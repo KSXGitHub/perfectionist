@@ -10,9 +10,10 @@ codebases.
 A URL that references a file or directory inside a hosted git
 repository must use a pinned ref:
 
-- A long commit SHA (40 hex chars).
-- A short commit SHA (7 to 39 hex chars; minimum length is
-  configurable).
+- A commit SHA whose length falls in the project's configured range
+  (1 to 40 hex characters by default — i.e., any prefix passes; a
+  project that wants short pinned URLs can require exactly 12, and a
+  project that wants the full SHA can require exactly 40).
 - Optionally a tag, when the project trusts that tags are not force-
   moved.
 
@@ -36,15 +37,19 @@ only need a host plus a path-template addition.
 For every URL that matches one of the configured forge patterns,
 extract the `{ref}` segment and classify it:
 
-- **Long SHA** (`^[0-9a-fA-F]{40}$`): accept.
-- **Short SHA** (`^[0-9a-fA-F]{N,39}$`, where `N` defaults to 7):
-  accept.
+- **Commit SHA**: pure hex, length in
+  `[commit_length_min, commit_length_max]`. Accept.
 - **Tag** (matches one of the configured `tag_patterns`, or appears
   in `tag_allowlist`): accept iff `allow_tags = true`.
 - **Codeberg / Gitea ref-typed URL**: when the URL contains
   `/src/branch/`, the ref is *known* to be a branch and is rejected
   regardless of how it would otherwise classify; `/src/commit/` and
-  `/src/tag/` are accepted (the latter subject to `allow_tags`).
+  `/src/tag/` are accepted (the latter subject to `allow_tags`,
+  *and* the SHA-length window — a `/src/commit/abc` URL with only
+  3 hex chars is still rejected when the project requires 12).
+- **Hex string outside the configured length window**: reject. The
+  diagnostic distinguishes this from the branch case so the author
+  can simply lengthen or shorten the SHA rather than re-pin.
 - **Anything else** (typically a branch name): reject.
 
 Diagnostic span is the `{ref}` substring of the URL, with help text
@@ -56,10 +61,15 @@ that explains what kind of ref the lint expected.
 // Bad: branch ref
 /// See <https://github.com/owner/repo/blob/main/src/lib.rs>.
 
-// Good: long SHA
+// Good (default length window): long SHA
 /// See <https://github.com/owner/repo/blob/8c1f6e2a6d33c1b1a2f9e0e1d3b8a4c7d6e5f4a3/src/lib.rs>.
 
-// Good: short SHA (7+ hex chars)
+// Good (default length window): short SHA
+/// See <https://github.com/owner/repo/blob/8c1f6e2/src/lib.rs>.
+
+// Bad under `commit_length_min = 12, commit_length_max = 12`:
+//   short SHA accepted by default, but here the project pinned the
+//   length at 12 chars so the diagnostic names the wrong length.
 /// See <https://github.com/owner/repo/blob/8c1f6e2/src/lib.rs>.
 
 // Good (default config): semver tag
@@ -93,8 +103,29 @@ tag_patterns = [
 # Exact strings always accepted as tags, regardless of pattern match.
 tag_allowlist = []
 
-# Minimum length for a hex string to count as a "short SHA".
-min_short_commit_length = 7
+# Range for the hex SHA length, inclusive. The defaults accept any
+# valid abbreviation:
+#
+#   commit_length_min = 1, commit_length_max = 40   # any length
+#
+# To require the full 40-char SHA:
+#
+#   commit_length_min = 40, commit_length_max = 40
+#
+# To require a specific abbreviated length (e.g., to keep URLs short
+# while still pinned), set both knobs to the same value:
+#
+#   commit_length_min = 12, commit_length_max = 12
+#
+# To allow any length within a window:
+#
+#   commit_length_min = 7,  commit_length_max = 12
+#
+# A SHA that falls outside the window is rejected with a distinct
+# diagnostic that names the configured length, so authors can adjust
+# the URL without re-pinning.
+commit_length_min = 1
+commit_length_max = 40
 
 # Forge URL patterns. Each entry maps a host glob to the path
 # template that locates the ref segment. `{ref}` is the capture
@@ -152,10 +183,15 @@ in one entry.
   template's `{owner}/{repo}/.../{ref}/**` pattern and extract the
   ref.
 - Ref classification:
-  1. Long SHA: pure hex, length 40.
-  2. Short SHA: pure hex, length in `[min_short_commit_length, 39]`.
-  3. Codeberg/Gitea ref-typed URL: classification is forced by the
-     URL path (`/src/branch/` → branch regardless of contents).
+  1. Codeberg/Gitea ref-typed URL: classification is forced by the
+     URL path. `/src/branch/` is always a branch; `/src/commit/`
+     proceeds to the SHA-length check; `/src/tag/` proceeds to the
+     tag check.
+  2. SHA: pure hex, length in
+     `[commit_length_min, commit_length_max]`.
+  3. Hex string outside the length window: emit a distinct
+     "wrong-length SHA" diagnostic that names the configured length
+     and the actual length.
   4. Tag: regex match against `tag_patterns`, or membership in
      `tag_allowlist`.
   5. Otherwise: branch.
