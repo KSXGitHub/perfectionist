@@ -92,8 +92,8 @@ assert_eq!(actual, expected, "tree did not flatten...");
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
-  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
-  required for every registered lint.
+  catalogue, in particular the lint-name namespacing (`perfectionist::*`)
+  that every registered lint follows.
 
 ## Autofix
 

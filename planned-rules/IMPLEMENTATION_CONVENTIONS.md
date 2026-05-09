@@ -81,54 +81,84 @@ The rules that explicitly call this convention out in their
 implementation notes are the candidates; rules that just walk a
 fixed-size byte sequence do not.
 
-## Lint name prefixing
+## Lint name namespacing
 
-Every lint registered by this plugin must carry the `perfectionist_`
-prefix on its rustc-visible name. The planning files in this
-directory use the *unprefixed* form for readability — `qualified_paths`
-reads better than `perfectionist_qualified_paths` in a sentence —
-but the lint as it appears in `declare_lint!`, in the
-`dylint.toml` configuration table, in `#[allow(...)]` /
-`#[deny(...)]` attributes, and in compiler diagnostic output is
-always prefixed.
+Every lint registered by this plugin lives in the `perfectionist`
+*tool namespace*. The planning files in this directory use the
+unqualified form for readability — `qualified_paths` reads better
+than `perfectionist::qualified_paths` in a sentence — but the lint
+as it appears in `declare_tool_lint!`, in the `dylint.toml`
+configuration table, in `#[allow(...)]` / `#[deny(...)]`
+attributes, and in compiler diagnostic output is always
+namespaced.
 
-### Why prefix at all
+### Why namespace at all
 
 Dylint loads each plugin as a separate dynamic library, but
 rustc's `LintStore` is a single global table per compilation. Two
-plugins that both register a lint named `single_letter_names` cause
-rustc to reject the second registration as a duplicate. The names
-this catalogue chose — `from`, `bare_url`, `qualified_paths`,
+plugins that both register a lint named `single_letter_names`
+cause rustc to reject the second registration as a duplicate. The
+names this catalogue chose — `from`, `bare_url`, `qualified_paths`,
 `serde_source_types`, and similar — are exactly the names an
 independent plugin author would reach for, so collisions are not
-hypothetical. The prefix removes them.
+hypothetical. Namespacing removes them.
 
-The prefix also makes diagnostic attribution unambiguous. When a
-user sees `warning: ...` followed by `--> note: #[warn(perfectionist_qualified_paths)]
-on by default`, the source plugin is named in the note and there
-is no question which library to consult or configure.
+The namespace also makes diagnostic attribution unambiguous. A
+warning's note reads `#[warn(perfectionist::qualified_paths)] on
+by default`, naming the source plugin so there is no question
+which library to consult or configure.
 
-### Why not a tool namespace
+### Why a tool namespace rather than a bare prefix
 
-Clippy's `#[allow(clippy::foo)]` and `rustdoc::bar` work because
-rustc has *hard-coded* support for those two tool names. Custom
-tool namespaces require `#![register_tool(name)]`, which is an
-unstable feature. Building a stable plugin on top of an unstable
-attribute would force every downstream user onto nightly Rust;
-that is not a trade-off this catalogue is willing to make.
+Two reasonable approaches exist:
 
-If `register_tool` ever stabilises with the necessary semantics,
-this section can be revisited.
+- **Tool namespace** (`perfectionist::qualified_paths`): the
+  approach used by `clippy::*` and `rustdoc::*`. Idiomatic, scoped,
+  reads cleanly in `#[allow(...)]`.
+- **Bare prefix** (`perfectionist_qualified_paths`): a single long
+  identifier. Mechanically simpler, no tool registration required.
 
-### Why not embed the crate name in `declare_tool_lint!`
+Both work for *this* plugin's compilation because the plugin is
+already nightly (it depends on `rustc_private`) and can use
+`clippy_utils::declare_tool_lint!`, which threads through the
+unstable `register_tool` machinery. During a `cargo dylint` run
+the plugin's nightly toolchain compiles the consumer's code, the
+tool name is registered, and `#[allow(perfectionist::foo)]` is
+recognised exactly the way `#[allow(clippy::foo)]` is.
 
-clippy_utils exposes `declare_tool_lint!` for the same goal —
-producing lints whose canonical name is `tool::lint`. The
-implementation still flows through `register_tool`, so the
-nightly-only constraint applies. Same conclusion as the previous
-section.
+The tool-namespace form is preferred because it is the standard
+Rust pattern for plugin-provided lints, separates the project's
+namespace from the global lint name pool, and keeps user-visible
+syntax close to the syntax users already know from clippy.
 
-### How to apply the prefix
+### Caveat: the consumer-side `unknown_lints` warning
+
+The plugin can register `perfectionist` as a tool name during a
+`cargo dylint` run, but it cannot do so during the consumer's
+*normal* `cargo build` / `cargo check` (where the plugin is not
+loaded). When stable rustc encounters `#[allow(perfectionist::foo)]`
+in source without the plugin loaded, the behaviour depends on the
+rustc version and is not perfectly stable across releases:
+
+- Some rustc versions silently ignore unknown tool prefixes
+  (treating them as "this attribute is for a tool I don't
+  recognise; not my problem").
+- Other versions emit an `unknown_lints` warning naming the
+  unknown tool / lint.
+
+Either behaviour is *also* what happens for the bare-prefix
+alternative `#[allow(perfectionist_foo)]` — stable rustc has no
+way to know either name belongs to a real lint. Tool namespace is
+therefore at worst equivalent to bare prefix on this dimension,
+and possibly *more* lenient because tool-prefixed unknowns are the
+case rustc most often special-cases for cross-tool ergonomics.
+
+The standard workaround for both forms is to add
+`#![allow(unknown_lints)]` at the crate root of any project that
+sees the warning. Document this in the project's user-facing
+README so consumers know to apply it once if needed.
+
+### How to apply the namespace
 
 When a rule's planning file reads:
 
@@ -136,20 +166,24 @@ When a rule's planning file reads:
 # `qualified_paths`
 ```
 
-the `declare_lint!` invocation reads:
+the `declare_tool_lint!` invocation reads:
 
 ```rust
-declare_lint! {
-    pub PERFECTIONIST_QUALIFIED_PATHS,
+clippy_utils::declare_tool_lint! {
+    pub perfectionist::QUALIFIED_PATHS,
     Warn,
     "decide whether items from outside the current scope are named \
-     by their full path or imported via `use`"
+     by their full path or imported via `use`",
+    report_in_external_macro: false
 }
 ```
 
-The convention is one-to-one: drop the leading `pub`, uppercase
-the identifier, prepend `PERFECTIONIST_`. The diagnostic text
-inside the lint is the rule's own one-line summary.
+The macro produces a lint whose canonical printed name is
+`perfectionist::qualified_paths`. The translation from planning
+name to declaration is one-to-one: take the snake_case identifier
+from the planning H1, uppercase it for the macro identifier, slot
+it under `perfectionist::`. The diagnostic text inside the lint is
+the rule's own one-line summary.
 
 Configuration tables follow the same shape. The planning file
 shows:
@@ -162,25 +196,31 @@ style = "preserve"
 The actual `dylint.toml` reads:
 
 ```toml
-[perfectionist_qualified_paths]
+[perfectionist::qualified_paths]
 style = "preserve"
 ```
 
-A user-side suppression looks like:
+A user-side suppression reads:
 
 ```rust
-#[allow(perfectionist_qualified_paths)]
+#[allow(perfectionist::qualified_paths)]
 fn legacy_function() { /* ... */ }
 ```
 
-### What stays unprefixed
+A crate-root suppression of the cross-toolchain warning is:
+
+```rust
+#![allow(unknown_lints)]
+```
+
+### What stays unqualified
 
 - File names in this directory (`qualified-paths.md`).
 - Cross-references in prose between rule files
   (`see [\`commit-id-length\`](./commit-id-length.md)`).
 - The rule names listed in the README index.
 
-These exist for reading, not for `rustc` to ingest, and the prefix
-adds noise without adding meaning. The convention above is the
-single point of translation between the readable planning name and
-the registered rustc name.
+These exist for reading, not for `rustc` to ingest, and the
+namespace adds noise without adding meaning. The convention above
+is the single point of translation between the readable planning
+name and the registered rustc name.
