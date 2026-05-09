@@ -45,7 +45,14 @@ of this file.
   `clippy::std_instead_of_core` + `std_instead_of_alloc`),
   `prefer_std`, or `preserve` (default).
 - [`no-star-imports.md`](./no-star-imports.md) — forbid `use foo::*` inside
-  module bodies, with a documented allowlist for preludes and root re-exports.
+  module bodies. Two exceptions are enabled by default and individually
+  configurable: the prelude form (`use foo::prelude::*`) and root-of-
+  module re-exports (`pub use submodule::*`). A project can disable
+  either or both.
+- [`named-prelude-import.md`](./named-prelude-import.md) — dual of the
+  previous rule. Forbid named imports from a `prelude` module
+  (`use foo::prelude::Item;`); allow the glob form
+  (`use foo::prelude::*;`).
 
 ### Naming
 - [`single-letter-names.md`](./single-letter-names.md) — the umbrella rule for

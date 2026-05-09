@@ -5,7 +5,7 @@
 ## Statement
 
 Avoid star (glob) imports inside the bodies of regular modules. Two
-exceptions:
+exceptions are allowed by default, both individually configurable:
 
 1. **External-crate preludes**, e.g. `use rayon::prelude::*;`,
    `use assert_cmd::prelude::*;`.
@@ -15,16 +15,22 @@ exceptions:
 `use super::*;` inside a `#[cfg(test)] mod tests` block is the case the
 guide is most concerned about; explicit imports must replace it.
 
+A project that wants a stricter posture can disable either or both
+exceptions through `dylint.toml`.
+
 ## What to lint
 
-For every `use foo::bar::*;` (i.e., `UseTreeKind::Glob`), emit unless one
-of the following holds:
+For every `use foo::bar::*;` (i.e., `UseTreeKind::Glob`), emit unless
+one of the *enabled* exceptions applies:
 
-- The use is `pub` and sits at the *top level* of a module body
-  (root-of-module re-export).
-- The final non-glob segment of the path is `prelude` (prelude exception).
-  This is a heuristic but covers `rayon::prelude`, `assert_cmd::prelude`,
-  `diesel::prelude`, etc.
+- **`prelude`** (default enabled): the final non-glob segment of the
+  path is `prelude`. Heuristic, but covers `rayon::prelude`,
+  `assert_cmd::prelude`, `diesel::prelude`, etc. Configurable via
+  `prelude_segment_names`.
+- **`root_reexport`** (default enabled): the use is `pub` and sits at
+  the *top level* of a module body.
+
+When both exceptions are disabled the lint flags every glob `use`.
 
 ## Examples
 
@@ -43,28 +49,77 @@ mod tests {
 ```
 
 ```rust
-// Allowed (prelude exception)
+// Allowed by default (prelude exception)
 use rayon::prelude::*;
 
-// Allowed (root re-export)
+// Allowed by default (root re-export)
 pub use comver::*;
+```
+
+When `prelude` is disabled (`exceptions = ["root_reexport"]`):
+
+```rust
+// Bad (under that config)
+use rayon::prelude::*;
+
+// Good
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+```
+
+When `root_reexport` is disabled (`exceptions = ["prelude"]`):
+
+```rust
+// Bad (under that config)
+pub use comver::*;
+
+// Good
+pub use comver::{Version, VersionReq};
+```
+
+## Configuration
+
+```toml
+# dylint.toml
+[no_star_imports]
+# Which exception cases to allow. Both enabled by default.
+exceptions = ["prelude", "root_reexport"]
+
+# Names recognised as prelude segments.
+prelude_segment_names = ["prelude"]
+
+# Additional fully-qualified paths the lint should never flag, regardless
+# of style. Useful for crate-specific glob conventions.
+allowed_paths = []
+```
+
+A project that wants to ban *all* glob `use` statements outright can set:
+
+```toml
+[no_star_imports]
+exceptions = []
 ```
 
 ## Implementation notes
 
-- `EarlyLintPass::check_item` on `ItemKind::Use` with a tree containing a
-  `Glob`.
+- `EarlyLintPass::check_item` on `ItemKind::Use` with a tree containing
+  a `Glob`.
 - Determine the parent module via the item's `HirId` ancestors; the
-  root-re-export exception requires the parent be the module root and the
-  visibility be `pub`.
-- For the prelude exception, inspect `UseTree::prefix` and check that the
-  last segment ident is `prelude`.
+  root-re-export exception requires the parent be the module root and
+  the visibility be `pub`.
+- For the prelude exception, inspect `UseTree::prefix` and check that
+  the last segment ident is in `prelude_segment_names`.
+- Read the `exceptions` config once per crate and store as a
+  `bitflags`-style set; each `check_item` call consults it.
 
-## Configuration
+## Interaction with [`named-prelude-import`](./named-prelude-import.md)
 
-Provide a `dylint.toml` knob `no_star_imports.allowed_paths` so projects
-can extend the prelude allowlist (e.g., `tracing::prelude`) without
-patching the lint.
+The two lints are duals. `no_star_imports` (with the `prelude`
+exception enabled) lets `use foo::prelude::*;` through and forbids
+`use super::*;`. `named_prelude_import` flags
+`use foo::prelude::Item;` and lets `use foo::prelude::*;` through.
+Together they say: "preludes must be glob-imported, and globs are only
+allowed for preludes". Enabling both is the recommended posture for
+projects that follow the prelude convention strictly.
 
 ## Severity
 
