@@ -27,6 +27,11 @@ of this file.
   import-granularity style. Configurable as `merged` (the recommendation
   from both source documents — collapse `use` lines that share a prefix
   into a single braced `use`) or `separate` (one `use` per leaf path).
+- [`import-grouping.md`](./import-grouping.md) — enforce a project-wide
+  import-grouping style. Configurable as `single_group` (every `use` in
+  one contiguous block) or `grouped` (partitioned into std / internal /
+  third-party blocks separated by blank lines, with the order
+  configurable).
 - [`no-star-imports.md`](./no-star-imports.md) — forbid `use foo::*` inside
   module bodies, with a documented allowlist for preludes and root re-exports.
 
