@@ -72,10 +72,17 @@ pattern that several rules call out by reference — live in
 ### Trait bounds and signatures
 - [`where-clause-bounds.md`](./where-clause-bounds.md) — prefer `where` clauses
   over inline bounds when there are multiple constraints.
+- [`prefer-owned-parameter.md`](./prefer-owned-parameter.md) — when a
+  function takes `&T` but the body unconditionally calls
+  `.to_owned()` / `.to_path_buf()` / equivalent, take `T` directly.
+  Pairs with `clippy::ptr_arg` and `clippy::needless_pass_by_value`
+  to cover the full owned-vs-borrowed trade-off from the pacquet
+  guide.
 
 ### Derives and error types
-- [`derive-ordering.md`](./derive-ordering.md) — enforce the canonical order
-  for `#[derive(...)]` and require splitting across lines by category.
+- [`derive-ordering.md`](./derive-ordering.md) — order trait names within
+  one `#[derive(...)]` list. Three styles: `preserve`, `alphabetical`,
+  `prefix_then_alphabetical`. Default `preserve`.
 - [`error-type-derives.md`](./error-type-derives.md) — `derive_more::Display` /
   `Error` must only be derived when actually needed; flag superfluous `Error`
   on non-error types.
@@ -90,8 +97,10 @@ pattern that several rules call out by reference — live in
   `#[debug(...)]` attributes from `derive_more`.
 
 ### Pipe trait
-- [`unnecessary-pipe.md`](./unnecessary-pipe.md) — flag `.pipe(f)` where the
-  receiver is not the tail of an existing method chain.
+- [`pipe-style.md`](./pipe-style.md) — bidirectional pipe-trait
+  policy. Flags `value.pipe(f)` at the start of a chain (suggests
+  `f(value)`) and flags `f(chain)` wrapping a method chain
+  (suggests `chain.pipe(f)`). Both checks default to enforce.
 
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
@@ -173,11 +182,14 @@ external state, or judgement calls that a static lint cannot evaluate:
   threshold is arbitrary; flagged here as an *advisory* lint candidate but
   rejected as a real rule. The hard rule (external file path layout) is
   covered by [`unit-test-file-layout.md`](./unit-test-file-layout.md).
-- **Owned vs borrowed parameter trade-off** — `clippy::ptr_arg` already flags
-  `&PathBuf` / `&String` / `&Vec<_>` parameters, which covers the
-  "most encompassing type" case from the pacquet guide. The remaining
-  trade-off ("would owned reduce total copies?") requires whole-program
-  reasoning that a single lint pass cannot perform.
+- **"Use the most encompassing type" case** of the pacquet guide's
+  owned-vs-borrowed section is already covered by
+  `clippy::ptr_arg` (flags `&PathBuf` / `&String` / `&Vec<_>` and
+  suggests `&Path` / `&str` / `&[_]`). The other two cases
+  (prefer-owned-when-converting and
+  prefer-borrowed-when-not-consumed) are handled respectively by
+  [`prefer-owned-parameter`](./prefer-owned-parameter.md) and
+  `clippy::needless_pass_by_value`.
 - **Reporter wire-contract requirements** in pacquet (channel naming,
   upstream permalink comments, ordering relative to side effects, recording
   fakes in tests) — these depend on cross-repo invariants and human

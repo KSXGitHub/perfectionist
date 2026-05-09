@@ -213,14 +213,3 @@ A crate-root suppression of the cross-toolchain warning is:
 #![allow(unknown_lints)]
 ```
 
-### What stays unqualified
-
-- File names in this directory (`qualified-paths.md`).
-- Cross-references in prose between rule files
-  (`see [\`commit-id-length\`](./commit-id-length.md)`).
-- The rule names listed in the README index.
-
-These exist for reading, not for `rustc` to ingest, and the
-namespace adds noise without adding meaning. The convention above
-is the single point of translation between the readable planning
-name and the registered rustc name.

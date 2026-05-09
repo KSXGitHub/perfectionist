@@ -56,68 +56,60 @@ targets = ["doc", "comment", "string_literal"]
 commit_length_min = 1
 commit_length_max = 40
 
-# Forge URL patterns. Each entry maps a host glob to one or more
-# path templates that locate SHA-shaped segments. `{sha}` matches a
-# single hex segment; `{sha_a}` and `{sha_b}` match the two SHAs in
-# a compare URL. `**` matches any path suffix.
-forges = [
-  { host = "github.com", paths = [
-      "{owner}/{repo}/blob/{sha}/**",
-      "{owner}/{repo}/tree/{sha}/**",
-      "{owner}/{repo}/raw/{sha}/**",
-      "{owner}/{repo}/edit/{sha}/**",
-      "{owner}/{repo}/blame/{sha}/**",
-      "{owner}/{repo}/commit/{sha}",
-      "{owner}/{repo}/commits/{sha}",
-      "{owner}/{repo}/compare/{sha_a}...{sha_b}",
-      "{owner}/{repo}/compare/{sha_a}..{sha_b}",
-  ] },
-  { host = "gitlab.com", paths = [
-      "{owner}/{repo}/-/blob/{sha}/**",
-      "{owner}/{repo}/-/tree/{sha}/**",
-      "{owner}/{repo}/-/raw/{sha}/**",
-      "{owner}/{repo}/-/edit/{sha}/**",
-      "{owner}/{repo}/-/commit/{sha}",
-      "{owner}/{repo}/-/compare/{sha_a}...{sha_b}",
-  ] },
-  { host = "bitbucket.org", paths = [
-      "{owner}/{repo}/src/{sha}/**",
-      "{owner}/{repo}/commits/{sha}",
-      "{owner}/{repo}/branches/compare/{sha_a}..{sha_b}",
-  ] },
-  { host = "codeberg.org", paths = [
-      "{owner}/{repo}/src/commit/{sha}/**",
-      "{owner}/{repo}/raw/commit/{sha}/**",
-      "{owner}/{repo}/commit/{sha}",
-      "{owner}/{repo}/compare/{sha_a}...{sha_b}",
-  ] },
-  { host = "gitee.com", paths = [
-      "{owner}/{repo}/blob/{sha}/**",
-      "{owner}/{repo}/commit/{sha}",
-      "{owner}/{repo}/compare/{sha_a}...{sha_b}",
-  ] },
-  { host = "git.sr.ht", paths = [
-      "~{user}/{repo}/tree/{sha}/item/**",
-      "~{user}/{repo}/commit/{sha}",
-  ] },
+# Forge hosts to scan, mapped to the forge kind that determines the
+# URL shapes containing SHA-shaped path segments. Each kind's
+# patterns (file, tree, raw, commit, compare, …) are hardcoded.
+# Configuration declares hostnames only; self-hosted instances
+# register by adding an entry with the appropriate kind.
+hosts = [
+  { hostname = "github.com",    kind = "github" },
+  { hostname = "gitee.com",     kind = "github" },     # github-shape
+  { hostname = "gitlab.com",    kind = "gitlab" },
+  { hostname = "bitbucket.org", kind = "bitbucket" },
+  { hostname = "codeberg.org",  kind = "gitea" },      # gitea-shape
+  { hostname = "git.sr.ht",     kind = "sourcehut" },
 ]
 
 # Skip URLs whose host matches one of these glob patterns.
 skip_hosts = []
 
-# Skip refs that are not pure hex even if they appear in a slot the
-# template marks as `{sha}`. By default the lint treats a non-hex
-# ref as "not a SHA, this rule has nothing to say"; another rule
-# (typically `unpinned-repo-ref`) handles the branch case. Set to
-# false to flag non-hex refs in `{sha}` slots as wrong-shape.
+# Skip refs that are not pure hex even if they appear in a slot
+# the per-kind URL shape marks as a SHA. By default the lint
+# treats a non-hex ref as "not a SHA, this rule has nothing to
+# say"; another rule (typically `unpinned-repo-ref`) handles the
+# branch case. Set to false to flag non-hex refs in SHA slots as
+# wrong-shape.
 ignore_non_hex_refs = true
 ```
 
+A self-hosted instance registers with one entry:
+
+```toml
+hosts = [
+  { hostname = "gitlab.example.com", kind = "gitlab" },
+  { hostname = "git.example.com",    kind = "gitea" },
+]
+```
+
+The `hostname` field accepts a glob (`gitlab.*.example.com`).
+
+### SHA-bearing URL paths per forge kind
+
+The hardcoded SHA slots (and compare-range slots) by kind:
+
+| Kind        | URL paths containing SHAs                                                                                                  |
+|-------------|----------------------------------------------------------------------------------------------------------------------------|
+| `github`    | `/{owner}/{repo}/(blob|tree|raw|edit|blame)/{sha}/...`, `/commit/{sha}`, `/commits/{sha}`, `/compare/{sha_a}(..|...){sha_b}` |
+| `gitlab`    | `/{owner}/{repo}/-/(blob|tree|raw|edit)/{sha}/...`, `/-/commit/{sha}`, `/-/compare/{sha_a}...{sha_b}`                       |
+| `bitbucket` | `/{owner}/{repo}/src/{sha}/...`, `/commits/{sha}`, `/branches/compare/{sha_a}..{sha_b}`                                     |
+| `gitea`     | `/{owner}/{repo}/(src|raw)/commit/{sha}/...`, `/commit/{sha}`, `/compare/{sha_a}...{sha_b}`                                 |
+| `sourcehut` | `/~{user}/{repo}/tree/{sha}/item/...`, `/commit/{sha}`                                                                      |
+
 ## What to lint
 
-For every URL that matches a configured forge template, walk the
-captured `{sha}` (and `{sha_a}`/`{sha_b}` for compare URLs) groups.
-For each capture:
+For every URL whose host matches a configured `hosts` entry,
+dispatch to the per-kind matcher. For each SHA slot (and each side
+of a compare range) it captures:
 
 1. If the captured value is not pure hex and `ignore_non_hex_refs`
    is true, skip — `unpinned-repo-ref` will handle the branch case
@@ -155,24 +147,21 @@ A compare URL emits up to two diagnostics, one per SHA.
   [`bare-url`](./bare-url.md) and
   [`unpinned-repo-ref`](./unpinned-repo-ref.md). Discovery happens
   once per source comment; classification is per-lint.
-- The forge template parser must support both `{sha}` (single
-  capture) and `{sha_a}` / `{sha_b}` (two captures separated by
-  `..` or `...`). Implement as a small ad-hoc matcher rather than a
-  full glob library.
+- Each `kind` has a small, fixed set of SHA-bearing path patterns,
+  baked into the lint at compile time. The lint does not parse user-
+  supplied templates; configuration declares hostnames only.
 - For compare URLs, emit one diagnostic per offending SHA. The same
   URL may produce two warnings.
 - The wrong-length diagnostic span is the SHA itself, not the whole
   URL, so editors can highlight just the bad portion.
-- **Parser style.** Implement the forge template matcher as
-  parser-combinator-style `take_*` functions per
+- **Parser style.** Implement the URL matcher as parser-
+  combinator-style `take_*` functions per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
   reuse the URL skeleton from
   [`unpinned-repo-ref`](./unpinned-repo-ref.md), then add
   `take_sha` (a run of `[0-9a-fA-F]`) and `take_range_separator`
-  (`...` or `..`) for the compare-URL case. A `{sha_a}...{sha_b}`
-  template becomes `take_sha`, `take_range_separator`, `take_sha`
-  in sequence — the combinator order makes the two-SHA capture
-  obvious to the reader.
+  (`...` or `..`) for the compare-URL case. The per-kind matchers
+  are small functions registered in a table keyed by kind.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this

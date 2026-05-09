@@ -57,17 +57,6 @@ inline_style = "preserve"
 inline_max_lines = 50
 inline_max_percent_of_file = 100   # 100 = effectively disabled
 
-# Item kinds that count toward the inline-test footprint. The defaults
-# cover every item that only exists in test builds, so a project's
-# test footprint is correctly measured even when it does not use
-# `mod tests { ... }` at all.
-inline_test_kinds = [
-  "cfg_test_mod",      # inline `#[cfg(test)] mod X { ... }`
-  "test_fn",           # `#[test] fn ...` at module level
-  "cfg_test_fn",       # `#[cfg(test)] fn ...` (test helpers)
-  "cfg_test_other",    # `#[cfg(test)] struct/enum/use/const ...`
-]
-
 # How external test files must be laid out on disk.
 external_layout = "nested"
 # "nested"    — for `src/foo.rs` declaring `mod bar;` (test or otherwise),
@@ -122,7 +111,8 @@ every **inline test item** — by default that is the union of:
 - `#[cfg(test)] fn ...` (test helpers next to production code),
 - any other `#[cfg(test)]`-gated item (`use`, `struct`, `const`, …).
 
-The set is configurable via `inline_test_kinds`.
+The set is fixed: any item that only exists in a test build counts
+toward the footprint.
 
 3. **Inline-style (per `inline_style`)**:
    - `external_only`: emit one diagnostic *per* collected inline test
@@ -249,16 +239,16 @@ file's position relative to its parent matters.
 - Walking the parent module: implement `external_when_long` as a
   per-`SourceFile` accumulator. In `EarlyLintPass::check_mod` (or
   `check_crate` walking each module body) iterate top-level items,
-  classify each as production-or-test using the configured
-  `inline_test_kinds`, and sum the per-item line spans for the
-  test items. Emit once per parent source file when the sum exceeds
-  either limit.
-- Item classification:
-  - `cfg_test_mod`: `ItemKind::Mod(.., Inline::Yes)` carrying
-    `#[cfg(test)]`.
-  - `test_fn`: `ItemKind::Fn` carrying `#[test]`.
-  - `cfg_test_fn`: `ItemKind::Fn` carrying `#[cfg(test)]`.
-  - `cfg_test_other`: any other `ItemKind` carrying `#[cfg(test)]`.
+  classify each as production-or-test using the fixed kinds below,
+  and sum the per-item line spans for the test items. Emit once
+  per parent source file when the sum exceeds either limit.
+- Item classification (fixed; no configuration knob):
+  - inline `#[cfg(test)] mod X { ... }`:
+    `ItemKind::Mod(.., Inline::Yes)` carrying `#[cfg(test)]`.
+  - `#[test] fn ...`: `ItemKind::Fn` carrying `#[test]`.
+  - `#[cfg(test)] fn ...`: `ItemKind::Fn` carrying `#[cfg(test)]`.
+  - any other `#[cfg(test)]`-gated item: any other `ItemKind`
+    carrying `#[cfg(test)]`.
 - Skip the inline-style check entirely for a file that contains
   *only* test items — that file is itself a valid extraction target.
   Detect by classifying every top-level item once and confirming the
