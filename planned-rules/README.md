@@ -100,6 +100,13 @@ pattern that several rules call out by reference — live in
 - [`serde-source-types.md`](./serde-source-types.md) — forbid
   `#[serde(from = "&'de str")]` / `try_from = "&'de str"`; advise
   `Cow<'de, str>` or `String`.
+- [`serde-wrapper-style.md`](./serde-wrapper-style.md) — when a
+  single-field wrapper has trivial `From` / `Into` impls,
+  `#[serde(transparent)]` and `#[serde(from = "T", into = "T")]`
+  produce the same wire format. The lint enforces a project-wide
+  choice between the two (`transparent` for zero-cost,
+  `from_into` to keep a validation hook ready). Default
+  `preserve`.
 
 ### Documentation
 - [`intra-doc-links.md`](./intra-doc-links.md) — backticked identifiers in
