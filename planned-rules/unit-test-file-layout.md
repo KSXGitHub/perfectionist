@@ -141,11 +141,15 @@ The set is configurable via `inline_test_kinds`.
      when it has no `mod tests { ... }` block at all.
    - `preserve`: emit nothing.
 
-A file containing **only** test items (e.g., `src/foo/tests.rs`
-itself, or any file whose path matches `external_layout`) is
-exempt from the inline-style check — it is by definition the
-extraction target, not the place a programmer is meant to extract
-*from*.
+A file that contains **only** test items — for example, the
+`src/foo/tests.rs` that a parent file's `mod tests;` resolves to,
+or any other file whose top-level items are entirely
+`#[cfg(test)]`-gated — is exempt from the inline-style check. The
+file is itself the extraction target; flagging it would just be
+the lint asking the author to move tests *out of* their existing
+test file. The detection is content-based (no production items at
+the top level); it does not depend on the file matching the
+configured `external_layout` pattern.
 
 ## Examples
 
