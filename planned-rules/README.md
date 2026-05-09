@@ -62,6 +62,12 @@ pattern that several rules call out by reference — live in
 - [`single-letter-names.md`](./single-letter-names.md) — the umbrella rule for
   single-letter generics, `let` bindings, function parameters, and closure
   parameters, with the exact allow-list from both guides.
+- [`qualified-paths.md`](./qualified-paths.md) — decide whether items from
+  outside the current scope are named by their full path
+  (`std::fs::create_dir_all`, `#[derive(clap::Parser)]`) or imported
+  via `use` and called by the simple identifier. AI tends to produce
+  the former; parallel-disk-usage prefers the latter. Configurable
+  per project.
 
 ### Trait bounds and signatures
 - [`where-clause-bounds.md`](./where-clause-bounds.md) — prefer `where` clauses
