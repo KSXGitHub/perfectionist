@@ -127,6 +127,15 @@ pattern that several rules call out by reference — live in
   `text_block_fnl! { ... }` (default) or the
   `"line\n\<newline>line"` continuation form. Skips templates and
   attribute literals.
+- [`print-macro-split.md`](./print-macro-split.md) — when a
+  splittable print macro (`println!`, `eprintln!`, `writeln!`,
+  log family, …) has an embedded-`\n` template *and* spans more
+  than `max_line_width` columns, suggest either splitting into
+  one call per line (`multiple_calls`, default) or folding the
+  template with backslash-newline continuations
+  (`line_continuation`). Excludes `format!`/`format_args!` and
+  the panic/assert family because their behaviour changes under
+  splitting.
 
 ### Serde
 - [`serde-source-types.md`](./serde-source-types.md) — forbid
