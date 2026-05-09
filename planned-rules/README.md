@@ -116,6 +116,12 @@ of this file.
   Bitbucket, Codeberg / Gitea, sourcehut, …) to be pinned to a
   commit SHA, with optional acceptance of tag refs. Branch refs
   like `/blob/main/...` are rejected.
+- [`commit-id-length.md`](./commit-id-length.md) — enforce a
+  consistent SHA length for commit IDs that appear in forge URLs.
+  Covers file references, single-commit views (`/commit/<sha>`),
+  and range comparisons (`/compare/<sha>...<sha>`). Defaults are
+  permissive (any length passes); a project tightens the window to
+  pin a fixed length such as 12 or 40.
 
 ### Clap derive help
 - [`clap-help-no-markdown.md`](./clap-help-no-markdown.md) — forbid
