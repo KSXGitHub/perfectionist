@@ -69,9 +69,6 @@ of this file.
 ### Documentation
 - [`intra-doc-links.md`](./intra-doc-links.md) — backticked identifiers in
   rustdoc comments that resolve in scope must be written as intra-doc links.
-- [`private-doc-references.md`](./private-doc-references.md) — `///` and
-  `//!` on a `pub` (or `pub(crate)`) item must not name an item that is more
-  private than itself.
 - [`em-dash-prose.md`](./em-dash-prose.md) — flag em dashes in doc comments
   and string literals reachable from `format!` / `println!` style macros.
 
@@ -105,3 +102,12 @@ external state, or judgement calls that a static lint cannot evaluate:
 - **Test logging guidance** (`assert_eq!` with multi-line strings should
   log via `eprintln!`, complex structures via `dbg!`) — the rule branches
   on the runtime *shape* of values, which a static lint cannot inspect.
+- **Doc comments referencing items more private than the documented item**
+  (pacquet *Documentation comments*) — already covered by rustdoc's
+  built-in `rustdoc::private_intra_doc_links` lint (default `warn`).
+  Run `RUSTFLAGS='-D warnings' cargo doc --document-private-items` to
+  promote it to a hard error. The bare-backtick variant
+  (`` `Foo` `` rather than `` [`Foo`] ``) is funnelled into intra-doc
+  links by the [`intra-doc-links`](./intra-doc-links.md) rule, after
+  which rustdoc catches it. Reimplementing this in Dylint would be a
+  less accurate duplicate of rustdoc's own resolver.
