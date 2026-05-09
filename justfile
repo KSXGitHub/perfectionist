@@ -14,7 +14,7 @@ build:
 
 # Check documentation
 doc:
-  RUSTFLAGS='-D warnings' run doc
+  RUSTFLAGS='-D warnings' cargo doc
 
 # Run all the lints
 lint:
