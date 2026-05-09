@@ -45,8 +45,8 @@ inline_style = "preserve"
 # "preserve"           — no preference about inline vs external.
 
 # Threshold for `external_when_long`. The lint sums the line spans of
-# every inline test item in a file (see `inline_test_kinds` below) and
-# compares the total against both limits. The lint fires when either
+# every inline test item in a file (the fixed set defined under
+# "What to lint" below) and compares the total against both limits. The lint fires when either
 # is exceeded. The percentage is `(inline_test_lines / file_lines) *
 # 100`, where `file_lines` is the total line count of the parent
 # source file.
