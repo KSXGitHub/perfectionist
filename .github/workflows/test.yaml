@@ -31,7 +31,11 @@ jobs:
         run: |
           installer=$(mktemp -d)/install-rustup
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > $installer
-          bash $installer --default-toolchain $(cat rust-toolchain) -y
+          bash $installer --default-toolchain none -y
+          source "$HOME/.cargo/env"
+          # Triggers rustup to install the toolchain and components from the
+          # rust-toolchain override file (TOML format is required for `components`).
+          rustup show active-toolchain || rustup show
 
       - name: Install Rust tools
         uses: taiki-e/install-action@v2
