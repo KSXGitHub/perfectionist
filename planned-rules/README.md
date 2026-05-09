@@ -25,8 +25,9 @@ of this file.
 ### Imports
 - [`import-granularity.md`](./import-granularity.md) — enforce a project-wide
   import-granularity style. Configurable as `merged` (the recommendation
-  from both source documents — collapse `use` lines that share a prefix
-  into a single braced `use`) or `separate` (one `use` per leaf path).
+  from both source documents — collapse every shared prefix into one
+  nested `use`), `module` (one `use` per leaf module, items from the
+  same module merged), or `separate` (one `use` per leaf path).
 - [`import-grouping.md`](./import-grouping.md) — enforce a project-wide
   import-grouping style. Configurable as `single_group` (every `use` in
   one contiguous block) or `grouped` (partitioned into std / internal /
