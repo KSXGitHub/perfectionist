@@ -75,6 +75,13 @@ pattern that several rules call out by reference — live in
   on non-error types.
 - [`non-exhaustive-error.md`](./non-exhaustive-error.md) — public error enums
   should carry `#[non_exhaustive]`.
+- [`prefer-derive-more.md`](./prefer-derive-more.md) — flag hand-written
+  `impl` blocks that could be replaced by a `derive_more` derive
+  (`From`, `Into`, `AsRef`, `Deref`, etc., with `Display` and
+  `Error` available behind opt-in flags due to detection difficulty).
+- [`derive-more-inlined-args.md`](./derive-more-inlined-args.md) —
+  `clippy::uninlined_format_args` for `#[display(...)]` and
+  `#[debug(...)]` attributes from `derive_more`.
 
 ### Pipe trait
 - [`unnecessary-pipe.md`](./unnecessary-pipe.md) — flag `.pipe(f)` where the
