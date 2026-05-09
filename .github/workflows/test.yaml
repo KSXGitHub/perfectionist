@@ -57,3 +57,9 @@ jobs:
       - name: Test
         shell: bash
         run: just test
+
+      - name: Clean workspace artifacts before cache
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: cargo clean --workspace
