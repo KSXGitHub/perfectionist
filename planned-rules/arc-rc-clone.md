@@ -22,10 +22,16 @@ Do not fire when:
 
 - The receiver is already `&Arc<T>` and the call is a deref-then-clone
   (this is rare but legal; the suggested fix is the same shape).
-- The call is *itself* `Arc::clone(...)` / `Rc::clone(...)` — that's the
+- The call is *itself* `Arc::clone(...)` or `Rc::clone(...)` — the
   desired form.
-- The call sits inside a context where `clone()` has been disambiguated
-  via UFCS (`<Arc<T> as Clone>::clone(&value)`) — this is also acceptable.
+- The call uses the turbofish-typed form `Arc::<T>::clone(...)` or
+  `Rc::<T>::clone(...)`. Functionally identical to the bare form, often
+  written when the type cannot otherwise be inferred or when the author
+  wants the type pinned at the call site for documentation. Same
+  acceptance rule for `alloc::sync::Arc::<T>::clone(...)` and
+  `alloc::rc::Rc::<T>::clone(...)`.
+- The call uses the fully-qualified UFCS form
+  `<Arc<T> as Clone>::clone(&value)` — also acceptable.
 
 ## Examples
 
@@ -52,6 +58,18 @@ fn my_function(value: Arc<Vec<u8>>) {
 - For the autofix, render `Arc::clone(&{receiver_snippet})`. Pre-existing
   parentheses or trailing `?` need careful span handling — defer to
   `clippy_utils::source::snippet_with_applicability`.
+- The `Arc::<T>::clone(...)` / `Rc::<T>::clone(...)` accepted forms
+  appear in HIR as `ExprKind::Call` with a callee of `ExprKind::Path`
+  whose final segment is `clone` and whose preceding segment carries a
+  non-empty `GenericArgs::AngleBracketed`. Match the path's resolved
+  `DefId` against `Arc::clone` / `Rc::clone` so re-exports are caught;
+  the turbofish presence at the segment before `clone` is the only
+  thing that distinguishes this form from the bare one for diagnostic
+  purposes — both are accepted.
+- The `<Arc<T> as Clone>::clone(...)` UFCS form appears as
+  `ExprKind::Call` with callee `ExprKind::Path(QPath::TypeRelative(...))`
+  resolving to `Clone::clone` with the qualifying type being `Arc` or
+  `Rc`. Also accepted.
 
 ## Interaction with `clippy::clone_on_ref_ptr`
 
