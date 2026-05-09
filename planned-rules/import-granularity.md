@@ -1,9 +1,11 @@
 # `import_granularity`
 
 **Sources:** parallel-disk-usage *Code Style › Import Organization*; pacquet
-*Import Organization*. Both source documents recommend the **`crate`** style;
-the **`module`** and **`item`** styles are supported here for projects that
-prefer a different shape.
+*Import Organization*. Both source documents show examples in the **`crate`**
+shape; the default in this catalogue is **`module`** because it is the
+shape that scales best as a codebase grows — `crate`-style nests can
+become unwieldy for large `use` blocks, and `item` produces the most
+diff churn. Projects that want either extreme set the style explicitly.
 
 ## Statement
 
@@ -11,12 +13,12 @@ A project picks one import-granularity style and enforces it consistently.
 The three styles describe the *unit* of one `use` statement, on a coarse-to-
 fine scale:
 
-- **`crate`** (default, matching both source documents): one `use` per
-  crate root. Every shared prefix is collapsed into nested braces.
+- **`crate`**: one `use` per crate root. Every shared prefix is
+  collapsed into nested braces.
   Example: `use std::{fs::{read as read_file, write as write_file}, io::{Error, ErrorKind}};`.
-- **`module`**: one `use` per leaf module. Items inside that module are
-  merged into one braced list; items from sibling modules sit on
-  separate `use` lines. Example:
+- **`module`** (default): one `use` per leaf module. Items inside that
+  module are merged into one braced list; items from sibling modules
+  sit on separate `use` lines. Example:
   `use std::collections::{BTreeMap, BTreeSet};`.
 - **`item`**: one `use` per leaf item. Every imported name lives on its
   own line. Example:
@@ -30,7 +32,7 @@ block whose shape does not match the configured style.
 ```toml
 # dylint.toml
 [import_granularity]
-style = "crate"   # or "module" or "item"
+style = "module"   # or "crate" or "item"
 ```
 
 Optional knobs (apply to all styles):
