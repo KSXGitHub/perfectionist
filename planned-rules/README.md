@@ -92,6 +92,10 @@ pattern that several rules call out by reference — live in
   `impl` blocks that could be replaced by a `derive_more` derive
   (`From`, `Into`, `AsRef`, `Deref`, etc., with `Display` and
   `Error` available behind opt-in flags due to detection difficulty).
+- [`prefer-derive-more-over-thiserror.md`](./prefer-derive-more-over-thiserror.md)
+  — flag `thiserror::Error` derives and `#[error(...)]` attributes;
+  suggest the corresponding `derive_more::{Display, Error}` form.
+  Translates `{0}`/`{1}` positional placeholders to `{_0}`/`{_1}`.
 - [`derive-more-inlined-args.md`](./derive-more-inlined-args.md) —
   `clippy::uninlined_format_args` for `#[display(...)]` and
   `#[debug(...)]` attributes from `derive_more`.
@@ -110,6 +114,13 @@ pattern that several rules call out by reference — live in
 ### Cloning
 - [`arc-rc-clone.md`](./arc-rc-clone.md) — require `Arc::clone(&x)` /
   `Rc::clone(&x)` instead of `x.clone()` when `x: Arc<_>` / `Rc<_>`.
+
+### String literals
+- [`prefer-raw-string.md`](./prefer-raw-string.md) — when a string
+  literal contains `\"`, `\\`, or `\'` escapes (and no
+  whitespace/Unicode escapes that can't appear in raw form), prefer
+  the `r"..."` / `r#"..."#` form. Autofix picks the smallest
+  hash-count that doesn't collide.
 
 ### Serde
 - [`serde-source-types.md`](./serde-source-types.md) — forbid
