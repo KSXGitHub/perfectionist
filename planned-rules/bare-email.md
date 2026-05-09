@@ -112,6 +112,16 @@ skip_domains = ["example.com", "example.org"]
 - For `style = "forbid"`, the lint emits no Suggestion. The intent
   is that the address be removed or moved, neither of which is
   mechanically expressible.
+- **Parser style.** Implement the address scanner as
+  parser-combinator-style `take_*` functions per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
+  The grammar splits cleanly into `take_local_part` (consumes a run
+  of `[A-Za-z0-9._%+-]`), `take_at` (a single `@` byte), and
+  `take_domain` (one or more `[A-Za-z0-9-]+` labels separated by
+  `.`, with a final TLD of two or more letters). Composing these
+  three keeps the email match readable and the failure points
+  visible, and avoids dragging a regex engine through the lint
+  pass.
 
 ## Severity
 

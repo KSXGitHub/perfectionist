@@ -68,6 +68,15 @@ struct PackageName(String);
   sufficient. `syn` is *not* available in a Dylint pass; instead, lex the
   string with `rustc_lexer` or do a minimal hand-written check
   (`trimmed.starts_with('&') && ends_with("str")`).
+- **Parser style.** Implement the type-literal parser as parser-
+  combinator-style `take_*` functions per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
+  `take_whitespace`, `take_path_prefix` (`core::` / `std::` /
+  empty), `take_ampersand`, `take_lifetime` (returns `Option<...>`,
+  since the lifetime is optional), and `take_ident` for the trailing
+  type name. The `&'de str` case is the composition
+  `&` → optional lifetime → identifier; making each step a separate
+  combinator keeps the lint's intent visible at the call site.
 
 ## Severity
 

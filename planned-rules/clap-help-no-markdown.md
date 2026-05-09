@@ -121,6 +121,18 @@ struct Cli {
   `pulldown_cmark` is overkill for one Dylint pass and would balloon
   the binary; the four constructs are individually trivial to detect
   by character.
+- **Parser style.** Implement the markdown scanner as parser-
+  combinator-style `take_*` functions per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
+  `take_code_span`, `take_code_block`, `take_link`,
+  `take_reference_definition`, `take_html_tag`, and `take_heading`,
+  one per banned construct. Each combinator returns the matched
+  substring and remaining input, so the dispatcher can branch on
+  whether the construct is in `forbid` and emit the right
+  per-construct diagnostic. Share the markdown helpers with
+  [`intra-doc-links`](./intra-doc-links.md),
+  [`unicode-ellipsis-in-docs`](./unicode-ellipsis-in-docs.md), and
+  [`em-dash-prose`](./em-dash-prose.md).
 - Override detection: walk attribute lists for `clap`, `arg`,
   `command` paths. Recognise `MetaNameValue` shape with the override
   key. `clippy_utils::attrs::find_by_name` is a starting point but

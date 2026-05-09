@@ -177,6 +177,14 @@ in one entry.
   forge's API; both would be out of scope and would also be pointing
   at the wrong thing (the URL might reference a *different*
   repository than the local one).
+- **Parser style.** Implement the URL/path matcher as parser-
+  combinator-style `take_*` functions per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
+  `take_scheme`, `take_host`, then a per-forge sequence of
+  `take_segment` (matching a literal like `blob` or `tree`) and
+  `take_capture` (extracting `{owner}`, `{repo}`, `{ref}`). The
+  per-forge templates expand into one combinator pipeline each,
+  registered in a table keyed by host glob.
 
 ## Severity
 

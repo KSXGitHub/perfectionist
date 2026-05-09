@@ -11,6 +11,10 @@ Every rule listed here is judged feasible to detect with a Dylint
 source documents that are *not* mechanically checkable are listed at the bottom
 of this file.
 
+Cross-cutting implementation conventions — including the parser-combinator
+pattern that several rules call out by reference — live in
+[`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
+
 ## Index
 
 ### Module and file layout

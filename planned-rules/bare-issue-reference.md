@@ -107,6 +107,14 @@ form = "inline"
   arbitrary files). Document the pattern of duplicating the URL in
   `dylint.toml`, and offer a small build-script snippet in the
   project's README that synchronises the two.
+- **Parser style.** Decompose the bare-reference scanner into
+  parser-combinator-style `take_*` functions per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
+  `take_token_prefix` (`#`, `GH-`, `gh-`, or any user-configured
+  alternative), `take_digits`, and a left-context check that the
+  preceding byte is not a word character or an opening bracket.
+  Each `extra_tokens` entry becomes one alternative in the
+  `take_token_prefix` step.
 
 ## Severity
 

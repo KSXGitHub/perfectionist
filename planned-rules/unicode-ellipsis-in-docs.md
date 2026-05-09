@@ -63,6 +63,16 @@ Skip:
   pass; a hand-written byte scanner is enough since we only need to
   recognise the three delimiters `` ` ``, `` ``` ``, and indented
   `    ` blocks.
+- **Parser style.** Implement the markdown exclusion scanner as
+  parser-combinator-style `take_*` functions per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
+  `take_code_span` and `take_code_block` consume the excluded
+  regions in one shot, leaving only the prose slice for the
+  codepoint scan. Sharing this with the analogous step in
+  [`intra-doc-links`](./intra-doc-links.md) and
+  [`em-dash-prose`](./em-dash-prose.md) is the natural follow-up;
+  factor the helper crate-internally rather than re-implementing
+  per lint.
 
 ## Autofix
 

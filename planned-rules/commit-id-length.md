@@ -163,6 +163,16 @@ A compare URL emits up to two diagnostics, one per SHA.
   URL may produce two warnings.
 - The wrong-length diagnostic span is the SHA itself, not the whole
   URL, so editors can highlight just the bad portion.
+- **Parser style.** Implement the forge template matcher as
+  parser-combinator-style `take_*` functions per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
+  reuse the URL skeleton from
+  [`unpinned-repo-ref`](./unpinned-repo-ref.md), then add
+  `take_sha` (a run of `[0-9a-fA-F]`) and `take_range_separator`
+  (`...` or `..`) for the compare-URL case. A `{sha_a}...{sha_b}`
+  template becomes `take_sha`, `take_range_separator`, `take_sha`
+  in sequence — the combinator order makes the two-SHA capture
+  obvious to the reader.
 
 ## Autofix
 

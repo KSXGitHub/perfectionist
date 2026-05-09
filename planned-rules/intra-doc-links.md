@@ -51,6 +51,16 @@ pub fn install(manifest: &PackageManifest, store: &Store) { /* ... */ }
   rustc's resolver in late-pass for the symbol in the current
   `ParentScope`.
 - The autofix wraps the existing backticked span with `[` / `]`.
+- **Parser style.** Implement the markdown scanner as parser-
+  combinator-style `take_*` functions per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
+  `take_code_span` (between matching `` ` `` runs),
+  `take_code_block` (between matching ``` ``` ``` ``` fences or a
+  four-space-indent block), `take_link_target`
+  (`` [`Foo`] ``, `[Foo]`, `[Foo](path)`, `[Foo][id]`), and
+  `take_backticked_ident` for the candidate-extraction step. The
+  combinators stitch into one walk that classifies each span as
+  excluded, already-linked, or candidate.
 
 ## Caveats
 

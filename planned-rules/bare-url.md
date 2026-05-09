@@ -130,6 +130,16 @@ skip_hosts = ["example.com", "example.org", "localhost"]
   `<...>`, one moving it outside — so the author can pick.
 - The match is greedy on `\S+` but stops before a closing bracket
   or angle bracket that would invalidate the wrap.
+- **Parser style.** Implement URL discovery as parser-combinator-
+  style `take_*` functions per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
+  `take_scheme` (`http://` / `https://`), `take_authority`,
+  `take_path`, and a `take_trailing_punctuation` helper that
+  classifies the last byte as either part of the URL or part of the
+  surrounding sentence. The trailing-punctuation decision is the
+  reason this rule wants combinators rather than a single regex —
+  the caller's choice of when to commit drives the
+  `MachineApplicable` vs `MaybeIncorrect` split.
 
 ## Severity
 

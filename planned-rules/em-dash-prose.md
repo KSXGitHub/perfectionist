@@ -106,6 +106,14 @@ action.
   `ExprKind::Macro` (post-expansion, look for `Span::from_expansion`
   and the macro `DefId`'s diagnostic name).
 - For doc comments, strip code spans and code blocks before scanning.
+- **Parser style.** When the markdown exclusion (code spans and
+  code blocks) is non-trivial, implement it as parser-combinator-
+  style `take_*` functions per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
+  Share the helper with
+  [`intra-doc-links`](./intra-doc-links.md) and
+  [`unicode-ellipsis-in-docs`](./unicode-ellipsis-in-docs.md) so
+  the three rules agree on what counts as a code region.
 - **No autofix is offered, ever.** The lint is deliberately
   fix-resistant: a tool-generated `—` → `,` substitution would mask
   the symptom while leaving the underlying loose phrasing in place,
