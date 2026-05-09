@@ -136,6 +136,18 @@ pattern that several rules call out by reference — live in
   (`line_continuation`). Excludes `format!`/`format_args!` and
   the panic/assert family because their behaviour changes under
   splitting.
+- [`format-macro-wrap.md`](./format-macro-wrap.md) — counterpart
+  for the *unsplittable* macros: `format!`, `format_args!`,
+  `panic!`, `assert!` (with message), the `debug_assert*` family,
+  `unimplemented!`/`todo!`/`unreachable!`. When the source line
+  exceeds `max_line_width`, suggest folding the template with
+  `\n\<newline>` continuations. Only one rewrite — multi-call is
+  not viable for these macros.
+- [`derive-more-template-wrap.md`](./derive-more-template-wrap.md)
+  — same width-driven wrapping for derive_more attribute-form
+  templates: `#[display(...)]`, `#[debug(...)]`. The attribute
+  is consumed by a derive macro so multi-attribute splitting
+  isn't viable; only line-continuation rewriting.
 
 ### Serde
 - [`serde-source-types.md`](./serde-source-types.md) — forbid
