@@ -98,6 +98,18 @@ a single non-leaf path with one or more leaves directly under it. Nested
 braces below the leaf module (`use foo::{bar::Baz, bar::Qux};`) are a
 violation; the fix folds them into `use foo::bar::{Baz, Qux};`.
 
+### Interaction with `self` imports
+
+A leaf-module `use` with a `{self, ...}` brace list — e.g.
+`use foo::bar::{self, Bar};` — is treated as compliant under `module`
+style. Although `self` resolves to module `bar` (parent: `foo`) and `Bar`
+resolves to an item in `bar` (parent: `bar`), the combined form is the
+canonical idiom for "import this module along with items from it" and
+splitting it would produce noisy diffs without semantic benefit.
+
+Whether `{self, ...}` itself is an acceptable form is the
+[`self_import`](./self-import.md) lint's job, not this one's.
+
 ## Style: `item`
 
 Each `use` declaration imports exactly one leaf path. A project that picks

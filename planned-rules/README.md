@@ -34,6 +34,11 @@ of this file.
   one contiguous block) or `grouped` (partitioned into std / internal /
   third-party blocks separated by blank lines, with the order
   configurable).
+- [`self-import.md`](./self-import.md) — decide how `self` in `use`
+  statements is handled. Configurable as `forbid` (always prefer the
+  bare `use foo::bar;`), `combined` (fold adjacent module + item
+  imports into `use foo::bar::{self, X};`), or `preserve` (default
+  no-op).
 - [`no-star-imports.md`](./no-star-imports.md) — forbid `use foo::*` inside
   module bodies, with a documented allowlist for preludes and root re-exports.
 
