@@ -48,9 +48,19 @@ macro and switching forms breaks the template.
 
 ## What to lint
 
-For every string literal (`ExprKind::Lit` of `LitKind::Str`) whose
-*decoded* value contains at least `min_newlines_to_trigger`
-newline characters (default 2):
+For every string literal (`ExprKind::Lit` of `LitKind::Str`) that
+satisfies *either* trigger:
+
+- Its decoded value contains at least `min_newlines_to_trigger`
+  newline characters (default 2), **or**
+- Any single line in its decoded value (between newline boundaries,
+  or the entire value when no newlines are present) has unicode
+  display width strictly greater than `max_line_width` (default
+  100). "Width" is computed by Unicode display width — wide CJK
+  characters count as 2 cells, combining marks count as 0, ASCII
+  counts as 1 — not by `char` or byte count.
+
+then:
 
 1. Check the literal's enclosing context. Skip if the literal is:
    - The first positional argument of a recognised format-family
@@ -65,18 +75,36 @@ newline characters (default 2):
      `#[display(...)]`, `#[debug(...)]`, `#[error(...)]`,
      `#[doc = "..."]`, and any other attribute whose argument
      happens to contain a multi-line string.
-2. Apply the configured `style`:
-   - **`text_block_macros`**: split the literal on `\n`. Determine
-     whether the literal ends in a trailing newline. Suggest:
-     - `text_block_fnl! { "line1" "line2" ... }` if there *is* a
-       trailing newline (the `_fnl` variant adds the trailing
-       newline that the join itself omits).
-     - `text_block! { "line1" "line2" ... }` otherwise.
-   - **`line_continuation`**: synthesise the multi-line literal
-     form by replacing each interior `\n` with `\n\<newline><indent>`
-     where `<indent>` matches the source indentation of the line
-     containing the original literal. The result is a single
-     literal whose decoded value is identical.
+2. Apply the configured `style`. The handling depends on which
+   trigger fired:
+   - **Newline trigger** (the literal has `≥ min_newlines_to_trigger`
+     newlines):
+     - `text_block_macros`: split on `\n`. Determine whether the
+       literal ends in a trailing newline. Suggest
+       `text_block_fnl! { ... }` if it does (the `_fnl` variant
+       adds the trailing newline that the join itself omits);
+       otherwise suggest `text_block! { ... }`.
+     - `line_continuation`: synthesise the multi-line literal form
+       by replacing each interior `\n` with `\n\<newline><indent>`
+       where `<indent>` matches the source column of the original
+       literal. The result is a single literal whose decoded value
+       is identical.
+   - **Width trigger only** (the literal has no qualifying newlines
+     but at least one line exceeds `max_line_width`): always
+     suggest `line_continuation`, regardless of the configured
+     `style`. `text_block_macros` would *insert* newlines that
+     weren't there, changing the runtime value; the line-
+     continuation form is the only rewrite that preserves the
+     value while breaking the source line. The lint splits at the
+     last whitespace boundary that fits the budget, with a
+     fallback to a hard split at the budget boundary if no
+     whitespace is available.
+   - **Both triggers** (multi-line *and* an over-width line): apply
+     the configured `style` for the multi-line shape, then run the
+     width check on each resulting per-line literal and apply
+     line-continuation splits as needed. A `text_block!` invocation
+     can carry its own `\<newline>` continuations inside any of
+     its quoted lines.
 
 ## Examples
 
@@ -116,6 +144,38 @@ let banner = "foo\n\
               baz";
 ```
 
+### Width trigger (single long line)
+
+```rust
+// Bad: one line that exceeds `max_line_width = 100`
+let url = "https://very-long-subdomain.example.com/api/v2/resources/very-long-identifier?param=value";
+
+// Good: line_continuation form keeps the runtime value identical
+let url = "https://very-long-subdomain.example.com/api/v2/resources/\
+           very-long-identifier?param=value";
+```
+
+The lint never suggests `text_block_macros` for the width-only
+case — splitting into multiple `text_block!` quoted lines would
+insert `\n` characters that weren't in the original literal,
+changing the runtime value.
+
+### Both triggers (multi-line and a long line)
+
+```rust
+// Bad: two newlines AND the middle line is too long
+let banner = "header\nthis is a very long line that exceeds the configured max_line_width\nfooter";
+
+// Good (style = text_block_macros): outer text_block, inner
+// line-continuation on the long quoted line
+let banner = text_block! {
+    "header"
+    "this is a very long line that exceeds the \
+     configured max_line_width"
+    "footer"
+};
+```
+
 ### Skipped contexts
 
 ```rust
@@ -143,8 +203,16 @@ style = "text_block_macros"  # or "line_continuation"
 
 # Minimum number of `\n` characters in the decoded value before
 # the rule fires. Default 2; raise to 3+ to ignore the most
-# common two-line case if the project tolerates it.
+# common two-line case if the project tolerates it. Set to 0 to
+# disable the newline trigger entirely.
 min_newlines_to_trigger = 2
+
+# Maximum unicode display width of any single line in the literal.
+# Lines longer than this fire the rule even when there are no
+# embedded newlines. Default 100 matches rustfmt's column limit;
+# common alternatives are 80 (terminal) or 120 (modern wide
+# editors). Set to 0 to disable the width trigger entirely.
+max_line_width = 100
 
 # Format-family macros whose first positional argument is a
 # template and should not be flagged.
@@ -200,6 +268,22 @@ text_block_fnl_import_path = "text_block_macros::text_block_fnl"
   `\n` codepoints. The threshold is the count, not the line
   count — a string with one trailing newline counts as one,
   not as two lines.
+- Width measurement: pull in the
+  [`unicode-width`](https://crates.io/crates/unicode-width)
+  crate (a single small dep) and use
+  `UnicodeWidthStr::width(line)` on each `\n`-delimited segment.
+  Don't count code points (wrong for CJK / emoji), don't count
+  bytes (wrong for any non-ASCII). The threshold is *strict
+  greater than*: `width == max_line_width` is fine,
+  `width == max_line_width + 1` fires.
+- Width-trigger autofix split point: scan the offending line
+  right-to-left from the budget boundary for the last whitespace
+  character (`' '`, `'\t'`); split there. If no whitespace is
+  available within the budget, hard-split at the boundary —
+  `\<newline>` is valid in any byte position outside escape
+  sequences. The lint emits one continuation per line that
+  exceeds the budget; a paragraph split into N continuations is
+  one diagnostic with one suggestion containing all N splits.
 - Trailing-newline detection (for the `text_block_macros` ↔
   `text_block_fnl` choice): the decoded value's last character
   is `\n` ⇒ use `_fnl`.
