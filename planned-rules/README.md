@@ -23,8 +23,10 @@ of this file.
   `pub mod` first, then `pub use`, then private items.
 
 ### Imports
-- [`merged-imports.md`](./merged-imports.md) — collapse multiple `use`
-  statements that share a prefix into a single braced `use`.
+- [`import-granularity.md`](./import-granularity.md) — enforce a project-wide
+  import-granularity style. Configurable as `merged` (the recommendation
+  from both source documents — collapse `use` lines that share a prefix
+  into a single braced `use`) or `separate` (one `use` per leaf path).
 - [`no-star-imports.md`](./no-star-imports.md) — forbid `use foo::*` inside
   module bodies, with a documented allowlist for preludes and root re-exports.
 
