@@ -102,6 +102,15 @@ of this file.
 - [`unicode-ellipsis-in-panic-messages.md`](./unicode-ellipsis-in-panic-messages.md) —
   flag U+2026 (`…`) in `panic!` / `assert*!` / `expect` messages;
   prefer `...`.
+- [`bare-issue-reference.md`](./bare-issue-reference.md) — require
+  `#123` issue / PR references in doc comments to be markdown links.
+- [`bare-url.md`](./bare-url.md) — require bare URLs in doc comments
+  and regular comments to be wrapped in `<...>` or labelled
+  `[text](url)`.
+- [`bare-email.md`](./bare-email.md) — require bare email addresses in
+  doc comments and regular comments to be wrapped, prefixed
+  `mailto:`, or both. A `forbid` style bans them outright for
+  privacy-conscious projects.
 
 ### Clap derive help
 - [`clap-help-no-markdown.md`](./clap-help-no-markdown.md) — forbid
