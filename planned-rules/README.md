@@ -121,6 +121,12 @@ pattern that several rules call out by reference — live in
   whitespace/Unicode escapes that can't appear in raw form), prefer
   the `r"..."` / `r#"..."#` form. Autofix picks the smallest
   hash-count that doesn't collide.
+- [`prefer-text-block.md`](./prefer-text-block.md) — when a string
+  literal contains 2+ embedded `\n` newlines (and isn't a format
+  template or display-attribute), prefer `text_block! { ... }` /
+  `text_block_fnl! { ... }` (default) or the
+  `"line\n\<newline>line"` continuation form. Skips templates and
+  attribute literals.
 
 ### Serde
 - [`serde-source-types.md`](./serde-source-types.md) — forbid
