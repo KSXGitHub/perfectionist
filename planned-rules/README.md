@@ -39,6 +39,11 @@ of this file.
   bare `use foo::bar;`), `combined` (fold adjacent module + item
   imports into `use foo::bar::{self, X};`), or `preserve` (default
   no-op).
+- [`core-or-std.md`](./core-or-std.md) — decide whether items that
+  exist in both `core`/`alloc` and `std` should be named through the
+  narrower or wider path. Configurable as `prefer_core` (matches
+  `clippy::std_instead_of_core` + `std_instead_of_alloc`),
+  `prefer_std`, or `preserve` (default).
 - [`no-star-imports.md`](./no-star-imports.md) — forbid `use foo::*` inside
   module bodies, with a documented allowlist for preludes and root re-exports.
 
