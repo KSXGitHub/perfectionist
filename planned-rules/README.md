@@ -111,6 +111,11 @@ of this file.
   doc comments and regular comments to be wrapped, prefixed
   `mailto:`, or both. A `forbid` style bans them outright for
   privacy-conscious projects.
+- [`unpinned-repo-ref.md`](./unpinned-repo-ref.md) — require URLs that
+  reference files in a hosted git repository (GitHub, GitLab,
+  Bitbucket, Codeberg / Gitea, sourcehut, …) to be pinned to a
+  commit SHA, with optional acceptance of tag refs. Branch refs
+  like `/blob/main/...` are rejected.
 
 ### Clap derive help
 - [`clap-help-no-markdown.md`](./clap-help-no-markdown.md) — forbid
