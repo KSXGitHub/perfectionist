@@ -71,6 +71,13 @@ of this file.
   rustdoc comments that resolve in scope must be written as intra-doc links.
 - [`em-dash-prose.md`](./em-dash-prose.md) — flag em dashes in doc comments
   and string literals reachable from `format!` / `println!` style macros.
+- [`unicode-ellipsis-in-docs.md`](./unicode-ellipsis-in-docs.md) — flag
+  U+2026 (`…`) in `///` and `//!` doc comments; prefer `...`.
+- [`unicode-ellipsis-in-comments.md`](./unicode-ellipsis-in-comments.md) —
+  flag U+2026 (`…`) in `//` and `/* */` comments; prefer `...`.
+- [`unicode-ellipsis-in-panic-messages.md`](./unicode-ellipsis-in-panic-messages.md) —
+  flag U+2026 (`…`) in `panic!` / `assert*!` / `expect` messages;
+  prefer `...`.
 
 ## Out of scope (cannot be linted by Dylint)
 
