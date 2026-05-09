@@ -1,24 +1,26 @@
 # `import_granularity`
 
 **Sources:** parallel-disk-usage *Code Style › Import Organization*; pacquet
-*Import Organization*. Both source documents recommend the **merged** style;
-the **module** and **separate** styles are supported here for projects that
+*Import Organization*. Both source documents recommend the **`crate`** style;
+the **`module`** and **`item`** styles are supported here for projects that
 prefer a different shape.
 
 ## Statement
 
 A project picks one import-granularity style and enforces it consistently.
-The three styles supported by this lint are:
+The three styles describe the *unit* of one `use` statement, on a coarse-to-
+fine scale:
 
-- **`merged`** (default, matching both source documents): collapse every
-  shared prefix into a single `use` statement. The end result is one `use`
-  per top-level crate (per module body, per cfg gate). Example:
-  `use std::{fs::{read as read_file, write as write_file}, io::{Error, ErrorKind}};`.
-- **`module`**: keep one `use` per *leaf module*, but merge items inside
-  that module into one braced list. Example:
+- **`crate`** (default, matching both source documents): one `use` per
+  crate root. Every shared prefix is collapsed into nested braces.
+  Example: `use std::{fs::{read as read_file, write as write_file}, io::{Error, ErrorKind}};`.
+- **`module`**: one `use` per leaf module. Items inside that module are
+  merged into one braced list; items from sibling modules sit on
+  separate `use` lines. Example:
   `use std::collections::{BTreeMap, BTreeSet};`.
-- **`separate`**: every `use` statement imports exactly one leaf path.
-  Example: `use std::collections::BTreeMap; use std::collections::BTreeSet;`.
+- **`item`**: one `use` per leaf item. Every imported name lives on its
+  own line. Example:
+  `use std::collections::BTreeMap; use std::collections::BTreeSet;`.
 
 Within each style the lint reports the same kind of mismatch: an import
 block whose shape does not match the configured style.
@@ -28,7 +30,7 @@ block whose shape does not match the configured style.
 ```toml
 # dylint.toml
 [import_granularity]
-style = "merged"   # or "module" or "separate"
+style = "crate"   # or "module" or "item"
 ```
 
 Optional knobs (apply to all styles):
@@ -42,9 +44,9 @@ Optional knobs (apply to all styles):
 - `import_granularity.respect_doc_comments = true` — never merge a
   `use` that carries its own `///` / `#[doc = "..."]` attribute.
 
-## Style: `merged`
+## Style: `crate`
 
-> Combine every shared prefix into a single `use` statement.
+> One `use` per crate root. Collapse every shared prefix.
 
 Two `use` statements are mergeable when they share at least one common
 ancestor segment, sit in the same module body, and have matching
@@ -53,7 +55,7 @@ result is one top-level `use` per crate root, with nested braces all the
 way down.
 
 ```rust
-// Bad (under style = "merged")
+// Bad (under style = "crate")
 use std::path::Path;
 use std::path::PathBuf;
 use std::collections::HashMap;
@@ -96,20 +98,20 @@ a single non-leaf path with one or more leaves directly under it. Nested
 braces below the leaf module (`use foo::{bar::Baz, bar::Qux};`) are a
 violation; the fix folds them into `use foo::bar::{Baz, Qux};`.
 
-## Style: `separate`
+## Style: `item`
 
 Each `use` declaration imports exactly one leaf path. A project that picks
 this style usually does so to make `git blame` and code review easier
 (one-line diffs per import change) and to side-step rustfmt's quirks
 around brace-list reflow.
 
-A `use` statement counts as "separate-style compliant" when its tree is a
+A `use` statement counts as "item-style compliant" when its tree is a
 single non-glob path leaf, optionally renamed with `as`. A glob is *not*
-a violation under `separate`; globs are governed by the
+a violation under `item`; globs are governed by the
 [`no_star_imports`](./no-star-imports.md) lint.
 
 ```rust
-// Bad (under style = "separate")
+// Bad (under style = "item")
 use std::path::{Path, PathBuf};
 use std::collections::{HashMap, BTreeMap};
 
@@ -120,13 +122,13 @@ use std::collections::HashMap;
 use std::collections::BTreeMap;
 ```
 
-The autofix for `separate` mode synthesises one `use` per leaf, copying
-the original visibility and attributes onto each new line.
+The autofix for `item` mode synthesises one `use` per leaf, copying the
+original visibility and attributes onto each new line.
 
-### Nested-list edge case (`separate` only)
+### Nested-list edge case (`item` only)
 
 A `use` like `use foo::{bar::Baz, bar::Qux};` has a *nested* brace list.
-Under `separate` it must be split into two top-level `use` lines, not
+Under `item` it must be split into two top-level `use` lines, not
 flattened into `use foo::{bar::Baz}; use foo::{bar::Qux};`. The fix
 removes the redundant braces.
 
@@ -140,13 +142,13 @@ removes the redundant braces.
   path segments. The leaf count is the number of imported items, and
   the depth at which a `use` statement *starts* is the granularity
   cutoff.
-  - Under `merged`, flag if the group of `use` statements maps to more
+  - Under `crate`, flag if the group of `use` statements maps to more
     than one top-level node when a single braced statement could
     represent the same set.
   - Under `module`, flag any `use` that either (a) crosses two distinct
     leaf modules at the top of its tree, or (b) splits items from the
     same leaf module across more than one `use` statement.
-  - Under `separate`, flag any `use` whose tree has more than one leaf.
+  - Under `item`, flag any `use` whose tree has more than one leaf.
 - Use `clippy_utils::source::snippet_with_applicability` to render the
   replacement.
 - Suggest with `Applicability::MachineApplicable` when no `as` renames
@@ -160,14 +162,8 @@ enforce the same shape, but they are unstable. This lint exists to give
 stable-toolchain projects an alternative, and to fire as a hard CI check
 rather than as a silent reformat.
 
-If a project enables both rustfmt's option and this lint, configure them
-consistently:
-
-| `import_granularity.style` | rustfmt `imports_granularity` |
-|----------------------------|-------------------------------|
-| `merged`                   | `Crate`                       |
-| `module`                   | `Module`                      |
-| `separate`                 | `Item`                        |
+The style names map 1-to-1 to rustfmt's `imports_granularity`:
+`crate` ⇔ `Crate`, `module` ⇔ `Module`, `item` ⇔ `Item`.
 
 ## Severity
 
