@@ -9,11 +9,15 @@ both styles as a configuration knob.
 
 The rule has two independent axes:
 
-1. **Inline vs external (`mod foo;` as a file vs `mod foo { ... }`
-   inline):** parallel-disk-usage allows inline test modules when they
-   are short and only requires the move to an external file once the
-   block grows long. pacquet requires every test module to live in an
-   external file.
+1. **Inline vs external:** test code can be intermingled with
+   production code in the same file in two shapes — inline
+   `#[cfg(test)] mod X { ... }` blocks, or bare `#[test] fn` /
+   `#[cfg(test)] fn` / `#[cfg(test)] use` items declared next to
+   production code. Both forms count as "inline test code". The rule
+   measures the *total* inline-test footprint per file, not each
+   block in isolation. parallel-disk-usage allows inline test code
+   when its footprint is small; pacquet requires every test item to
+   live in an external file.
 2. **External-file location:** when a `#[cfg(test)] mod <name>;` *is*
    external, where on disk does the file live? The two source documents
    agree on a nested layout (`src/foo/<name>.rs` for tests of
@@ -40,10 +44,10 @@ inline_style = "preserve"
 #                        (matching parallel-disk-usage's guidance).
 # "preserve"           — no preference about inline vs external.
 
-# Threshold for `external_when_long`. The inline block must satisfy
-# *both* limits; the lint fires when either is exceeded. The line
-# count is the source-line span of the inline `{ ... }` block,
-# including braces. The percentage is `(inline_lines / file_lines) *
+# Threshold for `external_when_long`. The lint sums the line spans of
+# every inline test item in a file (see `inline_test_kinds` below) and
+# compares the total against both limits. The lint fires when either
+# is exceeded. The percentage is `(inline_test_lines / file_lines) *
 # 100`, where `file_lines` is the total line count of the parent
 # source file.
 #
@@ -52,6 +56,17 @@ inline_style = "preserve"
 # add the relative cap.
 inline_max_lines = 50
 inline_max_percent_of_file = 100   # 100 = effectively disabled
+
+# Item kinds that count toward the inline-test footprint. The defaults
+# cover every item that only exists in test builds, so a project's
+# test footprint is correctly measured even when it does not use
+# `mod tests { ... }` at all.
+inline_test_kinds = [
+  "cfg_test_mod",      # inline `#[cfg(test)] mod X { ... }`
+  "test_fn",           # `#[test] fn ...` at module level
+  "cfg_test_fn",       # `#[cfg(test)] fn ...` (test helpers)
+  "cfg_test_other",    # `#[cfg(test)] struct/enum/use/const ...`
+]
 
 # How external test files must be laid out on disk.
 external_layout = "nested"
@@ -99,20 +114,38 @@ with `ModKind::Loaded(.., Inline::No, ..)`) that carries
    a loaded test module name. This catches stragglers from a
    half-completed migration.
 
-For every inline test module
-(`ItemKind::Mod` with `ModKind::Loaded(.., Inline::Yes, ..)` that
-carries `#[cfg(test)]`):
+For every parent source file, scan the top-level items and collect
+every **inline test item** — by default that is the union of:
+
+- inline `#[cfg(test)] mod X { ... }` blocks,
+- `#[test] fn ...` at module level,
+- `#[cfg(test)] fn ...` (test helpers next to production code),
+- any other `#[cfg(test)]`-gated item (`use`, `struct`, `const`, …).
+
+The set is configurable via `inline_test_kinds`.
 
 3. **Inline-style (per `inline_style`)**:
-   - `external_only`: emit unconditionally; suggest extracting to
-     `<parent>/<name>.rs`.
-   - `external_when_long`: count the line span of the inline `{ ... }`
-     body, then compute its share of the parent file's total line
-     count. Emit when *either* the absolute count exceeds
+   - `external_only`: emit one diagnostic *per* collected inline test
+     item. Each one is bad on its own and the suggested fix is to
+     move all of them into an external `mod <name>;`.
+   - `external_when_long`: sum the line spans of every collected
+     inline test item in the file, then compute the sum's share of
+     the parent file's total line count. Emit a single per-file
+     diagnostic when *either* the absolute total exceeds
      `inline_max_lines` *or* the share exceeds
-     `inline_max_percent_of_file`. The diagnostic names which limit
-     was tripped so the author knows which threshold to consult.
+     `inline_max_percent_of_file`. The diagnostic spans the contiguous
+     run of inline test items (or the union of their spans, if they
+     are not contiguous), names which limit was tripped, and points
+     at the canonical extraction target. A file that has only one or
+     two short tests stays under the budget and is not flagged, even
+     when it has no `mod tests { ... }` block at all.
    - `preserve`: emit nothing.
+
+A file containing **only** test items (e.g., `src/foo/tests.rs`
+itself, or any file whose path matches `external_layout`) is
+exempt from the inline-style check — it is by definition the
+extraction target, not the place a programmer is meant to extract
+*from*.
 
 ## Examples
 
@@ -122,7 +155,8 @@ carries `#[cfg(test)]`):
 // src/foo.rs
 //
 // Acceptable when `inline_style = "preserve"` or
-// `inline_style = "external_when_long"` and the body is short.
+// `inline_style = "external_when_long"` and the inline-test footprint
+// is small.
 #[cfg(test)]
 mod tests {
     use super::parse;
@@ -137,9 +171,33 @@ mod tests {
 ```rust
 // src/foo.rs
 //
-// Required when `inline_style = "external_only"`, regardless of length.
-// Also required under `external_when_long` once the body crosses the
-// configured line budget.
+// Same threshold check applies when there is no `mod tests` block at
+// all and tests are written as bare items. The footprint counted by
+// `external_when_long` is the sum of every `#[test] fn`, every
+// `#[cfg(test)] fn`, and any other `#[cfg(test)]` items.
+fn parse(input: &str) -> Result<Vec<Token>, ParseError> { /* ... */ }
+
+#[test]
+fn parses_empty_input() {
+    assert_eq!(parse(""), Ok(vec![]));
+}
+
+#[cfg(test)]
+fn fixture() -> String { /* ... */ }
+
+#[test]
+fn parses_full_input() {
+    let input = fixture();
+    assert!(parse(&input).is_ok());
+}
+```
+
+```rust
+// src/foo.rs
+//
+// Required when `inline_style = "external_only"`, regardless of
+// length. Also required under `external_when_long` once the combined
+// inline-test footprint crosses the configured budget.
 #[cfg(test)]
 mod tests;
 ```
@@ -184,12 +242,29 @@ file's position relative to its parent matters.
   with the parent file's path, both reduced to absolute `PathBuf`s.
 - The unexpected-sibling scan runs once per parent directory; cache
   results keyed by `<parent_dir>` for the lifetime of the lint pass.
-- Line counting for `external_when_long`: take the `Span` of the
-  inline body and call `cx.sess().source_map().span_to_lines(span)`;
-  the resulting `FileLines.lines.len()` is the inline-block count.
-  Use `SourceFile::count_lines()` on the parent file (also reachable
-  through the source map) for the denominator of the percentage check.
-  Cache the per-file total per crate to avoid recounting.
+- Walking the parent module: implement `external_when_long` as a
+  per-`SourceFile` accumulator. In `EarlyLintPass::check_mod` (or
+  `check_crate` walking each module body) iterate top-level items,
+  classify each as production-or-test using the configured
+  `inline_test_kinds`, and sum the per-item line spans for the
+  test items. Emit once per parent source file when the sum exceeds
+  either limit.
+- Item classification:
+  - `cfg_test_mod`: `ItemKind::Mod(.., Inline::Yes)` carrying
+    `#[cfg(test)]`.
+  - `test_fn`: `ItemKind::Fn` carrying `#[test]`.
+  - `cfg_test_fn`: `ItemKind::Fn` carrying `#[cfg(test)]`.
+  - `cfg_test_other`: any other `ItemKind` carrying `#[cfg(test)]`.
+- Skip the inline-style check entirely for a file that contains
+  *only* test items — that file is itself a valid extraction target.
+  Detect by classifying every top-level item once and confirming the
+  production-item count is zero.
+- Line counting: for each contributing item, take its `Span` and call
+  `cx.sess().source_map().span_to_lines(span)`; the
+  `FileLines.lines.len()` is its line count. Sum across items. Use
+  `SourceFile::count_lines()` on the parent file for the denominator
+  of the percentage check. Cache the per-file total per crate to
+  avoid recounting.
 
 ## Severity
 
