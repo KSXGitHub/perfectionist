@@ -71,6 +71,11 @@ fn my_function(value: Arc<Vec<u8>>) {
   resolving to `Clone::clone` with the qualifying type being `Arc` or
   `Rc`. Also accepted.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Interaction with `clippy::clone_on_ref_ptr`
 
 This is essentially Clippy's `clone_on_ref_ptr` lint. The pacquet guide

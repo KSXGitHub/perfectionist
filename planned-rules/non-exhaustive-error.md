@@ -48,6 +48,11 @@ pub enum RuntimeError {
     `clippy_utils::ty::implements_trait`).
 - Look for `#[non_exhaustive]` on the item's attribute list.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Configuration
 
 - `non_exhaustive_error.require_for = ["pub"]` — `"pub_crate"` and

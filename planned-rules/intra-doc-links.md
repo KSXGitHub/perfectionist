@@ -62,6 +62,11 @@ pub fn install(manifest: &PackageManifest, store: &Store) { /* ... */ }
   combinators stitch into one walk that classifies each span as
   excluded, already-linked, or candidate.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Caveats
 
 False positives: backticks around an identifier that the writer

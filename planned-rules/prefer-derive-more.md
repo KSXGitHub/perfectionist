@@ -191,6 +191,11 @@ crate_path = "derive_more"
     Bail on any body that does not consist of a single constructor
     expression.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Severity
 
 Warn for the easy and medium sub-lints. The hard sub-lints, when

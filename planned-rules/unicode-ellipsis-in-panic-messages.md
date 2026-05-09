@@ -90,6 +90,11 @@ assert_eq!(actual, expected, "tree did not flatten...");
   cannot inspect runtime strings. Leave a `// FIXME` note in the
   diagnostic suggesting the user check dynamic messages by inspection.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Autofix
 
 Replace `…` with `...` inside the literal.

@@ -132,6 +132,11 @@ The lint emits nothing. Default.
   automatically — that requires whole-crate analysis the lint pass
   does not perform.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Interaction with clippy
 
 - `prefer_core` is functionally equivalent to enabling

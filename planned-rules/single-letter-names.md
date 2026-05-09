@@ -120,6 +120,11 @@ list.sort_by(|a, b| a.name.cmp(&b.name));
   `single_letter_names.comparison_methods` (so projects can extend the
   comparison-closure allowlist with their own DSL helpers).
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Severity
 
 Warn for each sub-lint.

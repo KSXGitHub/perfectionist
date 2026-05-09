@@ -169,6 +169,11 @@ removes the redundant braces.
   collide and no macro expansions overlap the spans; otherwise
   `MaybeIncorrect`.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Interaction with `cargo fmt`
 
 `rustfmt`'s `imports_granularity` and `group_imports` options can

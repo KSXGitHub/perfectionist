@@ -58,6 +58,11 @@ Comment varieties to cover:
 - Run from `LateLintPass::check_crate` (or `EarlyLintPass::check_crate`
   with the same source-map access). One pass per crate, not per item.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Autofix
 
 Replace `…` with `...`. `Applicability::MachineApplicable`.

@@ -123,6 +123,11 @@ skip_domains = ["example.com", "example.org"]
   visible, and avoids dragging a regex engine through the lint
   pass.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Severity
 
 Warn for `angle_brackets`, `mailto`, `both`, and `either`.

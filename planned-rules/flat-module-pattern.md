@@ -38,6 +38,11 @@ src/foo/bar.rs       # nested submodule
 - Use `clippy_utils::diagnostics::span_lint` with the `SourceFile`'s outer
   span (the first byte of the file).
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Suggested fix
 
 Move `src/foo/mod.rs` to `src/foo.rs`. Cargo and rustc accept either

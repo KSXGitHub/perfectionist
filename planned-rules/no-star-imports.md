@@ -111,6 +111,11 @@ exceptions = []
 - Read the `exceptions` config once per crate and store as a
   `bitflags`-style set; each `check_item` call consults it.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Interaction with [`named-prelude-import`](./named-prelude-import.md)
 
 The two lints are duals. `no_star_imports` (with the `prelude`

@@ -58,6 +58,11 @@ pub use parser::Parser;
 - `clippy_utils::source::snippet_opt` can render the offending item's first
   line in the help text.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Edge cases
 
 - `#[macro_use] extern crate foo;` predates 2018-edition imports and should

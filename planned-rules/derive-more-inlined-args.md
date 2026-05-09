@@ -143,6 +143,11 @@ but the inlined form for positional ones can flip
   with the rewritten attribute text. This keeps the span math
   simple and avoids partial edits that confuse `cargo clippy --fix`.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Severity
 
 Warn. The autofix is `MachineApplicable` because the rewrite is a

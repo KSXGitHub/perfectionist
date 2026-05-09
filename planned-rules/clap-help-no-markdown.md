@@ -138,6 +138,11 @@ struct Cli {
   key. `clippy_utils::attrs::find_by_name` is a starting point but
   needs path matching, not just symbol matching.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Configuration
 
 ```toml

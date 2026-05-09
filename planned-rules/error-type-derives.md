@@ -65,6 +65,11 @@ struct ConfigSummary(String);
   the original attribute — preserve it in `check_item` before the
   implementation is desugared.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Caveats
 
 - A type may be used as an error only via downstream crates, in which case

@@ -124,6 +124,11 @@ action.
 - The diagnostic includes the `--note` and `--help` text described
   above as static strings.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Configuration
 
 - `em_dash_prose.targets` — array of `"doc"`, `"comment"`, `"macro"`.

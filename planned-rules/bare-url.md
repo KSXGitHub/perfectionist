@@ -141,6 +141,11 @@ skip_hosts = ["example.com", "example.org", "localhost"]
   the caller's choice of when to commit drives the
   `MachineApplicable` vs `MaybeIncorrect` split.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Severity
 
 Warn.

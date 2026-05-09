@@ -266,6 +266,11 @@ file's position relative to its parent matters.
   of the percentage check. Cache the per-file total per crate to
   avoid recounting.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Severity
 
 Warn for every sub-violation. Autofix:

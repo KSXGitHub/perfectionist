@@ -247,6 +247,11 @@ For each path:
   canonical-vs-preferred-path problem described above. Handle by
   consulting `core-or-std` config when present.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Severity
 
 Warn. Default `style = "preserve"` keeps the rule a no-op until a

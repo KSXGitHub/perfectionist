@@ -116,6 +116,11 @@ form = "inline"
   Each `extra_tokens` entry becomes one alternative in the
   `take_token_prefix` step.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Severity
 
 Warn. With `repo_base_url` unset and `suggestion_mode = "help_only"`,

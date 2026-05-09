@@ -246,6 +246,11 @@ Applicability is `MaybeIncorrect` because:
 The autofix is offered as help text; `cargo clippy --fix` will not
 apply it without manual review.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Severity
 
 Warn for both directions. Default style `preserve` (no enforcement)

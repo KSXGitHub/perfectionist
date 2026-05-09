@@ -129,6 +129,11 @@ The lint emits nothing. Useful as a project-wide acknowledgement that
   for correctness — apply granularity, then `self_import`, or vice
   versa, and the fixed point is the same.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Severity
 
 Warn for both `forbid` and `combined`. `preserve` emits nothing.

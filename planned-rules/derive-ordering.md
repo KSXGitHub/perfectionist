@@ -165,6 +165,11 @@ struct Foo(u64);
   from each derive entry. Account for paths like `serde::Deserialize`
   by using only the final segment when `match_by_ident = true`.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Interaction with other formatting
 
 `cargo fmt` does *not* reorder derives. This lint is the only

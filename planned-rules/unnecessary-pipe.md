@@ -64,6 +64,11 @@ let name = entry.file_name().pipe(OsStringDisplay::from).pipe(Some);
   the receiver; offer it only when the receiver type's `as_ref` is
   unambiguous (otherwise emit a help-only suggestion).
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Configuration
 
 - `unnecessary_pipe.pipe_trait_paths` — additional paths recognised as

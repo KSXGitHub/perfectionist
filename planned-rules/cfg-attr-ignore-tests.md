@@ -80,6 +80,11 @@ fn unix_permissions() {
   contains no path resolved to an item outside the local crate. That
   keeps false positives low at the cost of missing some opportunities.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Severity
 
 Warn.

@@ -186,6 +186,11 @@ in one entry.
   per-forge templates expand into one combinator pipeline each,
   registered in a table keyed by host glob.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Severity
 
 Warn by default. Projects that follow pacquet's "cardinal rule"

@@ -134,6 +134,11 @@ Special cases:
   output matches the granularity style before grouping decides where
   each `use` line lives.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Interaction with `cargo fmt`
 
 `rustfmt`'s `group_imports` option offers `Preserve`,

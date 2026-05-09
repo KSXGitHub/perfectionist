@@ -74,6 +74,11 @@ Skip:
   factor the helper crate-internally rather than re-implementing
   per lint.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Autofix
 
 Replace `…` with `...`. `Applicability::MachineApplicable`.

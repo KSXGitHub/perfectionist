@@ -78,6 +78,11 @@ struct PackageName(String);
   `&` → optional lifetime → identifier; making each step a separate
   combinator keeps the lint's intent visible at the call site.
 
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name prefixing (`perfectionist_*`)
+  required for every registered lint.
+
 ## Severity
 
 Deny for `borrowed_str` (it produces silently broken parsers). Warn for
