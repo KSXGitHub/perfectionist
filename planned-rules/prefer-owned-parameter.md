@@ -1,7 +1,7 @@
 # `prefer_owned_parameter`
 
-**Source:** pacquet *When to use [owned] parameter? When to use
-[borrowed] parameter?*. The pacquet guide gives both directions of
+**Source:** pacquet *When to use owned parameter? When to use
+borrowed parameter?*. The pacquet guide gives both directions of
 the trade-off; this lint covers the *prefer owned* direction. The
 opposite direction ("prefer borrowed when ownership isn't consumed")
 is already covered by `clippy::needless_pass_by_value`.

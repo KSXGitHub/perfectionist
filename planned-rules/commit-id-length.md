@@ -41,8 +41,10 @@ targets = ["doc", "comment", "string_literal"]
 
 # Range for the SHA length, inclusive.
 #
-# To accept any length (default behaviour — no enforcement):
-#   commit_length_min = 1, commit_length_max = 40
+# Defaults: 6 to 40, accepting any abbreviation that's at least
+# Git's default-render length (6 chars in `git log --oneline`,
+# bumped from Git's hard minimum of 4 to push back on
+# overly-short SHAs that risk ambiguity in large repos).
 #
 # To require the full 40-char SHA:
 #   commit_length_min = 40, commit_length_max = 40
@@ -51,9 +53,9 @@ targets = ["doc", "comment", "string_literal"]
 # staying pinned):
 #   commit_length_min = 12, commit_length_max = 12
 #
-# To allow any length within a window:
+# To allow any length within a tighter window:
 #   commit_length_min = 7, commit_length_max = 12
-commit_length_min = 1
+commit_length_min = 6
 commit_length_max = 40
 
 # Forge hosts to scan, mapped to the forge kind that determines the
@@ -124,10 +126,13 @@ A compare URL emits up to two diagnostics, one per SHA.
 ## Examples
 
 ```rust
-// Default config (any length 1..=40): all of these pass.
+// Default config (any length 6..=40): all of these pass.
 /// See <https://github.com/owner/repo/commit/8c1f6e2>.
 /// See <https://github.com/owner/repo/commit/8c1f6e2a6d33c1b1a2f9e0e1d3b8a4c7d6e5f4a3>.
 /// See <https://github.com/owner/repo/compare/abcdef0...feedface>.
+
+// Bad under default 6..=40: SHA shorter than the minimum.
+/// See <https://github.com/owner/repo/commit/abc>.
 
 // Under `commit_length_min = 12, commit_length_max = 12`:
 //   the 7-char SHA is flagged; the 40-char SHA is also flagged
@@ -187,8 +192,10 @@ the window themselves.
 
 ## Severity
 
-Warn. The defaults (`1..=40`) make the lint a no-op; a project opts
-in by tightening the window.
+Warn. The defaults (`6..=40`) reject SHAs shorter than Git's
+default abbreviation length while accepting everything from 6-char
+prefixes up to the full 40-char hash; a project tightens the
+window further by raising the minimum or pinning a fixed length.
 
 ## Interaction with `unpinned-repo-ref`
 
