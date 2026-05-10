@@ -57,11 +57,11 @@ pub struct UnknownPerfectionistLints {
 }
 
 impl UnknownPerfectionistLints {
-    fn new(registered_names: Vec<String>) -> Self {
+    fn new(known: Vec<String>) -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
             suggestion_distance: config.suggestion_distance,
-            known: registered_names,
+            known,
         }
     }
 }
