@@ -8,7 +8,7 @@ all:
   just doc
   just lint
   just test
-  just dogfood
+  just self-lint
 
 # Check format
 fmt:
@@ -30,6 +30,6 @@ lint:
 test:
   cargo test
 
-# Run perfectionist's own lints on its source (dogfood)
-dogfood:
+# Run perfectionist's own lints on its source
+self-lint:
   cargo dylint --all -- --all-targets

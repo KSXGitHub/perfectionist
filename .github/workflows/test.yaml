@@ -63,9 +63,9 @@ jobs:
         shell: bash
         run: just test
 
-      - name: Dogfood
+      - name: Self-lint
         shell: bash
-        run: just dogfood
+        run: just self-lint
 
       - name: Clean workspace artifacts before cache
         if: always()
