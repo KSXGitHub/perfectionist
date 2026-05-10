@@ -6,7 +6,7 @@ on:
       - '[0-9]+.[0-9]+.[0-9]+*'
 
 jobs:
-  publish:
+  publish-crate:
     name: Publish to crates.io
 
     runs-on: ubuntu-latest
@@ -79,3 +79,130 @@ jobs:
         continue-on-error: true
         shell: bash
         run: cargo clean --workspace
+
+  build-binaries:
+    name: Build ${{ matrix.target }}
+
+    # Per-platform, per-architecture build of the launcher + driver.
+    # The artifacts of this job are tarballs / zips that ship the two
+    # launcher binaries + the rustc-driver wrapper. Each archive is
+    # standalone — the launcher resolves a sysroot at runtime, either
+    # from the user's rustup or via on-demand download.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+            archive: tar.gz
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-22.04-arm
+            archive: tar.gz
+          - target: x86_64-apple-darwin
+            os: macos-13
+            archive: tar.gz
+          - target: aarch64-apple-darwin
+            os: macos-14
+            archive: tar.gz
+          - target: x86_64-pc-windows-msvc
+            os: windows-2022
+            archive: zip
+
+    runs-on: ${{ matrix.os }}
+
+    permissions:
+      id-token: write       # for sigstore signing inside attest-build-provenance
+      attestations: write   # for storing the attestation
+      contents: write       # for uploading to the release
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust
+        shell: bash
+        run: |
+          installer=$(mktemp -d)/install-rustup
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > $installer
+          bash $installer --default-toolchain none -y
+          # `cargo`/`rustup` end up on PATH via $CARGO_HOME/bin. The
+          # default installer puts that under $HOME/.cargo.
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          source "$HOME/.cargo/env"
+          rustup show active-toolchain || rustup show
+          rustup target add ${{ matrix.target }}
+
+      - name: Build release binaries
+        shell: bash
+        run: |
+          # Strip debuginfo to keep the artefact small. The driver still
+          # links dynamically to `librustc_driver`; that's resolved at
+          # runtime by the launcher.
+          export CARGO_PROFILE_RELEASE_STRIP=symbols
+          cargo build --release --locked --target ${{ matrix.target }} \
+            --bin perfectionist \
+            --bin cargo-perfectionist \
+            --bin perfectionist-driver
+
+      - name: Stage archive contents
+        id: stage
+        shell: bash
+        run: |
+          set -eu
+          ver="${{ github.ref_name }}"
+          stem="perfectionist-${ver}-${{ matrix.target }}"
+          stage="staging/${stem}"
+          mkdir -p "${stage}"
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            cp target/${{ matrix.target }}/release/perfectionist.exe "${stage}/"
+            cp target/${{ matrix.target }}/release/cargo-perfectionist.exe "${stage}/"
+            cp target/${{ matrix.target }}/release/perfectionist-driver.exe "${stage}/"
+          else
+            cp target/${{ matrix.target }}/release/perfectionist "${stage}/"
+            cp target/${{ matrix.target }}/release/cargo-perfectionist "${stage}/"
+            cp target/${{ matrix.target }}/release/perfectionist-driver "${stage}/"
+          fi
+          cp README.md LICENSE.md "${stage}/"
+          echo "stem=${stem}" >> "$GITHUB_OUTPUT"
+          echo "stage=${stage}" >> "$GITHUB_OUTPUT"
+
+      - name: Pack archive
+        id: pack
+        shell: bash
+        run: |
+          set -eu
+          stem='${{ steps.stage.outputs.stem }}'
+          stage='${{ steps.stage.outputs.stage }}'
+          if [[ "${{ matrix.archive }}" == "zip" ]]; then
+            archive="${stem}.zip"
+            (cd staging && 7z a "../${archive}" "${stem}") > /dev/null
+          else
+            archive="${stem}.tar.gz"
+            tar -C staging -czf "${archive}" "${stem}"
+          fi
+          echo "archive=${archive}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate sha256
+        shell: bash
+        run: |
+          archive='${{ steps.pack.outputs.archive }}'
+          if command -v shasum >/dev/null; then
+            shasum -a 256 "${archive}" > "${archive}.sha256"
+          else
+            sha256sum "${archive}" > "${archive}.sha256"
+          fi
+
+      - name: Attest build provenance
+        # Produces a Sigstore-signed in-toto SLSA provenance attestation
+        # bound to the archive. Verifiable with `gh attestation verify`.
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ steps.pack.outputs.archive }}
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            ${{ steps.pack.outputs.archive }}
+            ${{ steps.pack.outputs.archive }}.sha256
+          fail_on_unmatched_files: true

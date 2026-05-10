@@ -16,20 +16,45 @@ categories = [
   "development-tools",
   "rust-patterns",
 ]
+build = "build.rs"
 include = [
   "/src",
+  "/build.rs",
+  "/rust-toolchain",
   "/Cargo.toml",
   "/README.md",
   "/LICENSE.md",
 ]
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["lib", "cdylib"]
+
+[[bin]]
+name = "perfectionist"
+path = "src/bin/perfectionist.rs"
+
+[[bin]]
+name = "cargo-perfectionist"
+path = "src/bin/cargo-perfectionist.rs"
+
+[[bin]]
+name = "perfectionist-driver"
+path = "src/bin/perfectionist-driver.rs"
 
 [dependencies]
 clippy_utils = "=0.1.96"
 dylint_linting = "5.0.0"
 serde = { version = "1.0.228", features = ["derive"] }
+
+# Launcher-only dependencies. The lint code does not import them; they are
+# pulled in to support the standalone binary distribution path described in
+# the README ("Self-contained binary").
+clap = { version = "4.5", features = ["derive", "env"] }
+flate2 = "1.0"
+sha2 = "0.10"
+tar = "0.4"
+toml = "0.8"
+ureq = { version = "2.10", default-features = false, features = ["tls"] }
 
 [dev-dependencies]
 dylint_testing = "5.0.0"
