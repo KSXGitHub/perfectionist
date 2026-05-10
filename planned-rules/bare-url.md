@@ -119,11 +119,14 @@ skip_hosts = ["example.com", "example.org", "localhost"]
 
 ## Implementation notes
 
-- `LateLintPass`. Reuse the doc-comment scanner from
-  [`intra-doc-links`](./intra-doc-links.md) for the doc target and
-  the regular-comment retokenizer from the implemented
+- `LateLintPass`. For the doc target, use the shared markdown
+  scanner (Tier A — structural classification) per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md#markdown-parsing)
+  to skip code regions, autolinks, labelled links, and
+  reference-link definitions. For the comment target, reuse the
+  regular-comment retokenizer from the implemented
   `perfectionist::unicode_ellipsis_in_comments` lint
-  (see `src/lib.rs`) for the comment target.
+  (see `src/lib.rs`).
 - The autofix span includes only the matched URL bytes; the
   replacement is `<{matched}>`. For the `MaybeIncorrect` cases,
   emit two suggestions — one keeping the trailing character inside

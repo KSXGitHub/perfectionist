@@ -110,29 +110,21 @@ struct Cli {
   2. **For each documented item, check membership.** A field's
      container is its struct; an enum variant's container is its enum.
      The lint fires only when the container is in the cached set.
-- Re-use the doc-comment scanner from
+- Share the "stitch `#[doc = ...]` attributes, walk, emit
+  per-construct sub-spans" pipeline with
   [`intra-doc-links`](./intra-doc-links.md) and
-  [`unicode-ellipsis-in-docs`](./unicode-ellipsis-in-docs.md) — the
-  three lints all need the same "stitch `#[doc = ...]` attributes,
-  walk markdown structure, emit per-construct sub-spans" pipeline.
-  Factor it into a shared helper crate-internally.
-- Markdown parsing: use a small hand-written scanner for the four
-  high-value constructs (links, code spans, code blocks, HTML tags).
-  `pulldown_cmark` is overkill for one Dylint pass and would balloon
-  the binary; the four constructs are individually trivial to detect
-  by character.
-- **Parser style.** Implement the markdown scanner as parser-
-  combinator-style `take_*` functions per
-  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
-  `take_code_span`, `take_code_block`, `take_link`,
-  `take_reference_definition`, `take_html_tag`, and `take_heading`,
-  one per banned construct. Each combinator returns the matched
-  substring and remaining input, so the dispatcher can branch on
-  whether the construct is in `forbid` and emit the right
-  per-construct diagnostic. Share the markdown helpers with
-  [`intra-doc-links`](./intra-doc-links.md),
-  [`unicode-ellipsis-in-docs`](./unicode-ellipsis-in-docs.md), and
-  [`em-dash-prose`](./em-dash-prose.md).
+  [`unicode-ellipsis-in-docs`](./unicode-ellipsis-in-docs.md).
+  Factor it into a crate-internal helper.
+- Use the shared markdown scanner (Tier A — structural
+  classification) per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md#markdown-parsing).
+  Each banned construct in `forbid` maps to one `take_*` result;
+  the dispatcher branches on the match and emits the right
+  per-construct diagnostic. This rule is the most demanding
+  consumer of the scanner — if its HTML-tag and
+  reference-definition needs come to dominate, the convention's
+  escape hatch (vendor `pulldown_cmark` for this rule alone)
+  applies here.
 - Override detection: walk attribute lists for `clap`, `arg`,
   `command` paths. Recognise `MetaNameValue` shape with the override
   key. `clippy_utils::attrs::find_by_name` is a starting point but
