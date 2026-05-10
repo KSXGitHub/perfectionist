@@ -8,6 +8,7 @@ all:
   just doc
   just lint
   just test
+  just self-lint
 
 # Check format
 fmt:
@@ -28,3 +29,7 @@ lint:
 # Run all the tests
 test:
   cargo test
+
+# Run perfectionist's own lints on its source
+self-lint:
+  DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --all-targets
