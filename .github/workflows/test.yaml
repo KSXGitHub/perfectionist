@@ -20,6 +20,7 @@ jobs:
         with:
           path: |
             ~/.cargo
+            ~/.dylint_drivers
             target
           key: ${{ github.job }}-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
@@ -61,6 +62,10 @@ jobs:
       - name: Test
         shell: bash
         run: just test
+
+      - name: Self-lint
+        shell: bash
+        run: just self-lint
 
       - name: Clean workspace artifacts before cache
         if: always()

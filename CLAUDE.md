@@ -97,6 +97,25 @@ knobs, or autofix branches, the planning file stays:
 The rule file lives until everything in it is implemented or
 explicitly retracted.
 
+## Registering a new rule in `lib.rs`
+
+`src/lib.rs::register_lints` registers each rule module's lints
+in turn, then — *as the final step* — calls
+`unknown_perfectionist_lints::register_pass`. That pass snapshots
+the registered `perfectionist::*` lint names out of the
+`LintStore`, so any module that registers lints below this call
+will be invisible to it and its legitimate suppression sites will
+warn as "unknown lint".
+
+When you add a new rule:
+
+1. Add the `mod` line and call its `register` (or
+   `register_lint`) function alongside the other modules in
+   `register_lints`, *above* the
+   `unknown_perfectionist_lints::register_pass(...)` call.
+2. Do not introduce a parallel `REGISTERED_LINT_NAMES`-style
+   array. The `LintStore` is the single source of truth.
+
 ## Notes on cross-rule dependencies
 
 A handful of rules share helpers — the markdown exclusion
