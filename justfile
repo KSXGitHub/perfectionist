@@ -32,4 +32,4 @@ test:
 
 # Run perfectionist's own lints on its source
 self-lint:
-  cargo dylint --all -- --all-targets
+  DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --all-targets
