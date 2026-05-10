@@ -103,8 +103,10 @@ Six rules in this catalogue scan a slice of markdown:
 - [`em-dash-prose`](./em-dash-prose.md) — strips code regions, then
   byte-scans for `—` / `–`.
 
-They share one crate-internal scanner, `src/markdown.rs`, built
-from `take_*` combinators per the "Parser style" section above.
+They share one crate-internal scanner, to be added at
+`src/markdown.rs`, built from `take_*` combinators per the
+"Parser style" section above. The helper does not exist yet — the
+first rule to need it implements it; subsequent rules consume it.
 The helper is hand-written. **Do not pull in `pulldown_cmark`,
 `comrak`, `markdown-rs`, or `markdown-it`** for any of these rules
 without first revisiting the rationale below.
@@ -129,8 +131,8 @@ Two needs sit on top of the same primitives.
 One `take_*` per CommonMark construct the catalogue recognises:
 
 - `take_code_span` — between matching `` ` `` runs of equal length.
-- `take_code_block` — fenced (``` ``` ```, `~~~`) or four-space
-  indented.
+- `take_code_block` — fenced (triple-backtick or `~~~`) or
+  four-space indented.
 - `take_link` — `[text](dest)`, `[text][id]`, `[text]`, `` [`Type`] ``.
 - `take_autolink` — `<https://...>`, `<mailto:...>`.
 - `take_reference_definition` — `[id]: dest` at block start.
@@ -154,7 +156,7 @@ without overshooting:
 
 - **`pulldown_cmark`** — the de facto Rust choice. Event-based,
   carries source offsets via `OffsetIter`, MIT, fast, used by
-  `mdbook` and historically by rustdoc. For a five-construct
+  `mdbook` and historically by rustdoc. For a seven-construct
   predicate it is still ~2-3k LoC of dependency loaded into
   rustc, and consumers must map its event taxonomy onto the
   lints' construct taxonomy. The closest fit, still not free.
