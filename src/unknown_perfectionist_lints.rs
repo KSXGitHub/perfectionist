@@ -41,14 +41,12 @@ const TOOL_NAME: &str = "perfectionist";
 #[serde(default, rename_all = "snake_case")]
 struct Config {
     suggestion_distance: usize,
-    extra_known_names: Vec<String>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             suggestion_distance: 2,
-            extra_known_names: Vec::new(),
         }
     }
 }
@@ -61,15 +59,9 @@ pub struct UnknownPerfectionistLints {
 impl UnknownPerfectionistLints {
     fn new(registered_names: Vec<String>) -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let mut known = registered_names;
-        for extra in config.extra_known_names {
-            if !known.iter().any(|n| n == &extra) {
-                known.push(extra);
-            }
-        }
         Self {
             suggestion_distance: config.suggestion_distance,
-            known,
+            known: registered_names,
         }
     }
 }
