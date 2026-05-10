@@ -1,0 +1,28 @@
+warning: Unicode `…` (U+2026) in comment
+  --> $DIR/main.rs:1:46
+   |
+LL | // Bad: line comment with horizontal ellipsis…
+   |                                              ^ help: use ASCII `...` instead: `...`
+   |
+   = note: `#[warn(perfectionist::unicode_ellipsis_in_comments)]` on by default
+
+warning: Unicode `…` (U+2026) in comment
+  --> $DIR/main.rs:4:43
+   |
+LL | /* Bad: block comment ending with ellipsis… */
+   |                                           ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in comment
+  --> $DIR/main.rs:8:33
+   |
+LL |  * Multi-line block comment with…
+   |                                 ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in comment
+  --> $DIR/main.rs:9:46
+   |
+LL |  * multiple lines, each scanned independently…
+   |                                              ^ help: use ASCII `...` instead: `...`
+
+warning: 4 warnings emitted
+

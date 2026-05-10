@@ -172,8 +172,6 @@ pattern that several rules call out by reference — live in
   and string literals reachable from `format!` / `println!` style macros.
 - [`unicode-ellipsis-in-docs.md`](./unicode-ellipsis-in-docs.md) — flag
   U+2026 (`…`) in `///` and `//!` doc comments; prefer `...`.
-- [`unicode-ellipsis-in-comments.md`](./unicode-ellipsis-in-comments.md) —
-  flag U+2026 (`…`) in `//` and `/* */` comments; prefer `...`.
 - [`unicode-ellipsis-in-panic-messages.md`](./unicode-ellipsis-in-panic-messages.md) —
   flag U+2026 (`…`) in `panic!` / `assert*!` / `expect` messages;
   prefer `...`.

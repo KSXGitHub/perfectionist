@@ -1,8 +1,8 @@
 # `unicode_ellipsis_in_panic_messages`
 
 **Source:** project convention (parallel to
-[`unicode-ellipsis-in-docs`](./unicode-ellipsis-in-docs.md) and
-[`unicode-ellipsis-in-comments`](./unicode-ellipsis-in-comments.md)).
+[`unicode-ellipsis-in-docs`](./unicode-ellipsis-in-docs.md) and the
+implemented `perfectionist::unicode_ellipsis_in_comments` lint).
 
 ## Statement
 

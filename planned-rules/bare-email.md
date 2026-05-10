@@ -101,8 +101,9 @@ skip_domains = ["example.com", "example.org"]
 
 - `LateLintPass`. Share the doc-comment scanner with
   [`intra-doc-links`](./intra-doc-links.md) and the regular-comment
-  retokenizer with
-  [`unicode-ellipsis-in-comments`](./unicode-ellipsis-in-comments.md).
+  retokenizer with the implemented
+  `perfectionist::unicode_ellipsis_in_comments` lint
+  (see `src/lib.rs`).
 - The match deliberately requires a top-level domain of at least
   two ASCII letters and a dot before it; this avoids false positives
   on Cargo crate names that happen to contain `@`
