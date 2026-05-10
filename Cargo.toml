@@ -27,7 +27,7 @@ include = [
 crate-type = ["cdylib"]
 
 [dependencies]
-clippy_utils = "=0.1.92"
+clippy_utils = "=0.1.96"
 dylint_linting = "5.0.0"
 serde = { version = "1", features = ["derive"] }
 
