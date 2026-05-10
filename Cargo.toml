@@ -29,7 +29,7 @@ crate-type = ["cdylib"]
 [dependencies]
 clippy_utils = "=0.1.96"
 dylint_linting = "5.0.0"
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
 
 [dev-dependencies]
 dylint_testing = "5.0.0"
