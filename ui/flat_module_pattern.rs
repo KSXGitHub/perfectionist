@@ -2,7 +2,7 @@
 #[path = "auxiliary/foo/mod.rs"]
 mod foo;
 
-// Loads `auxiliary/clean/clean.rs`, which uses the flat layout
+// Loads `auxiliary/clean/clean.rs`, which is not a `mod.rs`
 // and should NOT be flagged.
 #[path = "auxiliary/clean/clean.rs"]
 mod clean;
