@@ -63,10 +63,10 @@ pub fn register_pass(lint_store: &mut LintStore) {
 }
 
 impl<'tcx> LateLintPass<'tcx> for FlatModulePattern {
-    fn check_crate(&mut self, cx: &LateContext<'tcx>) {
-        let crate_root = cx.sess().local_crate_source_file();
+    fn check_crate(&mut self, lint_context: &LateContext<'tcx>) {
+        let crate_root = lint_context.sess().local_crate_source_file();
         let crate_root_path = crate_root.as_ref().and_then(RealFileName::local_path);
-        let source_map = cx.sess().source_map();
+        let source_map = lint_context.sess().source_map();
         for source_file in source_map.files().iter() {
             if source_file.cnum != LOCAL_CRATE {
                 continue;
@@ -91,7 +91,7 @@ impl<'tcx> LateLintPass<'tcx> for FlatModulePattern {
                 None,
             );
             span_lint_and_help(
-                cx,
+                lint_context,
                 FLAT_MODULE_PATTERN,
                 span,
                 "submodule uses the `mod.rs` layout",
