@@ -36,12 +36,12 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-const CONFIG_KEY: &str = "unicode_ellipsis_in_comments";
+const CONFIG_KEY: &str = "perfectionist::unicode_ellipsis_in_comments";
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, rename_all = "snake_case")]
 struct Config {
-    also_flag: Vec<String>,
+    also_flag: Vec<char>,
     scope: Vec<Scope>,
 }
 
@@ -70,12 +70,7 @@ impl UnicodeEllipsisInComments {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         let mut needles = vec!['\u{2026}'];
-        for extra in config.also_flag {
-            let mut chars = extra.chars();
-            let Some(ch) = chars.next() else { continue };
-            if chars.next().is_some() {
-                continue;
-            }
+        for ch in config.also_flag {
             if !needles.contains(&ch) {
                 needles.push(ch);
             }

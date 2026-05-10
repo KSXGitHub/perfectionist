@@ -120,7 +120,7 @@ Two reasonable approaches exist:
 
 Both work for *this* plugin's compilation because the plugin is
 already nightly (it depends on `rustc_private`) and can use
-`clippy_utils::declare_tool_lint!`, which threads through the
+`rustc_session::declare_tool_lint!`, which threads through the
 unstable `register_tool` machinery. During a `cargo dylint` run
 the plugin's nightly toolchain compiles the consumer's code, the
 tool name is registered, and `#[allow(perfectionist::foo)]` is
@@ -169,7 +169,7 @@ When a rule's planning file reads:
 the `declare_tool_lint!` invocation reads:
 
 ```rust
-clippy_utils::declare_tool_lint! {
+rustc_session::declare_tool_lint! {
     pub perfectionist::QUALIFIED_PATHS,
     Warn,
     "decide whether items from outside the current scope are named \
