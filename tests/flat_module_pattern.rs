@@ -66,9 +66,7 @@ fn fixture_cargo_toml() -> String {
             version: "0.0.0",
             edition: "2024",
         },
-        lib: Lib {
-            path: "src/lib.rs",
-        },
+        lib: Lib { path: "src/lib.rs" },
     };
     toml::to_string(&manifest).expect("serialize Cargo.toml")
 }
