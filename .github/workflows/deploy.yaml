@@ -47,6 +47,11 @@ jobs:
           # rust-toolchain override file (TOML format is required for `components`).
           rustup show active-toolchain || rustup show
 
+      - name: Install Rust tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: dylint-link
+
       - name: Verify tag matches Cargo.toml version
         shell: bash
         run: |
