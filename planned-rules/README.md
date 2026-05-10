@@ -198,6 +198,14 @@ pattern that several rules call out by reference — live in
   permissive (any length passes); a project tightens the window to
   pin a fixed length such as 12 or 40.
 
+### Plugin hygiene
+- [`unknown-perfectionist-lints.md`](./unknown-perfectionist-lints.md) — flag
+  `#[allow(perfectionist::...)]` (and `warn`/`deny`/`forbid`/`expect`,
+  including via `cfg_attr`) attributes whose lint name is not registered by
+  this plugin. Catches typos and stale references that rustc's
+  `unknown_lints` covers inconsistently for tool-namespaced names; emits a
+  "did you mean" hint against the registered set.
+
 ### Clap derive help
 - [`clap-help-no-markdown.md`](./clap-help-no-markdown.md) — forbid
   markdown constructs (HTML, links, intra-doc links, code blocks, code
