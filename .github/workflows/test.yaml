@@ -42,6 +42,10 @@ jobs:
         with:
           tool: cargo-dylint, dylint-link, just
 
+      - name: Fmt
+        shell: bash
+        run: just fmt
+
       - name: Build
         shell: bash
         run: just build
@@ -57,3 +61,9 @@ jobs:
       - name: Test
         shell: bash
         run: just test
+
+      - name: Clean workspace artifacts before cache
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: cargo clean --workspace
