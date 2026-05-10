@@ -9,6 +9,7 @@
 use std::{path::Path, process::Command};
 
 use build_fs_tree::{Build, MergeableFileSystemTree, dir, file};
+use cargo_toml::{Edition, Inheritable, Manifest, Package, Product, Workspace};
 use command_extra::CommandExtra;
 use pipe_trait::Pipe;
 use serde::Serialize;
@@ -16,74 +17,50 @@ use tempfile::TempDir;
 
 const PERFECTIONIST_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
-#[derive(Serialize)]
-struct CargoToml {
-    package: Package,
-    lib: Lib,
-}
-
-#[derive(Serialize)]
-struct Package {
-    name: &'static str,
-    version: &'static str,
-    edition: &'static str,
-}
-
-#[derive(Serialize)]
-struct Lib {
-    path: &'static str,
-}
-
-#[derive(Serialize)]
-struct DylintToml {
-    workspace: Workspace,
-}
-
-#[derive(Serialize)]
-struct Workspace {
-    metadata: WorkspaceMetadata,
-}
-
-#[derive(Serialize)]
-struct WorkspaceMetadata {
+#[derive(Default, Serialize)]
+struct DylintWorkspaceMetadata {
     dylint: DylintMetadata,
 }
 
-#[derive(Serialize)]
+#[derive(Default, Serialize)]
 struct DylintMetadata {
     libraries: Vec<DylintLibrary>,
 }
 
-#[derive(Serialize)]
+#[derive(Default, Serialize)]
 struct DylintLibrary {
     path: String,
 }
 
 fn fixture_cargo_toml() -> String {
-    let manifest = CargoToml {
-        package: Package {
-            name: "fixture",
-            version: "0.0.0",
-            edition: "2024",
-        },
-        lib: Lib { path: "src/lib.rs" },
+    let mut package = Package::<()>::new("fixture", "0.0.0");
+    package.edition = Inheritable::Set(Edition::E2024);
+    let manifest = Manifest::<()> {
+        package: Some(package),
+        lib: Some(Product {
+            path: Some("src/lib.rs".to_owned()),
+            ..Default::default()
+        }),
+        ..Default::default()
     };
     toml::to_string(&manifest).expect("serialize Cargo.toml")
 }
 
 fn fixture_dylint_toml() -> String {
-    let config = DylintToml {
-        workspace: Workspace {
-            metadata: WorkspaceMetadata {
+    let manifest = Manifest::<DylintWorkspaceMetadata> {
+        workspace: Some(Workspace {
+            metadata: Some(DylintWorkspaceMetadata {
                 dylint: DylintMetadata {
                     libraries: vec![DylintLibrary {
                         path: PERFECTIONIST_DIR.to_owned(),
                     }],
                 },
-            },
-        },
+            }),
+            ..Default::default()
+        }),
+        ..Default::default()
     };
-    toml::to_string(&config).expect("serialize dylint.toml")
+    toml::to_string(&manifest).expect("serialize dylint.toml")
 }
 
 fn run_dylint(project_dir: &Path) -> (String, bool) {

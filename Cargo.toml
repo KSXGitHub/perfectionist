@@ -33,6 +33,7 @@ serde = { version = "1.0.228", features = ["derive"] }
 
 [dev-dependencies]
 build-fs-tree = "0.8.1"
+cargo_toml = "0.22.3"
 command-extra = "1.0.0"
 dylint_testing = "5.0.0"
 pipe-trait = "0.4.0"
