@@ -33,7 +33,7 @@ Read three things first, in this order:
      `take_*` functions, not regex.
    - **Lint name namespacing.** Every lint registers under the
      `perfectionist` tool namespace via
-     `clippy_utils::declare_tool_lint!`. The planning files use
+     `rustc_session::declare_tool_lint!`. The planning files use
      the unqualified form (`qualified_paths`) for readability;
      the registered name is `perfectionist::qualified_paths`.
 

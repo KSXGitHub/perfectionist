@@ -121,9 +121,9 @@ skip_hosts = ["example.com", "example.org", "localhost"]
 
 - `LateLintPass`. Reuse the doc-comment scanner from
   [`intra-doc-links`](./intra-doc-links.md) for the doc target and
-  the regular-comment retokenizer from
-  [`unicode-ellipsis-in-comments`](./unicode-ellipsis-in-comments.md)
-  for the comment target.
+  the regular-comment retokenizer from the implemented
+  `perfectionist::unicode_ellipsis_in_comments` lint
+  (see `src/lib.rs`) for the comment target.
 - The autofix span includes only the matched URL bytes; the
   replacement is `<{matched}>`. For the `MaybeIncorrect` cases,
   emit two suggestions — one keeping the trailing character inside
