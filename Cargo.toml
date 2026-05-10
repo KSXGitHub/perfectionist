@@ -32,10 +32,10 @@ dylint_linting = "5.0.0"
 serde = { version = "1.0.228", features = ["derive"] }
 
 [dev-dependencies]
-build-fs-tree = "0.8"
+build-fs-tree = "0.8.1"
 dylint_testing = "5.0.0"
-tempfile = "3"
-text-block-macros = "0.2"
+tempfile = "3.27.0"
+text-block-macros = "0.2.0"
 
 [package.metadata.rust-analyzer]
 rustc_private = true
