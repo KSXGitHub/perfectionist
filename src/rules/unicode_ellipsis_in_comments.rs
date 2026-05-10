@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use clippy_utils::diagnostics::span_lint_and_then;
+use clippy_utils::diagnostics::span_lint_and_sugg;
 use rustc_ast::Crate;
 use rustc_errors::Applicability;
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
@@ -84,13 +84,10 @@ impl UnicodeEllipsisInComments {
 
 impl_lint_pass!(UnicodeEllipsisInComments => [UNICODE_ELLIPSIS_IN_COMMENTS]);
 
-/// Register this rule's lint declaration. Paired with [`register_pass`];
-/// see the module-level convention documented in `register_lints`.
 pub fn register_lint(lint_store: &mut LintStore) {
     lint_store.register_lints(&[UNICODE_ELLIPSIS_IN_COMMENTS]);
 }
 
-/// Install this rule's early pass.
 pub fn register_pass(lint_store: &mut LintStore) {
     lint_store.register_early_pass(|| Box::new(UnicodeEllipsisInComments::new()));
 }
@@ -158,19 +155,14 @@ impl UnicodeEllipsisInComments {
             } else {
                 Applicability::MaybeIncorrect
             };
-            span_lint_and_then(
+            span_lint_and_sugg(
                 cx,
                 UNICODE_ELLIPSIS_IN_COMMENTS,
                 span,
                 format!("Unicode `{ch}` (U+{:04X}) in comment", ch as u32),
-                |diagnostic| {
-                    diagnostic.span_suggestion(
-                        span,
-                        "use ASCII `...` instead",
-                        "...".to_owned(),
-                        applicability,
-                    );
-                },
+                "use ASCII `...` instead",
+                "...".to_owned(),
+                applicability,
             );
         }
     }

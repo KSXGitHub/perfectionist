@@ -110,8 +110,6 @@ impl EarlyLintPass for UnknownPerfectionistLints {
             let Some(cfg_attr_args) = attribute.meta_item_list() else {
                 return;
             };
-            // `cfg_attr(predicate, attr1, attr2, ...)`: skip the predicate at
-            // index 0 and walk every wrapped attribute.
             for wrapped_attribute in cfg_attr_args.iter().skip(1) {
                 let Some(wrapped_meta_item) = wrapped_attribute.meta_item() else {
                     continue;
