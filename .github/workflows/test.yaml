@@ -62,6 +62,10 @@ jobs:
         shell: bash
         run: just test
 
+      - name: Dogfood
+        shell: bash
+        run: just dogfood
+
       - name: Clean workspace artifacts before cache
         if: always()
         continue-on-error: true
