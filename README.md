@@ -4,7 +4,7 @@ Additional linting rules for Rust projects.
 
 ## Usage
 
-Install [Dylint](https://github.com/trailofbits/dylint), then add `perfectionist` to your workspace's `Cargo.toml`:
+Install [Dylint](https://github.com/trailofbits/dylint), then add `perfectionist` to your workspace's `dylint.toml`:
 
 ```toml
 [workspace.metadata.dylint]
@@ -31,7 +31,14 @@ Per-rule configuration is read from `dylint.toml` at the workspace root. The con
 
 ## Development
 
-Install [Just](https://github.com/casey/just/) and run the following command to check everything:
+Prerequisites:
+
+- [Rustup](https://rustup.rs/)
+- [Just](https://github.com/casey/just/)
+- [cargo-dylint](https://github.com/trailofbits/dylint/tree/master/cargo-dylint)
+- [dylint-link](https://github.com/trailofbits/dylint/tree/master/dylint-link)
+
+Run the following command to check everything:
 
 ```sh
 just all
