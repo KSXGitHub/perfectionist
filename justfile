@@ -3,10 +3,15 @@ _default:
 
 # Check everything
 all:
+  just fmt
   just build
   just doc
   just lint
   just test
+
+# Check format
+fmt:
+  cargo fmt -- --check
 
 # Build in debug mode
 build:
