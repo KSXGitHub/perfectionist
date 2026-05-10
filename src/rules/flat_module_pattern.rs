@@ -67,22 +67,21 @@ impl<'tcx> LateLintPass<'tcx> for FlatModulePattern {
         let crate_root = lint_context.sess().local_crate_source_file();
         let crate_root_path = crate_root.as_ref().and_then(RealFileName::local_path);
         let source_map = lint_context.sess().source_map();
-        for source_file in source_map.files().iter() {
-            if source_file.cnum != LOCAL_CRATE {
-                continue;
-            }
-            let FileName::Real(real_file_name) = &source_file.name else {
-                continue;
-            };
-            let Some(path) = real_file_name.local_path() else {
-                continue;
-            };
-            if !is_mod_rs(path) {
-                continue;
-            }
-            if Some(path) == crate_root_path {
-                continue;
-            }
+        let source_files = source_map.files();
+        let source_file_iter = source_files
+            .iter()
+            .filter(|source_file| source_file.cnum == LOCAL_CRATE)
+            .filter_map(|source_file| {
+                let FileName::Real(real_file_name) = &source_file.name else {
+                    return None;
+                };
+                let path = real_file_name.local_path()?;
+                Some((source_file, path))
+            })
+            .filter(|(_, path)| is_mod_rs(path))
+            .filter(|(_, path)| Some(*path) != crate_root_path);
+
+        for (source_file, _) in source_file_iter {
             let span_start = source_file.start_pos;
             let span = Span::new(
                 span_start,
