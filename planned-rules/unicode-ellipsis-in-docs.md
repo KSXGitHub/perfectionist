@@ -57,22 +57,10 @@ Skip:
   `clippy_utils::source::position_before_rarrow`-style helpers, or
   more directly with `attr.value_str().unwrap()`'s span and an offset
   computed from the literal contents.
-- For the code-span / code-block exclusion, use a tiny markdown
-  scanner — track inside-backtick state and inside-fence state. The
-  `pulldown_cmark` crate is a heavyweight dependency for a Dylint
-  pass; a hand-written byte scanner is enough since we only need to
-  recognise the three delimiters `` ` ``, `` ``` ``, and indented
-  `    ` blocks.
-- **Parser style.** Implement the markdown exclusion scanner as
-  parser-combinator-style `take_*` functions per
-  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
+- Use the shared markdown scanner (Tier B — code-region mask) per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md#markdown-parsing).
   `take_code_span` and `take_code_block` consume the excluded
-  regions in one shot, leaving only the prose slice for the
-  codepoint scan. Sharing this with the analogous step in
-  [`intra-doc-links`](./intra-doc-links.md) and
-  [`em-dash-prose`](./em-dash-prose.md) is the natural follow-up;
-  factor the helper crate-internally rather than re-implementing
-  per lint.
+  regions; the codepoint scan runs over the remaining prose slices.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this

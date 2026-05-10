@@ -85,12 +85,13 @@ form = "inline"
 
 ## Implementation notes
 
-- `LateLintPass::check_attribute` to read `#[doc = "..."]` attribute
-  values. Walk the rendered text once per item, applying the markdown
-  exclusion logic from
-  [`intra-doc-links`](./intra-doc-links.md) and
-  [`unicode-ellipsis-in-docs`](./unicode-ellipsis-in-docs.md). Share
-  the helper.
+- `LateLintPass::check_attribute` to read `#[doc = "..."]`
+  attribute values. Walk the rendered text once per item, using
+  the shared markdown scanner (Tier A — structural classification)
+  per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md#markdown-parsing)
+  to skip code regions, existing links, and reference-link
+  definitions.
 - The autofix substitutes the bare span with the rendered link.
   Suggestion applicability:
   - `suggestion_mode = "issue_url"` → `MachineApplicable`. The
