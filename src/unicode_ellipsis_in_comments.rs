@@ -62,17 +62,22 @@ enum Scope {
 }
 
 pub struct UnicodeEllipsisInComments {
-    needles: Vec<String>,
+    needles: Vec<char>,
     scopes: BTreeSet<Scope>,
 }
 
 impl UnicodeEllipsisInComments {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let mut needles = vec!["\u{2026}".to_owned()];
+        let mut needles = vec!['\u{2026}'];
         for extra in config.also_flag {
-            if !needles.contains(&extra) {
-                needles.push(extra);
+            let mut chars = extra.chars();
+            let Some(ch) = chars.next() else { continue };
+            if chars.next().is_some() {
+                continue;
+            }
+            if !needles.contains(&ch) {
+                needles.push(ch);
             }
         }
         Self {
@@ -138,17 +143,15 @@ impl UnicodeEllipsisInComments {
         comment: &str,
     ) {
         for (idx, ch) in comment.char_indices() {
-            let mut buf = [0u8; 4];
-            let ch_str = ch.encode_utf8(&mut buf);
-            let Some(needle) = self.needles.iter().find(|n| n.as_str() == ch_str) else {
+            if !self.needles.contains(&ch) {
                 continue;
-            };
+            }
             let char_len = ch.len_utf8() as u32;
             let lo = source_file
                 .absolute_position(RelativeBytePos::from_u32(comment_offset + idx as u32));
             let hi = BytePos::from_u32(lo.0 + char_len);
             let span = Span::new(lo, hi, SyntaxContext::root(), None);
-            let applicability = if needle == "\u{2026}" {
+            let applicability = if ch == '\u{2026}' {
                 Applicability::MachineApplicable
             } else {
                 Applicability::MaybeIncorrect
