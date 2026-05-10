@@ -19,7 +19,7 @@ build:
 
 # Check documentation
 doc:
-  RUSTFLAGS='-D warnings' cargo doc
+  RUSTFLAGS='-D warnings' cargo doc --no-deps --document-private-items
 
 # Run all the lints
 lint:
