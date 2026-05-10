@@ -99,21 +99,29 @@ explicitly retracted.
 
 ## Registering a new rule in `lib.rs`
 
-`src/lib.rs::register_lints` registers each rule module's lints
-in turn, then — *as the final step* — calls
-`unknown_perfectionist_lints::register_pass`. That pass snapshots
-the registered `perfectionist::*` lint names out of the
-`LintStore`, so any module that registers lints below this call
-will be invisible to it and its legitimate suppression sites will
-warn as "unknown lint".
+Every rule module exposes two registration functions:
+
+- `register_lint(lint_store)` — registers the lint declaration
+  only.
+- `register_pass(lint_store)` — installs the rule's early/late
+  pass.
+
+`src/lib.rs::register_lints` calls them in two phases: every
+`register_lint` first, then every `register_pass`. The phasing
+exists because `unknown_perfectionist_lints::register_pass`
+snapshots the registered `perfectionist::*` lint names out of the
+`LintStore` at construction time, so every rule's lint
+declaration must already be in the store before any pass is
+installed.
 
 When you add a new rule:
 
-1. Add the `mod` line and call its `register` (or
-   `register_lint`) function alongside the other modules in
-   `register_lints`, *above* the
-   `unknown_perfectionist_lints::register_pass(...)` call.
-2. Do not introduce a parallel `REGISTERED_LINT_NAMES`-style
+1. Add the `mod` line and expose both `register_lint` and
+   `register_pass` from the rule module.
+2. Call `your_rule::register_lint(lint_store)` in the phase-1
+   block of `register_lints` and
+   `your_rule::register_pass(lint_store)` in the phase-2 block.
+3. Do not introduce a parallel `REGISTERED_LINT_NAMES`-style
    array. The `LintStore` is the single source of truth.
 
 ## Notes on cross-rule dependencies

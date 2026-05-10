@@ -53,40 +53,39 @@ impl Default for Config {
 
 pub struct UnknownPerfectionistLints {
     suggestion_distance: usize,
-    known: Vec<String>,
+    registered_lints: Vec<String>,
 }
 
 impl UnknownPerfectionistLints {
-    fn new(known: Vec<String>) -> Self {
+    fn new(registered_lints: Vec<String>) -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
             suggestion_distance: config.suggestion_distance,
-            known,
+            registered_lints,
         }
     }
 }
 
 impl_lint_pass!(UnknownPerfectionistLints => [UNKNOWN_PERFECTIONIST_LINTS]);
 
-/// Register only the lint declaration. Call this from `register_lints`
-/// alongside the other rule modules' registration calls; the early pass
-/// itself is installed separately by [`register_pass`] once every lint has
-/// been registered, so the pass can read the full set out of the store.
+/// Register this rule's lint declaration. Paired with [`register_pass`];
+/// see the module-level convention documented in `register_lints`.
 pub fn register_lint(lint_store: &mut LintStore) {
     lint_store.register_lints(&[UNKNOWN_PERFECTIONIST_LINTS]);
 }
 
-/// Install the early pass. Must be called *after* every other rule module
+/// Install this rule's early pass. Must be called *after* every rule module
 /// has registered its lints, since the pass snapshots the registered
 /// `perfectionist::*` names from `lint_store` at construction time.
 pub fn register_pass(lint_store: &mut LintStore) {
-    let registered: Vec<String> = collect_registered_names(lint_store);
-    lint_store
-        .register_early_pass(move || Box::new(UnknownPerfectionistLints::new(registered.clone())));
+    let registered_lints: Vec<String> = collect_registered_lint_names(lint_store);
+    lint_store.register_early_pass(move || {
+        Box::new(UnknownPerfectionistLints::new(registered_lints.clone()))
+    });
 }
 
-fn collect_registered_names(lint_store: &LintStore) -> Vec<String> {
-    let prefix = format!("{TOOL_NAME}::");
+fn collect_registered_lint_names(lint_store: &LintStore) -> Vec<String> {
+    let tool_prefix = format!("{TOOL_NAME}::");
     lint_store
         .get_lints()
         .iter()
@@ -95,158 +94,168 @@ fn collect_registered_names(lint_store: &LintStore) -> Vec<String> {
             // (`perfectionist::UNICODE_ELLIPSIS_IN_COMMENTS`); `name_lower()`
             // returns the snake-case form rustc surfaces in diagnostics and
             // attribute references (`perfectionist::unicode_ellipsis_in_comments`).
-            let lower = lint.name_lower();
-            lower.strip_prefix(&prefix).map(str::to_owned)
+            let lower_name = lint.name_lower();
+            lower_name.strip_prefix(&tool_prefix).map(str::to_owned)
         })
         .collect()
 }
 
 impl EarlyLintPass for UnknownPerfectionistLints {
-    fn check_attribute(&mut self, cx: &EarlyContext<'_>, attr: &Attribute) {
-        if is_lint_control_attr(attr) {
-            if let Some(items) = attr.meta_item_list() {
-                self.check_items(cx, &items);
+    fn check_attribute(&mut self, lint_context: &EarlyContext<'_>, attribute: &Attribute) {
+        if is_lint_level_attribute(attribute) {
+            if let Some(lint_names) = attribute.meta_item_list() {
+                self.check_lint_name_list(lint_context, &lint_names);
             }
-        } else if attr.has_name(sym::cfg_attr) {
-            let Some(items) = attr.meta_item_list() else {
+        } else if attribute.has_name(sym::cfg_attr) {
+            let Some(cfg_attr_args) = attribute.meta_item_list() else {
                 return;
             };
-            for inner in items.iter().skip(1) {
-                let Some(meta) = inner.meta_item() else {
+            for wrapped_attribute in cfg_attr_args.iter().skip(1) {
+                let Some(wrapped_meta_item) = wrapped_attribute.meta_item() else {
                     continue;
                 };
-                if !is_lint_control_meta(meta) {
+                if !is_lint_level_meta_item(wrapped_meta_item) {
                     continue;
                 }
-                let MetaItemKind::List(nested) = &meta.kind else {
+                let MetaItemKind::List(lint_names) = &wrapped_meta_item.kind else {
                     continue;
                 };
-                self.check_items(cx, nested);
+                self.check_lint_name_list(lint_context, lint_names);
             }
         }
     }
 }
 
-const LINT_CONTROL_NAMES: [Symbol; 5] =
+const LINT_LEVEL_ATTRIBUTE_NAMES: [Symbol; 5] =
     [sym::allow, sym::warn, sym::deny, sym::forbid, sym::expect];
 
-fn is_lint_control_attr(attr: &Attribute) -> bool {
-    LINT_CONTROL_NAMES.iter().any(|name| attr.has_name(*name))
+fn is_lint_level_attribute(attribute: &Attribute) -> bool {
+    LINT_LEVEL_ATTRIBUTE_NAMES
+        .iter()
+        .any(|name| attribute.has_name(*name))
 }
 
-fn is_lint_control_meta(meta: &MetaItem) -> bool {
-    LINT_CONTROL_NAMES.iter().any(|name| meta.has_name(*name))
+fn is_lint_level_meta_item(meta_item: &MetaItem) -> bool {
+    LINT_LEVEL_ATTRIBUTE_NAMES
+        .iter()
+        .any(|name| meta_item.has_name(*name))
 }
 
 impl UnknownPerfectionistLints {
-    fn check_items(&self, cx: &EarlyContext<'_>, items: &[MetaItemInner]) {
-        for inner in items {
-            let Some(meta) = inner.meta_item() else {
+    fn check_lint_name_list(&self, lint_context: &EarlyContext<'_>, lint_names: &[MetaItemInner]) {
+        for lint_name in lint_names {
+            let Some(meta_item) = lint_name.meta_item() else {
                 continue;
             };
-            self.check_lint_name(cx, meta);
+            self.check_lint_name(lint_context, meta_item);
         }
     }
 
-    fn check_lint_name(&self, cx: &EarlyContext<'_>, meta: &MetaItem) {
-        let segments = &meta.path.segments;
-        let Some(first) = segments.first() else {
+    fn check_lint_name(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem) {
+        let segments = &meta_item.path.segments;
+        let Some(first_segment) = segments.first() else {
             return;
         };
-        if first.ident.name.as_str() != TOOL_NAME {
+        if first_segment.ident.name.as_str() != TOOL_NAME {
             return;
         }
-        let trailing: Vec<&str> = segments[1..]
+        let segments_after_tool: Vec<&str> = segments[1..]
             .iter()
-            .map(|s| s.ident.name.as_str())
+            .map(|segment| segment.ident.name.as_str())
             .collect();
-        match trailing.as_slice() {
-            [name] if self.is_known(name) => {}
-            [name] => self.report(cx, meta, name),
-            [] => self.report_no_name(cx, meta),
+        match segments_after_tool.as_slice() {
+            [name] if self.is_registered(name) => {}
+            [name] => self.report(lint_context, meta_item, name),
+            [] => self.report_no_name(lint_context, meta_item),
             _ => {
-                let candidate = trailing.join("_");
-                self.report(cx, meta, &candidate);
+                let candidate = segments_after_tool.join("_");
+                self.report(lint_context, meta_item, &candidate);
             }
         }
     }
 
-    fn is_known(&self, name: &str) -> bool {
-        self.known.iter().any(|k| k == name)
+    fn is_registered(&self, name: &str) -> bool {
+        self.registered_lints
+            .iter()
+            .any(|registered| registered == name)
     }
 
-    fn nearest(&self, candidate: &str) -> Option<&str> {
+    fn find_closest_match(&self, candidate: &str) -> Option<&str> {
         if self.suggestion_distance == 0 {
             return None;
         }
-        let mut best: Option<(&str, usize)> = None;
-        for k in &self.known {
-            let d = levenshtein(candidate, k);
-            if d <= self.suggestion_distance && best.is_none_or(|(_, bd)| d < bd) {
-                best = Some((k.as_str(), d));
+        let mut closest: Option<(&str, usize)> = None;
+        for registered in &self.registered_lints {
+            let distance = levenshtein(candidate, registered);
+            if distance <= self.suggestion_distance
+                && closest.is_none_or(|(_, closest_distance)| distance < closest_distance)
+            {
+                closest = Some((registered.as_str(), distance));
             }
         }
-        best.map(|(name, _)| name)
+        closest.map(|(name, _)| name)
     }
 
-    fn report(&self, cx: &EarlyContext<'_>, meta: &MetaItem, candidate: &str) {
-        let printed = path_to_string(meta);
-        let suggestion = self.nearest(candidate);
+    fn report(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem, candidate: &str) {
+        let path_text = path_to_string(meta_item);
+        let suggestion = self.find_closest_match(candidate);
         span_lint_and_then(
-            cx,
+            lint_context,
             UNKNOWN_PERFECTIONIST_LINTS,
-            meta.span,
-            format!("unknown lint: `{printed}`"),
-            |diag| {
-                if let Some(s) = suggestion {
-                    diag.help(format!("did you mean `{TOOL_NAME}::{s}`?"));
+            meta_item.span,
+            format!("unknown lint: `{path_text}`"),
+            |diagnostic| {
+                if let Some(suggested_name) = suggestion {
+                    diagnostic.help(format!("did you mean `{TOOL_NAME}::{suggested_name}`?"));
                 }
             },
         );
     }
 
-    fn report_no_name(&self, cx: &EarlyContext<'_>, meta: &MetaItem) {
+    fn report_no_name(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem) {
         span_lint_and_then(
-            cx,
+            lint_context,
             UNKNOWN_PERFECTIONIST_LINTS,
-            meta.span,
+            meta_item.span,
             format!("unknown lint: `{TOOL_NAME}` is a tool prefix, not a lint name"),
             |_| {},
         );
     }
 }
 
-fn path_to_string(meta: &MetaItem) -> String {
-    let mut out = String::new();
-    for (i, seg) in meta.path.segments.iter().enumerate() {
-        if i > 0 {
-            out.push_str("::");
+fn path_to_string(meta_item: &MetaItem) -> String {
+    let mut result = String::new();
+    for (index, segment) in meta_item.path.segments.iter().enumerate() {
+        if index > 0 {
+            result.push_str("::");
         }
-        out.push_str(seg.ident.name.as_str());
+        result.push_str(segment.ident.name.as_str());
     }
-    out
+    result
 }
 
-fn levenshtein(a: &str, b: &str) -> usize {
-    let a: Vec<char> = a.chars().collect();
-    let b: Vec<char> = b.chars().collect();
-    let n = a.len();
-    let m = b.len();
-    if n == 0 {
-        return m;
+fn levenshtein(left: &str, right: &str) -> usize {
+    let left_chars: Vec<char> = left.chars().collect();
+    let right_chars: Vec<char> = right.chars().collect();
+    let left_len = left_chars.len();
+    let right_len = right_chars.len();
+    if left_len == 0 {
+        return right_len;
     }
-    if m == 0 {
-        return n;
+    if right_len == 0 {
+        return left_len;
     }
-    let mut prev: Vec<usize> = (0..=m).collect();
-    let mut curr: Vec<usize> = vec![0; m + 1];
-    for i in 1..=n {
-        curr[0] = i;
-        for j in 1..=m {
-            let cost = usize::from(a[i - 1] != b[j - 1]);
-            curr[j] = (prev[j] + 1).min(curr[j - 1] + 1).min(prev[j - 1] + cost);
+    let mut previous_row: Vec<usize> = (0..=right_len).collect();
+    let mut current_row: Vec<usize> = vec![0; right_len + 1];
+    for i in 1..=left_len {
+        current_row[0] = i;
+        for j in 1..=right_len {
+            let substitution_cost = usize::from(left_chars[i - 1] != right_chars[j - 1]);
+            current_row[j] = (previous_row[j] + 1)
+                .min(current_row[j - 1] + 1)
+                .min(previous_row[j - 1] + substitution_cost);
         }
-        std::mem::swap(&mut prev, &mut curr);
+        std::mem::swap(&mut previous_row, &mut current_row);
     }
-    prev[m]
+    previous_row[right_len]
 }
