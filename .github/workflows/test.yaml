@@ -20,6 +20,7 @@ jobs:
         with:
           path: |
             ~/.cargo
+            ~/.dylint_drivers
             target
           key: ${{ github.job }}-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
