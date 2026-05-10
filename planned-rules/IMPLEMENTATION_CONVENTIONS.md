@@ -81,6 +81,133 @@ The rules that explicitly call this convention out in their
 implementation notes are the candidates; rules that just walk a
 fixed-size byte sequence do not.
 
+## Markdown parsing
+
+Six rules in this catalogue scan a slice of markdown:
+
+- [`intra-doc-links`](./intra-doc-links.md) — distinguishes
+  `` `Foo` `` (candidate) from `` [`Foo`] ``, `[Foo]`,
+  `[Foo](path)`, `[Foo][id]` (already linked).
+- [`clap-help-no-markdown`](./clap-help-no-markdown.md) — classifies
+  every banned construct (links, code spans, code blocks, HTML
+  tags, headings, reference definitions) and emits a per-construct
+  diagnostic.
+- [`bare-issue-reference`](./bare-issue-reference.md) — skips code
+  regions, existing links, and reference-link definitions before
+  flagging bare `#123` tokens.
+- [`bare-url`](./bare-url.md) — skips code regions, autolinks
+  (`<...>`), labelled links, and reference-link definitions before
+  flagging bare `http(s)://` URLs.
+- [`unicode-ellipsis-in-docs`](./unicode-ellipsis-in-docs.md) —
+  strips code regions, then byte-scans for U+2026.
+- [`em-dash-prose`](./em-dash-prose.md) — strips code regions, then
+  byte-scans for `—` / `–`.
+
+They share one crate-internal scanner, `src/markdown.rs`, built
+from `take_*` combinators per the "Parser style" section above.
+The helper is hand-written. **Do not pull in `pulldown_cmark`,
+`comrak`, `markdown-rs`, or `markdown-it`** for any of these rules
+without first revisiting the rationale below.
+
+### Two tiers of consumer
+
+Two needs sit on top of the same primitives.
+
+- **Tier A — structural classification.** Distinguishes a code
+  span from an inline link from a reference definition from an
+  autolink from an HTML tag from a heading. Consumers:
+  `intra_doc_links`, `clap_help_no_markdown`, `bare_issue_reference`,
+  `bare_url`.
+- **Tier B — code-region mask.** Only needs the predicate "is this
+  byte inside a code span or code block?". Consumers:
+  `unicode_ellipsis_in_docs`, `em_dash_prose`. The mask is
+  `take_code_span` plus `take_code_block` in a loop over the input;
+  no separate scanner.
+
+### Combinator surface
+
+One `take_*` per CommonMark construct the catalogue recognises:
+
+- `take_code_span` — between matching `` ` `` runs of equal length.
+- `take_code_block` — fenced (``` ``` ```, `~~~`) or four-space
+  indented.
+- `take_link` — `[text](dest)`, `[text][id]`, `[text]`, `` [`Type`] ``.
+- `take_autolink` — `<https://...>`, `<mailto:...>`.
+- `take_reference_definition` — `[id]: dest` at block start.
+- `take_html_tag` — `<tag ...>` and `</tag>`.
+- `take_heading` — ATX (`# h`) and Setext (`h\n===`).
+
+Each combinator returns the matched substring and the remainder
+per the canonical shapes in "Parser style". Rust-specific
+extraction layered on top — `intra_doc_links` pulling an
+identifier out of a `take_code_span` result, `bare_url` pulling a
+scheme out of `take_autolink` failure-fallback prose — lives in
+each rule's own module, not in `src/markdown.rs`.
+
+### Why hand-rolled rather than a library
+
+A Dylint plugin loads into rustc's process; every transitive crate
+is paid for at lint time. The grammar these six rules need is
+seven constructs, no inline-emphasis precedence, no link-reference
+resolution across the whole comment. No library hits that target
+without overshooting:
+
+- **`pulldown_cmark`** — the de facto Rust choice. Event-based,
+  carries source offsets via `OffsetIter`, MIT, fast, used by
+  `mdbook` and historically by rustdoc. For a five-construct
+  predicate it is still ~2-3k LoC of dependency loaded into
+  rustc, and consumers must map its event taxonomy onto the
+  lints' construct taxonomy. The closest fit, still not free.
+- **`comrak`** — CommonMark + GFM, AST-based. Brings
+  `typed-arena`, `unicode-categories`, `entities`, `slug`, `xdg`.
+  Heavier than `pulldown_cmark` and aimed at GFM rendering, not
+  at "give me byte spans of code regions".
+- **`markdown-rs`** (`wooorm/markdown-rs`) — CommonMark + GFM +
+  MDX + frontmatter. Most spec-faithful, largest dep tree, worst
+  weight-vs-need ratio for this use case.
+- **`markdown-it`** — JS port. Pluggable. Less battle-tested in
+  Rust than `pulldown_cmark`.
+
+The combinator approach also keeps span construction precise
+without a mapping layer: each `take_*` knows exactly how many
+bytes it consumed, which is how the lints' diagnostics anchor
+into the source map.
+
+### Rustdoc flavour
+
+Rustdoc intra-doc links — `` [`Foo`] ``, `[Foo]`,
+`[Foo](crate::foo::Foo)` — are *plain CommonMark* at the parser
+level. What makes them intra-doc links is rustdoc's *post-parse*
+resolution step, which tries each link's destination text as a
+Rust path through the documented item's scope. No general-purpose
+markdown library models that resolution; rustdoc's own pipeline
+lives in `rustc_resolve` and `rustdoc::html::markdown` and is not
+published as a library.
+
+The practical consequence: the scanner's job is to say "this is a
+link, here is its destination text". Whether the destination
+resolves as a Rust path is `intra_doc_links`'s job, performed
+against `TyCtxt` in a `LateLintPass`, not the scanner's.
+Consumers that need only "is this any kind of link?" (e.g.,
+`clap_help_no_markdown`, which rejects all link forms) stop at the
+scanner's answer.
+
+This also means library choice is downstream of the intra-doc-link
+question, not upstream of it: even if a hypothetical library
+parsed rustdoc-flavoured markdown, the resolution layer would
+still be custom code in this repo.
+
+### Where to revisit this decision
+
+The decision is per-helper, not per-codebase. If, during
+implementation of `clap_help_no_markdown`, the HTML-tag and
+reference-definition combinators turn out to dominate the helper's
+complexity — they cover constructs none of the other five rules
+need — that single rule may switch to a vendored `pulldown_cmark`
+walk while the other five continue on the hand-rolled helper.
+Open a follow-up PR; do not silently expand `src/markdown.rs`'s
+dependency surface for the other consumers.
+
 ## Lint name namespacing
 
 Every lint registered by this plugin lives in the `perfectionist`
