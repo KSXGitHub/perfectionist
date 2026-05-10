@@ -37,7 +37,6 @@ command-extra = "1.0.0"
 dylint_testing = "5.0.0"
 pipe-trait = "0.4.0"
 tempfile = "3.27.0"
-text-block-macros = "0.2.0"
 toml = "1.1.2"
 
 [package.metadata.rust-analyzer]
