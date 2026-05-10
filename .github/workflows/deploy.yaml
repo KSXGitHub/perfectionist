@@ -1,0 +1,76 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+*'
+
+jobs:
+  publish:
+    name: Publish to crates.io
+
+    runs-on: ubuntu-latest
+
+    environment:
+      name: crates-io
+      url: https://crates.io/crates/perfectionist
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Cache
+        uses: actions/cache@v5
+        timeout-minutes: 1
+        continue-on-error: true
+        with:
+          path: |
+            ~/.cargo
+            ~/.dylint_drivers
+            target
+          key: ${{ github.job }}-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ github.job }}-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}-${{ hashFiles('**/Cargo.lock') }}
+            ${{ github.job }}-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}-
+
+      - name: Install Rust
+        shell: bash
+        run: |
+          installer=$(mktemp -d)/install-rustup
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > $installer
+          bash $installer --default-toolchain none -y
+          source "$HOME/.cargo/env"
+          # Triggers rustup to install the toolchain and components from the
+          # rust-toolchain override file (TOML format is required for `components`).
+          rustup show active-toolchain || rustup show
+
+      - name: Verify tag matches Cargo.toml version
+        shell: bash
+        run: |
+          tag="${{ github.ref_name }}"
+          version=$(cargo metadata --format-version 1 --no-deps \
+            | jq -r '.packages[] | select(.name == "perfectionist") | .version')
+          if [ "$tag" != "$version" ]; then
+            echo "::error::Tag '$tag' does not match Cargo.toml version '$version'"
+            exit 1
+          fi
+          echo "Tag and Cargo.toml version match: $version"
+
+      - name: Authenticate with crates.io
+        id: auth
+        uses: rust-lang/crates-io-auth-action@v1
+
+      - name: Publish to crates.io
+        shell: bash
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        run: cargo publish --locked
+
+      - name: Clean workspace artifacts before cache
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: cargo clean --workspace
