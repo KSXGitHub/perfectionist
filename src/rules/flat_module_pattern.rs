@@ -51,8 +51,14 @@ impl FlatModulePattern {
 
 impl_lint_pass!(FlatModulePattern => [FLAT_MODULE_PATTERN]);
 
-pub fn register(lint_store: &mut LintStore) {
+/// Register this rule's lint declaration. Paired with [`register_pass`];
+/// see the module-level convention documented in `register_lints`.
+pub fn register_lint(lint_store: &mut LintStore) {
     lint_store.register_lints(&[FLAT_MODULE_PATTERN]);
+}
+
+/// Install this rule's late pass.
+pub fn register_pass(lint_store: &mut LintStore) {
     lint_store.register_late_pass(|_| Box::new(FlatModulePattern::new()));
 }
 
@@ -65,10 +71,10 @@ impl<'tcx> LateLintPass<'tcx> for FlatModulePattern {
             if source_file.cnum != LOCAL_CRATE {
                 continue;
             }
-            let FileName::Real(real) = &source_file.name else {
+            let FileName::Real(real_file_name) = &source_file.name else {
                 continue;
             };
-            let Some(path) = real.local_path() else {
+            let Some(path) = real_file_name.local_path() else {
                 continue;
             };
             if !is_mod_rs(path) {
@@ -77,8 +83,13 @@ impl<'tcx> LateLintPass<'tcx> for FlatModulePattern {
             if Some(path) == crate_root_path {
                 continue;
             }
-            let start = source_file.start_pos;
-            let span = Span::new(start, BytePos(start.0), SyntaxContext::root(), None);
+            let span_start = source_file.start_pos;
+            let span = Span::new(
+                span_start,
+                BytePos(span_start.0),
+                SyntaxContext::root(),
+                None,
+            );
             span_lint_and_help(
                 cx,
                 FLAT_MODULE_PATTERN,
