@@ -2,7 +2,7 @@ use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Attribute, MetaItem, MetaItemInner, MetaItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::{Symbol, sym};
+use rustc_span::{Symbol, sym as symbols};
 
 declare_tool_lint! {
     /// ### What it does
@@ -101,12 +101,12 @@ fn collect_registered_lint_names(lint_store: &LintStore) -> Vec<String> {
 }
 
 impl EarlyLintPass for UnknownPerfectionistLints {
-    fn check_attribute(&mut self, cx: &EarlyContext<'_>, attribute: &Attribute) {
+    fn check_attribute(&mut self, lint_context: &EarlyContext<'_>, attribute: &Attribute) {
         if is_lint_level_attribute(attribute) {
             if let Some(lint_names) = attribute.meta_item_list() {
-                self.check_lint_name_list(cx, &lint_names);
+                self.check_lint_name_list(lint_context, &lint_names);
             }
-        } else if attribute.has_name(sym::cfg_attr) {
+        } else if attribute.has_name(symbols::cfg_attr) {
             let Some(cfg_attr_args) = attribute.meta_item_list() else {
                 return;
             };
@@ -120,14 +120,19 @@ impl EarlyLintPass for UnknownPerfectionistLints {
                 let MetaItemKind::List(lint_names) = &wrapped_meta_item.kind else {
                     continue;
                 };
-                self.check_lint_name_list(cx, lint_names);
+                self.check_lint_name_list(lint_context, lint_names);
             }
         }
     }
 }
 
-const LINT_LEVEL_ATTRIBUTE_NAMES: [Symbol; 5] =
-    [sym::allow, sym::warn, sym::deny, sym::forbid, sym::expect];
+const LINT_LEVEL_ATTRIBUTE_NAMES: [Symbol; 5] = [
+    symbols::allow,
+    symbols::warn,
+    symbols::deny,
+    symbols::forbid,
+    symbols::expect,
+];
 
 fn is_lint_level_attribute(attribute: &Attribute) -> bool {
     LINT_LEVEL_ATTRIBUTE_NAMES
@@ -142,16 +147,16 @@ fn is_lint_level_meta_item(meta_item: &MetaItem) -> bool {
 }
 
 impl UnknownPerfectionistLints {
-    fn check_lint_name_list(&self, cx: &EarlyContext<'_>, lint_names: &[MetaItemInner]) {
+    fn check_lint_name_list(&self, lint_context: &EarlyContext<'_>, lint_names: &[MetaItemInner]) {
         for lint_name in lint_names {
             let Some(meta_item) = lint_name.meta_item() else {
                 continue;
             };
-            self.check_lint_name(cx, meta_item);
+            self.check_lint_name(lint_context, meta_item);
         }
     }
 
-    fn check_lint_name(&self, cx: &EarlyContext<'_>, meta_item: &MetaItem) {
+    fn check_lint_name(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem) {
         let segments = &meta_item.path.segments;
         let Some(first_segment) = segments.first() else {
             return;
@@ -165,11 +170,11 @@ impl UnknownPerfectionistLints {
             .collect();
         match segments_after_tool.as_slice() {
             [name] if self.is_registered(name) => {}
-            [name] => self.report(cx, meta_item, name),
-            [] => self.report_no_name(cx, meta_item),
+            [name] => self.report(lint_context, meta_item, name),
+            [] => self.report_no_name(lint_context, meta_item),
             _ => {
                 let candidate = segments_after_tool.join("_");
-                self.report(cx, meta_item, &candidate);
+                self.report(lint_context, meta_item, &candidate);
             }
         }
     }
@@ -196,11 +201,11 @@ impl UnknownPerfectionistLints {
         closest.map(|(name, _)| name)
     }
 
-    fn report(&self, cx: &EarlyContext<'_>, meta_item: &MetaItem, candidate: &str) {
+    fn report(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem, candidate: &str) {
         let path_text = path_to_string(meta_item);
         let suggestion = self.find_closest_match(candidate);
         span_lint_and_then(
-            cx,
+            lint_context,
             UNKNOWN_PERFECTIONIST_LINTS,
             meta_item.span,
             format!("unknown lint: `{path_text}`"),
@@ -212,9 +217,9 @@ impl UnknownPerfectionistLints {
         );
     }
 
-    fn report_no_name(&self, cx: &EarlyContext<'_>, meta_item: &MetaItem) {
+    fn report_no_name(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem) {
         span_lint_and_then(
-            cx,
+            lint_context,
             UNKNOWN_PERFECTIONIST_LINTS,
             meta_item.span,
             format!("unknown lint: `{TOOL_NAME}` is a tool prefix, not a lint name"),

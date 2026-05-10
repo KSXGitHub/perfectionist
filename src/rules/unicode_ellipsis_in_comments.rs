@@ -70,9 +70,9 @@ impl UnicodeEllipsisInComments {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         let mut flagged_chars = vec!['\u{2026}'];
-        for ch in config.also_flag {
-            if !flagged_chars.contains(&ch) {
-                flagged_chars.push(ch);
+        for character in config.also_flag {
+            if !flagged_chars.contains(&character) {
+                flagged_chars.push(character);
             }
         }
         Self {
@@ -93,8 +93,8 @@ pub fn register_pass(lint_store: &mut LintStore) {
 }
 
 impl EarlyLintPass for UnicodeEllipsisInComments {
-    fn check_crate(&mut self, cx: &EarlyContext<'_>, _: &Crate) {
-        let source_map = cx.sess().source_map();
+    fn check_crate(&mut self, lint_context: &EarlyContext<'_>, _: &Crate) {
+        let source_map = lint_context.sess().source_map();
         let scan_line_comments = self.scopes.contains(&Scope::Line);
         let scan_block_comments = self.scopes.contains(&Scope::Block);
         if !(scan_line_comments || scan_block_comments) {
@@ -122,7 +122,7 @@ impl EarlyLintPass for UnicodeEllipsisInComments {
                         .checked_add(token_len)
                         .expect("source-file offset overflowed u32");
                     let comment = &source_text[offset as usize..end as usize];
-                    self.scan_comment(cx, source_file, offset, comment);
+                    self.scan_comment(lint_context, source_file, offset, comment);
                 }
                 offset = offset
                     .checked_add(token_len)
@@ -135,31 +135,34 @@ impl EarlyLintPass for UnicodeEllipsisInComments {
 impl UnicodeEllipsisInComments {
     fn scan_comment(
         &self,
-        cx: &EarlyContext<'_>,
+        lint_context: &EarlyContext<'_>,
         source_file: &SourceFile,
         comment_offset: u32,
         comment: &str,
     ) {
-        for (byte_index, ch) in comment.char_indices() {
-            if !self.flagged_chars.contains(&ch) {
+        for (byte_index, character) in comment.char_indices() {
+            if !self.flagged_chars.contains(&character) {
                 continue;
             }
-            let char_len = ch.len_utf8() as u32;
+            let char_len = character.len_utf8() as u32;
             let span_start = source_file.absolute_position(RelativeBytePos::from_u32(
                 comment_offset + byte_index as u32,
             ));
             let span_end = BytePos::from_u32(span_start.0 + char_len);
             let span = Span::new(span_start, span_end, SyntaxContext::root(), None);
-            let applicability = if ch == '\u{2026}' {
+            let applicability = if character == '\u{2026}' {
                 Applicability::MachineApplicable
             } else {
                 Applicability::MaybeIncorrect
             };
             span_lint_and_sugg(
-                cx,
+                lint_context,
                 UNICODE_ELLIPSIS_IN_COMMENTS,
                 span,
-                format!("Unicode `{ch}` (U+{:04X}) in comment", ch as u32),
+                format!(
+                    "Unicode `{character}` (U+{:04X}) in comment",
+                    character as u32
+                ),
                 "use ASCII `...` instead",
                 "...".to_owned(),
                 applicability,
