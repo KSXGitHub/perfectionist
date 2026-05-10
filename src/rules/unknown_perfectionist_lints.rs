@@ -2,7 +2,7 @@ use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Attribute, MetaItem, MetaItemInner, MetaItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::{Symbol, sym as symbols};
+use rustc_span::{Symbol, sym};
 
 declare_tool_lint! {
     /// ### What it does
@@ -106,7 +106,7 @@ impl EarlyLintPass for UnknownPerfectionistLints {
             if let Some(lint_names) = attribute.meta_item_list() {
                 self.check_lint_name_list(lint_context, &lint_names);
             }
-        } else if attribute.has_name(symbols::cfg_attr) {
+        } else if attribute.has_name(sym::cfg_attr) {
             let Some(cfg_attr_args) = attribute.meta_item_list() else {
                 return;
             };
@@ -126,13 +126,8 @@ impl EarlyLintPass for UnknownPerfectionistLints {
     }
 }
 
-const LINT_LEVEL_ATTRIBUTE_NAMES: [Symbol; 5] = [
-    symbols::allow,
-    symbols::warn,
-    symbols::deny,
-    symbols::forbid,
-    symbols::expect,
-];
+const LINT_LEVEL_ATTRIBUTE_NAMES: [Symbol; 5] =
+    [sym::allow, sym::warn, sym::deny, sym::forbid, sym::expect];
 
 fn is_lint_level_attribute(attribute: &Attribute) -> bool {
     LINT_LEVEL_ATTRIBUTE_NAMES
