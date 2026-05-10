@@ -31,12 +31,11 @@ Per-rule configuration is read from `dylint.toml` at the workspace root. The con
 
 ## Development
 
-Prerequisites:
-
-- [Rustup](https://rustup.rs/)
-- [Just](https://github.com/casey/just/)
-- [cargo-dylint](https://github.com/trailofbits/dylint/tree/master/cargo-dylint)
-- [dylint-link](https://github.com/trailofbits/dylint/tree/master/dylint-link)
+**Prerequisites:**
+* [Rustup](https://rustup.rs/)
+* [Just](https://github.com/casey/just/)
+* [cargo-dylint](https://github.com/trailofbits/dylint/tree/master/cargo-dylint)
+* [dylint-link](https://github.com/trailofbits/dylint/tree/master/dylint-link)
 
 Run the following command to check everything:
 
