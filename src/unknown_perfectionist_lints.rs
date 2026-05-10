@@ -20,12 +20,12 @@ declare_tool_lint! {
     ///
     /// ### Example
     /// ```rust,ignore
-    /// #[allow(perfectionist::qualified_path)] // typo
+    /// #[allow(perfectionist::unicode_ellipsis_in_comment)] // typo
     /// fn legacy() {}
     /// ```
     /// Use instead:
     /// ```rust,ignore
-    /// #[allow(perfectionist::qualified_paths)]
+    /// #[allow(perfectionist::unicode_ellipsis_in_comments)]
     /// fn legacy() {}
     /// ```
     pub perfectionist::UNKNOWN_PERFECTIONIST_LINTS,
@@ -59,9 +59,9 @@ pub struct UnknownPerfectionistLints {
 }
 
 impl UnknownPerfectionistLints {
-    fn new(registered_names: &'static [&'static str]) -> Self {
+    fn new(registered_names: Vec<String>) -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let mut known: Vec<String> = registered_names.iter().map(|s| (*s).to_owned()).collect();
+        let mut known = registered_names;
         for extra in config.extra_known_names {
             if !known.iter().any(|n| n == &extra) {
                 known.push(extra);
@@ -76,10 +76,37 @@ impl UnknownPerfectionistLints {
 
 impl_lint_pass!(UnknownPerfectionistLints => [UNKNOWN_PERFECTIONIST_LINTS]);
 
-pub fn register(lint_store: &mut LintStore, registered_names: &'static [&'static str]) {
+/// Register only the lint declaration. Call this from `register_lints`
+/// alongside the other rule modules' registration calls; the early pass
+/// itself is installed separately by [`register_pass`] once every lint has
+/// been registered, so the pass can read the full set out of the store.
+pub fn register_lint(lint_store: &mut LintStore) {
     lint_store.register_lints(&[UNKNOWN_PERFECTIONIST_LINTS]);
+}
+
+/// Install the early pass. Must be called *after* every other rule module
+/// has registered its lints, since the pass snapshots the registered
+/// `perfectionist::*` names from `lint_store` at construction time.
+pub fn register_pass(lint_store: &mut LintStore) {
+    let registered: Vec<String> = collect_registered_names(lint_store);
     lint_store
-        .register_early_pass(move || Box::new(UnknownPerfectionistLints::new(registered_names)));
+        .register_early_pass(move || Box::new(UnknownPerfectionistLints::new(registered.clone())));
+}
+
+fn collect_registered_names(lint_store: &LintStore) -> Vec<String> {
+    let prefix = format!("{TOOL_NAME}::");
+    lint_store
+        .get_lints()
+        .iter()
+        .filter_map(|lint| {
+            // `Lint::name` is the upper-case macro identifier
+            // (`perfectionist::UNICODE_ELLIPSIS_IN_COMMENTS`); `name_lower()`
+            // returns the snake-case form rustc surfaces in diagnostics and
+            // attribute references (`perfectionist::unicode_ellipsis_in_comments`).
+            let lower = lint.name_lower();
+            lower.strip_prefix(&prefix).map(str::to_owned)
+        })
+        .collect()
 }
 
 impl EarlyLintPass for UnknownPerfectionistLints {
@@ -180,7 +207,7 @@ impl UnknownPerfectionistLints {
             format!("unknown lint: `{printed}`"),
             |diag| {
                 if let Some(s) = suggestion {
-                    diag.help(format!("did you mean `perfectionist::{s}`?"));
+                    diag.help(format!("did you mean `{TOOL_NAME}::{s}`?"));
                 }
             },
         );
@@ -191,7 +218,7 @@ impl UnknownPerfectionistLints {
             cx,
             UNKNOWN_PERFECTIONIST_LINTS,
             meta.span,
-            "unknown lint: `perfectionist` is a tool prefix, not a lint name",
+            format!("unknown lint: `{TOOL_NAME}` is a tool prefix, not a lint name"),
             |_| {},
         );
     }
