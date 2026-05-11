@@ -89,9 +89,14 @@ macro invocation:
   shape is unconstrained.
 - For every other macro, behaviour depends on the selected
   mode — see "Five eligibility modes" below. Briefly:
-  `denylist_only` and `matcher_based` (for proc macros) skip
-  the invocation, `blanket` flags it, and `allowlist_denylist`
-  consults the configured `unknown_macro_policy`.
+  `denylist_only` skips the invocation, `blanket` flags it,
+  and `allowlist_denylist` consults the configured
+  `unknown_macro_policy`. `matcher_based` walks the matcher
+  for unknown declarative (`macro_rules!`) macros and treats
+  the result as an allowlist or denylist hit; unknown proc
+  macros are not walkable and fall back to the
+  `allowlist_denylist` behaviour (default skip, configurable
+  to flag via `unknown_macro_policy = "deny"`).
 
 Curly-brace macro invocations (`name! { ... }`) are out of scope.
 They are conventionally DSL bodies where the evaluation contract
@@ -108,11 +113,21 @@ anything about the definition.
 
 ### What counts as a "non-trivial" argument
 
-A "trivial" argument is one whose evaluation has no observable
-effect and produces the same value every time. Trivial arguments
-are accepted even by macros on the denylist, because zero-or-many
-evaluations of a trivial expression are indistinguishable from
-exactly-one.
+A "trivial" argument is one with a *syntactically simple*
+shape — the list below is a purely syntactic heuristic, not a
+guarantee of purity. Some shapes on the trivial list can still
+have observable effects: `base[index]` can panic on
+out-of-bounds, `*ptr` may run a user-defined `Deref` impl,
+autoderef on a field access can invoke trait code, a `Cast`
+between user types can pick up `From`/`Into` plumbing. The lint
+treats these shapes as trivial anyway because in practice their
+evaluation-count behaviour rarely *matters*: across zero / one /
+many evaluations the program reaches the same observable state
+aside from a possible panic, which is a separate class of bug
+this rule does not target. The point of the classification is
+to filter out the "complex enough to plausibly carry a hidden
+side effect" cases (calls, `?`, blocks, control-flow
+expressions) — not to certify mathematical purity.
 
 Trivial:
 
