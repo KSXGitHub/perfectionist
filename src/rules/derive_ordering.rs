@@ -209,14 +209,22 @@ impl DeriveOrdering {
         // The suggestion replaces the entire first-to-last span with a
         // single-line `entry, entry` reconstruction, so any inline
         // whitespace, line breaks, or comments between entries are
-        // lost on apply. For a single-line derive that's exactly the
-        // shape rustfmt produces, so `MachineApplicable` is safe and
-        // matches the planning spec. For a multi-line derive — where
-        // the apply would visibly flatten the list — downgrade to
-        // `MaybeIncorrect` so `cargo fix` does not silently squash
+        // lost on apply. For a single-line derive with no inline
+        // comments that's exactly the shape rustfmt produces, so
+        // `MachineApplicable` is safe and matches the planning spec.
+        // If the derive spans multiple lines or contains inline
+        // comment tokens between entries — where the apply would
+        // visibly flatten the list or drop user comments — downgrade
+        // to `MaybeIncorrect` so `cargo fix` does not silently squash
         // the formatting; the suggestion still surfaces in IDE
-        // diagnostics for manual review.
-        let applicability = if lint_context.sess().source_map().is_multiline(replace_span) {
+        // diagnostics for manual review. Derive entries are paths
+        // (`Foo::Bar`) and cannot themselves contain `//` or `/*`,
+        // so a substring check on the replaced snippet is sufficient.
+        let replace_snippet = source_map.span_to_snippet(replace_span).ok();
+        let has_inline_comment = replace_snippet
+            .as_deref()
+            .is_some_and(|snippet| snippet.contains("//") || snippet.contains("/*"));
+        let applicability = if source_map.is_multiline(replace_span) || has_inline_comment {
             Applicability::MaybeIncorrect
         } else {
             Applicability::MachineApplicable

@@ -20,5 +20,11 @@ LL | |     Clone,
 LL | |     Copy,
    | |________^ help: reorder the derive list: `Clone, Copy, Debug`
 
-warning: 3 warnings emitted
+warning: derive list is not in ASCII-case-insensitive alphabetical order
+  --> $DIR/fixture.rs:34:10
+   |
+LL | #[derive(Debug /* keep me */, Clone, Copy)]
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: reorder the derive list: `Clone, Copy, Debug`
+
+warning: 4 warnings emitted
 

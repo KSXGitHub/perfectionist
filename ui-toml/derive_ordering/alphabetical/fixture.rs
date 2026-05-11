@@ -27,4 +27,11 @@ struct _MixedCase;
 )]
 struct _MultiLine;
 
+// Bad and contains an inline block comment between entries. The
+// derive fits on one line, but the autofix would silently drop the
+// `/* keep me */`, so the applicability is downgraded to
+// `MaybeIncorrect` for the same reason as the multi-line case.
+#[derive(Debug /* keep me */, Clone, Copy)]
+struct _InlineComment;
+
 fn main() {}
