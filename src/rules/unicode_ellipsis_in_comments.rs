@@ -16,7 +16,8 @@ declare_tool_lint! {
     /// `/* */` comments. Doc comments (`///`, `//!`) are covered by a
     /// sibling lint.
     ///
-    /// ### Why is this bad?
+    /// ### Why restrict this?
+    /// This is a stylistic preference, not a correctness issue.
     /// ASCII `...` survives every encoding round-trip, every terminal,
     /// every `grep` invocation, and every `git diff` viewer without
     /// rendering as `?` or a tofu box. The Unicode form usually arrives

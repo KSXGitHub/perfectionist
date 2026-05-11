@@ -8,7 +8,9 @@ parallel to [`em-dash-prose`](./em-dash-prose.md), which targets U+2014).
 Forbid U+2026 HORIZONTAL ELLIPSIS (`…`) in doc comments. Prefer the
 three-ASCII-dot form `...`.
 
-Rationale:
+## Why restrict this?
+
+This is a stylistic preference, not a correctness issue.
 
 - ASCII `...` survives every encoding round-trip, every terminal, every
   copy-paste, every `grep` invocation, and every `git diff` viewer
