@@ -68,6 +68,18 @@ procedural function-like, attribute-style derives that take a
 comma-separated argument list. The matcher source is irrelevant
 because the human author has vetted the entry.
 
+**Caveat — "comma-separated" means the rustfmt shape.** The
+curated list and `extra_name_based` should only include macros
+where commas are *required between items* and *optional only at
+the trailing position* — the same policy rustfmt applies to
+function calls and struct literals. Macros that treat commas as
+*fully optional* separators throughout — `build-fs-tree`'s
+`dir!` is one example, where each entry may or may not be
+followed by a comma independently — must not be added. Forcing a
+trailing comma on the last entry would clash with the no-comma
+style users of those macros often choose. If such a macro slips
+into the list, move it to `deny_list` to opt it out.
+
 ### Matcher-based — declarative-macro auto-detection
 
 For a `macro_rules!` macro whose definition is visible to the
@@ -86,6 +98,15 @@ rustc still has on hand), inspect the matcher arms:
 - An arm whose final position is something else (a non-comma
   token, or a `$name:tt` capture) doesn't carry a trailing
   comma at all and is out of scope.
+
+The predicate is specifically about the *tail* of the top-level
+matcher. A macro whose matcher makes every comma optional —
+e.g., `$($key:literal => $value:expr $(,)?)*`, where each entry
+may or may not be followed by a comma independently — has a
+top-level tail that is the `)*` of the outer repetition, not a
+top-level `$(,)?`. The predicate doesn't match, the lint
+correctly skips, and users who write such macros without any
+commas are not forced into a stray trailing one.
 
 For a given invocation, the lint determines which arm matches
 (or, conservatively, requires that *every* arm of the macro
@@ -257,6 +278,31 @@ always_comma!(
     b,
     c,
 );
+```
+
+### Skipped: macro with fully-optional commas
+
+```rust
+// Matcher with per-item optional commas: every comma in the
+// list is independently optional, so both comma-separated and
+// no-comma styles are valid. `build-fs-tree::dir!` is a
+// real-world example.
+macro_rules! dir {
+    ($($key:literal => $value:expr $(,)?)*) => { /* ... */ };
+}
+
+// Skipped: the matcher's top-level tail is `)*`, not a
+// top-level `$(,)?`. Matcher-based detection's predicate
+// (`$(,)?` at the tail of the top-level matcher) doesn't
+// match, so the lint correctly leaves the call alone. The
+// macro must also not be added to `extra_name_based` — users
+// who write entries without any commas would otherwise get a
+// stray trailing comma against an otherwise comma-free style.
+dir! {
+    "foo" => file!("a")
+    "bar" => file!("b")
+    "baz" => file!("c")
+}
 ```
 
 ### Skipped: unknown procedural macro
