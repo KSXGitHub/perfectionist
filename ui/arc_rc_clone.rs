@@ -24,10 +24,11 @@ fn _bad_field() {
 }
 
 fn _bad_through_reference(value: &Arc<u32>) {
-    // The deref-then-clone case the rule calls out: the binding is
-    // already `&Arc<T>`. The accepted suggested fix is the same
-    // `Arc::clone(&...)` shape — type inference handles the extra
-    // borrow.
+    // Receiver is `&Arc<T>`. Method resolution still picks
+    // `<Arc<T> as Clone>::clone` (whose self type is `&Arc<T>` and
+    // matches the receiver type at the very first probe step), so
+    // `value.clone()` already returns `Arc<T>`. The autofix
+    // `Arc::clone(&value)` preserves both the type and behaviour.
     let _ = value.clone();
 }
 

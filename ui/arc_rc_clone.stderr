@@ -36,7 +36,7 @@ LL +     let _ = Arc::clone(&state.inner);
    |
 
 warning: using `.clone()` on an `Arc<T>`
-  --> $DIR/arc_rc_clone.rs:31:13
+  --> $DIR/arc_rc_clone.rs:32:13
    |
 LL |     let _ = value.clone();
    |             ^^^^^^^^^^^^^
