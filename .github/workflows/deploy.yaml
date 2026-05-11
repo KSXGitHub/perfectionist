@@ -47,15 +47,10 @@ jobs:
           # rust-toolchain override file (TOML format is required for `components`).
           rustup show active-toolchain || rustup show
 
-      # dylint-link has no prebuilt distribution, so taiki-e/install-action
-      # falls back to a from-source `cargo install` and provides no caching
-      # for the resulting binary. baptiste0928/cargo-install caches the
-      # compiled binary keyed on crate+version+OS, independent of the
-      # workspace cache above (which is keyed on Cargo.lock and so churns).
-      - name: Install dylint-link
-        uses: baptiste0928/cargo-install@v3
+      - name: Install Rust tools
+        uses: taiki-e/install-action@v2
         with:
-          crate: dylint-link
+          tool: dylint-link
 
       - name: Verify tag matches Cargo.toml version
         shell: bash

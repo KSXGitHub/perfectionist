@@ -41,17 +41,17 @@ jobs:
       - name: Install Rust tools
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-dylint, just
+          tool: dylint-link, just
 
-      # dylint-link has no prebuilt distribution, so taiki-e/install-action
+      # cargo-dylint has no prebuilt distribution, so taiki-e/install-action
       # falls back to a from-source `cargo install` and provides no caching
       # for the resulting binary. baptiste0928/cargo-install caches the
       # compiled binary keyed on crate+version+OS, independent of the
       # workspace cache above (which is keyed on Cargo.lock and so churns).
-      - name: Install dylint-link
+      - name: Install cargo-dylint
         uses: baptiste0928/cargo-install@v3
         with:
-          crate: dylint-link
+          crate: cargo-dylint
 
       - name: Fmt
         shell: bash
