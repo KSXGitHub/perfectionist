@@ -31,9 +31,26 @@ fn _hash_count_grows() {
     let _ = "snippet: \"#suffix\" end";
 }
 
+// Bad: literal is a `core` macro argument. With
+// `report_in_external_macro: true` the user-written escape inside
+// `println!` (and the equivalent `format!` / `vec!` / `assert!`
+// invocations) must still be flagged.
+fn _inside_core_macro() {
+    println!("path: \"foo\"");
+}
+
 // Not flagged: contains a required non-raw escape (`\n`).
 fn _has_newline_escape() {
     let _ = "name:\tvalue\n";
+}
+
+// Not flagged: line-continuation escape (`\` followed by a real
+// newline) is the `_ =>` arm of `take_escape_non_raw`. The
+// continuation cannot be expressed in a raw string, so the lint
+// must stay silent here.
+fn _line_continuation() {
+    let _ = "foo\
+    bar";
 }
 
 // Not flagged: mixed eligible + non-raw escapes.
@@ -68,7 +85,9 @@ fn main() {
     _multi_byte_utf8();
     _mixed_eligible_escapes();
     _hash_count_grows();
+    _inside_core_macro();
     _has_newline_escape();
+    _line_continuation();
     _mixed_eligible_and_non_raw();
     _already_raw();
     _no_escapes();

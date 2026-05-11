@@ -36,5 +36,11 @@ warning: string literal uses escapes that a raw string would avoid
 LL |     let _ = "snippet: /"#suffix/" end";
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r##"snippet: "#suffix" end"##`
 
-warning: 6 warnings emitted
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:39:14
+   |
+LL |     println!("path: /"foo/"");
+   |              ^^^^^^^^^^^^^^^ help: use a raw string: `r#"path: "foo""#`
+
+warning: 7 warnings emitted
 
