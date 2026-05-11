@@ -23,9 +23,14 @@ declare_tool_lint! {
     /// ### Why restrict this?
     /// This is a stylistic preference, not a correctness issue.
     /// `Arc<T>` and `Rc<T>` implement `Clone` precisely so the method
-    /// call compiles; the practice forbidden here is calling it
-    /// through the `Clone` trait by name. Two reasons to prefer the
-    /// qualified form:
+    /// call compiles; the practice forbidden here is the *method-call
+    /// dispatch* (`value.clone()`), where the impl Rust picks
+    /// depends on the receiver's type. The accepted qualified forms
+    /// — bare (`Arc::clone(&value)`), turbofish
+    /// (`Arc::<T>::clone(&value)`), and UFCS
+    /// (`<Arc<T> as Clone>::clone(&value)`) — all name the impl at
+    /// the call site, so the cost is visible to the reader. Two
+    /// reasons to prefer them:
     ///
     /// - **Explicit cost.** `Arc::clone` is `O(1)` reference-count
     ///   bump regardless of what `T` is; `T::clone` may be an
