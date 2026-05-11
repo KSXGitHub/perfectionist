@@ -110,6 +110,12 @@ pattern that several rules call out by reference — live in
   `#[cfg_attr(..., ignore = "...")]` over `#[cfg(...)]` on `#[test]`s, and
   require an `ignore` reason string.
 
+### Cloning
+- [`arc-rc-clone.md`](./arc-rc-clone.md) — require `Arc::clone(&x)` /
+  `Rc::clone(&x)` instead of `x.clone()` when `x: Arc<_>` / `Rc<_>`.
+  Core detection is implemented; `clippy::clone_on_ref_ptr` interop
+  still pending.
+
 ### String literals
 - [`prefer-raw-string.md`](./prefer-raw-string.md) — when a string
   literal contains `\"`, `\\`, or `\'` escapes (and no
