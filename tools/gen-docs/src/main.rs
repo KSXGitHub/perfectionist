@@ -37,15 +37,11 @@ struct Cli {
     #[clap(help = "Output directory; index.html will be written here")]
     out_dir: PathBuf,
 
-    /// Git ref the rendered "Source:" links should target.
-    /// Defaults to `master` so the dev-snapshot page keeps linking
-    /// to tip-of-tree. CI for a tagged release should pass the
-    /// tag (or its SHA) so the published page points at the
-    /// source the page was actually generated from.
     #[clap(
         long,
         default_value = "master",
         value_parser = clap::builder::NonEmptyStringValueParser::new(),
+        help = r#"Git ref the rendered "Source:" links should target"#,
     )]
     git_ref: String,
 }
