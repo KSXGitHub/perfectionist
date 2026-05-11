@@ -14,10 +14,10 @@ use std::path::{Path, PathBuf};
 
 pub use _utils::*;
 
-pub const PERFECTIONIST_DIR: &str = env!("CARGO_MANIFEST_DIR");
+pub const CARGO_MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 pub fn perfectionist_dir() -> &'static Path {
-    Path::new(PERFECTIONIST_DIR)
+    Path::new(CARGO_MANIFEST_DIR)
 }
 
 /// Path to the target dir shared by every integration-test fixture.
