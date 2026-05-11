@@ -26,8 +26,8 @@ fn main() {
         .join("integration-fixtures-warmup");
 
     // Start the fixture fresh so the warmup is reproducible.
-    std::fs::remove_dir_all(&warmup_project_dir).expect("delete warmup project dir");
-    std::fs::create_dir_all(&warmup_project_dir).expect("create warmup project dir");
+    std::fs::remove_dir_all(&warmup_project_dir).expect("delete old warmup project dir");
+    std::fs::create_dir_all(&warmup_project_dir).expect("create new warmup project dir");
 
     _utils::build_project(
         &warmup_project_dir,
