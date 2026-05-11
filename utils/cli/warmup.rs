@@ -24,6 +24,10 @@ struct WarmupCli {
 
 fn main() -> ExitCode {
     let WarmupCli { root } = WarmupCli::parse();
+    // Canonicalise so the perfectionist path embedded in the fixture's
+    // `dylint.toml` resolves regardless of where the fixture sits.
+    let root = std::fs::canonicalize(&root)
+        .unwrap_or_else(|error| panic!("canonicalise {}: {error}", root.display()));
     let shared_target_dir = root.join("target").join("integration-fixtures");
     let warmup_project_dir = root.join("target").join("integration-fixtures-warmup");
 
