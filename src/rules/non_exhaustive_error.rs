@@ -56,7 +56,7 @@ declare_tool_lint! {
     /// ```
     pub perfectionist::NON_EXHAUSTIVE_ERROR,
     Allow,
-    "publicly-exposed error type is missing `#[non_exhaustive]`",
+    "error-shaped type is missing `#[non_exhaustive]`",
     report_in_external_macro: false
 }
 

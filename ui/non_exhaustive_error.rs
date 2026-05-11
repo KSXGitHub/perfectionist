@@ -81,6 +81,17 @@ pub struct NotSumLikeError(pub ParseKind, pub u32);
 // Good: struct whose single field is not an enum is not "sum-like".
 pub struct NotEnumWrapperError(pub u32);
 
+// Good: borrowed enum wrapper. The single field has type `&'static
+// ParseKind`, whose `kind()` is `ty::Ref`, not `ty::Adt`. Downstream
+// crates cannot pattern-match on a reference, so adding a variant
+// to the underlying enum can never break callers of this struct.
+pub struct BorrowedError(pub &'static ParseKind);
+
+// Good: boxed enum wrapper. The single field has type `Box<ParseKind>`,
+// whose `Adt` is `Box` (a struct), not an enum. Same exhaustiveness
+// reasoning as the borrowed case applies.
+pub struct BoxedError(pub Box<ParseKind>);
+
 // Bad: type-aliased sum-like wrapper. The field's source-level type
 // is `KindAlias`, but it resolves through the alias to `ParseKind`
 // (an enum), so the SemVer concern still applies.
