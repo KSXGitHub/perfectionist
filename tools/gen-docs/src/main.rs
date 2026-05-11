@@ -22,7 +22,6 @@
 use std::{
     collections::BTreeSet,
     fs,
-    ops::Range,
     path::{Path, PathBuf},
     process::ExitCode,
 };
@@ -37,7 +36,6 @@ use strum::{Display, EnumString};
 use syn::{
     Attribute, Expr, ExprLit, Ident, Item, Lit, LitStr, Meta, Token, Type,
     parse::{Parse, ParseStream},
-    spanned::Spanned,
 };
 
 #[derive(Parser)]
@@ -127,10 +125,11 @@ struct ConfigField {
     /// because every `Config` uses `#[serde(rename_all = "snake_case")]`
     /// and the fields are already named in snake case.
     name: String,
-    /// Verbatim source of the field's type (e.g. `Vec<char>`),
-    /// sliced out of the rule file using `proc_macro2::Span`
-    /// byte ranges.
-    type_source: String,
+    /// TOML-flavoured label for the field's type (e.g. `[string]`
+    /// for `Vec<char>`). See [`toml_type_label`] for the mapping
+    /// rules; the source-level type is intentionally not surfaced,
+    /// since TOML authors don't write Rust syntax in `dylint.toml`.
+    type_label: String,
     /// Per-field `///` doc comment, in markdown form.
     doc_markdown: String,
 }
@@ -166,7 +165,7 @@ struct EnumVariant {
 
 struct StructField {
     name: String,
-    type_source: String,
+    type_label: String,
     doc_markdown: String,
 }
 
@@ -257,7 +256,7 @@ fn extract_rule(source_path: &Path) -> Option<Rule> {
         )
     });
 
-    let config = extract_config(&file, &source);
+    let config = extract_config(&file);
 
     Some(Rule {
         namespaced,
@@ -274,7 +273,7 @@ fn extract_rule(source_path: &Path) -> Option<Rule> {
 /// reference — into a `ConfigDoc`. Returns `None` when either the
 /// constant or the struct is missing; both are mandatory for a rule
 /// to be considered "configurable" by `dylint.toml`.
-fn extract_config(file: &syn::File, source: &str) -> Option<ConfigDoc> {
+fn extract_config(file: &syn::File) -> Option<ConfigDoc> {
     let key = file.items.iter().find_map(|item| match item {
         Item::Const(item_const) if item_const.ident == "CONFIG_KEY" => match &*item_const.expr {
             Expr::Lit(ExprLit {
@@ -303,8 +302,7 @@ fn extract_config(file: &syn::File, source: &str) -> Option<ConfigDoc> {
                 .as_ref()
                 .expect("named field always has an ident")
                 .to_string(),
-            type_source: span_text(source, field.ty.span())
-                .unwrap_or_else(|| fallback_type_text(&field.ty)),
+            type_label: toml_type_label(&field.ty),
             doc_markdown: doc_attrs_to_markdown(&field.attrs),
         })
         .collect();
@@ -316,7 +314,7 @@ fn extract_config(file: &syn::File, source: &str) -> Option<ConfigDoc> {
     }
     let custom_types = referenced
         .into_iter()
-        .filter_map(|ident| find_type_doc(file, source, &ident))
+        .filter_map(|ident| find_type_doc(file, &ident))
         .collect();
 
     Some(ConfigDoc {
@@ -394,7 +392,7 @@ fn is_builtin_type(name: &str) -> bool {
 /// from another crate); those are silently dropped rather than
 /// faked, since the docs are only useful when we can show the real
 /// shape.
-fn find_type_doc(file: &syn::File, source: &str, ident: &str) -> Option<TypeDoc> {
+fn find_type_doc(file: &syn::File, ident: &str) -> Option<TypeDoc> {
     for item in &file.items {
         match item {
             Item::Enum(item_enum) if item_enum.ident == ident => {
@@ -436,8 +434,7 @@ fn find_type_doc(file: &syn::File, source: &str, ident: &str) -> Option<TypeDoc>
                                 .as_ref()
                                 .expect("named field always has an ident")
                                 .to_string(),
-                            type_source: span_text(source, field.ty.span())
-                                .unwrap_or_else(|| fallback_type_text(&field.ty)),
+                            type_label: toml_type_label(&field.ty),
                             doc_markdown: doc_attrs_to_markdown(&field.attrs),
                         })
                         .collect(),
@@ -549,24 +546,75 @@ fn pascal_to_snake(name: &str) -> String {
     out
 }
 
-/// Slice the verbatim source bytes covered by `span`. Falls back to
-/// `None` when the span has no usable byte range (which happens for
-/// synthetic spans produced by macro expansion, not for code that
-/// originated in a file we just parsed — but the type system makes
-/// us account for the case anyway).
-fn span_text(source: &str, span: proc_macro2::Span) -> Option<String> {
-    let Range { start, end } = span.byte_range();
-    if end <= start || end > source.len() {
-        return None;
+/// Translate a `syn::Type` into a TOML-flavoured type label. The
+/// renderer never shows Rust syntax to the reader; TOML authors
+/// write arrays as `[a, b]`, integers without sign annotations, and
+/// strings without `char` / `&str` / `Cow` distinctions, so the
+/// labels echo that vocabulary. The translation is purely structural
+/// — no ad-hoc exceptions for specific field names — so adding a
+/// new built-in type means extending the match arms here.
+///
+/// - `bool` → `boolean`
+/// - `u*` / `usize` → `unsigned integer`
+/// - `i*` / `isize` → `integer`
+/// - `f32` / `f64` → `float`
+/// - `String` / `&str` / `char` / `OsString` / `PathBuf` / `Cow<…>` → `string`
+/// - `Vec<T>` / `HashSet<T>` / `BTreeSet<T>` / `VecDeque<T>` /
+///   `LinkedList<T>` → `[label-of-T]`
+/// - `HashMap<_, V>` / `BTreeMap<_, V>` → `table of label-of-V`
+/// - `Option<T>` → `label-of-T` (every config field is already
+///   marked optional, so the wrapper would just add noise)
+/// - Anything else (project-local enums and structs) → the Rust
+///   identifier verbatim, since those names appear in the per-rule
+///   Types subsection below and the reader can scan to them.
+fn toml_type_label(ty: &Type) -> String {
+    match ty {
+        Type::Path(type_path) => {
+            let Some(segment) = type_path.path.segments.last() else {
+                return ty.to_token_stream().to_string();
+            };
+            let ident = segment.ident.to_string();
+            let inner_types: Vec<&Type> = match &segment.arguments {
+                syn::PathArguments::AngleBracketed(args) => args
+                    .args
+                    .iter()
+                    .filter_map(|arg| match arg {
+                        syn::GenericArgument::Type(inner) => Some(inner),
+                        _ => None,
+                    })
+                    .collect(),
+                _ => Vec::new(),
+            };
+            match ident.as_str() {
+                "bool" => "boolean".to_owned(),
+                "String" | "str" | "char" | "OsString" | "OsStr" | "Path" | "PathBuf" | "Cow" => {
+                    "string".to_owned()
+                }
+                "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => "unsigned integer".to_owned(),
+                "i8" | "i16" | "i32" | "i64" | "i128" | "isize" => "integer".to_owned(),
+                "f32" | "f64" => "float".to_owned(),
+                "Vec" | "HashSet" | "BTreeSet" | "VecDeque" | "LinkedList" => {
+                    match inner_types.first() {
+                        Some(inner) => format!("[{}]", toml_type_label(inner)),
+                        None => "array".to_owned(),
+                    }
+                }
+                "HashMap" | "BTreeMap" => match inner_types.get(1) {
+                    Some(value) => format!("table of {}", toml_type_label(value)),
+                    None => "table".to_owned(),
+                },
+                "Option" => match inner_types.first() {
+                    Some(inner) => toml_type_label(inner),
+                    None => ident,
+                },
+                _ => ident,
+            }
+        }
+        Type::Reference(type_ref) => toml_type_label(&type_ref.elem),
+        Type::Paren(type_paren) => toml_type_label(&type_paren.elem),
+        Type::Group(type_group) => toml_type_label(&type_group.elem),
+        _ => ty.to_token_stream().to_string(),
     }
-    Some(source[start..end].to_owned())
-}
-
-/// Best-effort stringifier for a `syn::Type` when no source span is
-/// available. The output uses `quote`'s default token spacing, which
-/// is less pretty than the original source but always parseable.
-fn fallback_type_text(ty: &Type) -> String {
-    ty.to_token_stream().to_string()
 }
 
 /// Minimal grammar of `declare_tool_lint!`'s body. The macro itself
@@ -708,47 +756,55 @@ fn rule_article(rule: &Rule) -> Markup {
     }
 }
 
-/// Render the per-rule configuration block. When the `Config`
-/// struct has no fields, the block is still emitted so readers
-/// can see that the rule is intentionally non-configurable (and,
-/// where the struct itself carries a doc comment, why).
+/// Render the per-rule configuration block, wrapped in a `<details>`
+/// element so a long reference table doesn't dominate the page.
+/// The element is collapsed by default — configuration is reference
+/// material, and the rule's description above it is what most
+/// readers came for. Modern browsers auto-expand a closed `<details>`
+/// when find-in-page hits something inside it, so search still
+/// works against the hidden content. When the `Config` struct has
+/// no fields, the block is still emitted so readers can see that
+/// the rule is intentionally non-configurable (and, where the
+/// struct itself carries a doc comment, why).
 fn config_section(config: &ConfigDoc) -> Markup {
     html! {
-        h3 { "Configuration" }
-        p {
-            "Configure via " code { "dylint.toml" } " under "
-            code { "[\"" (config.key) "\"]" } "."
-        }
-        @if !config.struct_doc_markdown.is_empty() {
-            (PreEscaped(markdown_to_html(&config.struct_doc_markdown)))
-        }
-        @if config.fields.is_empty() {
-            @if config.struct_doc_markdown.is_empty() {
-                p { em { "No configurable options." } }
+        details.config-details {
+            summary { h3 { "Configuration" } }
+            p {
+                "Configure via " code { "dylint.toml" } " under "
+                code { "[\"" (config.key) "\"]" } "."
             }
-        } @else {
-            dl.config {
-                @for field in &config.fields {
-                    dt {
-                        code.config-key { (field.name) }
-                        " : "
-                        code.config-type { (field.type_source) }
-                        " "
-                        span.badge.badge-optional { "optional" }
-                    }
-                    dd {
-                        @if field.doc_markdown.is_empty() {
-                            p { em { "Undocumented." } }
-                        } @else {
-                            (PreEscaped(markdown_to_html(&field.doc_markdown)))
+            @if !config.struct_doc_markdown.is_empty() {
+                (PreEscaped(markdown_to_html(&config.struct_doc_markdown)))
+            }
+            @if config.fields.is_empty() {
+                @if config.struct_doc_markdown.is_empty() {
+                    p { em { "No configurable options." } }
+                }
+            } @else {
+                dl.config {
+                    @for field in &config.fields {
+                        dt {
+                            code.config-key { (field.name) }
+                            " : "
+                            code.config-type { (field.type_label) }
+                            " "
+                            span.badge.badge-optional { "optional" }
+                        }
+                        dd {
+                            @if field.doc_markdown.is_empty() {
+                                p { em { "Undocumented." } }
+                            } @else {
+                                (PreEscaped(markdown_to_html(&field.doc_markdown)))
+                            }
                         }
                     }
                 }
-            }
-            @if !config.custom_types.is_empty() {
-                h4 { "Custom types" }
-                @for ty in &config.custom_types {
-                    (custom_type_block(ty))
+                @if !config.custom_types.is_empty() {
+                    h4 { "Types" }
+                    @for ty in &config.custom_types {
+                        (custom_type_block(ty))
+                    }
                 }
             }
         }
@@ -806,7 +862,7 @@ fn custom_type_block(ty: &TypeDoc) -> Markup {
                                 dt {
                                     code.config-key { (field.name) }
                                     " : "
-                                    code.config-type { (field.type_source) }
+                                    code.config-type { (field.type_label) }
                                 }
                                 dd {
                                     @if field.doc_markdown.is_empty() {

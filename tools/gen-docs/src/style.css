@@ -82,6 +82,36 @@ article.rule h3 {
   font-size: 1.05rem;
 }
 
+details.config-details {
+  margin-top: 1rem;
+}
+
+details.config-details > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+details.config-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.config-details > summary > h3 {
+  display: inline;
+  margin: 0;
+}
+
+details.config-details > summary::before {
+  content: "▸ ";
+  display: inline-block;
+  width: 1em;
+  color: #57606a;
+  transition: transform 0.15s ease;
+}
+
+details.config-details[open] > summary::before {
+  content: "▾ ";
+}
+
 dl.config {
   margin: 0.5rem 0 1rem;
   padding: 0.5rem 0.75rem;
