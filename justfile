@@ -41,4 +41,4 @@ warmup-integration-tests:
 
 # Render the rule catalogue to `gh-pages/index.html`
 gen-docs out_dir="gh-pages":
-  cargo run --package _utils --bin gen-docs -- "$(pwd)" {{out_dir}}
+  cargo run --package _gen_docs --bin gen-docs -- "$(pwd)" {{out_dir}}

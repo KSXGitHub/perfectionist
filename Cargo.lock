@@ -3,6 +3,17 @@
 version = 4
 
 [[package]]
+name = "_gen_docs"
+version = "0.0.0"
+dependencies = [
+ "cargo_toml",
+ "clap",
+ "proc-macro2",
+ "pulldown-cmark",
+ "syn",
+]
+
+[[package]]
 name = "_utils"
 version = "0.0.0"
 dependencies = [
@@ -11,10 +22,7 @@ dependencies = [
  "clap",
  "command-extra",
  "pipe-trait",
- "proc-macro2",
- "pulldown-cmark",
  "serde",
- "syn",
  "tempfile",
  "toml 1.1.2+spec-1.1.0",
 ]

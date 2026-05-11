@@ -57,7 +57,7 @@ jobs:
 
       - name: Render site
         shell: bash
-        run: cargo run --package _utils --bin gen-docs -- "$(pwd)" gh-pages
+        run: cargo run --package _gen_docs --bin gen-docs -- "$(pwd)" gh-pages
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
