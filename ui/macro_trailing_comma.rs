@@ -111,7 +111,7 @@ fn bar(_: &str, _: i32) -> Inner {
     Inner { name: 0, kids: 0 }
 }
 
-fn wrap<T>(value: T) -> T {
+fn wrap<Value>(value: Value) -> Value {
     value
 }
 
