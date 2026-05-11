@@ -305,14 +305,21 @@ fn extract_config(file: &syn::File) -> Option<ConfigDoc> {
     };
     let fields = named_fields
         .iter()
-        .map(|field| ConfigField {
-            name: field
+        .map(|field| {
+            let rust_name = field
                 .ident
                 .as_ref()
                 .expect("named field always has an ident")
-                .to_string(),
-            type_label: toml_type_label(&field.ty),
-            doc_markdown: doc_attrs_to_markdown(&field.attrs),
+                .to_string();
+            // Honour `#[serde(rename = "...")]` so the rendered
+            // TOML key matches what a user would actually type,
+            // mirroring the enum-variant handling in `find_type_doc`.
+            let name = serde_str_attr(&field.attrs, "rename").unwrap_or(rust_name);
+            ConfigField {
+                name,
+                type_label: toml_type_label(&field.ty),
+                doc_markdown: doc_attrs_to_markdown(&field.attrs),
+            }
         })
         .collect();
 
@@ -834,7 +841,7 @@ fn config_section(config: &ConfigDoc) -> Markup {
     }
     html! {
         details.config-details {
-            summary { h3 { "Configuration" } }
+            summary.config-summary { "Configuration" }
             p {
                 "Configure via " code { "dylint.toml" } " under "
                 code { "[\"" (config.key) "\"]" } "."
@@ -1086,6 +1093,15 @@ mod tests {
         syn::parse_str(source).expect("test input should parse as a syn::Type")
     }
 
+    /// Parse a Rust item and return its outer attributes. Used to
+    /// drive `serde_str_attr` tests without standing up a full
+    /// `syn::Field` or `syn::Variant` value by hand.
+    fn parse_attrs(source: &str) -> Vec<Attribute> {
+        let parsed: syn::ItemStruct =
+            syn::parse_str(source).expect("test input should parse as an item struct");
+        parsed.attrs
+    }
+
     #[test]
     fn pascal_to_snake_basic() {
         assert_eq!(pascal_to_snake("Line"), "line");
@@ -1192,6 +1208,57 @@ mod tests {
                  or remove the entry from BUILTIN_TYPES",
             );
         }
+    }
+
+    #[test]
+    fn serde_str_attr_branches() {
+        // Picks the value of the requested key.
+        let attrs = parse_attrs(r#"#[serde(rename_all = "snake_case")] struct S;"#);
+        assert_eq!(
+            serde_str_attr(&attrs, "rename_all"),
+            Some("snake_case".to_owned())
+        );
+        assert_eq!(serde_str_attr(&attrs, "rename"), None);
+
+        // Ignores non-`serde` attributes.
+        let attrs = parse_attrs(r#"#[derive(Debug)] #[other(rename = "x")] struct S;"#);
+        assert_eq!(serde_str_attr(&attrs, "rename"), None);
+
+        // Mixed Path / NameValue items inside `serde(...)`: the
+        // path-form `default` is skipped, the name-value matches.
+        let attrs = parse_attrs(r#"#[serde(default, rename = "foo")] struct S;"#);
+        assert_eq!(serde_str_attr(&attrs, "rename"), Some("foo".to_owned()));
+
+        // First match wins when the key appears more than once.
+        let attrs =
+            parse_attrs(r#"#[serde(rename = "first")] #[serde(rename = "second")] struct S;"#);
+        assert_eq!(serde_str_attr(&attrs, "rename"), Some("first".to_owned()));
+
+        // Non-string value is rejected (only `Lit::Str` is accepted).
+        let attrs = parse_attrs(r#"#[serde(skip = true)] struct S;"#);
+        assert_eq!(serde_str_attr(&attrs, "skip"), None);
+    }
+
+    #[test]
+    fn config_field_honours_serde_rename() {
+        // Walk a synthetic rule file through `extract_config` to
+        // confirm that `#[serde(rename = "...")]` on a Config
+        // field surfaces as the TOML key instead of the Rust ident.
+        let source = r#"
+            const CONFIG_KEY: &str = "perfectionist::demo";
+
+            #[derive(serde::Deserialize)]
+            #[serde(default, rename_all = "snake_case")]
+            struct Config {
+                #[serde(rename = "renamed-key")]
+                rust_name: bool,
+                plain_name: usize,
+            }
+        "#;
+        let file = syn::parse_file(source).unwrap();
+        let config = extract_config(&file).expect("demo file declares CONFIG_KEY and Config");
+        let names: Vec<&str> = config.fields.iter().map(|f| f.name.as_str()).collect();
+        assert_eq!(names, vec!["renamed-key", "plain_name"]);
     }
 
     #[test]

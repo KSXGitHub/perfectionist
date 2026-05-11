@@ -100,9 +100,10 @@ details.config-details > summary::-webkit-details-marker {
   display: none;
 }
 
-details.config-details > summary > h3 {
-  display: inline;
-  margin: 0;
+details.config-details > summary.config-summary {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1f2328;
 }
 
 details.config-details > summary::before {
