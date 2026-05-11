@@ -21,9 +21,9 @@ pub use project::build_project;
 
 /// Materialise a fixture project in a fresh `TempDir`, run
 /// `cargo dylint --all` against it (sharing the warmed `target/`), and
-/// return the stderr output, success flag, and the `TempDir` guard so
-/// the caller keeps the project on disk for the duration of its
-/// assertions.
+/// return the `TempDir` guard, the stderr output, and the success
+/// flag. The `TempDir` is yielded first so the caller keeps the
+/// project on disk for the duration of its assertions.
 pub fn run_project_with_sources(
     package_name: &str,
     perfectionist_dir: &Path,

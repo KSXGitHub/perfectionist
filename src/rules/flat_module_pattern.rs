@@ -3,7 +3,7 @@ use std::path::Path;
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::{BytePos, FileName, RealFileName, Span, SyntaxContext, def_id::LOCAL_CRATE};
+use rustc_span::{FileName, RealFileName, Span, SyntaxContext, def_id::LOCAL_CRATE};
 
 declare_tool_lint! {
     /// ### What it does
@@ -83,12 +83,7 @@ impl<'tcx> LateLintPass<'tcx> for FlatModulePattern {
 
         for (source_file, _) in source_file_iter {
             let span_start = source_file.start_pos;
-            let span = Span::new(
-                span_start,
-                BytePos(span_start.0),
-                SyntaxContext::root(),
-                None,
-            );
+            let span = Span::new(span_start, span_start, SyntaxContext::root(), None);
             span_lint_and_help(
                 lint_context,
                 FLAT_MODULE_PATTERN,

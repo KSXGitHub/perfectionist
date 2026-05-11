@@ -27,12 +27,16 @@ fn main() -> ExitCode {
     let shared_target_dir = root.join("target").join("integration-fixtures");
     let warmup_project_dir = root.join("target").join("integration-fixtures-warmup");
 
-    // Start the fixture fresh so the warmup is reproducible.
-    if let Err(error) = std::fs::remove_dir_all(&warmup_project_dir) {
-        eprintln!(
+    // Start the fixture fresh so the warmup is reproducible. A
+    // missing dir is fine — that's the expected state on a clean
+    // checkout — so don't bark about it.
+    match std::fs::remove_dir_all(&warmup_project_dir) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => eprintln!(
             "warning: Failed to clean up {}: {error}",
             warmup_project_dir.display(),
-        );
+        ),
     }
     std::fs::create_dir_all(&warmup_project_dir).expect("create new warmup project dir");
 
