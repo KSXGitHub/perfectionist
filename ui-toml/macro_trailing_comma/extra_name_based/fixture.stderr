@@ -1,0 +1,10 @@
+warning: multi-line macro invocation should end with a trailing comma
+  --> $DIR/fixture.rs:16:10
+   |
+LL |         3
+   |          ^ help: add a trailing comma: `,`
+   |
+   = note: `#[warn(perfectionist::macro_trailing_comma)]` on by default
+
+warning: 1 warning emitted
+

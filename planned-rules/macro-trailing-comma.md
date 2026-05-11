@@ -1,5 +1,20 @@
 # `macro_trailing_comma`
 
+## Status
+
+Name-based eligibility is **implemented** in `src/rules/macro_trailing_comma.rs`
+with the curated `core` / `std` and well-known third-party list,
+plus the `extra_name_based`, `ignore`, and `enabled` configuration
+knobs. The `matcher_based` knob is accepted but currently a no-op.
+
+Still pending: **matcher-based** declarative-macro auto-detection
+(the `$(,)?` / `$(,)*` matcher walk described under "Matcher-based
+— declarative-macro auto-detection" and "Why matcher-based is
+harder than name-based" below). Until that lands, only macros named
+in the curated list or in `extra_name_based` are linted; any
+`macro_rules!` macro the user writes themselves is silently
+ineligible regardless of its matcher shape.
+
 **Source:** project convention. Fills a gap that
 `rustfmt`'s `trailing_comma = "Vertical"` (the default) leaves
 open: rustfmt rewrites function-call and struct-literal argument
