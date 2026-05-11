@@ -296,23 +296,19 @@ fn extract_config_defaults(file: &syn::File, source: &str) -> HashMap<String, St
     let mut out = HashMap::new();
     let Some(impl_item) = file.items.iter().find_map(|item| match item {
         Item::Impl(item_impl)
-            if item_impl
-                .trait_
-                .as_ref()
-                .is_some_and(|(_, path, _)| {
-                    path.segments
+            if item_impl.trait_.as_ref().is_some_and(|(_, path, _)| {
+                path.segments
+                    .last()
+                    .is_some_and(|segment| segment.ident == "Default")
+            }) && matches!(
+                &*item_impl.self_ty,
+                Type::Path(type_path)
+                    if type_path
+                        .path
+                        .segments
                         .last()
-                        .is_some_and(|segment| segment.ident == "Default")
-                })
-                && matches!(
-                    &*item_impl.self_ty,
-                    Type::Path(type_path)
-                        if type_path
-                            .path
-                            .segments
-                            .last()
-                            .is_some_and(|segment| segment.ident == "Config")
-                ) =>
+                        .is_some_and(|segment| segment.ident == "Config")
+            ) =>
         {
             Some(item_impl)
         }
