@@ -254,7 +254,7 @@ fn render_page(rules: &[Rule], crate_version: &str) -> String {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 title { "perfectionist lints" }
-                style { (PreEscaped(STYLE)) (PreEscaped(highlight_css())) }
+                style { (PreEscaped(STYLE)) (PreEscaped(&*HIGHLIGHT_CSS)) }
             }
             body {
                 h1 { "perfectionist lints" }
@@ -348,8 +348,9 @@ fn markdown_to_html(markdown: &str) -> String {
 /// Walk pulldown-cmark events, replacing fenced code blocks with
 /// pre-highlighted HTML produced by `syntect`. The first comma-
 /// separated token of the fence's info string is the language tag
-/// (so `rust,ignore` is treated as Rust); unknown or missing tags
-/// fall back to plain text.
+/// (so `rust,ignore` is treated as Rust). Untagged fences pass
+/// through to pulldown-cmark's default rendering; unknown tags are
+/// highlighted as plain text.
 fn highlight_code_blocks<'a>(parser: impl Iterator<Item = Event<'a>>) -> Vec<Event<'a>> {
     let mut out = Vec::new();
     let mut current_lang: Option<String> = None;
@@ -437,11 +438,10 @@ static THEME: LazyLock<Theme> = LazyLock::new(|| {
         .remove("InspiredGitHub")
         .expect("InspiredGitHub theme is bundled with syntect")
 });
-
-fn highlight_css() -> String {
+static HIGHLIGHT_CSS: LazyLock<String> = LazyLock::new(|| {
     css_for_theme_with_class_style(&THEME, ClassStyle::Spaced)
         .expect("generating CSS for a bundled theme should not fail")
-}
+});
 
 /// Render a short, single-line snippet of markdown without the
 /// outer `<p>…</p>` wrapper that block-level rendering inserts. Used
