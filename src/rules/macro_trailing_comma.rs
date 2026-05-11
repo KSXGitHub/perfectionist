@@ -239,7 +239,7 @@ impl MacroTrailingComma {
             TokenTree::Token(token, _) if token.kind == TokenKind::Comma,
         );
         match (is_multi_line, last_is_comma) {
-            (true, false) => emit_insert(lint_context, last_tree.span()),
+            (true, false) => emit_insert(lint_context, last_tree.span().shrink_to_hi()),
             (false, true) => emit_remove(lint_context, last_tree.span()),
             _ => {}
         }
@@ -286,11 +286,11 @@ fn entry_matches(entry: &[String], invocation: &rustc_ast::Path) -> bool {
     }
 }
 
-fn emit_insert(lint_context: &EarlyContext<'_>, last_tree_span: Span) {
+fn emit_insert(lint_context: &EarlyContext<'_>, insert_at: Span) {
     span_lint_and_sugg(
         lint_context,
         MACRO_TRAILING_COMMA,
-        last_tree_span.shrink_to_hi(),
+        insert_at,
         "multi-line macro invocation should end with a trailing comma",
         "add a trailing comma",
         ",".to_owned(),
