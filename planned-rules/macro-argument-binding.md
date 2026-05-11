@@ -77,7 +77,8 @@ macro invocation:
   top-level argument is flagged. The set of accepted argument
   shapes is the trivial set defined under
   "What counts as a 'non-trivial' argument" below — literals,
-  paths, `&path`, `path.field`, `*path`, and casts.
+  paths, `&path`, `path.field`, `base[index]`, `*path`, and
+  casts.
 - If the macro is on the **allowlist** of macros known to
   evaluate each top-level argument exactly once, the argument
   shape is unconstrained.
@@ -304,14 +305,17 @@ recommended landing order.
 | 0 — denylist only | opt-in | smallest | known-conditional macros only |
 | 1 — blanket | opt-in | small | every non-trivial macro arg |
 | 2 — allowlist + denylist | **on** | small | denylist always; unknown configurable |
-| 3 — mode 2 + bypass | opt-in (flag) | small + recursion | mode 2 minus pure-call shapes |
+| 3 — mode 2 + bypass | opt-in | small + recursion | mode 2 minus pure-call shapes |
 | 4 — matcher-based | opt-in | large | mode 2 plus learned `macro_rules!` |
 
-Modes 0, 1, and 2 share the same visitor and differ only in
-the name-lookup table. Mode 3 adds one extra predicate. Mode 4
-adds the matcher walker. The recommended implementation order
-matches the table: mode 0 is the smallest landable step, mode
-4 is the largest.
+Modes 0, 1, 2, and 4 are values of the `mode` enum and are
+mutually exclusive. Mode 3 is the separate `expression_bypass`
+boolean knob and layers on top of whichever `mode` is
+selected. Modes 0, 1, and 2 share the same visitor and differ
+only in the name-lookup table; mode 3 adds one extra
+predicate; mode 4 adds the matcher walker. The recommended
+implementation order matches the table: mode 0 is the
+smallest landable step, mode 4 is the largest.
 
 ## What to lint
 
@@ -355,9 +359,11 @@ For every macro invocation:
    syntactic positions the macro author chose, not normal
    value arguments.
 7. Classify the expression with the trivial / non-trivial
-   split above. If non-trivial, and the `expression_bypass`
-   knob is enabled, apply the bypass recursion before
-   deciding.
+   split above. If trivial, the argument is accepted — skip
+   to the next argument. If non-trivial and
+   `expression_bypass` is enabled, run the bypass recursion;
+   on a bypass match, accept and skip to the next argument.
+   Otherwise continue to step 8.
 8. Emit a diagnostic on the non-trivial argument's span. The
    suggested rewrite is a `let` binding immediately before
    the macro call, with the binding name derived from the
