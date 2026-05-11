@@ -83,3 +83,20 @@ fn escapes_eligible_subset_narrows_what_counts_as_eliminable() {
         },
     );
 }
+
+#[test]
+fn escapes_eligible_rejects_non_self_decoding_entries() {
+    // Misconfigured `escapes_eligible = ["\\n"]`: `\n` decodes to
+    // a newline, not the letter `n`, so accepting it as eliminable
+    // would let the autofix corrupt newline-containing literals.
+    // The filter at config load must drop the entry; the resulting
+    // empty eligible set silently disables the rule for this
+    // fixture.
+    run(
+        "ui-toml/prefer_raw_string/escapes_eligible_rejects_non_self_decoding",
+        RuleConfig {
+            escapes_eligible: Some(vec![r"\n".into()]),
+            ..Default::default()
+        },
+    );
+}

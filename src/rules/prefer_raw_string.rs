@@ -105,16 +105,18 @@ pub struct PreferRawString {
 impl PreferRawString {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        // Drop malformed eligible entries (anything that isn't a
-        // backslash followed by exactly one character). The decoded
-        // form of an eligible escape is "the entry minus its leading
-        // backslash"; entries that don't fit that shape would produce
-        // garbage rewrites, so silently filter them out rather than
-        // letting bad config corrupt user code.
+        // Drop entries that aren't one of the three self-decoding
+        // escapes (`\"`, `\\`, `\'`). Anything else — `\n`, `\t`,
+        // `\xNN`, `\u{...}`, ill-formed shapes — would break
+        // `eliminable_decoded`'s "second char is the decoded form"
+        // contract and let the `MachineApplicable` autofix silently
+        // corrupt user code. Filter rather than reject so a stray
+        // entry in the config table doesn't take the whole rule
+        // offline.
         let escapes_eligible = config
             .escapes_eligible
             .into_iter()
-            .filter(|entry| is_well_formed_eligible_entry(entry))
+            .filter(|entry| is_supported_eligible_entry(entry))
             .collect();
         Self {
             enabled: config.enabled,
@@ -230,9 +232,10 @@ fn take_escape_eliminable<'a>(input: &'a str, eligible: &[String]) -> Option<(&'
 }
 
 /// Decode an eligible escape into the verbatim text it represents
-/// in a raw string. Eligible entries are well-formed `\<char>`
-/// sequences (see [`is_well_formed_eligible_entry`]), so the decoded
-/// form is exactly the entry with its leading backslash removed.
+/// in a raw string. Eligible entries are constrained to the three
+/// self-decoding escapes by [`is_supported_eligible_entry`], so the
+/// decoded form is exactly the entry with its leading backslash
+/// removed.
 fn eliminable_decoded(escape: &str) -> &str {
     &escape['\\'.len_utf8()..]
 }
@@ -316,11 +319,16 @@ fn minimal_hash_count(decoded: &str) -> usize {
     }
 }
 
-/// A well-formed `escapes_eligible` entry is `\` followed by exactly
-/// one character. The decoded form is then unambiguous: the second
-/// character. Entries that don't fit this shape are dropped so that
-/// configuration mistakes can't corrupt the autofix.
-fn is_well_formed_eligible_entry(entry: &str) -> bool {
-    let mut chars = entry.chars();
-    chars.next() == Some('\\') && chars.next().is_some() && chars.next().is_none()
+/// A supported `escapes_eligible` entry is one of the three Rust
+/// escapes that self-decode — that is, whose decoded character is
+/// exactly the byte that follows the backslash: `\"`, `\\`, `\'`.
+/// `eliminable_decoded`'s contract is "strip the leading backslash",
+/// which only holds for these three. Every other valid Rust escape
+/// (`\n`, `\t`, `\r`, `\0`, `\xNN`, `\u{...}`) decodes to a
+/// different character, so accepting it here would let the autofix
+/// silently corrupt strings — e.g. `escapes_eligible = ["\\n"]`
+/// would rewrite a newline-containing literal to one containing the
+/// letter `n`.
+fn is_supported_eligible_entry(entry: &str) -> bool {
+    matches!(entry, r#"\""# | r"\\" | r"\'")
 }
