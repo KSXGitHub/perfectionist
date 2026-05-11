@@ -38,10 +38,11 @@ declare_tool_lint! {
     ///
     /// - **Explicit cost.** `Arc::clone` is `O(1)` reference-count
     ///   bump regardless of what `T` is; `T::clone` may be an
-    ///   arbitrarily expensive deep copy. If the binding's type later
-    ///   changes from `Arc<T>` to `&T`, the method-call form silently
-    ///   switches to the latter — the qualified form does not type-
-    ///   check and fails loudly.
+    ///   arbitrarily expensive deep copy. If the binding's type
+    ///   later changes from `Arc<Vec<u8>>` to `&Vec<u8>`, the
+    ///   method-call form `value.clone()` silently switches to
+    ///   `<Vec<u8> as Clone>::clone` and starts allocating; the
+    ///   qualified form does not type check and fails loudly.
     /// - **Reader signal.** `Arc::clone(&handle)` reads as "share a
     ///   handle"; `handle.clone()` reads as a generic `Clone`
     ///   invocation whose cost is unknown without checking the
@@ -63,7 +64,7 @@ declare_tool_lint! {
     /// ```
     pub perfectionist::ARC_RC_CLONE,
     Warn,
-    "calling `.clone()` on an `Arc<T>` or `Rc<T>`; prefer the qualified `Arc::clone(&x)` form",
+    "calling `.clone()` on an `Arc<T>` or `Rc<T>`; prefer the qualified `Arc::clone` / `Rc::clone` form",
     report_in_external_macro: false
 }
 
