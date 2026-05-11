@@ -21,7 +21,7 @@ numbered lists are not flagged by default; clap renders them as their
 literal characters in `--help`, which usually reads cleanly. They are
 configurable.
 
-## Rationale
+## Why is this bad?
 
 By default, clap does **not** render doc comments through a markdown
 processor. The raw text is shown verbatim in the terminal `--help`

@@ -10,10 +10,12 @@ Forbid U+2026 HORIZONTAL ELLIPSIS (`…`) in the message string of any
 panicking or assertion-style macro. Prefer the three-ASCII-dot form
 `...`.
 
-Rationale: panic and assertion messages surface in stderr, in CI logs,
-in crash reporters, and on terminals whose locale or encoding may not
-be UTF-8. Sticking to ASCII means the message renders identically
-everywhere.
+## Why restrict this?
+
+This is a stylistic preference, not a correctness issue. Panic and
+assertion messages surface in stderr, in CI logs, in crash reporters,
+and on terminals whose locale or encoding may not be UTF-8. Sticking
+to ASCII means the message renders identically everywhere.
 
 ## What to lint
 

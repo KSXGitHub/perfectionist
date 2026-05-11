@@ -203,8 +203,9 @@ enabled, default to warn but should be promoted to deny only after
 the project has audited their suggestions on a representative
 sample.
 
-## Why this rule exists
+## Why restrict this?
 
+This is a stylistic preference, not a correctness issue.
 Hand-written `impl From for ...` blocks are the most common
 AI-generated alternative to a one-line derive. They sneak past code
 review because they look "more explicit" — the model produced four
