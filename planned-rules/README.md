@@ -75,9 +75,6 @@ pattern that several rules call out by reference — live in
   guide.
 
 ### Derives and error types
-- [`derive-ordering.md`](./derive-ordering.md) — order trait names within
-  one `#[derive(...)]` list. Three styles: `preserve`, `alphabetical`,
-  `prefix_then_alphabetical`. Default `preserve`.
 - [`error-type-derives.md`](./error-type-derives.md) — `derive_more::Display` /
   `Error` must only be derived when actually needed; flag superfluous `Error`
   on non-error types.

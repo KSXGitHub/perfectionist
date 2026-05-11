@@ -1,3 +1,4 @@
+pub mod derive_ordering;
 pub mod flat_module_pattern;
 pub mod macro_trailing_comma;
 pub mod single_letter_names;
