@@ -55,7 +55,7 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::non_exhaustive_error";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, Default, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum RequireFor {
     #[default]

@@ -26,5 +26,19 @@ LL + #[non_exhaustive]
 LL | pub struct ParseError(pub ParseKind);
    |
 
-warning: 2 warnings emitted
+warning: public enum `BadlyNamed` is missing `#[non_exhaustive]`
+  --> $DIR/non_exhaustive_error.rs:44:1
+   |
+LL | / pub enum BadlyNamed {
+LL | |     Variant,
+LL | | }
+   | |_^
+   |
+help: add `#[non_exhaustive]` to keep new variants from being a SemVer break
+   |
+LL + #[non_exhaustive]
+LL | pub enum BadlyNamed {
+   |
+
+warning: 3 warnings emitted
 

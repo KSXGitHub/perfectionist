@@ -38,6 +38,27 @@ pub enum SomethingElse {
     Variant,
 }
 
+// Bad: name does not end in `Error`, but the type implements
+// `std::error::Error` — caught by the trait-impl branch of the
+// "looks like an error" predicate.
+pub enum BadlyNamed {
+    Variant,
+}
+
+impl std::fmt::Display for BadlyNamed {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("badly named")
+    }
+}
+
+impl std::fmt::Debug for BadlyNamed {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("BadlyNamed")
+    }
+}
+
+impl std::error::Error for BadlyNamed {}
+
 // Good: struct with two fields is not "sum-like", so the struct half
 // of the rule does not apply, even though the name ends in `Error`.
 pub struct NotSumLikeError(pub ParseKind, pub u32);
