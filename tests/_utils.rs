@@ -21,8 +21,6 @@ pub fn cargo_manifest_dir() -> &'static Path {
 }
 
 /// Path to the target dir shared by every integration-test fixture.
-/// Pre-warmed by `just warmup-integration-tests`; populated lazily by
-/// cargo otherwise.
 pub fn shared_target_dir() -> PathBuf {
     cargo_manifest_dir()
         .join("target")
