@@ -322,8 +322,8 @@ comma_list!(
 let zeros = vec![0; 10];
 
 // Skipped: `quote!` is a token-tree passthrough, not a
-// comma-separated list. It isn't on the name-based allow-list,
-// and matcher-based detection's $(,)? / $(,)* predicate
+// comma-separated list. It isn't on the curated name-based
+// list, and matcher-based detection's $(,)? / $(,)* predicate
 // doesn't match its grammar — so step 3's eligibility check
 // fails and the lint never reaches the trailing-comma check.
 quote! {
@@ -460,10 +460,14 @@ ignore = [
   a bare literal `,` at the same position are *required*, not
   optional, and the walker must distinguish them (see the
   `take_optional_trailing_comma` note below).
-  For dependency macros, the matcher comes from
-  `tcx.hir_node_by_def_id(...)` if local, or via the macro
-  metadata in `tcx.cstore_untracked()` for external macros;
-  unavailable matchers degrade to "ineligible".
+  Matcher access depends on where the macro is defined: for a
+  macro defined in the current crate, use
+  `tcx.hir_node_by_def_id(def_id)` to reach the
+  `ItemKind::MacroDef` AST. For a macro imported from a
+  dependency, the matcher is in the dependency's rmeta and is
+  reachable via `tcx.cstore_untracked()` plus the macro-data
+  query. Unavailable matchers (some cross-crate cases) degrade
+  to "ineligible".
 - **Parser style.** The matcher walker is a
   parser-combinator-style `take_*` chain over the matcher
   token stream per
