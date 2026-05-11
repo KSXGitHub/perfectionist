@@ -156,13 +156,15 @@ pattern that several rules call out by reference — live in
 ### Macros
 - [`macro-trailing-comma.md`](./macro-trailing-comma.md) — apply
   rustfmt's `trailing_comma = "Vertical"` policy (trailing comma
-  on multi-line argument lists, none on single-line) to macro
-  invocations, which rustfmt itself leaves untouched. Two
-  eligibility modes: **name-based**, a curated list of
-  core/std and well-known third-party macros (easy, configurable
-  via `extra_name_based`), and **matcher-based**, an automatic
-  walk of `macro_rules!` matchers to detect the `$(,)?`
-  optional-trailing-comma idiom (harder, configurable via
+  on multi-line argument lists, none on single-line) to
+  function-like macro invocations (`ast::MacCall`), which
+  rustfmt itself leaves untouched. Attribute-style invocations
+  like `#[derive(...)]` are out of scope. Two eligibility modes:
+  **name-based**, a curated list of core/std and well-known
+  third-party macros (easy, configurable via
+  `extra_name_based`), and **matcher-based**, an automatic walk
+  of `macro_rules!` matchers to detect the `$(,)?` optional-
+  trailing-comma idiom (harder, configurable via
   `matcher_based`).
 
 ### Serde
