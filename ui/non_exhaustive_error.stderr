@@ -1,0 +1,30 @@
+warning: public enum `RuntimeError` is missing `#[non_exhaustive]`
+  --> $DIR/non_exhaustive_error.rs:7:1
+   |
+LL | / pub enum RuntimeError {
+LL | |     Serialization,
+LL | |     Io,
+LL | | }
+   | |_^
+   |
+   = note: `#[warn(perfectionist::non_exhaustive_error)]` on by default
+help: add `#[non_exhaustive]` to keep new variants from being a SemVer break
+   |
+LL + #[non_exhaustive]
+LL | pub enum RuntimeError {
+   |
+
+warning: public struct `ParseError` is missing `#[non_exhaustive]`
+  --> $DIR/non_exhaustive_error.rs:22:1
+   |
+LL | pub struct ParseError(pub ParseKind);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: add `#[non_exhaustive]` to keep new variants from being a SemVer break
+   |
+LL + #[non_exhaustive]
+LL | pub struct ParseError(pub ParseKind);
+   |
+
+warning: 2 warnings emitted
+
