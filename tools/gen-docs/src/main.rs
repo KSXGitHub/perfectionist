@@ -806,8 +806,12 @@ fn render_page(rules: &[Rule], crate_version: &str, git_ref: &str) -> String {
             body {
                 h1 { "perfectionist lints" }
                 div.banner {
-                    "Showing development docs from " code { "master" } ". "
-                    "Latest released version: " code { (crate_version) } "."
+                    @if git_ref == "master" {
+                        "Showing development docs from " code { "master" } ". "
+                        "Latest released version: " code { (crate_version) } "."
+                    } @else {
+                        "Showing docs for " code { (git_ref) } "."
+                    }
                 }
                 p {
                     "perfectionist is a Dylint plugin; see the "
@@ -845,7 +849,8 @@ fn render_page(rules: &[Rule], crate_version: &str, git_ref: &str) -> String {
                     (rule_article(rule, git_ref))
                 }
                 footer {
-                    "Generated from " code { "src/rules/" } "."
+                    "Generated from " code { "src/rules/" }
+                    " at " code { (git_ref) } "."
                 }
             }
         }
