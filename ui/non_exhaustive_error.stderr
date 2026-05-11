@@ -27,7 +27,7 @@ LL | pub struct ParseError(pub ParseKind);
    |
 
 warning: public enum `BadlyNamed` is missing `#[non_exhaustive]`
-  --> $DIR/non_exhaustive_error.rs:44:1
+  --> $DIR/non_exhaustive_error.rs:58:1
    |
 LL | / pub enum BadlyNamed {
 LL | |     Variant,

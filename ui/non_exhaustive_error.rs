@@ -32,6 +32,20 @@ enum PrivateError {
     Variant,
 }
 
+// Good: `pub(crate)` enum is not externally reachable, so default
+// `require_for = "pub"` skips it.
+pub(crate) enum CrateLocalError {
+    Variant,
+}
+
+// Good: `pub` enum buried inside a non-`pub` module is not
+// externally reachable, so default `require_for = "pub"` skips it.
+mod private_module {
+    pub enum UnreachableError {
+        Variant,
+    }
+}
+
 // Good: name does not end in `Error` and the type does not implement
 // `std::error::Error`.
 pub enum SomethingElse {

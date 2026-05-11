@@ -7,6 +7,7 @@ use rustc_hir as hir;
 use rustc_hir::attrs::AttributeKind;
 use rustc_hir::def::{DefKind, Res};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
+use rustc_middle::middle::privacy::Level;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::def_id::{CRATE_DEF_ID, LocalDefId};
@@ -67,11 +68,21 @@ enum RequireFor {
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, rename_all = "snake_case")]
 struct Config {
-    /// Visibility threshold for the rule. `"pub"` (default) only
-    /// requires `#[non_exhaustive]` on fully-public items;
-    /// `"pub_crate"` additionally requires it on `pub(crate)` items;
-    /// `"all"` requires it on every error-shaped item regardless of
-    /// visibility.
+    /// Visibility threshold for the rule.
+    ///
+    /// - `"pub"` (default) requires `#[non_exhaustive]` on items
+    ///   that are *effectively* reachable from outside the crate
+    ///   (declared `pub`, re-exported `pub`, and not buried inside
+    ///   a non-`pub` module). A `pub enum FooError` inside a
+    ///   non-`pub` module is not flagged because it cannot be
+    ///   matched on by any downstream crate.
+    /// - `"pub_crate"` additionally requires `#[non_exhaustive]`
+    ///   on items literally declared `pub(crate)` (i.e., restricted
+    ///   to the crate root). Items declared `pub(in some::module)`
+    ///   are not promoted by this mode even if their effective
+    ///   reach happens to extend to the crate root.
+    /// - `"all"` requires it on every error-shaped item regardless
+    ///   of visibility.
     require_for: RequireFor,
     /// Identifier suffixes that mark a type as "an error" purely
     /// by name, without inspecting its trait implementations.
@@ -105,14 +116,18 @@ impl NonExhaustiveError {
     }
 
     fn visibility_qualifies(&self, tcx: TyCtxt<'_>, def_id: LocalDefId) -> bool {
-        let vis = tcx.visibility(def_id.to_def_id());
         match self.require_for {
             RequireFor::All => true,
-            RequireFor::PubCrate => match vis {
-                ty::Visibility::Public => true,
-                ty::Visibility::Restricted(scope) => scope == CRATE_DEF_ID.to_def_id(),
-            },
-            RequireFor::Pub => matches!(vis, ty::Visibility::Public),
+            RequireFor::Pub => is_externally_reachable(tcx, def_id),
+            RequireFor::PubCrate => {
+                if is_externally_reachable(tcx, def_id) {
+                    return true;
+                }
+                matches!(
+                    tcx.visibility(def_id.to_def_id()),
+                    ty::Visibility::Restricted(scope) if scope == CRATE_DEF_ID.to_def_id(),
+                )
+            }
         }
     }
 
@@ -167,6 +182,17 @@ impl<'tcx> LateLintPass<'tcx> for NonExhaustiveError {
         }
         emit(cx, item, kind_label, name);
     }
+}
+
+/// An item is "externally reachable" when its effective visibility at
+/// the `Reexported` level is `Public` — i.e., a downstream crate can
+/// see it directly or through the public re-export tree. A `pub` item
+/// declared inside a non-`pub` module is *not* externally reachable
+/// even though its declared visibility is `Public`, so adding a variant
+/// to it can never be a SemVer break.
+fn is_externally_reachable(tcx: TyCtxt<'_>, def_id: LocalDefId) -> bool {
+    tcx.effective_visibilities(())
+        .is_public_at_level(def_id, Level::Reexported)
 }
 
 fn implements_error_trait(cx: &LateContext<'_>, def_id: LocalDefId) -> bool {
