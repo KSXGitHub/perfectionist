@@ -10,7 +10,7 @@ path = "src/lib.rs"
 
 [[bin]]
 name = "warmup"
-path = "src/bin/warmup.rs"
+path = "cli/warmup.rs"
 
 [dependencies]
 build-fs-tree = "0.8.1"
