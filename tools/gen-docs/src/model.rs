@@ -39,6 +39,7 @@ pub(crate) struct Rule {
 
 /// The configuration surface of a single rule, as extracted from the
 /// rule's `Config` struct paired with its `CONFIG_KEY` constant.
+#[derive(Clone)]
 pub(crate) struct ConfigDoc {
     /// The TOML table key, e.g. `perfectionist::flat_module_pattern`.
     /// Read from the file's `CONFIG_KEY` constant verbatim.
@@ -56,6 +57,7 @@ pub(crate) struct ConfigDoc {
 /// renderer marks them with an `optional` badge rather than
 /// reproducing the Rust default expression — the prose doc comment
 /// states the default in human-readable form.
+#[derive(Clone)]
 pub(crate) struct ConfigField {
     /// The TOML key a reader writes in `dylint.toml`. Resolved in
     /// this order: per-field `#[serde(rename = "...")]` if present;
@@ -78,6 +80,7 @@ pub(crate) struct ConfigField {
 /// Renders as a sub-block under the rule's Configuration section so
 /// readers know what shape an enum variant or nested struct takes
 /// in TOML without leaving the page.
+#[derive(Clone)]
 pub(crate) struct TypeDoc {
     /// Rust identifier of the type (e.g. `Scope`).
     pub(crate) name: String,
@@ -88,11 +91,13 @@ pub(crate) struct TypeDoc {
     pub(crate) kind: TypeKind,
 }
 
+#[derive(Clone)]
 pub(crate) enum TypeKind {
     Enum { variants: Vec<EnumVariant> },
     Struct { fields: Vec<StructField> },
 }
 
+#[derive(Clone)]
 pub(crate) struct EnumVariant {
     /// Rust identifier, e.g. `Line`.
     pub(crate) rust_name: String,
@@ -109,6 +114,7 @@ pub(crate) struct EnumVariant {
 /// custom struct's TOML representation requires every field
 /// to be present, since serde's `default` attribute belongs to
 /// the top-level `Config` deserialisation, not nested.
+#[derive(Clone)]
 pub(crate) struct StructField {
     /// The TOML key for this field, after applying the struct's
     /// own serde rename rules where present.
