@@ -21,29 +21,25 @@ mod rules;
 pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
     dylint_linting::init_config(session);
 
-    rules::flat_module_pattern::register_lint(lint_store);
-    rules::macro_trailing_comma::register_lint(lint_store);
-    rules::unicode_ellipsis_in_comments::register_lint(lint_store);
-    rules::unicode_ellipsis_in_panic_messages::register_lint(lint_store);
+    macro_rules! register {
+        ($( $rule_name:ident )+) => {
+            $( rules::$rule_name::register_lint(lint_store); )+
+            $( rules::$rule_name::register_pass(lint_store); )+
+        };
+    }
 
-    // `unknown_perfectionist_lints::register_pass` snapshots the registered
-    // `perfectionist::*` lint names out of the `LintStore`, so its pass must
-    // be installed after every other rule's `register_lint` call. Keep this
-    // rule's registrations last, regardless of alphabetical order — a future
-    // rule whose name starts with `v`..=`z` would otherwise silently break
-    // the snapshot if these calls were left to alphabetical sorting.
-    rules::unknown_perfectionist_lints::register_lint(lint_store);
+    register! {
+        flat_module_pattern
+        macro_trailing_comma
+        unicode_ellipsis_in_comments
+        unicode_ellipsis_in_panic_messages
 
-    rules::flat_module_pattern::register_pass(lint_store);
-    rules::macro_trailing_comma::register_pass(lint_store);
-    rules::unicode_ellipsis_in_comments::register_pass(lint_store);
-    rules::unicode_ellipsis_in_panic_messages::register_pass(lint_store);
-
-    // `unknown_perfectionist_lints::register_pass` snapshots the registered
-    // `perfectionist::*` lint names out of the `LintStore`, so its pass must
-    // be installed after every other rule's `register_lint` call. Keep this
-    // rule's registrations last, regardless of alphabetical order — a future
-    // rule whose name starts with `v`..=`z` would otherwise silently break
-    // the snapshot if these calls were left to alphabetical sorting.
-    rules::unknown_perfectionist_lints::register_pass(lint_store);
+        // `unknown_perfectionist_lints::register_pass` snapshots the registered
+        // `perfectionist::*` lint names out of the `LintStore`, so its pass must
+        // be installed after every other rule's `register_lint` call. Keep this
+        // rule's registrations last, regardless of alphabetical order — a future
+        // rule whose name starts with `v`..=`z` would otherwise silently break
+        // the snapshot if these calls were left to alphabetical sorting.
+        unknown_perfectionist_lints
+    }
 }
