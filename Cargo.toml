@@ -4,7 +4,7 @@ members = ["tools/*", "utils"]
 [package]
 name = "perfectionist"
 description = "Additional linting rules for Rust projects"
-version = "0.0.0-rc.4"
+version = "0.0.0-rc.7"
 authors = ["khai96_ <hvksmr1996@gmail.com>"]
 edition = "2024"
 readme = "README.md"
@@ -37,6 +37,7 @@ serde = { version = "1.0.228", features = ["derive"] }
 [dev-dependencies]
 _utils = { path = "utils" }
 dylint_testing = "5.0.0"
+toml = "1.1.2"
 
 [package.metadata.rust-analyzer]
 rustc_private = true

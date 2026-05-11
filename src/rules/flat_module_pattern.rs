@@ -37,6 +37,10 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::flat_module_pattern";
 
+/// Configuration is reserved for future knobs; the lint currently
+/// has no options. The empty struct still exists so that a stray
+/// `[perfectionist::flat_module_pattern]` table in `dylint.toml`
+/// deserialises rather than producing a confusing parse error.
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, rename_all = "snake_case")]
 struct Config {}

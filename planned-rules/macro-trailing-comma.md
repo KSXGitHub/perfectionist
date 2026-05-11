@@ -1,5 +1,29 @@
 # `macro_trailing_comma`
 
+## Status
+
+Name-based eligibility is **implemented** in `src/rules/macro_trailing_comma.rs`
+with the curated `core` / `std` and well-known third-party list,
+plus the `extra_name_based`, `ignore`, and `enabled` configuration
+knobs. The `matcher_based` knob is accepted but currently a no-op.
+
+The "Vertical only applies to block-indent layouts" caveat from
+the "What to lint" section is also implemented: any multi-line
+invocation whose first top-level token starts on the same line as
+the opening delimiter (the compact / visual-indent shape, e.g.
+`vec![Inner { ... }]` or `vec![bar(\n    ...,\n)]`) is skipped.
+The predicate keys off the first token's line, not the element
+count, matching rustfmt's actual `trailing_comma = "Vertical"`
+behaviour rather than the documented spec for function calls.
+
+Still pending: **matcher-based** declarative-macro auto-detection
+(the `$(,)?` / `$(,)*` matcher walk described under "Matcher-based
+— declarative-macro auto-detection" and "Why matcher-based is
+harder than name-based" below). Until that lands, only macros named
+in the curated list or in `extra_name_based` are linted; any
+`macro_rules!` macro the user writes themselves is silently
+ineligible regardless of its matcher shape.
+
 **Source:** project convention. Fills a gap that
 `rustfmt`'s `trailing_comma = "Vertical"` (the default) leaves
 open: rustfmt rewrites function-call and struct-literal argument
@@ -216,7 +240,17 @@ For every macro invocation:
    one-item list, not a token-tree passthrough.
 5. Determine "single-line" vs "multi-line" by the source
    positions of the opening and closing delimiters. If they
-   share a line, single-line; otherwise multi-line.
+   share a line, single-line; otherwise multi-line. For the
+   multi-line case, additionally check whether the first
+   top-level token starts on the same line as the opening
+   delimiter; if it does, the invocation is in compact /
+   visual-indent layout and the multi-line "insert trailing
+   comma" branch is skipped. rustfmt's `Vertical` policy only
+   adds the trailing comma when each top-level item is on its
+   own line, separate from the delimiter; for a single
+   multi-line element such as `vec![Inner { ... }]` rustfmt
+   leaves the comma off (and strips any that gets added), so
+   the lint defers to rustfmt and emits nothing.
 6. Locate the final top-level token before the closing
    delimiter:
    - **Multi-line, no trailing comma** → emit a diagnostic
@@ -432,11 +466,23 @@ ignore = [
 
 ## Implementation notes
 
-- `EarlyLintPass::check_mac` over `ast::MacCall`. The early
+- The rule is split across two passes for `#[expect]`
+  fulfilment. Pre-expansion `EarlyLintPass::check_mac` over
+  `ast::MacCall` identifies the violation spans — the early
   pass runs before macro expansion so the invocation's raw
-  token stream is still on the AST node — the lint needs the
-  source token tree, not the expansion result, to decide
-  whether the closing delimiter is preceded by a comma.
+  token stream is still on the AST node, which the lint
+  needs to decide whether the closing delimiter is preceded
+  by a comma. Pre-expansion emission, however, runs before
+  `cfg_attr` is evaluated, so a `cfg_attr`-wrapped
+  `#![expect(perfectionist::macro_trailing_comma)]` is not
+  yet visible to the lint-level lookup. To make `#[expect]`
+  fulfil correctly, the pre-expansion pass parks each
+  violation in a process-static `PENDING_VIOLATIONS` queue;
+  a late pass then walks the HIR, finds the deepest HIR node
+  whose span contains each pending span, and emits the
+  diagnostic there via `clippy_utils::span_lint_hir_and_then`.
+  By the late pass the `#[expect]` is visible to rustc's
+  level lookup, so the expectation is marked fulfilled.
 - Macro path resolution: `MacCall::path` resolves to a `Res`
   via the resolver. From the resolved `DefId`, look the path
   up in the name-based list (built-in plus
