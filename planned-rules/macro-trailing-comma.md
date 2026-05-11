@@ -35,7 +35,7 @@ trailing comma, forbid one, or accept either; a procedural
 macro's grammar is opaque. Two complementary mechanisms decide
 eligibility, named for *how* they identify an eligible macro.
 
-### Name-based — well-known macro allow-list
+### Name-based — curated macro list
 
 A hard-coded list of macros known to accept the trailing comma
 optionally. **Inclusion criterion:** the macro's matcher accepts
@@ -209,7 +209,7 @@ For every macro invocation:
    - Otherwise, no diagnostic.
 
 The autofix is `Applicability::MachineApplicable` for name-based
-matches (curated allow-list — the human vetted that the comma is
+matches (curated list — the human vetted that the comma is
 optional) and for matcher-based matches where every arm of the
 macro accepts both forms. Matcher-based cases that picked one
 matching arm out of several are `Applicability::MaybeIncorrect`
@@ -361,7 +361,7 @@ my_proc::custom!(
 enabled = true
 
 # Enable the matcher-based declarative-macro auto-detection.
-# Defaults on. Disable to fall back to a pure allow-list policy
+# Defaults on. Disable to fall back to a pure name-based policy
 # if matcher-based detection proves too noisy on a particular
 # codebase.
 matcher_based = true
@@ -406,7 +406,7 @@ ignore = [
   whether the closing delimiter is preceded by a comma.
 - Macro path resolution: `MacCall::path` resolves to a `Res`
   via the resolver. From the resolved `DefId`, look the path
-  up in the name-based allow-list (built-in plus
+  up in the name-based list (built-in plus
   `extra_name_based`). For matcher-based detection, fetch the
   matcher arms from the resolved macro definition.
 - Token-tree inspection: `MacCall::args` carries a

@@ -158,7 +158,7 @@ pattern that several rules call out by reference — live in
   rustfmt's `trailing_comma = "Vertical"` policy (trailing comma
   on multi-line argument lists, none on single-line) to macro
   invocations, which rustfmt itself leaves untouched. Two
-  eligibility modes: **name-based**, a curated allow-list of
+  eligibility modes: **name-based**, a curated list of
   core/std and well-known third-party macros (easy, configurable
   via `extra_name_based`), and **matcher-based**, an automatic
   walk of `macro_rules!` matchers to detect the `$(,)?`
