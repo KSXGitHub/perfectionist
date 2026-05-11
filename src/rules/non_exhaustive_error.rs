@@ -160,7 +160,7 @@ impl<'tcx> LateLintPass<'tcx> for NonExhaustiveError {
         if attrs.iter().any(|attr| {
             matches!(
                 attr,
-                hir::Attribute::Parsed(AttributeKind::NonExhaustive(_))
+                hir::Attribute::Parsed(AttributeKind::NonExhaustive(_)),
             )
         }) {
             return;
@@ -192,7 +192,7 @@ fn is_sum_like(cx: &LateContext<'_>, data: &hir::VariantData<'_>) -> bool {
     };
     matches!(
         cx.qpath_res(&qpath, field_ty.hir_id),
-        Res::Def(DefKind::Enum, _)
+        Res::Def(DefKind::Enum, _),
     )
 }
 
