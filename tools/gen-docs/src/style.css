@@ -110,7 +110,6 @@ details.config-details > summary::before {
   display: inline-block;
   width: 1em;
   color: #57606a;
-  transition: transform 0.15s ease;
 }
 
 details.config-details[open] > summary::before {

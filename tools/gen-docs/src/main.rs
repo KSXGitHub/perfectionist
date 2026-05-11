@@ -373,6 +373,13 @@ fn collect_referenced_idents(ty: &Type, out: &mut Vec<String>, seen: &mut BTreeS
 /// the std-library containers that show up in serde-deserialised
 /// configuration values. `Config` itself is on the list so a
 /// self-referential type doesn't loop the lookup.
+///
+/// **Keep in sync with [`toml_type_label`].** The two functions
+/// share a coverage contract: every ident accepted here must also
+/// have a match arm there, otherwise the renderer either drops a
+/// real custom type from the Types section (false positive here)
+/// or leaks a Rust identifier into the field-type column (false
+/// negative there).
 fn is_builtin_type(name: &str) -> bool {
     matches!(
         name,
@@ -383,7 +390,7 @@ fn is_builtin_type(name: &str) -> bool {
         | "usize" | "isize"
         | "f32" | "f64"
         // Common std types likely to appear in serde-deserialised configs.
-        | "String" | "Vec" | "Option" | "Result"
+        | "String" | "Vec" | "Option"
         | "Box" | "Rc" | "Arc" | "Cow"
         | "PathBuf" | "Path" | "OsString" | "OsStr"
         | "HashMap" | "HashSet" | "BTreeMap" | "BTreeSet"
@@ -571,9 +578,16 @@ fn pascal_to_snake(name: &str) -> String {
 /// - `HashMap<_, V>` / `BTreeMap<_, V>` → `table of label-of-V`
 /// - `Option<T>` → `label-of-T` (every config field is already
 ///   marked optional, so the wrapper would just add noise)
+/// - `Option<T>` / `Box<T>` / `Rc<T>` / `Arc<T>` → `label-of-T`
+///   (every config field is already marked optional, and the
+///   smart-pointer wrappers are transparent at the serde layer)
 /// - Anything else (project-local enums and structs) → the Rust
 ///   identifier verbatim, since those names appear in the per-rule
 ///   Types subsection below and the reader can scan to them.
+///
+/// **Keep in sync with [`is_builtin_type`].** Both functions must
+/// recognise the same set of identifiers; see the note on
+/// `is_builtin_type` for why.
 fn toml_type_label(ty: &Type) -> String {
     match ty {
         Type::Path(type_path) => {
@@ -610,7 +624,7 @@ fn toml_type_label(ty: &Type) -> String {
                     Some(value) => format!("table of {}", toml_type_label(value)),
                     None => "table".to_owned(),
                 },
-                "Option" => match inner_types.first() {
+                "Option" | "Box" | "Rc" | "Arc" => match inner_types.first() {
                     Some(inner) => toml_type_label(inner),
                     None => ident,
                 },
@@ -620,6 +634,11 @@ fn toml_type_label(ty: &Type) -> String {
         Type::Reference(type_ref) => toml_type_label(&type_ref.elem),
         Type::Paren(type_paren) => toml_type_label(&type_paren.elem),
         Type::Group(type_group) => toml_type_label(&type_group.elem),
+        // Tuples, trait objects, function pointers, raw pointers,
+        // etc. fall through to a Rust-syntax fallback. No current
+        // `Config` field uses any of these; if one ever does, add
+        // a real arm rather than letting Rust syntax leak into the
+        // user-facing label.
         _ => ty.to_token_stream().to_string(),
     }
 }
