@@ -22,8 +22,9 @@ tripping on legitimately rich CLI options:
 A "line" here is a non-empty `///` continuation; doc-comment leading
 markers and trailing whitespace are stripped before counting.
 
-## Rationale
+## Why restrict this?
 
+This is a stylistic preference, not a correctness issue.
 CLI help text serves the user at a terminal, not a docs.rs reader. A
 flag that prints an essay is hostile in `--help` output:
 

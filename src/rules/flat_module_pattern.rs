@@ -12,7 +12,8 @@ declare_tool_lint! {
     /// the module (`module.rs`), with any nested children placed
     /// inside the `module/` directory next to it.
     ///
-    /// ### Why is this bad?
+    /// ### Why restrict this?
+    /// This is a stylistic preference, not a correctness issue.
     /// The flat layout keeps the file name unique to its module,
     /// so editors, terminal tabs, and `grep` results identify the
     /// module without their parent directory. The `mod.rs` form

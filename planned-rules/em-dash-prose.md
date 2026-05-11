@@ -9,9 +9,10 @@
 > appears, restructure the surrounding sentence so each clause stands on
 > its own.
 
-## Why this rule exists
+## Why restrict this?
 
-The em dash is a hallmark of AI-generated text. Modern code-writing
+This is a stylistic preference, not a correctness issue. The em dash
+is a hallmark of AI-generated text. Modern code-writing
 assistants reach for it whenever they want to glue two clauses together
 without committing to a structural relationship. The result reads as
 loose, conversational prose — exactly the register technical

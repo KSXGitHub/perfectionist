@@ -124,6 +124,47 @@ When you add a new rule:
 3. Do not introduce a parallel `REGISTERED_LINT_NAMES`-style
    array. The `LintStore` is the single source of truth.
 
+## Rationale section: "Why is this bad?" vs "Why restrict this?"
+
+Every rule's documentation — both the rustdoc on the
+`declare_tool_lint!` block and the planning file in
+`planned-rules/` — needs a section that explains the motivation.
+Pick the heading based on whether the violation is objectively
+broken or a stylistic preference:
+
+- **"Why is this bad?"** — use only when violating the rule
+  produces an objective defect: silently broken behaviour, a
+  user-visible rendering bug, a typo that neutralises a
+  suppression, data corruption, a security issue, or similar.
+  The reader should be able to read the section and agree that
+  the practice is wrong on its own terms, not just out of taste.
+  Examples in this repository:
+  `perfectionist::unknown_perfectionist_lints` (a typo in
+  `#[allow(perfectionist::...)]` silently fails to suppress
+  anything) and `planned-rules/clap-help-no-markdown.md`
+  (markdown leaks into the terminal `--help` output as literal
+  syntax).
+- **"Why restrict this?"** — use for every other rule. Most lints
+  in this catalogue enforce stylistic preferences (em-dash usage,
+  ellipsis form, derive choice, module layout, doc-comment
+  length, etc.). The practice they forbid is not wrong in any
+  absolute sense; the project simply prefers the alternative.
+  Open these sections with an explicit disclaimer such as "This
+  is a stylistic preference, not a correctness issue.", then
+  explain the preference.
+
+Do not use "Why is this bad?" as a default heading. Claiming
+objective badness for what is really a preference misleads
+readers and invites pushback that the rule's rationale cannot
+sustain. When in doubt, the rule is a preference; use "Why
+restrict this?".
+
+Headings like "Why both lints together", "Why one rule instead
+of two", "Why not `format!`-family", etc. are *design*
+rationale (explaining the rule's shape, not the user practice it
+forbids). Those are independent of this convention and may
+coexist with either of the headings above.
+
 ## Notes on cross-rule dependencies
 
 A handful of rules share helpers — the markdown exclusion
