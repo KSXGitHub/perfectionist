@@ -208,7 +208,7 @@ assert_eq!(
 );
 ```
 
-### Matcher-based: locally-defined `macro_rules!`
+### Matcher-based: `macro_rules!` ending in `$(,)?`
 
 ```rust
 macro_rules! comma_list {
