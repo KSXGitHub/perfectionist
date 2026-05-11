@@ -7,8 +7,11 @@
 The core rule is implemented in
 [`src/rules/arc_rc_clone.rs`](../src/rules/arc_rc_clone.rs):
 method-call shape detection, the bare / turbofish / UFCS qualified
-forms are accepted, autofix renders `Arc::clone(&...)` /
-`Rc::clone(&...)`.
+forms are accepted, autofix renders `Arc::clone(&value)` /
+`Rc::clone(&value)` — and drops the leading `&` when the receiver
+is already typed as `&Arc<T>` / `&Rc<T>`, so chained shapes like
+`arcs.first().unwrap().clone()` rewrite to
+`Arc::clone(arcs.first().unwrap())`.
 
 Still pending:
 

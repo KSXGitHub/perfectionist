@@ -10,8 +10,12 @@ use rustc_span::sym;
 declare_tool_lint! {
     /// ### What it does
     /// Flags `value.clone()` where `value` is an `Arc<T>` or `Rc<T>`,
-    /// and suggests rewriting it as `Arc::clone(&value)` /
-    /// `Rc::clone(&value)`.
+    /// and suggests rewriting it as the qualified `Arc::clone(...)` /
+    /// `Rc::clone(...)` form. For a receiver of type `Arc<T>` /
+    /// `Rc<T>`, the rewrite is `Arc::clone(&value)`; for a receiver
+    /// already typed as `&Arc<T>` / `&Rc<T>`, the leading `&` is
+    /// dropped (`Arc::clone(value)`) so the result doesn't form a
+    /// stutter-borrow `&&Arc<T>`.
     ///
     /// The qualified form is accepted in every shape: the bare
     /// `Arc::clone(...)`, the turbofish-typed `Arc::<T>::clone(...)`,
