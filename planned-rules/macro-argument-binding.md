@@ -89,8 +89,13 @@ macro invocation:
   paths, `&path`, `path.field`, `base[index]`, `*path`, and
   casts.
 - If the macro is on the **allowlist** of macros known to
-  evaluate each top-level argument exactly once, the argument
-  shape is unconstrained.
+  evaluate each top-level argument exactly once on the
+  taken control-flow path, the argument shape is
+  unconstrained. The `assert!`/`assert_eq!`/`assert_ne!`
+  family is included with a caveat — their *message-format*
+  args are evaluated only on the failure path, but they are
+  accepted on the strength of the condition/operand
+  guarantee. See "Mode 2" below for the full discussion.
 - For every other macro, behaviour depends on the selected
   mode — see "Five eligibility modes" below. Briefly:
   `denylist_only` skips the invocation, `blanket` flags it,
@@ -412,11 +417,12 @@ For every macro invocation:
    the same token-stream handling as
    [`macro-trailing-comma`](./macro-trailing-comma.md):
    track delimiter nesting and split on top-level commas. A
-   top-level `;` is a skip-the-whole-invocation trigger
-   (the macro uses `;` as its separator — `vec![v; count]`,
-   `thread_local! { ... }` — so it doesn't fit this rule's
-   "comma-separated argument list" shape). A top-level `=>`
-   is allowed and walked through as ordinary content
+   top-level `;` is a skip-the-whole-invocation trigger:
+   the macro uses `;` as its separator (`vec![v; count]`'s
+   repeated-element form is the canonical example) and the
+   call shape isn't the comma-separated argument list this
+   rule targets. A top-level `=>` is allowed and walked
+   through as ordinary content
    (`hashmap! { "a" => 1, "b" => 2 }` legitimately carries
    one per entry). The lint only inspects top-level
    expressions — an argument that itself contains a
