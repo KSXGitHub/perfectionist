@@ -29,12 +29,13 @@ fn main() -> ExitCode {
 
     // Start the fixture fresh so the warmup is reproducible. A
     // missing dir is fine — that's the expected state on a clean
-    // checkout — so don't bark about it.
+    // checkout — but any other I/O error would leave stale files
+    // around, so fail loudly.
     match std::fs::remove_dir_all(&warmup_project_dir) {
         Ok(()) => {}
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-        Err(error) => eprintln!(
-            "warning: Failed to clean up {}: {error}",
+        Err(error) => panic!(
+            "failed to clean up {}: {error}",
             warmup_project_dir.display(),
         ),
     }
