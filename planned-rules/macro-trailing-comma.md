@@ -160,8 +160,9 @@ Matcher-based matching has to:
    the exact call path. Some matchers are not re-exported
    across crate boundaries — those cases must degrade gracefully
    (treat as ineligible, do not warn).
-2. Walk every arm's matcher token tree, locating the trailing
-   `$(,)?` (or equivalent) per the predicate above.
+2. Walk every arm's matcher token tree, locating an optional
+   trailing comma at the tail of the top-level matcher —
+   `$(,)?` or `$(,)*` per the predicate above.
 3. Decide which arm matches the invocation — or refuse to
    touch the invocation if not every arm is the optional-comma
    kind, to stay safe in the face of ambiguity.
