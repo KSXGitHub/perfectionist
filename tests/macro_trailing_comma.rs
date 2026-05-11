@@ -98,6 +98,22 @@ fn ignore_wins_over_extra_name_based_for_the_same_macro() {
 }
 
 #[test]
+fn ignore_supports_qualified_path_and_whitespace_padding() {
+    // Two coverage gaps in one fixture: a multi-segment `ignore`
+    // entry (only `extra_name_based`'s multi-segment branch was
+    // previously exercised), and `parse_path`'s per-segment
+    // whitespace trim — the literal `"  std::vec  "` should still
+    // match a `std::vec!(...)` invocation.
+    run(
+        "ui-toml/macro_trailing_comma/ignore_qualified_with_whitespace",
+        RuleConfig {
+            ignore: vec!["  std::vec  ".into()],
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
 fn enabled_false_suppresses_the_entire_rule() {
     // `vec!` is on the built-in name-based list and the fixture has
     // a trailing-comma violation, but `enabled = false` should

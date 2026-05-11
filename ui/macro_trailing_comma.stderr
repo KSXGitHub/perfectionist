@@ -30,5 +30,11 @@ warning: multi-line macro invocation should end with a trailing comma
 LL |         2
    |          ^ help: add a trailing comma: `,`
 
-warning: 5 warnings emitted
+warning: multi-line macro invocation should end with a trailing comma
+  --> $DIR/macro_trailing_comma.rs:92:6
+   |
+LL |     )];
+   |      ^ help: add a trailing comma: `,`
+
+warning: 6 warnings emitted
 

@@ -76,6 +76,22 @@ fn _skip_uncurated() {
     );
 }
 
+// Known limitation: the OUTER `vec!` is flagged, but the INNER
+// `format!` is not, despite also being multi-line with no trailing
+// comma. `MacCall::args` stores its delimited arguments as a raw
+// `TokenStream`; the AST visitor's `walk_mac` does not descend into
+// it, so nested macro invocations have no `MacCall` AST node at
+// pre-expansion time and `check_mac` never fires for them. Matching
+// them would require the same token-tree walk the matcher-based half
+// will add. Locked in here so a future change in that direction is a
+// deliberate test update.
+fn _nested_macro_inner_uncovered() {
+    let _ = vec![format!(
+        "{}",
+        42
+    )];
+}
+
 fn compute() -> i32 {
     0
 }
