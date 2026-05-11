@@ -108,6 +108,14 @@ is intentional (`thread_local! { static FOO: ...; }`,
 `quote! { fn foo() { ... } }`, `html! { <div>{value}</div> }`),
 not function-call-like argument lists.
 
+Function-like and array-like invocations whose top-level token
+stream uses `;` as a separator are also out of scope:
+`vec![expr; n]` (repeated-element form) and similar `;`-shaped
+grammars are not the comma-separated argument list this rule
+targets. Step 5 of "What to lint" detects this mechanically by
+treating a top-level `;` as a skip-the-whole-invocation
+trigger.
+
 The call-site delimiter is the *only* signal the lint uses to
 classify a macro invocation. A declarative macro's body does not
 fix its call shape; the same `macro_rules!` accepts `name!(...)`,
