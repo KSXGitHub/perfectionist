@@ -153,7 +153,6 @@ pub struct MacroTrailingComma {
 impl MacroTrailingComma {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let _ = config.matcher_based;
         let mut name_based: BTreeSet<Vec<String>> = BUILTIN_NAME_BASED
             .iter()
             .map(|name| vec![(*name).to_owned()])
@@ -198,14 +197,10 @@ impl EarlyLintPass for MacroTrailingComma {
         if !self.enabled {
             return;
         }
-        let invocation_path = path_segments(mac_call);
-        if invocation_path.is_empty() {
+        if matches_any(&mac_call.path, &self.ignore) {
             return;
         }
-        if matches_any(&invocation_path, &self.ignore) {
-            return;
-        }
-        if !matches_any(&invocation_path, &self.name_based) {
+        if !matches_any(&mac_call.path, &self.name_based) {
             return;
         }
         self.check_invocation(lint_context, mac_call);
@@ -215,16 +210,27 @@ impl EarlyLintPass for MacroTrailingComma {
 impl MacroTrailingComma {
     fn check_invocation(&self, lint_context: &EarlyContext<'_>, mac_call: &MacCall) {
         let args = &mac_call.args;
-        let top_level_trees: Vec<&TokenTree> = args.tokens.iter().collect();
-        if top_level_trees.is_empty() {
+        // Single-pass walk over the top-level token stream: track the
+        // last tree and whether any top-level `;` appears. Avoids
+        // allocating a `Vec` per `check_mac` call.
+        let mut last_tree: Option<&TokenTree> = None;
+        let mut has_top_level_semicolon = false;
+        for tree in args.tokens.iter() {
+            if let TokenTree::Token(token, _) = tree
+                && token.kind == TokenKind::Semi
+            {
+                has_top_level_semicolon = true;
+            }
+            last_tree = Some(tree);
+        }
+        if has_top_level_semicolon {
             return;
         }
-        if has_top_level_semicolon(&top_level_trees) {
+        let Some(last_tree) = last_tree else {
             return;
-        }
+        };
         let source_map = lint_context.sess().source_map();
         let is_multi_line = source_map.is_multiline(args.dspan.entire());
-        let last_tree = *top_level_trees.last().expect("checked non-empty above");
         let last_is_comma = matches!(
             last_tree,
             TokenTree::Token(token, _) if token.kind == TokenKind::Comma,
@@ -237,15 +243,6 @@ impl MacroTrailingComma {
     }
 }
 
-fn path_segments(mac_call: &MacCall) -> Vec<String> {
-    mac_call
-        .path
-        .segments
-        .iter()
-        .map(|segment| segment.ident.name.as_str().to_owned())
-        .collect()
-}
-
 fn parse_path(raw: &str) -> Vec<String> {
     raw.split("::")
         .map(str::trim)
@@ -254,36 +251,36 @@ fn parse_path(raw: &str) -> Vec<String> {
         .collect()
 }
 
-fn matches_any(invocation_segments: &[String], entries: &BTreeSet<Vec<String>>) -> bool {
-    entries
-        .iter()
-        .any(|entry| matches_entry(invocation_segments, entry))
+fn matches_any(invocation: &rustc_ast::Path, entries: &BTreeSet<Vec<String>>) -> bool {
+    entries.iter().any(|entry| entry_matches(entry, invocation))
 }
 
-fn matches_entry(invocation_segments: &[String], entry: &[String]) -> bool {
-    if entry.is_empty() {
+/// Match a configured entry against an invocation path without
+/// allocating a `Vec<String>` snapshot of the invocation. Single-
+/// segment entries match the path's final segment; multi-segment
+/// entries tail-match the path's segments.
+fn entry_matches(entry: &[String], invocation: &rustc_ast::Path) -> bool {
+    let segments = &invocation.segments;
+    if entry.is_empty() || segments.is_empty() {
         return false;
     }
     if entry.len() == 1 {
         // Single-segment entry: match by the final segment of the path,
         // so `vec!`, `std::vec!`, and `::std::vec!` all qualify.
-        invocation_segments
+        segments
             .last()
-            .is_some_and(|last| last == &entry[0])
+            .is_some_and(|segment| segment.ident.name.as_str() == entry[0])
+    } else if segments.len() < entry.len() {
+        false
     } else {
         // Multi-segment entry: tail-match against the invocation path,
         // accommodating optional leading crate prefixes.
-        invocation_segments.ends_with(entry)
+        let start = segments.len() - entry.len();
+        segments[start..]
+            .iter()
+            .zip(entry.iter())
+            .all(|(segment, entry_segment)| segment.ident.name.as_str() == entry_segment.as_str())
     }
-}
-
-fn has_top_level_semicolon(top_level_trees: &[&TokenTree]) -> bool {
-    top_level_trees.iter().any(|tree| {
-        matches!(
-            tree,
-            TokenTree::Token(token, _) if token.kind == TokenKind::Semi,
-        )
-    })
 }
 
 fn emit_insert(lint_context: &EarlyContext<'_>, last_tree_span: Span) {
