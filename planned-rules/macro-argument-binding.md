@@ -167,21 +167,19 @@ author can hoist it to a `const` if they want it accepted.
 
 ## Five eligibility modes
 
-The user's question — what difficulty levels exist between
-"forbid everything" and "fully read the macro definition" — is
-answered by the configuration ladder below. The modes are
-ordered by *implementation* cost, not by some clean monotone
-relationship on what they flag: Mode 3 relaxes Mode 2's
-denylist, and Mode 4 reshapes it. The default is mode 2
-(curated allowlist + denylist).
+The configuration ladder below covers the spectrum between
+"forbid every non-trivial macro argument" and "fully read the
+macro definition". The modes are ordered by *implementation*
+cost, not by some clean monotone relationship on what they
+flag: Mode 3 relaxes Mode 2's denylist, and Mode 4 reshapes
+it. The default is mode 2 (curated allowlist + denylist).
 
-### Mode 0 — denylist-only (the simplest possible rule)
+### Mode 0 — denylist-only (the smallest landable rule)
 
-*Easier than the user's "easiest".* Ship a hard-coded denylist
-of known-conditional macros — `debug_assert!`,
-`debug_assert_eq!`, `debug_assert_ne!`, and a handful of
-similar shapes — and flag only those. Every other macro is
-silently accepted.
+Ship a hard-coded denylist of known-conditional macros —
+`debug_assert!`, `debug_assert_eq!`, `debug_assert_ne!`, and a
+handful of similar shapes — and flag only those. Every other
+macro is silently accepted.
 
 The implementation is a name-set lookup keyed on the resolved
 `DefId` plus a non-trivial-argument predicate. No allowlist, no
@@ -196,10 +194,10 @@ by `debug_assert*`. Set `mode = "denylist_only"`.
 
 ### Mode 1 — blanket ban
 
-The user's "easiest, dumbest" mode. Every function-like and
-array-like macro invocation is flagged when given a non-trivial
-top-level argument, regardless of whether the macro is known
-safe. Curly-brace invocations remain out of scope per the
+The maximum-paranoia mode. Every function-like and array-like
+macro invocation is flagged when given a non-trivial top-level
+argument, regardless of whether the macro is known safe.
+Curly-brace invocations remain out of scope per the
 "Statement" section.
 
 This mode is deliberately not the default — `format!("hello
@@ -211,56 +209,59 @@ specific macros that the project trusts.
 
 ### Mode 2 — curated allowlist + denylist (default)
 
-The user's "still easy" mode, augmented with the denylist
-spelled out in mode 0. Three name-lookups decide each
-invocation:
+The default mode. Mode 0's denylist plus a curated allowlist
+of macros known to evaluate each top-level argument exactly
+once. Three name-lookups decide each invocation:
 
 1. **Denylist hit**: flag every non-trivial argument.
    The denylist defaults to `debug_assert!`,
    `debug_assert_eq!`, `debug_assert_ne!`, and any user-added
    entries.
 2. **Allowlist hit**: accept unconditionally. The
-   allowlist defaults to the same `core` / `std` and
-   well-known third-party set as
-   [`macro-trailing-comma`](./macro-trailing-comma.md) —
+   allowlist defaults to a subset of
+   [`macro-trailing-comma`](./macro-trailing-comma.md)'s
+   curated `core` / `std` and well-known third-party set:
    `format!`, `println!`, `vec!`, `write!`, `assert!`,
-   `assert_eq!`, `anyhow!`, and similar.
+   `assert_eq!`, `anyhow!`, and similar — every macro on
+   that rule's list whose top-level arguments are
+   evaluated exactly once.
 
-   Notably absent: the `log::*` and `tracing::*` families
-   — those check the configured level before evaluating
-   their arguments (the same conditional-evaluation
-   footgun called out in "Why is this bad?"), so they
-   don't meet the criterion. They are left off both
-   default lists; projects that want strict enforcement
+   Notably absent from *this* rule's allowlist (though
+   present in `macro-trailing-comma`'s): the `log::*` and
+   `tracing::*` families. Those check the configured
+   level before evaluating their arguments — the same
+   conditional-evaluation footgun called out in "Why is
+   this bad?" — so they fail the exactly-once criterion.
+   They are also left off this rule's default *denylist*
+   to avoid noise; projects that want strict enforcement
    add them to `deny_extra`.
 
    Caveat for the `assert!` family: `assert!`,
-   `assert_eq!`, `assert_ne!`, and the `debug_assert*`
-   counterparts evaluate their *condition / operand* args
-   exactly once, but their *message-format* args are
-   evaluated only on the failure path (so zero times when
-   the assertion passes). The default allowlist accepts
-   them on the strength of the condition/operand
-   guarantee, since assert messages in practice are
-   either absent or trivial (literal templates plus path
-   references). A side-effecting expression in a message
-   slot — `assert!(check(), "saw {}", set.insert(k))` —
-   is the same hidden-evaluation footgun as the
-   motivating bug, but is rare enough that the default
-   accepts the trade. Projects that find this too loose
-   can add `assert`, `assert_eq`, and `assert_ne` to
-   `deny_extra`; the more precise per-arg-position
-   solution is left to a future enhancement.
+   `assert_eq!`, and `assert_ne!` evaluate their
+   *condition / operand* args exactly once, but their
+   *message-format* args are evaluated only on the
+   failure path (zero times when the assertion passes).
+   The default allowlist accepts them on the strength of
+   the condition/operand guarantee, since assert messages
+   in practice are either absent or trivial (literal
+   templates plus path references). A side-effecting
+   expression in a message slot — `assert!(check(),
+   "saw {}", set.insert(k))` — is the same hidden-
+   evaluation footgun as the motivating bug, but is rare
+   enough that the default accepts the trade. Projects
+   that find this too loose can add `assert`, `assert_eq`,
+   and `assert_ne` to `deny_extra`; treating the message
+   slot separately from the condition slot is left as a
+   future enhancement.
 3. **Neither**: skip silently. Unknown macros are not flagged
    by default. A project that wants stricter behaviour
    reaches for mode 1 or mode 4.
 
 The default rejecting only the denylist (rather than every
-unlisted macro) is a usability choice. The user's framing of
-"still easy" was that unlisted macros get flagged; in practice
-that produces too much noise during initial rule adoption.
-Projects can set `unknown_macro_policy = "deny"` to recover
-the strict variant.
+unlisted macro) is a usability choice. The strict reading —
+flag every macro not on the curated allowlist — produces too
+much noise during initial rule adoption. Projects that want
+that stance set `unknown_macro_policy = "deny"`.
 
 ### Mode 3 — mode 2 with expression-side bypass
 
@@ -268,7 +269,7 @@ A bypass that layers on top of any of the modes above. The
 bypass does not change the trivial / non-trivial split —
 that classification stays as defined under "What counts as a
 'non-trivial' argument". Instead, it adds an *accept rule*:
-even when the macro would otherwise fire (conditional, or
+even when the macro would otherwise fire (denylisted, or
 denied under mode 1's blanket), accept the invocation if
 every top-level argument's outermost shape is either trivial
 or a function / method call whose own sub-expressions are all
@@ -298,18 +299,17 @@ turn it on as the first knob to adjust.
 
 ### Mode 4 — matcher-based declarative-macro analysis
 
-The user's "hard" mode. Layered on top of mode 2: the
-denylist and allowlist are consulted first, and the matcher
-walk runs only on `macro_rules!` macros that *would otherwise
-be unknown*. An invocation that resolves to an exactly-once
-macro is still accepted unconditionally; an invocation that
-resolves to a denylisted macro is still flagged. The matcher
-walk turns an "unknown" verdict into a justified
-allowlist-or-deny decision rather than overriding
-the curated lists. For a `macro_rules!` macro reached by the
-walk (its
-definition visible to the compiler — current crate, or a
-dependency whose macro body rustc still has on hand):
+Layered on top of mode 2: the denylist and allowlist are
+consulted first, and the matcher walk runs only on
+`macro_rules!` macros that *would otherwise be unknown*. An
+invocation that resolves to an allowlisted macro is still
+accepted unconditionally; an invocation that resolves to a
+denylisted macro is still flagged. The matcher walk turns an
+"unknown" verdict into a justified allowlist-or-flag decision
+rather than overriding the curated lists. For a `macro_rules!`
+macro reached by the walk (its definition visible to the
+compiler — current crate, or a dependency whose macro body
+rustc still has on hand):
 
 1. Determine which arm of the macro matches the call.
 2. For each `$name:expr` capture in that arm, count its
@@ -334,7 +334,7 @@ dependency whose macro body rustc still has on hand):
 
 Matcher analysis does not extend to procedural macros — the
 expansion is custom Rust code, not introspectable from the
-matcher. Proc macros remain governed by the user's allowlist /
+matcher. Proc macros remain governed by the allowlist /
 denylist configuration.
 
 Set `mode = "matcher_based"` to enable. Defaults off; this
@@ -387,11 +387,12 @@ For every macro invocation:
      Allowlist hit → skip. Otherwise consult
      `unknown_macro_policy`: `allow` (default) → skip,
      `deny` → continue.
-   - `matcher_based`: conditional / allowlists as
-     above; for unknown declarative macros, walk the matcher
-     per mode 4. Result is either "treat as allowlisted"
-     (continue: skip) or "treat as denylisted" (continue:
-     lint).
+   - `matcher_based`: denylist and allowlist as above; for
+     unknown declarative macros, walk the matcher per mode 4.
+     Result is either "treat as allowlisted" (continue: skip)
+     or "treat as denylisted" (continue: lint). Unknown proc
+     macros are not walkable and fall through to
+     `unknown_macro_policy`.
 5. Walk the invocation's *top-level* argument list. The lint
    only inspects top-level expressions — an argument that
    itself contains a non-trivial sub-expression is the
@@ -446,23 +447,26 @@ debug_assert!(was_new, "duplicate insert");
 // side effects.
 debug_assert_eq!(count, MAX_RETRIES, "expected {MAX_RETRIES} retries");
 debug_assert!(buffer.is_empty(), "buffer must start empty");
-//            ^^^^^^^^^^^^^^^^^ method call → flagged under
-//                              the strict default;
-//                              accepted under
+//            ^^^^^^^^^^^^^^^^^ method call → flagged with
+//                              `expression_bypass = false`
+//                              (the built-in default);
+//                              accepted with
 //                              `expression_bypass = true`
 //                              because `is_empty` takes only
-//                              `&self`.
+//                              `&self` and is treated as a
+//                              pure accessor.
 ```
 
 In practice nearly every `debug_assert!` argument is a
 boolean-returning method or function call. Without
 `expression_bypass = true` the lint flags essentially every
 reasonable `debug_assert!` invocation, which is not a
-recommended deployment shape. Projects that adopt the default
-denylist for the `insert`-style bug above almost always want
-the bypass on at the same time; the two knobs are paired in
-typical configurations even though they default to opposite
-positions out of the box.
+recommended deployment shape. Projects that keep
+`debug_assert!` on the denylist (to catch the
+`insert`-style bug above) almost always set
+`expression_bypass = true` at the same time; the two
+settings are typically paired in real configurations even
+though their built-in defaults sit at opposite ends.
 
 ### Allowlisted macros pass through
 
@@ -509,8 +513,8 @@ macro_rules! double_use {
     ($e:expr) => { $e + $e };
 }
 
-// Bad — `next` is consumed twice. The current value plus the
-// next value, not "doubled current".
+// Bad — `next` is consumed twice. `total` ends up as
+// `current_item + next_item`, not `2 * current_item`.
 let total = double_use!(iter.next().unwrap());
 
 // Good
@@ -523,12 +527,12 @@ automatically: the matcher walker sees `$e` referenced twice in
 the RHS and flags every non-trivial argument to `double_use!`
 even though the macro is otherwise unknown to the lint.
 
-### Procedural macro stays in user-config territory
+### Procedural macros require explicit configuration
 
 ```rust
 // Whether this is safe depends on the proc macro's expansion,
-// which the lint cannot read. The user adds `serde_json::json`
-// to `allow_extra` once, project-wide after confirming each
+// which the lint cannot read. A project adds `serde_json::json`
+// to `allow_extra` once, project-wide, after confirming each
 // argument is evaluated exactly once by the macro's expansion.
 let payload = serde_json::json!({ "id": next_id(), "ts": now() });
 ```
