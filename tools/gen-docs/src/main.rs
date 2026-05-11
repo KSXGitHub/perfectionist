@@ -109,13 +109,6 @@ struct ConfigDoc {
     /// The TOML table key, e.g. `perfectionist::flat_module_pattern`.
     /// Read from the file's `CONFIG_KEY` constant verbatim.
     key: String,
-    /// Doc comment attached to the `Config` struct itself. Only
-    /// surfaced when the rule has at least one configurable field;
-    /// empty Configs render the inline `Configuration: none.` line
-    /// and intentionally drop any struct-level note (it would
-    /// always be implementation prose about the placeholder, not
-    /// user-facing schema).
-    struct_doc_markdown: String,
     /// One entry per named field of the `Config` struct.
     fields: Vec<ConfigField>,
     /// Non-built-in types referenced from `Config`'s fields, in the
@@ -130,9 +123,13 @@ struct ConfigDoc {
 /// reproducing the Rust default expression — the prose doc comment
 /// states the default in human-readable form.
 struct ConfigField {
-    /// Field identifier, e.g. `also_flag`. Matches the TOML key
-    /// because every `Config` uses `#[serde(rename_all = "snake_case")]`
-    /// and the fields are already named in snake case.
+    /// The TOML key a reader writes in `dylint.toml`. Resolved in
+    /// this order: per-field `#[serde(rename = "...")]` if present;
+    /// otherwise the struct-level `#[serde(rename_all = "...")]`
+    /// applied to the Rust identifier; otherwise the raw Rust
+    /// identifier (the project convention has Configs in
+    /// `snake_case` with `rename_all = "snake_case"`, which makes
+    /// the Rust ident and the TOML key coincide).
     name: String,
     /// TOML-flavoured label for the field's type (e.g. `[string]`
     /// for `Vec<char>`). See [`toml_type_label`] for the mapping
@@ -320,7 +317,7 @@ fn extract_config(source_path: &Path, file: &syn::File) -> Option<ConfigDoc> {
             return None;
         }
     };
-    let struct_doc_markdown = doc_attrs_to_markdown(&config_struct.attrs);
+    let rename_all = serde_str_attr(&config_struct.attrs, "rename_all");
 
     let named_fields = match &config_struct.fields {
         syn::Fields::Named(named) => named.named.iter().collect::<Vec<_>>(),
@@ -334,10 +331,15 @@ fn extract_config(source_path: &Path, file: &syn::File) -> Option<ConfigDoc> {
                 .as_ref()
                 .expect("named field always has an ident")
                 .to_string();
-            // Honour `#[serde(rename = "...")]` so the rendered
-            // TOML key matches what a user would actually type,
-            // mirroring the enum-variant handling in `find_type_doc`.
-            let name = serde_str_attr(&field.attrs, "rename").unwrap_or(rust_name);
+            // Precedence mirrors serde itself: per-field
+            // `#[serde(rename = "...")]` wins, then the struct-
+            // level `rename_all` style, then the raw Rust ident.
+            let name = serde_str_attr(&field.attrs, "rename").unwrap_or_else(|| {
+                rename_all
+                    .as_deref()
+                    .map(|style| apply_rename_all(style, &rust_name))
+                    .unwrap_or(rust_name)
+            });
             ConfigField {
                 name,
                 type_label: toml_type_label(&field.ty),
@@ -358,7 +360,6 @@ fn extract_config(source_path: &Path, file: &syn::File) -> Option<ConfigDoc> {
 
     Some(ConfigDoc {
         key,
-        struct_doc_markdown,
         fields,
         custom_types,
     })
@@ -870,9 +871,6 @@ fn config_section(config: &ConfigDoc) -> Markup {
                 "Configure via " code { "dylint.toml" } " under "
                 code { "[\"" (config.key) "\"]" } "."
             }
-            @if !config.struct_doc_markdown.is_empty() {
-                (PreEscaped(markdown_to_html(&config.struct_doc_markdown)))
-            }
             dl.config {
                 @for field in &config.fields {
                     dt {
@@ -1284,6 +1282,30 @@ mod tests {
             .expect("demo file declares CONFIG_KEY and Config");
         let names: Vec<&str> = config.fields.iter().map(|f| f.name.as_str()).collect();
         assert_eq!(names, vec!["renamed-key", "plain_name"]);
+    }
+
+    #[test]
+    fn config_field_honours_struct_rename_all() {
+        // `rename_all = "kebab-case"` on the Config struct should
+        // surface every Rust field's snake-case identifier with
+        // dashes. A per-field `#[serde(rename)]` still wins.
+        let source = r#"
+            const CONFIG_KEY: &str = "perfectionist::demo";
+
+            #[derive(serde::Deserialize)]
+            #[serde(default, rename_all = "kebab-case")]
+            struct Config {
+                also_flag: bool,
+                some_other_key: usize,
+                #[serde(rename = "explicit")]
+                overridden: bool,
+            }
+        "#;
+        let file = syn::parse_file(source).unwrap();
+        let config = extract_config(Path::new("synthetic.rs"), &file)
+            .expect("demo file declares CONFIG_KEY and Config");
+        let names: Vec<&str> = config.fields.iter().map(|f| f.name.as_str()).collect();
+        assert_eq!(names, vec!["also-flag", "some-other-key", "explicit"]);
     }
 
     #[test]
