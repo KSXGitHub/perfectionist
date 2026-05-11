@@ -86,15 +86,18 @@ For a `macro_rules!` macro whose definition is visible to the
 compiler (the local crate, or a dependency whose macro body
 rustc still has on hand), inspect the matcher arms:
 
-- A macro arm whose final matcher position is `$(,)?` — or
-  equivalently `$(,)*` / `$(,)+` used purely to absorb a
-  trailing comma — can match the invocation with or without the
-  comma. The optional-comma capture cannot be expanded into the
-  body (a literal token in a matcher position cannot be
-  referenced by `$name` in the expansion), so the trailing
-  comma is purely syntactic. The lint may rewrite freely.
-- An arm that ends in a literal `,` (no `?` / `*` / `+`)
-  *requires* the trailing comma; the lint must not remove it.
+- A macro arm whose final matcher position is `$(,)?` or
+  `$(,)*` — used purely to absorb a trailing comma — can
+  match the invocation with or without the comma. The
+  optional-comma capture cannot be expanded into the body (a
+  literal token in a matcher position cannot be referenced by
+  `$name` in the expansion), so the trailing comma is purely
+  syntactic. The lint may rewrite freely.
+- An arm that ends in a literal `,` *or* in `$(,)+`
+  *requires* at least one trailing comma; the lint must not
+  remove it. `$(,)+` is the easy mis-read here — `+` matches
+  one or more, so an invocation with no trailing comma at all
+  would not have matched in the first place.
 - An arm whose final position is something else (a non-comma
   token, or a `$name:tt` capture) doesn't carry a trailing
   comma at all and is out of scope.
@@ -395,7 +398,11 @@ deny_list = [
   one combinator per matcher position kind (literal token,
   `$name:frag` capture, `$( ... )sep rep` repetition), with
   a top-level `take_optional_trailing_comma` that recognises
-  `$(,)?`, `$(,)*`, `$(,)+` at the tail of an arm.
+  `$(,)?` and `$(,)*` at the tail of an arm. `$(,)+` and a
+  bare literal `,` are *not* optional-trailing-comma forms
+  (both require at least one comma) and the combinator must
+  classify them as "required" so the lint refuses to remove
+  the comma.
 
 ### Difficulty
 
