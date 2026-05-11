@@ -76,10 +76,15 @@ struct Config {
     /// raw form is arguably noisier than the original.
     min_escapes_to_trigger: usize,
     /// Escape sequences considered eliminable by switching to raw
-    /// form. Each entry is the literal source spelling of the
-    /// escape (a backslash followed by one character). The default
-    /// covers the three cases that a raw string expresses without
-    /// any escape.
+    /// form. Only the three Rust escapes whose decoded character
+    /// is exactly the byte after the backslash — `"\""`, `"\\"`,
+    /// `"\\'"` — are accepted; entries listed here that fall
+    /// outside that closed set are silently dropped. (`\n`, `\t`,
+    /// `\xNN`, `\u{...}` and other escapes decode to a different
+    /// character and cannot be expressed verbatim in a raw string,
+    /// so they have no place in this list.) Use this knob to
+    /// narrow eligibility — e.g. `["\\\""]` to only flag literals
+    /// whose sole escapes are escaped quotes — not to extend it.
     escapes_eligible: Vec<String>,
 }
 
