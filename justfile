@@ -20,6 +20,7 @@ build:
 
 # Check documentation
 doc:
+  just gen-docs
   RUSTFLAGS='-D warnings' cargo doc --no-deps --document-private-items
 
 # Run all the lints
