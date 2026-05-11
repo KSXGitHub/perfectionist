@@ -54,7 +54,7 @@ declare_tool_lint! {
 const CONFIG_KEY: &str = "perfectionist::derive_ordering";
 
 /// Default `prefix` list for the `prefix_then_alphabetical` style.
-/// Standard-library auto-traits first (in the order one would
+/// Common standard-library derives first (in the order one would
 /// typically read them), then the comparison-trait quartet, then
 /// `Hash`. The default applies only when `style =
 /// "prefix_then_alphabetical"`; under any other style the prefix is
