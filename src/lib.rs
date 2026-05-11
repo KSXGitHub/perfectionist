@@ -29,9 +29,12 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
     }
 
     register! {
+        arc_rc_clone
         derive_ordering
         flat_module_pattern
         macro_trailing_comma
+        non_exhaustive_error
+        prefer_raw_string
         single_letter_names
         unicode_ellipsis_in_comments
         unicode_ellipsis_in_panic_messages

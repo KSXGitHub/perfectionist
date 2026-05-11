@@ -181,8 +181,8 @@ target_macros = [
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
   reuse the placeholder/literal helpers from
   [`derive-more-inlined-args`](./derive-more-inlined-args.md) and
-  [`prefer-raw-string`](./prefer-raw-string.md). The split is at
-  decoded-`\n` boundaries; placeholders that straddle a `\n` are
+  the escape scanner in `src/rules/prefer_raw_string.rs`. The
+  split is at decoded-`\n` boundaries; placeholders that straddle a `\n` are
   impossible because `\n` cannot appear *inside* a `{...}`
   placeholder, so the split is always between placeholders.
 

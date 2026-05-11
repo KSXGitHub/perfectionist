@@ -160,7 +160,7 @@ target_macros = [
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
   Reuse the placeholder/literal helpers from
   [`derive-more-inlined-args`](./derive-more-inlined-args.md),
-  [`prefer-raw-string`](./prefer-raw-string.md), and
+  the escape scanner in `src/rules/prefer_raw_string.rs`, and
   [`print-macro-split`](./print-macro-split.md). The split logic
   is the same as `prefer-text-block`'s width-trigger split:
   scan for the last whitespace within the budget, hard-split at

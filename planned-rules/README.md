@@ -78,8 +78,6 @@ pattern that several rules call out by reference — live in
 - [`error-type-derives.md`](./error-type-derives.md) — `derive_more::Display` /
   `Error` must only be derived when actually needed; flag superfluous `Error`
   on non-error types.
-- [`non-exhaustive-error.md`](./non-exhaustive-error.md) — public error enums
-  should carry `#[non_exhaustive]`.
 - [`prefer-derive-more.md`](./prefer-derive-more.md) — flag hand-written
   `impl` blocks that could be replaced by a `derive_more` derive
   (`From`, `Into`, `AsRef`, `Deref`, etc., with `Display` and
@@ -112,11 +110,6 @@ pattern that several rules call out by reference — live in
   `Rc::clone(&x)` instead of `x.clone()` when `x: Arc<_>` / `Rc<_>`.
 
 ### String literals
-- [`prefer-raw-string.md`](./prefer-raw-string.md) — when a string
-  literal contains `\"`, `\\`, or `\'` escapes (and no
-  whitespace/Unicode escapes that can't appear in raw form), prefer
-  the `r"..."` / `r#"..."#` form. Autofix picks the smallest
-  hash-count that doesn't collide.
 - [`prefer-text-block.md`](./prefer-text-block.md) — when a string
   literal contains 2+ embedded `\n` newlines (and isn't a format
   template or display-attribute), prefer `text_block! { ... }` /

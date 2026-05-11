@@ -144,7 +144,7 @@ both qualify.
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
   Reuse the placeholder/literal helpers from
   [`derive-more-inlined-args`](./derive-more-inlined-args.md),
-  [`prefer-raw-string`](./prefer-raw-string.md),
+  the escape scanner in `src/rules/prefer_raw_string.rs`,
   [`print-macro-split`](./print-macro-split.md), and
   [`format-macro-wrap`](./format-macro-wrap.md). The split logic
   is the same as `format-macro-wrap`'s: scan for the last

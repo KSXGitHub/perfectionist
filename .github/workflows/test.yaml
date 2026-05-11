@@ -18,10 +18,19 @@ jobs:
         timeout-minutes: 1
         continue-on-error: true
         with:
+          # `target/integration-fixtures{,-warmup}/` hold the
+          # warmup's incremental-compilation state. rustc ICEs when
+          # any input to the lint-registration fingerprint (e.g. a
+          # rule's `default_level`) changes against a cache
+          # populated under the previous value, so the dirs are
+          # excluded; the expensive plugin build still lives in the
+          # main `target/` cache.
           path: |
             ~/.cargo
             ~/.dylint_drivers
             target
+            !target/integration-fixtures
+            !target/integration-fixtures-warmup
           key: ${{ github.job }}-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ github.job }}-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}-${{ hashFiles('**/Cargo.lock') }}
