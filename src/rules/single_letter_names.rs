@@ -109,8 +109,9 @@ declare_tool_lint! {
     /// callback. Two shapes qualify as trivial:
     /// - the closure is the immediate argument of a call whose
     ///   callee name is in the comparison / fold allowlist
-    ///   (`sort_by`, `cmp`, `partial_cmp`, `min_by`, `max_by`,
-    ///   `binary_search_by`, `fold`, `try_fold`, …);
+    ///   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
+    ///   `binary_search_by`, `cmp_by`, `partial_cmp_by`,
+    ///   `fold`, `try_fold`, …);
     /// - the body is a trivial wrapper around the parameter —
     ///   a field access (`|x| x.field`), a method call
     ///   (`|x| x.foo()`), a one-argument call where the
@@ -169,14 +170,19 @@ const DEFAULT_COMPARISON_METHODS: &[&str] = &[
     "sort_unstable_by",
     "sort_by_key",
     "sort_unstable_by_key",
-    "cmp",
-    "partial_cmp",
     "min_by",
     "max_by",
     "min_by_key",
     "max_by_key",
     "binary_search_by",
     "binary_search_by_key",
+    // `Iterator::cmp_by` / `partial_cmp_by` / `eq_by` take a
+    // closure of two parameters. The bare `cmp` / `partial_cmp`
+    // trait methods are not closure-accepting, so they are not
+    // listed here.
+    "cmp_by",
+    "partial_cmp_by",
+    "eq_by",
     "fold",
     "try_fold",
     "rfold",
