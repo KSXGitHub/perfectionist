@@ -109,10 +109,12 @@ struct ConfigDoc {
     /// The TOML table key, e.g. `perfectionist::flat_module_pattern`.
     /// Read from the file's `CONFIG_KEY` constant verbatim.
     key: String,
-    /// Doc comment attached to the `Config` struct itself, useful
-    /// for rules with no fields (where it explains why the struct
-    /// still exists) or for cross-cutting notes about a rule's
-    /// configuration shape.
+    /// Doc comment attached to the `Config` struct itself. Only
+    /// surfaced when the rule has at least one configurable field;
+    /// empty Configs render the inline `Configuration: none.` line
+    /// and intentionally drop any struct-level note (it would
+    /// always be implementation prose about the placeholder, not
+    /// user-facing schema).
     struct_doc_markdown: String,
     /// One entry per named field of the `Config` struct.
     fields: Vec<ConfigField>,
@@ -384,26 +386,54 @@ fn collect_referenced_idents(ty: &Type, out: &mut Vec<String>, seen: &mut BTreeS
 /// have a match arm there, otherwise the renderer either drops a
 /// real custom type from the Types section (false positive here)
 /// or leaks a Rust identifier into the field-type column (false
-/// negative there).
+/// negative there). The unit test `builtin_types_all_map_to_toml_label`
+/// guards this contract mechanically.
 fn is_builtin_type(name: &str) -> bool {
-    matches!(
-        name,
-        // Primitives.
-        "bool" | "char" | "str"
-        | "u8" | "u16" | "u32" | "u64" | "u128"
-        | "i8" | "i16" | "i32" | "i64" | "i128"
-        | "usize" | "isize"
-        | "f32" | "f64"
-        // Common std types likely to appear in serde-deserialised configs.
-        | "String" | "Vec" | "Option"
-        | "Box" | "Rc" | "Arc" | "Cow"
-        | "PathBuf" | "Path" | "OsString" | "OsStr"
-        | "HashMap" | "HashSet" | "BTreeMap" | "BTreeSet"
-        | "VecDeque" | "LinkedList"
-        // The Config struct itself.
-        | "Config"
-    )
+    BUILTIN_TYPES.contains(&name)
 }
+
+/// The full set [`is_builtin_type`] accepts, exposed as a constant
+/// so the contract test can iterate it.
+const BUILTIN_TYPES: &[&str] = &[
+    // Primitives.
+    "bool",
+    "char",
+    "str",
+    "u8",
+    "u16",
+    "u32",
+    "u64",
+    "u128",
+    "i8",
+    "i16",
+    "i32",
+    "i64",
+    "i128",
+    "usize",
+    "isize",
+    "f32",
+    "f64",
+    // Common std types likely to appear in serde-deserialised configs.
+    "String",
+    "Vec",
+    "Option",
+    "Box",
+    "Rc",
+    "Arc",
+    "Cow",
+    "PathBuf",
+    "Path",
+    "OsString",
+    "OsStr",
+    "HashMap",
+    "HashSet",
+    "BTreeMap",
+    "BTreeSet",
+    "VecDeque",
+    "LinkedList",
+    // The Config struct itself.
+    "Config",
+];
 
 /// Find the `enum` or `struct` definition for `ident` inside `file`
 /// and produce a `TypeDoc` describing its variants or fields.
@@ -511,8 +541,20 @@ fn apply_rename_all(style: &str, name: &str) -> String {
         "snake_case" => pascal_to_snake(name),
         "SCREAMING_SNAKE_CASE" => pascal_to_snake(name).to_ascii_uppercase(),
         "kebab-case" => pascal_to_snake(name).replace('_', "-"),
+        "SCREAMING-KEBAB-CASE" => pascal_to_snake(name).replace('_', "-").to_ascii_uppercase(),
         "lowercase" => name.to_ascii_lowercase(),
         "UPPERCASE" => name.to_ascii_uppercase(),
+        // Rust enum variants are already `PascalCase` by convention.
+        "PascalCase" => name.to_owned(),
+        // `camelCase` is `PascalCase` with the first character
+        // lower-cased; everything else stays as written.
+        "camelCase" => {
+            let mut chars = name.chars();
+            match chars.next() {
+                Some(first) => first.to_lowercase().chain(chars).collect(),
+                None => String::new(),
+            }
+        }
         _ => name.to_owned(),
     }
 }
@@ -1115,6 +1157,79 @@ mod tests {
         let mut seen = BTreeSet::new();
         collect_referenced_idents(&ty, &mut out, &mut seen);
         assert_eq!(out, vec!["Scope".to_owned()]);
+    }
+
+    #[test]
+    fn builtin_types_all_map_to_toml_label() {
+        // Coverage contract: every name in BUILTIN_TYPES must have
+        // a matching arm in `toml_type_label`, otherwise the
+        // renderer would drop the name from the Types section
+        // (because `is_builtin_type` returns true) AND emit it
+        // verbatim as a Rust identifier in the field-type column.
+        //
+        // The `Config` entry is exempt — it's on the builtin list
+        // purely to prevent self-referential lookup loops, and has
+        // no user-facing label form.
+        //
+        // Generic types need a concrete instantiation to exercise
+        // the arm (a bare `Option` with no inner type would hit
+        // the `_ => ident` fallback). `bool` is harmless filler.
+        for &name in BUILTIN_TYPES {
+            if name == "Config" {
+                continue;
+            }
+            let source = match name {
+                "Vec" | "HashSet" | "BTreeSet" | "VecDeque" | "LinkedList" | "Option" | "Box"
+                | "Rc" | "Arc" | "Cow" => format!("{name}<bool>"),
+                "HashMap" | "BTreeMap" => format!("{name}<String, bool>"),
+                _ => name.to_owned(),
+            };
+            let label = toml_type_label(&parse_type(&source));
+            assert_ne!(
+                label, name,
+                "builtin `{name}` is missing a `toml_type_label` arm \
+                 (rendered `{source}` as `{label}`); either add one \
+                 or remove the entry from BUILTIN_TYPES",
+            );
+        }
+    }
+
+    #[test]
+    fn apply_rename_all_covers_serde_styles() {
+        assert_eq!(
+            apply_rename_all("snake_case", "BlockComment"),
+            "block_comment"
+        );
+        assert_eq!(
+            apply_rename_all("SCREAMING_SNAKE_CASE", "BlockComment"),
+            "BLOCK_COMMENT",
+        );
+        assert_eq!(
+            apply_rename_all("kebab-case", "BlockComment"),
+            "block-comment"
+        );
+        assert_eq!(
+            apply_rename_all("SCREAMING-KEBAB-CASE", "BlockComment"),
+            "BLOCK-COMMENT",
+        );
+        assert_eq!(
+            apply_rename_all("PascalCase", "BlockComment"),
+            "BlockComment"
+        );
+        assert_eq!(
+            apply_rename_all("camelCase", "BlockComment"),
+            "blockComment"
+        );
+        assert_eq!(
+            apply_rename_all("lowercase", "BlockComment"),
+            "blockcomment"
+        );
+        assert_eq!(
+            apply_rename_all("UPPERCASE", "BlockComment"),
+            "BLOCKCOMMENT"
+        );
+        // Unknown style: pass through unchanged.
+        assert_eq!(apply_rename_all("???", "BlockComment"), "BlockComment");
     }
 
     #[test]
