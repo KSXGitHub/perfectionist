@@ -26,6 +26,7 @@ use clap::Parser;
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 use proc_macro2::TokenStream;
 use pulldown_cmark::{Event, Options, Tag, TagEnd, html as cmark_html};
+use strum::{Display, EnumString};
 use syn::{
     Attribute, Expr, ExprLit, Ident, Item, Lit, LitStr, Meta, Token,
     parse::{Parse, ParseStream},
@@ -76,14 +77,36 @@ fn main() -> ExitCode {
 struct Rule {
     /// `perfectionist::flat_module_pattern` — used as the anchor.
     namespaced: String,
-    /// `Warn` / `Deny` / `Allow` / ...
-    level: String,
+    /// Default severity of the lint as declared in `declare_tool_lint!`.
+    level: Level,
     /// The third positional argument to `declare_tool_lint!`.
     short_desc: String,
     /// The concatenated `///` doc comment lines, in markdown form.
     doc_markdown: String,
     /// Source path relative to the repo root, for cross-linking.
     relative_source: PathBuf,
+}
+
+/// The set of lint levels rustc / Dylint accept as the second
+/// positional argument to `declare_tool_lint!`. An unrecognised
+/// identifier here is a hard error rather than a silent fallback, so
+/// future additions to rustc's level list are caught immediately.
+#[derive(Debug, Clone, Copy, EnumString, Display)]
+enum Level {
+    Warn,
+    Deny,
+    Forbid,
+    Allow,
+}
+
+impl Level {
+    fn css_class(self) -> &'static str {
+        match self {
+            Level::Warn => "level-warn",
+            Level::Deny | Level::Forbid => "level-deny",
+            Level::Allow => "level-allow",
+        }
+    }
 }
 
 fn collect_rules(rules_dir: &Path) -> Vec<Rule> {
@@ -137,9 +160,17 @@ fn extract_rule(source_path: &Path) -> Option<Rule> {
         .rev()
         .collect();
 
+    let level_ident = declaration.level.to_string();
+    let level: Level = level_ident.parse().unwrap_or_else(|_| {
+        panic!(
+            "unknown lint level `{level_ident}` in {}",
+            source_path.display()
+        )
+    });
+
     Some(Rule {
         namespaced,
-        level: declaration.level.to_string(),
+        level,
         short_desc: declaration.desc.value(),
         doc_markdown,
         relative_source,
@@ -222,8 +253,7 @@ fn render_page(rules: &[Rule], crate_version: &str) -> String {
                     "perfectionist is a Dylint plugin; see the "
                     a href="https://github.com/KSXGitHub/perfectionist" { "README" }
                     " for setup. Lint-control attributes use the "
-                    code { "perfectionist::" } " namespace, e.g. "
-                    code { "#[allow(perfectionist::flat_module_pattern)]" } "."
+                    code { "perfectionist::" } " namespace."
                 }
                 h2 { "Index" }
                 table.index {
@@ -242,7 +272,7 @@ fn render_page(rules: &[Rule], crate_version: &str) -> String {
                                         code { (rule.namespaced) }
                                     }
                                 }
-                                td { (level_badge(&rule.level)) }
+                                td { (level_badge(rule.level)) }
                                 td {
                                     (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
                                 }
@@ -271,8 +301,7 @@ fn rule_article(rule: &Rule) -> Markup {
         article.rule id=(anchor_for(&rule.namespaced)) {
             h2 { code { (rule.namespaced) } }
             p {
-                (level_badge(&rule.level))
-                " — "
+                (level_badge(rule.level))
                 (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
             }
             (PreEscaped(markdown_to_html(&rule.doc_markdown)))
@@ -284,10 +313,10 @@ fn rule_article(rule: &Rule) -> Markup {
     }
 }
 
-fn level_badge(level: &str) -> Markup {
-    let class = format!("level {}", level_css_class(level));
+fn level_badge(level: Level) -> Markup {
+    let class = format!("level {}", level.css_class());
     html! {
-        span class=(class) { (level) }
+        span class=(class) { (level.to_string()) }
     }
 }
 
@@ -320,15 +349,6 @@ fn markdown_inline_to_html(markdown: &str) -> String {
 
 fn anchor_for(namespaced: &str) -> String {
     namespaced.replace("::", "-")
-}
-
-fn level_css_class(level: &str) -> &'static str {
-    match level {
-        "Warn" => "level-warn",
-        "Deny" | "Forbid" => "level-deny",
-        "Allow" => "level-allow",
-        _ => "level-other",
-    }
 }
 
 const STYLE: &str = include_str!("style.css");
