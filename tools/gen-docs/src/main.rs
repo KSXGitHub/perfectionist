@@ -24,7 +24,7 @@ use std::{
 use cargo_toml::{Inheritable, Manifest};
 use clap::Parser;
 use proc_macro2::TokenStream;
-use pulldown_cmark::{Options, html as cmark_html};
+use pulldown_cmark::{Event, Options, Tag, TagEnd, html as cmark_html};
 use syn::{
     Attribute, Expr, ExprLit, Ident, Item, Lit, LitStr, Meta, Token,
     parse::{Parse, ParseStream},
@@ -205,7 +205,7 @@ fn render_page(rules: &[Rule], crate_version: &str) -> String {
     let mut index_rows = String::new();
     for rule in rules {
         let level_class = level_css_class(&rule.level);
-        let short_desc_html = escape_html(&rule.short_desc);
+        let short_desc_html = markdown_inline_to_html(&rule.short_desc);
         let namespaced_html = escape_html(&rule.namespaced);
         let anchor = anchor_for(&rule.namespaced);
         index_rows.push_str(&format!(
@@ -220,7 +220,7 @@ fn render_page(rules: &[Rule], crate_version: &str) -> String {
     for rule in rules {
         let anchor = anchor_for(&rule.namespaced);
         let namespaced_html = escape_html(&rule.namespaced);
-        let short_desc_html = escape_html(&rule.short_desc);
+        let short_desc_html = markdown_inline_to_html(&rule.short_desc);
         let level_class = level_css_class(&rule.level);
         let body_html = markdown_to_html(&rule.doc_markdown);
         let source_html = escape_html(&rule.relative_source.display().to_string());
@@ -283,6 +283,22 @@ fn markdown_to_html(markdown: &str) -> String {
     let mut buffer = String::new();
     cmark_html::push_html(&mut buffer, parser);
     buffer
+}
+
+/// Render a short, single-line snippet of markdown without the
+/// outer `<p>…</p>` wrapper that block-level rendering inserts. Used
+/// for table cells and inline headings where backticks should still
+/// turn into `<code>`.
+fn markdown_inline_to_html(markdown: &str) -> String {
+    let parser = pulldown_cmark::Parser::new(markdown).filter(|event| {
+        !matches!(
+            event,
+            Event::Start(Tag::Paragraph) | Event::End(TagEnd::Paragraph)
+        )
+    });
+    let mut buffer = String::new();
+    cmark_html::push_html(&mut buffer, parser);
+    buffer.trim_end().to_owned()
 }
 
 fn anchor_for(namespaced: &str) -> String {
