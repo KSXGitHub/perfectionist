@@ -123,13 +123,29 @@ const BUILTIN_NAME_BASED: &[&str] = &[
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, rename_all = "snake_case")]
 struct Config {
+    /// Master on/off switch for the rule. Defaults to `true`. Set
+    /// to `false` to silence every diagnostic this lint would emit
+    /// without having to enumerate every macro under `ignore`.
     enabled: bool,
     /// Accepted for forward compatibility with the matcher-based half of
     /// the rule. Currently a no-op — only name-based eligibility is
     /// implemented; see `planned-rules/macro-trailing-comma.md` for the
     /// status breakdown.
     matcher_based: bool,
+    /// Additional macro paths to treat as name-based eligible, on top
+    /// of the curated built-in list. Each entry is matched by its
+    /// final path segment, so `"my_crate::vec_like"` and `"vec_like"`
+    /// both target invocations whose last segment is `vec_like`.
+    /// Empty by default. Only add macros whose trailing comma is
+    /// syntactically optional at the top level; macros that treat
+    /// the comma as a fully optional separator throughout (rather
+    /// than only at the tail) should not be listed here.
     extra_name_based: Vec<String>,
+    /// Macro paths to opt out of the rule, even if they would
+    /// otherwise be eligible via the built-in list or
+    /// `extra_name_based`. Matched by final path segment, like
+    /// `extra_name_based`. Checked first, so this knob always wins
+    /// over eligibility. Empty by default.
     ignore: Vec<String>,
 }
 
