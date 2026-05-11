@@ -178,20 +178,37 @@ impl UnicodeEllipsisInPanicMessages {
             return;
         };
         let context = format!("`{macro_name}!` message");
+        // Track delimiter nesting so we only scan literals at the
+        // macro's own argument level. The snippet starts with
+        // `macro_name!(`/`[`/`{`, which opens depth 1; literals
+        // belonging to the panic message live at exactly depth 1.
+        // Anything deeper is an argument of a nested call (e.g.,
+        // `format!("...")` or `include_str!("path")`) whose literal
+        // is not the panic message.
         let mut byte_offset: u32 = 0;
+        let mut depth: u32 = 0;
         for token in tokenize(&snippet, FrontmatterAllowed::No) {
             let token_length = token.len;
-            if let TokenKind::Literal { kind, .. } = token.kind
-                && is_display_string_literal(kind)
-            {
-                let token_start = byte_offset as usize;
-                let token_end = token_start + token_length as usize;
-                let literal_snippet = &snippet[token_start..token_end];
-                let token_lo = call_span.lo() + BytePos::from_u32(byte_offset);
-                let token_hi = token_lo + BytePos::from_u32(token_length);
-                let token_span =
-                    Span::new(token_lo, token_hi, call_span.ctxt(), call_span.parent());
-                self.scan_literal(lint_context, token_span, literal_snippet, &context);
+            match token.kind {
+                TokenKind::OpenParen | TokenKind::OpenBracket | TokenKind::OpenBrace => {
+                    depth = depth.saturating_add(1);
+                }
+                TokenKind::CloseParen | TokenKind::CloseBracket | TokenKind::CloseBrace => {
+                    depth = depth.saturating_sub(1);
+                }
+                TokenKind::Literal { kind, .. }
+                    if depth == 1 && is_display_string_literal(kind) =>
+                {
+                    let token_start = byte_offset as usize;
+                    let token_end = token_start + token_length as usize;
+                    let literal_snippet = &snippet[token_start..token_end];
+                    let token_lo = call_span.lo() + BytePos::from_u32(byte_offset);
+                    let token_hi = token_lo + BytePos::from_u32(token_length);
+                    let token_span =
+                        Span::new(token_lo, token_hi, call_span.ctxt(), call_span.parent());
+                    self.scan_literal(lint_context, token_span, literal_snippet, &context);
+                }
+                _ => {}
             }
             byte_offset = byte_offset
                 .checked_add(token_length)

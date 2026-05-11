@@ -23,17 +23,25 @@ fn _expect() {
     let _: () = Result::<i32, ()>::Err(()).expect_err("expected error…");
 }
 
-// Should NOT fire: non-panic / non-expect contexts.
+// Should NOT fire: non-panic / non-expect contexts. Each line below
+// contains a real U+2026, so a regression that started flagging these
+// contexts would surface here.
 fn _quiet() {
-    let _ = "string literal with ellipsis (not a panic)";
-    eprintln!("log line with ellipsis");
-    let _ = format!("formatted message with ellipsis");
+    let _ = "string literal with …, not a panic";
+    eprintln!("log line with …");
+    let _ = format!("formatted message with …");
     // The synthetic message inserted by bare `assert!(cond)` has no
-    // U+2026 so it doesn't fire here either.
+    // U+2026, so it doesn't fire here either.
     assert!(true);
     // Literal expressed via escape — source has `\u{2026}`, not the
     // raw codepoint — is not flagged.
     panic!("escaped \u{2026} stays");
+    // String literals nested inside another macro that is *not* a
+    // panic-family member are not part of the panic message and must
+    // not be flagged, even when they appear inside a panic-family
+    // call. The outer message ("path:") is ASCII so the lint stays
+    // silent on this whole line.
+    panic!("path: {}", concat!("dir/", "name…"));
 }
 
 // Should NOT fire: ASCII `...` is already correct.
