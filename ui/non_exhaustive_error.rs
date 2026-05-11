@@ -82,14 +82,18 @@ pub struct NotSumLikeError(pub ParseKind, pub u32);
 pub struct NotEnumWrapperError(pub u32);
 
 // Good: borrowed enum wrapper. The single field has type `&'static
-// ParseKind`, whose `kind()` is `ty::Ref`, not `ty::Adt`. Downstream
-// crates cannot pattern-match on a reference, so adding a variant
-// to the underlying enum can never break callers of this struct.
+// ParseKind`, whose `kind()` is `ty::Ref`, not `ty::Adt`. The
+// sum-like predicate is intentionally narrow — it only matches a
+// direct enum ADT as the wrapped type — so this struct is not
+// classified as sum-like and is silently skipped. (Downstream
+// callers can still deref-and-match against the underlying enum
+// if they want to; the predicate just doesn't try to peer through
+// the reference.)
 pub struct BorrowedError(pub &'static ParseKind);
 
-// Good: boxed enum wrapper. The single field has type `Box<ParseKind>`,
-// whose `Adt` is `Box` (a struct), not an enum. Same exhaustiveness
-// reasoning as the borrowed case applies.
+// Good: boxed enum wrapper. `Box<ParseKind>`'s `Adt` is `Box`
+// (a struct), not an enum, so the predicate skips this struct for
+// the same reason as the borrowed case.
 pub struct BoxedError(pub Box<ParseKind>);
 
 // Bad: type-aliased sum-like wrapper. The field's source-level type

@@ -40,7 +40,7 @@ LL | pub enum BadlyNamed {
    |
 
 warning: struct `AliasedError` is missing `#[non_exhaustive]`
-  --> $DIR/non_exhaustive_error.rs:99:12
+  --> $DIR/non_exhaustive_error.rs:103:12
    |
 LL | pub struct AliasedError(pub KindAlias);
    |            ^^^^^^^^^^^^

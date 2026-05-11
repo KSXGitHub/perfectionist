@@ -92,9 +92,16 @@ struct Config {
     require_for: RequireFor,
     /// Identifier suffixes that mark a type as "an error" purely
     /// by name, without inspecting its trait implementations.
-    /// Defaults to `["Error"]`; extend with project conventions like
-    /// `"Failure"`. A type that implements `std::error::Error` is
-    /// flagged regardless of suffix.
+    ///
+    /// Setting this option **replaces** the built-in default,
+    /// rather than extending it: configuring
+    /// `suffixes = ["Failure"]` matches only `*Failure` names, not
+    /// `*Error` or `*Failure`. To keep the default suffix alongside
+    /// a project-specific one, list it explicitly:
+    /// `suffixes = ["Error", "Failure"]`.
+    ///
+    /// Defaults to `["Error"]`. A type that implements
+    /// `std::error::Error` is flagged regardless of suffix.
     suffixes: Vec<String>,
 }
 
@@ -208,12 +215,20 @@ fn implements_error_trait(cx: &LateContext<'_>, def_id: LocalDefId) -> bool {
     implements_trait(cx, ty, error_trait, &[])
 }
 
-/// A struct is "sum-like" when it has exactly one field whose type
-/// (post-resolution) is an enum. Resolving through type aliases and
-/// associated types is intentional — `pub struct FooError(pub E)` where
-/// `type E = MyEnum;` is still a newtype around an enum, and the
-/// SemVer-surface concern is identical to a direct `pub struct
-/// FooError(pub MyEnum)`.
+/// A struct is "sum-like" when it has exactly one field whose
+/// resolved type is an `enum` ADT. `tcx.type_of(..)` already
+/// follows transparent type aliases, so `pub struct FooError(pub
+/// MyAlias)` where `type MyAlias = MyEnum;` is correctly classified
+/// as sum-like — the SemVer-surface concern is identical to a
+/// direct `pub struct FooError(pub MyEnum)`.
+///
+/// Projection types (associated types like `<T as Trait>::Item`)
+/// are *not* normalized here, so a sum-like wrapper around an
+/// associated type that happens to resolve to an enum is not
+/// classified as sum-like. Adding normalization (via
+/// `tcx.normalize_erasing_regions`) would close that gap but
+/// hasn't been needed in practice — drop a follow-up if a
+/// real-world wrapper hits this case.
 fn is_sum_like(cx: &LateContext<'_>, data: &hir::VariantData<'_>) -> bool {
     let fields = data.fields();
     if fields.len() != 1 {
