@@ -98,7 +98,7 @@ function calls and struct literals. Macros that treat commas as
 followed by a comma independently — must not be added. Forcing a
 trailing comma on the last entry would clash with the no-comma
 style users of those macros often choose. If such a macro slips
-into the list, move it to `deny_list` to opt it out.
+into the list, add it to `ignore` to opt it out.
 
 ### Matcher-based — declarative-macro auto-detection
 
@@ -172,9 +172,9 @@ first; ship matcher-based in a follow-up.
 For every macro invocation:
 
 1. Resolve the macro `DefId`.
-2. If the resolved path matches an entry in `deny_list`,
-   skip. `deny_list` is checked first so a user opt-out wins
-   over both name-based and matcher-based eligibility.
+2. If the resolved path matches an entry in `ignore`, skip.
+   `ignore` is checked first so a user opt-out wins over both
+   name-based and matcher-based eligibility.
 3. Decide eligibility:
    - If the path matches a name-based entry (built-in or
      user-configured via `extra_name_based`), eligible.
@@ -384,12 +384,15 @@ extra_name_based = [
   # "another_macro",
 ]
 
-# Macros to never lint, even when name-based or matcher-based
-# detection would otherwise mark them eligible. Use this for
-# macros where the project's own convention diverges (for
-# example, macros whose body is more readable with the comma
-# always present even on a single line).
-deny_list = [
+# Macros for the lint to ignore, even when name-based or
+# matcher-based detection would otherwise mark them eligible.
+# Use this for macros where the project's own convention
+# diverges (for example, macros whose body is more readable
+# with the comma always present even on a single line). The
+# name is `ignore` rather than `deny_list` because the lint
+# never forbids the macro itself — it only declines to act on
+# the invocation's trailing comma.
+ignore = [
   # "my_crate::ascii_table",
 ]
 ```
