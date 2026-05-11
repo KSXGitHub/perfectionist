@@ -7,10 +7,11 @@
 //! (`pub perfectionist::NAME`), its default level, its one-line
 //! description, and the `///` doc-comment block that documents it.
 //! In addition, when a rule's file defines a `Config` struct paired
-//! with a `CONFIG_KEY` constant, the configurable fields (and their
-//! per-field doc comments and default expressions) are surfaced too.
-//! The output is a single self-contained `index.html` written into
-//! the directory passed on the command line.
+//! with a `CONFIG_KEY` constant, the configurable fields and any
+//! non-built-in types they reference (enums, project-local structs)
+//! are surfaced too. The output is a single self-contained
+//! `index.html` written into the directory passed on the command
+//! line.
 //!
 //! The macro grammar is fixed by `rustc_session::declare_tool_lint!`
 //! and the project's convention of placing the doc comment inside
@@ -19,7 +20,7 @@
 //! rustc plugin host just to read these few fields.
 
 use std::{
-    collections::HashMap,
+    collections::BTreeSet,
     fs,
     ops::Range,
     path::{Path, PathBuf},
@@ -34,7 +35,7 @@ use pulldown_cmark::{Event, Options, Tag, TagEnd, html as cmark_html};
 use quote::ToTokens;
 use strum::{Display, EnumString};
 use syn::{
-    Attribute, Expr, ExprLit, Ident, ImplItem, Item, Lit, LitStr, Meta, Stmt, Token, Type,
+    Attribute, Expr, ExprLit, Ident, Item, Lit, LitStr, Meta, Token, Type,
     parse::{Parse, ParseStream},
     spanned::Spanned,
 };
@@ -98,8 +99,7 @@ struct Rule {
 }
 
 /// The configuration surface of a single rule, as extracted from the
-/// rule's `Config` struct, paired `CONFIG_KEY` constant, and (when
-/// present) hand-written `impl Default for Config`.
+/// rule's `Config` struct paired with its `CONFIG_KEY` constant.
 struct ConfigDoc {
     /// The TOML table key, e.g. `perfectionist::flat_module_pattern`.
     /// Read from the file's `CONFIG_KEY` constant verbatim.
@@ -111,11 +111,17 @@ struct ConfigDoc {
     struct_doc_markdown: String,
     /// One entry per named field of the `Config` struct.
     fields: Vec<ConfigField>,
+    /// Non-built-in types referenced from `Config`'s fields, in the
+    /// order the reader is most likely to want them: every type that
+    /// appears earlier in the field list comes first.
+    custom_types: Vec<TypeDoc>,
 }
 
-/// One configurable knob, with the source text of its type and
-/// default expression preserved verbatim so the rendered docs match
-/// what a reader will see in `src/rules/<rule>.rs`.
+/// One configurable knob. Each rule's `Config` derives
+/// `#[serde(default)]`, so every field is optional in TOML; the
+/// renderer marks them with an `optional` badge rather than
+/// reproducing the Rust default expression — the prose doc comment
+/// states the default in human-readable form.
 struct ConfigField {
     /// Field identifier, e.g. `also_flag`. Matches the TOML key
     /// because every `Config` uses `#[serde(rename_all = "snake_case")]`
@@ -125,11 +131,42 @@ struct ConfigField {
     /// sliced out of the rule file using `proc_macro2::Span`
     /// byte ranges.
     type_source: String,
-    /// Verbatim source of the field's default expression as it
-    /// appears in `impl Default for Config`, or `None` when no
-    /// `Default` impl could be located.
-    default_source: Option<String>,
     /// Per-field `///` doc comment, in markdown form.
+    doc_markdown: String,
+}
+
+/// A non-built-in type that one of the `Config` fields references.
+/// Renders as a sub-block under the rule's Configuration section so
+/// readers know what shape an enum variant or nested struct takes
+/// in TOML without leaving the page.
+struct TypeDoc {
+    /// Rust identifier of the type (e.g. `Scope`).
+    name: String,
+    /// Doc comment attached to the `enum` or `struct` definition.
+    doc_markdown: String,
+    /// Whether the type is an enum or a struct, and the per-variant
+    /// or per-field detail that comes with it.
+    kind: TypeKind,
+}
+
+enum TypeKind {
+    Enum { variants: Vec<EnumVariant> },
+    Struct { fields: Vec<StructField> },
+}
+
+struct EnumVariant {
+    /// Rust identifier, e.g. `Line`.
+    rust_name: String,
+    /// The string a TOML author would write — typically
+    /// `rust_name` lowercased and snake-cased when the enum carries
+    /// `#[serde(rename_all = "snake_case")]`.
+    serialized: String,
+    doc_markdown: String,
+}
+
+struct StructField {
+    name: String,
+    type_source: String,
     doc_markdown: String,
 }
 
@@ -232,11 +269,11 @@ fn extract_rule(source_path: &Path) -> Option<Rule> {
     })
 }
 
-/// Locate the rule's `Config` struct, its `CONFIG_KEY` constant, and
-/// the optional `impl Default for Config` block, and bundle them
-/// into a `ConfigDoc`. Returns `None` when either the constant or
-/// the struct is missing — both are mandatory for a rule to be
-/// considered "configurable" by `dylint.toml`.
+/// Locate the rule's `Config` struct and its `CONFIG_KEY` constant
+/// and bundle them — along with any project-local types the fields
+/// reference — into a `ConfigDoc`. Returns `None` when either the
+/// constant or the struct is missing; both are mandatory for a rule
+/// to be considered "configurable" by `dylint.toml`.
 fn extract_config(file: &syn::File, source: &str) -> Option<ConfigDoc> {
     let key = file.items.iter().find_map(|item| match item {
         Item::Const(item_const) if item_const.ident == "CONFIG_KEY" => match &*item_const.expr {
@@ -253,104 +290,261 @@ fn extract_config(file: &syn::File, source: &str) -> Option<ConfigDoc> {
         _ => None,
     })?;
     let struct_doc_markdown = doc_attrs_to_markdown(&config_struct.attrs);
-    let defaults = extract_config_defaults(file, source);
 
-    let fields = match &config_struct.fields {
-        syn::Fields::Named(named) => named
-            .named
-            .iter()
-            .map(|field| {
-                let name = field
-                    .ident
-                    .as_ref()
-                    .expect("named field always has an ident")
-                    .to_string();
-                let type_source = span_text(source, field.ty.span())
-                    .unwrap_or_else(|| fallback_type_text(&field.ty));
-                let default_source = defaults.get(&name).cloned();
-                let doc_markdown = doc_attrs_to_markdown(&field.attrs);
-                ConfigField {
-                    name,
-                    type_source,
-                    default_source,
-                    doc_markdown,
-                }
-            })
-            .collect(),
+    let named_fields = match &config_struct.fields {
+        syn::Fields::Named(named) => named.named.iter().collect::<Vec<_>>(),
         _ => Vec::new(),
     };
+    let fields = named_fields
+        .iter()
+        .map(|field| ConfigField {
+            name: field
+                .ident
+                .as_ref()
+                .expect("named field always has an ident")
+                .to_string(),
+            type_source: span_text(source, field.ty.span())
+                .unwrap_or_else(|| fallback_type_text(&field.ty)),
+            doc_markdown: doc_attrs_to_markdown(&field.attrs),
+        })
+        .collect();
+
+    let mut referenced = Vec::new();
+    let mut seen = BTreeSet::new();
+    for field in &named_fields {
+        collect_referenced_idents(&field.ty, &mut referenced, &mut seen);
+    }
+    let custom_types = referenced
+        .into_iter()
+        .filter_map(|ident| find_type_doc(file, source, &ident))
+        .collect();
 
     Some(ConfigDoc {
         key,
         struct_doc_markdown,
         fields,
+        custom_types,
     })
 }
 
-/// Pull each field's default expression out of `impl Default for
-/// Config`. Recognises the conventional shape
-/// `fn default() -> Self { Self { field: expr, ... } }` (with or
-/// without an explicit `return`); anything more exotic yields an
-/// empty map and the rendered docs simply omit the default column.
-fn extract_config_defaults(file: &syn::File, source: &str) -> HashMap<String, String> {
-    let mut out = HashMap::new();
-    let Some(impl_item) = file.items.iter().find_map(|item| match item {
-        Item::Impl(item_impl)
-            if item_impl.trait_.as_ref().is_some_and(|(_, path, _)| {
-                path.segments
-                    .last()
-                    .is_some_and(|segment| segment.ident == "Default")
-            }) && matches!(
-                &*item_impl.self_ty,
-                Type::Path(type_path)
-                    if type_path
-                        .path
-                        .segments
-                        .last()
-                        .is_some_and(|segment| segment.ident == "Config")
-            ) =>
-        {
-            Some(item_impl)
+/// Walk a `syn::Type` and collect every type identifier that isn't a
+/// well-known built-in. Insertion order matches the order each
+/// distinct ident is first encountered, so the rendered docs list
+/// types in the order a reader scanning the field list will meet
+/// them. The `seen` set deduplicates across multiple fields.
+fn collect_referenced_idents(ty: &Type, out: &mut Vec<String>, seen: &mut BTreeSet<String>) {
+    match ty {
+        Type::Path(type_path) => {
+            for segment in &type_path.path.segments {
+                let name = segment.ident.to_string();
+                if !is_builtin_type(&name) && seen.insert(name.clone()) {
+                    out.push(name);
+                }
+                if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
+                    for arg in &args.args {
+                        if let syn::GenericArgument::Type(inner) = arg {
+                            collect_referenced_idents(inner, out, seen);
+                        }
+                    }
+                }
+            }
         }
-        _ => None,
-    }) else {
-        return out;
-    };
+        Type::Reference(type_ref) => collect_referenced_idents(&type_ref.elem, out, seen),
+        Type::Tuple(type_tuple) => {
+            for elem in &type_tuple.elems {
+                collect_referenced_idents(elem, out, seen);
+            }
+        }
+        Type::Array(type_array) => collect_referenced_idents(&type_array.elem, out, seen),
+        Type::Slice(type_slice) => collect_referenced_idents(&type_slice.elem, out, seen),
+        Type::Paren(type_paren) => collect_referenced_idents(&type_paren.elem, out, seen),
+        Type::Group(type_group) => collect_referenced_idents(&type_group.elem, out, seen),
+        _ => {}
+    }
+}
 
-    let Some(default_fn) = impl_item.items.iter().find_map(|item| match item {
-        ImplItem::Fn(item_fn) if item_fn.sig.ident == "default" => Some(item_fn),
-        _ => None,
-    }) else {
-        return out;
-    };
+/// Type names the renderer treats as "obvious", omitting them from
+/// the per-rule custom-types listing. Covers Rust's primitives and
+/// the std-library containers that show up in serde-deserialised
+/// configuration values. `Config` itself is on the list so a
+/// self-referential type doesn't loop the lookup.
+fn is_builtin_type(name: &str) -> bool {
+    matches!(
+        name,
+        // Primitives.
+        "bool" | "char" | "str"
+        | "u8" | "u16" | "u32" | "u64" | "u128"
+        | "i8" | "i16" | "i32" | "i64" | "i128"
+        | "usize" | "isize"
+        | "f32" | "f64"
+        // Common std types likely to appear in serde-deserialised configs.
+        | "String" | "Vec" | "Option" | "Result"
+        | "Box" | "Rc" | "Arc" | "Cow"
+        | "PathBuf" | "Path" | "OsString" | "OsStr"
+        | "HashMap" | "HashSet" | "BTreeMap" | "BTreeSet"
+        | "VecDeque" | "LinkedList"
+        // The Config struct itself.
+        | "Config"
+    )
+}
 
-    let Some(struct_expr) = default_fn
-        .block
-        .stmts
-        .last()
-        .and_then(|stmt| match stmt {
-            Stmt::Expr(expr, _) => Some(expr),
-            _ => None,
-        })
-        .and_then(|expr| match expr {
-            Expr::Struct(struct_expr) => Some(struct_expr),
-            Expr::Return(return_expr) => match return_expr.expr.as_deref() {
-                Some(Expr::Struct(struct_expr)) => Some(struct_expr),
-                _ => None,
-            },
-            _ => None,
-        })
-    else {
-        return out;
-    };
+/// Find the `enum` or `struct` definition for `ident` inside `file`
+/// and produce a `TypeDoc` describing its variants or fields.
+/// Returns `None` for idents we can't locate (e.g., types imported
+/// from another crate); those are silently dropped rather than
+/// faked, since the docs are only useful when we can show the real
+/// shape.
+fn find_type_doc(file: &syn::File, source: &str, ident: &str) -> Option<TypeDoc> {
+    for item in &file.items {
+        match item {
+            Item::Enum(item_enum) if item_enum.ident == ident => {
+                let rename_all = serde_rename_all(&item_enum.attrs);
+                let variants = item_enum
+                    .variants
+                    .iter()
+                    .map(|variant| {
+                        let rust_name = variant.ident.to_string();
+                        let variant_rename = serde_field_rename(&variant.attrs);
+                        let serialized = variant_rename
+                            .or_else(|| {
+                                rename_all
+                                    .as_deref()
+                                    .map(|style| apply_rename_all(style, &rust_name))
+                            })
+                            .unwrap_or_else(|| rust_name.clone());
+                        EnumVariant {
+                            rust_name,
+                            serialized,
+                            doc_markdown: doc_attrs_to_markdown(&variant.attrs),
+                        }
+                    })
+                    .collect();
+                return Some(TypeDoc {
+                    name: ident.to_owned(),
+                    doc_markdown: doc_attrs_to_markdown(&item_enum.attrs),
+                    kind: TypeKind::Enum { variants },
+                });
+            }
+            Item::Struct(item_struct) if item_struct.ident == ident => {
+                let fields = match &item_struct.fields {
+                    syn::Fields::Named(named) => named
+                        .named
+                        .iter()
+                        .map(|field| StructField {
+                            name: field
+                                .ident
+                                .as_ref()
+                                .expect("named field always has an ident")
+                                .to_string(),
+                            type_source: span_text(source, field.ty.span())
+                                .unwrap_or_else(|| fallback_type_text(&field.ty)),
+                            doc_markdown: doc_attrs_to_markdown(&field.attrs),
+                        })
+                        .collect(),
+                    _ => Vec::new(),
+                };
+                return Some(TypeDoc {
+                    name: ident.to_owned(),
+                    doc_markdown: doc_attrs_to_markdown(&item_struct.attrs),
+                    kind: TypeKind::Struct { fields },
+                });
+            }
+            _ => {}
+        }
+    }
+    None
+}
 
-    for field_value in &struct_expr.fields {
-        let syn::Member::Named(ident) = &field_value.member else {
+/// Read the `rename_all = "..."` style from a type's `#[serde(...)]`
+/// attribute, if present. Returns the raw style name (e.g.
+/// `"snake_case"`); the actual case conversion lives in
+/// [`apply_rename_all`].
+fn serde_rename_all(attrs: &[Attribute]) -> Option<String> {
+    for attr in attrs {
+        if !attr.path().is_ident("serde") {
             continue;
-        };
-        let text = span_text(source, field_value.expr.span())
-            .unwrap_or_else(|| field_value.expr.to_token_stream().to_string());
-        out.insert(ident.to_string(), text);
+        }
+        let parsed =
+            attr.parse_args_with(syn::punctuated::Punctuated::<Meta, Token![,]>::parse_terminated);
+        let Ok(items) = parsed else { continue };
+        for item in items {
+            if let Meta::NameValue(name_value) = item
+                && name_value.path.is_ident("rename_all")
+                && let Expr::Lit(ExprLit {
+                    lit: Lit::Str(literal),
+                    ..
+                }) = name_value.value
+            {
+                return Some(literal.value());
+            }
+        }
+    }
+    None
+}
+
+/// Read a per-variant or per-field `#[serde(rename = "...")]`
+/// override, used when one specific variant opts out of the
+/// enum-wide `rename_all` policy.
+fn serde_field_rename(attrs: &[Attribute]) -> Option<String> {
+    for attr in attrs {
+        if !attr.path().is_ident("serde") {
+            continue;
+        }
+        let parsed =
+            attr.parse_args_with(syn::punctuated::Punctuated::<Meta, Token![,]>::parse_terminated);
+        let Ok(items) = parsed else { continue };
+        for item in items {
+            if let Meta::NameValue(name_value) = item
+                && name_value.path.is_ident("rename")
+                && let Expr::Lit(ExprLit {
+                    lit: Lit::Str(literal),
+                    ..
+                }) = name_value.value
+            {
+                return Some(literal.value());
+            }
+        }
+    }
+    None
+}
+
+/// Apply one of serde's `rename_all` styles to a Rust identifier.
+/// Only the styles that actually appear in this codebase are
+/// implemented; anything else falls through to the identifier as
+/// written, which keeps the renderer honest about what it knows
+/// instead of silently producing a wrong serialised name.
+fn apply_rename_all(style: &str, name: &str) -> String {
+    match style {
+        "snake_case" => pascal_to_snake(name),
+        "SCREAMING_SNAKE_CASE" => pascal_to_snake(name).to_ascii_uppercase(),
+        "kebab-case" => pascal_to_snake(name).replace('_', "-"),
+        "lowercase" => name.to_ascii_lowercase(),
+        "UPPERCASE" => name.to_ascii_uppercase(),
+        _ => name.to_owned(),
+    }
+}
+
+/// Convert `PascalCase` (or `camelCase`) to `snake_case` by inserting
+/// `_` before each uppercase letter that follows a lowercase one or
+/// precedes a lowercase one. Adequate for the rule-author-controlled
+/// enum names this generator sees; not a general-purpose case
+/// converter.
+fn pascal_to_snake(name: &str) -> String {
+    let mut out = String::with_capacity(name.len() + 2);
+    let chars: Vec<char> = name.chars().collect();
+    for (index, &ch) in chars.iter().enumerate() {
+        if ch.is_ascii_uppercase() {
+            let prev_lower = index > 0 && chars[index - 1].is_ascii_lowercase();
+            let next_lower = chars
+                .get(index + 1)
+                .is_some_and(|next| next.is_ascii_lowercase());
+            if index > 0 && (prev_lower || next_lower) {
+                out.push('_');
+            }
+            out.push(ch.to_ascii_lowercase());
+        } else {
+            out.push(ch);
+        }
     }
     out
 }
@@ -539,18 +733,89 @@ fn config_section(config: &ConfigDoc) -> Markup {
                         code.config-key { (field.name) }
                         " : "
                         code.config-type { (field.type_source) }
-                        @if let Some(default) = &field.default_source {
-                            " "
-                            span.config-default {
-                                "(default: " code { (default) } ")"
-                            }
-                        }
+                        " "
+                        span.badge.badge-optional { "optional" }
                     }
                     dd {
                         @if field.doc_markdown.is_empty() {
                             p { em { "Undocumented." } }
                         } @else {
                             (PreEscaped(markdown_to_html(&field.doc_markdown)))
+                        }
+                    }
+                }
+            }
+            @if !config.custom_types.is_empty() {
+                h4 { "Custom types" }
+                @for ty in &config.custom_types {
+                    (custom_type_block(ty))
+                }
+            }
+        }
+    }
+}
+
+/// Render one custom type referenced by a `Config` field. Enum
+/// variants are listed with the string a TOML author would write,
+/// since that's the user-facing value; the Rust identifier is shown
+/// in parentheses only when it differs.
+fn custom_type_block(ty: &TypeDoc) -> Markup {
+    let kind_label = match ty.kind {
+        TypeKind::Enum { .. } => "enum",
+        TypeKind::Struct { .. } => "struct",
+    };
+    html! {
+        div.custom-type {
+            p {
+                code.custom-type-name { (ty.name) }
+                " "
+                span.custom-type-kind { (kind_label) }
+            }
+            @if !ty.doc_markdown.is_empty() {
+                (PreEscaped(markdown_to_html(&ty.doc_markdown)))
+            }
+            @match &ty.kind {
+                TypeKind::Enum { variants } => {
+                    @if !variants.is_empty() {
+                        dl.config {
+                            @for variant in variants {
+                                dt {
+                                    code.config-key { "\"" (variant.serialized) "\"" }
+                                    @if variant.rust_name != variant.serialized {
+                                        " "
+                                        span.config-default {
+                                            "(Rust: " code { (variant.rust_name) } ")"
+                                        }
+                                    }
+                                }
+                                dd {
+                                    @if variant.doc_markdown.is_empty() {
+                                        p { em { "Undocumented." } }
+                                    } @else {
+                                        (PreEscaped(markdown_to_html(&variant.doc_markdown)))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                TypeKind::Struct { fields } => {
+                    @if !fields.is_empty() {
+                        dl.config {
+                            @for field in fields {
+                                dt {
+                                    code.config-key { (field.name) }
+                                    " : "
+                                    code.config-type { (field.type_source) }
+                                }
+                                dd {
+                                    @if field.doc_markdown.is_empty() {
+                                        p { em { "Undocumented." } }
+                                    } @else {
+                                        (PreEscaped(markdown_to_html(&field.doc_markdown)))
+                                    }
+                                }
+                            }
                         }
                     }
                 }

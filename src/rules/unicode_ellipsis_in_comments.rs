@@ -62,10 +62,14 @@ impl Default for Config {
     }
 }
 
+/// Selector for which comment syntaxes the rule scans.
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum Scope {
+    /// `//`-prefixed line comments, including consecutive runs that
+    /// rustc treats as a single logical comment.
     Line,
+    /// `/* ... */` block comments, including nested ones.
     Block,
 }
 
