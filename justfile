@@ -16,7 +16,7 @@ fmt:
 
 # Build in debug mode
 build:
-  cargo build
+  cargo build --workspace --all-targets
 
 # Check documentation
 doc:
@@ -24,12 +24,12 @@ doc:
 
 # Run all the lints
 lint:
-  cargo clippy --all-targets -- -D warnings
+  cargo clippy --workspace --all-targets -- -D warnings
 
 # Run all the tests
 test:
   just warmup-integration-tests
-  cargo test
+  cargo test --workspace --all-targets
 
 # Run perfectionist's own lints on its source
 self-lint:
