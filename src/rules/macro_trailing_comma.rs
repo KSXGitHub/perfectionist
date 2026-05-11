@@ -204,7 +204,7 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    // The lint is split across two passes for issue #409: a
+    // The lint is split across two passes for issue [#409]: a
     // `cfg_attr`-wrapped `#[expect]` is not yet visible to a pre-
     // expansion lint level lookup (the `cfg_attr` is itself an
     // attribute that has not been evaluated yet), so emitting the
@@ -223,6 +223,8 @@ pub fn register_pass(lint_store: &mut LintStore) {
     // Pre-expansion remains necessary for the first half: post-
     // expansion the macros covered by this rule have been expanded
     // away and `check_mac` would never fire.
+    //
+    // [#409]: https://github.com/KSXGitHub/parallel-disk-usage/issues/409
     lint_store.register_pre_expansion_pass(|| Box::new(MacroTrailingComma::new()));
     lint_store.register_late_pass(|_| Box::new(MacroTrailingCommaLate));
 }
