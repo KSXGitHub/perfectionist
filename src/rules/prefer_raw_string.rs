@@ -13,6 +13,11 @@ declare_tool_lint! {
     /// `r"..."` / `r#"..."#`, picking the smallest hash count that
     /// avoids a delimiter collision.
     ///
+    /// This includes literals passed as arguments to macros such as
+    /// `println!`, `format!`, `vec!`, and `assert!`. Suppress per
+    /// call site with `#[allow(perfectionist::prefer_raw_string)]`
+    /// when the regular form is deliberately preferred.
+    ///
     /// Whitespace and control-character escapes (`\n`, `\t`, `\r`,
     /// `\0`) and Unicode escapes (`\x..`, `\u{..}`) are exempt — a
     /// raw string cannot express them, and the regular form is the
