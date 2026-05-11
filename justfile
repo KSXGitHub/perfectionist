@@ -38,3 +38,7 @@ self-lint:
 # Pre-warm `target/integration-fixtures`
 warmup-integration-tests:
   cargo run --package _utils --bin warmup -- "$(pwd)"
+
+# Render the rule catalogue to `gh-pages/index.html`
+gen-docs out_dir="gh-pages":
+  cargo run --package _utils --bin gen-docs -- "$(pwd)" {{out_dir}}
