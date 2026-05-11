@@ -209,14 +209,33 @@ invocation:
    well-known third-party set as
    [`macro-trailing-comma`](./macro-trailing-comma.md) —
    `format!`, `println!`, `vec!`, `write!`, `assert!`,
-   `assert_eq!`, `anyhow!`, and similar. Notably absent:
-   the `log::*` and `tracing::*` families — those check
-   the configured level before evaluating their arguments
-   (the same conditional-evaluation footgun called out in
-   "Why is this bad?"), so they don't meet the
-   exactly-once criterion. They are left off both default
-   lists; projects that want strict enforcement add them
-   to `deny_extra`.
+   `assert_eq!`, `anyhow!`, and similar.
+
+   Notably absent: the `log::*` and `tracing::*` families
+   — those check the configured level before evaluating
+   their arguments (the same conditional-evaluation
+   footgun called out in "Why is this bad?"), so they
+   don't meet the criterion. They are left off both
+   default lists; projects that want strict enforcement
+   add them to `deny_extra`.
+
+   Caveat for the `assert!` family: `assert!`,
+   `assert_eq!`, `assert_ne!`, and the `debug_assert*`
+   counterparts evaluate their *condition / operand* args
+   exactly once, but their *message-format* args are
+   evaluated only on the failure path (so zero times when
+   the assertion passes). The default allowlist accepts
+   them on the strength of the condition/operand
+   guarantee, since assert messages in practice are
+   either absent or trivial (literal templates plus path
+   references). A side-effecting expression in a message
+   slot — `assert!(check(), "saw {}", set.insert(k))` —
+   is the same hidden-evaluation footgun as the
+   motivating bug, but is rare enough that the default
+   accepts the trade. Projects that find this too loose
+   can add `assert`, `assert_eq`, and `assert_ne` to
+   `deny_extra`; the more precise per-arg-position
+   solution is left to a future enhancement.
 3. **Neither**: skip silently. Unknown macros are not flagged
    by default. A project that wants stricter behaviour
    reaches for mode 1 or mode 4.
