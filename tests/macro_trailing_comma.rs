@@ -6,34 +6,69 @@
 //!
 //! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
 //! the duration of `run_tests`. The env var is process-global, so the
-//! three `#[test]`s in this binary serialise themselves on a shared
+//! `#[test]`s in this binary serialise themselves on a shared
 //! `Mutex` to avoid clobbering each other under the default
 //! parallel test harness.
 
+use std::collections::BTreeMap;
 use std::sync::Mutex;
 
 const LINT_NAME: &str = "perfectionist::macro_trailing_comma";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
-fn dylint_toml_for(body: &str) -> String {
-    format!("[\"{LINT_NAME}\"]\n{body}")
+/// The rule's user-facing configuration shape, mirrored here for
+/// serialisation. Kept as a separate type from the lint's own internal
+/// `Config` so the test surface is independent of the implementation's
+/// private struct.
+#[derive(Default, serde::Serialize)]
+struct RuleConfig {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    extra_name_based: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    ignore: Vec<String>,
 }
 
-fn run(src_base: &str, dylint_toml_body: &str) {
+fn dylint_toml(config: RuleConfig) -> String {
+    // A single-entry map gets serialised by `toml` as a top-level
+    // table keyed by `LINT_NAME` — the same shape `dylint_linting`'s
+    // `config_or_default` reads from `dylint.toml`. The `::` in the
+    // key is quoted automatically.
+    let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
+    toml::to_string(&table).expect("serialise rule config as dylint.toml")
+}
+
+fn run(src_base: &str, config: RuleConfig) {
     // A poisoned mutex from a previous panic doesn't make this lock
     // unsafe — recover the inner guard and proceed.
     let _serial = SERIAL.lock().unwrap_or_else(|err| err.into_inner());
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), src_base)
-        .dylint_toml(dylint_toml_for(dylint_toml_body))
+        .dylint_toml(dylint_toml(config))
         .run();
 }
 
 #[test]
-fn extra_name_based_enables_a_user_named_macro() {
+fn extra_name_based_enables_a_macro_by_bare_name() {
     run(
         "ui-toml/macro_trailing_comma/extra_name_based",
-        "extra_name_based = [\"my_macro\"]\n",
+        RuleConfig {
+            extra_name_based: vec!["my_macro".into()],
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn extra_name_based_enables_a_macro_by_qualified_path() {
+    // Multi-segment entries tail-match the invocation path, so a
+    // third-party macro invoked as `inner::their_macro!` is matched
+    // by the qualified entry `inner::their_macro`.
+    run(
+        "ui-toml/macro_trailing_comma/extra_name_based_qualified",
+        RuleConfig {
+            extra_name_based: vec!["inner::their_macro".into()],
+            ..Default::default()
+        },
     );
 }
 
@@ -41,7 +76,10 @@ fn extra_name_based_enables_a_user_named_macro() {
 fn ignore_suppresses_a_built_in_curated_macro() {
     run(
         "ui-toml/macro_trailing_comma/ignore",
-        "ignore = [\"vec\"]\n",
+        RuleConfig {
+            ignore: vec!["vec".into()],
+            ..Default::default()
+        },
     );
 }
 
@@ -49,6 +87,9 @@ fn ignore_suppresses_a_built_in_curated_macro() {
 fn ignore_wins_over_extra_name_based_for_the_same_macro() {
     run(
         "ui-toml/macro_trailing_comma/ignore_overrides_extra",
-        "extra_name_based = [\"my_macro\"]\nignore = [\"my_macro\"]\n",
+        RuleConfig {
+            extra_name_based: vec!["my_macro".into()],
+            ignore: vec!["my_macro".into()],
+        },
     );
 }
