@@ -777,17 +777,15 @@ fn rule_article(rule: &Rule) -> Markup {
 ///    "Configuration: none." instead. The fact that the rule is
 ///    not configurable is itself information; omitting the section
 ///    entirely would leave readers wondering whether they missed a
-///    knob. Any struct-level doc comment is still surfaced after
-///    the inline line, so the rule's prose explanation of *why*
-///    the placeholder exists is preserved.
+///    knob. Any struct-level doc comment is *not* surfaced in this
+///    case — an empty config has no user-facing schema to
+///    annotate, so the comment is internal implementation prose
+///    that belongs in the source, not on the catalogue page.
 fn config_section(config: &ConfigDoc) -> Markup {
     if config.fields.is_empty() {
         return html! {
             p.config-none {
                 strong { "Configuration:" } " none."
-            }
-            @if !config.struct_doc_markdown.is_empty() {
-                (PreEscaped(markdown_to_html(&config.struct_doc_markdown)))
             }
         };
     }
