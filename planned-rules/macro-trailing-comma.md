@@ -38,7 +38,19 @@ eligibility, named for *how* they identify an eligible macro.
 ### Name-based — well-known macro allow-list
 
 A hard-coded list of macros known to accept the trailing comma
-optionally. The list covers two groups:
+optionally. **Inclusion criterion:** the macro takes a
+top-level comma-separated argument list — i.e., a typical
+invocation contains two or more items separated by *top-level*
+commas in the macro's token stream — and the trailing comma is
+syntactically optional in the macro's matcher. Macros that use
+a different separator (`;` for `thread_local!`, `lazy_static!`),
+that take a single argument that isn't a list (`include_str!`,
+`compile_error!`, `cfg!`), or that pass tokens through verbatim
+so that a trailing comma would change their output
+(`stringify!`, `paste::paste!`) do **not** qualify; they're
+deliberately absent from the list below.
+
+The list covers two groups:
 
 - **`core` / `std` macros** that take comma-separated arguments:
   `vec!`, `format!`, `format_args!`, `print!`, `println!`,
@@ -46,16 +58,12 @@ optionally. The list covers two groups:
   `unimplemented!`, `todo!`, `unreachable!`, `assert!`,
   `assert_eq!`, `assert_ne!`, `debug_assert!`,
   `debug_assert_eq!`, `debug_assert_ne!`, `matches!`,
-  `dbg!`, `concat!`, `env!`, `option_env!`, `stringify!`,
-  `cfg!`, `compile_error!`, `include!`, `include_str!`,
-  `include_bytes!`, `thread_local!`.
+  `dbg!`, `concat!`, `env!`, `option_env!`.
 - **Well-known third-party macros** with the same convention:
   `pretty_assertions::{assert_eq, assert_ne, assert_str_eq}`,
   `maplit::{hashmap, btreemap, hashset, btreeset, convert_args}`,
-  `serde_json::json`, `lazy_static::lazy_static`,
-  `paste::paste`, `log::{log, error, warn, info, debug, trace}`,
+  `log::{log, error, warn, info, debug, trace}`,
   `tracing::{event, error, warn, info, debug, trace, span}`,
-  `clap::{arg, command}`,
   `anyhow::{anyhow, bail, ensure}`.
 
   The list is curated, not exhaustive — projects extend it via
@@ -169,13 +177,20 @@ For every macro invocation:
      ends in `$(,)?` (per the predicate above), eligible.
    - Otherwise, skip.
 4. Inspect the *invocation token stream* — not the expansion —
-   to confirm that the top-level argument list is purely comma-
-   separated. Skip if:
-   - The delimiter is opened but the body contains a top-level
-     `;` (e.g., `vec![value; count]`), `=>` (token-tree macros
-     like `quote!` arms), or any other top-level separator that
-     isn't a comma.
-   - There are zero arguments (no comma to add or remove).
+   to confirm the call is shaped like a top-level comma-
+   separated argument list. Skip if:
+   - The body contains a top-level `;` (e.g., `vec![value;
+     count]`, `thread_local! { static FOO: ...; static BAR:
+     ...; }`). A top-level `;` indicates the macro uses `;` as
+     its item separator, not commas.
+   - The body contains **zero** top-level commas (no list to
+     apply the trailing-comma policy to). This catches token-
+     tree macros like `quote! { fn foo() {} }` whose body has
+     no top-level commas at all, single-argument macros, and
+     empty invocations. `=>` may appear at the top level
+     between items — e.g., `hashmap! { "a" => 1, "b" => 2 }`
+     legitimately has a top-level `=>` per entry — and is
+     fine as long as top-level commas separate the entries.
 5. Determine "single-line" vs "multi-line" by the source
    positions of the opening and closing delimiters. If they
    share a line, single-line; otherwise multi-line.
@@ -263,13 +278,15 @@ comma_list!(
 );
 ```
 
-### Skipped: non-comma top-level separator
+### Skipped: not shaped like a comma-separated list
 
 ```rust
-// Skipped: vec![value; count] uses `;`, not a list separator
+// Skipped: `vec![value; count]` uses `;`, not a list separator.
+// A top-level `;` indicates a different macro form.
 let zeros = vec![0; 10];
 
-// Skipped: quote! arm uses `=>` and arbitrary tokens
+// Skipped: no top-level commas in the body — the macro is a
+// token-tree passthrough, not a comma-separated list.
 quote! {
     fn foo() -> i32 { 42 }
 };
