@@ -1,0 +1,90 @@
+name: Pages
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# A single in-flight deploy at a time. Don't cancel running deploys
+# because GitHub Pages rejects overlapping uploads.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Cache
+        uses: actions/cache@v5
+        timeout-minutes: 1
+        continue-on-error: true
+        with:
+          path: |
+            ~/.cargo
+            target
+          key: ${{ github.job }}-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ github.job }}-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}-${{ hashFiles('**/Cargo.lock') }}
+            ${{ github.job }}-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}-
+
+      - name: Install Rust
+        shell: bash
+        run: |
+          installer=$(mktemp -d)/install-rustup
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > $installer
+          bash $installer --default-toolchain none -y
+          source "$HOME/.cargo/env"
+          # Triggers rustup to install the toolchain and components from the
+          # rust-toolchain override file (TOML format is required for `components`).
+          rustup show active-toolchain || rustup show
+
+      - name: Install dylint-link
+        uses: taiki-e/install-action@v2
+        with:
+          tool: dylint-link
+
+      - name: Render site
+        shell: bash
+        run: cargo run --package _gen_docs --bin gen-docs -- "$(pwd)" gh-pages
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: gh-pages
+
+      - name: Clean workspace artifacts before cache
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: cargo clean --workspace
+
+  deploy:
+    name: Deploy to GitHub Pages
+
+    needs: build
+
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
