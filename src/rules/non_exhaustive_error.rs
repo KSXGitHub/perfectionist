@@ -65,9 +65,21 @@ const CONFIG_KEY: &str = "perfectionist::non_exhaustive_error";
 #[derive(Debug, Clone, Copy, Default, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum RequireFor {
+    /// Require `#[non_exhaustive]` on items that are *effectively*
+    /// reachable from outside the crate (declared `pub`, re-exported
+    /// `pub`, and not buried inside a non-`pub` module). A
+    /// `pub enum FooError` inside a non-`pub` module is not flagged
+    /// because it cannot be matched on by any downstream crate.
     #[default]
     Pub,
+    /// In addition to the `Pub` case, require `#[non_exhaustive]`
+    /// on items literally declared `pub(crate)` (i.e., restricted
+    /// to the crate root). Items declared `pub(in some::module)`
+    /// are not promoted by this mode even if their effective reach
+    /// happens to extend to the crate root.
     PubCrate,
+    /// Require `#[non_exhaustive]` on every error-shaped item
+    /// regardless of visibility.
     All,
 }
 
@@ -75,20 +87,6 @@ enum RequireFor {
 #[serde(default, rename_all = "snake_case")]
 struct Config {
     /// Visibility threshold for the rule.
-    ///
-    /// - `"pub"` (default) requires `#[non_exhaustive]` on items
-    ///   that are *effectively* reachable from outside the crate
-    ///   (declared `pub`, re-exported `pub`, and not buried inside
-    ///   a non-`pub` module). A `pub enum FooError` inside a
-    ///   non-`pub` module is not flagged because it cannot be
-    ///   matched on by any downstream crate.
-    /// - `"pub_crate"` additionally requires `#[non_exhaustive]`
-    ///   on items literally declared `pub(crate)` (i.e., restricted
-    ///   to the crate root). Items declared `pub(in some::module)`
-    ///   are not promoted by this mode even if their effective
-    ///   reach happens to extend to the crate root.
-    /// - `"all"` requires it on every error-shaped item regardless
-    ///   of visibility.
     require_for: RequireFor,
     /// Identifier suffixes that mark a type as "an error" purely
     /// by name, without inspecting its trait implementations.
