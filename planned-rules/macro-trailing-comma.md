@@ -150,12 +150,15 @@ paths.
 Matcher-based matching has to:
 
 1. Reach the `macro_rules!` matcher AST from the invocation's
-   `DefId`. For local macros this is `tcx.hir().get_by_def_id`;
-   for dependency macros the matcher is reachable via
-   `tcx.crate_def_map(cnum)` and the macro's expansion data,
-   which lives in the crate metadata. Some matchers are not
-   re-exported across crate boundaries — those cases must
-   degrade gracefully (treat as ineligible, do not warn).
+   `DefId`. For local macros this is
+   `tcx.hir_node_by_def_id(def_id)`, which returns a
+   `Node<'tcx>` whose `ItemKind::MacroDef` carries the matcher
+   arms. For dependency macros the matcher is reachable via the
+   crate-metadata store (`tcx.cstore_untracked()` plus the
+   macro-data query); see the implementation notes section for
+   the exact call path. Some matchers are not re-exported
+   across crate boundaries — those cases must degrade gracefully
+   (treat as ineligible, do not warn).
 2. Walk every arm's matcher token tree, locating the trailing
    `$(,)?` (or equivalent) per the predicate above.
 3. Decide which arm matches the invocation — or refuse to
@@ -183,17 +186,17 @@ For every macro invocation:
      ends in `$(,)?` (per the predicate above), eligible.
    - Otherwise, skip.
 4. Inspect the *invocation token stream* — not the expansion —
-   to confirm the call is shaped like a top-level comma-
-   separated argument list. Skip if:
+   to confirm the call is shaped like a top-level
+   comma-separated argument list. Skip if:
    - The body contains a top-level `;` (e.g., `vec![value;
      count]`, `thread_local! { static FOO: ...; static BAR:
      ...; }`). A top-level `;` indicates the macro uses `;` as
      its item separator, not commas.
    - The body contains **zero** top-level commas (no list to
-     apply the trailing-comma policy to). This catches token-
-     tree macros like `quote! { fn foo() {} }` whose body has
-     no top-level commas at all, single-argument macros, and
-     empty invocations. `=>` may appear at the top level
+     apply the trailing-comma policy to). This catches
+     token-tree macros like `quote! { fn foo() {} }` whose body
+     has no top-level commas at all, single-argument macros,
+     and empty invocations. `=>` may appear at the top level
      between items — e.g., `hashmap! { "a" => 1, "b" => 2 }`
      legitimately has a top-level `=>` per entry — and is
      fine as long as top-level commas separate the entries.
@@ -426,9 +429,9 @@ ignore = [
   `tcx.hir_node_by_def_id(...)` if local, or via the macro
   metadata in `tcx.cstore_untracked()` for external macros;
   unavailable matchers degrade to "ineligible".
-- **Parser style.** The matcher walker is a parser-
-  combinator-style `take_*` chain over the matcher token
-  stream per
+- **Parser style.** The matcher walker is a
+  parser-combinator-style `take_*` chain over the matcher
+  token stream per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
   one combinator per matcher position kind (literal token,
   `$name:frag` capture, `$( ... )sep rep` repetition), with
