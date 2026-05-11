@@ -80,4 +80,10 @@ pub struct NotSumLikeError(pub ParseKind, pub u32);
 // Good: struct whose single field is not an enum is not "sum-like".
 pub struct NotEnumWrapperError(pub u32);
 
+// Bad: type-aliased sum-like wrapper. The field's source-level type
+// is `KindAlias`, but it resolves through the alias to `ParseKind`
+// (an enum), so the SemVer concern still applies.
+pub type KindAlias = ParseKind;
+pub struct AliasedError(pub KindAlias);
+
 fn main() {}

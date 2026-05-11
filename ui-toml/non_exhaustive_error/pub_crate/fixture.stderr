@@ -1,0 +1,27 @@
+warning: enum `CrateLocalError` is missing `#[non_exhaustive]`
+  --> $DIR/fixture.rs:8:17
+   |
+LL | pub(crate) enum CrateLocalError {
+   |                 ^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::non_exhaustive_error)]` on by default
+help: add `#[non_exhaustive]` to keep new variants from being a SemVer break
+   |
+LL + #[non_exhaustive]
+LL | pub(crate) enum CrateLocalError {
+   |
+
+warning: enum `AlsoFlaggedError` is missing `#[non_exhaustive]`
+  --> $DIR/fixture.rs:12:10
+   |
+LL | pub enum AlsoFlaggedError {
+   |          ^^^^^^^^^^^^^^^^
+   |
+help: add `#[non_exhaustive]` to keep new variants from being a SemVer break
+   |
+LL + #[non_exhaustive]
+LL | pub enum AlsoFlaggedError {
+   |
+
+warning: 2 warnings emitted
+

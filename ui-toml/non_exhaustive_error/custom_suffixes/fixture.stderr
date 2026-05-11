@@ -1,0 +1,15 @@
+warning: enum `ConfigFailure` is missing `#[non_exhaustive]`
+  --> $DIR/fixture.rs:7:10
+   |
+LL | pub enum ConfigFailure {
+   |          ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::non_exhaustive_error)]` on by default
+help: add `#[non_exhaustive]` to keep new variants from being a SemVer break
+   |
+LL + #[non_exhaustive]
+LL | pub enum ConfigFailure {
+   |
+
+warning: 1 warning emitted
+

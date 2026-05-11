@@ -35,5 +35,17 @@ LL + #[non_exhaustive]
 LL | pub enum BadlyNamed {
    |
 
-warning: 3 warnings emitted
+warning: struct `AliasedError` is missing `#[non_exhaustive]`
+  --> $DIR/non_exhaustive_error.rs:87:12
+   |
+LL | pub struct AliasedError(pub KindAlias);
+   |            ^^^^^^^^^^^^
+   |
+help: add `#[non_exhaustive]` to keep new variants from being a SemVer break
+   |
+LL + #[non_exhaustive]
+LL | pub struct AliasedError(pub KindAlias);
+   |
+
+warning: 4 warnings emitted
 

@@ -1,0 +1,39 @@
+warning: enum `PublicError` is missing `#[non_exhaustive]`
+  --> $DIR/fixture.rs:4:10
+   |
+LL | pub enum PublicError {
+   |          ^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::non_exhaustive_error)]` on by default
+help: add `#[non_exhaustive]` to keep new variants from being a SemVer break
+   |
+LL + #[non_exhaustive]
+LL | pub enum PublicError {
+   |
+
+warning: enum `CrateLocalError` is missing `#[non_exhaustive]`
+  --> $DIR/fixture.rs:8:17
+   |
+LL | pub(crate) enum CrateLocalError {
+   |                 ^^^^^^^^^^^^^^^
+   |
+help: add `#[non_exhaustive]` to keep new variants from being a SemVer break
+   |
+LL + #[non_exhaustive]
+LL | pub(crate) enum CrateLocalError {
+   |
+
+warning: enum `PrivateError` is missing `#[non_exhaustive]`
+  --> $DIR/fixture.rs:12:6
+   |
+LL | enum PrivateError {
+   |      ^^^^^^^^^^^^
+   |
+help: add `#[non_exhaustive]` to keep new variants from being a SemVer break
+   |
+LL + #[non_exhaustive]
+LL | enum PrivateError {
+   |
+
+warning: 3 warnings emitted
+

@@ -5,7 +5,6 @@ use clippy_utils::ty::implements_trait;
 use rustc_errors::Applicability;
 use rustc_hir as hir;
 use rustc_hir::attrs::AttributeKind;
-use rustc_hir::def::{DefKind, Res};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_middle::middle::privacy::Level;
 use rustc_middle::ty::{self, TyCtxt};
@@ -56,10 +55,6 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::non_exhaustive_error";
 
-// TODO(non_exhaustive_error): the non-default variants
-// (`PubCrate`, `All`) have no UI coverage. The project's `ui-toml/`
-// convention (see `ui-toml/macro_trailing_comma/`) is where per-mode
-// fixtures would live; add one fixture per non-default mode.
 #[derive(Debug, Clone, Copy, Default, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum RequireFor {
@@ -206,23 +201,19 @@ fn implements_error_trait(cx: &LateContext<'_>, def_id: LocalDefId) -> bool {
     implements_trait(cx, ty, error_trait, &[])
 }
 
-/// A struct is "sum-like" when it has exactly one field and that
-/// field's type resolves to an `enum`. The rationale matches the
-/// planning file: such a struct is a newtype around an enum, so its
-/// SemVer surface inherits the enum's variant-addition concern.
+/// A struct is "sum-like" when it has exactly one field whose type
+/// (post-resolution) is an enum. Resolving through type aliases and
+/// associated types is intentional — `pub struct FooError(pub E)` where
+/// `type E = MyEnum;` is still a newtype around an enum, and the
+/// SemVer-surface concern is identical to a direct `pub struct
+/// FooError(pub MyEnum)`.
 fn is_sum_like(cx: &LateContext<'_>, data: &hir::VariantData<'_>) -> bool {
     let fields = data.fields();
     if fields.len() != 1 {
         return false;
     }
-    let field_ty = fields[0].ty;
-    let hir::TyKind::Path(qpath) = field_ty.kind else {
-        return false;
-    };
-    matches!(
-        cx.qpath_res(&qpath, field_ty.hir_id),
-        Res::Def(DefKind::Enum, _),
-    )
+    let field_ty = cx.tcx.type_of(fields[0].def_id).instantiate_identity();
+    matches!(field_ty.kind(), ty::Adt(adt_def, _) if adt_def.is_enum())
 }
 
 fn emit(cx: &LateContext<'_>, item: &hir::Item<'_>, kind_label: &str, ident: rustc_span::Ident) {
