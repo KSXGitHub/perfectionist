@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 
 pub use _utils::*;
 
-pub const CARGO_MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
+const CARGO_MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 pub fn perfectionist_dir() -> &'static Path {
     Path::new(CARGO_MANIFEST_DIR)
