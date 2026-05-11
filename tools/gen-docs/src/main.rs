@@ -19,17 +19,24 @@ use std::{
     fs,
     path::{Path, PathBuf},
     process::ExitCode,
+    sync::LazyLock,
 };
 
 use cargo_toml::{Inheritable, Manifest};
 use clap::Parser;
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 use proc_macro2::TokenStream;
-use pulldown_cmark::{Event, Options, Tag, TagEnd, html as cmark_html};
+use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Tag, TagEnd, html as cmark_html};
 use strum::{Display, EnumString};
 use syn::{
     Attribute, Expr, ExprLit, Ident, Item, Lit, LitStr, Meta, Token,
     parse::{Parse, ParseStream},
+};
+use syntect::{
+    highlighting::{Theme, ThemeSet},
+    html::{ClassStyle, ClassedHTMLGenerator, css_for_theme_with_class_style},
+    parsing::SyntaxSet,
+    util::LinesWithEndings,
 };
 
 #[derive(Parser)]
@@ -247,7 +254,7 @@ fn render_page(rules: &[Rule], crate_version: &str) -> String {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 title { "perfectionist lints" }
-                style { (PreEscaped(STYLE)) }
+                style { (PreEscaped(STYLE)) (PreEscaped(&*HIGHLIGHT_CSS)) }
             }
             body {
                 h1 { "perfectionist lints" }
@@ -332,10 +339,109 @@ fn markdown_to_html(markdown: &str) -> String {
     options.insert(Options::ENABLE_STRIKETHROUGH);
     options.insert(Options::ENABLE_FOOTNOTES);
     let parser = pulldown_cmark::Parser::new_ext(markdown, options);
+    let events = highlight_code_blocks(parser);
     let mut buffer = String::new();
-    cmark_html::push_html(&mut buffer, parser);
+    cmark_html::push_html(&mut buffer, events.into_iter());
     buffer
 }
+
+/// Walk pulldown-cmark events, replacing fenced code blocks with
+/// pre-highlighted HTML produced by `syntect`. The first comma-
+/// separated token of the fence's info string is the language tag
+/// (so `rust,ignore` is treated as Rust). Untagged fences pass
+/// through to pulldown-cmark's default rendering; unknown tags are
+/// highlighted as plain text.
+fn highlight_code_blocks<'a>(parser: impl Iterator<Item = Event<'a>>) -> Vec<Event<'a>> {
+    let mut out = Vec::new();
+    let mut current_lang: Option<String> = None;
+    let mut code_buffer = String::new();
+    for event in parser {
+        match event {
+            Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(info))) => {
+                let lang = info
+                    .split(',')
+                    .next()
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .map(str::to_owned);
+                if let Some(lang) = lang {
+                    current_lang = Some(lang);
+                    code_buffer.clear();
+                } else {
+                    // Untagged fenced blocks have no language to highlight;
+                    // let pulldown-cmark emit them as plain `<pre><code>`.
+                    out.push(Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(info))));
+                }
+            }
+            Event::End(TagEnd::CodeBlock) if current_lang.is_some() => {
+                let lang = current_lang.take().expect("guarded above");
+                let html = highlight_to_html(&code_buffer, &lang);
+                out.push(Event::Html(CowStr::Boxed(html.into_boxed_str())));
+            }
+            Event::Text(text) if current_lang.is_some() => {
+                code_buffer.push_str(&text);
+            }
+            other => out.push(other),
+        }
+    }
+    out
+}
+
+fn highlight_to_html(code: &str, lang: &str) -> String {
+    let syntax_set: &SyntaxSet = &SYNTAX_SET;
+    let extension = match lang {
+        "rust" => "rs",
+        other => other,
+    };
+    let syntax = syntax_set
+        .find_syntax_by_extension(extension)
+        .or_else(|| syntax_set.find_syntax_by_name(lang))
+        .or_else(|| syntax_set.find_syntax_by_token(lang))
+        .unwrap_or_else(|| syntax_set.find_syntax_plain_text());
+    let mut generator =
+        ClassedHTMLGenerator::new_with_class_style(syntax, syntax_set, ClassStyle::Spaced);
+    for line in LinesWithEndings::from(code) {
+        // The classed generator only fails on malformed regex
+        // matches, which can't happen against the bundled syntaxes.
+        generator
+            .parse_html_for_line_which_includes_newline(line)
+            .expect("classed highlighting of bundled syntax should not fail");
+    }
+    let body = generator.finalize();
+    let class_attr = lang_class_attr(lang);
+    format!("<pre><code{class_attr}>{body}</code></pre>\n")
+}
+
+/// Render the `language-…` class attribute for a code block, but
+/// only when the fence's language tag is made of characters that
+/// are unambiguously safe to drop into an HTML attribute. Anything
+/// outside the allow-list yields an empty attribute — the page
+/// still renders correctly because the inline `<span class>`es
+/// generated by `syntect` carry the actual highlighting, and the
+/// `language-…` class is purely decorative here.
+fn lang_class_attr(lang: &str) -> String {
+    let safe = !lang.is_empty()
+        && lang
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '+' | '#' | '.'));
+    if safe {
+        format!(" class=\"language-{lang}\"")
+    } else {
+        String::new()
+    }
+}
+
+static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(SyntaxSet::load_defaults_newlines);
+static THEME: LazyLock<Theme> = LazyLock::new(|| {
+    ThemeSet::load_defaults()
+        .themes
+        .remove("InspiredGitHub")
+        .expect("InspiredGitHub theme is bundled with syntect")
+});
+static HIGHLIGHT_CSS: LazyLock<String> = LazyLock::new(|| {
+    css_for_theme_with_class_style(&THEME, ClassStyle::Spaced)
+        .expect("generating CSS for a bundled theme should not fail")
+});
 
 /// Render a short, single-line snippet of markdown without the
 /// outer `<p>…</p>` wrapper that block-level rendering inserts. Used
