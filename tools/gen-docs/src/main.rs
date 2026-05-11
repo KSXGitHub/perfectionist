@@ -333,14 +333,19 @@ fn extract_config(file: &syn::File) -> Option<ConfigDoc> {
 }
 
 /// Walk a `syn::Type` and collect every type identifier that isn't a
-/// well-known built-in. Insertion order matches the order each
-/// distinct ident is first encountered, so the rendered docs list
-/// types in the order a reader scanning the field list will meet
-/// them. The `seen` set deduplicates across multiple fields.
+/// well-known built-in. Only the *last* segment of each path is
+/// considered, matching [`toml_type_label`]'s rule: leading
+/// segments like `std::vec` in `std::vec::Vec<T>` are noise (the
+/// generator only looks up types against the rule file's local
+/// items, so qualified paths would never resolve anyway).
+/// Insertion order matches the order each distinct ident is first
+/// encountered, so the rendered docs list types in the order a
+/// reader scanning the field list will meet them. The `seen` set
+/// deduplicates across multiple fields.
 fn collect_referenced_idents(ty: &Type, out: &mut Vec<String>, seen: &mut BTreeSet<String>) {
     match ty {
         Type::Path(type_path) => {
-            for segment in &type_path.path.segments {
+            if let Some(segment) = type_path.path.segments.last() {
                 let name = segment.ident.to_string();
                 if !is_builtin_type(&name) && seen.insert(name.clone()) {
                     out.push(name);
@@ -410,13 +415,13 @@ fn find_type_doc(file: &syn::File, ident: &str) -> Option<TypeDoc> {
     for item in &file.items {
         match item {
             Item::Enum(item_enum) if item_enum.ident == ident => {
-                let rename_all = serde_rename_all(&item_enum.attrs);
+                let rename_all = serde_str_attr(&item_enum.attrs, "rename_all");
                 let variants = item_enum
                     .variants
                     .iter()
                     .map(|variant| {
                         let rust_name = variant.ident.to_string();
-                        let variant_rename = serde_field_rename(&variant.attrs);
+                        let variant_rename = serde_str_attr(&variant.attrs, "rename");
                         let serialized = variant_rename
                             .or_else(|| {
                                 rename_all
@@ -466,11 +471,14 @@ fn find_type_doc(file: &syn::File, ident: &str) -> Option<TypeDoc> {
     None
 }
 
-/// Read the `rename_all = "..."` style from a type's `#[serde(...)]`
-/// attribute, if present. Returns the raw style name (e.g.
-/// `"snake_case"`); the actual case conversion lives in
-/// [`apply_rename_all`].
-fn serde_rename_all(attrs: &[Attribute]) -> Option<String> {
+/// Read a `#[serde(key = "literal")]` string value, scanning every
+/// `serde(...)` attribute on the item. Returns the first match in
+/// source order; an attribute whose body fails to parse is silently
+/// skipped, since this generator runs against rule sources that the
+/// compiler has already accepted — a parse failure here means the
+/// attribute uses a form (e.g. `serde(deny_unknown_fields)`) that
+/// the generator simply doesn't surface.
+fn serde_str_attr(attrs: &[Attribute], key: &str) -> Option<String> {
     for attr in attrs {
         if !attr.path().is_ident("serde") {
             continue;
@@ -480,33 +488,7 @@ fn serde_rename_all(attrs: &[Attribute]) -> Option<String> {
         let Ok(items) = parsed else { continue };
         for item in items {
             if let Meta::NameValue(name_value) = item
-                && name_value.path.is_ident("rename_all")
-                && let Expr::Lit(ExprLit {
-                    lit: Lit::Str(literal),
-                    ..
-                }) = name_value.value
-            {
-                return Some(literal.value());
-            }
-        }
-    }
-    None
-}
-
-/// Read a per-variant or per-field `#[serde(rename = "...")]`
-/// override, used when one specific variant opts out of the
-/// enum-wide `rename_all` policy.
-fn serde_field_rename(attrs: &[Attribute]) -> Option<String> {
-    for attr in attrs {
-        if !attr.path().is_ident("serde") {
-            continue;
-        }
-        let parsed =
-            attr.parse_args_with(syn::punctuated::Punctuated::<Meta, Token![,]>::parse_terminated);
-        let Ok(items) = parsed else { continue };
-        for item in items {
-            if let Meta::NameValue(name_value) = item
-                && name_value.path.is_ident("rename")
+                && name_value.path.is_ident(key)
                 && let Expr::Lit(ExprLit {
                     lit: Lit::Str(literal),
                     ..
@@ -1053,3 +1035,96 @@ fn anchor_for(namespaced: &str) -> String {
 }
 
 const STYLE: &str = include_str!("style.css");
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse_type(source: &str) -> Type {
+        syn::parse_str(source).expect("test input should parse as a syn::Type")
+    }
+
+    #[test]
+    fn pascal_to_snake_basic() {
+        assert_eq!(pascal_to_snake("Line"), "line");
+        assert_eq!(pascal_to_snake("BlockComment"), "block_comment");
+        assert_eq!(pascal_to_snake("XMLParser"), "xml_parser");
+        assert_eq!(pascal_to_snake("HTTPServer"), "http_server");
+        assert_eq!(pascal_to_snake("URL"), "url");
+        assert_eq!(pascal_to_snake("already_snake"), "already_snake");
+    }
+
+    #[test]
+    fn toml_type_label_primitives() {
+        assert_eq!(toml_type_label(&parse_type("bool")), "boolean");
+        assert_eq!(toml_type_label(&parse_type("usize")), "unsigned integer");
+        assert_eq!(toml_type_label(&parse_type("i32")), "integer");
+        assert_eq!(toml_type_label(&parse_type("f64")), "float");
+        assert_eq!(toml_type_label(&parse_type("String")), "string");
+        assert_eq!(toml_type_label(&parse_type("char")), "string");
+    }
+
+    #[test]
+    fn toml_type_label_arrays_and_maps() {
+        assert_eq!(toml_type_label(&parse_type("Vec<char>")), "[string]");
+        assert_eq!(
+            toml_type_label(&parse_type("Vec<Vec<u8>>")),
+            "[[unsigned integer]]"
+        );
+        assert_eq!(
+            toml_type_label(&parse_type("HashMap<String, usize>")),
+            "table of unsigned integer",
+        );
+    }
+
+    #[test]
+    fn toml_type_label_transparent_wrappers() {
+        // Option, Box, Rc, Arc unwrap to the inner type.
+        assert_eq!(toml_type_label(&parse_type("Option<String>")), "string");
+        assert_eq!(
+            toml_type_label(&parse_type("Box<usize>")),
+            "unsigned integer"
+        );
+        assert_eq!(toml_type_label(&parse_type("Arc<Vec<String>>")), "[string]");
+    }
+
+    #[test]
+    fn toml_type_label_qualified_paths_use_last_segment() {
+        assert_eq!(
+            toml_type_label(&parse_type("std::vec::Vec<String>")),
+            "[string]"
+        );
+        assert_eq!(
+            toml_type_label(&parse_type("alloc::string::String")),
+            "string"
+        );
+    }
+
+    #[test]
+    fn toml_type_label_custom_idents_pass_through() {
+        // Project-local enums/structs surface verbatim; readers
+        // follow them to the per-rule Types subsection.
+        assert_eq!(toml_type_label(&parse_type("Scope")), "Scope");
+        assert_eq!(toml_type_label(&parse_type("Vec<Scope>")), "[Scope]");
+    }
+
+    #[test]
+    fn collect_referenced_idents_skips_builtins_and_keeps_order() {
+        let ty = parse_type("HashMap<String, Vec<Scope>>");
+        let mut out = Vec::new();
+        let mut seen = BTreeSet::new();
+        collect_referenced_idents(&ty, &mut out, &mut seen);
+        assert_eq!(out, vec!["Scope".to_owned()]);
+    }
+
+    #[test]
+    fn collect_referenced_idents_inspects_only_last_segment() {
+        // `std` and `vec` would have been picked up by the old
+        // every-segment walk; the current behaviour drops them.
+        let ty = parse_type("std::vec::Vec<my_crate::Inner>");
+        let mut out = Vec::new();
+        let mut seen = BTreeSet::new();
+        collect_referenced_idents(&ty, &mut out, &mut seen);
+        assert_eq!(out, vec!["Inner".to_owned()]);
+    }
+}
