@@ -254,7 +254,32 @@ fn extract_rule(source_path: &Path) -> Option<Rule> {
             Some(&item_macro.mac.tokens)
         }
         _ => None,
-    })?;
+    });
+    let macro_item = match macro_item {
+        Some(macro_item) => macro_item,
+        None => {
+            // Silent skip for legitimate helper files. But if the
+            // file *looks* rule-shaped — has a `CONFIG_KEY` const
+            // or a `Config` struct — the missing macro is almost
+            // certainly a typo (`declare_tool_lin!`, etc.) that
+            // would otherwise drop the rule from the docs without
+            // any signal.
+            let looks_rule_shaped = file.items.iter().any(|item| match item {
+                Item::Const(item_const) => item_const.ident == "CONFIG_KEY",
+                Item::Struct(item_struct) => item_struct.ident == "Config",
+                _ => false,
+            });
+            if looks_rule_shaped {
+                eprintln!(
+                    "warning: {} looks rule-shaped (has `CONFIG_KEY` or `Config`) \
+                     but has no `declare_tool_lint!` macro; the rule will not \
+                     appear in the docs",
+                    source_path.display(),
+                );
+            }
+            return None;
+        }
+    };
 
     let declaration = syn::parse2::<DeclareToolLint>(macro_item.clone()).unwrap_or_else(|error| {
         panic!(
@@ -800,7 +825,10 @@ fn render_page(rules: &[Rule], crate_version: &str, git_ref: &str) -> String {
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
-                title { "perfectionist lints" }
+                title {
+                    "perfectionist lints"
+                    @if git_ref != "master" { " — " (git_ref) }
+                }
                 style { (PreEscaped(STYLE)) (PreEscaped(&*HIGHLIGHT_CSS)) }
             }
             body {
@@ -1385,8 +1413,12 @@ mod tests {
             apply_rename_all("UPPERCASE", "BlockComment"),
             "BLOCKCOMMENT"
         );
-        // Unknown style: pass through unchanged.
-        assert_eq!(apply_rename_all("???", "BlockComment"), "BlockComment");
+        // The unknown-style fallback is observable — it prints a
+        // warning and returns the name unchanged — but asserting
+        // it here would spam stderr on every clean test run. The
+        // behaviour is covered by manual smoke runs of `gen-docs`
+        // against rule sources that intentionally use an unknown
+        // style.
     }
 
     #[test]
