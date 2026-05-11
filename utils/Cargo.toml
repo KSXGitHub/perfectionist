@@ -1,0 +1,22 @@
+[package]
+name = "_utils"
+description = "Internal test-support helpers for perfectionist's integration tests"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "warmup"
+path = "src/bin/warmup.rs"
+
+[dependencies]
+build-fs-tree = "0.8.1"
+cargo_toml = "0.22.3"
+command-extra = "1.0.0"
+pipe-trait = "0.4.0"
+serde = { version = "1.0.228", features = ["derive"] }
+tempfile = "3.27.0"
+toml = "1.1.2"

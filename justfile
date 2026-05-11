@@ -30,6 +30,12 @@ lint:
 test:
   cargo test
 
+# Pre-warm `target/integration-fixtures` so the per-test
+# `cargo dylint` invocations don't each pay the cost of compiling std
+# and the perfectionist plugin from cold.
+warmup-integration-tests:
+  cargo run --package _utils --bin warmup -- "$(pwd)"
+
 # Run perfectionist's own lints on its source
 self-lint:
   DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --all-targets

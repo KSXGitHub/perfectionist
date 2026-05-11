@@ -1,3 +1,6 @@
+[workspace]
+members = ["utils"]
+
 [package]
 name = "perfectionist"
 description = "Additional linting rules for Rust projects"
@@ -32,13 +35,8 @@ dylint_linting = "5.0.0"
 serde = { version = "1.0.228", features = ["derive"] }
 
 [dev-dependencies]
-build-fs-tree = "0.8.1"
-cargo_toml = "0.22.3"
-command-extra = "1.0.0"
+_utils = { path = "utils" }
 dylint_testing = "5.0.0"
-pipe-trait = "0.4.0"
-tempfile = "3.27.0"
-toml = "1.1.2"
 
 [package.metadata.rust-analyzer]
 rustc_private = true

@@ -3,6 +3,19 @@
 version = 4
 
 [[package]]
+name = "_utils"
+version = "0.0.0"
+dependencies = [
+ "build-fs-tree",
+ "cargo_toml",
+ "command-extra",
+ "pipe-trait",
+ "serde",
+ "tempfile",
+ "toml 1.1.2+spec-1.1.0",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -858,16 +871,11 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 name = "perfectionist"
 version = "0.0.0-rc.3"
 dependencies = [
- "build-fs-tree",
- "cargo_toml",
+ "_utils",
  "clippy_utils",
- "command-extra",
  "dylint_linting",
  "dylint_testing",
- "pipe-trait",
  "serde",
- "tempfile",
- "toml 1.1.2+spec-1.1.0",
 ]
 
 [[package]]
