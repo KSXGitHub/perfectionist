@@ -38,5 +38,11 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
     rules::unicode_ellipsis_in_comments::register_pass(lint_store);
     rules::unicode_ellipsis_in_panic_messages::register_pass(lint_store);
 
+    // `unknown_perfectionist_lints::register_pass` snapshots the registered
+    // `perfectionist::*` lint names out of the `LintStore`, so its pass must
+    // be installed after every other rule's `register_lint` call. Keep this
+    // rule's registrations last, regardless of alphabetical order — a future
+    // rule whose name starts with `v`..=`z` would otherwise silently break
+    // the snapshot if these calls were left to alphabetical sorting.
     rules::unknown_perfectionist_lints::register_pass(lint_store);
 }
