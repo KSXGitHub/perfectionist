@@ -163,8 +163,8 @@ pattern that several rules call out by reference — live in
   **name-based**, a curated list of core/std and well-known
   third-party macros (easy, configurable via
   `extra_name_based`), and **matcher-based**, an automatic walk
-  of `macro_rules!` matchers to detect the `$(,)?`
-  optional-trailing-comma idiom (harder, configurable via
+  of `macro_rules!` matchers to detect the `$(,)?` / `$(,)*`
+  optional-trailing-comma idioms (harder, configurable via
   `matcher_based`).
 
 ### Serde

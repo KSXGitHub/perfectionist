@@ -183,7 +183,8 @@ For every macro invocation:
      user-configured via `extra_name_based`), eligible.
    - Otherwise, if matcher-based detection is enabled and the
      macro is a visible declarative macro whose matched arm
-     ends in `$(,)?` (per the predicate above), eligible.
+     ends in `$(,)?` or `$(,)*` (per the predicate above),
+     eligible.
    - Otherwise, skip.
 4. Inspect the *invocation token stream* — not the expansion —
    to confirm the call is shaped like a top-level
@@ -423,8 +424,13 @@ ignore = [
   available on the `DelimArgs` directly.
 - Matcher walk: `macro_rules!` arms are
   `ast::MacroDef::body`'s LHS token streams. Walk the LHS,
-  detect the `$(,)?` pattern at the end of the top-level
-  matcher (`OpenDelim(Paren) ... $(,)? CloseDelim(Paren)`).
+  detect either of the optional-trailing-comma patterns
+  (`$(,)?` or `$(,)*`) at the end of the top-level matcher —
+  i.e., `OpenDelim(Paren) ... $(,)? CloseDelim(Paren)` or
+  `OpenDelim(Paren) ... $(,)* CloseDelim(Paren)`. `$(,)+` and
+  a bare literal `,` at the same position are *required*, not
+  optional, and the walker must distinguish them (see the
+  `take_optional_trailing_comma` note below).
   For dependency macros, the matcher comes from
   `tcx.hir_node_by_def_id(...)` if local, or via the macro
   metadata in `tcx.cstore_untracked()` for external macros;
