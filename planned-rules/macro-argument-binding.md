@@ -49,9 +49,12 @@ evaluate an argument zero or many times") is partly a correctness
 concern and partly a defensive coding stance:
 
 - **Correctness** for macros that conditionally skip evaluation
-  (`debug_assert*`, `cfg!`, custom `#[cfg(test)]` wrappers, log
-  macros below the configured filter level in some
-  implementations).
+  (`debug_assert*`, custom `#[cfg(test)]` wrappers, log macros
+  below the configured filter level in some implementations).
+  `cfg!` looks like a member of this family but isn't — its
+  argument is `meta` syntax, not a Rust expression, so the
+  "argument-evaluation count" framing doesn't apply and the
+  lint deliberately leaves it alone.
 - **Correctness** for macros that evaluate an argument multiple
   times (anything implementing a syntactic transformation —
   `min!`/`max!`-style macros, n-arg-tuple builders, retry-loop
@@ -62,30 +65,32 @@ concern and partly a defensive coding stance:
   reading the matcher. A `let` binding makes the code work
   regardless.
 
-The rule's default configuration flags only the cases where the
-trap is real (known-conditional macros and macros not on the
-curated safe list). The blanket-ban mode is opt-in for projects
-that want the defensive stance everywhere.
+The rule's default configuration flags only known-conditional
+macros — the ones in the curated conditional list. Unknown
+macros are skipped under the default
+`unknown_macro_policy = "allow"`; projects that want the
+defensive stance set `unknown_macro_policy = "deny"` or
+switch to the blanket-ban mode.
 
 ## Statement
 
 For a function-like (`name!(...)`) or array-like (`name![...]`)
 macro invocation:
 
-- If the macro is on the **denylist** of macros known to evaluate
+- If the macro is on the **conditional list** of macros known to evaluate
   arguments conditionally or repeatedly, every non-trivial
   top-level argument is flagged. The set of accepted argument
   shapes is the trivial set defined under
   "What counts as a 'non-trivial' argument" below — literals,
   paths, `&path`, `path.field`, `base[index]`, `*path`, and
   casts.
-- If the macro is on the **allowlist** of macros known to
+- If the macro is on the **exactly-once list** of macros known to
   evaluate each top-level argument exactly once, the argument
   shape is unconstrained.
 - For every other macro, behaviour depends on the selected
   mode — see "Five eligibility modes" below. Briefly:
-  `denylist_only` and `matcher_based` (for proc macros) skip
-  the invocation, `blanket` flags it, and `allowlist_denylist`
+  `conditional_only` and `matcher_based` (for proc macros) skip
+  the invocation, `blanket` flags it, and `name_based`
   consults the configured `unknown_macro_policy`.
 
 Curly-brace macro invocations (`name! { ... }`) are out of scope.
@@ -105,7 +110,7 @@ anything about the definition.
 
 A "trivial" argument is one whose evaluation has no observable
 effect and produces the same value every time. Trivial arguments
-are accepted even by macros on the denylist, because zero-or-many
+are accepted even by macros on the conditional list, because zero-or-many
 evaluations of a trivial expression are indistinguishable from
 exactly-one.
 
@@ -152,26 +157,27 @@ The user's question — what difficulty levels exist between
 answered by the configuration ladder below. The modes are
 ordered by *implementation* cost, not by some clean monotone
 relationship on what they flag: Mode 3 relaxes Mode 2's
-denial set, and Mode 4 reshapes it. The default is mode 2
-(curated allowlist + denylist).
+conditional list, and Mode 4 reshapes it. The default is mode 2
+(name-based lookup against the two curated lists).
 
-### Mode 0 — denylist-only (the simplest possible rule)
+### Mode 0 — conditional-only (the simplest possible rule)
 
-*Easier than the user's "easiest".* Ship a hard-coded denylist of
-known-conditional macros — `debug_assert!`, `debug_assert_eq!`,
-`debug_assert_ne!`, `cfg!`, and a handful of similar shapes — and
-flag only those. Every other macro is silently accepted.
+*Easier than the user's "easiest".* Ship a hard-coded conditional
+list of known-conditional macros — `debug_assert!`,
+`debug_assert_eq!`, `debug_assert_ne!`, and a handful of
+similar shapes — and flag only those. Every other macro is
+silently accepted.
 
 The implementation is a name-set lookup keyed on the resolved
-`DefId` plus a non-trivial-argument predicate. No allowlist, no
+`DefId` plus a non-trivial-argument predicate. No exactly-once list, no
 matcher walk, no user configuration beyond extending the
-denylist. The rule's surface area is "this exact set of
+conditional list. The rule's surface area is "this exact set of
 core/std macros, for this exact reason".
 
 This mode exists for projects that want to enable
 `perfectionist::macro_argument_binding` without auditing their
 third-party macro use — they only care about not getting bitten
-by `debug_assert*`. Set `mode = "denylist_only"`.
+by `debug_assert*`. Set `mode = "conditional_only"`.
 
 ### Mode 1 — blanket ban
 
@@ -185,21 +191,22 @@ This mode is deliberately not the default — `format!("hello
 {name}", compute())` is fine in practice and reading every macro
 invocation as a footgun is exhausting. Projects that want the
 maximum-paranoia stance can opt in by setting
-`mode = "blanket"`. Set the `extra_allowlist` knob to whitelist
+`mode = "blanket"`. Set the `extra_exactly_once` knob to whitelist
 specific macros that the project trusts.
 
-### Mode 2 — curated allowlist + denylist (default)
+### Mode 2 — curated name-based lookup (default)
 
-The user's "still easy" mode, augmented with the denylist
+The user's "still easy" mode, augmented with the conditional list
 spelled out in mode 0. Three name-lookups decide each
 invocation:
 
-1. **Denylist hit**: flag every non-trivial argument. The
-   denylist defaults to `debug_assert!`, `debug_assert_eq!`,
-   `debug_assert_ne!`, `cfg!`, and any user-added entries.
-2. **Allowlist hit**: accept unconditionally. The allowlist
-   defaults to the same `core` / `std` and well-known
-   third-party set as
+1. **Conditional-list hit**: flag every non-trivial argument.
+   The conditional list defaults to `debug_assert!`,
+   `debug_assert_eq!`, `debug_assert_ne!`, and any user-added
+   entries.
+2. **Exactly-once-list hit**: accept unconditionally. The
+   exactly-once list defaults to the same `core` / `std` and
+   well-known third-party set as
    [`macro-trailing-comma`](./macro-trailing-comma.md) —
    `format!`, `println!`, `vec!`, `write!`, `assert!`,
    `assert_eq!`, the `log::*` and `tracing::*` families,
@@ -208,7 +215,7 @@ invocation:
    by default. A project that wants stricter behaviour
    reaches for mode 1 or mode 4.
 
-The default rejecting only the denylist (rather than every
+The default rejecting only the conditional list (rather than every
 unlisted macro) is a usability choice. The user's framing of
 "still easy" was that unlisted macros get flagged; in practice
 that produces too much noise during initial rule adoption.
@@ -221,7 +228,7 @@ A bypass that layers on top of any of the modes above. The
 bypass does not change the trivial / non-trivial split —
 that classification stays as defined under "What counts as a
 'non-trivial' argument". Instead, it adds an *accept rule*:
-even when the macro would otherwise fire (denylisted, or
+even when the macro would otherwise fire (conditional, or
 denied under mode 1's blanket), accept the invocation if
 every top-level argument's outermost shape is either trivial
 or a function / method call whose own sub-expressions are all
@@ -252,14 +259,15 @@ turn it on as the first knob to adjust.
 ### Mode 4 — matcher-based declarative-macro analysis
 
 The user's "hard" mode. Layered on top of mode 2: the
-denylist and allowlist are consulted first, and the matcher
+conditional list and exactly-once list are consulted first, and the matcher
 walk runs only on `macro_rules!` macros that *would otherwise
-be unknown*. An invocation that resolves to an allowlisted
+be unknown*. An invocation that resolves to an exactly-once
 macro is still accepted unconditionally; an invocation that
-resolves to a denylisted macro is still flagged. The matcher
+resolves to a conditional macro is still flagged. The matcher
 walk turns an "unknown" verdict into a justified
-allowlist-or-flag decision rather than overriding the curated
-lists. For a `macro_rules!` macro reached by the walk (its
+exactly-once-vs-conditional decision rather than overriding
+the curated lists. For a `macro_rules!` macro reached by the
+walk (its
 definition visible to the compiler — current crate, or a
 dependency whose macro body rustc still has on hand):
 
@@ -271,7 +279,7 @@ dependency whose macro body rustc still has on hand):
      repetition that could change its evaluation count:
      the argument is evaluated exactly once. Eligible
      (treat the argument's macro as if it were on the
-     allowlist).
+     exactly-once list).
    - Zero occurrences (the capture is matched but discarded):
      the argument is never evaluated. Flag with a "the
      argument is unused in this expansion" diagnostic.
@@ -286,8 +294,8 @@ dependency whose macro body rustc still has on hand):
 
 Matcher analysis does not extend to procedural macros — the
 expansion is custom Rust code, not introspectable from the
-matcher. Proc macros remain governed by the user's allowlist /
-denylist configuration.
+matcher. Proc macros remain governed by the user's exactly-once list /
+conditional list configuration.
 
 Set `mode = "matcher_based"` to enable. Defaults off; this
 mode is the most expensive to implement (see "Why
@@ -302,9 +310,9 @@ recommended landing order.
 
 | Mode | Default | Cost to implement | Flags |
 | --- | --- | --- | --- |
-| 0 — denylist only | opt-in | smallest | known-conditional macros only |
+| 0 — conditional only | opt-in | smallest | known-conditional macros only |
 | 1 — blanket | opt-in | small | every non-trivial macro arg |
-| 2 — allowlist + denylist | **on** | small | denylist always; unknown configurable |
+| 2 — name-based | **on** | small | conditional list always; unknown configurable |
 | 3 — mode 2 + bypass | opt-in | small + recursion | mode 2 minus pure-call shapes |
 | 4 — matcher-based | opt-in | large | mode 2 plus learned `macro_rules!` |
 
@@ -325,24 +333,25 @@ For every macro invocation:
    curly-brace invocations are out of scope.
 2. Resolve the macro `DefId`.
 3. Consult `ignore`. If the path matches, skip. `ignore` wins
-   over both the denylist and the allowlist; it exists for
+   over both the conditional list and the exactly-once list; it exists for
    per-project opt-outs of curated entries.
 4. Apply the configured `mode`:
-   - `denylist_only`: match against the denylist
+   - `conditional_only`: match against the conditional list
      (`debug_assert!`, `debug_assert_eq!`, `debug_assert_ne!`,
-     `cfg!`, plus `extra_denylist`). Continue to step 5 only
-     on a hit.
+     plus `extra_conditional`). Continue to step 5 only on a
+     hit.
    - `blanket`: continue to step 5 for every macro not on the
-     allowlist (`extra_allowlist` only — there is no built-in
-     allowlist in this mode, by design).
-   - `allowlist_denylist` (default): denylist hit → continue.
-     Allowlist hit → skip. Otherwise consult
+     exactly-once list (`extra_exactly_once` only — there is
+     no built-in exactly-once list in this mode, by design).
+   - `name_based` (default): conditional-list hit → continue.
+     Exactly-once-list hit → skip. Otherwise consult
      `unknown_macro_policy`: `allow` (default) → skip,
      `deny` → continue.
-   - `matcher_based`: denylist / allowlist as above; for
-     unknown macros, walk the matcher per mode 4. Result is
-     either "treat as allowlisted" (continue: skip) or
-     "treat as denylisted" (continue: lint).
+   - `matcher_based`: conditional / exactly-once lists as
+     above; for unknown declarative macros, walk the matcher
+     per mode 4. Result is either "treat as exactly-once"
+     (continue: skip) or "treat as conditional" (continue:
+     lint).
 5. Walk the invocation's *top-level* argument list. The lint
    only inspects top-level expressions — an argument that
    itself contains a non-trivial sub-expression is the
@@ -410,16 +419,16 @@ boolean-returning method or function call. Without
 `expression_bypass = true` the lint flags essentially every
 reasonable `debug_assert!` invocation, which is not a
 recommended deployment shape. Projects that adopt the default
-denylist for the `insert`-style bug above almost always want
+conditional list for the `insert`-style bug above almost always want
 the bypass on at the same time; the two knobs are paired in
 typical configurations even though they default to opposite
 positions out of the box.
 
-### Allowlisted macros pass through
+### Exactly-once macros pass through
 
 ```rust
 // Accepted under default config — `format!` is on the
-// curated allowlist; arguments are evaluated exactly once.
+// curated exactly-once list; arguments are evaluated exactly once.
 let msg = format!("retrying {} ({} failures)", endpoint, count.fetch_add(1, Ordering::Relaxed));
 ```
 
@@ -427,13 +436,13 @@ let msg = format!("retrying {} ({} failures)", endpoint, count.fetch_add(1, Orde
 
 ```rust
 // Accepted under default config — vec! is on the curated
-// allowlist; each element is evaluated exactly once.
+// exactly-once list; each element is evaluated exactly once.
 let xs = vec![compute(), compute(), compute()];
 ```
 
 ```rust
 // Flagged under blanket mode — every non-trivial argument is
-// a candidate, allowlist or not.
+// a candidate, exactly-once list or not.
 let xs = vec![compute(), compute(), compute()];
 
 // Good (blanket mode rewrite)
@@ -479,7 +488,7 @@ even though the macro is otherwise unknown to the lint.
 ```rust
 // Whether this is safe depends on the proc macro's expansion,
 // which the lint cannot read. The user adds `tracing::info`
-// to `extra_allowlist` once, project-wide.
+// to `extra_exactly_once` once, project-wide.
 tracing::info!(latency = stopwatch.elapsed().as_millis(), "done");
 ```
 
@@ -490,36 +499,36 @@ tracing::info!(latency = stopwatch.elapsed().as_millis(), "done");
 # Set to false to disable the rule entirely.
 enabled = true
 
-# Eligibility mode. Defaults to "allowlist_denylist".
-#   "denylist_only"     — flag only the curated denylist
-#   "blanket"           — flag everything not on extra_allowlist
-#   "allowlist_denylist" — flag denylist hits + unknowns per policy
-#   "matcher_based"     — allowlist_denylist + matcher walking
-mode = "allowlist_denylist"
+# Eligibility mode. Defaults to "name_based".
+#   "conditional_only" — flag only macros in the curated conditional list
+#   "blanket"          — flag everything not on extra_exactly_once
+#   "name_based"       — flag conditional-list hits + unknowns per policy
+#   "matcher_based"    — name_based + matcher walking for unknown declarative macros
+mode = "name_based"
 
-# Behaviour for macros that match neither the denylist nor the
-# allowlist under "allowlist_denylist" mode. `allow` (default)
-# silently skips them; `deny` treats them as denylisted.
+# Behaviour for macros that match neither the conditional list nor the
+# exactly-once list under "name_based" mode. `allow` (default)
+# silently skips them; `deny` treats them as conditional.
 # Ignored under other modes.
 unknown_macro_policy = "allow"
 
 # When true, accept calls and method calls whose arguments are
-# themselves trivial — even on denylisted macros. Default off;
+# themselves trivial — even on conditional macros. Default off;
 # turn on if the lint is too noisy with read-only accessor
 # calls inside `debug_assert*`.
 expression_bypass = false
 
-# Macros added to the built-in denylist. Each entry is a
+# Macros added to the built-in conditional list. Each entry is a
 # fully-qualified macro path (no trailing `!`) or a bare macro
 # name to match by final segment only.
-extra_denylist = [
+extra_conditional = [
   # "my_crate::sometimes_evaluates",
 ]
 
-# Macros added to the built-in allowlist. Same path syntax as
-# extra_denylist. Use for third-party macros the project
+# Macros added to the built-in exactly-once list. Same path syntax as
+# extra_conditional. Use for third-party macros the project
 # trusts to evaluate each argument exactly once.
-extra_allowlist = [
+extra_exactly_once = [
   # "tracing::info",
   # "tracing::debug",
 ]
@@ -546,7 +555,7 @@ ignore = [
 - Macro path resolution: `MacCall::path` resolves to a `Res`;
   use the resolved `DefId` for the name-lookup. Bare-name
   matching falls back to the path's final segment so
-  `extra_allowlist = ["my_macro"]` works without forcing the
+  `extra_exactly_once = ["my_macro"]` works without forcing the
   user to spell out the crate path.
 - Argument splitting: walk `MacCall::args.tokens` tracking
   delimiter nesting and split on top-level commas. Reuse the
@@ -619,12 +628,12 @@ own matcher-based detection.
 
 ## Severity
 
-Warn. The denylist defaults — `debug_assert*` and `cfg!` —
-flag a genuine correctness bug. Promoting the lint to deny
+Warn. The conditional list default — `debug_assert*` —
+flags a genuine correctness bug. Promoting the lint to deny
 crate-wide via
 `#![deny(perfectionist::macro_argument_binding)]` is viable
 but presumes the project has already turned
-`expression_bypass = true` on (or has narrowed the denylist):
+`expression_bypass = true` on (or has narrowed the conditional list):
 under the strict default, every `debug_assert!` invocation
 with a non-trivial argument fires, which is the majority of
 them, and deny would refuse to compile the project.
@@ -644,5 +653,5 @@ them, and deny would refuse to compile the project.
   the *template literal* inside their target macros and
   treat the surrounding macro as a known-safe call. Those
   rules' target macros are all on this rule's default
-  allowlist, so the two never disagree about whether a
+  exactly-once list, so the two never disagree about whether a
   given invocation needs intervention.
