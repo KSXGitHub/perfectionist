@@ -18,8 +18,6 @@ pattern that several rules call out by reference — live in
 ## Index
 
 ### Module and file layout
-- [`flat-module-pattern.md`](./flat-module-pattern.md) — forbid `mod.rs` in
-  favour of the flat `module.rs` layout.
 - [`unit-test-file-layout.md`](./unit-test-file-layout.md) — external test
   modules must live at `<parent>/tests.rs`, never `<parent>_tests.rs` or
   flattened into a sibling.
