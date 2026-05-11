@@ -86,6 +86,11 @@ details.config-details {
   margin-top: 1rem;
 }
 
+p.config-none {
+  margin-top: 1rem;
+  color: #57606a;
+}
+
 details.config-details > summary {
   cursor: pointer;
   list-style: none;

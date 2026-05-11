@@ -763,17 +763,34 @@ fn rule_article(rule: &Rule) -> Markup {
     }
 }
 
-/// Render the per-rule configuration block, wrapped in a `<details>`
-/// element so a long reference table doesn't dominate the page.
-/// The element is collapsed by default — configuration is reference
-/// material, and the rule's description above it is what most
-/// readers came for. Modern browsers auto-expand a closed `<details>`
-/// when find-in-page hits something inside it, so search still
-/// works against the hidden content. When the `Config` struct has
-/// no fields, the block is still emitted so readers can see that
-/// the rule is intentionally non-configurable (and, where the
-/// struct itself carries a doc comment, why).
+/// Render the per-rule configuration block. Two shapes:
+///
+/// 1. When the rule has at least one configurable field, wrap the
+///    block in a `<details>` element, collapsed by default. The
+///    rule's description above is what most catalogue readers came
+///    for; configuration is reference material that can stay
+///    hidden until clicked. Modern browsers auto-expand a closed
+///    `<details>` when find-in-page hits something inside it, so
+///    search still works.
+/// 2. When the rule has no fields (an empty `Config` struct,
+///    e.g. `flat_module_pattern`), render a single inline line
+///    "Configuration: none." instead. The fact that the rule is
+///    not configurable is itself information; omitting the section
+///    entirely would leave readers wondering whether they missed a
+///    knob. Any struct-level doc comment is still surfaced after
+///    the inline line, so the rule's prose explanation of *why*
+///    the placeholder exists is preserved.
 fn config_section(config: &ConfigDoc) -> Markup {
+    if config.fields.is_empty() {
+        return html! {
+            p.config-none {
+                strong { "Configuration:" } " none."
+            }
+            @if !config.struct_doc_markdown.is_empty() {
+                (PreEscaped(markdown_to_html(&config.struct_doc_markdown)))
+            }
+        };
+    }
     html! {
         details.config-details {
             summary { h3 { "Configuration" } }
@@ -784,34 +801,28 @@ fn config_section(config: &ConfigDoc) -> Markup {
             @if !config.struct_doc_markdown.is_empty() {
                 (PreEscaped(markdown_to_html(&config.struct_doc_markdown)))
             }
-            @if config.fields.is_empty() {
-                @if config.struct_doc_markdown.is_empty() {
-                    p { em { "No configurable options." } }
-                }
-            } @else {
-                dl.config {
-                    @for field in &config.fields {
-                        dt {
-                            code.config-key { (field.name) }
-                            " : "
-                            code.config-type { (field.type_label) }
-                            " "
-                            span.badge.badge-optional { "optional" }
-                        }
-                        dd {
-                            @if field.doc_markdown.is_empty() {
-                                p { em { "Undocumented." } }
-                            } @else {
-                                (PreEscaped(markdown_to_html(&field.doc_markdown)))
-                            }
+            dl.config {
+                @for field in &config.fields {
+                    dt {
+                        code.config-key { (field.name) }
+                        " : "
+                        code.config-type { (field.type_label) }
+                        " "
+                        span.badge.badge-optional { "optional" }
+                    }
+                    dd {
+                        @if field.doc_markdown.is_empty() {
+                            p { em { "Undocumented." } }
+                        } @else {
+                            (PreEscaped(markdown_to_html(&field.doc_markdown)))
                         }
                     }
                 }
-                @if !config.custom_types.is_empty() {
-                    h4 { "Types" }
-                    @for ty in &config.custom_types {
-                        (custom_type_block(ty))
-                    }
+            }
+            @if !config.custom_types.is_empty() {
+                h4 { "Types" }
+                @for ty in &config.custom_types {
+                    (custom_type_block(ty))
                 }
             }
         }
