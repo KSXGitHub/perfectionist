@@ -127,8 +127,10 @@ fn collect_rules(rules_dir: &Path) -> Vec<Rule> {
 }
 
 fn extract_rule(source_path: &Path) -> Option<Rule> {
-    let source = fs::read_to_string(source_path).expect("failed to read rule source");
-    let file = syn::parse_file(&source).expect("failed to parse rule source");
+    let source = fs::read_to_string(source_path)
+        .unwrap_or_else(|error| panic!("failed to read {}: {error}", source_path.display()));
+    let file = syn::parse_file(&source)
+        .unwrap_or_else(|error| panic!("failed to parse {}: {error}", source_path.display()));
     let macro_item = file.items.iter().find_map(|item| match item {
         Item::Macro(item_macro)
             if item_macro
@@ -143,8 +145,12 @@ fn extract_rule(source_path: &Path) -> Option<Rule> {
         _ => None,
     })?;
 
-    let declaration = syn::parse2::<DeclareToolLint>(macro_item.clone())
-        .expect("failed to parse declare_tool_lint! body");
+    let declaration = syn::parse2::<DeclareToolLint>(macro_item.clone()).unwrap_or_else(|error| {
+        panic!(
+            "failed to parse declare_tool_lint! body in {}: {error}",
+            source_path.display()
+        )
+    });
 
     let namespaced = format!(
         "perfectionist::{}",
