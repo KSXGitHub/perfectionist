@@ -53,20 +53,26 @@ optionally. The list covers two groups:
   `pretty_assertions::{assert_eq, assert_ne, assert_str_eq}`,
   `maplit::{hashmap, btreemap, hashset, btreeset, convert_args}`,
   `serde_json::json`, `lazy_static::lazy_static`,
-  `paste::paste`, `derive_more`-style derivable attributes
-  whose argument list is comma-separated, `log::{log, error,
-  warn, info, debug, trace}`, `tracing::{event, error, warn,
-  info, debug, trace, span}`, `clap::{arg, command}`,
-  `anyhow::{anyhow, bail, ensure}`, `thiserror`-style attribute
-  argument lists.
+  `paste::paste`, `log::{log, error, warn, info, debug, trace}`,
+  `tracing::{event, error, warn, info, debug, trace, span}`,
+  `clap::{arg, command}`,
+  `anyhow::{anyhow, bail, ensure}`.
 
   The list is curated, not exhaustive — projects extend it via
   configuration when they import a new such macro.
 
-Name-based matching applies to *any* macro form: declarative,
-procedural function-like, attribute-style derives that take a
-comma-separated argument list. The matcher source is irrelevant
-because the human author has vetted the entry.
+Name-based matching applies to any function-like macro
+invocation, declarative or procedural: anything that the AST
+represents as an `ast::MacCall`. **Attribute-style invocations
+are out of scope** for this rule — `#[derive(...)]`,
+`#[display(...)]`, `#[error(...)]`, `#[serde(...)]`, and the
+rest live on `ast::Attribute` nodes that the lint's
+`check_mac` callback does not visit. A separate
+`attribute-trailing-comma` rule could handle those in a
+follow-up (the comma-policy reasoning is the same, but the
+visit path, configuration shape, and span layout all differ);
+this rule restricts itself to `MacCall` to keep the
+implementation single-purpose.
 
 **Caveat — "comma-separated" means the rustfmt shape.** The
 curated list and `extra_name_based` should only include macros
@@ -152,14 +158,17 @@ first; ship matcher-based in a follow-up.
 For every macro invocation:
 
 1. Resolve the macro `DefId`.
-2. Decide eligibility:
+2. If the resolved path matches an entry in `deny_list`,
+   skip. `deny_list` is checked first so a user opt-out wins
+   over both name-based and matcher-based eligibility.
+3. Decide eligibility:
    - If the path matches a name-based entry (built-in or
-     user-configured), eligible.
+     user-configured via `extra_name_based`), eligible.
    - Otherwise, if matcher-based detection is enabled and the
      macro is a visible declarative macro whose matched arm
      ends in `$(,)?` (per the predicate above), eligible.
    - Otherwise, skip.
-3. Inspect the *invocation token stream* — not the expansion —
+4. Inspect the *invocation token stream* — not the expansion —
    to confirm that the top-level argument list is purely comma-
    separated. Skip if:
    - The delimiter is opened but the body contains a top-level
@@ -167,10 +176,10 @@ For every macro invocation:
      like `quote!` arms), or any other top-level separator that
      isn't a comma.
    - There are zero arguments (no comma to add or remove).
-4. Determine "single-line" vs "multi-line" by the source
+5. Determine "single-line" vs "multi-line" by the source
    positions of the opening and closing delimiters. If they
    share a line, single-line; otherwise multi-line.
-5. Locate the final top-level token before the closing
+6. Locate the final top-level token before the closing
    delimiter:
    - **Multi-line, no trailing comma** → emit a diagnostic
      suggesting an inserted `,`.
