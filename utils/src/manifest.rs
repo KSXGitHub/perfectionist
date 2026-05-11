@@ -43,13 +43,14 @@ pub fn fixture_cargo_toml(package_name: &str) -> String {
 }
 
 pub fn fixture_dylint_toml(perfectionist_dir: &Path) -> String {
+    let library = DylintLibrary {
+        path: perfectionist_dir.display().to_string(),
+    };
     let manifest = Manifest::<DylintWorkspaceMetadata> {
         workspace: Some(Workspace {
             metadata: Some(DylintWorkspaceMetadata {
                 dylint: DylintMetadata {
-                    libraries: vec![DylintLibrary {
-                        path: perfectionist_dir.display().to_string(),
-                    }],
+                    libraries: vec![library],
                 },
             }),
             ..Default::default()

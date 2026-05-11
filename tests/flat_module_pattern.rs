@@ -27,15 +27,15 @@ fn flags_mod_rs_submodule() {
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     assert!(
         stderr.contains("perfectionist::flat_module_pattern"),
-        "expected `flat_module_pattern` warning; stderr was:\n{stderr}"
+        "expected `flat_module_pattern` warning; stderr was:\n{stderr}",
     );
     assert!(
         stderr.contains("submodule uses the `mod.rs` layout"),
-        "expected lint message; stderr was:\n{stderr}"
+        "expected lint message; stderr was:\n{stderr}",
     );
     assert!(
         stderr.contains("foo/mod.rs"),
-        "expected reference to `foo/mod.rs`; stderr was:\n{stderr}"
+        "expected reference to `foo/mod.rs`; stderr was:\n{stderr}",
     );
 }
 
@@ -54,7 +54,7 @@ fn does_not_flag_flat_layout() {
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     assert!(
         !stderr.contains("perfectionist::flat_module_pattern"),
-        "did not expect `flat_module_pattern` warning; stderr was:\n{stderr}"
+        "did not expect `flat_module_pattern` warning; stderr was:\n{stderr}",
     );
 }
 
@@ -75,7 +75,7 @@ fn does_not_flag_deep_flat_layout() {
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     assert!(
         !stderr.contains("perfectionist::flat_module_pattern"),
-        "did not expect `flat_module_pattern` warning; stderr was:\n{stderr}"
+        "did not expect `flat_module_pattern` warning; stderr was:\n{stderr}",
     );
 }
 
@@ -96,11 +96,11 @@ fn flags_deep_mod_rs_at_leaf_level() {
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     assert!(
         stderr.contains("perfectionist::flat_module_pattern"),
-        "expected `flat_module_pattern` warning; stderr was:\n{stderr}"
+        "expected `flat_module_pattern` warning; stderr was:\n{stderr}",
     );
     assert!(
         stderr.contains("foo/bar/mod.rs"),
-        "expected reference to `foo/bar/mod.rs`; stderr was:\n{stderr}"
+        "expected reference to `foo/bar/mod.rs`; stderr was:\n{stderr}",
     );
 }
 
@@ -121,10 +121,10 @@ fn flags_mod_rs_at_intermediate_level() {
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     assert!(
         stderr.contains("perfectionist::flat_module_pattern"),
-        "expected `flat_module_pattern` warning; stderr was:\n{stderr}"
+        "expected `flat_module_pattern` warning; stderr was:\n{stderr}",
     );
     assert!(
         stderr.contains("foo/mod.rs"),
-        "expected reference to `foo/mod.rs`; stderr was:\n{stderr}"
+        "expected reference to `foo/mod.rs`; stderr was:\n{stderr}",
     );
 }

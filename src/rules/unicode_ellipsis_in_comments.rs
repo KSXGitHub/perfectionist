@@ -173,7 +173,7 @@ impl UnicodeEllipsisInComments {
                 span,
                 format!(
                     "Unicode `{character}` (U+{:04X}) in comment",
-                    character as u32
+                    character as u32,
                 ),
                 "use ASCII `...` instead",
                 "...".to_owned(),

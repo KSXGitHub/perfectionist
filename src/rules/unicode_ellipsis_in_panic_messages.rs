@@ -289,7 +289,7 @@ impl UnicodeEllipsisInPanicMessages {
                 span,
                 format!(
                     "Unicode `{character}` (U+{:04X}) in {context}",
-                    character as u32
+                    character as u32,
                 ),
                 "use ASCII `...` instead",
                 "...".to_owned(),
