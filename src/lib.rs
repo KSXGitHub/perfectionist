@@ -29,6 +29,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
     }
 
     register! {
+        arc_rc_clone
         flat_module_pattern
         macro_trailing_comma
         non_exhaustive_error
