@@ -42,7 +42,15 @@ declare_tool_lint! {
     pub perfectionist::PREFER_RAW_STRING,
     Warn,
     "string literal contains only raw-expressible escapes; prefer the raw-string form",
-    report_in_external_macro: false
+    // Load-bearing: an escaped string literal passed as a `println!` /
+    // `format!` / `vec!` / etc. argument lives inside a `core` macro
+    // expansion. With the default `false` rustc would treat every
+    // diagnostic on those literals as "in an external macro" and
+    // drop it before reaching the user, even though the literal
+    // itself is user-written. The `span_to_snippet` guard in
+    // `check_expr` already bails on synthesised spans, so
+    // compiler-generated literals stay safely out of scope.
+    report_in_external_macro: true
 }
 
 const CONFIG_KEY: &str = "perfectionist::prefer_raw_string";

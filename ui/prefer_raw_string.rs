@@ -13,6 +13,13 @@ fn _escaped_apostrophe() {
     let _ = "it\'s here";
 }
 
+// Bad: multi-byte UTF-8 surrounding an eligible escape. Exercises
+// the `len_utf8` branch in `take_literal_char` — the autofix must
+// preserve the non-ASCII characters byte-for-byte.
+fn _multi_byte_utf8() {
+    let _ = "日本語: C:\\Users";
+}
+
 // Bad: mix of `\"` and `\\` in one literal.
 fn _mixed_eligible_escapes() {
     let _ = "say \"\\\\\" twice";
@@ -58,6 +65,7 @@ fn main() {
     _escaped_quotes();
     _escaped_backslashes();
     _escaped_apostrophe();
+    _multi_byte_utf8();
     _mixed_eligible_escapes();
     _hash_count_grows();
     _has_newline_escape();

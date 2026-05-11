@@ -19,16 +19,22 @@ LL |     let _ = "it/'s here";
    |             ^^^^^^^^^^^^ help: use a raw string: `r"it's here"`
 
 warning: string literal uses escapes that a raw string would avoid
-  --> $DIR/prefer_raw_string.rs:18:13
+  --> $DIR/prefer_raw_string.rs:20:13
+   |
+LL |     let _ = "日本語: C:/Users";
+   |             ^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r"日本語: C:/Users"`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:25:13
    |
 LL |     let _ = "say /"///" twice";
    |             ^^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r#"say "/" twice"#`
 
 warning: string literal uses escapes that a raw string would avoid
-  --> $DIR/prefer_raw_string.rs:24:13
+  --> $DIR/prefer_raw_string.rs:31:13
    |
 LL |     let _ = "snippet: /"#suffix/" end";
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r##"snippet: "#suffix" end"##`
 
-warning: 5 warnings emitted
+warning: 6 warnings emitted
 
