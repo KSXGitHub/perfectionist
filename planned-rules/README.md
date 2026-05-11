@@ -161,6 +161,19 @@ pattern that several rules call out by reference — live in
   of `macro_rules!` matchers to detect the `$(,)?` / `$(,)*`
   optional-trailing-comma idioms (harder, configurable via
   `matcher_based`).
+- [`macro-argument-binding.md`](./macro-argument-binding.md) —
+  require non-trivial expressions passed to function-like and
+  array-like macro invocations to be bound to a `let` first.
+  Targets the `debug_assert_eq!(set.insert(x), None)` footgun
+  (release builds skip evaluation entirely) and the general
+  class of "macros don't promise exactly-once argument
+  evaluation". Five eligibility modes from a tiny denylist of
+  known-conditional macros (`debug_assert*`, `cfg!`) through a
+  configurable allowlist/denylist (default), an expression-side
+  bypass for pure accessor calls, up to matcher-based analysis
+  that counts each `$expr` capture's occurrences in the
+  `macro_rules!` expansion. Curly-brace invocations are out of
+  scope.
 
 ### Serde
 - [`serde-source-types.md`](./serde-source-types.md) — forbid
