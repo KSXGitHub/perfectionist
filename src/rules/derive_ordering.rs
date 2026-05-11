@@ -160,12 +160,11 @@ impl EarlyLintPass for DeriveOrdering {
 
 impl DeriveOrdering {
     fn check_derive_list(&self, lint_context: &EarlyContext<'_>, entries: &[MetaItemInner]) {
-        // Two-or-fewer entries can never be in the wrong order under
-        // any style supported by the rule: a zero- or one-entry list
-        // is vacuously sorted, and a two-entry list either is or
-        // isn't sorted but never needs further analysis. The same
-        // bail-out also short-circuits the much more common case of
-        // `#[derive(Foo)]` with a single trait.
+        // Fewer than two entries can never be in the wrong order: a
+        // zero- or one-entry list is vacuously sorted. The same
+        // bail-out also short-circuits the very common case of
+        // `#[derive(Foo)]` with a single trait. Two-entry lists
+        // *can* be out of order and are analysed in full below.
         if entries.len() < 2 {
             return;
         }
@@ -207,6 +206,21 @@ impl DeriveOrdering {
         }
         let new_text = snippets.join(", ");
         let replace_span = parsed[0].span.with_hi(parsed[parsed.len() - 1].span.hi());
+        // The suggestion replaces the entire first-to-last span with a
+        // single-line `entry, entry` reconstruction, so any inline
+        // whitespace, line breaks, or comments between entries are
+        // lost on apply. For a single-line derive that's exactly the
+        // shape rustfmt produces, so `MachineApplicable` is safe and
+        // matches the planning spec. For a multi-line derive — where
+        // the apply would visibly flatten the list — downgrade to
+        // `MaybeIncorrect` so `cargo fix` does not silently squash
+        // the formatting; the suggestion still surfaces in IDE
+        // diagnostics for manual review.
+        let applicability = if lint_context.sess().source_map().is_multiline(replace_span) {
+            Applicability::MaybeIncorrect
+        } else {
+            Applicability::MachineApplicable
+        };
         let message = match self.style {
             Style::Alphabetical => {
                 "derive list is not in ASCII-case-insensitive alphabetical order"
@@ -226,7 +240,7 @@ impl DeriveOrdering {
                     replace_span,
                     "reorder the derive list",
                     new_text,
-                    Applicability::MachineApplicable,
+                    applicability,
                 );
             },
         );

@@ -11,10 +11,20 @@ struct _Ok;
 #[derive(Debug)]
 struct _Single;
 
-// Bad: `PartialEq` should come after `Hash` only if case-sensitively
-// compared; under ASCII-case-insensitive comparison `Hash` < `PartialEq`,
-// and the entries here are out of order.
+// Bad: `Hash` < `PartialEq` lexically, so the entries here are out
+// of order.
 #[derive(PartialEq, Eq, Hash)]
 struct _MixedCase;
+
+// Bad and multi-line. The autofix flattens the list onto one line,
+// so the applicability is downgraded to `MaybeIncorrect` — surfaced
+// in the diagnostic as the absence of an inline replacement hint
+// next to the underline.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+)]
+struct _MultiLine;
 
 fn main() {}
