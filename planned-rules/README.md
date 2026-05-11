@@ -167,11 +167,12 @@ pattern that several rules call out by reference — live in
   Targets the `debug_assert_eq!(set.insert(x), None)` footgun
   (release builds skip evaluation entirely) and the general
   class of "macros don't promise exactly-once argument
-  evaluation". Five eligibility modes from a tiny denylist of
-  known-conditional macros (`debug_assert*`, `cfg!`) through a
-  configurable allowlist/denylist (default), an expression-side
-  bypass for pure accessor calls, up to matcher-based analysis
-  that counts each `$expr` capture's occurrences in the
+  evaluation". Five eligibility modes ordered by implementation
+  cost: a tiny denylist of known-conditional macros
+  (`debug_assert*`, `cfg!`), an opt-in blanket ban, the default
+  curated allowlist + denylist, an expression-side bypass for
+  pure-accessor call shapes, and matcher-based analysis that
+  counts each `$expr` capture's occurrences in the
   `macro_rules!` expansion. Curly-brace invocations are out of
   scope.
 

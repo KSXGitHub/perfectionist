@@ -139,10 +139,11 @@ author can hoist it to a `const` if they want it accepted.
 
 The user's question — what difficulty levels exist between
 "forbid everything" and "fully read the macro definition" — is
-answered by the configuration ladder below. Each mode is a strict
-superset of the previous one in terms of work avoided, and a
-strict subset in terms of false positives. The default is mode
-2 (curated allowlist + denylist).
+answered by the configuration ladder below. The modes are
+ordered by *implementation* cost, not by some clean monotone
+relationship on what they flag: Mode 3 relaxes Mode 2's
+denial set, and Mode 4 reshapes it. The default is mode 2
+(curated allowlist + denylist).
 
 ### Mode 0 — denylist-only (the simplest possible rule)
 
@@ -210,13 +211,12 @@ the strict variant.
 ### Mode 3 — mode 2 with expression-side bypass
 
 A bypass that layers on top of any of the modes above. Even
-when the macro is on the denylist (or every macro is denied
-under mode 1), accept the invocation if every non-trivial
-top-level argument is *also* a single name binding — i.e.,
-arguments are limited to identifiers, paths, and the other
-trivial shapes above plus single-name calls like
-`Arc::clone(&x)` (a function call whose only argument is a
-trivial expression).
+when the macro would otherwise fire (denylisted, or denied
+under mode 1's blanket), accept the invocation if every
+top-level argument is either trivial *or* a function / method
+call whose own arguments are themselves trivial. The canonical
+example is `Arc::clone(&x)`: a `Call` whose sole argument
+`&x` is a reference to a path, both of which are trivial.
 
 The bypass widens the trivial-expression definition: a
 function or method call is acceptable when every one of its
@@ -377,11 +377,23 @@ debug_assert!(was_new, "duplicate insert");
 // side effects.
 debug_assert_eq!(count, MAX_RETRIES, "expected {MAX_RETRIES} retries");
 debug_assert!(buffer.is_empty(), "buffer must start empty");
-//            ^^^^^^^^^^^^^^^^^ method call → flagged when
-//                              `expression_bypass = false`;
-//                              accepted under bypass because
-//                              `is_empty` takes only `&self`.
+//            ^^^^^^^^^^^^^^^^^ method call → flagged under
+//                              the strict default;
+//                              accepted under
+//                              `expression_bypass = true`
+//                              because `is_empty` takes only
+//                              `&self`.
 ```
+
+In practice nearly every `debug_assert!` argument is a
+boolean-returning method or function call. Without
+`expression_bypass = true` the lint flags essentially every
+reasonable `debug_assert!` invocation, which is not a
+recommended deployment shape. Projects that adopt the default
+denylist for the `insert`-style bug above almost always want
+the bypass on at the same time; the two knobs are paired in
+typical configurations even though they default to opposite
+positions out of the box.
 
 ### Allowlisted macros pass through
 
@@ -394,11 +406,15 @@ let msg = format!("retrying {} ({} failures)", endpoint, count.fetch_add(1, Orde
 ### Array-like invocation is also in scope
 
 ```rust
-// Bad — vec! is on the allowlist, so this is fine by default,
-// but in blanket mode the `compute()` call would be flagged.
+// Accepted under default config — vec! is on the curated
+// allowlist; each element is evaluated exactly once.
 let xs = vec![compute(), compute(), compute()];
 
-// Good (blanket mode)
+// Flagged under blanket mode — every non-trivial argument is
+// a candidate, allowlist or not.
+let xs = vec![compute(), compute(), compute()];
+
+// Good (blanket mode rewrite)
 let a = compute();
 let b = compute();
 let c = compute();
@@ -517,11 +533,13 @@ ignore = [
   introduces (or factor it out the other way around,
   whichever rule lands first).
 - Per-argument re-parse: each top-level argument is a token
-  stream; reparse it as an expression with
-  `rustc_parse::parser::Parser::parse_expr_anon`. Arguments
-  that fail to parse as an expression are skipped (they are
-  not value-shaped — `name = value`, `name: type`, and similar
-  syntactic positions that some macros consume).
+  stream; reparse it as an expression with `rustc_parse`'s
+  `Parser::parse_expr` (or the equivalent
+  restriction-respecting helper if the surrounding context
+  needs it). Arguments that fail to parse as an expression
+  are skipped (they are not value-shaped — `name = value`,
+  `name: type`, and similar syntactic positions that some
+  macros consume).
 - Trivial / non-trivial predicate: a `match` on
   `ast::ExprKind` covering `Lit`, `Path`, `AddrOf`, `Field`,
   `Index`, `Unary(Deref, _)`, `Cast`, and the trivial-base
