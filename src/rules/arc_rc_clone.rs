@@ -116,13 +116,16 @@ impl<'tcx> LateLintPass<'tcx> for ArcRcClone {
             Some(sym::Rc) => "Rc",
             _ => return,
         };
-        // `MachineApplicable` assumes the bare type name (`Arc` /
-        // `Rc`) is in scope at the call site. Code that uses only the
-        // full path — e.g. `std::sync::Arc::new(v).clone()` without
-        // `use std::sync::Arc` — will require adding the import after
-        // applying the autofix. Matches the same limitation
-        // `clippy::clone_on_ref_ptr` carries.
-        let mut applicability = Applicability::MachineApplicable;
+        // The autofix renders the bare type name (`Arc` / `Rc`),
+        // which assumes the user has the type in scope. Code that
+        // uses only the full path — e.g. `std::sync::Arc::new(v).clone()`
+        // without `use std::sync::Arc` — would not compile after the
+        // rewrite, so the applicability is `MaybeIncorrect` rather
+        // than `MachineApplicable`: the suggestion still surfaces to
+        // the user, but `cargo fix` won't apply it silently. Same
+        // trade-off `clippy::clone_on_ref_ptr` carries, with a
+        // tighter applicability label.
+        let mut applicability = Applicability::MaybeIncorrect;
         let receiver_sugg =
             Sugg::hir_with_applicability(cx, receiver, "_", &mut applicability).maybe_paren();
         span_lint_and_sugg(
