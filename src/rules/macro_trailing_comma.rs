@@ -211,20 +211,16 @@ impl MacroTrailingComma {
     fn check_invocation(&self, lint_context: &EarlyContext<'_>, mac_call: &MacCall) {
         let args = &mac_call.args;
         // Single-pass walk over the top-level token stream: track the
-        // last tree and whether any top-level `;` appears. Avoids
-        // allocating a `Vec` per `check_mac` call.
+        // last tree and bail on a top-level `;`. Avoids allocating a
+        // `Vec` per `check_mac` call.
         let mut last_tree: Option<&TokenTree> = None;
-        let mut has_top_level_semicolon = false;
         for tree in args.tokens.iter() {
             if let TokenTree::Token(token, _) = tree
                 && token.kind == TokenKind::Semi
             {
-                has_top_level_semicolon = true;
+                return;
             }
             last_tree = Some(tree);
-        }
-        if has_top_level_semicolon {
-            return;
         }
         let Some(last_tree) = last_tree else {
             return;

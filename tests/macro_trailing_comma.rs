@@ -23,6 +23,8 @@ static SERIAL: Mutex<()> = Mutex::new(());
 /// private struct.
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    enabled: Option<bool>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     extra_name_based: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -90,6 +92,21 @@ fn ignore_wins_over_extra_name_based_for_the_same_macro() {
         RuleConfig {
             extra_name_based: vec!["my_macro".into()],
             ignore: vec!["my_macro".into()],
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn enabled_false_suppresses_the_entire_rule() {
+    // `vec!` is on the built-in name-based list and the fixture has
+    // a trailing-comma violation, but `enabled = false` should
+    // short-circuit `check_mac` before any diagnostic is emitted.
+    run(
+        "ui-toml/macro_trailing_comma/disabled",
+        RuleConfig {
+            enabled: Some(false),
+            ..Default::default()
         },
     );
 }
