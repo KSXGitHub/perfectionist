@@ -94,12 +94,6 @@ pub fn register_pass(lint_store: &mut LintStore) {
 
 impl<'tcx> LateLintPass<'tcx> for ArcRcClone {
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx hir::Expr<'tcx>) {
-        // Expansion-originated `.clone()` calls (e.g. inside a
-        // third-party macro) are out of the user's hands; let them
-        // pass.
-        if expr.span.from_expansion() {
-            return;
-        }
         let hir::ExprKind::MethodCall(method_segment, receiver, [], _) = expr.kind else {
             return;
         };
@@ -110,10 +104,10 @@ impl<'tcx> LateLintPass<'tcx> for ArcRcClone {
         // shape (receiver type `Arc<T>`) and the reference-receiver
         // shape (receiver type `&Arc<T>`, where method probe still
         // picks `<Arc<T> as Clone>::clone` at the first candidate
-        // level). The autofix is the same `Arc::clone(&...)` form
-        // for both.
-        let receiver_ty = cx.typeck_results().expr_ty(receiver).peel_refs();
-        let ty::Adt(adt, _) = receiver_ty.kind() else {
+        // level). The rewrite below adjusts its leading `&` based on
+        // which shape the receiver actually has.
+        let raw_ty = cx.typeck_results().expr_ty(receiver);
+        let ty::Adt(adt, _) = raw_ty.peel_refs().kind() else {
             return;
         };
         let kind = match cx.tcx.get_diagnostic_name(adt.did()) {
@@ -133,13 +127,23 @@ impl<'tcx> LateLintPass<'tcx> for ArcRcClone {
         let mut applicability = Applicability::MaybeIncorrect;
         let receiver_sugg =
             Sugg::hir_with_applicability(cx, receiver, "_", &mut applicability).maybe_paren();
+        // For receivers that are already `&Arc<T>` / `&Rc<T>`, drop
+        // the leading `&` so `arc_ref.clone()` rewrites to
+        // `Arc::clone(arc_ref)` rather than the harder-to-read
+        // `Arc::clone(&arc_ref)` (which would form a `&&Arc<T>` and
+        // compile only via deref coercion).
+        let leading_amp = if matches!(raw_ty.kind(), ty::Ref(..)) {
+            ""
+        } else {
+            "&"
+        };
         span_lint_and_sugg(
             cx,
             ARC_RC_CLONE,
             expr.span,
             format!("calling `.clone()` on an `{kind}<T>`"),
             "use the qualified form to make the cheap refcount bump explicit",
-            format!("{kind}::clone(&{receiver_sugg})"),
+            format!("{kind}::clone({leading_amp}{receiver_sugg})"),
             applicability,
         );
     }

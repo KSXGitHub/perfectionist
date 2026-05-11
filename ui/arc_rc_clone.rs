@@ -27,8 +27,9 @@ fn _bad_through_reference(value: &Arc<u32>) {
     // Receiver is `&Arc<T>`. Method resolution still picks
     // `<Arc<T> as Clone>::clone` (whose self type is `&Arc<T>` and
     // matches the receiver type at the very first probe step), so
-    // `value.clone()` already returns `Arc<T>`. The autofix
-    // `Arc::clone(&value)` preserves both the type and behaviour.
+    // `value.clone()` already returns `Arc<T>`. The autofix passes
+    // `value` straight through — no extra `&`, because the receiver
+    // is already a reference.
     let _ = value.clone();
 }
 
@@ -58,10 +59,10 @@ fn _good_other_types() {
 }
 
 fn _bad_chained(arcs: &[Arc<u32>]) {
-    // Chained receiver: `arcs.first().unwrap()` is `&Arc<u32>` (a
-    // method-call expression). The `Sugg` for a method call is
-    // `NonParen`, so the rewrite drops `&` directly in front
-    // without any wrapping parens.
+    // Chained receiver: `arcs.first().unwrap()` is `&Arc<u32>`, so
+    // the rewrite passes it straight through without an extra `&`.
+    // `Sugg` for a method call is `NonParen`, so no wrapping parens
+    // either.
     let _ = arcs.first().unwrap().clone();
 }
 

@@ -36,7 +36,7 @@ LL +     let _ = Arc::clone(&state.inner);
    |
 
 warning: calling `.clone()` on an `Arc<T>`
-  --> $DIR/arc_rc_clone.rs:32:13
+  --> $DIR/arc_rc_clone.rs:33:13
    |
 LL |     let _ = value.clone();
    |             ^^^^^^^^^^^^^
@@ -44,11 +44,11 @@ LL |     let _ = value.clone();
 help: use the qualified form to make the cheap refcount bump explicit
    |
 LL -     let _ = value.clone();
-LL +     let _ = Arc::clone(&value);
+LL +     let _ = Arc::clone(value);
    |
 
 warning: calling `.clone()` on an `Arc<T>`
-  --> $DIR/arc_rc_clone.rs:65:13
+  --> $DIR/arc_rc_clone.rs:66:13
    |
 LL |     let _ = arcs.first().unwrap().clone();
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -56,7 +56,7 @@ LL |     let _ = arcs.first().unwrap().clone();
 help: use the qualified form to make the cheap refcount bump explicit
    |
 LL -     let _ = arcs.first().unwrap().clone();
-LL +     let _ = Arc::clone(&arcs.first().unwrap());
+LL +     let _ = Arc::clone(arcs.first().unwrap());
    |
 
 warning: 5 warnings emitted
