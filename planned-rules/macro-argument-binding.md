@@ -118,6 +118,9 @@ Trivial:
   `&mut buffer`).
 - A field access or tuple-index on a trivial base
   (`config.threshold`, `point.0`).
+- An index expression `base[index]` where both `base` and
+  `index` are themselves trivial (`buffer[0]`,
+  `lookup[Foo::KEY]`).
 - A unary deref of a trivial expression (`*ptr`).
 - A trivial expression annotated with a type (`x as u64`,
   `42_u8`).
@@ -235,9 +238,9 @@ re-evaluate or skip" by accepting any call whose arguments are
 themselves trivial (typically `&path` / `path`).
 
 The implementation cost over mode 2 is one extra match arm
-plus a recursive descent through `ExprKind::Call`,
-`ExprKind::MethodCall`, and `ExprKind::Field`. The accuracy
-gain is large in real codebases.
+plus a recursive descent through `ExprKind::Call` and
+`ExprKind::MethodCall`. The accuracy gain is large in real
+codebases.
 
 Enable with `expression_bypass = true`. Default off — the
 heuristic is approximate (it cannot tell a pure method from an
@@ -291,8 +294,8 @@ matcher-based is harder than name-based" in
 [`macro-trailing-comma`](./macro-trailing-comma.md), which
 faces the same matcher-access infrastructure work) and the
 matcher walker can be reused between this rule and
-`macro-trailing-comma`. Recommended landing order is
-mode 0 → 2 → 3 → 4; mode 1 falls out of mode 2 trivially.
+`macro-trailing-comma`. See the Difficulty section for the
+recommended landing order.
 
 ### Picking a mode
 
@@ -420,7 +423,9 @@ let msg = format!("retrying {} ({} failures)", endpoint, count.fetch_add(1, Orde
 // Accepted under default config — vec! is on the curated
 // allowlist; each element is evaluated exactly once.
 let xs = vec![compute(), compute(), compute()];
+```
 
+```rust
 // Flagged under blanket mode — every non-trivial argument is
 // a candidate, allowlist or not.
 let xs = vec![compute(), compute(), compute()];
