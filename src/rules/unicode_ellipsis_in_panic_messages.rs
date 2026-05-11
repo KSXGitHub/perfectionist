@@ -76,8 +76,18 @@ const DEFAULT_METHODS: &[&str] = &["expect", "expect_err"];
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, rename_all = "snake_case")]
 struct Config {
+    /// Macros whose call site should be scanned for the flagged
+    /// characters. Defaults to the standard panic and assertion
+    /// macros (`panic`, `unimplemented`, `todo`, `unreachable`,
+    /// `debug_unreachable`, and the `assert*` family). Override to
+    /// add project-specific assertion-shaped macros, or to narrow
+    /// the set when a project deliberately uses `…` in one of them.
     macros: Vec<String>,
+    /// Method names on `Option` / `Result` whose first argument is
+    /// the panic message. Defaults to `expect` and `expect_err`.
     methods: Vec<String>,
+    /// Extra characters to flag alongside U+2026, in the same spirit
+    /// as `unicode_ellipsis_in_comments.also_flag`. Empty by default.
     also_flag: Vec<char>,
 }
 

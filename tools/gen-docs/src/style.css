@@ -77,6 +77,45 @@ article.rule .source {
   color: #57606a;
 }
 
+article.rule h3 {
+  margin-top: 1.5rem;
+  font-size: 1.05rem;
+}
+
+dl.config {
+  margin: 0.5rem 0 1rem;
+  padding: 0.5rem 0.75rem;
+  background: #f6f8fa;
+  border-radius: 6px;
+}
+
+dl.config dt {
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
+}
+
+dl.config dt:first-child {
+  margin-top: 0;
+}
+
+dl.config dd {
+  margin: 0.25rem 0 0.75rem 1rem;
+  font-size: 0.92rem;
+}
+
+dl.config dd p {
+  margin: 0.25rem 0;
+}
+
+.config-key {
+  background: #ddf4ff;
+}
+
+.config-default {
+  font-size: 0.85rem;
+  color: #57606a;
+}
+
 pre,
 code {
   font-family: ui-monospace, SFMono-Regular, monospace;

@@ -42,7 +42,14 @@ const CONFIG_KEY: &str = "perfectionist::unicode_ellipsis_in_comments";
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, rename_all = "snake_case")]
 struct Config {
+    /// Extra characters to flag alongside U+2026. Useful for catching
+    /// near-relatives such as U+22EF MIDLINE HORIZONTAL ELLIPSIS (`⋯`)
+    /// or U+2025 TWO DOT LEADER (`‥`) that the same autocorrect
+    /// pipelines occasionally insert. Empty by default.
     also_flag: Vec<char>,
+    /// Which comment forms to scan. Defaults to both `line` (`//`)
+    /// and `block` (`/* */`). Narrow this if a project intentionally
+    /// uses one form for prose and wants the lint to ignore it.
     scope: Vec<Scope>,
 }
 

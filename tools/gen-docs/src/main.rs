@@ -6,6 +6,9 @@
 //! invocation, and pulls four things out of it: the lint identifier
 //! (`pub perfectionist::NAME`), its default level, its one-line
 //! description, and the `///` doc-comment block that documents it.
+//! In addition, when a rule's file defines a `Config` struct paired
+//! with a `CONFIG_KEY` constant, the configurable fields (and their
+//! per-field doc comments and default expressions) are surfaced too.
 //! The output is a single self-contained `index.html` written into
 //! the directory passed on the command line.
 //!
@@ -16,7 +19,9 @@
 //! rustc plugin host just to read these few fields.
 
 use std::{
+    collections::HashMap,
     fs,
+    ops::Range,
     path::{Path, PathBuf},
     process::ExitCode,
 };
@@ -26,10 +31,12 @@ use clap::Parser;
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 use proc_macro2::TokenStream;
 use pulldown_cmark::{Event, Options, Tag, TagEnd, html as cmark_html};
+use quote::ToTokens;
 use strum::{Display, EnumString};
 use syn::{
-    Attribute, Expr, ExprLit, Ident, Item, Lit, LitStr, Meta, Token,
+    Attribute, Expr, ExprLit, Ident, ImplItem, Item, Lit, LitStr, Meta, Stmt, Token, Type,
     parse::{Parse, ParseStream},
+    spanned::Spanned,
 };
 
 #[derive(Parser)]
@@ -85,6 +92,45 @@ struct Rule {
     doc_markdown: String,
     /// Source path relative to the repo root, for cross-linking.
     relative_source: PathBuf,
+    /// `Config` struct contents when the rule declares one. `None`
+    /// means the rule file has no `Config` / `CONFIG_KEY` pair.
+    config: Option<ConfigDoc>,
+}
+
+/// The configuration surface of a single rule, as extracted from the
+/// rule's `Config` struct, paired `CONFIG_KEY` constant, and (when
+/// present) hand-written `impl Default for Config`.
+struct ConfigDoc {
+    /// The TOML table key, e.g. `perfectionist::flat_module_pattern`.
+    /// Read from the file's `CONFIG_KEY` constant verbatim.
+    key: String,
+    /// Doc comment attached to the `Config` struct itself, useful
+    /// for rules with no fields (where it explains why the struct
+    /// still exists) or for cross-cutting notes about a rule's
+    /// configuration shape.
+    struct_doc_markdown: String,
+    /// One entry per named field of the `Config` struct.
+    fields: Vec<ConfigField>,
+}
+
+/// One configurable knob, with the source text of its type and
+/// default expression preserved verbatim so the rendered docs match
+/// what a reader will see in `src/rules/<rule>.rs`.
+struct ConfigField {
+    /// Field identifier, e.g. `also_flag`. Matches the TOML key
+    /// because every `Config` uses `#[serde(rename_all = "snake_case")]`
+    /// and the fields are already named in snake case.
+    name: String,
+    /// Verbatim source of the field's type (e.g. `Vec<char>`),
+    /// sliced out of the rule file using `proc_macro2::Span`
+    /// byte ranges.
+    type_source: String,
+    /// Verbatim source of the field's default expression as it
+    /// appears in `impl Default for Config`, or `None` when no
+    /// `Default` impl could be located.
+    default_source: Option<String>,
+    /// Per-field `///` doc comment, in markdown form.
+    doc_markdown: String,
 }
 
 /// The set of lint levels rustc / Dylint accept as the second
@@ -174,13 +220,163 @@ fn extract_rule(source_path: &Path) -> Option<Rule> {
         )
     });
 
+    let config = extract_config(&file, &source);
+
     Some(Rule {
         namespaced,
         level,
         short_desc: declaration.desc.value(),
         doc_markdown,
         relative_source,
+        config,
     })
+}
+
+/// Locate the rule's `Config` struct, its `CONFIG_KEY` constant, and
+/// the optional `impl Default for Config` block, and bundle them
+/// into a `ConfigDoc`. Returns `None` when either the constant or
+/// the struct is missing — both are mandatory for a rule to be
+/// considered "configurable" by `dylint.toml`.
+fn extract_config(file: &syn::File, source: &str) -> Option<ConfigDoc> {
+    let key = file.items.iter().find_map(|item| match item {
+        Item::Const(item_const) if item_const.ident == "CONFIG_KEY" => match &*item_const.expr {
+            Expr::Lit(ExprLit {
+                lit: Lit::Str(literal),
+                ..
+            }) => Some(literal.value()),
+            _ => None,
+        },
+        _ => None,
+    })?;
+    let config_struct = file.items.iter().find_map(|item| match item {
+        Item::Struct(item_struct) if item_struct.ident == "Config" => Some(item_struct),
+        _ => None,
+    })?;
+    let struct_doc_markdown = doc_attrs_to_markdown(&config_struct.attrs);
+    let defaults = extract_config_defaults(file, source);
+
+    let fields = match &config_struct.fields {
+        syn::Fields::Named(named) => named
+            .named
+            .iter()
+            .map(|field| {
+                let name = field
+                    .ident
+                    .as_ref()
+                    .expect("named field always has an ident")
+                    .to_string();
+                let type_source = span_text(source, field.ty.span())
+                    .unwrap_or_else(|| fallback_type_text(&field.ty));
+                let default_source = defaults.get(&name).cloned();
+                let doc_markdown = doc_attrs_to_markdown(&field.attrs);
+                ConfigField {
+                    name,
+                    type_source,
+                    default_source,
+                    doc_markdown,
+                }
+            })
+            .collect(),
+        _ => Vec::new(),
+    };
+
+    Some(ConfigDoc {
+        key,
+        struct_doc_markdown,
+        fields,
+    })
+}
+
+/// Pull each field's default expression out of `impl Default for
+/// Config`. Recognises the conventional shape
+/// `fn default() -> Self { Self { field: expr, ... } }` (with or
+/// without an explicit `return`); anything more exotic yields an
+/// empty map and the rendered docs simply omit the default column.
+fn extract_config_defaults(file: &syn::File, source: &str) -> HashMap<String, String> {
+    let mut out = HashMap::new();
+    let Some(impl_item) = file.items.iter().find_map(|item| match item {
+        Item::Impl(item_impl)
+            if item_impl
+                .trait_
+                .as_ref()
+                .is_some_and(|(_, path, _)| {
+                    path.segments
+                        .last()
+                        .is_some_and(|segment| segment.ident == "Default")
+                })
+                && matches!(
+                    &*item_impl.self_ty,
+                    Type::Path(type_path)
+                        if type_path
+                            .path
+                            .segments
+                            .last()
+                            .is_some_and(|segment| segment.ident == "Config")
+                ) =>
+        {
+            Some(item_impl)
+        }
+        _ => None,
+    }) else {
+        return out;
+    };
+
+    let Some(default_fn) = impl_item.items.iter().find_map(|item| match item {
+        ImplItem::Fn(item_fn) if item_fn.sig.ident == "default" => Some(item_fn),
+        _ => None,
+    }) else {
+        return out;
+    };
+
+    let Some(struct_expr) = default_fn
+        .block
+        .stmts
+        .last()
+        .and_then(|stmt| match stmt {
+            Stmt::Expr(expr, _) => Some(expr),
+            _ => None,
+        })
+        .and_then(|expr| match expr {
+            Expr::Struct(struct_expr) => Some(struct_expr),
+            Expr::Return(return_expr) => match return_expr.expr.as_deref() {
+                Some(Expr::Struct(struct_expr)) => Some(struct_expr),
+                _ => None,
+            },
+            _ => None,
+        })
+    else {
+        return out;
+    };
+
+    for field_value in &struct_expr.fields {
+        let syn::Member::Named(ident) = &field_value.member else {
+            continue;
+        };
+        let text = span_text(source, field_value.expr.span())
+            .unwrap_or_else(|| field_value.expr.to_token_stream().to_string());
+        out.insert(ident.to_string(), text);
+    }
+    out
+}
+
+/// Slice the verbatim source bytes covered by `span`. Falls back to
+/// `None` when the span has no usable byte range (which happens for
+/// synthetic spans produced by macro expansion, not for code that
+/// originated in a file we just parsed — but the type system makes
+/// us account for the case anyway).
+fn span_text(source: &str, span: proc_macro2::Span) -> Option<String> {
+    let Range { start, end } = span.byte_range();
+    if end <= start || end > source.len() {
+        return None;
+    }
+    Some(source[start..end].to_owned())
+}
+
+/// Best-effort stringifier for a `syn::Type` when no source span is
+/// available. The output uses `quote`'s default token spacing, which
+/// is less pretty than the original source but always parseable.
+fn fallback_type_text(ty: &Type) -> String {
+    ty.to_token_stream().to_string()
 }
 
 /// Minimal grammar of `declare_tool_lint!`'s body. The macro itself
@@ -311,9 +507,57 @@ fn rule_article(rule: &Rule) -> Markup {
                 (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
             }
             (PreEscaped(markdown_to_html(&rule.doc_markdown)))
+            @if let Some(config) = &rule.config {
+                (config_section(config))
+            }
             p.source {
                 "Source: "
                 a href=(source_url) { code { (source_path) } }
+            }
+        }
+    }
+}
+
+/// Render the per-rule configuration block. When the `Config`
+/// struct has no fields, the block is still emitted so readers
+/// can see that the rule is intentionally non-configurable (and,
+/// where the struct itself carries a doc comment, why).
+fn config_section(config: &ConfigDoc) -> Markup {
+    html! {
+        h3 { "Configuration" }
+        p {
+            "Configure via " code { "dylint.toml" } " under "
+            code { "[\"" (config.key) "\"]" } "."
+        }
+        @if !config.struct_doc_markdown.is_empty() {
+            (PreEscaped(markdown_to_html(&config.struct_doc_markdown)))
+        }
+        @if config.fields.is_empty() {
+            @if config.struct_doc_markdown.is_empty() {
+                p { em { "No configurable options." } }
+            }
+        } @else {
+            dl.config {
+                @for field in &config.fields {
+                    dt {
+                        code.config-key { (field.name) }
+                        " : "
+                        code.config-type { (field.type_source) }
+                        @if let Some(default) = &field.default_source {
+                            " "
+                            span.config-default {
+                                "(default: " code { (default) } ")"
+                            }
+                        }
+                    }
+                    dd {
+                        @if field.doc_markdown.is_empty() {
+                            p { em { "Undocumented." } }
+                        } @else {
+                            (PreEscaped(markdown_to_html(&field.doc_markdown)))
+                        }
+                    }
+                }
             }
         }
     }
