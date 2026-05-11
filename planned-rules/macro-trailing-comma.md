@@ -38,17 +38,23 @@ eligibility, named for *how* they identify an eligible macro.
 ### Name-based — well-known macro allow-list
 
 A hard-coded list of macros known to accept the trailing comma
-optionally. **Inclusion criterion:** the macro takes a
-top-level comma-separated argument list — i.e., a typical
-invocation contains two or more items separated by *top-level*
-commas in the macro's token stream — and the trailing comma is
-syntactically optional in the macro's matcher. Macros that use
-a different separator (`;` for `thread_local!`, `lazy_static!`),
-that take a single argument that isn't a list (`include_str!`,
+optionally. **Inclusion criterion:** the macro's matcher accepts
+a top-level comma-separated argument list with a syntactically
+optional trailing comma. The list may have any length — a
+single-argument invocation like `dbg!(x)` or `env!("VAR")`
+qualifies just as much as a multi-argument one — but
+single-argument invocations contain no comma at all and so the
+policy is vacuous for them (step 4 of the algorithm skips on
+zero top-level commas). The policy *meaningfully* fires when
+the invocation has two or more top-level items.
+
+Macros that use a different separator (`;` for `thread_local!`,
+`lazy_static!`), that take a single non-list argument the
+matcher won't follow with an optional comma (`include_str!`,
 `compile_error!`, `cfg!`), or that pass tokens through verbatim
-so that a trailing comma would change their output
-(`stringify!`, `paste::paste!`) do **not** qualify; they're
-deliberately absent from the list below.
+so a trailing comma would change their output (`stringify!`,
+`paste::paste!`) do **not** qualify; they're deliberately
+absent from the list below.
 
 The list covers two groups:
 
