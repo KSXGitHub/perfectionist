@@ -30,10 +30,10 @@ lint:
 test:
   cargo test
 
-# Pre-warm `target/integration-fixtures`
-warmup-integration-tests:
-  cargo run --package _utils --bin warmup -- "$(pwd)"
-
 # Run perfectionist's own lints on its source
 self-lint:
   DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --all-targets
+
+# Pre-warm `target/integration-fixtures`
+warmup-integration-tests:
+  cargo run --package _utils --bin warmup -- "$(pwd)"
