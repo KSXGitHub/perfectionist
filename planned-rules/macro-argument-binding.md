@@ -20,8 +20,8 @@ The fix is to bind the call to a `let` first, then pass the
 binding to the macro:
 
 ```rust
-let rejected = my_map.insert(key, value);
-debug_assert_eq!(rejected, None, "Something went wrong! `key` wasn't new");
+let ejected = my_map.insert(key, value);
+debug_assert_eq!(ejected, None, "Something went wrong! `key` wasn't new");
 ```
 
 `debug_assert*` is the most famous offender, but the trap is
@@ -184,9 +184,12 @@ macro is silently accepted.
 
 The implementation is a name-set lookup keyed on the resolved
 `DefId` plus a non-trivial-argument predicate. No allowlist, no
-matcher walk, no user configuration beyond extending the
-denylist. The rule's surface area is "this exact set of
-core/std macros, for this exact reason".
+matcher walk; the only mode-specific knob is `deny_extra` for
+extending the built-in denylist. The shared knobs (`ignore`,
+`expression_bypass`) still apply per the "What to lint" and
+"Configuration" sections — they're not mode-gated. The rule's
+surface area in this mode is "this exact set of core/std
+macros, for this exact reason".
 
 This mode exists for projects that want to enable
 `perfectionist::macro_argument_binding` without auditing their
@@ -436,8 +439,8 @@ human glance.
 debug_assert_eq!(my_map.insert(key, value), None, "duplicate key");
 
 // Good
-let rejected = my_map.insert(key, value);
-debug_assert_eq!(rejected, None, "duplicate key");
+let ejected = my_map.insert(key, value);
+debug_assert_eq!(ejected, None, "duplicate key");
 ```
 
 ### Trivial arguments stay inline
