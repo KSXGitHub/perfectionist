@@ -172,6 +172,13 @@ impl<'tcx> LateLintPass<'tcx> for PreferRawString {
         let Some(scan) = scan_body(body, &self.escapes_eligible) else {
             return;
         };
+        // The `eliminable_count == 0` guard is stricter than the
+        // planning file's `count >= threshold` rule and deliberate:
+        // suggesting `r"hello"` for `"hello"` would just trip
+        // `clippy::needless_raw_strings` on the next pass. The
+        // guard kicks in if a user sets `min_escapes_to_trigger`
+        // to 0, which the planning file doesn't expect but the
+        // schema doesn't forbid.
         if scan.eliminable_count == 0 || scan.eliminable_count < self.min_escapes_to_trigger {
             return;
         }
@@ -334,6 +341,11 @@ fn minimal_hash_count(decoded: &str) -> usize {
 /// silently corrupt strings — e.g. `escapes_eligible = ["\\n"]`
 /// would rewrite a newline-containing literal to one containing the
 /// letter `n`.
+///
+/// The supported set is the same one named by
+/// [`DEFAULT_ESCAPES_ELIGIBLE`]; matching against that constant
+/// keeps the two definitions from drifting apart if a future
+/// extension to `eliminable_decoded` ever adds a fourth entry.
 fn is_supported_eligible_entry(entry: &str) -> bool {
-    matches!(entry, r#"\""# | r"\\" | r"\'")
+    DEFAULT_ESCAPES_ELIGIBLE.contains(&entry)
 }
