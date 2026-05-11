@@ -6,7 +6,7 @@ use std::{collections::BTreeMap, path::Path};
 
 use build_fs_tree::{Build, FileSystemTree, MergeableFileSystemTree};
 
-use crate::manifest::{fixture_cargo_toml, fixture_dylint_toml};
+use crate::manifest::{fixture_cargo_toml, fixture_dylint_toml_with_config};
 
 /// Materialise a Cargo project at `project_dir` consisting of a
 /// `Cargo.toml` for a library package named `package_name`, a
@@ -18,6 +18,18 @@ pub fn build_project(
     perfectionist_dir: &Path,
     sources: &[(&str, &str)],
 ) {
+    build_project_with_dylint_config(project_dir, package_name, perfectionist_dir, sources, "");
+}
+
+/// Like [`build_project`], but appends `dylint_toml_extra` to the
+/// generated `dylint.toml` — typically a per-rule configuration table.
+pub fn build_project_with_dylint_config(
+    project_dir: &Path,
+    package_name: &str,
+    perfectionist_dir: &Path,
+    sources: &[(&str, &str)],
+    dylint_toml_extra: &str,
+) {
     let mut entries: BTreeMap<String, FileSystemTree<String, String>> = BTreeMap::new();
     entries.insert(
         "Cargo.toml".to_owned(),
@@ -25,7 +37,10 @@ pub fn build_project(
     );
     entries.insert(
         "dylint.toml".to_owned(),
-        FileSystemTree::File(fixture_dylint_toml(perfectionist_dir)),
+        FileSystemTree::File(fixture_dylint_toml_with_config(
+            perfectionist_dir,
+            dylint_toml_extra,
+        )),
     );
     for (path, contents) in sources {
         entries.insert(
