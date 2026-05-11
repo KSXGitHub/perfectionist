@@ -42,11 +42,12 @@ optionally. **Inclusion criterion:** the macro's matcher accepts
 a top-level comma-separated argument list with a syntactically
 optional trailing comma. The list may have any length — a
 single-argument invocation like `dbg!(x)` or `env!("VAR")`
-qualifies just as much as a multi-argument one — but
-single-argument invocations contain no comma at all and so the
-policy is vacuous for them (step 4 of the algorithm skips on
-zero top-level commas). The policy *meaningfully* fires when
-the invocation has two or more top-level items.
+qualifies just as much as a multi-argument one. Multi-line
+single-argument invocations get a trailing comma per rustfmt's
+policy (`vec![\n    x\n]` → `vec![\n    x,\n]`); single-line
+single-argument invocations have nothing to fix (no trailing
+comma is present to remove and the invocation is already
+single-line short).
 
 Macros that use a different separator (`;` for `thread_local!`,
 `lazy_static!`), that take a single non-list argument the
@@ -192,15 +193,26 @@ For every macro invocation:
    - The body contains a top-level `;` (e.g., `vec![value;
      count]`, `thread_local! { static FOO: ...; static BAR:
      ...; }`). A top-level `;` indicates the macro uses `;` as
-     its item separator, not commas.
-   - The body contains **zero** top-level commas (no list to
-     apply the trailing-comma policy to). This catches
-     token-tree macros like `quote! { fn foo() {} }` whose body
-     has no top-level commas at all, single-argument macros,
-     and empty invocations. `=>` may appear at the top level
-     between items — e.g., `hashmap! { "a" => 1, "b" => 2 }`
-     legitimately has a top-level `=>` per entry — and is
-     fine as long as top-level commas separate the entries.
+     its item separator, not commas. Note that step 3's
+     eligibility check has already filtered macros to the
+     curated comma-separated-list set, so this case mostly
+     guards against the dual-arm `vec!` (`vec![el; n]` form)
+     and any cross-arm matcher-based hits where one arm of the
+     macro is comma-separated and another is `;`-separated.
+   - The body is empty (only whitespace and comments between
+     delimiters). Nothing to add or remove.
+   - `=>` may appear at the top level between items — e.g.,
+     `hashmap! { "a" => 1, "b" => 2 }` legitimately has a
+     top-level `=>` per entry — and is fine. It is *not* a
+     skip trigger.
+
+   A zero-comma body is **not** a skip trigger. A single-item
+   list still benefits from the multi-line trailing comma per
+   rustfmt's policy (`vec![\n    x\n]` becomes
+   `vec![\n    x,\n]`). The eligibility check at step 3 has
+   already established that the macro is shaped like a
+   comma-separated list, so a one-item invocation is a
+   one-item list, not a token-tree passthrough.
 5. Determine "single-line" vs "multi-line" by the source
    positions of the opening and closing delimiters. If they
    share a line, single-line; otherwise multi-line.
@@ -246,6 +258,19 @@ let xs = vec![1, 2, 3,];
 
 // Good
 let xs = vec![1, 2, 3];
+```
+
+```rust
+// Bad: single-argument multi-line invocation, no trailing
+// comma. Matches rustfmt's behaviour for function calls.
+dbg!(
+    expensive_function_call(arg)
+);
+
+// Good
+dbg!(
+    expensive_function_call(arg),
+);
 ```
 
 ### Name-based: `assert_eq!`
@@ -295,8 +320,11 @@ comma_list!(
 // A top-level `;` indicates a different macro form.
 let zeros = vec![0; 10];
 
-// Skipped: no top-level commas in the body — the macro is a
-// token-tree passthrough, not a comma-separated list.
+// Skipped: `quote!` is a token-tree passthrough, not a
+// comma-separated list. It isn't on the name-based allow-list,
+// and matcher-based detection's $(,)? / $(,)* predicate
+// doesn't match its grammar — so step 3's eligibility check
+// fails and the lint never reaches the trailing-comma check.
 quote! {
     fn foo() -> i32 { 42 }
 };
