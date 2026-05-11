@@ -225,7 +225,7 @@ namespaced.
 
 Dylint loads each plugin as a separate dynamic library, but
 rustc's `LintStore` is a single global table per compilation. Two
-plugins that both register a lint named `single_letter_names`
+plugins that both register a lint named `qualified_paths`
 cause rustc to reject the second registration as a duplicate. The
 names this catalogue chose — `from`, `bare_url`, `qualified_paths`,
 `serde_source_types`, and similar — are exactly the names an
