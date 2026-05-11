@@ -28,6 +28,7 @@ lint:
 
 # Run all the tests
 test:
+  just warmup-integration-tests
   cargo test
 
 # Run perfectionist's own lints on its source
