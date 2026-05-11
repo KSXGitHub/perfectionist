@@ -53,10 +53,22 @@ struct Cli {
 
     #[clap(help = "Output directory; index.html will be written here")]
     out_dir: PathBuf,
+
+    /// Git ref the rendered "Source:" links should target.
+    /// Defaults to `master` so the dev-snapshot page keeps linking
+    /// to tip-of-tree. CI for a tagged release should pass the
+    /// tag (or its SHA) so the published page points at the
+    /// source the page was actually generated from.
+    #[clap(long, default_value = "master")]
+    git_ref: String,
 }
 
 fn main() -> ExitCode {
-    let Cli { root, out_dir } = Cli::parse();
+    let Cli {
+        root,
+        out_dir,
+        git_ref,
+    } = Cli::parse();
 
     let manifest = Manifest::from_path(root.join("Cargo.toml")).expect("failed to read Cargo.toml");
     let crate_version = manifest
@@ -78,7 +90,7 @@ fn main() -> ExitCode {
     }
 
     fs::create_dir_all(&out_dir).expect("failed to create output directory");
-    let html = render_page(&rules, &crate_version);
+    let html = render_page(&rules, &crate_version, &git_ref);
     let index_path = out_dir.join("index.html");
     fs::write(&index_path, html).expect("failed to write index.html");
 
@@ -169,9 +181,20 @@ struct EnumVariant {
     doc_markdown: String,
 }
 
+/// A field of a project-local struct surfaced under a rule's
+/// Types section. Mirrors [`ConfigField`] for the nested-struct
+/// case, but the renderer omits the optional badge here — a
+/// custom struct's TOML representation requires every field
+/// to be present, since serde's `default` attribute belongs to
+/// the top-level `Config` deserialisation, not nested.
 struct StructField {
+    /// The TOML key for this field, after applying the struct's
+    /// own serde rename rules where present.
     name: String,
+    /// TOML-flavoured label for the field's type. See
+    /// [`toml_type_label`] for the mapping.
     type_label: String,
+    /// Per-field `///` doc comment, in markdown form.
     doc_markdown: String,
 }
 
@@ -564,10 +587,18 @@ fn serde_str_attr(attrs: &[Attribute], key: &str) -> Option<String> {
 }
 
 /// Apply one of serde's `rename_all` styles to a Rust identifier.
-/// Only the styles that actually appear in this codebase are
-/// implemented; anything else falls through to the identifier as
-/// written, which keeps the renderer honest about what it knows
-/// instead of silently producing a wrong serialised name.
+/// Covers the styles serde itself documents: `snake_case`,
+/// `kebab-case`, their SCREAMING variants, `lowercase`, `UPPERCASE`,
+/// `camelCase`, and `PascalCase`. None of the current rules need
+/// anything outside `snake_case`; the others are here so that
+/// adopting a new style elsewhere doesn't silently mangle the
+/// rendered TOML keys.
+///
+/// An unrecognised style prints a warning to stderr and falls
+/// through to the identifier as written. Warning rather than
+/// panicking, on the principle that a wrong doc page is less bad
+/// than a broken doc-generation build — but the warning makes the
+/// gap loud enough that the rule author notices.
 fn apply_rename_all(style: &str, name: &str) -> String {
     match style {
         "snake_case" => pascal_to_snake(name),
@@ -587,7 +618,14 @@ fn apply_rename_all(style: &str, name: &str) -> String {
                 None => String::new(),
             }
         }
-        _ => name.to_owned(),
+        unknown => {
+            eprintln!(
+                "warning: unrecognised serde `rename_all` style {unknown:?}; \
+                 rendering `{name}` unchanged. Add an arm to `apply_rename_all` \
+                 if this style needs to be supported."
+            );
+            name.to_owned()
+        }
     }
 }
 
@@ -755,7 +793,7 @@ fn doc_attrs_to_markdown(attrs: &[Attribute]) -> String {
     lines.join("\n")
 }
 
-fn render_page(rules: &[Rule], crate_version: &str) -> String {
+fn render_page(rules: &[Rule], crate_version: &str, git_ref: &str) -> String {
     let markup: Markup = html! {
         (DOCTYPE)
         html lang="en" {
@@ -804,7 +842,7 @@ fn render_page(rules: &[Rule], crate_version: &str) -> String {
                 }
                 h2 { "Rules" }
                 @for rule in rules {
-                    (rule_article(rule))
+                    (rule_article(rule, git_ref))
                 }
                 footer {
                     "Generated from " code { "src/rules/" } "."
@@ -815,10 +853,10 @@ fn render_page(rules: &[Rule], crate_version: &str) -> String {
     markup.into_string()
 }
 
-fn rule_article(rule: &Rule) -> Markup {
+fn rule_article(rule: &Rule, git_ref: &str) -> Markup {
     let source_path = rule.relative_source.display().to_string();
     let source_url =
-        format!("https://github.com/KSXGitHub/perfectionist/blob/master/{source_path}");
+        format!("https://github.com/KSXGitHub/perfectionist/blob/{git_ref}/{source_path}");
     html! {
         article.rule id=(anchor_for(&rule.namespaced)) {
             h2 { code { (rule.namespaced) } }
