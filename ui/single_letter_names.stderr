@@ -41,7 +41,7 @@ LL |     let m = 5_u32;
    = note: `#[warn(perfectionist::single_letter_let_binding)]` on by default
 
 warning: closure parameter `t` has a single-letter name
-  --> $DIR/single_letter_names.rs:75:15
+  --> $DIR/single_letter_names.rs:80:15
    |
 LL |         .map(|t| {
    |               ^
@@ -50,7 +50,7 @@ LL |         .map(|t| {
    = note: `#[warn(perfectionist::single_letter_closure_param)]` on by default
 
 warning: function parameter `w` has a single-letter name
-  --> $DIR/single_letter_names.rs:90:16
+  --> $DIR/single_letter_names.rs:95:16
    |
 LL | fn write_label(w: &mut String, t: &str) {
    |                ^
@@ -59,7 +59,7 @@ LL | fn write_label(w: &mut String, t: &str) {
    = note: `#[warn(perfectionist::single_letter_function_param)]` on by default
 
 warning: function parameter `t` has a single-letter name
-  --> $DIR/single_letter_names.rs:90:32
+  --> $DIR/single_letter_names.rs:95:32
    |
 LL | fn write_label(w: &mut String, t: &str) {
    |                                ^

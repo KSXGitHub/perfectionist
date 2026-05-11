@@ -113,8 +113,11 @@ declare_tool_lint! {
     ///   `binary_search_by`, `fold`, `try_fold`, …);
     /// - the body is a trivial wrapper around the parameter —
     ///   a field access (`|x| x.field`), a method call
-    ///   (`|x| x.foo()`), or a one-argument call where the
-    ///   parameter is the sole argument (`|x| vec![x]`).
+    ///   (`|x| x.foo()`), a one-argument call where the
+    ///   parameter is the sole argument (`|x| vec![x]`), or a
+    ///   reference (`|x| &x`). Surrounding `*` / `&` operators
+    ///   around the parameter inside any of these shapes are
+    ///   peeled before the match, so `|s| (*s).foo()` qualifies.
     ///
     /// ### Why restrict this?
     /// This is a stylistic preference, not a correctness issue.
@@ -395,27 +398,21 @@ impl SingleLetterNames {
         closure: &'tcx hir::Closure<'tcx>,
     ) {
         let body = lint_context.tcx.hir_body(closure.body);
-        let single_letter_params: Vec<(rustc_span::Ident, hir::HirId)> = body
+        let single_letter_params: Vec<rustc_span::Ident> = body
             .params
             .iter()
             .filter_map(|param| {
                 let ident = binding_ident(param.pat)?;
-                if is_single_ascii_letter(ident.name.as_str()) {
-                    let binding_hir_id = binding_hir_id(param.pat)?;
-                    Some((ident, binding_hir_id))
-                } else {
-                    None
-                }
+                is_single_ascii_letter(ident.name.as_str()).then_some(ident)
             })
             .collect();
         if single_letter_params.is_empty() {
             return;
         }
-        let is_trivial = self.closure_is_trivial(lint_context, closure_expr, body);
-        if is_trivial {
+        if self.closure_is_trivial(lint_context, closure_expr, body) {
             return;
         }
-        for (ident, _) in single_letter_params {
+        for ident in single_letter_params {
             span_lint_and_help(
                 lint_context,
                 SINGLE_LETTER_CLOSURE_PARAM,

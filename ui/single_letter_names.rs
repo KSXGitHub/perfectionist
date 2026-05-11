@@ -69,6 +69,11 @@ fn run() {
     let pairs = vec![Pair { left: 1, right: 2 }];
     let _lefts: Vec<i32> = pairs.iter().map(|p| p.left).collect();
 
+    // OK: trivial wrapper closure with a deref peel — `(*s).method()`
+    // is still structurally a method call on the parameter.
+    let names = ["one", "two"];
+    let _owned: Vec<String> = names.iter().map(|s| (*s).to_owned()).collect();
+
     // Bad: multi-statement closure body, single-letter parameter.
     let _formatted: Vec<String> = sorted
         .iter()
