@@ -265,7 +265,7 @@ fn extract_rule(source_path: &Path) -> Option<Rule> {
         )
     });
 
-    let config = extract_config(&file);
+    let config = extract_config(source_path, &file);
 
     Some(Rule {
         namespaced,
@@ -279,10 +279,13 @@ fn extract_rule(source_path: &Path) -> Option<Rule> {
 
 /// Locate the rule's `Config` struct and its `CONFIG_KEY` constant
 /// and bundle them — along with any project-local types the fields
-/// reference — into a `ConfigDoc`. Returns `None` when either the
-/// constant or the struct is missing; both are mandatory for a rule
-/// to be considered "configurable" by `dylint.toml`.
-fn extract_config(file: &syn::File) -> Option<ConfigDoc> {
+/// reference — into a `ConfigDoc`. Returns `None` when *both* the
+/// constant and the struct are missing (a rule with no configuration
+/// concept at all). Defining only one of the two prints a warning
+/// and still returns `None`: the convention in this repo is that
+/// every rule has both, and a half-defined Config is almost always
+/// the author having dropped the other half.
+fn extract_config(source_path: &Path, file: &syn::File) -> Option<ConfigDoc> {
     let key = file.items.iter().find_map(|item| match item {
         Item::Const(item_const) if item_const.ident == "CONFIG_KEY" => match &*item_const.expr {
             Expr::Lit(ExprLit {
@@ -292,11 +295,31 @@ fn extract_config(file: &syn::File) -> Option<ConfigDoc> {
             _ => None,
         },
         _ => None,
-    })?;
+    });
     let config_struct = file.items.iter().find_map(|item| match item {
         Item::Struct(item_struct) if item_struct.ident == "Config" => Some(item_struct),
         _ => None,
-    })?;
+    });
+    let (key, config_struct) = match (key, config_struct) {
+        (Some(key), Some(config_struct)) => (key, config_struct),
+        (None, None) => return None,
+        (Some(_), None) => {
+            eprintln!(
+                "warning: {} declares CONFIG_KEY but no `Config` struct; \
+                 skipping its configuration section",
+                source_path.display(),
+            );
+            return None;
+        }
+        (None, Some(_)) => {
+            eprintln!(
+                "warning: {} declares a `Config` struct but no CONFIG_KEY const; \
+                 skipping its configuration section",
+                source_path.display(),
+            );
+            return None;
+        }
+    };
     let struct_doc_markdown = doc_attrs_to_markdown(&config_struct.attrs);
 
     let named_fields = match &config_struct.fields {
@@ -382,25 +405,26 @@ fn collect_referenced_idents(ty: &Type, out: &mut Vec<String>, seen: &mut BTreeS
     }
 }
 
+/// Whether `name` is in the renderer's built-in type set. Thin
+/// wrapper around [`BUILTIN_TYPES`] kept for naming intent at the
+/// call sites; the contract and rationale live on the constant.
+fn is_builtin_type(name: &str) -> bool {
+    BUILTIN_TYPES.contains(&name)
+}
+
 /// Type names the renderer treats as "obvious", omitting them from
 /// the per-rule custom-types listing. Covers Rust's primitives and
 /// the std-library containers that show up in serde-deserialised
 /// configuration values. `Config` itself is on the list so a
 /// self-referential type doesn't loop the lookup.
 ///
-/// **Keep in sync with [`toml_type_label`].** The two functions
-/// share a coverage contract: every ident accepted here must also
-/// have a match arm there, otherwise the renderer either drops a
-/// real custom type from the Types section (false positive here)
-/// or leaks a Rust identifier into the field-type column (false
-/// negative there). The unit test `builtin_types_all_map_to_toml_label`
-/// guards this contract mechanically.
-fn is_builtin_type(name: &str) -> bool {
-    BUILTIN_TYPES.contains(&name)
-}
-
-/// The full set [`is_builtin_type`] accepts, exposed as a constant
-/// so the contract test can iterate it.
+/// **Keep in sync with [`toml_type_label`].** The two share a
+/// coverage contract: every ident here must also have a match arm
+/// there, otherwise the renderer either drops a real custom type
+/// from the Types section (false positive here) or leaks a Rust
+/// identifier into the field-type column (false negative there).
+/// The unit test `builtin_types_all_map_to_toml_label` guards this
+/// contract mechanically.
 const BUILTIN_TYPES: &[&str] = &[
     // Primitives.
     "bool",
@@ -1256,7 +1280,8 @@ mod tests {
             }
         "#;
         let file = syn::parse_file(source).unwrap();
-        let config = extract_config(&file).expect("demo file declares CONFIG_KEY and Config");
+        let config = extract_config(Path::new("synthetic.rs"), &file)
+            .expect("demo file declares CONFIG_KEY and Config");
         let names: Vec<&str> = config.fields.iter().map(|f| f.name.as_str()).collect();
         assert_eq!(names, vec!["renamed-key", "plain_name"]);
     }
