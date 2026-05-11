@@ -153,6 +153,17 @@ pattern that several rules call out by reference — live in
   is consumed by a derive macro so multi-attribute splitting
   isn't viable; only line-continuation rewriting.
 
+### Macros
+- [`macro-trailing-comma.md`](./macro-trailing-comma.md) — apply
+  rustfmt's `trailing_comma = "Vertical"` policy (trailing comma
+  on multi-line argument lists, none on single-line) to macro
+  invocations, which rustfmt itself leaves untouched. Two tiers
+  decide eligibility: a curated allow-list of core/std and
+  well-known third-party macros (Tier 1, easy, configurable via
+  `extra_tier_1`), and an automatic walk of `macro_rules!`
+  matchers to detect the `$(,)?` optional-trailing-comma idiom
+  (Tier 2, harder, configurable via `tier_2`).
+
 ### Serde
 - [`serde-source-types.md`](./serde-source-types.md) — forbid
   `#[serde(from = "&'de str")]` / `try_from = "&'de str"`; advise
