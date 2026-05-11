@@ -31,6 +31,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
     register! {
         flat_module_pattern
         macro_trailing_comma
+        non_exhaustive_error
         prefer_raw_string
         single_letter_names
         unicode_ellipsis_in_comments

@@ -81,8 +81,6 @@ pattern that several rules call out by reference — live in
 - [`error-type-derives.md`](./error-type-derives.md) — `derive_more::Display` /
   `Error` must only be derived when actually needed; flag superfluous `Error`
   on non-error types.
-- [`non-exhaustive-error.md`](./non-exhaustive-error.md) — public error enums
-  should carry `#[non_exhaustive]`.
 - [`prefer-derive-more.md`](./prefer-derive-more.md) — flag hand-written
   `impl` blocks that could be replaced by a `derive_more` derive
   (`From`, `Into`, `AsRef`, `Deref`, etc., with `Display` and
