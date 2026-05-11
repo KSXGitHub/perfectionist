@@ -1,0 +1,10 @@
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/fixture.rs:12:13
+   |
+LL |     let _ = "C:/Users/foo/bar";
+   |             ^^^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r"C:/Users/foo/bar"`
+   |
+   = note: `#[warn(perfectionist::prefer_raw_string)]` on by default
+
+warning: 1 warning emitted
+
