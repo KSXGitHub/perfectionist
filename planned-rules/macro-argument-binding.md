@@ -209,8 +209,14 @@ invocation:
    well-known third-party set as
    [`macro-trailing-comma`](./macro-trailing-comma.md) —
    `format!`, `println!`, `vec!`, `write!`, `assert!`,
-   `assert_eq!`, the `log::*` and `tracing::*` families,
-   `anyhow!`, and similar.
+   `assert_eq!`, `anyhow!`, and similar. Notably absent:
+   the `log::*` and `tracing::*` families — those check
+   the configured level before evaluating their arguments
+   (the same conditional-evaluation footgun called out in
+   "Why is this bad?"), so they don't meet the
+   exactly-once criterion. They are left off both default
+   lists; projects that want strict enforcement add them
+   to `deny_extra`.
 3. **Neither**: skip silently. Unknown macros are not flagged
    by default. A project that wants stricter behaviour
    reaches for mode 1 or mode 4.
@@ -487,9 +493,10 @@ even though the macro is otherwise unknown to the lint.
 
 ```rust
 // Whether this is safe depends on the proc macro's expansion,
-// which the lint cannot read. The user adds `tracing::info`
-// to `allow_extra` once, project-wide.
-tracing::info!(latency = stopwatch.elapsed().as_millis(), "done");
+// which the lint cannot read. The user adds `serde_json::json`
+// to `allow_extra` once, project-wide after confirming each
+// argument is evaluated exactly once by the macro's expansion.
+let payload = serde_json::json!({ "id": next_id(), "ts": now() });
 ```
 
 ## Configuration
@@ -529,8 +536,7 @@ deny_extra = [
 # deny_extra. Use for third-party macros the project
 # trusts to evaluate each argument exactly once.
 allow_extra = [
-  # "tracing::info",
-  # "tracing::debug",
+  # "serde_json::json",
 ]
 
 # Macros to skip entirely, regardless of which list they would
