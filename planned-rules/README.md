@@ -118,11 +118,6 @@ pattern that several rules call out by reference — live in
   `Rc::clone(&x)` instead of `x.clone()` when `x: Arc<_>` / `Rc<_>`.
 
 ### String literals
-- [`prefer-raw-string.md`](./prefer-raw-string.md) — when a string
-  literal contains `\"`, `\\`, or `\'` escapes (and no
-  whitespace/Unicode escapes that can't appear in raw form), prefer
-  the `r"..."` / `r#"..."#` form. Autofix picks the smallest
-  hash-count that doesn't collide.
 - [`prefer-text-block.md`](./prefer-text-block.md) — when a string
   literal contains 2+ embedded `\n` newlines (and isn't a format
   template or display-attribute), prefer `text_block! { ... }` /

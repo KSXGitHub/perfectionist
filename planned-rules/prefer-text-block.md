@@ -325,12 +325,12 @@ Warn. The default style (`text_block_macros`) reflects the
 catalogue's preferred form; projects that don't want the
 external-crate dependency switch to `line_continuation`.
 
-## Interaction with `prefer-raw-string`
+## Interaction with `perfectionist::prefer_raw_string`
 
 The two rules look at the same expression type but at different
 properties:
 
-- `prefer-raw-string` (when applied) rewrites a literal's *quote
+- `perfectionist::prefer_raw_string` (when applied) rewrites a literal's *quote
   delimiters* to avoid escapes for printable characters.
 - `prefer-text-block` (when applied) rewrites a literal's
   *shape* to spread newlines across multiple source lines.
@@ -338,7 +338,7 @@ properties:
 A multi-line string with both `\"` escapes and `\n` separators
 hits both lints. The natural application order is
 `prefer-text-block` first (lift the lines into a `text_block!`
-or continued literal), then `prefer-raw-string` on each
+or continued literal), then `perfectionist::prefer_raw_string` on each
 resulting per-line literal. The two lints converge on a final
 form like:
 

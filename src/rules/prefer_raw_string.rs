@@ -1,0 +1,313 @@
+use clippy_utils::diagnostics::span_lint_and_sugg;
+use rustc_ast::{LitKind, StrStyle};
+use rustc_errors::Applicability;
+use rustc_hir::{Expr, ExprKind};
+use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
+use rustc_session::{declare_tool_lint, impl_lint_pass};
+
+declare_tool_lint! {
+    /// ### What it does
+    /// Forbids regular string literals whose only backslash escapes
+    /// are ones a raw string would express verbatim — `\"`, `\\`,
+    /// and `\'`. The autofix rewrites the literal to the raw form
+    /// `r"..."` / `r#"..."#`, picking the smallest hash count that
+    /// avoids a delimiter collision.
+    ///
+    /// Whitespace and control-character escapes (`\n`, `\t`, `\r`,
+    /// `\0`) and Unicode escapes (`\x..`, `\u{..}`) are exempt — a
+    /// raw string cannot express them, and the regular form is the
+    /// only choice. A literal that mixes eliminable and
+    /// inexpressible escapes is also left alone; the rewrite would
+    /// force the author to split the literal or fall back to
+    /// `concat!`, which loses more than it gains.
+    ///
+    /// ### Why restrict this?
+    /// This is a stylistic preference, not a correctness issue. The
+    /// rule trades one noise source (interior backslash escapes)
+    /// for a slightly more elaborate string syntax. The benefit is
+    /// highest in strings full of file paths, regex patterns, JSON
+    /// snippets, or embedded source code — all of which would
+    /// otherwise be a sea of `\\` and `\"`.
+    ///
+    /// ### Example
+    /// ```rust,ignore
+    /// let json = "{\"name\":\"foo\"}";
+    /// let path = "C:\\Users\\foo\\bar";
+    /// ```
+    /// Use instead:
+    /// ```rust,ignore
+    /// let json = r#"{"name":"foo"}"#;
+    /// let path = r"C:\Users\foo\bar";
+    /// ```
+    pub perfectionist::PREFER_RAW_STRING,
+    Warn,
+    "string literal contains only raw-expressible escapes; prefer the raw-string form",
+    report_in_external_macro: false
+}
+
+const CONFIG_KEY: &str = "perfectionist::prefer_raw_string";
+
+/// Default eligible escape sequences: the three escapes that a raw
+/// string can express verbatim with no escape at all.
+const DEFAULT_ESCAPES_ELIGIBLE: &[&str] = &[r#"\""#, r"\\", r"\'"];
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(default, rename_all = "snake_case")]
+struct Config {
+    /// Master on/off switch for the rule. Set to `false` to silence
+    /// every diagnostic without enumerating individual literals.
+    enabled: bool,
+    /// Minimum number of eliminable escapes a string must contain
+    /// before the lint fires. Default 1 catches every escapable
+    /// string; set to 2 to skip single-escape literals where the
+    /// raw form is arguably noisier than the original.
+    min_escapes_to_trigger: usize,
+    /// Escape sequences considered eliminable by switching to raw
+    /// form. Each entry is the literal source spelling of the
+    /// escape (a backslash followed by one character). The default
+    /// covers the three cases that a raw string expresses without
+    /// any escape.
+    escapes_eligible: Vec<String>,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            min_escapes_to_trigger: 1,
+            escapes_eligible: DEFAULT_ESCAPES_ELIGIBLE
+                .iter()
+                .map(|entry| (*entry).to_owned())
+                .collect(),
+        }
+    }
+}
+
+pub struct PreferRawString {
+    enabled: bool,
+    min_escapes_to_trigger: usize,
+    escapes_eligible: Vec<String>,
+}
+
+impl PreferRawString {
+    fn new() -> Self {
+        let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        // Drop malformed eligible entries (anything that isn't a
+        // backslash followed by exactly one character). The decoded
+        // form of an eligible escape is "the entry minus its leading
+        // backslash"; entries that don't fit that shape would produce
+        // garbage rewrites, so silently filter them out rather than
+        // letting bad config corrupt user code.
+        let escapes_eligible = config
+            .escapes_eligible
+            .into_iter()
+            .filter(|entry| is_well_formed_eligible_entry(entry))
+            .collect();
+        Self {
+            enabled: config.enabled,
+            min_escapes_to_trigger: config.min_escapes_to_trigger,
+            escapes_eligible,
+        }
+    }
+}
+
+impl_lint_pass!(PreferRawString => [PREFER_RAW_STRING]);
+
+pub fn register_lint(lint_store: &mut LintStore) {
+    lint_store.register_lints(&[PREFER_RAW_STRING]);
+}
+
+pub fn register_pass(lint_store: &mut LintStore) {
+    lint_store.register_late_pass(|_| Box::new(PreferRawString::new()));
+}
+
+impl<'tcx> LateLintPass<'tcx> for PreferRawString {
+    fn check_expr(&mut self, lint_context: &LateContext<'tcx>, expr: &Expr<'tcx>) {
+        if !self.enabled {
+            return;
+        }
+        let ExprKind::Lit(literal) = expr.kind else {
+            return;
+        };
+        if !matches!(literal.node, LitKind::Str(_, StrStyle::Cooked)) {
+            return;
+        }
+        let Ok(snippet) = lint_context
+            .sess()
+            .source_map()
+            .span_to_snippet(literal.span)
+        else {
+            return;
+        };
+        // Belt-and-braces: defend against any source spelling that
+        // doesn't actually look like a cooked string literal at the
+        // syntactic level (synthesised spans, edge cases). The
+        // `Cooked` check above already covers the normal path.
+        let Some(body) = snippet
+            .strip_prefix('"')
+            .and_then(|rest| rest.strip_suffix('"'))
+        else {
+            return;
+        };
+        let Some(scan) = scan_body(body, &self.escapes_eligible) else {
+            return;
+        };
+        if scan.eliminable_count == 0 || scan.eliminable_count < self.min_escapes_to_trigger {
+            return;
+        }
+        let n_hashes = minimal_hash_count(&scan.decoded);
+        let hashes = "#".repeat(n_hashes);
+        let suggestion = format!("r{hashes}\"{}\"{hashes}", scan.decoded);
+        span_lint_and_sugg(
+            lint_context,
+            PREFER_RAW_STRING,
+            literal.span,
+            "string literal uses escapes that a raw string would avoid",
+            "use a raw string",
+            suggestion,
+            Applicability::MachineApplicable,
+        );
+    }
+}
+
+struct ScanResult {
+    eliminable_count: usize,
+    decoded: String,
+}
+
+/// Walk the body of a cooked string literal (everything between the
+/// surrounding quotes) and classify each escape. Returns `None` if
+/// the body contains any non-raw escape — `\n`, `\t`, `\r`, `\0`,
+/// `\xNN`, `\u{...}`, line continuations, or any other backslash
+/// sequence that is not listed in the configured `escapes_eligible`.
+fn scan_body(body: &str, eligible: &[String]) -> Option<ScanResult> {
+    let mut rest = body;
+    let mut eliminable_count: usize = 0;
+    let mut decoded = String::with_capacity(body.len());
+    while !rest.is_empty() {
+        if let Some((escape, remainder)) = take_escape_eliminable(rest, eligible) {
+            decoded.push_str(eliminable_decoded(escape));
+            eliminable_count = eliminable_count.saturating_add(1);
+            rest = remainder;
+            continue;
+        }
+        if take_escape_non_raw(rest).is_some() {
+            return None;
+        }
+        let (literal, remainder) = take_literal_char(rest)?;
+        decoded.push_str(literal);
+        rest = remainder;
+    }
+    Some(ScanResult {
+        eliminable_count,
+        decoded,
+    })
+}
+
+/// Take a prefix of `input` that matches one of the configured
+/// eligible escape sequences. Each entry is matched literally
+/// against the input — no decoding, no normalisation.
+fn take_escape_eliminable<'a>(input: &'a str, eligible: &[String]) -> Option<(&'a str, &'a str)> {
+    for entry in eligible {
+        if !entry.is_empty() && input.starts_with(entry.as_str()) {
+            return Some(input.split_at(entry.len()));
+        }
+    }
+    None
+}
+
+/// Decode an eligible escape into the verbatim text it represents
+/// in a raw string. Eligible entries are well-formed `\<char>`
+/// sequences (see [`is_well_formed_eligible_entry`]), so the decoded
+/// form is exactly the entry with its leading backslash removed.
+fn eliminable_decoded(escape: &str) -> &str {
+    &escape['\\'.len_utf8()..]
+}
+
+/// Take any backslash escape from the front of `input`. Recognises
+/// `\xNN` (4 bytes), `\u{...}` (variable length), and any
+/// single-character escape (`\n`, `\t`, `\r`, `\0`, `\"`, `\\`,
+/// `\'`, line continuation, …). Returns `None` if `input` does not
+/// start with `\` or the escape is malformed (incomplete `\u{...}`
+/// without a closing brace, dangling backslash at the end of input,
+/// truncated `\xNN`).
+fn take_escape_non_raw(input: &str) -> Option<(&str, &str)> {
+    let bytes = input.as_bytes();
+    if bytes.first() != Some(&b'\\') {
+        return None;
+    }
+    let second_byte = *bytes.get(1)?;
+    let escape_len = match second_byte {
+        b'x' => 4,
+        b'u' => {
+            // `\u{...}`: scan to the closing `}`. The bytes between
+            // `{` and `}` are constrained to ASCII hex by the rustc
+            // lexer, so a byte-level scan is sufficient.
+            let mut length: usize = 2;
+            let mut closing_found = false;
+            for &byte in &bytes[2..] {
+                length = length.saturating_add(1);
+                if byte == b'}' {
+                    closing_found = true;
+                    break;
+                }
+            }
+            if !closing_found {
+                return None;
+            }
+            length
+        }
+        _ => {
+            // `\` + a single UTF-8 character (e.g. `\n`, `\"`,
+            // or the line-continuation `\<newline>`).
+            let second_char = input['\\'.len_utf8()..].chars().next()?;
+            '\\'.len_utf8() + second_char.len_utf8()
+        }
+    };
+    if escape_len > input.len() {
+        return None;
+    }
+    Some(input.split_at(escape_len))
+}
+
+/// Take a single non-backslash UTF-8 character from the front of
+/// `input`. Returns `None` only when `input` is empty or starts with
+/// `\`, in which case the caller should run one of the escape
+/// combinators first.
+fn take_literal_char(input: &str) -> Option<(&str, &str)> {
+    let first = input.chars().next()?;
+    if first == '\\' {
+        return None;
+    }
+    Some(input.split_at(first.len_utf8()))
+}
+
+/// Smallest number of `#` characters needed so that the closing
+/// `"<n #s>` sequence does not appear inside `decoded`.
+///
+/// In practice this is 0 for paths and 1 for JSON / HTML snippets;
+/// longer runs only matter when the literal itself embeds raw-
+/// string source text.
+fn minimal_hash_count(decoded: &str) -> usize {
+    let mut hashes = String::new();
+    let mut count: usize = 0;
+    loop {
+        let mut pattern = String::with_capacity('"'.len_utf8() + hashes.len());
+        pattern.push('"');
+        pattern.push_str(&hashes);
+        if !decoded.contains(&pattern) {
+            return count;
+        }
+        hashes.push('#');
+        count = count.saturating_add(1);
+    }
+}
+
+/// A well-formed `escapes_eligible` entry is `\` followed by exactly
+/// one character. The decoded form is then unambiguous: the second
+/// character. Entries that don't fit this shape are dropped so that
+/// configuration mistakes can't corrupt the autofix.
+fn is_well_formed_eligible_entry(entry: &str) -> bool {
+    let mut chars = entry.chars();
+    chars.next() == Some('\\') && chars.next().is_some() && chars.next().is_none()
+}

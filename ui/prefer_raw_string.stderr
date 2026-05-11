@@ -1,0 +1,34 @@
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:3:13
+   |
+LL |     let _ = "{/"name/":/"foo/"}";
+   |             ^^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r#"{"name":"foo"}"#`
+   |
+   = note: `#[warn(perfectionist::prefer_raw_string)]` on by default
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:8:13
+   |
+LL |     let _ = "C:/Users/foo/bar";
+   |             ^^^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r"C:/Users/foo/bar"`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:13:13
+   |
+LL |     let _ = "it/'s here";
+   |             ^^^^^^^^^^^^ help: use a raw string: `r"it's here"`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:18:13
+   |
+LL |     let _ = "say /"///" twice";
+   |             ^^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r#"say "/" twice"#`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:24:13
+   |
+LL |     let _ = "snippet: /"#suffix/" end";
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r##"snippet: "#suffix" end"##`
+
+warning: 5 warnings emitted
+
