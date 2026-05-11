@@ -18,6 +18,20 @@ impl<T> Trivial for Option<T> {
     fn done(&self) {}
 }
 
+// The short-trait-impl exemption applies only to generics owned by
+// the impl block itself. A generic on a method inside a short impl
+// is still flagged.
+trait Convert {
+    fn convert<U>(&self, value: U) -> U;
+}
+
+impl<T> Convert for Option<T> {
+    // Bad: `U` is owned by the method, not by the short impl.
+    fn convert<U>(&self, value: U) -> U {
+        value
+    }
+}
+
 // Bad: long trait impl, even though it implements a trait.
 impl<T> Iterator for Wrapper<T> {
     type Item = T;

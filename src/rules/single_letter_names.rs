@@ -472,16 +472,26 @@ impl SingleLetterNames {
         param_hir_id: hir::HirId,
     ) -> bool {
         for (_, node) in lint_context.tcx.hir_parent_iter(param_hir_id) {
-            let hir::Node::Item(item) = node else {
-                continue;
-            };
-            let hir::ItemKind::Impl(impl_block) = &item.kind else {
-                return false;
-            };
-            if impl_block.of_trait.is_none() {
-                return false;
+            match node {
+                hir::Node::Item(item) => {
+                    let hir::ItemKind::Impl(impl_block) = &item.kind else {
+                        return false;
+                    };
+                    if impl_block.of_trait.is_none() {
+                        return false;
+                    }
+                    return span_line_count(lint_context, item.span) <= self.short_impl_max_lines;
+                }
+                // A generic on a method (or other associated item) inside
+                // an impl is owned by the method, not by the impl. The
+                // short-trait-impl exemption applies only to generics
+                // owned by the impl block itself, so stop here rather
+                // than walk through to the surrounding impl.
+                hir::Node::ImplItem(_) | hir::Node::TraitItem(_) | hir::Node::ForeignItem(_) => {
+                    return false;
+                }
+                _ => continue,
             }
-            return span_line_count(lint_context, item.span) <= self.short_impl_max_lines;
         }
         false
     }
@@ -550,6 +560,10 @@ fn path_final_segment<'hir>(expr: &'hir hir::Expr<'hir>) -> Option<Symbol> {
 /// - a method call `param.foo(args)`,
 /// - a one-argument call `f(param)`,
 /// - a reference `&param`.
+///
+/// In every shape, `*` / `&` operators around the reference to
+/// the parameter are peeled by `is_param_ref` before matching,
+/// so `|s| (*s).foo()` and `|s| f(&*s)` both qualify.
 fn is_trivial_wrapper<'hir>(expr: &'hir hir::Expr<'hir>, params: &'hir [hir::Param<'hir>]) -> bool {
     /// "Refers to a parameter, possibly through one or more `*` /
     /// `&` operators." Peeling through these keeps `|s| (*s).foo()`

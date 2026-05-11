@@ -15,8 +15,24 @@ LL | fn map_pairs<K, V>(input: Vec<(K, V)>) -> Vec<(V, K)> {
    |
    = help: rename to a descriptive identifier (e.g. `Element`, `Key`, `Reader`)
 
+warning: generic type parameter `U` has a single-letter name
+  --> $DIR/single_letter_names.rs:25:16
+   |
+LL |     fn convert<U>(&self, value: U) -> U;
+   |                ^
+   |
+   = help: rename to a descriptive identifier (e.g. `Element`, `Key`, `Reader`)
+
+warning: generic type parameter `U` has a single-letter name
+  --> $DIR/single_letter_names.rs:30:16
+   |
+LL |     fn convert<U>(&self, value: U) -> U {
+   |                ^
+   |
+   = help: rename to a descriptive identifier (e.g. `Element`, `Key`, `Reader`)
+
 warning: generic type parameter `T` has a single-letter name
-  --> $DIR/single_letter_names.rs:22:6
+  --> $DIR/single_letter_names.rs:36:6
    |
 LL | impl<T> Iterator for Wrapper<T> {
    |      ^
@@ -24,7 +40,7 @@ LL | impl<T> Iterator for Wrapper<T> {
    = help: rename to a descriptive identifier (e.g. `Element`, `Key`, `Reader`)
 
 warning: generic type parameter `T` has a single-letter name
-  --> $DIR/single_letter_names.rs:47:16
+  --> $DIR/single_letter_names.rs:61:16
    |
 LL | struct Wrapper<T> {
    |                ^
@@ -32,7 +48,7 @@ LL | struct Wrapper<T> {
    = help: rename to a descriptive identifier (e.g. `Element`, `Key`, `Reader`)
 
 warning: `let` binding `m` has a single-letter name
-  --> $DIR/single_letter_names.rs:54:9
+  --> $DIR/single_letter_names.rs:68:9
    |
 LL |     let m = 5_u32;
    |         ^
@@ -41,7 +57,7 @@ LL |     let m = 5_u32;
    = note: `#[warn(perfectionist::single_letter_let_binding)]` on by default
 
 warning: closure parameter `t` has a single-letter name
-  --> $DIR/single_letter_names.rs:80:15
+  --> $DIR/single_letter_names.rs:94:15
    |
 LL |         .map(|t| {
    |               ^
@@ -50,7 +66,7 @@ LL |         .map(|t| {
    = note: `#[warn(perfectionist::single_letter_closure_param)]` on by default
 
 warning: function parameter `w` has a single-letter name
-  --> $DIR/single_letter_names.rs:95:16
+  --> $DIR/single_letter_names.rs:109:16
    |
 LL | fn write_label(w: &mut String, t: &str) {
    |                ^
@@ -59,12 +75,12 @@ LL | fn write_label(w: &mut String, t: &str) {
    = note: `#[warn(perfectionist::single_letter_function_param)]` on by default
 
 warning: function parameter `t` has a single-letter name
-  --> $DIR/single_letter_names.rs:95:32
+  --> $DIR/single_letter_names.rs:109:32
    |
 LL | fn write_label(w: &mut String, t: &str) {
    |                                ^
    |
    = help: rename to a descriptive identifier
 
-warning: 8 warnings emitted
+warning: 10 warnings emitted
 
