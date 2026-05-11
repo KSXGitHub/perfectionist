@@ -43,19 +43,6 @@ pub fn fixture_cargo_toml(package_name: &str) -> String {
 }
 
 pub fn fixture_dylint_toml(perfectionist_dir: &Path) -> String {
-    fixture_dylint_toml_with_config(perfectionist_dir, "")
-}
-
-/// Like [`fixture_dylint_toml`], but appends `extra_toml` after the
-/// `workspace.metadata.dylint` block. The caller is responsible for
-/// supplying valid TOML — typically a per-rule configuration table
-/// keyed by the rule's namespaced name, e.g.:
-///
-/// ```toml
-/// ["perfectionist::macro_trailing_comma"]
-/// extra_name_based = ["my_macro"]
-/// ```
-pub fn fixture_dylint_toml_with_config(perfectionist_dir: &Path, extra_toml: &str) -> String {
     let library = DylintLibrary {
         path: perfectionist_dir.display().to_string(),
     };
@@ -70,10 +57,5 @@ pub fn fixture_dylint_toml_with_config(perfectionist_dir: &Path, extra_toml: &st
         }),
         ..Default::default()
     };
-    let base = toml::to_string(&manifest).expect("serialize dylint.toml");
-    if extra_toml.is_empty() {
-        base
-    } else {
-        format!("{base}\n{extra_toml}")
-    }
+    toml::to_string(&manifest).expect("serialize dylint.toml")
 }
