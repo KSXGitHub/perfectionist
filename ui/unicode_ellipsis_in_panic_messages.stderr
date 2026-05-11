@@ -1,0 +1,82 @@
+warning: Unicode `…` (U+2026) in `panic!` message
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:4:37
+   |
+LL |     panic!("could not parse manifest…");
+   |                                     ^ help: use ASCII `...` instead: `...`
+   |
+   = note: `#[warn(perfectionist::unicode_ellipsis_in_panic_messages)]` on by default
+
+warning: Unicode `…` (U+2026) in `unimplemented!` message
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:5:40
+   |
+LL |     unimplemented!("not yet implemented…");
+   |                                        ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in `todo!` message
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:6:28
+   |
+LL |     todo!("write this later…");
+   |                            ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in `unreachable!` message
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:7:31
+   |
+LL |     unreachable!("can't happen…");
+   |                               ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in `assert!` message
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:11:34
+   |
+LL |     assert!(flag, "flag was false…");
+   |                                  ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in `assert_eq!` message
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:12:50
+   |
+LL |     assert_eq!(left, right, "tree did not flatten…");
+   |                                                  ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in `assert_ne!` message
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:13:57
+   |
+LL |     assert_ne!(left, right, "values matched unexpectedly…");
+   |                                                         ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in `debug_assert!` message
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:14:40
+   |
+LL |     debug_assert!(flag, "flag was false…");
+   |                                        ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in `debug_assert_eq!` message
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:15:56
+   |
+LL |     debug_assert_eq!(left, right, "tree did not flatten…");
+   |                                                        ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in `debug_assert_ne!` message
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:16:63
+   |
+LL |     debug_assert_ne!(left, right, "values matched unexpectedly…");
+   |                                                               ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in `expect` message
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:21:54
+   |
+LL |     let _: i32 = Some(1).expect("config missing-bad-1…");
+   |                                                      ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in `expect` message
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:22:71
+   |
+LL |     let _: i32 = Result::<i32, ()>::Ok(1).expect("config missing-bad-2…");
+   |                                                                       ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in `expect_err` message
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:23:70
+   |
+LL |     let _: () = Result::<i32, ()>::Err(()).expect_err("expected error…");
+   |                                                                      ^ help: use ASCII `...` instead: `...`
+
+warning: 13 warnings emitted
+
