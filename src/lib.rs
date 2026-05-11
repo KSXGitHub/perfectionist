@@ -20,6 +20,7 @@ mod rules;
 #[allow(clippy::no_mangle_with_rust_abi)]
 pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
     dylint_linting::init_config(session);
+
     rules::flat_module_pattern::register_lint(lint_store);
     rules::macro_trailing_comma::register_lint(lint_store);
     rules::unicode_ellipsis_in_comments::register_lint(lint_store);
