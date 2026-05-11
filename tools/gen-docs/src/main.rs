@@ -59,7 +59,11 @@ struct Cli {
     /// to tip-of-tree. CI for a tagged release should pass the
     /// tag (or its SHA) so the published page points at the
     /// source the page was actually generated from.
-    #[clap(long, default_value = "master")]
+    #[clap(
+        long,
+        default_value = "master",
+        value_parser = clap::builder::NonEmptyStringValueParser::new(),
+    )]
     git_ref: String,
 }
 
@@ -100,12 +104,31 @@ fn main() -> ExitCode {
     }
 
     fs::create_dir_all(&out_dir).expect("failed to create output directory");
-    let html = render_page(&rules, &crate_version, &git_ref, &repo_url);
+    let context = RenderContext {
+        crate_version: &crate_version,
+        git_ref: &git_ref,
+        repo_url: &repo_url,
+    };
+    let html = render_page(&rules, &context);
     let index_path = out_dir.join("index.html");
     fs::write(&index_path, html).expect("failed to write index.html");
 
     eprintln!("wrote {} rule(s) to {}", rules.len(), index_path.display());
     ExitCode::SUCCESS
+}
+
+/// Page-global context threaded through the renderer. Grouping
+/// these here keeps the per-article and per-field rendering
+/// signatures from collecting more positional string args every
+/// time a new contextual field is added.
+struct RenderContext<'a> {
+    /// Latest released version of the crate, read from `Cargo.toml`.
+    crate_version: &'a str,
+    /// Git ref the rendered "Source:" links target.
+    git_ref: &'a str,
+    /// Project repository URL, used for the README link in the
+    /// banner and as the base for the per-rule blob URLs.
+    repo_url: &'a str,
 }
 
 /// One lint, in the shape the page needs to render.
@@ -828,7 +851,12 @@ fn doc_attrs_to_markdown(attrs: &[Attribute]) -> String {
     lines.join("\n")
 }
 
-fn render_page(rules: &[Rule], crate_version: &str, git_ref: &str, repo_url: &str) -> String {
+fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String {
+    let RenderContext {
+        crate_version,
+        git_ref,
+        repo_url,
+    } = *context;
     let markup: Markup = html! {
         (DOCTYPE)
         html lang="en" {
@@ -884,7 +912,7 @@ fn render_page(rules: &[Rule], crate_version: &str, git_ref: &str, repo_url: &st
                 }
                 h2 { "Rules" }
                 @for rule in rules {
-                    (rule_article(rule, git_ref, repo_url))
+                    (rule_article(rule, context))
                 }
                 footer {
                     "Generated from " code { "src/rules/" }
@@ -896,7 +924,10 @@ fn render_page(rules: &[Rule], crate_version: &str, git_ref: &str, repo_url: &st
     markup.into_string()
 }
 
-fn rule_article(rule: &Rule, git_ref: &str, repo_url: &str) -> Markup {
+fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
+    let RenderContext {
+        git_ref, repo_url, ..
+    } = *context;
     // Build the URL-friendly path by joining components with `/`
     // instead of `Path::display`, which uses the host's native
     // separator and would emit `\` on Windows.
