@@ -20,8 +20,8 @@ The fix is to bind the call to a `let` first, then pass the
 binding to the macro:
 
 ```rust
-let was_new = my_map.insert(key, value).is_none();
-debug_assert!(was_new, "Something went wrong! `key` wasn't new");
+let rejected = my_map.insert(key, value);
+debug_assert_eq!(rejected, None, "Something went wrong! `key` wasn't new");
 ```
 
 `debug_assert*` is the most famous offender, but the trap is
@@ -436,8 +436,8 @@ human glance.
 debug_assert_eq!(my_map.insert(key, value), None, "duplicate key");
 
 // Good
-let was_new = my_map.insert(key, value).is_none();
-debug_assert!(was_new, "duplicate key");
+let rejected = my_map.insert(key, value);
+debug_assert_eq!(rejected, None, "duplicate key");
 ```
 
 ### Trivial arguments stay inline
