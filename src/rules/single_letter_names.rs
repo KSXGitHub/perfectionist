@@ -306,7 +306,10 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterNames {
         if !is_single_ascii_letter(ident.name.as_str()) {
             return;
         }
-        if self.let_binding_allowed_idents.contains(ident.name.as_str()) {
+        if self
+            .let_binding_allowed_idents
+            .contains(ident.name.as_str())
+        {
             return;
         }
         if is_in_test(lint_context.tcx, local.hir_id) {
