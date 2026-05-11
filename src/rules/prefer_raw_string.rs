@@ -233,10 +233,12 @@ fn scan_body(body: &str, eligible: &[String]) -> Option<ScanResult> {
 
 /// Take a prefix of `input` that matches one of the configured
 /// eligible escape sequences. Each entry is matched literally
-/// against the input — no decoding, no normalisation.
+/// against the input — no decoding, no normalisation. Entries
+/// reach this function only after [`is_supported_eligible_entry`]
+/// has accepted them, so they are non-empty by construction.
 fn take_escape_eliminable<'a>(input: &'a str, eligible: &[String]) -> Option<(&'a str, &'a str)> {
     for entry in eligible {
-        if !entry.is_empty() && input.starts_with(entry.as_str()) {
+        if input.starts_with(entry.as_str()) {
             return Some(input.split_at(entry.len()));
         }
     }
