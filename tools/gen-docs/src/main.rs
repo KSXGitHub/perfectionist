@@ -23,6 +23,7 @@ use std::{
 
 use cargo_toml::{Inheritable, Manifest};
 use clap::Parser;
+use maud::{DOCTYPE, Markup, PreEscaped, html};
 use proc_macro2::TokenStream;
 use pulldown_cmark::{Event, Options, Tag, TagEnd, html as cmark_html};
 use syn::{
@@ -202,76 +203,92 @@ fn doc_attrs_to_markdown(attrs: &[Attribute]) -> String {
 }
 
 fn render_page(rules: &[Rule], crate_version: &str) -> String {
-    let mut index_rows = String::new();
-    for rule in rules {
-        let level_class = level_css_class(&rule.level);
-        let short_desc_html = markdown_inline_to_html(&rule.short_desc);
-        let namespaced_html = escape_html(&rule.namespaced);
-        let anchor = anchor_for(&rule.namespaced);
-        index_rows.push_str(&format!(
-            "      <tr><td><a href=\"#{anchor}\"><code>{namespaced_html}</code></a></td>\
-             <td><span class=\"level {level_class}\">{level}</span></td>\
-             <td>{short_desc_html}</td></tr>\n",
-            level = rule.level,
-        ));
+    let markup: Markup = html! {
+        (DOCTYPE)
+        html lang="en" {
+            head {
+                meta charset="utf-8";
+                meta name="viewport" content="width=device-width, initial-scale=1";
+                title { "perfectionist lints" }
+                style { (PreEscaped(STYLE)) }
+            }
+            body {
+                h1 { "perfectionist lints" }
+                div.banner {
+                    "Showing development docs from " code { "master" } ". "
+                    "Latest released version: " code { (crate_version) } "."
+                }
+                p {
+                    "perfectionist is a Dylint plugin; see the "
+                    a href="https://github.com/KSXGitHub/perfectionist" { "README" }
+                    " for setup. Lint-control attributes use the "
+                    code { "perfectionist::" } " namespace, e.g. "
+                    code { "#[allow(perfectionist::flat_module_pattern)]" } "."
+                }
+                h2 { "Index" }
+                table.index {
+                    thead {
+                        tr {
+                            th { "Lint" }
+                            th { "Default" }
+                            th { "Description" }
+                        }
+                    }
+                    tbody {
+                        @for rule in rules {
+                            tr {
+                                td {
+                                    a href={ "#" (anchor_for(&rule.namespaced)) } {
+                                        code { (rule.namespaced) }
+                                    }
+                                }
+                                td { (level_badge(&rule.level)) }
+                                td {
+                                    (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
+                                }
+                            }
+                        }
+                    }
+                }
+                h2 { "Rules" }
+                @for rule in rules {
+                    (rule_article(rule))
+                }
+                footer {
+                    "Generated from " code { "src/rules/" } "."
+                }
+            }
+        }
+    };
+    markup.into_string()
+}
+
+fn rule_article(rule: &Rule) -> Markup {
+    let source_path = rule.relative_source.display().to_string();
+    let source_url =
+        format!("https://github.com/KSXGitHub/perfectionist/blob/master/{source_path}");
+    html! {
+        article.rule id=(anchor_for(&rule.namespaced)) {
+            h2 { code { (rule.namespaced) } }
+            p {
+                (level_badge(&rule.level))
+                " — "
+                (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
+            }
+            (PreEscaped(markdown_to_html(&rule.doc_markdown)))
+            p.source {
+                "Source: "
+                a href=(source_url) { code { (source_path) } }
+            }
+        }
     }
+}
 
-    let mut sections = String::new();
-    for rule in rules {
-        let anchor = anchor_for(&rule.namespaced);
-        let namespaced_html = escape_html(&rule.namespaced);
-        let short_desc_html = markdown_inline_to_html(&rule.short_desc);
-        let level_class = level_css_class(&rule.level);
-        let body_html = markdown_to_html(&rule.doc_markdown);
-        let source_html = escape_html(&rule.relative_source.display().to_string());
-        let source_path = rule.relative_source.display().to_string();
-        sections.push_str(&format!(
-            "    <article class=\"rule\" id=\"{anchor}\">\n\
-             \x20     <h2><code>{namespaced_html}</code></h2>\n\
-             \x20     <p><span class=\"level {level_class}\">{level}</span> \
-             &mdash; {short_desc_html}</p>\n\
-             {body_html}\n\
-             \x20     <p class=\"source\">Source: \
-             <a href=\"https://github.com/KSXGitHub/perfectionist/blob/master/{source_path}\">\
-             <code>{source_html}</code></a></p>\n\
-             \x20   </article>\n",
-            level = rule.level,
-        ));
+fn level_badge(level: &str) -> Markup {
+    let class = format!("level {}", level_css_class(level));
+    html! {
+        span class=(class) { (level) }
     }
-
-    let version_html = escape_html(crate_version);
-
-    format!(
-        "<!DOCTYPE html>\n\
-<html lang=\"en\">\n\
-<head>\n\
-\x20 <meta charset=\"utf-8\">\n\
-\x20 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\
-\x20 <title>perfectionist lints</title>\n\
-\x20 <style>{STYLE}</style>\n\
-</head>\n\
-<body>\n\
-\x20 <h1>perfectionist lints</h1>\n\
-\x20 <div class=\"banner\">Showing development docs from <code>master</code>. \
-Latest released version: <code>{version_html}</code>.</div>\n\
-\x20 <p>perfectionist is a Dylint plugin; see the \
-<a href=\"https://github.com/KSXGitHub/perfectionist\">README</a> for setup. \
-Lint-control attributes use the <code>perfectionist::</code> namespace, e.g. \
-<code>#[allow(perfectionist::flat_module_pattern)]</code>.</p>\n\
-\x20 <h2>Index</h2>\n\
-\x20 <table class=\"index\">\n\
-\x20   <thead><tr><th>Lint</th><th>Default</th><th>Description</th></tr></thead>\n\
-\x20   <tbody>\n\
-{index_rows}\
-\x20   </tbody>\n\
-\x20 </table>\n\
-\x20 <h2>Rules</h2>\n\
-{sections}\
-\x20 <footer>Generated from <code>src/rules/</code>.</footer>\n\
-</body>\n\
-</html>\n",
-        STYLE = STYLE,
-    )
 }
 
 fn markdown_to_html(markdown: &str) -> String {
@@ -314,52 +331,4 @@ fn level_css_class(level: &str) -> &'static str {
     }
 }
 
-fn escape_html(input: &str) -> String {
-    let mut output = String::with_capacity(input.len());
-    for char in input.chars() {
-        match char {
-            '&' => output.push_str("&amp;"),
-            '<' => output.push_str("&lt;"),
-            '>' => output.push_str("&gt;"),
-            '"' => output.push_str("&quot;"),
-            '\'' => output.push_str("&#39;"),
-            other => output.push(other),
-        }
-    }
-    output
-}
-
-const STYLE: &str = "
-body { font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-       max-width: 820px; margin: 2rem auto; padding: 0 1rem; line-height: 1.55;
-       color: #1f2328; }
-h1 { border-bottom: 1px solid #d0d7de; padding-bottom: .3rem; }
-h2 { margin-top: 2.2rem; }
-.banner { background: #fff8c5; border-left: 4px solid #d4a72c;
-          padding: .75rem 1rem; margin: 1rem 0 1.5rem; font-size: .9rem; }
-table.index { width: 100%; border-collapse: collapse; margin-bottom: 2rem; }
-table.index td, table.index th { text-align: left; padding: .4rem .6rem;
-                                 border-bottom: 1px solid #eaeef2;
-                                 vertical-align: top; }
-table.index th { background: #f6f8fa; }
-.level { font-family: ui-monospace, SFMono-Regular, monospace; font-size: .8rem;
-         padding: .1rem .45rem; border-radius: 3px; }
-.level-warn { background: #fff8c5; }
-.level-deny { background: #ffebe9; }
-.level-allow { background: #eaeef2; }
-.level-other { background: #ddf4ff; }
-article.rule { margin-bottom: 3rem; padding-top: 1rem;
-               border-top: 1px solid #eaeef2; }
-article.rule h2 { font-family: ui-monospace, SFMono-Regular, monospace; }
-article.rule .source { font-size: .85rem; color: #57606a; }
-pre, code { font-family: ui-monospace, SFMono-Regular, monospace; }
-pre { background: #f6f8fa; padding: .75rem 1rem; border-radius: 6px;
-      overflow-x: auto; font-size: .88rem; }
-code { background: #f6f8fa; padding: .1rem .35rem; border-radius: 3px;
-       font-size: .9rem; }
-pre code { background: none; padding: 0; font-size: 1rem; }
-footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid #eaeef2;
-         font-size: .85rem; color: #57606a; }
-a { color: #0969da; }
-a:hover { text-decoration: underline; }
-";
+const STYLE: &str = include_str!("style.css");

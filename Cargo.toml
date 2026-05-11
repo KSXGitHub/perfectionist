@@ -1,5 +1,5 @@
 [workspace]
-members = ["tools/gen-docs", "utils"]
+members = ["tools/*", "utils"]
 
 [package]
 name = "perfectionist"
