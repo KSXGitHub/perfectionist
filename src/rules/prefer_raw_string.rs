@@ -18,6 +18,9 @@ declare_tool_lint! {
     /// call site with `#[allow(perfectionist::prefer_raw_string)]`
     /// when the regular form is deliberately preferred.
     ///
+    /// Pattern-position literals (e.g. `match s { "C:\\path" => ... }`)
+    /// are out of scope — the rule only visits expression literals.
+    ///
     /// Whitespace and control-character escapes (`\n`, `\t`, `\r`,
     /// `\0`) and Unicode escapes (`\x..`, `\u{..}`) are exempt — a
     /// raw string cannot express them, and the regular form is the
