@@ -554,16 +554,27 @@ fn path_final_segment<'hir>(expr: &'hir hir::Expr<'hir>) -> Option<Symbol> {
 /// - a one-argument call `f(param)`,
 /// - a reference `&param`.
 fn is_trivial_wrapper<'hir>(expr: &'hir hir::Expr<'hir>, params: &'hir [hir::Param<'hir>]) -> bool {
+    /// "Refers to a parameter, possibly through one or more `*` /
+    /// `&` operators." Peeling through these keeps `|s| (*s).foo()`
+    /// classified as a trivial wrapper, since the deref is a
+    /// purely-structural step the reader does not need help with.
     fn is_param_ref(expr: &hir::Expr<'_>, params: &[hir::Param<'_>]) -> bool {
-        let hir::ExprKind::Path(hir::QPath::Resolved(None, path)) = &expr.kind else {
-            return false;
-        };
-        let Res::Local(local_hir_id) = path.res else {
-            return false;
-        };
-        params
-            .iter()
-            .any(|param| binding_hir_id(param.pat) == Some(local_hir_id))
+        let mut expr = expr;
+        loop {
+            match &expr.kind {
+                hir::ExprKind::Unary(hir::UnOp::Deref, inner)
+                | hir::ExprKind::AddrOf(_, _, inner) => expr = inner,
+                hir::ExprKind::Path(hir::QPath::Resolved(None, path)) => {
+                    let Res::Local(local_hir_id) = path.res else {
+                        return false;
+                    };
+                    return params
+                        .iter()
+                        .any(|param| binding_hir_id(param.pat) == Some(local_hir_id));
+                }
+                _ => return false,
+            }
+        }
     }
     match expr.kind {
         hir::ExprKind::Field(receiver, _) => is_param_ref(receiver, params),
