@@ -2,6 +2,12 @@
 
 Additional linting rules for Rust projects.
 
+## Rules
+
+See [the homepage](https://KSXGitHub.github.io/perfectionist/) for all the rules implemented so far.
+
+See [`planned-rules/`](https://github.com/KSXGitHub/perfectionist/tree/master/planned-rules) for all the rules not yet implemented.
+
 ## Usage
 
 Install [Dylint](https://github.com/trailofbits/dylint), then add `perfectionist` to your workspace's `dylint.toml`:

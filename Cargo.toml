@@ -1,15 +1,15 @@
 [workspace]
-members = ["utils"]
+members = ["tools/*", "utils"]
 
 [package]
 name = "perfectionist"
 description = "Additional linting rules for Rust projects"
-version = "0.0.0-rc.3"
+version = "0.0.0-rc.4"
 authors = ["khai96_ <hvksmr1996@gmail.com>"]
 edition = "2024"
 readme = "README.md"
 license = "MIT"
-documentation = "https://docs.rs/perfectionist"
+documentation = "https://KSXGitHub.github.io/perfectionist/"
 repository = "https://github.com/KSXGitHub/perfectionist.git"
 keywords = [
   "lint",
