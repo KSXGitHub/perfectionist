@@ -168,10 +168,9 @@ pattern that several rules call out by reference — live in
   (release builds skip evaluation entirely) and the general
   class of "macros don't promise exactly-once argument
   evaluation". Five eligibility modes ordered by implementation
-  cost: a tiny **conditional list** of known-conditional macros
-  (`debug_assert*`), an opt-in blanket ban, the default
-  name-based lookup against curated **conditional** and
-  **exactly-once** lists, an expression-side bypass for
+  cost: a tiny denylist of known-conditional macros
+  (`debug_assert*`), an opt-in blanket ban, the default curated
+  allowlist + denylist, an expression-side bypass for
   pure-accessor call shapes, and matcher-based analysis that
   counts each `$expr` capture's occurrences in the
   `macro_rules!` expansion. Curly-brace invocations are out of
