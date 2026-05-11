@@ -199,10 +199,7 @@ invocation:
    [`macro-trailing-comma`](./macro-trailing-comma.md) —
    `format!`, `println!`, `vec!`, `write!`, `assert!`,
    `assert_eq!`, the `log::*` and `tracing::*` families,
-   `anyhow!`, and similar. (Built-in macros that match either
-   the denylist or the allowlist agree with this rule's policy
-   only when the user uses them as documented; the curated
-   list reflects upstream semantics, not project taste.)
+   `anyhow!`, and similar.
 3. **Neither**: skip silently. Unknown macros are not flagged
    by default. A project that wants stricter behaviour
    reaches for mode 1 or mode 4.
@@ -216,21 +213,18 @@ the strict variant.
 
 ### Mode 3 — mode 2 with expression-side bypass
 
-A bypass that layers on top of any of the modes above. Even
-when the macro would otherwise fire (denylisted, or denied
-under mode 1's blanket), accept the invocation if every
-top-level argument is either trivial *or* a function / method
-call whose own arguments are themselves trivial. The canonical
-example is `Arc::clone(&x)`: a `Call` whose sole argument
-`&x` is a reference to a path, both of which are trivial.
-
-The bypass does not change the trivial / non-trivial split —
-that classification stays as defined above. Instead, the
-bypass adds an additional *accept rule* layered on top: even
-a non-trivial argument is accepted if its outermost shape is
-a function or method call whose own sub-expressions are all
-trivial. The bypass's recursion stops at any non-trivial
-sub-expression.
+A bypass that layers on top of any of the modes above. The
+bypass does not change the trivial / non-trivial split —
+that classification stays as defined under "What counts as a
+'non-trivial' argument". Instead, it adds an *accept rule*:
+even when the macro would otherwise fire (denylisted, or
+denied under mode 1's blanket), accept the invocation if
+every top-level argument's outermost shape is either trivial
+or a function / method call whose own sub-expressions are all
+trivial. The canonical example is `Arc::clone(&x)`: a `Call`
+whose sole argument `&x` is a reference to a path, both of
+which are trivial. The bypass's recursion stops at any
+non-trivial sub-expression.
 
 The motivation is that `debug_assert_eq!(my_set.contains(&k),
 true)` is *also* unsafe-feeling but ultimately fine — the
@@ -253,8 +247,16 @@ turn it on as the first knob to adjust.
 
 ### Mode 4 — matcher-based declarative-macro analysis
 
-The user's "hard" mode. For a `macro_rules!` macro whose
-definition is visible to the compiler (current crate, or a
+The user's "hard" mode. Layered on top of mode 2: the
+denylist and allowlist are consulted first, and the matcher
+walk runs only on `macro_rules!` macros that *would otherwise
+be unknown*. An invocation that resolves to an allowlisted
+macro is still accepted unconditionally; an invocation that
+resolves to a denylisted macro is still flagged. The matcher
+walk turns an "unknown" verdict into a justified
+allowlist-or-flag decision rather than overriding the curated
+lists. For a `macro_rules!` macro reached by the walk (its
+definition visible to the compiler — current crate, or a
 dependency whose macro body rustc still has on hand):
 
 1. Determine which arm of the macro matches the call.
@@ -556,10 +558,10 @@ ignore = [
   variant — false positives are better than false negatives
   here.
 - Expression-side bypass (mode 3): a recursive descent
-  through `Call`, `MethodCall`, and `Field`. Each callee /
-  receiver must itself be trivial; each argument must be
-  trivial-after-bypass. A bypass match implies the call is
-  "as safe as an accessor".
+  through `ExprKind::Call` and `ExprKind::MethodCall`. The
+  callee / receiver must itself be trivial; each argument
+  must be trivial-after-bypass. A bypass match implies the
+  call is "as safe as an accessor".
 - Matcher walker (mode 4): reuse the `take_*` combinator
   scaffold introduced for
   [`macro-trailing-comma`](./macro-trailing-comma.md)'s
@@ -607,9 +609,14 @@ own matcher-based detection.
 ## Severity
 
 Warn. The denylist defaults — `debug_assert*` and `cfg!` —
-flag a genuine correctness bug, and projects that want
-stronger behaviour can promote the lint to deny per file or
-crate-wide via `#![deny(perfectionist::macro_argument_binding)]`.
+flag a genuine correctness bug. Promoting the lint to deny
+crate-wide via
+`#![deny(perfectionist::macro_argument_binding)]` is viable
+but presumes the project has already turned
+`expression_bypass = true` on (or has narrowed the denylist):
+under the strict default, every `debug_assert!` invocation
+with a non-trivial argument fires, which is the majority of
+them, and deny would refuse to compile the project.
 
 ## Interaction with sibling rules
 
