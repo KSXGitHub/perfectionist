@@ -16,10 +16,12 @@ struct _Single;
 #[derive(PartialEq, Eq, Hash)]
 struct _MixedCase;
 
-// Bad and multi-line. The autofix flattens the list onto one line,
-// so the applicability is downgraded to `MaybeIncorrect` — surfaced
-// in the diagnostic as the absence of an inline replacement hint
-// next to the underline.
+// Bad and multi-line. The autofix would flatten the list onto one
+// line, so the applicability is downgraded to `MaybeIncorrect`.
+// `MaybeIncorrect` is not visible in the rendered diagnostic text
+// (the `help: reorder the derive list: ...` label still appears);
+// its user-visible effect is that `cargo fix` will not auto-apply
+// the suggestion, leaving the multi-line layout intact.
 #[derive(
     Debug,
     Clone,

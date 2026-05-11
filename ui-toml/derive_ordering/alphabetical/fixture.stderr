@@ -13,7 +13,7 @@ LL | #[derive(PartialEq, Eq, Hash)]
    |          ^^^^^^^^^^^^^^^^^^^ help: reorder the derive list: `Eq, Hash, PartialEq`
 
 warning: derive list is not in ASCII-case-insensitive alphabetical order
-  --> $DIR/fixture.rs:24:5
+  --> $DIR/fixture.rs:26:5
    |
 LL | /     Debug,
 LL | |     Clone,
@@ -21,7 +21,7 @@ LL | |     Copy,
    | |________^ help: reorder the derive list: `Clone, Copy, Debug`
 
 warning: derive list is not in ASCII-case-insensitive alphabetical order
-  --> $DIR/fixture.rs:34:10
+  --> $DIR/fixture.rs:36:10
    |
 LL | #[derive(Debug /* keep me */, Clone, Copy)]
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: reorder the derive list: `Clone, Copy, Debug`
