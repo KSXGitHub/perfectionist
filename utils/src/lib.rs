@@ -1,10 +1,3 @@
-//! Test-support building blocks for perfectionist's integration
-//! tests. These helpers materialise a minimal Cargo project on disk
-//! and shell out to `cargo dylint` against it. Path inputs are taken
-//! as parameters rather than discovered, because this crate is built
-//! in isolation from any test workspace and has no access to the
-//! caller's `CARGO_TARGET_DIR` or `CARGO_MANIFEST_DIR`.
-
 use std::{collections::BTreeMap, path::Path, process::Command};
 
 use build_fs_tree::{Build, FileSystemTree, MergeableFileSystemTree};
