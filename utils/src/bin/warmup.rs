@@ -12,7 +12,8 @@
 //! shared target dir is computed relative to it.
 
 use clap::Parser;
-use std::{path::PathBuf, process};
+use std::path::PathBuf;
+use std::process::ExitCode;
 
 #[derive(Parser)]
 #[clap(about = "Pre-warm the shared integration-test target dir")]
@@ -21,7 +22,7 @@ struct WarmupCli {
     root: PathBuf,
 }
 
-fn main() {
+fn main() -> ExitCode {
     let WarmupCli { root } = WarmupCli::parse();
     let shared_target_dir = root.join("target").join("integration-fixtures");
     let warmup_project_dir = root.join("target").join("integration-fixtures-warmup");
@@ -40,6 +41,8 @@ fn main() {
     let (stderr, success) = _utils::run_dylint(&warmup_project_dir, &shared_target_dir);
     if !success {
         eprintln!("{stderr}");
-        process::exit(1);
+        return ExitCode::FAILURE;
     }
+
+    ExitCode::SUCCESS
 }
