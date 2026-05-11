@@ -126,3 +126,27 @@ fn enabled_false_suppresses_the_entire_rule() {
         },
     );
 }
+
+#[test]
+fn fn_level_expect_fulfils_against_a_violation() {
+    // Companion to `crate_level_expect_...`: a function-scope
+    // `#[expect]` must also fulfil, because the late pass emits at
+    // the deepest enclosing HIR node rather than always at the
+    // crate root.
+    run(
+        "ui-toml/macro_trailing_comma/expect_at_fn_scope",
+        RuleConfig::default(),
+    );
+}
+
+#[test]
+fn crate_level_expect_fulfils_against_a_violation() {
+    // Regression for
+    // <https://github.com/KSXGitHub/parallel-disk-usage/issues/409>:
+    // a crate-level `#![expect(...)]` must mark the expectation
+    // fulfilled when a violation exists in the crate.
+    run(
+        "ui-toml/macro_trailing_comma/expect_at_crate_root",
+        RuleConfig::default(),
+    );
+}
