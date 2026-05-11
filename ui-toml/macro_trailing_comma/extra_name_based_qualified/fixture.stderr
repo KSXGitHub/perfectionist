@@ -1,5 +1,5 @@
 warning: multi-line macro invocation should end with a trailing comma
-  --> $DIR/fixture.rs:23:10
+  --> $DIR/fixture.rs:30:10
    |
 LL |         3
    |          ^ help: add a trailing comma: `,`

@@ -2,10 +2,17 @@
 // `inner::their_macro` in `extra_name_based`. The same machinery
 // applies to a third-party macro referenced as
 // `somecrate::their_macro!` — multi-segment entries tail-match the
-// invocation path. The fixture defines `their_macro!` with
-// `#[macro_export]` (which puts it in the crate root's item
-// namespace) and re-exports it through a local `mod inner` only
-// because the test must be self-contained.
+// invocation path.
+//
+// Note: `#[macro_export]` here is a fixture-only workaround, not a
+// representation of how a downstream crate would expose its macro.
+// `macro_rules!` macros are not at crate-root scope by default, so
+// `pub(crate) use crate::their_macro` would otherwise fail to
+// resolve; `#[macro_export]` hoists the macro into the root namespace
+// for the duration of this self-contained test. A real third-party
+// macro is already exported through its defining crate's module
+// structure, so users adding a qualified entry to `extra_name_based`
+// do not need the attribute.
 
 #[macro_export]
 macro_rules! their_macro {

@@ -146,6 +146,13 @@ impl Default for Config {
 
 pub struct MacroTrailingComma {
     enabled: bool,
+    // TODO(matcher_based): the lookup is currently linear
+    // (`entries.iter().any(...)`), so the `BTreeSet` ordering is unused
+    // — it only deduplicates identical config entries. When the
+    // matcher-based half grows these lists, bucket by entry length: a
+    // `BTreeSet<String>` for single-segment entries (O(log N) on the
+    // invocation's final segment) plus a `Vec<Vec<String>>` for
+    // multi-segment entries.
     name_based: BTreeSet<Vec<String>>,
     ignore: BTreeSet<Vec<String>>,
 }
