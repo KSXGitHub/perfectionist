@@ -11,19 +11,20 @@
 //! Takes the perfectionist crate directory as a single argument; the
 //! shared target dir is computed relative to it.
 
+use clap::Parser;
 use std::{path::PathBuf, process};
 
+#[derive(Parser)]
+#[clap(about = "Pre-warm the shared integration-test target dir")]
+struct WarmupCli {
+    #[clap(help = "The root of the repository")]
+    root: PathBuf,
+}
+
 fn main() {
-    let perfectionist_dir: PathBuf = std::env::args_os()
-        .nth(1)
-        .expect("usage: warmup <perfectionist_dir>")
-        .into();
-    let shared_target_dir = perfectionist_dir
-        .join("target")
-        .join("integration-fixtures");
-    let warmup_project_dir = perfectionist_dir
-        .join("target")
-        .join("integration-fixtures-warmup");
+    let WarmupCli { root } = WarmupCli::parse();
+    let shared_target_dir = root.join("target").join("integration-fixtures");
+    let warmup_project_dir = root.join("target").join("integration-fixtures-warmup");
 
     // Start the fixture fresh so the warmup is reproducible.
     std::fs::remove_dir_all(&warmup_project_dir).expect("delete old warmup project dir");
@@ -32,7 +33,7 @@ fn main() {
     _utils::build_project(
         &warmup_project_dir,
         "fixture_warmup",
-        &perfectionist_dir,
+        &root,
         &[("src/lib.rs", "")],
     );
 
