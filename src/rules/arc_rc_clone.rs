@@ -101,10 +101,12 @@ impl<'tcx> LateLintPass<'tcx> for ArcRcClone {
         if method_segment.ident.name != sym::clone {
             return;
         }
-        // Peeling references covers both the direct `value.clone()`
-        // shape (receiver type `Arc<T>`) and the deref-then-clone
-        // shape (receiver type `&Arc<T>`); the rule's accepted
-        // suggested fix is the same `Arc::clone(&...)` form for both.
+        // `peel_refs()` accepts both the direct `value.clone()`
+        // shape (receiver type `Arc<T>`) and the reference-receiver
+        // shape (receiver type `&Arc<T>`, where method probe still
+        // picks `<Arc<T> as Clone>::clone` at the first candidate
+        // level). The autofix is the same `Arc::clone(&...)` form
+        // for both.
         let receiver_ty = cx.typeck_results().expr_ty(receiver).peel_refs();
         let ty::Adt(adt, _) = receiver_ty.kind() else {
             return;
