@@ -56,6 +56,10 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::non_exhaustive_error";
 
+// TODO(non_exhaustive_error): the non-default variants
+// (`PubCrate`, `All`) have no UI coverage. The project's `ui-toml/`
+// convention (see `ui-toml/macro_trailing_comma/`) is where per-mode
+// fixtures would live; add one fixture per non-default mode.
 #[derive(Debug, Clone, Copy, Default, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum RequireFor {
@@ -167,8 +171,7 @@ impl<'tcx> LateLintPass<'tcx> for NonExhaustiveError {
         if !self.visibility_qualifies(cx.tcx, local_def_id) {
             return;
         }
-        let name = ident.name.as_str();
-        if !self.name_matches(name) && !implements_error_trait(cx, local_def_id) {
+        if !self.name_matches(ident.name.as_str()) && !implements_error_trait(cx, local_def_id) {
             return;
         }
         let attrs = cx.tcx.hir_attrs(item.hir_id());
@@ -180,7 +183,7 @@ impl<'tcx> LateLintPass<'tcx> for NonExhaustiveError {
         }) {
             return;
         }
-        emit(cx, item, kind_label, name);
+        emit(cx, item, kind_label, ident);
     }
 }
 
@@ -222,12 +225,13 @@ fn is_sum_like(cx: &LateContext<'_>, data: &hir::VariantData<'_>) -> bool {
     )
 }
 
-fn emit(cx: &LateContext<'_>, item: &hir::Item<'_>, kind_label: &str, name: &str) {
-    let message = format!("public {kind_label} `{name}` is missing `#[non_exhaustive]`");
+fn emit(cx: &LateContext<'_>, item: &hir::Item<'_>, kind_label: &str, ident: rustc_span::Ident) {
+    let name = ident.name.as_str();
+    let message = format!("{kind_label} `{name}` is missing `#[non_exhaustive]`");
     let insert_at = item.span.shrink_to_lo();
     let indent = indent_of(cx, item.span).unwrap_or(0);
     let replacement = format!("#[non_exhaustive]\n{:indent$}", "", indent = indent);
-    span_lint_and_then(cx, NON_EXHAUSTIVE_ERROR, item.span, message, |diag| {
+    span_lint_and_then(cx, NON_EXHAUSTIVE_ERROR, ident.span, message, |diag| {
         diag.span_suggestion(
             insert_at,
             "add `#[non_exhaustive]` to keep new variants from being a SemVer break",

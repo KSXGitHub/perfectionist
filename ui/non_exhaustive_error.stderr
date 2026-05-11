@@ -1,11 +1,8 @@
-warning: public enum `RuntimeError` is missing `#[non_exhaustive]`
-  --> $DIR/non_exhaustive_error.rs:7:1
+warning: enum `RuntimeError` is missing `#[non_exhaustive]`
+  --> $DIR/non_exhaustive_error.rs:7:10
    |
-LL | / pub enum RuntimeError {
-LL | |     Serialization,
-LL | |     Io,
-LL | | }
-   | |_^
+LL | pub enum RuntimeError {
+   |          ^^^^^^^^^^^^
    |
    = note: `#[warn(perfectionist::non_exhaustive_error)]` on by default
 help: add `#[non_exhaustive]` to keep new variants from being a SemVer break
@@ -14,11 +11,11 @@ LL + #[non_exhaustive]
 LL | pub enum RuntimeError {
    |
 
-warning: public struct `ParseError` is missing `#[non_exhaustive]`
-  --> $DIR/non_exhaustive_error.rs:22:1
+warning: struct `ParseError` is missing `#[non_exhaustive]`
+  --> $DIR/non_exhaustive_error.rs:22:12
    |
 LL | pub struct ParseError(pub ParseKind);
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |            ^^^^^^^^^^
    |
 help: add `#[non_exhaustive]` to keep new variants from being a SemVer break
    |
@@ -26,13 +23,11 @@ LL + #[non_exhaustive]
 LL | pub struct ParseError(pub ParseKind);
    |
 
-warning: public enum `BadlyNamed` is missing `#[non_exhaustive]`
-  --> $DIR/non_exhaustive_error.rs:58:1
+warning: enum `BadlyNamed` is missing `#[non_exhaustive]`
+  --> $DIR/non_exhaustive_error.rs:58:10
    |
-LL | / pub enum BadlyNamed {
-LL | |     Variant,
-LL | | }
-   | |_^
+LL | pub enum BadlyNamed {
+   |          ^^^^^^^^^^
    |
 help: add `#[non_exhaustive]` to keep new variants from being a SemVer break
    |
