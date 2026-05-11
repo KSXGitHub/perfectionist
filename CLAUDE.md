@@ -176,6 +176,20 @@ cluster, factor the shared helper into a crate-internal module so
 the second rule can reuse it. The planning files name this
 expectation explicitly; don't duplicate the helper.
 
+## Commit message style
+
+Every commit in this repository follows the
+[Conventional Commits](https://www.conventionalcommits.org/)
+style — a `type(scope): subject` header with the type drawn from
+the usual set (`feat`, `fix`, `docs`, `chore`, `ci`, `refactor`,
+`style`, `build`, `test`, `perf`), an optional scope in
+parentheses, and a `!` after the type/scope for breaking changes
+(e.g. `feat!: remove ...`). New commits you author should match.
+
+The single exception is version-bump commits, whose subject is
+just the version itself (e.g. `0.0.0-rc.6`). Use this form only
+for commits that do nothing other than bump the version.
+
 ## Symlinks
 
 This file is the authoritative implementation guide. It is also
