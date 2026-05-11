@@ -79,6 +79,16 @@ fn main() -> ExitCode {
             Inheritable::Inherited => None,
         })
         .unwrap_or_else(|| "unknown".to_owned());
+    // Derive the human-facing repository URL from Cargo.toml so a
+    // fork picks up its own URL without hand-editing the renderer.
+    // Cargo's `repository` field typically ends in `.git` for clone
+    // ergonomics; strip it for the human-facing URL.
+    let repo_url = manifest
+        .package
+        .as_ref()
+        .and_then(|package| package.repository.as_ref().and_then(|r| r.get().ok()))
+        .map(|url| url.strip_suffix(".git").unwrap_or(url).to_owned())
+        .unwrap_or_else(|| "https://github.com/KSXGitHub/perfectionist".to_owned());
 
     let rules_dir = root.join("src").join("rules");
     let mut rules = collect_rules(&rules_dir);
@@ -90,7 +100,7 @@ fn main() -> ExitCode {
     }
 
     fs::create_dir_all(&out_dir).expect("failed to create output directory");
-    let html = render_page(&rules, &crate_version, &git_ref);
+    let html = render_page(&rules, &crate_version, &git_ref, &repo_url);
     let index_path = out_dir.join("index.html");
     fs::write(&index_path, html).expect("failed to write index.html");
 
@@ -818,7 +828,7 @@ fn doc_attrs_to_markdown(attrs: &[Attribute]) -> String {
     lines.join("\n")
 }
 
-fn render_page(rules: &[Rule], crate_version: &str, git_ref: &str) -> String {
+fn render_page(rules: &[Rule], crate_version: &str, git_ref: &str, repo_url: &str) -> String {
     let markup: Markup = html! {
         (DOCTYPE)
         html lang="en" {
@@ -843,7 +853,7 @@ fn render_page(rules: &[Rule], crate_version: &str, git_ref: &str) -> String {
                 }
                 p {
                     "perfectionist is a Dylint plugin; see the "
-                    a href="https://github.com/KSXGitHub/perfectionist" { "README" }
+                    a href=(repo_url) { "README" }
                     " for setup. Lint-control attributes use the "
                     code { "perfectionist::" } " namespace."
                 }
@@ -874,7 +884,7 @@ fn render_page(rules: &[Rule], crate_version: &str, git_ref: &str) -> String {
                 }
                 h2 { "Rules" }
                 @for rule in rules {
-                    (rule_article(rule, git_ref))
+                    (rule_article(rule, git_ref, repo_url))
                 }
                 footer {
                     "Generated from " code { "src/rules/" }
@@ -886,10 +896,17 @@ fn render_page(rules: &[Rule], crate_version: &str, git_ref: &str) -> String {
     markup.into_string()
 }
 
-fn rule_article(rule: &Rule, git_ref: &str) -> Markup {
-    let source_path = rule.relative_source.display().to_string();
-    let source_url =
-        format!("https://github.com/KSXGitHub/perfectionist/blob/{git_ref}/{source_path}");
+fn rule_article(rule: &Rule, git_ref: &str, repo_url: &str) -> Markup {
+    // Build the URL-friendly path by joining components with `/`
+    // instead of `Path::display`, which uses the host's native
+    // separator and would emit `\` on Windows.
+    let source_path = rule
+        .relative_source
+        .components()
+        .map(|component| component.as_os_str().to_string_lossy().into_owned())
+        .collect::<Vec<_>>()
+        .join("/");
+    let source_url = format!("{repo_url}/blob/{git_ref}/{source_path}");
     html! {
         article.rule id=(anchor_for(&rule.namespaced)) {
             h2 { code { (rule.namespaced) } }
