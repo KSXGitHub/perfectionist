@@ -1,10 +1,14 @@
 warning: enum `RuntimeError` is missing `#[non_exhaustive]`
-  --> $DIR/non_exhaustive_error.rs:7:10
+  --> $DIR/non_exhaustive_error.rs:8:10
    |
 LL | pub enum RuntimeError {
    |          ^^^^^^^^^^^^
    |
-   = note: `#[warn(perfectionist::non_exhaustive_error)]` on by default
+note: the lint level is defined here
+  --> $DIR/non_exhaustive_error.rs:5:9
+   |
+LL | #![warn(perfectionist::non_exhaustive_error)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 help: add `#[non_exhaustive]` to keep new variants from being a SemVer break
    |
 LL + #[non_exhaustive]
@@ -12,7 +16,7 @@ LL | pub enum RuntimeError {
    |
 
 warning: struct `ParseError` is missing `#[non_exhaustive]`
-  --> $DIR/non_exhaustive_error.rs:22:12
+  --> $DIR/non_exhaustive_error.rs:23:12
    |
 LL | pub struct ParseError(pub ParseKind);
    |            ^^^^^^^^^^
@@ -24,7 +28,7 @@ LL | pub struct ParseError(pub ParseKind);
    |
 
 warning: enum `BadlyNamed` is missing `#[non_exhaustive]`
-  --> $DIR/non_exhaustive_error.rs:58:10
+  --> $DIR/non_exhaustive_error.rs:59:10
    |
 LL | pub enum BadlyNamed {
    |          ^^^^^^^^^^
@@ -36,7 +40,7 @@ LL | pub enum BadlyNamed {
    |
 
 warning: struct `AliasedError` is missing `#[non_exhaustive]`
-  --> $DIR/non_exhaustive_error.rs:87:12
+  --> $DIR/non_exhaustive_error.rs:88:12
    |
 LL | pub struct AliasedError(pub KindAlias);
    |            ^^^^^^^^^^^^

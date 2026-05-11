@@ -1,3 +1,8 @@
+#![feature(register_tool)]
+#![register_tool(perfectionist)]
+#![allow(unknown_lints)]
+#![warn(perfectionist::non_exhaustive_error)]
+
 // Under `require_for = "pub_crate"`, an enum literally declared
 // `pub(crate)` must be flagged. The `pub` enum is flagged for the
 // same reason it is under the default mode. A `pub(super)` enum

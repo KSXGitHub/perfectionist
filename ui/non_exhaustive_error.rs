@@ -2,6 +2,7 @@
 #![register_tool(perfectionist)]
 #![allow(unknown_lints)]
 #![allow(dead_code)]
+#![warn(perfectionist::non_exhaustive_error)]
 
 // Bad: public error enum missing `#[non_exhaustive]`.
 pub enum RuntimeError {

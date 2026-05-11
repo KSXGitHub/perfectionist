@@ -32,6 +32,13 @@ declare_tool_lint! {
     /// release across the dependents that exhaustively match on the
     /// enum.
     ///
+    /// The opinion is opt-in: some projects deliberately use exhaustive
+    /// error enums to force downstream consumers to handle every new
+    /// variant, and binary crates have no SemVer surface to protect.
+    /// The lint therefore defaults to `Allow` — enable it per crate
+    /// with `#![warn(perfectionist::non_exhaustive_error)]` (or
+    /// `deny`) on projects that want it.
+    ///
     /// ### Example
     /// ```rust,ignore
     /// #[derive(Debug)]
@@ -48,7 +55,7 @@ declare_tool_lint! {
     /// }
     /// ```
     pub perfectionist::NON_EXHAUSTIVE_ERROR,
-    Warn,
+    Allow,
     "publicly-exposed error type is missing `#[non_exhaustive]`",
     report_in_external_macro: false
 }

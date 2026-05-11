@@ -1,3 +1,8 @@
+#![feature(register_tool)]
+#![register_tool(perfectionist)]
+#![allow(unknown_lints)]
+#![warn(perfectionist::non_exhaustive_error)]
+
 // Under `require_for = "all"`, every error-shaped enum is flagged
 // regardless of visibility, including module-private ones.
 
