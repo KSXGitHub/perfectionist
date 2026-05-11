@@ -57,4 +57,26 @@ fn _good_other_types() {
     let _ = boxed.clone();
 }
 
+fn _bad_chained(arcs: &[Arc<u32>]) {
+    // Chained receiver: `arcs.first().unwrap()` is `&Arc<u32>` (a
+    // method-call expression). The `Sugg` for a method call is
+    // `NonParen`, so the rewrite drops `&` directly in front
+    // without any wrapping parens.
+    let _ = arcs.first().unwrap().clone();
+}
+
+fn _good_weak() {
+    // `Weak<T>` carries the diagnostic name `ArcWeak` / `RcWeak`,
+    // not `Arc` / `Rc`. The rule deliberately scopes to the strong
+    // handles only — `weak.clone()` is a refcount bump on the
+    // weak count and is left alone.
+    let strong = Arc::new(1);
+    let weak: std::sync::Weak<u32> = Arc::downgrade(&strong);
+    let _ = weak.clone();
+
+    let rc_strong = Rc::new(1);
+    let rc_weak: std::rc::Weak<u32> = Rc::downgrade(&rc_strong);
+    let _ = rc_weak.clone();
+}
+
 fn main() {}
