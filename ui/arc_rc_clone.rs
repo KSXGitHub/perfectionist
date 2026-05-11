@@ -66,6 +66,19 @@ fn _bad_chained(arcs: &[Arc<u32>]) {
     let _ = arcs.first().unwrap().clone();
 }
 
+#[allow(suspicious_double_ref_op)]
+fn _good_double_reference(value: &&Arc<u32>) {
+    // Receiver is `&&Arc<T>`. Method probe finds the blanket
+    // `<&Arc<T> as Clone>::clone` (self type `&&Arc<T>`) at the
+    // first candidate level, so `value.clone()` returns
+    // `&Arc<T>` — a reference copy, not a refcount bump. The
+    // result-type filter keeps the lint silent rather than rewrite
+    // into something that would change the expression's type.
+    // (`suspicious_double_ref_op` flags this for unrelated reasons;
+    // silenced here so the fixture documents only our rule.)
+    let _ = value.clone();
+}
+
 fn _good_weak() {
     // `Weak<T>` carries the diagnostic name `ArcWeak` / `RcWeak`,
     // not `Arc` / `Rc`. The rule deliberately scopes to the strong

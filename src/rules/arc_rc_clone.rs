@@ -105,14 +105,15 @@ impl<'tcx> LateLintPass<'tcx> for ArcRcClone {
         if method_segment.ident.name != sym::clone {
             return;
         }
-        // `peel_refs()` accepts both the direct `value.clone()`
-        // shape (receiver type `Arc<T>`) and the reference-receiver
-        // shape (receiver type `&Arc<T>`, where method probe still
-        // picks `<Arc<T> as Clone>::clone` at the first candidate
-        // level). The rewrite below adjusts its leading `&` based on
-        // which shape the receiver actually has.
-        let raw_ty = cx.typeck_results().expr_ty(receiver);
-        let ty::Adt(adt, _) = raw_ty.peel_refs().kind() else {
+        // Match on the method call's *result* type rather than the
+        // receiver: that's the type a refcount-bumping `.clone()`
+        // actually produces, so it filters out shapes where the
+        // blanket `<&T as Clone>::clone` wins method probe and the
+        // call returns a reference instead. With a receiver of type
+        // `&&Arc<T>`, for instance, `.clone()` returns `&Arc<T>`
+        // (a pointer copy, not a refcount bump); rewriting that to
+        // `Arc::clone(...)` would change the expression's type.
+        let ty::Adt(adt, _) = cx.typeck_results().expr_ty(expr).kind() else {
             return;
         };
         let kind = match cx.tcx.get_diagnostic_name(adt.did()) {
@@ -132,12 +133,11 @@ impl<'tcx> LateLintPass<'tcx> for ArcRcClone {
         let mut applicability = Applicability::MaybeIncorrect;
         let receiver_sugg =
             Sugg::hir_with_applicability(cx, receiver, "_", &mut applicability).maybe_paren();
-        // For receivers that are already `&Arc<T>` / `&Rc<T>`, drop
-        // the leading `&` so `arc_ref.clone()` rewrites to
-        // `Arc::clone(arc_ref)` rather than the harder-to-read
-        // `Arc::clone(&arc_ref)` (which would form a `&&Arc<T>` and
-        // compile only via deref coercion).
-        let leading_amp = if matches!(raw_ty.kind(), ty::Ref(..)) {
+        // For receivers that are already `&Arc<T>` / `&Rc<T>` (or
+        // `&mut`), drop the leading `&` so `arc_ref.clone()` rewrites
+        // to `Arc::clone(arc_ref)` rather than the harder-to-read
+        // `Arc::clone(&arc_ref)` (which would form `&&Arc<T>`).
+        let leading_amp = if matches!(cx.typeck_results().expr_ty(receiver).kind(), ty::Ref(..)) {
             ""
         } else {
             "&"
