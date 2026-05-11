@@ -8,13 +8,13 @@ plus the `extra_name_based`, `ignore`, and `enabled` configuration
 knobs. The `matcher_based` knob is accepted but currently a no-op.
 
 The "Vertical only applies to block-indent layouts" caveat from
-the "What to lint" section is also implemented: a multi-line
-invocation whose first top-level token shares its line with the
-opening delimiter (the compact / visual-indent shape rustfmt
-produces for `vec![Inner { ... }]`, `vec![bar(\n    ...,\n)]`,
-and similar single multi-line elements) is skipped, matching
-rustfmt's actual `trailing_comma = "Vertical"` behaviour rather
-than the documented spec for function calls.
+the "What to lint" section is also implemented: any multi-line
+invocation whose first top-level token starts on the same line as
+the opening delimiter (the compact / visual-indent shape, e.g.
+`vec![Inner { ... }]` or `vec![bar(\n    ...,\n)]`) is skipped.
+The predicate keys off the first token's line, not the element
+count, matching rustfmt's actual `trailing_comma = "Vertical"`
+behaviour rather than the documented spec for function calls.
 
 Still pending: **matcher-based** declarative-macro auto-detection
 (the `$(,)?` / `$(,)*` matcher walk described under "Matcher-based

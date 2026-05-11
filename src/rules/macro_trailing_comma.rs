@@ -40,12 +40,12 @@ declare_tool_lint! {
     /// macros covered by this lint, it cannot, and the policy applies
     /// without risk.
     ///
-    /// Multi-line invocations whose argument list is a single element
-    /// laid out in visual-indent style — the element starts on the
-    /// opening-delimiter line, e.g. `vec![Inner { ... }]` — are skipped.
-    /// rustfmt's `Vertical` policy treats those as compact rather than
-    /// block-indent and leaves the trailing comma off (and strips any
-    /// that gets added), so the two tools have to agree.
+    /// Multi-line invocations whose first top-level token starts on the
+    /// opening-delimiter line (visual-indent / compact layout, e.g.
+    /// `vec![Inner { ... }]`) are skipped: rustfmt's `Vertical` policy
+    /// only adds a trailing comma when each top-level item is on its
+    /// own line, separate from the delimiter, and strips any comma
+    /// added to the compact shape. The two tools have to agree.
     ///
     /// ### Example
     /// ```rust,ignore

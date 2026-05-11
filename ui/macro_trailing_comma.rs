@@ -76,12 +76,14 @@ fn _skip_uncurated() {
     );
 }
 
-// Skipped: a single multi-line element whose first token shares its
-// line with the opening delimiter is the visual-indent shape rustfmt
-// produces — and rustfmt's `trailing_comma = "Vertical"` does not add
-// a trailing comma to that shape (and actively strips any that gets
-// added). The two tools have to agree, so the lint skips it.
-fn _single_multi_line_element_skipped() {
+// Skipped: the first top-level token shares its line with the opening
+// delimiter — the visual-indent shape rustfmt produces, and rustfmt's
+// `trailing_comma = "Vertical"` does not add a trailing comma to that
+// shape (and actively strips any that gets added). The two tools have
+// to agree, so the lint skips it. Each call below is one such shape:
+// a single multi-line `format!` element, a single multi-line struct
+// literal, and a nested `vec!` with a single multi-line call.
+fn _compact_first_token_skipped() {
     let _ = vec![format!(
         "{}",
         42
