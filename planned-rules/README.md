@@ -164,7 +164,7 @@ pattern that several rules call out by reference — live in
 - [`macro-argument-binding.md`](./macro-argument-binding.md) —
   require non-trivial expressions passed to function-like and
   array-like macro invocations to be bound to a `let` first.
-  Targets the `debug_assert_eq!(set.insert(x), None)` footgun
+  Targets the `debug_assert_eq!(map.insert(k, v), None)` footgun
   (release builds skip evaluation entirely) and the general
   class of "macros don't promise exactly-once argument
   evaluation". Five eligibility modes ordered by implementation

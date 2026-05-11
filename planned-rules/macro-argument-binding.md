@@ -3,14 +3,15 @@
 **Source:** project convention. The motivating bug:
 
 ```rust
-debug_assert_eq!(my_set.insert(new_item), None, "Something went wrong! `new_item` wasn't new");
+debug_assert_eq!(my_map.insert(key, value), None, "Something went wrong! `key` wasn't new");
 ```
 
-In debug builds this works: `insert` runs, the result is compared
-against `None`, and the assertion panics if `new_item` was a
-duplicate. In release builds `debug_assert_eq!` expands to nothing
-at all — the arguments are *not evaluated* — so `insert` never
-runs, `new_item` is silently dropped, and `my_set` ends the
+In debug builds this works: `insert` runs, returns the previous
+value associated with `key` (or `None` if the key was new), and
+the assertion panics if `key` was already present. In release
+builds `debug_assert_eq!` expands to nothing at all — the
+arguments are *not evaluated* — so `insert` never runs,
+`(key, value)` is silently dropped, and `my_map` ends the
 function in a different state from the one the author intended.
 The bug only shows up when the binary is finally built with
 `--release` and behaves differently from every test run.
@@ -19,8 +20,8 @@ The fix is to bind the call to a `let` first, then pass the
 binding to the macro:
 
 ```rust
-let was_new = my_set.insert(new_item).is_none();
-debug_assert!(was_new, "Something went wrong! `new_item` wasn't new");
+let was_new = my_map.insert(key, value).is_none();
+debug_assert!(was_new, "Something went wrong! `key` wasn't new");
 ```
 
 `debug_assert*` is the most famous offender, but the trap is
@@ -432,11 +433,11 @@ human glance.
 
 ```rust
 // Bad — release mode skips `insert` entirely
-debug_assert_eq!(my_set.insert(new_item), None, "duplicate insert");
+debug_assert_eq!(my_map.insert(key, value), None, "duplicate key");
 
 // Good
-let was_new = my_set.insert(new_item).is_none();
-debug_assert!(was_new, "duplicate insert");
+let was_new = my_map.insert(key, value).is_none();
+debug_assert!(was_new, "duplicate key");
 ```
 
 ### Trivial arguments stay inline
@@ -452,9 +453,13 @@ debug_assert!(buffer.is_empty(), "buffer must start empty");
 //                              (the built-in default);
 //                              accepted with
 //                              `expression_bypass = true`
-//                              because `is_empty` takes only
-//                              `&self` and is treated as a
-//                              pure accessor.
+//                              because the call has the
+//                              shape `trivial.method()` and
+//                              the bypass's syntactic
+//                              heuristic accepts any such
+//                              shape (even though the lint
+//                              cannot prove `is_empty` is
+//                              actually pure).
 ```
 
 In practice nearly every `debug_assert!` argument is a
