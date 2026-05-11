@@ -129,7 +129,7 @@ impl<'tcx> LateLintPass<'tcx> for ArcRcClone {
             cx,
             ARC_RC_CLONE,
             expr.span,
-            format!("using `.clone()` on an `{kind}<T>`"),
+            format!("calling `.clone()` on an `{kind}<T>`"),
             "use the qualified form to make the cheap refcount bump explicit",
             format!("{kind}::clone(&{receiver_sugg})"),
             applicability,

@@ -1,4 +1,4 @@
-warning: using `.clone()` on an `Arc<T>`
+warning: calling `.clone()` on an `Arc<T>`
   --> $DIR/arc_rc_clone.rs:7:13
    |
 LL |     let _ = value.clone();
@@ -11,7 +11,7 @@ LL -     let _ = value.clone();
 LL +     let _ = Arc::clone(&value);
    |
 
-warning: using `.clone()` on an `Rc<T>`
+warning: calling `.clone()` on an `Rc<T>`
   --> $DIR/arc_rc_clone.rs:13:13
    |
 LL |     let _ = value.clone();
@@ -23,7 +23,7 @@ LL -     let _ = value.clone();
 LL +     let _ = Rc::clone(&value);
    |
 
-warning: using `.clone()` on an `Arc<T>`
+warning: calling `.clone()` on an `Arc<T>`
   --> $DIR/arc_rc_clone.rs:23:13
    |
 LL |     let _ = state.inner.clone();
@@ -35,7 +35,7 @@ LL -     let _ = state.inner.clone();
 LL +     let _ = Arc::clone(&state.inner);
    |
 
-warning: using `.clone()` on an `Arc<T>`
+warning: calling `.clone()` on an `Arc<T>`
   --> $DIR/arc_rc_clone.rs:32:13
    |
 LL |     let _ = value.clone();
@@ -47,7 +47,7 @@ LL -     let _ = value.clone();
 LL +     let _ = Arc::clone(&value);
    |
 
-warning: using `.clone()` on an `Arc<T>`
+warning: calling `.clone()` on an `Arc<T>`
   --> $DIR/arc_rc_clone.rs:65:13
    |
 LL |     let _ = arcs.first().unwrap().clone();
