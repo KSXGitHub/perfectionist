@@ -19,13 +19,18 @@ fn _panics() {
     panic! {"brace form with …"}
 }
 
-fn _asserts(left: i32, right: i32, flag: bool) {
+fn _asserts(left: i32, right: i32, flag: bool, value: Option<i32>) {
     assert!(flag, "flag was false…");
     assert_eq!(left, right, "tree did not flatten…");
     assert_ne!(left, right, "values matched unexpectedly…");
     debug_assert!(flag, "flag was false…");
     debug_assert_eq!(left, right, "tree did not flatten…");
     debug_assert_ne!(left, right, "values matched unexpectedly…");
+    // Condition that is itself a macro call with its own commas:
+    // the depth tracker must not count `matches!`'s internal commas
+    // toward the outer `assert!`'s top-level comma count. Only the
+    // trailing message literal should fire.
+    assert!(matches!(value, Some(_)), "message with …");
 }
 
 fn _expect() {

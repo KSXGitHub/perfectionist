@@ -102,29 +102,35 @@ warning: Unicode `…` (U+2026) in `debug_assert_ne!` message
 LL |     debug_assert_ne!(left, right, "values matched unexpectedly…");
    |                                                               ^ help: use ASCII `...` instead: `...`
 
+warning: Unicode `…` (U+2026) in `assert!` message
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:33:53
+   |
+LL |     assert!(matches!(value, Some(_)), "message with …");
+   |                                                     ^ help: use ASCII `...` instead: `...`
+
 warning: Unicode `…` (U+2026) in `expect` message
-  --> $DIR/unicode_ellipsis_in_panic_messages.rs:33:54
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:38:54
    |
 LL |     let _: i32 = Some(1).expect("config missing-bad-1…");
    |                                                      ^ help: use ASCII `...` instead: `...`
 
 warning: Unicode `…` (U+2026) in `expect` message
-  --> $DIR/unicode_ellipsis_in_panic_messages.rs:34:71
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:39:71
    |
 LL |     let _: i32 = Result::<i32, ()>::Ok(1).expect("config missing-bad-2…");
    |                                                                       ^ help: use ASCII `...` instead: `...`
 
 warning: Unicode `…` (U+2026) in `expect_err` message
-  --> $DIR/unicode_ellipsis_in_panic_messages.rs:35:70
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:40:70
    |
 LL |     let _: () = Result::<i32, ()>::Err(()).expect_err("expected error…");
    |                                                                      ^ help: use ASCII `...` instead: `...`
 
 warning: Unicode `…` (U+2026) in `assert!` message
-  --> $DIR/unicode_ellipsis_in_panic_messages.rs:69:33
+  --> $DIR/unicode_ellipsis_in_panic_messages.rs:74:33
    |
 LL |     assert!(true, "message with …");
    |                                 ^ help: use ASCII `...` instead: `...`
 
-warning: 21 warnings emitted
+warning: 22 warnings emitted
 
