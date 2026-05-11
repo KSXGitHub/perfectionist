@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use clippy_utils::diagnostics::span_lint_and_sugg;
 use clippy_utils::macros::root_macro_call_first_node;
 use clippy_utils::res::MaybeDef;
@@ -39,6 +37,11 @@ declare_tool_lint! {
     pub perfectionist::UNICODE_ELLIPSIS_IN_PANIC_MESSAGES,
     Warn,
     "U+2026 HORIZONTAL ELLIPSIS in panic / assertion / expect messages; prefer `...`",
+    // Load-bearing: the user-supplied literal inside `panic!`,
+    // `assert!`, `assert_eq!`, etc. lives inside a `core` macro
+    // expansion. With the default `false` rustc would treat every
+    // diagnostic on those literals as "in an external macro" and
+    // drop it before reaching the user.
     report_in_external_macro: true
 }
 
@@ -88,7 +91,6 @@ pub struct UnicodeEllipsisInPanicMessages {
     flagged_chars: Vec<char>,
     macros: Vec<Symbol>,
     methods: Vec<Symbol>,
-    scanned_macro_calls: HashSet<Span>,
 }
 
 impl UnicodeEllipsisInPanicMessages {
@@ -112,7 +114,6 @@ impl UnicodeEllipsisInPanicMessages {
                 .iter()
                 .map(|name| Symbol::intern(name))
                 .collect(),
-            scanned_macro_calls: HashSet::new(),
         }
     }
 }
@@ -129,15 +130,13 @@ pub fn register_pass(lint_store: &mut LintStore) {
 
 impl<'tcx> LateLintPass<'tcx> for UnicodeEllipsisInPanicMessages {
     fn check_expr(&mut self, lint_context: &LateContext<'tcx>, expr: &Expr<'tcx>) {
-        // Panic / assertion macros: scan the user-visible source of
-        // the macro call once per call. `root_macro_call_first_node`
-        // returns the outermost macro call only for the first HIR
-        // node of its expansion, so deduplication by call span is
-        // belt-and-braces.
+        // Panic / assertion macros: `root_macro_call_first_node`
+        // returns `Some` exactly when `expr` is the boundary HIR
+        // node of the outermost macro expansion, so each call's
+        // source is scanned once.
         if let Some(macro_call) = root_macro_call_first_node(lint_context, expr) {
             let macro_name = lint_context.tcx.item_name(macro_call.def_id);
-            if self.macros.contains(&macro_name) && self.scanned_macro_calls.insert(macro_call.span)
-            {
+            if self.macros.contains(&macro_name) {
                 self.scan_macro_call_source(lint_context, macro_call.span, macro_name);
             }
         }
@@ -149,11 +148,14 @@ impl<'tcx> LateLintPass<'tcx> for UnicodeEllipsisInPanicMessages {
             && let ExprKind::Lit(literal) = message_argument.kind
             && matches!(literal.node, LitKind::Str(..))
         {
-            self.scan_method_literal(
-                lint_context,
-                literal.span,
-                &format!("`{}` message", path_segment.ident.name),
-            );
+            let context = format!("`{}` message", path_segment.ident.name);
+            if let Ok(snippet) = lint_context
+                .sess()
+                .source_map()
+                .span_to_snippet(literal.span)
+            {
+                self.scan_literal(lint_context, literal.span, &snippet, &context);
+            }
         }
     }
 }
@@ -185,8 +187,17 @@ impl UnicodeEllipsisInPanicMessages {
         // Anything deeper is an argument of a nested call (e.g.,
         // `format!("...")` or `include_str!("path")`) whose literal
         // is not the panic message.
+        //
+        // Within depth 1 we also count commas to skip the non-message
+        // arguments of `assert!`-family macros: `assert!(cond, msg)`
+        // skips one comma-separated argument before the message,
+        // `assert_eq!(a, b, msg)` and `assert_ne!`/`debug_assert_eq!`/
+        // `debug_assert_ne!` skip two. Scanning value-position
+        // literals would otherwise rewrite comparison operands.
+        let skip_arguments = arguments_before_message(macro_name);
         let mut byte_offset: u32 = 0;
         let mut depth: u32 = 0;
+        let mut top_level_comma_count: u32 = 0;
         for token in tokenize(&snippet, FrontmatterAllowed::No) {
             let token_length = token.len;
             match token.kind {
@@ -196,8 +207,13 @@ impl UnicodeEllipsisInPanicMessages {
                 TokenKind::CloseParen | TokenKind::CloseBracket | TokenKind::CloseBrace => {
                     depth = depth.saturating_sub(1);
                 }
+                TokenKind::Comma if depth == 1 => {
+                    top_level_comma_count = top_level_comma_count.saturating_add(1);
+                }
                 TokenKind::Literal { kind, .. }
-                    if depth == 1 && is_display_string_literal(kind) =>
+                    if depth == 1
+                        && top_level_comma_count >= skip_arguments
+                        && is_display_string_literal(kind) =>
                 {
                     let token_start = byte_offset as usize;
                     let token_end = token_start + token_length as usize;
@@ -214,22 +230,6 @@ impl UnicodeEllipsisInPanicMessages {
                 .checked_add(token_length)
                 .expect("snippet offset overflowed u32");
         }
-    }
-
-    fn scan_method_literal(
-        &self,
-        lint_context: &LateContext<'_>,
-        literal_span: Span,
-        context: &str,
-    ) {
-        let Ok(snippet) = lint_context
-            .sess()
-            .source_map()
-            .span_to_snippet(literal_span)
-        else {
-            return;
-        };
-        self.scan_literal(lint_context, literal_span, &snippet, context);
     }
 
     fn scan_literal(
@@ -281,6 +281,27 @@ impl UnicodeEllipsisInPanicMessages {
 
 fn is_display_string_literal(kind: LiteralKind) -> bool {
     matches!(kind, LiteralKind::Str { .. } | LiteralKind::RawStr { .. })
+}
+
+/// How many comma-separated top-level arguments precede the message
+/// argument for a given macro. `0` for macros whose first argument is
+/// itself the message (`panic!`, `todo!`, …); `1` for `assert!` /
+/// `debug_assert!` (the condition comes first); `2` for `assert_eq!`
+/// / `assert_ne!` / `debug_assert_eq!` / `debug_assert_ne!` (the two
+/// values come first).
+///
+/// Unknown macros — including any added through the configuration's
+/// `macros` knob — default to `0`. A project that adds an
+/// assertion-shaped custom macro through configuration accepts the
+/// false positive in that case; correctly handling it would require
+/// a per-macro skip-count configuration knob that the planning file
+/// did not call for.
+fn arguments_before_message(macro_name: Symbol) -> u32 {
+    match macro_name.as_str() {
+        "assert" | "debug_assert" => 1,
+        "assert_eq" | "assert_ne" | "debug_assert_eq" | "debug_assert_ne" => 2,
+        _ => 0,
+    }
 }
 
 /// Return `(prefix_length, suffix_length)` covering the opening and

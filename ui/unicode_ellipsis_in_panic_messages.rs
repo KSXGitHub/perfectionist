@@ -1,10 +1,22 @@
-// Macro invocations: each of the following should fire once.
+// Macro invocations: each of the following should fire once
+// per U+2026 codepoint in the literal.
 
 fn _panics() {
     panic!("could not parse manifest…");
     unimplemented!("not yet implemented…");
     todo!("write this later…");
     unreachable!("can't happen…");
+    // Raw string literals are scanned identically.
+    panic!(r"raw string with …");
+    panic!(r#"raw-hash string with …"#);
+    // Two ellipses in one literal — should fire twice.
+    panic!("first … and second …");
+    // Path-qualified macro invocation still resolves to `panic`.
+    std::panic!("qualified path with …");
+    // Bracket and brace delimiters are recognised by the depth
+    // tracker.
+    panic!["bracket form with …"];
+    panic! {"brace form with …"}
 }
 
 fn _asserts(left: i32, right: i32, flag: bool) {
@@ -42,6 +54,19 @@ fn _quiet() {
     // call. The outer message ("path:") is ASCII so the lint stays
     // silent on this whole line.
     panic!("path: {}", concat!("dir/", "name…"));
+    // Value-position literals in `assert_eq!`/`assert_ne!` and their
+    // `debug_*` variants are the values being compared, not the
+    // panic message. Flagging (and especially autofixing) them would
+    // change what the assertion tests for.
+    assert_eq!("value-with-…", "another-…");
+    assert_ne!("value-with-…", "another-…");
+    debug_assert_eq!("value-with-…", "another-…");
+    debug_assert_ne!("value-with-…", "another-…");
+    // `assert!`'s first argument is the condition — a string-literal
+    // condition wouldn't compile, so this case is more theoretical,
+    // but the skip-count keeps it consistent. The trailing literal
+    // *is* the message and should still fire.
+    assert!(true, "message with …");
 }
 
 // Should NOT fire: ASCII `...` is already correct.
