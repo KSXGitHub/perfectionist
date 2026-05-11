@@ -37,10 +37,12 @@ The `debug_assert*` case is an objective defect — the program's
 runtime behaviour differs between debug and release builds in a
 way the author did not intend, and the difference is invisible at
 the call site. A duplicate insertion silently succeeds in
-release; a "should never happen" `?` operator silently returns
-`Ok(_)` early in debug-stripped code; an iterator's `.next()`
-quietly advances in one build configuration but not another.
-None of these are stylistic preferences — they're bugs.
+release; a `?` operator that would have short-circuited an
+error in debug never runs in release, so the function proceeds
+past the assert as if the call had returned `Ok`; an iterator's
+`.next()` quietly advances in one build configuration but not
+another. None of these are stylistic preferences — they're
+bugs.
 
 The general form ("any function-like or array-like macro may
 evaluate an argument zero or many times") is partly a correctness
@@ -72,14 +74,18 @@ macro invocation:
 
 - If the macro is on the **denylist** of macros known to evaluate
   arguments conditionally or repeatedly, every non-trivial
-  top-level argument must be a path expression (a `let` binding,
-  a constant, or a function/method-less reference). A non-trivial
-  argument that is not bound to a name is flagged.
+  top-level argument is flagged. The set of accepted argument
+  shapes is the trivial set defined under
+  "What counts as a 'non-trivial' argument" below — literals,
+  paths, `&path`, `path.field`, `*path`, and casts.
 - If the macro is on the **allowlist** of macros known to
   evaluate each top-level argument exactly once, the argument
   shape is unconstrained.
-- For every other macro, behaviour depends on the configured
-  *unknown-macro policy* (see "Five eligibility modes" below).
+- For every other macro, behaviour depends on the selected
+  mode — see "Five eligibility modes" below. Briefly:
+  `denylist_only` and `matcher_based` (for proc macros) skip
+  the invocation, `blanket` flags it, and `allowlist_denylist`
+  consults the configured `unknown_macro_policy`.
 
 Curly-brace macro invocations (`name! { ... }`) are out of scope.
 They are conventionally DSL bodies where the evaluation contract
@@ -218,10 +224,13 @@ call whose own arguments are themselves trivial. The canonical
 example is `Arc::clone(&x)`: a `Call` whose sole argument
 `&x` is a reference to a path, both of which are trivial.
 
-The bypass widens the trivial-expression definition: a
-function or method call is acceptable when every one of its
-arguments is itself trivial. The recursion stops at any
-non-trivial sub-expression.
+The bypass does not change the trivial / non-trivial split —
+that classification stays as defined above. Instead, the
+bypass adds an additional *accept rule* layered on top: even
+a non-trivial argument is accepted if its outermost shape is
+a function or method call whose own sub-expressions are all
+trivial. The bypass's recursion stops at any non-trivial
+sub-expression.
 
 The motivation is that `debug_assert_eq!(my_set.contains(&k),
 true)` is *also* unsafe-feeling but ultimately fine — the
