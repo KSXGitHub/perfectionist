@@ -16,7 +16,7 @@ pub use _utils::*;
 
 const CARGO_MANIFEST_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
-pub fn perfectionist_dir() -> &'static Path {
+pub fn cargo_manifest_dir() -> &'static Path {
     Path::new(CARGO_MANIFEST_DIR)
 }
 
@@ -24,7 +24,7 @@ pub fn perfectionist_dir() -> &'static Path {
 /// Pre-warmed by `just warmup-integration-tests`; populated lazily by
 /// cargo otherwise.
 pub fn shared_target_dir() -> PathBuf {
-    perfectionist_dir()
+    cargo_manifest_dir()
         .join("target")
         .join("integration-fixtures")
 }

@@ -10,14 +10,14 @@
 
 pub mod _utils;
 
-use _utils::{perfectionist_dir, run_project_with_sources, shared_target_dir};
+use _utils::{cargo_manifest_dir, run_project_with_sources, shared_target_dir};
 
 #[test]
 fn flags_mod_rs_submodule() {
     let target = shared_target_dir();
     let (_temp, stderr, success) = run_project_with_sources(
         "fixture_flags_mod_rs_submodule",
-        perfectionist_dir(),
+        cargo_manifest_dir(),
         &target,
         &[
             ("src/lib.rs", "pub mod foo;\n"),
@@ -44,7 +44,7 @@ fn does_not_flag_flat_layout() {
     let target = shared_target_dir();
     let (_temp, stderr, success) = run_project_with_sources(
         "fixture_does_not_flag_flat_layout",
-        perfectionist_dir(),
+        cargo_manifest_dir(),
         &target,
         &[
             ("src/lib.rs", "pub mod foo;\n"),
@@ -63,7 +63,7 @@ fn does_not_flag_deep_flat_layout() {
     let target = shared_target_dir();
     let (_temp, stderr, success) = run_project_with_sources(
         "fixture_does_not_flag_deep_flat_layout",
-        perfectionist_dir(),
+        cargo_manifest_dir(),
         &target,
         &[
             ("src/lib.rs", "pub mod foo;\n"),
@@ -84,7 +84,7 @@ fn flags_deep_mod_rs_at_leaf_level() {
     let target = shared_target_dir();
     let (_temp, stderr, success) = run_project_with_sources(
         "fixture_flags_deep_mod_rs_at_leaf_level",
-        perfectionist_dir(),
+        cargo_manifest_dir(),
         &target,
         &[
             ("src/lib.rs", "pub mod foo;\n"),
@@ -109,7 +109,7 @@ fn flags_mod_rs_at_intermediate_level() {
     let target = shared_target_dir();
     let (_temp, stderr, success) = run_project_with_sources(
         "fixture_flags_mod_rs_at_intermediate_level",
-        perfectionist_dir(),
+        cargo_manifest_dir(),
         &target,
         &[
             ("src/lib.rs", "pub mod foo;\n"),
