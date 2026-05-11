@@ -76,20 +76,37 @@ fn _skip_uncurated() {
     );
 }
 
-// Known limitation: the OUTER `vec!` is flagged, but the INNER
-// `format!` is not, despite also being multi-line with no trailing
-// comma. `MacCall::args` stores its delimited arguments as a raw
-// `TokenStream`; the AST visitor's `walk_mac` does not descend into
-// it, so nested macro invocations have no `MacCall` AST node at
-// pre-expansion time and `check_mac` never fires for them. Matching
-// them would require the same token-tree walk the matcher-based half
-// will add. Locked in here so a future change in that direction is a
-// deliberate test update.
-fn _nested_macro_inner_uncovered() {
+// Skipped: a single multi-line element whose first token shares its
+// line with the opening delimiter is the visual-indent shape rustfmt
+// produces — and rustfmt's `trailing_comma = "Vertical"` does not add
+// a trailing comma to that shape (and actively strips any that gets
+// added). The two tools have to agree, so the lint skips it.
+fn _single_multi_line_element_skipped() {
     let _ = vec![format!(
         "{}",
         42
     )];
+    let _ = vec![Inner {
+        name: 1,
+        kids: 2,
+    }];
+    let _ = wrap(vec![bar(
+        "very long name",
+        4069,
+    )]);
+}
+
+struct Inner {
+    name: i32,
+    kids: i32,
+}
+
+fn bar(_: &str, _: i32) -> Inner {
+    Inner { name: 0, kids: 0 }
+}
+
+fn wrap<T>(value: T) -> T {
+    value
 }
 
 fn compute() -> i32 {
