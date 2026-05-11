@@ -141,14 +141,10 @@ fn fn_level_expect_fulfils_against_a_violation() {
 
 #[test]
 fn crate_level_expect_fulfils_against_a_violation() {
-    // Regression for issue [#409]: a crate-level `#![expect(...)]` of
-    // this lint must mark the expectation fulfilled when a violation
-    // exists in the crate. The fixture contains a multi-line `vec!`
-    // missing the trailing comma; the expect must hide the warning
-    // AND silence `unfulfilled_lint_expectations`, with no extra
-    // workaround needed.
-    //
-    // [#409]: https://github.com/KSXGitHub/parallel-disk-usage/issues/409
+    // Regression for
+    // <https://github.com/KSXGitHub/parallel-disk-usage/issues/409>:
+    // a crate-level `#![expect(...)]` must mark the expectation
+    // fulfilled when a violation exists in the crate.
     run(
         "ui-toml/macro_trailing_comma/expect_at_crate_root",
         RuleConfig::default(),

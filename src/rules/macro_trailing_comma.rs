@@ -204,27 +204,14 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    // The lint is split across two passes for issue [#409]: a
-    // `cfg_attr`-wrapped `#[expect]` is not yet visible to a pre-
-    // expansion lint level lookup (the `cfg_attr` is itself an
-    // attribute that has not been evaluated yet), so emitting the
-    // diagnostic during pre-expansion would slip past rustc's
-    // expectation tracker and the expectation would be reported as
-    // unfulfilled.
-    //
-    // The pre-expansion pass collects violation spans into
-    // `PENDING_VIOLATIONS`; the late pass walks the HIR to find the
-    // deepest containing node for each span and emits the diagnostic
-    // there. By that point `cfg_attr` has been evaluated, so the
-    // `#[expect]` / `#[allow]` attributes the user wrote on the crate
-    // root (or any enclosing item) are visible to the lint-level
-    // lookup and behave correctly.
-    //
-    // Pre-expansion remains necessary for the first half: post-
-    // expansion the macros covered by this rule have been expanded
-    // away and `check_mac` would never fire.
-    //
-    // [#409]: https://github.com/KSXGitHub/parallel-disk-usage/issues/409
+    // Split across two passes per
+    // <https://github.com/KSXGitHub/parallel-disk-usage/issues/409>:
+    // pre-expansion sees the `MacCall` tokens but runs before
+    // `cfg_attr` is evaluated, so a `cfg_attr`-wrapped `#[expect]`
+    // is invisible at emission time. The pre-expansion pass parks
+    // violation spans in `PENDING_VIOLATIONS`; the late pass walks
+    // the HIR and emits each at its deepest enclosing node, by which
+    // point `cfg_attr` has resolved and lint-level attributes apply.
     lint_store.register_pre_expansion_pass(|| Box::new(MacroTrailingComma::new()));
     lint_store.register_late_pass(|_| Box::new(MacroTrailingCommaLate));
 }
