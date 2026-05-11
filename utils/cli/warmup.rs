@@ -28,7 +28,12 @@ fn main() -> ExitCode {
     let warmup_project_dir = root.join("target").join("integration-fixtures-warmup");
 
     // Start the fixture fresh so the warmup is reproducible.
-    std::fs::remove_dir_all(&warmup_project_dir).expect("delete old warmup project dir");
+    if let Err(error) = std::fs::remove_dir_all(&warmup_project_dir) {
+        eprintln!(
+            "warning: Failed to clean up {}: {error}",
+            warmup_project_dir.display(),
+        );
+    }
     std::fs::create_dir_all(&warmup_project_dir).expect("create new warmup project dir");
 
     _utils::build_project(
