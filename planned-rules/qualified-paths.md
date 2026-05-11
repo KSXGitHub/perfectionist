@@ -268,5 +268,5 @@ same shape as
 [`import-granularity`](./import-granularity.md),
 [`core-or-std`](./core-or-std.md),
 [`self-import`](./self-import.md),
-[`derive-ordering`](./derive-ordering.md), and
+`perfectionist::derive_ordering`, and
 [`serde-wrapper-style`](./serde-wrapper-style.md).
