@@ -11,6 +11,7 @@ dependencies = [
  "maud",
  "proc-macro2",
  "pulldown-cmark",
+ "quote",
  "strum",
  "syn",
  "syntect",
