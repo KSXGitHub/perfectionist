@@ -1,0 +1,310 @@
+use std::collections::BTreeSet;
+
+use clippy_utils::diagnostics::span_lint_and_sugg;
+use rustc_ast::MacCall;
+use rustc_ast::token::TokenKind;
+use rustc_ast::tokenstream::TokenTree;
+use rustc_errors::Applicability;
+use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
+use rustc_session::{declare_tool_lint, impl_lint_pass};
+use rustc_span::Span;
+
+declare_tool_lint! {
+    /// ### What it does
+    /// For function-like macro invocations whose top-level arguments are
+    /// comma-separated, enforces rustfmt's `trailing_comma = "Vertical"`
+    /// policy that rustfmt itself does not apply inside macro bodies:
+    /// multi-line invocations must end with a trailing comma; single-line
+    /// invocations must not.
+    ///
+    /// Eligibility is name-based — a curated list of `core` / `std` and
+    /// well-known third-party macros (`vec!`, `format!`, `println!`,
+    /// `assert_eq!`, `dbg!`, `log::info!`, `tracing::debug!`,
+    /// `anyhow::bail!`, `maplit::hashmap!`, …), extended via
+    /// `extra_name_based` and overridden via `ignore`.
+    ///
+    /// Attribute-style invocations (`#[derive(...)]`, `#[serde(...)]`,
+    /// etc.) are out of scope.
+    ///
+    /// ### Why restrict this?
+    /// This is a stylistic preference, not a correctness issue. rustfmt's
+    /// default `trailing_comma = "Vertical"` policy keeps argument lists
+    /// uniform: every multi-line list ends with a comma, every single-line
+    /// list does not. rustfmt opts out of macro bodies because a macro
+    /// matcher *can* make the trailing comma load-bearing; for the curated
+    /// macros covered by this lint, it cannot, and the policy applies
+    /// without risk.
+    ///
+    /// ### Example
+    /// ```rust,ignore
+    /// let xs = vec![
+    ///     1,
+    ///     2,
+    ///     3
+    /// ];
+    /// let ys = vec![1, 2, 3,];
+    /// ```
+    /// Use instead:
+    /// ```rust,ignore
+    /// let xs = vec![
+    ///     1,
+    ///     2,
+    ///     3,
+    /// ];
+    /// let ys = vec![1, 2, 3];
+    /// ```
+    pub perfectionist::MACRO_TRAILING_COMMA,
+    Warn,
+    "macro invocation does not follow rustfmt's vertical trailing-comma policy",
+    report_in_external_macro: false
+}
+
+const CONFIG_KEY: &str = "perfectionist::macro_trailing_comma";
+
+/// Curated macros whose top-level argument list is comma-separated with
+/// a syntactically optional trailing comma. See the rule docs in
+/// `planned-rules/macro-trailing-comma.md` for the inclusion criterion.
+///
+/// Each entry is a single segment; matching is by the final segment of
+/// the invocation's path, so `vec!`, `std::vec!`, and `::std::vec!` all
+/// match the `"vec"` entry.
+const BUILTIN_NAME_BASED: &[&str] = &[
+    // `core` / `std`
+    "vec",
+    "format",
+    "format_args",
+    "print",
+    "println",
+    "eprint",
+    "eprintln",
+    "write",
+    "writeln",
+    "panic",
+    "unimplemented",
+    "todo",
+    "unreachable",
+    "assert",
+    "assert_eq",
+    "assert_ne",
+    "debug_assert",
+    "debug_assert_eq",
+    "debug_assert_ne",
+    "matches",
+    "dbg",
+    "concat",
+    "env",
+    "option_env",
+    // `pretty_assertions` (its `assert_eq` / `assert_ne` final segments
+    // already match the `core` entries; `assert_str_eq` is unique to it).
+    "assert_str_eq",
+    // `maplit`
+    "hashmap",
+    "btreemap",
+    "hashset",
+    "btreeset",
+    "convert_args",
+    // `log` (its `error` / `warn` / `info` / `debug` / `trace` final
+    // segments also cover `tracing`'s same-named macros).
+    "log",
+    "error",
+    "warn",
+    "info",
+    "debug",
+    "trace",
+    // `tracing`
+    "event",
+    "span",
+    // `anyhow`
+    "anyhow",
+    "bail",
+    "ensure",
+];
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(default, rename_all = "snake_case")]
+struct Config {
+    enabled: bool,
+    /// Accepted for forward compatibility with the matcher-based half of
+    /// the rule. Currently a no-op — only name-based eligibility is
+    /// implemented; see `planned-rules/macro-trailing-comma.md` for the
+    /// status breakdown.
+    matcher_based: bool,
+    extra_name_based: Vec<String>,
+    ignore: Vec<String>,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            matcher_based: true,
+            extra_name_based: Vec::new(),
+            ignore: Vec::new(),
+        }
+    }
+}
+
+pub struct MacroTrailingComma {
+    enabled: bool,
+    name_based: BTreeSet<Vec<String>>,
+    ignore: BTreeSet<Vec<String>>,
+}
+
+impl MacroTrailingComma {
+    fn new() -> Self {
+        let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        let _ = config.matcher_based;
+        let mut name_based: BTreeSet<Vec<String>> = BUILTIN_NAME_BASED
+            .iter()
+            .map(|name| vec![(*name).to_owned()])
+            .collect();
+        for entry in &config.extra_name_based {
+            let parsed = parse_path(entry);
+            if !parsed.is_empty() {
+                name_based.insert(parsed);
+            }
+        }
+        let ignore = config
+            .ignore
+            .iter()
+            .map(|entry| parse_path(entry))
+            .filter(|parsed| !parsed.is_empty())
+            .collect();
+        Self {
+            enabled: config.enabled,
+            name_based,
+            ignore,
+        }
+    }
+}
+
+impl_lint_pass!(MacroTrailingComma => [MACRO_TRAILING_COMMA]);
+
+pub fn register_lint(lint_store: &mut LintStore) {
+    lint_store.register_lints(&[MACRO_TRAILING_COMMA]);
+}
+
+pub fn register_pass(lint_store: &mut LintStore) {
+    // Pre-expansion is required so that the visitor still sees `MacCall`
+    // nodes. By the post-expansion early pass, the macros covered by this
+    // rule have been expanded away and `check_mac` would never fire.
+    // The `pre_expansion_passes` slot is the same one Clippy uses for
+    // similar macro-shape checks.
+    lint_store.register_pre_expansion_pass(|| Box::new(MacroTrailingComma::new()));
+}
+
+impl EarlyLintPass for MacroTrailingComma {
+    fn check_mac(&mut self, lint_context: &EarlyContext<'_>, mac_call: &MacCall) {
+        if !self.enabled {
+            return;
+        }
+        let invocation_path = path_segments(mac_call);
+        if invocation_path.is_empty() {
+            return;
+        }
+        if matches_any(&invocation_path, &self.ignore) {
+            return;
+        }
+        if !matches_any(&invocation_path, &self.name_based) {
+            return;
+        }
+        self.check_invocation(lint_context, mac_call);
+    }
+}
+
+impl MacroTrailingComma {
+    fn check_invocation(&self, lint_context: &EarlyContext<'_>, mac_call: &MacCall) {
+        let args = &mac_call.args;
+        let top_level_trees: Vec<&TokenTree> = args.tokens.iter().collect();
+        if top_level_trees.is_empty() {
+            return;
+        }
+        if has_top_level_semicolon(&top_level_trees) {
+            return;
+        }
+        let source_map = lint_context.sess().source_map();
+        let is_multi_line = source_map.is_multiline(args.dspan.entire());
+        let last_tree = *top_level_trees.last().expect("checked non-empty above");
+        let last_is_comma = matches!(
+            last_tree,
+            TokenTree::Token(token, _) if token.kind == TokenKind::Comma,
+        );
+        match (is_multi_line, last_is_comma) {
+            (true, false) => emit_insert(lint_context, last_tree.span()),
+            (false, true) => emit_remove(lint_context, last_tree.span()),
+            _ => {}
+        }
+    }
+}
+
+fn path_segments(mac_call: &MacCall) -> Vec<String> {
+    mac_call
+        .path
+        .segments
+        .iter()
+        .map(|segment| segment.ident.name.as_str().to_owned())
+        .collect()
+}
+
+fn parse_path(raw: &str) -> Vec<String> {
+    raw.split("::")
+        .filter(|segment| !segment.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+fn matches_any(invocation_segments: &[String], entries: &BTreeSet<Vec<String>>) -> bool {
+    entries
+        .iter()
+        .any(|entry| matches_entry(invocation_segments, entry))
+}
+
+fn matches_entry(invocation_segments: &[String], entry: &[String]) -> bool {
+    if entry.is_empty() {
+        return false;
+    }
+    if entry.len() == 1 {
+        // Single-segment entry: match by the final segment of the path,
+        // so `vec!`, `std::vec!`, and `::std::vec!` all qualify.
+        invocation_segments
+            .last()
+            .is_some_and(|last| last == &entry[0])
+    } else {
+        // Multi-segment entry: tail-match against the invocation path,
+        // accommodating optional leading crate prefixes.
+        invocation_segments.ends_with(entry)
+    }
+}
+
+fn has_top_level_semicolon(top_level_trees: &[&TokenTree]) -> bool {
+    top_level_trees.iter().any(|tree| {
+        matches!(
+            tree,
+            TokenTree::Token(token, _) if token.kind == TokenKind::Semi,
+        )
+    })
+}
+
+fn emit_insert(lint_context: &EarlyContext<'_>, last_tree_span: Span) {
+    span_lint_and_sugg(
+        lint_context,
+        MACRO_TRAILING_COMMA,
+        last_tree_span.shrink_to_hi(),
+        "multi-line macro invocation should end with a trailing comma",
+        "add a trailing comma",
+        ",".to_owned(),
+        Applicability::MachineApplicable,
+    );
+}
+
+fn emit_remove(lint_context: &EarlyContext<'_>, comma_span: Span) {
+    span_lint_and_sugg(
+        lint_context,
+        MACRO_TRAILING_COMMA,
+        comma_span,
+        "single-line macro invocation should not end with a trailing comma",
+        "remove the trailing comma",
+        String::new(),
+        Applicability::MachineApplicable,
+    );
+}
