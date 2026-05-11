@@ -248,6 +248,7 @@ fn path_segments(mac_call: &MacCall) -> Vec<String> {
 
 fn parse_path(raw: &str) -> Vec<String> {
     raw.split("::")
+        .map(str::trim)
         .filter(|segment| !segment.is_empty())
         .map(str::to_owned)
         .collect()
