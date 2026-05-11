@@ -80,9 +80,11 @@ fn _skip_uncurated() {
 // delimiter — the visual-indent shape rustfmt produces, and rustfmt's
 // `trailing_comma = "Vertical"` does not add a trailing comma to that
 // shape (and actively strips any that gets added). The two tools have
-// to agree, so the lint skips it. Each call below is one such shape:
-// a single multi-line `format!` element, a single multi-line struct
-// literal, and a nested `vec!` with a single multi-line call.
+// to agree, so the lint skips it. The first three cases are single
+// multi-line elements; the fourth is a multi-element list whose first
+// element happens to start on the opening-delimiter line, locking in
+// that the predicate keys off the first token's line, not the element
+// count.
 fn _compact_first_token_skipped() {
     let _ = vec![format!(
         "{}",
@@ -96,6 +98,8 @@ fn _compact_first_token_skipped() {
         "very long name",
         4069,
     )]);
+    let _ = vec![1, 2,
+        3, 4];
 }
 
 struct Inner {
