@@ -157,12 +157,13 @@ pattern that several rules call out by reference — live in
 - [`macro-trailing-comma.md`](./macro-trailing-comma.md) — apply
   rustfmt's `trailing_comma = "Vertical"` policy (trailing comma
   on multi-line argument lists, none on single-line) to macro
-  invocations, which rustfmt itself leaves untouched. Two tiers
-  decide eligibility: a curated allow-list of core/std and
-  well-known third-party macros (Tier 1, easy, configurable via
-  `extra_tier_1`), and an automatic walk of `macro_rules!`
-  matchers to detect the `$(,)?` optional-trailing-comma idiom
-  (Tier 2, harder, configurable via `tier_2`).
+  invocations, which rustfmt itself leaves untouched. Two
+  eligibility modes: **name-based**, a curated allow-list of
+  core/std and well-known third-party macros (easy, configurable
+  via `extra_name_based`), and **matcher-based**, an automatic
+  walk of `macro_rules!` matchers to detect the `$(,)?`
+  optional-trailing-comma idiom (harder, configurable via
+  `matcher_based`).
 
 ### Serde
 - [`serde-source-types.md`](./serde-source-types.md) — forbid

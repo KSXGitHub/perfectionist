@@ -27,15 +27,15 @@ comma-separated:
 "Eligible" means the trailing comma is provably optional — see
 the next section.
 
-## Two tiers of eligibility
+## Two eligibility modes
 
 The hard part is deciding when adding or removing the trailing
 comma is safe. A declarative macro's matchers can require a
 trailing comma, forbid one, or accept either; a procedural
 macro's grammar is opaque. Two complementary mechanisms decide
-eligibility:
+eligibility, named for *how* they identify an eligible macro.
 
-### Tier 1 — well-known macro allow-list
+### Name-based — well-known macro allow-list
 
 A hard-coded list of macros known to accept the trailing comma
 optionally. The list covers two groups:
@@ -63,12 +63,12 @@ optionally. The list covers two groups:
   The list is curated, not exhaustive — projects extend it via
   configuration when they import a new such macro.
 
-Tier 1 applies to *any* macro form: declarative, procedural
-function-like, attribute-style derives that take a comma-
-separated argument list. The matcher source is irrelevant
+Name-based matching applies to *any* macro form: declarative,
+procedural function-like, attribute-style derives that take a
+comma-separated argument list. The matcher source is irrelevant
 because the human author has vetted the entry.
 
-### Tier 2 — declarative-macro auto-detection
+### Matcher-based — declarative-macro auto-detection
 
 For a `macro_rules!` macro whose definition is visible to the
 compiler (the local crate, or a dependency whose macro body
@@ -92,34 +92,36 @@ For a given invocation, the lint determines which arm matches
 accept both forms) and proceeds only if the matched arm is the
 optional-comma kind.
 
-Tier 2 does not extend to procedural macros: the matcher is
-custom Rust code, not introspectable as a token pattern.
+Matcher-based matching does not extend to procedural macros:
+the matcher is custom Rust code, not introspectable as a token
+pattern.
 
-### Why Tier 2 is harder than Tier 1
+### Why matcher-based is harder than name-based
 
-Tier 1 is a name-set lookup on the resolved macro `DefId`. The
-implementation is a `BTreeSet<&'static str>` initialised at
-plugin start, plus the user's `extra_tier_1` paths.
+Name-based matching is a name-set lookup on the resolved macro
+`DefId`. The implementation is a `BTreeSet<&'static str>`
+initialised at plugin start, plus the user's `extra_name_based`
+paths.
 
-Tier 2 has to:
+Matcher-based matching has to:
 
 1. Reach the `macro_rules!` matcher AST from the invocation's
    `DefId`. For local macros this is `tcx.hir().get_by_def_id`;
    for dependency macros the matcher is reachable via
    `tcx.crate_def_map(cnum)` and the macro's expansion data,
    which lives in the crate metadata. Some matchers are not
-   re-exported across crate boundaries — those Tier-2 cases
-   must degrade gracefully (treat as ineligible, do not warn).
+   re-exported across crate boundaries — those cases must
+   degrade gracefully (treat as ineligible, do not warn).
 2. Walk every arm's matcher token tree, locating the trailing
    `$(,)?` (or equivalent) per the predicate above.
 3. Decide which arm matches the invocation — or refuse to
    touch the invocation if not every arm is the optional-comma
    kind, to stay safe in the face of ambiguity.
 
-Tier 1 is a single afternoon. Tier 2 is a few days plus the
-matcher-walking infrastructure, plus careful handling of the
-multi-arm and cross-crate cases. The user's intuition is
-correct: implement Tier 1 first; ship Tier 2 in a follow-up.
+Name-based is a single afternoon. Matcher-based is a few days
+plus the matcher-walking infrastructure, plus careful handling
+of the multi-arm and cross-crate cases. Implement name-based
+first; ship matcher-based in a follow-up.
 
 ## What to lint
 
@@ -127,11 +129,11 @@ For every macro invocation:
 
 1. Resolve the macro `DefId`.
 2. Decide eligibility:
-   - If the path matches a Tier-1 entry (built-in or
+   - If the path matches a name-based entry (built-in or
      user-configured), eligible.
-   - Otherwise, if Tier 2 is enabled and the macro is a
-     visible declarative macro whose matched arm ends in
-     `$(,)?` (per the predicate above), eligible.
+   - Otherwise, if matcher-based detection is enabled and the
+     macro is a visible declarative macro whose matched arm
+     ends in `$(,)?` (per the predicate above), eligible.
    - Otherwise, skip.
 3. Inspect the *invocation token stream* — not the expansion —
    to confirm that the top-level argument list is purely comma-
@@ -152,17 +154,17 @@ For every macro invocation:
      diagnostic suggesting removal of the `,`.
    - Otherwise, no diagnostic.
 
-The autofix is `Applicability::MachineApplicable` for Tier 1
-(curated allow-list — the human vetted that the comma is
-optional) and for Tier 2 cases where every arm of the macro
-accepts both forms. Tier 2 cases that picked one matching arm
-out of several are `Applicability::MaybeIncorrect` — the
-matched-arm analysis is conservative but a future macro
+The autofix is `Applicability::MachineApplicable` for name-based
+matches (curated allow-list — the human vetted that the comma is
+optional) and for matcher-based matches where every arm of the
+macro accepts both forms. Matcher-based cases that picked one
+matching arm out of several are `Applicability::MaybeIncorrect`
+— the matched-arm analysis is conservative but a future macro
 revision could shift which arm matches.
 
 ## Examples
 
-### Tier 1: `vec!`
+### Name-based: `vec!`
 
 ```rust
 // Bad: multi-line, missing trailing comma
@@ -188,7 +190,7 @@ let xs = vec![1, 2, 3,];
 let xs = vec![1, 2, 3];
 ```
 
-### Tier 1: `assert_eq!`
+### Name-based: `assert_eq!`
 
 ```rust
 // Bad: multi-line panic message
@@ -206,7 +208,7 @@ assert_eq!(
 );
 ```
 
-### Tier 2: locally-defined `macro_rules!`
+### Matcher-based: locally-defined `macro_rules!`
 
 ```rust
 macro_rules! comma_list {
@@ -261,7 +263,7 @@ always_comma!(
 
 ```rust
 // Skipped: `my_proc::custom!` is a procedural macro and is
-// not in the user's `extra_tier_1` list. The lint cannot
+// not in the user's `extra_name_based` list. The lint cannot
 // inspect a proc-macro grammar.
 my_proc::custom!(
     a,
@@ -277,33 +279,35 @@ my_proc::custom!(
 # Set to false to disable the rule entirely.
 enabled = true
 
-# Enable the Tier 2 declarative-macro auto-detection. Defaults
-# on. Disable to fall back to a pure allow-list policy if Tier 2
-# proves too noisy on a particular codebase.
-tier_2 = true
+# Enable the matcher-based declarative-macro auto-detection.
+# Defaults on. Disable to fall back to a pure allow-list policy
+# if matcher-based detection proves too noisy on a particular
+# codebase.
+matcher_based = true
 
-# Additional macros to treat as Tier 1, beyond the built-in
-# core/std and well-known third-party set. Each entry is a
-# fully-qualified macro path (no trailing `!`) or a bare macro
-# name to match by final segment only.
+# Additional macros to treat as name-based matches, beyond the
+# built-in core/std and well-known third-party set. Each entry
+# is a fully-qualified macro path (no trailing `!`) or a bare
+# macro name to match by final segment only.
 #
 # Use this knob when:
 # - A project depends on a third-party macro the built-in list
 #   does not cover.
-# - Tier 2 cannot see the macro definition (cross-crate proc
-#   macro, or macro_rules! re-exported in a way that loses the
-#   matcher).
+# - Matcher-based detection cannot see the macro definition
+#   (cross-crate proc macro, or macro_rules! re-exported in a
+#   way that loses the matcher).
 # - The macro is a procedural one whose author guarantees the
 #   trailing comma is optional.
-extra_tier_1 = [
+extra_name_based = [
   # "my_crate::my_macro",
   # "another_macro",
 ]
 
-# Macros to never lint, even if they match Tier 1 or Tier 2.
-# Use this for macros where the project's own convention
-# diverges (for example, macros whose body is more readable with
-# the comma always present even on a single line).
+# Macros to never lint, even when name-based or matcher-based
+# detection would otherwise mark them eligible. Use this for
+# macros where the project's own convention diverges (for
+# example, macros whose body is more readable with the comma
+# always present even on a single line).
 deny_list = [
   # "my_crate::ascii_table",
 ]
@@ -318,9 +322,9 @@ deny_list = [
   whether the closing delimiter is preceded by a comma.
 - Macro path resolution: `MacCall::path` resolves to a `Res`
   via the resolver. From the resolved `DefId`, look the path
-  up in the Tier-1 allow-list (built-in plus
-  `extra_tier_1`). For Tier 2, fetch the matcher arms from
-  the resolved macro definition.
+  up in the name-based allow-list (built-in plus
+  `extra_name_based`). For matcher-based detection, fetch the
+  matcher arms from the resolved macro definition.
 - Token-tree inspection: `MacCall::args` carries a
   `DelimArgs` whose `tokens: TokenStream` is the raw user
   input. Walk the top-level token stream, tracking nesting
@@ -330,7 +334,7 @@ deny_list = [
   `Span::lo()`/`Span::hi()` line numbers via the
   `SourceMap`. The opening and closing delimiter spans are
   available on the `DelimArgs` directly.
-- Tier 2 matcher walk: `macro_rules!` arms are
+- Matcher walk: `macro_rules!` arms are
   `ast::MacroDef::body`'s LHS token streams. Walk the LHS,
   detect the `$(,)?` pattern at the end of the top-level
   matcher (`OpenDelim(Paren) ... $(,)? CloseDelim(Paren)`).
@@ -338,9 +342,9 @@ deny_list = [
   `tcx.hir_node_by_def_id(...)` if local, or via the macro
   metadata in `tcx.cstore_untracked()` for external macros;
   unavailable matchers degrade to "ineligible".
-- **Parser style.** The matcher walker for Tier 2 is a
-  parser-combinator-style `take_*` chain over the matcher
-  token stream per
+- **Parser style.** The matcher walker is a parser-
+  combinator-style `take_*` chain over the matcher token
+  stream per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
   one combinator per matcher position kind (literal token,
   `$name:frag` capture, `$( ... )sep rep` repetition), with
@@ -349,21 +353,21 @@ deny_list = [
 
 ### Difficulty
 
-**Tier 1: easy.** A name-set lookup keyed off a resolved
+**Name-based: easy.** A name-set lookup keyed off a resolved
 `DefId`, plus a token-stream scan for the trailing comma,
 plus a span-based "is this multi-line" predicate. The
 autofix is a one-character insertion or removal at a known
 position — `MachineApplicable`.
 
-**Tier 2: hard.** The matcher walker has to handle every
-matcher repetition shape, the multi-arm case (which arm
-matched? do all arms agree on the optional comma?), and the
-cross-crate "matcher not available" degradation. None of
+**Matcher-based: hard.** The matcher walker has to handle
+every matcher repetition shape, the multi-arm case (which
+arm matched? do all arms agree on the optional comma?), and
+the cross-crate "matcher not available" degradation. None of
 this is conceptually deep; the work is in covering the
 matcher grammar carefully and refusing to act when
-ambiguous. Recommend landing Tier 1 first as a standalone
-PR, then layering Tier 2 on top behind the `tier_2`
-configuration knob.
+ambiguous. Recommend landing name-based first as a
+standalone PR, then layering matcher-based on top behind the
+`matcher_based` configuration knob.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in
