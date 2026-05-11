@@ -9,9 +9,12 @@ debug_assert_eq!(my_map.insert(key, value), None, "Something went wrong! `key` w
 In debug builds this works: `insert` runs, returns the previous
 value associated with `key` (or `None` if the key was new), and
 the assertion panics if `key` was already present. In release
-builds `debug_assert_eq!` expands to nothing at all — the
-arguments are *not evaluated* — so `insert` never runs,
-`(key, value)` is silently dropped, and `my_map` ends the
+builds the `debug_assertions` cfg is off, so the conditional
+that `debug_assert_eq!` expands to — roughly
+`if cfg!(debug_assertions) { ... }` — folds to `if false { ... }`
+and the body is dead-code-eliminated. The key property is that
+the argument expressions are *not evaluated*: `insert` never
+runs, `(key, value)` is silently dropped, and `my_map` ends the
 function in a different state from the one the author intended.
 The bug only shows up when the binary is finally built with
 `--release` and behaves differently from every test run.
@@ -397,15 +400,21 @@ For every macro invocation:
      or "treat as denylisted" (continue: lint). Unknown proc
      macros are not walkable and fall through to
      `unknown_macro_policy`.
-5. Walk the invocation's *top-level* argument list. The lint
-   only inspects top-level expressions — an argument that
-   itself contains a non-trivial sub-expression is the
-   author's choice, and recursing into nested macros opens
-   the door to false positives. Top-level argument boundaries
-   are recovered from the invocation token stream the same
-   way [`macro-trailing-comma`](./macro-trailing-comma.md)
-   does it (track delimiter nesting; split on top-level
-   commas; skip top-level `;` and `=>`).
+5. Walk the invocation's *top-level* argument list, using
+   the same token-stream handling as
+   [`macro-trailing-comma`](./macro-trailing-comma.md):
+   track delimiter nesting and split on top-level commas. A
+   top-level `;` is a skip-the-whole-invocation trigger
+   (the macro uses `;` as its separator — `vec![v; count]`,
+   `thread_local! { ... }` — so it doesn't fit this rule's
+   "comma-separated argument list" shape). A top-level `=>`
+   is allowed and walked through as ordinary content
+   (`hashmap! { "a" => 1, "b" => 2 }` legitimately carries
+   one per entry). The lint only inspects top-level
+   expressions — an argument that itself contains a
+   non-trivial sub-expression is the author's choice, and
+   recursing into nested macros opens the door to false
+   positives.
 6. For each top-level argument, parse the token stream as an
    expression. Skip arguments that don't parse as a single
    expression (a `name: type` argument shape, a path-only
