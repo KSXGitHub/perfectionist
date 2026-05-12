@@ -81,6 +81,20 @@ article.rule h2 .lint-name {
   font-size: 1.11em;
 }
 
+article.rule h2 .back-to-top {
+  float: right;
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: normal;
+  color: #57606a;
+  text-decoration: none;
+}
+
+article.rule h2 .back-to-top:hover {
+  color: #0969da;
+  text-decoration: underline;
+}
+
 article.rule .source {
   font-size: 0.85rem;
   color: #57606a;

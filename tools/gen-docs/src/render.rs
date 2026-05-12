@@ -36,7 +36,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 style { (PreEscaped(STYLE)) (PreEscaped(&*HIGHLIGHT_CSS)) }
             }
             body {
-                h1 { "perfectionist lints" }
+                h1 id="top" { "perfectionist lints" }
                 div.banner {
                     @if git_ref == "master" {
                         "Showing development docs from " code { "master" } ". "
@@ -113,6 +113,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                     span.lint-prefix { (NAMESPACE) }
                     span.lint-name { (unnamespaced(&rule.namespaced)) }
                 }
+                a.back-to-top href="#top" aria-label="Back to top" { "↑ top" }
             }
             p {
                 (level_badge(rule.level))
