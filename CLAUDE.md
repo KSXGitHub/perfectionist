@@ -100,8 +100,8 @@ has two consequences for the implementer:
    pattern.
 
 4. **Cross-rule helpers are `pub(crate)`, not `pub`.** The crate is
-   a dylint `cdylib` with no public API surface, so `pub` over-
-   advertises. Items in `src/common.rs`, `src/macro_path.rs`,
+   a dylint `cdylib` with no public API surface, so `pub`
+   over-advertises. Items in `src/common.rs`, `src/macro_path.rs`,
    `src/enclosing_hir.rs`, and `src/literal_scan.rs` should all be
    `pub(crate)` (or tighter). Use `pub(super)` for items that are
    only meant to leak one module level up — e.g. a rule's `Config`

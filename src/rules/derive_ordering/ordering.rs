@@ -87,9 +87,9 @@ pub(super) fn is_identity(permutation: &[usize]) -> bool {
         .all(|(position, &index)| position == index)
 }
 
-/// `Ordering::Less` if `left` precedes `right` in ASCII-case-
-/// insensitive alphabetical order. Lowercases byte-by-byte during
-/// the comparison rather than allocating a normalised form.
+/// `Ordering::Less` if `left` precedes `right` in
+/// ASCII-case-insensitive alphabetical order. Lowercases byte-by-byte
+/// during the comparison rather than allocating a normalised form.
 fn ascii_ci_cmp(left: &str, right: &str) -> Ordering {
     left.bytes()
         .map(|byte| byte.to_ascii_lowercase())
