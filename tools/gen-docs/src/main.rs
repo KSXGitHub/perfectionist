@@ -83,8 +83,10 @@ fn main() -> ExitCode {
 
     // Resolve the user-supplied ref (typically a branch like `master`)
     // to a commit SHA so the rendered "Source:" links are permalinks
-    // that survive future commits to the branch.
-    let git_ref = resolve_git_ref(&root, &git_ref);
+    // that survive future commits to the branch. The original ref is
+    // kept for the page title and banner, which want to read as
+    // "Showing docs for `master`" rather than a bare SHA.
+    let commit_sha = resolve_git_ref(&root, &git_ref);
 
     let manifest = Manifest::from_path(root.join("Cargo.toml")).expect("failed to read Cargo.toml");
     let crate_version = manifest
@@ -119,6 +121,7 @@ fn main() -> ExitCode {
     let context = RenderContext {
         crate_version: &crate_version,
         git_ref: &git_ref,
+        commit_sha: &commit_sha,
         repo_url: &repo_url,
     };
     let html = render_page(&rules, &context);

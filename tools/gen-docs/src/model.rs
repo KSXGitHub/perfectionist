@@ -20,8 +20,18 @@ pub(crate) const NAMESPACE: &str = "perfectionist::";
 pub(crate) struct RenderContext<'a> {
     /// Latest released version of the crate, read from `Cargo.toml`.
     pub(crate) crate_version: &'a str,
-    /// Git ref the rendered "Source:" links target.
+    /// Human-facing git ref (typically a branch like `master`, a
+    /// tag, or whatever the user passed via `--git-ref`). Used in
+    /// the page title and banner so a reader can tell *which*
+    /// branch they're looking at — those strings would be useless
+    /// if they read "Showing docs for `60c4549b...`".
     pub(crate) git_ref: &'a str,
+    /// Commit SHA `git_ref` resolved to. Used for the per-rule
+    /// "Source:" blob URLs (which must be permalinks so they don't
+    /// rot when the branch advances) and for the footer's
+    /// generated-from line, where the exact commit is the useful
+    /// piece of information.
+    pub(crate) commit_sha: &'a str,
     /// Project repository URL, used for the README link in the
     /// banner and as the base for the per-rule blob URLs.
     pub(crate) repo_url: &'a str,

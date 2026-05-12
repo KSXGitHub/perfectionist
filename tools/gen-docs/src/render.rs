@@ -19,6 +19,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
     let RenderContext {
         crate_version,
         git_ref,
+        commit_sha,
         repo_url,
     } = *context;
     let markup: Markup = html! {
@@ -80,7 +81,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 }
                 footer {
                     "Generated from " code { "src/rules/" }
-                    " at " code { (git_ref) } "."
+                    " at " code { (commit_sha) } "."
                 }
             }
         }
@@ -90,7 +91,9 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
 
 fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
     let RenderContext {
-        git_ref, repo_url, ..
+        commit_sha,
+        repo_url,
+        ..
     } = *context;
     // Build the URL-friendly path by joining components with `/`
     // instead of `Path::display`, which uses the host's native
@@ -101,7 +104,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
         .map(|component| component.as_os_str().to_string_lossy().into_owned())
         .collect::<Vec<_>>()
         .join("/");
-    let source_url = format!("{repo_url}/blob/{git_ref}/{source_path}");
+    let source_url = format!("{repo_url}/blob/{commit_sha}/{source_path}");
     html! {
         article.rule id=(anchor_for(&rule.namespaced)) {
             h2 {
