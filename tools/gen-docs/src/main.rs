@@ -61,17 +61,12 @@ fn resolve_git_ref(root: &Path, git_ref: &str) -> String {
         let stderr = String::from_utf8_lossy(&output.stderr);
         panic!("`git rev-parse {git_ref}` failed: {}", stderr.trim());
     }
-    let sha = output
+    output
         .stdout
         .pipe(String::from_utf8)
         .expect("`git rev-parse` produced non-UTF-8 output")
         .trim()
-        .to_owned();
-    assert!(
-        !sha.is_empty(),
-        "`git rev-parse {git_ref}` produced empty output",
-    );
-    sha
+        .to_owned()
 }
 
 fn main() -> ExitCode {
