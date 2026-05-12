@@ -160,6 +160,5 @@ fn gha_dylint_version(version: &str) -> Result<(), GhaDylintVersionError> {
         .append(true)
         .open(path)
         .map_err(GhaDylintVersionError::OpenFile)?;
-    writeln!(file, "version={version}").map_err(GhaDylintVersionError::WriteFile)?;
-    Ok(())
+    writeln!(file, "version={version}").map_err(GhaDylintVersionError::WriteFile)
 }
