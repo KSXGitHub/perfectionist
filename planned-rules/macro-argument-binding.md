@@ -103,9 +103,9 @@ hoist them to a `const` if they need to appear inline.
 ## Eligibility modes
 
 Four modes ordered by implementation cost. The default is
-`allowlist_denylist`.
+`allow_and_deny`.
 
-### Mode 0 — `denylist_only`
+### Mode 0 — `deny_only`
 
 Flag only invocations of the curated denylist (`debug_assert!`,
 `debug_assert_eq!`, `debug_assert_ne!`) plus any `deny_extra`
@@ -126,7 +126,7 @@ The maximum-paranoia stance. Not the default because
 `format!("hello {name}", compute())` is fine in practice and
 flagging every macro invocation is exhausting.
 
-### Mode 2 — `allowlist_denylist` (default)
+### Mode 2 — `allow_and_deny` (default)
 
 Three name-set lookups decide each invocation:
 
@@ -288,8 +288,8 @@ let payload = serde_json::json!({ "id": next_id(), "ts": now() });
 # Set to false to disable the rule entirely.
 enabled = true
 
-# Eligibility mode. Defaults to "allowlist_denylist".
-mode = "allowlist_denylist"
+# Eligibility mode. Defaults to "allow_and_deny".
+mode = "allow_and_deny"
 
 # Macros added to the built-in denylist. Each entry is a
 # fully-qualified macro path (no trailing `!`) or a bare macro
