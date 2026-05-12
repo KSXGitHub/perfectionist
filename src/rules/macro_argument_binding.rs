@@ -267,6 +267,9 @@ fn check_argument(argument: &[TokenTree]) {
     if argument.is_empty() {
         return;
     }
+    if !looks_like_expression(argument) {
+        return;
+    }
     if is_trivial_expression(argument) {
         return;
     }
@@ -274,6 +277,27 @@ fn check_argument(argument: &[TokenTree]) {
     let last = argument.last().expect("non-empty checked above");
     let span = first.span().to(last.span());
     queue(span);
+}
+
+/// Heuristic: does the argument plausibly parse as a single Rust
+/// expression? The rule docs say "skip arguments that don't parse as a
+/// single expression (`name: type`, `name = value`, etc. are syntactic
+/// positions the macro author chose)" and prescribe a `Parser::parse_expr`
+/// re-parse to make that call. We approximate without `rustc_parse` to
+/// avoid emitting parser-recovery diagnostics for arbitrary macro
+/// inputs: a top-level `=>` token is a match-arm separator (`matches!`,
+/// `impl_lint_pass!`-style `Type => [LINT_NAMES]` DSLs) and is never
+/// part of a single Rust expression. Other non-expression markers like
+/// `name: type` and `name = value` are not reliably distinguishable
+/// from valid expression syntax (`expr: type` ascription, assignment),
+/// and a future re-parse-based implementation will subsume this check.
+fn looks_like_expression(argument: &[TokenTree]) -> bool {
+    !argument.iter().any(|tree| {
+        matches!(
+            tree,
+            TokenTree::Token(token, _) if token.kind == TokenKind::FatArrow,
+        )
+    })
 }
 
 fn queue(span: Span) {

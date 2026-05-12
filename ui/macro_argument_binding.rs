@@ -96,6 +96,26 @@ fn _empty_argument_list() {
     let _: Vec<u32> = vec![];
 }
 
+// Skipped: a top-level `=>` signals the argument is a syntactic
+// position the macro author chose (`Type => [LINT_NAMES]` is the
+// canonical example, courtesy of `impl_lint_pass!`), not a Rust
+// expression. The rule does not flag these — `value()` here is
+// non-trivial but lives on the right-hand side of `=>`, so the whole
+// argument is skipped rather than parsed as an expression.
+fn _fat_arrow_skips_argument() {
+    let _ = arrow_macro!(NameType => value());
+}
+
+macro_rules! arrow_macro {
+    ($name:ident => $value:expr) => {{
+        let _ = $value;
+        0
+    }};
+}
+
+#[allow(dead_code)]
+struct NameType;
+
 struct Map;
 impl Map {
     fn insert(&mut self, _: u32, _: u32) -> Option<u32> {
