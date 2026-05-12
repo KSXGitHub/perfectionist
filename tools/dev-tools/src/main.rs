@@ -17,6 +17,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
 use clap::{Parser, Subcommand};
+use command_extra::CommandExtra;
+use pipe_trait::Pipe;
 use serde::Deserialize;
 
 const DYLINT_LIBRARY_CRATE: &str = "dylint_linting";
@@ -74,11 +76,14 @@ fn install(root: &Path, version: &str) -> ExitCode {
     );
 
     for crate_name in ["cargo-dylint", "dylint-link"] {
-        let status = Command::new("cargo")
-            .env("CARGO_INSTALL_ROOT", &install_root)
-            .args(["install", "--locked", "--version"])
-            .arg(version)
-            .arg(crate_name)
+        let status = "cargo"
+            .pipe(Command::new)
+            .with_env("CARGO_INSTALL_ROOT", &install_root)
+            .with_arg("install")
+            .with_arg("--locked")
+            .with_arg("--version")
+            .with_arg(version)
+            .with_arg(crate_name)
             .status()
             .unwrap_or_else(|error| panic!("spawn `cargo install {crate_name}`: {error}"));
         // `cargo install` exits 0 both on a fresh install and when
