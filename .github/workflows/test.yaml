@@ -56,13 +56,13 @@ jobs:
       # cache it under a key tied to that version rather than to the
       # whole `Cargo.lock`. Most lockfile churn (unrelated dep bumps)
       # leaves this cache valid and skips the from-source rebuild of
-      # cargo-dylint and dylint-link.
+      # cargo-dylint and dylint-link. The version is read by the same
+      # workspace crate that performs the install, so there is one
+      # source of truth and no shell-side `Cargo.lock` parsing.
       - name: Read pinned dylint version
         id: dylint-version
         shell: bash
-        run: |
-          version=$(grep -A1 '^name = "dylint_linting"$' Cargo.lock | grep '^version' | head -1 | cut -d'"' -f2)
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(just dylint-version)" >> "$GITHUB_OUTPUT"
 
       - name: Cache .dev-tools
         uses: actions/cache@v5

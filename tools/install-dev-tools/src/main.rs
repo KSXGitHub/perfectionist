@@ -22,6 +22,12 @@ const INSTALL_DIR: &str = ".dev-tools";
 struct Cli {
     #[clap(help = "The root of the perfectionist repository")]
     root: PathBuf,
+
+    /// Print the pinned dylint version (read from Cargo.lock) and
+    /// exit without installing. Used by CI to derive the
+    /// `.dev-tools/` cache key.
+    #[clap(long)]
+    print_version: bool,
 }
 
 #[derive(Deserialize)]
@@ -36,8 +42,15 @@ struct LockedPackage {
 }
 
 fn main() -> ExitCode {
-    let Cli { root } = Cli::parse();
+    let Cli {
+        root,
+        print_version,
+    } = Cli::parse();
     let version = locked_dylint_version(&root);
+    if print_version {
+        println!("{version}");
+        return ExitCode::SUCCESS;
+    }
     let install_root = root.join(INSTALL_DIR);
 
     eprintln!(

@@ -55,6 +55,10 @@ warmup-integration-tests:
 install-dev-tools:
   cargo --config 'target."cfg(all())".linker="cc"' run --package _install_dev_tools -- "$(pwd)"
 
+# Print the dylint_linting version pinned in Cargo.lock
+dylint-version:
+  @cargo --config 'target."cfg(all())".linker="cc"' run --quiet --package _install_dev_tools -- "$(pwd)" --print-version
+
 # Render the rule catalogue to `gh-pages/index.html`.
 gen-docs out_dir="gh-pages" git_ref="":
   #!/usr/bin/env bash
