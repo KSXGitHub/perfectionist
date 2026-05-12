@@ -7,7 +7,7 @@ use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Symbol;
 
-use crate::rules::common::{binding_ident, is_single_ascii_letter};
+use crate::common::{binding_ident, is_single_ascii_letter};
 
 declare_tool_lint! {
     /// ### What it does

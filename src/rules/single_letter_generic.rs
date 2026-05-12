@@ -5,7 +5,7 @@ use rustc_span::Span;
 
 use clippy_utils::diagnostics::span_lint_and_help;
 
-use crate::rules::common::is_single_ascii_letter;
+use crate::common::is_single_ascii_letter;
 
 declare_tool_lint! {
     /// ### What it does

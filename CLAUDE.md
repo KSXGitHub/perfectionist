@@ -69,8 +69,8 @@ has two consequences for the implementer:
    only the fields the rule actually reads — fields nominally
    "about" the rule but consumed by a different rule belong in
    that other rule's `Config`. If two rules genuinely share a
-   helper function or type, factor it into `src/rules/common.rs`
-   (for trivial cross-rule utilities) or a dedicated
+   helper function or type, factor it into `src/common.rs` (for
+   trivial cross-rule utilities) or a dedicated
    crate-internal module rather than co-housing the rules in one
    file.
 

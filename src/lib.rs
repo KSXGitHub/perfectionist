@@ -14,6 +14,7 @@ use rustc_session::Session;
 
 dylint_linting::dylint_library!();
 
+mod common;
 mod macro_path;
 mod rules;
 
