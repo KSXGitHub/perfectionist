@@ -216,11 +216,7 @@ fn run_write_md(root: &Path, rules_dir: &Path) -> ExitCode {
     eprintln!(
         "wrote {} rule file(s) and {} index to {} ({} orphan(s) removed)",
         summary.rules_written,
-        if summary.index_written {
-            "1"
-        } else {
-            "no"
-        },
+        if summary.index_written { "1" } else { "no" },
         rules_dir.display(),
         summary.orphans_removed,
     );

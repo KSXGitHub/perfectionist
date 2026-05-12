@@ -91,7 +91,10 @@ pub(crate) fn render_index_md(rules: &[Rule]) -> String {
          `cargo run --package _gen_docs --bin gen-docs -- write-md rules/`.",
     );
     out.push('\n');
-    let _ = writeln!(out, "Lint-control attributes use the `{NAMESPACE}` namespace.");
+    let _ = writeln!(
+        out,
+        "Lint-control attributes use the `{NAMESPACE}` namespace."
+    );
     out.push('\n');
     let _ = writeln!(out, "| Lint | Default | Description |");
     let _ = writeln!(out, "| ---- | ------- | ----------- |");
