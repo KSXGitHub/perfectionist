@@ -75,7 +75,7 @@ enum RuntimeError {
 }
 
 fn run(Cli { root, command }: Cli) -> Result<(), RuntimeError> {
-    let version = locked_dylint_version(&root)?;
+    let version = dylint_version(&root)?;
     match command {
         Subcmd::PrintVersion => println!("{version}"),
 
@@ -126,7 +126,7 @@ enum DylintVersionError {
     NoData,
 }
 
-fn locked_dylint_version(root: &Path) -> Result<String, DylintVersionError> {
+fn dylint_version(root: &Path) -> Result<String, DylintVersionError> {
     root.join("Cargo.lock")
         .pipe(read_to_string)
         .map_err(DylintVersionError::ReadLockFile)?
