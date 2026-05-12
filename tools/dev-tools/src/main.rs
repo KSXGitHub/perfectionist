@@ -39,11 +39,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Sub {
-    /// Install cargo-dylint and dylint-link into `<root>/.dev-tools/`
-    /// at the version pinned in `Cargo.lock`.
+    #[clap(about = "Install the development tools")]
     Install,
-    /// Print the pinned dylint version (read from `Cargo.lock`) and
-    /// exit. Used by CI to derive the `.dev-tools/` cache key.
+    #[clap(about = "Print the dylint version")]
     PrintVersion,
 }
 
