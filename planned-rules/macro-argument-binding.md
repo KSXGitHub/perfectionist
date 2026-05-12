@@ -27,6 +27,16 @@ Still pending:
   These should be trivial per the spec's intent ("a path resolving to
   a function name, or unit / tuple variant"); extend `take_path_tail`
   to consume an optional `::<...>` token-tree per segment.
+- **Keyword idents as path starts.** The trivial-atom matcher's
+  `Ident(_, _)` branch dispatches to the path walker regardless of
+  whether the ident is a valid path-start keyword (`self`, `Self`,
+  `super`, `crate`, the empty set otherwise). Reserved keywords like
+  `let`, `if`, `match`, `for`, `while` are accepted as path heads
+  and the resulting "trivial path" leaves an unexpected tail in the
+  suffix walk, which still bottoms out as non-trivial — so the lint
+  classification is correct by coincidence. Tighten `take_trivial_atom`
+  to reject reserved-keyword idents so the right door owns the
+  decision.
 
 The "What to lint" pipeline below applies to the implemented
 modes as written. The remainder of this file is the active spec
