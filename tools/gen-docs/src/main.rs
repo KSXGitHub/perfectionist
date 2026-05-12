@@ -23,6 +23,8 @@ use std::process::{Command, ExitCode};
 
 use cargo_toml::{Inheritable, Manifest};
 use clap::Parser;
+use command_extra::CommandExtra;
+use pipe_trait::Pipe;
 
 use crate::extract::collect_rules;
 use crate::model::RenderContext;
@@ -47,19 +49,21 @@ struct Cli {
 }
 
 fn resolve_git_ref(root: &Path, git_ref: &str) -> String {
-    let output = Command::new("git")
-        .arg("-C")
-        .arg(root)
-        .arg("rev-parse")
-        .arg("--verify")
-        .arg(format!("{git_ref}^{{commit}}"))
+    let output = "git"
+        .pipe(Command::new)
+        .with_current_dir(root)
+        .with_arg("rev-parse")
+        .with_arg("--verify")
+        .with_arg(format!("{git_ref}^{{commit}}"))
         .output()
         .expect("failed to invoke `git rev-parse`");
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         panic!("`git rev-parse {git_ref}` failed: {}", stderr.trim());
     }
-    let sha = String::from_utf8(output.stdout)
+    let sha = output
+        .stdout
+        .pipe(String::from_utf8)
         .expect("`git rev-parse` produced non-UTF-8 output")
         .trim()
         .to_owned();
