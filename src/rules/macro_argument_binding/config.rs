@@ -158,4 +158,3 @@ impl MacroArgumentBinding {
         }
     }
 }
-

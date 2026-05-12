@@ -96,8 +96,9 @@ fn is_param_ref(expr: &hir::Expr<'_>, params: &[hir::Param<'_>]) -> bool {
     let mut expr = expr;
     loop {
         match &expr.kind {
-            hir::ExprKind::Unary(hir::UnOp::Deref, inner)
-            | hir::ExprKind::AddrOf(_, _, inner) => expr = inner,
+            hir::ExprKind::Unary(hir::UnOp::Deref, inner) | hir::ExprKind::AddrOf(_, _, inner) => {
+                expr = inner
+            }
             hir::ExprKind::Path(hir::QPath::Resolved(None, path)) => {
                 let Res::Local(local_hir_id) = path.res else {
                     return false;

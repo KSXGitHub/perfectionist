@@ -68,7 +68,8 @@ pub(super) fn scan_macro_call_source(
                 let literal_snippet = &snippet[token_start..token_end];
                 let token_lo = call_span.lo() + BytePos::from_u32(byte_offset);
                 let token_hi = token_lo + BytePos::from_u32(token_length);
-                let token_span = Span::new(token_lo, token_hi, call_span.ctxt(), call_span.parent());
+                let token_span =
+                    Span::new(token_lo, token_hi, call_span.ctxt(), call_span.parent());
                 scan_literal(
                     lint_context,
                     flagged_chars,
@@ -106,7 +107,12 @@ pub(super) fn scan_literal(
             let span_start =
                 literal_span.lo() + BytePos::from_u32((prefix_length + byte_offset) as u32);
             let span_end = span_start + BytePos::from_u32(character_length);
-            Span::new(span_start, span_end, literal_span.ctxt(), literal_span.parent())
+            Span::new(
+                span_start,
+                span_end,
+                literal_span.ctxt(),
+                literal_span.parent(),
+            )
         },
     );
 }
