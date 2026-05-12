@@ -181,12 +181,61 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// Compute the relative-path prefix the markdown renderer needs
+/// to climb from a file under `rules_dir` back up to the repo
+/// `root`. Returned with a trailing `/`, so callers can append a
+/// path under `root` directly (e.g. `"../" + "src/rules/foo.rs"`).
+///
+/// Returns `Err` when `rules_dir` is the same directory as `root`
+/// (the catalogue's `README.md` would collide with the project's
+/// own) or when it resolves to a path outside `root` (the renderer
+/// has no way to produce a correct relative link in that case).
+fn source_link_prefix_for(rules_dir: &Path, root: &Path) -> Result<String, String> {
+    let abs_root = std::path::absolute(root)
+        .map_err(|error| format!("failed to resolve --root `{}`: {error}", root.display(),))?;
+    let abs_rules = std::path::absolute(rules_dir).map_err(|error| {
+        format!(
+            "failed to resolve rules_dir `{}`: {error}",
+            rules_dir.display(),
+        )
+    })?;
+    let rel = abs_rules.strip_prefix(&abs_root).map_err(|_| {
+        format!(
+            "rules_dir `{}` is not inside --root `{}`; the markdown renderer can only \
+             build relative `Source:` links when rules_dir is under the repo root",
+            rules_dir.display(),
+            root.display(),
+        )
+    })?;
+    let depth = rel.components().count();
+    if depth == 0 {
+        // rules_dir == root: the catalogue's `README.md` would
+        // overwrite the project's own README, and per-rule files
+        // would litter the repo root. Refuse before any write.
+        return Err(format!(
+            "rules_dir `{}` resolves to the same directory as --root `{}`; \
+             choose a subdirectory (e.g. `rules/`) so the catalogue's `README.md` \
+             doesn't collide with the project's own",
+            rules_dir.display(),
+            root.display(),
+        ));
+    }
+    Ok("../".repeat(depth))
+}
+
 fn run_check_md(root: &Path, rules_dir: &Path) -> ExitCode {
     let rules = match load_rules(root) {
         Ok(rules) => rules,
         Err(code) => return code,
     };
-    match check_rules_dir(&rules, rules_dir) {
+    let source_link_prefix = match source_link_prefix_for(rules_dir, root) {
+        Ok(prefix) => prefix,
+        Err(message) => {
+            eprintln!("error: {message}");
+            return ExitCode::FAILURE;
+        }
+    };
+    match check_rules_dir(&rules, rules_dir, &source_link_prefix) {
         CheckOutcome::Clean => {
             eprintln!(
                 "{} is up to date ({} rule(s))",
@@ -198,8 +247,7 @@ fn run_check_md(root: &Path, rules_dir: &Path) -> ExitCode {
         CheckOutcome::Drifted(report) => {
             eprint!("{report}");
             eprintln!(
-                "{} is out of date. Run `gen-docs write-md {}` to regenerate.",
-                rules_dir.display(),
+                "{} is out of date. Run `just gen-rules-md` to regenerate.",
                 rules_dir.display(),
             );
             ExitCode::FAILURE
@@ -212,7 +260,14 @@ fn run_write_md(root: &Path, rules_dir: &Path) -> ExitCode {
         Ok(rules) => rules,
         Err(code) => return code,
     };
-    let summary = write_rules_dir(&rules, rules_dir);
+    let source_link_prefix = match source_link_prefix_for(rules_dir, root) {
+        Ok(prefix) => prefix,
+        Err(message) => {
+            eprintln!("error: {message}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let summary = write_rules_dir(&rules, rules_dir, &source_link_prefix);
     eprintln!(
         "{}: rewrote {} rule file(s); index {}; {} orphan(s) removed",
         rules_dir.display(),

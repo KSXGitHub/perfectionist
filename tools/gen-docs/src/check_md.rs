@@ -24,10 +24,13 @@ struct ExpectedTree {
 }
 
 impl ExpectedTree {
-    fn from_rules(rules: &[Rule]) -> Self {
+    fn from_rules(rules: &[Rule], source_link_prefix: &str) -> Self {
         let mut files = BTreeMap::new();
         for rule in rules {
-            let prev = files.insert(rule_file_name(rule), render_rule_md(rule));
+            let prev = files.insert(
+                rule_file_name(rule),
+                render_rule_md(rule, source_link_prefix),
+            );
             if prev.is_some() {
                 // Two rules cannot share a filename; the extractor
                 // already guarantees rule namespaces are unique, so
@@ -44,6 +47,14 @@ impl ExpectedTree {
     }
 
     fn is_managed(&self, file_name: &str) -> bool {
+        // Case-sensitive exact match. Adequate for every workflow
+        // this generator supports: every entry in the managed set
+        // is either written by this tool (consistent casing) or
+        // filtered out earlier by `read_managed_filenames` (non-md
+        // files like `.gitkeep`). A manually-created `readme.md`
+        // on a case-insensitive filesystem (macOS APFS default)
+        // would not match `README.md` here and would be deleted as
+        // an orphan; that's an unsupported configuration.
         self.files.contains_key(file_name)
     }
 }
@@ -70,8 +81,12 @@ pub(crate) struct WriteSummary {
     pub(crate) orphans_removed: usize,
 }
 
-pub(crate) fn check_rules_dir(rules: &[Rule], rules_dir: &Path) -> CheckOutcome {
-    let expected = ExpectedTree::from_rules(rules);
+pub(crate) fn check_rules_dir(
+    rules: &[Rule],
+    rules_dir: &Path,
+    source_link_prefix: &str,
+) -> CheckOutcome {
+    let expected = ExpectedTree::from_rules(rules, source_link_prefix);
     let actual_names = read_managed_filenames(rules_dir);
 
     let mut report = String::new();
@@ -111,8 +126,12 @@ pub(crate) fn check_rules_dir(rules: &[Rule], rules_dir: &Path) -> CheckOutcome 
     }
 }
 
-pub(crate) fn write_rules_dir(rules: &[Rule], rules_dir: &Path) -> WriteSummary {
-    let expected = ExpectedTree::from_rules(rules);
+pub(crate) fn write_rules_dir(
+    rules: &[Rule],
+    rules_dir: &Path,
+    source_link_prefix: &str,
+) -> WriteSummary {
+    let expected = ExpectedTree::from_rules(rules, source_link_prefix);
     fs::create_dir_all(rules_dir).expect("failed to create rules directory");
 
     let mut summary = WriteSummary {
@@ -151,6 +170,10 @@ pub(crate) fn write_rules_dir(rules: &[Rule], rules_dir: &Path) -> WriteSummary 
                 .unwrap_or_else(|error| panic!("failed to write {}: {error}", path.display()));
         }
         if file_name == INDEX_FILE_NAME {
+            // Plain assignment, not `|=`: `BTreeMap` keys are
+            // unique, so the loop visits `INDEX_FILE_NAME` at most
+            // once. If a future change ever adds a second managed
+            // index file, replace this with the explicit OR.
             summary.index_changed = needs_write;
         } else if needs_write {
             summary.rules_changed += 1;
@@ -242,17 +265,20 @@ mod tests {
     fn write_then_check_is_clean() {
         let dir = tempdir("write-then-check");
         let rules = vec![fake_rule("alpha"), fake_rule("beta")];
-        write_rules_dir(&rules, &dir);
-        assert!(matches!(check_rules_dir(&rules, &dir), CheckOutcome::Clean));
+        write_rules_dir(&rules, &dir, "../");
+        assert!(matches!(
+            check_rules_dir(&rules, &dir, "../"),
+            CheckOutcome::Clean
+        ));
     }
 
     #[test]
     fn missing_file_drifts() {
         let dir = tempdir("missing");
         let rules = vec![fake_rule("alpha"), fake_rule("beta")];
-        write_rules_dir(&rules, &dir);
+        write_rules_dir(&rules, &dir, "../");
         fs::remove_file(dir.join("alpha.md")).unwrap();
-        match check_rules_dir(&rules, &dir) {
+        match check_rules_dir(&rules, &dir, "../") {
             CheckOutcome::Drifted(report) => assert!(report.contains("`alpha.md`: missing")),
             CheckOutcome::Clean => panic!("expected drift"),
         }
@@ -262,9 +288,9 @@ mod tests {
     fn stale_file_drifts() {
         let dir = tempdir("stale");
         let rules = vec![fake_rule("alpha")];
-        write_rules_dir(&rules, &dir);
+        write_rules_dir(&rules, &dir, "../");
         fs::write(dir.join("alpha.md"), "not the right body").unwrap();
-        match check_rules_dir(&rules, &dir) {
+        match check_rules_dir(&rules, &dir, "../") {
             CheckOutcome::Drifted(report) => {
                 assert!(report.contains("`alpha.md`: content differs"))
             }
@@ -276,13 +302,13 @@ mod tests {
     fn orphan_file_drifts_and_write_removes_it() {
         let dir = tempdir("orphan");
         let rules = vec![fake_rule("alpha")];
-        write_rules_dir(&rules, &dir);
+        write_rules_dir(&rules, &dir, "../");
         fs::write(dir.join("orphan.md"), "leftover").unwrap();
-        match check_rules_dir(&rules, &dir) {
+        match check_rules_dir(&rules, &dir, "../") {
             CheckOutcome::Drifted(report) => assert!(report.contains("`orphan.md`: orphan")),
             CheckOutcome::Clean => panic!("expected drift"),
         }
-        let summary = write_rules_dir(&rules, &dir);
+        let summary = write_rules_dir(&rules, &dir, "../");
         assert_eq!(summary.orphans_removed, 1);
         assert!(!dir.join("orphan.md").exists());
     }
@@ -291,22 +317,45 @@ mod tests {
     fn non_md_files_are_ignored() {
         let dir = tempdir("non-md");
         let rules = vec![fake_rule("alpha")];
-        write_rules_dir(&rules, &dir);
+        write_rules_dir(&rules, &dir, "../");
         fs::write(dir.join(".gitkeep"), "").unwrap();
         fs::write(dir.join("notes.txt"), "scratch").unwrap();
-        assert!(matches!(check_rules_dir(&rules, &dir), CheckOutcome::Clean));
+        assert!(matches!(
+            check_rules_dir(&rules, &dir, "../"),
+            CheckOutcome::Clean
+        ));
         // And `write-md` doesn't delete them.
-        write_rules_dir(&rules, &dir);
+        write_rules_dir(&rules, &dir, "../");
         assert!(dir.join(".gitkeep").exists());
         assert!(dir.join("notes.txt").exists());
+    }
+
+    #[test]
+    fn nonexistent_dir_drifts_with_every_file_missing() {
+        // `read_managed_filenames` returns an empty set on
+        // `NotFound`, so `check_rules_dir` should report each
+        // expected file as missing rather than panicking or
+        // silently passing.
+        let base = tempdir("nonexistent");
+        let dir = base.join("never-created");
+        assert!(!dir.exists());
+        let rules = vec![fake_rule("alpha"), fake_rule("beta")];
+        match check_rules_dir(&rules, &dir, "../") {
+            CheckOutcome::Drifted(report) => {
+                assert!(report.contains("`alpha.md`: missing"));
+                assert!(report.contains("`beta.md`: missing"));
+                assert!(report.contains("`README.md`: missing"));
+            }
+            CheckOutcome::Clean => panic!("expected drift"),
+        }
     }
 
     #[test]
     fn second_write_is_a_no_op() {
         let dir = tempdir("idempotent");
         let rules = vec![fake_rule("alpha")];
-        write_rules_dir(&rules, &dir);
-        let summary = write_rules_dir(&rules, &dir);
+        write_rules_dir(&rules, &dir, "../");
+        let summary = write_rules_dir(&rules, &dir, "../");
         assert_eq!(summary.rules_changed, 0);
         assert!(!summary.index_changed);
         assert_eq!(summary.orphans_removed, 0);
