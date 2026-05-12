@@ -112,7 +112,6 @@ fn _single_argument_deny() {
 // the test harness's default edition (no real `async fn` needed).
 fn _await_suffix_flagged() {
     let future = ();
-    let _ = future;
     let _ = await_macro!(future.await);
 }
 
