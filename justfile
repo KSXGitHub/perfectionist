@@ -41,5 +41,5 @@ warmup-integration-tests:
   time cargo run --package _utils --bin warmup -- "$(pwd)"
 
 # Render the rule catalogue to `gh-pages/index.html`
-gen-docs out_dir="gh-pages" git_ref="master":
+gen-docs out_dir="gh-pages" git_ref=`git rev-parse HEAD`:
   cargo run --package _gen_docs --bin gen-docs -- "$(pwd)" "{{out_dir}}" --git-ref="{{git_ref}}"
