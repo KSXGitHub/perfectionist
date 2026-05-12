@@ -44,16 +44,16 @@ pub fn entry_matches(entry: &[String], invocation: &rustc_ast::Path) -> bool {
         return false;
     }
     if entry.len() == 1 {
-        segments
+        return segments
             .last()
-            .is_some_and(|segment| segment.ident.name.as_str() == entry[0])
-    } else if segments.len() < entry.len() {
-        false
-    } else {
-        let start = segments.len() - entry.len();
-        segments[start..]
-            .iter()
-            .zip(entry.iter())
-            .all(|(segment, entry_segment)| segment.ident.name.as_str() == entry_segment.as_str())
+            .is_some_and(|segment| segment.ident.name.as_str() == entry[0]);
     }
+    if segments.len() < entry.len() {
+        return false;
+    }
+    let start = segments.len() - entry.len();
+    segments[start..]
+        .iter()
+        .zip(entry.iter())
+        .all(|(segment, entry_segment)| segment.ident.name.as_str() == entry_segment.as_str())
 }
