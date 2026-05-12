@@ -46,16 +46,26 @@ impl ExpectedTree {
         ExpectedTree { files }
     }
 
+    /// Case-sensitive exact match. This is the right contract for
+    /// every code path that reads `expected.files` to decide what
+    /// to render or compare — those paths must use the canonical
+    /// casing the renderer wrote. For the orphan-delete code path,
+    /// see `is_managed_case_insensitive`.
     fn is_managed(&self, file_name: &str) -> bool {
-        // Case-sensitive exact match. Adequate for every workflow
-        // this generator supports: every entry in the managed set
-        // is either written by this tool (consistent casing) or
-        // filtered out earlier by `read_managed_filenames` (non-md
-        // files like `.gitkeep`). A manually-created `readme.md`
-        // on a case-insensitive filesystem (macOS APFS default)
-        // would not match `README.md` here and would be deleted as
-        // an orphan; that's an unsupported configuration.
         self.files.contains_key(file_name)
+    }
+
+    /// Case-insensitive match. Used only to guard the orphan-
+    /// delete step on case-insensitive filesystems (macOS APFS,
+    /// Windows NTFS): there, `readme.md` and `README.md` are the
+    /// same inode, and a case-sensitive orphan check would happily
+    /// delete the on-disk file the renderer is about to write,
+    /// silently dropping its contents. See the caller for the full
+    /// rationale.
+    fn is_managed_case_insensitive(&self, file_name: &str) -> bool {
+        self.files
+            .keys()
+            .any(|key| key.eq_ignore_ascii_case(file_name))
     }
 }
 
@@ -148,12 +158,30 @@ pub(crate) fn write_rules_dir(
     // nothing and stays correct under future renames.
     let actual_names = read_managed_filenames(rules_dir);
     for file_name in &actual_names {
-        if !expected.is_managed(file_name) {
-            let path = rules_dir.join(file_name);
-            fs::remove_file(&path)
-                .unwrap_or_else(|error| panic!("failed to remove {}: {error}", path.display()));
-            summary.orphans_removed += 1;
+        if expected.is_managed(file_name) {
+            continue;
         }
+        // Case-insensitive collision guard. On case-insensitive
+        // filesystems (macOS APFS default, Windows NTFS), a
+        // user-typed `readme.md` and the catalogue's `README.md`
+        // resolve to the same inode. The case-sensitive
+        // `is_managed` check above returns false for the
+        // on-disk name; if we then `remove_file` it, we delete
+        // the file the renderer is about to (re)write, silently
+        // discarding any user content it held. Skipping the
+        // delete when the name case-insensitively matches a
+        // managed entry is safe on case-sensitive filesystems
+        // too — our generator only ever writes the canonical
+        // casing, so a Linux-side `readme.md` couldn't have been
+        // produced by us and skipping its deletion just leaves
+        // an unrelated user file in place.
+        if expected.is_managed_case_insensitive(file_name) {
+            continue;
+        }
+        let path = rules_dir.join(file_name);
+        fs::remove_file(&path)
+            .unwrap_or_else(|error| panic!("failed to remove {}: {error}", path.display()));
+        summary.orphans_removed += 1;
     }
 
     for (file_name, body) in &expected.files {
@@ -170,11 +198,12 @@ pub(crate) fn write_rules_dir(
                 .unwrap_or_else(|error| panic!("failed to write {}: {error}", path.display()));
         }
         if file_name == INDEX_FILE_NAME {
-            // Plain assignment, not `|=`: `BTreeMap` keys are
-            // unique, so the loop visits `INDEX_FILE_NAME` at most
-            // once. If a future change ever adds a second managed
-            // index file, replace this with the explicit OR.
-            summary.index_changed = needs_write;
+            // OR-assign rather than overwrite so the flag stays
+            // sticky if a future refactor (retry-on-IO, multiple
+            // managed indexes) visits the index more than once.
+            // `BTreeMap` keys are unique today, but the defensive
+            // form costs nothing.
+            summary.index_changed |= needs_write;
         } else if needs_write {
             summary.rules_changed += 1;
         }
@@ -183,15 +212,21 @@ pub(crate) fn write_rules_dir(
     summary
 }
 
-/// List the markdown filenames the doc generator considers part of
-/// its managed set. Restricted to `.md` files at the top level so a
-/// `rules/.gitkeep`, a `rules/EXTRA.md` placed there deliberately,
-/// or a nested subdirectory doesn't get flagged as an orphan.
+/// List the on-disk `.md` files the doc generator's orphan check
+/// considers. Restricted to `.md` files at the top level so a
+/// `rules/.gitkeep` or a nested subdirectory isn't pulled in.
 ///
-/// `.md` is the right boundary: every file this generator writes
-/// ends in `.md`, and any other extension is by definition not
-/// something this generator produced. A future `.html` mirror, if
-/// one's ever added, would warrant a separate managed-set scheme.
+/// **The `rules/` directory is fully managed by this generator.**
+/// Any `.md` file at the top level that doesn't correspond to an
+/// implemented rule is treated as an orphan by `check-md` and
+/// deleted by `write-md`; users cannot drop extra hand-written
+/// `.md` files into the directory expecting them to survive.
+/// Non-`.md` files (`.gitkeep`, `notes.txt`) and subdirectories are
+/// out of scope for the orphan check and are left untouched.
+///
+/// `.md` is the right boundary for the managed set: every file
+/// this generator writes ends in `.md`, and any other extension is
+/// by definition not something this generator produced.
 fn read_managed_filenames(rules_dir: &Path) -> BTreeSet<String> {
     let mut names = BTreeSet::new();
     let entries = match fs::read_dir(rules_dir) {
@@ -348,6 +383,27 @@ mod tests {
             }
             CheckOutcome::Clean => panic!("expected drift"),
         }
+    }
+
+    #[test]
+    fn case_insensitive_collision_is_not_deleted() {
+        // On a case-sensitive filesystem (Linux), this test
+        // creates two distinct files: `README.md` (the managed
+        // index) and `readme.md` (a hand-typed file). The orphan
+        // check should leave `readme.md` alone rather than
+        // deleting it, since on a case-insensitive filesystem the
+        // two would be the same inode and deleting would discard
+        // the managed file's contents along with it. Skipping the
+        // delete on Linux too is harmless — we'd only have written
+        // the canonical casing, so a lowercase orphan can't have
+        // come from us.
+        let dir = tempdir("case-collision");
+        let rules = vec![fake_rule("alpha")];
+        write_rules_dir(&rules, &dir, "../");
+        fs::write(dir.join("readme.md"), "user content").unwrap();
+        let summary = write_rules_dir(&rules, &dir, "../");
+        assert_eq!(summary.orphans_removed, 0);
+        assert!(dir.join("readme.md").exists());
     }
 
     #[test]

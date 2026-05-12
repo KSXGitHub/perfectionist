@@ -188,9 +188,13 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
 ///
 /// Returns `Err` when `rules_dir` is the same directory as `root`
 /// (the catalogue's `README.md` would collide with the project's
-/// own) or when it resolves to a path outside `root` (the renderer
-/// has no way to produce a correct relative link in that case).
+/// own), when it resolves to a path outside `root`, or when the
+/// path contains `..` segments — `std::path::absolute` doesn't
+/// normalise those, so `rules/../rules` would otherwise be
+/// (silently) interpreted as depth 3 and produce broken links.
 fn source_link_prefix_for(rules_dir: &Path, root: &Path) -> Result<String, String> {
+    use std::path::Component;
+
     let abs_root = std::path::absolute(root)
         .map_err(|error| format!("failed to resolve --root `{}`: {error}", root.display(),))?;
     let abs_rules = std::path::absolute(rules_dir).map_err(|error| {
@@ -207,11 +211,42 @@ fn source_link_prefix_for(rules_dir: &Path, root: &Path) -> Result<String, Strin
             root.display(),
         )
     })?;
-    let depth = rel.components().count();
+
+    // Walk the relative components by hand instead of using
+    // `components().count()`: `std::path::absolute` does *not*
+    // collapse `..` or `.`, so `rules/../rules` and `rules/sub/..`
+    // would both report depth ≥ 3 — producing a `Source:` link
+    // three directories too deep. Reject `..` outright (the user
+    // should write the path they mean) and skip `.` (semantically
+    // a no-op).
+    let mut depth = 0usize;
+    for component in rel.components() {
+        match component {
+            Component::Normal(_) => depth += 1,
+            Component::CurDir => {}
+            Component::ParentDir => {
+                return Err(format!(
+                    "rules_dir `{}` contains a `..` segment; write the resolved path \
+                     directly (e.g. `rules/` rather than `rules/sub/..`)",
+                    rules_dir.display(),
+                ));
+            }
+            // `RootDir` / `Prefix` can't appear here: `strip_prefix`
+            // returns only the suffix past `abs_root`, which is
+            // necessarily relative.
+            _ => {
+                return Err(format!(
+                    "rules_dir `{}` contains an unsupported path component {component:?}",
+                    rules_dir.display(),
+                ));
+            }
+        }
+    }
     if depth == 0 {
-        // rules_dir == root: the catalogue's `README.md` would
-        // overwrite the project's own README, and per-rule files
-        // would litter the repo root. Refuse before any write.
+        // rules_dir == root (or only `.` components): the
+        // catalogue's `README.md` would overwrite the project's
+        // own README, and per-rule files would litter the repo
+        // root. Refuse before any write.
         return Err(format!(
             "rules_dir `{}` resolves to the same directory as --root `{}`; \
              choose a subdirectory (e.g. `rules/`) so the catalogue's `README.md` \
@@ -288,5 +323,63 @@ fn main() -> ExitCode {
         CliCommand::Html { out_dir, git_ref } => run_html(&cli.root, &out_dir, &git_ref),
         CliCommand::CheckMd { rules_dir } => run_check_md(&cli.root, &rules_dir),
         CliCommand::WriteMd { rules_dir } => run_write_md(&cli.root, &rules_dir),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn source_link_prefix_for_typical_one_level() {
+        // The canonical layout: `rules_dir` directly inside
+        // `root`. Every rule .md climbs one directory.
+        let prefix = source_link_prefix_for(Path::new("/repo/rules"), Path::new("/repo"))
+            .expect("typical layout should resolve");
+        assert_eq!(prefix, "../");
+    }
+
+    #[test]
+    fn source_link_prefix_for_deeper_nesting() {
+        // Hypothetical multi-level layout. Three components →
+        // three `../` segments.
+        let prefix =
+            source_link_prefix_for(Path::new("/repo/docs/lints/rules"), Path::new("/repo"))
+                .expect("deeper layout should resolve");
+        assert_eq!(prefix, "../../../");
+    }
+
+    #[test]
+    fn source_link_prefix_for_root_equals_rules_dir_is_rejected() {
+        // Catalogue `README.md` would clobber the project's own.
+        let error = source_link_prefix_for(Path::new("/repo"), Path::new("/repo"))
+            .expect_err("rules_dir == root should be rejected");
+        assert!(error.contains("same directory"), "got: {error}");
+    }
+
+    #[test]
+    fn source_link_prefix_for_outside_root_is_rejected() {
+        let error = source_link_prefix_for(Path::new("/tmp/elsewhere"), Path::new("/repo"))
+            .expect_err("path outside --root should be rejected");
+        assert!(error.contains("not inside"), "got: {error}");
+    }
+
+    #[test]
+    fn source_link_prefix_for_parent_dir_segment_is_rejected() {
+        // Regression test: `std::path::absolute` doesn't collapse
+        // `..`, so a naive depth count would treat `rules/../rules`
+        // as depth 3 and produce broken `Source:` links. Reject
+        // the input instead.
+        let error = source_link_prefix_for(Path::new("/repo/rules/../rules"), Path::new("/repo"))
+            .expect_err("`..` in rules_dir should be rejected");
+        assert!(error.contains("`..`"), "got: {error}");
+    }
+
+    #[test]
+    fn source_link_prefix_for_cur_dir_segments_are_ignored() {
+        // `./rules/./` is semantically `rules/`; depth 1, not 3.
+        let prefix = source_link_prefix_for(Path::new("/repo/./rules/."), Path::new("/repo"))
+            .expect("`.` segments should be transparent");
+        assert_eq!(prefix, "../");
     }
 }
