@@ -262,9 +262,9 @@ checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 
 [[package]]
 name = "clippy_utils"
-version = "0.1.96"
+version = "0.1.97"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f89a5c65b57b45dfab53e86f7251c89e9112aa445e2596e336f76065e28e14cd"
+checksum = "bb170400201dae0f1738eadec962b57e5abd8743cf6a6c136a0fcd1994ae6c93"
 dependencies = [
  "arrayvec",
  "itertools",
@@ -396,9 +396,9 @@ dependencies = [
 
 [[package]]
 name = "dylint"
-version = "5.0.0"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa9a937bab540c0c8cdcbd650a572e6899ef2b6ffbc277d61bd2ae8d17c0edce"
+checksum = "b795f98802f87352aab60584eea87f942c53ab30edcafab4b31a6cbdd9e8a3ac"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -414,9 +414,9 @@ dependencies = [
 
 [[package]]
 name = "dylint_internal"
-version = "5.0.0"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e11f358a59510be7fa5c4f412729fabbe31a3587a342e4241a6a72020a2a0c5"
+checksum = "a03ff51e671fceef87e50fef97ddc1569241af242d76e0b367dfcc812c860eb0"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -424,21 +424,19 @@ dependencies = [
  "cargo_metadata",
  "git2",
  "home",
- "if_chain",
  "log",
  "regex",
- "rustversion",
  "serde",
  "tar",
  "thiserror 2.0.18",
- "toml 0.9.12+spec-1.1.0",
+ "toml 1.1.2+spec-1.1.0",
 ]
 
 [[package]]
 name = "dylint_linting"
-version = "5.0.0"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4588b33aafbd472a6468ad1521d74094faa2bbdb53d534c2d24320300ea94135"
+checksum = "c3efcb9b741bccdd6f1ce701c4b17b452112e8c0cd045c8b894a112584ff5d55"
 dependencies = [
  "cargo_metadata",
  "dylint_internal",
@@ -446,14 +444,14 @@ dependencies = [
  "rustversion",
  "serde",
  "thiserror 2.0.18",
- "toml 0.9.12+spec-1.1.0",
+ "toml 1.1.2+spec-1.1.0",
 ]
 
 [[package]]
 name = "dylint_testing"
-version = "5.0.0"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cdc27f344ddb5488eb16b6e0f8aec889a30fb7e4d135060d336cfa60d1fd671c"
+checksum = "2eaa3ca6e1f740cd587630c321f61927b4cafdc2abf7c2fbacc3fca8635fcc48"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -780,12 +778,6 @@ dependencies = [
  "icu_normalizer",
  "icu_properties",
 ]
-
-[[package]]
-name = "if_chain"
-version = "1.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd62e6b5e86ea8eeeb8db1de02880a6abc01a397b2ebb64b5d74ac255318f5cb"
 
 [[package]]
 name = "indexmap"
