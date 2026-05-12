@@ -25,16 +25,10 @@ jobs:
           # populated under the previous value, so the dirs are
           # excluded; the expensive plugin build still lives in the
           # main `target/` cache.
-          #
-          # `.dev-tools/` holds `cargo-dylint` and `dylint-link`
-          # installed by `just install-dev-tools` at the version
-          # pinned in Cargo.lock; caching it skips the from-source
-          # `cargo install` on subsequent runs with the same lockfile.
           path: |
             ~/.cargo
             ~/.dylint_drivers
             target
-            .dev-tools
             !target/integration-fixtures
             !target/integration-fixtures-warmup
           key: ${{ github.job }}-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}-${{ hashFiles('**/Cargo.lock') }}
@@ -58,10 +52,26 @@ jobs:
         with:
           tool: just
 
-      # `cargo-dylint` and `dylint-link` are pinned to the workspace's
-      # `dylint_linting` version via `just install-dev-tools`, which
-      # writes them under `.dev-tools/`. That dir is in the cache, so
-      # this step is a no-op on a cache hit.
+      # `.dev-tools/` only changes when `dylint_linting` is bumped, so
+      # cache it under a key tied to that version rather than to the
+      # whole `Cargo.lock`. Most lockfile churn (unrelated dep bumps)
+      # leaves this cache valid and skips the from-source rebuild of
+      # cargo-dylint and dylint-link.
+      - name: Read pinned dylint version
+        id: dylint-version
+        shell: bash
+        run: |
+          version=$(grep -A1 '^name = "dylint_linting"$' Cargo.lock | grep '^version' | head -1 | cut -d'"' -f2)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache .dev-tools
+        uses: actions/cache@v5
+        timeout-minutes: 1
+        continue-on-error: true
+        with:
+          path: .dev-tools
+          key: dev-tools-${{ runner.os }}-${{ steps.dylint-version.outputs.version }}
+
       - name: Install dylint tooling
         shell: bash
         run: just install-dev-tools
