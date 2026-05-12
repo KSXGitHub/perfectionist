@@ -142,6 +142,10 @@ fn dylint_version(root: &Path) -> Result<String, DylintVersionError> {
         .map_err(DylintVersionError::ReadManifest)?
         .dependencies
         .get(DYLINT_LIBRARY_CRATE)
-        .map(|dep| dep.req().to_owned())
-        .ok_or(DylintVersionError::NoData)
+        .ok_or(DylintVersionError::NoData)?
+        .try_req()
+        .ok()
+        .ok_or(DylintVersionError::NoData)?
+        .to_owned()
+        .pipe(Ok)
 }
