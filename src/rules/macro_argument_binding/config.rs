@@ -146,9 +146,7 @@ impl MacroArgumentBinding {
     /// *not* consider the call's delimiter or argument shape — those
     /// stay in the early-pass driver, where token-tree concerns live.
     pub(super) fn should_check_path(&self, path: &Path) -> bool {
-        self.enabled
-            && !matches_any(path, &self.ignore)
-            && self.arguments_should_be_checked(path)
+        self.enabled && !matches_any(path, &self.ignore) && self.arguments_should_be_checked(path)
     }
 
     fn arguments_should_be_checked(&self, path: &Path) -> bool {
