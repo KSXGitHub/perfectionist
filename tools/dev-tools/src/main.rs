@@ -14,16 +14,16 @@
 //! `.cargo/config.toml`) is not yet on PATH — can still compile it.
 
 use std::env;
-use std::fs::{OpenOptions, read_to_string};
+use std::fs::OpenOptions;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
+use cargo_toml::Manifest;
 use clap::{Parser, Subcommand};
 use command_extra::CommandExtra;
 use derive_more::Display;
 use pipe_trait::Pipe;
-use serde::Deserialize;
 
 const DYLINT_LIBRARY_CRATE: &str = "dylint_linting";
 const INSTALL_DIR: &str = ".dev-tools";
@@ -45,17 +45,6 @@ enum Sub {
     DylintVersion,
     #[clap(about = "Append `version=<dylint version>` to $GITHUB_OUTPUT")]
     GhaDylintVersion,
-}
-
-#[derive(Deserialize)]
-struct CargoLock {
-    package: Vec<LockedPackage>,
-}
-
-#[derive(Deserialize)]
-struct LockedPackage {
-    name: String,
-    version: String,
 }
 
 fn main() -> ExitCode {
@@ -141,23 +130,18 @@ fn gha_dylint_version(version: &str) -> Result<(), GhaDylintVersionError> {
 
 #[derive(Display)]
 enum DylintVersionError {
-    #[display("Failed to read Cargo.lock: {_0}")]
-    ReadLockFile(io::Error),
-    #[display("Failed to parse Cargo.lock: {_0}")]
-    ParseLockFile(toml::de::Error),
-    #[display("{DYLINT_LIBRARY_CRATE} not found in Cargo.lock")]
+    #[display("Failed to read Cargo.toml: {_0}")]
+    ReadManifest(cargo_toml::Error),
+    #[display("{DYLINT_LIBRARY_CRATE} is not a dependency in Cargo.toml")]
     NoData,
 }
 
 fn dylint_version(root: &Path) -> Result<String, DylintVersionError> {
-    root.join("Cargo.lock")
-        .pipe(read_to_string)
-        .map_err(DylintVersionError::ReadLockFile)?
-        .pipe_as_ref(toml::from_str::<CargoLock>)
-        .map_err(DylintVersionError::ParseLockFile)?
-        .package
-        .into_iter()
-        .find(|pkg| pkg.name == DYLINT_LIBRARY_CRATE)
-        .map(|pkg| pkg.version)
+    root.join("Cargo.toml")
+        .pipe(Manifest::from_path)
+        .map_err(DylintVersionError::ReadManifest)?
+        .dependencies
+        .get(DYLINT_LIBRARY_CRATE)
+        .map(|dep| dep.req().to_owned())
         .ok_or(DylintVersionError::NoData)
 }
