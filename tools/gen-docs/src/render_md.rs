@@ -115,12 +115,23 @@ pub(crate) fn render_index_md(rules: &[Rule]) -> String {
     out.push('\n');
     for rule in rules {
         let name = unnamespaced(&rule.namespaced);
+        // Split each entry across two lines: link + level on the
+        // first, the short description as a continuation paragraph
+        // after a blank line. The two-space indent on the
+        // continuation is what CommonMark requires to keep the
+        // paragraph attached to the list item; without it the
+        // description would render as a sibling paragraph
+        // following the list. The blank-line break makes the
+        // entries scan as cards in the rendered page and keeps
+        // long descriptions from running off the right margin in
+        // the raw markdown source.
         let _ = writeln!(
             out,
-            "- [`{name}`](./{name}.md) (default: `{level}`). {desc}",
+            "- [`{name}`](./{name}.md) (default: `{level}`).",
             level = rule.level.to_string().to_ascii_lowercase(),
-            desc = rule.short_desc,
         );
+        let _ = writeln!(out);
+        let _ = writeln!(out, "  {desc}", desc = rule.short_desc);
     }
     trim_trailing_blank_lines(&mut out);
     out
@@ -359,9 +370,13 @@ mod tests {
         let mut rule = fake_rule();
         rule.short_desc = "uses | inside".to_owned();
         let index = render_index_md(std::slice::from_ref(&rule));
-        // Bullet-list form, not a table: no `|` separator chars on
-        // the entry line, no escaping needed for `|` in the prose.
-        assert!(index.contains("- [`demo_rule`](./demo_rule.md) (default: `warn`). uses | inside"));
+        // Each entry spans two lines: the link/level line, then a
+        // blank line, then the indented short-description
+        // continuation paragraph.
+        assert!(index.contains("- [`demo_rule`](./demo_rule.md) (default: `warn`).\n"));
+        assert!(index.contains("\n  uses | inside\n"));
+        // The bullet-list form needs no `|` escaping (unlike a
+        // table) — the pipe in the description appears raw.
         assert!(!index.contains("\\|"));
     }
 
