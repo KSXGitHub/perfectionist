@@ -21,7 +21,7 @@ use syn::{
 
 use crate::extract::config::extract_config;
 use crate::extract::serde_attrs::doc_attrs_to_markdown;
-use crate::model::{Level, Rule};
+use crate::model::{Level, NAMESPACE, Rule};
 
 pub(crate) fn collect_rules(rules_dir: &Path) -> Vec<Rule> {
     let entries = fs::read_dir(rules_dir).expect("failed to read src/rules/");
@@ -109,7 +109,7 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
                     )
                 });
             let namespaced = format!(
-                "perfectionist::{}",
+                "{NAMESPACE}{}",
                 declaration.name.to_string().to_ascii_lowercase()
             );
             let doc_markdown = doc_attrs_to_markdown(&declaration.attrs);

@@ -9,7 +9,7 @@ pub(crate) mod markdown;
 
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 
-use crate::model::{Level, RenderContext, Rule};
+use crate::model::{Level, NAMESPACE, RenderContext, Rule};
 use crate::render::config::config_section;
 use crate::render::markdown::{HIGHLIGHT_CSS, markdown_inline_to_html, markdown_to_html};
 
@@ -47,7 +47,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     "perfectionist is a Dylint plugin; see the "
                     a href=(repo_url) { "README" }
                     " for setup. Lint-control attributes use the "
-                    code { "perfectionist::" } " namespace."
+                    code { (NAMESPACE) } " namespace."
                 }
                 h2 { "Index" }
                 table.index {
@@ -106,7 +106,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
         article.rule id=(anchor_for(&rule.namespaced)) {
             h2 {
                 code {
-                    span.lint-prefix { "perfectionist::" }
+                    span.lint-prefix { (NAMESPACE) }
                     span.lint-name { (unnamespaced(&rule.namespaced)) }
                 }
             }
@@ -138,7 +138,5 @@ fn anchor_for(namespaced: &str) -> String {
 }
 
 fn unnamespaced(namespaced: &str) -> &str {
-    namespaced
-        .strip_prefix("perfectionist::")
-        .unwrap_or(namespaced)
+    namespaced.strip_prefix(NAMESPACE).unwrap_or(namespaced)
 }
