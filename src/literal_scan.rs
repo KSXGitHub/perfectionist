@@ -1,12 +1,20 @@
-//! Helpers shared by the Unicode-ellipsis rules.
+//! Helpers shared by rules that scan string-literal / comment text.
 //!
-//! Both `unicode_ellipsis_in_comments` and
-//! `unicode_ellipsis_in_panic_messages` walk a stretch of source text,
-//! emit a diagnostic for each flagged character, and offer the same
-//! `...` autofix. The per-character logic is identical; the only
+//! [`emit_flagged_chars`] is used by both Unicode-ellipsis rules
+//! (`unicode_ellipsis_in_comments` and
+//! `unicode_ellipsis_in_panic_messages`): walk a stretch of source
+//! text, emit a diagnostic for each flagged character, and offer the
+//! same `...` autofix. The per-character logic is identical; the only
 //! per-rule pieces are the lint name, a context label, and how to
-//! turn a byte offset within the text into a [`Span`]. This module
-//! captures that shared shape so the two rules emit identically.
+//! turn a byte offset within the text into a [`Span`].
+//!
+//! [`string_literal_quote_lengths`] is the companion parser for any
+//! rule that needs to scan a string-literal body without its opening
+//! and closing delimiters. Currently used only by
+//! `unicode_ellipsis_in_panic_messages`'s literal scanner, but it
+//! sits here rather than inside that rule because the shape it
+//! recognises (plain and raw display strings) is a generic property
+//! of Rust string literals, not specific to ellipsis detection.
 
 use clippy_utils::diagnostics::span_lint_and_sugg;
 use rustc_errors::Applicability;

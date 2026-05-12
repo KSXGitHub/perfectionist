@@ -21,7 +21,7 @@ use std::collections::BTreeSet;
 /// becomes `["std", "vec"]`. An empty or all-empty input returns an
 /// empty vector; callers should treat that as "no matchable path" and
 /// skip the entry.
-pub fn parse_path(raw: &str) -> Vec<String> {
+pub(crate) fn parse_path(raw: &str) -> Vec<String> {
     raw.split("::")
         .map(str::trim)
         .filter(|segment| !segment.is_empty())
@@ -57,7 +57,7 @@ pub(crate) fn merge_with_builtins(
 }
 
 /// Returns `true` if any entry in `entries` matches the invocation path.
-pub fn matches_any(invocation: &rustc_ast::Path, entries: &BTreeSet<Vec<String>>) -> bool {
+pub(crate) fn matches_any(invocation: &rustc_ast::Path, entries: &BTreeSet<Vec<String>>) -> bool {
     entries.iter().any(|entry| entry_matches(entry, invocation))
 }
 
@@ -65,7 +65,7 @@ pub fn matches_any(invocation: &rustc_ast::Path, entries: &BTreeSet<Vec<String>>
 /// allocating a `Vec<String>` snapshot of the invocation. Single-segment
 /// entries match the path's final segment; multi-segment entries
 /// tail-match the path's segment sequence.
-pub fn entry_matches(entry: &[String], invocation: &rustc_ast::Path) -> bool {
+pub(crate) fn entry_matches(entry: &[String], invocation: &rustc_ast::Path) -> bool {
     let segments = &invocation.segments;
     if entry.is_empty() || segments.is_empty() {
         return false;

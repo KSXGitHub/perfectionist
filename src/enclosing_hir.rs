@@ -24,8 +24,9 @@ use rustc_span::Span;
 /// Walk the HIR once and, for each input span, return the deepest HIR
 /// node whose own span contains it. The returned vector has the same
 /// length and order as `target_spans`. A span not contained by any
-/// visited node — e.g. one that lies outside the crate's local HIR —
-/// maps to [`hir::CRATE_HIR_ID`].
+/// visited node — e.g. one inside a synthesised macro expansion whose
+/// enclosing item's span does not cover the call site — maps to
+/// [`hir::CRATE_HIR_ID`].
 pub(crate) fn find_enclosing_hir_ids(tcx: TyCtxt<'_>, target_spans: &[Span]) -> Vec<hir::HirId> {
     let mut best: Vec<hir::HirId> = vec![hir::CRATE_HIR_ID; target_spans.len()];
     let mut finder = EnclosingHirFinder {

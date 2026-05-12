@@ -1,15 +1,19 @@
 //! Classifiers for the "trivial single-expression callback"
 //! exemption.
 //!
-//! A closure is exempted if either:
-//! - its body is a single expression and the enclosing call is one of
-//!   the configured comparison / fold callees, or
-//! - its body is a single expression that is a trivial wrapper around
-//!   one of the closure's parameters (field access, method call, one-
-//!   argument call, reference).
+//! The exemption has a shared precondition and two acceptance
+//! branches. A closure qualifies when [`single_expression_body`]
+//! returns `Some` *and* either of the following holds:
 //!
-//! The helpers here decide each predicate. The driver in
-//! [`super`] composes them.
+//! - the enclosing call's callee — recovered via
+//!   [`parent_call_callee_name`] — is on the rule's configured
+//!   comparison / fold allowlist, or
+//! - the body is a trivial wrapper around one of the closure's
+//!   parameters (field access, method call, one-argument call,
+//!   reference), as decided by [`is_trivial_wrapper`].
+//!
+//! The driver in [`super`] composes these helpers; this module
+//! holds the predicates themselves.
 
 use rustc_hir as hir;
 use rustc_hir::def::Res;
