@@ -88,14 +88,16 @@ macro invocation:
   "What counts as a 'non-trivial' argument" below — literals,
   paths, `&path`, `path.field`, `base[index]`, `*path`, and
   casts.
-- If the macro is on the **allowlist** of macros known to
-  evaluate each top-level argument exactly once on the
-  taken control-flow path, the argument shape is
-  unconstrained. The `assert!`/`assert_eq!`/`assert_ne!`
-  family is included with a caveat — their *message-format*
-  args are evaluated only on the failure path, but they are
-  accepted on the strength of the condition/operand
-  guarantee. See "Mode 2" below for the full discussion.
+- If the macro is on the **allowlist**, the argument shape
+  is unconstrained. The criterion is roughly "operand
+  arguments are evaluated exactly once", and the curated
+  allowlist enumerates the macros that meet it: `format!`,
+  `println!`, `vec!`, `write!`, `anyhow!`, etc. The
+  `assert!`/`assert_eq!`/`assert_ne!` family is included by
+  policy with a known caveat — their *message-format* args
+  are evaluated only on the failure path (zero times when
+  the assertion passes). See "Mode 2" below for the full
+  discussion.
 - For every other macro, behaviour depends on the selected
   mode — see "Five eligibility modes" below. Briefly:
   `denylist_only` skips the invocation, `blanket` flags it,
