@@ -1,0 +1,93 @@
+# `perfectionist::macro_trailing_comma`
+
+**Default level:** `warn`  
+**Source:** [`src/rules/macro_trailing_comma.rs`](../src/rules/macro_trailing_comma.rs)
+
+> macro invocation does not follow rustfmt's vertical trailing-comma policy
+
+### What it does
+For function-like macro invocations whose top-level arguments are
+comma-separated, enforces rustfmt's `trailing_comma = "Vertical"`
+policy that rustfmt itself does not apply inside macro bodies:
+multi-line invocations must end with a trailing comma; single-line
+invocations must not.
+
+Eligibility is name-based — a curated list of `core` / `std` and
+well-known third-party macros (`vec!`, `format!`, `println!`,
+`assert_eq!`, `dbg!`, `log::info!`, `tracing::debug!`,
+`anyhow::bail!`, `maplit::hashmap!`, …), extended via
+`extra_name_based` and overridden via `ignore`.
+
+Attribute-style invocations (`#[derive(...)]`, `#[serde(...)]`,
+etc.) are out of scope.
+
+### Why restrict this?
+This is a stylistic preference, not a correctness issue. rustfmt's
+default `trailing_comma = "Vertical"` policy keeps argument lists
+uniform: every multi-line list ends with a comma, every single-line
+list does not. rustfmt opts out of macro bodies because a macro
+matcher *can* make the trailing comma load-bearing; for the curated
+macros covered by this lint, it cannot, and the policy applies
+without risk.
+
+Multi-line invocations whose first top-level token starts on the
+opening-delimiter line (visual-indent / compact layout, e.g.
+`vec![Inner { ... }]`) are skipped: rustfmt's `Vertical` policy
+only adds a trailing comma when each top-level item is on its
+own line, separate from the delimiter, and strips any comma
+added to the compact shape. The two tools have to agree.
+
+### Example
+```rust,ignore
+let xs = vec![
+    1,
+    2,
+    3
+];
+let ys = vec![1, 2, 3,];
+```
+Use instead:
+```rust,ignore
+let xs = vec![
+    1,
+    2,
+    3,
+];
+let ys = vec![1, 2, 3];
+```
+
+## Configuration
+
+Configure via `dylint.toml` under `["perfectionist::macro_trailing_comma"]`. Every field is optional; the per-field prose below states the default.
+
+### `enabled` — `boolean` (optional)
+
+Master on/off switch for the rule. Defaults to `true`. Set
+to `false` to silence every diagnostic this lint would emit
+without having to enumerate every macro under `ignore`.
+
+### `matcher_based` — `boolean` (optional)
+
+Accepted for forward compatibility with the matcher-based half of
+the rule. Currently a no-op — only name-based eligibility is
+implemented; see `planned-rules/macro-trailing-comma.md` for the
+status breakdown.
+
+### `extra_name_based` — `[string]` (optional)
+
+Additional macro paths to treat as name-based eligible, on top
+of the curated built-in list. Each entry is matched by its
+final path segment, so `"my_crate::vec_like"` and `"vec_like"`
+both target invocations whose last segment is `vec_like`.
+Empty by default. Only add macros whose trailing comma is
+syntactically optional at the top level; macros that treat
+the comma as a fully optional separator throughout (rather
+than only at the tail) should not be listed here.
+
+### `ignore` — `[string]` (optional)
+
+Macro paths to opt out of the rule, even if they would
+otherwise be eligible via the built-in list or
+`extra_name_based`. Matched by final path segment, like
+`extra_name_based`. Checked first, so this knob always wins
+over eligibility. Empty by default.

@@ -1,0 +1,64 @@
+# `perfectionist::unicode_ellipsis_in_panic_messages`
+
+**Default level:** `warn`  
+**Source:** [`src/rules/unicode_ellipsis_in_panic_messages.rs`](../src/rules/unicode_ellipsis_in_panic_messages.rs)
+
+> U+2026 HORIZONTAL ELLIPSIS in panic / assertion / expect messages; prefer `...`
+
+### What it does
+Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in the message of a
+panic-family or assertion-style macro (`panic!`,
+`unimplemented!`, `todo!`, `unreachable!`, `assert!`,
+`assert_eq!`, `assert_ne!`, `debug_assert*!`) and in the
+`expect` / `expect_err` argument on `Option` and `Result`.
+Prefer the three-ASCII-dot form `...`.
+
+### Why restrict this?
+This is a stylistic preference, not a correctness issue.
+Panic and assertion messages surface in stderr, CI logs, crash
+reporters, and on terminals whose locale or encoding may not
+be UTF-8. ASCII `...` renders identically everywhere.
+
+### Example
+```rust,ignore
+panic!("could not parse manifest…");
+let manifest = load().expect("config missing…");
+```
+Use instead:
+```rust,ignore
+panic!("could not parse manifest...");
+let manifest = load().expect("config missing...");
+```
+
+### Custom macros
+The `macros` configuration accepts any macro name, but the
+lint's per-macro knowledge of which argument is the message
+only covers the built-in panic / assertion macros. A custom
+macro added through this knob is treated as if its first
+argument were the message; an `assert_eq!`-shaped wrapper
+would therefore also scan its value-position literals. Adding
+per-macro skip counts requires extending the configuration
+schema and is out of scope for the initial rule.
+
+## Configuration
+
+Configure via `dylint.toml` under `["perfectionist::unicode_ellipsis_in_panic_messages"]`. Every field is optional; the per-field prose below states the default.
+
+### `macros` — `[string]` (optional)
+
+Macros whose call site should be scanned for the flagged
+characters. Defaults to the standard panic and assertion
+macros (`panic`, `unimplemented`, `todo`, `unreachable`,
+`debug_unreachable`, and the `assert*` family). Override to
+add project-specific assertion-shaped macros, or to narrow
+the set when a project deliberately uses `…` in one of them.
+
+### `methods` — `[string]` (optional)
+
+Method names on `Option` / `Result` whose first argument is
+the panic message. Defaults to `expect` and `expect_err`.
+
+### `also_flag` — `[string]` (optional)
+
+Extra characters to flag alongside U+2026, in the same spirit
+as `unicode_ellipsis_in_comments.also_flag`. Empty by default.

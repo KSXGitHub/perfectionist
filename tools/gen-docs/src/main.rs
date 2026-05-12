@@ -1,5 +1,4 @@
-//! Generate the static documentation site for perfectionist's
-//! implemented lints.
+//! Generate documentation for perfectionist's implemented lints.
 //!
 //! Reads each `src/rules/*.rs` (skipping `mod.rs`-style index files
 //! that don't declare a lint), locates the `declare_tool_lint!`
@@ -9,43 +8,88 @@
 //! In addition, when a rule's file defines a `Config` struct paired
 //! with a `CONFIG_KEY` constant, the configurable fields and any
 //! non-built-in types they reference (enums, project-local structs)
-//! are surfaced too. The output is a single self-contained
-//! `index.html` written into the directory passed on the command
-//! line.
+//! are surfaced too.
+//!
+//! The same extracted model feeds three output modes, selected via
+//! subcommand:
+//!
+//! - `html` writes the self-contained `index.html` GitHub Pages
+//!   reads (the project's public catalogue).
+//! - `write-md` writes a `rules/` directory with one markdown file
+//!   per rule plus a `README.md` index, intended for in-repo
+//!   browsing alongside `src/rules/` and `planned-rules/`.
+//! - `check-md` re-renders that same directory in memory and
+//!   compares it against the on-disk copy, failing the build if
+//!   anything drifts (missing files, orphan files, content
+//!   mismatch). Wired into CI so the in-repo markdown stays in
+//!   lockstep with the rule sources.
 
+mod check_md;
 mod extract;
 mod model;
 mod render;
+mod render_md;
 
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
 use cargo_toml::{Inheritable, Manifest};
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use command_extra::CommandExtra;
 use pipe_trait::Pipe;
 
+use crate::check_md::{CheckOutcome, check_rules_dir, write_rules_dir};
 use crate::extract::collect_rules;
-use crate::model::RenderContext;
+use crate::model::{RenderContext, Rule};
 use crate::render::render_page;
 
 #[derive(Parser)]
-#[clap(about = "Render perfectionist's lint catalogue to a static HTML page")]
+#[clap(about = "Render perfectionist's lint catalogue")]
 struct Cli {
-    #[clap(help = "Repository root containing Cargo.toml and src/rules/")]
-    root: PathBuf,
-
-    #[clap(help = "Output directory; index.html will be written here")]
-    out_dir: PathBuf,
-
     #[clap(
         long,
-        default_value = "master",
-        value_parser = clap::builder::NonEmptyStringValueParser::new(),
-        help = r#"Git ref the rendered "Source:" links should target; resolved to a commit SHA via `git rev-parse` so the links are permalinks"#,
+        default_value = ".",
+        global = true,
+        help = "Repository root containing Cargo.toml and src/rules/"
     )]
-    git_ref: String,
+    root: PathBuf,
+
+    #[clap(subcommand)]
+    command: CliCommand,
+}
+
+#[derive(Subcommand)]
+enum CliCommand {
+    /// Render the catalogue to a self-contained HTML page.
+    Html {
+        #[clap(help = "Output directory; index.html will be written here")]
+        out_dir: PathBuf,
+
+        #[clap(
+            long,
+            default_value = "master",
+            value_parser = clap::builder::NonEmptyStringValueParser::new(),
+            help = r#"Git ref the rendered "Source:" links should target; resolved to a commit SHA via `git rev-parse` so the links are permalinks"#,
+        )]
+        git_ref: String,
+    },
+
+    /// Check whether the on-disk markdown copy of the catalogue is
+    /// up to date with the rule sources. Exits non-zero if anything
+    /// drifts (content mismatch, missing file, orphan file).
+    CheckMd {
+        #[clap(help = "Directory containing one markdown file per rule, plus a README.md index")]
+        rules_dir: PathBuf,
+    },
+
+    /// Write the markdown copy of the catalogue, one file per rule
+    /// plus a `README.md` index. Files that no longer correspond to
+    /// any rule are removed.
+    WriteMd {
+        #[clap(help = "Directory to write the markdown catalogue into; created if missing")]
+        rules_dir: PathBuf,
+    },
 }
 
 fn resolve_git_ref(root: &Path, git_ref: &str) -> String {
@@ -74,19 +118,28 @@ fn resolve_git_ref(root: &Path, git_ref: &str) -> String {
         .to_owned()
 }
 
-fn main() -> ExitCode {
-    let Cli {
-        root,
-        out_dir,
-        git_ref,
-    } = Cli::parse();
+/// Collect the rule list every subcommand needs. Centralised here
+/// so the "no rules found" guard, the sort, and the rule-source
+/// path all have a single home; the subcommands focus on what to
+/// do *with* the list, not how to produce it.
+fn load_rules(root: &Path) -> Result<Vec<Rule>, ExitCode> {
+    let rules_src_dir = root.join("src").join("rules");
+    let mut rules = collect_rules(&rules_src_dir);
+    rules.sort_by(|a, b| a.namespaced.cmp(&b.namespaced));
+    if rules.is_empty() {
+        eprintln!("no rules found under {}", rules_src_dir.display());
+        return Err(ExitCode::FAILURE);
+    }
+    Ok(rules)
+}
 
+fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     // Resolve the user-supplied ref (typically a branch like `master`)
     // to a commit SHA so the rendered "Source:" links are permalinks
     // that survive future commits to the branch. The original ref is
     // kept for the page title and banner, which want to read as
     // "Showing docs for `master`" rather than a bare SHA.
-    let commit_sha = resolve_git_ref(&root, &git_ref);
+    let commit_sha = resolve_git_ref(root, git_ref);
 
     let manifest = Manifest::from_path(root.join("Cargo.toml")).expect("failed to read Cargo.toml");
     let crate_version = manifest
@@ -108,19 +161,15 @@ fn main() -> ExitCode {
         .map(|url| url.strip_suffix(".git").unwrap_or(url).to_owned())
         .unwrap_or_else(|| "https://github.com/KSXGitHub/perfectionist".to_owned());
 
-    let rules_dir = root.join("src").join("rules");
-    let mut rules = collect_rules(&rules_dir);
-    rules.sort_by(|a, b| a.namespaced.cmp(&b.namespaced));
+    let rules = match load_rules(root) {
+        Ok(rules) => rules,
+        Err(code) => return code,
+    };
 
-    if rules.is_empty() {
-        eprintln!("no rules found under {}", rules_dir.display());
-        return ExitCode::FAILURE;
-    }
-
-    fs::create_dir_all(&out_dir).expect("failed to create output directory");
+    fs::create_dir_all(out_dir).expect("failed to create output directory");
     let context = RenderContext {
         crate_version: &crate_version,
-        git_ref: &git_ref,
+        git_ref,
         commit_sha: &commit_sha,
         repo_url: &repo_url,
     };
@@ -130,4 +179,59 @@ fn main() -> ExitCode {
 
     eprintln!("wrote {} rule(s) to {}", rules.len(), index_path.display());
     ExitCode::SUCCESS
+}
+
+fn run_check_md(root: &Path, rules_dir: &Path) -> ExitCode {
+    let rules = match load_rules(root) {
+        Ok(rules) => rules,
+        Err(code) => return code,
+    };
+    match check_rules_dir(&rules, rules_dir) {
+        CheckOutcome::Clean => {
+            eprintln!(
+                "{} is up to date ({} rule(s))",
+                rules_dir.display(),
+                rules.len(),
+            );
+            ExitCode::SUCCESS
+        }
+        CheckOutcome::Drifted(report) => {
+            eprint!("{report}");
+            eprintln!(
+                "{} is out of date. Run `gen-docs write-md {}` to regenerate.",
+                rules_dir.display(),
+                rules_dir.display(),
+            );
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn run_write_md(root: &Path, rules_dir: &Path) -> ExitCode {
+    let rules = match load_rules(root) {
+        Ok(rules) => rules,
+        Err(code) => return code,
+    };
+    let summary = write_rules_dir(&rules, rules_dir);
+    eprintln!(
+        "wrote {} rule file(s) and {} index to {} ({} orphan(s) removed)",
+        summary.rules_written,
+        if summary.index_written {
+            "1"
+        } else {
+            "no"
+        },
+        rules_dir.display(),
+        summary.orphans_removed,
+    );
+    ExitCode::SUCCESS
+}
+
+fn main() -> ExitCode {
+    let cli = Cli::parse();
+    match cli.command {
+        CliCommand::Html { out_dir, git_ref } => run_html(&cli.root, &out_dir, &git_ref),
+        CliCommand::CheckMd { rules_dir } => run_check_md(&cli.root, &rules_dir),
+        CliCommand::WriteMd { rules_dir } => run_write_md(&cli.root, &rules_dir),
+    }
 }

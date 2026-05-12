@@ -1,0 +1,59 @@
+# `perfectionist::unicode_ellipsis_in_comments`
+
+**Default level:** `warn`  
+**Source:** [`src/rules/unicode_ellipsis_in_comments.rs`](../src/rules/unicode_ellipsis_in_comments.rs)
+
+> U+2026 HORIZONTAL ELLIPSIS in non-doc comments; prefer `...`
+
+### What it does
+Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in regular `//` and
+`/* */` comments. Doc comments (`///`, `//!`) are covered by a
+sibling lint.
+
+### Why restrict this?
+This is a stylistic preference, not a correctness issue.
+ASCII `...` survives every encoding round-trip, every terminal,
+every `grep` invocation, and every `git diff` viewer without
+rendering as `?` or a tofu box. The Unicode form usually arrives
+by accident from autocorrect.
+
+### Example
+```rust,ignore
+// TODO: handle the empty-tree case…
+```
+Use instead:
+```rust,ignore
+// TODO: handle the empty-tree case...
+```
+
+## Configuration
+
+Configure via `dylint.toml` under `["perfectionist::unicode_ellipsis_in_comments"]`. Every field is optional; the per-field prose below states the default.
+
+### `also_flag` — `[string]` (optional)
+
+Extra characters to flag alongside U+2026. Useful for catching
+near-relatives such as U+22EF MIDLINE HORIZONTAL ELLIPSIS (`⋯`)
+or U+2025 TWO DOT LEADER (`‥`) that the same autocorrect
+pipelines occasionally insert. Empty by default.
+
+### `scope` — `[Scope]` (optional)
+
+Which comment forms to scan. Defaults to both `line` (`//`)
+and `block` (`/* */`). Narrow this if a project intentionally
+uses one form for prose and wants the lint to ignore it.
+
+### Types
+
+#### `Scope` (enum)
+
+Selector for which comment syntaxes the rule scans.
+
+##### `"line"` (Rust: `Line`)
+
+`//`-prefixed line comments, including consecutive runs that
+rustc treats as a single logical comment.
+
+##### `"block"` (Rust: `Block`)
+
+`/* ... */` block comments, including nested ones.
