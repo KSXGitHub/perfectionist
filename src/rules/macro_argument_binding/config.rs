@@ -13,7 +13,7 @@ use rustc_ast::MacCall;
 
 use crate::macro_path::{matches_any, parse_path};
 
-pub(super) const CONFIG_KEY: &str = "perfectionist::macro_argument_binding";
+const CONFIG_KEY: &str = "perfectionist::macro_argument_binding";
 
 /// Macros whose argument list is checked unconditionally because the
 /// expansion is known to evaluate captures conditionally on a `cfg`
@@ -107,7 +107,7 @@ impl Default for Config {
 }
 
 pub struct MacroArgumentBinding {
-    pub(super) enabled: bool,
+    enabled: bool,
     mode: Mode,
     /// Built-in deny list plus `deny_extra`. Used in `DenyOnly` and
     /// `AllowAndDeny`.
@@ -120,7 +120,7 @@ pub struct MacroArgumentBinding {
     /// `Blanket` mode, which has no built-in allow list per the rule
     /// docs (`planned-rules/macro-argument-binding.md`).
     allow_extra: BTreeSet<Vec<String>>,
-    pub(super) ignore: BTreeSet<Vec<String>>,
+    ignore: BTreeSet<Vec<String>>,
 }
 
 impl MacroArgumentBinding {
@@ -141,7 +141,17 @@ impl MacroArgumentBinding {
         }
     }
 
-    pub(super) fn arguments_should_be_checked(&self, mac_call: &MacCall) -> bool {
+    /// Path-side eligibility: combines the `enabled` switch, the
+    /// `ignore` list, and the mode-based deny / allow lookup. Does
+    /// *not* consider the call's delimiter or argument shape — those
+    /// stay in the early-pass driver, where token-tree concerns live.
+    pub(super) fn should_check_path(&self, mac_call: &MacCall) -> bool {
+        self.enabled
+            && !matches_any(&mac_call.path, &self.ignore)
+            && self.arguments_should_be_checked(mac_call)
+    }
+
+    fn arguments_should_be_checked(&self, mac_call: &MacCall) -> bool {
         let on_deny = matches_any(&mac_call.path, &self.deny);
         match self.mode {
             Mode::DenyOnly => on_deny,

@@ -26,8 +26,6 @@ use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Span;
 
-use crate::macro_path::matches_any;
-
 mod config;
 mod late;
 mod triviality;
@@ -112,21 +110,16 @@ pub(crate) static PENDING_VIOLATIONS: Mutex<Vec<Span>> = Mutex::new(Vec::new());
 
 impl EarlyLintPass for MacroArgumentBinding {
     fn check_mac(&mut self, _lint_context: &EarlyContext<'_>, mac_call: &MacCall) {
-        if !self.enabled {
+        // Curly-brace invocations are DSL bodies; skip them. The
+        // delimiter check is on AST shape, not path / config, so it
+        // lives here rather than behind `should_check_path`.
+        if mac_call.args.delim == Delimiter::Brace {
             return;
         }
-        let args = &mac_call.args;
-        // Curly-brace invocations are DSL bodies; skip them.
-        if args.delim == Delimiter::Brace {
+        if !self.should_check_path(mac_call) {
             return;
         }
-        if matches_any(&mac_call.path, &self.ignore) {
-            return;
-        }
-        if !self.arguments_should_be_checked(mac_call) {
-            return;
-        }
-        let Some(arguments) = split_top_level_arguments(&args.tokens) else {
+        let Some(arguments) = split_top_level_arguments(&mac_call.args.tokens) else {
             return;
         };
         for argument in arguments {
