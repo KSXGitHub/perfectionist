@@ -8,7 +8,9 @@ version = "0.0.0"
 dependencies = [
  "cargo_toml",
  "clap",
+ "command-extra",
  "maud",
+ "pipe-trait",
  "proc-macro2",
  "pulldown-cmark",
  "quote",
