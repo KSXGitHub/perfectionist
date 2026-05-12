@@ -7,19 +7,19 @@
 
 > U+2026 HORIZONTAL ELLIPSIS in non-doc comments; prefer `...`
 
-### What it does
+## What it does
 Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in regular `//` and
 `/* */` comments. Doc comments (`///`, `//!`) are covered by a
 sibling lint.
 
-### Why restrict this?
+## Why restrict this?
 This is a stylistic preference, not a correctness issue.
 ASCII `...` survives every encoding round-trip, every terminal,
 every `grep` invocation, and every `git diff` viewer without
 rendering as `?` or a tofu box. The Unicode form usually arrives
 by accident from autocorrect.
 
-### Example
+## Example
 ```rust,ignore
 // TODO: handle the empty-tree case…
 ```

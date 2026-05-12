@@ -7,11 +7,11 @@
 
 > `let` binding has a single-letter name
 
-### What it does
+## What it does
 Flags `let x = ...;` bindings whose identifier is one ASCII
 letter, outside `#[cfg(test)]` code.
 
-### Why restrict this?
+## Why restrict this?
 This is a stylistic preference, not a correctness issue.
 A descriptive `let` binding documents what the right-hand
 side computed; a single-letter name does not. The rule
@@ -21,7 +21,7 @@ switches off entirely under `#[cfg(test)]` where fixtures
 such as `let a = ...; let b = ...;` for interchangeable
 specimens are a recognised idiom.
 
-### Example
+## Example
 ```rust,ignore
 let m = entry.metadata()?;
 ```

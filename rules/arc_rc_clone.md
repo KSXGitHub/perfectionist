@@ -7,7 +7,7 @@
 
 > calling `.clone()` on an `Arc<T>` or `Rc<T>`; prefer the qualified `Arc::clone` / `Rc::clone` form
 
-### What it does
+## What it does
 Flags `value.clone()` where `value` is an `Arc<T>` or `Rc<T>`,
 and suggests rewriting it as the qualified `Arc::clone(...)` /
 `Rc::clone(...)` form. For a receiver of type `Arc<T>` /
@@ -23,7 +23,7 @@ untouched. The lint targets only the method-call shape, which
 reads as a generic `Clone` call rather than the cheap refcount
 bump it actually is.
 
-### Why restrict this?
+## Why restrict this?
 This is a stylistic preference, not a correctness issue.
 `Arc<T>` and `Rc<T>` implement `Clone` precisely so the method
 call compiles; the practice forbidden here is the *method-call
@@ -47,7 +47,7 @@ reasons to prefer them:
   invocation whose cost is unknown without checking the
   binding's type.
 
-### Example
+## Example
 ```rust,ignore
 fn spawn_worker(state: std::sync::Arc<State>) {
     let copy = state.clone();

@@ -7,7 +7,7 @@
 
 > macro invocation passes a non-trivial expression that should be bound to a `let` first
 
-### What it does
+## What it does
 Flags non-trivial expressions passed as top-level arguments to a
 function-like (`name!(...)`) or array-like (`name![...]`) macro
 invocation. The fix is to bind the expression to a `let` first
@@ -19,7 +19,7 @@ convention they are DSL bodies (`thread_local! { ... }`,
 `quote! { ... }`, `html! { ... }`) where the evaluation
 contract is the macro's, not the call site's.
 
-### Why is this bad?
+## Why is this bad?
 A function-like or array-like macro may evaluate any top-level
 argument zero, one, or many times depending on its matcher.
 Functions guarantee exactly-once evaluation per argument; macros
@@ -41,7 +41,7 @@ The same trap covers any macro that expands its capture more
 than once (`min!`/`max!`-style, retry loops): a side-effecting
 expression repeated produces wrong results.
 
-### Example
+## Example
 ```rust,ignore
 debug_assert_eq!(map.insert(key, value), None, "duplicate");
 ```

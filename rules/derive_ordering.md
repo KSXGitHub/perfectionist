@@ -7,7 +7,7 @@
 
 > trait names in a `#[derive(...)]` list are not in the configured order
 
-### What it does
+## What it does
 Enforces a project-wide ordering of trait names inside a single
 `#[derive(...)]` list. Three styles are configurable via
 `style`:
@@ -24,7 +24,7 @@ does not police how derives are partitioned across multiple
 `#[derive(...)]` lines — that's a layout decision left to the
 author.
 
-### Why restrict this?
+## Why restrict this?
 This is a stylistic preference, not a correctness issue. The
 trait order inside `#[derive(...)]` has no semantic effect:
 `#[derive(Debug, Clone)]` and `#[derive(Clone, Debug)]`
@@ -33,7 +33,7 @@ derive lists scan uniformly across the codebase. `cargo fmt`
 does not reorder derives, so this lint is the only mechanism
 for enforcing one.
 
-### Example
+## Example
 Under `style = "alphabetical"`:
 ```rust,ignore
 #[derive(Debug, Clone, Copy)]

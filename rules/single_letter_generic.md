@@ -7,12 +7,12 @@
 
 > generic type parameter has a single-letter name
 
-### What it does
+## What it does
 Flags generic type parameters whose identifier is one ASCII
 letter (`T`, `U`, `K`, `V`, …), except inside trait `impl`
 blocks whose body fits within a small line threshold.
 
-### Why restrict this?
+## Why restrict this?
 This is a stylistic preference, not a correctness issue.
 Single-letter generic names propagate through the type
 signatures and bounds; in a long impl block they force
@@ -24,7 +24,7 @@ the canonical `impl<T> From<T> for Wrapper<T>` shape
 where the body is small enough that a reader cannot lose
 track of `T`.
 
-### Example
+## Example
 ```rust,ignore
 pub fn collect_keys<K, V>(map: BTreeMap<K, V>) -> Vec<K> {
     /* fifty lines */

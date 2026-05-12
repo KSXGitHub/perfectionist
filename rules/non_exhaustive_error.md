@@ -7,7 +7,7 @@
 
 > error-shaped type is missing `#[non_exhaustive]`
 
-### What it does
+## What it does
 Flags publicly-exposed error enums that lack a `#[non_exhaustive]`
 attribute. An enum is treated as an error enum when its name ends
 in `Error` (configurable) or it implements `std::error::Error`.
@@ -17,7 +17,7 @@ itself an enum) follow the same rule.
 "Publicly-exposed" defaults to `pub` items; `pub(crate)` and the
 whole-crate "every item" sweep are configurable.
 
-### Why restrict this?
+## Why restrict this?
 This is a stylistic preference, not a correctness issue. Adding
 a variant to an error enum is one of the most common reasons to
 publish a new minor version of an error-producing library, and
@@ -34,7 +34,7 @@ The lint therefore defaults to `Allow` — enable it per crate
 with `#![warn(perfectionist::non_exhaustive_error)]` (or
 `deny`) on projects that want it.
 
-### Example
+## Example
 ```rust,ignore
 #[derive(Debug)]
 pub enum RuntimeError {

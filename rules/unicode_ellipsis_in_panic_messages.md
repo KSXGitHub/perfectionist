@@ -7,7 +7,7 @@
 
 > U+2026 HORIZONTAL ELLIPSIS in panic / assertion / expect messages; prefer `...`
 
-### What it does
+## What it does
 Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in the message of a
 panic-family or assertion-style macro (`panic!`,
 `unimplemented!`, `todo!`, `unreachable!`, `assert!`,
@@ -15,13 +15,13 @@ panic-family or assertion-style macro (`panic!`,
 `expect` / `expect_err` argument on `Option` and `Result`.
 Prefer the three-ASCII-dot form `...`.
 
-### Why restrict this?
+## Why restrict this?
 This is a stylistic preference, not a correctness issue.
 Panic and assertion messages surface in stderr, CI logs, crash
 reporters, and on terminals whose locale or encoding may not
 be UTF-8. ASCII `...` renders identically everywhere.
 
-### Example
+## Example
 ```rust,ignore
 panic!("could not parse manifest…");
 let manifest = load().expect("config missing…");
@@ -32,7 +32,7 @@ panic!("could not parse manifest...");
 let manifest = load().expect("config missing...");
 ```
 
-### Custom macros
+## Custom macros
 The `macros` configuration accepts any macro name, but the
 lint's per-macro knowledge of which argument is the message
 only covers the built-in panic / assertion macros. A custom

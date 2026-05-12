@@ -7,13 +7,13 @@
 
 > submodule defined as `module/mod.rs`; prefer the flat `module.rs` layout
 
-### What it does
+## What it does
 Forbids the `module/mod.rs` layout for submodules. Each
 submodule should be defined by a sibling file named after
 the module (`module.rs`), with any nested children placed
 inside the `module/` directory next to it.
 
-### Why restrict this?
+## Why restrict this?
 This is a stylistic preference, not a correctness issue.
 The flat layout keeps the file name unique to its module,
 so editors, terminal tabs, and `grep` results identify the
@@ -21,7 +21,7 @@ module without their parent directory. The `mod.rs` form
 produces dozens of identically-named tabs in editors that
 don't disambiguate by directory.
 
-### Example
+## Example
 ```text
 // Bad
 src/foo/mod.rs

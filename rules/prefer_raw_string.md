@@ -7,7 +7,7 @@
 
 > string literal contains only raw-expressible escapes; prefer the raw-string form
 
-### What it does
+## What it does
 Forbids regular string literals whose only backslash escapes
 are ones a raw string would express verbatim — `\"`, `\\`,
 and `\'`. The autofix rewrites the literal to the raw form
@@ -30,7 +30,7 @@ inexpressible escapes is also left alone; the rewrite would
 force the author to split the literal or fall back to
 `concat!`, which loses more than it gains.
 
-### Why restrict this?
+## Why restrict this?
 This is a stylistic preference, not a correctness issue. The
 rule trades one noise source (interior backslash escapes)
 for a slightly more elaborate string syntax. The benefit is
@@ -38,7 +38,7 @@ highest in strings full of file paths, regex patterns, JSON
 snippets, or embedded source code — all of which would
 otherwise be a sea of `\\` and `\"`.
 
-### Example
+## Example
 ```rust,ignore
 let json = "{\"name\":\"foo\"}";
 let path = "C:\\Users\\foo\\bar";
