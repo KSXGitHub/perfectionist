@@ -304,15 +304,44 @@ fn source_path_str(rule: &Rule) -> String {
 /// longer a heading.
 fn promote_headings(markdown: &str) -> String {
     let mut out = String::with_capacity(markdown.len());
-    let mut in_fence = false;
+    // Track the open fence's marker character and length per
+    // CommonMark §4.5: a fenced code block opened with N
+    // backticks closes only on a line of M ≥ N backticks (and
+    // nothing else); the same rule with `~`. The two fence
+    // characters are independent — a `~~~` inside a triple-
+    // backtick block is body content, not a close marker.
+    // Storing only a `bool` would incorrectly toggle on either,
+    // and a future rule whose example used both kinds of fence
+    // would silently corrupt rendered output.
+    let mut open_fence: Option<(u8, usize)> = None;
     for line in markdown.split_inclusive('\n') {
         let trimmed = line.trim_start_matches([' ', '\t']);
-        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
-            in_fence = !in_fence;
+        let fence_marker = if trimmed.starts_with("```") {
+            Some(b'`')
+        } else if trimmed.starts_with("~~~") {
+            Some(b'~')
+        } else {
+            None
+        };
+        if let Some(marker) = fence_marker {
+            let length = trimmed.bytes().take_while(|&b| b == marker).count();
+            match open_fence {
+                None => open_fence = Some((marker, length)),
+                Some((open_marker, open_length))
+                    if open_marker == marker && length >= open_length =>
+                {
+                    open_fence = None;
+                }
+                Some(_) => {
+                    // Mismatched marker or shorter run: this is
+                    // body content of the open fence, not a close
+                    // marker. Stay inside the fence.
+                }
+            }
             out.push_str(line);
             continue;
         }
-        if in_fence {
+        if open_fence.is_some() {
             out.push_str(line);
             continue;
         }
@@ -505,5 +534,42 @@ mod tests {
         // A line of seven `#` is not a heading per CommonMark.
         let out = promote_headings("####### not a heading\n");
         assert_eq!(out, "####### not a heading\n");
+    }
+
+    #[test]
+    fn promote_headings_distinguishes_fence_markers() {
+        // A triple-backtick fence stays open through a `~~~` line
+        // in its body — `~~~` is the wrong marker, so it's not a
+        // close — and any `## inside` between them must not be
+        // treated as a heading. Per CommonMark §4.5, fence char
+        // and length both matter for the close.
+        let input = "```rust\n## inside backtick fence\n~~~\nstill inside\n```\n## outside\n";
+        let out = promote_headings(input);
+        // The body lines pass through verbatim.
+        assert!(
+            out.contains("## inside backtick fence\n"),
+            "body should be untouched: {out}"
+        );
+        assert!(out.contains("~~~\n"), "tilde line should pass: {out}");
+        // The line after the close-fence is outside; promote it.
+        assert!(out.contains("# outside\n"), "outside promoted: {out}");
+        assert!(
+            !out.contains("\n## outside\n"),
+            "outside should be promoted, not left at h2: {out}"
+        );
+    }
+
+    #[test]
+    fn promote_headings_requires_matching_close_length() {
+        // Per CommonMark §4.5, a fence opened with 4 backticks
+        // closes only on ≥ 4 backticks. A 3-backtick line inside
+        // is body, not a close.
+        let input = "````\n```\n## inside long fence\n````\n## outside\n";
+        let out = promote_headings(input);
+        assert!(
+            out.contains("## inside long fence\n"),
+            "inside long fence should pass: {out}"
+        );
+        assert!(out.contains("# outside\n"), "outside promoted: {out}");
     }
 }
