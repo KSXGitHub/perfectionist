@@ -9,6 +9,10 @@ macro_rules! arrow_macro {
     }};
 }
 
+macro_rules! await_macro {
+    ($($tokens:tt)*) => {{ 0 }};
+}
+
 // `debug_assert_eq!` is on the built-in deny list. The first argument
 // is a non-trivial method call; in release builds the macro folds to
 // `if false { ... }` and the call never runs, leaving the map in a
@@ -96,6 +100,20 @@ fn _all_trivial_shapes_accepted() {
 // Single-argument deny-listed call with a non-trivial expression.
 fn _single_argument_deny() {
     debug_assert!(value().is_some());
+}
+
+// `.await` is `ExprKind::Await`, not a field access — non-trivial
+// per the spec. Without the explicit `await`-keyword rejection in
+// the dot-suffix branch, the walker would consume `.await` as a
+// "trivial field access" and silently accept the whole expression.
+// `await_macro!` is uncatalogued so default-mode flags non-trivial
+// args — that's what we verify here. The macro swallows the tokens
+// rather than emitting an `expr` so the fixture stays valid under
+// the test harness's default edition (no real `async fn` needed).
+fn _await_suffix_flagged() {
+    let future = ();
+    let _ = future;
+    let _ = await_macro!(future.await);
 }
 
 // Empty top-level argument list — nothing to check, no false positive.

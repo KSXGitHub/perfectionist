@@ -152,6 +152,12 @@ fn take_trivial_suffixes(mut tokens: &[TokenTree]) -> &[TokenTree] {
         match head {
             TokenTree::Token(token, _) => match token.kind {
                 // `.ident` (field access) or `.0` (tuple index).
+                // Postfix `.await` is *not* a field access — it's
+                // `ExprKind::Await`, which the rule docs list as
+                // non-trivial. Reject the `await` keyword explicitly so
+                // `future.await` correctly falls out as non-trivial.
+                // (`r#await` as a raw ident remains a literal field
+                // access and stays accepted via the catch-all arm.)
                 TokenKind::Dot => {
                     let Some((next, after)) = rest.split_first() else {
                         return tokens;
@@ -160,6 +166,9 @@ fn take_trivial_suffixes(mut tokens: &[TokenTree]) -> &[TokenTree] {
                         return tokens;
                     };
                     match next_token.kind {
+                        TokenKind::Ident(name, IdentIsRaw::No) if name == kw::Await => {
+                            return tokens;
+                        }
                         TokenKind::Ident(_, _) | TokenKind::Literal(_) => tokens = after,
                         _ => return tokens,
                     }
