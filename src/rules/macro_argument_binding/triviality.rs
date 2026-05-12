@@ -25,8 +25,8 @@ use rustc_span::kw;
 /// `=>` is ordinary content here — match-arm syntax inside `matches!`
 /// shows up as a top-level fat arrow but is meaningful to the macro,
 /// not a separator. The walker passes it through unchanged so each
-/// argument's `looks_like_expression` check can skip it as a non-
-/// expression position the macro author chose.
+/// argument's `looks_like_expression` check can skip it as a
+/// non-expression position the macro author chose.
 pub(super) fn split_top_level_arguments(stream: &TokenStream) -> Option<Vec<Vec<TokenTree>>> {
     let mut arguments: Vec<Vec<TokenTree>> = Vec::new();
     let mut current: Vec<TokenTree> = Vec::new();

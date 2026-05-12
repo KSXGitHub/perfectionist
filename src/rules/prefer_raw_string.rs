@@ -319,8 +319,8 @@ fn take_literal_char(input: &str) -> Option<(&str, &str)> {
 /// `"<n #s>` sequence does not appear inside `decoded`.
 ///
 /// In practice this is 0 for paths and 1 for JSON / HTML snippets;
-/// longer runs only matter when the literal itself embeds raw-
-/// string source text.
+/// longer runs only matter when the literal itself embeds
+/// raw-string source text.
 fn minimal_hash_count(decoded: &str) -> usize {
     let mut hashes = String::new();
     let mut count: usize = 0;
