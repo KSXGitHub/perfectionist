@@ -61,9 +61,9 @@ what the macro does with its captures.
 For a function-like (`name!(...)`) or array-like (`name![...]`)
 macro invocation:
 
-- If the macro is on the **denylist**, every non-trivial
+- If the macro is on the **deny list**, every non-trivial
   top-level argument is flagged.
-- If the macro is on the **allowlist**, the argument shape is
+- If the macro is on the **allow list**, the argument shape is
   unconstrained.
 - For every other macro, behaviour depends on the configured
   `mode` (see "Eligibility modes" below).
@@ -107,7 +107,7 @@ Four modes ordered by implementation cost. The default is
 
 ### Mode 0 — `deny_only`
 
-Flag only invocations of the curated denylist (`debug_assert!`,
+Flag only invocations of the curated deny list (`debug_assert!`,
 `debug_assert_eq!`, `debug_assert_ne!`) plus any `deny_extra`
 entries. Every other macro is silently accepted.
 
@@ -120,7 +120,7 @@ macros.
 Flag every function-like or array-like invocation that carries
 a non-trivial top-level argument, regardless of macro. Add
 specific exceptions to `allow_extra`; there is no built-in
-allowlist in this mode.
+allow list in this mode.
 
 The maximum-paranoia stance. Not the default because
 `format!("hello {name}", compute())` is fine in practice and
@@ -130,13 +130,13 @@ flagging every macro invocation is exhausting.
 
 Three name-set lookups decide each invocation:
 
-1. **Denylist hit** (`debug_assert*` plus `deny_extra`) → flag
+1. **Deny-list hit** (`debug_assert*` plus `deny_extra`) → flag
    every non-trivial argument.
-2. **Allowlist hit** (the curated set below plus `allow_extra`)
+2. **Allow-list hit** (the curated set below plus `allow_extra`)
    → accept unconditionally.
 3. **Neither** → flag every non-trivial argument.
 
-The default allowlist tracks the curated set in
+The default allow list tracks the curated set in
 [`macro-trailing-comma`](./macro-trailing-comma.md), with the
 conditional-evaluation families (`log::*`, `tracing::*`)
 removed: `format!`, `format_args!`, `print!`, `println!`,
@@ -152,7 +152,7 @@ trust to evaluate each argument exactly once.
 
 ### Mode 3 — `matcher_based`
 
-Layers on top of mode 2. The allowlist and denylist are
+Layers on top of mode 2. The allow list and deny list are
 consulted first; the matcher walk runs only on `macro_rules!`
 macros that would otherwise be unknown.
 
@@ -162,7 +162,7 @@ count occurrences of `$name` in the expansion:
 
 - Exactly one, not nested inside any `$( ... )*` / `$( ... )+` /
   `$( ... )?` repetition → the argument is evaluated exactly
-  once. Treat the invocation as allowlisted.
+  once. Treat the invocation as allow-listed.
 - Zero, two or more, or any occurrence inside a repetition or
   conditional fragment → flag the invocation.
 
@@ -225,10 +225,10 @@ debug_assert_eq!(ejected, None, "duplicate key");
 debug_assert_eq!(count, MAX_RETRIES, "expected {MAX_RETRIES} retries");
 ```
 
-### Allowlisted macros pass through
+### Allow-listed macros pass through
 
 ```rust
-// Accepted — `format!` is on the curated allowlist; arguments
+// Accepted — `format!` is on the curated allow list; arguments
 // are evaluated exactly once.
 let msg = format!("retrying {} ({} failures)", endpoint, count.fetch_add(1, Ordering::Relaxed));
 ```
@@ -236,13 +236,13 @@ let msg = format!("retrying {} ({} failures)", endpoint, count.fetch_add(1, Orde
 ### Array-like invocation is in scope
 
 ```rust
-// Accepted under default config — `vec!` is on the allowlist.
+// Accepted under default config — `vec!` is on the allow list.
 let xs = vec![compute(), compute(), compute()];
 ```
 
 ```rust
 // Flagged under blanket mode — every non-trivial argument is
-// a candidate, allowlist or not.
+// a candidate, allow list or not.
 let xs = vec![compute(), compute(), compute()];
 
 // Good (blanket-mode rewrite)
@@ -291,14 +291,14 @@ enabled = true
 # Eligibility mode. Defaults to "allow_and_deny".
 mode = "allow_and_deny"
 
-# Macros added to the built-in denylist. Each entry is a
+# Macros added to the built-in deny list. Each entry is a
 # fully-qualified macro path (no trailing `!`) or a bare macro
 # name to match by final segment only.
 deny_extra = [
   # "my_crate::sometimes_evaluates",
 ]
 
-# Macros added to the built-in allowlist.
+# Macros added to the built-in allow list.
 allow_extra = [
   # "serde_json::json",
 ]
@@ -369,4 +369,4 @@ Warn.
 - [`format-macro-wrap`](./format-macro-wrap.md) and
   [`print-macro-split`](./print-macro-split.md) operate on the
   *template literal* inside their target macros. Those rules'
-  target macros are all on this rule's default allowlist.
+  target macros are all on this rule's default allow list.

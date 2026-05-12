@@ -168,8 +168,8 @@ pattern that several rules call out by reference — live in
   (release builds skip evaluation entirely) and the general
   class of "macros don't promise exactly-once argument
   evaluation". Four `mode` values ordered by implementation
-  cost: a tiny denylist of `debug_assert*`, an opt-in blanket
-  ban, the default curated allowlist + denylist, and
+  cost: a tiny deny list of `debug_assert*`, an opt-in blanket
+  ban, the default curated allow + deny lists, and
   matcher-based analysis for unknown `macro_rules!` macros that
   counts each `$name:expr` capture's `$name` references in the
   expansion. Curly-brace invocations are out of scope.
