@@ -82,12 +82,11 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
         return Vec::new();
     }
 
-    // A module with multiple `declare_tool_lint!` blocks is a
-    // sub-lint family (e.g. `single_letter_names`'s four lints).
-    // The configuration block is shared across the family — it
-    // lives once at module scope and is keyed by the module name,
-    // not by any individual sub-lint name — so attach it to every
-    // rule emitted from this file.
+    // The convention is one rule per file with its own `Config`,
+    // so `macro_items` is expected to have exactly one entry. The
+    // code below still handles a multi-lint file defensively —
+    // every emitted rule receives the same `config` value — but
+    // no rule in the catalogue uses that shape today.
     let config = extract_config(source_path, &file);
     let relative_source: std::path::PathBuf = source_path
         .components()
