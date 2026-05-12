@@ -14,6 +14,7 @@ use rustc_session::Session;
 
 dylint_linting::dylint_library!();
 
+mod macro_path;
 mod rules;
 
 #[unsafe(no_mangle)]
@@ -32,6 +33,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         arc_rc_clone
         derive_ordering
         flat_module_pattern
+        macro_argument_binding
         macro_trailing_comma
         non_exhaustive_error
         prefer_raw_string

@@ -1,0 +1,51 @@
+warning: non-trivial expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:11:22
+   |
+LL |     debug_assert_eq!(map.insert(0, 0), None, "duplicate key");
+   |                      ^^^^^^^^^^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+   = note: `#[warn(perfectionist::macro_argument_binding)]` on by default
+
+warning: non-trivial expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:17:19
+   |
+LL |     debug_assert!(value().is_some());
+   |                   ^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+
+warning: non-trivial expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:25:22
+   |
+LL |     debug_assert_ne!(value(), Some(0));
+   |                      ^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+
+warning: non-trivial expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:25:31
+   |
+LL |     debug_assert_ne!(value(), Some(0));
+   |                               ^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+
+warning: non-trivial expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:33:23
+   |
+LL |     let _ = my_macro!(value(), count);
+   |                       ^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+
+warning: non-trivial expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:91:19
+   |
+LL |     debug_assert!(value().is_some());
+   |                   ^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+
+warning: 6 warnings emitted
+

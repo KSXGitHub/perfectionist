@@ -1,0 +1,59 @@
+//! Shared helpers for matching macro-invocation paths against configured
+//! name lists. Used by every rule that classifies an `ast::MacCall`
+//! against a curated name set; see the rules in `src/rules/` that work
+//! with `EarlyLintPass::check_mac`.
+//!
+//! Match semantics:
+//!
+//! - A single-segment entry matches by the invocation path's final
+//!   segment, so `vec!`, `std::vec!`, and `::std::vec!` all match the
+//!   `"vec"` entry.
+//! - A multi-segment entry tail-matches the invocation path's segment
+//!   sequence, so the entry `"inner::their_macro"` matches both
+//!   `inner::their_macro!(...)` and `outer::inner::their_macro!(...)`.
+//! - Per-segment whitespace is trimmed and empty segments are dropped,
+//!   so `"  std::vec  "` is equivalent to `"std::vec"`.
+
+use std::collections::BTreeSet;
+
+/// Split a configured `"a::b::c"`-style path into its segments. Trims
+/// per-segment whitespace and drops empty segments — `"  std::vec  "`
+/// becomes `["std", "vec"]`. An empty or all-empty input returns an
+/// empty vector; callers should treat that as "no matchable path" and
+/// skip the entry.
+pub fn parse_path(raw: &str) -> Vec<String> {
+    raw.split("::")
+        .map(str::trim)
+        .filter(|segment| !segment.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+/// Returns `true` if any entry in `entries` matches the invocation path.
+pub fn matches_any(invocation: &rustc_ast::Path, entries: &BTreeSet<Vec<String>>) -> bool {
+    entries.iter().any(|entry| entry_matches(entry, invocation))
+}
+
+/// Match a configured entry against an invocation path without
+/// allocating a `Vec<String>` snapshot of the invocation. Single-segment
+/// entries match the path's final segment; multi-segment entries
+/// tail-match the path's segment sequence.
+pub fn entry_matches(entry: &[String], invocation: &rustc_ast::Path) -> bool {
+    let segments = &invocation.segments;
+    if entry.is_empty() || segments.is_empty() {
+        return false;
+    }
+    if entry.len() == 1 {
+        segments
+            .last()
+            .is_some_and(|segment| segment.ident.name.as_str() == entry[0])
+    } else if segments.len() < entry.len() {
+        false
+    } else {
+        let start = segments.len() - entry.len();
+        segments[start..]
+            .iter()
+            .zip(entry.iter())
+            .all(|(segment, entry_segment)| segment.ident.name.as_str() == entry_segment.as_str())
+    }
+}

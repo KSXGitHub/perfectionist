@@ -1,5 +1,30 @@
 # `macro_argument_binding`
 
+## Status
+
+Partially implemented. Modes 0-2 (`deny_only`, `blanket`,
+`allow_and_deny`) ship today, along with the `enabled`,
+`deny_extra`, `allow_extra`, and `ignore` knobs. The lint emits
+diagnostics with a `let`-binding hint (no autofix, by design — the
+binding name varies per site).
+
+Still pending:
+
+- **Mode 3 (`matcher_based`).** The mode value is not accepted by
+  the configuration parser yet; a `dylint.toml` that names it
+  fails to deserialise. The matcher-walking infrastructure is
+  shared with the equivalent eligibility check planned for
+  `macro-trailing-comma`; both will land together.
+- **Cast suffix beyond path-shaped types.** The trivial-expression
+  predicate currently recognises `expr as Path` (e.g., `x as u64`,
+  `x as my::Type`) but treats `expr as &Path`, `expr as *const T`,
+  and other non-path type forms as non-trivial. Expanding the
+  type recogniser is a small, additive change.
+
+The "What to lint" pipeline below applies to the implemented
+modes as written. The remainder of this file is the active spec
+for the unimplemented portion.
+
 **Source:** project convention. The motivating bug:
 
 ```rust
