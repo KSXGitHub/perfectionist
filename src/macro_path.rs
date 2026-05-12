@@ -33,7 +33,7 @@ pub fn parse_path(raw: &str) -> Vec<String> {
 /// deduplicated set of segment sequences. Empty / whitespace-only
 /// entries are silently dropped, mirroring the contract of
 /// [`parse_path`].
-pub fn parse_path_list(raw_entries: &[String]) -> BTreeSet<Vec<String>> {
+pub(crate) fn parse_path_list(raw_entries: &[String]) -> BTreeSet<Vec<String>> {
     raw_entries
         .iter()
         .map(|entry| parse_path(entry))
@@ -45,7 +45,7 @@ pub fn parse_path_list(raw_entries: &[String]) -> BTreeSet<Vec<String>> {
 /// user-supplied multi-segment entries into a single matchable set.
 /// The built-in side is treated as single-segment entries, which match
 /// by the invocation path's final segment.
-pub fn merge_with_builtins(
+pub(crate) fn merge_with_builtins(
     builtin: &[&str],
     extras: &BTreeSet<Vec<String>>,
 ) -> BTreeSet<Vec<String>> {

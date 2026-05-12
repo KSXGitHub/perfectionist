@@ -31,7 +31,7 @@ use rustc_span::Span;
 ///
 /// [`MachineApplicable`]: Applicability::MachineApplicable
 /// [`MaybeIncorrect`]: Applicability::MaybeIncorrect
-pub fn emit_flagged_chars<Cx>(
+pub(crate) fn emit_flagged_chars<Cx>(
     lint_context: &Cx,
     lint: &'static Lint,
     text: &str,
@@ -75,7 +75,7 @@ pub fn emit_flagged_chars<Cx>(
 /// Recognises plain (`"..."`) and raw (`r"..."`, `r#"..."#`, …)
 /// strings. Byte / C-string forms are excluded — the helper is for
 /// rules that operate on display strings.
-pub fn string_literal_quote_lengths(snippet: &str) -> Option<(usize, usize)> {
+pub(crate) fn string_literal_quote_lengths(snippet: &str) -> Option<(usize, usize)> {
     let bytes = snippet.as_bytes();
     let mut index = 0;
     let mut hash_count = 0;

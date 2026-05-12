@@ -26,7 +26,7 @@ use rustc_span::Span;
 /// length and order as `target_spans`. A span not contained by any
 /// visited node — e.g. one that lies outside the crate's local HIR —
 /// maps to [`hir::CRATE_HIR_ID`].
-pub fn find_enclosing_hir_ids(tcx: TyCtxt<'_>, target_spans: &[Span]) -> Vec<hir::HirId> {
+pub(crate) fn find_enclosing_hir_ids(tcx: TyCtxt<'_>, target_spans: &[Span]) -> Vec<hir::HirId> {
     let mut best: Vec<hir::HirId> = vec![hir::CRATE_HIR_ID; target_spans.len()];
     let mut finder = EnclosingHirFinder {
         tcx,
