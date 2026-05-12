@@ -1,0 +1,17 @@
+[package]
+name = "_dev_tools"
+description = "Manages cargo-dylint and dylint-link under .dev-tools/, pinned to the dylint version this workspace resolves in Cargo.lock"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "dev-tools"
+path = "src/main.rs"
+
+[dependencies]
+cargo_toml = "0.22.3"
+clap = { version = "4.6.1", features = ["derive"] }
+command-extra = "1.0.0"
+derive_more = { version = "2.1.1", default-features = false, features = ["display"] }
+pipe-trait = "0.4.0"

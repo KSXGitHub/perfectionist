@@ -40,8 +40,14 @@ Per-rule configuration is read from `dylint.toml` at the workspace root. The con
 **Prerequisites:**
 * [Rustup](https://rustup.rs/)
 * [Just](https://github.com/casey/just/)
-* [cargo-dylint](https://github.com/trailofbits/dylint/tree/master/cargo-dylint)
-* [dylint-link](https://github.com/trailofbits/dylint/tree/master/dylint-link)
+
+`cargo-dylint` and `dylint-link` are not part of the cargo dependency graph but their ABI is coupled to it. They're installed into a workspace-local `.dev-tools/` directory (pinned to the `dylint_linting` version in `Cargo.lock`) by:
+
+```sh
+just install-dev-tools
+```
+
+Run this once after cloning, and again whenever `dylint_linting` is bumped. Every other `just` recipe prepends `.dev-tools/bin` to `PATH`, so subsequent commands use the pinned binaries automatically.
 
 Run the following command to check everything:
 

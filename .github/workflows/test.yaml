@@ -47,20 +47,34 @@ jobs:
           # rust-toolchain override file (TOML format is required for `components`).
           rustup show active-toolchain || rustup show
 
-      - name: Install Rust tools
+      - name: Install just
         uses: taiki-e/install-action@v2
         with:
-          tool: dylint-link, just
+          tool: just
 
-      # cargo-dylint has no prebuilt distribution, so taiki-e/install-action
-      # falls back to a from-source `cargo install` and provides no caching
-      # for the resulting binary. baptiste0928/cargo-install caches the
-      # compiled binary keyed on crate+version+OS, independent of the
-      # workspace cache above (which is keyed on Cargo.lock and so churns).
-      - name: Install cargo-dylint
-        uses: baptiste0928/cargo-install@v3
+      # `.dev-tools/` only changes when `dylint_linting` is bumped, so
+      # cache it under a key tied to that version rather than to the
+      # whole `Cargo.lock`. Most lockfile churn (unrelated dep bumps)
+      # leaves this cache valid and skips the from-source rebuild of
+      # cargo-dylint and dylint-link. The version is read by the same
+      # workspace crate that performs the install, so there is one
+      # source of truth and no shell-side `Cargo.lock` parsing.
+      - name: Read pinned dylint version
+        id: dylint-version
+        shell: bash
+        run: just gha-dylint-version
+
+      - name: Cache .dev-tools
+        uses: actions/cache@v5
+        timeout-minutes: 1
+        continue-on-error: true
         with:
-          crate: cargo-dylint
+          path: .dev-tools
+          key: dev-tools-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}-${{ steps.dylint-version.outputs.version }}
+
+      - name: Install dylint tooling
+        shell: bash
+        run: just install-dev-tools
 
       - name: Fmt
         shell: bash
