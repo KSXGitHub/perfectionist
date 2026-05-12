@@ -18,11 +18,13 @@ mod model;
 mod render;
 
 use std::fs;
-use std::path::PathBuf;
-use std::process::ExitCode;
+use std::path::{Path, PathBuf};
+use std::process::{Command, ExitCode};
 
 use cargo_toml::{Inheritable, Manifest};
 use clap::Parser;
+use command_extra::CommandExtra;
+use pipe_trait::Pipe;
 
 use crate::extract::collect_rules;
 use crate::model::RenderContext;
@@ -41,9 +43,35 @@ struct Cli {
         long,
         default_value = "master",
         value_parser = clap::builder::NonEmptyStringValueParser::new(),
-        help = r#"Git ref the rendered "Source:" links should target"#,
+        help = r#"Git ref the rendered "Source:" links should target; resolved to a commit SHA via `git rev-parse` so the links are permalinks"#,
     )]
     git_ref: String,
+}
+
+fn resolve_git_ref(root: &Path, git_ref: &str) -> String {
+    let revision = format!("{git_ref}^{{commit}}");
+    let output = "git"
+        .pipe(Command::new)
+        .with_current_dir(root)
+        .with_arg("rev-parse")
+        .with_arg("--verify")
+        .with_arg(&revision)
+        .output()
+        .expect("failed to invoke `git rev-parse`");
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        panic!(
+            "`git rev-parse --verify {revision}` failed ({}): {}",
+            output.status,
+            stderr.trim(),
+        );
+    }
+    output
+        .stdout
+        .pipe(String::from_utf8)
+        .expect("`git rev-parse` produced non-UTF-8 output")
+        .trim()
+        .to_owned()
 }
 
 fn main() -> ExitCode {
@@ -52,6 +80,13 @@ fn main() -> ExitCode {
         out_dir,
         git_ref,
     } = Cli::parse();
+
+    // Resolve the user-supplied ref (typically a branch like `master`)
+    // to a commit SHA so the rendered "Source:" links are permalinks
+    // that survive future commits to the branch. The original ref is
+    // kept for the page title and banner, which want to read as
+    // "Showing docs for `master`" rather than a bare SHA.
+    let commit_sha = resolve_git_ref(&root, &git_ref);
 
     let manifest = Manifest::from_path(root.join("Cargo.toml")).expect("failed to read Cargo.toml");
     let crate_version = manifest
@@ -86,6 +121,7 @@ fn main() -> ExitCode {
     let context = RenderContext {
         crate_version: &crate_version,
         git_ref: &git_ref,
+        commit_sha: &commit_sha,
         repo_url: &repo_url,
     };
     let html = render_page(&rules, &context);
