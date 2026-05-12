@@ -198,9 +198,10 @@ Ship a hard-coded denylist of known-conditional macros —
 handful of similar shapes — and flag only those. Every other
 macro is silently accepted.
 
-The implementation is a name-set lookup keyed on the resolved
-`DefId` plus a non-trivial-argument predicate. No allowlist, no
-matcher walk; the only mode-specific knob is `deny_extra` for
+The implementation is a syntactic name-set lookup over the
+invocation's `MacCall::path` segments plus a
+non-trivial-argument predicate. No allowlist, no matcher walk;
+the only mode-specific knob is `deny_extra` for
 extending the built-in denylist. The shared knobs (`ignore`,
 `expression_bypass`) still apply per the "What to lint" and
 "Configuration" sections — they're not mode-gated. The rule's
@@ -391,7 +392,13 @@ For every macro invocation:
 
 1. Check the invocation's `Delimiter`. If it is `Brace`, skip —
    curly-brace invocations are out of scope.
-2. Resolve the macro `DefId`.
+2. Read the invocation's `MacCall::path` segments. The
+   pre-expansion pass runs before name resolution, so this is
+   a raw `rustc_ast::Path` — there's no `Res`/`DefId` to
+   resolve. Name matching against configuration entries is
+   syntactic; see "Implementation notes" for the segment /
+   tail-matching helper that `macro-trailing-comma` already
+   provides.
 3. Consult `ignore`. If the path matches, skip. `ignore` wins
    over both the denylist and the allowlist; it exists for
    per-project opt-outs of curated entries.
@@ -423,7 +430,7 @@ For every macro invocation:
    call shape isn't the comma-separated argument list this
    rule targets. A top-level `=>` is allowed and walked
    through as ordinary content
-   (`hashmap! { "a" => 1, "b" => 2 }` legitimately carries
+   (`hashmap!("a" => 1, "b" => 2)` legitimately carries
    one per entry). The lint only inspects top-level
    expressions — an argument that itself contains a
    non-trivial sub-expression is the author's choice, and
@@ -630,11 +637,19 @@ ignore = [
   [`macro-trailing-comma`](./macro-trailing-comma.md) uses
   (park spans in a process-static queue, emit from a late
   pass that walks HIR) applies here.
-- Macro path resolution: `MacCall::path` resolves to a `Res`;
-  use the resolved `DefId` for the name-lookup. Bare-name
-  matching falls back to the path's final segment so
-  `allow_extra = ["my_macro"]` works without forcing the
-  user to spell out the crate path.
+- Macro path matching: the pre-expansion pass runs before
+  name resolution, so `MacCall::path` is a raw
+  `rustc_ast::Path` with no `Res`/`DefId` attached. Match
+  syntactically against `path.segments` the way
+  [`macro-trailing-comma`](./macro-trailing-comma.md)'s
+  `matches_any` / `entry_matches` helpers do: single-segment
+  configuration entries (like `"my_macro"`) match against the
+  invocation path's final segment so `my_macro!`,
+  `crate_x::my_macro!`, and `::crate_x::my_macro!` all
+  qualify; multi-segment entries (like `"crate_x::my_macro"`)
+  tail-match the invocation path's segments, accommodating
+  optional leading crate prefixes. Reuse the same helpers
+  rather than rolling new ones.
 - Argument splitting: walk `MacCall::args.tokens` tracking
   delimiter nesting and split on top-level commas. Reuse the
   helper that
