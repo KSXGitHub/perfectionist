@@ -20,7 +20,7 @@ use std::process::{Command, ExitCode};
 
 use clap::{Parser, Subcommand};
 use command_extra::CommandExtra;
-use derive_more::{Display, From};
+use derive_more::Display;
 use pipe_trait::Pipe;
 use serde::Deserialize;
 
@@ -68,18 +68,18 @@ fn main() -> ExitCode {
     }
 }
 
-#[derive(Display, From)]
+#[derive(Display)]
 enum RuntimeError {
     Install(InstallError),
     DylintVersion(DylintVersionError),
 }
 
 fn run(Cli { root, command }: Cli) -> Result<(), RuntimeError> {
-    let version = dylint_version(&root)?;
+    let version = dylint_version(&root).map_err(RuntimeError::DylintVersion)?;
     match command {
         Subcmd::PrintVersion => println!("{version}"),
 
-        Subcmd::Install => install(&root, &version)?,
+        Subcmd::Install => install(&root, &version).map_err(RuntimeError::Install)?,
     }
     Ok(())
 }
