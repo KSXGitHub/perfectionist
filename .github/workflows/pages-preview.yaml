@@ -19,6 +19,14 @@ jobs:
     name: Build and deploy preview
     runs-on: ubuntu-latest
 
+    # Skip PRs from forks: GitHub withholds repository secrets from
+    # workflow runs triggered by fork PRs, so CLOUDFLARE_API_TOKEN
+    # would resolve to an empty string and the deploy step would
+    # fail authentication. A skipped job shows as neutral on the
+    # PR rather than as a confusing red X that external
+    # contributors can't act on.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
     # Scopes CLOUDFLARE_API_TOKEN to this job. The deployment also
     # shows up under the repo's Environments tab so each preview is
     # tracked alongside production.
