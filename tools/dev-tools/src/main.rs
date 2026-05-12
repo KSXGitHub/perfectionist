@@ -28,9 +28,9 @@ const DYLINT_LIBRARY_CRATE: &str = "dylint_linting";
 const INSTALL_DIR: &str = ".dev-tools";
 
 #[derive(Parser)]
-#[clap(about = "Manage workspace-local dylint tooling under .dev-tools/")]
+#[clap(about = "Manage workspace-local tooling under .dev-tools/")]
 struct Cli {
-    #[clap(help = "The root of the perfectionist repository")]
+    #[clap(help = "The root of the repository")]
     root: PathBuf,
 
     #[clap(subcommand)]
