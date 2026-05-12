@@ -186,14 +186,37 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
 /// `root`. Returned with a trailing `/`, so callers can append a
 /// path under `root` directly (e.g. `"../" + "src/rules/foo.rs"`).
 ///
-/// Returns `Err` when `rules_dir` is the same directory as `root`
-/// (the catalogue's `README.md` would collide with the project's
-/// own), when it resolves to a path outside `root`, or when the
-/// path contains `..` segments — `std::path::absolute` doesn't
-/// normalise those, so `rules/../rules` would otherwise be
+/// Returns `Err` when `rules_dir` is a symbolic link (which could
+/// resolve outside `root` and let write-md's orphan-delete step
+/// touch files outside the repo), when it's the same directory as
+/// `root` (the catalogue's `README.md` would collide with the
+/// project's own), when it resolves to a path outside `root`, or
+/// when the path contains `..` segments — `std::path::absolute`
+/// doesn't normalise those, so `rules/../rules` would otherwise be
 /// (silently) interpreted as depth 3 and produce broken links.
 fn source_link_prefix_for(rules_dir: &Path, root: &Path) -> Result<String, String> {
     use std::path::Component;
+
+    // Symlink guard. `std::path::absolute` is purely lexical
+    // (doesn't follow symlinks), so a `rules_dir` that's itself a
+    // symlink to `/etc` would pass the `strip_prefix` containment
+    // check below — and then `write-md`'s orphan-delete loop
+    // would happily remove `.md` files via the symlink target.
+    // Refuse before any filesystem mutation. Only checked when
+    // the path exists; a non-existent `rules_dir` (check-md
+    // against a never-created location) can't be a symlink, and
+    // write-md creates the directory with `create_dir_all`,
+    // which won't follow a symlink to create a regular dir.
+    if let Ok(metadata) = std::fs::symlink_metadata(rules_dir)
+        && metadata.file_type().is_symlink()
+    {
+        return Err(format!(
+            "rules_dir `{}` is a symbolic link; refusing to operate on it. \
+             Pass the resolved target directly so write-md's orphan-delete \
+             step can't follow the link out of `--root`",
+            rules_dir.display(),
+        ));
+    }
 
     let abs_root = std::path::absolute(root)
         .map_err(|error| format!("failed to resolve --root `{}`: {error}", root.display(),))?;
@@ -381,6 +404,34 @@ mod tests {
         let prefix = source_link_prefix_for(Path::new("/repo/./rules/."), Path::new("/repo"))
             .expect("`.` segments should be transparent");
         assert_eq!(prefix, "../");
+    }
+
+    #[test]
+    fn source_link_prefix_for_rejects_symlink_rules_dir() {
+        // Create a real directory and a symlink pointing at it,
+        // then ask the helper to resolve the symlink's path. The
+        // lexical containment check would happily accept this
+        // (the symlink path is under `root`), but the helper
+        // refuses before any orphan-delete can follow the link.
+        // Skip on platforms where symlink creation isn't
+        // supported in the test sandbox.
+        let base = std::env::temp_dir()
+            .join(format!("perfectionist-symlink-test-{}", std::process::id(),));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).unwrap();
+        let real = base.join("real");
+        std::fs::create_dir_all(&real).unwrap();
+        let link = base.join("rules");
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+        #[cfg(not(unix))]
+        {
+            // Windows symlinks need elevated privileges; skip.
+            return;
+        }
+        let error = source_link_prefix_for(&link, &base)
+            .expect_err("symlinked rules_dir should be rejected");
+        assert!(error.contains("symbolic link"), "got: {error}");
     }
 
     #[test]

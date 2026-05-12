@@ -315,52 +315,63 @@ fn promote_headings(markdown: &str) -> String {
     // would silently corrupt rendered output.
     let mut open_fence: Option<(u8, usize)> = None;
     for line in markdown.split_inclusive('\n') {
-        let trimmed = line.trim_start_matches([' ', '\t']);
-        let fence_marker = if trimmed.starts_with("```") {
-            Some(b'`')
-        } else if trimmed.starts_with("~~~") {
-            Some(b'~')
-        } else {
-            None
-        };
-        if let Some(marker) = fence_marker {
-            let length = trimmed.bytes().take_while(|&b| b == marker).count();
-            // After the marker run, the rest of the line decides
-            // whether this is a valid close fence. Per CommonMark
-            // §4.5, a close fence cannot carry an info string —
-            // only optional trailing whitespace. An open fence
-            // may carry one (`` ```rust ``). Treat any line whose
-            // post-marker tail is non-whitespace as body text
-            // when an open fence already exists, so a literal
-            // `` ```rust `` line nested inside a wider outer
-            // fence isn't mistaken for a close.
-            let after_markers = &trimmed[length..];
-            let tail_is_blank = after_markers.trim().is_empty();
-            match open_fence {
-                None => {
-                    open_fence = Some((marker, length));
+        // Per CommonMark §4.5, a fence-marker line (open or
+        // close) carries at most 3 leading spaces. A line with 4+
+        // leading spaces is an indented-code-block line, not a
+        // fence — even if its first non-whitespace bytes are
+        // backticks. Compute `leading_spaces` first and only
+        // consider the line as a fence marker when it's within
+        // the allowance.
+        let leading_spaces = line.bytes().take_while(|&b| b == b' ').count();
+        if leading_spaces < 4 {
+            let after_leading = &line[leading_spaces..];
+            let fence_marker = if after_leading.starts_with("```") {
+                Some(b'`')
+            } else if after_leading.starts_with("~~~") {
+                Some(b'~')
+            } else {
+                None
+            };
+            if let Some(marker) = fence_marker {
+                let length = after_leading.bytes().take_while(|&b| b == marker).count();
+                // After the marker run, the rest of the line
+                // decides whether this is a valid close fence.
+                // Per CommonMark §4.5, a close fence cannot carry
+                // an info string — only optional trailing
+                // whitespace. An open fence may carry one
+                // (`` ```rust ``). Treat any line whose
+                // post-marker tail is non-whitespace as body text
+                // when an open fence already exists, so a literal
+                // `` ```rust `` line nested inside a wider outer
+                // fence isn't mistaken for a close.
+                let after_markers = &after_leading[length..];
+                let tail_is_blank = after_markers.trim().is_empty();
+                match open_fence {
+                    None => {
+                        open_fence = Some((marker, length));
+                    }
+                    Some((open_marker, open_length))
+                        if open_marker == marker && length >= open_length && tail_is_blank =>
+                    {
+                        open_fence = None;
+                    }
+                    Some(_) => {
+                        // Mismatched marker, shorter run, or
+                        // non-blank tail: body content of the
+                        // open fence, not a close marker. Stay
+                        // inside the fence.
+                    }
                 }
-                Some((open_marker, open_length))
-                    if open_marker == marker && length >= open_length && tail_is_blank =>
-                {
-                    open_fence = None;
-                }
-                Some(_) => {
-                    // Mismatched marker, shorter run, or non-blank
-                    // tail: body content of the open fence, not a
-                    // close marker. Stay inside the fence.
-                }
+                out.push_str(line);
+                continue;
             }
-            out.push_str(line);
-            continue;
         }
         if open_fence.is_some() {
             out.push_str(line);
             continue;
         }
-        let leading_spaces = line.bytes().take_while(|&b| b == b' ').count();
         if leading_spaces >= 4 {
-            // Indented code block.
+            // Indented code block (outside any fenced block).
             out.push_str(line);
             continue;
         }
@@ -569,6 +580,34 @@ mod tests {
         assert!(
             !out.contains("\n## outside\n"),
             "outside should be promoted, not left at h2: {out}"
+        );
+    }
+
+    #[test]
+    fn promote_headings_treats_indented_fence_marker_as_indented_code() {
+        // Per CommonMark §4.5, a fence opener may be indented at
+        // most 3 spaces; with 4+ spaces it's an indented code
+        // block, not a fence. The previous implementation
+        // trimmed *all* leading whitespace before checking for
+        // backticks, so a `    ```` line opened a phantom fence
+        // and any subsequent heading line was suppressed.
+        let input = "    ```\n    ## inside indented code\n    ```\n## outside\n";
+        let out = promote_headings(input);
+        // The indented `` ``` `` lines pass through verbatim.
+        assert!(
+            out.contains("    ```\n"),
+            "indented backticks should not open a fence: {out}"
+        );
+        // The 4-space-indented heading is inside an indented
+        // code block, so it stays untouched too.
+        assert!(
+            out.contains("    ## inside indented code\n"),
+            "indented heading should not be promoted: {out}"
+        );
+        // The unindented heading outside is promoted normally.
+        assert!(
+            out.contains("\n# outside\n"),
+            "trailing heading should be promoted: {out}"
         );
     }
 
