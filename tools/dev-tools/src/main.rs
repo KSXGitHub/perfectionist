@@ -34,11 +34,11 @@ struct Cli {
     root: PathBuf,
 
     #[clap(subcommand)]
-    command: Subcmd,
+    command: Sub,
 }
 
 #[derive(Subcommand)]
-enum Subcmd {
+enum Sub {
     /// Install cargo-dylint and dylint-link into `<root>/.dev-tools/`
     /// at the version pinned in `Cargo.lock`.
     Install,
@@ -77,8 +77,8 @@ enum RuntimeError {
 fn run(Cli { root, command }: Cli) -> Result<(), RuntimeError> {
     let version = dylint_version(&root).map_err(RuntimeError::DylintVersion)?;
     match command {
-        Subcmd::PrintVersion => println!("{version}"),
-        Subcmd::Install => install(&root, &version).map_err(RuntimeError::Install)?,
+        Sub::PrintVersion => println!("{version}"),
+        Sub::Install => install(&root, &version).map_err(RuntimeError::Install)?,
     }
     Ok(())
 }
