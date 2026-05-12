@@ -48,7 +48,11 @@ install-dev-tools:
 
 # Print the dylint_linting version pinned in Cargo.lock
 dylint-version:
-  @cargo --config 'target."cfg(all())".linker="cc"' run --locked --quiet --package _dev_tools -- "$(pwd)" print-version
+  @cargo --config 'target."cfg(all())".linker="cc"' run --locked --quiet --package _dev_tools -- "$(pwd)" dylint-version
+
+# Append `version=<dylint version>` to $GITHUB_OUTPUT (for CI)
+gha-dylint-version:
+  @cargo --config 'target."cfg(all())".linker="cc"' run --locked --quiet --package _dev_tools -- "$(pwd)" gha-dylint-version
 
 # Render the rule catalogue to `gh-pages/index.html`.
 gen-docs out_dir="gh-pages" git_ref="":

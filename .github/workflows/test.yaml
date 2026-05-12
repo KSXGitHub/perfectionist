@@ -62,7 +62,7 @@ jobs:
       - name: Read pinned dylint version
         id: dylint-version
         shell: bash
-        run: echo "version=$(just dylint-version)" >> "$GITHUB_OUTPUT"
+        run: just gha-dylint-version
 
       - name: Cache .dev-tools
         uses: actions/cache@v5

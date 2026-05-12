@@ -13,8 +13,9 @@
 //! checkout — where `dylint-link` (the workspace's linker per
 //! `.cargo/config.toml`) is not yet on PATH — can still compile it.
 
-use std::fs::read_to_string;
-use std::io;
+use std::env;
+use std::fs::{OpenOptions, read_to_string};
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
@@ -42,7 +43,9 @@ enum Sub {
     #[clap(about = "Install the development tools")]
     Install,
     #[clap(about = "Print the dylint version")]
-    PrintVersion,
+    DylintVersion,
+    #[clap(about = "Append `version=<dylint version>` to $GITHUB_OUTPUT")]
+    GhaDylintVersion,
 }
 
 #[derive(Deserialize)]
@@ -70,13 +73,17 @@ fn main() -> ExitCode {
 enum RuntimeError {
     Install(InstallError),
     DylintVersion(DylintVersionError),
+    GhaDylintVersion(GhaDylintVersionError),
 }
 
 fn run(Cli { root, command }: Cli) -> Result<(), RuntimeError> {
     let version = dylint_version(&root).map_err(RuntimeError::DylintVersion)?;
     match command {
-        Sub::PrintVersion => println!("{version}"),
+        Sub::DylintVersion => println!("{version}"),
         Sub::Install => install(&root, &version).map_err(RuntimeError::Install)?,
+        Sub::GhaDylintVersion => {
+            gha_dylint_version(&version).map_err(RuntimeError::GhaDylintVersion)?
+        }
     }
     Ok(())
 }
@@ -134,4 +141,24 @@ fn dylint_version(root: &Path) -> Result<String, DylintVersionError> {
         .find(|pkg| pkg.name == DYLINT_LIBRARY_CRATE)
         .map(|pkg| pkg.version)
         .ok_or(DylintVersionError::NoData)
+}
+
+#[derive(Display)]
+enum GhaDylintVersionError {
+    #[display("$GITHUB_OUTPUT is not set: {_0}")]
+    EnvVar(env::VarError),
+    #[display("Failed to open $GITHUB_OUTPUT: {_0}")]
+    OpenFile(io::Error),
+    #[display("Failed to write to $GITHUB_OUTPUT: {_0}")]
+    WriteFile(io::Error),
+}
+
+fn gha_dylint_version(version: &str) -> Result<(), GhaDylintVersionError> {
+    let path = env::var("GITHUB_OUTPUT").map_err(GhaDylintVersionError::EnvVar)?;
+    let mut file = OpenOptions::new()
+        .append(true)
+        .open(path)
+        .map_err(GhaDylintVersionError::OpenFile)?;
+    writeln!(file, "version={version}").map_err(GhaDylintVersionError::WriteFile)?;
+    Ok(())
 }
