@@ -46,26 +46,15 @@ impl ExpectedTree {
         ExpectedTree { files }
     }
 
-    /// Case-sensitive exact match. This is the right contract for
-    /// every code path that reads `expected.files` to decide what
-    /// to render or compare — those paths must use the canonical
-    /// casing the renderer wrote. For the orphan-delete code path,
-    /// see `is_managed_case_insensitive`.
+    /// Case-sensitive exact match against the canonical filename
+    /// the renderer would emit. The `rules/` directory is fully
+    /// managed: any top-level `.md` file whose name doesn't match
+    /// an entry here is a stray and gets reported by `check-md` /
+    /// deleted by `write-md`. That includes case-differing names
+    /// (`Readme.md` next to `README.md`), which a previous version
+    /// guarded against; the project preference is strict deletion.
     fn is_managed(&self, file_name: &str) -> bool {
         self.files.contains_key(file_name)
-    }
-
-    /// Case-insensitive match. Used only to guard the orphan-
-    /// delete step on case-insensitive filesystems (macOS APFS,
-    /// Windows NTFS): there, `readme.md` and `README.md` are the
-    /// same inode, and a case-sensitive orphan check would happily
-    /// delete the on-disk file the renderer is about to write,
-    /// silently dropping its contents. See the caller for the full
-    /// rationale.
-    fn is_managed_case_insensitive(&self, file_name: &str) -> bool {
-        self.files
-            .keys()
-            .any(|key| key.eq_ignore_ascii_case(file_name))
     }
 }
 
@@ -159,23 +148,6 @@ pub(crate) fn write_rules_dir(
     let actual_names = read_managed_filenames(rules_dir);
     for file_name in &actual_names {
         if expected.is_managed(file_name) {
-            continue;
-        }
-        // Case-insensitive collision guard. On case-insensitive
-        // filesystems (macOS APFS default, Windows NTFS), a
-        // user-typed `readme.md` and the catalogue's `README.md`
-        // resolve to the same inode. The case-sensitive
-        // `is_managed` check above returns false for the
-        // on-disk name; if we then `remove_file` it, we delete
-        // the file the renderer is about to (re)write, silently
-        // discarding any user content it held. Skipping the
-        // delete when the name case-insensitively matches a
-        // managed entry is safe on case-sensitive filesystems
-        // too — our generator only ever writes the canonical
-        // casing, so a Linux-side `readme.md` couldn't have been
-        // produced by us and skipping its deletion just leaves
-        // an unrelated user file in place.
-        if expected.is_managed_case_insensitive(file_name) {
             continue;
         }
         let path = rules_dir.join(file_name);
@@ -386,24 +358,31 @@ mod tests {
     }
 
     #[test]
-    fn case_insensitive_collision_is_not_deleted() {
-        // On a case-sensitive filesystem (Linux), this test
-        // creates two distinct files: `README.md` (the managed
-        // index) and `readme.md` (a hand-typed file). The orphan
-        // check should leave `readme.md` alone rather than
-        // deleting it, since on a case-insensitive filesystem the
-        // two would be the same inode and deleting would discard
-        // the managed file's contents along with it. Skipping the
-        // delete on Linux too is harmless — we'd only have written
-        // the canonical casing, so a lowercase orphan can't have
-        // come from us.
+    fn stray_md_with_collision_casing_is_deleted() {
+        // The directory is fully managed: a hand-added `readme.md`
+        // (different case from the managed `README.md`) is treated
+        // as a stray and deleted, same as any other unmanaged
+        // `.md` file. On case-sensitive filesystems the two
+        // coexist as distinct inodes; on case-insensitive ones
+        // they're already the same file, and write-md's
+        // subsequent write step rebuilds the canonical-cased
+        // README from scratch either way.
         let dir = tempdir("case-collision");
         let rules = vec![fake_rule("alpha")];
         write_rules_dir(&rules, &dir, "../");
         fs::write(dir.join("readme.md"), "user content").unwrap();
         let summary = write_rules_dir(&rules, &dir, "../");
-        assert_eq!(summary.orphans_removed, 0);
-        assert!(dir.join("readme.md").exists());
+        assert_eq!(summary.orphans_removed, 1);
+        // On a case-sensitive filesystem (Linux/CI) the stray is
+        // gone outright. On a case-insensitive filesystem the
+        // remaining file is the freshly-written `README.md`
+        // (canonical case), not the user's `readme.md`. Both
+        // shapes leave the user's content discarded — the point
+        // of the "fully managed" contract.
+        assert!(
+            !dir.join("readme.md").exists()
+                || fs::read_to_string(dir.join("readme.md")).unwrap() != "user content"
+        );
     }
 
     #[test]
