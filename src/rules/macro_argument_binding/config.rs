@@ -106,7 +106,7 @@ impl Default for Config {
     }
 }
 
-pub struct MacroArgumentBinding {
+pub(super) struct MacroArgumentBinding {
     enabled: bool,
     mode: Mode,
     /// Built-in deny list plus `deny_extra`. Used in `DenyOnly` and

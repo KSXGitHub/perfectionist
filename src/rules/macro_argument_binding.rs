@@ -106,7 +106,10 @@ pub fn register_pass(lint_store: &mut LintStore) {
 /// into a session-side table), so a process-wide static is safe; the
 /// `Mutex` just serialises the queue against parallel pre-expansion
 /// passes within one compilation.
-pub(crate) static PENDING_VIOLATIONS: Mutex<Vec<Span>> = Mutex::new(Vec::new());
+///
+/// The static is private — child modules (`late`) read it through
+/// Rust's standard descendant-reachability rule for non-`pub` items.
+static PENDING_VIOLATIONS: Mutex<Vec<Span>> = Mutex::new(Vec::new());
 
 impl EarlyLintPass for MacroArgumentBinding {
     fn check_mac(&mut self, _lint_context: &EarlyContext<'_>, mac_call: &MacCall) {

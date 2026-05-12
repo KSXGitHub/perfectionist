@@ -19,7 +19,7 @@ use rustc_span::Span;
 
 use super::{MACRO_ARGUMENT_BINDING, PENDING_VIOLATIONS};
 
-pub struct MacroArgumentBindingLate;
+pub(super) struct MacroArgumentBindingLate;
 
 impl<'tcx> LateLintPass<'tcx> for MacroArgumentBindingLate {
     fn check_crate_post(&mut self, lint_context: &LateContext<'tcx>) {
