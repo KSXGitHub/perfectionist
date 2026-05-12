@@ -28,6 +28,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
+                meta name="description" content="Catalogue of perfectionist's lints — a Dylint plugin adding stylistic and correctness lints for Rust projects.";
                 title {
                     "perfectionist lints"
                     @if git_ref != "master" { " — " (git_ref) }
