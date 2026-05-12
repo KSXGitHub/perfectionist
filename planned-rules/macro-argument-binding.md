@@ -583,9 +583,12 @@ enabled = true
 mode = "allowlist_denylist"
 
 # Behaviour for macros that match neither the denylist nor the
-# allowlist under "allowlist_denylist" mode. `allow` (default)
-# silently skips them; `deny` treats them as denylisted.
-# Ignored under other modes.
+# allowlist. Consulted under `allowlist_denylist` (the default)
+# for every unknown macro, and under `matcher_based` as the
+# fallback for unknown proc macros (which the matcher walker
+# cannot inspect). `allow` (default) silently skips; `deny`
+# treats the macro as denylisted. Ignored under
+# `denylist_only` and `blanket`.
 unknown_macro_policy = "allow"
 
 # When true, accept calls and method calls whose arguments are
