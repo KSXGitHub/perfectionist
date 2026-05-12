@@ -78,7 +78,6 @@ fn run(Cli { root, command }: Cli) -> Result<(), RuntimeError> {
     let version = dylint_version(&root).map_err(RuntimeError::DylintVersion)?;
     match command {
         Subcmd::PrintVersion => println!("{version}"),
-
         Subcmd::Install => install(&root, &version).map_err(RuntimeError::Install)?,
     }
     Ok(())
