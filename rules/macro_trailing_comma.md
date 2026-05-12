@@ -60,36 +60,4 @@ let ys = vec![1, 2, 3];
 
 ## Configuration
 
-Configure via `dylint.toml` under `["perfectionist::macro_trailing_comma"]`. Every field is optional; the per-field prose below states the default.
-
-### `enabled`: `boolean` (optional)
-
-Master on/off switch for the rule. Defaults to `true`. Set
-to `false` to silence every diagnostic this lint would emit
-without having to enumerate every macro under `ignore`.
-
-### `matcher_based`: `boolean` (optional)
-
-Accepted for forward compatibility with the matcher-based half of
-the rule. Currently a no-op — only name-based eligibility is
-implemented; see `planned-rules/macro-trailing-comma.md` for the
-status breakdown.
-
-### `extra_name_based`: `[string]` (optional)
-
-Additional macro paths to treat as name-based eligible, on top
-of the curated built-in list. Each entry is matched by its
-final path segment, so `"my_crate::vec_like"` and `"vec_like"`
-both target invocations whose last segment is `vec_like`.
-Empty by default. Only add macros whose trailing comma is
-syntactically optional at the top level; macros that treat
-the comma as a fully optional separator throughout (rather
-than only at the tail) should not be listed here.
-
-### `ignore`: `[string]` (optional)
-
-Macro paths to opt out of the rule, even if they would
-otherwise be eligible via the built-in list or
-`extra_name_based`. Matched by final path segment, like
-`extra_name_based`. Checked first, so this knob always wins
-over eligibility. Empty by default.
+None.
