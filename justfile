@@ -1,3 +1,11 @@
+# `.dev-tools/bin` holds workspace-local copies of cargo-dylint and
+# dylint-link, installed by the `install-dev-tools` recipe and pinned
+# to the `dylint_linting` version in Cargo.lock. Prepending it to
+# PATH means every recipe's `cargo dylint` / `dylint-link` (the
+# latter via `.cargo/config.toml`) resolves there first, ahead of
+# whatever stale copies the developer left under `~/.cargo/bin`.
+export PATH := justfile_directory() + "/.dev-tools/bin:" + env_var("PATH")
+
 _default:
   @just --list
 
@@ -40,37 +48,12 @@ self-lint:
 warmup-integration-tests:
   time cargo run --package _utils --bin warmup -- "$(pwd)"
 
-# Install cargo-dylint and dylint-link at the version this workspace requires
+# Install cargo-dylint and dylint-link into `.dev-tools/`
+# The `--config linker="cc"` override lets the installer compile on a
+# fresh checkout where `dylint-link` (the workspace's linker per
+# `.cargo/config.toml`) is not yet on PATH.
 install-dev-tools:
-  #!/usr/bin/env bash
-  # Implemented in shell rather than a `_utils` binary so a fresh
-  # checkout — where `dylint-link` (the configured linker) is not yet
-  # on PATH and `cargo build` therefore can't compile anything — can
-  # still run it.
-  set -euo pipefail
-  version=$(
-    awk '
-      /^\[\[package\]\]/ { in_pkg = 1; name = ""; version = ""; next }
-      in_pkg && /^name *= / { name = $0 }
-      in_pkg && /^version *= / { version = $0 }
-      in_pkg && /^$/ {
-        if (name ~ /"dylint_linting"/) {
-          sub(/^version *= *"/, "", version)
-          sub(/"$/, "", version)
-          print version
-          exit
-        }
-        in_pkg = 0
-      }
-    ' Cargo.lock
-  )
-  if [ -z "$version" ]; then
-    echo "Could not find dylint_linting version in Cargo.lock" >&2
-    exit 1
-  fi
-  echo "Installing cargo-dylint and dylint-link at version $version"
-  cargo install --locked --force --version "$version" cargo-dylint
-  cargo install --locked --force --version "$version" dylint-link
+  cargo --config 'target."cfg(all())".linker="cc"' run --package _install_dev_tools -- "$(pwd)"
 
 # Render the rule catalogue to `gh-pages/index.html`.
 gen-docs out_dir="gh-pages" git_ref="":

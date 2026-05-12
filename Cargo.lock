@@ -20,6 +20,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "_install_dev_tools"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "serde",
+ "toml 1.1.2+spec-1.1.0",
+]
+
+[[package]]
 name = "_utils"
 version = "0.0.0"
 dependencies = [

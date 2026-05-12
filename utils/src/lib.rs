@@ -11,7 +11,6 @@ pub use tempfile::TempDir;
 
 pub mod dylint;
 pub mod manifest;
-pub mod preflight;
 pub mod project;
 
 pub use dylint::run_dylint;
@@ -31,12 +30,6 @@ pub fn run_project_with_sources(
     shared_target_dir: &Path,
     sources: &[(&str, &str)],
 ) -> (TempDir, String, bool) {
-    // Surface an outdated `cargo-dylint` / `dylint-link` before we
-    // hit a confusing error inside `cargo dylint`. Memoised so the
-    // probes only run once per test binary.
-    if let Err(message) = preflight::check_dylint_tools_once(perfectionist_dir) {
-        panic!("{message}");
-    }
     let temp = TempDir::new().expect("failed to create temp dir");
     build_project(temp.path(), package_name, perfectionist_dir, sources);
     let (stderr, success) = run_dylint(temp.path(), shared_target_dir);

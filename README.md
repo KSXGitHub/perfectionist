@@ -40,15 +40,14 @@ Per-rule configuration is read from `dylint.toml` at the workspace root. The con
 **Prerequisites:**
 * [Rustup](https://rustup.rs/)
 * [Just](https://github.com/casey/just/)
-* [cargo-dylint](https://github.com/trailofbits/dylint/tree/master/cargo-dylint) and [dylint-link](https://github.com/trailofbits/dylint/tree/master/dylint-link), at the same major version as the `dylint_linting` dependency pinned in `Cargo.lock`.
 
-The dylint tools are not managed by cargo's dependency graph, so they have to be installed separately and kept in sync with the workspace. After cloning, and whenever `dylint_linting` is bumped, run:
+`cargo-dylint` and `dylint-link` are not part of the cargo dependency graph but their ABI is coupled to it. They're installed into a workspace-local `.dev-tools/` directory (pinned to the `dylint_linting` version in `Cargo.lock`) by:
 
 ```sh
 just install-dev-tools
 ```
 
-This installs the matching version of both binaries (via `cargo install --locked --force`). `just warmup-integration-tests` and `just test` start with a preflight check that fails fast with a pointer to this recipe if the local versions drift out of sync.
+Run this once after cloning, and again whenever `dylint_linting` is bumped. Every other `just` recipe prepends `.dev-tools/bin` to `PATH`, so subsequent commands use the pinned binaries automatically.
 
 Run the following command to check everything:
 

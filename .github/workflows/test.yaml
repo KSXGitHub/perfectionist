@@ -25,10 +25,16 @@ jobs:
           # populated under the previous value, so the dirs are
           # excluded; the expensive plugin build still lives in the
           # main `target/` cache.
+          #
+          # `.dev-tools/` holds `cargo-dylint` and `dylint-link`
+          # installed by `just install-dev-tools` at the version
+          # pinned in Cargo.lock; caching it skips the from-source
+          # `cargo install` on subsequent runs with the same lockfile.
           path: |
             ~/.cargo
             ~/.dylint_drivers
             target
+            .dev-tools
             !target/integration-fixtures
             !target/integration-fixtures-warmup
           key: ${{ github.job }}-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}-${{ hashFiles('**/Cargo.lock') }}
@@ -47,20 +53,18 @@ jobs:
           # rust-toolchain override file (TOML format is required for `components`).
           rustup show active-toolchain || rustup show
 
-      - name: Install Rust tools
+      - name: Install just
         uses: taiki-e/install-action@v2
         with:
-          tool: dylint-link, just
+          tool: just
 
-      # cargo-dylint has no prebuilt distribution, so taiki-e/install-action
-      # falls back to a from-source `cargo install` and provides no caching
-      # for the resulting binary. baptiste0928/cargo-install caches the
-      # compiled binary keyed on crate+version+OS, independent of the
-      # workspace cache above (which is keyed on Cargo.lock and so churns).
-      - name: Install cargo-dylint
-        uses: baptiste0928/cargo-install@v3
-        with:
-          crate: cargo-dylint
+      # `cargo-dylint` and `dylint-link` are pinned to the workspace's
+      # `dylint_linting` version via `just install-dev-tools`, which
+      # writes them under `.dev-tools/`. That dir is in the cache, so
+      # this step is a no-op on a cache hit.
+      - name: Install dylint tooling
+        shell: bash
+        run: just install-dev-tools
 
       - name: Fmt
         shell: bash
