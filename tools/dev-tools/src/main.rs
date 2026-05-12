@@ -75,34 +75,22 @@ fn install(root: &Path, version: &str) -> ExitCode {
         install_root.display(),
     );
 
-    for crate_name in ["cargo-dylint", "dylint-link"] {
-        let status = "cargo"
-            .pipe(Command::new)
-            .with_env("CARGO_INSTALL_ROOT", &install_root)
-            .with_arg("install")
-            .with_arg("--locked")
-            .with_arg("--version")
-            .with_arg(version)
-            .with_arg(crate_name)
-            .status()
-            .unwrap_or_else(|error| panic!("spawn `cargo install {crate_name}`: {error}"));
-        // `cargo install` exits 0 both on a fresh install and when
-        // the requested version is already present, so success here
-        // means "the binary is on disk at the right version" in
-        // either case. A non-zero exit (typically a different
-        // version is already installed) is the developer's signal
-        // to delete `.dev-tools/` and rerun.
-        if !status.success() {
-            eprintln!(
-                "`cargo install {crate_name}` failed (exit {status}). \
-                 If a different version is already installed under \
-                 {}, remove it and rerun.",
-                install_root.display(),
-            );
-            return ExitCode::FAILURE;
-        }
+    let status = "cargo"
+        .pipe(Command::new)
+        .with_env("CARGO_INSTALL_ROOT", &install_root)
+        .with_arg("install")
+        .with_arg("--locked")
+        .with_arg("--version")
+        .with_arg(version)
+        .with_arg("cargo-dylint")
+        .with_arg("dylint-link")
+        .status()
+        .expect("spawn `cargo install`");
+    if status.success() {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
     }
-    ExitCode::SUCCESS
 }
 
 fn locked_dylint_version(root: &Path) -> String {
