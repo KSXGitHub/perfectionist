@@ -33,7 +33,6 @@ const INSTALL_DIR: &str = ".dev-tools";
 struct Cli {
     #[clap(help = "The root of the repository")]
     root: PathBuf,
-
     #[clap(subcommand)]
     command: Sub,
 }
