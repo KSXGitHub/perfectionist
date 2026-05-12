@@ -40,6 +40,38 @@ self-lint:
 warmup-integration-tests:
   time cargo run --package _utils --bin warmup -- "$(pwd)"
 
+# Install cargo-dylint and dylint-link at the version this workspace requires
+install-dev-tools:
+  #!/usr/bin/env bash
+  # Implemented in shell rather than a `_utils` binary so a fresh
+  # checkout — where `dylint-link` (the configured linker) is not yet
+  # on PATH and `cargo build` therefore can't compile anything — can
+  # still run it.
+  set -euo pipefail
+  version=$(
+    awk '
+      /^\[\[package\]\]/ { in_pkg = 1; name = ""; version = ""; next }
+      in_pkg && /^name *= / { name = $0 }
+      in_pkg && /^version *= / { version = $0 }
+      in_pkg && /^$/ {
+        if (name ~ /"dylint_linting"/) {
+          sub(/^version *= *"/, "", version)
+          sub(/"$/, "", version)
+          print version
+          exit
+        }
+        in_pkg = 0
+      }
+    ' Cargo.lock
+  )
+  if [ -z "$version" ]; then
+    echo "Could not find dylint_linting version in Cargo.lock" >&2
+    exit 1
+  fi
+  echo "Installing cargo-dylint and dylint-link at version $version"
+  cargo install --locked --force --version "$version" cargo-dylint
+  cargo install --locked --force --version "$version" dylint-link
+
 # Render the rule catalogue to `gh-pages/index.html`.
 gen-docs out_dir="gh-pages" git_ref="":
   #!/usr/bin/env bash

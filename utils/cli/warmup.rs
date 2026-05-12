@@ -28,6 +28,16 @@ fn main() -> ExitCode {
     // `dylint.toml` resolves regardless of where the fixture sits.
     let root = std::fs::canonicalize(&root)
         .unwrap_or_else(|error| panic!("canonicalise {}: {error}", root.display()));
+
+    // Fail fast with a clear message if the local `cargo-dylint` or
+    // `dylint-link` is at a different major version than this
+    // workspace's `dylint_linting`. Otherwise the warmup later dies
+    // deep inside cargo with an opaque error.
+    if let Err(message) = _utils::preflight::check_dylint_tools(&root) {
+        eprintln!("{message}");
+        return ExitCode::FAILURE;
+    }
+
     let shared_target_dir = root.join("target").join("integration-fixtures");
     let warmup_project_dir = root.join("target").join("integration-fixtures-warmup");
 
