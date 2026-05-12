@@ -2,6 +2,13 @@ macro_rules! my_macro {
     ($($item:expr),* $(,)?) => {{ $(let _ = $item;)* 0 }};
 }
 
+macro_rules! arrow_macro {
+    ($name:ident => $value:expr) => {{
+        let _ = $value;
+        0
+    }};
+}
+
 // `debug_assert_eq!` is on the built-in deny list. The first argument
 // is a non-trivial method call; in release builds the macro folds to
 // `if false { ... }` and the call never runs, leaving the map in a
@@ -104,13 +111,6 @@ fn _empty_argument_list() {
 // argument is skipped rather than parsed as an expression.
 fn _fat_arrow_skips_argument() {
     let _ = arrow_macro!(NameType => value());
-}
-
-macro_rules! arrow_macro {
-    ($name:ident => $value:expr) => {{
-        let _ = $value;
-        0
-    }};
 }
 
 #[allow(dead_code)]

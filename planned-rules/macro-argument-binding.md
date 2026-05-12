@@ -20,6 +20,13 @@ Still pending:
   `x as my::Type`) but treats `expr as &Path`, `expr as *const T`,
   and other non-path type forms as non-trivial. Expanding the
   type recogniser is a small, additive change.
+- **Turbofish in path arguments.** A path with explicit generics
+  (`Vec::<u32>::new`, `Some::<u32>`) is parsed as `path-segment` plus
+  `::<...>` plus more segments; the current path walker only consumes
+  `::ident` runs and so falls through to non-trivial on the turbofish.
+  These should be trivial per the spec's intent ("a path resolving to
+  a function name, or unit / tuple variant"); extend `take_path_tail`
+  to consume an optional `::<...>` token-tree per segment.
 
 The "What to lint" pipeline below applies to the implemented
 modes as written. The remainder of this file is the active spec
