@@ -23,6 +23,7 @@ build:
 # Check documentation
 doc:
   just gen-docs
+  just check-rules-md
   RUSTFLAGS='-D warnings' cargo doc --no-deps --document-private-items
 
 # Run all the lints
@@ -65,4 +66,12 @@ gen-docs out_dir="gh-pages" git_ref="":
   if [ -z "$ref" ]; then
     ref="$(git rev-parse HEAD)"
   fi
-  cargo run --package _gen_docs --bin gen-docs -- "$(pwd)" "{{out_dir}}" --git-ref="$ref"
+  cargo run --package _gen_docs --bin gen-docs -- --root "$(pwd)" html "{{out_dir}}" --git-ref="$ref"
+
+# Regenerate the in-tree markdown catalogue under `rules/`.
+gen-rules-md rules_dir="rules":
+  cargo run --package _gen_docs --bin gen-docs -- --root "$(pwd)" write-md "{{rules_dir}}"
+
+# Verify the in-tree markdown catalogue is in sync with `src/rules/`.
+check-rules-md rules_dir="rules":
+  cargo run --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"

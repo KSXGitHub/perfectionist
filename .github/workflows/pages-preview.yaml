@@ -76,7 +76,7 @@ jobs:
       # which isn't checked out here).
       - name: Render site
         shell: bash
-        run: cargo run --package _gen_docs --bin gen-docs -- "$(pwd)" gh-pages --git-ref="${{ github.event.pull_request.head.sha }}"
+        run: cargo run --package _gen_docs --bin gen-docs -- --root "$(pwd)" html gh-pages --git-ref="${{ github.event.pull_request.head.sha }}"
 
       # Wrangler's `--branch` flag drives the alias subdomain
       # Cloudflare assigns to the deployment
