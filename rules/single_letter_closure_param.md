@@ -28,8 +28,8 @@ callback. Two shapes qualify as trivial:
 This is a stylistic preference, not a correctness issue.
 A multi-line closure body whose parameter is a single
 letter forces the reader to scroll back to the closure
-header for context on every reference. The trivial-
-callback exception covers `sort_by(|a, b| ...)` and
+header for context on every reference. The
+trivial-callback exception covers `sort_by(|a, b| ...)` and
 `.map(|x| x.field)` shapes that are short enough that the
 parameter's role is unambiguous from the call site.
 
