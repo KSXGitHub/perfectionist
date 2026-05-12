@@ -37,7 +37,10 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         macro_trailing_comma
         non_exhaustive_error
         prefer_raw_string
-        single_letter_names
+        single_letter_closure_param
+        single_letter_function_param
+        single_letter_generic
+        single_letter_let_binding
         unicode_ellipsis_in_comments
         unicode_ellipsis_in_panic_messages
 

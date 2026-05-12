@@ -43,6 +43,37 @@ measurement), check whether the helper already exists in the
 codebase before writing a new one. Sibling-rule references in the
 planning files identify shared infrastructure.
 
+## One rule per file, one `Config` per rule
+
+The catalogue is organised so that each rule has exactly one
+source file at `src/rules/<rule_name>.rs` and exactly one `Config`
+struct keyed by the rule's full namespaced name. The convention
+has two consequences for the implementer:
+
+1. **Before writing code, check whether the rule is actually one
+   rule.** A planning file that bundles several independently-
+   triggered checks under one banner is usually better
+   implemented as several rules. If the sub-checks can be cleanly
+   separated — distinct trigger predicates, disjoint
+   configuration, no shared diagnostic — split the planning file
+   into one rule per sub-check before you start. (Historical
+   example: an early `single_letter_names` rule bundled four
+   independently-configured checks for generics, `let` bindings,
+   function parameters, and closure parameters; each lives in its
+   own file today.)
+
+2. **When writing code, give each rule its own file and `Config`.**
+   The file name matches the rule name (snake_case, no
+   `perfectionist::` prefix). `CONFIG_KEY` is the full namespaced
+   name (`perfectionist::<rule_name>`). The `Config` struct holds
+   only the fields the rule actually reads — fields nominally
+   "about" the rule but consumed by a different rule belong in
+   that other rule's `Config`. If two rules genuinely share a
+   helper function or type, factor it into `src/rules/common.rs`
+   (for trivial cross-rule utilities) or a dedicated
+   crate-internal module rather than co-housing the rules in one
+   file.
+
 ## When the implementation is complete
 
 If a PR fully implements a rule — every sub-check, every
