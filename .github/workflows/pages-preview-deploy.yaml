@@ -1,0 +1,102 @@
+name: Pages preview deploy
+
+# Triggered after `Pages preview` finishes. The two-workflow split
+# exists because the build runs against a fork's tree and GitHub
+# withholds secrets from such runs by design. `workflow_run`
+# fires in the context of the base repository's default branch
+# instead, so `CLOUDFLARE_API_TOKEN` is available here even when
+# the originating PR came from a fork.
+on:
+  workflow_run:
+    workflows: [Pages preview]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+# Cancel an in-flight deploy if a newer build for the same head
+# branch completes; matches the build-side concurrency intent
+# (`pages-preview-<pr-number>`) but keyed on the branch because
+# the PR number isn't known until artifacts are downloaded.
+concurrency:
+  group: pages-preview-deploy-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy preview
+    runs-on: ubuntu-latest
+    # Skip if the build itself failed or was cancelled — there is
+    # no usable artifact to deploy in that case.
+    if: github.event.workflow_run.conclusion == 'success'
+
+    # Scopes CLOUDFLARE_API_TOKEN to this job. The deployment also
+    # shows up under the repo's Environments tab so each preview
+    # is tracked alongside production.
+    environment:
+      name: cloudflare-preview
+      url: ${{ steps.deploy.outputs.deployment-url }}
+
+    steps:
+      # `actions/download-artifact@v4` with `run-id` reaches across
+      # workflow runs; needs `actions: read` (granted above) and an
+      # explicit `github-token`.
+      - name: Download rendered site
+        uses: actions/download-artifact@v4
+        with:
+          name: gh-pages
+          path: gh-pages
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download PR metadata
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-meta
+          path: pr-meta
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # The metadata files came from a fork-controlled build, so
+      # validate the values before letting them reach the shell or
+      # the Cloudflare API. Git ref names and SHAs both have a
+      # constrained character set; reject anything else outright
+      # rather than try to escape it.
+      - name: Read and validate PR metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          number=$(cat pr-meta/number)
+          head_sha=$(cat pr-meta/head-sha)
+          head_ref=$(cat pr-meta/head-ref)
+
+          [[ "$number"   =~ ^[0-9]+$              ]] || { echo "bad pr number: $number"   >&2; exit 1; }
+          [[ "$head_sha" =~ ^[0-9a-f]{40}$        ]] || { echo "bad head sha: $head_sha"  >&2; exit 1; }
+          [[ "$head_ref" =~ ^[A-Za-z0-9._/-]{1,255}$ ]] || { echo "bad head ref: $head_ref" >&2; exit 1; }
+
+          {
+            echo "number=$number"
+            echo "head-sha=$head_sha"
+            echo "head-ref=$head_ref"
+          } >> "$GITHUB_OUTPUT"
+
+      # Wrangler's `--branch` flag drives the alias subdomain
+      # Cloudflare assigns to the deployment
+      # (<branch-slug>.perfectionist-preview.pages.dev). Using the
+      # PR's head ref keeps that URL stable across pushes to the
+      # same PR; the per-commit hash URL stays unique per deploy.
+      # The branch and SHA below originate inside the fork-built
+      # artifact, but the validation step above has already
+      # constrained them to `[A-Za-z0-9._/-]+` and 40 hex chars
+      # respectively — no character that survives validation has
+      # meaning to either YAML expansion or wrangler's argv
+      # parser, so direct substitution is safe.
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy gh-pages --project-name=perfectionist-preview --branch=${{ steps.meta.outputs.head-ref }} --commit-hash=${{ steps.meta.outputs.head-sha }}

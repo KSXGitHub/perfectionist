@@ -15,16 +15,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
-    name: Build and deploy preview
+  build:
+    name: Build preview
     runs-on: ubuntu-latest
-
-    # Scopes CLOUDFLARE_API_TOKEN to this job. The deployment also
-    # shows up under the repo's Environments tab so each preview is
-    # tracked alongside production.
-    environment:
-      name: cloudflare-preview
-      url: ${{ steps.deploy.outputs.deployment-url }}
 
     steps:
       # Check out the PR head commit (not the auto-generated merge
@@ -70,18 +63,38 @@ jobs:
         shell: bash
         run: cargo run --package _gen_docs --bin gen-docs -- "$(pwd)" gh-pages --git-ref="${{ github.event.pull_request.head.sha }}"
 
-      # Wrangler's `--branch` flag drives the alias subdomain
-      # Cloudflare assigns to the deployment
-      # (<branch-slug>.perfectionist-preview.pages.dev). Using the
-      # PR's head ref keeps that URL stable across pushes to the
-      # same PR; the per-commit hash URL stays unique per deploy.
-      - name: Deploy to Cloudflare Pages
-        id: deploy
-        uses: cloudflare/wrangler-action@v3
+      # Persist the values the deploy workflow needs to invoke
+      # `wrangler pages deploy`. We can't rely on
+      # `github.event.workflow_run.pull_requests` over there: it's
+      # documented to be empty for runs triggered by fork PRs, which
+      # is precisely the case this split exists to support.
+      - name: Stash PR metadata
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          mkdir -p pr-meta
+          printf '%s' "$PR_NUMBER" > pr-meta/number
+          printf '%s' "$HEAD_SHA"  > pr-meta/head-sha
+          printf '%s' "$HEAD_REF"  > pr-meta/head-ref
+
+      - name: Upload rendered site
+        uses: actions/upload-artifact@v4
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy gh-pages --project-name=perfectionist-preview --branch=${{ github.head_ref }} --commit-hash=${{ github.event.pull_request.head.sha }}
+          name: gh-pages
+          path: gh-pages
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Upload PR metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-meta
+          path: pr-meta
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Clean workspace artifacts before cache
         if: always()
