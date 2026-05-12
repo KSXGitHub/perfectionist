@@ -109,9 +109,10 @@ enum Mode {
     /// plus `deny_extra`). Every other macro is silently accepted.
     DenyOnly,
     /// Flag every function-like or array-like invocation that carries
-    /// a non-trivial top-level argument, regardless of macro. Project
-    /// exceptions go in `allow_extra`; there is no built-in allow list
-    /// in this mode.
+    /// a non-trivial top-level argument, regardless of any built-in
+    /// classification — unless the invocation matches an `allow_extra`
+    /// entry. The built-in allow list is deliberately ignored in this
+    /// mode; project exceptions go in `allow_extra`.
     Blanket,
     /// Curated deny list plus curated allow list, both extensible via
     /// `deny_extra` / `allow_extra`. Macros on neither list are
@@ -315,9 +316,9 @@ fn queue(span: Span) {
 ///
 /// `=>` is ordinary content here — match-arm syntax inside `matches!`
 /// shows up as a top-level fat arrow but is meaningful to the macro,
-/// not a separator. The walker passes it through unchanged so the
-/// per-argument re-parser can decide whether each argument is a single
-/// expression (and if not, the argument is skipped on parse failure).
+/// not a separator. The walker passes it through unchanged so each
+/// argument's `looks_like_expression` check can skip it as a non-
+/// expression position the macro author chose.
 fn split_top_level_arguments(stream: &TokenStream) -> Option<Vec<Vec<TokenTree>>> {
     let mut arguments: Vec<Vec<TokenTree>> = Vec::new();
     let mut current: Vec<TokenTree> = Vec::new();
