@@ -40,6 +40,18 @@ self-lint:
 warmup-integration-tests:
   time cargo run --package _utils --bin warmup -- "$(pwd)"
 
-# Render the rule catalogue to `gh-pages/index.html`
-gen-docs out_dir="gh-pages" git_ref=`git branch --show-current`:
-  cargo run --package _gen_docs --bin gen-docs -- "$(pwd)" "{{out_dir}}" --git-ref="{{git_ref}}"
+# Render the rule catalogue to `gh-pages/index.html`.
+# `git_ref` defaults to the current branch name, falling back to the
+# commit SHA when checked out detached (e.g., the `actions/checkout`
+# default in CI). gen-docs requires a non-empty value.
+gen-docs out_dir="gh-pages" git_ref="":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  ref="{{git_ref}}"
+  if [ -z "$ref" ]; then
+    ref="$(git branch --show-current)"
+  fi
+  if [ -z "$ref" ]; then
+    ref="$(git rev-parse HEAD)"
+  fi
+  cargo run --package _gen_docs --bin gen-docs -- "$(pwd)" "{{out_dir}}" --git-ref="$ref"
