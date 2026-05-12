@@ -41,6 +41,17 @@ The same trap covers any macro that expands its capture more
 than once (`min!`/`max!`-style, retry loops): a side-effecting
 expression repeated produces wrong results.
 
+Trivial arguments — literals, paths, field accesses, indexing
+of trivial bases, dereferences, references, casts, the unit
+literal `()`, parenthesised / tuple groups whose elements are
+all trivial, and binary chains of trivial operands joined by
+side-effect-free operators — are accepted as-is. A comparison
+like `a.field <= b.field` evaluates the same way regardless of
+how many times the macro touches it, so binding it to a `let`
+would only force the comparison to run in release builds for
+no benefit. The lint focuses on arguments whose evaluation
+is itself observable.
+
 ## Example
 ```rust,ignore
 debug_assert_eq!(map.insert(key, value), None, "duplicate");

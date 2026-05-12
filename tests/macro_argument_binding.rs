@@ -134,3 +134,11 @@ fn crate_level_expect_fulfils_against_a_violation() {
         RuleConfig::default(),
     );
 }
+
+#[test]
+fn module_level_expect_fulfils_for_item_position_macro() {
+    run(
+        "ui-toml/macro_argument_binding/expect_at_module_with_item_macro",
+        RuleConfig::default(),
+    );
+}

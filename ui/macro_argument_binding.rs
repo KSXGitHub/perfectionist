@@ -13,6 +13,14 @@ macro_rules! await_macro {
     ($($tokens:tt)*) => {{ 0 }};
 }
 
+macro_rules! assignment_macro {
+    ($($tokens:tt)*) => {{ 0 }};
+}
+
+macro_rules! op_separator_macro {
+    ($($tokens:tt)*) => {{ 0 }};
+}
+
 // `debug_assert_eq!` is on the built-in deny list. The first argument
 // is a non-trivial method call; in release builds the macro folds to
 // `if false { ... }` and the call never runs, leaving the map in a
@@ -128,6 +136,54 @@ fn _empty_argument_list() {
 // argument is skipped rather than parsed as an expression.
 fn _fat_arrow_skips_argument() {
     let _ = arrow_macro!(NameType => value());
+}
+
+// Skipped: a top-level `=` or compound-assignment operator signals an
+// assignment-shaped DSL matcher the macro author chose
+// (`make_const!(NAME = 'x')`, `bump!(counter += 1)`), not a Rust
+// expression to bind. `name = value` is technically a valid Rust
+// assignment expression of unit type, but in macro-argument position
+// it is overwhelmingly a structural separator and the let-bind
+// rewrite would be meaningless for the macro's matcher arm.
+fn _assignment_dsl_skipped(items: &mut u32, slot: &mut u32) {
+    let _ = assignment_macro!(LEVEL0 = value());
+    let _ = assignment_macro!(*items += value());
+    let _ = assignment_macro!(*slot *= value());
+}
+
+// Skipped: a bare operator token cannot begin a Rust expression, so
+// `==` here is not an expression at all; suggesting a `let` binding
+// is impossible. Custom operator-positional DSLs like
+// `debug_assert_op_expr!(actual, ==, expected)` rely on this skip.
+fn _bare_operator_skipped(left: u32, right: u32) {
+    let _ = op_separator_macro!(left, ==, right);
+    let _ = op_separator_macro!(left, >, right);
+}
+
+// `()` is the canonical trivial value: the empty-tuple / unit literal.
+// Parenthesised trivial expressions and tuples of trivial elements are
+// also trivial, since none of these introduce a side effect beyond
+// their contents. Without these, callers that pass `()` as a marker
+// argument would be flagged with a meaningless let-binding hint.
+fn _parenthesised_trivial_accepted(point: (u32, u32)) {
+    let _ = my_macro!((), value());
+    let _ = my_macro!((MAX), value());
+    let _ = my_macro!((point.0, point.1), value());
+    let _ = my_macro!((MAX,), value());
+}
+
+// Binary chains over trivial operands are trivial — comparisons and
+// arithmetic on local bindings, fields, and constants are side-effect-
+// free and produce the same result regardless of how many times the
+// macro evaluates them. Flagging these would defeat the debug-only
+// optimisation of `debug_assert!(a <= b)` by forcing the comparison to
+// evaluate in release builds.
+fn _binary_chain_of_trivial_operands_accepted(left: u32, right: u32, point: (u32, u32)) {
+    debug_assert!(left <= right);
+    debug_assert!(left == right);
+    debug_assert!(left != right && left < MAX);
+    debug_assert!(point.0 + point.1 < MAX);
+    debug_assert!(left * 2 == right + 1);
 }
 
 #[allow(dead_code)]

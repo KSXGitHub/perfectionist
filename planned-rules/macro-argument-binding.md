@@ -15,6 +15,13 @@ Still pending:
   fails to deserialise. The matcher-walking infrastructure is
   shared with the equivalent eligibility check planned for
   `macro-trailing-comma`; both will land together.
+- **Range expressions over trivial operands.** The spec couples
+  range-expression triviality to operand triviality the same way
+  it does for binary expressions, but the walker only recognises
+  binary chains; `start..end` and `start..=end` over trivial
+  operands still fall through as non-trivial. Extending
+  `take_trivial_expression` to optionally consume a range tail is
+  a small follow-up.
 - **Cast suffix beyond path-shaped types.** The trivial-expression
   predicate currently recognises `expr as Path` (e.g., `x as u64`,
   `x as my::Type`) but treats `expr as &Path`, `expr as *const T`,
@@ -134,13 +141,35 @@ The lint accepts any argument whose outermost shape is one of:
   themselves trivial (`buffer[0]`, `lookup[Foo::KEY]`).
 - A unary deref of a trivial expression (`*ptr`).
 - A trivial expression annotated with a type (`x as u64`).
+- The unit literal `()`, a parenthesised trivial expression
+  (`(x)`), or a tuple whose every element is trivial
+  (`(a, b)`, `(a,)`).
+- A binary chain whose every operand is trivial and whose
+  every operator is side-effect-free in the syntactic sense:
+  the arithmetic operators (`+`, `-`, `*`, `/`, `%`), the
+  bitwise operators (`&`, `|`, `^`, `<<`, `>>`), the
+  comparison operators (`==`, `!=`, `<`, `>`, `<=`, `>=`),
+  and the short-circuit operators (`&&`, `||`). `a <= b`,
+  `count + offset`, `flags & MASK == 0` are all trivial when
+  the operands are.
 
 Everything else is non-trivial: function and method calls, `?`,
 `.await`, macro invocations, blocks, control-flow expressions,
-assignments, and any binary or range expression whose operands
-are non-trivial. The classification is purely syntactic — `const
-fn` calls and other "morally pure" expressions are non-trivial;
-hoist them to a `const` if they need to appear inline.
+assignments, range expressions, and any binary expression whose
+operands are non-trivial. The classification is purely
+syntactic — `const fn` calls and other "morally pure"
+expressions are non-trivial; hoist them to a `const` if they
+need to appear inline.
+
+The binary-chain rule reflects an important consequence for
+`debug_assert*`: a side-effect-free comparison of trivial
+operands evaluates the same way regardless of how many times the
+macro touches it, and the lint's `let`-binding hint would
+*force* the comparison to evaluate even in release builds. The
+trivial-chain carve-out keeps the lint focused on the genuine
+hazard (side-effecting expressions like `map.insert(k, v)`
+passed where the macro might drop them) and away from the noise
+case (comparing two locals).
 
 ## Eligibility modes
 
@@ -236,8 +265,13 @@ For every macro invocation:
    content and walked through.
 6. For each top-level argument, parse the token stream as an
    expression. Skip arguments that don't parse as a single
-   expression (`name: type`, `name = value`, etc. are syntactic
-   positions the macro author chose).
+   expression — including positional operator markers
+   (`debug_assert_op_expr!(a, ==, b)`), assignment-shaped
+   matchers (`make_const!(NAME = 'x')`, `bump!(counter += 1)`),
+   `name: type` ascription-shaped matchers, and `Type => body`
+   match-arm DSLs. All are syntactic positions the macro author
+   chose, and the let-bind rewrite the rule would propose is
+   meaningless for the macro's matcher arm.
 7. Classify the expression with the trivial / non-trivial split.
    If trivial, accept; if non-trivial, emit a diagnostic
    suggesting a `let` binding immediately before the macro
