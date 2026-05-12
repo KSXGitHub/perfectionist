@@ -9,7 +9,7 @@
 
 use std::collections::BTreeSet;
 
-use rustc_ast::MacCall;
+use rustc_ast::Path;
 
 use crate::macro_path::{matches_any, parse_path};
 
@@ -145,18 +145,18 @@ impl MacroArgumentBinding {
     /// `ignore` list, and the mode-based deny / allow lookup. Does
     /// *not* consider the call's delimiter or argument shape — those
     /// stay in the early-pass driver, where token-tree concerns live.
-    pub(super) fn should_check_path(&self, mac_call: &MacCall) -> bool {
+    pub(super) fn should_check_path(&self, path: &Path) -> bool {
         self.enabled
-            && !matches_any(&mac_call.path, &self.ignore)
-            && self.arguments_should_be_checked(mac_call)
+            && !matches_any(path, &self.ignore)
+            && self.arguments_should_be_checked(path)
     }
 
-    fn arguments_should_be_checked(&self, mac_call: &MacCall) -> bool {
-        let on_deny = matches_any(&mac_call.path, &self.deny);
+    fn arguments_should_be_checked(&self, path: &Path) -> bool {
+        let on_deny = matches_any(path, &self.deny);
         match self.mode {
             Mode::DenyOnly => on_deny,
-            Mode::Blanket => !matches_any(&mac_call.path, &self.allow_extra),
-            Mode::AllowAndDeny => on_deny || !matches_any(&mac_call.path, &self.allow),
+            Mode::Blanket => !matches_any(path, &self.allow_extra),
+            Mode::AllowAndDeny => on_deny || !matches_any(path, &self.allow),
         }
     }
 }

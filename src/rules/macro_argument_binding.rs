@@ -119,7 +119,7 @@ impl EarlyLintPass for MacroArgumentBinding {
         if mac_call.args.delim == Delimiter::Brace {
             return;
         }
-        if !self.should_check_path(mac_call) {
+        if !self.should_check_path(&mac_call.path) {
             return;
         }
         let Some(arguments) = split_top_level_arguments(&mac_call.args.tokens) else {
