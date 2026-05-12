@@ -245,6 +245,10 @@ fn unnamespaced(namespaced: &str) -> &str {
     namespaced.strip_prefix(NAMESPACE).unwrap_or(namespaced)
 }
 
+/// Render a path with `/` separators even on Windows. The path
+/// appears inside a markdown link, where `/` is the only separator
+/// browsers and Git's blob viewer interpret correctly. Joining by
+/// `Path::display()` would emit `\` on Windows and break the link.
 fn source_path_str(rule: &Rule) -> String {
     rule.relative_source
         .components()

@@ -214,10 +214,14 @@ fn run_write_md(root: &Path, rules_dir: &Path) -> ExitCode {
     };
     let summary = write_rules_dir(&rules, rules_dir);
     eprintln!(
-        "wrote {} rule file(s) and {} index to {} ({} orphan(s) removed)",
-        summary.rules_written,
-        if summary.index_written { "1" } else { "no" },
+        "{}: rewrote {} rule file(s); index {}; {} orphan(s) removed",
         rules_dir.display(),
+        summary.rules_changed,
+        if summary.index_changed {
+            "rewritten"
+        } else {
+            "unchanged"
+        },
         summary.orphans_removed,
     );
     ExitCode::SUCCESS

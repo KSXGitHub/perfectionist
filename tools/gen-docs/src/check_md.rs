@@ -59,10 +59,14 @@ pub(crate) enum CheckOutcome {
 
 /// Outcome summary for the `write-md` subcommand. The CLI prints
 /// these counts so a reader of the build log can tell at a glance
-/// whether anything actually changed.
+/// whether anything actually changed. Every field counts *changes
+/// to disk*, not files emitted — a rule whose existing on-disk
+/// body already matches the rendered output is not counted in
+/// `rules_changed`, and the index is `index_changed: false` even
+/// though the renderer produced its bytes.
 pub(crate) struct WriteSummary {
-    pub(crate) rules_written: usize,
-    pub(crate) index_written: bool,
+    pub(crate) rules_changed: usize,
+    pub(crate) index_changed: bool,
     pub(crate) orphans_removed: usize,
 }
 
@@ -112,8 +116,8 @@ pub(crate) fn write_rules_dir(rules: &[Rule], rules_dir: &Path) -> WriteSummary 
     fs::create_dir_all(rules_dir).expect("failed to create rules directory");
 
     let mut summary = WriteSummary {
-        rules_written: 0,
-        index_written: false,
+        rules_changed: 0,
+        index_changed: false,
         orphans_removed: 0,
     };
 
@@ -147,9 +151,9 @@ pub(crate) fn write_rules_dir(rules: &[Rule], rules_dir: &Path) -> WriteSummary 
                 .unwrap_or_else(|error| panic!("failed to write {}: {error}", path.display()));
         }
         if file_name == INDEX_FILE_NAME {
-            summary.index_written = needs_write;
+            summary.index_changed = needs_write;
         } else if needs_write {
-            summary.rules_written += 1;
+            summary.rules_changed += 1;
         }
     }
 
@@ -178,7 +182,17 @@ fn read_managed_filenames(rules_dir: &Path) -> BTreeSet<String> {
         if !file_type.is_file() {
             continue;
         }
-        let name = entry.file_name().to_string_lossy().into_owned();
+        // Skip non-UTF-8 filenames rather than coercing them via
+        // `to_string_lossy`: a coerced name would still round-trip
+        // through `rules_dir.join(name)` to the *wrong* on-disk
+        // path, and the orphan-delete step would either fail or
+        // (worse) target a different file. The rule extractor only
+        // ever produces UTF-8 names, so this branch should never
+        // fire in practice; a non-UTF-8 file in `rules/` is by
+        // definition not something this generator wrote.
+        let Some(name) = entry.file_name().to_str().map(str::to_owned) else {
+            continue;
+        };
         if Path::new(&name).extension().is_some_and(|ext| ext == "md") {
             names.insert(name);
         }
@@ -204,12 +218,19 @@ mod tests {
         }
     }
 
-    /// Build a temporary directory under `target/` so the test
-    /// doesn't litter the working tree, and doesn't conflict with
-    /// another test running in parallel.
+    /// Build a temporary directory unique to *this call*, so the
+    /// test doesn't litter the working tree and can't collide with
+    /// another test running in parallel. The path includes both the
+    /// process id (for cross-process isolation under `cargo test`'s
+    /// test harness, which forks per binary) and a per-process
+    /// atomic counter (for inter-test isolation within the same
+    /// binary, so two tests that happen to share a `label` don't
+    /// share a directory).
     fn tempdir(label: &str) -> PathBuf {
+        static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let seq = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let base = std::env::temp_dir().join(format!(
-            "perfectionist-gen-docs-{label}-{}",
+            "perfectionist-gen-docs-{label}-{}-{seq}",
             std::process::id(),
         ));
         let _ = fs::remove_dir_all(&base);
@@ -286,8 +307,8 @@ mod tests {
         let rules = vec![fake_rule("alpha")];
         write_rules_dir(&rules, &dir);
         let summary = write_rules_dir(&rules, &dir);
-        assert_eq!(summary.rules_written, 0);
-        assert!(!summary.index_written);
+        assert_eq!(summary.rules_changed, 0);
+        assert!(!summary.index_changed);
         assert_eq!(summary.orphans_removed, 0);
     }
 }
