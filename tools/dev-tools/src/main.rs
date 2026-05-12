@@ -15,7 +15,7 @@
 
 use std::env;
 use std::fs::{OpenOptions, read_to_string};
-use std::io::{self, Write};
+use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
@@ -154,6 +154,7 @@ enum GhaDylintVersionError {
 }
 
 fn gha_dylint_version(version: &str) -> Result<(), GhaDylintVersionError> {
+    use std::io::Write;
     let path = env::var("GITHUB_OUTPUT").map_err(GhaDylintVersionError::EnvVar)?;
     let mut file = OpenOptions::new()
         .append(true)
