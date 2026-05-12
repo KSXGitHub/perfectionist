@@ -21,7 +21,7 @@ use std::collections::BTreeSet;
 /// becomes `["std", "vec"]`. An empty or all-empty input returns an
 /// empty vector; callers should treat that as "no matchable path" and
 /// skip the entry.
-pub fn parse_path(raw: &str) -> Vec<String> {
+pub(crate) fn parse_path(raw: &str) -> Vec<String> {
     raw.split("::")
         .map(str::trim)
         .filter(|segment| !segment.is_empty())
@@ -29,8 +29,35 @@ pub fn parse_path(raw: &str) -> Vec<String> {
         .collect()
 }
 
+/// Parse a list of `"a::b::c"`-style entries from configuration into a
+/// deduplicated set of segment sequences. Empty / whitespace-only
+/// entries are silently dropped, mirroring the contract of
+/// [`parse_path`].
+pub(crate) fn parse_path_list(raw_entries: &[String]) -> BTreeSet<Vec<String>> {
+    raw_entries
+        .iter()
+        .map(|entry| parse_path(entry))
+        .filter(|parsed| !parsed.is_empty())
+        .collect()
+}
+
+/// Combine a curated built-in name list (single segments) with a set of
+/// user-supplied multi-segment entries into a single matchable set.
+/// The built-in side is treated as single-segment entries, which match
+/// by the invocation path's final segment.
+pub(crate) fn merge_with_builtins(
+    builtin: &[&str],
+    extras: &BTreeSet<Vec<String>>,
+) -> BTreeSet<Vec<String>> {
+    builtin
+        .iter()
+        .map(|name| vec![(*name).to_owned()])
+        .chain(extras.iter().cloned())
+        .collect()
+}
+
 /// Returns `true` if any entry in `entries` matches the invocation path.
-pub fn matches_any(invocation: &rustc_ast::Path, entries: &BTreeSet<Vec<String>>) -> bool {
+pub(crate) fn matches_any(invocation: &rustc_ast::Path, entries: &BTreeSet<Vec<String>>) -> bool {
     entries.iter().any(|entry| entry_matches(entry, invocation))
 }
 
@@ -38,7 +65,7 @@ pub fn matches_any(invocation: &rustc_ast::Path, entries: &BTreeSet<Vec<String>>
 /// allocating a `Vec<String>` snapshot of the invocation. Single-segment
 /// entries match the path's final segment; multi-segment entries
 /// tail-match the path's segment sequence.
-pub fn entry_matches(entry: &[String], invocation: &rustc_ast::Path) -> bool {
+pub(crate) fn entry_matches(entry: &[String], invocation: &rustc_ast::Path) -> bool {
     let segments = &invocation.segments;
     if entry.is_empty() || segments.is_empty() {
         return false;

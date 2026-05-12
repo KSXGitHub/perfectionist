@@ -15,6 +15,8 @@ use rustc_session::Session;
 dylint_linting::dylint_library!();
 
 mod common;
+mod enclosing_hir;
+mod literal_scan;
 mod macro_path;
 mod rules;
 

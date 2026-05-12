@@ -75,6 +75,46 @@ has two consequences for the implementer:
    crate-internal module rather than co-housing the rules in one
    file.
 
+3. **When a rule grows past one screenful, split it into a
+   directory module beside the flat `.rs` entry.** The crate's own
+   `perfectionist::flat_module_pattern` lint forbids the `mod.rs`
+   form, so the layout is `src/rules/<rule>.rs` next to
+   `src/rules/<rule>/<concern>.rs`. The flat `.rs` entry keeps the
+   `declare_tool_lint!` block, the `register_lint` / `register_pass`
+   functions, the `EarlyLintPass` / `LateLintPass` driver, and any
+   process-wide state (`static PENDING_VIOLATIONS`, etc.). Common
+   submodule names that have emerged:
+   - `config` — `Config` struct, default lists, in-memory rule state.
+   - `early` / `late` — the corresponding pass implementation when
+     it doesn't fit alongside the driver.
+   - `emit` — diagnostic-emission helpers, one per violation shape.
+   - `queue` — the `PendingViolation` payload for rules that split
+     across pre-expansion and late passes.
+   - `scan` / `parser` — source-text walkers and parser combinators.
+   - `ordering` / `triviality` — rule-specific algorithms.
+
+   The `macro_argument_binding/`, `macro_trailing_comma/`,
+   `prefer_raw_string/`, `derive_ordering/`,
+   `unicode_ellipsis_in_panic_messages/`, and
+   `single_letter_closure_param/` directories illustrate the
+   pattern.
+
+4. **Cross-rule helpers are `pub(crate)`, not `pub`.** The crate is
+   a dylint `cdylib` with no public API surface, so `pub`
+   over-advertises. Items in `src/common.rs`, `src/macro_path.rs`,
+   `src/enclosing_hir.rs`, and `src/literal_scan.rs` should all be
+   `pub(crate)` (or tighter). Use `pub(super)` for items that are
+   only meant to leak one module level up — e.g. a rule's `Config`
+   struct that's read by the rule's flat `.rs` driver but nowhere
+   else.
+
+   When deciding between `src/common.rs` and a dedicated module:
+   `common.rs` is for short, self-contained, single-concept
+   helpers (`is_single_ascii_letter`, `binding_ident`). Anything
+   that has its own invariants worth documenting in a module
+   docstring — a generic HIR walker, a per-character emit loop, a
+   path-set parser — earns its own file.
+
 ## When the implementation is complete
 
 If a PR fully implements a rule — every sub-check, every

@@ -1,14 +1,14 @@
 use std::collections::BTreeSet;
 
-use clippy_utils::diagnostics::span_lint_and_sugg;
 use rustc_ast::Crate;
-use rustc_errors::Applicability;
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{
     BytePos, Pos, RelativeBytePos, SourceFile, Span, SyntaxContext, def_id::LOCAL_CRATE,
 };
+
+use crate::literal_scan::emit_flagged_chars;
 
 declare_tool_lint! {
     /// ### What it does
@@ -152,33 +152,19 @@ impl UnicodeEllipsisInComments {
         comment_offset: u32,
         comment: &str,
     ) {
-        for (byte_index, character) in comment.char_indices() {
-            if !self.flagged_chars.contains(&character) {
-                continue;
-            }
-            let char_len = character.len_utf8() as u32;
-            let span_start = source_file.absolute_position(RelativeBytePos::from_u32(
-                comment_offset + byte_index as u32,
-            ));
-            let span_end = BytePos::from_u32(span_start.0 + char_len);
-            let span = Span::new(span_start, span_end, SyntaxContext::root(), None);
-            let applicability = if character == '\u{2026}' {
-                Applicability::MachineApplicable
-            } else {
-                Applicability::MaybeIncorrect
-            };
-            span_lint_and_sugg(
-                lint_context,
-                UNICODE_ELLIPSIS_IN_COMMENTS,
-                span,
-                format!(
-                    "Unicode `{character}` (U+{:04X}) in comment",
-                    character as u32,
-                ),
-                "use ASCII `...` instead",
-                "...".to_owned(),
-                applicability,
-            );
-        }
+        emit_flagged_chars(
+            lint_context,
+            UNICODE_ELLIPSIS_IN_COMMENTS,
+            comment,
+            &self.flagged_chars,
+            "comment",
+            |byte_index, char_len| {
+                let span_start = source_file.absolute_position(RelativeBytePos::from_u32(
+                    comment_offset + byte_index as u32,
+                ));
+                let span_end = BytePos::from_u32(span_start.0 + char_len);
+                Span::new(span_start, span_end, SyntaxContext::root(), None)
+            },
+        );
     }
 }

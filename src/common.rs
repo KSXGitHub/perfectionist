@@ -25,3 +25,14 @@ pub(crate) fn binding_ident<'hir>(pat: &'hir hir::Pat<'hir>) -> Option<rustc_spa
         _ => None,
     }
 }
+
+/// Sibling of [`binding_ident`] that returns the binding's `HirId`
+/// instead of its `Ident`. Used by the closure-parameter rule to test
+/// whether a particular expression refers to one of the closure's
+/// parameters.
+pub(crate) fn binding_hir_id<'hir>(pat: &'hir hir::Pat<'hir>) -> Option<hir::HirId> {
+    match pat.kind {
+        hir::PatKind::Binding(_, hir_id, _, None) => Some(hir_id),
+        _ => None,
+    }
+}
