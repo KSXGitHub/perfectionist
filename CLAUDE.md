@@ -60,7 +60,8 @@ has two consequences for the implementer:
    example: an early `single_letter_names` rule bundled four
    independently-configured checks for generics, `let` bindings,
    function parameters, and closure parameters; each lives in its
-   own file today.)
+   own file today. Reference:
+   <https://github.com/KSXGitHub/perfectionist/pull/43>)
 
 2. **When writing code, give each rule its own file and `Config`.**
    The file name matches the rule name (snake_case, no
