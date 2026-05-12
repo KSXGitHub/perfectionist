@@ -49,17 +49,22 @@ struct Cli {
 }
 
 fn resolve_git_ref(root: &Path, git_ref: &str) -> String {
+    let revision = format!("{git_ref}^{{commit}}");
     let output = "git"
         .pipe(Command::new)
         .with_current_dir(root)
         .with_arg("rev-parse")
         .with_arg("--verify")
-        .with_arg(format!("{git_ref}^{{commit}}"))
+        .with_arg(&revision)
         .output()
         .expect("failed to invoke `git rev-parse`");
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        panic!("`git rev-parse {git_ref}` failed: {}", stderr.trim());
+        panic!(
+            "`git rev-parse --verify {revision}` failed ({}): {}",
+            output.status,
+            stderr.trim(),
+        );
     }
     output
         .stdout
