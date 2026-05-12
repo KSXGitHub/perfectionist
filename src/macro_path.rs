@@ -29,6 +29,33 @@ pub fn parse_path(raw: &str) -> Vec<String> {
         .collect()
 }
 
+/// Parse a list of `"a::b::c"`-style entries from configuration into a
+/// deduplicated set of segment sequences. Empty / whitespace-only
+/// entries are silently dropped, mirroring the contract of
+/// [`parse_path`].
+pub fn parse_path_list<S: AsRef<str>>(raw_entries: &[S]) -> BTreeSet<Vec<String>> {
+    raw_entries
+        .iter()
+        .map(|entry| parse_path(entry.as_ref()))
+        .filter(|parsed| !parsed.is_empty())
+        .collect()
+}
+
+/// Combine a curated built-in name list (single segments) with a set of
+/// user-supplied multi-segment entries into a single matchable set.
+/// The built-in side is treated as single-segment entries, which match
+/// by the invocation path's final segment.
+pub fn merge_with_builtins(
+    builtin: &[&str],
+    extras: &BTreeSet<Vec<String>>,
+) -> BTreeSet<Vec<String>> {
+    builtin
+        .iter()
+        .map(|name| vec![(*name).to_owned()])
+        .chain(extras.iter().cloned())
+        .collect()
+}
+
 /// Returns `true` if any entry in `entries` matches the invocation path.
 pub fn matches_any(invocation: &rustc_ast::Path, entries: &BTreeSet<Vec<String>>) -> bool {
     entries.iter().any(|entry| entry_matches(entry, invocation))

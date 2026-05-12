@@ -1,11 +1,20 @@
-use std::cmp::Ordering;
+//! `perfectionist::derive_ordering` — enforce a project-wide ordering
+//! of trait names inside a single `#[derive(...)]` list.
+//!
+//! The ordering algorithm itself lives in [`ordering`]; this file
+//! owns the lint declaration, the configuration, and the early
+//! pre-expansion pass that runs it.
 
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Attribute, MetaItemInner};
 use rustc_errors::Applicability;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::{Span, sym};
+use rustc_span::sym;
+
+mod ordering;
+
+use ordering::{DeriveEntry, Style, desired_order, is_identity};
 
 declare_tool_lint! {
     /// ### What it does
@@ -70,21 +79,6 @@ const DEFAULT_PREFIX: &[&str] = &[
     "Ord",
     "Hash",
 ];
-
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum Style {
-    /// No-op. The lint emits nothing.
-    #[default]
-    Preserve,
-    /// Every trait name must appear in ASCII-case-insensitive
-    /// alphabetical order.
-    Alphabetical,
-    /// Traits listed in the configured `prefix` come first, in the
-    /// listed order; remaining traits are sorted alphabetically
-    /// after.
-    PrefixThenAlphabetical,
-}
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, rename_all = "snake_case")]
@@ -185,7 +179,7 @@ impl DeriveOrdering {
                 span: entry.span(),
             });
         }
-        let desired = self.desired_order(&parsed);
+        let desired = desired_order(self.style, &self.prefix, &parsed);
         if is_identity(&desired) {
             return;
         }
@@ -253,75 +247,4 @@ impl DeriveOrdering {
             },
         );
     }
-
-    /// Return a permutation of `0..entries.len()` describing the
-    /// desired source order under the configured `style`. A return
-    /// value equal to the identity permutation means the entries
-    /// are already in order.
-    fn desired_order(&self, entries: &[DeriveEntry]) -> Vec<usize> {
-        match self.style {
-            Style::Preserve => (0..entries.len()).collect(),
-            Style::Alphabetical => {
-                let mut indices: Vec<usize> = (0..entries.len()).collect();
-                // `slice::sort_by` is stable, so equal-key entries
-                // retain their original relative order.
-                indices.sort_by(|left, right| {
-                    ascii_ci_cmp(&entries[*left].final_name, &entries[*right].final_name)
-                });
-                indices
-            }
-            Style::PrefixThenAlphabetical => {
-                let mut used = vec![false; entries.len()];
-                let mut order: Vec<usize> = Vec::with_capacity(entries.len());
-                // Walk the configured prefix in order; for each
-                // prefix name, find the first not-yet-used entry
-                // that matches and append it. An entry that appears
-                // in the prefix list but not in the user's derive
-                // is silently skipped — the prefix is "preferred
-                // ordering", not "required to be present".
-                for prefix_name in &self.prefix {
-                    for (index, entry) in entries.iter().enumerate() {
-                        if !used[index] && entry.final_name == *prefix_name {
-                            order.push(index);
-                            used[index] = true;
-                            break;
-                        }
-                    }
-                }
-                let mut rest: Vec<usize> =
-                    (0..entries.len()).filter(|index| !used[*index]).collect();
-                rest.sort_by(|left, right| {
-                    ascii_ci_cmp(&entries[*left].final_name, &entries[*right].final_name)
-                });
-                order.extend(rest);
-                order
-            }
-        }
-    }
-}
-
-struct DeriveEntry {
-    /// Final segment of the entry's path. `serde::Deserialize` is
-    /// represented as `"Deserialize"`. Used for ordering decisions;
-    /// the full path is recovered from `span` via the source map
-    /// when emitting the suggestion.
-    final_name: String,
-    /// Source span of the entry, covering its full path text.
-    span: Span,
-}
-
-/// `Ordering::Less` if `left` precedes `right` in ASCII-case-
-/// insensitive alphabetical order. Lowercases byte-by-byte during
-/// the comparison rather than allocating a normalised form.
-fn ascii_ci_cmp(left: &str, right: &str) -> Ordering {
-    left.bytes()
-        .map(|byte| byte.to_ascii_lowercase())
-        .cmp(right.bytes().map(|byte| byte.to_ascii_lowercase()))
-}
-
-fn is_identity(permutation: &[usize]) -> bool {
-    permutation
-        .iter()
-        .enumerate()
-        .all(|(position, &index)| position == index)
 }

@@ -11,7 +11,7 @@ use std::collections::BTreeSet;
 
 use rustc_ast::Path;
 
-use crate::macro_path::{matches_any, parse_path};
+use crate::macro_path::{matches_any, merge_with_builtins, parse_path_list};
 
 const CONFIG_KEY: &str = "perfectionist::macro_argument_binding";
 
@@ -159,18 +159,3 @@ impl MacroArgumentBinding {
     }
 }
 
-fn parse_path_list(raw_entries: &[String]) -> BTreeSet<Vec<String>> {
-    raw_entries
-        .iter()
-        .map(|entry| parse_path(entry))
-        .filter(|parsed| !parsed.is_empty())
-        .collect()
-}
-
-fn merge_with_builtins(builtin: &[&str], extras: &BTreeSet<Vec<String>>) -> BTreeSet<Vec<String>> {
-    builtin
-        .iter()
-        .map(|name| vec![(*name).to_owned()])
-        .chain(extras.iter().cloned())
-        .collect()
-}

@@ -1,9 +1,22 @@
+//! `perfectionist::prefer_raw_string` — flag cooked string literals
+//! whose only escapes are ones a raw string would express verbatim.
+//!
+//! The hand-rolled parser-combinator scanner lives in [`parser`]; this
+//! file owns the lint declaration, the configuration, and the late
+//! pass that drives it.
+
 use clippy_utils::diagnostics::span_lint_and_sugg;
 use rustc_ast::{LitKind, StrStyle};
 use rustc_errors::Applicability;
 use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
+
+mod parser;
+
+use parser::{
+    DEFAULT_ESCAPES_ELIGIBLE, is_supported_eligible_entry, minimal_hash_count, scan_body,
+};
 
 declare_tool_lint! {
     /// ### What it does
@@ -63,10 +76,6 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::prefer_raw_string";
 
-/// Default eligible escape sequences: the three escapes that a raw
-/// string can express verbatim with no escape at all.
-const DEFAULT_ESCAPES_ELIGIBLE: &[&str] = &[r#"\""#, r"\\", r"\'"];
-
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, rename_all = "snake_case")]
 struct Config {
@@ -116,11 +125,10 @@ impl PreferRawString {
         // Drop entries that aren't one of the three self-decoding
         // escapes (`\"`, `\\`, `\'`). Anything else — `\n`, `\t`,
         // `\xNN`, `\u{...}`, ill-formed shapes — would break
-        // `eliminable_decoded`'s "second char is the decoded form"
-        // contract and let the `MachineApplicable` autofix silently
-        // corrupt user code. Filter rather than reject so a stray
-        // entry in the config table doesn't take the whole rule
-        // offline.
+        // the parser's "second char is the decoded form" contract
+        // and let the `MachineApplicable` autofix silently corrupt
+        // user code. Filter rather than reject so a stray entry in
+        // the config table doesn't take the whole rule offline.
         let escapes_eligible = config
             .escapes_eligible
             .into_iter()
@@ -198,159 +206,4 @@ impl<'tcx> LateLintPass<'tcx> for PreferRawString {
             Applicability::MachineApplicable,
         );
     }
-}
-
-struct ScanResult {
-    eliminable_count: usize,
-    decoded: String,
-}
-
-/// Walk the body of a cooked string literal (everything between the
-/// surrounding quotes) and classify each escape. Returns `None` if
-/// the body contains any non-raw escape — `\n`, `\t`, `\r`, `\0`,
-/// `\xNN`, `\u{...}`, line continuations, or any other backslash
-/// sequence that is not listed in the configured `escapes_eligible`.
-fn scan_body(body: &str, eligible: &[String]) -> Option<ScanResult> {
-    let mut rest = body;
-    let mut eliminable_count: usize = 0;
-    let mut decoded = String::with_capacity(body.len());
-    while !rest.is_empty() {
-        if let Some((escape, remainder)) = take_escape_eliminable(rest, eligible) {
-            decoded.push_str(eliminable_decoded(escape));
-            eliminable_count = eliminable_count.saturating_add(1);
-            rest = remainder;
-            continue;
-        }
-        if take_escape_non_raw(rest).is_some() {
-            return None;
-        }
-        let (literal, remainder) = take_literal_char(rest)?;
-        decoded.push_str(literal);
-        rest = remainder;
-    }
-    Some(ScanResult {
-        eliminable_count,
-        decoded,
-    })
-}
-
-/// Take a prefix of `input` that matches one of the configured
-/// eligible escape sequences. Each entry is matched literally
-/// against the input — no decoding, no normalisation. Entries
-/// reach this function only after [`is_supported_eligible_entry`]
-/// has accepted them, so they are non-empty by construction.
-fn take_escape_eliminable<'a>(input: &'a str, eligible: &[String]) -> Option<(&'a str, &'a str)> {
-    for entry in eligible {
-        if input.starts_with(entry.as_str()) {
-            return Some(input.split_at(entry.len()));
-        }
-    }
-    None
-}
-
-/// Decode an eligible escape into the verbatim text it represents
-/// in a raw string. Eligible entries are constrained to the three
-/// self-decoding escapes by [`is_supported_eligible_entry`], so the
-/// decoded form is exactly the entry with its leading backslash
-/// removed.
-fn eliminable_decoded(escape: &str) -> &str {
-    &escape['\\'.len_utf8()..]
-}
-
-/// Take any backslash escape from the front of `input`. Recognises
-/// `\xNN` (4 bytes), `\u{...}` (variable length), and any
-/// single-character escape (`\n`, `\t`, `\r`, `\0`, `\"`, `\\`,
-/// `\'`, line continuation, …). Returns `None` if `input` does not
-/// start with `\` or the escape is malformed (incomplete `\u{...}`
-/// without a closing brace, dangling backslash at the end of input,
-/// truncated `\xNN`).
-fn take_escape_non_raw(input: &str) -> Option<(&str, &str)> {
-    let bytes = input.as_bytes();
-    if bytes.first() != Some(&b'\\') {
-        return None;
-    }
-    let second_byte = *bytes.get(1)?;
-    let escape_len = match second_byte {
-        b'x' => 4,
-        b'u' => {
-            // `\u{...}`: scan to the closing `}`. The bytes between
-            // `{` and `}` are constrained to ASCII hex by the rustc
-            // lexer, so a byte-level scan is sufficient.
-            let mut length: usize = 2;
-            let mut closing_found = false;
-            for &byte in &bytes[2..] {
-                length = length.saturating_add(1);
-                if byte == b'}' {
-                    closing_found = true;
-                    break;
-                }
-            }
-            if !closing_found {
-                return None;
-            }
-            length
-        }
-        _ => {
-            // `\` + a single UTF-8 character (e.g. `\n`, `\"`,
-            // or the line-continuation `\<newline>`).
-            let second_char = input['\\'.len_utf8()..].chars().next()?;
-            '\\'.len_utf8() + second_char.len_utf8()
-        }
-    };
-    if escape_len > input.len() {
-        return None;
-    }
-    Some(input.split_at(escape_len))
-}
-
-/// Take a single non-backslash UTF-8 character from the front of
-/// `input`. Returns `None` only when `input` is empty or starts with
-/// `\`, in which case the caller should run one of the escape
-/// combinators first.
-fn take_literal_char(input: &str) -> Option<(&str, &str)> {
-    let first = input.chars().next()?;
-    if first == '\\' {
-        return None;
-    }
-    Some(input.split_at(first.len_utf8()))
-}
-
-/// Smallest number of `#` characters needed so that the closing
-/// `"<n #s>` sequence does not appear inside `decoded`.
-///
-/// In practice this is 0 for paths and 1 for JSON / HTML snippets;
-/// longer runs only matter when the literal itself embeds raw-
-/// string source text.
-fn minimal_hash_count(decoded: &str) -> usize {
-    let mut hashes = String::new();
-    let mut count: usize = 0;
-    loop {
-        let mut pattern = String::with_capacity('"'.len_utf8() + hashes.len());
-        pattern.push('"');
-        pattern.push_str(&hashes);
-        if !decoded.contains(&pattern) {
-            return count;
-        }
-        hashes.push('#');
-        count = count.saturating_add(1);
-    }
-}
-
-/// A supported `escapes_eligible` entry is one of the three Rust
-/// escapes that self-decode — that is, whose decoded character is
-/// exactly the byte that follows the backslash: `\"`, `\\`, `\'`.
-/// `eliminable_decoded`'s contract is "strip the leading backslash",
-/// which only holds for these three. Every other valid Rust escape
-/// (`\n`, `\t`, `\r`, `\0`, `\xNN`, `\u{...}`) decodes to a
-/// different character, so accepting it here would let the autofix
-/// silently corrupt strings — e.g. `escapes_eligible = ["\\n"]`
-/// would rewrite a newline-containing literal to one containing the
-/// letter `n`.
-///
-/// The supported set is the same one named by
-/// [`DEFAULT_ESCAPES_ELIGIBLE`]; matching against that constant
-/// keeps the two definitions from drifting apart if a future
-/// extension to `eliminable_decoded` ever adds a fourth entry.
-fn is_supported_eligible_entry(entry: &str) -> bool {
-    DEFAULT_ESCAPES_ELIGIBLE.contains(&entry)
 }
