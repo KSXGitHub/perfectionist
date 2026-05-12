@@ -13,6 +13,7 @@
 //! checkout — where `dylint-link` (the workspace's linker per
 //! `.cargo/config.toml`) is not yet on PATH — can still compile it.
 
+use std::fs::read_to_string;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -126,10 +127,12 @@ enum DylintVersionError {
 }
 
 fn locked_dylint_version(root: &Path) -> Result<String, DylintVersionError> {
-    let lock_path = root.join("Cargo.lock");
-    let text = std::fs::read_to_string(&lock_path).map_err(DylintVersionError::ReadLockFile)?;
-    let lock: CargoLock = toml::from_str(&text).map_err(DylintVersionError::ParseLockFile)?;
-    lock.package
+    root.join("Cargo.lock")
+        .pipe(read_to_string)
+        .map_err(DylintVersionError::ReadLockFile)?
+        .pipe_as_ref(toml::from_str::<CargoLock>)
+        .map_err(DylintVersionError::ParseLockFile)?
+        .package
         .into_iter()
         .find(|pkg| pkg.name == DYLINT_LIBRARY_CRATE)
         .map(|pkg| pkg.version)
