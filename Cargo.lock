@@ -8,6 +8,7 @@ version = "0.0.0"
 dependencies = [
  "clap",
  "command-extra",
+ "derive_more",
  "pipe-trait",
  "serde",
  "toml 1.1.2+spec-1.1.0",

@@ -13,11 +13,13 @@
 //! checkout — where `dylint-link` (the workspace's linker per
 //! `.cargo/config.toml`) is not yet on PATH — can still compile it.
 
+use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
 use clap::{Parser, Subcommand};
 use command_extra::CommandExtra;
+use derive_more::{Display, From};
 use pipe_trait::Pipe;
 use serde::Deserialize;
 
@@ -56,18 +58,40 @@ struct LockedPackage {
 }
 
 fn main() -> ExitCode {
-    let Cli { root, command } = Cli::parse();
-    let version = locked_dylint_version(&root);
-    match command {
-        Subcmd::PrintVersion => {
-            println!("{version}");
-            ExitCode::SUCCESS
+    match run(Cli::parse()) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("error: {error}");
+            ExitCode::FAILURE
         }
-        Subcmd::Install => install(&root, &version),
     }
 }
 
-fn install(root: &Path, version: &str) -> ExitCode {
+#[derive(Display, From)]
+enum RuntimeError {
+    Install(InstallError),
+    DylintVersion(DylintVersionError),
+}
+
+fn run(Cli { root, command }: Cli) -> Result<(), RuntimeError> {
+    let version = locked_dylint_version(&root)?;
+    match command {
+        Subcmd::PrintVersion => println!("{version}"),
+
+        Subcmd::Install => install(&root, &version)?,
+    }
+    Ok(())
+}
+
+#[derive(Display)]
+enum InstallError {
+    #[display("Failed to spawn `cargo install`: {_0}")]
+    Spawn(io::Error),
+    #[display("Process exits with an error")]
+    Status,
+}
+
+fn install(root: &Path, version: &str) -> Result<(), InstallError> {
     let install_root = root.join(INSTALL_DIR);
 
     eprintln!(
@@ -75,7 +99,7 @@ fn install(root: &Path, version: &str) -> ExitCode {
         install_root.display(),
     );
 
-    let status = "cargo"
+    "cargo"
         .pipe(Command::new)
         .with_env("CARGO_INSTALL_ROOT", &install_root)
         .with_arg("install")
@@ -85,28 +109,29 @@ fn install(root: &Path, version: &str) -> ExitCode {
         .with_arg("cargo-dylint")
         .with_arg("dylint-link")
         .status()
-        .expect("spawn `cargo install`");
-    if status.success() {
-        ExitCode::SUCCESS
-    } else {
-        ExitCode::FAILURE
-    }
+        .map_err(InstallError::Spawn)?
+        .success()
+        .then_some(())
+        .ok_or(InstallError::Status)
 }
 
-fn locked_dylint_version(root: &Path) -> String {
+#[derive(Display)]
+enum DylintVersionError {
+    #[display("Failed to read Cargo.lock: {_0}")]
+    ReadLockFile(io::Error),
+    #[display("Failed to parse Cargo.lock: {_0}")]
+    ParseLockFile(toml::de::Error),
+    #[display("{DYLINT_LIBRARY_CRATE} not found in Cargo.lock")]
+    NoData,
+}
+
+fn locked_dylint_version(root: &Path) -> Result<String, DylintVersionError> {
     let lock_path = root.join("Cargo.lock");
-    let text = std::fs::read_to_string(&lock_path)
-        .unwrap_or_else(|error| panic!("read {}: {error}", lock_path.display()));
-    let lock: CargoLock = toml::from_str(&text)
-        .unwrap_or_else(|error| panic!("parse {}: {error}", lock_path.display()));
+    let text = std::fs::read_to_string(&lock_path).map_err(DylintVersionError::ReadLockFile)?;
+    let lock: CargoLock = toml::from_str(&text).map_err(DylintVersionError::ParseLockFile)?;
     lock.package
         .into_iter()
         .find(|pkg| pkg.name == DYLINT_LIBRARY_CRATE)
         .map(|pkg| pkg.version)
-        .unwrap_or_else(|| {
-            panic!(
-                "{DYLINT_LIBRARY_CRATE} not found in {}",
-                lock_path.display(),
-            )
-        })
+        .ok_or(DylintVersionError::NoData)
 }
