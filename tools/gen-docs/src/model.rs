@@ -6,6 +6,13 @@ use std::path::PathBuf;
 
 use strum::{Display, EnumString};
 
+/// The tool namespace every `perfectionist` lint registers under,
+/// including the trailing `::`. Shared between the extractor (which
+/// prepends it to build `Rule::namespaced`) and the renderer (which
+/// strips it for the index column and re-emits it as a separately
+/// styled span in each rule's heading).
+pub(crate) const NAMESPACE: &str = "perfectionist::";
+
 /// Page-global context threaded through the renderer. Grouping
 /// these here keeps the per-article and per-field rendering
 /// signatures from collecting more positional string args every

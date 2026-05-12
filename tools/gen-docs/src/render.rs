@@ -9,7 +9,7 @@ pub(crate) mod markdown;
 
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 
-use crate::model::{Level, RenderContext, Rule};
+use crate::model::{Level, NAMESPACE, RenderContext, Rule};
 use crate::render::config::config_section;
 use crate::render::markdown::{HIGHLIGHT_CSS, markdown_inline_to_html, markdown_to_html};
 
@@ -47,7 +47,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     "perfectionist is a Dylint plugin; see the "
                     a href=(repo_url) { "README" }
                     " for setup. Lint-control attributes use the "
-                    code { "perfectionist::" } " namespace."
+                    code { (NAMESPACE) } " namespace."
                 }
                 h2 { "Index" }
                 table.index {
@@ -63,7 +63,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                             tr {
                                 td {
                                     a href={ "#" (anchor_for(&rule.namespaced)) } {
-                                        code { (rule.namespaced) }
+                                        code { (unnamespaced(&rule.namespaced)) }
                                     }
                                 }
                                 td { (level_badge(rule.level)) }
@@ -104,7 +104,12 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
     let source_url = format!("{repo_url}/blob/{git_ref}/{source_path}");
     html! {
         article.rule id=(anchor_for(&rule.namespaced)) {
-            h2 { code { (rule.namespaced) } }
+            h2 {
+                code {
+                    span.lint-prefix { (NAMESPACE) }
+                    span.lint-name { (unnamespaced(&rule.namespaced)) }
+                }
+            }
             p {
                 (level_badge(rule.level))
                 (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
@@ -130,4 +135,8 @@ fn level_badge(level: Level) -> Markup {
 
 fn anchor_for(namespaced: &str) -> String {
     namespaced.replace("::", "-")
+}
+
+fn unnamespaced(namespaced: &str) -> &str {
+    namespaced.strip_prefix(NAMESPACE).unwrap_or(namespaced)
 }

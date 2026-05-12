@@ -72,6 +72,15 @@ article.rule h2 {
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
+article.rule h2 .lint-prefix {
+  font-size: 0.89em;
+  color: #57606a;
+}
+
+article.rule h2 .lint-name {
+  font-size: 1.11em;
+}
+
 article.rule .source {
   font-size: 0.85rem;
   color: #57606a;
