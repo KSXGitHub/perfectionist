@@ -70,7 +70,7 @@ jobs:
         continue-on-error: true
         with:
           path: .dev-tools
-          key: dev-tools-${{ runner.os }}-${{ steps.dylint-version.outputs.version }}
+          key: dev-tools-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}-${{ steps.dylint-version.outputs.version }}
 
       - name: Install dylint tooling
         shell: bash
