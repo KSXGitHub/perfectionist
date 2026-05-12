@@ -49,15 +49,15 @@ warmup-integration-tests:
   time cargo run --package _utils --bin warmup -- "$(pwd)"
 
 # Install cargo-dylint and dylint-link into `.dev-tools/`
-# The `--config linker="cc"` override lets the installer compile on a
+# The `--config linker="cc"` override lets the tool compile on a
 # fresh checkout where `dylint-link` (the workspace's linker per
 # `.cargo/config.toml`) is not yet on PATH.
 install-dev-tools:
-  cargo --config 'target."cfg(all())".linker="cc"' run --package _install_dev_tools -- "$(pwd)"
+  cargo --config 'target."cfg(all())".linker="cc"' run --package _dev_tools -- "$(pwd)" install
 
 # Print the dylint_linting version pinned in Cargo.lock
 dylint-version:
-  @cargo --config 'target."cfg(all())".linker="cc"' run --quiet --package _install_dev_tools -- "$(pwd)" --print-version
+  @cargo --config 'target."cfg(all())".linker="cc"' run --quiet --package _dev_tools -- "$(pwd)" print-version
 
 # Render the rule catalogue to `gh-pages/index.html`.
 gen-docs out_dir="gh-pages" git_ref="":

@@ -1,12 +1,12 @@
 [package]
-name = "_install_dev_tools"
-description = "Installs cargo-dylint and dylint-link into target/dev-tools/ at the version this workspace pins in Cargo.lock"
+name = "_dev_tools"
+description = "Manages cargo-dylint and dylint-link under .dev-tools/, pinned to the dylint version this workspace resolves in Cargo.lock"
 version = "0.0.0"
 edition = "2024"
 publish = false
 
 [[bin]]
-name = "install-dev-tools"
+name = "dev-tools"
 path = "src/main.rs"
 
 [dependencies]

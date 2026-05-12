@@ -1,4 +1,4 @@
-//! Install `cargo-dylint` and `dylint-link` into a workspace-local
+//! Manage `cargo-dylint` and `dylint-link` under a workspace-local
 //! directory (`.dev-tools/`), at the version `Cargo.lock` resolves
 //! `dylint_linting` to. The justfile prepends `.dev-tools/bin` to
 //! `PATH` so every recipe picks up these binaries rather than
@@ -8,26 +8,33 @@
 //! under `target/` so it survives `cargo clean --workspace` and can
 //! be cached in CI.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use serde::Deserialize;
 
 const DYLINT_LIBRARY_CRATE: &str = "dylint_linting";
 const INSTALL_DIR: &str = ".dev-tools";
 
 #[derive(Parser)]
-#[clap(about = "Install dylint tooling into <root>/.dev-tools/")]
+#[clap(about = "Manage workspace-local dylint tooling under .dev-tools/")]
 struct Cli {
     #[clap(help = "The root of the perfectionist repository")]
     root: PathBuf,
 
-    /// Print the pinned dylint version (read from Cargo.lock) and
-    /// exit without installing. Used by CI to derive the
-    /// `.dev-tools/` cache key.
-    #[clap(long)]
-    print_version: bool,
+    #[clap(subcommand)]
+    command: Subcmd,
+}
+
+#[derive(Subcommand)]
+enum Subcmd {
+    /// Install cargo-dylint and dylint-link into `<root>/.dev-tools/`
+    /// at the version pinned in `Cargo.lock`.
+    Install,
+    /// Print the pinned dylint version (read from `Cargo.lock`) and
+    /// exit. Used by CI to derive the `.dev-tools/` cache key.
+    PrintVersion,
 }
 
 #[derive(Deserialize)]
@@ -42,15 +49,18 @@ struct LockedPackage {
 }
 
 fn main() -> ExitCode {
-    let Cli {
-        root,
-        print_version,
-    } = Cli::parse();
+    let Cli { root, command } = Cli::parse();
     let version = locked_dylint_version(&root);
-    if print_version {
-        println!("{version}");
-        return ExitCode::SUCCESS;
+    match command {
+        Subcmd::PrintVersion => {
+            println!("{version}");
+            ExitCode::SUCCESS
+        }
+        Subcmd::Install => install(&root, &version),
     }
+}
+
+fn install(root: &Path, version: &str) -> ExitCode {
     let install_root = root.join(INSTALL_DIR);
 
     eprintln!(
@@ -62,7 +72,7 @@ fn main() -> ExitCode {
         let status = Command::new("cargo")
             .env("CARGO_INSTALL_ROOT", &install_root)
             .args(["install", "--locked", "--version"])
-            .arg(&version)
+            .arg(version)
             .arg(crate_name)
             .status()
             .unwrap_or_else(|error| panic!("spawn `cargo install {crate_name}`: {error}"));
@@ -85,7 +95,7 @@ fn main() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn locked_dylint_version(root: &std::path::Path) -> String {
+fn locked_dylint_version(root: &Path) -> String {
     let lock_path = root.join("Cargo.lock");
     let text = std::fs::read_to_string(&lock_path)
         .unwrap_or_else(|error| panic!("read {}: {error}", lock_path.display()));
