@@ -33,10 +33,10 @@ pub fn parse_path(raw: &str) -> Vec<String> {
 /// deduplicated set of segment sequences. Empty / whitespace-only
 /// entries are silently dropped, mirroring the contract of
 /// [`parse_path`].
-pub fn parse_path_list<S: AsRef<str>>(raw_entries: &[S]) -> BTreeSet<Vec<String>> {
+pub fn parse_path_list(raw_entries: &[String]) -> BTreeSet<Vec<String>> {
     raw_entries
         .iter()
-        .map(|entry| parse_path(entry.as_ref()))
+        .map(|entry| parse_path(entry))
         .filter(|parsed| !parsed.is_empty())
         .collect()
 }
