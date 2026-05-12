@@ -18,8 +18,8 @@ mod model;
 mod render;
 
 use std::fs;
-use std::path::PathBuf;
-use std::process::ExitCode;
+use std::path::{Path, PathBuf};
+use std::process::{Command, ExitCode};
 
 use cargo_toml::{Inheritable, Manifest};
 use clap::Parser;
@@ -41,9 +41,33 @@ struct Cli {
         long,
         default_value = "master",
         value_parser = clap::builder::NonEmptyStringValueParser::new(),
-        help = r#"Git ref the rendered "Source:" links should target"#,
+        help = r#"Git ref the rendered "Source:" links should target; resolved to a commit SHA via `git rev-parse` so the links are permalinks"#,
     )]
     git_ref: String,
+}
+
+fn resolve_git_ref(root: &Path, git_ref: &str) -> String {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .arg("rev-parse")
+        .arg("--verify")
+        .arg(format!("{git_ref}^{{commit}}"))
+        .output()
+        .expect("failed to invoke `git rev-parse`");
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        panic!("`git rev-parse {git_ref}` failed: {}", stderr.trim());
+    }
+    let sha = String::from_utf8(output.stdout)
+        .expect("`git rev-parse` produced non-UTF-8 output")
+        .trim()
+        .to_owned();
+    assert!(
+        !sha.is_empty(),
+        "`git rev-parse {git_ref}` produced empty output",
+    );
+    sha
 }
 
 fn main() -> ExitCode {
@@ -52,6 +76,11 @@ fn main() -> ExitCode {
         out_dir,
         git_ref,
     } = Cli::parse();
+
+    // Resolve the user-supplied ref (typically a branch like `master`)
+    // to a commit SHA so the rendered "Source:" links are permalinks
+    // that survive future commits to the branch.
+    let git_ref = resolve_git_ref(&root, &git_ref);
 
     let manifest = Manifest::from_path(root.join("Cargo.toml")).expect("failed to read Cargo.toml");
     let crate_version = manifest
