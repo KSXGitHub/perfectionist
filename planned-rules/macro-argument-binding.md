@@ -295,11 +295,15 @@ that classification stays as defined under "What counts as a
 even when the macro would otherwise fire (denylisted, or
 denied under mode 1's blanket), accept the invocation if
 every top-level argument's outermost shape is either trivial
-or a function / method call whose own sub-expressions are all
-trivial. The canonical example is `Arc::clone(&x)`: a `Call`
-whose sole argument `&x` is a reference to a path, both of
-which are trivial. The bypass's recursion stops at any
-non-trivial sub-expression.
+or a single function / method call whose callee/receiver and
+each argument are themselves strictly trivial (per the
+trivial list, no recursion through nested calls). The
+canonical example is `Arc::clone(&x)`: a `Call` whose callee
+`Arc::clone` is a trivial path and whose sole argument `&x`
+is a trivial reference. The bypass does *not* peer inside
+nested calls — a top-level argument of shape
+`Rc::clone(Arc::clone(&x))` is rejected, because the outer
+call's argument is itself a non-trivial expression.
 
 The motivation is that `debug_assert_eq!(my_set.contains(&k),
 true)` is *also* unsafe-feeling but ultimately fine — the
@@ -310,7 +314,7 @@ re-evaluate or skip" by accepting any call whose arguments are
 themselves trivial (typically `&path` / `path`).
 
 The implementation cost over mode 2 is one extra match arm
-plus a recursive descent through `ExprKind::Call` and
+plus a one-level walk over `ExprKind::Call` and
 `ExprKind::MethodCall`. The accuracy gain is large in real
 codebases.
 
@@ -672,11 +676,14 @@ ignore = [
   recursions. Default to non-trivial for any unrecognised
   variant — false positives are better than false negatives
   here.
-- Expression-side bypass (mode 3): a recursive descent
-  through `ExprKind::Call` and `ExprKind::MethodCall`. The
-  callee / receiver must itself be trivial; each argument
-  must be trivial-after-bypass. A bypass match implies the
-  call is "as safe as an accessor".
+- Expression-side bypass (mode 3): a one-level check over
+  `ExprKind::Call` and `ExprKind::MethodCall`. The callee or
+  receiver must itself be strictly trivial (per the trivial
+  predicate above); each call argument must also be strictly
+  trivial. No recursion through nested calls — the bypass is
+  deliberately shallow so the rule stays simple to reason
+  about. A bypass match implies the call is "as safe as an
+  accessor".
 - Matcher walker (mode 4): reuse the `take_*` combinator
   scaffold introduced for
   [`macro-trailing-comma`](./macro-trailing-comma.md)'s

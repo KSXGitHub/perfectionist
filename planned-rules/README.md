@@ -167,15 +167,15 @@ pattern that several rules call out by reference — live in
   Targets the `debug_assert_eq!(map.insert(k, v), None)` footgun
   (release builds skip evaluation entirely) and the general
   class of "macros don't promise exactly-once argument
-  evaluation". Four mutually-exclusive `mode` values plus an
-  optional `expression_bypass` flag layered on top, ordered by
-  implementation cost: a tiny denylist of known-conditional
+  evaluation". Four mutually-exclusive `mode` values ordered
+  by implementation cost — a tiny denylist of known-conditional
   macros (`debug_assert*`), an opt-in blanket ban, the default
-  curated allowlist + denylist, the bypass for pure-accessor
-  call shapes, and matcher-based analysis that counts each
-  `$name:expr` capture's `$name` references in the
-  `macro_rules!` expansion. Curly-brace invocations and `;`-separated forms
-  (`vec![expr; n]`) are out of scope.
+  curated allowlist + denylist, and matcher-based analysis
+  that counts each `$name:expr` capture's `$name` references
+  in the `macro_rules!` expansion — plus an orthogonal
+  `expression_bypass` flag that can layer on any mode to
+  accept pure-accessor call shapes. Curly-brace invocations
+  and `;`-separated forms (`vec![expr; n]`) are out of scope.
 
 ### Serde
 - [`serde-source-types.md`](./serde-source-types.md) — forbid
