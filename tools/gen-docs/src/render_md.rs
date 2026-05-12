@@ -325,17 +325,30 @@ fn promote_headings(markdown: &str) -> String {
         };
         if let Some(marker) = fence_marker {
             let length = trimmed.bytes().take_while(|&b| b == marker).count();
+            // After the marker run, the rest of the line decides
+            // whether this is a valid close fence. Per CommonMark
+            // §4.5, a close fence cannot carry an info string —
+            // only optional trailing whitespace. An open fence
+            // may carry one (`` ```rust ``). Treat any line whose
+            // post-marker tail is non-whitespace as body text
+            // when an open fence already exists, so a literal
+            // `` ```rust `` line nested inside a wider outer
+            // fence isn't mistaken for a close.
+            let after_markers = &trimmed[length..];
+            let tail_is_blank = after_markers.trim().is_empty();
             match open_fence {
-                None => open_fence = Some((marker, length)),
+                None => {
+                    open_fence = Some((marker, length));
+                }
                 Some((open_marker, open_length))
-                    if open_marker == marker && length >= open_length =>
+                    if open_marker == marker && length >= open_length && tail_is_blank =>
                 {
                     open_fence = None;
                 }
                 Some(_) => {
-                    // Mismatched marker or shorter run: this is
-                    // body content of the open fence, not a close
-                    // marker. Stay inside the fence.
+                    // Mismatched marker, shorter run, or non-blank
+                    // tail: body content of the open fence, not a
+                    // close marker. Stay inside the fence.
                 }
             }
             out.push_str(line);
@@ -556,6 +569,28 @@ mod tests {
         assert!(
             !out.contains("\n## outside\n"),
             "outside should be promoted, not left at h2: {out}"
+        );
+    }
+
+    #[test]
+    fn promote_headings_rejects_info_string_as_close_fence() {
+        // Per CommonMark §4.5, the close fence cannot carry an
+        // info string. A nested `` ```rust `` line inside a wider
+        // outer fence is body, not a close.
+        let input = "````\n## inside\n```rust\n## still inside\n````\n## outside\n";
+        let out = promote_headings(input);
+        assert!(
+            out.contains("## inside\n"),
+            "body heading should not be promoted: {out}"
+        );
+        assert!(
+            out.contains("## still inside\n"),
+            "heading after the bogus close should still be body: {out}"
+        );
+        // The real close (4 backticks alone) ends the fence.
+        assert!(
+            out.contains("# outside\n"),
+            "outside should be promoted: {out}"
         );
     }
 

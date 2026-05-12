@@ -382,4 +382,16 @@ mod tests {
             .expect("`.` segments should be transparent");
         assert_eq!(prefix, "../");
     }
+
+    #[test]
+    fn source_link_prefix_for_trailing_dot_on_root() {
+        // Regression: `std::path::absolute` *does* normalise `.`
+        // segments on every platform std supports, so a `--root`
+        // passed as `/repo/.` resolves to `/repo` and strip_prefix
+        // works as expected. Pin the behaviour with a test in case
+        // the std contract ever loosens.
+        let prefix = source_link_prefix_for(Path::new("/repo/rules"), Path::new("/repo/."))
+            .expect("trailing `.` on --root should normalise");
+        assert_eq!(prefix, "../");
+    }
 }
