@@ -7,6 +7,11 @@
 //! The install root is `<repo>/.dev-tools/` rather than somewhere
 //! under `target/` so it survives `cargo clean --workspace` and can
 //! be cached in CI.
+//!
+//! The justfile invokes this binary with
+//! `cargo --config 'target."cfg(all())".linker="cc"'` so a fresh
+//! checkout — where `dylint-link` (the workspace's linker per
+//! `.cargo/config.toml`) is not yet on PATH — can still compile it.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};

@@ -1,9 +1,3 @@
-# `.dev-tools/bin` holds workspace-local copies of cargo-dylint and
-# dylint-link, installed by the `install-dev-tools` recipe and pinned
-# to the `dylint_linting` version in Cargo.lock. Prepending it to
-# PATH means every recipe's `cargo dylint` / `dylint-link` (the
-# latter via `.cargo/config.toml`) resolves there first, ahead of
-# whatever stale copies the developer left under `~/.cargo/bin`.
 export PATH := justfile_directory() + "/.dev-tools/bin:" + env_var("PATH")
 
 _default:
@@ -49,9 +43,6 @@ warmup-integration-tests:
   time cargo run --package _utils --bin warmup -- "$(pwd)"
 
 # Install cargo-dylint and dylint-link into `.dev-tools/`
-# The `--config linker="cc"` override lets the tool compile on a
-# fresh checkout where `dylint-link` (the workspace's linker per
-# `.cargo/config.toml`) is not yet on PATH.
 install-dev-tools:
   cargo --config 'target."cfg(all())".linker="cc"' run --package _dev_tools -- "$(pwd)" install
 
