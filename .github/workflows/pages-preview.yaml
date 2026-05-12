@@ -27,7 +27,13 @@ jobs:
       url: ${{ steps.deploy.outputs.deployment-url }}
 
     steps:
+      # Check out the PR head commit (not the auto-generated merge
+      # ref) so the rendered docs reflect exactly the code under
+      # review and the "Source:" permalinks resolve to a SHA that
+      # exists on GitHub.
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Cache
         uses: actions/cache@v5
@@ -56,9 +62,13 @@ jobs:
         with:
           tool: dylint-link
 
+      # Pass the PR head SHA as `--git-ref` so the rendered
+      # "Source:" links permalink the exact commit being previewed
+      # rather than `master` (which `gen-docs` defaults to but
+      # which isn't checked out here).
       - name: Render site
         shell: bash
-        run: cargo run --package _gen_docs --bin gen-docs -- "$(pwd)" gh-pages
+        run: cargo run --package _gen_docs --bin gen-docs -- "$(pwd)" gh-pages --git-ref="${{ github.event.pull_request.head.sha }}"
 
       # Wrangler's `--branch` flag drives the alias subdomain
       # Cloudflare assigns to the deployment
