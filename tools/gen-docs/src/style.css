@@ -73,12 +73,12 @@ article.rule h2 {
 }
 
 article.rule h2 .lint-prefix {
-  font-size: 0.75em;
+  font-size: 0.89em;
   color: #57606a;
 }
 
 article.rule h2 .lint-name {
-  font-size: 1.1em;
+  font-size: 1.11em;
 }
 
 article.rule .source {
