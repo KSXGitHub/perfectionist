@@ -1,5 +1,47 @@
 # `macro_argument_binding`
 
+## Status
+
+Partially implemented. Modes 0-2 (`deny_only`, `blanket`,
+`allow_and_deny`) ship today, along with the `enabled`,
+`deny_extra`, `allow_extra`, and `ignore` knobs. The lint emits
+diagnostics with a `let`-binding hint (no autofix, by design — the
+binding name varies per site).
+
+Still pending:
+
+- **Mode 3 (`matcher_based`).** The mode value is not accepted by
+  the configuration parser yet; a `dylint.toml` that names it
+  fails to deserialise. The matcher-walking infrastructure is
+  shared with the equivalent eligibility check planned for
+  `macro-trailing-comma`; both will land together.
+- **Cast suffix beyond path-shaped types.** The trivial-expression
+  predicate currently recognises `expr as Path` (e.g., `x as u64`,
+  `x as my::Type`) but treats `expr as &Path`, `expr as *const T`,
+  and other non-path type forms as non-trivial. Expanding the
+  type recogniser is a small, additive change.
+- **Turbofish in path arguments.** A path with explicit generics
+  (`Vec::<u32>::new`, `Some::<u32>`) is parsed as `path-segment` plus
+  `::<...>` plus more segments; the current path walker only consumes
+  `::ident` runs and so falls through to non-trivial on the turbofish.
+  These should be trivial per the spec's intent ("a path resolving to
+  a function name, or unit / tuple variant"); extend `take_path_tail`
+  to consume an optional `::<...>` token-tree per segment.
+- **Keyword idents as path starts.** The trivial-atom matcher's
+  `Ident(_, _)` branch dispatches to the path walker regardless of
+  whether the ident is a valid path-start keyword (`self`, `Self`,
+  `super`, `crate`, the empty set otherwise). Reserved keywords like
+  `let`, `if`, `match`, `for`, `while` are accepted as path heads
+  and the resulting "trivial path" leaves an unexpected tail in the
+  suffix walk, which still bottoms out as non-trivial — so the lint
+  classification is correct by coincidence. Tighten `take_trivial_atom`
+  to reject reserved-keyword idents so the right door owns the
+  decision.
+
+The "What to lint" pipeline below applies to the implemented
+modes as written. The remainder of this file is the active spec
+for the unimplemented portion.
+
 **Source:** project convention. The motivating bug:
 
 ```rust
