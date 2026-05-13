@@ -22,6 +22,15 @@ Specifically:
 
 ## What to lint
 
+> **Lint name shape.** The `error_type_derives::` prefix used in the
+> sub-check headings below is a documentation label grouping related
+> checks under one banner. Per the
+> [lint-name namespacing convention](./IMPLEMENTATION_CONVENTIONS.md#lint-name-namespacing),
+> each sub-check is registered as its own flat tool lint
+> `perfectionist::<sub_check_name>` (e.g.
+> `perfectionist::copyable_error`). Suppression attributes use the
+> flat form: `#[allow(perfectionist::copyable_error)]`.
+
 ### `error_type_derives::unused_error`
 
 Flag a type that derives `derive_more::Error` (or `thiserror::Error`) but
@@ -45,11 +54,10 @@ satisfaction, …) anywhere in the crate.
 
 Flag a type that derives or implements `std::error::Error` *and* is
 `Copy` (whether derived or hand-implemented). Production error types
-almost always carry owned
-payload — a `String` message, a `PathBuf`, a boxed `source` — that
-forbids `Copy`, so a `Copy` error is a strong signal that the author
-wrote a plain data type and reflexively reached for `Error` on the
-derive list. The motivating example was
+almost always carry owned payload — a `String` message, a `PathBuf`,
+a boxed `source` — that forbids `Copy`, so a `Copy` error is a
+strong signal that the author wrote a plain data type and reflexively
+reached for `Error` on the derive list. The motivating example was
 `parallel_disk_usage::size::ParsedValue`, which derived `Copy + Error`
 despite being the *successful* return type of
 `Formatter::parse_value`.
@@ -57,12 +65,7 @@ despite being the *successful* return type of
 The check is a heuristic, not an absolute defect: small unit-style
 error enums (`enum ParseError { Empty, Negative }`) are legitimate
 `Copy` errors. Suppress with `#[allow(perfectionist::copyable_error)]`
-on the type when the heuristic misfires. (The `error_type_derives::`
-prefix used throughout this file is a documentation label grouping
-the sub-checks under one banner; per the
-[lint-name namespacing convention](./IMPLEMENTATION_CONVENTIONS.md#lint-name-namespacing)
-each sub-check is registered as a flat tool lint
-`perfectionist::<sub_check_name>`.)
+on the type when the heuristic misfires.
 
 ### `error_type_derives::unconventional_error_name`
 
@@ -72,27 +75,48 @@ pattern is the `Error` suffix, matching `std::io::Error`,
 `serde_json::Error`, the thiserror documentation's examples, and the
 parallel-disk-usage convention that motivated the rule. Configure
 under the `[error_type_derives]` table; the `error_name_pattern` key
-accepts one of three forms:
+accepts one of four forms, shown below as four separately-pasteable
+snippets (each is a complete `[error_type_derives]` table on its
+own — pick one):
+
+The default. Equivalent to omitting the key entirely:
 
 ```toml
 [error_type_derives]
-# Inline table tagged with the matcher kind. The default.
 error_name_pattern = { suffix = "Error" }
-# …or a regex matcher:
-# error_name_pattern = { regex = ".*(Error|Failure)$" }
-# `suffix` and `regex` are mutually exclusive; specifying both is a
-# config error.
+```
 
-# Bare-string shorthand for the `suffix` form. The two lines below
-# are equivalent.
+A bare string is shorthand for the `suffix` form, so the common case
+stays one line:
+
+```toml
+[error_type_derives]
 error_name_pattern = "Error"
-error_name_pattern = { suffix = "Error" }
+```
 
-# `false` disables the sub-check entirely (TOML has no `null`
-# literal, so `false` is the off switch). Omitting the key applies
-# the default `{ suffix = "Error" }` matcher.
+A list of suffixes, for projects that use more than one error-naming
+convention (e.g. both `Error` and `Failure`). The type's name matches
+if it ends with any element. A bare list of strings is also accepted
+as shorthand for `{ suffix = [...] }`:
+
+```toml
+[error_type_derives]
+error_name_pattern = { suffix = ["Error", "Failure"] }
+```
+
+`false` disables the sub-check entirely. TOML has no `null` literal,
+so `false` is the off switch:
+
+```toml
+[error_type_derives]
 error_name_pattern = false
 ```
+
+Regex is intentionally *not* offered as a matcher form. See
+[`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md#parser-style)
+for the project-wide rationale; for this rule specifically, suffix
+matching covers the realistic configuration space without a regex
+dependency.
 
 The check is one-directional: a type that *matches* the convention
 but does not implement `Error` is not flagged here, because matching
