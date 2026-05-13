@@ -3,9 +3,8 @@ use std::collections::BTreeSet;
 use clippy_utils::diagnostics::span_lint_and_help;
 use clippy_utils::is_in_test;
 use rustc_hir as hir;
-use rustc_lint::{LateContext, LateLintPass, LintStore};
+use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-
 use rustc_span::Symbol;
 
 use crate::common::{binding_ident, is_single_ascii_letter, merge_symbol_allowlist};
@@ -93,6 +92,20 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterLetBinding {
         if !matches!(local.source, hir::LocalSource::Normal) {
             // `for` / `while let` desugarings synthesise `LetStmt`
             // nodes with names the user did not write.
+            return;
+        }
+        if local
+            .span
+            .in_external_macro(lint_context.sess().source_map())
+        {
+            // Proc-macros such as `clap_derive`'s `default_value_t`
+            // synthesise `let <one-letter> = ...;` bindings while
+            // attaching a user-source span to the identifier. The
+            // tool-lint's `report_in_external_macro: false` flag
+            // inspects the diagnostic span (the identifier), which
+            // looks like user code; the surrounding statement span
+            // still carries the external expansion context, so the
+            // explicit check is needed to suppress the lint.
             return;
         }
         let Some(ident) = binding_ident(local.pat) else {
