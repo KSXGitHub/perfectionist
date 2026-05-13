@@ -88,6 +88,13 @@ fn run() {
     let names = ["one", "two"];
     let _owned: Vec<String> = names.iter().map(|s| (*s).to_owned()).collect();
 
+    // OK: macro-call body. `vec![x]` expands to
+    // `<[_]>::into_vec(Box::new([x]))`, which doesn't pattern-match
+    // any of the HIR-level trivial-wrapper arms, so the rule relies
+    // on the body's expansion-origin span to recognise it.
+    let _nested: Vec<Vec<i32>> = sorted.iter().copied().map(|x| vec![x]).collect();
+    let _shouted: Vec<String> = sorted.iter().map(|n| format!("{n}!")).collect();
+
     // Bad: multi-statement closure body, single-letter parameter.
     let _formatted: Vec<String> = sorted
         .iter()
