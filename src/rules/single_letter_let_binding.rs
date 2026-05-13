@@ -5,7 +5,6 @@ use clippy_utils::is_in_test;
 use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-
 use rustc_span::Symbol;
 
 use crate::common::{binding_ident, is_single_ascii_letter, merge_symbol_allowlist};
