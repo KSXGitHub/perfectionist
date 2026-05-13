@@ -12,6 +12,8 @@
 
 use std::sync::Mutex;
 
+use text_block_macros::text_block_fnl;
+
 static SERIAL: Mutex<()> = Mutex::new(());
 
 fn run(src_base: &str, dylint_toml_contents: &str) {
@@ -30,9 +32,10 @@ fn run(src_base: &str, dylint_toml_contents: &str) {
 fn disable_in_global_table_suppresses_a_default_on_rule() {
     run(
         "ui-toml/macro_argument_binding/disabled",
-        r#"[perfectionist]
-disable = ["macro_argument_binding"]
-"#,
+        text_block_fnl! {
+            "[perfectionist]"
+            r#"disable = ["macro_argument_binding"]"#
+        },
     );
 }
 
@@ -43,11 +46,12 @@ disable = ["macro_argument_binding"]
 fn disable_accepts_inline_table_with_reason() {
     run(
         "ui-toml/macro_argument_binding/disabled",
-        r#"[perfectionist]
-disable = [
-    { name = "macro_argument_binding", reason = "test-only" },
-]
-"#,
+        text_block_fnl! {
+            "[perfectionist]"
+            "disable = ["
+            r#"    { name = "macro_argument_binding", reason = "test-only" },"#
+            "]"
+        },
     );
 }
 
@@ -57,9 +61,10 @@ disable = [
 fn disable_accepts_array_of_tables_form() {
     run(
         "ui-toml/macro_argument_binding/disabled",
-        r#"[[perfectionist.disable]]
-name = "macro_argument_binding"
-reason = "test-only"
-"#,
+        text_block_fnl! {
+            "[[perfectionist.disable]]"
+            r#"name = "macro_argument_binding""#
+            r#"reason = "test-only""#
+        },
     );
 }
