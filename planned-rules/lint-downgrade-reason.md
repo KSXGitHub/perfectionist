@@ -78,8 +78,9 @@ attribute-already-flagged guard). A project that enables only
 catches the high-value cases — most silencing in practice is of
 clippy lints whose default level is `warn`. A project that
 enables only `lint_downgrade_reason` accepts `#[allow]` on
-default-`allow` lints (rare) but catches every relative
-downgrade including `#[warn]` over `#[deny]`.
+default-`allow` lints (a large share of the pedantic / nursery /
+restriction clippy groups) but catches every relative downgrade
+including `#[warn]` over `#[deny]`.
 
 ## Examples
 

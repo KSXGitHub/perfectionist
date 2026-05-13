@@ -138,11 +138,11 @@ include_tool_namespaces = true
   `src/rules/unicode_ellipsis_in_comments.rs`) for locating
   comments by source range.
 - The Rust-string-literal escape helper used to render the
-  lifted comment as a `"..."` string belongs in
-  `src/common.rs::escape_rust_string_literal`; it has no other
-  consumers yet (the sibling reason-related rules insert an
-  empty string and so do not escape anything) but the helper is
-  general enough to live in the shared module from the start.
+  lifted comment as a `"..."` string is single-use today — the
+  sibling reason-related rules insert an empty string and need
+  no escape. Per the catalogue's convention (single-rule helpers
+  live in the rule's own file, not `src/common.rs`), keep it
+  private to this rule's module until a second consumer arrives.
 
 ### Difficulty
 

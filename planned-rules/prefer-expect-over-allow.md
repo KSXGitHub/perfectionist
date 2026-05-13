@@ -43,10 +43,11 @@ in the attribute is one of:
   follow the standard fire-deterministically semantics).
 
 …propose `#[expect(...)]` in its place. If the attribute mixes a
-rewriteable lint with a non-rewriteable one (e.g.,
-`#[allow(dead_code, clippy::too_many_arguments)]`), split it: keep
-the non-rewriteable names under `#[allow]`, move the rewriteable
-ones to a new `#[expect]`.
+rewriteable lint with a non-rewriteable one (an exempt-list entry
+or an unknown lint, both treated as non-rewriteable for split
+purposes — e.g., `#[allow(dead_code, clippy::too_many_arguments)]`),
+split it: keep the non-rewriteable names under `#[allow]`, move
+the rewriteable ones to a new `#[expect]`.
 
 ## When `#[allow]` stays
 
@@ -160,8 +161,8 @@ apply_to_tool_namespaces = true
 ### Difficulty
 
 **Medium.** Detection is straightforward: read the attribute path,
-list the inner lint names, classify each. The simple autofix is a
-five-byte substitution.
+list the inner lint names, classify each. The simple autofix is
+a one-identifier substitution (`allow` → `expect`).
 
 What pushes this past "easy" is the eligibility decision. Some
 lints fire only in some compilations — `dead_code`, `unused_*`,
