@@ -15,7 +15,10 @@ callback. Two shapes qualify as trivial:
   callee name is in the comparison / fold allowlist
   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
   `binary_search_by`, `cmp_by`, `partial_cmp_by`,
-  `fold`, `try_fold`, …);
+  `fold`, `try_fold`, …). The allowlist also covers the
+  matching adaptors from `itertools` (`sorted_by`,
+  `k_smallest_by`, `minmax_by_key`, …) and `into-sorted`
+  (`into_sorted_by`, `into_sorted_by_key`, …);
 - the body is a trivial wrapper around the parameter —
   a field access (`|x| x.field`), a method call
   (`|x| x.foo()`), a one-argument call where the

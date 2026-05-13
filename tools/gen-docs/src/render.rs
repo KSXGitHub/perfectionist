@@ -113,7 +113,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                     span.lint-prefix { (NAMESPACE) }
                     span.lint-name { (unnamespaced(&rule.namespaced)) }
                 }
-                a.rule-jump-link href="#catalogue" aria-label="Back to top" { "↑ top" }
+                a.rule-jump-link href="#catalogue" aria-label="Back to catalogue" { "↑ top" }
             }
             p {
                 (level_badge(rule.level))

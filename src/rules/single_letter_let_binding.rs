@@ -45,7 +45,7 @@ const CONFIG_KEY: &str = "perfectionist::single_letter_let_binding";
 const DEFAULT_LET_ALLOWLIST: &[&str] = &["n"];
 
 #[derive(Debug, Default, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Additional identifiers to allow as `let` binding names,
     /// even outside `#[cfg(test)]` code. Merged with the built-in

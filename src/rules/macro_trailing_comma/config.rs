@@ -68,7 +68,7 @@ const BUILTIN_NAME_BASED: &[&str] = &[
 ];
 
 #[derive(Debug, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Master on/off switch for the rule. Defaults to `true`. Set
     /// to `false` to silence every diagnostic this lint would emit

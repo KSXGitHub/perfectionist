@@ -93,7 +93,7 @@ enum RequireFor {
 const DEFAULT_SUFFIXES: &[&str] = &["Error"];
 
 #[derive(Debug, Default, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Visibility threshold for the rule.
     require_for: RequireFor,

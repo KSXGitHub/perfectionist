@@ -28,7 +28,10 @@ declare_tool_lint! {
     ///   callee name is in the comparison / fold allowlist
     ///   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
     ///   `binary_search_by`, `cmp_by`, `partial_cmp_by`,
-    ///   `fold`, `try_fold`, …);
+    ///   `fold`, `try_fold`, …). The allowlist also covers the
+    ///   matching adaptors from `itertools` (`sorted_by`,
+    ///   `k_smallest_by`, `minmax_by_key`, …) and `into-sorted`
+    ///   (`into_sorted_by`, `into_sorted_by_key`, …);
     /// - the body is a trivial wrapper around the parameter —
     ///   a field access (`|x| x.field`), a method call
     ///   (`|x| x.foo()`), a one-argument call where the
@@ -93,10 +96,46 @@ const DEFAULT_COMPARISON_METHODS: &[&str] = &[
     "try_fold",
     "rfold",
     "reduce",
+    // `itertools::Itertools` adaptors that take a comparator or
+    // key closure and follow the same `|a, b| ...` / `|x| ...`
+    // convention as their std counterparts.
+    "sorted_by",
+    "sorted_by_key",
+    "sorted_by_cached_key",
+    "sorted_unstable_by",
+    "sorted_unstable_by_key",
+    "k_smallest_by",
+    "k_smallest_by_key",
+    "k_smallest_relaxed_by",
+    "k_smallest_relaxed_by_key",
+    "k_largest_by",
+    "k_largest_by_key",
+    "k_largest_relaxed_by",
+    "k_largest_relaxed_by_key",
+    "min_set_by",
+    "min_set_by_key",
+    "max_set_by",
+    "max_set_by_key",
+    "minmax_by",
+    "minmax_by_key",
+    "position_min_by",
+    "position_min_by_key",
+    "position_max_by",
+    "position_max_by_key",
+    "position_minmax_by",
+    "position_minmax_by_key",
+    // `into_sorted::{IntoSorted, IntoSortedUnstable}` adaptors
+    // that return an owned sorted array, mirroring the std
+    // `sort_by` / `sort_by_key` shapes.
+    "into_sorted_by",
+    "into_sorted_by_key",
+    "into_sorted_by_cached_key",
+    "into_sorted_unstable_by",
+    "into_sorted_unstable_by_key",
 ];
 
 #[derive(Debug, Default, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Additional method / function names whose closure argument
     /// may carry single-letter parameters when the body is a

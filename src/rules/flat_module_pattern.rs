@@ -42,7 +42,7 @@ const CONFIG_KEY: &str = "perfectionist::flat_module_pattern";
 /// `[perfectionist::flat_module_pattern]` table in `dylint.toml`
 /// deserialises rather than producing a confusing parse error.
 #[derive(Debug, Default, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}
 
 pub struct FlatModulePattern;

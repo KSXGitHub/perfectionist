@@ -28,7 +28,7 @@ const DEFAULT_MACROS: &[&str] = &[
 const DEFAULT_METHODS: &[&str] = &["expect", "expect_err"];
 
 #[derive(Debug, Default, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Additional macros whose call site should be scanned for
     /// the flagged characters. Merged with the built-in defaults
