@@ -262,6 +262,20 @@ The single exception is version-bump commits, whose subject is
 just the version itself (e.g. `0.0.0-rc.6`). Use this form only
 for commits that do nothing other than bump the version.
 
+## Markdown links
+
+`README.md` uses absolute links throughout, because it is
+rendered by multiple services (crates.io, docs.rs, lib.rs, etc.)
+that don't share a common base for resolving relative paths. Keep
+new links there absolute.
+
+Every other markdown file in the repository — `CLAUDE.md`,
+`planned-rules/*.md`, and anything else committed alongside the
+source — is only rendered in contexts where relative paths
+resolve correctly (GitHub, local editors, agent tooling). Prefer
+relative links in those files; they survive repository renames
+and don't bake in a hosting URL.
+
 ## Symlinks
 
 This file is the authoritative implementation guide. It is also
