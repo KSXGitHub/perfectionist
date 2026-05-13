@@ -21,6 +21,14 @@ macro_rules! op_separator_macro {
     ($($tokens:tt)*) => {{ 0 }};
 }
 
+macro_rules! arrow_separator_macro {
+    ($($tokens:tt)*) => {{ 0 }};
+}
+
+macro_rules! in_separator_macro {
+    ($($tokens:tt)*) => {{ 0 }};
+}
+
 // `debug_assert_eq!` is on the built-in deny list. The first argument
 // is a non-trivial method call; in release builds the macro folds to
 // `if false { ... }` and the call never runs, leaving the map in a
@@ -158,6 +166,37 @@ fn _assignment_dsl_skipped(items: &mut u32, slot: &mut u32) {
 fn _bare_operator_skipped(left: u32, right: u32) {
     let _ = op_separator_macro!(left, ==, right);
     let _ = op_separator_macro!(left, >, right);
+}
+
+// Skipped: a top-level `->` is a structural matcher token, not a Rust
+// operator. Macros like `link!("src" -> "dst")` use it to pair two
+// arguments; reparse-as-expression would fail and the let-bind hint is
+// nonsense. Same skip applies to definition-shape DSLs that mix `->`
+// with other separators (`test_case!(name -> value in System == "x")`).
+fn _arrow_separator_skipped(left: u32, right: u32) {
+    let _ = arrow_separator_macro!("src" -> "dst");
+    let _ = arrow_separator_macro!(left -> right);
+}
+
+// Skipped: a top-level `in` keyword usually indicates a DSL separator
+// (`for_each!(x in iter, ...)`-style matchers) rather than a Rust
+// expression. A bare `for x in iter { ... }` macro argument is also a
+// real Rust expression containing a top-level `in`, and the heuristic
+// will skip that too; the trade-off favours the DSL-matcher case,
+// which has been reported in the wild, over the `for`-expression case,
+// which has not. The principled fix (#64) is a parser-based reparse.
+fn _in_keyword_separator_skipped() {
+    let _ = in_separator_macro!(item in container);
+}
+
+// Skipped: a definition-shape DSL that mixes `->`, `in`, and `==` as
+// separator-position tokens. None of these positions form a single
+// Rust expression standalone, and any `let` binding the rule could
+// suggest would break the matcher's structural pattern. The `->`
+// alone is enough to disqualify the argument; `==` stays a real Rust
+// binary operator so that `debug_assert!(a == b)` keeps being trivial.
+fn _mixed_definition_dsl_skipped() {
+    let _ = arrow_separator_macro!(plain_number -> 65_535 in PlainNumber == "65535");
 }
 
 // `()` is the canonical trivial value: the empty-tuple / unit literal.
