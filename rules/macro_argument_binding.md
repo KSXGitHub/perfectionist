@@ -96,6 +96,13 @@ as `deny_extra`. Only meaningful in `AllowAndDeny` and
 Macros to skip entirely, regardless of which list they would
 otherwise hit. Same matching rules as `deny_extra`.
 
+### `trivial_methods_extra`: `[string]` (optional)
+
+Method names added to the built-in pure-method list. Each
+entry is a bare method identifier (no `()`, no receiver). A
+`.method()` invocation on a trivial base is then accepted as a
+trivial postfix when the method takes no arguments.
+
 ### Types
 
 #### `Mode` (enum)

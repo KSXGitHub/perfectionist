@@ -4,9 +4,10 @@
 
 Partially implemented. Modes 0-2 (`deny_only`, `blanket`,
 `allow_and_deny`) ship today, along with the `enabled`,
-`deny_extra`, `allow_extra`, and `ignore` knobs. The lint emits
-diagnostics with a `let`-binding hint (no autofix, by design — the
-binding name varies per site).
+`deny_extra`, `allow_extra`, `ignore`, and
+`trivial_methods_extra` knobs. The lint emits diagnostics with a
+`let`-binding hint (no autofix, by design — the binding name
+varies per site).
 
 Still pending:
 
