@@ -69,7 +69,9 @@ uses `…` in one of the default macros.
 
 Additional method names on `Option` / `Result` whose first
 argument is the panic message. Merged with the built-in
-defaults (`expect`, `expect_err`); empty by default.
+defaults (`expect`, `expect_err`); empty by default. Use
+this to add project-specific `expect`-shaped wrappers
+without having to re-state the standard pair.
 
 ### `ignore_methods`: `[string]` (optional)
 
