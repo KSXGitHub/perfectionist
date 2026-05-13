@@ -63,7 +63,7 @@ without having to enumerate every macro under `ignore`.
 
 ### `mode`: `Mode` (optional)
 
-Eligibility mode. See [`Mode`].
+Eligibility mode.
 
 ### `deny_extra`: `[string]` (optional)
 
