@@ -47,7 +47,7 @@ struct EnclosingHirFinder<'a, 'tcx> {
 impl<'a, 'tcx> EnclosingHirFinder<'a, 'tcx> {
     fn update(&mut self, hir_id: hir::HirId, span: Span) {
         for (index, &target) in self.targets.iter().enumerate() {
-            if !span.contains(target) {
+            if !contains(span, target) {
                 continue;
             }
             // The walk is depth-first: a parent is visited before its
@@ -56,6 +56,29 @@ impl<'a, 'tcx> EnclosingHirFinder<'a, 'tcx> {
             self.best[index] = hir_id;
         }
     }
+}
+
+/// Containment check that resolves macro hygiene before comparing byte
+/// ranges. A HIR item synthesised by a macro expansion can carry an
+/// `Item.span` whose byte positions point into the macro definition
+/// body (def-site), not into the call site — for example, the
+/// `pub const $name: $ty = $value;` template inside a `macro_rules!`
+/// block. A direct byte-range check against a pre-expansion target
+/// span (which sits at the call site) then misses the expanded item
+/// and the diagnostic falls back to a higher ancestor, breaking
+/// `#[expect]` / `#[allow]` attributes that need to attach to the
+/// expanded item itself rather than to the surrounding module.
+///
+/// Resolving both spans through [`Span::source_callsite`] walks each
+/// span up its expansion chain until it lands on user-written source.
+/// For an expanded item the call-site span byte-covers the call's
+/// arguments, so the containment check succeeds and the deepest HIR
+/// node wins as intended.
+fn contains(item_span: Span, target: Span) -> bool {
+    item_span.contains(target)
+        || item_span
+            .source_callsite()
+            .contains(target.source_callsite())
 }
 
 impl<'tcx> Visitor<'tcx> for EnclosingHirFinder<'_, 'tcx> {
