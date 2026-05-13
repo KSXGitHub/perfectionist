@@ -11,7 +11,7 @@ pub(crate) mod serde_attrs;
 pub(crate) mod ty;
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use pipe_trait::Pipe;
 use proc_macro2::TokenStream;
@@ -186,7 +186,7 @@ fn merge_submodule_items(source_path: &Path, parent: syn::File) -> syn::File {
             return parent;
         }
     };
-    let mut submodule_paths: Vec<std::path::PathBuf> = entries
+    let mut submodule_paths: Vec<PathBuf> = entries
         .filter_map(Result::ok)
         .map(|entry| entry.path())
         .filter(|path| path.extension().is_some_and(|extension| extension == "rs"))
