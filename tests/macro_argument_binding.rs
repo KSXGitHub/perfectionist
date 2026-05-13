@@ -27,6 +27,10 @@ struct RuleConfig {
     allow_extra: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     ignore: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    extra_trivial_methods: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    ignore_trivial_methods: Vec<String>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -97,6 +101,28 @@ fn allow_extra_silences_an_uncatalogued_macro() {
 }
 
 #[test]
+fn extra_trivial_methods_adds_a_pure_getter_to_the_postfix_set() {
+    run(
+        "ui-toml/macro_argument_binding/extra_trivial_methods",
+        RuleConfig {
+            extra_trivial_methods: vec!["cached_size".into()],
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn ignore_trivial_methods_drops_a_built_in_pure_getter() {
+    run(
+        "ui-toml/macro_argument_binding/ignore_trivial_methods",
+        RuleConfig {
+            ignore_trivial_methods: vec!["as_ref".into()],
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
 fn ignore_suppresses_a_built_in_deny_listed_macro() {
     run(
         "ui-toml/macro_argument_binding/ignore",
@@ -131,6 +157,14 @@ fn fn_level_expect_fulfils_against_a_violation() {
 fn crate_level_expect_fulfils_against_a_violation() {
     run(
         "ui-toml/macro_argument_binding/expect_at_crate_root",
+        RuleConfig::default(),
+    );
+}
+
+#[test]
+fn module_level_expect_fulfils_for_item_position_macro() {
+    run(
+        "ui-toml/macro_argument_binding/expect_at_module_with_item_macro",
         RuleConfig::default(),
     );
 }

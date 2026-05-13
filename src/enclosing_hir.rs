@@ -47,7 +47,7 @@ struct EnclosingHirFinder<'a, 'tcx> {
 impl<'a, 'tcx> EnclosingHirFinder<'a, 'tcx> {
     fn update(&mut self, hir_id: hir::HirId, span: Span) {
         for (index, &target) in self.targets.iter().enumerate() {
-            if !span.contains(target) {
+            if !contains(span, target) {
                 continue;
             }
             // The walk is depth-first: a parent is visited before its
@@ -56,6 +56,38 @@ impl<'a, 'tcx> EnclosingHirFinder<'a, 'tcx> {
             self.best[index] = hir_id;
         }
     }
+}
+
+/// Containment check that resolves macro hygiene before comparing byte
+/// ranges. A HIR item synthesised by a macro expansion can carry an
+/// `Item.span` whose byte positions point into the macro definition
+/// body (def-site), not into the call site — for example, the
+/// `pub const $name: $ty = $value;` template inside a `macro_rules!`
+/// block. A direct byte-range check against a pre-expansion target
+/// span (which sits at the call site) misses such an item, so the
+/// `best[index]` slot lands on a *child* HIR node of the expanded
+/// item (one of the captures, which does carry a call-site span)
+/// rather than on the item itself.
+///
+/// `#[expect]` / `#[allow]` resolution walks HIR ancestry from the
+/// anchor up, so this child-node anchoring still surfaces attributes
+/// on the surrounding module today; the fallback is a semantic
+/// improvement (the diagnostic now anchors at the expanded item, not
+/// at one of its captures) rather than a fix for an observable bug.
+/// It also guards against future shapes where no descendant carries
+/// a call-site span — items the visitor doesn't recurse into, or
+/// proc-macro expansions that set spans atypically.
+///
+/// Resolving both spans through [`Span::source_callsite`] walks each
+/// span up its expansion chain until it lands on user-written source.
+/// For an expanded item the call-site span byte-covers the call's
+/// arguments, so the containment check succeeds and the deepest HIR
+/// node wins as intended.
+fn contains(item_span: Span, target: Span) -> bool {
+    item_span.contains(target)
+        || item_span
+            .source_callsite()
+            .contains(target.source_callsite())
 }
 
 impl<'tcx> Visitor<'tcx> for EnclosingHirFinder<'_, 'tcx> {
