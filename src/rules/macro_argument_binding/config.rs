@@ -11,6 +11,7 @@ use std::collections::BTreeSet;
 
 use rustc_ast::Path;
 
+use crate::common::merge_string_allowlist;
 use crate::macro_path::{matches_any, merge_with_builtins, parse_path_list};
 
 const CONFIG_KEY: &str = "perfectionist::macro_argument_binding";
@@ -44,6 +45,18 @@ const BUILTIN_ALLOW: &[&str] = &[
     "matches",
     "dbg",
     "anyhow",
+];
+
+/// Zero-arg method names that are conventionally side-effect-free
+/// across the standard library and ecosystem. `vec.len()`,
+/// `s.is_empty()`, `opt.as_ref()` evaluate the same way no matter how
+/// many times the macro touches them, so they are accepted as trivial
+/// postfixes on a trivial base. Names whose pure-getter convention is
+/// less universal (e.g. `count` is consuming on `Iterator` but
+/// `O(1)` and pure on indexed collections) are left for projects to
+/// add via `extra_trivial_methods`.
+const BUILTIN_TRIVIAL_METHODS: &[&str] = &[
+    "as_bytes", "as_deref", "as_mut", "as_ref", "as_slice", "as_str", "is_empty", "len",
 ];
 
 /// Eligibility mode. The default is `AllowAndDeny`. The matcher-based
@@ -92,6 +105,19 @@ pub(super) struct Config {
     /// Macros to skip entirely, regardless of which list they would
     /// otherwise hit. Same matching rules as `deny_extra`.
     pub ignore: Vec<String>,
+    /// Method names added to the built-in pure-method list. Each
+    /// entry is a bare method identifier (no `()`, no receiver). A
+    /// `.method()` invocation on a trivial base is then accepted as a
+    /// trivial postfix when the method takes no arguments.
+    pub extra_trivial_methods: Vec<String>,
+    /// Method names to drop from the pure-method list, even if they
+    /// appear in the built-in defaults or in `extra_trivial_methods`.
+    /// Empty by default; checked after the merge, so this knob always
+    /// wins. Useful for opting back into linting on a default entry
+    /// the project does not consider trivial — for example, removing
+    /// `as_ref` for a project that wraps it in a non-pure
+    /// implementation.
+    pub ignore_trivial_methods: Vec<String>,
 }
 
 impl Default for Config {
@@ -102,6 +128,8 @@ impl Default for Config {
             deny_extra: Vec::new(),
             allow_extra: Vec::new(),
             ignore: Vec::new(),
+            extra_trivial_methods: Vec::new(),
+            ignore_trivial_methods: Vec::new(),
         }
     }
 }
@@ -120,7 +148,13 @@ pub(super) struct MacroArgumentBinding {
     /// `Blanket` mode, which has no built-in allow list per the rule
     /// docs (`planned-rules/macro-argument-binding.md`).
     allow_extra: BTreeSet<Vec<String>>,
+    /// Macros to skip entirely. Checked before deny / allow lookup, so
+    /// an entry here wins over any other classification.
     ignore: BTreeSet<Vec<String>>,
+    /// Built-in pure-method list plus `extra_trivial_methods`,
+    /// consulted by the trivial-expression walker to accept
+    /// `expr.method()` as a trivial postfix on a trivial base.
+    trivial_methods: BTreeSet<String>,
 }
 
 impl MacroArgumentBinding {
@@ -131,6 +165,11 @@ impl MacroArgumentBinding {
         let deny = merge_with_builtins(BUILTIN_DENY, &extra_deny);
         let allow = merge_with_builtins(BUILTIN_ALLOW, &extra_allow);
         let ignore = parse_path_list(&config.ignore);
+        let trivial_methods = merge_string_allowlist(
+            BUILTIN_TRIVIAL_METHODS,
+            config.extra_trivial_methods,
+            config.ignore_trivial_methods,
+        );
         Self {
             enabled: config.enabled,
             mode: config.mode,
@@ -138,7 +177,14 @@ impl MacroArgumentBinding {
             allow,
             allow_extra: extra_allow,
             ignore,
+            trivial_methods,
         }
+    }
+
+    /// The merged set of method names whose `.method()` invocations
+    /// on a trivial base are accepted as trivial postfixes.
+    pub(super) fn trivial_methods(&self) -> &BTreeSet<String> {
+        &self.trivial_methods
     }
 
     /// Path-side eligibility: combines the `enabled` switch, the

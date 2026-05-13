@@ -41,6 +41,20 @@ The same trap covers any macro that expands its capture more
 than once (`min!`/`max!`-style, retry loops): a side-effecting
 expression repeated produces wrong results.
 
+Trivial arguments — literals, paths, field accesses, indexing
+of trivial bases, dereferences, references, casts, the unit
+literal `()`, parenthesised / tuple groups whose elements are
+all trivial, binary chains of trivial operands joined by
+side-effect-free operators, and zero-arg method calls whose
+name is in the curated pure-getter set (`len`, `is_empty`,
+`as_str`, `as_bytes`, `as_ref`, `as_mut`, `as_deref`,
+`as_slice`, plus anything in `extra_trivial_methods`) — are
+accepted as-is. A comparison like `vec.len() <= cap` evaluates
+the same way regardless of how many times the macro touches
+it, so binding it to a `let` would only force the comparison
+to run in release builds for no benefit. The lint focuses on
+arguments whose evaluation is itself observable.
+
 ## Example
 ```rust,ignore
 debug_assert_eq!(map.insert(key, value), None, "duplicate");
@@ -81,6 +95,23 @@ as `deny_extra`. Only meaningful in `AllowAndDeny` and
 
 Macros to skip entirely, regardless of which list they would
 otherwise hit. Same matching rules as `deny_extra`.
+
+### `extra_trivial_methods`: `[string]` (optional)
+
+Method names added to the built-in pure-method list. Each
+entry is a bare method identifier (no `()`, no receiver). A
+`.method()` invocation on a trivial base is then accepted as a
+trivial postfix when the method takes no arguments.
+
+### `ignore_trivial_methods`: `[string]` (optional)
+
+Method names to drop from the pure-method list, even if they
+appear in the built-in defaults or in `extra_trivial_methods`.
+Empty by default; checked after the merge, so this knob always
+wins. Useful for opting back into linting on a default entry
+the project does not consider trivial — for example, removing
+`as_ref` for a project that wraps it in a non-pure
+implementation.
 
 ### Types
 

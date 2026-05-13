@@ -22,10 +22,13 @@ callback. Two shapes qualify as trivial:
 - the body is a trivial wrapper around the parameter —
   a field access (`|x| x.field`), a method call
   (`|x| x.foo()`), a one-argument call where the
-  parameter is the sole argument (`|x| vec![x]`), or a
-  reference (`|x| &x`). Surrounding `*` / `&` operators
-  around the parameter inside any of these shapes are
-  peeled before the match, so `|s| (*s).foo()` qualifies.
+  parameter is the sole argument (`|x| f(x)`), a
+  reference (`|x| &x`), or a macro call
+  (`|x| vec![x]`, `|x| dbg!(x)`,
+  `|x| format!("{x}")`). Surrounding `*` / `&`
+  operators around the parameter inside any of the
+  non-macro shapes are peeled before the match, so
+  `|s| (*s).foo()` qualifies.
 
 ## Why restrict this?
 This is a stylistic preference, not a correctness issue.

@@ -7,7 +7,9 @@ use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Span, Symbol};
 
-use crate::common::{binding_ident, is_single_ascii_letter, merge_symbol_allowlist};
+use crate::common::{
+    binding_ident, hir_in_external_macro, is_single_ascii_letter, merge_symbol_allowlist,
+};
 
 declare_tool_lint! {
     /// ### What it does
@@ -109,6 +111,9 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterFunctionParam {
         let skip_self = !matches!(decl.implicit_self, hir::ImplicitSelfKind::None);
         let params_iter = body.params.iter().skip(usize::from(skip_self));
         for param in params_iter {
+            if hir_in_external_macro(lint_context, param.hir_id, param.span) {
+                continue;
+            }
             let Some(ident) = binding_ident(param.pat) else {
                 continue;
             };

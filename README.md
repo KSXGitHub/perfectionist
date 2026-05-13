@@ -33,6 +33,27 @@ Each lint registers under the `perfectionist` tool namespace. There are two inde
 #[expect(perfectionist::unicode_ellipsis_in_comments, reason = "3 ASCII dots would be incorrect here")]
 ```
 
+<details>
+<summary>Boilerplate to make <code>#[expect(perfectionist::…)]</code> compile</summary>
+
+For the `perfectionist::*` path in the attribute above to be accepted, the compiler needs to know about the `perfectionist` tool namespace. Add the following to your crate root (e.g. `src/lib.rs` or `src/main.rs`):
+
+```rust
+#![cfg_attr(dylint_lib = "perfectionist", feature(register_tool))]
+#![cfg_attr(dylint_lib = "perfectionist", register_tool(perfectionist))]
+```
+
+Both attributes are gated on `cfg(dylint_lib = "perfectionist")` so they only take effect when the dylint driver is loading this library; regular `cargo build` and `cargo check` runs ignore them and don't need a nightly toolchain.
+
+Then declare the `dylint_lib` cfg in `Cargo.toml` so `cargo check` doesn't warn about an unexpected cfg name:
+
+```toml
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(dylint_lib, values("perfectionist"))'] }
+```
+
+</details>
+
 To escalate a rule project-wide, add an attribute to `src/lib.rs` (`#![deny(perfectionist::single_letter_let_binding)]`) or set `DYLINT_RUSTFLAGS=-D perfectionist::<rule>` in the environment.
 
 **2. Rule registration (project-wide).** Each rule is either *enabled* (its pass runs) or *disabled* (its pass is never installed, so it produces no diagnostics at all). Most rules are enabled by default; a few — currently only `non_exhaustive_error` — ship disabled and require an explicit opt-in. Flip the registration state via the crate-wide `[perfectionist]` table in `dylint.toml`:

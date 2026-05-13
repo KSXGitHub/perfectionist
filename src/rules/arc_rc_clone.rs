@@ -7,6 +7,8 @@ use rustc_middle::ty;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::sym;
 
+use crate::common::hir_in_external_macro;
+
 declare_tool_lint! {
     /// ### What it does
     /// Flags `value.clone()` where `value` is an `Arc<T>` or `Rc<T>`,
@@ -106,6 +108,9 @@ impl<'tcx> LateLintPass<'tcx> for ArcRcClone {
             return;
         };
         if method_segment.ident.name != sym::clone {
+            return;
+        }
+        if hir_in_external_macro(cx, expr.hir_id, expr.span) {
             return;
         }
         // Match on the method call's *result* type rather than the

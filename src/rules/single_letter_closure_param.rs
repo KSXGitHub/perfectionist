@@ -15,7 +15,9 @@ use rustc_session::{declare_tool_lint, impl_lint_pass};
 
 use rustc_span::Symbol;
 
-use crate::common::{binding_ident, is_single_ascii_letter, merge_symbol_allowlist};
+use crate::common::{
+    binding_ident, hir_in_external_macro, is_single_ascii_letter, merge_symbol_allowlist,
+};
 
 mod triviality;
 
@@ -37,10 +39,13 @@ declare_tool_lint! {
     /// - the body is a trivial wrapper around the parameter —
     ///   a field access (`|x| x.field`), a method call
     ///   (`|x| x.foo()`), a one-argument call where the
-    ///   parameter is the sole argument (`|x| vec![x]`), or a
-    ///   reference (`|x| &x`). Surrounding `*` / `&` operators
-    ///   around the parameter inside any of these shapes are
-    ///   peeled before the match, so `|s| (*s).foo()` qualifies.
+    ///   parameter is the sole argument (`|x| f(x)`), a
+    ///   reference (`|x| &x`), or a macro call
+    ///   (`|x| vec![x]`, `|x| dbg!(x)`,
+    ///   `|x| format!("{x}")`). Surrounding `*` / `&`
+    ///   operators around the parameter inside any of the
+    ///   non-macro shapes are peeled before the match, so
+    ///   `|s| (*s).foo()` qualifies.
     ///
     /// ### Why restrict this?
     /// This is a stylistic preference, not a correctness issue.
@@ -193,6 +198,9 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterClosureParam {
         let hir::ExprKind::Closure(closure) = expr.kind else {
             return;
         };
+        if hir_in_external_macro(lint_context, expr.hir_id, expr.span) {
+            return;
+        }
         let body = lint_context.tcx.hir_body(closure.body);
         let single_letter_params: Vec<rustc_span::Ident> = body
             .params

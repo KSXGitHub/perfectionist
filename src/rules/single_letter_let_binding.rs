@@ -5,10 +5,11 @@ use clippy_utils::is_in_test;
 use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-
 use rustc_span::Symbol;
 
-use crate::common::{binding_ident, is_single_ascii_letter, merge_symbol_allowlist};
+use crate::common::{
+    binding_ident, hir_in_external_macro, is_single_ascii_letter, merge_symbol_allowlist,
+};
 
 declare_tool_lint! {
     /// ### What it does
@@ -96,6 +97,9 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterLetBinding {
         if !matches!(local.source, hir::LocalSource::Normal) {
             // `for` / `while let` desugarings synthesise `LetStmt`
             // nodes with names the user did not write.
+            return;
+        }
+        if hir_in_external_macro(lint_context, local.hir_id, local.span) {
             return;
         }
         let Some(ident) = binding_ident(local.pat) else {
