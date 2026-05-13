@@ -138,6 +138,8 @@ pub(super) struct MacroArgumentBinding {
     /// `Blanket` mode, which has no built-in allow list per the rule
     /// docs (`planned-rules/macro-argument-binding.md`).
     allow_extra: BTreeSet<Vec<String>>,
+    /// Macros to skip entirely. Checked before deny / allow lookup, so
+    /// an entry here wins over any other classification.
     ignore: BTreeSet<Vec<String>>,
     /// Built-in pure-method list plus `extra_trivial_methods`,
     /// consulted by the trivial-expression walker to accept
