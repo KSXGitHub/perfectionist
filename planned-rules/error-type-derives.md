@@ -25,27 +25,32 @@ Specifically:
 This is a stylistic preference, not a correctness issue, with one
 exception flagged below.
 
-The rule's preference angle (`unused_error`, `unused_display`,
-`copyable_error`, `unconventional_error_name`): a derive list is
-read every time the type is read, and reviewers infer the type's
-intent from it. A `derive(Error)` on a type that's never used as an
-error, or that the rest of the codebase agrees doesn't look like an
-error (`Copy`, no `Error`-conforming name), creates a false signal —
-readers waste time reasoning about the type as if it might appear in
-a `Result`'s `Err` slot, and reviewers wave through an unjustified
-`Error` impl on the assumption "the author had a reason." Stripping
-the misleading derive (or, for the naming check, renaming the type)
-re-aligns the source with the codebase's conventions and shortens
-the time it takes a reader to classify any given type as
-"value vs error." `unused_display` is the same argument applied to
-`derive_more::Display`.
+The Error sub-checks (`unused_error`, `copyable_error`,
+`unconventional_error_name`): a derive list is read every time the
+type is read, and reviewers infer the type's intent from it. A
+`derive(Error)` on a type that's never used as an error, or that
+the rest of the codebase agrees doesn't look like an error (`impl
+Copy`, or named in a way the project reserves for non-errors),
+creates a false signal — readers reason about the type as if it
+might appear in a `Result`'s `Err` slot, and reviewers wave through
+an unjustified `Error` impl on the assumption "the author had a
+reason." Stripping the misleading derive (or, for the naming check,
+renaming the type) shortens the time it takes a reader to classify
+any given type as "value vs error."
+
+The Display sub-check (`unused_display`): a `derive(Display)`
+advertises a public-facing string representation. If nothing in the
+crate calls `format!`, `to_string`, or otherwise consumes the impl,
+the advertisement is hollow — and a reader trying to find "where do
+we render this type?" comes up empty.
 
 The objectively-bad exception (`missing_error`): a type used as
 `Result<_, T>`'s `Err` that does not implement `std::error::Error`
 breaks `?`-interop with downstream `Box<dyn Error>` consumers,
-loses `source()` chaining, and prevents `anyhow::Error` /
-`eyre::Report` conversion. This is a real defect, not a preference,
-and the sub-check defaults to deny accordingly (see *Severity*).
+prevents the value from participating in `source()` chains, and
+blocks `anyhow::Error` / `eyre::Report` conversion. This is a real
+defect, not a preference, and the sub-check defaults to deny
+accordingly (see *Severity*).
 
 ## What to lint
 
