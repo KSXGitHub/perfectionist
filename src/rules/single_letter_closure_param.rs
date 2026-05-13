@@ -118,7 +118,7 @@ impl SingleLetterClosureParam {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         let comparison_methods = DEFAULT_COMPARISON_METHODS
             .iter()
-            .map(|s| (*s).to_owned())
+            .map(ToString::to_string)
             .chain(config.extra_comparison_methods)
             .collect();
         Self { comparison_methods }
