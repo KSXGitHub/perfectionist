@@ -33,14 +33,15 @@ let manifest = load().expect("config missing...");
 ```
 
 ## Custom macros
-The `macros` configuration accepts any macro name, but the
-lint's per-macro knowledge of which argument is the message
-only covers the built-in panic / assertion macros. A custom
-macro added through this knob is treated as if its first
-argument were the message; an `assert_eq!`-shaped wrapper
-would therefore also scan its value-position literals. Adding
-per-macro skip counts requires extending the configuration
-schema and is out of scope for the initial rule.
+The `extra_macros` configuration accepts any macro name,
+but the lint's per-macro knowledge of which argument is
+the message only covers the built-in panic / assertion
+macros. A custom macro added through this knob is treated
+as if its first argument were the message; an
+`assert_eq!`-shaped wrapper would therefore also scan its
+value-position literals. Adding per-macro skip counts
+requires extending the configuration schema and is out of
+scope for the initial rule.
 
 ## Configuration
 
