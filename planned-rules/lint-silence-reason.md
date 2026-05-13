@@ -86,6 +86,16 @@ fn build_fetcher(/* ... */) {}
 ```
 
 ```rust
+// Bad — `reason` present but shorter than `min_reason_length`
+#[allow(clippy::too_many_arguments, reason = "x")]
+fn build_fetcher(/* ... */) {}
+
+// Good
+#[allow(clippy::too_many_arguments, reason = "matches pnpm's signature")]
+fn build_fetcher(/* ... */) {}
+```
+
+```rust
 // Not flagged by this rule — `#[warn]` is out of scope here.
 // `lint-downgrade-reason` decides whether the `warn` is a
 // relaxation relative to ambient policy.
@@ -149,9 +159,11 @@ min_reason_length = 3
   attributes, walk into the `cfg_attr` argument list and apply
   the same match to each inner attribute — `src/enclosing_hir.rs`
   carries the established walker shape; reuse it here.
-- Use `src/common.rs::attr_has_reason` to check whether the
-  attribute already carries a `reason = "<str>"` field; if
-  absent, emit at the attribute's span.
+- Use `src/common.rs::attr_has_reason` to retrieve the `reason`
+  field. If absent, emit the "missing reason" diagnostic at the
+  attribute's span. If present, compare the literal's length
+  against `min_reason_length`; if shorter, emit the "reason too
+  short" diagnostic at the literal's span.
 - Per-named-lint handling: an attribute that names multiple
   lints (`#[allow(a, b)]`) is treated as a single relaxation
   for diagnostic purposes — one missing `reason` triggers one

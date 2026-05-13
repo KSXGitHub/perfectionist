@@ -118,6 +118,15 @@ pub fn parse(input: &str) -> Result<Manifest, ParseError> { /* ... */ }
 ```
 
 ```rust
+#![deny(clippy::missing_errors_doc)]
+
+// Bad — relaxed below the crate-level `deny`, but the `reason`
+// is shorter than `min_reason_length`
+#[warn(clippy::missing_errors_doc, reason = "x")]
+pub fn parse(input: &str) -> Result<Manifest, ParseError> { /* ... */ }
+```
+
+```rust
 // `#[deny]` and `#[forbid]` are never flagged — they tighten,
 // not loosen.
 #[deny(clippy::too_many_arguments)]
