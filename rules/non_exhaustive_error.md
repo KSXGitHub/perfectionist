@@ -62,8 +62,8 @@ Visibility threshold for the rule.
 
 Additional identifier suffixes that mark a type as "an
 error" purely by name, without inspecting its trait
-implementations. Merged with the built-in defaults
-(`["Error"]`); empty by default. List project-specific
+implementations. Empty by default; merged with the
+built-in defaults (`["Error"]`). List project-specific
 vocabulary here (`Failure`, `Fault`, …) without having to
 re-state the standard suffix.
 
