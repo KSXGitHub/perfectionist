@@ -15,7 +15,9 @@ use rustc_session::{declare_tool_lint, impl_lint_pass};
 
 use rustc_span::Symbol;
 
-use crate::common::{binding_ident, is_single_ascii_letter, merge_symbol_allowlist};
+use crate::common::{
+    binding_ident, hir_in_external_macro, is_single_ascii_letter, merge_symbol_allowlist,
+};
 
 mod triviality;
 
@@ -193,6 +195,9 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterClosureParam {
         let hir::ExprKind::Closure(closure) = expr.kind else {
             return;
         };
+        if hir_in_external_macro(lint_context, expr.hir_id, expr.span) {
+            return;
+        }
         let body = lint_context.tcx.hir_body(closure.body);
         let single_letter_params: Vec<rustc_span::Ident> = body
             .params

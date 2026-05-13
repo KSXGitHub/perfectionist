@@ -6,7 +6,42 @@
 use std::collections::BTreeSet;
 
 use rustc_hir as hir;
-use rustc_span::Symbol;
+use rustc_hir::HirId;
+use rustc_lint::{LateContext, LintContext};
+use rustc_span::{Span, Symbol};
+
+/// Whether the HIR node at `hir_id` (whose own span is `span`)
+/// originates in an external proc-macro (or `macro_rules!`)
+/// expansion.
+///
+/// `declare_tool_lint!(... report_in_external_macro: false)` only
+/// inspects the diagnostic span when deciding whether to suppress.
+/// Proc-macro derives such as `clap_derive`'s `default_value_t`
+/// expansion synthesise nodes whose identifier inherits a
+/// user-source span (the span of the attribute that drove the
+/// expansion) so that downstream compile errors point somewhere a
+/// user can fix; from the lint's perspective the identifier looks
+/// user-authored even though the surrounding statement only exists
+/// in the expansion. Every rule whose diagnostic span is narrower
+/// than the syntactic node that produced the violation must
+/// therefore check the structural-parent span explicitly.
+///
+/// Two checks are needed because some structural spans cover only
+/// the identifier itself (a `<T>` generic parameter has no other
+/// tokens), so the node's own `Span::in_external_macro` returns
+/// false. Walking up to the enclosing item and checking its
+/// `def_span` catches that case — the synthesised owner item's
+/// span carries the expansion's `SyntaxContext`. Regression
+/// fixtures live in `ui/*_proc_macro.rs` with a minimal derive in
+/// `ui/auxiliary/proc_macro_synth_binding.rs`.
+pub(crate) fn hir_in_external_macro(cx: &LateContext<'_>, hir_id: HirId, span: Span) -> bool {
+    let sm = cx.sess().source_map();
+    if span.in_external_macro(sm) {
+        return true;
+    }
+    let owner_id = cx.tcx.hir_get_parent_item(hir_id);
+    cx.tcx.def_span(owner_id.to_def_id()).in_external_macro(sm)
+}
 
 /// Whether `name` is exactly one ASCII letter (`a`..=`z` or
 /// `A`..=`Z`). Used by every `single_letter_*` rule.

@@ -5,7 +5,7 @@ use rustc_span::Span;
 
 use clippy_utils::diagnostics::span_lint_and_help;
 
-use crate::common::is_single_ascii_letter;
+use crate::common::{hir_in_external_macro, is_single_ascii_letter};
 
 declare_tool_lint! {
     /// ### What it does
@@ -97,6 +97,9 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterGeneric {
         if synthetic {
             // `impl Trait`-desugared parameters carry compiler-generated
             // names that the user did not write; the rule does not apply.
+            return;
+        }
+        if hir_in_external_macro(lint_context, param.hir_id, param.span) {
             return;
         }
         let ident = param.name.ident();
