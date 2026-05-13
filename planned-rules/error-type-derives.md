@@ -151,8 +151,12 @@ cannot be changed without a breaking release).
 The check is one-directional: a type that *matches* the convention
 but does not implement `Error` is not flagged here, because matching
 the convention is exactly how a project declares "this is an error
-type". The inverse direction is covered by `missing_error` above,
-which keys on usage rather than naming.
+type." The inverse pairing — a type whose name promises "error" but
+which lacks an `Error` impl — is left to `missing_error` *when the
+type is actually used as one* (it triggers on usage in `Result<_, E>`,
+not on the name); a never-used type with an `Error`-shaped name is
+intentionally not flagged by any sub-check, since silently-renaming
+a never-used type is rarely what the author wanted.
 
 ## Examples
 
@@ -222,10 +226,13 @@ pub enum ParsedValue { /* ... */ }
 
 - A type may be used as an error only via downstream crates, in which case
   `unused_error` will false-positive. Allow `#[allow(...)]` on the type,
-  and mention `pub` types in a softer category by default (configurable
-  via `unused_error.flag_pub_types = false`, registered as
-  `[perfectionist::unused_error] flag_pub_types = false` in the
-  consumer's `dylint.toml`).
+  and mention `pub` types in a softer category by default; in the
+  consumer's `dylint.toml`, set:
+
+  ```toml
+  [perfectionist::unused_error]
+  flag_pub_types = false
+  ```
 
 ## Severity
 
