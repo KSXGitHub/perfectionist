@@ -186,7 +186,11 @@ min_reason_length = 3
   `src/enclosing_hir.rs`.
 - Compare the attribute's level against the inherited level
   using the `Forbid > Deny > Warn > Expect ≈ Allow` ordering.
-  Emit only when strictly lower.
+  If not strictly lower, accept. If strictly lower, run the
+  presence / length check from
+  [`lint-silence-reason`](./lint-silence-reason.md) and emit
+  the corresponding "missing reason" or "reason too short"
+  diagnostic.
 - The `reason`-presence check is shared with
   [`lint-reason-from-comment`](./lint-reason-from-comment.md)
   and

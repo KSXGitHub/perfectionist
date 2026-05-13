@@ -216,13 +216,15 @@ pattern that several rules call out by reference — live in
   issue surfaces an `unfulfilled_lint_expectations` warning rather
   than silently leaving a stale suppression.
 - [`lint-silence-reason.md`](./lint-silence-reason.md) —
-  require a `reason = "..."` on every `#[allow]` and `#[expect]`
+  require a `reason = "..."` of at least `min_reason_length`
+  characters (default 3) on every `#[allow]` and `#[expect]`
   attribute. Local check; no ancestry walk.
 - [`lint-downgrade-reason.md`](./lint-downgrade-reason.md) —
-  require a `reason = "..."` on any `#[warn]` / `#[allow]` /
-  `#[expect]` that lowers the lint's inherited level
-  (`deny → warn`, `warn → allow`, etc.). Ancestry-aware
-  counterpart to `lint-silence-reason`.
+  same presence-and-length requirement as
+  `lint-silence-reason`, extended to any `#[warn]` /
+  `#[allow]` / `#[expect]` that lowers the lint's inherited
+  level (`deny → warn`, `warn → allow`, etc.). Ancestry-aware
+  counterpart.
 
 ### Clap derive help
 - [`clap-help-no-markdown.md`](./clap-help-no-markdown.md) — forbid
