@@ -42,8 +42,10 @@ This is a stylistic preference, not a correctness issue.
 ## What to lint
 
 For every `#[allow(<lints>, ...)]` or `#[expect(<lints>, ...)]`
-attribute, check whether any nested meta item has the shape
-`reason = "<str>"`:
+attribute, first filter against `exempt_lints`: if every lint
+named in the attribute is on the configured exempt list, the
+attribute is not flagged. Otherwise, check whether any nested
+meta item has the shape `reason = "<str>"`:
 
 - **Absent.** Emit a "missing reason" diagnostic at the
   attribute's span.
@@ -93,9 +95,10 @@ pub fn parse(/* ... */) {}
 
 ## Autofix
 
-Insert `, reason = ""` immediately before the closing `)` of the
-attribute's argument list. `Applicability::HasPlaceholders` —
-the empty string is a placeholder the author fills in.
+For the missing-reason case: insert `, reason = ""` immediately
+before the closing `)` of the attribute's argument list.
+`Applicability::HasPlaceholders` — the empty string is a
+placeholder the author fills in.
 
 For a `cfg_attr`-wrapped lint attribute
 (`#[cfg_attr(<cfg>, allow(...))]`), the closing `)` targeted is
@@ -106,6 +109,10 @@ uses the same insertion point as the outer form.
 If the attribute is laid out across multiple lines, the
 suggestion keeps the `reason` entry on its own line matching the
 existing indentation.
+
+The too-short case has no autofix: the lint cannot synthesise a
+longer rationale on the author's behalf. The diagnostic points
+at the `reason` literal's span; the author rewrites it.
 
 ## Configuration
 

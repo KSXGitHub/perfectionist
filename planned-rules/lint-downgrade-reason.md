@@ -21,8 +21,8 @@ to the surrounding scope.
 This is a stylistic preference, not a correctness issue.
 
 - A relative downgrade is a *local exception* to a *project
-  policy*. The policy tends to live in `dylint.toml` /
-  `Cargo.toml`'s `[lints]` table / a crate-root `#![deny(...)]`;
+  policy*. The policy tends to live in `Cargo.toml`'s `[lints]`
+  table / a crate-root `#![deny(...)]` / `RUSTFLAGS=-D <lint>`;
   the exception lives at the site that needs it. The rationale
   for the exception is itself local information and belongs
   with the exception.
@@ -40,15 +40,18 @@ This is a stylistic preference, not a correctness issue.
 ## What to lint
 
 For every `#[warn(<lints>)]`, `#[allow(<lints>)]`, or
-`#[expect(<lints>)]` attribute, compute the effective level of
-each named lint at the *enclosing* scope. The level comes from
-the cargo-level sources — the workspace / package `[lints]`
-table in `Cargo.toml` (Rust 1.74+), `RUSTFLAGS`'s `-D` / `-W` /
-`-A` / `-F` flags, and inherited source attributes
-(`#![deny(...)]` at the crate root, `#[warn(...)]` on a parent
-module, etc.). `dylint.toml` is *not* a level source — it
-carries per-lint configuration tables (e.g. `[perfectionist::<lint>]`),
-not lint levels.
+`#[expect(<lints>)]` attribute, first filter against
+`exempt_lints`: if every lint named in the attribute is on the
+configured exempt list, the attribute is not flagged.
+Otherwise, compute the effective level of each named lint at
+the *enclosing* scope. The level comes from the cargo-level
+sources — the workspace / package `[lints]` table in
+`Cargo.toml` (Rust 1.74+), `RUSTFLAGS`'s `-D` / `-W` / `-A` /
+`-F` flags, and inherited source attributes (`#![deny(...)]` at
+the crate root, `#[warn(...)]` on a parent module, etc.).
+`dylint.toml` is *not* a level source — it carries per-lint
+configuration tables (e.g. `[perfectionist::<lint>]`), not lint
+levels.
 
 If the attribute's level is strictly lower than the resolved
 enclosing level (`deny → warn`, `deny → allow`,
@@ -131,14 +134,17 @@ fn build(/* ... */) {}
 
 ## Autofix
 
-Insert `, reason = ""` immediately before the closing `)` of the
-attribute's argument list. `Applicability::HasPlaceholders` —
-the empty string is a placeholder the author fills in. Layout
-and the `cfg_attr` / inner-attribute scope handling are the
-same as for
+For the missing-reason case: insert `, reason = ""` immediately
+before the closing `)` of the attribute's argument list.
+`Applicability::HasPlaceholders` — the empty string is a
+placeholder the author fills in. Layout and the `cfg_attr` /
+inner-attribute scope handling are the same as for
 [`lint-silence-reason`](./lint-silence-reason.md): the
 insertion point is the inner `warn(...)` / `allow(...)` /
 `expect(...)` argument list, not any wrapping `cfg_attr`.
+
+The too-short case has no autofix; the diagnostic points at the
+`reason` literal's span and the author rewrites it.
 
 ## Configuration
 
