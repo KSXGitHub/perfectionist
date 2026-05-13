@@ -1,5 +1,5 @@
 warning: enum `ConfigFailure` is missing `#[non_exhaustive]`
-  --> $DIR/fixture.rs:12:10
+  --> $DIR/fixture.rs:13:10
    |
 LL | pub enum ConfigFailure {
    |          ^^^^^^^^^^^^^

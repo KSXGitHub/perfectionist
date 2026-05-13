@@ -58,20 +58,24 @@ Configure via `dylint.toml` under `["perfectionist::non_exhaustive_error"]`. Eve
 
 Visibility threshold for the rule.
 
-### `suffixes`: `[string]` (optional)
+### `extra_suffixes`: `[string]` (optional)
 
-Identifier suffixes that mark a type as "an error" purely
-by name, without inspecting its trait implementations.
+Additional identifier suffixes that mark a type as "an
+error" purely by name, without inspecting its trait
+implementations. Merged with the built-in defaults
+(`["Error"]`); empty by default. List project-specific
+vocabulary here (`Failure`, `Fault`, …) without having to
+re-state the standard suffix.
 
-Setting this option **replaces** the built-in default,
-rather than extending it: configuring
-`suffixes = ["Failure"]` matches only `*Failure` names, not
-`*Error` or `*Failure`. To keep the default suffix alongside
-a project-specific one, list it explicitly:
-`suffixes = ["Error", "Failure"]`.
+### `ignore_suffixes`: `[string]` (optional)
 
-Defaults to `["Error"]`. A type that implements
-`std::error::Error` is flagged regardless of suffix.
+Identifier suffixes to drop from the allowlist, even if
+they appear in the built-in defaults or in `extra_suffixes`.
+Empty by default; checked after the merge with the
+built-ins, so this knob always wins. Use it when a project
+deliberately does not want the `Error` suffix to trigger
+the by-name branch — types that implement
+`std::error::Error` are still flagged via the trait branch.
 
 ### Types
 
