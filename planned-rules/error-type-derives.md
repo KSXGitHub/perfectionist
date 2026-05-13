@@ -120,47 +120,16 @@ under the `[unconventional_error_name]` table (registered as
 `[perfectionist::unconventional_error_name]` in the consumer's
 `dylint.toml` per the
 [lint-name namespacing convention](./IMPLEMENTATION_CONVENTIONS.md#lint-name-namespacing));
-the `error_name_pattern` key accepts one of five forms, shown below
-as separately-pasteable snippets (each is a complete table on its
-own — pick one):
-
-The default. Equivalent to omitting the key entirely:
+the `error_name_pattern` key accepts one of five forms — pick
+exactly one (uncomment one line, leave the others commented):
 
 ```toml
 [unconventional_error_name]
-error_name_pattern = { suffix = "Error" }
-```
-
-A bare string is shorthand for the `suffix` form, so the common case
-stays one line:
-
-```toml
-[unconventional_error_name]
-error_name_pattern = "Error"
-```
-
-A list of suffixes, for projects that use more than one error-naming
-convention (e.g. both `Error` and `Failure`). The type's name matches
-if it ends with any element:
-
-```toml
-[unconventional_error_name]
-error_name_pattern = { suffix = ["Error", "Failure"] }
-```
-
-A bare list of strings is shorthand for `{ suffix = [...] }`:
-
-```toml
-[unconventional_error_name]
-error_name_pattern = ["Error", "Failure"]
-```
-
-`false` disables the sub-check entirely. TOML has no `null` literal,
-so `false` is the off switch:
-
-```toml
-[unconventional_error_name]
-error_name_pattern = false
+error_name_pattern = { suffix = "Error" }                # default
+# error_name_pattern = "Error"                           # bare-string shorthand for `{ suffix = ... }`
+# error_name_pattern = { suffix = ["Error", "Failure"] } # list of suffixes; matches if the name ends with any
+# error_name_pattern = ["Error", "Failure"]              # bare-list shorthand for `{ suffix = [...] }`
+# error_name_pattern = false                             # disable the sub-check (TOML has no `null` literal)
 ```
 
 Regex is intentionally *not* offered as a matcher form. See
@@ -185,15 +154,15 @@ which keys on usage rather than naming.
 ```rust
 // Bad: Error derived but never used as one
 #[derive(Debug, Display, Error)]
-struct ConfigSummary(String);
+struct ConfigSummaryError(String);
 
 fn main() {
-    println!("{}", ConfigSummary("hi".into()));
+    println!("{}", ConfigSummaryError("hi".into()));
 }
 
 // Good
 #[derive(Debug, Display)]
-struct ConfigSummary(String);
+struct ConfigSummaryError(String);
 ```
 
 ```rust
@@ -225,15 +194,12 @@ pub enum ParsedValue { /* ... */ }
   the original attribute — preserve it in `check_item` before the
   implementation is desugared.
 - `copyable_error` and `unconventional_error_name` are *local* checks
-  and need no crate-wide bookkeeping. Inspect the item's derive list
-  and any `impl Error for T` block directly in `check_item`; for
-  `copyable_error`, query `implements_trait` against both
-  `std::marker::Copy` and `std::error::Error`.
-- `unconventional_error_name` follows the same local-check shape as
-  `copyable_error`: query `implements_trait` against
-  `std::error::Error`, then test the type's identifier (with generic
-  parameters stripped — `MyError<T>` matches an `Error` suffix on
-  `MyError`) against the configured `error_name_pattern`.
+  and need no crate-wide bookkeeping. The Error membership query is
+  the global `implements_trait` check above; on top of that:
+  `copyable_error` adds an `implements_trait` query against
+  `std::marker::Copy`; `unconventional_error_name` strips generic
+  parameters from the type's identifier (`MyError<T>` → `MyError`)
+  and tests the result against the configured `error_name_pattern`.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
