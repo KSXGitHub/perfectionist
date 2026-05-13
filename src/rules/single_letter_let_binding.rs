@@ -6,7 +6,9 @@ use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
-use crate::common::{binding_ident, is_single_ascii_letter};
+use rustc_span::Symbol;
+
+use crate::common::{binding_ident, is_single_ascii_letter, merge_symbol_allowlist};
 
 declare_tool_lint! {
     /// ### What it does
@@ -44,36 +46,35 @@ const CONFIG_KEY: &str = "perfectionist::single_letter_let_binding";
 /// most common idiom that survives outside test code.
 const DEFAULT_LET_ALLOWLIST: &[&str] = &["n"];
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Identifiers that are always allowed as `let` binding
-    /// names, even outside `#[cfg(test)]` code. Defaults to
-    /// `["n"]`.
-    allowed_idents: Vec<String>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            allowed_idents: DEFAULT_LET_ALLOWLIST
-                .iter()
-                .map(|s| (*s).to_owned())
-                .collect(),
-        }
-    }
+    /// Additional identifiers to allow as `let` binding names,
+    /// even outside `#[cfg(test)]` code. Merged with the built-in
+    /// defaults (`["n"]`); empty by default. Use this to
+    /// whitelist project-specific conventional names without
+    /// having to re-state the standard ones.
+    extra_allowed_idents: Vec<String>,
+    /// Identifiers to drop from the allowlist, even if they
+    /// appear in the built-in defaults or in
+    /// `extra_allowed_idents`. Empty by default; checked after
+    /// the merge with the built-ins, so this knob always wins.
+    ignore_allowed_idents: Vec<String>,
 }
 
 pub struct SingleLetterLetBinding {
-    allowed_idents: BTreeSet<String>,
+    allowed_idents: BTreeSet<Symbol>,
 }
 
 impl SingleLetterLetBinding {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        Self {
-            allowed_idents: config.allowed_idents.into_iter().collect(),
-        }
+        let allowed_idents = merge_symbol_allowlist(
+            DEFAULT_LET_ALLOWLIST,
+            config.extra_allowed_idents,
+            config.ignore_allowed_idents,
+        );
+        Self { allowed_idents }
     }
 }
 
@@ -100,7 +101,7 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterLetBinding {
         if !is_single_ascii_letter(ident.name.as_str()) {
             return;
         }
-        if self.allowed_idents.contains(ident.name.as_str()) {
+        if self.allowed_idents.contains(&ident.name) {
             return;
         }
         if is_in_test(lint_context.tcx, local.hir_id) {

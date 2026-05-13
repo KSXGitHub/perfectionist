@@ -3,7 +3,11 @@
 //! lists, and the in-memory `UnicodeEllipsisInPanicMessages` state the
 //! late pass holds.
 
+use std::collections::BTreeSet;
+
 use rustc_span::Symbol;
+
+use crate::common::merge_symbol_allowlist;
 
 const CONFIG_KEY: &str = "perfectionist::unicode_ellipsis_in_panic_messages";
 
@@ -23,44 +27,43 @@ const DEFAULT_MACROS: &[&str] = &[
 
 const DEFAULT_METHODS: &[&str] = &["expect", "expect_err"];
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Macros whose call site should be scanned for the flagged
-    /// characters. Defaults to the standard panic and assertion
-    /// macros (`panic`, `unimplemented`, `todo`, `unreachable`,
-    /// `debug_unreachable`, and the `assert*` family). Override to
-    /// add project-specific assertion-shaped macros, or to narrow
-    /// the set when a project deliberately uses `…` in one of them.
-    macros: Vec<String>,
-    /// Method names on `Option` / `Result` whose first argument is
-    /// the panic message. Defaults to `expect` and `expect_err`.
-    methods: Vec<String>,
+    /// Additional macros whose call site should be scanned for
+    /// the flagged characters. Merged with the built-in defaults
+    /// (the standard panic and assertion macros — `panic`,
+    /// `unimplemented`, `todo`, `unreachable`, `debug_unreachable`,
+    /// and the `assert*` family); empty by default. Use this to
+    /// add project-specific assertion-shaped macros without having
+    /// to re-state the standard ones.
+    extra_macros: Vec<String>,
+    /// Macros to drop from the scanned set, even if they appear in
+    /// the built-in defaults or in `extra_macros`. Empty by
+    /// default; checked after the merge with the built-ins, so
+    /// this knob always wins. Use it when a project deliberately
+    /// uses `…` in one of the default macros.
+    ignore_macros: Vec<String>,
+    /// Additional method names on `Option` / `Result` whose first
+    /// argument is the panic message. Merged with the built-in
+    /// defaults (`expect`, `expect_err`); empty by default. Use
+    /// this to add project-specific `expect`-shaped wrappers
+    /// without having to re-state the standard pair.
+    extra_methods: Vec<String>,
+    /// Methods to drop from the scanned set, even if they appear
+    /// in the built-in defaults or in `extra_methods`. Empty by
+    /// default; checked after the merge with the built-ins, so
+    /// this knob always wins.
+    ignore_methods: Vec<String>,
     /// Extra characters to flag alongside U+2026, in the same spirit
     /// as `unicode_ellipsis_in_comments.also_flag`. Empty by default.
     also_flag: Vec<char>,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            macros: DEFAULT_MACROS
-                .iter()
-                .map(|name| (*name).to_owned())
-                .collect(),
-            methods: DEFAULT_METHODS
-                .iter()
-                .map(|name| (*name).to_owned())
-                .collect(),
-            also_flag: Vec::new(),
-        }
-    }
-}
-
 pub(super) struct UnicodeEllipsisInPanicMessages {
     pub(super) flagged_chars: Vec<char>,
-    pub(super) macros: Vec<Symbol>,
-    pub(super) methods: Vec<Symbol>,
+    pub(super) macros: BTreeSet<Symbol>,
+    pub(super) methods: BTreeSet<Symbol>,
 }
 
 impl UnicodeEllipsisInPanicMessages {
@@ -74,16 +77,16 @@ impl UnicodeEllipsisInPanicMessages {
         }
         Self {
             flagged_chars,
-            macros: config
-                .macros
-                .iter()
-                .map(|name| Symbol::intern(name))
-                .collect(),
-            methods: config
-                .methods
-                .iter()
-                .map(|name| Symbol::intern(name))
-                .collect(),
+            macros: merge_symbol_allowlist(
+                DEFAULT_MACROS,
+                config.extra_macros,
+                config.ignore_macros,
+            ),
+            methods: merge_symbol_allowlist(
+                DEFAULT_METHODS,
+                config.extra_methods,
+                config.ignore_methods,
+            ),
         }
     }
 }
