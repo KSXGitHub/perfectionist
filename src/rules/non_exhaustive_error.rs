@@ -13,7 +13,7 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::def_id::{CRATE_DEF_ID, LocalDefId};
 
-use crate::common::merge_string_allowlist;
+use crate::common::{DefaultState, merge_string_allowlist, resolved_state};
 
 declare_tool_lint! {
     /// ### What it does
@@ -73,7 +73,7 @@ declare_tool_lint! {
 /// `[[perfectionist.enable]]` array-of-tables form). Read by
 /// `register_pass` below; gen-docs picks the constant up via syn
 /// to render the rule's default state.
-pub(crate) const ENABLED_BY_DEFAULT: bool = false;
+pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Disabled;
 
 const CONFIG_KEY: &str = "perfectionist::non_exhaustive_error";
 
@@ -177,7 +177,7 @@ pub fn register_lint(lint_store: &mut LintStore) {
 
 /// Install this rule's late pass.
 pub fn register_pass(lint_store: &mut LintStore) {
-    if !crate::common::is_enabled("non_exhaustive_error", ENABLED_BY_DEFAULT) {
+    if let DefaultState::Disabled = resolved_state("non_exhaustive_error", DEFAULT_STATE) {
         return;
     }
     lint_store.register_late_pass(|_| Box::new(NonExhaustiveError::new()));

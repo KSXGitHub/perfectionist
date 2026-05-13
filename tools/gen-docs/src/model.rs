@@ -44,11 +44,15 @@ pub(crate) struct Rule {
     /// Whether the rule's pass is registered out of the box, or only
     /// after the user opts in via
     /// `[perfectionist] enable = ["<rule>"]` in `dylint.toml`. Read
-    /// from a `pub(crate) const ENABLED_BY_DEFAULT: bool = ...;`
+    /// from a `pub(crate) const DEFAULT_STATE: DefaultState = ...;`
     /// item in the rule's source file when present; absent
     /// constants imply [`DefaultState::Enabled`] (the catalogue
-    /// default). The renderer surfaces this as the "Default state"
-    /// line in place of the old "Default level" line — under the
+    /// default). The runtime side uses its own `DefaultState` enum
+    /// of the same shape (`src/common.rs`), so the constant's
+    /// initializer is read directly here as an enum-variant path
+    /// — no `bool` intermediate. The renderer surfaces this as the
+    /// "Default state" line in place of the old "Default level"
+    /// line — under the
     /// current convention every rule's `declare_tool_lint!` level
     /// is `Warn`, so the user signal worth surfacing per rule is
     /// whether the rule runs at all, not what level it fires at.
@@ -65,12 +69,12 @@ pub(crate) struct Rule {
 }
 
 /// Whether a rule's pass is installed by default. Mirrors the
-/// `pub(crate) const ENABLED_BY_DEFAULT: bool = ...;` constant the
-/// extractor reads, but typed as a two-variant enum here so the
-/// renderer can pattern-match on intent rather than juggle a bare
-/// `bool` whose `true` / `false` meaning is opaque at call sites.
-/// Defaults to [`DefaultState::Enabled`] when a rule omits the
-/// constant — the common case across the catalogue.
+/// `pub(crate) const DEFAULT_STATE: DefaultState = ...;` constant
+/// the extractor reads from the rule's source. The runtime side
+/// defines its own `DefaultState` of the same shape; gen-docs has
+/// its own copy because the two crates don't link. Defaults to
+/// [`DefaultState::Enabled`] when a rule omits the constant — the
+/// common case across the catalogue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DefaultState {
     Enabled,
@@ -192,9 +196,10 @@ pub(crate) struct StructField {
 /// positional argument to `declare_tool_lint!`. The catalogue's
 /// convention is that every rule declares `Warn`; rules that should
 /// be off out of the box live behind a
-/// `pub(crate) const ENABLED_BY_DEFAULT: bool = false;` instead of a
-/// stricter or looser level. The extractor still parses the
-/// identifier so a future rule that drifts from the convention
+/// `pub(crate) const DEFAULT_STATE: DefaultState =
+/// DefaultState::Disabled;` instead of a stricter or looser level.
+/// The extractor still parses the identifier so a future rule that
+/// drifts from the convention
 /// trips a clear panic naming the file.
 #[derive(Debug, Clone, Copy, EnumString, Display)]
 pub(crate) enum Level {

@@ -7,7 +7,7 @@ use rustc_middle::ty;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::sym;
 
-use crate::common::hir_in_external_macro;
+use crate::common::{DefaultState, hir_in_external_macro, resolved_state};
 
 declare_tool_lint! {
     /// ### What it does
@@ -96,7 +96,7 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if !crate::common::is_enabled("arc_rc_clone", true) {
+    if let DefaultState::Disabled = resolved_state("arc_rc_clone", DefaultState::Enabled) {
         return;
     }
     lint_store.register_late_pass(|_| Box::new(ArcRcClone::new()));

@@ -33,8 +33,9 @@ struct RuleConfig {
 
 /// The `[perfectionist]` table, kept minimal so every fixture below
 /// turns the rule on. The rule ships disabled by default
-/// (`ENABLED_BY_DEFAULT = false` in `src/rules/non_exhaustive_error.rs`),
-/// so without this `enable` entry the pass would never register and
+/// (`DEFAULT_STATE = DefaultState::Disabled` in
+/// `src/rules/non_exhaustive_error.rs`), so without this `enable`
+/// entry the pass would never register and
 /// the fixture's `pub enum FooError {}` wouldn't trigger a diagnostic.
 #[derive(serde::Serialize)]
 struct GlobalConfig {

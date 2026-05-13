@@ -4,6 +4,8 @@ use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Symbol, sym};
 
+use crate::common::{DefaultState, resolved_state};
+
 declare_tool_lint! {
     /// ### What it does
     /// Flags lint-control attributes (`allow`, `warn`, `deny`,
@@ -84,7 +86,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 /// has registered its lints, since the pass snapshots the registered
 /// `perfectionist::*` names from `lint_store` at construction time.
 pub fn register_pass(lint_store: &mut LintStore) {
-    if !crate::common::is_enabled("unknown_perfectionist_lints", true) {
+    if let DefaultState::Disabled =
+        resolved_state("unknown_perfectionist_lints", DefaultState::Enabled)
+    {
         return;
     }
     let registered_lints: Vec<String> = collect_registered_lint_names(lint_store);

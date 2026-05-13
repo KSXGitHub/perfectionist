@@ -8,7 +8,8 @@ use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Span, Symbol};
 
 use crate::common::{
-    binding_ident, hir_in_external_macro, is_single_ascii_letter, merge_symbol_allowlist,
+    DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter,
+    merge_symbol_allowlist, resolved_state,
 };
 
 declare_tool_lint! {
@@ -86,7 +87,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if !crate::common::is_enabled("single_letter_function_param", true) {
+    if let DefaultState::Disabled =
+        resolved_state("single_letter_function_param", DefaultState::Enabled)
+    {
         return;
     }
     lint_store.register_late_pass(|_| Box::new(SingleLetterFunctionParam::new()));

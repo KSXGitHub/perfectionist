@@ -27,6 +27,8 @@ use rustc_ast::tokenstream::TokenTree;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
+use crate::common::{DefaultState, resolved_state};
+
 mod config;
 mod emit;
 mod late;
@@ -101,7 +103,7 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if !crate::common::is_enabled("macro_trailing_comma", true) {
+    if let DefaultState::Disabled = resolved_state("macro_trailing_comma", DefaultState::Enabled) {
         return;
     }
     // Split across two passes per

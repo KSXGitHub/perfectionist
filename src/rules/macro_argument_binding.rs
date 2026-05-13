@@ -27,6 +27,8 @@ use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Span;
 
+use crate::common::{DefaultState, resolved_state};
+
 mod config;
 mod late;
 mod triviality;
@@ -107,7 +109,8 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if !crate::common::is_enabled("macro_argument_binding", true) {
+    if let DefaultState::Disabled = resolved_state("macro_argument_binding", DefaultState::Enabled)
+    {
         return;
     }
     // Same split as `macro_trailing_comma`: a pre-expansion pass parks

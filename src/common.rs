@@ -107,18 +107,32 @@ impl RuleSelector {
     }
 }
 
-/// Resolved per-rule override map. `true` means the user explicitly
-/// listed the rule under `enable`; `false` means under `disable`.
-/// Rules absent from this map fall through to the per-rule default
-/// each `register_pass` declares.
-static GLOBAL_OVERRIDES: OnceLock<HashMap<String, bool>> = OnceLock::new();
+/// Whether a rule's pass is installed at all. Both the per-rule
+/// baseline (each rule's `DEFAULT_STATE` constant) and the
+/// user-supplied override (the `enable` / `disable` arrays in
+/// `dylint.toml`) speak this same alphabet, so a single type is
+/// used end-to-end and no `bool` ever bridges the two. Mirrors
+/// `gen-docs`'s own `DefaultState` (separate crate, same shape) —
+/// the doc generator reads each rule's `DEFAULT_STATE` constant
+/// directly to render the rule's catalogue entry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DefaultState {
+    Enabled,
+    Disabled,
+}
+
+/// Resolved per-rule override map, built once from the
+/// `[perfectionist]` table of `dylint.toml`. Rules absent from this
+/// map fall through to the per-rule `DEFAULT_STATE` constant each
+/// `register_pass` passes to [`resolved_state`].
+static GLOBAL_OVERRIDES: OnceLock<HashMap<String, DefaultState>> = OnceLock::new();
 
 /// Parse the `[perfectionist]` table of `dylint.toml` and stash the
 /// resolved override map. Called from
 /// [`crate::register_lints`] immediately after
 /// [`dylint_linting::init_config`] so that every per-rule
-/// `register_pass` can consult [`is_enabled`] when deciding whether
-/// to install its pass.
+/// `register_pass` can consult [`resolved_state`] when deciding
+/// whether to install its pass.
 ///
 /// Panics if any rule name appears under both `enable` and
 /// `disable` — that's a contradiction the runtime can't sensibly
@@ -131,12 +145,15 @@ static GLOBAL_OVERRIDES: OnceLock<HashMap<String, bool>> = OnceLock::new();
 /// purpose at a config-loading layer that has no diagnostic surface.
 pub(crate) fn init_global_config() {
     let config: GlobalConfig = dylint_linting::config_or_default("perfectionist");
-    let mut overrides: HashMap<String, bool> = HashMap::new();
-    for (selectors, enabled) in [(&config.enable, true), (&config.disable, false)] {
+    let mut overrides: HashMap<String, DefaultState> = HashMap::new();
+    for (selectors, state) in [
+        (&config.enable, DefaultState::Enabled),
+        (&config.disable, DefaultState::Disabled),
+    ] {
         for selector in selectors {
             let name = selector.name();
-            if let Some(prev) = overrides.insert(name.to_owned(), enabled)
-                && prev != enabled
+            if let Some(previous) = overrides.insert(name.to_owned(), state)
+                && previous != state
             {
                 panic!(
                     "perfectionist: rule `{name}` listed under both `enable` and \
@@ -150,23 +167,24 @@ pub(crate) fn init_global_config() {
         .expect("init_global_config called twice");
 }
 
-/// Whether the rule named `name` (unqualified — no `perfectionist::`
-/// prefix) should have its pass installed. Resolution order:
+/// Effective [`DefaultState`] for the rule named `name` (unqualified
+/// — no `perfectionist::` prefix). Resolution order:
 ///
 /// 1. If `name` appears under `disable` in the `[perfectionist]`
-///    table, return `false`.
-/// 2. If it appears under `enable`, return `true`.
-/// 3. Otherwise return `default_enabled` — the per-rule baseline.
+///    table, return [`DefaultState::Disabled`].
+/// 2. If it appears under `enable`, return [`DefaultState::Enabled`].
+/// 3. Otherwise return `default` — the per-rule baseline.
 ///
 /// Each rule's `register_pass` passes its own baseline as
-/// `default_enabled`: most rules pass `true`; rules listed in
-/// `src/rules/<name>.rs` as `ENABLED_BY_DEFAULT: bool = false`
-/// pass `false` and ship turned off until the user opts in.
-pub(crate) fn is_enabled(name: &str, default_enabled: bool) -> bool {
+/// `default`: most rules pass [`DefaultState::Enabled`]; rules
+/// listed in `src/rules/<name>.rs` as
+/// `DEFAULT_STATE: DefaultState = DefaultState::Disabled` pass
+/// `Disabled` and ship turned off until the user opts in.
+pub(crate) fn resolved_state(name: &str, default: DefaultState) -> DefaultState {
     let overrides = GLOBAL_OVERRIDES
         .get()
-        .expect("is_enabled called before init_global_config");
-    overrides.get(name).copied().unwrap_or(default_enabled)
+        .expect("resolved_state called before init_global_config");
+    overrides.get(name).copied().unwrap_or(default)
 }
 
 /// Whether `name` is exactly one ASCII letter (`a`..=`z` or

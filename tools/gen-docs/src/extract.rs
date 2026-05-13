@@ -141,19 +141,20 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
             // `Rule::default_state` doc comment): every rule's
             // `declare_tool_lint!` declares level `Warn`. The
             // default-disabled axis lives in
-            // `pub(crate) const ENABLED_BY_DEFAULT: bool = false;`
-            // alongside the macro, not in the level. A non-`Warn`
-            // here means the source has drifted from the policy; we
-            // panic so a doc regeneration catches it rather than
-            // silently rendering the old "Default level" surface
-            // we removed.
+            // `pub(crate) const DEFAULT_STATE: DefaultState =
+            // DefaultState::Disabled;` alongside the macro, not in
+            // the level. A non-`Warn` here means the source has
+            // drifted from the policy; we panic so a doc
+            // regeneration catches it rather than silently
+            // rendering the old "Default level" surface we removed.
             if !matches!(level, Level::Warn) {
                 panic!(
                     "{} declares level `{level_ident}`; catalogue policy is that \
                      every `declare_tool_lint!` uses level `Warn`. Move the \
                      off-by-default signal into \
-                     `pub(crate) const ENABLED_BY_DEFAULT: bool = false;` \
-                     next to the macro and change the level to `Warn`.",
+                     `pub(crate) const DEFAULT_STATE: DefaultState = \
+                     DefaultState::Disabled;` next to the macro and change \
+                     the level to `Warn`.",
                     source_path.display(),
                 );
             }
@@ -169,50 +170,65 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
         .collect()
 }
 
-/// Find a `pub(crate) const ENABLED_BY_DEFAULT: bool = <literal>;`
-/// item in `merged_file` and translate its boolean literal into a
-/// [`DefaultState`]. The merged file already includes submodule
-/// items, so the constant can live in either the flat rule file or
-/// a sibling `<rule>/<concern>.rs` (in practice every rule keeps it
-/// next to `declare_tool_lint!`). Absence of the constant means the
-/// rule is on out of the box — the common case across the
-/// catalogue — so the function returns [`DefaultState::Enabled`].
+/// Find a `pub(crate) const DEFAULT_STATE: DefaultState = <variant>;`
+/// item in `merged_file` and translate its enum-variant initializer
+/// into the corresponding [`DefaultState`]. The merged file already
+/// includes submodule items, so the constant can live in either the
+/// flat rule file or a sibling `<rule>/<concern>.rs` (in practice
+/// every rule keeps it next to `declare_tool_lint!`). Absence of the
+/// constant means the rule is on out of the box — the common case
+/// across the catalogue — so the function returns
+/// [`DefaultState::Enabled`].
+///
+/// No `bool` intermediate: the runtime constant uses the same enum
+/// shape gen-docs renders, and we read its initializer's *path* end
+/// segment directly. `DefaultState::Disabled` and a `use … Disabled`
+/// alias both work because we only inspect the last segment.
 fn extract_default_state(source_path: &Path, merged_file: &syn::File) -> DefaultState {
-    use syn::{Expr, ExprLit, Lit, Type, TypePath};
+    use syn::{Expr, ExprPath, Type, TypePath};
 
     for item in &merged_file.items {
         let Item::Const(item_const) = item else {
             continue;
         };
-        if item_const.ident != "ENABLED_BY_DEFAULT" {
+        if item_const.ident != "DEFAULT_STATE" {
             continue;
         }
-        let is_bool_type = matches!(
+        let is_default_state_type = matches!(
             &*item_const.ty,
-            Type::Path(TypePath { path, qself: None }) if path.is_ident("bool"),
+            Type::Path(TypePath { path, qself: None }) if path.is_ident("DefaultState"),
         );
-        if !is_bool_type {
+        if !is_default_state_type {
             panic!(
-                "{}: `ENABLED_BY_DEFAULT` must be typed `bool`",
+                "{}: `DEFAULT_STATE` must be typed `DefaultState`",
                 source_path.display(),
             );
         }
-        let Expr::Lit(ExprLit {
-            lit: Lit::Bool(lit_bool),
-            ..
+        let Expr::Path(ExprPath {
+            path, qself: None, ..
         }) = &*item_const.expr
         else {
             panic!(
-                "{}: `ENABLED_BY_DEFAULT` initializer must be a bool literal \
-                 (`true` or `false`); other expressions defeat the gen-docs \
-                 syntactic extraction",
+                "{}: `DEFAULT_STATE` initializer must be a `DefaultState` \
+                 variant path (e.g. `DefaultState::Enabled`); other \
+                 expressions defeat the gen-docs syntactic extraction",
                 source_path.display(),
             );
         };
-        return if lit_bool.value {
-            DefaultState::Enabled
-        } else {
-            DefaultState::Disabled
+        let Some(last_segment) = path.segments.last() else {
+            panic!(
+                "{}: `DEFAULT_STATE` initializer has an empty path",
+                source_path.display(),
+            );
+        };
+        return match last_segment.ident.to_string().as_str() {
+            "Enabled" => DefaultState::Enabled,
+            "Disabled" => DefaultState::Disabled,
+            other => panic!(
+                "{}: `DEFAULT_STATE` initializer names unknown `DefaultState` \
+                 variant `{other}`; only `Enabled` and `Disabled` are valid.",
+                source_path.display(),
+            ),
         };
     }
     DefaultState::Enabled

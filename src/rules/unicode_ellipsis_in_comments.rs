@@ -8,6 +8,7 @@ use rustc_span::{
     BytePos, Pos, RelativeBytePos, SourceFile, Span, SyntaxContext, def_id::LOCAL_CRATE,
 };
 
+use crate::common::{DefaultState, resolved_state};
 use crate::literal_scan::emit_flagged_chars;
 
 declare_tool_lint! {
@@ -101,7 +102,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if !crate::common::is_enabled("unicode_ellipsis_in_comments", true) {
+    if let DefaultState::Disabled =
+        resolved_state("unicode_ellipsis_in_comments", DefaultState::Enabled)
+    {
         return;
     }
     lint_store.register_early_pass(|| Box::new(UnicodeEllipsisInComments::new()));
