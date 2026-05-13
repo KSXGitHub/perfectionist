@@ -45,4 +45,23 @@ scope for the initial rule.
 
 ## Configuration
 
-None.
+Configure via `dylint.toml` under `["perfectionist::unicode_ellipsis_in_panic_messages"]`. Every field is optional; the per-field prose below states the default.
+
+### `macros`: `[string]` (optional)
+
+Macros whose call site should be scanned for the flagged
+characters. Defaults to the standard panic and assertion
+macros (`panic`, `unimplemented`, `todo`, `unreachable`,
+`debug_unreachable`, and the `assert*` family). Override to
+add project-specific assertion-shaped macros, or to narrow
+the set when a project deliberately uses `…` in one of them.
+
+### `methods`: `[string]` (optional)
+
+Method names on `Option` / `Result` whose first argument is
+the panic message. Defaults to `expect` and `expect_err`.
+
+### `also_flag`: `[string]` (optional)
+
+Extra characters to flag alongside U+2026, in the same spirit
+as `unicode_ellipsis_in_comments.also_flag`. Empty by default.
