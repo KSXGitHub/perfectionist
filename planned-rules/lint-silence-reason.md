@@ -43,8 +43,17 @@ This is a stylistic preference, not a correctness issue.
 
 For every `#[allow(<lints>, ...)]` or `#[expect(<lints>, ...)]`
 attribute, check whether any nested meta item has the shape
-`reason = "<str>"`. If absent, emit a diagnostic at the
-attribute's span.
+`reason = "<str>"`:
+
+- **Absent.** Emit a "missing reason" diagnostic at the
+  attribute's span.
+- **Present but shorter than `min_reason_length` (default 3).**
+  Emit a "reason too short" diagnostic at the `reason` literal's
+  span. A one-character `reason = "x"` satisfies the literal
+  presence requirement but conveys no rationale; the length
+  floor exists to catch this. Set `min_reason_length = 0` to
+  disable the length branch entirely (presence still enforced).
+- **Present and long enough.** Accept.
 
 `#[warn]`, `#[deny]`, and `#[forbid]` are not in scope for this
 rule. A `#[warn]` that lowers an inherited `#[deny]` *is* a
@@ -85,8 +94,14 @@ pub fn parse(/* ... */) {}
 ## Autofix
 
 Insert `, reason = ""` immediately before the closing `)` of the
-argument list. `Applicability::HasPlaceholders` — the empty
-string is a placeholder the author fills in.
+attribute's argument list. `Applicability::HasPlaceholders` —
+the empty string is a placeholder the author fills in.
+
+For a `cfg_attr`-wrapped lint attribute
+(`#[cfg_attr(<cfg>, allow(...))]`), the closing `)` targeted is
+the *inner* `allow(...)` / `expect(...)` argument list, not the
+outer `cfg_attr` one. The inner-attribute form `#![allow(...)]`
+uses the same insertion point as the outer form.
 
 If the attribute is laid out across multiple lines, the
 suggestion keeps the `reason` entry on its own line matching the
@@ -113,10 +128,14 @@ min_reason_length = 3
 ## Implementation notes
 
 - `EarlyLintPass::check_attribute`. Match `attr.path` against
-  `sym::allow` and `sym::expect`. Iterate
-  `attr.meta_item_list()` and check whether any item has the
-  shape `reason = "<str>"`. If absent, emit at the attribute's
-  span.
+  `sym::allow` and `sym::expect`. For `cfg_attr`-wrapped lint
+  attributes, walk into the `cfg_attr` argument list and apply
+  the same match to each inner attribute — `src/enclosing_hir.rs`
+  carries the established walker shape; reuse it here.
+- Iterate `attr.meta_item_list()` (or the equivalent inner
+  meta-item list for `cfg_attr`-wrapped attributes) and check
+  whether any item has the shape `reason = "<str>"`. If absent,
+  emit at the attribute's span.
 - Per-named-lint handling: an attribute that names multiple
   lints (`#[allow(a, b)]`) is treated as a single relaxation
   for diagnostic purposes — one missing `reason` triggers one
@@ -125,9 +144,11 @@ min_reason_length = 3
   per-attribute set; if every named lint is exempt, the
   attribute is not flagged.
 - The `reason`-presence check is shared with
+  [`lint-reason-from-comment`](./lint-reason-from-comment.md)
+  and
   [`lint-downgrade-reason`](./lint-downgrade-reason.md). Factor
-  it into `src/common.rs::attr_has_reason` the first time
-  either rule lands.
+  it into `src/common.rs::attr_has_reason` the first time any
+  of the three rules lands.
 
 ### Difficulty
 

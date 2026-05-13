@@ -32,8 +32,10 @@ This is a stylistic preference, not a correctness issue.
 
 ## What to lint
 
-For every `#[allow(<lints>, ...)]` attribute, if every lint named
-in the attribute is one of:
+For every `#[allow(<lints>, ...)]` attribute — including the
+inner-attribute form `#![allow(...)]` and the `cfg_attr`-wrapped
+form `#[cfg_attr(<cfg>, allow(...))]` — if every lint named in
+the attribute is one of:
 
 - A built-in rustc lint (`unused_variables`, `dead_code`, …) not
   on the exempt list below.
@@ -54,9 +56,15 @@ the rewriteable ones to a new `#[expect]`.
 Two cases the rule does not flag:
 
 - The attribute names a lint that is known not to fire
-  deterministically. `dead_code`, `unused_imports`,
-  `unused_macros`, and `unused_variables` are exempt by default
-  because their firing depends on which `cfg` arms compile.
+  deterministically. The default exempt set is the
+  `cfg`-conditional `unused_*` and reachability lints:
+  `dead_code`, `unused_imports`, `unused_macros`,
+  `unused_variables`, `unused_mut`, `unused_assignments`,
+  `unused_must_use`, and `unreachable_code`. All of these can
+  fire under one `cfg` arm and stay silent under another, so a
+  mechanical `expect` rewrite would break the build in the
+  silent arm. Projects extend or trim this set via
+  `exempt_lints`.
 - The attribute is `#![allow(...)]` at the crate root or on a
   whole module. `cfg`-conditional bodies inside the module may
   individually fire or not fire the lint, and `#[expect]` at this
@@ -64,6 +72,13 @@ Two cases the rule does not flag:
   — a fragile invariant. Configurable; default `false`.
 
 ## Examples
+
+The examples below already carry a `reason` field so that the
+only difference between Bad and Good is the `allow` → `expect`
+swap. The `reason`-presence requirement is enforced by the
+sibling [`lint-silence-reason`](./lint-silence-reason.md), not
+by this rule; an `#[allow]` without `reason` would be flagged by
+both rules independently.
 
 ```rust
 // Bad
@@ -106,6 +121,11 @@ fn scaffold(/* ... */) {}
 Replace the attribute path identifier `allow` with `expect`. The
 rewrite span is the five bytes `allow`.
 
+For a `cfg_attr`-wrapped lint attribute, the span targets the
+inner `allow` identifier inside the `cfg_attr` argument list,
+not the outer `cfg_attr` path. The cfg-arm scoping is preserved
+unchanged; only the inner level identifier moves.
+
 For the split case (mixed exempt and rewriteable lints), the
 autofix is a multi-attribute rewrite: replace the original
 attribute with two attributes, copying the `reason` field to each.
@@ -128,6 +148,10 @@ exempt_lints = [
     "unused_imports",
     "unused_macros",
     "unused_variables",
+    "unused_mut",
+    "unused_assignments",
+    "unused_must_use",
+    "unreachable_code",
 ]
 
 # When true, also rewrite crate-level `#![allow(...)]` and
@@ -145,7 +169,10 @@ apply_to_tool_namespaces = true
 
 - `EarlyLintPass::check_attribute`. Match `AttrKind::Normal` with
   `attr.path == sym::allow` and a non-empty
-  `attr.meta_item_list()`.
+  `attr.meta_item_list()`. For `cfg_attr`-wrapped lint
+  attributes, walk into the `cfg_attr` argument list and apply
+  the same match to each inner attribute — `src/enclosing_hir.rs`
+  carries the established walker shape; reuse it here.
 - For each nested meta item, classify the lint name:
   - **Built-in:** the name resolves through `LintStore::find_lints`
     to a lint registered with no tool prefix.

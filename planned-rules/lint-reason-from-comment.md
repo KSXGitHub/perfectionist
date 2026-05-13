@@ -92,16 +92,39 @@ fn build_fetcher(/* ... */) {}
 ## Autofix
 
 Lift the comment text into `reason = "..."`, then delete the
-comment:
+comment.
 
-- Strip the comment marker (`//`) and trim surrounding whitespace.
-  The result is the reason string.
+Recognised comment shapes: a single `//` line-comment
+immediately adjacent to the attribute, in either the trailing or
+leading position defined in "What to lint". Doc comments
+(`///`, `//!`) are filtered out at the trigger stage (see "What
+to lint"). Multi-line trailing comments (a `// ...` followed by
+another `// ...` on the next line) are *not* in scope — only the
+single comment immediately adjacent to the attribute is lifted;
+the second line is left alone.
+
+Text normalisation:
+
+- Strip the leading `//` marker.
+- Trim surrounding ASCII whitespace.
+- Strip a single leading run of one or more `-`, `=`, or `*`
+  decoration characters followed by whitespace
+  (`//-- foo` / `//== foo` / `//* foo` → `foo`). Other decoration
+  styles pass through unchanged; the author can clean them up
+  after the autofix.
 - Escape `\\`, `"`, and control characters per Rust string-literal
-  rules.
-- Insert `, reason = "<escaped text>"` immediately before the
-  closing `)` of the attribute's argument list.
-- Delete the comment span. If the comment was on its own line and
-  removing it leaves the line blank, delete the whole line.
+  rules. The escape helper is described under "Implementation
+  notes".
+
+Splice into the attribute:
+
+- Insert `, reason = "<normalised, escaped text>"` immediately
+  before the closing `)` of the attribute's argument list (for a
+  `cfg_attr`-wrapped attribute, the *inner* lint attribute's
+  closing `)`, not the outer `cfg_attr`'s).
+- Delete the original comment span. If the comment was on its
+  own line and removing it leaves the line blank, delete the
+  whole line.
 
 `Applicability::MachineApplicable` for trailing comments — the
 attachment is unambiguous. `Applicability::MaybeIncorrect` for
@@ -114,18 +137,16 @@ item; the author confirms.
 [lint_reason_from_comment]
 # Comment placements considered candidates. Subset of these two.
 sites = ["trailing", "leading"]
-
-# When false, only the `clippy::*` and built-in `unused_*`-style
-# lints are considered. When true, the rule also applies to tool-
-# namespaced lints (e.g. `perfectionist::*`).
-include_tool_namespaces = true
 ```
 
 ## Implementation notes
 
-- `EarlyLintPass::check_attribute`. The attribute parser exposes
-  `attr.meta_item_list()`; iterate it and check whether any
-  nested item has the shape `reason = "..."`.
+- `EarlyLintPass::check_attribute`. Use
+  `src/common.rs::attr_has_reason` to check whether the
+  attribute already has a `reason` field (shared with
+  [`lint-silence-reason`](./lint-silence-reason.md) and
+  [`lint-downgrade-reason`](./lint-downgrade-reason.md)); if
+  present, skip.
 - For trailing-comment detection: read the attribute's span, walk
   the source map forward over horizontal whitespace, and check
   whether the next token on the same line is a line comment.

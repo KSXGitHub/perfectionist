@@ -41,13 +41,28 @@ This is a stylistic preference, not a correctness issue.
 
 For every `#[warn(<lints>)]`, `#[allow(<lints>)]`, or
 `#[expect(<lints>)]` attribute, compute the effective level of
-each named lint at the *enclosing* scope (the project's
-`dylint.toml` / `Cargo.toml` `[lints]` table, the crate-root
-`#![deny(...)]`, the next outer item's `#[warn(...)]`, etc.). If
-the new level is strictly lower than the enclosing level
-(`deny → warn`, `deny → allow`, `deny → expect`, `warn → allow`,
-`warn → expect`) and the attribute does not contain
-`reason = "..."`, flag it.
+each named lint at the *enclosing* scope. The level comes from
+the cargo-level sources — the workspace / package `[lints]`
+table in `Cargo.toml` (Rust 1.74+), `RUSTFLAGS`'s `-D` / `-W` /
+`-A` / `-F` flags, and inherited source attributes
+(`#![deny(...)]` at the crate root, `#[warn(...)]` on a parent
+module, etc.). `dylint.toml` is *not* a level source — it
+carries per-lint configuration tables (e.g. `[perfectionist::<lint>]`),
+not lint levels.
+
+If the attribute's level is strictly lower than the resolved
+enclosing level (`deny → warn`, `deny → allow`,
+`deny → expect`, `warn → allow`, `warn → expect`), apply the
+same presence / length check as
+[`lint-silence-reason`](./lint-silence-reason.md):
+
+- **`reason` absent.** Emit a "missing reason" diagnostic at
+  the attribute's span.
+- **`reason` present but shorter than `min_reason_length`
+  (default 3).** Emit a "reason too short" diagnostic at the
+  literal's span. Set `min_reason_length = 0` to disable the
+  length branch (presence still enforced).
+- **`reason` present and long enough.** Accept.
 
 `#[deny]` and `#[forbid]` are never flagged — they tighten, not
 loosen. `#[warn]` at a site whose inherited level is already
@@ -117,10 +132,13 @@ fn build(/* ... */) {}
 ## Autofix
 
 Insert `, reason = ""` immediately before the closing `)` of the
-argument list. `Applicability::HasPlaceholders` — the empty
-string is a placeholder the author fills in. Layout is preserved
-the same way as for
-[`lint-silence-reason`](./lint-silence-reason.md).
+attribute's argument list. `Applicability::HasPlaceholders` —
+the empty string is a placeholder the author fills in. Layout
+and the `cfg_attr` / inner-attribute scope handling are the
+same as for
+[`lint-silence-reason`](./lint-silence-reason.md): the
+insertion point is the inner `warn(...)` / `allow(...)` /
+`expect(...)` argument list, not any wrapping `cfg_attr`.
 
 ## Configuration
 
@@ -153,7 +171,9 @@ min_reason_length = 3
   using the `Forbid > Deny > Warn > Expect ≈ Allow` ordering.
   Emit only when strictly lower.
 - The `reason`-presence check is shared with
-  [`lint-silence-reason`](./lint-silence-reason.md) — both
+  [`lint-reason-from-comment`](./lint-reason-from-comment.md)
+  and
+  [`lint-silence-reason`](./lint-silence-reason.md). All three
   consume `src/common.rs::attr_has_reason`.
 
 ### Difficulty
@@ -167,12 +187,14 @@ min_reason_length = 3
   version-conditional shim.
 - The ambient level must reflect *both* attribute-driven levels
   (`#![deny(...)]` on the crate, `#[warn(...)]` on a parent
-  module) *and* configuration-driven levels (`dylint.toml`'s
-  `[clippy_lints]` table, the workspace `Cargo.toml`'s
-  `[lints]` table introduced in Rust 1.74, and the
-  `RUSTFLAGS=-D <lint>` environment variable). Most of these
-  are aggregated by `lint_level_at_node` before it returns, but
-  the test matrix for the rule expands accordingly.
+  module) *and* cargo-level sources (the workspace / package
+  `[lints]` table in `Cargo.toml` introduced in Rust 1.74, and
+  the `RUSTFLAGS=-D <lint>` / `-W` / `-A` / `-F` environment
+  variable). Most of these are aggregated by
+  `lint_level_at_node` before it returns, but the test matrix
+  for the rule expands accordingly. `dylint.toml` is *not* a
+  source of lint levels — it carries per-lint configuration
+  tables only — so the query path does not consult it.
 - Determining "the level that would apply if this attribute did
   not exist" requires temporarily removing the attribute from
   consideration. Either re-query the lint-level map against the
