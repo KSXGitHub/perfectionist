@@ -60,8 +60,8 @@ struct Config {
 
 pub(super) struct UnicodeEllipsisInPanicMessages {
     pub(super) flagged_chars: Vec<char>,
-    pub(super) macros: Vec<Symbol>,
-    pub(super) methods: Vec<Symbol>,
+    pub(super) macros: BTreeSet<Symbol>,
+    pub(super) methods: BTreeSet<Symbol>,
 }
 
 impl UnicodeEllipsisInPanicMessages {
@@ -89,6 +89,6 @@ impl UnicodeEllipsisInPanicMessages {
     }
 }
 
-fn intern_symbols(names: BTreeSet<String>) -> Vec<Symbol> {
+fn intern_symbols(names: BTreeSet<String>) -> BTreeSet<Symbol> {
     names.iter().map(|name| Symbol::intern(name)).collect()
 }
