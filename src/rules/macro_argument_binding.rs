@@ -76,7 +76,7 @@ declare_tool_lint! {
     /// side-effect-free operators, and zero-arg method calls whose
     /// name is in the curated pure-getter set (`len`, `is_empty`,
     /// `as_str`, `as_bytes`, `as_ref`, `as_mut`, `as_deref`,
-    /// `as_slice`, plus anything in `trivial_methods_extra`) — are
+    /// `as_slice`, plus anything in `extra_trivial_methods`) — are
     /// accepted as-is. A comparison like `vec.len() <= cap` evaluates
     /// the same way regardless of how many times the macro touches
     /// it, so binding it to a `let` would only force the comparison

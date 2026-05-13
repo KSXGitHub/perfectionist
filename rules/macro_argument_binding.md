@@ -48,7 +48,7 @@ all trivial, binary chains of trivial operands joined by
 side-effect-free operators, and zero-arg method calls whose
 name is in the curated pure-getter set (`len`, `is_empty`,
 `as_str`, `as_bytes`, `as_ref`, `as_mut`, `as_deref`,
-`as_slice`, plus anything in `trivial_methods_extra`) — are
+`as_slice`, plus anything in `extra_trivial_methods`) — are
 accepted as-is. A comparison like `vec.len() <= cap` evaluates
 the same way regardless of how many times the macro touches
 it, so binding it to a `let` would only force the comparison
@@ -96,7 +96,7 @@ as `deny_extra`. Only meaningful in `AllowAndDeny` and
 Macros to skip entirely, regardless of which list they would
 otherwise hit. Same matching rules as `deny_extra`.
 
-### `trivial_methods_extra`: `[string]` (optional)
+### `extra_trivial_methods`: `[string]` (optional)
 
 Method names added to the built-in pure-method list. Each
 entry is a bare method identifier (no `()`, no receiver). A

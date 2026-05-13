@@ -28,7 +28,7 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     ignore: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    trivial_methods_extra: Vec<String>,
+    extra_trivial_methods: Vec<String>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -146,11 +146,11 @@ fn module_level_expect_fulfils_for_item_position_macro() {
 }
 
 #[test]
-fn trivial_methods_extra_adds_a_pure_getter_to_the_postfix_set() {
+fn extra_trivial_methods_adds_a_pure_getter_to_the_postfix_set() {
     run(
-        "ui-toml/macro_argument_binding/trivial_methods_extra",
+        "ui-toml/macro_argument_binding/extra_trivial_methods",
         RuleConfig {
-            trivial_methods_extra: vec!["cached_size".into()],
+            extra_trivial_methods: vec!["cached_size".into()],
             ..Default::default()
         },
     );

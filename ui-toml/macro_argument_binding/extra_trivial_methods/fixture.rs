@@ -1,4 +1,4 @@
-// `trivial_methods_extra` adds project-specific method names to the
+// `extra_trivial_methods` adds project-specific method names to the
 // built-in pure-getter set. A `.method()` invocation on a trivial
 // base then qualifies as a trivial postfix and the surrounding
 // expression is accepted.

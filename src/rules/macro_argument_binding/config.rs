@@ -53,7 +53,7 @@ const BUILTIN_ALLOW: &[&str] = &[
 /// postfixes on a trivial base. Names whose pure-getter convention is
 /// less universal (e.g. `count` is consuming on `Iterator` but
 /// `O(1)` and pure on indexed collections) are left for projects to
-/// add via `trivial_methods_extra`.
+/// add via `extra_trivial_methods`.
 const BUILTIN_TRIVIAL_METHODS: &[&str] = &[
     "as_bytes", "as_deref", "as_mut", "as_ref", "as_slice", "as_str", "is_empty", "len",
 ];
@@ -108,7 +108,7 @@ pub(super) struct Config {
     /// entry is a bare method identifier (no `()`, no receiver). A
     /// `.method()` invocation on a trivial base is then accepted as a
     /// trivial postfix when the method takes no arguments.
-    pub trivial_methods_extra: Vec<String>,
+    pub extra_trivial_methods: Vec<String>,
 }
 
 impl Default for Config {
@@ -119,7 +119,7 @@ impl Default for Config {
             deny_extra: Vec::new(),
             allow_extra: Vec::new(),
             ignore: Vec::new(),
-            trivial_methods_extra: Vec::new(),
+            extra_trivial_methods: Vec::new(),
         }
     }
 }
@@ -139,7 +139,7 @@ pub(super) struct MacroArgumentBinding {
     /// docs (`planned-rules/macro-argument-binding.md`).
     allow_extra: BTreeSet<Vec<String>>,
     ignore: BTreeSet<Vec<String>>,
-    /// Built-in pure-method list plus `trivial_methods_extra`,
+    /// Built-in pure-method list plus `extra_trivial_methods`,
     /// consulted by the trivial-expression walker to accept
     /// `expr.method()` as a trivial postfix on a trivial base.
     trivial_methods: BTreeSet<String>,
@@ -156,7 +156,7 @@ impl MacroArgumentBinding {
         let trivial_methods = BUILTIN_TRIVIAL_METHODS
             .iter()
             .map(|method| (*method).to_owned())
-            .chain(config.trivial_methods_extra)
+            .chain(config.extra_trivial_methods)
             .collect();
         Self {
             enabled: config.enabled,

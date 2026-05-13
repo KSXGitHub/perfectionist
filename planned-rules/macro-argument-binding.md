@@ -5,7 +5,7 @@
 Partially implemented. Modes 0-2 (`deny_only`, `blanket`,
 `allow_and_deny`) ship today, along with the `enabled`,
 `deny_extra`, `allow_extra`, `ignore`, and
-`trivial_methods_extra` knobs. The lint emits diagnostics with a
+`extra_trivial_methods` knobs. The lint emits diagnostics with a
 `let`-binding hint (no autofix, by design — the binding name
 varies per site).
 
@@ -157,7 +157,7 @@ The lint accepts any argument whose outermost shape is one of:
   base, where `method` is in the curated pure-getter set
   (`len`, `is_empty`, `as_str`, `as_bytes`, `as_ref`, `as_mut`,
   `as_deref`, `as_slice`) or in the project's
-  `trivial_methods_extra`. `vec.len()`, `s.is_empty()`,
+  `extra_trivial_methods`. `vec.len()`, `s.is_empty()`,
   `opt.as_ref()` evaluate the same way no matter how many
   times the macro touches them, so the let-bind rewrite
   would only force the call to run in release builds for
@@ -404,7 +404,7 @@ ignore = [
 # `as_deref`, `as_slice`). Add project-specific pure getters
 # here so `debug_assert!(value.my_cached_getter() <= limit)`
 # stops flagging.
-trivial_methods_extra = [
+extra_trivial_methods = [
   # "my_cached_getter",
 ]
 ```
