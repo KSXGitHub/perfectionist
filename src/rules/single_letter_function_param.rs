@@ -46,7 +46,7 @@ const CONFIG_KEY: &str = "perfectionist::single_letter_function_param";
 const DEFAULT_FN_PARAM_ALLOWLIST: &[&str] = &["n", "f", "i", "j", "k"];
 
 #[derive(Debug, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Identifiers that are always allowed as function or method
     /// parameter names. Defaults to `["n", "f", "i", "j", "k"]`.

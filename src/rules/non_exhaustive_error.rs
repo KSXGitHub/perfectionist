@@ -84,7 +84,7 @@ enum RequireFor {
 }
 
 #[derive(Debug, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Visibility threshold for the rule.
     require_for: RequireFor,
