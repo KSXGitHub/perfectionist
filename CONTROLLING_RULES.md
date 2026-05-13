@@ -2,7 +2,9 @@
 
 Each lint registers under the `perfectionist` tool namespace. There are two independent knobs for controlling a rule:
 
-**1. Lint level (per site).** Use rustc's `#[allow]` / `#[warn]` / `#[deny]` / `#[forbid]` / `#[expect]` attributes at the call site or crate root to change how a finding is reported. For example:
+## 1. Lint level (per site)
+
+Use rustc's `#[allow]` / `#[warn]` / `#[deny]` / `#[forbid]` / `#[expect]` attributes at the call site or crate root to change how a finding is reported. For example:
 
 ```rust
 #[expect(perfectionist::unicode_ellipsis_in_comments, reason = "3 ASCII dots would be incorrect here")]
@@ -28,7 +30,9 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(dylint_lib, values("perfec
 
 The `DYLINT_RUSTFLAGS=-D perfectionist::<rule>` form mentioned above bypasses source-level attributes (rustc receives the flag straight on its command line), so it does not need this boilerplate.
 
-**2. Rule registration (project-wide).** Each rule is either *enabled* (its pass runs) or *disabled* (its pass is never installed, so it produces no diagnostics at all). Most rules are enabled by default; a few — currently only `non_exhaustive_error` — ship disabled and require an explicit opt-in. Flip the registration state via the crate-wide `[perfectionist]` table in `dylint.toml`:
+## 2. Rule registration (project-wide)
+
+Each rule is either *enabled* (its pass runs) or *disabled* (its pass is never installed, so it produces no diagnostics at all). Most rules are enabled by default; a few — currently only `non_exhaustive_error` — ship disabled and require an explicit opt-in. Flip the registration state via the crate-wide `[perfectionist]` table in `dylint.toml`:
 
 ```toml
 [perfectionist]
