@@ -148,6 +148,13 @@ fn take_trivial_atom<'a>(
         // expression), `(a, b)` / `(a,)` (tuple of trivial elements).
         // Each element is recursively trivial; empty parens are the
         // canonical trivial value.
+        //
+        // The match is restricted to `Delimiter::Parenthesis` —
+        // `Delimiter::Invisible` (capture-wrapping delimiters
+        // introduced by macro expansion) falls through to the
+        // bottom `_ => None` arm. That's correct here: the rule
+        // runs pre-expansion and never sees invisible delimiters
+        // in practice.
         TokenTree::Delimited(_, _, Delimiter::Parenthesis, inner) => {
             if is_trivial_paren_inner(inner, trivial_methods) {
                 Some(rest)
@@ -272,6 +279,13 @@ fn take_trivial_suffixes<'a>(
                                 tokens = after;
                             }
                         }
+                        // Raw idents (`r#len`, `r#as_ref`) and tuple
+                        // indices fall through to plain field-access
+                        // handling. The pure-getter set keys off
+                        // non-raw idents because Rust doesn't reserve
+                        // any of the curated names, so a raw-escaped
+                        // form is unusual enough not to be worth the
+                        // extra branch.
                         TokenKind::Ident(_, _) | TokenKind::Literal(_) => tokens = after,
                         _ => return tokens,
                     }
