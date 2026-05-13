@@ -6,13 +6,18 @@
 //! macro author chose (`Type => [...]`, `name = value`, `name += value`,
 //! bare operators like `==`, and friends).
 //! [`is_trivial_expression`] decides whether the surviving expression
-//! falls in the spec's seven trivial shapes (plus parenthesised /
-//! tuple groups and binary chains over trivial operands).
+//! falls in the spec's trivial shapes (literals, paths, references,
+//! field accesses, indexing, dereferences, casts, parenthesised /
+//! tuple groups, binary chains over trivial operands, and
+//! `expr.method()` postfixes for a curated / configured set of
+//! pure-getter methods).
 //!
 //! The predicate is a hand-rolled token-stream walker — see the
 //! rationale in `planned-rules/macro-argument-binding.md`'s
 //! "Implementation notes" section. The walker is `take_*`-style per
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
+
+use std::collections::BTreeSet;
 
 use rustc_ast::token::{Delimiter, IdentIsRaw, TokenKind};
 use rustc_ast::tokenstream::{TokenStream, TokenTree};
@@ -108,23 +113,35 @@ fn is_dsl_marker(kind: TokenKind) -> bool {
 
 /// Returns `true` if the entire token slice forms a "trivial"
 /// expression per the rule's grammar. Triviality is purely syntactic:
-/// the seven shapes the rule docs enumerate (literal, path, reference,
-/// field, index, deref, cast), plus parenthesised / tuple groups whose
-/// elements are all trivial, plus binary chains whose every operand is
-/// trivial. The classification is recursive on operands. Anything
-/// outside that grammar is non-trivial — including `const fn` calls
-/// and other "morally pure" expressions.
-pub(super) fn is_trivial_expression(tokens: &[TokenTree]) -> bool {
-    take_trivial_expression(tokens).is_some_and(<[_]>::is_empty)
+/// the shapes the rule docs enumerate (literal, path, reference,
+/// field, index, deref, cast), plus parenthesised / tuple groups
+/// whose elements are all trivial, plus binary chains whose every
+/// operand is trivial, plus `.method()` postfixes when the method
+/// name is in `trivial_methods` (curated pure-getter set, extensible
+/// via `dylint.toml`). The classification is recursive on operands.
+/// Anything outside that grammar is non-trivial — including most
+/// `const fn` calls, generic method calls, and other "morally pure"
+/// expressions the walker cannot prove side-effect-free.
+pub(super) fn is_trivial_expression(
+    tokens: &[TokenTree],
+    trivial_methods: &BTreeSet<String>,
+) -> bool {
+    take_trivial_expression(tokens, trivial_methods).is_some_and(<[_]>::is_empty)
 }
 
-fn take_trivial_expression(tokens: &[TokenTree]) -> Option<&[TokenTree]> {
-    let after_atom = take_trivial_atom(tokens)?;
-    let after_suffix = take_trivial_suffixes(after_atom);
-    Some(take_trivial_binary_tail(after_suffix))
+fn take_trivial_expression<'a>(
+    tokens: &'a [TokenTree],
+    trivial_methods: &BTreeSet<String>,
+) -> Option<&'a [TokenTree]> {
+    let after_atom = take_trivial_atom(tokens, trivial_methods)?;
+    let after_suffix = take_trivial_suffixes(after_atom, trivial_methods);
+    Some(take_trivial_binary_tail(after_suffix, trivial_methods))
 }
 
-fn take_trivial_atom(tokens: &[TokenTree]) -> Option<&[TokenTree]> {
+fn take_trivial_atom<'a>(
+    tokens: &'a [TokenTree],
+    trivial_methods: &BTreeSet<String>,
+) -> Option<&'a [TokenTree]> {
     let (head, rest) = tokens.split_first()?;
     match head {
         // `()` (unit literal), `(expr)` (parenthesised trivial
@@ -132,7 +149,7 @@ fn take_trivial_atom(tokens: &[TokenTree]) -> Option<&[TokenTree]> {
         // Each element is recursively trivial; empty parens are the
         // canonical trivial value.
         TokenTree::Delimited(_, _, Delimiter::Parenthesis, inner) => {
-            if is_trivial_paren_inner(inner) {
+            if is_trivial_paren_inner(inner, trivial_methods) {
                 Some(rest)
             } else {
                 None
@@ -145,11 +162,11 @@ fn take_trivial_atom(tokens: &[TokenTree]) -> Option<&[TokenTree]> {
                 Some(rest)
             }
             // `&` expr or `&mut` expr.
-            TokenKind::And => take_reference_tail(rest),
+            TokenKind::And => take_reference_tail(rest, trivial_methods),
             // `&&` expr or `&& mut` expr (double reference).
-            TokenKind::AndAnd => take_reference_tail(rest),
+            TokenKind::AndAnd => take_reference_tail(rest, trivial_methods),
             // `*expr` (deref).
-            TokenKind::Star => take_trivial_expression(rest),
+            TokenKind::Star => take_trivial_expression(rest, trivial_methods),
             // Path: ident (`::` ident)*.
             TokenKind::Ident(_, _) => Some(take_path_tail(rest)),
             // Leading `::` — must be followed by an ident.
@@ -164,21 +181,24 @@ fn take_trivial_atom(tokens: &[TokenTree]) -> Option<&[TokenTree]> {
 /// `(a, b, ...)` (tuple, optional trailing comma) when every element is
 /// itself trivial. Empty elements in the middle (`(a,,b)`) are not
 /// Rust syntax and are rejected.
-fn is_trivial_paren_inner(stream: &TokenStream) -> bool {
+fn is_trivial_paren_inner(stream: &TokenStream, trivial_methods: &BTreeSet<String>) -> bool {
     let Some(arguments) = split_top_level_arguments(stream) else {
         return false;
     };
     arguments
         .iter()
-        .all(|argument| !argument.is_empty() && is_trivial_expression(argument))
+        .all(|argument| !argument.is_empty() && is_trivial_expression(argument, trivial_methods))
 }
 
-fn take_reference_tail(tokens: &[TokenTree]) -> Option<&[TokenTree]> {
+fn take_reference_tail<'a>(
+    tokens: &'a [TokenTree],
+    trivial_methods: &BTreeSet<String>,
+) -> Option<&'a [TokenTree]> {
     let after_mut = match tokens.split_first() {
         Some((TokenTree::Token(token, _), rest)) if token.is_keyword(kw::Mut) => rest,
         _ => tokens,
     };
-    take_trivial_expression(after_mut)
+    take_trivial_expression(after_mut, trivial_methods)
 }
 
 fn take_path_tail(mut tokens: &[TokenTree]) -> &[TokenTree] {
@@ -208,18 +228,23 @@ fn take_path_after_sep(tokens: &[TokenTree]) -> Option<&[TokenTree]> {
     Some(take_path_tail(rest))
 }
 
-fn take_trivial_suffixes(mut tokens: &[TokenTree]) -> &[TokenTree] {
+fn take_trivial_suffixes<'a>(
+    mut tokens: &'a [TokenTree],
+    trivial_methods: &BTreeSet<String>,
+) -> &'a [TokenTree] {
     loop {
         let Some((head, rest)) = tokens.split_first() else {
             return tokens;
         };
         match head {
             TokenTree::Token(token, _) => match token.kind {
-                // `.ident` (field access) or `.0` (tuple index).
-                // Postfix `.await` is *not* a field access — it's
-                // `ExprKind::Await`, which the rule docs list as
-                // non-trivial. Reject the `await` keyword explicitly so
-                // `future.await` correctly falls out as non-trivial.
+                // `.ident` (field access), `.0` (tuple index), or
+                // `.method()` (zero-arg pure-getter call) when the
+                // method name is in the configured trivial-methods
+                // set. Postfix `.await` is *not* a field access —
+                // it's `ExprKind::Await`, which the rule docs list as
+                // non-trivial. Reject the `await` keyword explicitly
+                // so `future.await` correctly falls out as non-trivial.
                 // (`r#await` as a raw ident remains a literal field
                 // access and stays accepted via the catch-all arm.)
                 TokenKind::Dot => {
@@ -232,6 +257,20 @@ fn take_trivial_suffixes(mut tokens: &[TokenTree]) -> &[TokenTree] {
                     match next_token.kind {
                         TokenKind::Ident(name, IdentIsRaw::No) if name == kw::Await => {
                             return tokens;
+                        }
+                        TokenKind::Ident(name, IdentIsRaw::No) => {
+                            // `.name()` (empty parens) is a trivial
+                            // postfix when the method is conventionally
+                            // pure (`vec.len()`, `s.is_empty()`,
+                            // `opt.as_ref()`). Otherwise treat `.name`
+                            // as a plain field access and let the
+                            // suffix loop decide what to do with the
+                            // tokens that follow.
+                            if is_trivial_method_call(after, name.as_str(), trivial_methods) {
+                                tokens = &after[1..];
+                            } else {
+                                tokens = after;
+                            }
                         }
                         TokenKind::Ident(_, _) | TokenKind::Literal(_) => tokens = after,
                         _ => return tokens,
@@ -251,7 +290,7 @@ fn take_trivial_suffixes(mut tokens: &[TokenTree]) -> &[TokenTree] {
             // `[expr]` — index. Both base and index must be trivial;
             // the recursion happens here for the index.
             TokenTree::Delimited(_, _, Delimiter::Bracket, inner) => {
-                if !is_trivial_expression_stream(inner) {
+                if !is_trivial_expression_stream(inner, trivial_methods) {
                     return tokens;
                 }
                 tokens = rest;
@@ -259,6 +298,21 @@ fn take_trivial_suffixes(mut tokens: &[TokenTree]) -> &[TokenTree] {
             _ => return tokens,
         }
     }
+}
+
+/// `true` iff `tokens` starts with `()` (empty parentheses) AND the
+/// preceding method name is in `trivial_methods`. The caller has
+/// already consumed the `.` and the method ident; it passes the
+/// remaining tokens (starting with the `(...)` delimiter) here.
+fn is_trivial_method_call(
+    tokens: &[TokenTree],
+    method_name: &str,
+    trivial_methods: &BTreeSet<String>,
+) -> bool {
+    let Some(TokenTree::Delimited(_, _, Delimiter::Parenthesis, inner)) = tokens.first() else {
+        return false;
+    };
+    inner.is_empty() && trivial_methods.contains(method_name)
 }
 
 /// Consume a tail of `OP trivial` pairs where `OP` is a side-effect-
@@ -275,15 +329,18 @@ fn take_trivial_suffixes(mut tokens: &[TokenTree]) -> &[TokenTree] {
 /// (`a + b * c` is consumed left-to-right rather than as `a + (b * c)`),
 /// but that does not affect the triviality verdict: every prefix /
 /// suffix in the chain has trivial operands.
-fn take_trivial_binary_tail(mut tokens: &[TokenTree]) -> &[TokenTree] {
+fn take_trivial_binary_tail<'a>(
+    mut tokens: &'a [TokenTree],
+    trivial_methods: &BTreeSet<String>,
+) -> &'a [TokenTree] {
     while let Some(after_op) = take_trivial_binary_operator(tokens) {
-        let Some(after_atom) = take_trivial_atom(after_op) else {
+        let Some(after_atom) = take_trivial_atom(after_op, trivial_methods) else {
             // The operator looked like a binop but no trivial atom
             // followed; leave the operator unconsumed so the caller
             // sees the whole rest as non-trivial.
             return tokens;
         };
-        tokens = take_trivial_suffixes(after_atom);
+        tokens = take_trivial_suffixes(after_atom, trivial_methods);
     }
     tokens
 }
@@ -329,7 +386,7 @@ fn take_trivial_type(tokens: &[TokenTree]) -> Option<&[TokenTree]> {
     }
 }
 
-fn is_trivial_expression_stream(stream: &TokenStream) -> bool {
+fn is_trivial_expression_stream(stream: &TokenStream, trivial_methods: &BTreeSet<String>) -> bool {
     let trees: Vec<TokenTree> = stream.iter().cloned().collect();
-    is_trivial_expression(&trees)
+    is_trivial_expression(&trees, trivial_methods)
 }

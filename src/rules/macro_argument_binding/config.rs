@@ -46,6 +46,25 @@ const BUILTIN_ALLOW: &[&str] = &[
     "anyhow",
 ];
 
+/// Zero-arg method names that are conventionally side-effect-free
+/// across the standard library and ecosystem. `vec.len()`,
+/// `s.is_empty()`, `opt.as_ref()` evaluate the same way no matter how
+/// many times the macro touches them, so they are accepted as trivial
+/// postfixes on a trivial base. Names whose pure-getter convention is
+/// less universal (e.g. `count` is consuming on `Iterator` but
+/// `O(1)` and pure on indexed collections) are left for projects to
+/// add via `trivial_methods_extra`.
+const BUILTIN_TRIVIAL_METHODS: &[&str] = &[
+    "as_bytes",
+    "as_deref",
+    "as_mut",
+    "as_ref",
+    "as_slice",
+    "as_str",
+    "is_empty",
+    "len",
+];
+
 /// Eligibility mode. The default is `AllowAndDeny`. The matcher-based
 /// mode described in `planned-rules/macro-argument-binding.md` is not
 /// yet implemented and is therefore not exposed as a value here; a
@@ -92,6 +111,11 @@ pub(super) struct Config {
     /// Macros to skip entirely, regardless of which list they would
     /// otherwise hit. Same matching rules as `deny_extra`.
     pub ignore: Vec<String>,
+    /// Method names added to the built-in pure-method list. Each
+    /// entry is a bare method identifier (no `()`, no receiver). A
+    /// `.method()` invocation on a trivial base is then accepted as a
+    /// trivial postfix when the method takes no arguments.
+    pub trivial_methods_extra: Vec<String>,
 }
 
 impl Default for Config {
@@ -102,6 +126,7 @@ impl Default for Config {
             deny_extra: Vec::new(),
             allow_extra: Vec::new(),
             ignore: Vec::new(),
+            trivial_methods_extra: Vec::new(),
         }
     }
 }
@@ -121,6 +146,10 @@ pub(super) struct MacroArgumentBinding {
     /// docs (`planned-rules/macro-argument-binding.md`).
     allow_extra: BTreeSet<Vec<String>>,
     ignore: BTreeSet<Vec<String>>,
+    /// Built-in pure-method list plus `trivial_methods_extra`,
+    /// consulted by the trivial-expression walker to accept
+    /// `expr.method()` as a trivial postfix on a trivial base.
+    trivial_methods: BTreeSet<String>,
 }
 
 impl MacroArgumentBinding {
@@ -131,6 +160,11 @@ impl MacroArgumentBinding {
         let deny = merge_with_builtins(BUILTIN_DENY, &extra_deny);
         let allow = merge_with_builtins(BUILTIN_ALLOW, &extra_allow);
         let ignore = parse_path_list(&config.ignore);
+        let trivial_methods = BUILTIN_TRIVIAL_METHODS
+            .iter()
+            .map(|method| (*method).to_owned())
+            .chain(config.trivial_methods_extra)
+            .collect();
         Self {
             enabled: config.enabled,
             mode: config.mode,
@@ -138,7 +172,14 @@ impl MacroArgumentBinding {
             allow,
             allow_extra: extra_allow,
             ignore,
+            trivial_methods,
         }
+    }
+
+    /// The merged set of method names whose `.method()` invocations
+    /// on a trivial base are accepted as trivial postfixes.
+    pub(super) fn trivial_methods(&self) -> &BTreeSet<String> {
+        &self.trivial_methods
     }
 
     /// Path-side eligibility: combines the `enabled` switch, the

@@ -152,6 +152,18 @@ The lint accepts any argument whose outermost shape is one of:
   and the short-circuit operators (`&&`, `||`). `a <= b`,
   `count + offset`, `flags & MASK == 0` are all trivial when
   the operands are.
+- A zero-argument method call `expr.method()` on a trivial
+  base, where `method` is in the curated pure-getter set
+  (`len`, `is_empty`, `as_str`, `as_bytes`, `as_ref`, `as_mut`,
+  `as_deref`, `as_slice`) or in the project's
+  `trivial_methods_extra`. `vec.len()`, `s.is_empty()`,
+  `opt.as_ref()` evaluate the same way no matter how many
+  times the macro touches them, so the let-bind rewrite
+  would only force the call to run in release builds for
+  no benefit. Method calls with arguments, generic method
+  calls, and method names outside the configured set stay
+  non-trivial: `map.insert(k, v)`, `iter.next()`,
+  `vec.try_into::<Foo>()` still flag.
 
 Everything else is non-trivial: function and method calls, `?`,
 `.await`, macro invocations, blocks, control-flow expressions,
@@ -383,6 +395,16 @@ allow_extra = [
 # otherwise hit.
 ignore = [
   # "my_crate::ad_hoc",
+]
+
+# Zero-argument method names treated as trivial postfixes on a
+# trivial base, in addition to the built-in set (`len`,
+# `is_empty`, `as_str`, `as_bytes`, `as_ref`, `as_mut`,
+# `as_deref`, `as_slice`). Add project-specific pure getters
+# here so `debug_assert!(value.my_cached_getter() <= limit)`
+# stops flagging.
+trivial_methods_extra = [
+  # "my_cached_getter",
 ]
 ```
 

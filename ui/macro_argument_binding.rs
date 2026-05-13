@@ -186,6 +186,20 @@ fn _binary_chain_of_trivial_operands_accepted(left: u32, right: u32, point: (u32
     debug_assert!(left * 2 == right + 1);
 }
 
+// Pure-getter method calls on a trivial base are trivial postfixes.
+// `len`, `is_empty`, `as_str`, `as_bytes`, `as_ref`, `as_mut`,
+// `as_deref`, `as_slice` are the built-in pure-getter set; projects
+// extend it via `dylint.toml`'s `trivial_methods_extra` knob (see
+// `tests/macro_argument_binding.rs`). Combined with the binary-chain
+// rule above, `debug_assert!(vec.len() <= cap)` no longer drags the
+// comparison out of its `cfg(debug_assertions)` guard.
+fn _pure_method_postfix_accepted(slice: &[u32], text: &String) {
+    debug_assert!(slice.len() <= MAX as usize);
+    debug_assert!(slice.is_empty() || slice.len() < MAX as usize);
+    debug_assert!(text.as_bytes().len() == text.as_str().len());
+    debug_assert!(slice.as_ref().len() == slice.len());
+}
+
 #[allow(dead_code)]
 struct NameType;
 

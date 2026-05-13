@@ -44,13 +44,16 @@ expression repeated produces wrong results.
 Trivial arguments — literals, paths, field accesses, indexing
 of trivial bases, dereferences, references, casts, the unit
 literal `()`, parenthesised / tuple groups whose elements are
-all trivial, and binary chains of trivial operands joined by
-side-effect-free operators — are accepted as-is. A comparison
-like `a.field <= b.field` evaluates the same way regardless of
-how many times the macro touches it, so binding it to a `let`
-would only force the comparison to run in release builds for
-no benefit. The lint focuses on arguments whose evaluation
-is itself observable.
+all trivial, binary chains of trivial operands joined by
+side-effect-free operators, and zero-arg method calls whose
+name is in the curated pure-getter set (`len`, `is_empty`,
+`as_str`, `as_bytes`, `as_ref`, `as_mut`, `as_deref`,
+`as_slice`, plus anything in `trivial_methods_extra`) — are
+accepted as-is. A comparison like `vec.len() <= cap` evaluates
+the same way regardless of how many times the macro touches
+it, so binding it to a `let` would only force the comparison
+to run in release builds for no benefit. The lint focuses on
+arguments whose evaluation is itself observable.
 
 ## Example
 ```rust,ignore
