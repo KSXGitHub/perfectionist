@@ -26,7 +26,9 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     require_for: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    suffixes: Option<Vec<String>>,
+    extra_suffixes: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ignore_suffixes: Option<Vec<String>>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -64,11 +66,12 @@ fn all_includes_private_items() {
 }
 
 #[test]
-fn custom_suffixes_replace_the_default_list() {
+fn custom_suffixes_extend_and_subtract_the_default_list() {
     run(
         "ui-toml/non_exhaustive_error/custom_suffixes",
         RuleConfig {
-            suffixes: Some(vec!["Failure".into()]),
+            extra_suffixes: Some(vec!["Failure".into()]),
+            ignore_suffixes: Some(vec!["Error".into()]),
             ..Default::default()
         },
     );

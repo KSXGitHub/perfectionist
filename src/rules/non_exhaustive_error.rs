@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::source::indent_of;
 use clippy_utils::sym;
@@ -10,6 +12,8 @@ use rustc_middle::middle::privacy::Level;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::def_id::{CRATE_DEF_ID, LocalDefId};
+
+use crate::common::merge_string_allowlist;
 
 declare_tool_lint! {
     /// ### What it does
@@ -83,46 +87,49 @@ enum RequireFor {
     All,
 }
 
-#[derive(Debug, serde::Deserialize)]
+/// Default identifier suffixes that mark a type as "an error"
+/// purely by name. A type that implements `std::error::Error` is
+/// flagged regardless of suffix.
+const DEFAULT_SUFFIXES: &[&str] = &["Error"];
+
+#[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Visibility threshold for the rule.
     require_for: RequireFor,
-    /// Identifier suffixes that mark a type as "an error" purely
-    /// by name, without inspecting its trait implementations.
-    ///
-    /// Setting this option **replaces** the built-in default,
-    /// rather than extending it: configuring
-    /// `suffixes = ["Failure"]` matches only `*Failure` names, not
-    /// `*Error` or `*Failure`. To keep the default suffix alongside
-    /// a project-specific one, list it explicitly:
-    /// `suffixes = ["Error", "Failure"]`.
-    ///
-    /// Defaults to `["Error"]`. A type that implements
-    /// `std::error::Error` is flagged regardless of suffix.
-    suffixes: Vec<String>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            require_for: RequireFor::default(),
-            suffixes: vec!["Error".to_owned()],
-        }
-    }
+    /// Additional identifier suffixes that mark a type as "an
+    /// error" purely by name, without inspecting its trait
+    /// implementations. Merged with the built-in defaults
+    /// (`["Error"]`); empty by default. List project-specific
+    /// vocabulary here (`Failure`, `Fault`, …) without having to
+    /// re-state the standard suffix.
+    extra_suffixes: Vec<String>,
+    /// Identifier suffixes to drop from the allowlist, even if
+    /// they appear in the built-in defaults or in `extra_suffixes`.
+    /// Empty by default; checked after the merge with the
+    /// built-ins, so this knob always wins. Use it when a project
+    /// deliberately does not want the `Error` suffix to trigger
+    /// the by-name branch — types that implement
+    /// `std::error::Error` are still flagged via the trait branch.
+    ignore_suffixes: Vec<String>,
 }
 
 pub struct NonExhaustiveError {
     require_for: RequireFor,
-    suffixes: Vec<String>,
+    suffixes: BTreeSet<String>,
 }
 
 impl NonExhaustiveError {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        let suffixes = merge_string_allowlist(
+            DEFAULT_SUFFIXES,
+            config.extra_suffixes,
+            config.ignore_suffixes,
+        );
         Self {
             require_for: config.require_for,
-            suffixes: config.suffixes,
+            suffixes,
         }
     }
 

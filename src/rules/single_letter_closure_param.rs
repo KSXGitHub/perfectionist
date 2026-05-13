@@ -13,7 +13,9 @@ use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
-use crate::common::{binding_ident, is_single_ascii_letter};
+use rustc_span::Symbol;
+
+use crate::common::{binding_ident, is_single_ascii_letter, merge_symbol_allowlist};
 
 mod triviality;
 
@@ -134,38 +136,41 @@ const DEFAULT_TRIVIAL_CALLBACK_METHODS: &[&str] = &[
     "into_sorted_unstable_by_key",
 ];
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Method / function names whose closure argument may carry
-    /// single-letter parameters when the body is a single
-    /// expression. Setting this option **replaces** the curated
-    /// default; to keep the defaults alongside a project-specific
-    /// helper such as `when` or `iter_by`, list every default
-    /// entry explicitly.
-    trivial_callback_methods: Vec<String>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            trivial_callback_methods: DEFAULT_TRIVIAL_CALLBACK_METHODS
-                .iter()
-                .map(|s| (*s).to_owned())
-                .collect(),
-        }
-    }
+    /// Additional method / function names whose closure argument
+    /// may carry single-letter parameters when the body is a
+    /// single expression. Merged with the built-in defaults (the
+    /// curated `core` / `std` callbacks plus selected `itertools`
+    /// and `into-sorted` adaptors); empty by default. List
+    /// project-specific DSL helpers (`when`, `iter_by`, third-party
+    /// callbacks such as `into_sorted_by`, …) here without having
+    /// to re-state the standard ones.
+    extra_trivial_callback_methods: Vec<String>,
+    /// Method / function names to drop from the allowlist, even if
+    /// they appear in the built-in defaults or in
+    /// `extra_trivial_callback_methods`. Empty by default; checked
+    /// after the merge with the built-ins, so this knob always
+    /// wins. Useful for opting back into linting on a default
+    /// entry the project does not consider trivial.
+    ignore_trivial_callback_methods: Vec<String>,
 }
 
 pub struct SingleLetterClosureParam {
-    trivial_callback_methods: BTreeSet<String>,
+    trivial_callback_methods: BTreeSet<Symbol>,
 }
 
 impl SingleLetterClosureParam {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        let trivial_callback_methods = merge_symbol_allowlist(
+            DEFAULT_TRIVIAL_CALLBACK_METHODS,
+            config.extra_trivial_callback_methods,
+            config.ignore_trivial_callback_methods,
+        );
         Self {
-            trivial_callback_methods: config.trivial_callback_methods.into_iter().collect(),
+            trivial_callback_methods,
         }
     }
 }
@@ -244,6 +249,6 @@ impl SingleLetterClosureParam {
         let Some(name) = parent_call_callee_name(lint_context, closure_expr) else {
             return false;
         };
-        self.trivial_callback_methods.contains(name.as_str())
+        self.trivial_callback_methods.contains(&name)
     }
 }
