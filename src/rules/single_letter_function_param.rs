@@ -5,9 +5,9 @@ use rustc_hir as hir;
 use rustc_hir::intravisit::FnKind;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::Span;
+use rustc_span::{Span, Symbol};
 
-use crate::common::{binding_ident, is_single_ascii_letter, merge_string_allowlist};
+use crate::common::{binding_ident, is_single_ascii_letter, merge_symbol_allowlist};
 
 declare_tool_lint! {
     /// ### What it does
@@ -62,13 +62,13 @@ struct Config {
 }
 
 pub struct SingleLetterFunctionParam {
-    allowed_idents: BTreeSet<String>,
+    allowed_idents: BTreeSet<Symbol>,
 }
 
 impl SingleLetterFunctionParam {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let allowed_idents = merge_string_allowlist(
+        let allowed_idents = merge_symbol_allowlist(
             DEFAULT_FN_PARAM_ALLOWLIST,
             config.extra_allowed_idents,
             config.ignore_allowed_idents,
@@ -112,7 +112,7 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterFunctionParam {
             if !is_single_ascii_letter(ident.name.as_str()) {
                 continue;
             }
-            if self.allowed_idents.contains(ident.name.as_str()) {
+            if self.allowed_idents.contains(&ident.name) {
                 continue;
             }
             span_lint_and_help(

@@ -13,7 +13,9 @@ use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
-use crate::common::{binding_ident, is_single_ascii_letter, merge_string_allowlist};
+use rustc_span::Symbol;
+
+use crate::common::{binding_ident, is_single_ascii_letter, merge_symbol_allowlist};
 
 mod triviality;
 
@@ -156,13 +158,13 @@ struct Config {
 }
 
 pub struct SingleLetterClosureParam {
-    trivial_callback_methods: BTreeSet<String>,
+    trivial_callback_methods: BTreeSet<Symbol>,
 }
 
 impl SingleLetterClosureParam {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let trivial_callback_methods = merge_string_allowlist(
+        let trivial_callback_methods = merge_symbol_allowlist(
             DEFAULT_TRIVIAL_CALLBACK_METHODS,
             config.extra_trivial_callback_methods,
             config.ignore_trivial_callback_methods,
@@ -247,6 +249,6 @@ impl SingleLetterClosureParam {
         let Some(name) = parent_call_callee_name(lint_context, closure_expr) else {
             return false;
         };
-        self.trivial_callback_methods.contains(name.as_str())
+        self.trivial_callback_methods.contains(&name)
     }
 }

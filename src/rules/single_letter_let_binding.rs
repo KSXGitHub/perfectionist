@@ -6,7 +6,9 @@ use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
-use crate::common::{binding_ident, is_single_ascii_letter, merge_string_allowlist};
+use rustc_span::Symbol;
+
+use crate::common::{binding_ident, is_single_ascii_letter, merge_symbol_allowlist};
 
 declare_tool_lint! {
     /// ### What it does
@@ -61,13 +63,13 @@ struct Config {
 }
 
 pub struct SingleLetterLetBinding {
-    allowed_idents: BTreeSet<String>,
+    allowed_idents: BTreeSet<Symbol>,
 }
 
 impl SingleLetterLetBinding {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let allowed_idents = merge_string_allowlist(
+        let allowed_idents = merge_symbol_allowlist(
             DEFAULT_LET_ALLOWLIST,
             config.extra_allowed_idents,
             config.ignore_allowed_idents,
@@ -99,7 +101,7 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterLetBinding {
         if !is_single_ascii_letter(ident.name.as_str()) {
             return;
         }
-        if self.allowed_idents.contains(ident.name.as_str()) {
+        if self.allowed_idents.contains(&ident.name) {
             return;
         }
         if is_in_test(lint_context.tcx, local.hir_id) {
