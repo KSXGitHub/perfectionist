@@ -25,10 +25,13 @@ declare_tool_lint! {
     /// letter, unless the closure is a trivial single-expression
     /// callback. Two shapes qualify as trivial:
     /// - the closure is the immediate argument of a call whose
-    ///   callee name is in the comparison / fold allowlist
+    ///   callee name is in the trivial-callback allowlist
     ///   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
     ///   `binary_search_by`, `cmp_by`, `partial_cmp_by`,
-    ///   `fold`, `try_fold`, …);
+    ///   `fold`, `try_fold`, …). The allowlist also covers the
+    ///   matching adaptors from `itertools` (`sorted_by`,
+    ///   `k_smallest_by`, `minmax_by_key`, …) and `into-sorted`
+    ///   (`into_sorted_by`, `into_sorted_by_key`, …);
     /// - the body is a trivial wrapper around the parameter —
     ///   a field access (`|x| x.field`), a method call
     ///   (`|x| x.foo()`), a one-argument call where the
@@ -71,7 +74,7 @@ const CONFIG_KEY: &str = "perfectionist::single_letter_closure_param";
 /// Default allowlist of method names whose closure argument may
 /// use single-letter parameters when the body is a single
 /// expression. Both source documents agree on this list.
-const DEFAULT_COMPARISON_METHODS: &[&str] = &[
+const DEFAULT_TRIVIAL_CALLBACK_METHODS: &[&str] = &[
     "sort_by",
     "sort_unstable_by",
     "sort_by_key",
@@ -93,22 +96,60 @@ const DEFAULT_COMPARISON_METHODS: &[&str] = &[
     "try_fold",
     "rfold",
     "reduce",
+    // `itertools::Itertools` adaptors that take a comparator or
+    // key closure and follow the same `|a, b| ...` / `|x| ...`
+    // convention as their std counterparts.
+    "sorted_by",
+    "sorted_by_key",
+    "sorted_by_cached_key",
+    "sorted_unstable_by",
+    "sorted_unstable_by_key",
+    "k_smallest_by",
+    "k_smallest_by_key",
+    "k_smallest_relaxed_by",
+    "k_smallest_relaxed_by_key",
+    "k_largest_by",
+    "k_largest_by_key",
+    "k_largest_relaxed_by",
+    "k_largest_relaxed_by_key",
+    "min_set_by",
+    "min_set_by_key",
+    "max_set_by",
+    "max_set_by_key",
+    "minmax_by",
+    "minmax_by_key",
+    "position_min_by",
+    "position_min_by_key",
+    "position_max_by",
+    "position_max_by_key",
+    "position_minmax_by",
+    "position_minmax_by_key",
+    // `into_sorted::{IntoSorted, IntoSortedUnstable}` adaptors
+    // that return an owned sorted array, mirroring the std
+    // `sort_by` / `sort_by_key` shapes.
+    "into_sorted_by",
+    "into_sorted_by_key",
+    "into_sorted_by_cached_key",
+    "into_sorted_unstable_by",
+    "into_sorted_unstable_by_key",
 ];
 
 #[derive(Debug, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Method / function names whose closure argument may carry
     /// single-letter parameters when the body is a single
-    /// expression. Extend this list to add project-specific DSL
-    /// helpers (`when`, `iter_by`, …).
-    comparison_methods: Vec<String>,
+    /// expression. Setting this option **replaces** the curated
+    /// default; to keep the defaults alongside a project-specific
+    /// helper such as `when` or `iter_by`, list every default
+    /// entry explicitly.
+    trivial_callback_methods: Vec<String>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            comparison_methods: DEFAULT_COMPARISON_METHODS
+            trivial_callback_methods: DEFAULT_TRIVIAL_CALLBACK_METHODS
                 .iter()
                 .map(|s| (*s).to_owned())
                 .collect(),
@@ -117,14 +158,14 @@ impl Default for Config {
 }
 
 pub struct SingleLetterClosureParam {
-    comparison_methods: BTreeSet<String>,
+    trivial_callback_methods: BTreeSet<String>,
 }
 
 impl SingleLetterClosureParam {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
-            comparison_methods: config.comparison_methods.into_iter().collect(),
+            trivial_callback_methods: config.trivial_callback_methods.into_iter().collect(),
         }
     }
 }
@@ -186,7 +227,7 @@ impl SingleLetterClosureParam {
         let Some(body_expr) = single_expression_body(body) else {
             return false;
         };
-        if self.is_in_comparison_call(lint_context, closure_expr) {
+        if self.parent_call_is_trivial_callback(lint_context, closure_expr) {
             return true;
         }
         if is_trivial_wrapper(body_expr, body.params) {
@@ -195,7 +236,7 @@ impl SingleLetterClosureParam {
         false
     }
 
-    fn is_in_comparison_call<'tcx>(
+    fn parent_call_is_trivial_callback<'tcx>(
         &self,
         lint_context: &LateContext<'tcx>,
         closure_expr: &'tcx hir::Expr<'tcx>,
@@ -203,6 +244,6 @@ impl SingleLetterClosureParam {
         let Some(name) = parent_call_callee_name(lint_context, closure_expr) else {
             return false;
         };
-        self.comparison_methods.contains(name.as_str())
+        self.trivial_callback_methods.contains(name.as_str())
     }
 }

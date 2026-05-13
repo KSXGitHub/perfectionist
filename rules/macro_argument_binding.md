@@ -67,4 +67,62 @@ debug_assert_eq!(ejected, None, "duplicate");
 
 ## Configuration
 
-None.
+Configure via `dylint.toml` under `["perfectionist::macro_argument_binding"]`. Every field is optional; the per-field prose below states the default.
+
+### `enabled`: `boolean` (optional)
+
+Master on/off switch for the rule. Defaults to `true`. Set
+to `false` to silence every diagnostic this lint would emit
+without having to enumerate every macro under `ignore`.
+
+### `mode`: `Mode` (optional)
+
+Eligibility mode.
+
+### `deny_extra`: `[string]` (optional)
+
+Macros added to the built-in deny list. Each entry is a
+fully-qualified macro path (no trailing `!`) or a bare macro
+name to match by final segment only.
+
+### `allow_extra`: `[string]` (optional)
+
+Macros added to the built-in allow list. Same matching rules
+as `deny_extra`. Only meaningful in `AllowAndDeny` and
+`Blanket` modes; in `DenyOnly` the allow list is unused.
+
+### `ignore`: `[string]` (optional)
+
+Macros to skip entirely, regardless of which list they would
+otherwise hit. Same matching rules as `deny_extra`.
+
+### Types
+
+#### `Mode` (enum)
+
+Eligibility mode. The default is `AllowAndDeny`. The matcher-based
+mode described in `planned-rules/macro-argument-binding.md` is not
+yet implemented and is therefore not exposed as a value here; a
+`dylint.toml` that names it will fail to deserialise with a
+useful error.
+
+##### `"deny_only"` (Rust: `DenyOnly`)
+
+Flag only invocations of the curated deny list (`debug_assert*`
+plus `deny_extra`). Every other macro is silently accepted.
+
+##### `"blanket"` (Rust: `Blanket`)
+
+Flag every function-like or array-like invocation that carries
+a non-trivial top-level argument, regardless of any built-in
+classification — unless the invocation matches an `allow_extra`
+entry. The built-in allow list is deliberately ignored in this
+mode; project exceptions go in `allow_extra`.
+
+##### `"allow_and_deny"` (Rust: `AllowAndDeny`)
+
+Curated deny list plus curated allow list, both extensible via
+`deny_extra` / `allow_extra`. Macros on neither list are
+flagged — flagging unrecognised macros is deliberate so the
+rule remains useful in projects that depend on uncatalogued
+proc macros.

@@ -68,17 +68,12 @@ const BUILTIN_NAME_BASED: &[&str] = &[
 ];
 
 #[derive(Debug, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Master on/off switch for the rule. Defaults to `true`. Set
     /// to `false` to silence every diagnostic this lint would emit
     /// without having to enumerate every macro under `ignore`.
     enabled: bool,
-    /// Accepted for forward compatibility with the matcher-based half of
-    /// the rule. Currently a no-op — only name-based eligibility is
-    /// implemented; see `planned-rules/macro-trailing-comma.md` for the
-    /// status breakdown.
-    matcher_based: bool,
     /// Additional macro paths to treat as name-based eligible, on top
     /// of the curated built-in list. Each entry is matched by its
     /// final path segment, so `"my_crate::vec_like"` and `"vec_like"`
@@ -87,11 +82,11 @@ struct Config {
     /// syntactically optional at the top level; macros that treat
     /// the comma as a fully optional separator throughout (rather
     /// than only at the tail) should not be listed here.
-    extra_name_based: Vec<String>,
+    name_based_extra: Vec<String>,
     /// Macro paths to opt out of the rule, even if they would
     /// otherwise be eligible via the built-in list or
-    /// `extra_name_based`. Matched by final path segment, like
-    /// `extra_name_based`. Checked first, so this knob always wins
+    /// `name_based_extra`. Matched by final path segment, like
+    /// `name_based_extra`. Checked first, so this knob always wins
     /// over eligibility. Empty by default.
     ignore: Vec<String>,
 }
@@ -100,8 +95,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             enabled: true,
-            matcher_based: true,
-            extra_name_based: Vec::new(),
+            name_based_extra: Vec::new(),
             ignore: Vec::new(),
         }
     }
@@ -123,13 +117,13 @@ pub(super) struct MacroTrailingComma {
 impl MacroTrailingComma {
     pub(super) fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let extra_name_based: BTreeSet<Vec<String>> = config
-            .extra_name_based
+        let name_based_extra: BTreeSet<Vec<String>> = config
+            .name_based_extra
             .iter()
             .map(|entry| parse_path(entry))
             .filter(|parsed| !parsed.is_empty())
             .collect();
-        let name_based = merge_with_builtins(BUILTIN_NAME_BASED, &extra_name_based);
+        let name_based = merge_with_builtins(BUILTIN_NAME_BASED, &name_based_extra);
         let ignore = parse_path_list(&config.ignore);
         Self {
             enabled: config.enabled,

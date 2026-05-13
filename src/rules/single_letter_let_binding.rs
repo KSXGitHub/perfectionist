@@ -45,18 +45,18 @@ const CONFIG_KEY: &str = "perfectionist::single_letter_let_binding";
 const DEFAULT_LET_ALLOWLIST: &[&str] = &["n"];
 
 #[derive(Debug, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Identifiers that are always allowed as `let` binding
     /// names, even outside `#[cfg(test)]` code. Defaults to
     /// `["n"]`.
-    let_binding_allowed_idents: Vec<String>,
+    allowed_idents: Vec<String>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            let_binding_allowed_idents: DEFAULT_LET_ALLOWLIST
+            allowed_idents: DEFAULT_LET_ALLOWLIST
                 .iter()
                 .map(|s| (*s).to_owned())
                 .collect(),
@@ -65,14 +65,14 @@ impl Default for Config {
 }
 
 pub struct SingleLetterLetBinding {
-    let_binding_allowed_idents: BTreeSet<String>,
+    allowed_idents: BTreeSet<String>,
 }
 
 impl SingleLetterLetBinding {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
-            let_binding_allowed_idents: config.let_binding_allowed_idents.into_iter().collect(),
+            allowed_idents: config.allowed_idents.into_iter().collect(),
         }
     }
 }
@@ -100,10 +100,7 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterLetBinding {
         if !is_single_ascii_letter(ident.name.as_str()) {
             return;
         }
-        if self
-            .let_binding_allowed_idents
-            .contains(ident.name.as_str())
-        {
+        if self.allowed_idents.contains(ident.name.as_str()) {
             return;
         }
         if is_in_test(lint_context.tcx, local.hir_id) {

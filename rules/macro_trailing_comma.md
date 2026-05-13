@@ -18,7 +18,7 @@ Eligibility is name-based — a curated list of `core` / `std` and
 well-known third-party macros (`vec!`, `format!`, `println!`,
 `assert_eq!`, `dbg!`, `log::info!`, `tracing::debug!`,
 `anyhow::bail!`, `maplit::hashmap!`, …), extended via
-`extra_name_based` and overridden via `ignore`.
+`name_based_extra` and overridden via `ignore`.
 
 Attribute-style invocations (`#[derive(...)]`, `#[serde(...)]`,
 etc.) are out of scope.
@@ -60,4 +60,29 @@ let ys = vec![1, 2, 3];
 
 ## Configuration
 
-None.
+Configure via `dylint.toml` under `["perfectionist::macro_trailing_comma"]`. Every field is optional; the per-field prose below states the default.
+
+### `enabled`: `boolean` (optional)
+
+Master on/off switch for the rule. Defaults to `true`. Set
+to `false` to silence every diagnostic this lint would emit
+without having to enumerate every macro under `ignore`.
+
+### `name_based_extra`: `[string]` (optional)
+
+Additional macro paths to treat as name-based eligible, on top
+of the curated built-in list. Each entry is matched by its
+final path segment, so `"my_crate::vec_like"` and `"vec_like"`
+both target invocations whose last segment is `vec_like`.
+Empty by default. Only add macros whose trailing comma is
+syntactically optional at the top level; macros that treat
+the comma as a fully optional separator throughout (rather
+than only at the tail) should not be listed here.
+
+### `ignore`: `[string]` (optional)
+
+Macro paths to opt out of the rule, even if they would
+otherwise be eligible via the built-in list or
+`name_based_extra`. Matched by final path segment, like
+`name_based_extra`. Checked first, so this knob always wins
+over eligibility. Empty by default.
