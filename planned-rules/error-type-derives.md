@@ -66,20 +66,29 @@ Flag a type that derives or implements `std::error::Error` but whose
 name does not match the project's error-naming convention. The default
 pattern is the `Error` suffix, matching `std::io::Error`,
 `serde_json::Error`, the thiserror documentation's examples, and the
-parallel-disk-usage convention that motivated the rule. Configure via
-`error_type_derives.error_name_pattern`, encoded in TOML as one of:
+parallel-disk-usage convention that motivated the rule. Configure
+under the `[error_type_derives]` table; the `error_name_pattern` key
+accepts one of three forms:
 
-- an inline table tagged with the matcher kind —
-  `error_name_pattern = { suffix = "Error" }` (the default) or
-  `error_name_pattern = { regex = ".*(Error|Failure)$" }`. The two
-  keys are mutually exclusive; specifying both is a config error;
-- a bare string, accepted as shorthand for the `suffix` form
-  (`error_name_pattern = "Error"` is equivalent to
-  `error_name_pattern = { suffix = "Error" }`) so the common case
-  stays one line;
-- `false` to disable the sub-check entirely (TOML has no `null`
-  literal, so `false` is the off switch; the absent/default case
-  applies the `{ suffix = "Error" }` matcher above).
+```toml
+[error_type_derives]
+# Inline table tagged with the matcher kind. The default.
+error_name_pattern = { suffix = "Error" }
+# …or a regex matcher:
+# error_name_pattern = { regex = ".*(Error|Failure)$" }
+# `suffix` and `regex` are mutually exclusive; specifying both is a
+# config error.
+
+# Bare-string shorthand for the `suffix` form. The two lines below
+# are equivalent.
+error_name_pattern = "Error"
+error_name_pattern = { suffix = "Error" }
+
+# `false` disables the sub-check entirely (TOML has no `null`
+# literal, so `false` is the off switch). Omitting the key applies
+# the default `{ suffix = "Error" }` matcher.
+error_name_pattern = false
+```
 
 The check is one-directional: a type that *matches* the convention
 but does not implement `Error` is not flagged here, because matching
