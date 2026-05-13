@@ -178,12 +178,13 @@ fn _arrow_separator_skipped(left: u32, right: u32) {
     let _ = arrow_separator_macro!(left -> right);
 }
 
-// Skipped: a top-level `in` keyword is a DSL separator (`for_each!(x
-// in iter, ...)`-style matchers), not a Rust expression operator —
-// `in` only appears inside `for` loop heads, which the macro's
-// argument position cannot be. Without the skip the walker would
-// consume the LHS path, leave `in iter` as residue, and emit a
-// let-bind hint that does not parse.
+// Skipped: a top-level `in` keyword usually indicates a DSL separator
+// (`for_each!(x in iter, ...)`-style matchers) rather than a Rust
+// expression. A bare `for x in iter { ... }` macro argument is also a
+// real Rust expression containing a top-level `in`, and the heuristic
+// will skip that too; the trade-off favours the DSL-matcher case,
+// which has been reported in the wild, over the `for`-expression case,
+// which has not. The principled fix (#64) is a parser-based reparse.
 fn _in_keyword_separator_skipped() {
     let _ = in_separator_macro!(item in container);
 }
