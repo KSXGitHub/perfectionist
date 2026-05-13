@@ -56,9 +56,13 @@ despite being the *successful* return type of
 
 The check is a heuristic, not an absolute defect: small unit-style
 error enums (`enum ParseError { Empty, Negative }`) are legitimate
-`Copy` errors. Suppress with
-`#[allow(perfectionist::error_type_derives::copyable_error)]` on the
-type when the heuristic misfires.
+`Copy` errors. Suppress with `#[allow(perfectionist::copyable_error)]`
+on the type when the heuristic misfires. (The `error_type_derives::`
+prefix used throughout this file is a documentation label grouping
+the sub-checks under one banner; per the
+[lint-name namespacing convention](./IMPLEMENTATION_CONVENTIONS.md#lint-name-namespacing)
+each sub-check is registered as a flat tool lint
+`perfectionist::<sub_check_name>`.)
 
 ### `error_type_derives::unconventional_error_name`
 
