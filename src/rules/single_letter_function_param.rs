@@ -50,13 +50,13 @@ const DEFAULT_FN_PARAM_ALLOWLIST: &[&str] = &["n", "f", "i", "j", "k"];
 struct Config {
     /// Identifiers that are always allowed as function or method
     /// parameter names. Defaults to `["n", "f", "i", "j", "k"]`.
-    fn_param_allowed_idents: Vec<String>,
+    allowed_idents: Vec<String>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            fn_param_allowed_idents: DEFAULT_FN_PARAM_ALLOWLIST
+            allowed_idents: DEFAULT_FN_PARAM_ALLOWLIST
                 .iter()
                 .map(|s| (*s).to_owned())
                 .collect(),
@@ -65,14 +65,14 @@ impl Default for Config {
 }
 
 pub struct SingleLetterFunctionParam {
-    fn_param_allowed_idents: BTreeSet<String>,
+    allowed_idents: BTreeSet<String>,
 }
 
 impl SingleLetterFunctionParam {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
-            fn_param_allowed_idents: config.fn_param_allowed_idents.into_iter().collect(),
+            allowed_idents: config.allowed_idents.into_iter().collect(),
         }
     }
 }
@@ -112,7 +112,7 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterFunctionParam {
             if !is_single_ascii_letter(ident.name.as_str()) {
                 continue;
             }
-            if self.fn_param_allowed_idents.contains(ident.name.as_str()) {
+            if self.allowed_idents.contains(ident.name.as_str()) {
                 continue;
             }
             span_lint_and_help(

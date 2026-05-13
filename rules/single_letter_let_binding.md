@@ -34,7 +34,7 @@ let metadata = entry.metadata()?;
 
 Configure via `dylint.toml` under `["perfectionist::single_letter_let_binding"]`. Every field is optional; the per-field prose below states the default.
 
-### `let_binding_allowed_idents`: `[string]` (optional)
+### `allowed_idents`: `[string]` (optional)
 
 Identifiers that are always allowed as `let` binding
 names, even outside `#[cfg(test)]` code. Defaults to

@@ -25,7 +25,7 @@ declare_tool_lint! {
     /// letter, unless the closure is a trivial single-expression
     /// callback. Two shapes qualify as trivial:
     /// - the closure is the immediate argument of a call whose
-    ///   callee name is in the comparison / fold allowlist
+    ///   callee name is in the trivial-callback allowlist
     ///   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
     ///   `binary_search_by`, `cmp_by`, `partial_cmp_by`,
     ///   `fold`, `try_fold`, …). The allowlist also covers the
@@ -74,7 +74,7 @@ const CONFIG_KEY: &str = "perfectionist::single_letter_closure_param";
 /// Default allowlist of method names whose closure argument may
 /// use single-letter parameters when the body is a single
 /// expression. Both source documents agree on this list.
-const DEFAULT_COMPARISON_METHODS: &[&str] = &[
+const DEFAULT_TRIVIAL_CALLBACK_METHODS: &[&str] = &[
     "sort_by",
     "sort_unstable_by",
     "sort_by_key",
@@ -139,15 +139,17 @@ const DEFAULT_COMPARISON_METHODS: &[&str] = &[
 struct Config {
     /// Method / function names whose closure argument may carry
     /// single-letter parameters when the body is a single
-    /// expression. Extend this list to add project-specific DSL
-    /// helpers (`when`, `iter_by`, …).
-    comparison_methods: Vec<String>,
+    /// expression. Setting this option **replaces** the curated
+    /// default; to keep the defaults alongside a project-specific
+    /// helper such as `when` or `iter_by`, list every default
+    /// entry explicitly.
+    trivial_callback_methods: Vec<String>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            comparison_methods: DEFAULT_COMPARISON_METHODS
+            trivial_callback_methods: DEFAULT_TRIVIAL_CALLBACK_METHODS
                 .iter()
                 .map(|s| (*s).to_owned())
                 .collect(),
@@ -156,14 +158,14 @@ impl Default for Config {
 }
 
 pub struct SingleLetterClosureParam {
-    comparison_methods: BTreeSet<String>,
+    trivial_callback_methods: BTreeSet<String>,
 }
 
 impl SingleLetterClosureParam {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
-            comparison_methods: config.comparison_methods.into_iter().collect(),
+            trivial_callback_methods: config.trivial_callback_methods.into_iter().collect(),
         }
     }
 }
@@ -225,7 +227,7 @@ impl SingleLetterClosureParam {
         let Some(body_expr) = single_expression_body(body) else {
             return false;
         };
-        if self.is_in_comparison_call(lint_context, closure_expr) {
+        if self.parent_call_is_trivial_callback(lint_context, closure_expr) {
             return true;
         }
         if is_trivial_wrapper(body_expr, body.params) {
@@ -234,7 +236,7 @@ impl SingleLetterClosureParam {
         false
     }
 
-    fn is_in_comparison_call<'tcx>(
+    fn parent_call_is_trivial_callback<'tcx>(
         &self,
         lint_context: &LateContext<'tcx>,
         closure_expr: &'tcx hir::Expr<'tcx>,
@@ -242,6 +244,6 @@ impl SingleLetterClosureParam {
         let Some(name) = parent_call_callee_name(lint_context, closure_expr) else {
             return false;
         };
-        self.comparison_methods.contains(name.as_str())
+        self.trivial_callback_methods.contains(name.as_str())
     }
 }

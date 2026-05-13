@@ -1,5 +1,5 @@
 // Bad: `inner::their_macro!` is matched by the multi-segment entry
-// `inner::their_macro` in `extra_name_based`. The same machinery
+// `inner::their_macro` in `name_based_extra`. The same machinery
 // applies to a third-party macro referenced as
 // `somecrate::their_macro!` — multi-segment entries tail-match the
 // invocation path.
@@ -11,7 +11,7 @@
 // resolve; `#[macro_export]` hoists the macro into the root namespace
 // for the duration of this self-contained test. A real third-party
 // macro is already exported through its defining crate's module
-// structure, so users adding a qualified entry to `extra_name_based`
+// structure, so users adding a qualified entry to `name_based_extra`
 // do not need the attribute.
 
 #[macro_export]
