@@ -12,7 +12,7 @@ Flags closure parameters whose identifier is one ASCII
 letter, unless the closure is a trivial single-expression
 callback. Two shapes qualify as trivial:
 - the closure is the immediate argument of a call whose
-  callee name is in the comparison / fold allowlist
+  callee name is in the trivial-callback allowlist
   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
   `binary_search_by`, `cmp_by`, `partial_cmp_by`,
   `fold`, `try_fold`, …). The allowlist also covers the
@@ -55,9 +55,11 @@ Use instead:
 
 Configure via `dylint.toml` under `["perfectionist::single_letter_closure_param"]`. Every field is optional; the per-field prose below states the default.
 
-### `comparison_methods`: `[string]` (optional)
+### `trivial_callback_methods`: `[string]` (optional)
 
 Method / function names whose closure argument may carry
 single-letter parameters when the body is a single
-expression. Extend this list to add project-specific DSL
-helpers (`when`, `iter_by`, …).
+expression. Setting this option **replaces** the curated
+default; to keep the defaults alongside a project-specific
+helper such as `when` or `iter_by`, list every default
+entry explicitly.

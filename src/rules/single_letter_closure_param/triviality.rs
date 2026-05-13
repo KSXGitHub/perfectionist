@@ -7,7 +7,7 @@
 //!
 //! - the enclosing call's callee — recovered via
 //!   [`parent_call_callee_name`] — is on the rule's configured
-//!   comparison / fold allowlist, or
+//!   trivial-callback allowlist, or
 //! - the body is a trivial wrapper around one of the closure's
 //!   parameters (field access, method call, one-argument call,
 //!   reference), as decided by [`is_trivial_wrapper`].

@@ -48,7 +48,7 @@ declare_tool_lint! {
     /// well-known third-party macros (`vec!`, `format!`, `println!`,
     /// `assert_eq!`, `dbg!`, `log::info!`, `tracing::debug!`,
     /// `anyhow::bail!`, `maplit::hashmap!`, …), extended via
-    /// `extra_name_based` and overridden via `ignore`.
+    /// `name_based_extra` and overridden via `ignore`.
     ///
     /// Attribute-style invocations (`#[derive(...)]`, `#[serde(...)]`,
     /// etc.) are out of scope.
