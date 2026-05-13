@@ -106,8 +106,8 @@ despite being the *successful* return type of
 
 The check is a heuristic, not an absolute defect: small unit-style
 error enums (`enum ParseError { Empty, Negative }`) are legitimate
-`Copy` errors. Suppress with `#[allow(perfectionist::copyable_error)]`
-on the type when the heuristic misfires.
+`Copy` errors. Suppress per-type with
+`#[allow(perfectionist::copyable_error)]` when the heuristic misfires.
 
 ### `error_type_derives::unconventional_error_name`
 
