@@ -66,4 +66,4 @@ name = "arc_rc_clone"
 
 The two knobs compose: `disable` skips the rule's pass entirely, so its level is moot; `enable` installs the pass, and the level is then whatever rustc resolves from the per-site attributes (or the rule's default `Warn`). Listing the same rule under both `enable` and `disable` is a config error.
 
-The per-rule default (enabled / disabled) is documented in each rule's page in [`rules/`](https://github.com/KSXGitHub/perfectionist/tree/master/rules) as **Default state**.
+The per-rule default (enabled / disabled) is documented in each rule's page in [`rules/`](./rules/) as **Default state**.

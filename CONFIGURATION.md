@@ -11,7 +11,7 @@ The top-level `[perfectionist]` table of `dylint.toml` controls which rules' pas
 
 Rule names are unqualified — drop the `perfectionist::` prefix that appears in attributes and CLI flags. The optional `reason` field on each entry is preserved for human readers of `dylint.toml` and has no runtime effect.
 
-See [CONTROLLING_RULES.md](https://github.com/KSXGitHub/perfectionist/blob/master/CONTROLLING_RULES.md) for the broader picture of how `enable` / `disable` compose with lint-level attributes and `DYLINT_RUSTFLAGS`.
+See [CONTROLLING_RULES.md](./CONTROLLING_RULES.md) for the broader picture of how `enable` / `disable` compose with lint-level attributes and `DYLINT_RUSTFLAGS`.
 
 ## Per-rule configuration: `[perfectionist::<rule>]` tables
 
@@ -22,4 +22,4 @@ Each rule has its own configuration table under its full namespaced name, e.g.:
 require_for = "pub_crate"
 ```
 
-The available knobs for each rule are documented in that rule's planning file. Once a rule is implemented, the same information is reproduced in its module documentation and in [`rules/`](https://github.com/KSXGitHub/perfectionist/tree/master/rules).
+The available knobs for each rule are documented in that rule's planning file. Once a rule is implemented, the same information is reproduced in its module documentation and in [`rules/`](./rules/).
