@@ -47,19 +47,36 @@ scope for the initial rule.
 
 Configure via `dylint.toml` under `["perfectionist::unicode_ellipsis_in_panic_messages"]`. Every field is optional; the per-field prose below states the default.
 
-### `macros`: `[string]` (optional)
+### `extra_macros`: `[string]` (optional)
 
-Macros whose call site should be scanned for the flagged
-characters. Defaults to the standard panic and assertion
-macros (`panic`, `unimplemented`, `todo`, `unreachable`,
-`debug_unreachable`, and the `assert*` family). Override to
-add project-specific assertion-shaped macros, or to narrow
-the set when a project deliberately uses `…` in one of them.
+Additional macros whose call site should be scanned for
+the flagged characters. Merged with the built-in defaults
+(the standard panic and assertion macros — `panic`,
+`unimplemented`, `todo`, `unreachable`, `debug_unreachable`,
+and the `assert*` family); empty by default. Use this to
+add project-specific assertion-shaped macros without having
+to re-state the standard ones.
 
-### `methods`: `[string]` (optional)
+### `ignore_macros`: `[string]` (optional)
 
-Method names on `Option` / `Result` whose first argument is
-the panic message. Defaults to `expect` and `expect_err`.
+Macros to drop from the scanned set, even if they appear in
+the built-in defaults or in `extra_macros`. Empty by
+default; checked after the merge with the built-ins, so
+this knob always wins. Use it when a project deliberately
+uses `…` in one of the default macros.
+
+### `extra_methods`: `[string]` (optional)
+
+Additional method names on `Option` / `Result` whose first
+argument is the panic message. Merged with the built-in
+defaults (`expect`, `expect_err`); empty by default.
+
+### `ignore_methods`: `[string]` (optional)
+
+Methods to drop from the scanned set, even if they appear
+in the built-in defaults or in `extra_methods`. Empty by
+default; checked after the merge with the built-ins, so
+this knob always wins.
 
 ### `also_flag`: `[string]` (optional)
 
