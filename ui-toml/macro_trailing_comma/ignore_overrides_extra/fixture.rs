@@ -1,4 +1,4 @@
-// Skipped: `my_macro!` appears in both `extra_name_based` and
+// Skipped: `my_macro!` appears in both `name_based_extra` and
 // `ignore`. Per the rule spec, `ignore` is checked first, so the
 // missing multi-line trailing comma must NOT be flagged.
 

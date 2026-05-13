@@ -147,10 +147,10 @@ pattern that several rules call out by reference — live in
   like `#[derive(...)]` are out of scope. Two eligibility modes:
   **name-based**, a curated list of core/std and well-known
   third-party macros (easy, configurable via
-  `extra_name_based`), and **matcher-based**, an automatic walk
+  `name_based_extra`), and **matcher-based**, an automatic walk
   of `macro_rules!` matchers to detect the `$(,)?` / `$(,)*`
-  optional-trailing-comma idioms (harder, configurable via
-  `matcher_based`).
+  optional-trailing-comma idioms (harder, not yet implemented
+  and therefore not configurable).
 - [`macro-argument-binding.md`](./macro-argument-binding.md) —
   require non-trivial expressions passed to function-like and
   array-like macro invocations to be bound to a `let` first.
