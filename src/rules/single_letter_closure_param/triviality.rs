@@ -10,7 +10,8 @@
 //!   trivial-callback allowlist, or
 //! - the body is a trivial wrapper around one of the closure's
 //!   parameters (field access, method call, one-argument call,
-//!   reference), as decided by [`is_trivial_wrapper`].
+//!   reference, or a macro call), as decided by
+//!   [`is_trivial_wrapper`].
 //!
 //! The driver in [`super`] composes these helpers; this module
 //! holds the predicates themselves.
@@ -74,15 +75,32 @@ fn path_final_segment<'hir>(expr: &'hir hir::Expr<'hir>) -> Option<Symbol> {
 /// - a field access `param.field`,
 /// - a method call `param.foo(args)`,
 /// - a one-argument call `f(param)`,
-/// - a reference `&param`.
+/// - a reference `&param`,
+/// - a macro call (`vec![param]`, `dbg!(param)`,
+///   `format!("{param}")`, …).
 ///
-/// In every shape, `*` / `&` operators around the reference to
-/// the parameter are peeled by `is_param_ref` before matching,
-/// so `|s| (*s).foo()` and `|s| f(&*s)` both qualify.
+/// In every non-macro shape, `*` / `&` operators around the
+/// reference to the parameter are peeled by `is_param_ref`
+/// before matching, so `|s| (*s).foo()` and `|s| f(&*s)` both
+/// qualify.
+///
+/// Macro calls are accepted unconditionally on the basis that
+/// the body's expression span lies entirely inside a single
+/// macro invocation written by the user — the source text is a
+/// one-liner whose role is unambiguous from the call site, in
+/// the same spirit as the other shapes. The post-expansion HIR
+/// of `vec![param]`, `dbg!(param)`, `format!("{param}")`, etc.
+/// does not pattern-match any of the arms above (e.g. `vec!`
+/// expands to `<[_]>::into_vec(Box::new([param]))`), so without
+/// this branch the rule would false-positive on every macro
+/// callback body.
 pub(super) fn is_trivial_wrapper<'hir>(
     expr: &'hir hir::Expr<'hir>,
     params: &'hir [hir::Param<'hir>],
 ) -> bool {
+    if expr.span.from_expansion() {
+        return true;
+    }
     match expr.kind {
         hir::ExprKind::Field(receiver, _) => is_param_ref(receiver, params),
         hir::ExprKind::MethodCall(_, receiver, _, _) => is_param_ref(receiver, params),
