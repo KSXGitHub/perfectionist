@@ -74,15 +74,18 @@ name does not match the project's error-naming convention. The default
 pattern is the `Error` suffix, matching `std::io::Error`,
 `serde_json::Error`, the thiserror documentation's examples, and the
 parallel-disk-usage convention that motivated the rule. Configure
-under the `[error_type_derives]` table; the `error_name_pattern` key
-accepts one of four forms, shown below as four separately-pasteable
-snippets (each is a complete `[error_type_derives]` table on its
+under the `[unconventional_error_name]` table (registered as
+`[perfectionist::unconventional_error_name]` in the consumer's
+`dylint.toml` per the
+[lint-name namespacing convention](./IMPLEMENTATION_CONVENTIONS.md#lint-name-namespacing));
+the `error_name_pattern` key accepts one of five forms, shown below
+as separately-pasteable snippets (each is a complete table on its
 own — pick one):
 
 The default. Equivalent to omitting the key entirely:
 
 ```toml
-[error_type_derives]
+[unconventional_error_name]
 error_name_pattern = { suffix = "Error" }
 ```
 
@@ -90,25 +93,31 @@ A bare string is shorthand for the `suffix` form, so the common case
 stays one line:
 
 ```toml
-[error_type_derives]
+[unconventional_error_name]
 error_name_pattern = "Error"
 ```
 
 A list of suffixes, for projects that use more than one error-naming
 convention (e.g. both `Error` and `Failure`). The type's name matches
-if it ends with any element. A bare list of strings is also accepted
-as shorthand for `{ suffix = [...] }`:
+if it ends with any element:
 
 ```toml
-[error_type_derives]
+[unconventional_error_name]
 error_name_pattern = { suffix = ["Error", "Failure"] }
+```
+
+A bare list of strings is shorthand for `{ suffix = [...] }`:
+
+```toml
+[unconventional_error_name]
+error_name_pattern = ["Error", "Failure"]
 ```
 
 `false` disables the sub-check entirely. TOML has no `null` literal,
 so `false` is the off switch:
 
 ```toml
-[error_type_derives]
+[unconventional_error_name]
 error_name_pattern = false
 ```
 
@@ -117,6 +126,11 @@ Regex is intentionally *not* offered as a matcher form. See
 for the project-wide rationale; for this rule specifically, suffix
 matching covers the realistic configuration space without a regex
 dependency.
+
+Suppress per-type with
+`#[allow(perfectionist::unconventional_error_name)]` when the
+mismatch is intentional (e.g. a public type whose existing name
+cannot be changed without a breaking release).
 
 The check is one-directional: a type that *matches* the convention
 but does not implement `Error` is not flagged here, because matching
@@ -185,13 +199,20 @@ pub enum ParsedValue { /* ... */ }
 ## Caveats
 
 - A type may be used as an error only via downstream crates, in which case
-  this lint will false-positive. Allow `#[allow(...)]` on the type, and
-  mention `pub` types in a softer category by default (configurable via
-  `error_type_derives.flag_pub_types = false`).
+  `unused_error` will false-positive. Allow `#[allow(...)]` on the type,
+  and mention `pub` types in a softer category by default (configurable
+  via `unused_error.flag_pub_types = false`, registered as
+  `[perfectionist::unused_error] flag_pub_types = false` in the
+  consumer's `dylint.toml`).
 
 ## Severity
 
 Warn for `unused_display`, `unused_error`, `copyable_error`, and
-`unconventional_error_name` — all four are heuristics that admit
-legitimate exceptions. Deny for `missing_error`, because using a
-non-`Error` type as the error half of `Result` is almost always a bug.
+`unconventional_error_name`. Each admits legitimate exceptions:
+`unused_display` and `unused_error` may flag types that are only
+used through downstream crates (closed-world assumption);
+`copyable_error` may flag legitimate `Copy` unit-style errors; and
+`unconventional_error_name` may flag a type whose name cannot be
+changed without a breaking release. Deny for `missing_error`,
+because using a non-`Error` type as the error half of `Result` is
+almost always a bug.
