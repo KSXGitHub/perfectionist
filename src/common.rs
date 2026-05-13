@@ -42,11 +42,14 @@ pub(crate) fn binding_hir_id<'hir>(pat: &'hir hir::Pat<'hir>) -> Option<hir::Hir
 
 /// Merge a curated built-in allowlist of `&str` defaults with a
 /// user-supplied `extras` list, then subtract every entry in
-/// `ignore`. Used by every rule whose config follows the
-/// `extra_<thing>` / `ignore_<thing>` pair convention. The
-/// `BTreeSet` return is convenient for set membership lookups and
-/// has the side benefit of dropping duplicates when defaults and
-/// extras overlap; callers that need a `Vec`-shaped result can
+/// `ignore`. Used by rules whose runtime allowlist key remains
+/// a `String` (currently just `non_exhaustive_error`, whose
+/// suffix lookup is `str::ends_with`-shaped); the four rules
+/// whose late-pass lookup key is a [`Symbol`] use the sibling
+/// [`merge_symbol_allowlist`] instead. The `BTreeSet` return is
+/// convenient for set membership lookups and has the side
+/// benefit of dropping duplicates when defaults and extras
+/// overlap; callers that need a `Vec`-shaped result can
 /// `.into_iter().collect()` it themselves.
 pub(crate) fn merge_string_allowlist(
     defaults: &[&str],

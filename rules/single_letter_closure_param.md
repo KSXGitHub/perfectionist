@@ -70,7 +70,7 @@ to re-state the standard ones.
 
 Method / function names to drop from the allowlist, even if
 they appear in the built-in defaults or in
-`extra_trivial_callback_methods`. Useful for opting back
-into linting on a default entry the project does not
-consider trivial. Empty by default; checked after the merge
-with the built-ins, so this knob always wins.
+`extra_trivial_callback_methods`. Empty by default; checked
+after the merge with the built-ins, so this knob always
+wins. Useful for opting back into linting on a default
+entry the project does not consider trivial.
