@@ -126,10 +126,12 @@ pub fn synth_generic(input: TokenStream) -> TokenStream {
 }
 
 /// `#[derive(SynthClosure)]` + `#[synth_closure]` →
-/// `const _: () = { let _ = |x| { let _ = 1; x }; };` where the
-/// closure parameter `x` inherits the user-span of `synth_closure`.
-/// The body is non-trivial so the single-letter-closure-param rule
-/// would fire on hand-written equivalent code.
+/// `fn _synth_closure_body() { let _ = (|x| { let _ = 1; x })(0u32); }`
+/// where the closure parameter `x` inherits the user-span of
+/// `synth_closure`. The body is non-trivial so the
+/// single-letter-closure-param rule would fire on hand-written
+/// equivalent code; the trailing `(0u32)` call pins the closure
+/// parameter's type so the function typechecks.
 #[proc_macro_derive(SynthClosure, attributes(synth_closure))]
 pub fn synth_closure(input: TokenStream) -> TokenStream {
     let attr_span = find_attr_span(input, "synth_closure")
@@ -168,7 +170,7 @@ pub fn synth_closure(input: TokenStream) -> TokenStream {
 }
 
 /// `#[derive(SynthArcClone)]` + `#[synth_arc]` →
-/// `const _: () = { let arc = std::sync::Arc::new(1u32); let _ = arc.clone(); };`
+/// `fn _synth_arc_clone_body() { let arc = std::sync::Arc::new(1u32); let _ = arc.clone(); }`
 /// where the `.clone()` method-call segment inherits the user-span
 /// of `synth_arc`. Exercises the method-call shape the
 /// `arc_rc_clone` rule fires on.
