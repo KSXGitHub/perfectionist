@@ -48,7 +48,7 @@ enum RuleSelector {
     Name(String),
     Verbose {
         name: String,
-        #[allow(
+        #[expect(
             dead_code,
             reason = "decorative field for human readers of dylint.toml"
         )]
