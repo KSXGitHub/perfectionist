@@ -4,8 +4,11 @@
 
 Name-based eligibility is **implemented** in `src/rules/macro_trailing_comma.rs`
 with the curated `core` / `std` and well-known third-party list,
-plus the `extra_name_based`, `ignore`, and `enabled` configuration
-knobs. The `matcher_based` knob is accepted but currently a no-op.
+plus the `name_based_extra`, `ignore`, and `enabled` configuration
+knobs. The matcher-based half is not yet implemented and its
+configuration is therefore not exposed — see
+[`macro-argument-binding.md`](./macro-argument-binding.md) for the
+sibling rule's handling of the same convention.
 
 The "Vertical only applies to block-indent layouts" caveat from
 the "What to lint" section is also implemented: any multi-line
@@ -20,7 +23,7 @@ Still pending: **matcher-based** declarative-macro auto-detection
 (the `$(,)?` / `$(,)*` matcher walk described under "Matcher-based
 — declarative-macro auto-detection" and "Why matcher-based is
 harder than name-based" below). Until that lands, only macros named
-in the curated list or in `extra_name_based` are linted; any
+in the curated list or in `name_based_extra` are linted; any
 `macro_rules!` macro the user writes themselves is silently
 ineligible regardless of its matcher shape.
 
@@ -114,7 +117,7 @@ this rule restricts itself to `MacCall` to keep the
 implementation single-purpose.
 
 **Caveat — "comma-separated" means the rustfmt shape.** The
-curated list and `extra_name_based` should only include macros
+curated list and `name_based_extra` should only include macros
 where commas are *required between items* and *optional only at
 the trailing position* — the same policy rustfmt applies to
 function calls and struct literals. Macros that treat commas as
@@ -169,7 +172,7 @@ pattern.
 
 Name-based matching is a name-set lookup on the resolved macro
 `DefId`. The implementation is a `BTreeSet<&'static str>`
-initialised at plugin start, plus the user's `extra_name_based`
+initialised at plugin start, plus the user's `name_based_extra`
 paths.
 
 Matcher-based matching has to:
@@ -206,7 +209,7 @@ For every macro invocation:
    name-based and matcher-based eligibility.
 3. Decide eligibility:
    - If the path matches a name-based entry (built-in or
-     user-configured via `extra_name_based`), eligible.
+     user-configured via `name_based_extra`), eligible.
    - Otherwise, if matcher-based detection is enabled and the
      macro is a visible declarative macro whose matched arm
      ends in `$(,)?` or `$(,)*` (per the predicate above),
@@ -397,7 +400,7 @@ macro_rules! dir {
 // top-level `$(,)?`. Matcher-based detection's predicate
 // (`$(,)?` at the tail of the top-level matcher) doesn't
 // match, so the lint correctly leaves the call alone. The
-// macro must also not be added to `extra_name_based` — users
+// macro must also not be added to `name_based_extra` — users
 // who write entries without any commas would otherwise get a
 // stray trailing comma against an otherwise comma-free style.
 dir! {
@@ -411,7 +414,7 @@ dir! {
 
 ```rust
 // Skipped: `my_proc::custom!` is a procedural macro and is
-// not in the user's `extra_name_based` list. The lint cannot
+// not in the user's `name_based_extra` list. The lint cannot
 // inspect a proc-macro grammar.
 my_proc::custom!(
     a,
@@ -427,12 +430,6 @@ my_proc::custom!(
 # Set to false to disable the rule entirely.
 enabled = true
 
-# Enable the matcher-based declarative-macro auto-detection.
-# Defaults on. Disable to fall back to a pure name-based policy
-# if matcher-based detection proves too noisy on a particular
-# codebase.
-matcher_based = true
-
 # Additional macros to treat as name-based matches, beyond the
 # built-in core/std and well-known third-party set. Each entry
 # is a fully-qualified macro path (no trailing `!`) or a bare
@@ -446,7 +443,7 @@ matcher_based = true
 #   way that loses the matcher).
 # - The macro is a procedural one whose author guarantees the
 #   trailing comma is optional.
-extra_name_based = [
+name_based_extra = [
   # "my_crate::my_macro",
   # "another_macro",
 ]
@@ -486,7 +483,7 @@ ignore = [
 - Macro path resolution: `MacCall::path` resolves to a `Res`
   via the resolver. From the resolved `DefId`, look the path
   up in the name-based list (built-in plus
-  `extra_name_based`). For matcher-based detection, fetch the
+  `name_based_extra`). For matcher-based detection, fetch the
   matcher arms from the resolved macro definition.
 - Token-tree inspection: `MacCall::args` carries a
   `DelimArgs` whose `tokens: TokenStream` is the raw user
@@ -542,8 +539,8 @@ the cross-crate "matcher not available" degradation. None of
 this is conceptually deep; the work is in covering the
 matcher grammar carefully and refusing to act when
 ambiguous. Recommend landing name-based first as a
-standalone PR, then layering matcher-based on top behind the
-`matcher_based` configuration knob.
+standalone PR, then layering matcher-based on top behind a
+new configuration knob added at the same time.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in

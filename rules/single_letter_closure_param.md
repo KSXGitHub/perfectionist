@@ -12,7 +12,7 @@ Flags closure parameters whose identifier is one ASCII
 letter, unless the closure is a trivial single-expression
 callback. Two shapes qualify as trivial:
 - the closure is the immediate argument of a call whose
-  callee name is in the comparison / fold allowlist
+  callee name is in the trivial-callback allowlist
   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
   `binary_search_by`, `cmp_by`, `partial_cmp_by`,
   `fold`, `try_fold`, …). The allowlist also covers the
@@ -55,22 +55,22 @@ Use instead:
 
 Configure via `dylint.toml` under `["perfectionist::single_letter_closure_param"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_comparison_methods`: `[string]` (optional)
+### `extra_trivial_callback_methods`: `[string]` (optional)
 
 Additional method / function names whose closure argument
 may carry single-letter parameters when the body is a
 single expression. The entries listed here are merged with
 the built-in allowlist rather than replacing it, so a
 project only needs to enumerate its own DSL helpers
-(`when`, `iter_by`, third-party comparators such as
+(`when`, `iter_by`, third-party callbacks such as
 `into_sorted_by`, …) and still benefits from the curated
 `core` / `std` defaults.
 
-### `ignore_comparison_methods`: `[string]` (optional)
+### `ignore_trivial_callback_methods`: `[string]` (optional)
 
 Method / function names to drop from the allowlist, even if
 they appear in the built-in defaults or in
-`extra_comparison_methods`. Useful for opting back into
-linting on a default entry the project does not consider
-trivial. Empty by default; checked after the merge with the
-built-ins, so this knob always wins.
+`extra_trivial_callback_methods`. Useful for opting back
+into linting on a default entry the project does not
+consider trivial. Empty by default; checked after the merge
+with the built-ins, so this knob always wins.

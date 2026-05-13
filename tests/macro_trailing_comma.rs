@@ -26,7 +26,7 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     enabled: Option<bool>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    extra_name_based: Vec<String>,
+    name_based_extra: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     ignore: Vec<String>,
 }
@@ -50,25 +50,25 @@ fn run(src_base: &str, config: RuleConfig) {
 }
 
 #[test]
-fn extra_name_based_enables_a_macro_by_bare_name() {
+fn name_based_extra_enables_a_macro_by_bare_name() {
     run(
-        "ui-toml/macro_trailing_comma/extra_name_based",
+        "ui-toml/macro_trailing_comma/name_based_extra",
         RuleConfig {
-            extra_name_based: vec!["my_macro".into()],
+            name_based_extra: vec!["my_macro".into()],
             ..Default::default()
         },
     );
 }
 
 #[test]
-fn extra_name_based_enables_a_macro_by_qualified_path() {
+fn name_based_extra_enables_a_macro_by_qualified_path() {
     // Multi-segment entries tail-match the invocation path, so a
     // third-party macro invoked as `inner::their_macro!` is matched
     // by the qualified entry `inner::their_macro`.
     run(
-        "ui-toml/macro_trailing_comma/extra_name_based_qualified",
+        "ui-toml/macro_trailing_comma/name_based_extra_qualified",
         RuleConfig {
-            extra_name_based: vec!["inner::their_macro".into()],
+            name_based_extra: vec!["inner::their_macro".into()],
             ..Default::default()
         },
     );
@@ -86,11 +86,11 @@ fn ignore_suppresses_a_built_in_curated_macro() {
 }
 
 #[test]
-fn ignore_wins_over_extra_name_based_for_the_same_macro() {
+fn ignore_wins_over_name_based_extra_for_the_same_macro() {
     run(
         "ui-toml/macro_trailing_comma/ignore_overrides_extra",
         RuleConfig {
-            extra_name_based: vec!["my_macro".into()],
+            name_based_extra: vec!["my_macro".into()],
             ignore: vec!["my_macro".into()],
             ..Default::default()
         },
@@ -100,7 +100,7 @@ fn ignore_wins_over_extra_name_based_for_the_same_macro() {
 #[test]
 fn ignore_supports_qualified_path_and_whitespace_padding() {
     // Two coverage gaps in one fixture: a multi-segment `ignore`
-    // entry (only `extra_name_based`'s multi-segment branch was
+    // entry (only `name_based_extra`'s multi-segment branch was
     // previously exercised), and `parse_path`'s per-segment
     // whitespace trim — the literal `"  std::vec  "` should still
     // match a `std::vec!(...)` invocation.

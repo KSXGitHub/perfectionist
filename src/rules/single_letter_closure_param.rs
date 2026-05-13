@@ -25,7 +25,7 @@ declare_tool_lint! {
     /// letter, unless the closure is a trivial single-expression
     /// callback. Two shapes qualify as trivial:
     /// - the closure is the immediate argument of a call whose
-    ///   callee name is in the comparison / fold allowlist
+    ///   callee name is in the trivial-callback allowlist
     ///   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
     ///   `binary_search_by`, `cmp_by`, `partial_cmp_by`,
     ///   `fold`, `try_fold`, …). The allowlist also covers the
@@ -74,7 +74,7 @@ const CONFIG_KEY: &str = "perfectionist::single_letter_closure_param";
 /// Default allowlist of method names whose closure argument may
 /// use single-letter parameters when the body is a single
 /// expression. Both source documents agree on this list.
-const DEFAULT_COMPARISON_METHODS: &[&str] = &[
+const DEFAULT_TRIVIAL_CALLBACK_METHODS: &[&str] = &[
     "sort_by",
     "sort_unstable_by",
     "sort_by_key",
@@ -142,32 +142,34 @@ struct Config {
     /// single expression. The entries listed here are merged with
     /// the built-in allowlist rather than replacing it, so a
     /// project only needs to enumerate its own DSL helpers
-    /// (`when`, `iter_by`, third-party comparators such as
+    /// (`when`, `iter_by`, third-party callbacks such as
     /// `into_sorted_by`, …) and still benefits from the curated
     /// `core` / `std` defaults.
-    extra_comparison_methods: Vec<String>,
+    extra_trivial_callback_methods: Vec<String>,
     /// Method / function names to drop from the allowlist, even if
     /// they appear in the built-in defaults or in
-    /// `extra_comparison_methods`. Useful for opting back into
-    /// linting on a default entry the project does not consider
-    /// trivial. Empty by default; checked after the merge with the
-    /// built-ins, so this knob always wins.
-    ignore_comparison_methods: Vec<String>,
+    /// `extra_trivial_callback_methods`. Useful for opting back
+    /// into linting on a default entry the project does not
+    /// consider trivial. Empty by default; checked after the merge
+    /// with the built-ins, so this knob always wins.
+    ignore_trivial_callback_methods: Vec<String>,
 }
 
 pub struct SingleLetterClosureParam {
-    comparison_methods: BTreeSet<String>,
+    trivial_callback_methods: BTreeSet<String>,
 }
 
 impl SingleLetterClosureParam {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let comparison_methods = merge_string_allowlist(
-            DEFAULT_COMPARISON_METHODS,
-            config.extra_comparison_methods,
-            config.ignore_comparison_methods,
+        let trivial_callback_methods = merge_string_allowlist(
+            DEFAULT_TRIVIAL_CALLBACK_METHODS,
+            config.extra_trivial_callback_methods,
+            config.ignore_trivial_callback_methods,
         );
-        Self { comparison_methods }
+        Self {
+            trivial_callback_methods,
+        }
     }
 }
 
@@ -228,7 +230,7 @@ impl SingleLetterClosureParam {
         let Some(body_expr) = single_expression_body(body) else {
             return false;
         };
-        if self.is_in_comparison_call(lint_context, closure_expr) {
+        if self.parent_call_is_trivial_callback(lint_context, closure_expr) {
             return true;
         }
         if is_trivial_wrapper(body_expr, body.params) {
@@ -237,7 +239,7 @@ impl SingleLetterClosureParam {
         false
     }
 
-    fn is_in_comparison_call<'tcx>(
+    fn parent_call_is_trivial_callback<'tcx>(
         &self,
         lint_context: &LateContext<'tcx>,
         closure_expr: &'tcx hir::Expr<'tcx>,
@@ -245,6 +247,6 @@ impl SingleLetterClosureParam {
         let Some(name) = parent_call_callee_name(lint_context, closure_expr) else {
             return false;
         };
-        self.comparison_methods.contains(name.as_str())
+        self.trivial_callback_methods.contains(name.as_str())
     }
 }
