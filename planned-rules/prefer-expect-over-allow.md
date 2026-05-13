@@ -34,9 +34,9 @@ This is a stylistic preference, not a correctness issue.
 
 For every `#[allow(<lints>, ...)]` attribute — including the
 `cfg_attr`-wrapped form `#[cfg_attr(<cfg>, allow(...))]`, and
-the inner-attribute form `#![allow(...)]` *when
-`apply_to_outer_scopes = true`* — if every lint named in the
-attribute is one of:
+(only when `apply_to_outer_scopes = true`) the inner-attribute
+form `#![allow(...)]` plus any outer `#[allow(...)]` placed on
+a module item — if every lint named in the attribute is one of:
 
 - A built-in rustc lint (`unused_variables`, `dead_code`, …) not
   on the exempt list below.

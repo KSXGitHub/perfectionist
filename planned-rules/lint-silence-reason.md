@@ -95,20 +95,28 @@ pub fn parse(/* ... */) {}
 
 ## Autofix
 
-For the missing-reason case: insert `, reason = ""` immediately
-before the closing `)` of the attribute's argument list.
-`Applicability::HasPlaceholders` — the empty string is a
-placeholder the author fills in.
+For the missing-reason case, insert a new `reason = ""` entry
+into the attribute's argument list. `Applicability::HasPlaceholders`
+— the empty string is a placeholder the author fills in. The
+insertion site and surrounding punctuation depend on the
+attribute's existing layout:
+
+- **Single line, no trailing comma**
+  (`#[allow(foo)]`): insert `, reason = ""` before the closing
+  `)`, producing `#[allow(foo, reason = "")]`.
+- **Single line, trailing comma**
+  (`#[allow(foo,)]`): insert ` reason = "",` before the closing
+  `)`, producing `#[allow(foo, reason = "",)]`.
+- **Multi-line**: insert a new line `reason = "",` immediately
+  before the line carrying the closing `)`, matching the
+  indentation of the preceding argument. If the last argument
+  on its own line lacks a trailing comma, add one when inserting.
 
 For a `cfg_attr`-wrapped lint attribute
-(`#[cfg_attr(<cfg>, allow(...))]`), the closing `)` targeted is
-the *inner* `allow(...)` / `expect(...)` argument list, not the
-outer `cfg_attr` one. The inner-attribute form `#![allow(...)]`
-uses the same insertion point as the outer form.
-
-If the attribute is laid out across multiple lines, the
-suggestion keeps the `reason` entry on its own line matching the
-existing indentation.
+(`#[cfg_attr(<cfg>, allow(...))]`), the *inner* `allow(...)` /
+`expect(...)` argument list is the target, not the outer
+`cfg_attr` one. The inner-attribute form `#![allow(...)]` uses
+the same insertion mechanic as the outer form.
 
 The too-short case has no autofix: the lint cannot synthesise a
 longer rationale on the author's behalf. The diagnostic points
@@ -139,10 +147,9 @@ min_reason_length = 3
   attributes, walk into the `cfg_attr` argument list and apply
   the same match to each inner attribute — `src/enclosing_hir.rs`
   carries the established walker shape; reuse it here.
-- Iterate `attr.meta_item_list()` (or the equivalent inner
-  meta-item list for `cfg_attr`-wrapped attributes) and check
-  whether any item has the shape `reason = "<str>"`. If absent,
-  emit at the attribute's span.
+- Use `src/common.rs::attr_has_reason` to check whether the
+  attribute already carries a `reason = "<str>"` field; if
+  absent, emit at the attribute's span.
 - Per-named-lint handling: an attribute that names multiple
   lints (`#[allow(a, b)]`) is treated as a single relaxation
   for diagnostic purposes — one missing `reason` triggers one
