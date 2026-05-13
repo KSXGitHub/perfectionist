@@ -137,10 +137,12 @@ include_tool_namespaces = true
   `perfectionist::unicode_ellipsis_in_comments` lint (see
   `src/rules/unicode_ellipsis_in_comments.rs`) for locating
   comments by source range.
-- The Rust-string-literal escape helper is shared with
-  [`lint-downgrade-reason`](./lint-downgrade-reason.md)'s autofix
-  hint. Factor it into `src/common.rs::escape_rust_string_literal`
-  the first time either rule lands.
+- The Rust-string-literal escape helper used to render the
+  lifted comment as a `"..."` string belongs in
+  `src/common.rs::escape_rust_string_literal`; it has no other
+  consumers yet (the sibling reason-related rules insert an
+  empty string and so do not escape anything) but the helper is
+  general enough to live in the shared module from the start.
 
 ### Difficulty
 
@@ -166,8 +168,11 @@ Warn.
 - [`prefer-expect-over-allow`](./prefer-expect-over-allow.md) acts
   on the same attributes but does not touch the `reason` field.
   The two rewrites compose in either order.
-- [`lint-downgrade-reason`](./lint-downgrade-reason.md) requires
-  that `#[allow]` / `#[expect]` carry a `reason` field. When the
-  rationale is currently written as a comment, this rule fires
-  first and lifts the comment; `lint-downgrade-reason` then sees
-  the `reason` field and stays silent.
+- [`lint-silence-reason`](./lint-silence-reason.md) requires
+  that every `#[allow]` / `#[expect]` carry a `reason` field;
+  [`lint-downgrade-reason`](./lint-downgrade-reason.md) extends
+  the same requirement to `#[warn]` / `#[allow]` / `#[expect]`
+  that lower an inherited level. When the rationale is
+  currently written as a comment, this rule fires first and
+  lifts the comment; the sibling rules then see the `reason`
+  field and stay silent.

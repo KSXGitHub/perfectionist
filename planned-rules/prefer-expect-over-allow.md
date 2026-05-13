@@ -196,9 +196,13 @@ Warn.
   an adjacent comment into the attribute's `reason` field before
   this rule rewrites `allow` → `expect`. The two rewrites
   compose in either order.
-- [`lint-downgrade-reason`](./lint-downgrade-reason.md)'s
-  `silenced_without_reason` sub-lint requires a `reason` field on
-  every `#[allow]` and `#[expect]`. After this rule rewrites
-  `allow` → `expect`, the `reason` requirement still applies; the
-  two rules together produce the canonical form
-  `#[expect(<lint>, reason = "...")]`.
+- [`lint-silence-reason`](./lint-silence-reason.md) requires a
+  `reason` field on every `#[allow]` and `#[expect]`. After this
+  rule rewrites `allow` → `expect`, the `reason` requirement
+  still applies; the two rules together produce the canonical
+  form `#[expect(<lint>, reason = "...")]`.
+- [`lint-downgrade-reason`](./lint-downgrade-reason.md) is
+  orthogonal: it cares about the level relative to the
+  inherited level, and `allow` and `expect` rank equally in
+  that comparison, so this rule's rewrite does not change
+  whether it fires.
