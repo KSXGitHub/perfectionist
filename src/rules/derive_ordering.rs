@@ -129,6 +129,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
+    if !crate::common::is_enabled("derive_ordering", true) {
+        return;
+    }
     // Pre-expansion: derives are consumed during macro expansion, so
     // a regular (post-expansion) `EarlyLintPass` no longer sees the
     // `#[derive(...)]` attribute by the time `check_attribute` would

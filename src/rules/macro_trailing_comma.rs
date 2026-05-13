@@ -101,6 +101,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
+    if !crate::common::is_enabled("macro_trailing_comma", true) {
+        return;
+    }
     // Split across two passes per
     // <https://github.com/KSXGitHub/parallel-disk-usage/issues/409>:
     // pre-expansion sees the `MacCall` tokens but runs before

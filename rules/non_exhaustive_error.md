@@ -2,7 +2,7 @@
 
 # `perfectionist::non_exhaustive_error`
 
-**Default level:** `allow`  
+**Default state:** `disabled`  
 **Source:** [`src/rules/non_exhaustive_error.rs`](../src/rules/non_exhaustive_error.rs)
 
 > error-shaped type is missing `#[non_exhaustive]`
@@ -30,9 +30,10 @@ enum.
 The opinion is opt-in: some projects deliberately use exhaustive
 error enums to force downstream consumers to handle every new
 variant, and binary crates have no SemVer surface to protect.
-The lint therefore defaults to `Allow` — enable it per crate
-with `#![warn(perfectionist::non_exhaustive_error)]` (or
-`deny`) on projects that want it.
+The rule therefore ships disabled by default — enable it per
+crate by adding `enable = ["non_exhaustive_error"]` (or
+`[[perfectionist.enable]] name = "non_exhaustive_error"`) to
+the `[perfectionist]` table of `dylint.toml`.
 
 ## Example
 ```rust,ignore

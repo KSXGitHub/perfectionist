@@ -28,6 +28,13 @@ pub(crate) fn rule_file_name(rule: &Rule) -> String {
     format!("{}.md", unnamespaced(&rule.namespaced))
 }
 
+/// One-word label for the "Default state" field. Centralised so the
+/// per-rule heading and the README's bullet list agree, and so a
+/// future change to the wording (e.g. `on`/`off`) is a one-site edit.
+fn default_state_word(default_enabled: bool) -> &'static str {
+    if default_enabled { "enabled" } else { "disabled" }
+}
+
 /// Filename of the per-directory index. `README.md` so GitHub
 /// renders it automatically when a user browses the `rules/`
 /// directory in the web UI.
@@ -61,8 +68,8 @@ pub(crate) fn render_rule_md(rule: &Rule, source_link_prefix: &str) -> String {
     out.push('\n');
     let _ = writeln!(
         out,
-        "**Default level:** `{}`  ",
-        rule.level.to_string().to_ascii_lowercase()
+        "**Default state:** `{}`  ",
+        default_state_word(rule.default_enabled),
     );
     let source_path = source_path_str(rule);
     let _ = writeln!(
@@ -148,8 +155,8 @@ pub(crate) fn render_index_md(rules: &[Rule]) -> String {
         // the raw markdown source.
         let _ = writeln!(
             out,
-            "- [`{name}`](./{name}.md) (default: `{level}`).",
-            level = rule.level.to_string().to_ascii_lowercase(),
+            "- [`{name}`](./{name}.md) (default: `{state}`).",
+            state = default_state_word(rule.default_enabled),
         );
         let _ = writeln!(out);
         let _ = writeln!(out, "  {desc}", desc = rule.short_desc);
@@ -417,12 +424,12 @@ mod tests {
     use std::path::PathBuf;
 
     use super::*;
-    use crate::model::{ConfigField, EnumVariant, Level, TypeDoc, TypeKind};
+    use crate::model::{ConfigField, EnumVariant, TypeDoc, TypeKind};
 
     fn fake_rule() -> Rule {
         Rule {
             namespaced: "perfectionist::demo_rule".to_owned(),
-            level: Level::Warn,
+            default_enabled: true,
             short_desc: "demo rule used in tests".to_owned(),
             doc_markdown: "### What it does\nDoes a demo.".to_owned(),
             relative_source: PathBuf::from("src/rules/demo_rule.rs"),
@@ -437,13 +444,21 @@ mod tests {
     }
 
     #[test]
-    fn rule_md_includes_header_level_and_short_desc() {
+    fn rule_md_includes_header_state_and_short_desc() {
         let md = render_rule_md(&fake_rule(), "../");
         assert!(md.contains("# `perfectionist::demo_rule`\n"));
-        assert!(md.contains("**Default level:** `warn`"));
+        assert!(md.contains("**Default state:** `enabled`"));
         assert!(md.contains("> demo rule used in tests"));
         assert!(md.ends_with('\n'));
         assert!(!md.ends_with("\n\n"));
+    }
+
+    #[test]
+    fn rule_md_renders_disabled_state_for_opt_in_rules() {
+        let mut rule = fake_rule();
+        rule.default_enabled = false;
+        let md = render_rule_md(&rule, "../");
+        assert!(md.contains("**Default state:** `disabled`"));
     }
 
     #[test]
@@ -500,10 +515,10 @@ mod tests {
         let mut rule = fake_rule();
         rule.short_desc = "uses | inside".to_owned();
         let index = render_index_md(std::slice::from_ref(&rule));
-        // Each entry spans two lines: the link/level line, then a
+        // Each entry spans two lines: the link/state line, then a
         // blank line, then the indented short-description
         // continuation paragraph.
-        assert!(index.contains("- [`demo_rule`](./demo_rule.md) (default: `warn`).\n"));
+        assert!(index.contains("- [`demo_rule`](./demo_rule.md) (default: `enabled`).\n"));
         assert!(index.contains("\n  uses | inside\n"));
         // The bullet-list form needs no `|` escaping (unlike a
         // table) — the pipe in the description appears raw.

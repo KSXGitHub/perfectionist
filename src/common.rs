@@ -3,10 +3,125 @@
 //! Each helper lives here only because more than one rule needs it.
 //! Anything used by a single rule belongs in that rule's own file.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
+use std::sync::OnceLock;
 
 use rustc_hir as hir;
 use rustc_span::Symbol;
+
+/// Crate-wide configuration table, deserialised from the top-level
+/// `[perfectionist]` table of `dylint.toml`. Each entry of `enable`
+/// flips a rule that was off by default to on; each entry of
+/// `disable` flips a rule that was on by default (the common case)
+/// to off. The two arrays accept either a bare rule name (a string)
+/// or an inline `{ name, reason }` table — the `reason` field is
+/// decorative and ignored at runtime, present so config authors can
+/// leave a rationale next to the entry for future readers without
+/// hiding it in a TOML comment. Listing the same rule under both
+/// arrays is a config error.
+///
+/// "Enable" / "disable" deliberately doesn't mention lint levels: it
+/// toggles whether the rule's pass is installed at all. The lint
+/// itself stays registered either way, so `#[expect/allow/deny(
+/// perfectionist::<rule>)]` at the call site continues to resolve
+/// against the registered lint set; users that want to escalate a
+/// rule's level above `Warn` reach for `#![deny(perfectionist::
+/// <rule>)]` or `DYLINT_RUSTFLAGS=-D perfectionist::<rule>` as
+/// before — the only mechanism rustc actually exposes for level
+/// changes from outside the source.
+#[derive(Debug, Default, serde::Deserialize)]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
+struct GlobalConfig {
+    enable: Vec<RuleSelector>,
+    disable: Vec<RuleSelector>,
+}
+
+/// Each `enable` / `disable` entry deserialises from either a bare
+/// string or an inline `{ name = "...", reason = "..." }` table.
+/// `#[serde(untagged)]` is what makes the array mixable, so a
+/// config author can write
+/// `enable = ["a", { name = "b", reason = "rationale" }]` in a
+/// single literal array.
+#[derive(Debug, serde::Deserialize)]
+#[serde(untagged)]
+enum RuleSelector {
+    Name(String),
+    Verbose {
+        name: String,
+        #[allow(dead_code, reason = "decorative field for human readers of dylint.toml")]
+        reason: Option<String>,
+    },
+}
+
+impl RuleSelector {
+    fn name(&self) -> &str {
+        match self {
+            RuleSelector::Name(name) | RuleSelector::Verbose { name, .. } => name,
+        }
+    }
+}
+
+/// Resolved per-rule override map. `true` means the user explicitly
+/// listed the rule under `enable`; `false` means under `disable`.
+/// Rules absent from this map fall through to the per-rule default
+/// each `register_pass` declares.
+static GLOBAL_OVERRIDES: OnceLock<HashMap<String, bool>> = OnceLock::new();
+
+/// Parse the `[perfectionist]` table of `dylint.toml` and stash the
+/// resolved override map. Called from
+/// [`crate::register_lints`] immediately after
+/// [`dylint_linting::init_config`] so that every per-rule
+/// `register_pass` can consult [`is_enabled`] when deciding whether
+/// to install its pass.
+///
+/// Panics if any rule name appears under both `enable` and
+/// `disable` — that's a contradiction the runtime can't sensibly
+/// resolve, and silently picking one direction would hide a
+/// user-side mistake. Unknown rule names are silently ignored: the
+/// override map keys that don't match any registered rule have no
+/// effect (the rule never registers, so there's nothing to toggle),
+/// and validating against the registered set here would duplicate
+/// the existing `perfectionist::unknown_perfectionist_lints` rule's
+/// purpose at a config-loading layer that has no diagnostic surface.
+pub(crate) fn init_global_config() {
+    let config: GlobalConfig = dylint_linting::config_or_default("perfectionist");
+    let mut overrides: HashMap<String, bool> = HashMap::new();
+    for (selectors, enabled) in [(&config.enable, true), (&config.disable, false)] {
+        for selector in selectors {
+            let name = selector.name();
+            if let Some(prev) = overrides.insert(name.to_owned(), enabled)
+                && prev != enabled
+            {
+                panic!(
+                    "perfectionist: rule `{name}` listed under both `enable` and \
+                     `disable` in the `[perfectionist]` table of `dylint.toml`",
+                );
+            }
+        }
+    }
+    GLOBAL_OVERRIDES
+        .set(overrides)
+        .expect("init_global_config called twice");
+}
+
+/// Whether the rule named `name` (unqualified — no `perfectionist::`
+/// prefix) should have its pass installed. Resolution order:
+///
+/// 1. If `name` appears under `disable` in the `[perfectionist]`
+///    table, return `false`.
+/// 2. If it appears under `enable`, return `true`.
+/// 3. Otherwise return `default_enabled` — the per-rule baseline.
+///
+/// Each rule's `register_pass` passes its own baseline as
+/// `default_enabled`: most rules pass `true`; rules listed in
+/// `src/rules/<name>.rs` as `ENABLED_BY_DEFAULT: bool = false`
+/// pass `false` and ship turned off until the user opts in.
+pub(crate) fn is_enabled(name: &str, default_enabled: bool) -> bool {
+    let overrides = GLOBAL_OVERRIDES
+        .get()
+        .expect("is_enabled called before init_global_config");
+    overrides.get(name).copied().unwrap_or(default_enabled)
+}
 
 /// Whether `name` is exactly one ASCII letter (`a`..=`z` or
 /// `A`..=`Z`). Used by every `single_letter_*` rule.

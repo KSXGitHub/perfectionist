@@ -41,8 +41,18 @@ pub(crate) struct RenderContext<'a> {
 pub(crate) struct Rule {
     /// `perfectionist::flat_module_pattern` — used as the anchor.
     pub(crate) namespaced: String,
-    /// Default severity of the lint as declared in `declare_tool_lint!`.
-    pub(crate) level: Level,
+    /// Whether the rule's pass is registered out of the box, or only
+    /// after the user opts in via
+    /// `[perfectionist] enable = ["<rule>"]` in `dylint.toml`. Read
+    /// from a `pub(crate) const ENABLED_BY_DEFAULT: bool = ...;`
+    /// item in the rule's source file when present; absent
+    /// constants imply `true` (the catalogue default). The renderer
+    /// surfaces this as the "Default state" line in place of the old
+    /// "Default level" line — under the current convention every
+    /// rule's `declare_tool_lint!` level is `Warn`, so the user
+    /// signal worth surfacing per rule is whether the rule runs at
+    /// all, not what level it fires at.
+    pub(crate) default_enabled: bool,
     /// The third positional argument to `declare_tool_lint!`.
     pub(crate) short_desc: String,
     /// The concatenated `///` doc comment lines, in markdown form.
@@ -144,23 +154,17 @@ pub(crate) struct StructField {
 }
 
 /// The set of lint levels rustc / Dylint accept as the second
-/// positional argument to `declare_tool_lint!`. An unrecognised
-/// identifier here is a hard error rather than a silent fallback, so
-/// future additions to rustc's level list are caught immediately.
+/// positional argument to `declare_tool_lint!`. The catalogue's
+/// convention is that every rule declares `Warn`; rules that should
+/// be off out of the box live behind a
+/// `pub(crate) const ENABLED_BY_DEFAULT: bool = false;` instead of a
+/// stricter or looser level. The extractor still parses the
+/// identifier so a future rule that drifts from the convention
+/// trips a clear panic naming the file.
 #[derive(Debug, Clone, Copy, EnumString, Display)]
 pub(crate) enum Level {
     Warn,
     Deny,
     Forbid,
     Allow,
-}
-
-impl Level {
-    pub(crate) fn css_class(self) -> &'static str {
-        match self {
-            Level::Warn => "level-warn",
-            Level::Deny | Level::Forbid => "level-deny",
-            Level::Allow => "level-allow",
-        }
-    }
 }

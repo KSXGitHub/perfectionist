@@ -42,7 +42,7 @@ table.index th {
   background: #f6f8fa;
 }
 
-.level {
+.state {
   font-family: ui-monospace, SFMono-Regular, monospace;
   font-size: 0.8rem;
   padding: 0.1rem 0.45rem;
@@ -50,15 +50,11 @@ table.index th {
   margin-right: 0.5rem;
 }
 
-.level-warn {
-  background: #fff8c5;
+.state-enabled {
+  background: #dafbe1;
 }
 
-.level-deny {
-  background: #ffebe9;
-}
-
-.level-allow {
+.state-disabled {
   background: #eaeef2;
 }
 

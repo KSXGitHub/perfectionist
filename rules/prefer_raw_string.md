@@ -2,7 +2,7 @@
 
 # `perfectionist::prefer_raw_string`
 
-**Default level:** `warn`  
+**Default state:** `enabled`  
 **Source:** [`src/rules/prefer_raw_string.rs`](../src/rules/prefer_raw_string.rs)
 
 > string literal contains only raw-expressible escapes; prefer the raw-string form

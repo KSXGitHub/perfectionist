@@ -31,9 +31,37 @@ struct RuleConfig {
     ignore_suffixes: Option<Vec<String>>,
 }
 
+/// The `[perfectionist]` table, kept minimal so every fixture below
+/// turns the rule on. The rule ships disabled by default
+/// (`ENABLED_BY_DEFAULT = false` in `src/rules/non_exhaustive_error.rs`),
+/// so without this `enable` entry the pass would never register and
+/// the fixture's `pub enum FooError {}` wouldn't trigger a diagnostic.
+#[derive(serde::Serialize)]
+struct GlobalConfig {
+    enable: Vec<&'static str>,
+}
+
 fn dylint_toml(config: RuleConfig) -> String {
-    let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
-    toml::to_string(&table).expect("serialise rule config as dylint.toml")
+    // Serialise as two top-level tables: `[perfectionist]` (enables
+    // the rule globally) and `[perfectionist::non_exhaustive_error]`
+    // (per-rule knobs the test exercises). `toml::to_string` on a
+    // serde-friendly wrapper emits both with one call; building the
+    // string by concatenation would risk producing `[perfectionist]`
+    // table contents bleeding into the rule table when the rule
+    // config happens to be empty.
+    #[derive(serde::Serialize)]
+    struct WholeToml<'a> {
+        perfectionist: GlobalConfig,
+        #[serde(flatten)]
+        rule: BTreeMap<&'a str, RuleConfig>,
+    }
+    let whole = WholeToml {
+        perfectionist: GlobalConfig {
+            enable: vec!["non_exhaustive_error"],
+        },
+        rule: [(LINT_NAME, config)].into_iter().collect(),
+    };
+    toml::to_string(&whole).expect("serialise rule config as dylint.toml")
 }
 
 fn run(src_base: &str, config: RuleConfig) {
@@ -41,6 +69,14 @@ fn run(src_base: &str, config: RuleConfig) {
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), src_base)
         .dylint_toml(dylint_toml(config))
         .run();
+}
+
+#[test]
+fn baseline_sweep_with_rule_enabled() {
+    // The rule is off by default; this is the equivalent of the
+    // `ui/<rule>.rs` sweep every other rule has, just hosted under
+    // `ui-toml/` because it needs a `dylint.toml` to opt the rule in.
+    run("ui-toml/non_exhaustive_error/baseline", RuleConfig::default());
 }
 
 #[test]

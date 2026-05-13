@@ -25,15 +25,73 @@ Run the lints:
 cargo dylint --all -- --all-targets
 ```
 
-Each lint registers under the `perfectionist` tool namespace. Suppress a finding at a specific site by name. For example:
+Each lint registers under the `perfectionist` tool namespace. There are two independent knobs for controlling a rule:
+
+**1. Lint level (per site).** Use rustc's `#[allow]` / `#[warn]` / `#[deny]` / `#[forbid]` / `#[expect]` attributes at the call site or crate root to change how a finding is reported. For example:
 
 ```rust
 #[expect(perfectionist::unicode_ellipsis_in_comments, reason = "3 ASCII dots would be incorrect here")]
 ```
 
+To escalate a rule project-wide, add an attribute to `src/lib.rs` (`#![deny(perfectionist::single_letter_let_binding)]`) or set `DYLINT_RUSTFLAGS=-D perfectionist::<rule>` in the environment.
+
+**2. Rule registration (project-wide).** Each rule is either *enabled* (its pass runs) or *disabled* (its pass is never installed, so it produces no diagnostics at all). Most rules are enabled by default; a few — currently only `non_exhaustive_error` — ship disabled and require an explicit opt-in. Flip the registration state via the crate-wide `[perfectionist]` table in `dylint.toml`:
+
+```toml
+[perfectionist]
+enable = ["non_exhaustive_error"]
+disable = ["arc_rc_clone"]
+```
+
+Each entry can also be an inline table carrying a `reason` for the human reading the config later:
+
+```toml
+[perfectionist]
+enable = [{ name = "non_exhaustive_error", reason = "we publish libraries and care about SemVer surface" }]
+disable = [
+    "arc_rc_clone",
+    { name = "single_letter_closure_param", reason = "we use single-letter binders in math-heavy code" },
+]
+```
+
+The array-of-tables form is also accepted, and the two forms can be mixed across (and within) arrays:
+
+```toml
+[[perfectionist.enable]]
+name = "non_exhaustive_error"
+reason = "we publish libraries and care about SemVer surface"
+
+[[perfectionist.disable]]
+name = "arc_rc_clone"
+```
+
+The two knobs compose: `disable` skips the rule's pass entirely, so its level is moot; `enable` installs the pass, and the level is then whatever rustc resolves from the per-site attributes (or the rule's default `Warn`). Listing the same rule under both `enable` and `disable` is a config error.
+
+The per-rule default (enabled / disabled) is documented in each rule's page in [`rules/`](https://github.com/KSXGitHub/perfectionist/tree/master/rules) as **Default state**.
+
 ## Configuration
 
-Per-rule configuration is read from `dylint.toml` at the workspace root. The configuration knobs for each rule are documented in that rule's planning file. Once a rule is implemented, the same information is reproduced in its module documentation.
+### Crate-wide configuration: the `[perfectionist]` table
+
+The top-level `[perfectionist]` table of `dylint.toml` controls which rules' passes are installed. It has two keys; both are optional:
+
+| Key | Type | Meaning |
+| --- | --- | --- |
+| `enable` | array of rule names or `{ name, reason }` tables | Force-on the named rules, even if their per-rule default is `disabled`. |
+| `disable` | array of rule names or `{ name, reason }` tables | Force-off the named rules, even if their per-rule default is `enabled`. |
+
+Rule names are unqualified — drop the `perfectionist::` prefix that appears in attributes and CLI flags. The optional `reason` field on each entry is preserved for human readers of `dylint.toml` and has no runtime effect.
+
+### Per-rule configuration: `[perfectionist::<rule>]` tables
+
+Each rule has its own configuration table under its full namespaced name, e.g.:
+
+```toml
+[perfectionist::non_exhaustive_error]
+require_for = "pub_crate"
+```
+
+The available knobs for each rule are documented in that rule's planning file. Once a rule is implemented, the same information is reproduced in its module documentation and in [`rules/`](https://github.com/KSXGitHub/perfectionist/tree/master/rules).
 
 ## Development
 

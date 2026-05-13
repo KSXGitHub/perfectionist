@@ -182,6 +182,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
+    if !crate::common::is_enabled("single_letter_closure_param", true) {
+        return;
+    }
     lint_store.register_late_pass(|_| Box::new(SingleLetterClosureParam::new()));
 }
 

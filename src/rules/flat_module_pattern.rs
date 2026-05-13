@@ -64,6 +64,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 
 /// Install this rule's late pass.
 pub fn register_pass(lint_store: &mut LintStore) {
+    if !crate::common::is_enabled("flat_module_pattern", true) {
+        return;
+    }
     lint_store.register_late_pass(|_| Box::new(FlatModulePattern::new()));
 }
 

@@ -39,9 +39,10 @@ declare_tool_lint! {
     /// The opinion is opt-in: some projects deliberately use exhaustive
     /// error enums to force downstream consumers to handle every new
     /// variant, and binary crates have no SemVer surface to protect.
-    /// The lint therefore defaults to `Allow` — enable it per crate
-    /// with `#![warn(perfectionist::non_exhaustive_error)]` (or
-    /// `deny`) on projects that want it.
+    /// The rule therefore ships disabled by default — enable it per
+    /// crate by adding `enable = ["non_exhaustive_error"]` (or
+    /// `[[perfectionist.enable]] name = "non_exhaustive_error"`) to
+    /// the `[perfectionist]` table of `dylint.toml`.
     ///
     /// ### Example
     /// ```rust,ignore
@@ -59,10 +60,17 @@ declare_tool_lint! {
     /// }
     /// ```
     pub perfectionist::NON_EXHAUSTIVE_ERROR,
-    Allow,
+    Warn,
     "error-shaped type is missing `#[non_exhaustive]`",
     report_in_external_macro: false
 }
+
+/// Off by default — enable it in `dylint.toml` via the crate-wide
+/// `[perfectionist] enable = ["non_exhaustive_error"]` (or the
+/// `[[perfectionist.enable]]` array-of-tables form). Read by
+/// `register_pass` below; gen-docs picks the constant up via syn
+/// to render the rule's default state.
+pub(crate) const ENABLED_BY_DEFAULT: bool = false;
 
 const CONFIG_KEY: &str = "perfectionist::non_exhaustive_error";
 
@@ -166,6 +174,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 
 /// Install this rule's late pass.
 pub fn register_pass(lint_store: &mut LintStore) {
+    if !crate::common::is_enabled("non_exhaustive_error", ENABLED_BY_DEFAULT) {
+        return;
+    }
     lint_store.register_late_pass(|_| Box::new(NonExhaustiveError::new()));
 }
 

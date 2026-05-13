@@ -101,6 +101,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
+    if !crate::common::is_enabled("unicode_ellipsis_in_comments", true) {
+        return;
+    }
     lint_store.register_early_pass(|| Box::new(UnicodeEllipsisInComments::new()));
 }
 

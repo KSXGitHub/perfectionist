@@ -84,6 +84,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 /// has registered its lints, since the pass snapshots the registered
 /// `perfectionist::*` names from `lint_store` at construction time.
 pub fn register_pass(lint_store: &mut LintStore) {
+    if !crate::common::is_enabled("unknown_perfectionist_lints", true) {
+        return;
+    }
     let registered_lints: Vec<String> = collect_registered_lint_names(lint_store);
     lint_store.register_early_pass(move || {
         Box::new(UnknownPerfectionistLints::new(registered_lints.clone()))

@@ -92,6 +92,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
+    if !crate::common::is_enabled("macro_argument_binding", true) {
+        return;
+    }
     // Same split as `macro_trailing_comma`: a pre-expansion pass parks
     // violation spans, a late pass walks the HIR and emits each at the
     // deepest enclosing node so `cfg_attr`-wrapped `#[expect]` and

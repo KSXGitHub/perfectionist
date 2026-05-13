@@ -82,6 +82,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
+    if !crate::common::is_enabled("single_letter_generic", true) {
+        return;
+    }
     lint_store.register_late_pass(|_| Box::new(SingleLetterGeneric::new()));
 }
 

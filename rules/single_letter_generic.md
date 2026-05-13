@@ -2,7 +2,7 @@
 
 # `perfectionist::single_letter_generic`
 
-**Default level:** `warn`  
+**Default state:** `enabled`  
 **Source:** [`src/rules/single_letter_generic.rs`](../src/rules/single_letter_generic.rs)
 
 > generic type parameter has a single-letter name
