@@ -1,5 +1,5 @@
 warning: non-trivial expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:22:22
+  --> $DIR/macro_argument_binding.rs:30:22
    |
 LL |     debug_assert_eq!(map.insert(0, 0), None, "duplicate key");
    |                      ^^^^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL |     debug_assert_eq!(map.insert(0, 0), None, "duplicate key");
    = note: `#[warn(perfectionist::macro_argument_binding)]` on by default
 
 warning: non-trivial expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:28:19
+  --> $DIR/macro_argument_binding.rs:36:19
    |
 LL |     debug_assert!(value().is_some());
    |                   ^^^^^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ LL |     debug_assert!(value().is_some());
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: non-trivial expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:36:22
+  --> $DIR/macro_argument_binding.rs:44:22
    |
 LL |     debug_assert_ne!(value(), Some(0));
    |                      ^^^^^^^
@@ -24,7 +24,7 @@ LL |     debug_assert_ne!(value(), Some(0));
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: non-trivial expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:36:31
+  --> $DIR/macro_argument_binding.rs:44:31
    |
 LL |     debug_assert_ne!(value(), Some(0));
    |                               ^^^^^^^
@@ -32,7 +32,7 @@ LL |     debug_assert_ne!(value(), Some(0));
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: non-trivial expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:44:23
+  --> $DIR/macro_argument_binding.rs:52:23
    |
 LL |     let _ = my_macro!(value(), count);
    |                       ^^^^^^^
@@ -40,7 +40,7 @@ LL |     let _ = my_macro!(value(), count);
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: non-trivial expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:102:19
+  --> $DIR/macro_argument_binding.rs:110:19
    |
 LL |     debug_assert!(value().is_some());
    |                   ^^^^^^^^^^^^^^^^^
@@ -48,12 +48,60 @@ LL |     debug_assert!(value().is_some());
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: non-trivial expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:115:26
+  --> $DIR/macro_argument_binding.rs:123:26
    |
 LL |     let _ = await_macro!(future.await);
    |                          ^^^^^^^^^^^^
    |
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
-warning: 7 warnings emitted
+warning: non-trivial expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:169:27
+   |
+LL |     let _ = my_macro!((), value());
+   |                           ^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+
+warning: non-trivial expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:170:30
+   |
+LL |     let _ = my_macro!((MAX), value());
+   |                              ^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+
+warning: non-trivial expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:171:43
+   |
+LL |     let _ = my_macro!((point.0, point.1), value());
+   |                                           ^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+
+warning: non-trivial expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:172:31
+   |
+LL |     let _ = my_macro!((MAX,), value());
+   |                               ^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+
+warning: non-trivial expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:215:19
+   |
+LL |     debug_assert!(slice.clear() == ());
+   |                   ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+
+warning: non-trivial expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:225:19
+   |
+LL |     debug_assert!(text.parse::<u32>().is_ok());
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+
+warning: 13 warnings emitted
 
