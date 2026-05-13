@@ -164,7 +164,7 @@ pub fn synth_closure(input: TokenStream) -> TokenStream {
         TokenTree::Group(Group::new(Delimiter::Parenthesis, call_args)),
         TokenTree::Punct(Punct::new(';', Spacing::Alone)),
     ]);
-    wrap_fn_block(body)
+    wrap_fn_block("_synth_closure_body", body)
 }
 
 /// `#[derive(SynthArcClone)]` + `#[synth_arc]` →
@@ -207,7 +207,7 @@ pub fn synth_arc_clone(input: TokenStream) -> TokenStream {
         TokenTree::Group(Group::new(Delimiter::Parenthesis, TokenStream::new())),
         TokenTree::Punct(Punct::new(';', Spacing::Alone)),
     ]);
-    wrap_fn_block(body)
+    wrap_fn_block("_synth_arc_clone_body", body)
 }
 
 fn wrap_const_block(body: TokenStream) -> TokenStream {
@@ -225,17 +225,19 @@ fn wrap_const_block(body: TokenStream) -> TokenStream {
     out
 }
 
-/// Wrap a body in `fn _synth() { ... }` rather than `const _: () = { ... };`
+/// Wrap a body in `fn <fn_name>() { ... }` rather than `const _: () = { ... };`
 /// for derives whose synthesised body cannot be evaluated at compile
-/// time (closure calls, `Arc::new`, etc.). The function is unused so
-/// the body is never actually executed at runtime; rustc still
-/// typechecks it and the late lint pass still walks the HIR.
-fn wrap_fn_block(body: TokenStream) -> TokenStream {
+/// time (closure calls, `Arc::new`, etc.). Callers pass a distinct
+/// `fn_name` per derive so that two `wrap_fn_block`-using derives can
+/// be applied to the same crate without colliding. The function is
+/// unused so the body is never actually executed at runtime; rustc
+/// still typechecks it and the late lint pass still walks the HIR.
+fn wrap_fn_block(fn_name: &str, body: TokenStream) -> TokenStream {
     let call_site = Span::call_site();
     let mut out = TokenStream::new();
     out.extend([
         TokenTree::Ident(Ident::new("fn", call_site)),
-        TokenTree::Ident(Ident::new("_synth_body", call_site)),
+        TokenTree::Ident(Ident::new(fn_name, call_site)),
         TokenTree::Group(Group::new(Delimiter::Parenthesis, TokenStream::new())),
         TokenTree::Group(Group::new(Delimiter::Brace, body)),
     ]);
