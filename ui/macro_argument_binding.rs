@@ -193,11 +193,36 @@ fn _binary_chain_of_trivial_operands_accepted(left: u32, right: u32, point: (u32
 // `tests/macro_argument_binding.rs`). Combined with the binary-chain
 // rule above, `debug_assert!(vec.len() <= cap)` no longer drags the
 // comparison out of its `cfg(debug_assertions)` guard.
+//
+// `text: &String` (rather than `&str`) is deliberate: `str::as_str`
+// is currently nightly-only behind `str_as_str`, so `&str.as_str()`
+// would refuse to compile under the test harness's stable check.
+// `String::as_str` is stable and lets the fixture exercise the
+// pure-getter rule on a string-shaped receiver.
 fn _pure_method_postfix_accepted(slice: &[u32], text: &String) {
     debug_assert!(slice.len() <= MAX as usize);
     debug_assert!(slice.is_empty() || slice.len() < MAX as usize);
     debug_assert!(text.as_bytes().len() == text.as_str().len());
     debug_assert!(slice.as_ref().len() == slice.len());
+}
+
+// Negative coverage: a zero-arg method whose name is *outside* the
+// built-in pure-getter list still flags. `clear` is purely a state-
+// mutating method despite its zero-arg shape, so the rule must keep
+// flagging it under the default config (users who want it accepted
+// explicitly opt in via `extra_trivial_methods`).
+fn _zero_arg_mutating_method_flagged(slice: &mut Vec<u32>) {
+    debug_assert!(slice.clear() == ());
+}
+
+// Negative coverage: a turbofish-generic method call is non-trivial.
+// The `::<T>` token sequence sits between `.method` and `()`, so the
+// suffix walker's `.method()` recogniser does not match and the
+// argument falls through to the non-trivial bucket. Matches the
+// docstring promise that "method calls with arguments, generic
+// method calls, ... still flag".
+fn _turbofish_method_call_flagged(text: &str) {
+    debug_assert!(text.parse::<u32>().is_ok());
 }
 
 #[allow(dead_code)]

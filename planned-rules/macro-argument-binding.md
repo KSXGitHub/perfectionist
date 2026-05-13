@@ -184,6 +184,22 @@ hazard (side-effecting expressions like `map.insert(k, v)`
 passed where the macro might drop them) and away from the noise
 case (comparing two locals).
 
+### Caveats of the pure-getter postfix rule
+
+The pure-getter rule is **syntactic, name-based, type-blind**. A
+third-party type that defines an inherent method named
+`is_empty`, `len`, `as_bytes`, `as_ref`, … and that performs
+observable side effects in that method will be incorrectly
+accepted as trivial. The curated list is restricted to names
+whose pure-getter convention is essentially universal across the
+ecosystem, but the lint cannot prove the convention holds for
+any given call site. The inverse knob (an "exclude" list to
+forbid specific names from the built-in set) is intentionally
+not exposed; projects that hit this corner are expected to use
+`#[expect(perfectionist::macro_argument_binding)]` at the call
+site, since the workaround scales by exception rather than by
+configuration.
+
 ## Eligibility modes
 
 Four modes ordered by implementation cost. The default is

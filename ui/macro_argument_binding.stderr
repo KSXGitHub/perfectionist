@@ -87,5 +87,21 @@ LL |     let _ = my_macro!((MAX,), value());
    |
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
-warning: 11 warnings emitted
+warning: non-trivial expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:215:19
+   |
+LL |     debug_assert!(slice.clear() == ());
+   |                   ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+
+warning: non-trivial expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:225:19
+   |
+LL |     debug_assert!(text.parse::<u32>().is_ok());
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+
+warning: 13 warnings emitted
 

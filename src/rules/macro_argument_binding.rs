@@ -17,6 +17,7 @@
 //! arguments, skip non-expression arguments, classify expressions,
 //! park violation spans for the late pass to emit.
 
+use std::collections::BTreeSet;
 use std::sync::Mutex;
 
 use rustc_ast::MacCall;
@@ -145,7 +146,7 @@ impl EarlyLintPass for MacroArgumentBinding {
     }
 }
 
-fn check_argument(argument: &[TokenTree], trivial_methods: &std::collections::BTreeSet<String>) {
+fn check_argument(argument: &[TokenTree], trivial_methods: &BTreeSet<String>) {
     if argument.is_empty() {
         return;
     }
