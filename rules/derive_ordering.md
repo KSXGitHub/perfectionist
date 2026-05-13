@@ -62,3 +62,22 @@ Trait names that must appear first under the
 appear. Ignored under other styles. Matched by the final
 path segment, so a configured `"Debug"` matches both
 `Debug` and `std::fmt::Debug` written in the source.
+
+### Types
+
+#### `Style` (enum)
+
+##### `"preserve"` (Rust: `Preserve`)
+
+No-op. The lint emits nothing.
+
+##### `"alphabetical"` (Rust: `Alphabetical`)
+
+Every trait name must appear in ASCII-case-insensitive
+alphabetical order.
+
+##### `"prefix_then_alphabetical"` (Rust: `PrefixThenAlphabetical`)
+
+Traits listed in the configured `prefix` come first, in the
+listed order; remaining traits are sorted alphabetically
+after.
