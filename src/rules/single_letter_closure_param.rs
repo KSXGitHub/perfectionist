@@ -141,12 +141,12 @@ const DEFAULT_TRIVIAL_CALLBACK_METHODS: &[&str] = &[
 struct Config {
     /// Additional method / function names whose closure argument
     /// may carry single-letter parameters when the body is a
-    /// single expression. The entries listed here are merged with
-    /// the built-in allowlist rather than replacing it, so a
-    /// project only needs to enumerate its own DSL helpers
-    /// (`when`, `iter_by`, third-party callbacks such as
-    /// `into_sorted_by`, …) and still benefits from the curated
-    /// `core` / `std` defaults.
+    /// single expression. Merged with the built-in defaults (the
+    /// curated `core` / `std` callbacks plus selected `itertools`
+    /// and `into-sorted` adaptors); empty by default. List
+    /// project-specific DSL helpers (`when`, `iter_by`, third-party
+    /// callbacks such as `into_sorted_by`, …) here without having
+    /// to re-state the standard ones.
     extra_trivial_callback_methods: Vec<String>,
     /// Method / function names to drop from the allowlist, even if
     /// they appear in the built-in defaults or in
