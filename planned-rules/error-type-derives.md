@@ -16,8 +16,8 @@ Specifically:
   `std::error::Error` (the `Err` variant of a `Result`, or a `source`).
 - A type that only needs formatting and not error handling should derive
   `Display` without `Error`.
-- A type that does not look like an error — `Copy`, or named in a way
-  the project reserves for non-errors — probably should not derive
+- A type that does not look like an error — `impl Copy`, or named in a
+  way the project reserves for non-errors — probably should not derive
   `Error` in the first place, even before usage is considered.
 
 ## What to lint
