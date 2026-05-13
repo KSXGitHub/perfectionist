@@ -135,7 +135,7 @@ const DEFAULT_COMPARISON_METHODS: &[&str] = &[
 ];
 
 #[derive(Debug, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Method / function names whose closure argument may carry
     /// single-letter parameters when the body is a single

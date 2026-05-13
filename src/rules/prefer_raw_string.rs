@@ -77,7 +77,7 @@ declare_tool_lint! {
 const CONFIG_KEY: &str = "perfectionist::prefer_raw_string";
 
 #[derive(Debug, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Master on/off switch for the rule. Set to `false` to silence
     /// every diagnostic without enumerating individual literals.

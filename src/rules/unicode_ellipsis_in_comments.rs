@@ -40,7 +40,7 @@ declare_tool_lint! {
 const CONFIG_KEY: &str = "perfectionist::unicode_ellipsis_in_comments";
 
 #[derive(Debug, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Extra characters to flag alongside U+2026. Useful for catching
     /// near-relatives such as U+22EF MIDLINE HORIZONTAL ELLIPSIS (`⋯`)

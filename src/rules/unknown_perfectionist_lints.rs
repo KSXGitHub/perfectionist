@@ -38,7 +38,7 @@ const CONFIG_KEY: &str = "perfectionist::unknown_perfectionist_lints";
 const TOOL_NAME: &str = "perfectionist";
 
 #[derive(Debug, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Maximum Levenshtein edit distance between an unknown
     /// `perfectionist::*` name and a registered lint for the lint to

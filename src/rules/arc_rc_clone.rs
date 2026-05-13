@@ -75,7 +75,7 @@ const CONFIG_KEY: &str = "perfectionist::arc_rc_clone";
 /// `[perfectionist::arc_rc_clone]` table in `dylint.toml`
 /// deserialises rather than producing a confusing parse error.
 #[derive(Debug, Default, serde::Deserialize)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}
 
 pub struct ArcRcClone;
