@@ -45,35 +45,37 @@ const CONFIG_KEY: &str = "perfectionist::single_letter_function_param";
 /// indices).
 const DEFAULT_FN_PARAM_ALLOWLIST: &[&str] = &["n", "f", "i", "j", "k"];
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, rename_all = "snake_case")]
 struct Config {
-    /// Identifiers that are always allowed as function or method
-    /// parameter names. Defaults to `["n", "f", "i", "j", "k"]`.
-    fn_param_allowed_idents: Vec<String>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            fn_param_allowed_idents: DEFAULT_FN_PARAM_ALLOWLIST
-                .iter()
-                .map(|s| (*s).to_owned())
-                .collect(),
-        }
-    }
+    /// Additional identifiers to allow as function or method
+    /// parameter names. Merged with the built-in defaults
+    /// (`["n", "f", "i", "j", "k"]`); empty by default. Use this
+    /// to whitelist project-specific conventional names without
+    /// having to re-state the standard ones.
+    extra_allowed_idents: Vec<String>,
+    /// Identifiers to drop from the allowlist, even if they appear
+    /// in the built-in defaults or in `extra_allowed_idents`.
+    /// Empty by default; checked after the merge with the
+    /// built-ins, so this knob always wins.
+    ignore_allowed_idents: Vec<String>,
 }
 
 pub struct SingleLetterFunctionParam {
-    fn_param_allowed_idents: BTreeSet<String>,
+    allowed_idents: BTreeSet<String>,
 }
 
 impl SingleLetterFunctionParam {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        Self {
-            fn_param_allowed_idents: config.fn_param_allowed_idents.into_iter().collect(),
-        }
+        let ignore: BTreeSet<String> = config.ignore_allowed_idents.into_iter().collect();
+        let allowed_idents = DEFAULT_FN_PARAM_ALLOWLIST
+            .iter()
+            .map(ToString::to_string)
+            .chain(config.extra_allowed_idents)
+            .filter(|name| !ignore.contains(name))
+            .collect();
+        Self { allowed_idents }
     }
 }
 
@@ -112,7 +114,7 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterFunctionParam {
             if !is_single_ascii_letter(ident.name.as_str()) {
                 continue;
             }
-            if self.fn_param_allowed_idents.contains(ident.name.as_str()) {
+            if self.allowed_idents.contains(ident.name.as_str()) {
                 continue;
             }
             span_lint_and_help(
