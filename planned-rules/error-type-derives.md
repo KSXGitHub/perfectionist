@@ -125,11 +125,16 @@ exactly one (uncomment one line, leave the others commented):
 
 ```toml
 [unconventional_error_name]
-error_name_pattern = { suffix = "Error" }                # default
-# error_name_pattern = "Error"                           # bare-string shorthand for `{ suffix = ... }`
-# error_name_pattern = { suffix = ["Error", "Failure"] } # list of suffixes; matches if the name ends with any
-# error_name_pattern = ["Error", "Failure"]              # bare-list shorthand for `{ suffix = [...] }`
-# error_name_pattern = false                             # disable the sub-check (TOML has no `null` literal)
+# Default; equivalent to omitting the key.
+error_name_pattern = { suffix = "Error" }
+# Bare-string shorthand for `{ suffix = ... }`.
+# error_name_pattern = "Error"
+# List of suffixes; matches if the name ends with any.
+# error_name_pattern = { suffix = ["Error", "Failure"] }
+# Bare-list shorthand for `{ suffix = [...] }`.
+# error_name_pattern = ["Error", "Failure"]
+# Disable the sub-check (TOML has no `null` literal).
+# error_name_pattern = false
 ```
 
 Regex is intentionally *not* offered as a matcher form. See
@@ -190,9 +195,14 @@ pub enum ParsedValue { /* ... */ }
   recorded types and emits in a final pass via `check_crate_post`.
 - Use `clippy_utils::ty::implements_trait` against `std::error::Error` and
   `std::fmt::Display` to confirm whether the derive landed.
-- Detection of the *derive* (versus a manual impl) requires inspecting
+- For the derive-keyed sub-checks (`unused_error`, `unused_display`),
+  detection of the *derive* (versus a manual impl) requires inspecting
   the original attribute — preserve it in `check_item` before the
-  implementation is desugared.
+  implementation is desugared. `copyable_error` and
+  `unconventional_error_name` side-step this by querying
+  `implements_trait` directly (which succeeds for both derived and
+  hand-rolled impls), since their predicate is "derives *or*
+  implements `Error`."
 - `copyable_error` and `unconventional_error_name` are *local* checks
   and need no crate-wide bookkeeping. The Error membership query is
   the global `implements_trait` check above; on top of that:
