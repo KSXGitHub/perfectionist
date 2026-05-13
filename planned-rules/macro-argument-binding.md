@@ -297,10 +297,12 @@ For every macro invocation:
    expression — including positional operator markers
    (`debug_assert_op_expr!(a, ==, b)`), assignment-shaped
    matchers (`make_const!(NAME = 'x')`, `bump!(counter += 1)`),
-   `name: type` ascription-shaped matchers, and `Type => body`
-   match-arm DSLs. All are syntactic positions the macro author
-   chose, and the let-bind rewrite the rule would propose is
-   meaningless for the macro's matcher arm.
+   `name: type` ascription-shaped matchers, `Type => body`
+   match-arm DSLs, `arg -> arg` arrow-paired matchers
+   (`link!("src" -> "dst")`), and `pat in iter`-style matchers.
+   All are syntactic positions the macro author chose, and the
+   let-bind rewrite the rule would propose is meaningless for
+   the macro's matcher arm.
 7. Classify the expression with the trivial / non-trivial split.
    If trivial, accept; if non-trivial, emit a diagnostic
    suggesting a `let` binding immediately before the macro

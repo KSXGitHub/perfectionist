@@ -4,7 +4,7 @@
 //! token stream into one segment per comma-separated argument.
 //! [`looks_like_expression`] rules out non-expression positions the
 //! macro author chose (`Type => [...]`, `name = value`, `name += value`,
-//! bare operators like `==`, and friends).
+//! `pat -> body`, `pat in iter`, bare operators like `==`, and friends).
 //! [`is_trivial_expression`] decides whether the surviving expression
 //! falls in the spec's trivial shapes (literals, paths, references,
 //! field accesses, indexing, dereferences, casts, parenthesised /
@@ -19,7 +19,7 @@
 
 use std::collections::BTreeSet;
 
-use rustc_ast::token::{Delimiter, IdentIsRaw, TokenKind};
+use rustc_ast::token::{Delimiter, IdentIsRaw, Token, TokenKind};
 use rustc_ast::tokenstream::{TokenStream, TokenTree};
 use rustc_span::kw;
 
@@ -74,12 +74,20 @@ pub(super) fn split_top_level_arguments(stream: &TokenStream) -> Option<Vec<Vec<
 ///    `Type => [LINT_NAMES]` DSLs); `=`, `+=`, `-=`, ... (assignment-
 ///    shaped matchers like `make_const!(NAME = '█')` or
 ///    `bump!(items += 1)`); a top-level `:` (`name: type` ascription-
-///    shaped matchers) — fails the check. `name = value` is technically
-///    a valid Rust assignment expression of unit type, but in macro-
+///    shaped matchers); `->` (`link!("src" -> "dst")`-style arrow
+///    matchers); the `in` keyword (`for_each!(x in iter, ...)`-style
+///    matchers) — fails the check. `name = value` is technically a
+///    valid Rust assignment expression of unit type, but in macro-
 ///    argument position the macro author overwhelmingly chose the `=`
 ///    as a structural marker; the let-bind rewrite the rule would
-///    propose is meaningless for the macro's matcher arm. A future
-///    re-parse-based implementation will subsume this check.
+///    propose is meaningless for the macro's matcher arm. The same
+///    reasoning extends to `->`, `in`, and the compound-assignment
+///    family — none of these tokens form a single Rust expression
+///    standalone in the shapes the rule observes. `==`, by contrast,
+///    is a real Rust binary operator (`debug_assert!(a == b)` is the
+///    motivating trivial shape) and is intentionally absent from this
+///    list. A future re-parse-based implementation will subsume the
+///    whole heuristic.
 pub(super) fn looks_like_expression(argument: &[TokenTree]) -> bool {
     if let Some(TokenTree::Token(token, _)) = argument.first()
         && !token.can_begin_expr()
@@ -87,15 +95,19 @@ pub(super) fn looks_like_expression(argument: &[TokenTree]) -> bool {
         return false;
     }
     !argument.iter().any(|tree| match tree {
-        TokenTree::Token(token, _) => is_dsl_marker(token.kind),
+        TokenTree::Token(token, _) => is_dsl_marker(token),
         _ => false,
     })
 }
 
-fn is_dsl_marker(kind: TokenKind) -> bool {
+fn is_dsl_marker(token: &Token) -> bool {
+    if token.is_keyword(kw::In) {
+        return true;
+    }
     matches!(
-        kind,
+        token.kind,
         TokenKind::FatArrow
+            | TokenKind::RArrow
             | TokenKind::Colon
             | TokenKind::Eq
             | TokenKind::PlusEq
