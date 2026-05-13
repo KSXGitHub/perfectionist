@@ -3,6 +3,16 @@
 **Sources:** parallel-disk-usage *Error Handling*; pacquet *Error
 Handling*.
 
+## Status
+
+Bundles five sub-checks (`unused_error`, `missing_error`,
+`unused_display`, `copyable_error`, `unconventional_error_name`).
+Per [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+("One rule per file, one `Config` per rule"), this file is expected
+to fan out into one planning file per sub-check before implementation
+begins. The sub-checks have distinct trigger predicates, disjoint
+configuration, and no shared diagnostic, so the split is mechanical.
+
 ## Statement
 
 > Use `derive_more` for error types. Only derive the traits that are
@@ -219,9 +229,11 @@ pub enum ParsedValue { /* ... */ }
   and any `impl Error for T` block directly in `check_item`; for
   `copyable_error`, query `implements_trait` against both
   `std::marker::Copy` and `std::error::Error`.
-- `unconventional_error_name`'s pattern check should match the type's
-  identifier alone, with generic parameters stripped (`MyError<T>`
-  matches an `Error` suffix on `MyError`).
+- `unconventional_error_name` follows the same local-check shape as
+  `copyable_error`: query `implements_trait` against
+  `std::error::Error`, then test the type's identifier (with generic
+  parameters stripped — `MyError<T>` matches an `Error` suffix on
+  `MyError`) against the configured `error_name_pattern`.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
