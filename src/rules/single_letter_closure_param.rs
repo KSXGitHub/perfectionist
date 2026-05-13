@@ -13,7 +13,7 @@ use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
-use crate::common::{binding_ident, is_single_ascii_letter};
+use crate::common::{binding_ident, is_single_ascii_letter, merge_string_allowlist};
 
 mod triviality;
 
@@ -123,13 +123,11 @@ pub struct SingleLetterClosureParam {
 impl SingleLetterClosureParam {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let ignore: BTreeSet<String> = config.ignore_comparison_methods.into_iter().collect();
-        let comparison_methods = DEFAULT_COMPARISON_METHODS
-            .iter()
-            .map(ToString::to_string)
-            .chain(config.extra_comparison_methods)
-            .filter(|name| !ignore.contains(name))
-            .collect();
+        let comparison_methods = merge_string_allowlist(
+            DEFAULT_COMPARISON_METHODS,
+            config.extra_comparison_methods,
+            config.ignore_comparison_methods,
+        );
         Self { comparison_methods }
     }
 }

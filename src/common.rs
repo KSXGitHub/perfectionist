@@ -3,6 +3,8 @@
 //! Each helper lives here only because more than one rule needs it.
 //! Anything used by a single rule belongs in that rule's own file.
 
+use std::collections::BTreeSet;
+
 use rustc_hir as hir;
 
 /// Whether `name` is exactly one ASCII letter (`a`..=`z` or
@@ -35,4 +37,26 @@ pub(crate) fn binding_hir_id<'hir>(pat: &'hir hir::Pat<'hir>) -> Option<hir::Hir
         hir::PatKind::Binding(_, hir_id, _, None) => Some(hir_id),
         _ => None,
     }
+}
+
+/// Merge a curated built-in allowlist of `&str` defaults with a
+/// user-supplied `extras` list, then subtract every entry in
+/// `ignore`. Used by every rule whose config follows the
+/// `extra_<thing>` / `ignore_<thing>` pair convention. The
+/// `BTreeSet` return is convenient for set membership lookups and
+/// has the side benefit of dropping duplicates when defaults and
+/// extras overlap; callers that need a `Vec`-shaped result can
+/// `.into_iter().collect()` it themselves.
+pub(crate) fn merge_string_allowlist(
+    defaults: &[&str],
+    extras: Vec<String>,
+    ignore: Vec<String>,
+) -> BTreeSet<String> {
+    let ignore: BTreeSet<String> = ignore.into_iter().collect();
+    defaults
+        .iter()
+        .map(ToString::to_string)
+        .chain(extras)
+        .filter(|name| !ignore.contains(name))
+        .collect()
 }

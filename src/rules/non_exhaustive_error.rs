@@ -13,6 +13,8 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::def_id::{CRATE_DEF_ID, LocalDefId};
 
+use crate::common::merge_string_allowlist;
+
 declare_tool_lint! {
     /// ### What it does
     /// Flags publicly-exposed error enums that lack a `#[non_exhaustive]`
@@ -114,19 +116,17 @@ struct Config {
 
 pub struct NonExhaustiveError {
     require_for: RequireFor,
-    suffixes: Vec<String>,
+    suffixes: BTreeSet<String>,
 }
 
 impl NonExhaustiveError {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let ignore: BTreeSet<String> = config.ignore_suffixes.into_iter().collect();
-        let suffixes = DEFAULT_SUFFIXES
-            .iter()
-            .map(ToString::to_string)
-            .chain(config.extra_suffixes)
-            .filter(|name| !ignore.contains(name))
-            .collect();
+        let suffixes = merge_string_allowlist(
+            DEFAULT_SUFFIXES,
+            config.extra_suffixes,
+            config.ignore_suffixes,
+        );
         Self {
             require_for: config.require_for,
             suffixes,
