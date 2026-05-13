@@ -2,7 +2,7 @@
 
 # `perfectionist::single_letter_function_param`
 
-**Default level:** `warn`  
+**Default state:** `enabled`  
 **Source:** [`src/rules/single_letter_function_param.rs`](../src/rules/single_letter_function_param.rs)
 
 > function parameter has a single-letter name

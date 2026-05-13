@@ -5,6 +5,8 @@ use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{FileName, RealFileName, Span, SyntaxContext, def_id::LOCAL_CRATE};
 
+use crate::common::{DefaultState, resolved_state};
+
 declare_tool_lint! {
     /// ### What it does
     /// Forbids the `module/mod.rs` layout for submodules. Each
@@ -64,6 +66,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 
 /// Install this rule's late pass.
 pub fn register_pass(lint_store: &mut LintStore) {
+    if let DefaultState::Disabled = resolved_state("flat_module_pattern", DefaultState::Enabled) {
+        return;
+    }
     lint_store.register_late_pass(|_| Box::new(FlatModulePattern::new()));
 }
 

@@ -2,7 +2,7 @@
 
 # `perfectionist::macro_trailing_comma`
 
-**Default level:** `warn`  
+**Default state:** `enabled`  
 **Source:** [`src/rules/macro_trailing_comma.rs`](../src/rules/macro_trailing_comma.rs)
 
 > macro invocation does not follow rustfmt's vertical trailing-comma policy

@@ -16,6 +16,8 @@ mod ordering;
 
 use ordering::{DeriveEntry, Style, desired_order, is_identity};
 
+use crate::common::{DefaultState, resolved_state};
+
 declare_tool_lint! {
     /// ### What it does
     /// Enforces a project-wide ordering of trait names inside a single
@@ -129,6 +131,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
+    if let DefaultState::Disabled = resolved_state("derive_ordering", DefaultState::Enabled) {
+        return;
+    }
     // Pre-expansion: derives are consumed during macro expansion, so
     // a regular (post-expansion) `EarlyLintPass` no longer sees the
     // `#[derive(...)]` attribute by the time `check_attribute` would

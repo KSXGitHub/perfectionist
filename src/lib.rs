@@ -24,6 +24,7 @@ mod rules;
 #[allow(clippy::no_mangle_with_rust_abi)]
 pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
     dylint_linting::init_config(session);
+    common::init_global_config();
 
     macro_rules! register {
         ($( $rule_name:ident )+) => {

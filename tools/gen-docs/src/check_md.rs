@@ -235,12 +235,12 @@ mod tests {
     use std::path::PathBuf;
 
     use super::*;
-    use crate::model::Level;
+    use crate::model::DefaultState;
 
     fn fake_rule(name: &str) -> Rule {
         Rule {
             namespaced: format!("perfectionist::{name}"),
-            level: Level::Warn,
+            default_state: DefaultState::Enabled,
             short_desc: format!("{name} short desc"),
             doc_markdown: "Body.".to_owned(),
             relative_source: PathBuf::from(format!("src/rules/{name}.rs")),

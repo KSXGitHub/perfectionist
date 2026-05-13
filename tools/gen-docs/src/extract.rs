@@ -22,7 +22,7 @@ use syn::{
 
 use crate::extract::config::extract_config;
 use crate::extract::serde_attrs::doc_attrs_to_markdown;
-use crate::model::{Level, NAMESPACE, Rule};
+use crate::model::{DefaultState, Level, NAMESPACE, Rule};
 
 pub(crate) fn collect_rules(rules_dir: &Path) -> Vec<Rule> {
     let entries = fs::read_dir(rules_dir).expect("failed to read src/rules/");
@@ -105,6 +105,7 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
     // every emitted rule receives the same `config` value — but
     // no rule in the catalogue uses that shape today.
     let config = extract_config(source_path, &merged_file);
+    let default_state = extract_default_state(source_path, &merged_file);
     let relative_source: std::path::PathBuf = source_path
         .components()
         .rev()
@@ -136,9 +137,30 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
                     source_path.display()
                 )
             });
+            // Catalogue policy (see `README.md` and the
+            // `Rule::default_state` doc comment): every rule's
+            // `declare_tool_lint!` declares level `Warn`. The
+            // default-disabled axis lives in
+            // `pub(crate) const DEFAULT_STATE: DefaultState =
+            // DefaultState::Disabled;` alongside the macro, not in
+            // the level. A non-`Warn` here means the source has
+            // drifted from the policy; we panic so a doc
+            // regeneration catches it rather than silently
+            // rendering the old "Default level" surface we removed.
+            if !matches!(level, Level::Warn) {
+                panic!(
+                    "{} declares level `{level_ident}`; catalogue policy is that \
+                     every `declare_tool_lint!` uses level `Warn`. Move the \
+                     off-by-default signal into \
+                     `pub(crate) const DEFAULT_STATE: DefaultState = \
+                     DefaultState::Disabled;` next to the macro and change \
+                     the level to `Warn`.",
+                    source_path.display(),
+                );
+            }
             Rule {
                 namespaced,
-                level,
+                default_state,
                 short_desc: declaration.desc.value(),
                 doc_markdown,
                 relative_source: relative_source.clone(),
@@ -146,6 +168,70 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
             }
         })
         .collect()
+}
+
+/// Find a `pub(crate) const DEFAULT_STATE: DefaultState = <variant>;`
+/// item in `merged_file` and translate its enum-variant initializer
+/// into the corresponding [`DefaultState`]. The merged file already
+/// includes submodule items, so the constant can live in either the
+/// flat rule file or a sibling `<rule>/<concern>.rs` (in practice
+/// every rule keeps it next to `declare_tool_lint!`). Absence of the
+/// constant means the rule is on out of the box — the common case
+/// across the catalogue — so the function returns
+/// [`DefaultState::Enabled`].
+///
+/// No `bool` intermediate: the runtime constant uses the same enum
+/// shape gen-docs renders, and we read its initializer's *path* end
+/// segment directly. `DefaultState::Disabled` and a `use … Disabled`
+/// alias both work because we only inspect the last segment.
+fn extract_default_state(source_path: &Path, merged_file: &syn::File) -> DefaultState {
+    use syn::{Expr, ExprPath, Type, TypePath};
+
+    for item in &merged_file.items {
+        let Item::Const(item_const) = item else {
+            continue;
+        };
+        if item_const.ident != "DEFAULT_STATE" {
+            continue;
+        }
+        let is_default_state_type = matches!(
+            &*item_const.ty,
+            Type::Path(TypePath { path, qself: None }) if path.is_ident("DefaultState"),
+        );
+        if !is_default_state_type {
+            panic!(
+                "{}: `DEFAULT_STATE` must be typed `DefaultState`",
+                source_path.display(),
+            );
+        }
+        let Expr::Path(ExprPath {
+            path, qself: None, ..
+        }) = &*item_const.expr
+        else {
+            panic!(
+                "{}: `DEFAULT_STATE` initializer must be a `DefaultState` \
+                 variant path (e.g. `DefaultState::Enabled`); other \
+                 expressions defeat the gen-docs syntactic extraction",
+                source_path.display(),
+            );
+        };
+        let Some(last_segment) = path.segments.last() else {
+            panic!(
+                "{}: `DEFAULT_STATE` initializer has an empty path",
+                source_path.display(),
+            );
+        };
+        return match last_segment.ident.to_string().as_str() {
+            "Enabled" => DefaultState::Enabled,
+            "Disabled" => DefaultState::Disabled,
+            other => panic!(
+                "{}: `DEFAULT_STATE` initializer names unknown `DefaultState` \
+                 variant `{other}`; only `Enabled` and `Disabled` are valid.",
+                source_path.display(),
+            ),
+        };
+    }
+    DefaultState::Enabled
 }
 
 /// Return a `syn::File` containing `parent`'s items followed by every

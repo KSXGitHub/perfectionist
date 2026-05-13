@@ -41,8 +41,22 @@ pub(crate) struct RenderContext<'a> {
 pub(crate) struct Rule {
     /// `perfectionist::flat_module_pattern` — used as the anchor.
     pub(crate) namespaced: String,
-    /// Default severity of the lint as declared in `declare_tool_lint!`.
-    pub(crate) level: Level,
+    /// Whether the rule's pass is registered out of the box, or only
+    /// after the user opts in via
+    /// `[perfectionist] enable = ["<rule>"]` in `dylint.toml`. Read
+    /// from a `pub(crate) const DEFAULT_STATE: DefaultState = ...;`
+    /// item in the rule's source file when present; absent
+    /// constants imply [`DefaultState::Enabled`] (the catalogue
+    /// default). The runtime side uses its own `DefaultState` enum
+    /// of the same shape (`src/common.rs`), so the constant's
+    /// initializer is read directly here as an enum-variant path
+    /// — no `bool` intermediate. The renderer surfaces this as the
+    /// "Default state" line in place of the old "Default level"
+    /// line — under the
+    /// current convention every rule's `declare_tool_lint!` level
+    /// is `Warn`, so the user signal worth surfacing per rule is
+    /// whether the rule runs at all, not what level it fires at.
+    pub(crate) default_state: DefaultState,
     /// The third positional argument to `declare_tool_lint!`.
     pub(crate) short_desc: String,
     /// The concatenated `///` doc comment lines, in markdown form.
@@ -52,6 +66,41 @@ pub(crate) struct Rule {
     /// `Config` struct contents when the rule declares one. `None`
     /// means the rule file has no `Config` / `CONFIG_KEY` pair.
     pub(crate) config: Option<ConfigDoc>,
+}
+
+/// Whether a rule's pass is installed by default. Mirrors the
+/// `pub(crate) const DEFAULT_STATE: DefaultState = ...;` constant
+/// the extractor reads from the rule's source. The runtime side
+/// defines its own `DefaultState` of the same shape; gen-docs has
+/// its own copy because the two crates don't link. Defaults to
+/// [`DefaultState::Enabled`] when a rule omits the constant — the
+/// common case across the catalogue.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DefaultState {
+    Enabled,
+    Disabled,
+}
+
+impl DefaultState {
+    /// One-word label for the rendered "Default state" line.
+    /// Centralised so the per-rule heading, the README's bullet
+    /// list, and the HTML badge agree on wording.
+    pub(crate) fn word(self) -> &'static str {
+        match self {
+            DefaultState::Enabled => "enabled",
+            DefaultState::Disabled => "disabled",
+        }
+    }
+
+    /// CSS class for the HTML state badge. Two distinct classes
+    /// rather than reusing a parametric one so future colour /
+    /// border tweaks per state are a one-rule CSS change.
+    pub(crate) fn css_class(self) -> &'static str {
+        match self {
+            DefaultState::Enabled => "state state-enabled",
+            DefaultState::Disabled => "state state-disabled",
+        }
+    }
 }
 
 /// The configuration surface of a single rule, as extracted from the
@@ -144,23 +193,18 @@ pub(crate) struct StructField {
 }
 
 /// The set of lint levels rustc / Dylint accept as the second
-/// positional argument to `declare_tool_lint!`. An unrecognised
-/// identifier here is a hard error rather than a silent fallback, so
-/// future additions to rustc's level list are caught immediately.
+/// positional argument to `declare_tool_lint!`. The catalogue's
+/// convention is that every rule declares `Warn`; rules that should
+/// be off out of the box live behind a
+/// `pub(crate) const DEFAULT_STATE: DefaultState =
+/// DefaultState::Disabled;` instead of a stricter or looser level.
+/// The extractor still parses the identifier so a future rule that
+/// drifts from the convention
+/// trips a clear panic naming the file.
 #[derive(Debug, Clone, Copy, EnumString, Display)]
 pub(crate) enum Level {
     Warn,
     Deny,
     Forbid,
     Allow,
-}
-
-impl Level {
-    pub(crate) fn css_class(self) -> &'static str {
-        match self {
-            Level::Warn => "level-warn",
-            Level::Deny | Level::Forbid => "level-deny",
-            Level::Allow => "level-allow",
-        }
-    }
 }

@@ -2,7 +2,7 @@
 
 # `perfectionist::single_letter_closure_param`
 
-**Default level:** `warn`  
+**Default state:** `enabled`  
 **Source:** [`src/rules/single_letter_closure_param.rs`](../src/rules/single_letter_closure_param.rs)
 
 > closure parameter has a single-letter name

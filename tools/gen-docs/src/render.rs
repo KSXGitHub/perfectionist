@@ -9,7 +9,7 @@ pub(crate) mod markdown;
 
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 
-use crate::model::{Level, NAMESPACE, RenderContext, Rule};
+use crate::model::{DefaultState, NAMESPACE, RenderContext, Rule};
 use crate::render::config::config_section;
 use crate::render::markdown::{HIGHLIGHT_CSS, markdown_inline_to_html, markdown_to_html};
 
@@ -68,7 +68,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                                         code { (unnamespaced(&rule.namespaced)) }
                                     }
                                 }
-                                td { (level_badge(rule.level)) }
+                                td { (state_badge(rule.default_state)) }
                                 td {
                                     (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
                                 }
@@ -116,7 +116,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                 a.rule-jump-link href="#catalogue" aria-label="Back to catalogue" { "↑ top" }
             }
             p {
-                (level_badge(rule.level))
+                (state_badge(rule.default_state))
                 (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
             }
             (PreEscaped(markdown_to_html(&rule.doc_markdown)))
@@ -131,10 +131,9 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
     }
 }
 
-fn level_badge(level: Level) -> Markup {
-    let class = format!("level {}", level.css_class());
+fn state_badge(default_state: DefaultState) -> Markup {
     html! {
-        span class=(class) { (level.to_string()) }
+        span class=(default_state.css_class()) { (default_state.word()) }
     }
 }
 

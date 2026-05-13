@@ -5,7 +5,7 @@ use rustc_span::Span;
 
 use clippy_utils::diagnostics::span_lint_and_help;
 
-use crate::common::{hir_in_external_macro, is_single_ascii_letter};
+use crate::common::{DefaultState, hir_in_external_macro, is_single_ascii_letter, resolved_state};
 
 declare_tool_lint! {
     /// ### What it does
@@ -82,6 +82,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
+    if let DefaultState::Disabled = resolved_state("single_letter_generic", DefaultState::Enabled) {
+        return;
+    }
     lint_store.register_late_pass(|_| Box::new(SingleLetterGeneric::new()));
 }
 

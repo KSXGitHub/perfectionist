@@ -25,36 +25,13 @@ Run the lints:
 cargo dylint --all -- --all-targets
 ```
 
-Each lint registers under the `perfectionist` tool namespace. Suppress a finding at a specific site by name. For example:
+## Controlling rules
 
-```rust
-#[expect(perfectionist::unicode_ellipsis_in_comments, reason = "3 ASCII dots would be incorrect here")]
-```
-
-<details>
-<summary>Boilerplate to make <code>#[expect(perfectionist::…)]</code> compile</summary>
-
-For the `perfectionist::*` path in the attribute above to be accepted, the compiler needs to know about the `perfectionist` tool namespace. Add the following to your crate root (e.g. `src/lib.rs` or `src/main.rs`):
-
-```rust
-#![cfg_attr(dylint_lib = "perfectionist", feature(register_tool))]
-#![cfg_attr(dylint_lib = "perfectionist", register_tool(perfectionist))]
-```
-
-Both attributes are gated on `cfg(dylint_lib = "perfectionist")` so they only take effect when the dylint driver is loading this library; regular `cargo build` and `cargo check` runs ignore them and don't need a nightly toolchain.
-
-Then declare the `dylint_lib` cfg in `Cargo.toml` so `cargo check` doesn't warn about an unexpected cfg name:
-
-```toml
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(dylint_lib, values("perfectionist"))'] }
-```
-
-</details>
+Each lint registers under the `perfectionist` tool namespace. See [CONTROLLING_RULES.md](https://github.com/KSXGitHub/perfectionist/blob/master/CONTROLLING_RULES.md) for how to change a rule's level per call site or project-wide, and how to enable or disable rules globally.
 
 ## Configuration
 
-Per-rule configuration is read from `dylint.toml` at the workspace root. The configuration knobs for each rule are documented in that rule's planning file. Once a rule is implemented, the same information is reproduced in its module documentation.
+`dylint.toml` accepts a crate-wide `[perfectionist]` table and per-rule `[perfectionist::<rule>]` tables. See [CONFIGURATION.md](https://github.com/KSXGitHub/perfectionist/blob/master/CONFIGURATION.md) for the full schema.
 
 ## Development
 

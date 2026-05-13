@@ -2,7 +2,7 @@
 
 # `perfectionist::derive_ordering`
 
-**Default level:** `warn`  
+**Default state:** `enabled`  
 **Source:** [`src/rules/derive_ordering.rs`](../src/rules/derive_ordering.rs)
 
 > trait names in a `#[derive(...)]` list are not in the configured order

@@ -18,6 +18,8 @@ use parser::{
     DEFAULT_ESCAPES_ELIGIBLE, is_supported_eligible_entry, minimal_hash_count, scan_body,
 };
 
+use crate::common::{DefaultState, resolved_state};
+
 declare_tool_lint! {
     /// ### What it does
     /// Forbids regular string literals whose only backslash escapes
@@ -149,6 +151,9 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
+    if let DefaultState::Disabled = resolved_state("prefer_raw_string", DefaultState::Enabled) {
+        return;
+    }
     lint_store.register_late_pass(|_| Box::new(PreferRawString::new()));
 }
 

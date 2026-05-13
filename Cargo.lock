@@ -1062,6 +1062,7 @@ dependencies = [
  "dylint_linting",
  "dylint_testing",
  "serde",
+ "text-block-macros",
  "toml 1.1.2+spec-1.1.0",
 ]
 
