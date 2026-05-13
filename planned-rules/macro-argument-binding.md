@@ -298,8 +298,9 @@ For every macro invocation:
    (`debug_assert_op_expr!(a, ==, b)`), assignment-shaped
    matchers (`make_const!(NAME = 'x')`, `bump!(counter += 1)`),
    `name: type` ascription-shaped matchers, `Type => body`
-   match-arm DSLs, `arg -> arg` arrow-paired matchers
-   (`link!("src" -> "dst")`), and `pat in iter`-style matchers.
+   match-arm DSLs, `lhs -> rhs` arrow-paired matchers
+   (`link!("src" -> "dst")`), and `name in name`-style separators
+   (`for_each!(x in iter, ...)`).
    All are syntactic positions the macro author chose, and the
    let-bind rewrite the rule would propose is meaningless for
    the macro's matcher arm.
