@@ -9,7 +9,7 @@ pub(crate) mod markdown;
 
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 
-use crate::model::{NAMESPACE, RenderContext, Rule};
+use crate::model::{DefaultState, NAMESPACE, RenderContext, Rule};
 use crate::render::config::config_section;
 use crate::render::markdown::{HIGHLIGHT_CSS, markdown_inline_to_html, markdown_to_html};
 
@@ -68,7 +68,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                                         code { (unnamespaced(&rule.namespaced)) }
                                     }
                                 }
-                                td { (state_badge(rule.default_enabled)) }
+                                td { (state_badge(rule.default_state)) }
                                 td {
                                     (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
                                 }
@@ -116,7 +116,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                 a.rule-jump-link href="#catalogue" aria-label="Back to catalogue" { "↑ top" }
             }
             p {
-                (state_badge(rule.default_enabled))
+                (state_badge(rule.default_state))
                 (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
             }
             (PreEscaped(markdown_to_html(&rule.doc_markdown)))
@@ -131,14 +131,9 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
     }
 }
 
-fn state_badge(default_enabled: bool) -> Markup {
-    let (class, label) = if default_enabled {
-        ("state state-enabled", "enabled")
-    } else {
-        ("state state-disabled", "disabled")
-    };
+fn state_badge(default_state: DefaultState) -> Markup {
     html! {
-        span class=(class) { (label) }
+        span class=(default_state.css_class()) { (default_state.word()) }
     }
 }
 

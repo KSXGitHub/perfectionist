@@ -76,7 +76,10 @@ fn baseline_sweep_with_rule_enabled() {
     // The rule is off by default; this is the equivalent of the
     // `ui/<rule>.rs` sweep every other rule has, just hosted under
     // `ui-toml/` because it needs a `dylint.toml` to opt the rule in.
-    run("ui-toml/non_exhaustive_error/baseline", RuleConfig::default());
+    run(
+        "ui-toml/non_exhaustive_error/baseline",
+        RuleConfig::default(),
+    );
 }
 
 #[test]

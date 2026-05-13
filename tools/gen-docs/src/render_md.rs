@@ -28,13 +28,6 @@ pub(crate) fn rule_file_name(rule: &Rule) -> String {
     format!("{}.md", unnamespaced(&rule.namespaced))
 }
 
-/// One-word label for the "Default state" field. Centralised so the
-/// per-rule heading and the README's bullet list agree, and so a
-/// future change to the wording (e.g. `on`/`off`) is a one-site edit.
-fn default_state_word(default_enabled: bool) -> &'static str {
-    if default_enabled { "enabled" } else { "disabled" }
-}
-
 /// Filename of the per-directory index. `README.md` so GitHub
 /// renders it automatically when a user browses the `rules/`
 /// directory in the web UI.
@@ -66,11 +59,7 @@ pub(crate) fn render_rule_md(rule: &Rule, source_link_prefix: &str) -> String {
     out.push('\n');
     let _ = writeln!(out, "# `{}`", rule.namespaced);
     out.push('\n');
-    let _ = writeln!(
-        out,
-        "**Default state:** `{}`  ",
-        default_state_word(rule.default_enabled),
-    );
+    let _ = writeln!(out, "**Default state:** `{}`  ", rule.default_state.word());
     let source_path = source_path_str(rule);
     let _ = writeln!(
         out,
@@ -156,7 +145,7 @@ pub(crate) fn render_index_md(rules: &[Rule]) -> String {
         let _ = writeln!(
             out,
             "- [`{name}`](./{name}.md) (default: `{state}`).",
-            state = default_state_word(rule.default_enabled),
+            state = rule.default_state.word(),
         );
         let _ = writeln!(out);
         let _ = writeln!(out, "  {desc}", desc = rule.short_desc);
@@ -424,12 +413,12 @@ mod tests {
     use std::path::PathBuf;
 
     use super::*;
-    use crate::model::{ConfigField, EnumVariant, TypeDoc, TypeKind};
+    use crate::model::{ConfigField, DefaultState, EnumVariant, TypeDoc, TypeKind};
 
     fn fake_rule() -> Rule {
         Rule {
             namespaced: "perfectionist::demo_rule".to_owned(),
-            default_enabled: true,
+            default_state: DefaultState::Enabled,
             short_desc: "demo rule used in tests".to_owned(),
             doc_markdown: "### What it does\nDoes a demo.".to_owned(),
             relative_source: PathBuf::from("src/rules/demo_rule.rs"),
@@ -456,7 +445,7 @@ mod tests {
     #[test]
     fn rule_md_renders_disabled_state_for_opt_in_rules() {
         let mut rule = fake_rule();
-        rule.default_enabled = false;
+        rule.default_state = DefaultState::Disabled;
         let md = render_rule_md(&rule, "../");
         assert!(md.contains("**Default state:** `disabled`"));
     }

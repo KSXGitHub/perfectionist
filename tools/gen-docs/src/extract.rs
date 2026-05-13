@@ -22,7 +22,7 @@ use syn::{
 
 use crate::extract::config::extract_config;
 use crate::extract::serde_attrs::doc_attrs_to_markdown;
-use crate::model::{Level, NAMESPACE, Rule};
+use crate::model::{DefaultState, Level, NAMESPACE, Rule};
 
 pub(crate) fn collect_rules(rules_dir: &Path) -> Vec<Rule> {
     let entries = fs::read_dir(rules_dir).expect("failed to read src/rules/");
@@ -105,7 +105,7 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
     // every emitted rule receives the same `config` value — but
     // no rule in the catalogue uses that shape today.
     let config = extract_config(source_path, &merged_file);
-    let default_enabled = extract_default_enabled(source_path, &merged_file);
+    let default_state = extract_default_state(source_path, &merged_file);
     let relative_source: std::path::PathBuf = source_path
         .components()
         .rev()
@@ -159,7 +159,7 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
             }
             Rule {
                 namespaced,
-                default_enabled,
+                default_state,
                 short_desc: declaration.desc.value(),
                 doc_markdown,
                 relative_source: relative_source.clone(),
@@ -170,13 +170,14 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
 }
 
 /// Find a `pub(crate) const ENABLED_BY_DEFAULT: bool = <literal>;`
-/// item in `merged_file` and read its boolean literal. The merged
-/// file already includes submodule items, so the constant can live
-/// in either the flat rule file or a sibling `<rule>/<concern>.rs`
-/// (in practice every rule keeps it next to `declare_tool_lint!`).
-/// Absence of the constant means "enabled by default" — the common
-/// case across the catalogue — so the function returns `true`.
-fn extract_default_enabled(source_path: &Path, merged_file: &syn::File) -> bool {
+/// item in `merged_file` and translate its boolean literal into a
+/// [`DefaultState`]. The merged file already includes submodule
+/// items, so the constant can live in either the flat rule file or
+/// a sibling `<rule>/<concern>.rs` (in practice every rule keeps it
+/// next to `declare_tool_lint!`). Absence of the constant means the
+/// rule is on out of the box — the common case across the
+/// catalogue — so the function returns [`DefaultState::Enabled`].
+fn extract_default_state(source_path: &Path, merged_file: &syn::File) -> DefaultState {
     use syn::{Expr, ExprLit, Lit, Type, TypePath};
 
     for item in &merged_file.items {
@@ -210,9 +211,13 @@ fn extract_default_enabled(source_path: &Path, merged_file: &syn::File) -> bool 
                 source_path.display(),
             );
         };
-        return lit_bool.value;
+        return if lit_bool.value {
+            DefaultState::Enabled
+        } else {
+            DefaultState::Disabled
+        };
     }
-    true
+    DefaultState::Enabled
 }
 
 /// Return a `syn::File` containing `parent`'s items followed by every

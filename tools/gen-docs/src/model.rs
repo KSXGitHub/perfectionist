@@ -46,13 +46,13 @@ pub(crate) struct Rule {
     /// `[perfectionist] enable = ["<rule>"]` in `dylint.toml`. Read
     /// from a `pub(crate) const ENABLED_BY_DEFAULT: bool = ...;`
     /// item in the rule's source file when present; absent
-    /// constants imply `true` (the catalogue default). The renderer
-    /// surfaces this as the "Default state" line in place of the old
-    /// "Default level" line — under the current convention every
-    /// rule's `declare_tool_lint!` level is `Warn`, so the user
-    /// signal worth surfacing per rule is whether the rule runs at
-    /// all, not what level it fires at.
-    pub(crate) default_enabled: bool,
+    /// constants imply [`DefaultState::Enabled`] (the catalogue
+    /// default). The renderer surfaces this as the "Default state"
+    /// line in place of the old "Default level" line — under the
+    /// current convention every rule's `declare_tool_lint!` level
+    /// is `Warn`, so the user signal worth surfacing per rule is
+    /// whether the rule runs at all, not what level it fires at.
+    pub(crate) default_state: DefaultState,
     /// The third positional argument to `declare_tool_lint!`.
     pub(crate) short_desc: String,
     /// The concatenated `///` doc comment lines, in markdown form.
@@ -62,6 +62,41 @@ pub(crate) struct Rule {
     /// `Config` struct contents when the rule declares one. `None`
     /// means the rule file has no `Config` / `CONFIG_KEY` pair.
     pub(crate) config: Option<ConfigDoc>,
+}
+
+/// Whether a rule's pass is installed by default. Mirrors the
+/// `pub(crate) const ENABLED_BY_DEFAULT: bool = ...;` constant the
+/// extractor reads, but typed as a two-variant enum here so the
+/// renderer can pattern-match on intent rather than juggle a bare
+/// `bool` whose `true` / `false` meaning is opaque at call sites.
+/// Defaults to [`DefaultState::Enabled`] when a rule omits the
+/// constant — the common case across the catalogue.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DefaultState {
+    Enabled,
+    Disabled,
+}
+
+impl DefaultState {
+    /// One-word label for the rendered "Default state" line.
+    /// Centralised so the per-rule heading, the README's bullet
+    /// list, and the HTML badge agree on wording.
+    pub(crate) fn word(self) -> &'static str {
+        match self {
+            DefaultState::Enabled => "enabled",
+            DefaultState::Disabled => "disabled",
+        }
+    }
+
+    /// CSS class for the HTML state badge. Two distinct classes
+    /// rather than reusing a parametric one so future colour /
+    /// border tweaks per state are a one-rule CSS change.
+    pub(crate) fn css_class(self) -> &'static str {
+        match self {
+            DefaultState::Enabled => "state state-enabled",
+            DefaultState::Disabled => "state state-disabled",
+        }
+    }
 }
 
 /// The configuration surface of a single rule, as extracted from the
