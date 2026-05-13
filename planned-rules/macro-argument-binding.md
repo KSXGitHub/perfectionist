@@ -4,10 +4,10 @@
 
 Partially implemented. Modes 0-2 (`deny_only`, `blanket`,
 `allow_and_deny`) ship today, along with the `enabled`,
-`deny_extra`, `allow_extra`, `ignore`, and
-`extra_trivial_methods` knobs. The lint emits diagnostics with a
-`let`-binding hint (no autofix, by design — the binding name
-varies per site).
+`deny_extra`, `allow_extra`, `ignore`, `extra_trivial_methods`,
+and `ignore_trivial_methods` knobs. The lint emits diagnostics
+with a `let`-binding hint (no autofix, by design — the binding
+name varies per site).
 
 Still pending:
 
@@ -193,12 +193,12 @@ observable side effects in that method will be incorrectly
 accepted as trivial. The curated list is restricted to names
 whose pure-getter convention is essentially universal across the
 ecosystem, but the lint cannot prove the convention holds for
-any given call site. The inverse knob (an "exclude" list to
-forbid specific names from the built-in set) is intentionally
-not exposed; projects that hit this corner are expected to use
-`#[expect(perfectionist::macro_argument_binding)]` at the call
-site, since the workaround scales by exception rather than by
-configuration.
+any given call site. Projects that hit this corner can drop
+specific names from the built-in set via the
+`ignore_trivial_methods` knob — for example, a project that
+wraps `as_ref` in a non-pure implementation can put `"as_ref"`
+in `ignore_trivial_methods` and the lint will flag every
+`.as_ref()` call as a method call again.
 
 ## Eligibility modes
 
@@ -422,6 +422,15 @@ ignore = [
 # stops flagging.
 extra_trivial_methods = [
   # "my_cached_getter",
+]
+
+# Method names to drop from the pure-method list, even if they
+# appear in the built-in defaults or in `extra_trivial_methods`.
+# Checked after the merge, so this knob always wins. Useful for
+# opting back into linting on a default entry the project does
+# not consider trivial.
+ignore_trivial_methods = [
+  # "as_ref",
 ]
 ```
 

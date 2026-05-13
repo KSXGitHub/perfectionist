@@ -11,6 +11,7 @@ use std::collections::BTreeSet;
 
 use rustc_ast::Path;
 
+use crate::common::merge_string_allowlist;
 use crate::macro_path::{matches_any, merge_with_builtins, parse_path_list};
 
 const CONFIG_KEY: &str = "perfectionist::macro_argument_binding";
@@ -109,6 +110,14 @@ pub(super) struct Config {
     /// `.method()` invocation on a trivial base is then accepted as a
     /// trivial postfix when the method takes no arguments.
     pub extra_trivial_methods: Vec<String>,
+    /// Method names to drop from the pure-method list, even if they
+    /// appear in the built-in defaults or in `extra_trivial_methods`.
+    /// Empty by default; checked after the merge, so this knob always
+    /// wins. Useful for opting back into linting on a default entry
+    /// the project does not consider trivial — for example, removing
+    /// `as_ref` for a project that wraps it in a non-pure
+    /// implementation.
+    pub ignore_trivial_methods: Vec<String>,
 }
 
 impl Default for Config {
@@ -120,6 +129,7 @@ impl Default for Config {
             allow_extra: Vec::new(),
             ignore: Vec::new(),
             extra_trivial_methods: Vec::new(),
+            ignore_trivial_methods: Vec::new(),
         }
     }
 }
@@ -155,11 +165,11 @@ impl MacroArgumentBinding {
         let deny = merge_with_builtins(BUILTIN_DENY, &extra_deny);
         let allow = merge_with_builtins(BUILTIN_ALLOW, &extra_allow);
         let ignore = parse_path_list(&config.ignore);
-        let trivial_methods = BUILTIN_TRIVIAL_METHODS
-            .iter()
-            .map(|method| (*method).to_owned())
-            .chain(config.extra_trivial_methods)
-            .collect();
+        let trivial_methods = merge_string_allowlist(
+            BUILTIN_TRIVIAL_METHODS,
+            config.extra_trivial_methods,
+            config.ignore_trivial_methods,
+        );
         Self {
             enabled: config.enabled,
             mode: config.mode,

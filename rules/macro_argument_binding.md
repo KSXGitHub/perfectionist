@@ -103,6 +103,16 @@ entry is a bare method identifier (no `()`, no receiver). A
 `.method()` invocation on a trivial base is then accepted as a
 trivial postfix when the method takes no arguments.
 
+### `ignore_trivial_methods`: `[string]` (optional)
+
+Method names to drop from the pure-method list, even if they
+appear in the built-in defaults or in `extra_trivial_methods`.
+Empty by default; checked after the merge, so this knob always
+wins. Useful for opting back into linting on a default entry
+the project does not consider trivial — for example, removing
+`as_ref` for a project that wraps it in a non-pure
+implementation.
+
 ### Types
 
 #### `Mode` (enum)
