@@ -31,6 +31,9 @@ Each lint registers under the `perfectionist` tool namespace. Suppress a finding
 #[expect(perfectionist::unicode_ellipsis_in_comments, reason = "3 ASCII dots would be incorrect here")]
 ```
 
+<details>
+<summary>Boilerplate to make <code>#[expect(perfectionist::…)]</code> compile</summary>
+
 For the `perfectionist::*` path in the attribute above to be accepted, the compiler needs to know about the `perfectionist` tool namespace. Add the following to your crate root (e.g. `src/lib.rs` or `src/main.rs`):
 
 ```rust
@@ -46,6 +49,8 @@ Then declare the `dylint_lib` cfg in `Cargo.toml` so `cargo check` doesn't warn 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(dylint_lib, values("perfectionist"))'] }
 ```
+
+</details>
 
 ## Configuration
 
