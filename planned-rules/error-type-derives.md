@@ -50,9 +50,9 @@ any given type as "value vs error."
 
 The Display sub-check (`unused_display`): a `derive(Display)`
 advertises a public-facing string representation. If nothing in the
-crate calls `format!`, `to_string`, or otherwise consumes the impl,
-the advertisement is hollow — and a reader trying to find "where do
-we render this type?" comes up empty.
+crate consumes the impl (see the `unused_display` predicate below
+for the consumer list), the advertisement is hollow — and a reader
+trying to find "where do we render this type?" comes up empty.
 
 The objectively-bad exception (`missing_error`): a type used as
 `Result<_, T>`'s `Err` that does not implement `std::error::Error`
@@ -194,8 +194,9 @@ pub enum ParsedValue { /* ... */ }
   records every `Result<_, E>` type, every `format_args!`-receiving span,
   and every `?` operator's error type during `check_crate`, then walks the
   recorded types and emits in a final pass via `check_crate_post`.
-- Use `clippy_utils::ty::implements_trait` against `std::error::Error` and
-  `std::fmt::Display` to confirm whether the derive landed.
+- Use `clippy_utils::ty::implements_trait` against `std::error::Error`
+  and `std::fmt::Display` to confirm the type implements the trait
+  (whether derived, hand-implemented, or otherwise).
 - For the derive-keyed sub-checks (`unused_error`, `unused_display`),
   detection of the *derive* (versus a manual impl) requires inspecting
   the original attribute — preserve it in `check_item` before the
