@@ -207,10 +207,10 @@ fn _pure_method_postfix_accepted(slice: &[u32], text: &String) {
 }
 
 // Negative coverage: a zero-arg method whose name is *outside* the
-// built-in pure-getter list still flags. `clear` is purely a state-
-// mutating method despite its zero-arg shape, so the rule must keep
-// flagging it under the default config (users who want it accepted
-// explicitly opt in via `extra_trivial_methods`).
+// built-in pure-getter list still flags. `clear` is a state-mutating
+// method despite its zero-arg shape, so the rule must keep flagging
+// it under the default config (users who want it accepted explicitly
+// opt in via `extra_trivial_methods`).
 fn _zero_arg_mutating_method_flagged(slice: &mut Vec<u32>) {
     debug_assert!(slice.clear() == ());
 }

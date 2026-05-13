@@ -99,6 +99,17 @@ fn allow_extra_silences_an_uncatalogued_macro() {
 }
 
 #[test]
+fn extra_trivial_methods_adds_a_pure_getter_to_the_postfix_set() {
+    run(
+        "ui-toml/macro_argument_binding/extra_trivial_methods",
+        RuleConfig {
+            extra_trivial_methods: vec!["cached_size".into()],
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
 fn ignore_suppresses_a_built_in_deny_listed_macro() {
     run(
         "ui-toml/macro_argument_binding/ignore",
@@ -142,16 +153,5 @@ fn module_level_expect_fulfils_for_item_position_macro() {
     run(
         "ui-toml/macro_argument_binding/expect_at_module_with_item_macro",
         RuleConfig::default(),
-    );
-}
-
-#[test]
-fn extra_trivial_methods_adds_a_pure_getter_to_the_postfix_set() {
-    run(
-        "ui-toml/macro_argument_binding/extra_trivial_methods",
-        RuleConfig {
-            extra_trivial_methods: vec!["cached_size".into()],
-            ..Default::default()
-        },
     );
 }
