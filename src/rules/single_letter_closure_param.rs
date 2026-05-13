@@ -95,25 +95,18 @@ const DEFAULT_COMPARISON_METHODS: &[&str] = &[
     "reduce",
 ];
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, rename_all = "snake_case")]
 struct Config {
-    /// Method / function names whose closure argument may carry
-    /// single-letter parameters when the body is a single
-    /// expression. Extend this list to add project-specific DSL
-    /// helpers (`when`, `iter_by`, …).
-    comparison_methods: Vec<String>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            comparison_methods: DEFAULT_COMPARISON_METHODS
-                .iter()
-                .map(|s| (*s).to_owned())
-                .collect(),
-        }
-    }
+    /// Additional method / function names whose closure argument
+    /// may carry single-letter parameters when the body is a
+    /// single expression. The entries listed here are merged with
+    /// the built-in allowlist rather than replacing it, so a
+    /// project only needs to enumerate its own DSL helpers
+    /// (`when`, `iter_by`, third-party comparators such as
+    /// `into_sorted_by`, …) and still benefits from the curated
+    /// `core` / `std` defaults.
+    extra_comparison_methods: Vec<String>,
 }
 
 pub struct SingleLetterClosureParam {
@@ -123,9 +116,12 @@ pub struct SingleLetterClosureParam {
 impl SingleLetterClosureParam {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        Self {
-            comparison_methods: config.comparison_methods.into_iter().collect(),
-        }
+        let comparison_methods = DEFAULT_COMPARISON_METHODS
+            .iter()
+            .map(|s| (*s).to_owned())
+            .chain(config.extra_comparison_methods)
+            .collect();
+        Self { comparison_methods }
     }
 }
 

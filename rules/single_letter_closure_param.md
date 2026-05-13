@@ -52,9 +52,13 @@ Use instead:
 
 Configure via `dylint.toml` under `["perfectionist::single_letter_closure_param"]`. Every field is optional; the per-field prose below states the default.
 
-### `comparison_methods`: `[string]` (optional)
+### `extra_comparison_methods`: `[string]` (optional)
 
-Method / function names whose closure argument may carry
-single-letter parameters when the body is a single
-expression. Extend this list to add project-specific DSL
-helpers (`when`, `iter_by`, …).
+Additional method / function names whose closure argument
+may carry single-letter parameters when the body is a
+single expression. The entries listed here are merged with
+the built-in allowlist rather than replacing it, so a
+project only needs to enumerate its own DSL helpers
+(`when`, `iter_by`, third-party comparators such as
+`into_sorted_by`, …) and still benefits from the curated
+`core` / `std` defaults.
