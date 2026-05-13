@@ -165,9 +165,10 @@ fn main() {
     println!("{}", ConfigSummaryError("hi".into()));
 }
 
-// Good
+// Good — drop the Error derive; rename to drop the now-misleading
+//        Error suffix (the type isn't an error, even if it once was).
 #[derive(Debug, Display)]
-struct ConfigSummaryError(String);
+struct ConfigSummary(String);
 ```
 
 ```rust
