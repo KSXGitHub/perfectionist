@@ -77,7 +77,8 @@ pattern that several rules call out by reference — live in
 ### Derives and error types
 - [`error-type-derives.md`](./error-type-derives.md) — `derive_more::Display` /
   `Error` must only be derived when actually needed; flag superfluous `Error`
-  on non-error types.
+  on non-error types, and flag `Error`-implementing types whose name doesn't
+  follow the project's error-naming convention.
 - [`prefer-derive-more.md`](./prefer-derive-more.md) — flag hand-written
   `impl` blocks that could be replaced by a `derive_more` derive
   (`From`, `Into`, `AsRef`, `Deref`, etc., with `Display` and
