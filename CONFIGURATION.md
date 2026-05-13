@@ -4,9 +4,9 @@
 
 The top-level `[perfectionist]` table of `dylint.toml` controls which rules' passes are installed. It has two keys; both are optional:
 
-| Key | Type | Meaning |
-| --- | --- | --- |
-| `enable` | array of rule names or `{ name, reason }` tables | Force-on the named rules, even if their per-rule default is `disabled`. |
+| Key       | Type                                             | Meaning                                                                 |
+| --------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| `enable`  | array of rule names or `{ name, reason }` tables | Force-on the named rules, even if their per-rule default is `disabled`. |
 | `disable` | array of rule names or `{ name, reason }` tables | Force-off the named rules, even if their per-rule default is `enabled`. |
 
 Rule names are unqualified — drop the `perfectionist::` prefix that appears in attributes and CLI flags. The optional `reason` field on each entry is preserved for human readers of `dylint.toml` and has no runtime effect.
