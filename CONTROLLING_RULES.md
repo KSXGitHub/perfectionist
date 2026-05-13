@@ -10,9 +10,6 @@ Each lint registers under the `perfectionist` tool namespace. There are two inde
 
 To escalate a rule project-wide, add an attribute to `src/lib.rs` (`#![deny(perfectionist::single_letter_let_binding)]`) or set `DYLINT_RUSTFLAGS=-D perfectionist::<rule>` in the environment.
 
-<details>
-<summary>Boilerplate to make in-source <code>perfectionist::…</code> attributes compile</summary>
-
 For any `#[allow / warn / deny / forbid / expect(perfectionist::…)]` attribute *in your source* to be accepted by rustc, the compiler needs to know about the `perfectionist` tool namespace. Add the following to your crate root (e.g. `src/lib.rs` or `src/main.rs`):
 
 ```rust
@@ -30,8 +27,6 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(dylint_lib, values("perfec
 ```
 
 The `DYLINT_RUSTFLAGS=-D perfectionist::<rule>` form mentioned above bypasses source-level attributes (rustc receives the flag straight on its command line), so it does not need this boilerplate.
-
-</details>
 
 **2. Rule registration (project-wide).** Each rule is either *enabled* (its pass runs) or *disabled* (its pass is never installed, so it produces no diagnostics at all). Most rules are enabled by default; a few — currently only `non_exhaustive_error` — ship disabled and require an explicit opt-in. Flip the registration state via the crate-wide `[perfectionist]` table in `dylint.toml`:
 
