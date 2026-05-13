@@ -62,3 +62,12 @@ project only needs to enumerate its own DSL helpers
 (`when`, `iter_by`, third-party comparators such as
 `into_sorted_by`, …) and still benefits from the curated
 `core` / `std` defaults.
+
+### `ignore_comparison_methods`: `[string]` (optional)
+
+Method / function names to drop from the allowlist, even if
+they appear in the built-in defaults or in
+`extra_comparison_methods`. Useful for opting back into
+linting on a default entry the project does not consider
+trivial. Empty by default; checked after the merge with the
+built-ins, so this knob always wins.

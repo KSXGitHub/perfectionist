@@ -107,6 +107,13 @@ struct Config {
     /// `into_sorted_by`, …) and still benefits from the curated
     /// `core` / `std` defaults.
     extra_comparison_methods: Vec<String>,
+    /// Method / function names to drop from the allowlist, even if
+    /// they appear in the built-in defaults or in
+    /// `extra_comparison_methods`. Useful for opting back into
+    /// linting on a default entry the project does not consider
+    /// trivial. Empty by default; checked after the merge with the
+    /// built-ins, so this knob always wins.
+    ignore_comparison_methods: Vec<String>,
 }
 
 pub struct SingleLetterClosureParam {
@@ -116,10 +123,12 @@ pub struct SingleLetterClosureParam {
 impl SingleLetterClosureParam {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        let ignore: BTreeSet<String> = config.ignore_comparison_methods.into_iter().collect();
         let comparison_methods = DEFAULT_COMPARISON_METHODS
             .iter()
             .map(ToString::to_string)
             .chain(config.extra_comparison_methods)
+            .filter(|name| !ignore.contains(name))
             .collect();
         Self { comparison_methods }
     }
