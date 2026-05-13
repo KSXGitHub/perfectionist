@@ -11,7 +11,7 @@ The top-level `[perfectionist]` table of `dylint.toml` controls which rules' pas
 
 Rule names are unqualified — drop the `perfectionist::` prefix that appears in attributes and CLI flags. The optional `reason` field on each entry is preserved for human readers of `dylint.toml` and has no runtime effect.
 
-Unknown rule names are silently ignored. Listing the same rule under both `enable` and `disable` is a config error and aborts the lint run.
+Unknown rule names are silently ignored. Listing the same rule under both `enable` and `disable` is a fatal config error.
 
 See [CONTROLLING_RULES.md](./CONTROLLING_RULES.md) for the broader picture of how `enable` / `disable` compose with lint-level attributes and `DYLINT_RUSTFLAGS`.
 

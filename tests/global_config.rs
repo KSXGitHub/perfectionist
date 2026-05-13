@@ -68,3 +68,49 @@ fn disable_accepts_array_of_tables_form() {
         },
     );
 }
+
+/// `enable = ["<rule>"]` flips a default-off rule to on, so the
+/// fixture's `pub enum FooError {}` produces the snapshot's
+/// diagnostic. Reuses the `non_exhaustive_error/baseline` fixture
+/// (the same one `tests/non_exhaustive_error.rs` exercises with the
+/// `WholeToml` helper); this test exists to lock in the bare-string
+/// form on the parser side without the per-rule scaffolding.
+#[test]
+fn enable_in_global_table_activates_a_default_off_rule() {
+    run(
+        "ui-toml/non_exhaustive_error/baseline",
+        text_block_fnl! {
+            "[perfectionist]"
+            r#"enable = ["non_exhaustive_error"]"#
+        },
+    );
+}
+
+/// Mirrors `disable_accepts_inline_table_with_reason`: the inline
+/// `{ name, reason }` table shape works on the `enable` side too,
+/// since `RuleSelector` is shared.
+#[test]
+fn enable_accepts_inline_table_with_reason() {
+    run(
+        "ui-toml/non_exhaustive_error/baseline",
+        text_block_fnl! {
+            "[perfectionist]"
+            "enable = ["
+            r#"    { name = "non_exhaustive_error", reason = "test-only" },"#
+            "]"
+        },
+    );
+}
+
+/// Mirrors `disable_accepts_array_of_tables_form` for `enable`.
+#[test]
+fn enable_accepts_array_of_tables_form() {
+    run(
+        "ui-toml/non_exhaustive_error/baseline",
+        text_block_fnl! {
+            "[[perfectionist.enable]]"
+            r#"name = "non_exhaustive_error""#
+            r#"reason = "test-only""#
+        },
+    );
+}

@@ -64,6 +64,6 @@ name = "arc_rc_clone"
 
 (TOML rejects mixing `enable = [...]` and `[[perfectionist.enable]]` in the same file as a duplicate-key error, so a config uses one or the other for each key.)
 
-The two knobs compose: `disable` skips the rule's pass entirely, so its level is moot; `enable` installs the pass, and the level is then whatever rustc resolves from the per-site attributes (or the rule's default `Warn`). Listing the same rule under both `enable` and `disable` is a config error.
+The two knobs compose: `disable` skips the rule's pass entirely, so its level is moot; `enable` installs the pass, and the level is then whatever rustc resolves from the per-site attributes (or the rule's default `Warn`). Listing the same rule under both `enable` and `disable` is a fatal config error.
 
 The per-rule default (enabled / disabled) is documented in each rule's page in [`rules/`](./rules/) as **Default state**.

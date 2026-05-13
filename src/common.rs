@@ -76,25 +76,33 @@ struct GlobalConfig {
 /// `#[serde(untagged)]` is what makes the array mixable, so a
 /// config author can write
 /// `enable = ["a", { name = "b", reason = "rationale" }]` in a
-/// single literal array.
+/// single literal array. The table shape is its own struct so we
+/// can put `#[serde(deny_unknown_fields)]` on it — serde doesn't
+/// honour that attribute on inline enum-variant shapes, only on
+/// named structs.
 #[derive(Debug, serde::Deserialize)]
 #[serde(untagged)]
 enum RuleSelector {
     Name(String),
-    Verbose {
-        name: String,
-        #[expect(
-            dead_code,
-            reason = "decorative field for human readers of dylint.toml"
-        )]
-        reason: Option<String>,
-    },
+    Verbose(VerboseSelector),
+}
+
+#[derive(Debug, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct VerboseSelector {
+    name: String,
+    #[expect(
+        dead_code,
+        reason = "decorative field for human readers of dylint.toml"
+    )]
+    reason: Option<String>,
 }
 
 impl RuleSelector {
     fn name(&self) -> &str {
         match self {
-            RuleSelector::Name(name) | RuleSelector::Verbose { name, .. } => name,
+            RuleSelector::Name(name) => name,
+            RuleSelector::Verbose(verbose) => &verbose.name,
         }
     }
 }
