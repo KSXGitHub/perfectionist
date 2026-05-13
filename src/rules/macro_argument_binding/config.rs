@@ -55,14 +55,7 @@ const BUILTIN_ALLOW: &[&str] = &[
 /// `O(1)` and pure on indexed collections) are left for projects to
 /// add via `trivial_methods_extra`.
 const BUILTIN_TRIVIAL_METHODS: &[&str] = &[
-    "as_bytes",
-    "as_deref",
-    "as_mut",
-    "as_ref",
-    "as_slice",
-    "as_str",
-    "is_empty",
-    "len",
+    "as_bytes", "as_deref", "as_mut", "as_ref", "as_slice", "as_str", "is_empty", "len",
 ];
 
 /// Eligibility mode. The default is `AllowAndDeny`. The matcher-based
