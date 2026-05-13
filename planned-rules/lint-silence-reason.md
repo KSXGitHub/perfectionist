@@ -133,10 +133,12 @@ exempt_lints = [
     # "clippy::module_name_repetitions",
 ]
 
-# Minimum length of the `reason` value. A one-word reason
-# ("legacy", "TODO") satisfies the literal requirement but
-# conveys little; this knob enforces a useful floor. Set to 0 to
-# disable.
+# Minimum length of the `reason` value. A one- or two-character
+# reason ("x", "ok") satisfies the literal presence requirement
+# but conveys nothing; the default floor of 3 excludes those
+# cases. Projects that want a higher bar (e.g. require a full
+# sentence) can raise it. Set to 0 to disable the length branch
+# entirely.
 min_reason_length = 3
 ```
 
@@ -167,8 +169,10 @@ min_reason_length = 3
 ### Difficulty
 
 **Easy.** A single attribute walk that reads the meta-item list
-for `reason = "<str>"`. The autofix span is the closing `)` of
-the attribute list, plus the inserted bytes `, reason = ""`.
+for `reason = "<str>"`. The autofix anchors at the closing `)`
+of the attribute list; the three layout cases in "Autofix"
+(single-line bare, single-line with trailing comma, multi-line)
+are all simple textual splices.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this

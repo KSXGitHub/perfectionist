@@ -116,15 +116,27 @@ Text normalisation:
   rules. The escape helper is described under "Implementation
   notes".
 
-Splice into the attribute:
+Splice into the attribute. The insertion site and surrounding
+punctuation depend on the attribute's existing layout — the
+three cases match
+[`lint-silence-reason`](./lint-silence-reason.md)'s autofix:
 
-- Insert `, reason = "<normalised, escaped text>"` immediately
-  before the closing `)` of the attribute's argument list (for a
-  `cfg_attr`-wrapped attribute, the *inner* lint attribute's
-  closing `)`, not the outer `cfg_attr`'s).
-- Delete the original comment span. If the comment was on its
-  own line and removing it leaves the line blank, delete the
-  whole line.
+- **Single line, no trailing comma**: insert
+  `, reason = "<text>"` before the closing `)`.
+- **Single line, trailing comma**: insert
+  ` reason = "<text>",` before the closing `)`.
+- **Multi-line**: insert a new line `reason = "<text>",`
+  immediately before the line carrying the closing `)`,
+  matching the indentation of the preceding argument. If the
+  last argument on its own line lacks a trailing comma, add
+  one when inserting.
+
+For a `cfg_attr`-wrapped attribute, the target is the *inner*
+lint attribute's closing `)`, not the outer `cfg_attr`'s.
+
+Then delete the original comment span. If the comment was on
+its own line and removing it leaves the line blank, delete the
+whole line.
 
 `Applicability::MachineApplicable` for trailing comments — the
 attachment is unambiguous. `Applicability::MaybeIncorrect` for

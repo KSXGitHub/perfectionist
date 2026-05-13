@@ -155,10 +155,12 @@ exempt_lints = [
     # "clippy::module_name_repetitions",
 ]
 
-# Minimum length of the `reason` value. A one-word reason
-# ("legacy", "TODO") satisfies the literal requirement but
-# conveys little; this knob enforces a useful floor. Set to 0
-# to disable.
+# Minimum length of the `reason` value. A one- or two-character
+# reason ("x", "ok") satisfies the literal presence requirement
+# but conveys nothing; the default floor of 3 excludes those
+# cases. Projects that want a higher bar (e.g. require a full
+# sentence) can raise it. Set to 0 to disable the length branch
+# entirely.
 min_reason_length = 3
 ```
 
