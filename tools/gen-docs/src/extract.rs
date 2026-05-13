@@ -13,6 +13,7 @@ pub(crate) mod ty;
 use std::fs;
 use std::path::Path;
 
+use pipe_trait::Pipe;
 use proc_macro2::TokenStream;
 use syn::{
     Attribute, Ident, Item, LitStr, Token,
@@ -61,7 +62,7 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
                     .last()
                     .is_some_and(|segment| segment.ident == "declare_tool_lint") =>
             {
-                Some(item_macro.mac.tokens.clone())
+                item_macro.mac.tokens.clone().pipe(Some)
             }
             _ => None,
         })
@@ -247,7 +248,27 @@ impl Parse for DeclareToolLint {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
+
+    /// Allocate a fresh temp directory unique across both processes
+    /// (cargo's test harness forks per binary) and across tests in
+    /// the same binary (the atomic counter handles concurrent runs
+    /// and any label collision). Mirrors the helper in
+    /// `check_md.rs`'s test module; kept local so the two test
+    /// modules stay self-contained.
+    fn tempdir(label: &str) -> PathBuf {
+        static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let seq = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let base = std::env::temp_dir().join(format!(
+            "perfectionist-gen-docs-extract-{label}-{}-{seq}",
+            std::process::id(),
+        ));
+        let _ = fs::remove_dir_all(&base);
+        fs::create_dir_all(&base).unwrap();
+        base
+    }
 
     /// Directory-module rules keep `CONFIG_KEY` and `Config` in
     /// `<rule>/config.rs`. Merging the submodule items into the
@@ -257,12 +278,7 @@ mod tests {
     /// can't silently come back.
     #[test]
     fn collect_rules_finds_config_in_submodule_file() {
-        let base = std::env::temp_dir().join(format!(
-            "perfectionist-merge-submodule-test-{}",
-            std::process::id(),
-        ));
-        let _ = fs::remove_dir_all(&base);
-        fs::create_dir_all(&base).unwrap();
+        let base = tempdir("merge-submodule");
         let parent_path = base.join("demo_rule.rs");
         fs::write(
             &parent_path,
