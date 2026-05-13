@@ -138,7 +138,7 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
                 )
             });
             // Catalogue policy (see `README.md` and the
-            // `Rule::default_enabled` doc comment): every rule's
+            // `Rule::default_state` doc comment): every rule's
             // `declare_tool_lint!` declares level `Warn`. The
             // default-disabled axis lives in
             // `pub(crate) const ENABLED_BY_DEFAULT: bool = false;`
@@ -187,13 +187,11 @@ fn extract_default_state(source_path: &Path, merged_file: &syn::File) -> Default
         if item_const.ident != "ENABLED_BY_DEFAULT" {
             continue;
         }
-        let Type::Path(TypePath { path, qself: None }) = &*item_const.ty else {
-            panic!(
-                "{}: `ENABLED_BY_DEFAULT` must be typed `bool`",
-                source_path.display(),
-            );
-        };
-        if !path.is_ident("bool") {
+        let is_bool_type = matches!(
+            &*item_const.ty,
+            Type::Path(TypePath { path, qself: None }) if path.is_ident("bool"),
+        );
+        if !is_bool_type {
             panic!(
                 "{}: `ENABLED_BY_DEFAULT` must be typed `bool`",
                 source_path.display(),

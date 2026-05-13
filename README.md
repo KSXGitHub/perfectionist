@@ -54,7 +54,7 @@ disable = [
 ]
 ```
 
-The array-of-tables form is also accepted, and the two forms can be mixed across (and within) arrays:
+Bare strings and inline `{ name, reason }` tables can be intermixed inside a single literal `enable = [...]` (or `disable = [...]`) array. The array-of-tables form is an alternative syntax for the same data — pick one form per key:
 
 ```toml
 [[perfectionist.enable]]
@@ -64,6 +64,8 @@ reason = "we publish libraries and care about SemVer surface"
 [[perfectionist.disable]]
 name = "arc_rc_clone"
 ```
+
+(TOML rejects mixing `enable = [...]` and `[[perfectionist.enable]]` in the same file as a duplicate-key error, so a config uses one or the other for each key.)
 
 The two knobs compose: `disable` skips the rule's pass entirely, so its level is moot; `enable` installs the pass, and the level is then whatever rustc resolves from the per-site attributes (or the rule's default `Warn`). Listing the same rule under both `enable` and `disable` is a config error.
 

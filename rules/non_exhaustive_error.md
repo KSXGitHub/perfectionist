@@ -31,9 +31,12 @@ The opinion is opt-in: some projects deliberately use exhaustive
 error enums to force downstream consumers to handle every new
 variant, and binary crates have no SemVer surface to protect.
 The rule therefore ships disabled by default — enable it per
-crate by adding `enable = ["non_exhaustive_error"]` (or
-`[[perfectionist.enable]] name = "non_exhaustive_error"`) to
-the `[perfectionist]` table of `dylint.toml`.
+crate by adding to `dylint.toml`:
+
+```toml
+[perfectionist]
+enable = ["non_exhaustive_error"]
+```
 
 ## Example
 ```rust,ignore
