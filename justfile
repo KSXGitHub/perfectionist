@@ -1,5 +1,19 @@
 export PATH := justfile_directory() + "/.dev-tools/bin:" + env_var("PATH")
 
+# Set CARGO_LOCKED=true to pass `--locked` to the cargo invocations in
+# `build`, `doc`, `lint`, `test`, and `self-lint`. Empty, `false`, and
+# unset all leave the lockfile writable; any other value is rejected.
+cargo_locked := env_var_or_default("CARGO_LOCKED", "")
+locked := if cargo_locked == "true" {
+    "--locked"
+  } else if cargo_locked == "false" {
+    ""
+  } else if cargo_locked == "" {
+    ""
+  } else {
+    error("CARGO_LOCKED must be 'true', 'false', empty, or unset; got: " + cargo_locked)
+  }
+
 _default:
   @just --list
 
@@ -17,27 +31,27 @@ fmt:
   cargo fmt -- --check
 
 # Build in debug mode
-build *cargo_flags:
-  cargo build --workspace --all-targets {{cargo_flags}}
+build:
+  cargo build --workspace --all-targets {{locked}}
 
 # Check documentation
-doc *cargo_flags:
+doc:
   just gen-docs
   just check-rules-md
-  RUSTFLAGS='-D warnings' cargo doc --no-deps --document-private-items {{cargo_flags}}
+  RUSTFLAGS='-D warnings' cargo doc --no-deps --document-private-items {{locked}}
 
 # Run all the lints
-lint *cargo_flags:
-  cargo clippy --workspace --all-targets {{cargo_flags}} -- -D warnings
+lint:
+  cargo clippy --workspace --all-targets {{locked}} -- -D warnings
 
 # Run all the tests
-test *cargo_flags:
+test:
   just warmup-integration-tests
-  cargo test --workspace --all-targets {{cargo_flags}}
+  cargo test --workspace --all-targets {{locked}}
 
 # Run perfectionist's own lints on its source
-self-lint *cargo_flags:
-  DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --all-targets {{cargo_flags}}
+self-lint:
+  DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --all-targets {{locked}}
 
 # Pre-warm `target/integration-fixtures`
 warmup-integration-tests:

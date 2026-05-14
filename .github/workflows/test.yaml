@@ -10,6 +10,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      CARGO_LOCKED: 'true'
+
     steps:
       - uses: actions/checkout@v6
 
@@ -82,23 +85,23 @@ jobs:
 
       - name: Build
         shell: bash
-        run: just build --locked
+        run: just build
 
       - name: Doc
         shell: bash
-        run: just doc --locked
+        run: just doc
 
       - name: Lint
         shell: bash
-        run: just lint --locked
+        run: just lint
 
       - name: Test
         shell: bash
-        run: just test --locked
+        run: just test
 
       - name: Self-lint
         shell: bash
-        run: just self-lint --locked
+        run: just self-lint
 
       - name: Clean workspace artifacts before cache
         if: always()
