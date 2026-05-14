@@ -1,19 +1,19 @@
 export PATH := justfile_directory() + "/.dev-tools/bin:" + env_var("PATH")
 
-# Set CARGO_LOCKED=true to pass `--locked` to the cargo invocations the
+# Set PERFECTIONIST_CARGO_LOCKED=true to pass `--locked` to the cargo invocations the
 # gating CI recipes (`build`, `doc`, `lint`, `test`, `self-lint`) reach,
 # including the warmup / doc-generation recipes they delegate to. Empty,
 # `false`, and unset all leave the lockfile writable; any other value
 # is rejected.
-cargo_locked := env_var_or_default("CARGO_LOCKED", "")
-locked := if cargo_locked == "true" {
+perfectionist_cargo_locked := env_var_or_default("PERFECTIONIST_CARGO_LOCKED", "")
+locked := if perfectionist_cargo_locked == "true" {
     "--locked"
-  } else if cargo_locked == "false" {
+  } else if perfectionist_cargo_locked == "false" {
     ""
-  } else if cargo_locked == "" {
+  } else if perfectionist_cargo_locked == "" {
     ""
   } else {
-    error("CARGO_LOCKED must be 'true', 'false', empty, or unset; got: " + cargo_locked)
+    error("PERFECTIONIST_CARGO_LOCKED must be 'true', 'false', empty, or unset; got: " + perfectionist_cargo_locked)
   }
 
 _default:
