@@ -227,9 +227,8 @@ skip the `self-lint` step entirely, since there's no
 `cargo-dylint` to drive it. Then read the in-tree rule catalogue
 under `rules/` and apply the rules manually to whatever code you
 just wrote or touched. Each per-rule markdown file in `rules/`
-(everything except `rules/README.md`, which is the generated
-index) is the human-readable spec for one lint; walk the diff
-against the relevant rules and fix violations by hand. Note this
+is the human-readable spec for one lint; walk the diff against
+the relevant rules and fix violations by hand. Note this
 fallback explicitly in your summary so the user knows the
 automated self-lint did not run.
 
