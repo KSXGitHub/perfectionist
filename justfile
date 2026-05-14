@@ -6,7 +6,9 @@ export PATH := justfile_directory() + "/.dev-tools/bin:" + env_var("PATH")
 cargo_locked := env_var_or_default("CARGO_LOCKED", "")
 locked := if cargo_locked == "true" {
     "--locked"
-  } else if cargo_locked == "false" || cargo_locked == "" {
+  } else if cargo_locked == "false" {
+    ""
+  } else if cargo_locked == "" {
     ""
   } else {
     error("CARGO_LOCKED must be 'true', 'false', empty, or unset; got: " + cargo_locked)
