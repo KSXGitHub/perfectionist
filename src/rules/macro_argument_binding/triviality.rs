@@ -354,7 +354,11 @@ fn take_atom_path_after_sep<'a>(
     let TokenKind::Ident(name, _) = token.kind else {
         return None;
     };
-    Some(take_path_and_optional_macro_call(name, rest, trivial_macros))
+    Some(take_path_and_optional_macro_call(
+        name,
+        rest,
+        trivial_macros,
+    ))
 }
 
 /// Type-position path tail: `take_atom_path_after_sep`'s sibling
