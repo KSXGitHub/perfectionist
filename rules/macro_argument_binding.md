@@ -45,15 +45,22 @@ Trivial arguments — literals, paths, field accesses, indexing
 of trivial bases, dereferences, references, casts, the unit
 literal `()`, parenthesised / tuple groups whose elements are
 all trivial, binary chains of trivial operands joined by
-side-effect-free operators, and zero-arg method calls whose
-name is in the curated pure-getter set (`len`, `is_empty`,
+side-effect-free operators, zero-arg method calls whose name
+is in the curated pure-getter set (`len`, `is_empty`,
 `as_str`, `as_bytes`, `as_ref`, `as_mut`, `as_deref`,
-`as_slice`, plus anything in `extra_trivial_methods`) — are
-accepted as-is. A comparison like `vec.len() <= cap` evaluates
-the same way regardless of how many times the macro touches
-it, so binding it to a `let` would only force the comparison
-to run in release builds for no benefit. The lint focuses on
-arguments whose evaluation is itself observable.
+`as_slice`, plus anything in `extra_trivial_methods`), and
+calls to `core` / `std` macros whose expansion is a compile-
+time constant (`concat!`, `env!`, `option_env!`,
+`include_str!`, `include_bytes!`, `stringify!`, `cfg!`,
+`line!`, `column!`, `file!`, `module_path!`, plus anything in
+`extra_trivial_macros`) — are accepted as-is. A comparison
+like `vec.len() <= cap` evaluates the same way regardless of
+how many times the macro touches it, so binding it to a `let`
+would only force the comparison to run in release builds for
+no benefit; the same logic applies to `env!("HOME")` inside
+`debug_assert_eq!(...)` — there is nothing to evaluate at
+runtime. The lint focuses on arguments whose evaluation is
+itself observable.
 
 ## Example
 ```rust,ignore
@@ -112,6 +119,23 @@ wins. Useful for opting back into linting on a default entry
 the project does not consider trivial — for example, removing
 `as_ref` for a project that wraps it in a non-pure
 implementation.
+
+### `extra_trivial_macros`: `[string]` (optional)
+
+Macro names added to the built-in trivial-macro list. Each
+entry is matched against the invocation's final path segment
+(so `my_crate::const_str` matches by the `"const_str"` tail).
+A trivial-macro call passed as an argument to another macro is
+treated as a trivial atom — the rule does not propose binding
+it to a `let`. Use this knob for project-specific macros whose
+expansion is guaranteed to be a literal or other compile-time
+constant.
+
+### `ignore_trivial_macros`: `[string]` (optional)
+
+Macro names to drop from the trivial-macro list, even if they
+appear in the built-in defaults or in `extra_trivial_macros`.
+Checked after the merge, so this knob always wins.
 
 ### Types
 

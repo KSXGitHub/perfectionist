@@ -31,6 +31,10 @@ struct RuleConfig {
     extra_trivial_methods: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     ignore_trivial_methods: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    extra_trivial_macros: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    ignore_trivial_macros: Vec<String>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -117,6 +121,28 @@ fn ignore_trivial_methods_drops_a_built_in_pure_getter() {
         "ui-toml/macro_argument_binding/ignore_trivial_methods",
         RuleConfig {
             ignore_trivial_methods: vec!["as_ref".into()],
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn extra_trivial_macros_adds_a_compile_time_macro_to_the_atom_set() {
+    run(
+        "ui-toml/macro_argument_binding/extra_trivial_macros",
+        RuleConfig {
+            extra_trivial_macros: vec!["literal_table".into()],
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn ignore_trivial_macros_drops_a_built_in_compile_time_macro() {
+    run(
+        "ui-toml/macro_argument_binding/ignore_trivial_macros",
+        RuleConfig {
+            ignore_trivial_macros: vec!["cfg".into()],
             ..Default::default()
         },
     );

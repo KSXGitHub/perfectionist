@@ -21,11 +21,32 @@ const CONFIG_KEY: &str = "perfectionist::macro_argument_binding";
 /// (`debug_assert*`) or to drop them entirely in release builds.
 const BUILTIN_DENY: &[&str] = &["debug_assert", "debug_assert_eq", "debug_assert_ne"];
 
-/// Macros known to evaluate every top-level argument exactly once. The
-/// list mirrors the curated set in `macro_trailing_comma`, with the
-/// conditional-evaluation families (`log::*`, `tracing::*`) removed
-/// because those *do* drop arguments below the configured filter level.
+/// Macros for which the call site is known not to introduce the
+/// "evaluate zero, one, or many times" hazard. Two disjoint groups:
+///
+/// 1. Runtime macros (`format!`, `vec!`, `assert!`, `dbg!`, …) that
+///    promise to evaluate every top-level argument exactly once.
+///    Shares its core with `macro_trailing_comma`'s built-in set,
+///    minus the conditional-evaluation families (`log::*`,
+///    `tracing::*`) that *do* drop arguments below the configured
+///    filter level.
+/// 2. `core` / `std` macros whose top-level argument simply isn't a
+///    runtime expression — `stringify!` takes a token sequence,
+///    `cfg!` takes a cfg predicate, the `env!` / `include_*` /
+///    `is_x86_feature_detected!` family takes a string literal, the
+///    `line!` / `column!` / `file!` / `module_path!` family takes
+///    no argument, `compile_error!` aborts compilation — or, in the
+///    matryoshka case from issue #71, is itself a call to another
+///    macro from this group. None of these evaluates a user
+///    expression at runtime, so no exactly-once-vs.-zero hazard
+///    surfaces at the call site.
+///
+/// `macro_trailing_comma`'s own built-in list is intentionally
+/// narrower than this one (it has no reason to care about
+/// `stringify!` / `cfg!` / `include_*` etc.); the two lists are not
+/// kept in lockstep.
 const BUILTIN_ALLOW: &[&str] = &[
+    // Runtime macros that promise exactly-once evaluation per argument.
     "format",
     "format_args",
     "print",
@@ -45,6 +66,51 @@ const BUILTIN_ALLOW: &[&str] = &[
     "matches",
     "dbg",
     "anyhow",
+    // `core` / `std` macros that do not evaluate a runtime user
+    // expression at the call site (see the doc comment above for
+    // the per-macro rationale).
+    "cfg",
+    "column",
+    "compile_error",
+    "concat",
+    "env",
+    "file",
+    "include",
+    "include_bytes",
+    "include_str",
+    "is_x86_feature_detected",
+    "line",
+    "module_path",
+    "option_env",
+    "stringify",
+];
+
+/// `core` / `std` macros whose invocation expands to a value the
+/// compiler computes at build time — a literal, a `&'static str`, a
+/// byte string, a `bool` cfg verdict, a line / column / file marker.
+/// None evaluates a runtime expression, none has side effects, so an
+/// `inner!(...)` call to one of these is itself a trivial argument
+/// for the surrounding macro: it cannot be evaluated more than once
+/// at runtime no matter what the outer macro does with it.
+///
+/// `include!` is deliberately excluded — its expansion is arbitrary
+/// Rust code rather than a literal, so its triviality depends on the
+/// included file's contents and the rule cannot prove it.
+/// `compile_error!` is also excluded: its expansion is the diverging
+/// `!` type rather than a value, and the planning doc reserves the
+/// trivial-atom slot for value-producing macros.
+const BUILTIN_TRIVIAL_MACROS: &[&str] = &[
+    "cfg",
+    "column",
+    "concat",
+    "env",
+    "file",
+    "include_bytes",
+    "include_str",
+    "line",
+    "module_path",
+    "option_env",
+    "stringify",
 ];
 
 /// Zero-arg method names that are conventionally side-effect-free
@@ -118,6 +184,19 @@ pub(super) struct Config {
     /// `as_ref` for a project that wraps it in a non-pure
     /// implementation.
     pub ignore_trivial_methods: Vec<String>,
+    /// Macro names added to the built-in trivial-macro list. Each
+    /// entry is matched against the invocation's final path segment
+    /// (so `my_crate::const_str` matches by the `"const_str"` tail).
+    /// A trivial-macro call passed as an argument to another macro is
+    /// treated as a trivial atom — the rule does not propose binding
+    /// it to a `let`. Use this knob for project-specific macros whose
+    /// expansion is guaranteed to be a literal or other compile-time
+    /// constant.
+    pub extra_trivial_macros: Vec<String>,
+    /// Macro names to drop from the trivial-macro list, even if they
+    /// appear in the built-in defaults or in `extra_trivial_macros`.
+    /// Checked after the merge, so this knob always wins.
+    pub ignore_trivial_macros: Vec<String>,
 }
 
 impl Default for Config {
@@ -130,6 +209,8 @@ impl Default for Config {
             ignore: Vec::new(),
             extra_trivial_methods: Vec::new(),
             ignore_trivial_methods: Vec::new(),
+            extra_trivial_macros: Vec::new(),
+            ignore_trivial_macros: Vec::new(),
         }
     }
 }
@@ -155,6 +236,13 @@ pub(super) struct MacroArgumentBinding {
     /// consulted by the trivial-expression walker to accept
     /// `expr.method()` as a trivial postfix on a trivial base.
     trivial_methods: BTreeSet<String>,
+    /// Built-in trivial-macro list plus `extra_trivial_macros`,
+    /// consulted by the trivial-expression walker to accept
+    /// `inner!(...)` as a trivial atom when the macro's expansion
+    /// is a compile-time constant. Match is tail-segment-based:
+    /// an entry of `"env"` accepts `env!(...)`, `std::env!(...)`,
+    /// and `::core::env!(...)` alike.
+    trivial_macros: BTreeSet<String>,
 }
 
 impl MacroArgumentBinding {
@@ -170,6 +258,11 @@ impl MacroArgumentBinding {
             config.extra_trivial_methods,
             config.ignore_trivial_methods,
         );
+        let trivial_macros = merge_string_allowlist(
+            BUILTIN_TRIVIAL_MACROS,
+            config.extra_trivial_macros,
+            config.ignore_trivial_macros,
+        );
         Self {
             enabled: config.enabled,
             mode: config.mode,
@@ -178,6 +271,7 @@ impl MacroArgumentBinding {
             allow_extra: extra_allow,
             ignore,
             trivial_methods,
+            trivial_macros,
         }
     }
 
@@ -185,6 +279,13 @@ impl MacroArgumentBinding {
     /// on a trivial base are accepted as trivial postfixes.
     pub(super) fn trivial_methods(&self) -> &BTreeSet<String> {
         &self.trivial_methods
+    }
+
+    /// The merged set of macro names whose `inner!(...)` invocations
+    /// are accepted as trivial atoms. Matched by final path segment,
+    /// so a single-name entry covers fully-qualified call sites too.
+    pub(super) fn trivial_macros(&self) -> &BTreeSet<String> {
+        &self.trivial_macros
     }
 
     /// Path-side eligibility: combines the `enabled` switch, the

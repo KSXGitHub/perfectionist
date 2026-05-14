@@ -264,6 +264,34 @@ fn _turbofish_method_call_flagged(text: &str) {
     debug_assert!(text.parse::<u32>().is_ok());
 }
 
+// `core` / `std` compile-time macros (`concat!`, `env!`,
+// `option_env!`, `include_str!`, `include_bytes!`, `stringify!`,
+// `cfg!`, `line!`, `column!`, `file!`, `module_path!`) are on the
+// allow list AND count as trivial atoms when nested inside another
+// macro. The expansion is a compile-time constant — a literal, a
+// `&'static str`, a `bool`, a span marker — with no runtime
+// evaluation to disturb. Both behaviours together make the patterns
+// flagged in issue #71 invisible to the lint.
+fn _compile_time_macros_accepted() {
+    // Outer compile-time macros are allow-listed: their arguments
+    // (literals, paths, other compile-time macro calls) are
+    // unconditionally accepted.
+    let _ = concat!("home is at ", env!("CARGO_PKG_NAME"));
+    let _ = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
+    let _ = stringify!(let x = compute(););
+    // Inner compile-time macros are trivial atoms inside any
+    // surrounding (even deny-listed) macro: there is no runtime
+    // expression to bind.
+    debug_assert_eq!(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_NAME"));
+    debug_assert!(cfg!(any()) || cfg!(all()));
+    debug_assert_eq!(line!(), line!());
+    debug_assert_eq!(concat!("a", "b"), "ab");
+    // Qualified-path call sites still hit the trivial-macro
+    // recognition: tail-segment matching makes `::std::stringify!`
+    // line up with the same `"stringify"` entry as the bare form.
+    debug_assert_eq!(::std::stringify!(x), std::stringify!(x));
+}
+
 #[allow(dead_code)]
 struct NameType;
 

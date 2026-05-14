@@ -17,7 +17,6 @@
 //! arguments, skip non-expression arguments, classify expressions,
 //! park violation spans for the late pass to emit.
 
-use std::collections::BTreeSet;
 use std::sync::Mutex;
 
 use rustc_ast::MacCall;
@@ -35,7 +34,9 @@ mod triviality;
 
 use config::MacroArgumentBinding;
 use late::MacroArgumentBindingLate;
-use triviality::{is_trivial_expression, looks_like_expression, split_top_level_arguments};
+use triviality::{
+    TrivialContext, is_trivial_expression, looks_like_expression, split_top_level_arguments,
+};
 
 declare_tool_lint! {
     /// ### What it does
@@ -76,15 +77,22 @@ declare_tool_lint! {
     /// of trivial bases, dereferences, references, casts, the unit
     /// literal `()`, parenthesised / tuple groups whose elements are
     /// all trivial, binary chains of trivial operands joined by
-    /// side-effect-free operators, and zero-arg method calls whose
-    /// name is in the curated pure-getter set (`len`, `is_empty`,
+    /// side-effect-free operators, zero-arg method calls whose name
+    /// is in the curated pure-getter set (`len`, `is_empty`,
     /// `as_str`, `as_bytes`, `as_ref`, `as_mut`, `as_deref`,
-    /// `as_slice`, plus anything in `extra_trivial_methods`) — are
-    /// accepted as-is. A comparison like `vec.len() <= cap` evaluates
-    /// the same way regardless of how many times the macro touches
-    /// it, so binding it to a `let` would only force the comparison
-    /// to run in release builds for no benefit. The lint focuses on
-    /// arguments whose evaluation is itself observable.
+    /// `as_slice`, plus anything in `extra_trivial_methods`), and
+    /// calls to `core` / `std` macros whose expansion is a compile-
+    /// time constant (`concat!`, `env!`, `option_env!`,
+    /// `include_str!`, `include_bytes!`, `stringify!`, `cfg!`,
+    /// `line!`, `column!`, `file!`, `module_path!`, plus anything in
+    /// `extra_trivial_macros`) — are accepted as-is. A comparison
+    /// like `vec.len() <= cap` evaluates the same way regardless of
+    /// how many times the macro touches it, so binding it to a `let`
+    /// would only force the comparison to run in release builds for
+    /// no benefit; the same logic applies to `env!("HOME")` inside
+    /// `debug_assert_eq!(...)` — there is nothing to evaluate at
+    /// runtime. The lint focuses on arguments whose evaluation is
+    /// itself observable.
     ///
     /// ### Example
     /// ```rust,ignore
@@ -146,20 +154,24 @@ impl EarlyLintPass for MacroArgumentBinding {
         let Some(arguments) = split_top_level_arguments(&mac_call.args.tokens) else {
             return;
         };
+        let ctx = TrivialContext {
+            methods: self.trivial_methods(),
+            macros: self.trivial_macros(),
+        };
         for argument in arguments {
-            check_argument(&argument, self.trivial_methods());
+            check_argument(&argument, ctx);
         }
     }
 }
 
-fn check_argument(argument: &[TokenTree], trivial_methods: &BTreeSet<String>) {
+fn check_argument(argument: &[TokenTree], ctx: TrivialContext<'_>) {
     if argument.is_empty() {
         return;
     }
     if !looks_like_expression(argument) {
         return;
     }
-    if is_trivial_expression(argument, trivial_methods) {
+    if is_trivial_expression(argument, ctx) {
         return;
     }
     let first = argument.first().expect("non-empty checked above");
