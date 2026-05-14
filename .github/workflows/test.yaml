@@ -1,8 +1,12 @@
 name: Test
 
 on:
-  - push
-  - pull_request
+  # Branch pushes only — tag pushes are covered by the deploy workflow,
+  # which invokes this workflow via `workflow_call` before publishing.
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_call:
 
 jobs:
   test:

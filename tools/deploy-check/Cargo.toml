@@ -1,0 +1,18 @@
+[package]
+name = "_deploy_check"
+description = "Validate the version-bump contract enforced by the deploy CI and the project's git hooks"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "deploy-check"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.6.1", features = ["derive"] }
+command-extra = "1.0.0"
+derive_more = { version = "2.1.1", default-features = false, features = ["display"] }
+pipe-trait = "0.4.0"
+serde = { version = "1.0.228", features = ["derive"] }
+toml = "1.1.2"

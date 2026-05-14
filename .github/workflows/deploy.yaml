@@ -6,8 +6,16 @@ on:
       - '[0-9]+.[0-9]+.[0-9]+*'
 
 jobs:
+  # Run the full test suite (`just all`) against the tagged commit
+  # before anything is published. `publish` requires this job to pass.
+  test:
+    name: Test
+    uses: ./.github/workflows/test.yaml
+
   publish:
     name: Publish to crates.io
+
+    needs: test
 
     runs-on: ubuntu-latest
 
@@ -21,6 +29,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          # The version-bump-contract check needs the tagged commit's
+          # parent to diff against, so fetch one extra commit beyond
+          # the default shallow clone.
+          fetch-depth: 2
 
       - name: Cache
         uses: actions/cache@v5
@@ -52,17 +65,19 @@ jobs:
         with:
           tool: dylint-link
 
-      - name: Verify tag matches Cargo.toml version
+      # Encapsulates the release contract:
+      #   * tag matches `X.Y.Z` or `X.Y.Z-<suffix>`
+      #   * commit message at HEAD equals the tag exactly
+      #   * Cargo.toml `[package].version` equals the tag
+      #   * Cargo.lock `perfectionist` version equals the tag
+      #   * the diff against the parent touches only the two `version`
+      #     lines in Cargo.toml and Cargo.lock — nothing else
+      # See `tools/deploy-check/`.
+      - name: Verify version-bump contract
         shell: bash
         run: |
-          tag="${{ github.ref_name }}"
-          version=$(cargo metadata --format-version 1 --no-deps \
-            | jq -r '.packages[] | select(.name == "perfectionist") | .version')
-          if [ "$tag" != "$version" ]; then
-            echo "::error::Tag '$tag' does not match Cargo.toml version '$version'"
-            exit 1
-          fi
-          echo "Tag and Cargo.toml version match: $version"
+          cargo run --locked --package _deploy_check --bin deploy-check -- \
+            "$(pwd)" verify "${{ github.ref_name }}"
 
       - name: Authenticate with crates.io
         id: auth
