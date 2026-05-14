@@ -210,7 +210,7 @@ fn take_trivial_atom<'a>(
             TokenKind::Star => take_trivial_expression(rest, ctx),
             // Path: ident (`::` ident)*. If the path is followed by
             // `!` and the path's final segment names a curated
-            // trivial macro (`concat!`, `env!`, `include_str!`, …),
+            // trivial macro (`concat!`, `env!`, `include_str!`, ...),
             // the whole `name!(...)` / `name![...]` is a trivial
             // atom — the expansion is a compile-time constant. The
             // body contents are unchecked: by construction the

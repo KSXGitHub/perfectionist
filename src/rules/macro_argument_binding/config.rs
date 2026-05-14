@@ -23,7 +23,7 @@ const BUILTIN_DENY: &[&str] = &["debug_assert", "debug_assert_eq", "debug_assert
 
 /// Macros known to evaluate every top-level argument exactly once,
 /// plus the curated set of `core` / `std` macros that operate purely
-/// at compile time (`concat!`, `env!`, `include_str!`, …): their
+/// at compile time (`concat!`, `env!`, `include_str!`, ...): their
 /// arguments are either literals or other compile-time-pure macro
 /// calls, never runtime expressions whose evaluation order matters.
 /// The list mirrors the curated set in `macro_trailing_comma`, with
