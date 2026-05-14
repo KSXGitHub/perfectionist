@@ -178,13 +178,15 @@ The lint accepts any argument whose outermost shape is one of:
   evaluate-once-vs.-zero hazard the rule is built to catch.
   Match is tail-segment-keyed: `env!`, `std::env!`, and
   `::core::env!` all match the `"env"` entry. The macro's
-  body contents are not inspected — by construction the
-  built-in macros accept only literals or other compile-time
-  macro calls, so there is nothing for the surrounding rule
-  to mis-classify there. Curly-delimited inner macros
-  (`name! { ... }`) do *not* qualify; the rule treats those
-  as DSL bodies, the same way it treats the outer call's
-  curly form.
+  body contents are not inspected. The justification isn't
+  that the input shape is restricted — `stringify!` accepts
+  arbitrary tokens and `cfg!` accepts cfg predicates — but
+  that none of these macros evaluates a runtime user
+  expression in the first place, so there is nothing for
+  the surrounding rule to drop or duplicate regardless of
+  what's inside. Curly-delimited inner macros (`name! { ... }`)
+  do *not* qualify; the rule treats those as DSL bodies, the
+  same way it treats the outer call's curly form.
 
 Everything else is non-trivial: function and method calls, `?`,
 `.await`, macro invocations, blocks, control-flow expressions,
@@ -256,20 +258,37 @@ Three name-set lookups decide each invocation:
    → accept unconditionally.
 3. **Neither** → flag every non-trivial argument.
 
-The default allow list tracks the curated set in
-[`macro-trailing-comma`](./macro-trailing-comma.md), with the
-conditional-evaluation families (`log::*`, `tracing::*`)
-removed: `format!`, `format_args!`, `print!`, `println!`,
-`eprint!`, `eprintln!`, `write!`, `writeln!`, `vec!`,
-`panic!`, `unimplemented!`, `todo!`, `unreachable!`,
+The default allow list has two parts.
+
+The first part overlaps with
+[`macro-trailing-comma`](./macro-trailing-comma.md)'s built-in
+set, minus the conditional-evaluation families (`log::*`,
+`tracing::*`) that *do* drop arguments below the configured
+filter level: `format!`, `format_args!`, `print!`,
+`println!`, `eprint!`, `eprintln!`, `write!`, `writeln!`,
+`vec!`, `panic!`, `unimplemented!`, `todo!`, `unreachable!`,
 `assert!`, `assert_eq!`, `assert_ne!`, `matches!`, `dbg!`,
-`anyhow!`, and similar. The `core` / `std` compile-time
-macro family is on the same allow list, because their
-arguments are literals or other compile-time macro calls
-with no observable evaluation order: `concat!`, `env!`,
-`option_env!`, `include!`, `include_str!`, `include_bytes!`,
-`stringify!`, `cfg!`, `compile_error!`, `line!`, `column!`,
-`file!`, `module_path!`, `is_x86_feature_detected!`.
+`anyhow!`, and similar. These are runtime macros whose
+matchers promise exactly-once evaluation per top-level
+argument.
+
+The second part adds `core` / `std` macros whose top-level
+argument simply isn't a runtime expression — `stringify!`
+takes a token sequence, `cfg!` takes a cfg predicate, the
+`env!` / `option_env!` / `include_str!` / `include_bytes!` /
+`include!` / `is_x86_feature_detected!` family takes a
+string literal, the `line!` / `column!` / `file!` /
+`module_path!` family takes no argument, and
+`compile_error!` aborts compilation — so there is no
+once-vs.-zero hazard for the rule to flag.
+`is_x86_feature_detected!` does perform a cached CPU check
+at runtime, but the lookup runs without any user-side
+argument evaluation, so it sits comfortably in the same
+group.
+
+`macro-trailing-comma`'s built-in list is intentionally
+narrower than this one; the two lists are not kept in
+lockstep.
 
 Flagging unlisted macros by default is deliberate: the rule
 isn't useful if every unrecognised proc macro gets a free pass.

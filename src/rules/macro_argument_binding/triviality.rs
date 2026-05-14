@@ -212,10 +212,14 @@ fn take_trivial_atom<'a>(
             // `!` and the path's final segment names a curated
             // trivial macro (`concat!`, `env!`, `include_str!`, ...),
             // the whole `name!(...)` / `name![...]` is a trivial
-            // atom — the expansion is a compile-time constant. The
-            // body contents are unchecked: by construction the
-            // macro accepts only literals or other trivial macro
-            // calls, so there is no runtime expression to bind.
+            // atom — the expansion is a compile-time constant and
+            // the macro itself does not evaluate any runtime user
+            // expression (`stringify!` takes a token sequence and
+            // `cfg!` takes a cfg predicate, but neither evaluates
+            // them as Rust code). The body contents are therefore
+            // unchecked: there is no runtime expression for the
+            // surrounding macro to drop or duplicate, regardless of
+            // what the inner macro's input shape is.
             TokenKind::Ident(name, _) => {
                 Some(take_path_and_optional_macro_call(name, rest, ctx.macros))
             }

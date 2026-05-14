@@ -21,15 +21,30 @@ const CONFIG_KEY: &str = "perfectionist::macro_argument_binding";
 /// (`debug_assert*`) or to drop them entirely in release builds.
 const BUILTIN_DENY: &[&str] = &["debug_assert", "debug_assert_eq", "debug_assert_ne"];
 
-/// Macros known to evaluate every top-level argument exactly once,
-/// plus the curated set of `core` / `std` macros that operate purely
-/// at compile time (`concat!`, `env!`, `include_str!`, ...): their
-/// arguments are either literals or other compile-time-pure macro
-/// calls, never runtime expressions whose evaluation order matters.
-/// The list mirrors the curated set in `macro_trailing_comma`, with
-/// the conditional-evaluation families (`log::*`, `tracing::*`)
-/// removed because those *do* drop arguments below the configured
-/// filter level.
+/// Macros for which the call site is known not to introduce the
+/// "evaluate zero, one, or many times" hazard. Two disjoint groups:
+///
+/// 1. Runtime macros (`format!`, `vec!`, `assert!`, `dbg!`, …) that
+///    promise to evaluate every top-level argument exactly once.
+///    Shares its core with `macro_trailing_comma`'s built-in set,
+///    minus the conditional-evaluation families (`log::*`,
+///    `tracing::*`) that *do* drop arguments below the configured
+///    filter level.
+/// 2. `core` / `std` macros whose top-level argument simply isn't a
+///    runtime expression — `stringify!` takes a token sequence,
+///    `cfg!` takes a cfg predicate, the `env!` / `include_*` /
+///    `is_x86_feature_detected!` family takes a string literal, the
+///    `line!` / `column!` / `file!` / `module_path!` family takes
+///    no argument, `compile_error!` aborts compilation — or, in the
+///    matryoshka case from issue #71, is itself a call to another
+///    macro from this group. None of these evaluates a user
+///    expression at runtime, so no exactly-once-vs.-zero hazard
+///    surfaces at the call site.
+///
+/// `macro_trailing_comma`'s own built-in list is intentionally
+/// narrower than this one (it has no reason to care about
+/// `stringify!` / `cfg!` / `include_*` etc.); the two lists are not
+/// kept in lockstep.
 const BUILTIN_ALLOW: &[&str] = &[
     // Runtime macros that promise exactly-once evaluation per argument.
     "format",
@@ -51,12 +66,9 @@ const BUILTIN_ALLOW: &[&str] = &[
     "matches",
     "dbg",
     "anyhow",
-    // `core` / `std` compile-time macros. Each accepts only literals,
-    // identifiers, or other compile-time macro calls (and `is_x86_*` /
-    // `cfg!` accept only literal-shaped feature / cfg predicates).
-    // There is no observable evaluation order to disturb, so passing
-    // any expression — even a nested macro that itself produces a
-    // literal — is safe.
+    // `core` / `std` macros that do not evaluate a runtime user
+    // expression at the call site (see the doc comment above for
+    // the per-macro rationale).
     "cfg",
     "column",
     "compile_error",
