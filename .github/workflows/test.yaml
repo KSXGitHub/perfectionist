@@ -10,6 +10,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      PERFECTIONIST_CARGO_LOCKED: 'true'
+
     steps:
       - uses: actions/checkout@v6
 

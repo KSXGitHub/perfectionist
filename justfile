@@ -1,5 +1,21 @@
 export PATH := justfile_directory() + "/.dev-tools/bin:" + env_var("PATH")
 
+# Set PERFECTIONIST_CARGO_LOCKED=true to pass `--locked` to the cargo invocations the
+# gating CI recipes (`build`, `doc`, `lint`, `test`, `self-lint`) reach,
+# including the warmup / doc-generation recipes they delegate to. Empty,
+# `false`, and unset all leave the lockfile writable; any other value
+# is rejected.
+perfectionist_cargo_locked := env_var_or_default("PERFECTIONIST_CARGO_LOCKED", "")
+locked := if perfectionist_cargo_locked == "true" {
+    "--locked"
+  } else if perfectionist_cargo_locked == "false" {
+    ""
+  } else if perfectionist_cargo_locked == "" {
+    ""
+  } else {
+    error("PERFECTIONIST_CARGO_LOCKED must be 'true', 'false', empty, or unset; got: " + perfectionist_cargo_locked)
+  }
+
 _default:
   @just --list
 
@@ -18,30 +34,30 @@ fmt:
 
 # Build in debug mode
 build:
-  cargo build --workspace --all-targets
+  cargo build --workspace --all-targets {{locked}}
 
 # Check documentation
 doc:
   just gen-docs
   just check-rules-md
-  RUSTFLAGS='-D warnings' cargo doc --no-deps --document-private-items
+  RUSTFLAGS='-D warnings' cargo doc --no-deps --document-private-items {{locked}}
 
 # Run all the lints
 lint:
-  cargo clippy --workspace --all-targets -- -D warnings
+  cargo clippy --workspace --all-targets {{locked}} -- -D warnings
 
 # Run all the tests
 test:
   just warmup-integration-tests
-  cargo test --workspace --all-targets
+  cargo test --workspace --all-targets {{locked}}
 
 # Run perfectionist's own lints on its source
 self-lint:
-  DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --all-targets
+  DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --all-targets {{locked}}
 
 # Pre-warm `target/integration-fixtures`
 warmup-integration-tests:
-  time cargo run --package _utils --bin warmup -- "$(pwd)"
+  time cargo run {{locked}} --package _utils --bin warmup -- "$(pwd)"
 
 # Install cargo-dylint and dylint-link into `.dev-tools/`
 install-dev-tools:
@@ -66,12 +82,12 @@ gen-docs out_dir="gh-pages" git_ref="":
   if [ -z "$ref" ]; then
     ref="$(git rev-parse HEAD)"
   fi
-  cargo run --package _gen_docs --bin gen-docs -- --root "$(pwd)" html "{{out_dir}}" --git-ref="$ref"
+  cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" html "{{out_dir}}" --git-ref="$ref"
 
 # Regenerate the in-tree markdown catalogue under `rules/`.
 gen-rules-md rules_dir="rules":
-  cargo run --package _gen_docs --bin gen-docs -- --root "$(pwd)" write-md "{{rules_dir}}"
+  cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" write-md "{{rules_dir}}"
 
 # Verify the in-tree markdown catalogue is in sync with `src/rules/`.
 check-rules-md rules_dir="rules":
-  cargo run --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
+  cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
