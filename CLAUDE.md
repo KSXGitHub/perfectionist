@@ -213,15 +213,24 @@ running a single sub-recipe (e.g. only `cargo test`) — the
 `self-lint` step runs perfectionist's own lints on its source and
 catches violations the other steps miss.
 
-If `cargo-dylint` cannot be installed for any reason (an
+If `just install-dev-tools` cannot complete for any reason (an
 extremely rare failure — sandboxed environments without network
 access, an upstream registry outage, an incompatible host
-toolchain), skip the `self-lint` step and instead read the
-in-tree rule catalogue under `rules/` and apply the rules
-manually to whatever code you just wrote or touched. Each file
-in `rules/` is the human-readable spec for one lint; walk the
-diff against the relevant rules and fix violations by hand. Note
-this fallback explicitly in your summary so the user knows the
+toolchain), the workspace is not just missing `cargo-dylint`:
+`.cargo/config.toml` also pins `dylint-link` as the linker, so
+every cargo-backed `just all` step (`build`, `doc`, `lint`,
+`test`) fails to link until it's present. In that case, override
+the linker for each cargo invocation the same way
+`install-dev-tools` does internally — pass
+`--config 'target."cfg(all())".linker="cc"'` to `cargo` — and
+skip the `self-lint` step entirely, since there's no
+`cargo-dylint` to drive it. Then read the in-tree rule catalogue
+under `rules/` and apply the rules manually to whatever code you
+just wrote or touched. Each per-rule markdown file in `rules/`
+(everything except `rules/README.md`, which is the generated
+index) is the human-readable spec for one lint; walk the diff
+against the relevant rules and fix violations by hand. Note this
+fallback explicitly in your summary so the user knows the
 automated self-lint did not run.
 
 ## Rationale section: "Why is this bad?" vs "Why restrict this?"
