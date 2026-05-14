@@ -53,6 +53,20 @@ Run the following command to check everything:
 just all
 ```
 
+## Frequently Asked Questions
+
+### Why does the code base looks so ugly?
+
+This code base is almost entirely AI-generated. Or in other words, vibe-coded.
+
+### Why vibe-code?
+
+I needed a way to automatically force the AI agents I use to comply with a certain codestyle, reducing the time I'll have to spend micro-managing and reviewing AI-generated code. I cannot rely on them interpreting the rules in the markdown guides correctly, and they often don't comply with the rules completely. Hence, I looked at the code style guides and thought: "Hmm, some of these rules can be coded into a program!" and so this program was born.
+
+I needed encode these rules quick, so I chose vibe-coding.
+
+The code quality of this code base is not as important as the code quality this code base will enforce upon others. This code base is, after all, scaffholding.
+
 ## License
 
 [MIT](https://github.com/KSXGitHub/perfectionist/blob/master/LICENSE.md) © [Hoàng Văn Khải](https://github.com/KSXGitHub/).
