@@ -4,7 +4,7 @@ Additional linting rules for Rust projects.
 
 ## Rules
 
-See [the homepage](https://KSXGitHub.github.io/perfectionist/) for all the rules implemented so far.
+See [the homepage](https://KSXGitHub.github.io/perfectionist/) or [the `rules/` directory](https://github.com/KSXGitHub/perfectionist/tree/master/rules) for all the rules implemented so far.
 
 See [`planned-rules/`](https://github.com/KSXGitHub/perfectionist/tree/master/planned-rules) for all the rules not yet implemented.
 
