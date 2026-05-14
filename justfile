@@ -17,27 +17,27 @@ fmt:
   cargo fmt -- --check
 
 # Build in debug mode
-build:
-  cargo build --workspace --all-targets
+build *cargo_flags:
+  cargo build --workspace --all-targets {{cargo_flags}}
 
 # Check documentation
-doc:
+doc *cargo_flags:
   just gen-docs
   just check-rules-md
-  RUSTFLAGS='-D warnings' cargo doc --no-deps --document-private-items
+  RUSTFLAGS='-D warnings' cargo doc --no-deps --document-private-items {{cargo_flags}}
 
 # Run all the lints
-lint:
-  cargo clippy --workspace --all-targets -- -D warnings
+lint *cargo_flags:
+  cargo clippy --workspace --all-targets {{cargo_flags}} -- -D warnings
 
 # Run all the tests
-test:
+test *cargo_flags:
   just warmup-integration-tests
-  cargo test --workspace --all-targets
+  cargo test --workspace --all-targets {{cargo_flags}}
 
 # Run perfectionist's own lints on its source
-self-lint:
-  DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --all-targets
+self-lint *cargo_flags:
+  DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --all-targets {{cargo_flags}}
 
 # Pre-warm `target/integration-fixtures`
 warmup-integration-tests:

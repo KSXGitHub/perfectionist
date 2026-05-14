@@ -82,23 +82,23 @@ jobs:
 
       - name: Build
         shell: bash
-        run: just build
+        run: just build --locked
 
       - name: Doc
         shell: bash
-        run: just doc
+        run: just doc --locked
 
       - name: Lint
         shell: bash
-        run: just lint
+        run: just lint --locked
 
       - name: Test
         shell: bash
-        run: just test
+        run: just test --locked
 
       - name: Self-lint
         shell: bash
-        run: just self-lint
+        run: just self-lint --locked
 
       - name: Clean workspace artifacts before cache
         if: always()
