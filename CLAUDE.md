@@ -200,11 +200,8 @@ When you add a new rule:
 
 After modifying any Rust code in this repository, install the
 necessary developer tools and run every task that `just all`
-performs. The recipe lives in the top-level `justfile` and
-currently chains `just fmt`, `just build`, `just doc`,
-`just lint`, `just test`, and `just self-lint`; running
-`just all` from the repository root executes the whole chain in
-order. The toolchain — `cargo-dylint`, `dylint-link`, and
+performs. The recipe lives in the top-level `justfile`.
+The toolchain — `cargo-dylint`, `dylint-link`, and
 anything else the project requires — is provisioned by
 `just install-dev-tools`, which drops binaries into
 `.dev-tools/bin` (already on `PATH` via the justfile). Run it
