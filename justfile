@@ -1,8 +1,10 @@
 export PATH := justfile_directory() + "/.dev-tools/bin:" + env_var("PATH")
 
-# Set CARGO_LOCKED=true to pass `--locked` to the cargo invocations in
-# `build`, `doc`, `lint`, `test`, and `self-lint`. Empty, `false`, and
-# unset all leave the lockfile writable; any other value is rejected.
+# Set CARGO_LOCKED=true to pass `--locked` to the cargo invocations the
+# gating CI recipes (`build`, `doc`, `lint`, `test`, `self-lint`) reach,
+# including the warmup / doc-generation recipes they delegate to. Empty,
+# `false`, and unset all leave the lockfile writable; any other value
+# is rejected.
 cargo_locked := env_var_or_default("CARGO_LOCKED", "")
 locked := if cargo_locked == "true" {
     "--locked"
@@ -55,7 +57,7 @@ self-lint:
 
 # Pre-warm `target/integration-fixtures`
 warmup-integration-tests:
-  time cargo run --package _utils --bin warmup -- "$(pwd)"
+  time cargo run {{locked}} --package _utils --bin warmup -- "$(pwd)"
 
 # Install cargo-dylint and dylint-link into `.dev-tools/`
 install-dev-tools:
@@ -80,12 +82,12 @@ gen-docs out_dir="gh-pages" git_ref="":
   if [ -z "$ref" ]; then
     ref="$(git rev-parse HEAD)"
   fi
-  cargo run --package _gen_docs --bin gen-docs -- --root "$(pwd)" html "{{out_dir}}" --git-ref="$ref"
+  cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" html "{{out_dir}}" --git-ref="$ref"
 
 # Regenerate the in-tree markdown catalogue under `rules/`.
 gen-rules-md rules_dir="rules":
-  cargo run --package _gen_docs --bin gen-docs -- --root "$(pwd)" write-md "{{rules_dir}}"
+  cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" write-md "{{rules_dir}}"
 
 # Verify the in-tree markdown catalogue is in sync with `src/rules/`.
 check-rules-md rules_dir="rules":
-  cargo run --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
+  cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
