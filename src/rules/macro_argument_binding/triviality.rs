@@ -256,10 +256,10 @@ fn take_reference_tail<'a>(
 /// trivial-macro list when a `!` follows. The first segment's name
 /// is passed in; the walker reads `::ident` runs and returns the
 /// last segment seen along with the slice after the path.
-fn walk_path_tail<'a>(
+fn walk_path_tail(
     first_name: rustc_span::Symbol,
-    mut tokens: &'a [TokenTree],
-) -> (rustc_span::Symbol, &'a [TokenTree]) {
+    mut tokens: &[TokenTree],
+) -> (rustc_span::Symbol, &[TokenTree]) {
     let mut last = first_name;
     while let Some((TokenTree::Token(sep, _), after_sep)) = tokens.split_first() {
         if sep.kind != TokenKind::PathSep {
