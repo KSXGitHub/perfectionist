@@ -5,9 +5,10 @@
 Partially implemented. Modes 0-2 (`deny_only`, `blanket`,
 `allow_and_deny`) ship today, along with the `enabled`,
 `deny_extra`, `allow_extra`, `ignore`, `extra_trivial_methods`,
-and `ignore_trivial_methods` knobs. The lint emits diagnostics
-with a `let`-binding hint (no autofix, by design — the binding
-name varies per site).
+`ignore_trivial_methods`, `extra_trivial_macros`, and
+`ignore_trivial_macros` knobs. The lint emits diagnostics with
+a `let`-binding hint (no autofix, by design — the binding name
+varies per site).
 
 Still pending:
 
@@ -165,6 +166,25 @@ The lint accepts any argument whose outermost shape is one of:
   calls, and method names outside the configured set stay
   non-trivial: `map.insert(k, v)`, `iter.next()`,
   `vec.try_into::<Foo>()` still flag.
+- A function-like or array-like invocation `name!(...)` /
+  `name![...]` of a curated trivial macro: `concat!`, `env!`,
+  `option_env!`, `include_str!`, `include_bytes!`,
+  `stringify!`, `cfg!`, `line!`, `column!`, `file!`,
+  `module_path!`, plus anything in `extra_trivial_macros`.
+  These expand to compile-time constants (a literal, a
+  `&'static str`, a `bool`, a span marker) with no runtime
+  side effect, so passing one to a surrounding `debug_assert*`
+  or any other macro does not introduce the
+  evaluate-once-vs.-zero hazard the rule is built to catch.
+  Match is tail-segment-keyed: `env!`, `std::env!`, and
+  `::core::env!` all match the `"env"` entry. The macro's
+  body contents are not inspected — by construction the
+  built-in macros accept only literals or other compile-time
+  macro calls, so there is nothing for the surrounding rule
+  to mis-classify there. Curly-delimited inner macros
+  (`name! { ... }`) do *not* qualify; the rule treats those
+  as DSL bodies, the same way it treats the outer call's
+  curly form.
 
 Everything else is non-trivial: function and method calls, `?`,
 `.await`, macro invocations, blocks, control-flow expressions,
@@ -243,7 +263,13 @@ removed: `format!`, `format_args!`, `print!`, `println!`,
 `eprint!`, `eprintln!`, `write!`, `writeln!`, `vec!`,
 `panic!`, `unimplemented!`, `todo!`, `unreachable!`,
 `assert!`, `assert_eq!`, `assert_ne!`, `matches!`, `dbg!`,
-`anyhow!`, and similar.
+`anyhow!`, and similar. The `core` / `std` compile-time
+macro family is on the same allow list, because their
+arguments are literals or other compile-time macro calls
+with no observable evaluation order: `concat!`, `env!`,
+`option_env!`, `include!`, `include_str!`, `include_bytes!`,
+`stringify!`, `cfg!`, `compile_error!`, `line!`, `column!`,
+`file!`, `module_path!`, `is_x86_feature_detected!`.
 
 Flagging unlisted macros by default is deliberate: the rule
 isn't useful if every unrecognised proc macro gets a free pass.
@@ -341,6 +367,18 @@ debug_assert_eq!(count, MAX_RETRIES, "expected {MAX_RETRIES} retries");
 let msg = format!("retrying {} ({} failures)", endpoint, count.fetch_add(1, Ordering::Relaxed));
 ```
 
+### Compile-time `core` / `std` macros pass through
+
+```rust
+// Accepted — `concat!`, `env!`, `include_str!`, and the rest of
+// the compile-time family are on the allow list, and their
+// expansion is itself a literal so they also count as trivial
+// atoms when used inside another macro. Both rules together
+// make these idioms invisible to the lint:
+let msg = concat!("home: ", env!("HOME"));
+debug_assert_eq!(env!("EXPECTED"), include_str!("expected.txt"));
+```
+
 ### Array-like invocation is in scope
 
 ```rust
@@ -434,6 +472,24 @@ extra_trivial_methods = [
 # not consider trivial.
 ignore_trivial_methods = [
   # "as_ref",
+]
+
+# Macro names treated as trivial atoms when they appear as
+# arguments to another macro, in addition to the built-in set
+# (`concat`, `env`, `option_env`, `include_str`, `include_bytes`,
+# `stringify`, `cfg`, `line`, `column`, `file`, `module_path`).
+# Add project-specific compile-time macros here so that, e.g.,
+# `debug_assert_eq!(literal_table!(KEY), expected)` stops flagging
+# the inner call.
+extra_trivial_macros = [
+  # "literal_table",
+]
+
+# Macro names to drop from the trivial-macro list, even if they
+# appear in the built-in defaults or in `extra_trivial_macros`.
+# Checked after the merge, so this knob always wins.
+ignore_trivial_macros = [
+  # "cfg",
 ]
 ```
 

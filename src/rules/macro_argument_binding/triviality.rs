@@ -24,6 +24,19 @@ use rustc_ast::token::{Delimiter, IdentIsRaw, Token, TokenKind};
 use rustc_ast::tokenstream::{TokenStream, TokenTree};
 use rustc_span::kw;
 
+/// Bundle of the two name-set tables the triviality walker consults:
+/// the pure-getter method names accepted as `.method()` postfixes,
+/// and the compile-time-pure macro names accepted as `name!(...)`
+/// atoms. Both are tail-segment-keyed (single-segment matching) and
+/// owned by the rule's [`super::config::MacroArgumentBinding`] state;
+/// passing them as one borrow keeps the recursive walker's signatures
+/// short.
+#[derive(Clone, Copy)]
+pub(super) struct TrivialContext<'a> {
+    pub methods: &'a BTreeSet<String>,
+    pub macros: &'a BTreeSet<String>,
+}
+
 /// Split the top-level token stream of a macro invocation into one
 /// segment per comma-separated argument. Returns `None` if a top-level
 /// `;` is encountered (the repeat form, `vec![v; count]`), which
@@ -146,25 +159,22 @@ fn is_dsl_marker(token: &Token) -> bool {
 /// Anything outside that grammar is non-trivial — including most
 /// `const fn` calls, generic method calls, and other "morally pure"
 /// expressions the walker cannot prove side-effect-free.
-pub(super) fn is_trivial_expression(
-    tokens: &[TokenTree],
-    trivial_methods: &BTreeSet<String>,
-) -> bool {
-    take_trivial_expression(tokens, trivial_methods).is_some_and(<[_]>::is_empty)
+pub(super) fn is_trivial_expression(tokens: &[TokenTree], ctx: TrivialContext<'_>) -> bool {
+    take_trivial_expression(tokens, ctx).is_some_and(<[_]>::is_empty)
 }
 
 fn take_trivial_expression<'a>(
     tokens: &'a [TokenTree],
-    trivial_methods: &BTreeSet<String>,
+    ctx: TrivialContext<'_>,
 ) -> Option<&'a [TokenTree]> {
-    let after_atom = take_trivial_atom(tokens, trivial_methods)?;
-    let after_suffix = take_trivial_suffixes(after_atom, trivial_methods);
-    Some(take_trivial_binary_tail(after_suffix, trivial_methods))
+    let after_atom = take_trivial_atom(tokens, ctx)?;
+    let after_suffix = take_trivial_suffixes(after_atom, ctx);
+    Some(take_trivial_binary_tail(after_suffix, ctx))
 }
 
 fn take_trivial_atom<'a>(
     tokens: &'a [TokenTree],
-    trivial_methods: &BTreeSet<String>,
+    ctx: TrivialContext<'_>,
 ) -> Option<&'a [TokenTree]> {
     let (head, rest) = tokens.split_first()?;
     match head {
@@ -180,7 +190,7 @@ fn take_trivial_atom<'a>(
         // runs pre-expansion and never sees invisible delimiters
         // in practice.
         TokenTree::Delimited(_, _, Delimiter::Parenthesis, inner) => {
-            if is_trivial_paren_inner(inner, trivial_methods) {
+            if is_trivial_paren_inner(inner, ctx) {
                 Some(rest)
             } else {
                 None
@@ -193,15 +203,24 @@ fn take_trivial_atom<'a>(
                 Some(rest)
             }
             // `&` expr or `&mut` expr.
-            TokenKind::And => take_reference_tail(rest, trivial_methods),
+            TokenKind::And => take_reference_tail(rest, ctx),
             // `&&` expr or `&& mut` expr (double reference).
-            TokenKind::AndAnd => take_reference_tail(rest, trivial_methods),
+            TokenKind::AndAnd => take_reference_tail(rest, ctx),
             // `*expr` (deref).
-            TokenKind::Star => take_trivial_expression(rest, trivial_methods),
-            // Path: ident (`::` ident)*.
-            TokenKind::Ident(_, _) => Some(take_path_tail(rest)),
+            TokenKind::Star => take_trivial_expression(rest, ctx),
+            // Path: ident (`::` ident)*. If the path is followed by
+            // `!` and the path's final segment names a curated
+            // trivial macro (`concat!`, `env!`, `include_str!`, …),
+            // the whole `name!(...)` / `name![...]` is a trivial
+            // atom — the expansion is a compile-time constant. The
+            // body contents are unchecked: by construction the
+            // macro accepts only literals or other trivial macro
+            // calls, so there is no runtime expression to bind.
+            TokenKind::Ident(name, _) => {
+                Some(take_path_and_optional_macro_call(name, rest, ctx.macros))
+            }
             // Leading `::` — must be followed by an ident.
-            TokenKind::PathSep => take_path_after_sep(rest),
+            TokenKind::PathSep => take_atom_path_after_sep(rest, ctx.macros),
             _ => None,
         },
         _ => None,
@@ -212,27 +231,56 @@ fn take_trivial_atom<'a>(
 /// `(a, b, ...)` (tuple, optional trailing comma) when every element is
 /// itself trivial. Empty elements in the middle (`(a,,b)`) are not
 /// Rust syntax and are rejected.
-fn is_trivial_paren_inner(stream: &TokenStream, trivial_methods: &BTreeSet<String>) -> bool {
+fn is_trivial_paren_inner(stream: &TokenStream, ctx: TrivialContext<'_>) -> bool {
     let Some(arguments) = split_top_level_arguments(stream) else {
         return false;
     };
     arguments
         .iter()
-        .all(|argument| !argument.is_empty() && is_trivial_expression(argument, trivial_methods))
+        .all(|argument| !argument.is_empty() && is_trivial_expression(argument, ctx))
 }
 
 fn take_reference_tail<'a>(
     tokens: &'a [TokenTree],
-    trivial_methods: &BTreeSet<String>,
+    ctx: TrivialContext<'_>,
 ) -> Option<&'a [TokenTree]> {
     let after_mut = match tokens.split_first() {
         Some((TokenTree::Token(token, _), rest)) if token.is_keyword(kw::Mut) => rest,
         _ => tokens,
     };
-    take_trivial_expression(after_mut, trivial_methods)
+    take_trivial_expression(after_mut, ctx)
+}
+
+/// Walk a path tail beginning after a leading ident, tracking the
+/// path's final segment so the caller can match it against the
+/// trivial-macro list when a `!` follows. The first segment's name
+/// is passed in; the walker reads `::ident` runs and returns the
+/// last segment seen along with the slice after the path.
+fn walk_path_tail<'a>(
+    first_name: rustc_span::Symbol,
+    mut tokens: &'a [TokenTree],
+) -> (rustc_span::Symbol, &'a [TokenTree]) {
+    let mut last = first_name;
+    while let Some((TokenTree::Token(sep, _), after_sep)) = tokens.split_first() {
+        if sep.kind != TokenKind::PathSep {
+            break;
+        }
+        let Some((TokenTree::Token(ident, _), after_ident)) = after_sep.split_first() else {
+            break;
+        };
+        let TokenKind::Ident(name, _) = ident.kind else {
+            break;
+        };
+        last = name;
+        tokens = after_ident;
+    }
+    (last, tokens)
 }
 
 fn take_path_tail(mut tokens: &[TokenTree]) -> &[TokenTree] {
+    // Type-position paths and `as`-cast paths don't need to know the
+    // tail segment's name (no trailing `!` is recognised there), so
+    // this variant skips the tracking that `walk_path_tail` does.
     while let Some((TokenTree::Token(sep, _), after_sep)) = tokens.split_first() {
         if sep.kind != TokenKind::PathSep {
             break;
@@ -248,6 +296,70 @@ fn take_path_tail(mut tokens: &[TokenTree]) -> &[TokenTree] {
     tokens
 }
 
+/// After consuming the leading ident of an atom path, walk the rest
+/// of the path and optionally consume a trailing trivial macro call.
+/// `first_name` is the leading ident's symbol; `tokens` is the slice
+/// following it.
+fn take_path_and_optional_macro_call<'a>(
+    first_name: rustc_span::Symbol,
+    tokens: &'a [TokenTree],
+    trivial_macros: &BTreeSet<String>,
+) -> &'a [TokenTree] {
+    let (tail_name, after_path) = walk_path_tail(first_name, tokens);
+    take_trivial_macro_call(after_path, tail_name, trivial_macros).unwrap_or(after_path)
+}
+
+/// If `tokens` starts with `! ( ... )` or `! [ ... ]` AND
+/// `macro_name`'s final segment is in `trivial_macros`, consume the
+/// `!` and the delimited body and return the slice after it.
+/// Returns `None` otherwise; the caller falls back to leaving the
+/// tokens unconsumed (so a non-trivial macro call correctly drops
+/// the whole expression into the non-trivial bucket).
+fn take_trivial_macro_call<'a>(
+    tokens: &'a [TokenTree],
+    macro_name: rustc_span::Symbol,
+    trivial_macros: &BTreeSet<String>,
+) -> Option<&'a [TokenTree]> {
+    let (bang, after_bang) = tokens.split_first()?;
+    let TokenTree::Token(bang_token, _) = bang else {
+        return None;
+    };
+    if bang_token.kind != TokenKind::Bang {
+        return None;
+    }
+    if !trivial_macros.contains(macro_name.as_str()) {
+        return None;
+    }
+    let (delim, after_delim) = after_bang.split_first()?;
+    let TokenTree::Delimited(_, _, delim_kind, _) = delim else {
+        return None;
+    };
+    // Curly-delimited inner macros are out of scope for the same
+    // reason curly-delimited outer macros are: `name! { ... }` is
+    // conventionally a DSL body, not a value-producing call.
+    if !matches!(delim_kind, Delimiter::Parenthesis | Delimiter::Bracket) {
+        return None;
+    }
+    Some(after_delim)
+}
+
+fn take_atom_path_after_sep<'a>(
+    tokens: &'a [TokenTree],
+    trivial_macros: &BTreeSet<String>,
+) -> Option<&'a [TokenTree]> {
+    let (ident, rest) = tokens.split_first()?;
+    let TokenTree::Token(token, _) = ident else {
+        return None;
+    };
+    let TokenKind::Ident(name, _) = token.kind else {
+        return None;
+    };
+    Some(take_path_and_optional_macro_call(name, rest, trivial_macros))
+}
+
+/// Type-position path tail: `take_atom_path_after_sep`'s sibling
+/// for `take_trivial_type`. Types don't carry trailing `!` macro
+/// calls so this variant only walks the `::ident` chain.
 fn take_path_after_sep(tokens: &[TokenTree]) -> Option<&[TokenTree]> {
     let (ident, rest) = tokens.split_first()?;
     let TokenTree::Token(token, _) = ident else {
@@ -261,7 +373,7 @@ fn take_path_after_sep(tokens: &[TokenTree]) -> Option<&[TokenTree]> {
 
 fn take_trivial_suffixes<'a>(
     mut tokens: &'a [TokenTree],
-    trivial_methods: &BTreeSet<String>,
+    ctx: TrivialContext<'_>,
 ) -> &'a [TokenTree] {
     loop {
         let Some((head, rest)) = tokens.split_first() else {
@@ -297,7 +409,7 @@ fn take_trivial_suffixes<'a>(
                             // as a plain field access and let the
                             // suffix loop decide what to do with the
                             // tokens that follow.
-                            if is_trivial_method_call(after, name.as_str(), trivial_methods) {
+                            if is_trivial_method_call(after, name.as_str(), ctx.methods) {
                                 tokens = &after[1..];
                             } else {
                                 tokens = after;
@@ -328,7 +440,7 @@ fn take_trivial_suffixes<'a>(
             // `[expr]` — index. Both base and index must be trivial;
             // the recursion happens here for the index.
             TokenTree::Delimited(_, _, Delimiter::Bracket, inner) => {
-                if !is_trivial_expression_stream(inner, trivial_methods) {
+                if !is_trivial_expression_stream(inner, ctx) {
                     return tokens;
                 }
                 tokens = rest;
@@ -369,16 +481,16 @@ fn is_trivial_method_call(
 /// suffix in the chain has trivial operands.
 fn take_trivial_binary_tail<'a>(
     mut tokens: &'a [TokenTree],
-    trivial_methods: &BTreeSet<String>,
+    ctx: TrivialContext<'_>,
 ) -> &'a [TokenTree] {
     while let Some(after_op) = take_trivial_binary_operator(tokens) {
-        let Some(after_atom) = take_trivial_atom(after_op, trivial_methods) else {
+        let Some(after_atom) = take_trivial_atom(after_op, ctx) else {
             // The operator looked like a binop but no trivial atom
             // followed; leave the operator unconsumed so the caller
             // sees the whole rest as non-trivial.
             return tokens;
         };
-        tokens = take_trivial_suffixes(after_atom, trivial_methods);
+        tokens = take_trivial_suffixes(after_atom, ctx);
     }
     tokens
 }
@@ -424,7 +536,7 @@ fn take_trivial_type(tokens: &[TokenTree]) -> Option<&[TokenTree]> {
     }
 }
 
-fn is_trivial_expression_stream(stream: &TokenStream, trivial_methods: &BTreeSet<String>) -> bool {
+fn is_trivial_expression_stream(stream: &TokenStream, ctx: TrivialContext<'_>) -> bool {
     let trees: Vec<TokenTree> = stream.iter().cloned().collect();
-    is_trivial_expression(&trees, trivial_methods)
+    is_trivial_expression(&trees, ctx)
 }
