@@ -196,6 +196,42 @@ When you add a new rule:
 3. Do not introduce a parallel `REGISTERED_LINT_NAMES`-style
    array. The `LintStore` is the single source of truth.
 
+## Validating Rust changes
+
+After modifying any Rust code in this repository, install the
+necessary developer tools and run every task that `just all`
+performs. The recipe lives in the top-level `justfile`.
+The toolchain — `cargo-dylint`, `dylint-link`, and
+anything else the project requires — is provisioned by
+`just install-dev-tools`, which drops binaries into
+`.dev-tools/bin` (already on `PATH` via the justfile). Run it
+once per fresh checkout, and again whenever `Cargo.lock` updates
+the pinned `dylint_linting` version.
+
+Treat `just all` as the gate before committing. Don't rely on
+running a single sub-recipe (e.g. only `cargo test`) — the
+`self-lint` step runs perfectionist's own lints on its source and
+catches violations the other steps miss.
+
+If `just install-dev-tools` cannot complete for any reason (an
+extremely rare failure — sandboxed environments without network
+access, an upstream registry outage, an incompatible host
+toolchain), the workspace is not just missing `cargo-dylint`:
+`.cargo/config.toml` also pins `dylint-link` as the linker, so
+every cargo-backed `just all` step (`build`, `doc`, `lint`,
+`test`) fails to link until it's present. In that case, override
+the linker for each cargo invocation the same way
+`install-dev-tools` does internally — pass
+`--config 'target."cfg(all())".linker="cc"'` to `cargo` — and
+skip the `self-lint` step entirely, since there's no
+`cargo-dylint` to drive it. Then read the in-tree rule catalogue
+under `rules/` and apply the rules manually to whatever code you
+just wrote or touched. Each per-rule markdown file in `rules/`
+is the human-readable spec for one lint; walk the diff against
+the relevant rules and fix violations by hand. Note this
+fallback explicitly in your summary so the user knows the
+automated self-lint did not run.
+
 ## Rationale section: "Why is this bad?" vs "Why restrict this?"
 
 Every rule's documentation — both the rustdoc on the
