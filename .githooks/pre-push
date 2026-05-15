@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# pre-push hook: reject pushing a tag whose name looks like a release
+# (X.Y.Z or X.Y.Z-<suffix>) but whose pointed-to commit fails the
+# version-bump contract enforced by tools/deploy-check.
+set -euo pipefail
+
+# stdin format (one per ref):  <local-ref> <local-sha> <remote-ref> <remote-sha>
+# Buffer it so the cheap shell-side filter can decide whether to
+# spawn cargo at all.
+input=$(cat)
+if [ -z "$input" ]; then
+  exit 0
+fi
+
+needs_check=0
+while IFS=' ' read -r local_ref local_sha _ _; do
+  [ -z "${local_ref:-}" ] && continue
+  case "$local_ref" in
+    refs/tags/*) ;;
+    *) continue ;;
+  esac
+  tag_name="${local_ref#refs/tags/}"
+  if [[ "$tag_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[^[:space:]]+)?$ ]] \
+     && [[ "$local_sha" != *[!0]* ]]; then
+    # Tag deletion — nothing to verify.
+    continue
+  elif [[ "$tag_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[^[:space:]]+)?$ ]]; then
+    needs_check=1
+    break
+  fi
+done <<< "$input"
+
+if [ "$needs_check" -eq 0 ]; then
+  exit 0
+fi
+
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+# See `.githooks/commit-msg` for why the linker override is here.
+exec cargo --config 'target."cfg(all())".linker="cc"' run \
+  --quiet --locked --package _deploy_check --bin deploy-check -- \
+  "$root" pre-push <<< "$input"
