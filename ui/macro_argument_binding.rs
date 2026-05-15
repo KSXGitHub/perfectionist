@@ -155,6 +155,32 @@ fn _brace_argument_with_dsl_markers_skipped() {
     // matching the spec's "blocks are impure" classification.
 }
 
+// A `let`-binding inside a brace-argument may be preceded by
+// outer attributes (`#[cfg(...)]`, `#[allow(...)]`) or doc
+// comments; the `let`-whitelist must skip past them before
+// checking the statement's first token. Without the skip, the
+// `:` in `let x: T` after `#[allow(...)]` would be misread as
+// a DSL key-position marker and the brace argument would be
+// dropped from analysis entirely (false negative on attributed
+// blocks).
+//
+// The observable consequence of the fix is *uniform* treatment
+// of brace-argument blocks: with the leading attribute correctly
+// skipped, the rule now classifies this block the same way it
+// classifies the un-attributed `{ let x = e; x }` — a real Rust
+// block, walked through `looks_like_expression`, then flagged
+// by the pure-expression walker (blocks are not a pure atom
+// shape). Pre-fix, the attribute caused a silent skip; post-fix,
+// the block is flagged, matching the rule's "blocks are impure"
+// policy.
+fn _brace_argument_with_attributed_let_flagged() {
+    let _ = dsl_macro!({
+        #[allow(unused)]
+        let x: u32 = MAX;
+        x
+    });
+}
+
 // All seven pure argument shapes — accepted under every mode. The
 // outer `debug_assert_eq!` is on the deny list, so any impure
 // argument here would otherwise be flagged.

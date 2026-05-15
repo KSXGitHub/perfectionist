@@ -154,36 +154,85 @@ pub(super) fn looks_like_expression(argument: &[TokenTree]) -> bool {
 ///   put the `:` one delimiter level deeper than the surrounding
 ///   block.
 ///
-/// Statements are split by top-level `;`. A labeled loop or block
-/// (`'a: loop { ... }`) at the brace's immediate top level is a
-/// known false positive — its `:` sits in the same position as a
-/// DSL key — but in macro-argument position labeled blocks are
-/// vanishingly rare.
+/// Statements are split by top-level `;`. At each statement's
+/// start, leading outer / inner attributes (`#[cfg(...)]`,
+/// `#![allow(...)]`) and doc comments are skipped before the
+/// `let`-whitelist check, so `{ #[cfg(foo)] let x: T = e; x }`
+/// (an attribute-annotated `let` binding inside a real block) is
+/// still treated as a Rust block.
+///
+/// A labeled loop or block (`'a: loop { ... }`) at the brace's
+/// immediate top level is a known false positive — its `:` sits
+/// in the same position as a DSL key — but in macro-argument
+/// position labeled blocks are vanishingly rare.
 fn brace_inner_looks_like_dsl(stream: &TokenStream) -> bool {
-    let mut statement_starts_with_let = false;
-    let mut at_statement_start = true;
-    for tree in stream.iter() {
-        match tree {
-            TokenTree::Token(token, _) => {
+    let trees: Vec<&TokenTree> = stream.iter().collect();
+    let mut whitelist_let = false;
+    let mut cursor = 0;
+    while cursor < trees.len() {
+        // Statement boundary: re-evaluate the `let`-whitelist on
+        // the new statement's first non-attribute token.
+        let after_attrs = skip_leading_attributes(&trees, cursor);
+        if let Some(TokenTree::Token(token, _)) = trees.get(after_attrs)
+            && token.is_keyword(kw::Let)
+        {
+            whitelist_let = true;
+        }
+        cursor = after_attrs;
+        // Walk the statement body until `;` or end of stream.
+        while cursor < trees.len() {
+            if let TokenTree::Token(token, _) = trees[cursor] {
                 match token.kind {
                     TokenKind::Semi => {
-                        statement_starts_with_let = false;
-                        at_statement_start = true;
-                        continue;
+                        whitelist_let = false;
+                        cursor += 1;
+                        break;
                     }
                     TokenKind::FatArrow => return true,
-                    TokenKind::Colon if !statement_starts_with_let => return true,
+                    TokenKind::Colon if !whitelist_let => return true,
                     _ => {}
                 }
-                if at_statement_start && token.is_keyword(kw::Let) {
-                    statement_starts_with_let = true;
-                }
-                at_statement_start = false;
             }
-            _ => at_statement_start = false,
+            cursor += 1;
         }
     }
     false
+}
+
+/// Advance past any leading outer (`#[...]`) or inner (`#![...]`)
+/// attributes and doc comments at position `start`, returning the
+/// index of the first non-attribute token tree. The check at
+/// statement start uses this so leading attributes don't disable
+/// the `let`-whitelist for the `:` in a `let pattern: type`
+/// binding.
+fn skip_leading_attributes(trees: &[&TokenTree], mut start: usize) -> usize {
+    loop {
+        let Some(tree) = trees.get(start) else {
+            return start;
+        };
+        let TokenTree::Token(token, _) = tree else {
+            return start;
+        };
+        match token.kind {
+            TokenKind::DocComment(..) => start += 1,
+            TokenKind::Pound => {
+                let mut after_pound = start + 1;
+                if matches!(trees.get(after_pound), Some(TokenTree::Token(t, _)) if t.kind == TokenKind::Bang)
+                {
+                    after_pound += 1;
+                }
+                if matches!(
+                    trees.get(after_pound),
+                    Some(TokenTree::Delimited(_, _, Delimiter::Bracket, _)),
+                ) {
+                    start = after_pound + 1;
+                } else {
+                    return start;
+                }
+            }
+            _ => return start,
+        }
+    }
 }
 
 fn is_dsl_marker(token: &Token) -> bool {
