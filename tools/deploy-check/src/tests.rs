@@ -2,6 +2,7 @@ use text_block_macros::text_block_fnl;
 
 use super::contract::assert_version_only_diff;
 use super::error::RuntimeError;
+use super::hook::extract_release_subject;
 use super::manifest::{parse_cargo_lock_version, parse_cargo_toml_version};
 use super::version_literal::is_version_literal;
 
@@ -58,6 +59,37 @@ fn cargo_lock_version_picks_perfectionist_entry() {
         r#"version = "2.0.0""#
     };
     assert_eq!(parse_cargo_lock_version(lock).unwrap(), "0.0.0-rc.5");
+}
+
+#[test]
+fn cargo_lock_rejects_lockfile_without_perfectionist_entry() {
+    let lock = text_block_fnl! {
+        "[[package]]"
+        r#"name = "foo""#
+        r#"version = "1.0.0""#
+    };
+    assert!(matches!(
+        parse_cargo_lock_version(lock),
+        Err(RuntimeError::NoLockPackageEntry)
+    ));
+}
+
+#[test]
+fn cargo_toml_propagates_malformed_toml() {
+    let manifest = "not = valid = toml\n";
+    assert!(matches!(
+        parse_cargo_toml_version(manifest),
+        Err(RuntimeError::ParseCargoToml(_))
+    ));
+}
+
+#[test]
+fn cargo_lock_propagates_malformed_toml() {
+    let lock = "[[package\nbroken";
+    assert!(matches!(
+        parse_cargo_lock_version(lock),
+        Err(RuntimeError::ParseCargoLock(_))
+    ));
 }
 
 #[test]
@@ -162,6 +194,57 @@ fn version_only_diff_accepts_arbitrary_distinct_versions() {
         assert_version_only_diff("Cargo.toml", &before, &after, before_ver, after_ver)
             .unwrap_or_else(|err| panic!("{before_ver} -> {after_ver} should be accepted: {err}"));
     }
+}
+
+#[test]
+fn commit_msg_strips_default_hash_comment_lines() {
+    let content = text_block_fnl! {
+        "0.0.0-rc.14"
+        ""
+        "# Please enter the commit message for your changes."
+        "# Lines starting with '#' will be ignored."
+    };
+    assert_eq!(
+        extract_release_subject(content, '#').unwrap(),
+        Some("0.0.0-rc.14")
+    );
+}
+
+#[test]
+fn commit_msg_honours_a_configured_semicolon_comment_char() {
+    // What a `core.commentChar = ;` template looks like — the
+    // pre-fix code rejected this as `MessageHasExtraContent`.
+    let content = text_block_fnl! {
+        "0.0.0-rc.14"
+        ""
+        "; Please enter the commit message for your changes."
+        "; Lines starting with ';' will be ignored."
+    };
+    assert_eq!(
+        extract_release_subject(content, ';').unwrap(),
+        Some("0.0.0-rc.14")
+    );
+}
+
+#[test]
+fn commit_msg_returns_none_when_subject_is_not_a_version() {
+    assert_eq!(
+        extract_release_subject("fix: something\n", '#').unwrap(),
+        None
+    );
+}
+
+#[test]
+fn commit_msg_rejects_release_shaped_subject_with_body_content() {
+    let content = text_block_fnl! {
+        "0.0.0-rc.14"
+        ""
+        "Signed-off-by: Someone <s@example.com>"
+    };
+    assert!(matches!(
+        extract_release_subject(content, '#'),
+        Err(RuntimeError::MessageHasExtraContent(_))
+    ));
 }
 
 #[test]

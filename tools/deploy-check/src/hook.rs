@@ -14,23 +14,60 @@ use super::version_literal::is_version_literal;
 pub(crate) fn commit_msg(root: &Path, msg_file: &Path) -> Result<(), RuntimeError> {
     let content = fs::read_to_string(msg_file)
         .map_err(|err| RuntimeError::ReadMsgFile(msg_file.to_owned(), err))?;
+    let comment = git_comment_char(root);
+    let Some(subject) = extract_release_subject(&content, comment)? else {
+        return Ok(());
+    };
+    verify(root, subject, &Source::Cached)
+}
+
+/// Read the user's effective `core.commentChar`, falling back to `#`
+/// when the key is unset, set to `auto` (Git 2.45+'s adaptive mode),
+/// or otherwise not a single character. The fallback matches Git's
+/// own default and the literal we accept in the shell-side
+/// pre-filter.
+fn git_comment_char(root: &Path) -> char {
+    let Ok(value) = git_capture(root, ["config", "--get", "core.commentChar"]) else {
+        return '#';
+    };
+    let trimmed = value.trim_end_matches('\n');
+    let mut chars = trimmed.chars();
+    match (chars.next(), chars.next()) {
+        (Some(c), None) => c,
+        _ => '#',
+    }
+}
+
+/// Parse the commit-message file's effective content (after stripping
+/// `comment`-prefixed lines and leading blanks). Returns:
+///
+/// * `Ok(Some(subject))` when the message is a release-shaped one
+///   (`X.Y.Z(-<suffix>)?` only, no body).
+/// * `Ok(None)` when the message is empty or doesn't look like a
+///   release — the hook bows out and lets git proceed.
+/// * `Err(MessageHasExtraContent)` when a release-shaped subject is
+///   followed by additional body lines, which the contract forbids.
+pub(crate) fn extract_release_subject(
+    content: &str,
+    comment: char,
+) -> Result<Option<&str>, RuntimeError> {
     let effective: Vec<&str> = content
         .lines()
-        .filter(|line| !line.starts_with('#'))
+        .filter(|line| !line.starts_with(comment))
         .map(str::trim_end)
         .skip_while(|line| line.is_empty())
         .collect();
     let subject = match effective.first() {
         Some(first) => *first,
-        None => return Ok(()),
+        None => return Ok(None),
     };
     if !is_version_literal(subject) {
-        return Ok(());
+        return Ok(None);
     }
     if effective.iter().skip(1).any(|line| !line.is_empty()) {
         return Err(RuntimeError::MessageHasExtraContent(subject.to_owned()));
     }
-    verify(root, subject, &Source::Cached)
+    Ok(Some(subject))
 }
 
 pub(crate) fn pre_push(root: &Path) -> Result<(), RuntimeError> {
