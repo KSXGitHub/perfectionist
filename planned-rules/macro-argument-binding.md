@@ -258,7 +258,7 @@ Three name-set lookups decide each invocation:
    → accept unconditionally.
 3. **Neither** → flag every non-trivial argument.
 
-The default allow list has two parts.
+The default allow list has three parts.
 
 The first part overlaps with
 [`macro-trailing-comma`](./macro-trailing-comma.md)'s built-in
@@ -285,6 +285,21 @@ once-vs.-zero hazard for the rule to flag.
 at runtime, but the lookup runs without any user-side
 argument evaluation, so it sits comfortably in the same
 group.
+
+The third part collects third-party macros whose matchers are
+known to evaluate every top-level argument exactly once before
+forwarding it, so the rule's once-vs.-zero hazard does not apply.
+The current entries are the `insta` snapshot-assertion family —
+`assert_snapshot!`, `assert_debug_snapshot!`,
+`assert_display_snapshot!`, `assert_compact_debug_snapshot!`,
+`assert_yaml_snapshot!`, `assert_json_snapshot!`,
+`assert_compact_json_snapshot!`, `assert_ron_snapshot!`,
+`assert_csv_snapshot!`, `assert_toml_snapshot!`, and
+`assert_binary_snapshot!` — but the group is open-ended; further
+crates can be added as their matchers are vetted.
+`assert_display_snapshot!` is deprecated upstream in favour of
+`assert_snapshot!` but is retained for projects on older `insta`
+releases.
 
 `macro-trailing-comma`'s built-in list is intentionally
 narrower than this one; the two lists are not kept in
