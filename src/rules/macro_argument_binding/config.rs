@@ -25,14 +25,11 @@ const BUILTIN_DENY: &[&str] = &["debug_assert", "debug_assert_eq", "debug_assert
 /// "evaluate zero, one, or many times" hazard. Three disjoint groups:
 ///
 /// 1. Runtime macros (`format!`, `vec!`, `assert!`, `dbg!`, …) that
-///    promise to evaluate every top-level argument exactly once,
-///    plus a small set of third-party companions (`anyhow!` /
-///    `bail!` / `ensure!`, `serde_json::json!`, the `maplit::*`
-///    builders) whose published semantics match the same
-///    contract. Shares its core with `macro_trailing_comma`'s
-///    built-in set, minus the conditional-evaluation families
-///    (`log::*`, `tracing::*`) that *do* drop arguments below
-///    the configured filter level.
+///    promise to evaluate every top-level argument exactly once.
+///    Shares its core with `macro_trailing_comma`'s built-in set,
+///    minus the conditional-evaluation families (`log::*`,
+///    `tracing::*`) that *do* drop arguments below the configured
+///    filter level.
 /// 2. `core` / `std` macros whose top-level argument simply isn't a
 ///    runtime expression — `stringify!` takes a token sequence,
 ///    `cfg!` takes a cfg predicate, the `env!` / `include_*` /
@@ -74,31 +71,6 @@ const BUILTIN_ALLOW: &[&str] = &[
     "matches",
     "dbg",
     "anyhow",
-    // Anyhow companions. `bail!(args)` expands to `return Err(anyhow!(args))`
-    // and evaluates each captured expression once; `ensure!(cond, args)`
-    // matches the shape of `assert!(cond, args)` already on this list — `cond`
-    // always evaluates, `args` only on failure, identical conditional-args
-    // semantics to `assert!`.
-    "bail",
-    "ensure",
-    // Third-party `tt`-based literal builders. The macros walk their
-    // input token tree once and emit one runtime evaluation per
-    // captured Rust expression — no cfg gate, no repetition, no
-    // conditional branch.
-    //
-    // - `serde_json::json` builds a `serde_json::Value` tree; each
-    //   embedded Rust expression goes through `to_value(&expr)`
-    //   exactly once.
-    // - `maplit::{hashmap, btreemap, hashset, btreeset}` expand to
-    //   one `.insert` call per pair; each captured key and value
-    //   is evaluated once. Single-segment tail matching means
-    //   `maplit::hashmap!`, fully-qualified call sites, and any
-    //   project-local re-export all line up with the same entry.
-    "btreemap",
-    "btreeset",
-    "hashmap",
-    "hashset",
-    "json",
     // `core` / `std` macros that do not evaluate a runtime user
     // expression at the call site (see the doc comment above for
     // the per-macro rationale).
@@ -117,13 +89,30 @@ const BUILTIN_ALLOW: &[&str] = &[
     "option_env",
     "stringify",
     // Third-party macros whose matchers evaluate every top-level
-    // argument exactly once. The current entries are `insta`'s
-    // snapshot-assertion family; add further crates here as their
-    // matchers are vetted to honour the same guarantee.
-    // `assert_display_snapshot` is deprecated upstream in favour of
-    // `assert_snapshot` but is retained for projects on older
-    // `insta` releases; `assert_binary_snapshot` is the newer
-    // byte-slice variant.
+    // argument exactly once. Entries are grouped by crate in the
+    // commentary below; the array itself is alphabetised because
+    // the matcher is tail-segment-keyed and doesn't care about
+    // origin.
+    //
+    // - `anyhow::{bail, ensure}` are companions to `anyhow!` (in
+    //   group 1). `bail!(args)` expands to `return Err(anyhow!(args))`
+    //   and evaluates each captured expression once; `ensure!(cond,
+    //   args)` matches the shape of `assert!(cond, args)` already on
+    //   group 1 — `cond` always evaluates, `args` only on failure.
+    // - `insta`'s snapshot-assertion family. Each variant
+    //   evaluates its value argument exactly once before
+    //   serialising; `assert_display_snapshot` is deprecated
+    //   upstream but retained for projects on older `insta`;
+    //   `assert_binary_snapshot` is the newer byte-slice variant.
+    // - `maplit::{hashmap, btreemap, hashset, btreeset}` expand to
+    //   one `.insert` call per pair; each captured key and value is
+    //   evaluated once.
+    // - `serde_json::json` builds a `serde_json::Value` tree; each
+    //   embedded Rust expression goes through `to_value(&expr)`
+    //   exactly once.
+    //
+    // Add further crates here as their matchers are vetted to
+    // honour the same once-only contract.
     "assert_binary_snapshot",
     "assert_compact_debug_snapshot",
     "assert_compact_json_snapshot",
@@ -135,6 +124,13 @@ const BUILTIN_ALLOW: &[&str] = &[
     "assert_snapshot",
     "assert_toml_snapshot",
     "assert_yaml_snapshot",
+    "bail",
+    "btreemap",
+    "btreeset",
+    "ensure",
+    "hashmap",
+    "hashset",
+    "json",
 ];
 
 /// `core` / `std` macros whose invocation expands to a value the
