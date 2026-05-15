@@ -286,20 +286,20 @@ at runtime, but the lookup runs without any user-side
 argument evaluation, so it sits comfortably in the same
 group.
 
-The third part is the `insta` snapshot-assertion family:
+The third part collects third-party macros whose matchers are
+known to evaluate every top-level argument exactly once before
+forwarding it, so the rule's once-vs.-zero hazard does not apply.
+The current entries are the `insta` snapshot-assertion family —
 `assert_snapshot!`, `assert_debug_snapshot!`,
 `assert_display_snapshot!`, `assert_compact_debug_snapshot!`,
 `assert_yaml_snapshot!`, `assert_json_snapshot!`,
 `assert_compact_json_snapshot!`, `assert_ron_snapshot!`,
 `assert_csv_snapshot!`, `assert_toml_snapshot!`, and
-`assert_binary_snapshot!`. Every variant evaluates its value
-argument exactly once before serialising it through the matching
-formatter (`Debug`, `Display`, or a `serde::Serialize` backend) for
-comparison against the on-disk snapshot, so the rule's
-once-vs.-zero hazard does not apply. `assert_display_snapshot!`
-is deprecated upstream in favour of `assert_snapshot!` but is
-still present in older `insta` releases and is listed for
-projects that have not yet migrated.
+`assert_binary_snapshot!` — but the group is open-ended; further
+crates can be added as their matchers are vetted.
+`assert_display_snapshot!` is deprecated upstream in favour of
+`assert_snapshot!` but is retained for projects on older `insta`
+releases.
 
 `macro-trailing-comma`'s built-in list is intentionally
 narrower than this one; the two lists are not kept in

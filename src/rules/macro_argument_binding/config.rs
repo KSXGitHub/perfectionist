@@ -40,13 +40,11 @@ const BUILTIN_DENY: &[&str] = &["debug_assert", "debug_assert_eq", "debug_assert
 ///    macro from this group. None of these evaluates a user
 ///    expression at runtime, so no exactly-once-vs.-zero hazard
 ///    surfaces at the call site.
-/// 3. Third-party assertion macros from `insta`'s snapshot-testing
-///    family. Each `assert_*_snapshot!` call evaluates its value
-///    argument exactly once and feeds the result through a
-///    formatter (`Debug`, `Display`, or a `serde::Serialize`
-///    backend) before comparing against the on-disk snapshot. The
-///    matchers are uniform across the family, so the same
-///    once-evaluation guarantee holds for every variant.
+/// 3. Third-party macros whose matchers are known to evaluate every
+///    top-level argument exactly once before forwarding it, so the
+///    once-vs.-zero hazard does not surface at the call site. New
+///    entries land here as they're identified; the group is open-
+///    ended and not tied to any single crate.
 ///
 /// `macro_trailing_comma`'s own built-in list is intentionally
 /// narrower than this one (it has no reason to care about
@@ -90,13 +88,14 @@ const BUILTIN_ALLOW: &[&str] = &[
     "module_path",
     "option_env",
     "stringify",
-    // `insta` snapshot-assertion macros. Every variant evaluates its
-    // value argument exactly once before serialising it for
-    // comparison against the stored snapshot. `assert_display_snapshot`
-    // is deprecated upstream in favour of `assert_snapshot` but is
-    // still present in older `insta` releases, so it is listed for
-    // projects that have not yet migrated. `assert_binary_snapshot`
-    // is the newer byte-slice variant.
+    // Third-party macros whose matchers evaluate every top-level
+    // argument exactly once. The current entries are `insta`'s
+    // snapshot-assertion family; add further crates here as their
+    // matchers are vetted to honour the same guarantee.
+    // `assert_display_snapshot` is deprecated upstream in favour of
+    // `assert_snapshot` but is retained for projects on older
+    // `insta` releases; `assert_binary_snapshot` is the newer
+    // byte-slice variant.
     "assert_binary_snapshot",
     "assert_compact_debug_snapshot",
     "assert_compact_json_snapshot",
