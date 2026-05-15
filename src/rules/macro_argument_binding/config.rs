@@ -89,13 +89,39 @@ const BUILTIN_ALLOW: &[&str] = &[
     "option_env",
     "stringify",
     // Third-party macros whose matchers evaluate every top-level
-    // argument exactly once. The current entries are `insta`'s
-    // snapshot-assertion family; add further crates here as their
-    // matchers are vetted to honour the same guarantee.
-    // `assert_display_snapshot` is deprecated upstream in favour of
-    // `assert_snapshot` but is retained for projects on older
-    // `insta` releases; `assert_binary_snapshot` is the newer
-    // byte-slice variant.
+    // argument exactly once. Entries are grouped by crate in the
+    // commentary below; the array itself is alphabetised because
+    // the matcher is tail-segment-keyed and doesn't care about
+    // origin.
+    //
+    // - `anyhow::{bail, ensure}` are companions to `anyhow!` (in
+    //   group 1). `bail!(args)` expands to `return Err(anyhow!(args))`
+    //   and evaluates each captured expression once; `ensure!(cond,
+    //   args)` matches the shape of `assert!(cond, args)` already on
+    //   group 1 — `cond` always evaluates, `args` only on failure.
+    // - `insta`'s snapshot-assertion family. Each variant
+    //   evaluates its value argument exactly once before
+    //   serialising; `assert_display_snapshot` is deprecated
+    //   upstream but retained for projects on older `insta`;
+    //   `assert_binary_snapshot` is the newer byte-slice variant.
+    // - `maplit::{hashmap, btreemap, hashset, btreeset}` expand to
+    //   one `.insert` call per pair; each captured key and value
+    //   is evaluated once. These entries are functionally
+    //   redundant given `looks_like_expression`'s top-level `=>`
+    //   DSL-marker skip (every non-empty maplit call form emits
+    //   `=>` at the top level of each argument and is skipped
+    //   regardless); they're retained as an explicit declaration
+    //   that the project has vetted these macros for the once-
+    //   only contract.
+    // - `serde_json::json` builds a `serde_json::Value` tree; each
+    //   embedded Rust expression goes through `to_value(&expr)`
+    //   exactly once. Unlike `maplit::*`, this entry is load-
+    //   bearing for direct-expression arguments — `json!(expr)`
+    //   has no DSL marker, so removing the entry would re-flag
+    //   `json!(value().unwrap())` and similar.
+    //
+    // Add further crates here as their matchers are vetted to
+    // honour the same once-only contract.
     "assert_binary_snapshot",
     "assert_compact_debug_snapshot",
     "assert_compact_json_snapshot",
@@ -107,23 +133,30 @@ const BUILTIN_ALLOW: &[&str] = &[
     "assert_snapshot",
     "assert_toml_snapshot",
     "assert_yaml_snapshot",
+    "bail",
+    "btreemap",
+    "btreeset",
+    "ensure",
+    "hashmap",
+    "hashset",
+    "json",
 ];
 
 /// `core` / `std` macros whose invocation expands to a value the
 /// compiler computes at build time — a literal, a `&'static str`, a
 /// byte string, a `bool` cfg verdict, a line / column / file marker.
 /// None evaluates a runtime expression, none has side effects, so an
-/// `inner!(...)` call to one of these is itself a trivial argument
+/// `inner!(...)` call to one of these is itself a pure argument
 /// for the surrounding macro: it cannot be evaluated more than once
 /// at runtime no matter what the outer macro does with it.
 ///
 /// `include!` is deliberately excluded — its expansion is arbitrary
-/// Rust code rather than a literal, so its triviality depends on the
+/// Rust code rather than a literal, so its purity depends on the
 /// included file's contents and the rule cannot prove it.
 /// `compile_error!` is also excluded: its expansion is the diverging
 /// `!` type rather than a value, and the planning doc reserves the
-/// trivial-atom slot for value-producing macros.
-const BUILTIN_TRIVIAL_MACROS: &[&str] = &[
+/// pure-atom slot for value-producing macros.
+const BUILTIN_PURE_MACROS: &[&str] = &[
     "cfg",
     "column",
     "concat",
@@ -140,12 +173,12 @@ const BUILTIN_TRIVIAL_MACROS: &[&str] = &[
 /// Zero-arg method names that are conventionally side-effect-free
 /// across the standard library and ecosystem. `vec.len()`,
 /// `s.is_empty()`, `opt.as_ref()` evaluate the same way no matter how
-/// many times the macro touches them, so they are accepted as trivial
-/// postfixes on a trivial base. Names whose pure-getter convention is
+/// many times the macro touches them, so they are accepted as pure
+/// postfixes on a pure base. Names whose pure-getter convention is
 /// less universal (e.g. `count` is consuming on `Iterator` but
 /// `O(1)` and pure on indexed collections) are left for projects to
-/// add via `extra_trivial_methods`.
-const BUILTIN_TRIVIAL_METHODS: &[&str] = &[
+/// add via `extra_pure_methods`.
+const BUILTIN_PURE_METHODS: &[&str] = &[
     "as_bytes", "as_deref", "as_mut", "as_ref", "as_slice", "as_str", "is_empty", "len",
 ];
 
@@ -161,7 +194,7 @@ pub(super) enum Mode {
     /// plus `deny_extra`). Every other macro is silently accepted.
     DenyOnly,
     /// Flag every function-like or array-like invocation that carries
-    /// a non-trivial top-level argument, regardless of any built-in
+    /// an impure top-level argument, regardless of any built-in
     /// classification — unless the invocation matches an `allow_extra`
     /// entry. The built-in allow list is deliberately ignored in this
     /// mode; project exceptions go in `allow_extra`.
@@ -197,30 +230,38 @@ pub(super) struct Config {
     pub ignore: Vec<String>,
     /// Method names added to the built-in pure-method list. Each
     /// entry is a bare method identifier (no `()`, no receiver). A
-    /// `.method()` invocation on a trivial base is then accepted as a
-    /// trivial postfix when the method takes no arguments.
-    pub extra_trivial_methods: Vec<String>,
+    /// `.method()` invocation on a pure base is then accepted as a
+    /// pure postfix when the method takes no arguments. Add a
+    /// project-local method here only when it is genuinely safe
+    /// for the surrounding macro to drop or duplicate the call
+    /// (the rule's working definition of *pure*) — typically an
+    /// `O(1)` side-effect-free getter that the lint's syntactic
+    /// classification can't otherwise see.
+    pub extra_pure_methods: Vec<String>,
     /// Method names to drop from the pure-method list, even if they
-    /// appear in the built-in defaults or in `extra_trivial_methods`.
+    /// appear in the built-in defaults or in `extra_pure_methods`.
     /// Empty by default; checked after the merge, so this knob always
     /// wins. Useful for opting back into linting on a default entry
-    /// the project does not consider trivial — for example, removing
-    /// `as_ref` for a project that wraps it in a non-pure
+    /// the project does not consider pure — for example, removing
+    /// `as_ref` for a project that wraps it in an impure
     /// implementation.
-    pub ignore_trivial_methods: Vec<String>,
-    /// Macro names added to the built-in trivial-macro list. Each
+    pub ignore_pure_methods: Vec<String>,
+    /// Macro names added to the built-in pure-macro list. Each
     /// entry is matched against the invocation's final path segment
     /// (so `my_crate::const_str` matches by the `"const_str"` tail).
-    /// A trivial-macro call passed as an argument to another macro is
-    /// treated as a trivial atom — the rule does not propose binding
-    /// it to a `let`. Use this knob for project-specific macros whose
-    /// expansion is guaranteed to be a literal or other compile-time
-    /// constant.
-    pub extra_trivial_macros: Vec<String>,
-    /// Macro names to drop from the trivial-macro list, even if they
-    /// appear in the built-in defaults or in `extra_trivial_macros`.
+    /// A pure-macro call passed as an argument to another macro is
+    /// treated as a pure atom — the rule does not propose binding
+    /// it to a `let`. Use this knob for project-specific macros
+    /// whose expansion is a compile-time constant (a literal, a
+    /// `&'static str`, a `bool`); their inclusion satisfies the
+    /// rule's pure-as-drop-or-duplicate-safe definition trivially,
+    /// since there is no runtime expression for the surrounding
+    /// macro to drop or duplicate.
+    pub extra_pure_macros: Vec<String>,
+    /// Macro names to drop from the pure-macro list, even if they
+    /// appear in the built-in defaults or in `extra_pure_macros`.
     /// Checked after the merge, so this knob always wins.
-    pub ignore_trivial_macros: Vec<String>,
+    pub ignore_pure_macros: Vec<String>,
 }
 
 impl Default for Config {
@@ -231,10 +272,10 @@ impl Default for Config {
             deny_extra: Vec::new(),
             allow_extra: Vec::new(),
             ignore: Vec::new(),
-            extra_trivial_methods: Vec::new(),
-            ignore_trivial_methods: Vec::new(),
-            extra_trivial_macros: Vec::new(),
-            ignore_trivial_macros: Vec::new(),
+            extra_pure_methods: Vec::new(),
+            ignore_pure_methods: Vec::new(),
+            extra_pure_macros: Vec::new(),
+            ignore_pure_macros: Vec::new(),
         }
     }
 }
@@ -256,17 +297,17 @@ pub(super) struct MacroArgumentBinding {
     /// Macros to skip entirely. Checked before deny / allow lookup, so
     /// an entry here wins over any other classification.
     ignore: BTreeSet<Vec<String>>,
-    /// Built-in pure-method list plus `extra_trivial_methods`,
-    /// consulted by the trivial-expression walker to accept
-    /// `expr.method()` as a trivial postfix on a trivial base.
-    trivial_methods: BTreeSet<String>,
-    /// Built-in trivial-macro list plus `extra_trivial_macros`,
-    /// consulted by the trivial-expression walker to accept
-    /// `inner!(...)` as a trivial atom when the macro's expansion
+    /// Built-in pure-method list plus `extra_pure_methods`,
+    /// consulted by the pure-expression walker to accept
+    /// `expr.method()` as a pure postfix on a pure base.
+    pure_methods: BTreeSet<String>,
+    /// Built-in pure-macro list plus `extra_pure_macros`,
+    /// consulted by the pure-expression walker to accept
+    /// `inner!(...)` as a pure atom when the macro's expansion
     /// is a compile-time constant. Match is tail-segment-based:
     /// an entry of `"env"` accepts `env!(...)`, `std::env!(...)`,
     /// and `::core::env!(...)` alike.
-    trivial_macros: BTreeSet<String>,
+    pure_macros: BTreeSet<String>,
 }
 
 impl MacroArgumentBinding {
@@ -277,15 +318,15 @@ impl MacroArgumentBinding {
         let deny = merge_with_builtins(BUILTIN_DENY, &extra_deny);
         let allow = merge_with_builtins(BUILTIN_ALLOW, &extra_allow);
         let ignore = parse_path_list(&config.ignore);
-        let trivial_methods = merge_string_allowlist(
-            BUILTIN_TRIVIAL_METHODS,
-            config.extra_trivial_methods,
-            config.ignore_trivial_methods,
+        let pure_methods = merge_string_allowlist(
+            BUILTIN_PURE_METHODS,
+            config.extra_pure_methods,
+            config.ignore_pure_methods,
         );
-        let trivial_macros = merge_string_allowlist(
-            BUILTIN_TRIVIAL_MACROS,
-            config.extra_trivial_macros,
-            config.ignore_trivial_macros,
+        let pure_macros = merge_string_allowlist(
+            BUILTIN_PURE_MACROS,
+            config.extra_pure_macros,
+            config.ignore_pure_macros,
         );
         Self {
             enabled: config.enabled,
@@ -294,22 +335,22 @@ impl MacroArgumentBinding {
             allow,
             allow_extra: extra_allow,
             ignore,
-            trivial_methods,
-            trivial_macros,
+            pure_methods,
+            pure_macros,
         }
     }
 
     /// The merged set of method names whose `.method()` invocations
-    /// on a trivial base are accepted as trivial postfixes.
-    pub(super) fn trivial_methods(&self) -> &BTreeSet<String> {
-        &self.trivial_methods
+    /// on a pure base are accepted as pure postfixes.
+    pub(super) fn pure_methods(&self) -> &BTreeSet<String> {
+        &self.pure_methods
     }
 
     /// The merged set of macro names whose `inner!(...)` invocations
-    /// are accepted as trivial atoms. Matched by final path segment,
+    /// are accepted as pure atoms. Matched by final path segment,
     /// so a single-name entry covers fully-qualified call sites too.
-    pub(super) fn trivial_macros(&self) -> &BTreeSet<String> {
-        &self.trivial_macros
+    pub(super) fn pure_macros(&self) -> &BTreeSet<String> {
+        &self.pure_macros
     }
 
     /// Path-side eligibility: combines the `enabled` switch, the

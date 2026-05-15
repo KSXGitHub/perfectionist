@@ -1,4 +1,4 @@
-//! `perfectionist::macro_argument_binding` — flag non-trivial top-level
+//! `perfectionist::macro_argument_binding` — flag impure top-level
 //! arguments to function-like (`name!(...)`) and array-like (`name![...]`)
 //! macro invocations.
 //!
@@ -7,8 +7,8 @@
 //! - [`config`] — user-facing configuration (`Mode`, `Config`,
 //!   `MacroArgumentBinding` state) and the curated built-in deny /
 //!   allow lists.
-//! - [`triviality`] — top-level argument splitter, the
-//!   `looks_like_expression` heuristic, and the trivial-expression
+//! - [`purity`] — top-level argument splitter, the
+//!   `looks_like_expression` heuristic, and the pure-expression
 //!   token-stream walker.
 //! - [`late`] — late pass that drains [`PENDING_VIOLATIONS`] and emits
 //!   each diagnostic at the deepest enclosing HIR node.
@@ -30,17 +30,15 @@ use crate::common::{DefaultState, resolved_state};
 
 mod config;
 mod late;
-mod triviality;
+mod purity;
 
 use config::MacroArgumentBinding;
 use late::MacroArgumentBindingLate;
-use triviality::{
-    TrivialContext, is_trivial_expression, looks_like_expression, split_top_level_arguments,
-};
+use purity::{PurityContext, is_pure_expression, looks_like_expression, split_top_level_arguments};
 
 declare_tool_lint! {
     /// ### What it does
-    /// Flags non-trivial expressions passed as top-level arguments to a
+    /// Flags impure expressions passed as top-level arguments to a
     /// function-like (`name!(...)`) or array-like (`name![...]`) macro
     /// invocation. The fix is to bind the expression to a `let` first
     /// and pass the binding instead, guaranteeing exactly-once
@@ -73,26 +71,46 @@ declare_tool_lint! {
     /// than once (`min!`/`max!`-style, retry loops): a side-effecting
     /// expression repeated produces wrong results.
     ///
-    /// Trivial arguments — literals, paths, field accesses, indexing
-    /// of trivial bases, dereferences, references, casts, the unit
-    /// literal `()`, parenthesised / tuple groups whose elements are
-    /// all trivial, binary chains of trivial operands joined by
+    /// ### Terminology
+    ///
+    /// In this rule, **pure** means *safe for the surrounding macro
+    /// to drop or duplicate*: evaluating the argument zero, one, or
+    /// many times is observationally equivalent. **Impure** is
+    /// anything else, and is what the rule flags.
+    ///
+    /// The classification is *syntactic*: the rule recognises a
+    /// curated set of shapes known to satisfy the property and
+    /// treats everything else as impure. A `const fn` call, a
+    /// `Result::map` chain over a pure base, or `vec.fold(...)` is
+    /// therefore impure under this rule unless its shape is
+    /// recognised — the lint cannot prove side-effect-freedom in
+    /// general, only spot it. The trade-off favours flagging
+    /// side-effect-free expressions over silently passing a real
+    /// hazard. The set is narrower than the functional-programming
+    /// notion of purity and is keyed to what a macro can actually
+    /// do with its captures, not to side-effect-freedom in the
+    /// abstract.
+    ///
+    /// The recognised pure shapes are: literals, paths, field
+    /// accesses, indexing of pure bases, dereferences, references,
+    /// casts, the unit literal `()`, parenthesised / tuple /
+    /// array-literal / array-repeat groups whose elements are all
+    /// pure, binary chains of pure operands joined by
     /// side-effect-free operators, zero-arg method calls whose name
     /// is in the curated pure-getter set (`len`, `is_empty`,
     /// `as_str`, `as_bytes`, `as_ref`, `as_mut`, `as_deref`,
-    /// `as_slice`, plus anything in `extra_trivial_methods`), and
+    /// `as_slice`, plus anything in `extra_pure_methods`), and
     /// calls to `core` / `std` macros whose expansion is a compile-
     /// time constant (`concat!`, `env!`, `option_env!`,
     /// `include_str!`, `include_bytes!`, `stringify!`, `cfg!`,
     /// `line!`, `column!`, `file!`, `module_path!`, plus anything in
-    /// `extra_trivial_macros`) — are accepted as-is. A comparison
-    /// like `vec.len() <= cap` evaluates the same way regardless of
-    /// how many times the macro touches it, so binding it to a `let`
-    /// would only force the comparison to run in release builds for
-    /// no benefit; the same logic applies to `env!("HOME")` inside
+    /// `extra_pure_macros`). A comparison like `vec.len() <= cap`
+    /// evaluates the same way regardless of how many times the
+    /// macro touches it, so binding it to a `let` would only force
+    /// the comparison to run in release builds for no benefit; the
+    /// same logic applies to `env!("HOME")` inside
     /// `debug_assert_eq!(...)` — there is nothing to evaluate at
-    /// runtime. The lint focuses on arguments whose evaluation is
-    /// itself observable.
+    /// runtime.
     ///
     /// ### Example
     /// ```rust,ignore
@@ -105,7 +123,7 @@ declare_tool_lint! {
     /// ```
     pub perfectionist::MACRO_ARGUMENT_BINDING,
     Warn,
-    "macro invocation passes a non-trivial expression that should be bound to a `let` first",
+    "macro invocation passes an impure expression that should be bound to a `let` first",
     report_in_external_macro: false
 }
 
@@ -154,9 +172,9 @@ impl EarlyLintPass for MacroArgumentBinding {
         let Some(arguments) = split_top_level_arguments(&mac_call.args.tokens) else {
             return;
         };
-        let ctx = TrivialContext {
-            methods: self.trivial_methods(),
-            macros: self.trivial_macros(),
+        let ctx = PurityContext {
+            methods: self.pure_methods(),
+            macros: self.pure_macros(),
         };
         for argument in arguments {
             check_argument(&argument, ctx);
@@ -164,14 +182,14 @@ impl EarlyLintPass for MacroArgumentBinding {
     }
 }
 
-fn check_argument(argument: &[TokenTree], ctx: TrivialContext<'_>) {
+fn check_argument(argument: &[TokenTree], ctx: PurityContext<'_>) {
     if argument.is_empty() {
         return;
     }
     if !looks_like_expression(argument) {
         return;
     }
-    if is_trivial_expression(argument, ctx) {
+    if is_pure_expression(argument, ctx) {
         return;
     }
     let first = argument.first().expect("non-empty checked above");

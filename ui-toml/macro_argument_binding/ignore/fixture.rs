@@ -1,5 +1,5 @@
 // Skipped: `debug_assert_eq!` is on the built-in deny list and the
-// first argument is a non-trivial method call, but the fixture's
+// first argument is an impure method call, but the fixture's
 // `dylint.toml` adds `debug_assert_eq` to `ignore`, which always
 // wins over the deny / allow lists. The rule emits no diagnostic.
 

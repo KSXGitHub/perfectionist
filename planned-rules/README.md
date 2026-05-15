@@ -152,7 +152,7 @@ pattern that several rules call out by reference — live in
   optional-trailing-comma idioms (harder, not yet implemented
   and therefore not configurable).
 - [`macro-argument-binding.md`](./macro-argument-binding.md) —
-  require non-trivial expressions passed to function-like and
+  require impure expressions passed to function-like and
   array-like macro invocations to be bound to a `let` first.
   Targets the `debug_assert_eq!(map.insert(k, v), None)` footgun
   (release builds skip evaluation entirely) and the general
