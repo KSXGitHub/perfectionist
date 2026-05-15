@@ -3,6 +3,19 @@
 version = 4
 
 [[package]]
+name = "_deploy_check"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "command-extra",
+ "derive_more",
+ "pipe-trait",
+ "serde",
+ "text-block-macros",
+ "toml 1.1.2+spec-1.1.0",
+]
+
+[[package]]
 name = "_dev_tools"
 version = "0.0.0"
 dependencies = [

@@ -63,6 +63,19 @@ warmup-integration-tests:
 install-dev-tools:
   cargo --config 'target."cfg(all())".linker="cc"' run --locked --package _dev_tools -- "$(pwd)" install
 
+# Point this checkout's `core.hooksPath` at `.githooks/` so the
+# version-bump contract (see `tools/deploy-check/`) is enforced
+# locally for commit messages and tag pushes.
+install-git-hooks:
+  git config core.hooksPath .githooks
+  chmod +x .githooks/commit-msg .githooks/pre-push
+
+# Undo `install-git-hooks`. Idempotent: silently succeeds when
+# `core.hooksPath` is already unset, so it is safe to run from
+# any state.
+uninstall-git-hooks:
+  git config --unset core.hooksPath 2>/dev/null || true
+
 # Print the dylint_linting version pinned in Cargo.lock
 dylint-version:
   @cargo --config 'target."cfg(all())".linker="cc"' run --locked --quiet --package _dev_tools -- "$(pwd)" dylint-version
