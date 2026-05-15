@@ -73,11 +73,17 @@ jobs:
       #   * the diff against the parent touches only the two `version`
       #     lines in Cargo.toml and Cargo.lock — nothing else
       # See `tools/deploy-check/`.
+      #
+      # The tag is read via `env:` rather than interpolated directly
+      # into the shell, so a tag whose name contained shell
+      # metacharacters (`$(...)`, backticks, etc.) cannot be expanded.
       - name: Verify version-bump contract
         shell: bash
+        env:
+          TAG_NAME: ${{ github.ref_name }}
         run: |
           cargo run --locked --package _deploy_check --bin deploy-check -- \
-            "$(pwd)" verify "${{ github.ref_name }}"
+            "$(pwd)" verify "$TAG_NAME"
 
       - name: Authenticate with crates.io
         id: auth
