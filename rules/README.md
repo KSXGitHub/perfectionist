@@ -17,7 +17,7 @@ Lint-control attributes use the `perfectionist::` namespace.
   submodule defined as `module/mod.rs`; prefer the flat `module.rs` layout
 - [`macro_argument_binding`](./macro_argument_binding.md) (default: `enabled`).
 
-  macro invocation passes a non-trivial expression that should be bound to a `let` first
+  macro invocation passes an impure expression that should be bound to a `let` first
 - [`macro_trailing_comma`](./macro_trailing_comma.md) (default: `enabled`).
 
   macro invocation does not follow rustfmt's vertical trailing-comma policy

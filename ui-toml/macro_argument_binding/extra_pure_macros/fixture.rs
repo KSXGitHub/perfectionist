@@ -1,12 +1,12 @@
-// `extra_trivial_macros` adds project-specific macro names to the
-// built-in trivial-macro set. A call to one of these macros — even
-// nested inside a deny-listed macro — qualifies as a trivial atom
+// `extra_pure_macros` adds project-specific macro names to the
+// built-in pure-macro set. A call to one of these macros — even
+// nested inside a deny-listed macro — qualifies as a pure atom
 // and the surrounding expression is accepted.
 //
 // This fixture's `dylint.toml` (see `tests/macro_argument_binding.rs`)
 // adds `literal_table`; the call below would otherwise be flagged
-// because macro invocations outside the built-in trivial set are
-// non-trivial by default.
+// because macro invocations outside the built-in pure set are
+// impure by default.
 
 #![feature(register_tool)]
 #![cfg_attr(dylint_lib = "perfectionist", register_tool(perfectionist))]

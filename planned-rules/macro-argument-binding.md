@@ -4,9 +4,9 @@
 
 Partially implemented. Modes 0-2 (`deny_only`, `blanket`,
 `allow_and_deny`) ship today, along with the `enabled`,
-`deny_extra`, `allow_extra`, `ignore`, `extra_trivial_methods`,
-`ignore_trivial_methods`, `extra_trivial_macros`, and
-`ignore_trivial_macros` knobs. The lint emits diagnostics with
+`deny_extra`, `allow_extra`, `ignore`, `extra_pure_methods`,
+`ignore_pure_methods`, `extra_pure_macros`, and
+`ignore_pure_macros` knobs. The lint emits diagnostics with
 a `let`-binding hint (no autofix, by design — the binding name
 varies per site).
 
@@ -17,33 +17,33 @@ Still pending:
   fails to deserialise. The matcher-walking infrastructure is
   shared with the equivalent eligibility check planned for
   `macro-trailing-comma`; both will land together.
-- **Range expressions over trivial operands.** The spec couples
-  range-expression triviality to operand triviality the same way
+- **Range expressions over pure operands.** The spec couples
+  range-expression purity to operand purity the same way
   it does for binary expressions, but the walker only recognises
-  binary chains; `start..end` and `start..=end` over trivial
-  operands still fall through as non-trivial. Extending
-  `take_trivial_expression` to optionally consume a range tail is
+  binary chains; `start..end` and `start..=end` over pure
+  operands still fall through as impure. Extending
+  `take_pure_expression` to optionally consume a range tail is
   a small follow-up.
-- **Cast suffix beyond path-shaped types.** The trivial-expression
+- **Cast suffix beyond path-shaped types.** The pure-expression
   predicate currently recognises `expr as Path` (e.g., `x as u64`,
   `x as my::Type`) but treats `expr as &Path`, `expr as *const T`,
-  and other non-path type forms as non-trivial. Expanding the
+  and other non-path type forms as impure. Expanding the
   type recogniser is a small, additive change.
 - **Turbofish in path arguments.** A path with explicit generics
   (`Vec::<u32>::new`, `Some::<u32>`) is parsed as `path-segment` plus
   `::<...>` plus more segments; the current path walker only consumes
-  `::ident` runs and so falls through to non-trivial on the turbofish.
-  These should be trivial per the spec's intent ("a path resolving to
+  `::ident` runs and so falls through to impure on the turbofish.
+  These should be pure per the spec's intent ("a path resolving to
   a function name, or unit / tuple variant"); extend `take_path_tail`
   to consume an optional `::<...>` token-tree per segment.
-- **Keyword idents as path starts.** The trivial-atom matcher's
+- **Keyword idents as path starts.** The pure-atom matcher's
   `Ident(_, _)` branch dispatches to the path walker regardless of
   whether the ident is a valid path-start keyword (`self`, `Self`,
   `super`, `crate`, the empty set otherwise). Reserved keywords like
   `let`, `if`, `match`, `for`, `while` are accepted as path heads
-  and the resulting "trivial path" leaves an unexpected tail in the
-  suffix walk, which still bottoms out as non-trivial — so the lint
-  classification is correct by coincidence. Tighten `take_trivial_atom`
+  and the resulting "pure path" leaves an unexpected tail in the
+  suffix walk, which still bottoms out as impure — so the lint
+  classification is correct by coincidence. Tighten `take_pure_atom`
   to reject reserved-keyword idents so the right door owns the
   decision.
 
@@ -112,7 +112,7 @@ what the macro does with its captures.
 For a function-like (`name!(...)`) or array-like (`name![...]`)
 macro invocation:
 
-- If the macro is on the **deny list**, every non-trivial
+- If the macro is on the **deny list**, every impure
   top-level argument is flagged.
 - If the macro is on the **allow list**, the argument shape is
   unconstrained.
@@ -128,7 +128,7 @@ uses: the same `macro_rules!` accepts all three call shapes,
 and the definition site doesn't fix which one the author chose
 at any given call site.
 
-### What counts as a "non-trivial" argument
+### What counts as a "impure" argument
 
 The lint accepts any argument whose outermost shape is one of:
 
@@ -136,41 +136,41 @@ The lint accepts any argument whose outermost shape is one of:
 - A path resolving to a `const`, `static`, local binding,
   function name, or unit / tuple variant (`MAX`, `count`,
   `Foo::BAR`, `Result::Ok`).
-- A reference to a trivial expression (`&count`, `&mut buffer`).
-- A field access or tuple-index on a trivial base
+- A reference to a pure expression (`&count`, `&mut buffer`).
+- A field access or tuple-index on a pure base
   (`config.threshold`, `point.0`).
 - An index `base[index]` where both `base` and `index` are
-  themselves trivial (`buffer[0]`, `lookup[Foo::KEY]`).
-- A unary deref of a trivial expression (`*ptr`).
-- A trivial expression annotated with a type (`x as u64`).
-- The unit literal `()`, a parenthesised trivial expression
-  (`(x)`), or a tuple whose every element is trivial
+  themselves pure (`buffer[0]`, `lookup[Foo::KEY]`).
+- A unary deref of a pure expression (`*ptr`).
+- A pure expression annotated with a type (`x as u64`).
+- The unit literal `()`, a parenthesised pure expression
+  (`(x)`), or a tuple whose every element is pure
   (`(a, b)`, `(a,)`).
-- A binary chain whose every operand is trivial and whose
+- A binary chain whose every operand is pure and whose
   every operator is side-effect-free in the syntactic sense:
   the arithmetic operators (`+`, `-`, `*`, `/`, `%`), the
   bitwise operators (`&`, `|`, `^`, `<<`, `>>`), the
   comparison operators (`==`, `!=`, `<`, `>`, `<=`, `>=`),
   and the short-circuit operators (`&&`, `||`). `a <= b`,
-  `count + offset`, `flags & MASK == 0` are all trivial when
+  `count + offset`, `flags & MASK == 0` are all pure when
   the operands are.
-- A zero-argument method call `expr.method()` on a trivial
+- A zero-argument method call `expr.method()` on a pure
   base, where `method` is in the curated pure-getter set
   (`len`, `is_empty`, `as_str`, `as_bytes`, `as_ref`, `as_mut`,
   `as_deref`, `as_slice`) or in the project's
-  `extra_trivial_methods`. `vec.len()`, `s.is_empty()`,
+  `extra_pure_methods`. `vec.len()`, `s.is_empty()`,
   `opt.as_ref()` evaluate the same way no matter how many
   times the macro touches them, so the let-bind rewrite
   would only force the call to run in release builds for
   no benefit. Method calls with arguments, generic method
   calls, and method names outside the configured set stay
-  non-trivial: `map.insert(k, v)`, `iter.next()`,
+  impure: `map.insert(k, v)`, `iter.next()`,
   `vec.try_into::<Foo>()` still flag.
 - A function-like or array-like invocation `name!(...)` /
-  `name![...]` of a curated trivial macro: `concat!`, `env!`,
+  `name![...]` of a curated pure macro: `concat!`, `env!`,
   `option_env!`, `include_str!`, `include_bytes!`,
   `stringify!`, `cfg!`, `line!`, `column!`, `file!`,
-  `module_path!`, plus anything in `extra_trivial_macros`.
+  `module_path!`, plus anything in `extra_pure_macros`.
   These expand to compile-time constants (a literal, a
   `&'static str`, a `bool`, a span marker) with no runtime
   side effect, so passing one to a surrounding `debug_assert*`
@@ -188,20 +188,20 @@ The lint accepts any argument whose outermost shape is one of:
   do *not* qualify; the rule treats those as DSL bodies, the
   same way it treats the outer call's curly form.
 
-Everything else is non-trivial: function and method calls, `?`,
+Everything else is impure: function and method calls, `?`,
 `.await`, macro invocations, blocks, control-flow expressions,
 assignments, range expressions, and any binary expression whose
-operands are non-trivial. The classification is purely
+operands are impure. The classification is purely
 syntactic — `const fn` calls and other "morally pure"
-expressions are non-trivial; hoist them to a `const` if they
+expressions are impure; hoist them to a `const` if they
 need to appear inline.
 
 The binary-chain rule reflects an important consequence for
-`debug_assert*`: a side-effect-free comparison of trivial
+`debug_assert*`: a side-effect-free comparison of pure
 operands evaluates the same way regardless of how many times the
 macro touches it, and the lint's `let`-binding hint would
 *force* the comparison to evaluate even in release builds. The
-trivial-chain carve-out keeps the lint focused on the genuine
+pure-chain carve-out keeps the lint focused on the genuine
 hazard (side-effecting expressions like `map.insert(k, v)`
 passed where the macro might drop them) and away from the noise
 case (comparing two locals).
@@ -212,14 +212,14 @@ The pure-getter rule is **syntactic, name-based, type-blind**. A
 third-party type that defines an inherent method named
 `is_empty`, `len`, `as_bytes`, `as_ref`, … and that performs
 observable side effects in that method will be incorrectly
-accepted as trivial. The curated list is restricted to names
+accepted as pure. The curated list is restricted to names
 whose pure-getter convention is essentially universal across the
 ecosystem, but the lint cannot prove the convention holds for
 any given call site. Projects that hit this corner can drop
 specific names from the built-in set via the
-`ignore_trivial_methods` knob — for example, a project that
+`ignore_pure_methods` knob — for example, a project that
 wraps `as_ref` in a non-pure implementation can put `"as_ref"`
-in `ignore_trivial_methods` and the lint will flag every
+in `ignore_pure_methods` and the lint will flag every
 `.as_ref()` call as a method call again.
 
 ## Eligibility modes
@@ -240,7 +240,7 @@ macros.
 ### Mode 1 — `blanket`
 
 Flag every function-like or array-like invocation that carries
-a non-trivial top-level argument, regardless of macro. Add
+an impure top-level argument, regardless of macro. Add
 specific exceptions to `allow_extra`; there is no built-in
 allow list in this mode.
 
@@ -253,10 +253,10 @@ flagging every macro invocation is exhausting.
 Three name-set lookups decide each invocation:
 
 1. **Deny-list hit** (`debug_assert*` plus `deny_extra`) → flag
-   every non-trivial argument.
+   every impure argument.
 2. **Allow-list hit** (the curated set below plus `allow_extra`)
    → accept unconditionally.
-3. **Neither** → flag every non-trivial argument.
+3. **Neither** → flag every impure argument.
 
 The default allow list has three parts.
 
@@ -364,8 +364,8 @@ For every macro invocation:
    All are syntactic positions the macro author chose, and the
    let-bind rewrite the rule would propose is meaningless for
    the macro's matcher arm.
-7. Classify the expression with the trivial / non-trivial split.
-   If trivial, accept; if non-trivial, emit a diagnostic
+7. Classify the expression with the pure / impure split.
+   If pure, accept; if impure, emit a diagnostic
    suggesting a `let` binding immediately before the macro
    call.
 
@@ -386,10 +386,10 @@ let ejected = my_map.insert(key, value);
 debug_assert_eq!(ejected, None, "duplicate key");
 ```
 
-### Trivial arguments stay inline
+### Pure arguments stay inline
 
 ```rust
-// Accepted — `count`, `MAX_RETRIES`, `&buffer` are all trivial.
+// Accepted — `count`, `MAX_RETRIES`, `&buffer` are all pure.
 debug_assert_eq!(count, MAX_RETRIES, "expected {MAX_RETRIES} retries");
 ```
 
@@ -406,7 +406,7 @@ let msg = format!("retrying {} ({} failures)", endpoint, count.fetch_add(1, Orde
 ```rust
 // Accepted — `concat!`, `env!`, `include_str!`, and the rest of
 // the compile-time family are on the allow list, and their
-// expansion is itself a literal so they also count as trivial
+// expansion is itself a literal so they also count as pure
 // atoms when used inside another macro. Both rules together
 // make these idioms invisible to the lint:
 let msg = concat!("home: ", env!("HOME"));
@@ -421,7 +421,7 @@ let xs = vec![compute(), compute(), compute()];
 ```
 
 ```rust
-// Flagged under blanket mode — every non-trivial argument is
+// Flagged under blanket mode — every impure argument is
 // a candidate, allow list or not.
 let xs = vec![compute(), compute(), compute()];
 
@@ -489,40 +489,40 @@ ignore = [
   # "my_crate::ad_hoc",
 ]
 
-# Zero-argument method names treated as trivial postfixes on a
-# trivial base, in addition to the built-in set (`len`,
+# Zero-argument method names treated as pure postfixes on a
+# pure base, in addition to the built-in set (`len`,
 # `is_empty`, `as_str`, `as_bytes`, `as_ref`, `as_mut`,
 # `as_deref`, `as_slice`). Add project-specific pure getters
 # here so `debug_assert!(value.my_cached_getter() <= limit)`
 # stops flagging.
-extra_trivial_methods = [
+extra_pure_methods = [
   # "my_cached_getter",
 ]
 
 # Method names to drop from the pure-method list, even if they
-# appear in the built-in defaults or in `extra_trivial_methods`.
+# appear in the built-in defaults or in `extra_pure_methods`.
 # Checked after the merge, so this knob always wins. Useful for
 # opting back into linting on a default entry the project does
-# not consider trivial.
-ignore_trivial_methods = [
+# not consider pure.
+ignore_pure_methods = [
   # "as_ref",
 ]
 
-# Macro names treated as trivial atoms when they appear as
+# Macro names treated as pure atoms when they appear as
 # arguments to another macro, in addition to the built-in set
 # (`concat`, `env`, `option_env`, `include_str`, `include_bytes`,
 # `stringify`, `cfg`, `line`, `column`, `file`, `module_path`).
 # Add project-specific compile-time macros here so that, e.g.,
 # `debug_assert_eq!(literal_table!(KEY), expected)` stops flagging
 # the inner call.
-extra_trivial_macros = [
+extra_pure_macros = [
   # "literal_table",
 ]
 
-# Macro names to drop from the trivial-macro list, even if they
-# appear in the built-in defaults or in `extra_trivial_macros`.
+# Macro names to drop from the pure-macro list, even if they
+# appear in the built-in defaults or in `extra_pure_macros`.
 # Checked after the merge, so this knob always wins.
-ignore_trivial_macros = [
+ignore_pure_macros = [
   # "cfg",
 ]
 ```
@@ -546,11 +546,11 @@ ignore_trivial_macros = [
 - Per-argument expression re-parse uses `rustc_parse`'s
   `Parser::parse_expr` (or the equivalent restriction-
   respecting helper for the surrounding context).
-- Trivial/non-trivial predicate: a `match` on `ast::ExprKind`
-  over the seven trivial variants (`Lit`, `Path`, `AddrOf`,
+- Pure/impure predicate: a `match` on `ast::ExprKind`
+  over the seven pure variants (`Lit`, `Path`, `AddrOf`,
   `Field`, `Index`, `Unary(Deref, _)`, `Cast`) with recursive
-  triviality checks on the sub-expressions. Default any
-  unrecognised variant to non-trivial.
+  purity checks on the sub-expressions. Default any
+  unrecognised variant to impure.
 - Matcher walker (mode 3): builds on the matcher-access
   infrastructure
   [`macro-trailing-comma`](./macro-trailing-comma.md)
@@ -559,7 +559,7 @@ ignore_trivial_macros = [
 ### Difficulty
 
 **Modes 0 / 1 / 2: easy.** A syntactic name-set lookup, a
-top-level argument splitter, and the trivial / non-trivial
+top-level argument splitter, and the pure / impure
 predicate. The three modes differ only in which lookup table
 the matcher consults.
 

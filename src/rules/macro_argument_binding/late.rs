@@ -40,7 +40,7 @@ fn emit(lint_context: &LateContext<'_>, hir_id: hir::HirId, span: Span) {
         MACRO_ARGUMENT_BINDING,
         hir_id,
         span,
-        "non-trivial expression passed directly to a macro",
+        "impure expression passed directly to a macro",
         |diag| {
             diag.help(
                 "bind the expression to a `let` immediately before the macro \
