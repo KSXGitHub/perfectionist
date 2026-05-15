@@ -95,11 +95,6 @@ diagnostic is informational.
 
 ```toml
 [prefer_derive_more_over_thiserror]
-# Set to false to disable the rule entirely (e.g., for projects
-# in the middle of a migration that want the warning silenced
-# until the migration finishes).
-enabled = true
-
 # Recognised thiserror paths. Defaults cover the canonical crate;
 # add forks here if a project re-exports under a custom name.
 thiserror_paths = ["thiserror::Error"]

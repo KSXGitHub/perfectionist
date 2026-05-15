@@ -4,9 +4,9 @@
 
 Name-based eligibility is **implemented** in `src/rules/macro_trailing_comma.rs`
 with the curated `core` / `std` and well-known third-party list,
-plus the `name_based_extra`, `ignore`, and `enabled` configuration
-knobs. The matcher-based half is not yet implemented and its
-configuration is therefore not exposed — see
+plus the `name_based_extra` and `ignore` configuration knobs. The
+matcher-based half is not yet implemented and its configuration is
+therefore not exposed — see
 [`macro-argument-binding.md`](./macro-argument-binding.md) for the
 sibling rule's handling of the same convention.
 
@@ -427,9 +427,6 @@ my_proc::custom!(
 
 ```toml
 [macro_trailing_comma]
-# Set to false to disable the rule entirely.
-enabled = true
-
 # Additional macros to treat as name-based matches, beyond the
 # built-in core/std and well-known third-party set. Each entry
 # is a fully-qualified macro path (no trailing `!`) or a bare

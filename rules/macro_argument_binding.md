@@ -96,12 +96,6 @@ debug_assert_eq!(ejected, None, "duplicate");
 
 Configure via `dylint.toml` under `["perfectionist::macro_argument_binding"]`. Every field is optional; the per-field prose below states the default.
 
-### `enabled`: `boolean` (optional)
-
-Master on/off switch for the rule. Defaults to `true`. Set
-to `false` to silence every diagnostic this lint would emit
-without having to enumerate every macro under `ignore`.
-
 ### `mode`: `Mode` (optional)
 
 Eligibility mode.

@@ -53,11 +53,6 @@ let path = r"C:\Users\foo\bar";
 
 Configure via `dylint.toml` under `["perfectionist::prefer_raw_string"]`. Every field is optional; the per-field prose below states the default.
 
-### `enabled`: `boolean` (optional)
-
-Master on/off switch for the rule. Set to `false` to silence
-every diagnostic without enumerating individual literals.
-
 ### `min_escapes_to_trigger`: `unsigned integer` (optional)
 
 Minimum number of eliminable escapes a string must contain

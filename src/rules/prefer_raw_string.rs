@@ -81,9 +81,6 @@ const CONFIG_KEY: &str = "perfectionist::prefer_raw_string";
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Master on/off switch for the rule. Set to `false` to silence
-    /// every diagnostic without enumerating individual literals.
-    enabled: bool,
     /// Minimum number of eliminable escapes a string must contain
     /// before the lint fires. Default 1 catches every escapable
     /// string; set to 2 to skip single-escape literals where the
@@ -105,7 +102,6 @@ struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            enabled: true,
             min_escapes_to_trigger: 1,
             escapes_eligible: DEFAULT_ESCAPES_ELIGIBLE
                 .iter()
@@ -116,7 +112,6 @@ impl Default for Config {
 }
 
 pub struct PreferRawString {
-    enabled: bool,
     min_escapes_to_trigger: usize,
     escapes_eligible: Vec<String>,
 }
@@ -137,7 +132,6 @@ impl PreferRawString {
             .filter(|entry| is_supported_eligible_entry(entry))
             .collect();
         Self {
-            enabled: config.enabled,
             min_escapes_to_trigger: config.min_escapes_to_trigger,
             escapes_eligible,
         }
@@ -159,9 +153,6 @@ pub fn register_pass(lint_store: &mut LintStore) {
 
 impl<'tcx> LateLintPass<'tcx> for PreferRawString {
     fn check_expr(&mut self, lint_context: &LateContext<'tcx>, expr: &Expr<'tcx>) {
-        if !self.enabled {
-            return;
-        }
         let ExprKind::Lit(literal) = expr.kind else {
             return;
         };

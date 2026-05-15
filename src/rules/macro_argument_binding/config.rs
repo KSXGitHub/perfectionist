@@ -208,13 +208,9 @@ pub(super) enum Mode {
     AllowAndDeny,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 pub(super) struct Config {
-    /// Master on/off switch for the rule. Defaults to `true`. Set
-    /// to `false` to silence every diagnostic this lint would emit
-    /// without having to enumerate every macro under `ignore`.
-    pub enabled: bool,
     /// Eligibility mode.
     pub mode: Mode,
     /// Macros added to the built-in deny list. Each entry is a
@@ -264,24 +260,7 @@ pub(super) struct Config {
     pub ignore_pure_macros: Vec<String>,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            mode: Mode::default(),
-            deny_extra: Vec::new(),
-            allow_extra: Vec::new(),
-            ignore: Vec::new(),
-            extra_pure_methods: Vec::new(),
-            ignore_pure_methods: Vec::new(),
-            extra_pure_macros: Vec::new(),
-            ignore_pure_macros: Vec::new(),
-        }
-    }
-}
-
 pub(super) struct MacroArgumentBinding {
-    enabled: bool,
     mode: Mode,
     /// Built-in deny list plus `deny_extra`. Used in `DenyOnly` and
     /// `AllowAndDeny`.
@@ -329,7 +308,6 @@ impl MacroArgumentBinding {
             config.ignore_pure_macros,
         );
         Self {
-            enabled: config.enabled,
             mode: config.mode,
             deny,
             allow,
@@ -353,12 +331,12 @@ impl MacroArgumentBinding {
         &self.pure_macros
     }
 
-    /// Path-side eligibility: combines the `enabled` switch, the
-    /// `ignore` list, and the mode-based deny / allow lookup. Does
-    /// *not* consider the call's delimiter or argument shape — those
-    /// stay in the early-pass driver, where token-tree concerns live.
+    /// Path-side eligibility: combines the `ignore` skip list with
+    /// the mode-based deny / allow lookup. Does *not* consider the
+    /// call's delimiter or argument shape — those stay in the
+    /// early-pass driver, where token-tree concerns live.
     pub(super) fn should_check_path(&self, path: &Path) -> bool {
-        self.enabled && !matches_any(path, &self.ignore) && self.arguments_should_be_checked(path)
+        !matches_any(path, &self.ignore) && self.arguments_should_be_checked(path)
     }
 
     fn arguments_should_be_checked(&self, path: &Path) -> bool {

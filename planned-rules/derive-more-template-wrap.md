@@ -104,9 +104,6 @@ struct Custom;
 
 ```toml
 [derive_more_template_wrap]
-# Set to false to disable the rule entirely.
-enabled = true
-
 # Source-line width that triggers the rule. Default 100 matches
 # rustfmt's column default. Width is unicode display width of the
 # line containing the attribute, not its byte length.
