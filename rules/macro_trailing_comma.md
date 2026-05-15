@@ -62,12 +62,6 @@ let ys = vec![1, 2, 3];
 
 Configure via `dylint.toml` under `["perfectionist::macro_trailing_comma"]`. Every field is optional; the per-field prose below states the default.
 
-### `enabled`: `boolean` (optional)
-
-Master on/off switch for the rule. Defaults to `true`. Set
-to `false` to silence every diagnostic this lint would emit
-without having to enumerate every macro under `ignore`.
-
 ### `name_based_extra`: `[string]` (optional)
 
 Additional macro paths to treat as name-based eligible, on top

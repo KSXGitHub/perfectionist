@@ -120,9 +120,6 @@ write!(f, "a\nb {x}")?;
 
 ```toml
 [format_macro_wrap]
-# Set to false to disable the rule entirely.
-enabled = true
-
 # Source-line width that triggers the rule. Default 100 matches
 # rustfmt's column default. Width is unicode display width of the
 # line containing the macro invocation, not its byte length.

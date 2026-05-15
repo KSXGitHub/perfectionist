@@ -67,13 +67,9 @@ const BUILTIN_NAME_BASED: &[&str] = &[
     "ensure",
 ];
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Master on/off switch for the rule. Defaults to `true`. Set
-    /// to `false` to silence every diagnostic this lint would emit
-    /// without having to enumerate every macro under `ignore`.
-    enabled: bool,
     /// Additional macro paths to treat as name-based eligible, on top
     /// of the curated built-in list. Each entry is matched by its
     /// final path segment, so `"my_crate::vec_like"` and `"vec_like"`
@@ -91,18 +87,7 @@ struct Config {
     ignore: Vec<String>,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            name_based_extra: Vec::new(),
-            ignore: Vec::new(),
-        }
-    }
-}
-
 pub(super) struct MacroTrailingComma {
-    enabled: bool,
     // TODO(matcher_based): the lookup is currently linear
     // (`entries.iter().any(...)`), so the `BTreeSet` ordering is unused
     // — it only deduplicates identical config entries. When the
@@ -125,17 +110,13 @@ impl MacroTrailingComma {
             .collect();
         let name_based = merge_with_builtins(BUILTIN_NAME_BASED, &name_based_extra);
         let ignore = parse_path_list(&config.ignore);
-        Self {
-            enabled: config.enabled,
-            name_based,
-            ignore,
-        }
+        Self { name_based, ignore }
     }
 
-    /// Path-side eligibility: combines the `enabled` switch with the
-    /// `ignore` / built-in `name_based` lookup. Does *not* consider the
+    /// Path-side eligibility: combines the `ignore` skip list with
+    /// the built-in `name_based` lookup. Does *not* consider the
     /// invocation's argument shape — that stays in the early pass.
     pub(super) fn should_check_path(&self, path: &rustc_ast::Path) -> bool {
-        self.enabled && !matches_any(path, &self.ignore) && matches_any(path, &self.name_based)
+        !matches_any(path, &self.ignore) && matches_any(path, &self.name_based)
     }
 }

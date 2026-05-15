@@ -24,8 +24,6 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    enabled: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     min_escapes_to_trigger: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     escapes_eligible: Option<Vec<String>>,
@@ -41,17 +39,6 @@ fn run(src_base: &str, config: RuleConfig) {
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), src_base)
         .dylint_toml(dylint_toml(config))
         .run();
-}
-
-#[test]
-fn enabled_false_suppresses_the_entire_rule() {
-    run(
-        "ui-toml/prefer_raw_string/disabled",
-        RuleConfig {
-            enabled: Some(false),
-            ..Default::default()
-        },
-    );
 }
 
 #[test]

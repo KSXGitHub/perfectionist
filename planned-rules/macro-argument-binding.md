@@ -3,8 +3,8 @@
 ## Status
 
 Partially implemented. Modes 0-2 (`deny_only`, `blanket`,
-`allow_and_deny`) ship today, along with the `enabled`,
-`deny_extra`, `allow_extra`, `ignore`, `extra_trivial_methods`,
+`allow_and_deny`) ship today, along with the `deny_extra`,
+`allow_extra`, `ignore`, `extra_trivial_methods`,
 `ignore_trivial_methods`, `extra_trivial_macros`, and
 `ignore_trivial_macros` knobs. The lint emits diagnostics with
 a `let`-binding hint (no autofix, by design — the binding name
@@ -465,9 +465,6 @@ let payload = serde_json::json!({ "id": next_id(), "ts": now() });
 
 ```toml
 [macro_argument_binding]
-# Set to false to disable the rule entirely.
-enabled = true
-
 # Eligibility mode. Defaults to "allow_and_deny".
 mode = "allow_and_deny"
 
