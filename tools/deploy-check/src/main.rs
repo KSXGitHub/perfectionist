@@ -392,7 +392,8 @@ struct CargoTomlPackage {
 }
 
 fn parse_cargo_toml_version(content: &str) -> Result<String, Error> {
-    toml::from_str::<CargoTomlFile>(content)
+    content
+        .pipe(toml::from_str::<CargoTomlFile>)
         .map_err(|err| Error::ParseCargoToml(err.to_string()))?
         .package
         .version
