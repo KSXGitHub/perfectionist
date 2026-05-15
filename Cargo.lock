@@ -11,6 +11,7 @@ dependencies = [
  "derive_more",
  "pipe-trait",
  "serde",
+ "text-block-macros",
  "toml 1.1.2+spec-1.1.0",
 ]
 

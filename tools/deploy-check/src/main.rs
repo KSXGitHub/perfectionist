@@ -394,7 +394,6 @@ struct CargoTomlPackage {
 fn parse_cargo_toml_version(content: &str) -> Result<String, RuntimeError> {
     content
         .pipe(toml::from_str::<CargoTomlFile>)
-        .map_err(|err| err.to_string())
         .map_err(RuntimeError::ParseCargoToml)?
         .package
         .version
@@ -414,8 +413,9 @@ struct CargoLockPackage {
 }
 
 fn parse_cargo_lock_version(content: &str) -> Result<String, RuntimeError> {
-    let lock: CargoLockFile =
-        toml::from_str(content).map_err(|err| RuntimeError::ParseCargoLock(err.to_string()))?;
+    let lock: CargoLockFile = content
+        .pipe(toml::from_str)
+        .map_err(RuntimeError::ParseCargoLock)?;
     let mut matches = lock.package.into_iter().filter(|p| p.name == PACKAGE_NAME);
     let first = matches.next().ok_or(RuntimeError::NoLockPackageEntry)?;
     if matches.next().is_some() {
@@ -472,9 +472,9 @@ enum RuntimeError {
     )]
     WrongFileSet(Vec<String>),
     #[display("failed to parse Cargo.toml: {_0}")]
-    ParseCargoToml(String),
+    ParseCargoToml(toml::de::Error),
     #[display("failed to parse Cargo.lock: {_0}")]
-    ParseCargoLock(String),
+    ParseCargoLock(toml::de::Error),
     #[display("Cargo.lock has no [[package]] entry for `{PACKAGE_NAME}`")]
     NoLockPackageEntry,
     #[display("Cargo.lock has more than one [[package]] entry for `{PACKAGE_NAME}`")]
@@ -529,6 +529,7 @@ enum RuntimeError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use text_block_macros::text_block_fnl;
 
     #[test]
     fn version_literal_grammar() {
@@ -553,49 +554,49 @@ mod tests {
 
     #[test]
     fn cargo_toml_version_extracted_from_package_section() {
-        let manifest = "\
-[workspace]
-members = [\"x\"]
-
-[package]
-name = \"perfectionist\"
-version = \"0.0.0-rc.7\"
-";
+        let manifest = text_block_fnl! {
+            "[workspace]"
+            r#"members = ["x"]"#
+            ""
+            "[package]"
+            r#"name = "perfectionist""#
+            r#"version = "0.0.0-rc.7""#
+        };
         assert_eq!(parse_cargo_toml_version(manifest).unwrap(), "0.0.0-rc.7");
     }
 
     #[test]
     fn cargo_lock_version_picks_perfectionist_entry() {
-        let lock = "\
-[[package]]
-name = \"foo\"
-version = \"1.0.0\"
-
-[[package]]
-name = \"perfectionist\"
-version = \"0.0.0-rc.5\"
-dependencies = [
- \"foo\",
-]
-
-[[package]]
-name = \"bar\"
-version = \"2.0.0\"
-";
+        let lock = text_block_fnl! {
+            "[[package]]"
+            r#"name = "foo""#
+            r#"version = "1.0.0""#
+            ""
+            "[[package]]"
+            r#"name = "perfectionist""#
+            r#"version = "0.0.0-rc.5""#
+            "dependencies = ["
+            r#" "foo","#
+            "]"
+            ""
+            "[[package]]"
+            r#"name = "bar""#
+            r#"version = "2.0.0""#
+        };
         assert_eq!(parse_cargo_lock_version(lock).unwrap(), "0.0.0-rc.5");
     }
 
     #[test]
     fn cargo_lock_rejects_duplicate_perfectionist_entries() {
-        let lock = "\
-[[package]]
-name = \"perfectionist\"
-version = \"0.0.0-rc.1\"
-
-[[package]]
-name = \"perfectionist\"
-version = \"0.0.0-rc.2\"
-";
+        let lock = text_block_fnl! {
+            "[[package]]"
+            r#"name = "perfectionist""#
+            r#"version = "0.0.0-rc.1""#
+            ""
+            "[[package]]"
+            r#"name = "perfectionist""#
+            r#"version = "0.0.0-rc.2""#
+        };
         assert!(matches!(
             parse_cargo_lock_version(lock),
             Err(RuntimeError::DuplicateLockPackageEntry)
@@ -604,31 +605,31 @@ version = \"0.0.0-rc.2\"
 
     #[test]
     fn version_only_diff_accepts_a_pure_version_bump() {
-        let before = "\
-[package]
-name = \"perfectionist\"
-version = \"0.0.0-rc.6\"
-";
-        let after = "\
-[package]
-name = \"perfectionist\"
-version = \"0.0.0-rc.7\"
-";
+        let before = text_block_fnl! {
+            "[package]"
+            r#"name = "perfectionist""#
+            r#"version = "0.0.0-rc.6""#
+        };
+        let after = text_block_fnl! {
+            "[package]"
+            r#"name = "perfectionist""#
+            r#"version = "0.0.0-rc.7""#
+        };
         assert_version_only_diff("Cargo.toml", before, after, "0.0.0-rc.6", "0.0.0-rc.7").unwrap();
     }
 
     #[test]
     fn version_only_diff_rejects_collateral_edits() {
-        let before = "\
-[package]
-name = \"perfectionist\"
-version = \"0.0.0-rc.6\"
-";
-        let after = "\
-[package]
-name = \"renamed\"
-version = \"0.0.0-rc.7\"
-";
+        let before = text_block_fnl! {
+            "[package]"
+            r#"name = "perfectionist""#
+            r#"version = "0.0.0-rc.6""#
+        };
+        let after = text_block_fnl! {
+            "[package]"
+            r#"name = "renamed""#
+            r#"version = "0.0.0-rc.7""#
+        };
         // The first differing line is `name = ...`, which doesn't
         // match the expected version-line text — so the rejection
         // is `UnexpectedBeforeLine`, not `ExtraLineChanged`.
@@ -640,16 +641,16 @@ version = \"0.0.0-rc.7\"
 
     #[test]
     fn version_only_diff_rejects_an_extra_changed_line_after_the_version() {
-        let before = "\
-[package]
-version = \"0.0.0-rc.6\"
-description = \"a\"
-";
-        let after = "\
-[package]
-version = \"0.0.0-rc.7\"
-description = \"b\"
-";
+        let before = text_block_fnl! {
+            "[package]"
+            r#"version = "0.0.0-rc.6""#
+            r#"description = "a""#
+        };
+        let after = text_block_fnl! {
+            "[package]"
+            r#"version = "0.0.0-rc.7""#
+            r#"description = "b""#
+        };
         assert!(matches!(
             assert_version_only_diff("Cargo.toml", before, after, "0.0.0-rc.6", "0.0.0-rc.7"),
             Err(RuntimeError::ExtraLineChanged { .. })
@@ -658,8 +659,11 @@ description = \"b\"
 
     #[test]
     fn version_only_diff_rejects_line_count_mismatch() {
-        let before = "version = \"0.0.0-rc.6\"\n";
-        let after = "version = \"0.0.0-rc.7\"\nextra\n";
+        let before = text_block_fnl! { r#"version = "0.0.0-rc.6""# };
+        let after = text_block_fnl! {
+            r#"version = "0.0.0-rc.7""#
+            "extra"
+        };
         assert!(matches!(
             assert_version_only_diff("Cargo.toml", before, after, "0.0.0-rc.6", "0.0.0-rc.7"),
             Err(RuntimeError::LineCountChanged(_))
@@ -668,7 +672,7 @@ description = \"b\"
 
     #[test]
     fn version_only_diff_rejects_byte_identical_inputs() {
-        let same = "version = \"0.0.0-rc.6\"\n";
+        let same = text_block_fnl! { r#"version = "0.0.0-rc.6""# };
         assert!(matches!(
             assert_version_only_diff("Cargo.toml", same, same, "0.0.0-rc.6", "0.0.0-rc.6"),
             Err(RuntimeError::NoVersionChange(_))
