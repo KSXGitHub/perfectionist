@@ -8,8 +8,13 @@ on:
 jobs:
   # Run the full test suite (`just all`) against the tagged commit
   # before anything is published. `publish` requires this job to pass.
+  # The called workflow itself further restricts the token to
+  # `contents: read`; this declaration makes the limit visible to
+  # static analysers (CodeQL etc.) inspecting deploy.yaml directly.
   test:
     name: Test
+    permissions:
+      contents: read
     uses: ./.github/workflows/test.yaml
 
   publish:

@@ -8,6 +8,13 @@ on:
   pull_request:
   workflow_call:
 
+# `actions/checkout` plus the cargo build / test commands only need
+# read access to the repo. Restrict the GITHUB_TOKEN accordingly so
+# a compromised step in this workflow cannot push back, open issues,
+# write packages, etc.
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test
