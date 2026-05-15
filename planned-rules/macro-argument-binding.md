@@ -339,17 +339,29 @@ group.
 The third part collects third-party macros whose matchers are
 known to evaluate every top-level argument exactly once before
 forwarding it, so the rule's once-vs.-zero hazard does not apply.
-The current entries are the `insta` snapshot-assertion family —
-`assert_snapshot!`, `assert_debug_snapshot!`,
-`assert_display_snapshot!`, `assert_compact_debug_snapshot!`,
-`assert_yaml_snapshot!`, `assert_json_snapshot!`,
-`assert_compact_json_snapshot!`, `assert_ron_snapshot!`,
-`assert_csv_snapshot!`, `assert_toml_snapshot!`, and
-`assert_binary_snapshot!` — but the group is open-ended; further
-crates can be added as their matchers are vetted.
-`assert_display_snapshot!` is deprecated upstream in favour of
-`assert_snapshot!` but is retained for projects on older `insta`
-releases.
+The current entries cover four crates; the group is open-ended
+and further crates can be added as their matchers are vetted.
+
+- The `insta` snapshot-assertion family: `assert_snapshot!`,
+  `assert_debug_snapshot!`, `assert_display_snapshot!`,
+  `assert_compact_debug_snapshot!`, `assert_yaml_snapshot!`,
+  `assert_json_snapshot!`, `assert_compact_json_snapshot!`,
+  `assert_ron_snapshot!`, `assert_csv_snapshot!`,
+  `assert_toml_snapshot!`, and `assert_binary_snapshot!`.
+  `assert_display_snapshot!` is deprecated upstream in favour of
+  `assert_snapshot!` but is retained for projects on older
+  `insta` releases.
+- The `anyhow!` companions `bail!` and `ensure!`. `bail!(args)`
+  expands to `return Err(anyhow!(args))` and evaluates each
+  captured expression once; `ensure!(cond, args)` matches the
+  conditional-arguments shape of `assert!(cond, args)` already
+  on group 1.
+- The `maplit::{hashmap, btreemap, hashset, btreeset}!` builders.
+  Each expands to one `.insert` call per key/value pair, so every
+  captured expression is evaluated exactly once.
+- `serde_json::json!`. The macro walks its input token tree once
+  and routes every embedded Rust expression through
+  `to_value(&expr)` exactly once.
 
 `macro-trailing-comma`'s built-in list is intentionally
 narrower than this one; the two lists are not kept in

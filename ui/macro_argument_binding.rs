@@ -113,7 +113,7 @@ fn _vec_allow_listed() {
 
 // Allow-listed `insta` snapshot-assertion macros. Each variant
 // evaluates its value argument exactly once before serialising, so
-// the rule accepts non-trivial arguments under the default config.
+// the rule accepts impure arguments under the default config.
 // Tail-segment matching means the rule recognises both bare and
 // path-qualified call sites.
 fn _insta_snapshots_allow_listed() {
