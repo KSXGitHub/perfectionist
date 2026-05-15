@@ -161,10 +161,20 @@ pub(super) fn looks_like_expression(argument: &[TokenTree]) -> bool {
 /// (an attribute-annotated `let` binding inside a real block) is
 /// still treated as a Rust block.
 ///
-/// A labeled loop or block (`'a: loop { ... }`) at the brace's
-/// immediate top level is a known false positive — its `:` sits
-/// in the same position as a DSL key — but in macro-argument
-/// position labeled blocks are vanishingly rare.
+/// Known false-positive shapes — block-statement-starting tokens
+/// other than `let` that legitimately introduce a top-level `:`
+/// — are not currently whitelisted:
+///
+/// - `const NAME: type = expr;` and `static NAME: type = expr;`
+///   item declarations inside the block.
+/// - Labelled loops and blocks (`'a: loop { ... }`,
+///   `'a: { ... }`) at the brace's immediate top level — the
+///   lifetime token is followed by `:` in the same position as
+///   a DSL key.
+///
+/// All three constructs are vanishingly rare in macro-argument
+/// position; the trade-off keeps the heuristic simple at the
+/// price of a documented false skip on these shapes.
 fn brace_inner_looks_like_dsl(stream: &TokenStream) -> bool {
     let trees: Vec<&TokenTree> = stream.iter().collect();
     let mut whitelist_let = false;
