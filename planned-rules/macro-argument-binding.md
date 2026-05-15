@@ -373,6 +373,16 @@ For every macro invocation:
    All are syntactic positions the macro author chose, and the
    let-bind rewrite the rule would propose is meaningless for
    the macro's matcher arm.
+
+   When the argument itself is a single brace-delimited group
+   (`name!({"k": "v"})`, `name!({"k" => "v"})`), descend one
+   level and re-apply the DSL-marker check to the brace's inner
+   top level. A top-level `=>` or a top-level `:` outside a
+   `let` statement signals a DSL body (JSON-shaped or maplit-
+   shaped) rather than a Rust block expression, and is skipped
+   for the same reason. Real block expressions like
+   `{ let x: T = e; x }` survive the check because the `let`
+   keyword licenses the `:`.
 7. Classify the expression with the pure / impure split.
    If pure, accept; if impure, emit a diagnostic
    suggesting a `let` binding immediately before the macro

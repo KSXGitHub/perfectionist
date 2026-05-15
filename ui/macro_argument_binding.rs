@@ -43,6 +43,10 @@ macro_rules! assert_yaml_snapshot {
     ($($tokens:tt)*) => {{}};
 }
 
+macro_rules! dsl_macro {
+    ($($tokens:tt)*) => {{ 0 }};
+}
+
 // `debug_assert_eq!` is on the built-in deny list. The first argument
 // is an impure method call; in release builds the macro folds to
 // `if false { ... }` and the call never runs, leaving the map in a
@@ -115,6 +119,24 @@ fn _vec_repeat_form_skipped() {
 // form via the surrounding `macro_rules!` dispatch.
 fn _brace_delimiter_skipped() {
     debug_assert! { value().is_some() }
+}
+
+// A brace-delimited *argument* (the macro's outer delimiter is `(`,
+// the argument's outer delimiter is `{`) carries DSL body syntax
+// that isn't a Rust expression — `{"key": "value"}` (JSON-shaped),
+// `{"key" => "value"}` (maplit-shaped). The rule cannot propose a
+// let-bind rewrite for these because they don't compile in
+// expression position, so the argument is treated as
+// not-an-expression and skipped. The DSL signal is a top-level `:`
+// (not in a `let` statement) or a top-level `=>`.
+fn _brace_argument_with_dsl_markers_skipped() {
+    let _ = dsl_macro!({ "key": "value" });
+    let _ = dsl_macro!({ "key" => "value", "other" => "value" });
+    // Real Rust block expressions still go through the regular
+    // pure-expression analysis: `{ let x: T = e; x }` reaches the
+    // walker (the `let` keyword whitelists the `:`) and bottoms
+    // out as impure (block expressions aren't a pure atom),
+    // matching the spec's "blocks are impure" classification.
 }
 
 // All seven pure argument shapes — accepted under every mode. The

@@ -119,10 +119,71 @@ pub(super) fn looks_like_expression(argument: &[TokenTree]) -> bool {
     {
         return false;
     }
-    !argument.iter().any(|tree| match tree {
+    if argument.iter().any(|tree| match tree {
         TokenTree::Token(token, _) => is_dsl_marker(token),
         _ => false,
-    })
+    }) {
+        return false;
+    }
+    // A single brace-delimited argument is a block expression in
+    // Rust, but in macro-argument position it's overwhelmingly the
+    // outer carrier for a DSL body — `json!({"k": "v"})`,
+    // `hashmap!({"k" => v})`, and similar. Descend one level and
+    // look for DSL markers that wouldn't appear at the top level of
+    // a real Rust block. If any are present, the argument is not
+    // an expression the rule can rewrite, and `let`-binding it
+    // wouldn't compile.
+    if let [TokenTree::Delimited(_, _, Delimiter::Brace, inner)] = argument
+        && brace_inner_looks_like_dsl(inner)
+    {
+        return false;
+    }
+    true
+}
+
+/// Heuristic: does a brace-delimited block's inner top level look
+/// like a DSL body rather than a Rust statement list?
+///
+/// - `=>` at top level is always a DSL marker. The Rust block
+///   grammar never produces a top-level `=>`: match arms live one
+///   delimiter level deeper than the surrounding block.
+/// - `:` at top level is a DSL key-position marker unless its
+///   *statement* begins with `let`. The only Rust block
+///   construct that emits a top-level `:` is the
+///   `let pattern: type` annotation; struct literals (`Foo { x: 1 }`)
+///   put the `:` one delimiter level deeper than the surrounding
+///   block.
+///
+/// Statements are split by top-level `;`. A labeled loop or block
+/// (`'a: loop { ... }`) at the brace's immediate top level is a
+/// known false positive — its `:` sits in the same position as a
+/// DSL key — but in macro-argument position labeled blocks are
+/// vanishingly rare.
+fn brace_inner_looks_like_dsl(stream: &TokenStream) -> bool {
+    let mut statement_starts_with_let = false;
+    let mut at_statement_start = true;
+    for tree in stream.iter() {
+        match tree {
+            TokenTree::Token(token, _) => {
+                match token.kind {
+                    TokenKind::Semi => {
+                        statement_starts_with_let = false;
+                        at_statement_start = true;
+                        continue;
+                    }
+                    TokenKind::FatArrow => return true,
+                    TokenKind::Colon if !statement_starts_with_let => return true,
+                    _ => {}
+                }
+                if at_statement_start && token.is_keyword(kw::Let) {
+                    statement_starts_with_let = true;
+                }
+                at_statement_start = false;
+            }
+            _ => at_statement_start = false,
+        }
+    }
+    false
 }
 
 fn is_dsl_marker(token: &Token) -> bool {
