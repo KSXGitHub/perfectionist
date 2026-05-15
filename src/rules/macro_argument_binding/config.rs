@@ -226,7 +226,12 @@ pub(super) struct Config {
     /// Method names added to the built-in pure-method list. Each
     /// entry is a bare method identifier (no `()`, no receiver). A
     /// `.method()` invocation on a pure base is then accepted as a
-    /// pure postfix when the method takes no arguments.
+    /// pure postfix when the method takes no arguments. Add a
+    /// project-local method here only when it is genuinely safe
+    /// for the surrounding macro to drop or duplicate the call
+    /// (the rule's working definition of *pure*) — typically an
+    /// `O(1)` side-effect-free getter that the lint's syntactic
+    /// classification can't otherwise see.
     pub extra_pure_methods: Vec<String>,
     /// Method names to drop from the pure-method list, even if they
     /// appear in the built-in defaults or in `extra_pure_methods`.
@@ -241,9 +246,12 @@ pub(super) struct Config {
     /// (so `my_crate::const_str` matches by the `"const_str"` tail).
     /// A pure-macro call passed as an argument to another macro is
     /// treated as a pure atom — the rule does not propose binding
-    /// it to a `let`. Use this knob for project-specific macros whose
-    /// expansion is guaranteed to be a literal or other compile-time
-    /// constant.
+    /// it to a `let`. Use this knob for project-specific macros
+    /// whose expansion is a compile-time constant (a literal, a
+    /// `&'static str`, a `bool`); their inclusion satisfies the
+    /// rule's pure-as-drop-or-duplicate-safe definition trivially,
+    /// since there is no runtime expression for the surrounding
+    /// macro to drop or duplicate.
     pub extra_pure_macros: Vec<String>,
     /// Macro names to drop from the pure-macro list, even if they
     /// appear in the built-in defaults or in `extra_pure_macros`.

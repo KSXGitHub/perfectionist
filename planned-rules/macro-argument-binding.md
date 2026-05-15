@@ -128,7 +128,34 @@ uses: the same `macro_rules!` accepts all three call shapes,
 and the definition site doesn't fix which one the author chose
 at any given call site.
 
-### What counts as a "impure" argument
+### Terminology: "pure" vs "impure"
+
+In this rule's vocabulary, an expression is **pure** if it is
+*safe for the surrounding macro to drop or duplicate* —
+evaluating it zero, one, or many times is observationally
+equivalent. **Impure** is anything else, and is what the rule
+flags.
+
+The classification is **syntactic and conservative**. The rule
+recognises a curated set of shapes (literals, paths,
+field accesses, the curated method names listed below, …) that
+are known to satisfy the property, and treats everything else as
+impure even if it is in fact side-effect-free. A `const fn`
+call, a `Result::map` chain over a pure base, or `vec.fold(...)`
+is therefore impure under this rule unless its shape is
+recognised — the lint cannot prove side-effect-freedom in
+general, only spot it.
+
+The set is intentionally narrower than the functional-
+programming notion of purity (which would accept any
+deterministic, observable-state-free expression) and keyed to
+what a function-like or array-like macro can actually do with
+its captures: drop them (`debug_assert*` in release) or
+duplicate them (`min!`-style, retry loops). Side-effect-freedom
+in the abstract is not enough; what matters is *exactly-once
+safety under the macro's specific transformation*.
+
+### What counts as a pure argument
 
 The lint accepts any argument whose outermost shape is one of:
 
