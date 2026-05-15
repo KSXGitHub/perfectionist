@@ -21,32 +21,34 @@ Still pending:
   entries in `deny`, `allow`, `ignore`, `deny_extra`, and
   `allow_extra` currently tail-match the *syntactic* path the
   user wrote at the call site. A configured entry of
-  `rusqlite::params` matches `rusqlite::params!(...)` and
-  `crate::rusqlite::params!(...)` but does *not* match the
-  ecosystem-standard call shapes that route the macro through
-  a `use` declaration:
+  `their_crate::their_macro` matches
+  `their_crate::their_macro!(...)` and
+  `crate::their_crate::their_macro!(...)` but does *not* match
+  the ecosystem-standard call shapes that route the macro
+  through a `use` declaration:
 
   ```rust
-  use rusqlite::params;
-  params!(...);                       // AST path: [params]
+  use their_crate::their_macro;
+  their_macro!(...);                  // AST path: [their_macro]
 
-  use rusqlite as r;
-  r::params!(...);                    // AST path: [r, params]
+  use their_crate as t;
+  t::their_macro!(...);               // AST path: [t, their_macro]
 
-  use rusqlite::params as bind;
-  bind!(...);                         // AST path: [bind]
+  use their_crate::their_macro as m;
+  m!(...);                            // AST path: [m]
   ```
 
   All three forms refer to the same macro, but the matcher only
   sees the textual fragment the author wrote. The ambition is
-  for a single configuration entry `rusqlite::params` to cover
-  *every* form that resolves to `rusqlite::params!` — qualified,
-  absolute, aliased through `use ... as ...`, and bare after a
-  `use rusqlite::params;`. A leading `::`
-  (`"::rusqlite::params"`) should optionally pin the entry as
-  absolute, matching only the global form, but the default
-  contract for a multi-segment entry is "resolves to this macro,
-  however the call site named it."
+  for a single configuration entry `their_crate::their_macro`
+  to cover *every* form that resolves to
+  `their_crate::their_macro!` — qualified, absolute, aliased
+  through `use ... as ...`, and bare after a
+  `use their_crate::their_macro;`. A leading `::`
+  (`"::their_crate::their_macro"`) should optionally pin the
+  entry as absolute, matching only the global form, but the
+  default contract for a multi-segment entry is "resolves to
+  this macro, however the call site named it."
 
   **Bare single-segment entries stay name-based at the call
   site.** A configured entry of `"vec"`, `"format"`, or
@@ -58,18 +60,19 @@ Still pending:
   macro across `core::format` vs `std::format` re-export chains
   to do its job. The resolution path is reserved for
   multi-segment entries, where a path is the only way to
-  disambiguate from same-named third-party macros (`params!`
-  exists in `rusqlite`, `sqlite`, and several proc-macro
-  helpers; `json!` exists in `serde_json` and several
-  templating crates).
+  disambiguate from same-named third-party macros — short
+  macro names are routinely claimed by several unrelated
+  crates each, and the bare-segment match cannot pick one
+  without false positives.
 
   **The feature requires type information.** Pre-expansion —
   where this rule's `check_mac` runs — sees raw AST paths and
   the unexpanded `use` items, but not their resolution: rustc
-  has not yet decided which `params` the bare `params!(...)`
-  refers to. Reimplementing the resolver from `use` items alone
-  is an incomplete approximation: globs (`use foo::*;`) have no
-  enumerable name list at the AST level, cross-crate re-exports
+  has not yet decided which definition the bare
+  `their_macro!(...)` refers to. Reimplementing the resolver
+  from `use` items alone is an incomplete approximation: globs
+  (`use foo::*;`) have no enumerable name list at the AST
+  level, cross-crate re-exports
   (`pub use other_crate::macro_name as ours;`) are not visible
   without the re-exporting crate's metadata,
   `#[macro_use] extern crate` brings names into scope through a
