@@ -346,14 +346,14 @@ fn is_version_literal(input: &str) -> bool {
 
 fn parse_version_literal(input: &str) -> Option<()> {
     let (_, rest) = take_digits(input)?;
-    let rest = take_char(rest, '.')?;
+    let rest = rest.strip_prefix('.')?;
     let (_, rest) = take_digits(rest)?;
-    let rest = take_char(rest, '.')?;
+    let rest = rest.strip_prefix('.')?;
     let (_, rest) = take_digits(rest)?;
     if rest.is_empty() {
         return Some(());
     }
-    let suffix = take_char(rest, '-')?;
+    let suffix = rest.strip_prefix('-')?;
     (!suffix.is_empty() && !suffix.chars().any(char::is_whitespace)).then_some(())
 }
 
@@ -362,12 +362,6 @@ fn parse_version_literal(input: &str) -> Option<()> {
 fn take_digits(input: &str) -> Option<(&str, &str)> {
     let end = input.bytes().take_while(|b| b.is_ascii_digit()).count();
     (end > 0).then(|| input.split_at(end))
-}
-
-/// Take exactly the character `c` from the front of `input`,
-/// returning the remainder.
-fn take_char(input: &str, c: char) -> Option<&str> {
-    input.strip_prefix(c)
 }
 
 // ---------------------------------------------------------------------------
