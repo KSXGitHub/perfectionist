@@ -81,7 +81,7 @@ fn main() -> ExitCode {
     }
 }
 
-fn run(Cli { root, command }: Cli) -> Result<(), Error> {
+fn run(Cli { root, command }: Cli) -> Result<(), RuntimeError> {
     match command {
         Sub::Verify {
             version,
@@ -114,7 +114,7 @@ enum Source {
 impl Source {
     /// Read `file` either before (parent / HEAD) or after (commit /
     /// index) the change.
-    fn read_file(&self, root: &Path, file: &str, before: bool) -> Result<String, Error> {
+    fn read_file(&self, root: &Path, file: &str, before: bool) -> Result<String, RuntimeError> {
         let target = match (self, before) {
             (Source::Commit(rev), true) => format!("{rev}^:{file}"),
             (Source::Commit(rev), false) => format!("{rev}:{file}"),
@@ -125,7 +125,7 @@ impl Source {
     }
 
     /// List the files changed by this source.
-    fn changed_files(&self, root: &Path) -> Result<Vec<String>, Error> {
+    fn changed_files(&self, root: &Path) -> Result<Vec<String>, RuntimeError> {
         let stdout = match self {
             Source::Commit(rev) => {
                 git_capture(root, ["diff", "--name-only", &format!("{rev}^..{rev}")])?
@@ -141,16 +141,16 @@ impl Source {
     }
 }
 
-fn verify(root: &Path, version: &str, source: &Source) -> Result<(), Error> {
+fn verify(root: &Path, version: &str, source: &Source) -> Result<(), RuntimeError> {
     if !is_version_literal(version) {
-        return Err(Error::BadVersionLiteral(version.to_owned()));
+        return Err(RuntimeError::BadVersionLiteral(version.to_owned()));
     }
 
     if let Source::Commit(rev) = source {
         let msg = git_capture(root, ["log", "-1", "--format=%B", rev])?;
         let trimmed = msg.trim_end_matches('\n');
         if trimmed != version {
-            return Err(Error::CommitMessageMismatch {
+            return Err(RuntimeError::CommitMessageMismatch {
                 rev: rev.clone(),
                 expected: version.to_owned(),
                 got: trimmed.to_owned(),
@@ -162,7 +162,7 @@ fn verify(root: &Path, version: &str, source: &Source) -> Result<(), Error> {
     files.sort();
     let expected_files = ["Cargo.lock", "Cargo.toml"];
     if files.iter().map(String::as_str).ne(expected_files) {
-        return Err(Error::WrongFileSet(files));
+        return Err(RuntimeError::WrongFileSet(files));
     }
 
     verify_version_bump_file(
@@ -192,21 +192,21 @@ fn verify_version_bump_file(
     root: &Path,
     version: &str,
     file: &str,
-    parse_version: impl Fn(&str) -> Result<String, Error>,
-) -> Result<(), Error> {
+    parse_version: impl Fn(&str) -> Result<String, RuntimeError>,
+) -> Result<(), RuntimeError> {
     let before = source.read_file(root, file, true)?;
     let after = source.read_file(root, file, false)?;
     let before_ver = parse_version(&before)?;
     let after_ver = parse_version(&after)?;
     if after_ver != version {
-        return Err(Error::VersionMismatch {
+        return Err(RuntimeError::VersionMismatch {
             file: file.to_owned(),
             expected: version.to_owned(),
             got: after_ver,
         });
     }
     if before_ver == after_ver {
-        return Err(Error::NoVersionChange(file.to_owned()));
+        return Err(RuntimeError::NoVersionChange(file.to_owned()));
     }
     assert_version_only_diff(file, &before, &after, &before_ver, &after_ver)
 }
@@ -224,11 +224,11 @@ fn assert_version_only_diff(
     after: &str,
     before_ver: &str,
     after_ver: &str,
-) -> Result<(), Error> {
+) -> Result<(), RuntimeError> {
     let before_lines: Vec<&str> = before.lines().collect();
     let after_lines: Vec<&str> = after.lines().collect();
     if before_lines.len() != after_lines.len() {
-        return Err(Error::LineCountChanged(file.to_owned()));
+        return Err(RuntimeError::LineCountChanged(file.to_owned()));
     }
     let expected_before = format!("version = \"{before_ver}\"");
     let expected_after = format!("version = \"{after_ver}\"");
@@ -239,9 +239,9 @@ fn assert_version_only_diff(
         .filter(|(_, (b, a))| b != a);
     let (idx, (b, a)) = diffs
         .next()
-        .ok_or_else(|| Error::NoVersionChange(file.to_owned()))?;
+        .ok_or_else(|| RuntimeError::NoVersionChange(file.to_owned()))?;
     if *b != expected_before {
-        return Err(Error::UnexpectedBeforeLine {
+        return Err(RuntimeError::UnexpectedBeforeLine {
             file: file.to_owned(),
             line: idx + 1,
             expected: expected_before,
@@ -249,7 +249,7 @@ fn assert_version_only_diff(
         });
     }
     if *a != expected_after {
-        return Err(Error::UnexpectedAfterLine {
+        return Err(RuntimeError::UnexpectedAfterLine {
             file: file.to_owned(),
             line: idx + 1,
             expected: expected_after,
@@ -257,7 +257,7 @@ fn assert_version_only_diff(
         });
     }
     if let Some((extra_idx, (extra_b, extra_a))) = diffs.next() {
-        return Err(Error::ExtraLineChanged {
+        return Err(RuntimeError::ExtraLineChanged {
             file: file.to_owned(),
             line: extra_idx + 1,
             before: (*extra_b).to_owned(),
@@ -271,9 +271,9 @@ fn assert_version_only_diff(
 // Hook entry points.
 // ---------------------------------------------------------------------------
 
-fn commit_msg(root: &Path, msg_file: &Path) -> Result<(), Error> {
-    let content =
-        fs::read_to_string(msg_file).map_err(|err| Error::ReadMsgFile(msg_file.to_owned(), err))?;
+fn commit_msg(root: &Path, msg_file: &Path) -> Result<(), RuntimeError> {
+    let content = fs::read_to_string(msg_file)
+        .map_err(|err| RuntimeError::ReadMsgFile(msg_file.to_owned(), err))?;
     let effective: Vec<&str> = content
         .lines()
         .filter(|line| !line.starts_with('#'))
@@ -288,16 +288,16 @@ fn commit_msg(root: &Path, msg_file: &Path) -> Result<(), Error> {
         return Ok(());
     }
     if effective.iter().skip(1).any(|line| !line.is_empty()) {
-        return Err(Error::MessageHasExtraContent(subject.to_owned()));
+        return Err(RuntimeError::MessageHasExtraContent(subject.to_owned()));
     }
     verify(root, subject, &Source::Cached)
 }
 
-fn pre_push(root: &Path) -> Result<(), Error> {
+fn pre_push(root: &Path) -> Result<(), RuntimeError> {
     let stdin = io::stdin();
     let mut failed = false;
     for line in stdin.lock().lines() {
-        let line = line.map_err(Error::ReadStdin)?;
+        let line = line.map_err(RuntimeError::ReadStdin)?;
         let parts: Vec<&str> = line.split_whitespace().collect();
         if parts.len() < 4 {
             continue;
@@ -326,7 +326,7 @@ fn pre_push(root: &Path) -> Result<(), Error> {
         }
     }
     if failed {
-        Err(Error::PrePushFailed)
+        Err(RuntimeError::PrePushFailed)
     } else {
         Ok(())
     }
@@ -391,11 +391,11 @@ struct CargoTomlPackage {
     version: String,
 }
 
-fn parse_cargo_toml_version(content: &str) -> Result<String, Error> {
+fn parse_cargo_toml_version(content: &str) -> Result<String, RuntimeError> {
     content
         .pipe(toml::from_str::<CargoTomlFile>)
         .map_err(|err| err.to_string())
-        .map_err(Error::ParseCargoToml)?
+        .map_err(RuntimeError::ParseCargoToml)?
         .package
         .version
         .pipe(Ok)
@@ -413,13 +413,13 @@ struct CargoLockPackage {
     version: String,
 }
 
-fn parse_cargo_lock_version(content: &str) -> Result<String, Error> {
+fn parse_cargo_lock_version(content: &str) -> Result<String, RuntimeError> {
     let lock: CargoLockFile =
-        toml::from_str(content).map_err(|err| Error::ParseCargoLock(err.to_string()))?;
+        toml::from_str(content).map_err(|err| RuntimeError::ParseCargoLock(err.to_string()))?;
     let mut matches = lock.package.into_iter().filter(|p| p.name == PACKAGE_NAME);
-    let first = matches.next().ok_or(Error::NoLockPackageEntry)?;
+    let first = matches.next().ok_or(RuntimeError::NoLockPackageEntry)?;
     if matches.next().is_some() {
-        return Err(Error::DuplicateLockPackageEntry);
+        return Err(RuntimeError::DuplicateLockPackageEntry);
     }
     Ok(first.version)
 }
@@ -428,7 +428,7 @@ fn parse_cargo_lock_version(content: &str) -> Result<String, Error> {
 // Plumbing.
 // ---------------------------------------------------------------------------
 
-fn git_capture<I, S>(root: &Path, args: I) -> Result<String, Error>
+fn git_capture<I, S>(root: &Path, args: I) -> Result<String, RuntimeError>
 where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
@@ -437,18 +437,18 @@ where
     for arg in args {
         command = command.with_arg(arg);
     }
-    let output = command.output().map_err(Error::SpawnGit)?;
+    let output = command.output().map_err(RuntimeError::SpawnGit)?;
     if !output.status.success() {
-        return Err(Error::GitFailed {
+        return Err(RuntimeError::GitFailed {
             status: output.status.code(),
             stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
         });
     }
-    String::from_utf8(output.stdout).map_err(|_| Error::GitNonUtf8)
+    String::from_utf8(output.stdout).map_err(|_| RuntimeError::GitNonUtf8)
 }
 
 #[derive(Display, Debug)]
-enum Error {
+enum RuntimeError {
     #[display("failed to spawn git: {_0}")]
     SpawnGit(io::Error),
     #[display("git exited with status {status:?}: {stderr}")]
@@ -598,7 +598,7 @@ version = \"0.0.0-rc.2\"
 ";
         assert!(matches!(
             parse_cargo_lock_version(lock),
-            Err(Error::DuplicateLockPackageEntry)
+            Err(RuntimeError::DuplicateLockPackageEntry)
         ));
     }
 
@@ -634,7 +634,7 @@ version = \"0.0.0-rc.7\"
         // is `UnexpectedBeforeLine`, not `ExtraLineChanged`.
         assert!(matches!(
             assert_version_only_diff("Cargo.toml", before, after, "0.0.0-rc.6", "0.0.0-rc.7"),
-            Err(Error::UnexpectedBeforeLine { .. })
+            Err(RuntimeError::UnexpectedBeforeLine { .. })
         ));
     }
 
@@ -652,7 +652,7 @@ description = \"b\"
 ";
         assert!(matches!(
             assert_version_only_diff("Cargo.toml", before, after, "0.0.0-rc.6", "0.0.0-rc.7"),
-            Err(Error::ExtraLineChanged { .. })
+            Err(RuntimeError::ExtraLineChanged { .. })
         ));
     }
 
@@ -662,7 +662,7 @@ description = \"b\"
         let after = "version = \"0.0.0-rc.7\"\nextra\n";
         assert!(matches!(
             assert_version_only_diff("Cargo.toml", before, after, "0.0.0-rc.6", "0.0.0-rc.7"),
-            Err(Error::LineCountChanged(_))
+            Err(RuntimeError::LineCountChanged(_))
         ));
     }
 
@@ -671,7 +671,7 @@ description = \"b\"
         let same = "version = \"0.0.0-rc.6\"\n";
         assert!(matches!(
             assert_version_only_diff("Cargo.toml", same, same, "0.0.0-rc.6", "0.0.0-rc.6"),
-            Err(Error::NoVersionChange(_))
+            Err(RuntimeError::NoVersionChange(_))
         ));
     }
 }
