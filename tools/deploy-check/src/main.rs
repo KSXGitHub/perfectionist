@@ -335,46 +335,40 @@ fn pre_push(root: &Path) -> Result<(), RuntimeError> {
 // ---------------------------------------------------------------------------
 // Version-literal grammar: `<digits>.<digits>.<digits>(-<suffix>)?`,
 // where `<suffix>` is non-empty and contains no whitespace.
+//
+// Each `take_*` peels a recognised prefix off the front of `input`
+// and returns the remainder, per the parser-combinator convention
+// in `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
 // ---------------------------------------------------------------------------
 
-fn is_version_literal(s: &str) -> bool {
-    let mut chars = s.chars().peekable();
-    if !take_digits(&mut chars) {
-        return false;
-    }
-    if chars.next() != Some('.') {
-        return false;
-    }
-    if !take_digits(&mut chars) {
-        return false;
-    }
-    if chars.next() != Some('.') {
-        return false;
-    }
-    if !take_digits(&mut chars) {
-        return false;
-    }
-    match chars.next() {
-        None => true,
-        Some('-') => {
-            let suffix: String = chars.collect();
-            !suffix.is_empty() && !suffix.chars().any(char::is_whitespace)
-        }
-        _ => false,
-    }
+fn is_version_literal(input: &str) -> bool {
+    parse_version_literal(input).is_some()
 }
 
-fn take_digits(chars: &mut std::iter::Peekable<std::str::Chars<'_>>) -> bool {
-    let mut count = 0usize;
-    while let Some(&c) = chars.peek() {
-        if c.is_ascii_digit() {
-            chars.next();
-            count += 1;
-        } else {
-            break;
-        }
+fn parse_version_literal(input: &str) -> Option<()> {
+    let (_, rest) = take_digits(input)?;
+    let rest = take_char(rest, '.')?;
+    let (_, rest) = take_digits(rest)?;
+    let rest = take_char(rest, '.')?;
+    let (_, rest) = take_digits(rest)?;
+    if rest.is_empty() {
+        return Some(());
     }
-    count > 0
+    let suffix = take_char(rest, '-')?;
+    (!suffix.is_empty() && !suffix.chars().any(char::is_whitespace)).then_some(())
+}
+
+/// Take a non-empty run of ASCII digits from the front of `input`,
+/// returning `(digits, rest)`.
+fn take_digits(input: &str) -> Option<(&str, &str)> {
+    let end = input.bytes().take_while(|b| b.is_ascii_digit()).count();
+    (end > 0).then(|| input.split_at(end))
+}
+
+/// Take exactly the character `c` from the front of `input`,
+/// returning the remainder.
+fn take_char(input: &str, c: char) -> Option<&str> {
+    input.strip_prefix(c)
 }
 
 // ---------------------------------------------------------------------------
@@ -391,9 +385,8 @@ struct CargoTomlPackage {
     version: String,
 }
 
-fn parse_cargo_toml_version(content: &str) -> Result<String, RuntimeError> {
-    content
-        .pipe(toml::from_str::<CargoTomlFile>)
+fn parse_cargo_toml_version(toml: &str) -> Result<String, RuntimeError> {
+    toml.pipe(toml::from_str::<CargoTomlFile>)
         .map_err(RuntimeError::ParseCargoToml)?
         .package
         .version
@@ -412,8 +405,8 @@ struct CargoLockPackage {
     version: String,
 }
 
-fn parse_cargo_lock_version(content: &str) -> Result<String, RuntimeError> {
-    let lock: CargoLockFile = content
+fn parse_cargo_lock_version(toml: &str) -> Result<String, RuntimeError> {
+    let lock: CargoLockFile = toml
         .pipe(toml::from_str)
         .map_err(RuntimeError::ParseCargoLock)?;
     let mut matches = lock.package.into_iter().filter(|p| p.name == PACKAGE_NAME);
@@ -433,11 +426,12 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    let mut command = "git".pipe(Command::new).with_current_dir(root);
-    for arg in args {
-        command = command.with_arg(arg);
-    }
-    let output = command.output().map_err(RuntimeError::SpawnGit)?;
+    let output = "git"
+        .pipe(Command::new)
+        .with_current_dir(root)
+        .with_args(args)
+        .output()
+        .map_err(RuntimeError::SpawnGit)?;
     if !output.status.success() {
         return Err(RuntimeError::GitFailed {
             status: output.status.code(),
