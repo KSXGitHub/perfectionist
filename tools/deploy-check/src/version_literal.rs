@@ -2,20 +2,28 @@
 //! whitespace-free.
 
 pub(crate) fn is_version_literal(input: &str) -> bool {
-    parse_version_literal(input).is_some()
-}
-
-fn parse_version_literal(input: &str) -> Option<()> {
-    let (_, rest) = take_digits(input)?;
-    let rest = rest.strip_prefix('.')?;
-    let (_, rest) = take_digits(rest)?;
-    let rest = rest.strip_prefix('.')?;
-    let (_, rest) = take_digits(rest)?;
+    let Some((_, rest)) = take_digits(input) else {
+        return false;
+    };
+    let Some(rest) = rest.strip_prefix('.') else {
+        return false;
+    };
+    let Some((_, rest)) = take_digits(rest) else {
+        return false;
+    };
+    let Some(rest) = rest.strip_prefix('.') else {
+        return false;
+    };
+    let Some((_, rest)) = take_digits(rest) else {
+        return false;
+    };
     if rest.is_empty() {
-        return Some(());
+        return true;
     }
-    let suffix = rest.strip_prefix('-')?;
-    (!suffix.is_empty() && !suffix.chars().any(char::is_whitespace)).then_some(())
+    let Some(suffix) = rest.strip_prefix('-') else {
+        return false;
+    };
+    !suffix.is_empty() && !suffix.chars().any(char::is_whitespace)
 }
 
 /// Take a non-empty run of ASCII digits from the front of `input`,
