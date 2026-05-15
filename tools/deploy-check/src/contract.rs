@@ -175,9 +175,27 @@ pub(crate) fn assert_version_only_diff(
     // so a release commit that also alters the version line's EOL
     // style or strips/adds the file's final newline can pass the
     // line-by-line check above. Synthesise what `after` should look
-    // like by swapping the version line in `before`, then compare
-    // byte-equal.
-    let synthesised = before.replacen(&expected_before, &expected_after, 1);
+    // like by swapping the line at `idx` (the one we already
+    // identified as the only differing line) and compare byte-equal.
+    //
+    // We replace by *position*, not by substring search: in
+    // Cargo.lock multiple packages can carry `version = "X"` lines
+    // with the same value, and a substring-anchored replace would
+    // target the wrong one whenever the before-version coincides
+    // with another package's version. `split_inclusive('\n')`
+    // preserves each line's terminator, which the synthesised line
+    // reuses verbatim — an EOL-style flip on the version line
+    // then surfaces as a byte mismatch against `after`.
+    let mut synthesised = String::with_capacity(before.len());
+    for (i, piece) in before.split_inclusive('\n').enumerate() {
+        if i == idx {
+            let terminator = &piece[expected_before.len()..];
+            synthesised.push_str(&expected_after);
+            synthesised.push_str(terminator);
+        } else {
+            synthesised.push_str(piece);
+        }
+    }
     if synthesised != after {
         return Err(RuntimeError::NonVersionByteDiff(file.to_owned()));
     }

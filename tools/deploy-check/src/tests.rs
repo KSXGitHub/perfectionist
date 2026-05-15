@@ -248,6 +248,34 @@ fn commit_msg_rejects_release_shaped_subject_with_body_content() {
 }
 
 #[test]
+fn version_only_diff_targets_the_right_line_when_another_package_shares_the_before_version() {
+    // `foo` and `perfectionist` both sit at `version = "1.0.0"`
+    // before the bump; only `perfectionist` moves to `"2.0.0"`.
+    // A byte-substring synthesise would target foo's identical line
+    // (the first occurrence) and falsely report `NonVersionByteDiff`;
+    // line-position synthesise targets exactly the differing line.
+    let before = text_block_fnl! {
+        "[[package]]"
+        r#"name = "foo""#
+        r#"version = "1.0.0""#
+        ""
+        "[[package]]"
+        r#"name = "perfectionist""#
+        r#"version = "1.0.0""#
+    };
+    let after = text_block_fnl! {
+        "[[package]]"
+        r#"name = "foo""#
+        r#"version = "1.0.0""#
+        ""
+        "[[package]]"
+        r#"name = "perfectionist""#
+        r#"version = "2.0.0""#
+    };
+    assert_version_only_diff("Cargo.lock", before, after, "1.0.0", "2.0.0").unwrap();
+}
+
+#[test]
 fn version_only_diff_rejects_trailing_newline_change_alongside_version_bump() {
     // `lines()` discards the trailing newline at EOF, so a release
     // commit that also strips it would pass the line-by-line check;
