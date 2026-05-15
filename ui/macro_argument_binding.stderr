@@ -1,5 +1,5 @@
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:56:22
+  --> $DIR/macro_argument_binding.rs:72:22
    |
 LL |     debug_assert_eq!(map.insert(0, 0), None, "duplicate key");
    |                      ^^^^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL |     debug_assert_eq!(map.insert(0, 0), None, "duplicate key");
    = note: `#[warn(perfectionist::macro_argument_binding)]` on by default
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:62:19
+  --> $DIR/macro_argument_binding.rs:78:19
    |
 LL |     debug_assert!(value().is_some());
    |                   ^^^^^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ LL |     debug_assert!(value().is_some());
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:70:22
+  --> $DIR/macro_argument_binding.rs:86:22
    |
 LL |     debug_assert_ne!(value(), Some(0));
    |                      ^^^^^^^
@@ -24,7 +24,7 @@ LL |     debug_assert_ne!(value(), Some(0));
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:70:31
+  --> $DIR/macro_argument_binding.rs:86:31
    |
 LL |     debug_assert_ne!(value(), Some(0));
    |                               ^^^^^^^
@@ -32,7 +32,7 @@ LL |     debug_assert_ne!(value(), Some(0));
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:78:23
+  --> $DIR/macro_argument_binding.rs:94:23
    |
 LL |     let _ = my_macro!(value(), count);
    |                       ^^^^^^^
@@ -40,7 +40,7 @@ LL |     let _ = my_macro!(value(), count);
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:165:19
+  --> $DIR/macro_argument_binding.rs:181:19
    |
 LL |     debug_assert!(value().is_some());
    |                   ^^^^^^^^^^^^^^^^^
@@ -48,7 +48,7 @@ LL |     debug_assert!(value().is_some());
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:178:26
+  --> $DIR/macro_argument_binding.rs:194:26
    |
 LL |     let _ = await_macro!(future.await);
    |                          ^^^^^^^^^^^^
@@ -56,7 +56,7 @@ LL |     let _ = await_macro!(future.await);
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:255:27
+  --> $DIR/macro_argument_binding.rs:271:27
    |
 LL |     let _ = my_macro!((), value());
    |                           ^^^^^^^
@@ -64,7 +64,7 @@ LL |     let _ = my_macro!((), value());
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:256:30
+  --> $DIR/macro_argument_binding.rs:272:30
    |
 LL |     let _ = my_macro!((MAX), value());
    |                              ^^^^^^^
@@ -72,7 +72,7 @@ LL |     let _ = my_macro!((MAX), value());
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:257:43
+  --> $DIR/macro_argument_binding.rs:273:43
    |
 LL |     let _ = my_macro!((point.0, point.1), value());
    |                                           ^^^^^^^
@@ -80,7 +80,7 @@ LL |     let _ = my_macro!((point.0, point.1), value());
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:258:31
+  --> $DIR/macro_argument_binding.rs:274:31
    |
 LL |     let _ = my_macro!((MAX,), value());
    |                               ^^^^^^^
@@ -88,7 +88,7 @@ LL |     let _ = my_macro!((MAX,), value());
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:277:23
+  --> $DIR/macro_argument_binding.rs:293:23
    |
 LL |     let _ = my_macro!([value(), value()]);
    |                       ^^^^^^^^^^^^^^^^^^
@@ -96,7 +96,7 @@ LL |     let _ = my_macro!([value(), value()]);
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:320:19
+  --> $DIR/macro_argument_binding.rs:336:19
    |
 LL |     debug_assert!(slice.clear() == ());
    |                   ^^^^^^^^^^^^^^^^^^^
@@ -104,7 +104,7 @@ LL |     debug_assert!(slice.clear() == ());
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:330:19
+  --> $DIR/macro_argument_binding.rs:346:19
    |
 LL |     debug_assert!(text.parse::<u32>().is_ok());
    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -281,6 +281,20 @@ filter level: `format!`, `format_args!`, `print!`,
 matchers promise exactly-once evaluation per top-level
 argument.
 
+Alongside the standard-library set, the first group also
+includes a small curated set of third-party companions whose
+published expansions match the same exactly-once contract:
+the `anyhow!` companions `bail!` / `ensure!`,
+`serde_json::json!`, and the `maplit::{hashmap, btreemap,
+hashset, btreeset}!` builders. Each walks its input token
+tree once, emits one runtime evaluation per captured Rust
+expression, and contains no `cfg` gate or repetition that
+could drop or duplicate a capture. Tail-segment matching
+means the entry covers fully-qualified and bare call sites
+alike. `bail!` / `ensure!` share the same conditional-
+arguments shape as the already-allowed `assert!` — the
+trade-off is identical and accepted on the same terms.
+
 The second part adds `core` / `std` macros whose top-level
 argument simply isn't a runtime expression — `stringify!`
 takes a token sequence, `cfg!` takes a cfg predicate, the
@@ -474,8 +488,11 @@ the expansion, so the macro fails the exactly-once check.
 
 ```rust
 // Whether this is safe depends on the proc macro's expansion,
-// which the lint cannot inspect. A project adds
-// `serde_json::json` to `allow_extra` once project-wide after
+// which the lint cannot inspect. `serde_json::json` already
+// ships on the built-in allow list (the macro walks its input
+// once and evaluates each captured expression once); a project
+// that uses a *different* proc macro with the same contract
+// adds its path to `allow_extra` once project-wide after
 // confirming each argument is evaluated exactly once.
 let payload = serde_json::json!({ "id": next_id(), "ts": now() });
 ```
@@ -499,7 +516,7 @@ deny_extra = [
 
 # Macros added to the built-in allow list.
 allow_extra = [
-  # "serde_json::json",
+  # "my_crate::tt_builder_macro",
 ]
 
 # Macros to skip entirely, regardless of which list they would

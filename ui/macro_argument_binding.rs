@@ -47,6 +47,22 @@ macro_rules! dsl_macro {
     ($($tokens:tt)*) => {{ 0 }};
 }
 
+macro_rules! json {
+    ($($tokens:tt)*) => {{ 0 }};
+}
+
+macro_rules! hashmap {
+    ($($tokens:tt)*) => {{ 0 }};
+}
+
+macro_rules! bail {
+    ($($tokens:tt)*) => {{ 0 }};
+}
+
+macro_rules! ensure {
+    ($($tokens:tt)*) => {{ 0 }};
+}
+
 // `debug_assert_eq!` is on the built-in deny list. The first argument
 // is an impure method call; in release builds the macro folds to
 // `if false { ... }` and the call never runs, leaving the map in a
@@ -328,6 +344,22 @@ fn _zero_arg_mutating_method_flagged(slice: &mut Vec<u32>) {
 // method calls, ... still flag".
 fn _turbofish_method_call_flagged(text: &str) {
     debug_assert!(text.parse::<u32>().is_ok());
+}
+
+// Third-party `tt`-based literal builders on the curated allow
+// list (`serde_json::json!`, `maplit::{hashmap, btreemap, ...}!`,
+// `anyhow::{bail, ensure}!`) accept impure top-level arguments
+// without flagging. Each macro evaluates every captured Rust
+// expression exactly once at runtime — no cfg gate, no repeated
+// substitution — so the exactly-once contract the rule defends
+// already holds. Tail-segment matching means `serde_json::json!`,
+// `::serde_json::json!`, and the bare `json!` form all line up
+// with the same entry.
+fn _third_party_allow_listed_accepted() {
+    let _ = json!({ "ts": value(), "items": [value(), value()] });
+    let _ = hashmap!("a" => value(), "b" => value());
+    let _ = bail!("error: {}", value());
+    let _ = ensure!(value().is_some(), "missing: {}", value());
 }
 
 // `core` / `std` compile-time macros (`concat!`, `env!`,
