@@ -34,9 +34,7 @@ mod purity;
 
 use config::MacroArgumentBinding;
 use late::MacroArgumentBindingLate;
-use purity::{
-    PurityContext, is_pure_expression, looks_like_expression, split_top_level_arguments,
-};
+use purity::{PurityContext, is_pure_expression, looks_like_expression, split_top_level_arguments};
 
 declare_tool_lint! {
     /// ### What it does

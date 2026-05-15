@@ -233,10 +233,7 @@ fn take_pure_expression<'a>(
     Some(take_pure_binary_tail(after_suffix, ctx))
 }
 
-fn take_pure_atom<'a>(
-    tokens: &'a [TokenTree],
-    ctx: PurityContext<'_>,
-) -> Option<&'a [TokenTree]> {
+fn take_pure_atom<'a>(tokens: &'a [TokenTree], ctx: PurityContext<'_>) -> Option<&'a [TokenTree]> {
     let (head, rest) = tokens.split_first()?;
     match head {
         // `()` (unit literal), `(expr)` (parenthesised pure
@@ -485,11 +482,7 @@ fn take_atom_path_after_sep<'a>(
     let TokenKind::Ident(name, _) = token.kind else {
         return None;
     };
-    Some(take_path_and_optional_macro_call(
-        name,
-        rest,
-        pure_macros,
-    ))
+    Some(take_path_and_optional_macro_call(name, rest, pure_macros))
 }
 
 /// Type-position path tail: `take_atom_path_after_sep`'s sibling
@@ -506,10 +499,7 @@ fn take_path_after_sep(tokens: &[TokenTree]) -> Option<&[TokenTree]> {
     Some(take_path_tail(rest))
 }
 
-fn take_pure_suffixes<'a>(
-    mut tokens: &'a [TokenTree],
-    ctx: PurityContext<'_>,
-) -> &'a [TokenTree] {
+fn take_pure_suffixes<'a>(mut tokens: &'a [TokenTree], ctx: PurityContext<'_>) -> &'a [TokenTree] {
     loop {
         let Some((head, rest)) = tokens.split_first() else {
             return tokens;
