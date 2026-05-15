@@ -26,10 +26,6 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 
-use contract::{Source, verify};
-use error::RuntimeError;
-use hook::{commit_msg, pre_push};
-
 mod contract;
 mod error;
 mod git;
@@ -39,6 +35,10 @@ mod version_literal;
 
 #[cfg(test)]
 mod tests;
+
+use contract::{Source, verify};
+use error::RuntimeError;
+use hook::{commit_msg, pre_push};
 
 pub(crate) const PACKAGE_NAME: &str = "perfectionist";
 
