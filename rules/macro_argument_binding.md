@@ -5,10 +5,10 @@
 **Default state:** `enabled`  
 **Source:** [`src/rules/macro_argument_binding.rs`](../src/rules/macro_argument_binding.rs)
 
-> macro invocation passes a non-trivial expression that should be bound to a `let` first
+> macro invocation passes an impure expression that should be bound to a `let` first
 
 ## What it does
-Flags non-trivial expressions passed as top-level arguments to a
+Flags impure expressions passed as top-level arguments to a
 function-like (`name!(...)`) or array-like (`name![...]`) macro
 invocation. The fix is to bind the expression to a `let` first
 and pass the binding instead, guaranteeing exactly-once
@@ -41,26 +41,46 @@ The same trap covers any macro that expands its capture more
 than once (`min!`/`max!`-style, retry loops): a side-effecting
 expression repeated produces wrong results.
 
-Trivial arguments — literals, paths, field accesses, indexing
-of trivial bases, dereferences, references, casts, the unit
-literal `()`, parenthesised / tuple groups whose elements are
-all trivial, binary chains of trivial operands joined by
+## Terminology
+
+In this rule, **pure** means *safe for the surrounding macro
+to drop or duplicate*: evaluating the argument zero, one, or
+many times is observationally equivalent. **Impure** is
+anything else, and is what the rule flags.
+
+The classification is *syntactic*: the rule recognises a
+curated set of shapes known to satisfy the property and
+treats everything else as impure. A `const fn` call, a
+`Result::map` chain over a pure base, or `vec.fold(...)` is
+therefore impure under this rule unless its shape is
+recognised — the lint cannot prove side-effect-freedom in
+general, only spot it. The trade-off favours flagging
+side-effect-free expressions over silently passing a real
+hazard. The set is narrower than the functional-programming
+notion of purity and is keyed to what a macro can actually
+do with its captures, not to side-effect-freedom in the
+abstract.
+
+The recognised pure shapes are: literals, paths, field
+accesses, indexing of pure bases, dereferences, references,
+casts, the unit literal `()`, parenthesised / tuple /
+array-literal / array-repeat groups whose elements are all
+pure, binary chains of pure operands joined by
 side-effect-free operators, zero-arg method calls whose name
 is in the curated pure-getter set (`len`, `is_empty`,
 `as_str`, `as_bytes`, `as_ref`, `as_mut`, `as_deref`,
-`as_slice`, plus anything in `extra_trivial_methods`), and
+`as_slice`, plus anything in `extra_pure_methods`), and
 calls to `core` / `std` macros whose expansion is a compile-
 time constant (`concat!`, `env!`, `option_env!`,
 `include_str!`, `include_bytes!`, `stringify!`, `cfg!`,
 `line!`, `column!`, `file!`, `module_path!`, plus anything in
-`extra_trivial_macros`) — are accepted as-is. A comparison
-like `vec.len() <= cap` evaluates the same way regardless of
-how many times the macro touches it, so binding it to a `let`
-would only force the comparison to run in release builds for
-no benefit; the same logic applies to `env!("HOME")` inside
+`extra_pure_macros`). A comparison like `vec.len() <= cap`
+evaluates the same way regardless of how many times the
+macro touches it, so binding it to a `let` would only force
+the comparison to run in release builds for no benefit; the
+same logic applies to `env!("HOME")` inside
 `debug_assert_eq!(...)` — there is nothing to evaluate at
-runtime. The lint focuses on arguments whose evaluation is
-itself observable.
+runtime.
 
 ## Example
 ```rust,ignore
@@ -97,38 +117,46 @@ as `deny_extra`. Only meaningful in `AllowAndDeny` and
 Macros to skip entirely, regardless of which list they would
 otherwise hit. Same matching rules as `deny_extra`.
 
-### `extra_trivial_methods`: `[string]` (optional)
+### `extra_pure_methods`: `[string]` (optional)
 
 Method names added to the built-in pure-method list. Each
 entry is a bare method identifier (no `()`, no receiver). A
-`.method()` invocation on a trivial base is then accepted as a
-trivial postfix when the method takes no arguments.
+`.method()` invocation on a pure base is then accepted as a
+pure postfix when the method takes no arguments. Add a
+project-local method here only when it is genuinely safe
+for the surrounding macro to drop or duplicate the call
+(the rule's working definition of *pure*) — typically an
+`O(1)` side-effect-free getter that the lint's syntactic
+classification can't otherwise see.
 
-### `ignore_trivial_methods`: `[string]` (optional)
+### `ignore_pure_methods`: `[string]` (optional)
 
 Method names to drop from the pure-method list, even if they
-appear in the built-in defaults or in `extra_trivial_methods`.
+appear in the built-in defaults or in `extra_pure_methods`.
 Empty by default; checked after the merge, so this knob always
 wins. Useful for opting back into linting on a default entry
-the project does not consider trivial — for example, removing
-`as_ref` for a project that wraps it in a non-pure
+the project does not consider pure — for example, removing
+`as_ref` for a project that wraps it in an impure
 implementation.
 
-### `extra_trivial_macros`: `[string]` (optional)
+### `extra_pure_macros`: `[string]` (optional)
 
-Macro names added to the built-in trivial-macro list. Each
+Macro names added to the built-in pure-macro list. Each
 entry is matched against the invocation's final path segment
 (so `my_crate::const_str` matches by the `"const_str"` tail).
-A trivial-macro call passed as an argument to another macro is
-treated as a trivial atom — the rule does not propose binding
-it to a `let`. Use this knob for project-specific macros whose
-expansion is guaranteed to be a literal or other compile-time
-constant.
+A pure-macro call passed as an argument to another macro is
+treated as a pure atom — the rule does not propose binding
+it to a `let`. Use this knob for project-specific macros
+whose expansion is a compile-time constant (a literal, a
+`&'static str`, a `bool`); their inclusion satisfies the
+rule's pure-as-drop-or-duplicate-safe definition trivially,
+since there is no runtime expression for the surrounding
+macro to drop or duplicate.
 
-### `ignore_trivial_macros`: `[string]` (optional)
+### `ignore_pure_macros`: `[string]` (optional)
 
-Macro names to drop from the trivial-macro list, even if they
-appear in the built-in defaults or in `extra_trivial_macros`.
+Macro names to drop from the pure-macro list, even if they
+appear in the built-in defaults or in `extra_pure_macros`.
 Checked after the merge, so this knob always wins.
 
 ### Types
@@ -149,7 +177,7 @@ plus `deny_extra`). Every other macro is silently accepted.
 ##### `"blanket"` (Rust: `Blanket`)
 
 Flag every function-like or array-like invocation that carries
-a non-trivial top-level argument, regardless of any built-in
+an impure top-level argument, regardless of any built-in
 classification — unless the invocation matches an `allow_extra`
 entry. The built-in allow list is deliberately ignored in this
 mode; project exceptions go in `allow_extra`.

@@ -1,4 +1,4 @@
-warning: non-trivial expression passed directly to a macro
+warning: impure expression passed directly to a macro
   --> $DIR/fixture.rs:10:19
    |
 LL |     debug_assert!(value.as_ref().is_some());
