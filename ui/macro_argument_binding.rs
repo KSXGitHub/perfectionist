@@ -319,6 +319,22 @@ fn _array_literal_with_impure_element_flagged() {
     let _ = my_macro!([value(), value()]);
 }
 
+// Negative coverage on the array-repeat halves. `[expr; count]`
+// is pure only when *both* halves are pure, so each side
+// independently breaking purity must still flag. `await_macro!`
+// is a `tt`-capturing stand-in that discards its body so the
+// fixture compiles even though Rust would otherwise reject a
+// non-const count in expression position; the rule's check runs
+// on tokens, before that semantic constraint applies.
+//
+// `await_macro!` is uncatalogued, default-mode flags impure
+// args, and the bracket atom routes the halves through
+// `is_pure_expression` independently via `split_array_repeat`.
+fn _array_repeat_with_impure_half_flagged() {
+    let _ = await_macro!([value(); 4]);
+    let _ = await_macro!([0; size()]);
+}
+
 // Binary chains over pure operands are pure — comparisons and
 // arithmetic on local bindings, fields, and constants are side-effect-
 // free and produce the same result regardless of how many times the
@@ -428,6 +444,10 @@ impl Map {
 
 const MAX: u32 = 0;
 const INDEX: usize = 0;
+
+fn size() -> usize {
+    0
+}
 
 fn value() -> Option<u32> {
     None
