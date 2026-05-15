@@ -17,6 +17,94 @@ Still pending:
   fails to deserialise. The matcher-walking infrastructure is
   shared with the equivalent eligibility check planned for
   `macro-trailing-comma`; both will land together.
+- **Identifier-path-aware allow / deny matching.** Multi-segment
+  entries in `deny`, `allow`, `ignore`, `deny_extra`, and
+  `allow_extra` currently tail-match the *syntactic* path the
+  user wrote at the call site. A configured entry of
+  `rusqlite::params` matches `rusqlite::params!(...)` and
+  `crate::rusqlite::params!(...)` but does *not* match the
+  ecosystem-standard call shapes that route the macro through
+  a `use` declaration:
+
+  ```rust
+  use rusqlite::params;
+  params!(...);                       // AST path: [params]
+
+  use rusqlite as r;
+  r::params!(...);                    // AST path: [r, params]
+
+  use rusqlite::params as bind;
+  bind!(...);                         // AST path: [bind]
+  ```
+
+  All three forms refer to the same macro, but the matcher only
+  sees the textual fragment the author wrote. The ambition is
+  for a single configuration entry `rusqlite::params` to cover
+  *every* form that resolves to `rusqlite::params!` — qualified,
+  absolute, aliased through `use ... as ...`, and bare after a
+  `use rusqlite::params;`. A leading `::`
+  (`"::rusqlite::params"`) should optionally pin the entry as
+  absolute, matching only the global form, but the default
+  contract for a multi-segment entry is "resolves to this macro,
+  however the call site named it."
+
+  **Bare single-segment entries stay name-based at the call
+  site.** A configured entry of `"vec"`, `"format"`, or
+  `"assert_eq"` continues to match the invocation's final
+  syntactic segment without consulting resolution — the
+  ecosystem names that earn a slot on the curated lists are
+  distinctive enough that the syntactic shape is sufficient,
+  and the matcher should not have to canonicalise the same
+  macro across `core::format` vs `std::format` re-export chains
+  to do its job. The resolution path is reserved for
+  multi-segment entries, where a path is the only way to
+  disambiguate from same-named third-party macros (`params!`
+  exists in `rusqlite`, `sqlite`, and several proc-macro
+  helpers; `json!` exists in `serde_json` and several
+  templating crates).
+
+  **The feature requires type information.** Pre-expansion —
+  where this rule's `check_mac` runs — sees raw AST paths and
+  the unexpanded `use` items, but not their resolution: rustc
+  has not yet decided which `params` the bare `params!(...)`
+  refers to. Reimplementing the resolver from `use` items alone
+  is an incomplete approximation: globs (`use foo::*;`) have no
+  enumerable name list at the AST level, cross-crate re-exports
+  (`pub use other_crate::macro_name as ours;`) are not visible
+  without the re-exporting crate's metadata,
+  `#[macro_use] extern crate` brings names into scope through a
+  different mechanism still, and the textual macro scope (the
+  legacy `macro_rules!` resolution rules) does not nest the same
+  way modular paths do. Only the compiler's own resolver answers
+  every case correctly, and it only has the answer post-
+  expansion.
+
+  The plumbing path that *does* work: keep the pre-expansion
+  pass for argument splitting and impure-shape classification,
+  but defer the deny / allow / ignore lookup to the late HIR
+  pass already running for diagnostic emission. The late pass
+  can look up the macro's `DefId` via
+  `Span::ctxt().outer_expn_data().macro_def_id` and compare
+  `tcx.def_path_str(def_id)` (or the structured `def_path`
+  walk) against the configured paths. `DefId` comparison
+  resolves cross-crate re-exports, glob imports, aliases, and
+  `#[macro_use] extern crate` without reimplementing any of
+  rustc's logic — type information is the resolver, supplied
+  by rustc as a free side-effect of having already compiled
+  the consumer crate up to the late pass.
+
+  **Difficulty: moderate.** The plumbing change is small
+  (~150-250 lines) but it touches every list-shaped lookup and
+  changes the rule's *contract* for `deny_extra`: a project
+  that today writes a homegrown `debug_assert_eq!` macro and
+  matches it by name alone will stop matching the built-in
+  deny entry once paths are resolved against the macro's
+  actual `DefId`. The new contract is arguably more correct —
+  it's the resolved macro the rule cares about, not the
+  textual fragment — but it is a behavioural change and
+  deserves its own planning entry, migration note in this
+  `Status` section, and a release-note call-out. Land
+  separately from any PR that adds to the curated lists.
 - **Range expressions over pure operands.** The spec couples
   range-expression purity to operand purity the same way
   it does for binary expressions, but the walker only recognises
@@ -614,7 +702,14 @@ ignore_pure_macros = [
   [`macro-trailing-comma`](./macro-trailing-comma.md)'s
   `matches_any` / `entry_matches` helpers; single-segment
   entries tail-match the path, multi-segment entries
-  tail-match the segment sequence.
+  tail-match the segment sequence. The Status section's
+  "Identifier-path-aware allow / deny matching" item lays out
+  the ambition to extend multi-segment matching to *every*
+  call shape that resolves to the same macro (post-`use`
+  bare, aliased, qualified, absolute), at the cost of moving
+  the path lookup into the late HIR pass so `DefId`-level
+  resolution is available; bare single-segment matching
+  stays where it is.
 - Argument splitting walks `MacCall::args.tokens`, tracks
   delimiter nesting, and splits on top-level commas. Share
   the splitter with `macro-trailing-comma`.
