@@ -8,8 +8,10 @@ msg_file="$1"
 
 # Cheap pre-filter so non-release commits don't pay the cost of
 # spawning cargo. Find the first non-blank, non-comment line and
-# check whether it matches the version-literal grammar.
-subject=$(grep -v '^#' "$msg_file" | awk 'NF{print; exit}')
+# check whether it matches the version-literal grammar. A single
+# awk handles both filters in one process so an all-comments /
+# empty message file doesn't trip `set -o pipefail`.
+subject=$(awk '!/^#/ && NF { print; exit }' "$msg_file")
 if ! [[ "$subject" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[^[:space:]]+)?$ ]]; then
   exit 0
 fi
