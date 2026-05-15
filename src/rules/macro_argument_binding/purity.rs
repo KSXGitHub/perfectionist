@@ -196,6 +196,21 @@ fn take_pure_atom<'a>(
                 None
             }
         }
+        // `[]` (empty array), `[a, b, ...]` (array literal with
+        // optional trailing comma), `[expr; count]` (array repeat).
+        // Each element is recursively pure; the repeat form
+        // requires both halves to be pure. The indexing suffix
+        // `base[index]` is handled separately by
+        // `take_pure_suffixes` — it never reaches this arm because
+        // an indexed expression starts with the base path, not the
+        // bracket.
+        TokenTree::Delimited(_, _, Delimiter::Bracket, inner) => {
+            if is_pure_array_inner(inner, ctx) {
+                Some(rest)
+            } else {
+                None
+            }
+        }
         TokenTree::Token(token, _) => match token.kind {
             TokenKind::Literal(_) => Some(rest),
             // `true` and `false` are keyword idents, not `Literal` tokens.
@@ -242,6 +257,57 @@ fn is_pure_paren_inner(stream: &TokenStream, ctx: PurityContext<'_>) -> bool {
     arguments
         .iter()
         .all(|argument| !argument.is_empty() && is_pure_expression(argument, ctx))
+}
+
+/// Accept `[]` (empty array literal), `[a, b, ...]` (array literal,
+/// optional trailing comma), and `[expr; count]` (array repeat) when
+/// every contained expression is itself pure. The repeat form is
+/// recognised by the top-level `;`; mixing `;` and `,` at the top
+/// level is malformed and rejected.
+fn is_pure_array_inner(stream: &TokenStream, ctx: PurityContext<'_>) -> bool {
+    if let Some(arguments) = split_top_level_arguments(stream) {
+        return arguments
+            .iter()
+            .all(|argument| !argument.is_empty() && is_pure_expression(argument, ctx));
+    }
+    let Some((expr, count)) = split_array_repeat(stream) else {
+        return false;
+    };
+    !expr.is_empty()
+        && is_pure_expression(&expr, ctx)
+        && !count.is_empty()
+        && is_pure_expression(&count, ctx)
+}
+
+/// Split a bracket-delimited stream at the first top-level `;`,
+/// the array-repeat separator. Returns `None` if the stream has
+/// no top-level `;`, more than one top-level `;`, or any top-level
+/// `,` (the repeat form is `[expr; count]` exactly — a comma at
+/// the top level signals a malformed mixture with array-literal
+/// syntax).
+fn split_array_repeat(stream: &TokenStream) -> Option<(Vec<TokenTree>, Vec<TokenTree>)> {
+    let mut before: Vec<TokenTree> = Vec::new();
+    let mut after: Option<Vec<TokenTree>> = None;
+    for tree in stream.iter() {
+        if let TokenTree::Token(token, _) = tree {
+            match token.kind {
+                TokenKind::Semi => {
+                    if after.is_some() {
+                        return None;
+                    }
+                    after = Some(Vec::new());
+                    continue;
+                }
+                TokenKind::Comma => return None,
+                _ => {}
+            }
+        }
+        match after.as_mut() {
+            Some(buf) => buf.push(tree.clone()),
+            None => before.push(tree.clone()),
+        }
+    }
+    after.map(|count| (before, count))
 }
 
 fn take_reference_tail<'a>(

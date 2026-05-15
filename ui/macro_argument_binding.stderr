@@ -88,7 +88,15 @@ LL |     let _ = my_macro!((MAX,), value());
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:279:19
+  --> $DIR/macro_argument_binding.rs:255:23
+   |
+LL |     let _ = my_macro!([value(), value()]);
+   |                       ^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
+
+warning: impure expression passed directly to a macro
+  --> $DIR/macro_argument_binding.rs:298:19
    |
 LL |     debug_assert!(slice.clear() == ());
    |                   ^^^^^^^^^^^^^^^^^^^
@@ -96,12 +104,12 @@ LL |     debug_assert!(slice.clear() == ());
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
 warning: impure expression passed directly to a macro
-  --> $DIR/macro_argument_binding.rs:289:19
+  --> $DIR/macro_argument_binding.rs:308:19
    |
 LL |     debug_assert!(text.parse::<u32>().is_ok());
    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
-warning: 13 warnings emitted
+warning: 14 warnings emitted
 

@@ -43,8 +43,9 @@ expression repeated produces wrong results.
 
 Pure arguments — literals, paths, field accesses, indexing
 of pure bases, dereferences, references, casts, the unit
-literal `()`, parenthesised / tuple groups whose elements are
-all pure, binary chains of pure operands joined by
+literal `()`, parenthesised / tuple / array-literal /
+array-repeat groups whose elements are all pure, binary
+chains of pure operands joined by
 side-effect-free operators, zero-arg method calls whose name
 is in the curated pure-getter set (`len`, `is_empty`,
 `as_str`, `as_bytes`, `as_ref`, `as_mut`, `as_deref`,

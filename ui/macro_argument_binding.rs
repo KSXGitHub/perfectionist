@@ -236,6 +236,25 @@ fn _parenthesised_pure_accepted(point: (u32, u32)) {
     let _ = my_macro!((MAX,), value());
 }
 
+// Array literals over pure elements are pure. The bracketed shape
+// is the canonical Rust array literal `[a, b, c]` and the repeat
+// form `[expr; count]`; both forms evaluate every captured Rust
+// expression at most once and so don't introduce the side-effect
+// hazard the rule is built to catch. Indexing (`base[index]`) is
+// handled separately by the suffix walker and is unaffected.
+fn _array_literal_of_pure_elements_accepted() {
+    debug_assert_eq!([0, 1, 2], [MAX, MAX, MAX], "array literal");
+    debug_assert_eq!([0; 4], [MAX; 4], "array repeat");
+}
+
+// Negative coverage: an array literal with at least one impure
+// element is still flagged. The let-bind rewrite the rule suggests
+// is meaningful here — the caller can bind the impure element
+// first and pass the resulting array.
+fn _array_literal_with_impure_element_flagged() {
+    let _ = my_macro!([value(), value()]);
+}
+
 // Binary chains over pure operands are pure — comparisons and
 // arithmetic on local bindings, fields, and constants are side-effect-
 // free and produce the same result regardless of how many times the

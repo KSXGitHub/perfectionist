@@ -146,6 +146,15 @@ The lint accepts any argument whose outermost shape is one of:
 - The unit literal `()`, a parenthesised pure expression
   (`(x)`), or a tuple whose every element is pure
   (`(a, b)`, `(a,)`).
+- The empty array literal `[]`, an array literal whose every
+  element is pure (`[a, b, c]`, optional trailing comma), or an
+  array-repeat `[expr; count]` whose `expr` and `count` are both
+  pure (`[0; 4]`, `[MAX; LEN]`). Array literals introduce no
+  side effect beyond their elements, and the array-repeat form
+  evaluates `expr` at most once at runtime, so neither shape
+  benefits from a let-bind rewrite when its parts are already
+  pure. The indexing suffix `base[index]` is handled by the
+  postfix walker and is unaffected by this carve-out.
 - A binary chain whose every operand is pure and whose
   every operator is side-effect-free in the syntactic sense:
   the arithmetic operators (`+`, `-`, `*`, `/`, `%`), the
