@@ -37,11 +37,13 @@ Still pending:
   `path.segments` via the shared
   [`macro_path::matches_any`](../src/macro_path.rs) helper. A
   multi-segment entry like `"my_crate::vec_like"` therefore
-  only matches the textual call shapes
-  `my_crate::vec_like!(...)` and
-  `::my_crate::vec_like!(...)`, not the bare
-  `vec_like!(...)` call that follows a
-  `use my_crate::vec_like;`. `macro-argument-binding`'s
+  matches by the invocation path's *final two segments* —
+  catching `my_crate::vec_like!(...)`,
+  `::my_crate::vec_like!(...)`, and even
+  `outer::my_crate::vec_like!(...)` indiscriminately, but
+  never the bare `vec_like!(...)` call that follows a
+  `use my_crate::vec_like;` (the AST path is just
+  `[vec_like]`, one segment short of the entry). `macro-argument-binding`'s
   Status section describes the resolution-based fix in
   detail; the same plumbing change benefits this rule, and
   the two rules' built-in lists should migrate together.

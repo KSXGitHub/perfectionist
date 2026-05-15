@@ -18,15 +18,17 @@ Still pending:
   shared with the equivalent eligibility check planned for
   `macro-trailing-comma`; both will land together.
 - **Identifier-path-aware allow / deny matching.** Multi-segment
-  entries in `deny`, `allow`, `ignore`, `deny_extra`, and
-  `allow_extra` currently tail-match the *syntactic* path the
-  user wrote at the call site. A configured entry of
-  `their_crate::their_macro` matches
-  `their_crate::their_macro!(...)` and
-  `::their_crate::their_macro!(...)` (any path whose final two
-  segments are `their_crate::their_macro`, leading `::` and
-  all) but does *not* match the ecosystem-standard call shapes
-  that route the macro through a `use` declaration:
+  entries — both the built-in deny / allow lists and the
+  user-supplied `deny_extra`, `allow_extra`, and `ignore` lists
+  — currently tail-match the *syntactic* path the user wrote
+  at the call site. A configured entry of
+  `their_crate::their_macro` matches any invocation whose
+  final two path segments are `their_crate::their_macro`
+  (`their_crate::their_macro!(...)`,
+  `::their_crate::their_macro!(...)`, and even
+  `something_else::their_crate::their_macro!(...)` all qualify)
+  but does *not* match the ecosystem-standard call shapes that
+  route the macro through a `use` declaration:
 
   ```rust
   use their_crate::their_macro;
