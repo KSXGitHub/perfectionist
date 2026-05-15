@@ -22,7 +22,7 @@ const CONFIG_KEY: &str = "perfectionist::macro_argument_binding";
 const BUILTIN_DENY: &[&str] = &["debug_assert", "debug_assert_eq", "debug_assert_ne"];
 
 /// Macros for which the call site is known not to introduce the
-/// "evaluate zero, one, or many times" hazard. Two disjoint groups:
+/// "evaluate zero, one, or many times" hazard. Three disjoint groups:
 ///
 /// 1. Runtime macros (`format!`, `vec!`, `assert!`, `dbg!`, …) that
 ///    promise to evaluate every top-level argument exactly once.
@@ -40,6 +40,13 @@ const BUILTIN_DENY: &[&str] = &["debug_assert", "debug_assert_eq", "debug_assert
 ///    macro from this group. None of these evaluates a user
 ///    expression at runtime, so no exactly-once-vs.-zero hazard
 ///    surfaces at the call site.
+/// 3. Third-party assertion macros from `insta`'s snapshot-testing
+///    family. Each `assert_*_snapshot!` call evaluates its value
+///    argument exactly once and feeds the result through a
+///    formatter (`Debug`, `Display`, or a `serde::Serialize`
+///    backend) before comparing against the on-disk snapshot. The
+///    matchers are uniform across the family, so the same
+///    once-evaluation guarantee holds for every variant.
 ///
 /// `macro_trailing_comma`'s own built-in list is intentionally
 /// narrower than this one (it has no reason to care about
@@ -83,6 +90,24 @@ const BUILTIN_ALLOW: &[&str] = &[
     "module_path",
     "option_env",
     "stringify",
+    // `insta` snapshot-assertion macros. Every variant evaluates its
+    // value argument exactly once before serialising it for
+    // comparison against the stored snapshot. `assert_display_snapshot`
+    // is deprecated upstream in favour of `assert_snapshot` but is
+    // still present in older `insta` releases, so it is listed for
+    // projects that have not yet migrated. `assert_binary_snapshot`
+    // is the newer byte-slice variant.
+    "assert_binary_snapshot",
+    "assert_compact_debug_snapshot",
+    "assert_compact_json_snapshot",
+    "assert_csv_snapshot",
+    "assert_debug_snapshot",
+    "assert_display_snapshot",
+    "assert_json_snapshot",
+    "assert_ron_snapshot",
+    "assert_snapshot",
+    "assert_toml_snapshot",
+    "assert_yaml_snapshot",
 ];
 
 /// `core` / `std` macros whose invocation expands to a value the

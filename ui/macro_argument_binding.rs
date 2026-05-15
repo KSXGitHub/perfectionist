@@ -29,6 +29,20 @@ macro_rules! in_separator_macro {
     ($($tokens:tt)*) => {{ 0 }};
 }
 
+// Stand-ins for the `insta` snapshot-assertion family, which the
+// rule recognises by tail-segment match. Each one swallows its
+// arguments unevaluated; the fixture only needs the call site to
+// parse, not to run.
+macro_rules! assert_snapshot {
+    ($($tokens:tt)*) => {{}};
+}
+macro_rules! assert_debug_snapshot {
+    ($($tokens:tt)*) => {{}};
+}
+macro_rules! assert_yaml_snapshot {
+    ($($tokens:tt)*) => {{}};
+}
+
 // `debug_assert_eq!` is on the built-in deny list. The first argument
 // is a non-trivial method call; in release builds the macro folds to
 // `if false { ... }` and the call never runs, leaving the map in a
@@ -75,6 +89,17 @@ fn _format_allow_listed() {
 // are accepted under the default config.
 fn _vec_allow_listed() {
     let _ = vec![value(), value(), value()];
+}
+
+// Allow-listed `insta` snapshot-assertion macros. Each variant
+// evaluates its value argument exactly once before serialising, so
+// the rule accepts non-trivial arguments under the default config.
+// Tail-segment matching means the rule recognises both bare and
+// path-qualified call sites.
+fn _insta_snapshots_allow_listed() {
+    assert_snapshot!(value().unwrap());
+    assert_debug_snapshot!(value().unwrap());
+    assert_yaml_snapshot!(value().unwrap());
 }
 
 // Repeat-form `vec![v; count]` uses a top-level `;`, which signals
