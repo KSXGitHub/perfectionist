@@ -142,7 +142,7 @@ appear in the built-in defaults or in `extra_pure_methods`.
 Empty by default; checked after the merge, so this knob always
 wins. Useful for opting back into linting on a default entry
 the project does not consider pure — for example, removing
-`as_ref` for a project that wraps it in a non-pure
+`as_ref` for a project that wraps it in an impure
 implementation.
 
 ### `extra_pure_macros`: `[string]` (optional)

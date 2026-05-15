@@ -254,7 +254,7 @@ ecosystem, but the lint cannot prove the convention holds for
 any given call site. Projects that hit this corner can drop
 specific names from the built-in set via the
 `ignore_pure_methods` knob — for example, a project that
-wraps `as_ref` in a non-pure implementation can put `"as_ref"`
+wraps `as_ref` in an impure implementation can put `"as_ref"`
 in `ignore_pure_methods` and the lint will flag every
 `.as_ref()` call as a method call again.
 
