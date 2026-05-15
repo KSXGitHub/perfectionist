@@ -8,10 +8,21 @@ msg_file="$1"
 
 # Cheap pre-filter so non-release commits don't pay the cost of
 # spawning cargo. Find the first non-blank, non-comment line and
-# check whether it matches the version-literal grammar. A single
-# awk handles both filters in one process so an all-comments /
-# empty message file doesn't trip `set -o pipefail`.
-subject=$(awk '!/^#/ && NF { print; exit }' "$msg_file")
+# check whether it matches the version-literal grammar.
+#
+# Honour `core.commentChar` (default `#`) so a user with a
+# non-default comment char doesn't have template comment lines
+# leak through and get picked as the subject — that would
+# otherwise let a malformed release commit slip past the hook.
+# Fall back to `#` on unset, `auto`, or any non-single-char
+# value, matching the Rust side's fallback.
+comment_char=$(git config --get core.commentChar 2>/dev/null || true)
+case "$comment_char" in
+  '') comment_char='#' ;;
+  ?) ;;
+  *) comment_char='#' ;;
+esac
+subject=$(awk -v cc="$comment_char" 'index($0, cc) != 1 && NF { print; exit }' "$msg_file")
 if ! [[ "$subject" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[^[:space:]]+)?$ ]]; then
   exit 0
 fi

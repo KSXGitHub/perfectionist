@@ -248,6 +248,31 @@ fn commit_msg_rejects_release_shaped_subject_with_body_content() {
 }
 
 #[test]
+fn version_only_diff_rejects_trailing_newline_change_alongside_version_bump() {
+    // `lines()` discards the trailing newline at EOF, so a release
+    // commit that also strips it would pass the line-by-line check;
+    // the byte-level synthesise check catches it.
+    let before = "version = \"0.0.0-rc.6\"\n";
+    let after = "version = \"0.0.0-rc.7\"";
+    assert!(matches!(
+        assert_version_only_diff("Cargo.toml", before, after, "0.0.0-rc.6", "0.0.0-rc.7"),
+        Err(RuntimeError::NonVersionByteDiff(_))
+    ));
+}
+
+#[test]
+fn version_only_diff_rejects_eol_style_change_on_the_version_line() {
+    // `lines()` strips both `\n` and `\r\n`, so a CRLF flip on the
+    // version line is invisible to line-by-line comparison.
+    let before = "[package]\nversion = \"0.0.0-rc.6\"\n";
+    let after = "[package]\nversion = \"0.0.0-rc.7\"\r\n";
+    assert!(matches!(
+        assert_version_only_diff("Cargo.toml", before, after, "0.0.0-rc.6", "0.0.0-rc.7"),
+        Err(RuntimeError::NonVersionByteDiff(_))
+    ));
+}
+
+#[test]
 fn version_only_diff_rejects_byte_identical_inputs() {
     let same = text_block_fnl! { r#"version = "0.0.0-rc.6""# };
     assert!(matches!(

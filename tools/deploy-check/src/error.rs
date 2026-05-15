@@ -82,6 +82,10 @@ pub(crate) enum RuntimeError {
         after: String,
     },
     #[display(
+        "{_0}: byte-level difference outside the version line (trailing newline or end-of-line style differs); restore the file to its pre-bump byte-for-byte content except for the version line"
+    )]
+    NonVersionByteDiff(String),
+    #[display(
         "commit message starts with a version literal ({_0:?}) but also contains additional body lines — release commits must be the version literal only"
     )]
     MessageHasExtraContent(String),
