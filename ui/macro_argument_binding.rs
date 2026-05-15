@@ -181,9 +181,14 @@ fn _brace_argument_with_attributed_let_flagged() {
     });
 }
 
-// All seven pure argument shapes — accepted under every mode. The
-// outer `debug_assert_eq!` is on the deny list, so any impure
-// argument here would otherwise be flagged.
+// The atom-shaped pure arguments — literal, path, reference,
+// mut-reference, tuple-index, deref, indexed pure base, pure
+// cast, rooted path — accepted under every mode. The outer
+// `debug_assert_eq!` is on the deny list, so any impure argument
+// here would otherwise be flagged. The grammar is open-ended
+// (array literals / repeats are exercised in a dedicated fixture
+// below; binary chains and pure-getter postfixes likewise); this
+// function only covers the atom shapes.
 fn _all_pure_shapes_accepted() {
     let pair: (u32, u32) = (0, 0);
     let buffer: [u32; 4] = [0; 4];

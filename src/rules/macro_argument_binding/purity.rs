@@ -9,9 +9,10 @@
 //! [`is_pure_expression`] decides whether the surviving expression
 //! falls in the spec's pure shapes (literals, paths, references,
 //! field accesses, indexing, dereferences, casts, parenthesised /
-//! tuple groups, binary chains over pure operands, and
-//! `expr.method()` postfixes for a curated / configured set of
-//! pure-getter methods).
+//! tuple groups, array literals and array-repeat forms over pure
+//! parts, binary chains over pure operands, and `expr.method()`
+//! postfixes for a curated / configured set of pure-getter
+//! methods).
 //!
 //! The predicate is a hand-rolled token-stream walker — see the
 //! rationale in `planned-rules/macro-argument-binding.md`'s
