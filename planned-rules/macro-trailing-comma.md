@@ -39,7 +39,7 @@ Still pending:
   multi-segment entry like `"my_crate::vec_like"` therefore
   only matches the textual call shapes
   `my_crate::vec_like!(...)` and
-  `crate::my_crate::vec_like!(...)`, not the bare
+  `::my_crate::vec_like!(...)`, not the bare
   `vec_like!(...)` call that follows a
   `use my_crate::vec_like;`. `macro-argument-binding`'s
   Status section describes the resolution-based fix in

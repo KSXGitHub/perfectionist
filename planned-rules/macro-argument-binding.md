@@ -23,9 +23,10 @@ Still pending:
   user wrote at the call site. A configured entry of
   `their_crate::their_macro` matches
   `their_crate::their_macro!(...)` and
-  `crate::their_crate::their_macro!(...)` but does *not* match
-  the ecosystem-standard call shapes that route the macro
-  through a `use` declaration:
+  `::their_crate::their_macro!(...)` (any path whose final two
+  segments are `their_crate::their_macro`, leading `::` and
+  all) but does *not* match the ecosystem-standard call shapes
+  that route the macro through a `use` declaration:
 
   ```rust
   use their_crate::their_macro;
@@ -65,22 +66,24 @@ Still pending:
   crates each, and the bare-segment match cannot pick one
   without false positives.
 
-  **The feature requires type information.** Pre-expansion —
-  where this rule's `check_mac` runs — sees raw AST paths and
-  the unexpanded `use` items, but not their resolution: rustc
-  has not yet decided which definition the bare
-  `their_macro!(...)` refers to. Reimplementing the resolver
-  from `use` items alone is an incomplete approximation: globs
-  (`use foo::*;`) have no enumerable name list at the AST
-  level, cross-crate re-exports
+  **The feature requires rustc's name-resolution output.**
+  Pre-expansion — where this rule's `check_mac` runs — sees
+  raw AST paths and the unexpanded `use` items, but not their
+  resolution: rustc has not yet decided which definition the
+  bare `their_macro!(...)` refers to (macro name resolution
+  happens *during* expansion, and type checking is a layer
+  above that — both run after pre-expansion). Reimplementing
+  the resolver from `use` items alone is an incomplete
+  approximation: globs (`use foo::*;`) have no enumerable name
+  list at the AST level, cross-crate re-exports
   (`pub use other_crate::macro_name as ours;`) are not visible
   without the re-exporting crate's metadata,
   `#[macro_use] extern crate` brings names into scope through a
   different mechanism still, and the textual macro scope (the
   legacy `macro_rules!` resolution rules) does not nest the same
   way modular paths do. Only the compiler's own resolver answers
-  every case correctly, and it only has the answer post-
-  expansion.
+  every case correctly, and it only has the answer once
+  expansion is finished.
 
   The plumbing path that *does* work: keep the pre-expansion
   pass for argument splitting and impure-shape classification,
@@ -92,22 +95,29 @@ Still pending:
   walk) against the configured paths. `DefId` comparison
   resolves cross-crate re-exports, glob imports, aliases, and
   `#[macro_use] extern crate` without reimplementing any of
-  rustc's logic — type information is the resolver, supplied
-  by rustc as a free side-effect of having already compiled
-  the consumer crate up to the late pass.
+  rustc's logic — the compiler's name-resolution output *is*
+  the resolver, available at the late pass as a free
+  side-effect of having compiled the consumer crate that far.
 
-  **Difficulty: moderate.** The plumbing change is small
-  (~150-250 lines) but it touches every list-shaped lookup and
-  changes the rule's *contract* for `deny_extra`: a project
-  that today writes a homegrown `debug_assert_eq!` macro and
-  matches it by name alone will stop matching the built-in
-  deny entry once paths are resolved against the macro's
-  actual `DefId`. The new contract is arguably more correct —
-  it's the resolved macro the rule cares about, not the
-  textual fragment — but it is a behavioural change and
-  deserves its own planning entry, migration note in this
-  `Status` section, and a release-note call-out. Land
-  separately from any PR that adds to the curated lists.
+  **Difficulty: moderate.** The plumbing change is small in
+  itself but it touches every list-shaped lookup and changes
+  the rule's *contract* for the multi-segment user-supplied
+  entries in `deny_extra` / `allow_extra` / `ignore`. Today a
+  `deny_extra = ["their_crate::their_macro"]` entry matches
+  every invocation whose syntactic path tail-equals the entry,
+  so a homegrown `other_dep::their_crate::their_macro!(...)` is
+  caught by accident. Under the resolved-`DefId` matcher, the
+  same entry matches only invocations that actually resolve to
+  `their_crate::their_macro` (and matches them in *every*
+  call-site form, including the bare-after-`use` shapes today's
+  syntactic matcher misses). Built-in single-segment entries
+  (`"debug_assert_eq"`, `"format"`, `"vec"`) are untouched
+  because their bucket stays name-based — the new contract is
+  scoped to the multi-segment paths where the resolution gap
+  is felt. The change is still behavioural enough to deserve
+  its own planning entry, a migration note in this `Status`
+  section, and a release-note call-out; land it separately
+  from any PR that adds to the curated lists.
 - **Range expressions over pure operands.** The spec couples
   range-expression purity to operand purity the same way
   it does for binary expressions, but the walker only recognises
