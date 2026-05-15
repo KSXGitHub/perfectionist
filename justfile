@@ -70,9 +70,11 @@ install-git-hooks:
   git config core.hooksPath .githooks
   chmod +x .githooks/commit-msg .githooks/pre-push
 
-# Undo `install-git-hooks`.
+# Undo `install-git-hooks`. Idempotent: silently succeeds when
+# `core.hooksPath` is already unset, so it is safe to run from
+# any state.
 uninstall-git-hooks:
-  git config --unset core.hooksPath
+  git config --unset core.hooksPath 2>/dev/null || true
 
 # Print the dylint_linting version pinned in Cargo.lock
 dylint-version:

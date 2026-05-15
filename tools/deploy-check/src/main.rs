@@ -512,7 +512,7 @@ where
     String::from_utf8(output.stdout).map_err(|_| Error::GitNonUtf8)
 }
 
-#[derive(Display)]
+#[derive(Display, Debug)]
 enum Error {
     #[display("failed to spawn git: {_0}")]
     SpawnGit(io::Error),
@@ -593,4 +593,193 @@ enum Error {
     MessageHasExtraContent(String),
     #[display("one or more tag updates fail the version-bump contract")]
     PrePushFailed,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn version_literal_grammar() {
+        for ok in ["0.0.0", "1.2.3", "0.0.0-rc.13", "10.20.30-beta.4+sha.abc"] {
+            assert!(is_version_literal(ok), "{ok:?} should be accepted");
+        }
+        for bad in [
+            "",
+            "1.2",
+            "1.2.3.4",
+            "v1.2.3",
+            "1.2.3-",
+            "1.2.3 ",
+            " 1.2.3",
+            "1.2.3-rc 1",
+            "1.a.0",
+            "1.2.3+meta",
+        ] {
+            assert!(!is_version_literal(bad), "{bad:?} should be rejected");
+        }
+    }
+
+    #[test]
+    fn cargo_toml_version_extracted_from_package_section() {
+        let manifest = "\
+[workspace]
+members = [\"x\"]
+
+[package]
+name = \"perfectionist\"
+version = \"0.0.0-rc.7\"
+";
+        assert_eq!(parse_cargo_toml_version(manifest).unwrap(), "0.0.0-rc.7");
+    }
+
+    #[test]
+    fn cargo_lock_version_picks_perfectionist_entry() {
+        let lock = "\
+[[package]]
+name = \"foo\"
+version = \"1.0.0\"
+
+[[package]]
+name = \"perfectionist\"
+version = \"0.0.0-rc.5\"
+dependencies = [
+ \"foo\",
+]
+
+[[package]]
+name = \"bar\"
+version = \"2.0.0\"
+";
+        assert_eq!(parse_cargo_lock_version(lock).unwrap(), "0.0.0-rc.5");
+    }
+
+    #[test]
+    fn cargo_lock_rejects_duplicate_perfectionist_entries() {
+        let lock = "\
+[[package]]
+name = \"perfectionist\"
+version = \"0.0.0-rc.1\"
+
+[[package]]
+name = \"perfectionist\"
+version = \"0.0.0-rc.2\"
+";
+        assert!(matches!(
+            parse_cargo_lock_version(lock),
+            Err(Error::DuplicateLockPackageEntry)
+        ));
+    }
+
+    #[test]
+    fn package_version_line_skips_dependencies_with_same_value() {
+        let manifest = "\
+[workspace]
+members = [\"a\"]
+
+[package]
+name = \"perfectionist\"
+version = \"0.0.0-rc.7\"
+
+[dependencies]
+serde = \"0.0.0-rc.7\"
+";
+        // The dependency literal is `serde = \"...\"`, not
+        // `version = \"...\"`, so `find_package_version_line`
+        // is unambiguous; it returns the [package] line index.
+        let idx = find_package_version_line(manifest, "0.0.0-rc.7").unwrap();
+        assert_eq!(
+            manifest.lines().nth(idx).unwrap(),
+            "version = \"0.0.0-rc.7\""
+        );
+    }
+
+    #[test]
+    fn lock_version_line_finds_perfectionist_block() {
+        let lock = "\
+[[package]]
+name = \"foo\"
+version = \"0.0.0-rc.7\"
+
+[[package]]
+name = \"perfectionist\"
+version = \"0.0.0-rc.7\"
+dependencies = [
+ \"foo\",
+]
+";
+        let idx = find_lock_version_line(lock, "0.0.0-rc.7").unwrap();
+        // The version line in `foo`'s block is at index 2; in
+        // `perfectionist`'s block at index 6 — confirm we got the
+        // latter.
+        assert_eq!(idx, 6);
+    }
+
+    #[test]
+    fn assert_only_one_line_changed_accepts_a_pure_version_bump() {
+        let before = "\
+[package]
+name = \"perfectionist\"
+version = \"0.0.0-rc.6\"
+";
+        let after = "\
+[package]
+name = \"perfectionist\"
+version = \"0.0.0-rc.7\"
+";
+        assert_only_one_line_changed(
+            "Cargo.toml",
+            before,
+            after,
+            2,
+            2,
+            "version = \"0.0.0-rc.6\"",
+            "version = \"0.0.0-rc.7\"",
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn assert_only_one_line_changed_rejects_collateral_edits() {
+        let before = "\
+[package]
+name = \"perfectionist\"
+version = \"0.0.0-rc.6\"
+";
+        let after = "\
+[package]
+name = \"renamed\"
+version = \"0.0.0-rc.7\"
+";
+        assert!(matches!(
+            assert_only_one_line_changed(
+                "Cargo.toml",
+                before,
+                after,
+                2,
+                2,
+                "version = \"0.0.0-rc.6\"",
+                "version = \"0.0.0-rc.7\"",
+            ),
+            Err(Error::ExtraLineChanged { .. })
+        ));
+    }
+
+    #[test]
+    fn assert_only_one_line_changed_rejects_line_count_mismatch() {
+        let before = "version = \"0.0.0-rc.6\"\n";
+        let after = "version = \"0.0.0-rc.7\"\nextra\n";
+        assert!(matches!(
+            assert_only_one_line_changed(
+                "Cargo.toml",
+                before,
+                after,
+                0,
+                0,
+                "version = \"0.0.0-rc.6\"",
+                "version = \"0.0.0-rc.7\"",
+            ),
+            Err(Error::LineCountChanged(_))
+        ));
+    }
 }
