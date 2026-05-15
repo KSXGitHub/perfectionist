@@ -397,7 +397,33 @@ fn _turbofish_method_call_flagged(text: &str) {
 // already holds. Tail-segment matching means `serde_json::json!`,
 // `::serde_json::json!`, and the bare `json!` form all line up
 // with the same entry.
+//
+// Each call below was chosen so the allow-list entry is *load-
+// bearing*: the impure argument shape would otherwise be flagged
+// by the default `AllowAndDeny` mode. Without that property the
+// test passes trivially and a regression that drops the entry
+// from `BUILTIN_ALLOW` would slip through.
+//
+// - `json!(value().unwrap())` — direct impure expression, no
+//   DSL marker, not brace-delimited. Without `json` on the allow
+//   list, the rule reaches `is_pure_expression` and flags it.
+// - `bail!("error: {}", value())` — second argument is an impure
+//   function call. Without `bail`, the second-argument check
+//   flags it.
+// - `ensure!(value().is_some(), "missing: {}", value())` — first
+//   argument is an impure method call; second / third are
+//   impure. Without `ensure`, all three flag.
+// - `json!({...})` and `hashmap!(k => v)` are also exercised, but
+//   note these would *also* be skipped by the brace-DSL and
+//   `=>`-DSL heuristics respectively even without their
+//   `BUILTIN_ALLOW` entries — they're here for shape coverage,
+//   not as load-bearing assertions. The `maplit::*` entries are
+//   in the same boat by design: every form of the macros emits
+//   `=>` at top level, which the DSL-marker check already
+//   skips. The allow-list entries serve as documentation of
+//   intent more than functional gates.
 fn _third_party_allow_listed_accepted() {
+    let _ = json!(value().unwrap());
     let _ = json!({ "ts": value(), "items": [value(), value()] });
     let _ = hashmap!("a" => value(), "b" => value());
     let _ = bail!("error: {}", value());

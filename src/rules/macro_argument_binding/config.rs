@@ -105,11 +105,20 @@ const BUILTIN_ALLOW: &[&str] = &[
     //   upstream but retained for projects on older `insta`;
     //   `assert_binary_snapshot` is the newer byte-slice variant.
     // - `maplit::{hashmap, btreemap, hashset, btreeset}` expand to
-    //   one `.insert` call per pair; each captured key and value is
-    //   evaluated once.
+    //   one `.insert` call per pair; each captured key and value
+    //   is evaluated once. These entries are functionally
+    //   redundant given `looks_like_expression`'s top-level `=>`
+    //   DSL-marker skip (every non-empty maplit call form emits
+    //   `=>` at the top level of each argument and is skipped
+    //   regardless); they're retained as an explicit declaration
+    //   that the project has vetted these macros for the once-
+    //   only contract.
     // - `serde_json::json` builds a `serde_json::Value` tree; each
     //   embedded Rust expression goes through `to_value(&expr)`
-    //   exactly once.
+    //   exactly once. Unlike `maplit::*`, this entry is load-
+    //   bearing for direct-expression arguments — `json!(expr)`
+    //   has no DSL marker, so removing the entry would re-flag
+    //   `json!(value().unwrap())` and similar.
     //
     // Add further crates here as their matchers are vetted to
     // honour the same once-only contract.

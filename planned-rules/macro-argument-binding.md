@@ -618,14 +618,25 @@ ignore_pure_macros = [
 - Argument splitting walks `MacCall::args.tokens`, tracks
   delimiter nesting, and splits on top-level commas. Share
   the splitter with `macro-trailing-comma`.
-- Per-argument expression re-parse uses `rustc_parse`'s
-  `Parser::parse_expr` (or the equivalent restriction-
-  respecting helper for the surrounding context).
-- Pure/impure predicate: a `match` on `ast::ExprKind`
-  over the seven pure variants (`Lit`, `Path`, `AddrOf`,
-  `Field`, `Index`, `Unary(Deref, _)`, `Cast`) with recursive
-  purity checks on the sub-expressions. Default any
-  unrecognised variant to impure.
+- Per-argument classification is a hand-rolled token-stream
+  walker (`src/rules/macro_argument_binding/purity.rs`), not a
+  `rustc_parse` re-parse. The walker pairs a
+  `looks_like_expression` heuristic that filters out DSL-shaped
+  arguments (top-level `=>`, `:` outside a `let`, `=`, `+=`, …,
+  and brace-delimited arguments whose inner top level matches
+  the same predicate) with a `take_*`-style combinator that
+  consumes pure-shape atoms, suffixes, and binary tails.
+  Anything the combinator can't consume is impure.
+
+  The original design called for a `Parser::parse_expr` re-parse
+  with an `ast::ExprKind` match over the seven pure variants
+  (`Lit`, `Path`, `AddrOf`, `Field`, `Index`, `Unary(Deref, _)`,
+  `Cast`) — see issue #64 for the deferral rationale. The
+  walker is the practical compromise: it avoids spawning
+  parser-recovery diagnostics on arbitrary macro inputs, runs
+  pre-expansion without an AST, and lets the rule honour the
+  cross-cutting parser-style convention in
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
 - Matcher walker (mode 3): builds on the matcher-access
   infrastructure
   [`macro-trailing-comma`](./macro-trailing-comma.md)
