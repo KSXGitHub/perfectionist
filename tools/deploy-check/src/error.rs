@@ -11,7 +11,7 @@ use derive_more::Display;
 use super::PACKAGE_NAME;
 
 #[derive(Display, Debug)]
-pub(super) enum RuntimeError {
+pub(crate) enum RuntimeError {
     #[display("failed to spawn git: {_0}")]
     SpawnGit(io::Error),
     #[display("git exited with status {status:?}: {stderr}")]
