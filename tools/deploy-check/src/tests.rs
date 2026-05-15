@@ -1,5 +1,9 @@
-use super::*;
 use text_block_macros::text_block_fnl;
+
+use super::contract::assert_version_only_diff;
+use super::error::RuntimeError;
+use super::manifest::{parse_cargo_lock_version, parse_cargo_toml_version};
+use super::version_literal::is_version_literal;
 
 #[test]
 fn version_literal_grammar() {
@@ -138,6 +142,26 @@ fn version_only_diff_rejects_line_count_mismatch() {
         assert_version_only_diff("Cargo.toml", before, after, "0.0.0-rc.6", "0.0.0-rc.7"),
         Err(RuntimeError::LineCountChanged(_))
     ));
+}
+
+/// The contract requires the two versions to be *different*; it
+/// does not require monotonicity or SemVer ordering. A downgrade
+/// (rc.20 → rc.10), a mainline-to-prerelease move (0.1.0 → 0.0.0-rc.5),
+/// or any other distinct pair is accepted as long as nothing else
+/// in the snapshot changes.
+#[test]
+fn version_only_diff_accepts_arbitrary_distinct_versions() {
+    for (before_ver, after_ver) in [
+        ("0.0.0-rc.36", "0.0.0-rc.20"),
+        ("0.1.0", "0.0.0-rc.88"),
+        ("0.0.1", "0.0.0-rc.72"),
+        ("0.1.2", "0.2.3"),
+    ] {
+        let before = format!("[package]\nversion = \"{before_ver}\"\n");
+        let after = format!("[package]\nversion = \"{after_ver}\"\n");
+        assert_version_only_diff("Cargo.toml", &before, &after, before_ver, after_ver)
+            .unwrap_or_else(|err| panic!("{before_ver} -> {after_ver} should be accepted: {err}"));
+    }
 }
 
 #[test]
