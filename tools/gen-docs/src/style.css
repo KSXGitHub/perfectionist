@@ -17,7 +17,10 @@ body {
    descendant. As a sibling, the nav's visibility is driven by plain
    author CSS — `.nav-drawer[open] + .nav-sidebar` on narrow
    viewports, an unconditional `display: block` above the
-   breakpoint. No JS required, no UA quirks to fight.
+   breakpoint. The show/hide mechanism itself needs no JS and fights
+   no UA quirks. (A separate inline script — see the "Hamburger
+   reveal" rule block further down — drives only the toggle's
+   IntersectionObserver-based fade-in, not the drawer.)
 
    On viewports >= 1100px the drawer is hidden and the nav is shown
    permanently as a left sidebar (page contents shifted right). Below
@@ -195,6 +198,20 @@ body {
   }
 
   .nav-toggle.nav-toggle-visible {
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity 0.18s ease,
+      visibility 0s linear 0s;
+  }
+
+  /* While the drawer is open the close (✕) control must stay
+     reachable regardless of the IntersectionObserver state. If the
+     user navigates to `#catalogue` (or any anchor scrolling the
+     index table back into view) the observer would otherwise hide
+     the toggle, leaving the sidebar covering the page with no
+     visible way to dismiss it. */
+  .nav-drawer[open] .nav-toggle {
     opacity: 1;
     visibility: visible;
     transition:
