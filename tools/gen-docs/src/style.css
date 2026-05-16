@@ -17,10 +17,14 @@ body {
    descendant. As a sibling, the nav's visibility is driven by plain
    author CSS — `.nav-drawer[open] + .nav-sidebar` on narrow
    viewports, an unconditional `display: block` above the
-   breakpoint. The show/hide mechanism itself needs no JS and fights
-   no UA quirks. (A separate inline script — see the "Hamburger
-   reveal" rule block further down — drives only the toggle's
-   IntersectionObserver-based fade-in, not the drawer.)
+   breakpoint. The show/hide mechanism itself needs no JS and
+   fights no UA quirks. (A separate inline script — see the
+   "Hamburger reveal" rule block further down — handles two
+   concerns CSS can't reach: it fades the toggle in/out via an
+   IntersectionObserver tied to the index table, and it clears
+   the `[open]` attribute when a sidebar link is followed so the
+   drawer doesn't sit on top of the destination on narrow
+   viewports.)
 
    On viewports >= 1100px the drawer is hidden and the nav is shown
    permanently as a left sidebar (page contents shifted right). Below

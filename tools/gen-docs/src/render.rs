@@ -212,6 +212,25 @@ mod tests {
         }
     }
 
+    /// Locate the sidebar's `<ul>` and return the slice spanning
+    /// just its contents. The narrow-viewport CSS selector
+    /// `.nav-drawer[open] + .nav-sidebar` depends on adjacent-
+    /// sibling ordering, so tests that want to count or inspect
+    /// sidebar entries should do so against this slice — not the
+    /// whole page, where the index table and rule articles emit
+    /// substrings (`href="#perfectionist-*"`, `<code>name</code>`,
+    /// `id="perfectionist-*"`) that overlap the sidebar's markup.
+    fn sidebar_list(html: &str) -> &str {
+        let open = "<ul class=\"nav-sidebar-list\">";
+        let close = "</ul>";
+        let start = html.find(open).expect("sidebar <ul> not rendered") + open.len();
+        let end = start
+            + html[start..]
+                .find(close)
+                .expect("sidebar <ul> unterminated");
+        &html[start..end]
+    }
+
     #[test]
     fn page_emits_nav_drawer_details_and_sibling_nav() {
         let html = render_page(&[fake_rule("alpha")], &fake_context());
@@ -219,22 +238,38 @@ mod tests {
         assert!(html.contains("class=\"nav-toggle\""));
         assert!(html.contains("aria-label=\"Toggle navigation\""));
         assert!(html.contains("aria-controls=\"nav-sidebar\""));
-        assert!(html.contains("id=\"nav-sidebar\""));
         assert!(html.contains("aria-label=\"Lint rules\""));
+        // The narrow-viewport CSS uses `.nav-drawer[open] +
+        // .nav-sidebar`, so the <nav> must be the immediate next
+        // sibling of </details>. Asserting only their individual
+        // presence (above) would let a refactor that nested the
+        // <nav> inside the <details>, or inserted another element
+        // between them, slip through and break the drawer on
+        // narrow viewports.
+        assert!(
+            html.contains("</details><nav class=\"nav-sidebar\" id=\"nav-sidebar\""),
+            "expected </details> to be immediately followed by the <nav class=\"nav-sidebar\"> sibling",
+        );
     }
 
     #[test]
     fn page_emits_one_sidebar_entry_per_rule_with_anchor_links() {
         let rules = [fake_rule("alpha"), fake_rule("beta_gamma")];
         let html = render_page(&rules, &fake_context());
-        // Each <li> in the sidebar should contain a link to the
-        // rule's article anchor; the link text is the unnamespaced
-        // rule name in a <code>.
-        assert!(html.contains("href=\"#perfectionist-alpha\""));
-        assert!(html.contains("<code>alpha</code>"));
-        assert!(html.contains("href=\"#perfectionist-beta_gamma\""));
-        assert!(html.contains("<code>beta_gamma</code>"));
-        // And the rule articles those anchors point at must exist.
+        let sidebar = sidebar_list(&html);
+        // One <li> per rule, scoped to the sidebar's <ul> so that
+        // the index table's rows and the rule articles can't make
+        // these assertions pass on their own.
+        assert_eq!(sidebar.matches("<li>").count(), rules.len());
+        assert!(
+            sidebar.contains("<li><a href=\"#perfectionist-alpha\"><code>alpha</code></a></li>")
+        );
+        assert!(sidebar.contains(
+            "<li><a href=\"#perfectionist-beta_gamma\"><code>beta_gamma</code></a></li>"
+        ));
+        // The rule articles those anchors resolve to must exist
+        // outside the sidebar slice, otherwise the sidebar links
+        // dangle.
         assert!(html.contains("id=\"perfectionist-alpha\""));
         assert!(html.contains("id=\"perfectionist-beta_gamma\""));
     }
@@ -242,11 +277,20 @@ mod tests {
     #[test]
     fn page_inlines_nav_toggle_script_and_noscript_fallback() {
         let html = render_page(&[fake_rule("only")], &fake_context());
-        assert!(html.contains("<script>"));
-        assert!(html.contains("IntersectionObserver"));
+        // Assert the full script body appears verbatim inside a
+        // <script> tag. `<script>` on its own would match an empty
+        // tag; substrings like `IntersectionObserver` also appear
+        // in the CSS comments that ship in the same HTML. The
+        // wrapped-content check pins both that the script is
+        // present and that NAV_TOGGLE_SCRIPT was the body.
+        let wrapped = format!("<script>{NAV_TOGGLE_SCRIPT}</script>");
+        assert!(
+            html.contains(&wrapped),
+            "expected NAV_TOGGLE_SCRIPT to be inlined verbatim inside a <script> tag",
+        );
         // <noscript> in <head> reverts the toggle to always-visible
         // for the explicit-noscript case.
-        assert!(html.contains("<noscript><style>"));
-        assert!(html.contains(NAV_TOGGLE_NOSCRIPT_CSS));
+        let noscript = format!("<noscript><style>{NAV_TOGGLE_NOSCRIPT_CSS}</style></noscript>");
+        assert!(html.contains(&noscript));
     }
 }

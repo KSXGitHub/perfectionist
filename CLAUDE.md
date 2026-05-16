@@ -261,15 +261,15 @@ regression that no automated step catches. Humans verify by opening
 `gh-pages/index.html` in a browser. Agents that can't do that should
 drive a headless Chromium from a throwaway Playwright script:
 
-- Use Playwright's Chromium headlessly. If the environment already
-  has Playwright and its Chromium binary available, point the
-  launcher at them; otherwise install Playwright into a temporary
-  location (the standard `npm i -D playwright` plus `npx playwright
-  install chromium` works) and use that. Write a one-off `.mjs`
-  that imports `chromium` from `"playwright"`, launches it, loads
-  `gh-pages/index.html` at the viewport sizes the change cares
-  about, and dumps screenshots and/or `getBoundingClientRect` /
-  `getComputedStyle` values.
+- Use Playwright's Chromium headlessly. If the environment
+  already has Playwright and its Chromium binary available, point
+  the launcher at them; otherwise install Playwright into a
+  temporary location — the standard
+  `npm i -D playwright && npx playwright install chromium` works —
+  and use that. Write a one-off `.mjs` that imports `chromium`
+  from `"playwright"`, launches it, loads `gh-pages/index.html` at
+  the viewport sizes the change cares about, and dumps screenshots
+  and/or `getBoundingClientRect` / `getComputedStyle` values.
 
 - Treat the script as scratch. Don't commit it (and don't add it
   to `.gitignore` either — local exclusions belong in
