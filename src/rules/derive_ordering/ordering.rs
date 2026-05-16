@@ -11,11 +11,9 @@ use rustc_span::Span;
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum Style {
-    /// No-op. The lint emits nothing.
-    #[default]
-    Preserve,
     /// Every trait name must appear in ASCII-case-insensitive
     /// alphabetical order.
+    #[default]
     Alphabetical,
     /// Traits listed in the configured `prefix` come first, in the
     /// listed order; remaining traits are sorted alphabetically
@@ -42,7 +40,6 @@ pub(super) fn desired_order(
     entries: &[DeriveEntry],
 ) -> Vec<usize> {
     match style {
-        Style::Preserve => (0..entries.len()).collect(),
         Style::Alphabetical => {
             let mut indices: Vec<usize> = (0..entries.len()).collect();
             // `slice::sort_by` is stable, so equal-key entries

@@ -9,7 +9,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`arc_rc_clone`](./arc_rc_clone.md) (default: `enabled`).
 
   calling `.clone()` on an `Arc<T>` or `Rc<T>`; prefer the qualified `Arc::clone` / `Rc::clone` form
-- [`derive_ordering`](./derive_ordering.md) (default: `enabled`).
+- [`derive_ordering`](./derive_ordering.md) (default: `disabled`).
 
   trait names in a `#[derive(...)]` list are not in the configured order
 - [`flat_module_pattern`](./flat_module_pattern.md) (default: `enabled`).
