@@ -198,7 +198,15 @@ body {
     }
 
     .nav-toggle {
-      animation: nav-toggle-reveal linear both;
+      /* Longhand because the `animation` shorthand defaults
+         `animation-duration` to `0s`, which collapses the scroll-
+         driven animation to its end state regardless of timeline
+         position. `auto` is the value that tells the animation to
+         take its duration from the timeline. */
+      animation-name: nav-toggle-reveal;
+      animation-duration: auto;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
       animation-timeline: --index-table;
       animation-range: exit 90% exit 100%;
     }
