@@ -162,6 +162,49 @@ body {
   }
 }
 
+/* Scroll-driven hamburger reveal.
+
+   The index table at the top of the page already contains a full list
+   of rules, so the hamburger drawer is redundant while the table is on
+   screen. Hide it until the table has scrolled out the top of the
+   viewport, then fade it in.
+
+   This uses CSS scroll-driven animations (`view-timeline` /
+   `animation-timeline`), supported in Chromium 115+, Firefox 139+, and
+   Safari 26+. The whole block is gated behind `@supports` so older
+   engines silently fall back to the always-visible hamburger
+   established above — better a permanently-visible toggle than a
+   permanently-hidden one.
+
+   The animation runs over `exit 90% exit 100%`: the last 10% of the
+   table's exit phase, so the hamburger reaches full opacity right as
+   the table's bottom edge clears the viewport top. */
+@supports (animation-timeline: --x) and (view-timeline-name: --x) {
+  @keyframes nav-toggle-reveal {
+    from {
+      opacity: 0;
+      visibility: hidden;
+    }
+    to {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  @media (max-width: 1099.98px) {
+    table.index {
+      view-timeline-name: --index-table;
+      view-timeline-axis: block;
+    }
+
+    .nav-toggle {
+      animation: nav-toggle-reveal linear both;
+      animation-timeline: --index-table;
+      animation-range: exit 90% exit 100%;
+    }
+  }
+}
+
 /* Wide viewports: turn the drawer into a permanent sidebar. The
    `display: block` override forces the `<nav>` to show even when
    `<details>` is closed, so the `[open]` attribute becomes a no-op
