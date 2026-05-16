@@ -94,21 +94,28 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
 /// Collapsible navigation drawer. Uses `<details>` so the toggle is
 /// a native disclosure widget — keyboard-operable and screen-reader-
 /// announced without scripting — and skins it as a hamburger button.
-/// On viewports wide enough for a side rail the CSS hides the
-/// `<summary>` and force-shows the `<nav>` regardless of `[open]`,
-/// turning the same markup into a permanent left sidebar.
+/// The `<nav>` deliberately lives outside the `<details>` and rides
+/// the adjacent-sibling selector: putting it inside would trip the
+/// modern UA stylesheet's `::details-content { content-visibility:
+/// hidden }` rule when the details is closed, which can't be
+/// overridden from the descendant. As a sibling, the nav's
+/// visibility is plain author CSS — reliable across browsers — and
+/// the wide-viewport media query can force-show it unconditionally.
 fn nav_drawer(rules: &[Rule]) -> Markup {
     html! {
         details.nav-drawer {
-            summary.nav-toggle aria-label="Toggle navigation" title="Toggle navigation" {}
-            nav.nav-sidebar aria-label="Lint rules" {
-                a.nav-sidebar-title href="#catalogue" { "perfectionist lints" }
-                ul.nav-sidebar-list {
-                    @for rule in rules {
-                        li {
-                            a href={ "#" (anchor_for(&rule.namespaced)) } {
-                                code { (unnamespaced(&rule.namespaced)) }
-                            }
+            summary.nav-toggle
+                aria-label="Toggle navigation"
+                aria-controls="nav-sidebar"
+                title="Toggle navigation" {}
+        }
+        nav.nav-sidebar id="nav-sidebar" aria-label="Lint rules" {
+            a.nav-sidebar-title href="#catalogue" { "perfectionist lints" }
+            ul.nav-sidebar-list {
+                @for rule in rules {
+                    li {
+                        a href={ "#" (anchor_for(&rule.namespaced)) } {
+                            code { (unnamespaced(&rule.namespaced)) }
                         }
                     }
                 }

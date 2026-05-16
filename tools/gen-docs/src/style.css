@@ -9,15 +9,20 @@ body {
 
 /* Collapsible nav drawer.
 
-   The whole construct is a single `<details>`: the `<summary>` is
-   skinned as a fixed-position hamburger button, and the `<nav>` is
-   shown by the UA whenever `<details>` is open. No JS required.
+   The `<details>` holds only the `<summary>` (skinned as a fixed-
+   position hamburger). The `<nav>` is its *sibling*, not its child,
+   because modern browsers wrap a closed `<details>`'s non-summary
+   children in an internal `::details-content` pseudo with
+   `content-visibility: hidden`, which is not overridable from a
+   descendant. As a sibling, the nav's visibility is driven by plain
+   author CSS — `.nav-drawer[open] + .nav-sidebar` on narrow
+   viewports, an unconditional `display: block` above the
+   breakpoint. No JS required, no UA quirks to fight.
 
-   On viewports >= 1100px the drawer is force-expanded into a
-   permanent left sidebar (summary hidden, nav shown unconditionally,
-   page contents shifted right) so wide screens get an always-visible
-   table of contents. Below that breakpoint the drawer is closed by
-   default and the hamburger toggles it on top of the page. */
+   On viewports >= 1100px the drawer is hidden and the nav is shown
+   permanently as a left sidebar (page contents shifted right). Below
+   that breakpoint the drawer is closed by default and the hamburger
+   toggles the sibling nav on top of the page. */
 
 .nav-drawer {
   margin: 0;
@@ -87,6 +92,11 @@ body {
   z-index: 99;
   box-sizing: border-box;
   box-shadow: 2px 0 10px rgba(31, 35, 40, 0.08);
+  display: none;
+}
+
+.nav-drawer[open] + .nav-sidebar {
+  display: block;
 }
 
 .nav-sidebar-title {
