@@ -112,14 +112,15 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
 /// uniformly. The script reveals the button by clearing `hidden`
 /// once its handlers are wired up.
 ///
-/// On narrow viewports the nav becomes a full-screen overlay
-/// (the JS also locks body scroll while it's open, which stops
-/// the mobile URL bar from collapsing under it and keeps every
-/// `position: fixed` element steady). The close (✕) button lives
-/// inside the overlay in normal flow rather than as a fixed-
-/// position sibling, so it's never affected by visual-viewport
-/// quirks even on browsers where `position: fixed` drifts with
-/// the URL bar.
+/// Below 1100px the nav becomes an overlay (a 280px panel on
+/// phone-landscape / tablet, full-screen at <=600px / phone-
+/// portrait). The JS also locks body scroll while it's open,
+/// which stops the mobile URL bar from collapsing under it and
+/// keeps every `position: fixed` element steady. The close (✕)
+/// button lives inside the overlay in normal flow rather than as
+/// a fixed-position sibling, so it's never affected by
+/// visual-viewport quirks even on browsers where `position: fixed`
+/// drifts with the URL bar.
 fn nav_drawer(rules: &[Rule]) -> Markup {
     html! {
         button.nav-toggle
@@ -262,8 +263,12 @@ mod tests {
         // wires up its (entirely JS-driven) behaviour — otherwise a
         // CSP-blocked or otherwise non-executing script would leave
         // a visible-but-inert hamburger on the page.
-        assert!(html.contains("<button class=\"nav-toggle\""));
-        assert!(html.contains(" hidden "));
+        // The button must literally carry the `hidden` attribute —
+        // not just have the word "hidden" somewhere on the page
+        // (the CSS comments mention `[hidden]` repeatedly). Anchor
+        // the assertion to the toggle's opening tag so a refactor
+        // that drops `hidden` from the template can't slip past.
+        assert!(html.contains("<button class=\"nav-toggle\" type=\"button\" hidden "));
         assert!(html.contains("aria-controls=\"nav-sidebar\""));
         assert!(html.contains("aria-expanded=\"false\""));
         assert!(html.contains("aria-label=\"Toggle navigation\""));
@@ -346,6 +351,25 @@ mod tests {
         // so we check for the closing tag (which only appears in
         // the actual element, never in a free-text comment).
         assert!(!html.contains("</noscript>"));
+    }
+
+    #[test]
+    fn style_sheet_contains_hidden_attribute_reset() {
+        // The `hidden`-attribute + reveal-on-ready design only
+        // works if author CSS doesn't silently override the UA's
+        // `[hidden] { display: none }` rule. The `.nav-toggle`
+        // selector sets `display: flex` at equal specificity, so
+        // an author-side `[hidden] { display: none !important }`
+        // reset is load-bearing — without it the toggle would be
+        // visible despite the Rust template emitting `<button
+        // hidden ...>`, defeating the whole "JS isn't running"
+        // fallback. Pin the reset's presence in the inlined CSS
+        // so a future edit can't quietly remove it.
+        assert!(
+            STYLE.contains("[hidden]") && STYLE.contains("display: none !important"),
+            "style.css must keep the `[hidden] {{ display: none !important }}` reset; \
+             without it the JS-driven toggle's `hidden`-by-default fallback is broken",
+        );
     }
 
     #[test]

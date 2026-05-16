@@ -251,6 +251,18 @@ page:
   only when the JS is pure enhancement (the page already works
   without it).
 
+  One CSS subtlety to keep in mind: the UA stylesheet expresses
+  `hidden` as `[hidden] { display: none }`, but author-origin
+  rules beat UA-origin rules at equal specificity. Any author
+  `display` declaration on the JS-controlled element will silently
+  override the UA rule and the element will stay visible despite
+  `hidden`. Pair the pattern with a sweeping
+  `[hidden] { display: none !important }` reset (already in
+  `tools/gen-docs/src/style.css`) to make `hidden` unconditional,
+  or qualify every author `display` declaration with
+  `:not([hidden])`. The reset is the standard fix and is shipped
+  by Bootstrap / Tailwind / most CSS resets.
+
 - **Conservative with bleeding-edge CSS.** Browser versions in
   active use trail current Baseline by several years. Before
   relying on a recent feature (`view-timeline`, `@container`,

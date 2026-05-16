@@ -26,7 +26,7 @@
 //   * `overflow: hidden` on body/html doesn't even reliably stop
 //     scrolling on iOS — a well-known cross-browser gap.
 //
-// So this script does three things CSS can't:
+// So this script does six things CSS can't:
 //
 //   1. Body scroll lock while the drawer is open
 //      (`body { position: fixed; top: -<scrollY>px }`, restored on
@@ -51,20 +51,42 @@
 //      `position: absolute` — eliminating `<details>` removes that
 //      whole category of UA quirk too.
 //
+//   4. Background inertness via the `inert` HTML attribute on every
+//      direct body child except the toggle and sidebar while the
+//      drawer is open. CSS has no equivalent for removing an element
+//      from the focus order *and* AT exposure in one step. (On
+//      browsers older than `inert`'s Baseline-2023 cutoff the
+//      assignment is a silent no-op; obscured content stays
+//      reachable to Tab/AT. The static index table near the top of
+//      the page still serves as the primary navigation path on
+//      those browsers, so the regression is cosmetic, not
+//      functional.)
+//
+//   5. Focus management on open and close: opening the drawer hides
+//      the toggle (`aria-expanded="true"` -> `display: none`) and
+//      closing hides the close button the same way, so a keyboard
+//      user would otherwise lose focus to <body>. Explicitly move
+//      focus to the close button on open and back to the hamburger
+//      on close.
+//
+//   6. Reveal-on-ready: the button is rendered with the HTML
+//      `hidden` attribute and this script clears it at the very end
+//      of setup. Every concern above is JS-driven, so a button
+//      visible to the reader without this script installed would
+//      be inert. CSP-blocked inline scripts, stripped script tags,
+//      or a parse error before the handler attaches all leave that
+//      inert-button state — `<noscript>` doesn't cover any of them
+//      ("scripting disabled in the browser" is its only trigger).
+//      Hiding at the source and revealing only after handlers are
+//      wired closes the gap uniformly. (Note: this only works
+//      because the CSS file also ships an author-side
+//      `[hidden] { display: none !important }` reset; without it,
+//      `.nav-toggle { display: flex }` silently overrides the UA
+//      `[hidden]` rule.)
+//
 // `position: fixed` is still the right CSS primitive. This file doesn't
 // replace it — it stabilises the viewport that `position: fixed`
 // resolves against.
-//
-// One more design choice baked into this file: the toggle is rendered
-// with the HTML `hidden` attribute, and this script removes it at the
-// end of setup. The button's behaviour is entirely JS-driven (every
-// concern above), so a button visible without this script installed
-// would be inert. CSP-blocked inline scripts, stripped script tags,
-// or a parse error before the handler attaches all leave that
-// inert-button state — `<noscript>` doesn't cover any of them
-// ("scripting disabled in the browser" is its only trigger). Hiding
-// at the source and revealing only after handlers are wired closes
-// the gap uniformly.
 // ============================================================================
 
 (function () {
@@ -75,8 +97,12 @@
   // ---- Hamburger fade ---------------------------------------------------
   //
   // Hide the hamburger while the catalogue's <h1> is on screen. Default
-  // is visible — if this branch never runs (no IntersectionObserver,
-  // CSP-blocked script, etc.) the drawer remains reachable. The earlier
+  // is visible — if this branch never runs (browser lacks
+  // IntersectionObserver) the hamburger just stays revealed throughout,
+  // which is harmless. (If the WHOLE script doesn't run — CSP block,
+  // stripped tag, parse error — the `hidden` attribute the Rust
+  // template emits keeps the button invisible; that case is concern 6
+  // in the file header, not this branch's responsibility.) The earlier
   // draft observed `table.index` instead, but on phone-height viewports
   // the table is taller than the viewport and stayed partially
   // intersecting through the entire articles section, leaving the
@@ -227,15 +253,40 @@
     target.focus({ preventScroll: true });
   });
 
+  // ---- Force-close on cross-breakpoint resize ---------------------------
+  //
+  // If the user opens the drawer at a narrow viewport and then resizes
+  // or rotates into the >=1100px band, the desktop CSS hides the close
+  // button (`.nav-sidebar-close { display: none }`) while leaving the
+  // body still scroll-locked and the background still `inert`. With
+  // the close button gone and the page background dead, the only way
+  // out would be a sidebar-link click — and even then the reader is
+  // stranded if they didn't want to navigate. Watch the breakpoint
+  // with `matchMedia` and tear the open state down on crossing.
+  if (window.matchMedia) {
+    var desktopMQ = window.matchMedia("(min-width: 1100px)");
+    var handleBreakpoint = function () {
+      if (desktopMQ.matches && toggle.getAttribute("aria-expanded") === "true") {
+        closeSidebar();
+      }
+    };
+    if (desktopMQ.addEventListener) {
+      desktopMQ.addEventListener("change", handleBreakpoint);
+    } else if (desktopMQ.addListener) {
+      // Safari < 14 / older WebKit: legacy MediaQueryList API.
+      desktopMQ.addListener(handleBreakpoint);
+    }
+  }
+
   // ---- Reveal the toggle -----------------------------------------------
   //
   // Everything above this line set up the behaviour the button needs to
   // actually work — IntersectionObserver fade, Visual Viewport API
-  // sync, click handler, focus management, inert plumbing. Now that
-  // those are wired up, drop the `hidden` attribute the Rust template
-  // emits, so the button appears in the page exactly when it's
-  // functional. If any of the above threw before reaching this line,
-  // the toggle stays hidden and the reader falls back to the index
-  // table near the top of the page.
+  // sync, click handler, focus management, inert plumbing, breakpoint
+  // recovery. Now that those are wired up, drop the `hidden` attribute
+  // the Rust template emits, so the button appears in the page exactly
+  // when it's functional. If any of the above threw before reaching
+  // this line, the toggle stays hidden and the reader falls back to
+  // the index table near the top of the page.
   toggle.hidden = false;
 })();
