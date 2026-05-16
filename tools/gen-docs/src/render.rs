@@ -15,10 +15,6 @@ use crate::render::markdown::{HIGHLIGHT_CSS, markdown_inline_to_html, markdown_t
 
 const STYLE: &str = include_str!("style.css");
 const NAV_TOGGLE_SCRIPT: &str = include_str!("nav_toggle.js");
-/// Without JS the toggle can't do anything (no click handler, no
-/// open/close, no scroll lock), so hide it. No-JS readers still
-/// have the full index table at the top of the page for navigation.
-const NAV_TOGGLE_NOSCRIPT_CSS: &str = ".nav-toggle{display:none!important;}";
 
 pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String {
     let RenderContext {
@@ -39,9 +35,6 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     @if git_ref != "master" { " — " (git_ref) }
                 }
                 style { (PreEscaped(STYLE)) (PreEscaped(&*HIGHLIGHT_CSS)) }
-                noscript {
-                    style { (PreEscaped(NAV_TOGGLE_NOSCRIPT_CSS)) }
-                }
             }
             body {
                 h1 id="catalogue" { "perfectionist lints" }
@@ -107,6 +100,18 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
 /// selector `.nav-toggle[aria-expanded="true"] + .nav-sidebar`
 /// drives display without scripting reaching into the nav.
 ///
+/// The toggle is rendered with the HTML `hidden` attribute: the
+/// click handler, scroll lock, focus moves, and `inert` setup are
+/// all JS-driven, so a button visible to the reader without those
+/// installed would be inert (a CSP-blocked inline script, a
+/// stripped script tag, a parse error before the handler attaches
+/// — any of these leave the page with a visible, non-functional
+/// hamburger if the button isn't gated on script readiness).
+/// `<noscript>` only covers "scripting disabled in the browser",
+/// not "script failed to run"; the `hidden` attribute covers both
+/// uniformly. The script reveals the button by clearing `hidden`
+/// once its handlers are wired up.
+///
 /// On narrow viewports the nav becomes a full-screen overlay
 /// (the JS also locks body scroll while it's open, which stops
 /// the mobile URL bar from collapsing under it and keeps every
@@ -119,6 +124,7 @@ fn nav_drawer(rules: &[Rule]) -> Markup {
     html! {
         button.nav-toggle
             type="button"
+            hidden
             aria-controls="nav-sidebar"
             aria-expanded="false"
             aria-label="Toggle navigation"
@@ -251,8 +257,13 @@ mod tests {
         // Toggle is a plain <button> driven by `aria-expanded`, not
         // a <summary>/<details>, so JS can control open state and
         // the CSS adjacent-sibling selector is keyed off the same
-        // attribute. The button starts in the closed state.
+        // attribute. The button starts in the closed state and is
+        // emitted with `hidden` so it appears only after the script
+        // wires up its (entirely JS-driven) behaviour — otherwise a
+        // CSP-blocked or otherwise non-executing script would leave
+        // a visible-but-inert hamburger on the page.
         assert!(html.contains("<button class=\"nav-toggle\""));
+        assert!(html.contains(" hidden "));
         assert!(html.contains("aria-controls=\"nav-sidebar\""));
         assert!(html.contains("aria-expanded=\"false\""));
         assert!(html.contains("aria-label=\"Toggle navigation\""));
@@ -313,7 +324,7 @@ mod tests {
     }
 
     #[test]
-    fn page_inlines_nav_toggle_script_and_noscript_fallback() {
+    fn page_inlines_nav_toggle_script() {
         let html = render_page(&[fake_rule("only")], &fake_context());
         // Assert the full script body appears verbatim inside a
         // <script> tag. `<script>` on its own would match an empty
@@ -326,11 +337,15 @@ mod tests {
             html.contains(&wrapped),
             "expected NAV_TOGGLE_SCRIPT to be inlined verbatim inside a <script> tag",
         );
-        // The toggle does nothing without JS, so the <noscript>
-        // override in <head> hides it; no-JS readers fall back to
-        // the full index table near the top of the page.
-        let noscript = format!("<noscript><style>{NAV_TOGGLE_NOSCRIPT_CSS}</style></noscript>");
-        assert!(html.contains(&noscript));
+        // The page no longer ships a `<noscript>` rule: the toggle
+        // is rendered with the HTML `hidden` attribute and the
+        // script clears it once it wires up handlers, which covers
+        // every "JS isn't running" mode — `<noscript>` only
+        // covers "scripting disabled in browser" and isn't needed.
+        // The JS file's own comments mention the term "noscript",
+        // so we check for the closing tag (which only appears in
+        // the actual element, never in a free-text comment).
+        assert!(!html.contains("</noscript>"));
     }
 
     #[test]

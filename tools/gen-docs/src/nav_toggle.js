@@ -54,6 +54,17 @@
 // `position: fixed` is still the right CSS primitive. This file doesn't
 // replace it — it stabilises the viewport that `position: fixed`
 // resolves against.
+//
+// One more design choice baked into this file: the toggle is rendered
+// with the HTML `hidden` attribute, and this script removes it at the
+// end of setup. The button's behaviour is entirely JS-driven (every
+// concern above), so a button visible without this script installed
+// would be inert. CSP-blocked inline scripts, stripped script tags,
+// or a parse error before the handler attaches all leave that
+// inert-button state — `<noscript>` doesn't cover any of them
+// ("scripting disabled in the browser" is its only trigger). Hiding
+// at the source and revealing only after handlers are wired closes
+// the gap uniformly.
 // ============================================================================
 
 (function () {
@@ -215,4 +226,16 @@
     target.setAttribute("tabindex", "-1");
     target.focus({ preventScroll: true });
   });
+
+  // ---- Reveal the toggle -----------------------------------------------
+  //
+  // Everything above this line set up the behaviour the button needs to
+  // actually work — IntersectionObserver fade, Visual Viewport API
+  // sync, click handler, focus management, inert plumbing. Now that
+  // those are wired up, drop the `hidden` attribute the Rust template
+  // emits, so the button appears in the page exactly when it's
+  // functional. If any of the above threw before reaching this line,
+  // the toggle stays hidden and the reader falls back to the index
+  // table near the top of the page.
+  toggle.hidden = false;
 })();

@@ -197,12 +197,13 @@ body {
 
   /* Hamburger fade-in driven by IntersectionObserver: hidden
      while the catalogue's <h1> is on screen, fades in once it
-     scrolls past. Default is *visible* — if the script is present
-     but the observer branch happens not to run yet (initial paint,
-     timing), the toggle is still reachable. If the script doesn't
-     load at all the toggle is inert anyway, and the <noscript>
-     override in <head> hides it entirely so no-JS readers fall
-     back to the index table further down the page. */
+     scrolls past. The toggle starts with the HTML `hidden`
+     attribute and the script clears it after wiring up handlers,
+     so a script that never runs (CSP-blocked, ad-blocker-stripped,
+     parse error) leaves the button hidden rather than visible-but-
+     inert. Once visible, the CSS default is opacity:1 / visibility
+     visible; the observer opts into hiding by adding
+     `.nav-toggle-hidden` while the <h1> intersects. */
   .nav-toggle {
     transition:
       opacity 0.18s ease,
