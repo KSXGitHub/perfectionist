@@ -7,6 +7,20 @@ body {
   color: #1f2328;
 }
 
+/* HTML spec says `[hidden]` always hides the element, but UA stylesheets
+   express that as `[hidden] { display: none }` — author rules with the
+   same (or lower) specificity but later in the cascade override it
+   silently. The `.nav-toggle` rule's `display: flex` does exactly that,
+   so without this reset the toggle would remain visible despite the
+   Rust template emitting `<button hidden ...>` (defeating the whole
+   "reveal only after JS is ready" defence). `!important` is justified
+   here because the `hidden` semantic is supposed to be unconditional
+   and the alternative is sprinkling `:not([hidden])` through every
+   rule that sets `display`. */
+[hidden] {
+  display: none !important;
+}
+
 /* Collapsible nav drawer.
 
    The toggle is a plain `<button>` with `aria-expanded`; the menu
