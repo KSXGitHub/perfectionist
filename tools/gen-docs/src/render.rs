@@ -227,12 +227,13 @@ mod tests {
 
     /// Locate the sidebar's `<ul>` and return the slice spanning
     /// just its contents. The narrow-viewport CSS selector
-    /// `.nav-drawer[open] + .nav-sidebar` depends on adjacent-
-    /// sibling ordering, so tests that want to count or inspect
-    /// sidebar entries should do so against this slice — not the
-    /// whole page, where the index table and rule articles emit
-    /// substrings (`href="#perfectionist-*"`, `<code>name</code>`,
-    /// `id="perfectionist-*"`) that overlap the sidebar's markup.
+    /// `.nav-toggle[aria-expanded="true"] + .nav-sidebar` depends
+    /// on adjacent-sibling ordering, so tests that want to count
+    /// or inspect sidebar entries should do so against this slice
+    /// — not the whole page, where the index table and rule
+    /// articles emit substrings (`href="#perfectionist-*"`,
+    /// `<code>name</code>`, `id="perfectionist-*"`) that overlap
+    /// the sidebar's markup.
     fn sidebar_list(html: &str) -> &str {
         let open = "<ul class=\"nav-sidebar-list\">";
         let close = "</ul>";
@@ -269,8 +270,24 @@ mod tests {
         );
         // The close (✕) button lives inside the overlay so the
         // drawer can be dismissed without any fixed-position
-        // element acting as both opener and closer.
-        assert!(html.contains("<button class=\"nav-sidebar-close\""));
+        // element acting as both opener and closer. It must also
+        // come *before* the title in DOM order: the hamburger
+        // sits at the top-left, so on close the user's finger is
+        // already there — putting the ✕ next to a tappable rule
+        // link would invite a misclick on close.
+        let header_start = html
+            .find("<div class=\"nav-sidebar-header\">")
+            .expect("nav-sidebar-header missing");
+        let close_pos = html[header_start..]
+            .find("<button class=\"nav-sidebar-close\"")
+            .expect("nav-sidebar-close missing");
+        let title_pos = html[header_start..]
+            .find("<a class=\"nav-sidebar-title\"")
+            .expect("nav-sidebar-title missing");
+        assert!(
+            close_pos < title_pos,
+            "close button must appear before title in DOM order",
+        );
     }
 
     #[test]
@@ -309,8 +326,9 @@ mod tests {
             html.contains(&wrapped),
             "expected NAV_TOGGLE_SCRIPT to be inlined verbatim inside a <script> tag",
         );
-        // <noscript> in <head> reverts the toggle to always-visible
-        // for the explicit-noscript case.
+        // The toggle does nothing without JS, so the <noscript>
+        // override in <head> hides it; no-JS readers fall back to
+        // the full index table near the top of the page.
         let noscript = format!("<noscript><style>{NAV_TOGGLE_NOSCRIPT_CSS}</style></noscript>");
         assert!(html.contains(&noscript));
     }

@@ -185,10 +185,12 @@ body {
 
   /* Hamburger fade-in driven by IntersectionObserver: hidden
      while the catalogue's <h1> is on screen, fades in once it
-     scrolls past. Default is *visible* so the drawer stays
-     reachable if the script doesn't run (CSP, ad-blocker, runtime
-     error, etc.). The <noscript> override in <head> remains as
-     defense-in-depth for the explicit-noscript case. */
+     scrolls past. Default is *visible* — if the script is present
+     but the observer branch happens not to run yet (initial paint,
+     timing), the toggle is still reachable. If the script doesn't
+     load at all the toggle is inert anyway, and the <noscript>
+     override in <head> hides it entirely so no-JS readers fall
+     back to the index table further down the page. */
   .nav-toggle {
     transition:
       opacity 0.18s ease,
