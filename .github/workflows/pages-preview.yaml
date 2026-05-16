@@ -19,13 +19,21 @@ jobs:
     name: Build and deploy preview
     runs-on: ubuntu-latest
 
-    # Skip PRs from forks: GitHub withholds repository secrets from
-    # workflow runs triggered by fork PRs, so CLOUDFLARE_API_TOKEN
-    # would resolve to an empty string and the deploy step would
-    # fail authentication. A skipped job shows as neutral on the
-    # PR rather than as a confusing red X that external
-    # contributors can't act on.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Skip PRs that won't have access to repository secrets:
+    #   * Fork PRs — GitHub withholds secrets from workflow runs
+    #     triggered by forks, so CLOUDFLARE_API_TOKEN resolves to
+    #     an empty string.
+    #   * Dependabot PRs — even though Dependabot pushes its
+    #     branches to this repo (so the fork check above passes),
+    #     `pull_request` runs for Dependabot use a restricted
+    #     security context that hides secrets by default for the
+    #     same authentication-failure reason.
+    # A skipped job shows as neutral on the PR rather than as a
+    # confusing red X that external contributors (or Dependabot)
+    # can't act on.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository
+      && github.event.pull_request.user.login != 'dependabot[bot]'
 
     # Scopes CLOUDFLARE_API_TOKEN to this job. The deployment also
     # shows up under the repo's Environments tab so each preview is
