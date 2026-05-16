@@ -185,3 +185,68 @@ fn anchor_for(namespaced: &str) -> String {
 fn unnamespaced(namespaced: &str) -> &str {
     namespaced.strip_prefix(NAMESPACE).unwrap_or(namespaced)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use super::*;
+
+    fn fake_rule(name: &str) -> Rule {
+        Rule {
+            namespaced: format!("perfectionist::{name}"),
+            default_state: DefaultState::Enabled,
+            short_desc: format!("demo rule {name}"),
+            doc_markdown: "### What it does\nDoes a demo.".to_owned(),
+            relative_source: PathBuf::from(format!("src/rules/{name}.rs")),
+            config: None,
+        }
+    }
+
+    fn fake_context() -> RenderContext<'static> {
+        RenderContext {
+            crate_version: "0.0.0-test",
+            git_ref: "master",
+            commit_sha: "0000000000000000000000000000000000000000",
+            repo_url: "https://example.invalid/perfectionist",
+        }
+    }
+
+    #[test]
+    fn page_emits_nav_drawer_details_and_sibling_nav() {
+        let html = render_page(&[fake_rule("alpha")], &fake_context());
+        assert!(html.contains("<details class=\"nav-drawer\">"));
+        assert!(html.contains("class=\"nav-toggle\""));
+        assert!(html.contains("aria-label=\"Toggle navigation\""));
+        assert!(html.contains("aria-controls=\"nav-sidebar\""));
+        assert!(html.contains("id=\"nav-sidebar\""));
+        assert!(html.contains("aria-label=\"Lint rules\""));
+    }
+
+    #[test]
+    fn page_emits_one_sidebar_entry_per_rule_with_anchor_links() {
+        let rules = [fake_rule("alpha"), fake_rule("beta_gamma")];
+        let html = render_page(&rules, &fake_context());
+        // Each <li> in the sidebar should contain a link to the
+        // rule's article anchor; the link text is the unnamespaced
+        // rule name in a <code>.
+        assert!(html.contains("href=\"#perfectionist-alpha\""));
+        assert!(html.contains("<code>alpha</code>"));
+        assert!(html.contains("href=\"#perfectionist-beta_gamma\""));
+        assert!(html.contains("<code>beta_gamma</code>"));
+        // And the rule articles those anchors point at must exist.
+        assert!(html.contains("id=\"perfectionist-alpha\""));
+        assert!(html.contains("id=\"perfectionist-beta_gamma\""));
+    }
+
+    #[test]
+    fn page_inlines_nav_toggle_script_and_noscript_fallback() {
+        let html = render_page(&[fake_rule("only")], &fake_context());
+        assert!(html.contains("<script>"));
+        assert!(html.contains("IntersectionObserver"));
+        // <noscript> in <head> reverts the toggle to always-visible
+        // for the explicit-noscript case.
+        assert!(html.contains("<noscript><style>"));
+        assert!(html.contains(NAV_TOGGLE_NOSCRIPT_CSS));
+    }
+}
