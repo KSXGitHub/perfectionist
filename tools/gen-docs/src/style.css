@@ -187,7 +187,8 @@ body {
    Firefox 139+, Safari 26+ — and the project's primary readers are on
    browsers below those cuts. Falling back to a tiny inline script
    keeps the feature working everywhere IntersectionObserver does
-   (every browser since 2017).
+   (Chromium and Firefox since 2017; Safari/iOS Safari since 12.1
+   in 2019).
 
    The static default below is *visible*: if the script doesn't run
    for any reason, the drawer must still be reachable. The script
