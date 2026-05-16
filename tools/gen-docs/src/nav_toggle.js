@@ -30,6 +30,13 @@
     sidebar.addEventListener("click", function (event) {
       var link = event.target.closest("a");
       if (!link) return;
+      // Skip anything that isn't an unmodified primary-button
+      // activation: Ctrl/Cmd/Shift/Alt-clicks and middle-clicks are
+      // standard gestures for "open in new tab/window", which leave
+      // the current page intact — closing the drawer or moving
+      // focus here would surprise the user.
+      if (event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       details.removeAttribute("open");
       var hash = link.hash;
       if (!hash) return;
