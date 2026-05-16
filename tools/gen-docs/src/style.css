@@ -17,13 +17,25 @@ body {
    the mobile URL bar from collapsing under the overlay and
    dragging the supposedly-fixed sidebar with it.
 
-   On viewports >= 1100px the toggle is hidden and the nav is
-   shown permanently as a left sidebar (page contents shifted
-   right via `html { padding-left }`). Below that breakpoint the
-   drawer is closed by default and tapping the hamburger opens a
-   full-screen overlay (per the user's suggestion: a sidebar that
-   only covers part of the page leaves a visible gap whose
-   scroll-with-page behaviour is the exact bug we're avoiding). */
+   Three viewport bands:
+
+   * `>= 1100px` (desktop / wide tablet landscape): the toggle is
+     hidden and the nav is shown permanently as a left sidebar.
+     Page contents shift right via `html { padding-left }`.
+   * `601px – 1099.98px` (tablet, phone landscape): the toggle
+     opens the nav as a 280px overlay on top of the page, leaving
+     the page visible behind. Width is big enough that a partial-
+     overlay reads as a sidebar, not a covered-up page.
+   * `<= 600px` (phone portrait): the overlay expands to fill the
+     full viewport. At narrow widths a 280px sidebar with the page
+     visible behind would leave only a thin strip of page peeking
+     out, and that strip's scroll-with-page behaviour is the exact
+     mobile-browser quirk we're working around in the JS — making
+     the overlay full-screen instead cuts the surface area where
+     the quirk could manifest. The 600px line is the same
+     phone/tablet boundary `table.index` uses to switch from
+     tabular to card-stacked layout, so the two layouts stay in
+     lockstep. */
 
 .nav-toggle {
   position: fixed;
@@ -206,12 +218,10 @@ body {
   }
 }
 
-/* Phone-portrait only: full-screen overlay (per the user's request).
-   The 600px line is the project's existing phone/tablet boundary —
-   the same one `table.index` uses to switch from tabular to
-   card-stacked layout (see further down). Phone landscape and any
-   tablet orientation sit above 600px wide, so they keep the 280px
-   sidebar overlay defined above. */
+/* Phone-portrait only: expand the overlay from a 280px sidebar to
+   the full viewport. See the rationale in the file-top "Collapsible
+   nav drawer" comment for why narrow widths get full-screen instead
+   of an overlay-with-page-behind. */
 @media (max-width: 600px) {
   .nav-sidebar {
     width: 100vw;

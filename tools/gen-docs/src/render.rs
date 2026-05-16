@@ -332,4 +332,20 @@ mod tests {
         let noscript = format!("<noscript><style>{NAV_TOGGLE_NOSCRIPT_CSS}</style></noscript>");
         assert!(html.contains(&noscript));
     }
+
+    #[test]
+    fn nav_toggle_script_is_a_single_iife() {
+        // Structural sanity check on `nav_toggle.js`. The whole
+        // file is a single IIFE — every helper, every event
+        // handler, every `var` is inside it. A duplicate-body bug
+        // slipped past an earlier edit (commit f87b81d) by leaving
+        // a stray `var ...; toggle.addEventListener(...); })();`
+        // block AFTER the IIFE's closing line, producing a runtime
+        // `ReferenceError: toggle is not defined` because those
+        // `var`s were function-scoped to the now-closed IIFE.
+        // Counting the IIFE opener and closer pins this shape so
+        // a future edit can't reintroduce the same bug silently.
+        assert_eq!(NAV_TOGGLE_SCRIPT.matches("(function () {").count(), 1);
+        assert_eq!(NAV_TOGGLE_SCRIPT.matches("})();").count(), 1);
+    }
 }

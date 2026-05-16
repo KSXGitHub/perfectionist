@@ -127,14 +127,52 @@
     bodyLocked = false;
   }
 
+  // ---- Background inertness ---------------------------------------------
+  //
+  // The overlay covers the page content (fully on phone-portrait, as a
+  // left strip on phone-landscape / tablet). Without intervention, Tab
+  // navigation could still reach the obscured content behind it, and
+  // assistive tech could still read it — both surprising for users who
+  // see a modal-style drawer. Apply the `inert` attribute (HTML
+  // standard, Baseline 2023) to every direct child of <body> except
+  // the toggle and the sidebar while the drawer is open; restore on
+  // close. `inert` removes focusability and AT exposure of the
+  // subtree without needing a manual focus trap or aria-hidden dance.
+  var inertedChildren = [];
+  function setBackgroundInert() {
+    inertedChildren = [];
+    for (var i = 0; i < document.body.children.length; i++) {
+      var el = document.body.children[i];
+      if (el === toggle || el === sidebar) continue;
+      if (el.inert) continue;
+      el.inert = true;
+      inertedChildren.push(el);
+    }
+  }
+  function clearBackgroundInert() {
+    for (var i = 0; i < inertedChildren.length; i++) inertedChildren[i].inert = false;
+    inertedChildren = [];
+  }
+
+  // ---- Focus management on open / close ---------------------------------
+  //
+  // Opening the drawer hides the toggle (`aria-expanded="true"` ->
+  // `display: none`), so a keyboard user who just tabbed-and-Entered on
+  // the hamburger would lose focus to <body>. Closing the drawer hides
+  // the close button the same way. In both cases we explicitly move
+  // focus to a sensible visible target so AT users keep their place.
   function openSidebar() {
     toggle.setAttribute("aria-expanded", "true");
     lockBodyScroll();
+    setBackgroundInert();
+    if (closeBtn) closeBtn.focus({ preventScroll: true });
   }
 
   function closeSidebar() {
     toggle.setAttribute("aria-expanded", "false");
     unlockBodyScroll();
+    clearBackgroundInert();
+    toggle.focus({ preventScroll: true });
   }
 
   toggle.addEventListener("click", function () {
