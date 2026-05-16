@@ -119,8 +119,8 @@
   // IntersectionObserver) the hamburger just stays revealed throughout,
   // which is harmless. (If the WHOLE script doesn't run — CSP block,
   // stripped tag, parse error — the `hidden` attribute the Rust
-  // template emits keeps the button invisible; that case is concern 6
-  // in the file header, not this branch's responsibility.) The earlier
+  // template emits keeps the button invisible; that case is category
+  // C in the file header, not this branch's responsibility.) The earlier
   // draft observed `table.index` instead, but on phone-height viewports
   // the table is taller than the viewport and stayed partially
   // intersecting through the entire articles section, leaving the
@@ -136,9 +136,9 @@
 
   // ---- Visual Viewport API offset compensation --------------------------
   //
-  // See concern (2) in the file header: translate the toggle by the
-  // visual viewport's offset so it stays glued to the visible area on
-  // browsers that anchor `position: fixed` to the layout viewport.
+  // See category A item 2 in the file header: translate the toggle by
+  // the visual viewport's offset so it stays glued to the visible area
+  // on browsers that anchor `position: fixed` to the layout viewport.
   if (window.visualViewport) {
     var vv = window.visualViewport;
     var syncToggleToViewport = function () {
@@ -152,8 +152,8 @@
 
   // ---- Open / close + body scroll lock ----------------------------------
   //
-  // See concern (1) in the file header for the load-bearing role of the
-  // scroll lock. The drawer is opened by tapping `.nav-toggle` and
+  // See category A item 1 in the file header for the load-bearing role
+  // of the scroll lock. The drawer is opened by tapping `.nav-toggle` and
   // closed by tapping `.nav-sidebar-close` (the ✕ inside the overlay).
   // Body scroll lock has the side benefit of stopping the page behind
   // from scrolling when the user swipes within the overlay. We preserve
