@@ -60,7 +60,7 @@ jobs:
         run: cargo run --package _gen_docs --bin gen-docs -- --root "$(pwd)" html gh-pages
 
       - name: Configure Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
