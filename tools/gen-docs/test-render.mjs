@@ -4,8 +4,18 @@
 // nav-drawer / hamburger reveal can be eyeballed without a real
 // browser in the loop.
 //
-// Run:  node tools/gen-docs/test-render.mjs
-// Writes screenshots under tools/gen-docs/test-screenshots/.
+// Setup (once per fresh container):
+//   - `just gen-docs` to refresh `gh-pages/index.html`
+//   - from this directory, symlink the global Playwright install:
+//       ln -sf /opt/node22/lib/node_modules node_modules
+//
+// Run:
+//   cd tools/gen-docs && node test-render.mjs
+// Writes screenshots under tools/gen-docs/test-screenshots/ (which
+// `.gitignore` already excludes).
+//
+// Caveats: Chromium only — for cross-engine concerns (Firefox /
+// Safari support of a CSS feature), pair this with a caniuse check.
 
 import { chromium } from "playwright";
 import { fileURLToPath } from "url";

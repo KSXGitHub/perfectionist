@@ -232,6 +232,53 @@ the relevant rules and fix violations by hand. Note this
 fallback explicitly in your summary so the user knows the
 automated self-lint did not run.
 
+## Generated documentation site (`tools/gen-docs/`)
+
+The lint catalogue at <https://ksxgithub.github.io/perfectionist/>
+is rendered by `tools/gen-docs/` into a single, self-contained
+`gh-pages/index.html`. Three preferences shape what may go on the
+page:
+
+- **CSS over JavaScript.** Reach for CSS first; only add an inline
+  `<script>` when CSS genuinely can't express the behaviour. When a
+  script is necessary, pair it with a `<noscript>` style override
+  so the catalogue still renders and navigates correctly with
+  scripting disabled. The current page uses one script (the
+  IntersectionObserver-driven hamburger reveal in
+  `tools/gen-docs/src/nav_toggle.js`); follow that pattern for any
+  future addition.
+
+- **Conservative with bleeding-edge CSS.** Browser versions in
+  active use trail current Baseline by several years. Before
+  relying on a recent feature (`view-timeline`, `@container`,
+  `:has()`, scroll-driven animations, etc.), check caniuse against
+  a several-year-old cutoff and provide a polyfill-free fallback
+  for older Firefox / Safari / mobile-Chromium engines — not just
+  `@supports`-gated paths, since those still leave older browsers
+  feature-less.
+
+- **Catalogue is a single file.** Resist the urge to split CSS, JS,
+  or imagery into separate assets. The generator inlines everything
+  into `gh-pages/index.html` so the page can be ctrl-F'd end to end
+  and the static-site host serves a single directory verbatim.
+
+### Verifying rendering changes
+
+`tools/gen-docs/test-render.mjs` is a headless-Chromium harness that
+loads the generated `gh-pages/index.html` at a range of viewport
+sizes, dumps computed styles for the nav-drawer / hamburger /
+sidebar, and writes screenshots under
+`tools/gen-docs/test-screenshots/`. Run it before pushing any
+visual change — `just all` doesn't cover layout.
+
+The script's header comment has the exact invocation, but the
+short version: from `tools/gen-docs/`, symlink the global Playwright
+install (`ln -sf /opt/node22/lib/node_modules node_modules`) once
+per fresh container, then `node test-render.mjs`. The harness only
+exercises a Chromium-based engine, so pair the screenshots with a
+caniuse check for any modern CSS the change relies on — Chromium
+support is not proof a feature is safe to ship.
+
 ## Rationale section: "Why is this bad?" vs "Why restrict this?"
 
 Every rule's documentation — both the rustdoc on the
