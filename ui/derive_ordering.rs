@@ -1,7 +1,10 @@
-// The default `style = "preserve"` makes the rule a no-op. No
-// fixture in this file should produce a diagnostic; the
-// configuration-driven styles are exercised under
-// `ui-toml/derive_ordering/`.
+// The rule ships disabled by default
+// (`DEFAULT_STATE = DefaultState::Disabled` in
+// `src/rules/derive_ordering.rs`), so without a `dylint.toml` that
+// enables it the pass never registers and nothing in this file
+// produces a diagnostic. The configuration-driven styles are
+// exercised under `ui-toml/derive_ordering/`, each with its own
+// `dylint.toml` that opts the rule in.
 
 #[derive(Debug, Clone, Copy)]
 struct _DeliberatelyOutOfOrder;

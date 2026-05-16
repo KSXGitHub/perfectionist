@@ -21,10 +21,9 @@ use crate::common::{DefaultState, resolved_state};
 declare_tool_lint! {
     /// ### What it does
     /// Enforces a project-wide ordering of trait names inside a single
-    /// `#[derive(...)]` list. Three styles are configurable via
+    /// `#[derive(...)]` list. Two styles are configurable via
     /// `style`:
-    /// - `preserve` (default) — no-op.
-    /// - `alphabetical` — every trait name must be in
+    /// - `alphabetical` (default) — every trait name must be in
     ///   ASCII-case-insensitive alphabetical order.
     /// - `prefix_then_alphabetical` — the configured `prefix` list of
     ///   traits goes first, in the listed order; remaining traits are
@@ -45,6 +44,16 @@ declare_tool_lint! {
     /// does not reorder derives, so this lint is the only mechanism
     /// for enforcing one.
     ///
+    /// The opinion is opt-in: a project that doesn't want to commit
+    /// to a single ordering shouldn't have to set anything. The rule
+    /// therefore ships disabled by default — enable it per crate by
+    /// adding to `dylint.toml`:
+    ///
+    /// ```toml
+    /// [perfectionist]
+    /// enable = ["derive_ordering"]
+    /// ```
+    ///
     /// ### Example
     /// Under `style = "alphabetical"`:
     /// ```rust,ignore
@@ -61,6 +70,13 @@ declare_tool_lint! {
     "trait names in a `#[derive(...)]` list are not in the configured order",
     report_in_external_macro: false
 }
+
+/// Off by default — enable it in `dylint.toml` via the crate-wide
+/// `[perfectionist] enable = ["derive_ordering"]` (or the
+/// `[[perfectionist.enable]]` array-of-tables form). Read by
+/// `register_pass` below; gen-docs picks the constant up via syn
+/// to render the rule's default state.
+pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Disabled;
 
 const CONFIG_KEY: &str = "perfectionist::derive_ordering";
 
@@ -85,9 +101,9 @@ const DEFAULT_PREFIX: &[&str] = &[
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Ordering policy. Defaults to `preserve`, which is a no-op;
-    /// a project opts in by setting `alphabetical` or
-    /// `prefix_then_alphabetical`.
+    /// Ordering policy. Defaults to `alphabetical`; set
+    /// `prefix_then_alphabetical` to pin a configured `prefix` list
+    /// of traits ahead of the alphabetised tail.
     style: Style,
     /// Trait names that must appear first under the
     /// `prefix_then_alphabetical` style, in the order they should
@@ -131,7 +147,7 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Disabled = resolved_state("derive_ordering", DefaultState::Enabled) {
+    if let DefaultState::Disabled = resolved_state("derive_ordering", DEFAULT_STATE) {
         return;
     }
     // Pre-expansion: derives are consumed during macro expansion, so
@@ -144,9 +160,6 @@ pub fn register_pass(lint_store: &mut LintStore) {
 
 impl EarlyLintPass for DeriveOrdering {
     fn check_attribute(&mut self, lint_context: &EarlyContext<'_>, attribute: &Attribute) {
-        if matches!(self.style, Style::Preserve) {
-            return;
-        }
         if !attribute.has_name(sym::derive) {
             return;
         }
@@ -235,7 +248,6 @@ impl DeriveOrdering {
             Style::PrefixThenAlphabetical => {
                 "derive list does not match the configured `prefix_then_alphabetical` order"
             }
-            Style::Preserve => unreachable!(),
         };
         span_lint_and_then(
             lint_context,

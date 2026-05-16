@@ -29,13 +29,38 @@ struct RuleConfig {
     prefix: Option<Vec<&'static str>>,
 }
 
+/// The `[perfectionist]` table, kept minimal so every fixture below
+/// turns the rule on. The rule ships disabled by default
+/// (`DEFAULT_STATE = DefaultState::Disabled` in
+/// `src/rules/derive_ordering.rs`), so without this `enable` entry
+/// the pass would never register and the fixture's out-of-order
+/// derives wouldn't trigger a diagnostic.
+#[derive(serde::Serialize)]
+struct GlobalConfig {
+    enable: Vec<&'static str>,
+}
+
 fn dylint_toml(config: RuleConfig) -> String {
-    // A single-entry map gets serialised by `toml` as a top-level
-    // table keyed by `LINT_NAME` — the same shape `dylint_linting`'s
-    // `config_or_default` reads from `dylint.toml`. The `::` in the
-    // key is quoted automatically.
-    let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
-    toml::to_string(&table).expect("serialise rule config as dylint.toml")
+    // Serialise as two top-level tables: `[perfectionist]` (enables
+    // the rule globally) and `[perfectionist::derive_ordering]`
+    // (per-rule knobs the test exercises). `toml::to_string` on a
+    // serde-friendly wrapper emits both with one call; building the
+    // string by concatenation would risk producing `[perfectionist]`
+    // table contents bleeding into the rule table when the rule
+    // config happens to be empty.
+    #[derive(serde::Serialize)]
+    struct WholeToml<'a> {
+        perfectionist: GlobalConfig,
+        #[serde(flatten)]
+        rule: BTreeMap<&'a str, RuleConfig>,
+    }
+    let whole = WholeToml {
+        perfectionist: GlobalConfig {
+            enable: vec!["derive_ordering"],
+        },
+        rule: [(LINT_NAME, config)].into_iter().collect(),
+    };
+    toml::to_string(&whole).expect("serialise rule config as dylint.toml")
 }
 
 fn run(src_base: &str, config: RuleConfig) {

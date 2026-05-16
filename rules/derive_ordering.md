@@ -2,17 +2,16 @@
 
 # `perfectionist::derive_ordering`
 
-**Default state:** `enabled`  
+**Default state:** `disabled`  
 **Source:** [`src/rules/derive_ordering.rs`](../src/rules/derive_ordering.rs)
 
 > trait names in a `#[derive(...)]` list are not in the configured order
 
 ## What it does
 Enforces a project-wide ordering of trait names inside a single
-`#[derive(...)]` list. Three styles are configurable via
+`#[derive(...)]` list. Two styles are configurable via
 `style`:
-- `preserve` (default) — no-op.
-- `alphabetical` — every trait name must be in
+- `alphabetical` (default) — every trait name must be in
   ASCII-case-insensitive alphabetical order.
 - `prefix_then_alphabetical` — the configured `prefix` list of
   traits goes first, in the listed order; remaining traits are
@@ -33,6 +32,16 @@ derive lists scan uniformly across the codebase. `cargo fmt`
 does not reorder derives, so this lint is the only mechanism
 for enforcing one.
 
+The opinion is opt-in: a project that doesn't want to commit
+to a single ordering shouldn't have to set anything. The rule
+therefore ships disabled by default — enable it per crate by
+adding to `dylint.toml`:
+
+```toml
+[perfectionist]
+enable = ["derive_ordering"]
+```
+
 ## Example
 Under `style = "alphabetical"`:
 ```rust,ignore
@@ -51,9 +60,9 @@ Configure via `dylint.toml` under `["perfectionist::derive_ordering"]`. Every fi
 
 ### `style`: `Style` (optional)
 
-Ordering policy. Defaults to `preserve`, which is a no-op;
-a project opts in by setting `alphabetical` or
-`prefix_then_alphabetical`.
+Ordering policy. Defaults to `alphabetical`; set
+`prefix_then_alphabetical` to pin a configured `prefix` list
+of traits ahead of the alphabetised tail.
 
 ### `prefix`: `[string]` (optional)
 
@@ -66,10 +75,6 @@ path segment, so a configured `"Debug"` matches both
 ### Types
 
 #### `Style` (enum)
-
-##### `"preserve"` (Rust: `Preserve`)
-
-No-op. The lint emits nothing.
 
 ##### `"alphabetical"` (Rust: `Alphabetical`)
 
