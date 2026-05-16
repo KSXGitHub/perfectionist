@@ -36,6 +36,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 style { (PreEscaped(STYLE)) (PreEscaped(&*HIGHLIGHT_CSS)) }
             }
             body {
+                (nav_drawer(rules))
                 h1 id="catalogue" { "perfectionist lints" }
                 div.banner {
                     @if git_ref == "master" {
@@ -88,6 +89,32 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
         }
     };
     markup.into_string()
+}
+
+/// Collapsible navigation drawer. Uses `<details>` so the toggle is
+/// a native disclosure widget — keyboard-operable and screen-reader-
+/// announced without scripting — and skins it as a hamburger button.
+/// On viewports wide enough for a side rail the CSS hides the
+/// `<summary>` and force-shows the `<nav>` regardless of `[open]`,
+/// turning the same markup into a permanent left sidebar.
+fn nav_drawer(rules: &[Rule]) -> Markup {
+    html! {
+        details.nav-drawer {
+            summary.nav-toggle aria-label="Toggle navigation" title="Toggle navigation" {}
+            nav.nav-sidebar aria-label="Lint rules" {
+                a.nav-sidebar-title href="#catalogue" { "perfectionist lints" }
+                ul.nav-sidebar-list {
+                    @for rule in rules {
+                        li {
+                            a href={ "#" (anchor_for(&rule.namespaced)) } {
+                                code { (unnamespaced(&rule.namespaced)) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
