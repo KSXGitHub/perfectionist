@@ -125,11 +125,11 @@ fn nav_drawer(rules: &[Rule]) -> Markup {
             title="Toggle navigation" {}
         nav.nav-sidebar id="nav-sidebar" aria-label="Lint rules" {
             div.nav-sidebar-header {
-                a.nav-sidebar-title href="#catalogue" { "perfectionist lints" }
                 button.nav-sidebar-close
                     type="button"
                     aria-label="Close navigation"
                     title="Close navigation" { "\u{2715}" }
+                a.nav-sidebar-title href="#catalogue" { "perfectionist lints" }
             }
             ul.nav-sidebar-list {
                 @for rule in rules {

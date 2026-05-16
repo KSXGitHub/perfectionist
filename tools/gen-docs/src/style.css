@@ -183,17 +183,6 @@ body {
     scroll-margin-top: 3.5rem;
   }
 
-  /* Full-screen overlay. The sidebar covers the entire visible
-     area, leaving no gap whose scroll-with-page behaviour would
-     expose the mobile-browser `position: fixed` quirk. The JS
-     also locks body scroll while the overlay is open. */
-  .nav-sidebar {
-    width: 100vw;
-    max-width: none;
-    border-right: none;
-    box-shadow: none;
-  }
-
   /* Hamburger fade-in driven by IntersectionObserver: hidden
      while the catalogue's <h1> is on screen, fades in once it
      scrolls past. Default is *visible* so the drawer stays
@@ -212,6 +201,21 @@ body {
     transition:
       opacity 0.18s ease,
       visibility 0s linear 0.18s;
+  }
+}
+
+/* Phone-portrait only: full-screen overlay (per the user's request).
+   The 600px line is the project's existing phone/tablet boundary —
+   the same one `table.index` uses to switch from tabular to
+   card-stacked layout (see further down). Phone landscape and any
+   tablet orientation sit above 600px wide, so they keep the 280px
+   sidebar overlay defined above. */
+@media (max-width: 600px) {
+  .nav-sidebar {
+    width: 100vw;
+    max-width: none;
+    border-right: none;
+    box-shadow: none;
   }
 }
 
