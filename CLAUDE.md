@@ -236,7 +236,7 @@ automated self-lint did not run.
 
 The lint catalogue at <https://ksxgithub.github.io/perfectionist/>
 is rendered by `tools/gen-docs/` into a single, self-contained
-`gh-pages/index.html`. Three preferences shape what may go on the
+`gh-pages/index.html`. Two preferences shape what may go on the
 page:
 
 - **CSS over JavaScript.** Reach for CSS first; only add an inline
@@ -256,11 +256,6 @@ page:
   for older Firefox / Safari / mobile-Chromium engines — not just
   `@supports`-gated paths, since those still leave older browsers
   feature-less.
-
-- **Catalogue is a single file.** Resist the urge to split CSS, JS,
-  or imagery into separate assets. The generator inlines everything
-  into `gh-pages/index.html` so the page can be ctrl-F'd end to end
-  and the static-site host serves a single directory verbatim.
 
 ### Verifying rendering changes
 
