@@ -70,12 +70,14 @@
 //      every direct body child except the toggle and sidebar while
 //      the drawer is open. CSS has no equivalent for removing an
 //      element from the focus order *and* AT exposure in one step.
-//      (On browsers older than `inert`'s Baseline-2023 cutoff the
-//      assignment is a silent no-op; obscured content stays
-//      reachable to Tab/AT. The static index table near the top of
-//      the page still serves as the primary navigation path on
-//      those browsers, so the regression is cosmetic, not
-//      functional.)
+//      `inert` is Baseline 2023, so older browsers silently ignore
+//      it and would let Tab escape into obscured content; a small
+//      keydown-based focus trap (also in this script) wraps Tab
+//      inside the sidebar while the drawer is open as a fallback.
+//      AT-exposure suppression on those older browsers degrades to
+//      what we get for free from the static index table near the
+//      top of the page — i.e. the page still has a navigation
+//      affordance, just not a modal-isolated one.
 //
 //   5. Focus management on open and close. Opening the drawer
 //      hides the toggle (`aria-expanded="true"` -> `display: none`)
@@ -258,6 +260,43 @@
 
   var closeBtn = sidebar.querySelector(".nav-sidebar-close");
   if (closeBtn) closeBtn.addEventListener("click", closeSidebar);
+
+  // ---- Focus trap fallback ----------------------------------------------
+  //
+  // `setBackgroundInert` above is the primary defence against Tab
+  // escape into obscured page content, but `inert` is Baseline 2023 —
+  // older browsers silently ignore `el.inert = true` and would let Tab
+  // wander off the last sidebar link into the still-focusable page
+  // behind. Wrap focus inside the sidebar with a keydown listener as a
+  // belt-and-suspenders fallback: on a Tab outside the sidebar (e.g.
+  // user moved focus there before `inert` was applied), bring it back;
+  // on a forward Tab from the last focusable, wrap to the first; on a
+  // back-Tab from the first, wrap to the last. On browsers that DO
+  // support `inert` this is mostly a no-op (Tab from the last
+  // focusable just lands on the same element again because nothing
+  // else is reachable), so the cost of always-on is negligible.
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Tab") return;
+    if (toggle.getAttribute("aria-expanded") !== "true") return;
+    var focusable = sidebar.querySelectorAll(
+      "a[href], button:not([disabled])"
+    );
+    if (focusable.length === 0) return;
+    var first = focusable[0];
+    var last = focusable[focusable.length - 1];
+    if (!sidebar.contains(document.activeElement)) {
+      event.preventDefault();
+      first.focus();
+      return;
+    }
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
 
   // ---- Close on sidebar-link follow -------------------------------------
   //
