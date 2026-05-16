@@ -228,6 +228,14 @@ h1 {
   padding-bottom: 0.3rem;
 }
 
+/* The catalogue h1 sits flush against the version banner. Its next
+   DOM sibling is the nav-drawer, not the banner, so the normal
+   h1↔banner margin collapse doesn't happen — zero both margins so
+   no gap is left in between. */
+h1#catalogue {
+  margin-bottom: 0;
+}
+
 h2 {
   margin-top: 2.2rem;
 }
@@ -236,7 +244,7 @@ h2 {
   background: #fff8c5;
   border-left: 4px solid #d4a72c;
   padding: 0.75rem 1rem;
-  margin: 1rem 0 1.5rem;
+  margin: 0 0 1.5rem;
   font-size: 0.9rem;
 }
 
