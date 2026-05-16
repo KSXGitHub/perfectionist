@@ -42,6 +42,50 @@ table.index th {
   background: #f6f8fa;
 }
 
+/* On phone-sized viewports the three-column index table no longer
+   fits: long snake_case lint identifiers in column 1 either overflow
+   or squeeze the description column to an unreadable sliver. Stack
+   each row vertically into a card-like block instead. Desktop and
+   tablet (>600px) keep the original tabular layout. */
+@media (max-width: 600px) {
+  table.index,
+  table.index tbody,
+  table.index tr,
+  table.index td {
+    display: block;
+    width: 100%;
+  }
+
+  /* Visually hide the header row instead of `display: none` so
+     assistive tech can still announce the column labels before each
+     row's cells are read out. */
+  table.index thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  table.index tr {
+    border-bottom: 1px solid #eaeef2;
+    padding: 0.5rem 0;
+  }
+
+  table.index td {
+    border-bottom: none;
+    padding: 0.15rem 0;
+  }
+
+  table.index td:first-child code {
+    overflow-wrap: anywhere;
+  }
+}
+
 .state {
   font-family: ui-monospace, SFMono-Regular, monospace;
   font-size: 0.8rem;
