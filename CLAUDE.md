@@ -259,20 +259,30 @@ page:
 
 ### Verifying rendering changes
 
-`tools/gen-docs/test-render.mjs` is a headless-Chromium harness that
-loads the generated `gh-pages/index.html` at a range of viewport
-sizes, dumps computed styles for the nav-drawer / hamburger /
-sidebar, and writes screenshots under
-`tools/gen-docs/test-screenshots/`. Run it before pushing any
-visual change — `just all` doesn't cover layout.
+`just all` doesn't cover layout, so a visual change can slip in a
+regression that no automated step catches. Humans verify by opening
+`gh-pages/index.html` in a browser. Agents that can't do that should
+drive a headless Chromium from a throwaway Playwright script:
 
-The script's header comment has the exact invocation, but the
-short version: from `tools/gen-docs/`, symlink the global Playwright
-install (`ln -sf /opt/node22/lib/node_modules node_modules`) once
-per fresh container, then `node test-render.mjs`. The harness only
-exercises a Chromium-based engine, so pair the screenshots with a
-caniuse check for any modern CSS the change relies on — Chromium
-support is not proof a feature is safe to ship.
+- The container has Playwright preinstalled under
+  `/opt/node22/lib/node_modules` and a Chromium binary at
+  `/opt/pw-browsers/chromium-*/chrome-linux/chrome`. From
+  `tools/gen-docs/`, `ln -sf /opt/node22/lib/node_modules
+  node_modules` once per fresh container, then write a one-off
+  `.mjs` that imports `chromium` from `"playwright"`, launches it
+  with that `executablePath`, loads `gh-pages/index.html` at the
+  viewport sizes the change cares about, and dumps screenshots
+  and/or `getBoundingClientRect` / `getComputedStyle` values.
+
+- Treat the script as scratch. Don't commit it (and don't add it
+  to `.gitignore` either — local exclusions belong in
+  `.git/info/exclude`). The catalogue doesn't need a permanent
+  test harness; ad-hoc checks for a specific change are easier to
+  write fresh than to maintain.
+
+- Chromium only. For cross-engine concerns (Firefox / Safari
+  support of a CSS feature), pair the screenshots with a caniuse
+  check — Chromium support is not proof a feature is safe to ship.
 
 ## Rationale section: "Why is this bad?" vs "Why restrict this?"
 
