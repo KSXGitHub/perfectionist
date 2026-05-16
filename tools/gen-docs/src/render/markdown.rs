@@ -112,7 +112,13 @@ fn lang_class_attr(lang: &str) -> String {
     }
 }
 
-static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(SyntaxSet::load_defaults_newlines);
+// `two_face::syntax::extra_newlines` returns a `SyntaxSet` that
+// supersets syntect's bundled defaults with extra languages —
+// notably TOML, which several rules use in `dylint.toml`
+// configuration snippets. Without it, fenced ```toml blocks fall
+// through to syntect's plain-text fallback while ```rust blocks
+// highlight normally.
+static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(two_face::syntax::extra_newlines);
 static THEME: LazyLock<Theme> = LazyLock::new(|| {
     ThemeSet::load_defaults()
         .themes
