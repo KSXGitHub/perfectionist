@@ -243,10 +243,7 @@ page:
   `<script>` when CSS genuinely can't express the behaviour. When a
   script is necessary, pair it with a `<noscript>` style override
   so the catalogue still renders and navigates correctly with
-  scripting disabled. The current page uses one script (the
-  IntersectionObserver-driven hamburger reveal in
-  `tools/gen-docs/src/nav_toggle.js`); follow that pattern for any
-  future addition.
+  scripting disabled.
 
 - **Conservative with bleeding-edge CSS.** Browser versions in
   active use trail current Baseline by several years. Before
