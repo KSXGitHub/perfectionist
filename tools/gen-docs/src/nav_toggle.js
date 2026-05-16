@@ -85,6 +85,24 @@
 //      Explicitly move focus to the close button on open and back
 //      to the hamburger on close.
 //
+//   6. Hamburger fade tied to a sentinel element on the page.
+//      Hide the toggle while the catalogue's <h1> is on screen and
+//      fade it in once the reader scrolls past. CSS scroll-driven
+//      animations (`view-timeline` / `animation-timeline`) could
+//      do this declaratively, but they're not yet available across
+//      the project's reader baseline. The IntersectionObserver
+//      fallback is a UX nicety, not load-bearing — if it doesn't
+//      run, the hamburger just stays visible throughout, which is
+//      harmless.
+//
+//   7. Force-close on cross-breakpoint resize. CSS media queries
+//      are stateless: there's no way for the `>=1100px` desktop
+//      rule to "clean up" the open drawer's body scroll lock and
+//      `inert` background when the viewport crosses the boundary.
+//      `matchMedia` plus an event listener is the JS equivalent.
+//      Defensive cleanup: only matters during rotation / window-
+//      resize while the drawer happens to be open.
+//
 // `position: fixed` is still the right CSS primitive. This file
 // doesn't replace it — it stabilises the viewport that
 // `position: fixed` resolves against (category A) and implements
