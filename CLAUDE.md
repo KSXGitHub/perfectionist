@@ -240,10 +240,16 @@ is rendered by `tools/gen-docs/` into a single, self-contained
 page:
 
 - **CSS over JavaScript.** Reach for CSS first; only add an inline
-  `<script>` when CSS genuinely can't express the behaviour. When a
-  script is necessary, pair it with a `<noscript>` style override
-  so the catalogue still renders and navigates correctly with
-  scripting disabled.
+  `<script>` when CSS genuinely can't express the behaviour. When
+  a script is necessary, render the JS-controlled element with the
+  HTML `hidden` attribute and have the script clear it once its
+  handlers are wired up — that covers every "JS isn't running"
+  mode (browser scripting disabled, CSP-blocked inline scripts,
+  ad-blocker-stripped tags, parse errors before the handler
+  attaches). `<noscript>` only catches the "scripting disabled"
+  case and leaves the others as visible-but-inert UI; reach for it
+  only when the JS is pure enhancement (the page already works
+  without it).
 
 - **Conservative with bleeding-edge CSS.** Browser versions in
   active use trail current Baseline by several years. Before
