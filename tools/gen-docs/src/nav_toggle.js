@@ -26,67 +26,85 @@
 //   * `overflow: hidden` on body/html doesn't even reliably stop
 //     scrolling on iOS — a well-known cross-browser gap.
 //
-// So this script does six things CSS can't:
+// So this script does work that falls in three categories:
+//
+// A. Workarounds for mobile-browser `position: fixed` bugs.
+//    These items only exist because some browsers anchor
+//    `position: fixed` to the layout viewport rather than the
+//    visual viewport. If `position: fixed` worked correctly on
+//    every browser, we wouldn't need either of them.
 //
 //   1. Body scroll lock while the drawer is open
 //      (`body { position: fixed; top: -<scrollY>px }`, restored on
-//      close). This is the load-bearing fix: with body unable to
-//      scroll, the URL bar can't dynamically collapse, so every
-//      `position: fixed` element stays glued to the visible area for
-//      the duration of the menu interaction. Same pattern is the only
-//      cross-browser way to stop background scroll on iOS.
+//      close). With body unable to scroll, the URL bar can't
+//      dynamically collapse, so every `position: fixed` element
+//      stays glued to the visible area for the duration of the
+//      menu interaction. (Bonus: same pattern is also the only
+//      cross-browser way to stop background scroll behind a modal
+//      on iOS — `overflow: hidden` is famously broken there, so
+//      this is two CSS bugs avoided for the price of one
+//      workaround.)
 //
-//   2. Visual Viewport API offset compensation on the toggle while the
-//      drawer is closed, so the hamburger stays at the top of the
-//      visible area even on browsers that mis-anchor `position: fixed`.
-//      `window.visualViewport.offsetTop/offsetLeft` are JS-only; CSS has
-//      no equivalent.
+//   2. Visual Viewport API offset compensation on the toggle while
+//      the drawer is closed. Same root cause — translate the
+//      toggle by `visualViewport.offsetTop`/`offsetLeft` so it
+//      stays at the top of the visible area on browsers that
+//      mis-anchor `position: fixed`.
+//      `window.visualViewport.offsetTop/offsetLeft` are JS-only;
+//      CSS has no equivalent.
 //
-//   3. Imperative open/close + scrollY snapshot. The CSS-only
-//      `<details>`/`<summary>` toggle can't be closed in response to
-//      other events (a sidebar link tap, a tap on the in-overlay close
-//      button) and can't drive the scroll lock. It can also create a
-//      containing block for fixed descendants on some mobile Firefox
-//      builds, turning the supposedly-fixed `<summary>` into effective
-//      `position: absolute` — eliminating `<details>` removes that
-//      whole category of UA quirk too.
+// B. Behaviours CSS genuinely doesn't provide. These would still
+//    need code even on a hypothetical perfect-CSS browser.
 //
-//   4. Background inertness via the `inert` HTML attribute on every
-//      direct body child except the toggle and sidebar while the
-//      drawer is open. CSS has no equivalent for removing an element
-//      from the focus order *and* AT exposure in one step. (On
-//      browsers older than `inert`'s Baseline-2023 cutoff the
+//   3. Imperative open/close from arbitrary events. The CSS-only
+//      `<details>`/`<summary>` toggle can't be closed in response
+//      to a sidebar link tap or a separate close-button tap; CSS
+//      has no event-handler equivalent. (Eliminating `<details>`
+//      also avoids a separate Firefox-Mobile containing-block
+//      quirk that turned the supposedly-fixed `<summary>` into
+//      effective `position: absolute`, but that's a happy side
+//      effect of switching to a `<button>`, not the reason for
+//      the switch.)
+//
+//   4. Background inertness via the `inert` HTML attribute on
+//      every direct body child except the toggle and sidebar while
+//      the drawer is open. CSS has no equivalent for removing an
+//      element from the focus order *and* AT exposure in one step.
+//      (On browsers older than `inert`'s Baseline-2023 cutoff the
 //      assignment is a silent no-op; obscured content stays
 //      reachable to Tab/AT. The static index table near the top of
 //      the page still serves as the primary navigation path on
 //      those browsers, so the regression is cosmetic, not
 //      functional.)
 //
-//   5. Focus management on open and close: opening the drawer hides
-//      the toggle (`aria-expanded="true"` -> `display: none`) and
-//      closing hides the close button the same way, so a keyboard
-//      user would otherwise lose focus to <body>. Explicitly move
-//      focus to the close button on open and back to the hamburger
-//      on close.
+//   5. Focus management on open and close. Opening the drawer
+//      hides the toggle (`aria-expanded="true"` -> `display: none`)
+//      and closing hides the close button the same way; CSS has no
+//      primitive for moving focus when an element disappears, so a
+//      keyboard user would otherwise lose focus to <body>.
+//      Explicitly move focus to the close button on open and back
+//      to the hamburger on close.
 //
-//   6. Reveal-on-ready: the button is rendered with the HTML
-//      `hidden` attribute and this script clears it at the very end
-//      of setup. Every concern above is JS-driven, so a button
-//      visible to the reader without this script installed would
-//      be inert. CSP-blocked inline scripts, stripped script tags,
-//      or a parse error before the handler attaches all leave that
-//      inert-button state — `<noscript>` doesn't cover any of them
-//      ("scripting disabled in the browser" is its only trigger).
-//      Hiding at the source and revealing only after handlers are
-//      wired closes the gap uniformly. (Note: this only works
-//      because the CSS file also ships an author-side
-//      `[hidden] { display: none !important }` reset; without it,
-//      `.nav-toggle { display: flex }` silently overrides the UA
-//      `[hidden]` rule.)
+// `position: fixed` is still the right CSS primitive. This file
+// doesn't replace it — it stabilises the viewport that
+// `position: fixed` resolves against (category A) and implements
+// the behaviours CSS doesn't reach (category B).
 //
-// `position: fixed` is still the right CSS primitive. This file doesn't
-// replace it — it stabilises the viewport that `position: fixed`
-// resolves against.
+// C. The consequence of needing JS at all. Because A and B mean
+//    the button only works when this script runs successfully, we
+//    also have to hide the button when it *doesn't* — otherwise a
+//    CSP-blocked inline script, a stripped script tag, or a parse
+//    error before the handlers attach all leave a visible-but-
+//    inert hamburger on the page. The Rust template renders the
+//    button with the HTML `hidden` attribute and this script
+//    clears it at the very end of setup; if anything throws before
+//    then, the toggle stays hidden. `<noscript>` only catches
+//    "scripting disabled in the browser", which is why we use
+//    `hidden` instead. (One CSS subtlety: style.css ships an
+//    author-side `[hidden] { display: none !important }` reset;
+//    without it the `.nav-toggle { display: flex }` rule silently
+//    overrides the UA `[hidden]` rule and the toggle stays visible
+//    despite `hidden`.)
 // ============================================================================
 
 (function () {
