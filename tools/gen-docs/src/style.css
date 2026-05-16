@@ -25,6 +25,11 @@ body {
    toggles the sibling nav on top of the page. */
 
 .nav-drawer {
+  /* Lives in the DOM after the <h1> so the h1 is body's first
+     in-flow child and its top margin still collapses with body's,
+     matching the pre-sidebar layout. The summary and the following
+     <nav> are both `position: fixed`, so their DOM position has no
+     bearing on where they render visually. */
   margin: 0;
 }
 

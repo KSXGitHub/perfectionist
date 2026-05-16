@@ -42,8 +42,8 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 }
             }
             body {
-                (nav_drawer(rules))
                 h1 id="catalogue" { "perfectionist lints" }
+                (nav_drawer(rules))
                 div.banner {
                     @if git_ref == "master" {
                         "Showing development docs from " code { "master" } ". "
