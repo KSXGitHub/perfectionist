@@ -19,13 +19,34 @@ The predicate keys off the first token's line, not the element
 count, matching rustfmt's actual `trailing_comma = "Vertical"`
 behaviour rather than the documented spec for function calls.
 
-Still pending: **matcher-based** declarative-macro auto-detection
-(the `$(,)?` / `$(,)*` matcher walk described under "Matcher-based
-— declarative-macro auto-detection" and "Why matcher-based is
-harder than name-based" below). Until that lands, only macros named
-in the curated list or in `name_based_extra` are linted; any
-`macro_rules!` macro the user writes themselves is silently
-ineligible regardless of its matcher shape.
+Still pending:
+
+- **Matcher-based declarative-macro auto-detection** (the
+  `$(,)?` / `$(,)*` matcher walk described under "Matcher-based
+  — declarative-macro auto-detection" and "Why matcher-based
+  is harder than name-based" below). Until that lands, only
+  macros named in the curated list or in `name_based_extra`
+  are linted; any `macro_rules!` macro the user writes
+  themselves is silently ineligible regardless of its matcher
+  shape.
+- **Identifier-path-aware name-based matching.** The
+  `Implementation notes` section below describes the
+  matching as "`MacCall::path` resolves to a `Res` via the
+  resolver. From the resolved `DefId`, look the path up …",
+  but the current code instead does a syntactic match against
+  `path.segments` via the shared
+  [`macro_path::matches_any`](../src/macro_path.rs) helper. A
+  multi-segment entry like `"my_crate::vec_like"` therefore
+  matches by the invocation path's *final two segments* —
+  catching `my_crate::vec_like!(...)`,
+  `::my_crate::vec_like!(...)`, and even
+  `outer::my_crate::vec_like!(...)` indiscriminately, but
+  never the bare `vec_like!(...)` call that follows a
+  `use my_crate::vec_like;` (the AST path is just
+  `[vec_like]`, one segment short of the entry). `macro-argument-binding`'s
+  Status section describes the resolution-based fix in
+  detail; the same plumbing change benefits this rule, and
+  the two rules' built-in lists should migrate together.
 
 **Source:** project convention. Fills a gap that
 `rustfmt`'s `trailing_comma = "Vertical"` (the default) leaves
