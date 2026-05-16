@@ -15,8 +15,10 @@ use crate::render::markdown::{HIGHLIGHT_CSS, markdown_inline_to_html, markdown_t
 
 const STYLE: &str = include_str!("style.css");
 const NAV_TOGGLE_SCRIPT: &str = include_str!("nav_toggle.js");
-const NAV_TOGGLE_NOSCRIPT_CSS: &str =
-    ".nav-toggle{opacity:1!important;visibility:visible!important;}";
+/// Without JS the toggle can't do anything (no click handler, no
+/// open/close, no scroll lock), so hide it. No-JS readers still
+/// have the full index table at the top of the page for navigation.
+const NAV_TOGGLE_NOSCRIPT_CSS: &str = ".nav-toggle{display:none!important;}";
 
 pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String {
     let RenderContext {
@@ -98,26 +100,37 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
     markup.into_string()
 }
 
-/// Collapsible navigation drawer. Uses `<details>` so the toggle is
-/// a native disclosure widget — keyboard-operable and screen-reader-
-/// announced without scripting — and skins it as a hamburger button.
-/// The `<nav>` deliberately lives outside the `<details>` and rides
-/// the adjacent-sibling selector: putting it inside would trip the
-/// modern UA stylesheet's `::details-content { content-visibility:
-/// hidden }` rule when the details is closed, which can't be
-/// overridden from the descendant. As a sibling, the nav's
-/// visibility is plain author CSS — reliable across browsers — and
-/// the wide-viewport media query can force-show it unconditionally.
+/// Collapsible navigation drawer. The visible toggle is a plain
+/// `<button>` rather than a `<summary>` inside `<details>` so the
+/// open/closed state can be driven by `aria-expanded` from JS,
+/// and the menu is a sibling `<nav>` so the adjacent-sibling
+/// selector `.nav-toggle[aria-expanded="true"] + .nav-sidebar`
+/// drives display without scripting reaching into the nav.
+///
+/// On narrow viewports the nav becomes a full-screen overlay
+/// (the JS also locks body scroll while it's open, which stops
+/// the mobile URL bar from collapsing under it and keeps every
+/// `position: fixed` element steady). The close (✕) button lives
+/// inside the overlay in normal flow rather than as a fixed-
+/// position sibling, so it's never affected by visual-viewport
+/// quirks even on browsers where `position: fixed` drifts with
+/// the URL bar.
 fn nav_drawer(rules: &[Rule]) -> Markup {
     html! {
-        details.nav-drawer {
-            summary.nav-toggle
-                aria-label="Toggle navigation"
-                aria-controls="nav-sidebar"
-                title="Toggle navigation" {}
-        }
+        button.nav-toggle
+            type="button"
+            aria-controls="nav-sidebar"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+            title="Toggle navigation" {}
         nav.nav-sidebar id="nav-sidebar" aria-label="Lint rules" {
-            a.nav-sidebar-title href="#catalogue" { "perfectionist lints" }
+            div.nav-sidebar-header {
+                a.nav-sidebar-title href="#catalogue" { "perfectionist lints" }
+                button.nav-sidebar-close
+                    type="button"
+                    aria-label="Close navigation"
+                    title="Close navigation" { "\u{2715}" }
+            }
             ul.nav-sidebar-list {
                 @for rule in rules {
                     li {
@@ -232,24 +245,32 @@ mod tests {
     }
 
     #[test]
-    fn page_emits_nav_drawer_details_and_sibling_nav() {
+    fn page_emits_nav_toggle_button_and_sibling_nav() {
         let html = render_page(&[fake_rule("alpha")], &fake_context());
-        assert!(html.contains("<details class=\"nav-drawer\">"));
-        assert!(html.contains("class=\"nav-toggle\""));
-        assert!(html.contains("aria-label=\"Toggle navigation\""));
+        // Toggle is a plain <button> driven by `aria-expanded`, not
+        // a <summary>/<details>, so JS can control open state and
+        // the CSS adjacent-sibling selector is keyed off the same
+        // attribute. The button starts in the closed state.
+        assert!(html.contains("<button class=\"nav-toggle\""));
         assert!(html.contains("aria-controls=\"nav-sidebar\""));
+        assert!(html.contains("aria-expanded=\"false\""));
+        assert!(html.contains("aria-label=\"Toggle navigation\""));
         assert!(html.contains("aria-label=\"Lint rules\""));
-        // The narrow-viewport CSS uses `.nav-drawer[open] +
-        // .nav-sidebar`, so the <nav> must be the immediate next
-        // sibling of </details>. Asserting only their individual
-        // presence (above) would let a refactor that nested the
-        // <nav> inside the <details>, or inserted another element
-        // between them, slip through and break the drawer on
-        // narrow viewports.
+        // The narrow-viewport CSS uses
+        // `.nav-toggle[aria-expanded="true"] + .nav-sidebar`, so
+        // the <nav> must be the immediate next sibling of
+        // </button>. A refactor that nested the <nav> inside the
+        // button or inserted another element between them would
+        // break the overlay on narrow viewports; pin the literal
+        // boundary.
         assert!(
-            html.contains("</details><nav class=\"nav-sidebar\" id=\"nav-sidebar\""),
-            "expected </details> to be immediately followed by the <nav class=\"nav-sidebar\"> sibling",
+            html.contains("</button><nav class=\"nav-sidebar\" id=\"nav-sidebar\""),
+            "expected </button> to be immediately followed by the <nav class=\"nav-sidebar\"> sibling",
         );
+        // The close (✕) button lives inside the overlay so the
+        // drawer can be dismissed without any fixed-position
+        // element acting as both opener and closer.
+        assert!(html.contains("<button class=\"nav-sidebar-close\""));
     }
 
     #[test]
