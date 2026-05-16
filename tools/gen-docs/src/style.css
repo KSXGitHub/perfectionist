@@ -175,7 +175,7 @@ body {
    The index table at the top of the page already contains a full list
    of rules, so the hamburger drawer is redundant while the table is on
    screen. A tiny script at the end of <body> watches the table with
-   IntersectionObserver and toggles `.nav-toggle-visible` on the
+   IntersectionObserver and toggles `.nav-toggle-hidden` on the
    summary; CSS does the fade.
 
    Why not CSS scroll-driven animations (`view-timeline` /
@@ -185,24 +185,30 @@ body {
    keeps the feature working everywhere IntersectionObserver does
    (every browser since 2017).
 
-   The static default below is hidden; the <noscript> override in
-   <head> reverts to always-visible when scripting is disabled so the
-   drawer remains reachable. */
+   The static default below is *visible*: if the script doesn't run
+   for any reason, the drawer must still be reachable. The script
+   opts into hiding the toggle only while the index table is on
+   screen. */
 @media (max-width: 1099.98px) {
   .nav-toggle {
+    /* Visible by default. The IntersectionObserver script adds
+       `nav-toggle-hidden` while the index table is on screen; if
+       the script never runs (CSP-blocked inline scripts, a runtime
+       error, an ad-blocker stripping the tag, anything else short
+       of true noscript mode), the toggle stays visible and the
+       drawer remains reachable. The <noscript> override in <head>
+       remains as defense-in-depth for the explicit-noscript case. */
+    transition:
+      opacity 0.18s ease,
+      visibility 0s linear 0s;
+  }
+
+  .nav-toggle.nav-toggle-hidden {
     opacity: 0;
     visibility: hidden;
     transition:
       opacity 0.18s ease,
       visibility 0s linear 0.18s;
-  }
-
-  .nav-toggle.nav-toggle-visible {
-    opacity: 1;
-    visibility: visible;
-    transition:
-      opacity 0.18s ease,
-      visibility 0s linear 0s;
   }
 
   /* While the drawer is open the close (✕) control must stay
