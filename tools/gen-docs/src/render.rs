@@ -14,6 +14,9 @@ use crate::render::config::config_section;
 use crate::render::markdown::{HIGHLIGHT_CSS, markdown_inline_to_html, markdown_to_html};
 
 const STYLE: &str = include_str!("style.css");
+const NAV_TOGGLE_SCRIPT: &str = include_str!("nav_toggle.js");
+const NAV_TOGGLE_NOSCRIPT_CSS: &str =
+    ".nav-toggle{opacity:1!important;visibility:visible!important;}";
 
 pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String {
     let RenderContext {
@@ -34,6 +37,9 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     @if git_ref != "master" { " — " (git_ref) }
                 }
                 style { (PreEscaped(STYLE)) (PreEscaped(&*HIGHLIGHT_CSS)) }
+                noscript {
+                    style { (PreEscaped(NAV_TOGGLE_NOSCRIPT_CSS)) }
+                }
             }
             body {
                 (nav_drawer(rules))
@@ -85,6 +91,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     "Generated from " code { "src/rules/" }
                     " at " code { (commit_sha) } "."
                 }
+                script { (PreEscaped(NAV_TOGGLE_SCRIPT)) }
             }
         }
     };

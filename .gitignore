@@ -5,3 +5,5 @@
 tmp
 *.tmp
 tmp.*
+/tools/gen-docs/node_modules
+/tools/gen-docs/test-screenshots
