@@ -56,8 +56,19 @@ table.index th {
     width: 100%;
   }
 
+  /* Visually hide the header row instead of `display: none` so
+     assistive tech can still announce the column labels before each
+     row's cells are read out. */
   table.index thead {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   table.index tr {
