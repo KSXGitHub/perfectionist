@@ -133,13 +133,22 @@ body {
   font-size: 0.85rem;
 }
 
-/* Narrow viewports: the fixed hamburger sits at the top-left, so
-   give the page a top inset that keeps the h1 from starting under
-   it. The hamburger still overlays content the user has scrolled
-   past, which is the normal behaviour of any fixed toggle. */
+/* Narrow viewports: the fixed hamburger sits at the top-left of the
+   viewport. We deliberately do not pad the body to clear it — that
+   would leave a permanent strip of whitespace above the h1. The
+   hamburger overlays the corner of whatever sits at the top of the
+   viewport, which is the normal behaviour of any fixed toggle.
+
+   Hash navigation (`#catalogue` or `#perfectionist-<rule>`) does
+   need a scroll inset, though: without one the browser scrolls the
+   target heading flush to viewport top, directly under the
+   hamburger. `scroll-margin-top` only affects scroll-into-view
+   alignment, not normal layout, so it fixes anchor jumps without
+   reintroducing the gap. */
 @media (max-width: 1099.98px) {
-  body {
-    padding-top: 3.5rem;
+  #catalogue,
+  article.rule {
+    scroll-margin-top: 3.5rem;
   }
 }
 
