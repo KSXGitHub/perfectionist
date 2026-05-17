@@ -275,6 +275,27 @@ body {
   }
 }
 
+/* Desktop / large-desktop tiers: bump the body's max-width so
+   the page doesn't strand huge bands of empty whitespace on
+   either side of the content. At the base 820px width, a 1920px
+   monitor with the 280px sidebar leaves ~410px of empty gutter
+   on each side of the body — roughly half the body width again,
+   wasted. Two graduated tiers widen the body without going so
+   far that paragraph line-length becomes uncomfortable: the
+   index table, TOML/code blocks, and rule articles all benefit
+   from the extra room while prose stays readable. */
+@media (min-width: 1400px) {
+  body {
+    max-width: 1040px;
+  }
+}
+
+@media (min-width: 1700px) {
+  body {
+    max-width: 1200px;
+  }
+}
+
 h1 {
   border-bottom: 1px solid #d0d7de;
   padding-bottom: 0.3rem;
