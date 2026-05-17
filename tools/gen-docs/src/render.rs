@@ -13,7 +13,13 @@ use crate::model::{DefaultState, NAMESPACE, RenderContext, Rule};
 use crate::render::config::config_section;
 use crate::render::markdown::{HIGHLIGHT_CSS, markdown_inline_to_html, markdown_to_html};
 
-const STYLE: &str = include_str!("style.css");
+const STYLE: &str = concat!(
+    include_str!("style/base.css"),
+    "\n",
+    include_str!("style/nav.css"),
+    "\n",
+    include_str!("style/rules.css"),
+);
 const NAV_TOGGLE_SCRIPT: &str = include_str!("nav_toggle.js");
 
 pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String {
@@ -367,7 +373,7 @@ mod tests {
         // so a future edit can't quietly remove it.
         assert!(
             STYLE.contains("[hidden]") && STYLE.contains("display: none !important"),
-            "style.css must keep the `[hidden] {{ display: none !important }}` reset; \
+            "style/base.css must keep the `[hidden] {{ display: none !important }}` reset; \
              without it the JS-driven toggle's `hidden`-by-default fallback is broken",
         );
     }

@@ -120,11 +120,11 @@
 //    clears it at the very end of setup; if anything throws before
 //    then, the toggle stays hidden. `<noscript>` only catches
 //    "scripting disabled in the browser", which is why we use
-//    `hidden` instead. (One CSS subtlety: style.css ships an
+//    `hidden` instead. (One CSS subtlety: style/base.css ships an
 //    author-side `[hidden] { display: none !important }` reset;
-//    without it the `.nav-toggle { display: flex }` rule silently
-//    overrides the UA `[hidden]` rule and the toggle stays visible
-//    despite `hidden`.)
+//    without it the `.nav-toggle { display: flex }` rule (in
+//    style/nav.css) silently overrides the UA `[hidden]` rule and
+//    the toggle stays visible despite `hidden`.)
 // ============================================================================
 
 (function () {
