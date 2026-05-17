@@ -232,6 +232,73 @@ the relevant rules and fix violations by hand. Note this
 fallback explicitly in your summary so the user knows the
 automated self-lint did not run.
 
+## Generated documentation site (`tools/gen-docs/`)
+
+The lint catalogue at <https://ksxgithub.github.io/perfectionist/>
+is rendered by `tools/gen-docs/` into a single, self-contained
+`gh-pages/index.html`. Two preferences shape what may go on the
+page:
+
+- **CSS over JavaScript.** Reach for CSS first; only add an inline
+  `<script>` when CSS genuinely can't express the behaviour. When
+  a script is necessary, render the JS-controlled element with the
+  HTML `hidden` attribute and have the script clear it once its
+  handlers are wired up — that covers every "JS isn't running"
+  mode (browser scripting disabled, CSP-blocked inline scripts,
+  ad-blocker-stripped tags, parse errors before the handler
+  attaches). `<noscript>` only catches the "scripting disabled"
+  case and leaves the others as visible-but-inert UI; reach for it
+  only when the JS is pure enhancement (the page already works
+  without it).
+
+  One CSS subtlety to keep in mind: the UA stylesheet expresses
+  `hidden` as `[hidden] { display: none }`, but author-origin
+  rules beat UA-origin rules at equal specificity. Any author
+  `display` declaration on the JS-controlled element will silently
+  override the UA rule and the element will stay visible despite
+  `hidden`. Pair the pattern with a sweeping
+  `[hidden] { display: none !important }` reset (already in
+  `tools/gen-docs/src/style.css`) to make `hidden` unconditional,
+  or qualify every author `display` declaration with
+  `:not([hidden])`. The reset is the standard fix and is shipped
+  by Bootstrap / Tailwind / most CSS resets.
+
+- **Conservative with bleeding-edge CSS.** Browser versions in
+  active use trail current Baseline by several years. Before
+  relying on a recent feature (`view-timeline`, `@container`,
+  `:has()`, scroll-driven animations, etc.), check caniuse against
+  a several-year-old cutoff and provide a polyfill-free fallback
+  for older Firefox / Safari / mobile-Chromium engines — not just
+  `@supports`-gated paths, since those still leave older browsers
+  feature-less.
+
+### Verifying rendering changes
+
+`just all` doesn't cover layout, so a visual change can slip in a
+regression that no automated step catches. Humans verify by opening
+`gh-pages/index.html` in a browser. Agents that can't do that should
+drive a headless Chromium from a throwaway Playwright script:
+
+- Use Playwright's Chromium headlessly. If the environment
+  already has Playwright and its Chromium binary available, point
+  the launcher at them; otherwise install Playwright into a
+  temporary location — the standard
+  `npm i -D playwright && npx playwright install chromium` works —
+  and use that. Write a one-off `.mjs` that imports `chromium`
+  from `"playwright"`, launches it, loads `gh-pages/index.html` at
+  the viewport sizes the change cares about, and dumps screenshots
+  and/or `getBoundingClientRect` / `getComputedStyle` values.
+
+- Treat the script as scratch. Don't commit it (and don't add it
+  to `.gitignore` either — local exclusions belong in
+  `.git/info/exclude`). The catalogue doesn't need a permanent
+  test harness; ad-hoc checks for a specific change are easier to
+  write fresh than to maintain.
+
+- Chromium only. For cross-engine concerns (Firefox / Safari
+  support of a CSS feature), pair the screenshots with a caniuse
+  check — Chromium support is not proof a feature is safe to ship.
+
 ## Rationale section: "Why is this bad?" vs "Why restrict this?"
 
 Every rule's documentation — both the rustdoc on the
