@@ -199,13 +199,8 @@ crate_path = "derive_more"
 ## Default state
 
 Active by default for the easy and medium sub-lints. The hard
-sub-lints ship inactive by default — a project opts in via the
-configuration knobs documented above — and remain at the
-registered warn level once active. Projects that have audited
-their suggestions on a representative sample can additionally
-promote any sub-lint to deny via
-`#![deny(perfectionist::<sub_lint>)]` or
-`DYLINT_RUSTFLAGS=-D perfectionist::<sub_lint>`.
+sub-lints ship inactive by default; a project opts in via the
+configuration knobs documented above.
 
 ## Why restrict this?
 

@@ -381,18 +381,13 @@ shipping a baseline policy would be presumptuous. Everything
 else is `Active by default`.
 
 Severity escalation (`Warn → Deny → Forbid`) is the consumer's
-prerogative and lives entirely outside the planning file. A
+prerogative and lives entirely outside the planning file. The
+lint's declared level stays `Warn` in `declare_tool_lint!`; a
 project that wants a stricter level on a particular rule reaches
 for `#![deny(perfectionist::<rule>)]` at the crate root, or
 `DYLINT_RUSTFLAGS="-D perfectionist::<rule>"` for a CI-wide
 escalation — the same mechanisms rustc already exposes for
-clippy and rustdoc lints. Each rule's `## Default state` section
-notes when promotion to deny is the recommended posture for
-specific project profiles (security-conscious privacy posture,
-completed-migration codebases, etc.).
-
-The lint's *declared* level stays `Warn` in `declare_tool_lint!`
-regardless of these recommendations; nothing the rule author
-writes in the planning file changes that, because consumer-side
-escalation is the only path the runtime model exposes.
+clippy and rustdoc lints. The planning file does not document
+which projects should escalate; that is project-side policy and
+out of scope for the catalogue.
 

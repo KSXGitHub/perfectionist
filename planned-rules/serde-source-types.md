@@ -91,10 +91,7 @@ is a documentation label; per the
 each sub-check is registered as its own flat tool lint
 (`perfectionist::borrowed_str`, `perfectionist::cow_or_string`).
 
-- `borrowed_str` — active by default. Because a `&'de str` source
-  produces silently broken parsers, projects should additionally
-  promote it via `#![deny(perfectionist::borrowed_str)]` or
-  `DYLINT_RUSTFLAGS=-D perfectionist::borrowed_str`.
+- `borrowed_str` — active by default.
 - `cow_or_string` — inactive by default. The advisory check is
   heuristic and easy to false-positive on; a project opts in by
   setting `serde_source_types.advisory = true` in `dylint.toml`.

@@ -131,8 +131,4 @@ skip_domains = ["example.com", "example.org"]
 
 ## Default state
 
-Active by default. Projects with a strict privacy posture that
-configure `style = "forbid"` can additionally promote the lint via
-`#![deny(perfectionist::bare_email)]` or
-`DYLINT_RUSTFLAGS=-D perfectionist::bare_email`, so a bare address
-becomes a hard error rather than a warning.
+Active by default.

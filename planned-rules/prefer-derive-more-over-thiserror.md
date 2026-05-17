@@ -130,11 +130,7 @@ hand, not in the lint itself.
 
 ## Default state
 
-Active by default. Projects that have completed the
-`thiserror`-to-`derive_more` migration and want to keep the door
-shut can additionally promote the lint via
-`#![deny(perfectionist::prefer_derive_more_over_thiserror)]` or
-`DYLINT_RUSTFLAGS=-D perfectionist::prefer_derive_more_over_thiserror`.
+Active by default.
 
 ## Interaction with sibling lints
 

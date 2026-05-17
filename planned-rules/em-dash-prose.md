@@ -137,7 +137,4 @@ action.
 
 ## Default state
 
-Active by default. Projects that want to keep AI-generated prose
-out of their codebase entirely can additionally promote the lint
-via `#![deny(perfectionist::em_dash_prose)]` or
-`DYLINT_RUSTFLAGS=-D perfectionist::em_dash_prose`.
+Active by default.

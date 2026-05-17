@@ -190,10 +190,7 @@ when the ref is hex.
 
 ## Default state
 
-Active by default. Projects that follow pacquet's "cardinal rule"
-posture should additionally promote the lint via
-`#![deny(perfectionist::unpinned_repo_ref)]` or
-`DYLINT_RUSTFLAGS=-D perfectionist::unpinned_repo_ref` in CI.
+Active by default.
 
 ## Interaction with sibling lints
 
