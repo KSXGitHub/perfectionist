@@ -184,8 +184,9 @@ rather than as a silent reformat.
 The style names map 1-to-1 to rustfmt's `imports_granularity`:
 `crate` ⇔ `Crate`, `module` ⇔ `Module`, `item` ⇔ `Item`.
 
-## Severity
+## Default state
 
-Warn for all styles. None of the three styles is "wrong" in the
-abstract; a mismatch with the project's configured style is the
-violation.
+Active by default. None of the three styles is "wrong" in the
+abstract; a mismatch with the project's configured `style` is
+the violation, so the rule is purely about consistency with the
+chosen layout.

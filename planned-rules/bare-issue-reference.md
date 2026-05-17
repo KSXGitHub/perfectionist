@@ -122,8 +122,9 @@ form = "inline"
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn. With `repo_base_url` unset and `suggestion_mode = "help_only"`,
-the lint becomes informational and a project can run it without
-configuration to flag the bare references for manual triage.
+Active by default. With `repo_base_url` unset and
+`suggestion_mode = "help_only"`, the lint becomes informational
+and a project can run it without further configuration to flag
+the bare references for manual triage.

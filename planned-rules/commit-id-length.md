@@ -190,12 +190,13 @@ When the configured window is a range rather than a fixed length,
 auto-truncation is also off; the author must pick a length within
 the window themselves.
 
-## Severity
+## Default state
 
-Warn. The defaults (`6..=40`) reject SHAs shorter than Git's
-default abbreviation length while accepting everything from 6-char
-prefixes up to the full 40-char hash; a project tightens the
-window further by raising the minimum or pinning a fixed length.
+Active by default. The default window (`6..=40`) rejects SHAs
+shorter than Git's default abbreviation length while accepting
+everything from 6-char prefixes up to the full 40-char hash; a
+project tightens the window further by raising the minimum or
+pinning a fixed length.
 
 ## Interaction with `unpinned-repo-ref`
 

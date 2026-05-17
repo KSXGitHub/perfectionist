@@ -188,10 +188,9 @@ when the ref is hex.
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn by default. Projects that follow pacquet's "cardinal rule"
-posture should set this to deny in CI.
+Active by default.
 
 ## Interaction with sibling lints
 

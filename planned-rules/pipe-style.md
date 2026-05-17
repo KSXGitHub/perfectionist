@@ -207,6 +207,7 @@ point convergence in two passes.
   catalogue, in particular the lint-name namespacing
   (`perfectionist::*`) that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn for both sub-checks.
+Active by default. Both sub-checks (`leading_pipe` and
+`wrapped_chain`) run when the rule is active.

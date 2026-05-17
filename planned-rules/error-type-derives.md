@@ -59,8 +59,7 @@ The objectively-bad exception (`missing_error`): a type used as
 breaks `?`-interop with downstream `Box<dyn Error>` consumers,
 prevents the value from participating in `source()` chains, and
 blocks `anyhow::Error` / `eyre::Report` conversion. This is a real
-defect, not a preference, and the sub-check defaults to deny
-accordingly (see *Severity*).
+defect, not a preference.
 
 ## What to lint
 
@@ -234,14 +233,10 @@ pub enum ParsedValue { /* ... */ }
   flag_pub_types = false
   ```
 
-## Severity
+## Default state
 
-Warn for `unused_display`, `unused_error`, `copyable_error`, and
-`unconventional_error_name`. Each admits legitimate exceptions:
-`unused_display` and `unused_error` may flag types that are only
-used through downstream crates (closed-world assumption);
-`copyable_error` may flag legitimate `Copy` unit-style errors; and
-`unconventional_error_name` may flag a type whose name cannot be
-changed without a breaking release. Deny for `missing_error`,
-because using a non-`Error` type as the error half of `Result` is
-almost always a bug.
+Each sub-check has its own default state once it is split into a
+sibling planning file per the Status section above. The expected
+shape: `unused_display`, `unused_error`, `copyable_error`,
+`unconventional_error_name`, and `missing_error` are all active
+by default.

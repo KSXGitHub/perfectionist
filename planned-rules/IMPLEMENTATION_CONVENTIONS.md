@@ -342,3 +342,50 @@ A crate-root suppression of the cross-toolchain warning is:
 #![allow(unknown_lints)]
 ```
 
+## Rule activation model
+
+Every rule registered by this plugin is declared at the `Warn`
+lint level. Each rule documents its **default state**: whether
+the rule's pass installs at all when the consumer runs
+`cargo dylint` without overrides.
+
+```rust
+pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
+// or
+pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
+```
+
+The two states map to the consumer-visible behaviour as follows:
+
+- **Active by default.** The pass installs unconditionally,
+  and the lint emits warnings wherever its trigger predicate
+  fires. The consumer suppresses individual sites with
+  `#[allow(perfectionist::<rule>)]` and turns the rule off
+  globally by listing it under `[perfectionist].disable` in
+  `dylint.toml`.
+- **Inactive by default.** The pass is not installed during a
+  `cargo dylint` run; the lint emits nothing. The consumer turns
+  the rule on globally by listing it under `[perfectionist].enable`
+  in `dylint.toml`. The lint *declaration* still registers
+  either way, so `#[expect/allow/deny(perfectionist::<rule>)]`
+  attributes at user call sites continue to resolve regardless
+  of which array the rule appears under.
+
+Reserve `Inactive by default` for rules whose triggers are
+known to false-positive in real codebases, advisory sub-checks
+gated behind a "are you sure?" knob, or rules whose preferred
+configuration genuinely varies per project to the point that
+shipping a baseline policy would be presumptuous. Everything
+else is `Active by default`.
+
+Severity escalation (`Warn → Deny → Forbid`) is the consumer's
+prerogative and lives entirely outside the planning file. The
+lint's declared level stays `Warn` in `declare_tool_lint!`; a
+project that wants a stricter level on a particular rule reaches
+for `#![deny(perfectionist::<rule>)]` at the crate root, or
+`DYLINT_RUSTFLAGS="-D perfectionist::<rule>"` for a CI-wide
+escalation — the same mechanisms rustc already exposes for
+clippy and rustdoc lints. The planning file does not document
+which projects should escalate; that is project-side policy and
+out of scope for the catalogue.
+

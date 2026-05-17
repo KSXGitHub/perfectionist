@@ -147,6 +147,8 @@ The lint emits nothing. Default.
 - `prefer_std` has no clippy equivalent; the perfectionist
   implementation is the canonical one.
 
-## Severity
+## Default state
 
-Warn for `prefer_core` and `prefer_std`. `preserve` emits nothing.
+Active by default, but the default `style = "preserve"` keeps the
+pass a no-op until the project opts into `prefer_core` or
+`prefer_std`.

@@ -191,9 +191,9 @@ are all simple textual splices.
   catalogue, in particular the lint-name namespacing
   (`perfectionist::*`) that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn.
+Active by default.
 
 ## Interaction with sibling rules
 

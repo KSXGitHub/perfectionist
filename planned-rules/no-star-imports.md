@@ -126,6 +126,6 @@ Together they say: "preludes must be glob-imported, and globs are only
 allowed for preludes". Enabling both is the recommended posture for
 projects that follow the prelude convention strictly.
 
-## Severity
+## Default state
 
-Warn.
+Active by default.

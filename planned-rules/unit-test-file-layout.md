@@ -265,16 +265,20 @@ file's position relative to its parent matters.
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn for every sub-violation. Autofix:
+Active by default.
+
+## Autofix
+
+No `MachineApplicable` rewrite is offered for any sub-violation.
+A Dylint pass cannot create files, and every remediation here
+involves moving or deleting source files. Each diagnostic emits
+help text only:
 
 - For inline-style violations under `external_only` and
-  `external_when_long`, the fix requires creating a new file and
-  replacing the inline body with `mod <name>;`. Suggest as help text;
-  do *not* offer a `MachineApplicable` rewrite (a Dylint pass cannot
-  create files).
-- For layout violations, suggest the canonical path in help text.
-  No `MachineApplicable` rewrite.
-- For unexpected-sibling diagnostics, suggest deletion or merging the
-  sibling into the canonical location. Help text only.
+  `external_when_long`, the help text suggests creating a new
+  file and replacing the inline body with `mod <name>;`.
+- For layout violations, the help text names the canonical path.
+- For unexpected-sibling diagnostics, the help text suggests
+  deletion or merging the sibling into the canonical location.

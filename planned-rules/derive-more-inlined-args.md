@@ -148,11 +148,15 @@ but the inlined form for positional ones can flip
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn. The autofix is `MachineApplicable` because the rewrite is a
-straightforward textual substitution — every other side of the
-mapping is left exactly as it was.
+Active by default.
+
+## Autofix
+
+`MachineApplicable`. The rewrite is a straightforward textual
+substitution — every other side of the mapping is left exactly as
+it was.
 
 ## Interaction with `clippy::uninlined_format_args`
 

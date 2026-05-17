@@ -135,7 +135,6 @@ action.
   it with a link to an internal style guide. The default message
   above is used when this is unset.
 
-## Severity
+## Default state
 
-Warn. Promoted to deny in projects that want to keep AI-generated
-prose out of their codebase entirely.
+Active by default.

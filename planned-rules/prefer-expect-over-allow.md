@@ -215,9 +215,9 @@ original span but the bookkeeping is worth its own helper.
   catalogue, in particular the lint-name namespacing
   (`perfectionist::*`) that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn.
+Active by default.
 
 ## Interaction with sibling rules
 

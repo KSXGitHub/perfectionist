@@ -319,11 +319,11 @@ The autofix:
   catalogue, in particular the lint-name namespacing
   (`perfectionist::*`) that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn. The default style (`text_block_macros`) reflects the
-catalogue's preferred form; projects that don't want the
-external-crate dependency switch to `line_continuation`.
+Active by default. The default `style = "text_block_macros"`
+reflects the catalogue's preferred form; projects that don't
+want the external-crate dependency switch to `line_continuation`.
 
 ## Interaction with `perfectionist::prefer_raw_string`
 

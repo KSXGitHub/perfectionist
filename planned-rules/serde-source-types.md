@@ -83,7 +83,15 @@ struct PackageName(String);
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
-## Severity
+## Default state
 
-Deny for `borrowed_str` (it produces silently broken parsers). Warn for
-the advisory `cow_or_string` sub-lint.
+The `serde_source_types::` prefix in the sub-check names below
+is a documentation label; per the
+[lint-name namespacing convention](./IMPLEMENTATION_CONVENTIONS.md#lint-name-namespacing),
+each sub-check is registered as its own flat tool lint
+(`perfectionist::borrowed_str`, `perfectionist::cow_or_string`).
+
+- `borrowed_str` — active by default.
+- `cow_or_string` — inactive by default. The advisory check is
+  heuristic and easy to false-positive on; a project opts in by
+  setting `serde_source_types.advisory = true` in `dylint.toml`.

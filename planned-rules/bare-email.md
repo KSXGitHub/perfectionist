@@ -129,8 +129,6 @@ skip_domains = ["example.com", "example.org"]
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn for `angle_brackets`, `mailto`, `both`, and `either`.
-Configurable to `deny` for `forbid` in projects with a strict privacy
-posture.
+Active by default.
