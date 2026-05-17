@@ -559,6 +559,19 @@ code {
   padding: 0.1rem 0.35rem;
   border-radius: 3px;
   font-size: 0.9rem;
+  /* Long lint identifiers and file paths (e.g.
+     `perfectionist::unicode_ellipsis_in_panic_messages` or
+     `src/rules/unicode_ellipsis_in_panic_messages.rs`) have no soft-wrap
+     opportunities by default — `_`, `::`, and `/` don't break — so on
+     phone-portrait widths an inline `<code>` snippet, the article-rule
+     `<h2>`, or the source-file link would push the page wider than the
+     viewport and make the whole document horizontally scrollable. Allow
+     such runs to wrap anywhere, matching the same idiom already used by
+     the nav sidebar list and the mobile-stacked index table. `<pre><code>`
+     is unaffected: `<pre>`'s `white-space: pre` suppresses automatic
+     line-wrapping entirely, so `overflow-wrap` has nothing to act on — the
+     horizontal scrollbar from `pre { overflow-x: auto }` keeps working. */
+  overflow-wrap: anywhere;
 }
 
 pre code {
