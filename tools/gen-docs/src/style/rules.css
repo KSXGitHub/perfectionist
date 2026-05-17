@@ -1,0 +1,240 @@
+table.index {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+}
+
+table.index td,
+table.index th {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid #eaeef2;
+  vertical-align: top;
+}
+
+table.index th {
+  background: #f6f8fa;
+}
+
+/* On phone-sized viewports the three-column index table no longer
+   fits: long snake_case lint identifiers in column 1 either overflow
+   or squeeze the description column to an unreadable sliver. Stack
+   each row vertically into a card-like block instead. Desktop and
+   tablet (>600px) keep the original tabular layout. */
+@media (max-width: 600px) {
+  table.index,
+  table.index tbody,
+  table.index tr,
+  table.index td {
+    display: block;
+    width: 100%;
+  }
+
+  /* Visually hide the header row instead of `display: none` so
+     assistive tech can still announce the column labels before each
+     row's cells are read out. */
+  table.index thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  table.index tr {
+    border-bottom: 1px solid #eaeef2;
+    padding: 0.5rem 0;
+  }
+
+  table.index td {
+    border-bottom: none;
+    padding: 0.15rem 0;
+  }
+
+  table.index td:first-child code {
+    overflow-wrap: anywhere;
+  }
+}
+
+.state {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.8rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
+  margin-right: 0.5rem;
+}
+
+.state-active {
+  background: #dafbe1;
+}
+
+.state-inactive {
+  background: #eaeef2;
+}
+
+article.rule {
+  margin-bottom: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eaeef2;
+}
+
+article.rule h2 {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
+article.rule h2 .lint-prefix {
+  font-size: 0.89em;
+  color: #57606a;
+}
+
+article.rule h2 .lint-name {
+  font-size: 1.11em;
+}
+
+article.rule h2 .rule-jump-link {
+  float: right;
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: normal;
+  color: #57606a;
+  text-decoration: none;
+}
+
+article.rule h2 .rule-jump-link:hover {
+  color: #0969da;
+  text-decoration: underline;
+}
+
+article.rule .source {
+  font-size: 0.85rem;
+  color: #57606a;
+}
+
+article.rule h3 {
+  margin-top: 1.5rem;
+  font-size: 1.05rem;
+}
+
+details.config-details {
+  margin-top: 1rem;
+}
+
+p.config-none {
+  margin-top: 1rem;
+  color: #57606a;
+}
+
+details.config-details > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+details.config-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.config-details > summary.config-summary {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1f2328;
+}
+
+details.config-details > summary::before {
+  content: "▸ ";
+  display: inline-block;
+  width: 1em;
+  color: #57606a;
+}
+
+details.config-details[open] > summary::before {
+  content: "▾ ";
+}
+
+dl.config {
+  margin: 0.5rem 0 1rem;
+  padding: 0.5rem 0.75rem;
+  background: #f6f8fa;
+  border-radius: 6px;
+}
+
+dl.config dt {
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
+}
+
+dl.config dt:first-child {
+  margin-top: 0;
+}
+
+dl.config dd {
+  margin: 0.25rem 0 0.75rem 1rem;
+  font-size: 0.92rem;
+}
+
+dl.config dd p {
+  margin: 0.25rem 0;
+}
+
+.config-key {
+  background: #ddf4ff;
+}
+
+.config-default {
+  font-size: 0.85rem;
+  color: #57606a;
+}
+
+.badge {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  vertical-align: middle;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
+.badge-optional {
+  background: #eaeef2;
+  color: #57606a;
+}
+
+article.rule h4 {
+  margin-top: 1.25rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+  color: #57606a;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+div.custom-type {
+  margin: 0.5rem 0 1rem;
+  padding: 0.5rem 0.75rem;
+  background: #f6f8fa;
+  border-left: 3px solid #d0d7de;
+  border-radius: 0 6px 6px 0;
+}
+
+div.custom-type > p:first-child {
+  margin: 0 0 0.25rem;
+}
+
+.custom-type-name {
+  background: #ddf4ff;
+}
+
+.custom-type-kind {
+  font-size: 0.78rem;
+  color: #57606a;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+div.custom-type dl.config {
+  background: transparent;
+  padding: 0;
+  margin: 0.25rem 0 0;
+}

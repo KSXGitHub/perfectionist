@@ -1,0 +1,90 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  max-width: 820px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  line-height: 1.55;
+  color: #1f2328;
+}
+
+/* HTML spec says `[hidden]` always hides the element, but UA stylesheets
+   express that as `[hidden] { display: none }` — author rules with the
+   same (or lower) specificity but later in the cascade override it
+   silently. The `.nav-toggle` rule's `display: flex` does exactly that,
+   so without this reset the toggle would remain visible despite the
+   Rust template emitting `<button hidden ...>` (defeating the whole
+   "reveal only after JS is ready" defence). `!important` is justified
+   here because the `hidden` semantic is supposed to be unconditional
+   and the alternative is sprinkling `:not([hidden])` through every
+   rule that sets `display`. */
+[hidden] {
+  display: none !important;
+}
+
+h1 {
+  border-bottom: 1px solid #d0d7de;
+  padding-bottom: 0.3rem;
+}
+
+/* The catalogue h1 sits flush against the version banner. Its
+   next DOM siblings are the nav toggle button and the sidebar
+   <nav>, not the banner, so the normal h1↔banner margin collapse
+   doesn't happen — zero both margins so no gap is left in between. */
+h1#catalogue {
+  margin-bottom: 0;
+}
+
+h2 {
+  margin-top: 2.2rem;
+}
+
+.banner {
+  background: #fff8c5;
+  border-left: 4px solid #d4a72c;
+  padding: 0.75rem 1rem;
+  margin: 0 0 1.5rem;
+  font-size: 0.9rem;
+}
+
+pre,
+code {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
+pre {
+  background: #f6f8fa;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 0.88rem;
+}
+
+code {
+  background: #f6f8fa;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: 1rem;
+}
+
+footer {
+  margin-top: 4rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eaeef2;
+  font-size: 0.85rem;
+  color: #57606a;
+}
+
+a {
+  color: #0969da;
+}
+
+a:hover {
+  text-decoration: underline;
+}

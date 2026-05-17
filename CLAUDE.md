@@ -258,7 +258,7 @@ page:
   override the UA rule and the element will stay visible despite
   `hidden`. Pair the pattern with a sweeping
   `[hidden] { display: none !important }` reset (already in
-  `tools/gen-docs/src/style.css`) to make `hidden` unconditional,
+  `tools/gen-docs/src/style/base.css`) to make `hidden` unconditional,
   or qualify every author `display` declaration with
   `:not([hidden])`. The reset is the standard fix and is shipped
   by Bootstrap / Tailwind / most CSS resets.
