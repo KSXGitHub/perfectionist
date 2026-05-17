@@ -159,15 +159,26 @@
   // See category A item 2 in the file header: translate the toggle by
   // the visual viewport's offset so it stays glued to the visible area
   // on browsers that anchor `position: fixed` to the layout viewport.
+  // The same compensation has to apply to the sidebar — if the user
+  // scrolled before tapping the toggle, `visualViewport.offsetTop` is
+  // already non-zero by the time the drawer opens, and the
+  // `position: fixed; top: 0` sidebar would render above the visible
+  // viewport with its header (and close button) clipped off. Locking
+  // body scroll on open only stops *further* URL-bar movement; an
+  // existing offset stays put unless we explicitly compensate. Set
+  // the height explicitly too, since `100dvh` is unreliable on the
+  // same browsers that mis-anchor `position: fixed`.
   if (window.visualViewport) {
     var vv = window.visualViewport;
-    var syncToggleToViewport = function () {
-      toggle.style.transform =
-        "translate(" + vv.offsetLeft + "px, " + vv.offsetTop + "px)";
+    var syncToViewport = function () {
+      var t = "translate(" + vv.offsetLeft + "px, " + vv.offsetTop + "px)";
+      toggle.style.transform = t;
+      sidebar.style.transform = t;
+      sidebar.style.height = vv.height + "px";
     };
-    vv.addEventListener("scroll", syncToggleToViewport);
-    vv.addEventListener("resize", syncToggleToViewport);
-    syncToggleToViewport();
+    vv.addEventListener("scroll", syncToViewport);
+    vv.addEventListener("resize", syncToViewport);
+    syncToViewport();
   }
 
   // ---- Open / close + body scroll lock ----------------------------------
