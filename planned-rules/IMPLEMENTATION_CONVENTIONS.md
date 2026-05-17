@@ -345,11 +345,9 @@ A crate-root suppression of the cross-toolchain warning is:
 ## Rule activation model
 
 Every rule registered by this plugin is declared at the `Warn`
-lint level. The rule's *severity* is therefore not a per-rule
-knob — there is nothing to choose between, and the planning files
-do not document one. What each rule does document is its
-**default state**: whether the rule's pass installs at all when
-the consumer runs `cargo dylint` without overrides.
+lint level. Each rule documents its **default state**: whether
+the rule's pass installs at all when the consumer runs
+`cargo dylint` without overrides.
 
 ```rust
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
