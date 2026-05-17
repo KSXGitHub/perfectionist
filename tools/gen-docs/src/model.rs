@@ -46,7 +46,7 @@ pub(crate) struct Rule {
     /// `[perfectionist] enable = ["<rule>"]` in `dylint.toml`. Read
     /// from a `pub(crate) const DEFAULT_STATE: DefaultState = ...;`
     /// item in the rule's source file when present; absent
-    /// constants imply [`DefaultState::Enabled`] (the catalogue
+    /// constants imply [`DefaultState::Active`] (the catalogue
     /// default). The runtime side uses its own `DefaultState` enum
     /// of the same shape (`src/common.rs`), so the constant's
     /// initializer is read directly here as an enum-variant path
@@ -73,12 +73,12 @@ pub(crate) struct Rule {
 /// the extractor reads from the rule's source. The runtime side
 /// defines its own `DefaultState` of the same shape; gen-docs has
 /// its own copy because the two crates don't link. Defaults to
-/// [`DefaultState::Enabled`] when a rule omits the constant — the
+/// [`DefaultState::Active`] when a rule omits the constant — the
 /// common case across the catalogue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DefaultState {
-    Enabled,
-    Disabled,
+    Active,
+    Inactive,
 }
 
 impl DefaultState {
@@ -87,8 +87,8 @@ impl DefaultState {
     /// list, and the HTML badge agree on wording.
     pub(crate) fn word(self) -> &'static str {
         match self {
-            DefaultState::Enabled => "enabled",
-            DefaultState::Disabled => "disabled",
+            DefaultState::Active => "active",
+            DefaultState::Inactive => "inactive",
         }
     }
 
@@ -97,8 +97,8 @@ impl DefaultState {
     /// border tweaks per state are a one-rule CSS change.
     pub(crate) fn css_class(self) -> &'static str {
         match self {
-            DefaultState::Enabled => "state state-enabled",
-            DefaultState::Disabled => "state state-disabled",
+            DefaultState::Active => "state state-active",
+            DefaultState::Inactive => "state state-inactive",
         }
     }
 }
@@ -197,7 +197,7 @@ pub(crate) struct StructField {
 /// convention is that every rule declares `Warn`; rules that should
 /// be off out of the box live behind a
 /// `pub(crate) const DEFAULT_STATE: DefaultState =
-/// DefaultState::Disabled;` instead of a stricter or looser level.
+/// DefaultState::Inactive;` instead of a stricter or looser level.
 /// The extractor still parses the identifier so a future rule that
 /// drifts from the convention
 /// trips a clear panic naming the file.

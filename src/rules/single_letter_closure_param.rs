@@ -188,8 +188,8 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Disabled =
-        resolved_state("single_letter_closure_param", DefaultState::Enabled)
+    if let DefaultState::Inactive =
+        resolved_state("single_letter_closure_param", DefaultState::Active)
     {
         return;
     }

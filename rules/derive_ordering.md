@@ -2,7 +2,7 @@
 
 # `perfectionist::derive_ordering`
 
-**Default state:** `disabled`  
+**Default state:** `inactive`  
 **Source:** [`src/rules/derive_ordering.rs`](../src/rules/derive_ordering.rs)
 
 > trait names in a `#[derive(...)]` list are not in the configured order
@@ -34,7 +34,7 @@ for enforcing one.
 
 The opinion is opt-in: a project that doesn't want to commit
 to a single ordering shouldn't have to set anything. The rule
-therefore ships disabled by default — enable it per crate by
+is therefore inactive by default — enable it per crate by
 adding to `dylint.toml`:
 
 ```toml

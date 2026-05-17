@@ -2,7 +2,7 @@
 
 # `perfectionist::unicode_ellipsis_in_comments`
 
-**Default state:** `enabled`  
+**Default state:** `active`  
 **Source:** [`src/rules/unicode_ellipsis_in_comments.rs`](../src/rules/unicode_ellipsis_in_comments.rs)
 
 > U+2026 HORIZONTAL ELLIPSIS in non-doc comments; prefer `...`

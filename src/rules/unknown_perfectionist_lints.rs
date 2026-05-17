@@ -86,8 +86,8 @@ pub fn register_lint(lint_store: &mut LintStore) {
 /// has registered its lints, since the pass snapshots the registered
 /// `perfectionist::*` names from `lint_store` at construction time.
 pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Disabled =
-        resolved_state("unknown_perfectionist_lints", DefaultState::Enabled)
+    if let DefaultState::Inactive =
+        resolved_state("unknown_perfectionist_lints", DefaultState::Active)
     {
         return;
     }

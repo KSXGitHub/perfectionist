@@ -84,8 +84,8 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Disabled =
-        resolved_state("unicode_ellipsis_in_panic_messages", DefaultState::Enabled)
+    if let DefaultState::Inactive =
+        resolved_state("unicode_ellipsis_in_panic_messages", DefaultState::Active)
     {
         return;
     }

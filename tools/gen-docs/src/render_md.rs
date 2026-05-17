@@ -418,7 +418,7 @@ mod tests {
     fn fake_rule() -> Rule {
         Rule {
             namespaced: "perfectionist::demo_rule".to_owned(),
-            default_state: DefaultState::Enabled,
+            default_state: DefaultState::Active,
             short_desc: "demo rule used in tests".to_owned(),
             doc_markdown: "### What it does\nDoes a demo.".to_owned(),
             relative_source: PathBuf::from("src/rules/demo_rule.rs"),
@@ -436,18 +436,18 @@ mod tests {
     fn rule_md_includes_header_state_and_short_desc() {
         let md = render_rule_md(&fake_rule(), "../");
         assert!(md.contains("# `perfectionist::demo_rule`\n"));
-        assert!(md.contains("**Default state:** `enabled`"));
+        assert!(md.contains("**Default state:** `active`"));
         assert!(md.contains("> demo rule used in tests"));
         assert!(md.ends_with('\n'));
         assert!(!md.ends_with("\n\n"));
     }
 
     #[test]
-    fn rule_md_renders_disabled_state_for_opt_in_rules() {
+    fn rule_md_renders_inactive_state_for_opt_in_rules() {
         let mut rule = fake_rule();
-        rule.default_state = DefaultState::Disabled;
+        rule.default_state = DefaultState::Inactive;
         let md = render_rule_md(&rule, "../");
-        assert!(md.contains("**Default state:** `disabled`"));
+        assert!(md.contains("**Default state:** `inactive`"));
     }
 
     #[test]
@@ -507,7 +507,7 @@ mod tests {
         // Each entry spans two lines: the link/state line, then a
         // blank line, then the indented short-description
         // continuation paragraph.
-        assert!(index.contains("- [`demo_rule`](./demo_rule.md) (default: `enabled`).\n"));
+        assert!(index.contains("- [`demo_rule`](./demo_rule.md) (default: `active`).\n"));
         assert!(index.contains("\n  uses | inside\n"));
         // The bullet-list form needs no `|` escaping (unlike a
         // table) — the pipe in the description appears raw.

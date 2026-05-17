@@ -46,7 +46,7 @@ declare_tool_lint! {
     ///
     /// The opinion is opt-in: a project that doesn't want to commit
     /// to a single ordering shouldn't have to set anything. The rule
-    /// therefore ships disabled by default — enable it per crate by
+    /// is therefore inactive by default — enable it per crate by
     /// adding to `dylint.toml`:
     ///
     /// ```toml
@@ -76,7 +76,7 @@ declare_tool_lint! {
 /// `[[perfectionist.enable]]` array-of-tables form). Read by
 /// `register_pass` below; gen-docs picks the constant up via syn
 /// to render the rule's default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Disabled;
+pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 
 const CONFIG_KEY: &str = "perfectionist::derive_ordering";
 
@@ -147,7 +147,7 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Disabled = resolved_state("derive_ordering", DEFAULT_STATE) {
+    if let DefaultState::Inactive = resolved_state("derive_ordering", DEFAULT_STATE) {
         return;
     }
     // Pre-expansion: derives are consumed during macro expansion, so

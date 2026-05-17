@@ -117,8 +117,8 @@ impl RuleSelector {
 /// directly to render the rule's catalogue entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DefaultState {
-    Enabled,
-    Disabled,
+    Active,
+    Inactive,
 }
 
 /// Resolved per-rule override map, built once from the
@@ -147,8 +147,8 @@ pub(crate) fn init_global_config() {
     let config: GlobalConfig = dylint_linting::config_or_default("perfectionist");
     let mut overrides: HashMap<String, DefaultState> = HashMap::new();
     for (selectors, state) in [
-        (&config.enable, DefaultState::Enabled),
-        (&config.disable, DefaultState::Disabled),
+        (&config.enable, DefaultState::Active),
+        (&config.disable, DefaultState::Inactive),
     ] {
         for selector in selectors {
             let name = selector.name();
@@ -171,15 +171,15 @@ pub(crate) fn init_global_config() {
 /// — no `perfectionist::` prefix). Resolution order:
 ///
 /// 1. If `name` appears under `disable` in the `[perfectionist]`
-///    table, return [`DefaultState::Disabled`].
-/// 2. If it appears under `enable`, return [`DefaultState::Enabled`].
+///    table, return [`DefaultState::Inactive`].
+/// 2. If it appears under `enable`, return [`DefaultState::Active`].
 /// 3. Otherwise return `default` — the per-rule baseline.
 ///
 /// Each rule's `register_pass` passes its own baseline as
-/// `default`: most rules pass [`DefaultState::Enabled`]; rules
+/// `default`: most rules pass [`DefaultState::Active`]; rules
 /// listed in `src/rules/<name>.rs` as
-/// `DEFAULT_STATE: DefaultState = DefaultState::Disabled` pass
-/// `Disabled` and ship turned off until the user opts in.
+/// `DEFAULT_STATE: DefaultState = DefaultState::Inactive` pass
+/// `Inactive` and ship turned off until the user opts in.
 pub(crate) fn resolved_state(name: &str, default: DefaultState) -> DefaultState {
     let overrides = GLOBAL_OVERRIDES
         .get()

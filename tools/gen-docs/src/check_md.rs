@@ -240,7 +240,7 @@ mod tests {
     fn fake_rule(name: &str) -> Rule {
         Rule {
             namespaced: format!("perfectionist::{name}"),
-            default_state: DefaultState::Enabled,
+            default_state: DefaultState::Active,
             short_desc: format!("{name} short desc"),
             doc_markdown: "Body.".to_owned(),
             relative_source: PathBuf::from(format!("src/rules/{name}.rs")),

@@ -82,7 +82,7 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Disabled = resolved_state("single_letter_generic", DefaultState::Enabled) {
+    if let DefaultState::Inactive = resolved_state("single_letter_generic", DefaultState::Active) {
         return;
     }
     lint_store.register_late_pass(|_| Box::new(SingleLetterGeneric::new()));

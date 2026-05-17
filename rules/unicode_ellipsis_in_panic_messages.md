@@ -2,7 +2,7 @@
 
 # `perfectionist::unicode_ellipsis_in_panic_messages`
 
-**Default state:** `enabled`  
+**Default state:** `active`  
 **Source:** [`src/rules/unicode_ellipsis_in_panic_messages.rs`](../src/rules/unicode_ellipsis_in_panic_messages.rs)
 
 > U+2026 HORIZONTAL ELLIPSIS in panic / assertion / expect messages; prefer `...`

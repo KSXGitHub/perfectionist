@@ -6,45 +6,45 @@ Auto-generated catalogue of implemented lints. Each entry links to a per-rule ma
 
 Lint-control attributes use the `perfectionist::` namespace.
 
-- [`arc_rc_clone`](./arc_rc_clone.md) (default: `enabled`).
+- [`arc_rc_clone`](./arc_rc_clone.md) (default: `active`).
 
   calling `.clone()` on an `Arc<T>` or `Rc<T>`; prefer the qualified `Arc::clone` / `Rc::clone` form
-- [`derive_ordering`](./derive_ordering.md) (default: `disabled`).
+- [`derive_ordering`](./derive_ordering.md) (default: `inactive`).
 
   trait names in a `#[derive(...)]` list are not in the configured order
-- [`flat_module_pattern`](./flat_module_pattern.md) (default: `enabled`).
+- [`flat_module_pattern`](./flat_module_pattern.md) (default: `active`).
 
   submodule defined as `module/mod.rs`; prefer the flat `module.rs` layout
-- [`macro_argument_binding`](./macro_argument_binding.md) (default: `enabled`).
+- [`macro_argument_binding`](./macro_argument_binding.md) (default: `active`).
 
   macro invocation passes an impure expression that should be bound to a `let` first
-- [`macro_trailing_comma`](./macro_trailing_comma.md) (default: `enabled`).
+- [`macro_trailing_comma`](./macro_trailing_comma.md) (default: `active`).
 
   macro invocation does not follow rustfmt's vertical trailing-comma policy
-- [`non_exhaustive_error`](./non_exhaustive_error.md) (default: `disabled`).
+- [`non_exhaustive_error`](./non_exhaustive_error.md) (default: `inactive`).
 
   error-shaped type is missing `#[non_exhaustive]`
-- [`prefer_raw_string`](./prefer_raw_string.md) (default: `enabled`).
+- [`prefer_raw_string`](./prefer_raw_string.md) (default: `active`).
 
   string literal contains only raw-expressible escapes; prefer the raw-string form
-- [`single_letter_closure_param`](./single_letter_closure_param.md) (default: `enabled`).
+- [`single_letter_closure_param`](./single_letter_closure_param.md) (default: `active`).
 
   closure parameter has a single-letter name
-- [`single_letter_function_param`](./single_letter_function_param.md) (default: `enabled`).
+- [`single_letter_function_param`](./single_letter_function_param.md) (default: `active`).
 
   function parameter has a single-letter name
-- [`single_letter_generic`](./single_letter_generic.md) (default: `enabled`).
+- [`single_letter_generic`](./single_letter_generic.md) (default: `active`).
 
   generic type parameter has a single-letter name
-- [`single_letter_let_binding`](./single_letter_let_binding.md) (default: `enabled`).
+- [`single_letter_let_binding`](./single_letter_let_binding.md) (default: `active`).
 
   `let` binding has a single-letter name
-- [`unicode_ellipsis_in_comments`](./unicode_ellipsis_in_comments.md) (default: `enabled`).
+- [`unicode_ellipsis_in_comments`](./unicode_ellipsis_in_comments.md) (default: `active`).
 
   U+2026 HORIZONTAL ELLIPSIS in non-doc comments; prefer `...`
-- [`unicode_ellipsis_in_panic_messages`](./unicode_ellipsis_in_panic_messages.md) (default: `enabled`).
+- [`unicode_ellipsis_in_panic_messages`](./unicode_ellipsis_in_panic_messages.md) (default: `active`).
 
   U+2026 HORIZONTAL ELLIPSIS in panic / assertion / expect messages; prefer `...`
-- [`unknown_perfectionist_lints`](./unknown_perfectionist_lints.md) (default: `enabled`).
+- [`unknown_perfectionist_lints`](./unknown_perfectionist_lints.md) (default: `active`).
 
   lint-control attribute references a `perfectionist::*` lint that this plugin does not register
