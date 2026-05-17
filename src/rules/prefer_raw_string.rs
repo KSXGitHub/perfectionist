@@ -145,7 +145,7 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Disabled = resolved_state("prefer_raw_string", DefaultState::Enabled) {
+    if let DefaultState::Inactive = resolved_state("prefer_raw_string", DefaultState::Active) {
         return;
     }
     lint_store.register_late_pass(|_| Box::new(PreferRawString::new()));

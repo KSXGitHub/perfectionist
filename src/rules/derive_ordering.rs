@@ -76,7 +76,7 @@ declare_tool_lint! {
 /// `[[perfectionist.enable]]` array-of-tables form). Read by
 /// `register_pass` below; gen-docs picks the constant up via syn
 /// to render the rule's default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Disabled;
+pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 
 const CONFIG_KEY: &str = "perfectionist::derive_ordering";
 
@@ -147,7 +147,7 @@ pub fn register_lint(lint_store: &mut LintStore) {
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Disabled = resolved_state("derive_ordering", DEFAULT_STATE) {
+    if let DefaultState::Inactive = resolved_state("derive_ordering", DEFAULT_STATE) {
         return;
     }
     // Pre-expansion: derives are consumed during macro expansion, so

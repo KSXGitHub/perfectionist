@@ -142,7 +142,7 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
             // `declare_tool_lint!` declares level `Warn`. The
             // default-disabled axis lives in
             // `pub(crate) const DEFAULT_STATE: DefaultState =
-            // DefaultState::Disabled;` alongside the macro, not in
+            // DefaultState::Inactive;` alongside the macro, not in
             // the level. A non-`Warn` here means the source has
             // drifted from the policy; we panic so a doc
             // regeneration catches it rather than silently
@@ -153,7 +153,7 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
                      every `declare_tool_lint!` uses level `Warn`. Move the \
                      off-by-default signal into \
                      `pub(crate) const DEFAULT_STATE: DefaultState = \
-                     DefaultState::Disabled;` next to the macro and change \
+                     DefaultState::Inactive;` next to the macro and change \
                      the level to `Warn`.",
                     source_path.display(),
                 );
@@ -178,11 +178,11 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
 /// every rule keeps it next to `declare_tool_lint!`). Absence of the
 /// constant means the rule is on out of the box — the common case
 /// across the catalogue — so the function returns
-/// [`DefaultState::Enabled`].
+/// [`DefaultState::Active`].
 ///
 /// No `bool` intermediate: the runtime constant uses the same enum
 /// shape gen-docs renders, and we read its initializer's *path* end
-/// segment directly. `DefaultState::Disabled` and a `use … Disabled`
+/// segment directly. `DefaultState::Inactive` and a `use … Inactive`
 /// alias both work because we only inspect the last segment.
 fn extract_default_state(source_path: &Path, merged_file: &syn::File) -> DefaultState {
     use syn::{Expr, ExprPath, Type, TypePath};
@@ -210,7 +210,7 @@ fn extract_default_state(source_path: &Path, merged_file: &syn::File) -> Default
         else {
             panic!(
                 "{}: `DEFAULT_STATE` initializer must be a `DefaultState` \
-                 variant path (e.g. `DefaultState::Enabled`); other \
+                 variant path (e.g. `DefaultState::Active`); other \
                  expressions defeat the gen-docs syntactic extraction",
                 source_path.display(),
             );
@@ -222,16 +222,16 @@ fn extract_default_state(source_path: &Path, merged_file: &syn::File) -> Default
             );
         };
         return match last_segment.ident.to_string().as_str() {
-            "Enabled" => DefaultState::Enabled,
-            "Disabled" => DefaultState::Disabled,
+            "Active" => DefaultState::Active,
+            "Inactive" => DefaultState::Inactive,
             other => panic!(
                 "{}: `DEFAULT_STATE` initializer names unknown `DefaultState` \
-                 variant `{other}`; only `Enabled` and `Disabled` are valid.",
+                 variant `{other}`; only `Active` and `Inactive` are valid.",
                 source_path.display(),
             ),
         };
     }
-    DefaultState::Enabled
+    DefaultState::Active
 }
 
 /// Return a `syn::File` containing `parent`'s items followed by every

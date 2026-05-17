@@ -418,7 +418,7 @@ mod tests {
     fn fake_rule() -> Rule {
         Rule {
             namespaced: "perfectionist::demo_rule".to_owned(),
-            default_state: DefaultState::Enabled,
+            default_state: DefaultState::Active,
             short_desc: "demo rule used in tests".to_owned(),
             doc_markdown: "### What it does\nDoes a demo.".to_owned(),
             relative_source: PathBuf::from("src/rules/demo_rule.rs"),
@@ -445,7 +445,7 @@ mod tests {
     #[test]
     fn rule_md_renders_inactive_state_for_opt_in_rules() {
         let mut rule = fake_rule();
-        rule.default_state = DefaultState::Disabled;
+        rule.default_state = DefaultState::Inactive;
         let md = render_rule_md(&rule, "../");
         assert!(md.contains("**Default state:** `inactive`"));
     }
