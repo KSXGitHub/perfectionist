@@ -2,7 +2,7 @@
 
 # `perfectionist::single_letter_let_binding`
 
-**Default state:** `enabled`  
+**Default state:** `active`  
 **Source:** [`src/rules/single_letter_let_binding.rs`](../src/rules/single_letter_let_binding.rs)
 
 > `let` binding has a single-letter name

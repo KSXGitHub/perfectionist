@@ -39,7 +39,7 @@ declare_tool_lint! {
     /// The opinion is opt-in: some projects deliberately use exhaustive
     /// error enums to force downstream consumers to handle every new
     /// variant, and binary crates have no SemVer surface to protect.
-    /// The rule therefore ships disabled by default — enable it per
+    /// The rule is therefore inactive by default — enable it per
     /// crate by adding to `dylint.toml`:
     ///
     /// ```toml

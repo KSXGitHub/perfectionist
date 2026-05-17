@@ -87,8 +87,8 @@ impl DefaultState {
     /// list, and the HTML badge agree on wording.
     pub(crate) fn word(self) -> &'static str {
         match self {
-            DefaultState::Enabled => "enabled",
-            DefaultState::Disabled => "disabled",
+            DefaultState::Enabled => "active",
+            DefaultState::Disabled => "inactive",
         }
     }
 
@@ -97,8 +97,8 @@ impl DefaultState {
     /// border tweaks per state are a one-rule CSS change.
     pub(crate) fn css_class(self) -> &'static str {
         match self {
-            DefaultState::Enabled => "state state-enabled",
-            DefaultState::Disabled => "state state-disabled",
+            DefaultState::Enabled => "state state-active",
+            DefaultState::Disabled => "state state-inactive",
         }
     }
 }

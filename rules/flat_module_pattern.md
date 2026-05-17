@@ -2,7 +2,7 @@
 
 # `perfectionist::flat_module_pattern`
 
-**Default state:** `enabled`  
+**Default state:** `active`  
 **Source:** [`src/rules/flat_module_pattern.rs`](../src/rules/flat_module_pattern.rs)
 
 > submodule defined as `module/mod.rs`; prefer the flat `module.rs` layout

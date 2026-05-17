@@ -2,7 +2,7 @@
 
 # `perfectionist::arc_rc_clone`
 
-**Default state:** `enabled`  
+**Default state:** `active`  
 **Source:** [`src/rules/arc_rc_clone.rs`](../src/rules/arc_rc_clone.rs)
 
 > calling `.clone()` on an `Arc<T>` or `Rc<T>`; prefer the qualified `Arc::clone` / `Rc::clone` form

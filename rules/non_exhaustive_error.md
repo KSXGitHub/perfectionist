@@ -2,7 +2,7 @@
 
 # `perfectionist::non_exhaustive_error`
 
-**Default state:** `disabled`  
+**Default state:** `inactive`  
 **Source:** [`src/rules/non_exhaustive_error.rs`](../src/rules/non_exhaustive_error.rs)
 
 > error-shaped type is missing `#[non_exhaustive]`
@@ -30,7 +30,7 @@ enum.
 The opinion is opt-in: some projects deliberately use exhaustive
 error enums to force downstream consumers to handle every new
 variant, and binary crates have no SemVer surface to protect.
-The rule therefore ships disabled by default — enable it per
+The rule is therefore inactive by default — enable it per
 crate by adding to `dylint.toml`:
 
 ```toml

@@ -46,7 +46,7 @@ declare_tool_lint! {
     ///
     /// The opinion is opt-in: a project that doesn't want to commit
     /// to a single ordering shouldn't have to set anything. The rule
-    /// therefore ships disabled by default — enable it per crate by
+    /// is therefore inactive by default — enable it per crate by
     /// adding to `dylint.toml`:
     ///
     /// ```toml
