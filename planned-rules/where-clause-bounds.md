@@ -61,6 +61,6 @@ where
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn.
+Active by default.

@@ -154,7 +154,8 @@ Special cases:
 Both `group_imports` and `imports_granularity` are unstable rustfmt
 options; this lint exists for projects on stable.
 
-## Severity
+## Default state
 
-Warn for both styles. A mismatch with the configured style is the
-violation; neither style is "wrong" in the abstract.
+Active by default. A mismatch with the configured `style` is the
+violation; neither style is "wrong" in the abstract, so the rule
+is purely about consistency with the project's chosen layout.

@@ -132,10 +132,14 @@ count_graphemes = false
 A project that wants a single budget can set the same value for all
 four `*_max_*` knobs.
 
-## Severity
+## Default state
 
-Warn. The autofix is *not* mechanical — trimming requires editorial
-judgement — so the lint emits a help-only suggestion pointing at
+Active by default.
+
+## Autofix
+
+Not mechanical — trimming requires editorial judgement — so the
+lint emits a help-only suggestion pointing at
 `#[arg(long_help = "...")]` as the canonical escape hatch.
 
 ## Interaction with `clap-help-no-markdown`

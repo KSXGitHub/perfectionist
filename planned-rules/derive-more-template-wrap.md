@@ -170,9 +170,9 @@ re-formatting would interact with the rewrite.
   catalogue, in particular the lint-name namespacing
   (`perfectionist::*`) that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn.
+Active by default.
 
 ## Interaction with sibling rules
 

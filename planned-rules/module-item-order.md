@@ -71,6 +71,6 @@ pub use parser::Parser;
   block) are explicitly permitted by both source documents and must not
   trigger the lint when they sit *after* the main import block.
 
-## Severity
+## Default state
 
-Warn.
+Active by default.

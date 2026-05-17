@@ -196,12 +196,16 @@ crate_path = "derive_more"
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn for the easy and medium sub-lints. The hard sub-lints, when
-enabled, default to warn but should be promoted to deny only after
-the project has audited their suggestions on a representative
-sample.
+Active by default for the easy and medium sub-lints. The hard
+sub-lints ship inactive by default — a project opts in via the
+configuration knobs documented above — and remain at the
+registered warn level once active. Projects that have audited
+their suggestions on a representative sample can additionally
+promote any sub-lint to deny via
+`#![deny(perfectionist::<sub_lint>)]` or
+`DYLINT_RUSTFLAGS=-D perfectionist::<sub_lint>`.
 
 ## Why restrict this?
 

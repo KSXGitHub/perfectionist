@@ -74,7 +74,12 @@ historical reference). Provide a project-level allowlist
 (`intra_doc_links.skip_idents = ["LegacyCache"]`) and respect
 `#[allow(...)]`.
 
-## Severity
+## Default state
 
-Warn. The autofix is `MachineApplicable` only when resolution is
-unambiguous in the current scope.
+Active by default.
+
+## Autofix
+
+`MachineApplicable` only when resolution is unambiguous in the
+current scope; ambiguous cases are emitted as help-only
+suggestions.

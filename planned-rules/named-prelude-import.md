@@ -99,6 +99,6 @@ prelude_segment_names = ["prelude"]
 allowed_paths = []
 ```
 
-## Severity
+## Default state
 
-Warn.
+Active by default.

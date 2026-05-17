@@ -252,10 +252,11 @@ For each path:
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn. Default `style = "preserve"` keeps the rule a no-op until a
-project opts in.
+Active by default, but the default `style = "preserve"` keeps the
+pass a no-op until the project opts into `prefer_imported` or
+`prefer_qualified`.
 
 ## Why one rule instead of two
 

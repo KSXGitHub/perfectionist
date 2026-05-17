@@ -128,11 +128,13 @@ hand, not in the lint itself.
   catalogue, in particular the lint-name namespacing
   (`perfectionist::*`) that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn. Promotable to deny in projects that have completed the
+Active by default. Projects that have completed the
 `thiserror`-to-`derive_more` migration and want to keep the door
-shut.
+shut can additionally promote the lint via
+`#![deny(perfectionist::prefer_derive_more_over_thiserror)]` or
+`DYLINT_RUSTFLAGS=-D perfectionist::prefer_derive_more_over_thiserror`.
 
 ## Interaction with sibling lints
 

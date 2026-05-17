@@ -150,8 +150,12 @@ extra_forbid = ["bold", "italic", "list"]   # empty by default
 override_keys = ["about", "long_about", "help", "long_help"]
 ```
 
-## Severity
+## Default state
 
-Warn. Autofix is offered only for the trivial code-span case
-(`` `Foo` `` → `Foo`); the others depend on what the author intended
-and are emitted as help-only suggestions.
+Active by default.
+
+## Autofix
+
+Offered only for the trivial code-span case (`` `Foo` `` → `Foo`);
+the other constructs depend on what the author intended and are
+emitted as help-only suggestions.

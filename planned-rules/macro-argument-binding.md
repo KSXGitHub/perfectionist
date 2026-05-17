@@ -765,9 +765,9 @@ modes 0-2 first; mode 3 as a follow-up.
   for cross-cutting conventions, in particular the lint-name
   namespacing under `perfectionist::*`.
 
-## Severity
+## Default state
 
-Warn.
+Active by default.
 
 ## Interaction with sibling rules
 

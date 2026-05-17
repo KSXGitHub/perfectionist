@@ -129,8 +129,10 @@ skip_domains = ["example.com", "example.org"]
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn for `angle_brackets`, `mailto`, `both`, and `either`.
-Configurable to `deny` for `forbid` in projects with a strict privacy
-posture.
+Active by default. Projects with a strict privacy posture that
+configure `style = "forbid"` can additionally promote the lint via
+`#![deny(perfectionist::bare_email)]` or
+`DYLINT_RUSTFLAGS=-D perfectionist::bare_email`, so a bare address
+becomes a hard error rather than a warning.

@@ -105,8 +105,8 @@ The lint emits nothing. Useful as a project-wide acknowledgement that
     braces.
   - `{self, X}`: split into two `use` statements (parent path and the
     parent-path-plus-X), preserving attributes and visibility.
-  - `::self` standalone: rewrite as the parent path; emit at warn
-    severity with a note that the original form may be invalid.
+  - `::self` standalone: rewrite as the parent path, with a note
+    that the original form may be invalid.
 - Under `combined`:
   - Walk adjacency windows of two `use` statements with matching attrs
     and visibility. If statement A imports `foo::bar` (or
@@ -134,9 +134,10 @@ The lint emits nothing. Useful as a project-wide acknowledgement that
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn for both `forbid` and `combined`. `preserve` emits nothing.
+Active by default, but the default `style = "preserve"` keeps the
+pass a no-op until the project opts into `forbid` or `combined`.
 
 ## Why a separate lint from `import-granularity`
 

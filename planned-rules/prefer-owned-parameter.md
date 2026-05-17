@@ -184,9 +184,9 @@ A conservative starting implementation:
   needed; the predicate degenerates to a single-use check.
 - Defer the multi-use / branching cases to a later pass.
 
-## Severity
+## Default state
 
-Warn.
+Active by default.
 
 ## Interaction with clippy
 

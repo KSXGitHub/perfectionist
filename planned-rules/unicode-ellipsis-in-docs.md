@@ -81,6 +81,6 @@ Replace `…` with `...`. `Applicability::MachineApplicable`.
 - `unicode_ellipsis_in_docs.allow_in_code_spans = true` — defaults to
   `true`; set to `false` to enforce the rule even inside `` `...` ``.
 
-## Severity
+## Default state
 
-Warn.
+Active by default.

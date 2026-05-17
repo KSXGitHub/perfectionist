@@ -251,12 +251,12 @@ apply it without manual review.
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
-## Severity
+## Default state
 
-Warn for both directions. Default style `preserve` (no enforcement)
-so the rule is zero-friction to adopt. A project that has audited
-the trivial-impl recogniser on its codebase opts in by setting
-`style`.
+Active by default, but the default `style = "preserve"` keeps the
+pass a no-op so the rule is zero-friction to adopt. A project
+that has audited the trivial-impl recogniser on its codebase opts
+in by setting `style` to `transparent` or `from_into`.
 
 ## Why a single rule instead of two
 
