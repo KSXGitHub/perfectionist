@@ -108,7 +108,8 @@ Fire only on expressions that satisfy **all** of:
      `test_directories` at the crate root (default `tests/`).
      `benches/` is **not** included by default — bench code is
      performance-sensitive, the same rationale that excludes
-     production code — but can be added via configuration.
+     production code — but a project can opt in by adding
+     `"benches"` to `test_directories`.
 2. **The expression's runtime value is a JSON document.** Two
    detection modes:
    - *Literal mode.* The expression is a string literal whose
