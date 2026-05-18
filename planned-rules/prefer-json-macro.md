@@ -381,7 +381,10 @@ corresponding Rust expression from the `format!` argument list.
 Placeholders that occupy a string position in the JSON become
 `format!("...{}...", expr)` calls (or the placeholder expression
 directly when the surrounding string is empty), preserving the
-escape semantics that `json!` then handles.
+escape semantics that `json!` then handles. The placeholder's
+format specifier — `{count:04}`, `{name:>10}`, `{value:.3}` —
+is carried into the wrapping `format!`'s template (`"{:04}"`
+etc.) so the formatted output is byte-identical to the original.
 
 `Applicability::MaybeIncorrect`. Two failure modes the
 suggestion cannot rule out:
