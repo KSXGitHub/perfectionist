@@ -30,8 +30,14 @@ declare_tool_lint! {
     /// letter, unless the closure is a trivial single-expression
     /// callback or the identifier is in the conventional-name
     /// allowlist (`n` for an unsigned count, `f` for a
-    /// `fmt::Formatter`, `i` / `j` / `k` for indices). Two
-    /// shapes qualify as trivial:
+    /// `fmt::Formatter`, `i` / `j` / `k` for indices).
+    /// "Single-expression" is a shared precondition for the
+    /// trivial-callback exception: the body must be a bare
+    /// expression or a block whose only content is a trailing
+    /// expression — a body with any `let` binding or other
+    /// statement before the trailing expression disqualifies the
+    /// closure regardless of which branch below would otherwise
+    /// apply. Given that, one of two further shapes must hold:
     /// - the closure is the immediate argument of a call whose
     ///   callee name is in the trivial-callback allowlist
     ///   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
