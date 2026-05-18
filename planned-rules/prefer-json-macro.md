@@ -438,7 +438,9 @@ Warn.
   interesting JSON document — the `json!` rewrite produces
   structured data rather than a multi-line string, so the
   text-block reshape becomes moot once the user applies it.
-- [`format-macro-wrap`](./format-macro-wrap.md) — when a
-  `format!` invocation triggers both rules, prefer this one for
-  the same reason: the `json!` rewrite eliminates the
-  `format!` invocation entirely, making the wrap question moot.
+- [`format-macro-wrap`](./format-macro-wrap.md) — same
+  suppression direction: when a `format!` invocation parses as
+  a structurally interesting JSON document, `format_macro_wrap`
+  should defer to this rule, since the `json!` rewrite
+  eliminates the `format!` invocation entirely and the wrap
+  question becomes moot.
