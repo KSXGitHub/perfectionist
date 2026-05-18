@@ -61,6 +61,23 @@ fn reason_empty() {}
 #[allow()]
 fn allow_no_lints() {}
 
+// Bad: multi-line `cfg_attr` — the autofix should target the
+// inner `allow` argument list, not the outer `cfg_attr` one.
+#[cfg_attr(
+    all(),
+    allow(dead_code),
+)]
+fn missing_reason_multiline_cfg_attr() {}
+
+// Bad: inner-attribute form (`#![...]`). The autofix's snippet
+// starts with `#![` rather than `#[`; the scanner ignores the
+// prefix and still finds the inner argument list.
+mod inner_attribute_bare {
+    #![allow(dead_code)]
+
+    pub(super) fn _used_so_dead_code_fires() {}
+}
+
 // Good: `reason` of length 3.
 #[allow(dead_code, reason = "ok!")]
 fn good_min_length() {}

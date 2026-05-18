@@ -105,6 +105,11 @@ pub fn register_pass(lint_store: &mut LintStore) {
 }
 
 impl EarlyLintPass for LintSilenceReason {
+    /// `EarlyLintPass::check_attribute` runs once per syntactic
+    /// attribute in source — `cfg_attr` is not unwrapped before the
+    /// callback. The walker below therefore reaches every silencing
+    /// attribute exactly once: bare `#[allow]` / `#[expect]` through
+    /// the first branch, `cfg_attr`-wrapped through the second.
     fn check_attribute(&mut self, lint_context: &EarlyContext<'_>, attribute: &Attribute) {
         if is_silencing_attribute_name(attribute.name()) {
             if let Some(args) = attribute.meta_item_list() {
@@ -221,8 +226,9 @@ impl LintSilenceReason {
                 return false;
             }
         }
-        // Vacuously true for an attribute with zero lint names
-        // (`#[allow()]`): the attribute is syntactically valid but
+        // Vacuously true for an attribute with zero lint names —
+        // `#[allow()]` and the degenerate `#[allow(reason = "...")]`
+        // both fall here. The attribute is syntactically valid but
         // silences nothing, so the rule has nothing to flag.
         true
     }

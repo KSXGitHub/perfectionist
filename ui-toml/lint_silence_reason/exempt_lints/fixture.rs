@@ -16,7 +16,12 @@ fn fully_exempt() {}
 #[allow(clippy::module_name_repetitions, dead_code)]
 fn mixed_with_non_exempt() {}
 
+// Good — the exemption applies through `cfg_attr` too.
+#[cfg_attr(all(), allow(clippy::module_name_repetitions))]
+fn fully_exempt_cfg_attr() {}
+
 fn main() {
     fully_exempt();
     mixed_with_non_exempt();
+    fully_exempt_cfg_attr();
 }
