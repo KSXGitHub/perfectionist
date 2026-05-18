@@ -93,6 +93,9 @@ fn run() {
     // any of the HIR-level trivial-wrapper arms, so the rule relies
     // on the body's expansion-origin span to recognise it.
     let _nested: Vec<Vec<i32>> = sorted.iter().copied().map(|x| vec![x]).collect();
+    // OK: `n` is in the default closure-parameter allowlist, so the
+    // body shape doesn't matter for this one — the conventional-name
+    // filter exempts the closure before the trivial-wrapper check.
     let _shouted: Vec<String> = sorted.iter().map(|n| format!("{n}!")).collect();
 
     // OK: `i` is in the default closure-parameter allowlist (index
