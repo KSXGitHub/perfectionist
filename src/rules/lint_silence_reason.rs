@@ -398,7 +398,7 @@ fn build_insertion(snippet: &str) -> Option<Insertion> {
     if !head[open_paren_offset..].contains('\n') {
         // Single-line layout: trim trailing ASCII whitespace from
         // `head` to see whether the last non-space char is a comma.
-        let trimmed = head.trim_end_matches([' ', '\t']);
+        let trimmed = head.trim_end_matches([' ', '\t', '\r']);
         let has_trailing_comma = trimmed.ends_with(',');
         let replacement = if has_trailing_comma {
             r#" reason = "","#
@@ -423,7 +423,7 @@ fn build_insertion(snippet: &str) -> Option<Insertion> {
         .chars()
         .take_while(|character| matches!(character, ' ' | '\t'))
         .collect();
-    let last_content_trimmed = last_content_line.trim_end_matches([' ', '\t']);
+    let last_content_trimmed = last_content_line.trim_end_matches([' ', '\t', '\r']);
 
     if last_content_trimmed.ends_with(',') || last_content_trimmed.is_empty() {
         // Either the previous argument already carries a trailing
@@ -527,5 +527,26 @@ mod tests {
         let input = "#[allow(/* ) */ foo)]";
         let expected = r#"#[allow(/* ) */ foo, reason = "")]"#;
         assert_eq!(run(input), expected);
+    }
+
+    /// CRLF line endings should not confuse the trailing-comma
+    /// detection — `\r` is treated the same as horizontal
+    /// whitespace when scanning the end of the last content line.
+    /// The inserted line uses LF; the existing source's CRLF runs
+    /// are preserved.
+    #[test]
+    fn multi_line_crlf_trailing_comma() {
+        let input = "allow(\r\n    foo,\r\n)";
+        let expected = "allow(\r\n    foo,\r\n    reason = \"\",\n)";
+        assert_eq!(run(input), expected);
+    }
+
+    /// Empty snippets and snippets with no parens return `None`
+    /// so the caller falls back to the no-sugg diagnostic.
+    #[test]
+    fn empty_or_unparenthesised_snippets_yield_none() {
+        assert!(build_insertion("").is_none());
+        assert!(build_insertion("allow").is_none());
+        assert!(build_insertion("allow(foo").is_none());
     }
 }
