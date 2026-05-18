@@ -10,7 +10,13 @@
 ## What it does
 Flags closure parameters whose identifier is one ASCII
 letter, unless the closure is a trivial single-expression
-callback. Two shapes qualify as trivial:
+callback. "Single-expression" is a shared precondition:
+the body must be a bare expression or a block whose only
+content is a trailing expression — a body with any `let`
+binding or other statement before the trailing expression
+disqualifies the closure regardless of which branch
+below would otherwise apply. Given that, one of two
+further shapes must hold:
 - the closure is the immediate argument of a call whose
   callee name is in the trivial-callback allowlist
   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
