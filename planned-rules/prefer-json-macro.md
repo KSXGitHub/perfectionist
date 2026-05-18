@@ -121,11 +121,25 @@ Fire only on expressions that satisfy **all** of:
      `writeln!`, `print!`-family macros are out of scope — they
      are typically used for streaming output, not JSON
      fabrication.
-3. **The document is non-trivial.** The parsed JSON has at least
-   `min_json_size` (default 2) keys or array elements, counted
-   recursively. Single-value documents (`"hello"`, `42`, `true`,
-   `null`) are uninteresting; the rule targets structural
-   fabrication.
+3. **The document is structurally interesting.** Defined
+   inductively over the parsed JSON value:
+   - a JSON object is structurally interesting iff it has at
+     least one key;
+   - a JSON array is structurally interesting iff at least one
+     of its elements is structurally interesting;
+   - every other JSON value (string, number, boolean, null) is
+     not structurally interesting.
+
+   The rule fires only when the top-level document is
+   structurally interesting. Equivalently: somewhere in the
+   value tree there is a JSON object with at least one key.
+   This exempts scalar documents (`"hello"`, `42`, `true`,
+   `null`), empty containers (`{}`, `[]`), flat primitive arrays
+   (`[0, 1, 2, 3]`, `["a", "b"]`), and arbitrarily nested arrays
+   that ultimately bottom out in primitives or empty objects
+   (`[{}]`, `[[[]]]`). The motivating cases — objects with
+   named fields and arrays of such objects — all carry at least
+   one non-empty object somewhere in the tree.
 
 For every triggering expression, emit a diagnostic suggesting
 `serde_json::json!({ ... }).to_string()` and supply an autofix
@@ -205,10 +219,19 @@ fn render_payload() -> String {
     r#"{"name":"hot path","fast":true}"#.to_string()
 }
 
-// Skipped: single-value document (min_json_size = 2 by default)
+// Skipped: scalar document
 #[test]
-fn small() {
+fn scalar() {
     let _ = r#""hello""#;
+}
+
+// Skipped: structurally uninteresting — no non-empty object
+// anywhere in the tree.
+#[test]
+fn flat_primitive_array() {
+    let _ = "[0, 1, 2, 3]";
+    let _ = "{}";
+    let _ = "[[]]";
 }
 
 // Skipped: not valid JSON
@@ -226,11 +249,6 @@ fn not_json() {
 # have a strong reason to hand-write JSON in test code (e.g.,
 # tests that verify byte-exact serializer output).
 enabled = true
-
-# Minimum number of recursive keys/elements in the parsed JSON
-# document before the rule fires. Single-value documents
-# (`"hello"`, `42`, `true`, `null`) are skipped regardless.
-min_json_size = 2
 
 # Attribute paths whose presence on the enclosing function counts
 # as "this is a test". Match against the attribute's last path
@@ -294,10 +312,12 @@ json_macro_path = "serde_json::json"
 
 - **JSON detection — literal mode.** For
   `ExprKind::Lit(LitKind::Str(..))`, run `serde_json::from_str`
-  on the decoded value. If parsing succeeds and the document's
-  recursive key/element count is `≥ min_json_size`, fire. Use a
-  walk over `serde_json::Value` to compute the size; do not
-  hand-roll a JSON traversal.
+  on the decoded value. If parsing succeeds, walk the resulting
+  `serde_json::Value` to check the structural-interest
+  predicate: an `Object` with at least one key is interesting;
+  an `Array` is interesting iff at least one of its elements is
+  interesting; everything else is uninteresting. Fire only when
+  the top-level value is interesting.
 
 - **JSON detection — format mode.** For a macro invocation that
   resolves to `format!`, locate the template literal (first
@@ -309,7 +329,8 @@ json_macro_path = "serde_json::json"
   synthetic string where each `{...}` placeholder is replaced
   by `null` and each `{{` / `}}` is unescaped to `{` / `}`. Run
   `serde_json::from_str` on the synthetic result; if it parses
-  and the document is non-trivial, fire.
+  and the resulting `Value` is structurally interesting (same
+  predicate as literal mode), fire.
 
   The placeholder-as-`null` substitution is a syntactic
   approximation: it assumes the placeholder slot will hold *a*
