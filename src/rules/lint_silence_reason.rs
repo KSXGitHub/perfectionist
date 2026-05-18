@@ -192,21 +192,23 @@ impl LintSilenceReason {
                 let LitKind::Str(value, _) = literal.kind else {
                     return;
                 };
-                let char_count = value.as_str().chars().count();
-                // An empty literal — `reason = ""` — carries no
-                // rationale; the autofix even emits one as its
-                // placeholder. Treat it as if the field were
-                // missing so the diagnostic message matches and
+                let value_str = value.as_str();
+                // A blank literal — `reason = ""` or `reason = "   "`
+                // — carries no rationale; the autofix even emits one
+                // as its placeholder. Treat blanks as if the field
+                // were missing so the diagnostic message matches and
                 // the author is pointed at the literal that needs
-                // filling in.
-                if char_count == 0 {
-                    self.emit_empty_reason(lint_context, literal.span);
+                // filling in. `str::trim` uses `char::is_whitespace`
+                // so tabs and newlines inside the literal count as
+                // blank too.
+                if value_str.trim().is_empty() {
+                    self.emit_blank_reason(lint_context, literal.span);
                     return;
                 }
                 if self.min_reason_length == 0 {
                     return;
                 }
-                if char_count < self.min_reason_length {
+                if value_str.chars().count() < self.min_reason_length {
                     self.emit_too_short(lint_context, literal.span);
                 }
             }
@@ -264,14 +266,14 @@ impl LintSilenceReason {
         );
     }
 
-    fn emit_empty_reason(&self, lint_context: &EarlyContext<'_>, literal_span: Span) {
+    fn emit_blank_reason(&self, lint_context: &EarlyContext<'_>, literal_span: Span) {
         span_lint_and_then(
             lint_context,
             LINT_SILENCE_REASON,
             literal_span,
             r#"lint-silencing attribute lacks an explanatory `reason = "..."` field"#,
             |diagnostic| {
-                diagnostic.help("write a rationale into the empty `reason` literal");
+                diagnostic.help("write a rationale into the blank `reason` literal");
             },
         );
     }

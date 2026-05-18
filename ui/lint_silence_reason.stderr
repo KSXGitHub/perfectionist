@@ -69,19 +69,27 @@ warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
 LL | #[allow(dead_code, reason = "")]
    |                             ^^
    |
-   = help: write a rationale into the empty `reason` literal
+   = help: write a rationale into the blank `reason` literal
 
 warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
-  --> $DIR/lint_silence_reason.rs:68:20
+  --> $DIR/lint_silence_reason.rs:62:29
+   |
+LL | #[allow(dead_code, reason = "   ")]
+   |                             ^^^^^
+   |
+   = help: write a rationale into the blank `reason` literal
+
+warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
+  --> $DIR/lint_silence_reason.rs:74:20
    |
 LL |     allow(dead_code),
    |                    ^ help: add a `reason` field: `, reason = ""`
 
 warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
-  --> $DIR/lint_silence_reason.rs:76:23
+  --> $DIR/lint_silence_reason.rs:82:23
    |
 LL |     #![allow(dead_code)]
    |                       ^ help: add a `reason` field: `, reason = ""`
 
-warning: 12 warnings emitted
+warning: 13 warnings emitted
 

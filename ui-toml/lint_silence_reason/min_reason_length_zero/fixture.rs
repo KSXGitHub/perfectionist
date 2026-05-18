@@ -20,8 +20,14 @@ fn no_reason() {}
 #[allow(dead_code, reason = "")]
 fn empty_reason() {}
 
+// Bad — whitespace-only literal also counts as missing,
+// regardless of the length-floor setting.
+#[allow(dead_code, reason = "   ")]
+fn whitespace_only_reason() {}
+
 fn main() {
     one_char_reason();
     no_reason();
     empty_reason();
+    whitespace_only_reason();
 }

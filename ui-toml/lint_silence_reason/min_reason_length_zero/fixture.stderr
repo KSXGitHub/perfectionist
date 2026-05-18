@@ -12,7 +12,15 @@ warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
 LL | #[allow(dead_code, reason = "")]
    |                             ^^
    |
-   = help: write a rationale into the empty `reason` literal
+   = help: write a rationale into the blank `reason` literal
 
-warning: 2 warnings emitted
+warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
+  --> $DIR/fixture.rs:25:29
+   |
+LL | #[allow(dead_code, reason = "   ")]
+   |                             ^^^^^
+   |
+   = help: write a rationale into the blank `reason` literal
+
+warning: 3 warnings emitted
 

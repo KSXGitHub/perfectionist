@@ -56,6 +56,12 @@ fn good_multibyte() {}
 #[allow(dead_code, reason = "")]
 fn reason_empty() {}
 
+// Bad: whitespace-only `reason` is treated the same as an empty
+// literal — the literal is long enough for the default length
+// floor but carries no rationale.
+#[allow(dead_code, reason = "   ")]
+fn reason_whitespace_only() {}
+
 // Good: empty argument list — silences no lint, so the rule
 // doesn't fire even without a `reason`.
 #[allow()]
