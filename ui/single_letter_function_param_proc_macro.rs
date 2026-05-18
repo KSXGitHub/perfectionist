@@ -6,7 +6,7 @@
 // identifier. The `SynthFnParam` derive imported below mirrors the
 // `clap_derive` span shape on a minimal `#[synth_param]` attribute.
 
-#![allow(dead_code, unused_variables)]
+#![allow(dead_code, unused_variables, reason = "ui fixture")]
 
 extern crate proc_macro_synth_binding;
 

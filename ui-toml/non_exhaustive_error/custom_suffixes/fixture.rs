@@ -1,6 +1,6 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
-#![allow(unknown_lints)]
+#![allow(unknown_lints, reason = "ui fixture")]
 #![warn(perfectionist::non_exhaustive_error)]
 
 // `extra_suffixes = ["Failure"]` adds to the built-in `["Error"]`

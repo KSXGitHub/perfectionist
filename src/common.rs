@@ -6,10 +6,11 @@
 use std::collections::{BTreeSet, HashMap};
 use std::sync::OnceLock;
 
+use rustc_ast::{MetaItemInner, MetaItemKind, MetaItemLit};
 use rustc_hir as hir;
 use rustc_hir::HirId;
 use rustc_lint::{LateContext, LintContext};
-use rustc_span::{Span, Symbol};
+use rustc_span::{Span, Symbol, sym};
 
 /// Whether the HIR node at `hir_id` (whose own span is `span`)
 /// originates in an external proc-macro (or `macro_rules!`)
@@ -185,6 +186,32 @@ pub(crate) fn resolved_state(name: &str, default: DefaultState) -> DefaultState 
         .get()
         .expect("resolved_state called before init_global_config");
     overrides.get(name).copied().unwrap_or(default)
+}
+
+/// Look up the `reason = "<literal>"` field in a lint-level attribute's
+/// argument list. Returns the `MetaItemLit` (so callers can inspect the
+/// literal's text and span) or `None` if no `reason` field is present.
+///
+/// Shared between the lint-level rules that all consume the same
+/// notion of "this attribute carries an explanatory reason":
+/// `lint_silence_reason`, `lint_downgrade_reason`, and
+/// `lint_reason_from_comment`. The arg list is the post-`meta_item_list`
+/// vector of nested meta items — the same shape every caller already
+/// constructs from `Attribute::meta_item_list()`.
+pub(crate) fn attr_has_reason(args: &[MetaItemInner]) -> Option<&MetaItemLit> {
+    for arg in args {
+        let MetaItemInner::MetaItem(meta) = arg else {
+            continue;
+        };
+        if !meta.has_name(sym::reason) {
+            continue;
+        }
+        let MetaItemKind::NameValue(literal) = &meta.kind else {
+            continue;
+        };
+        return Some(literal);
+    }
+    None
 }
 
 /// Whether `name` is exactly one ASCII letter (`a`..=`z` or

@@ -77,9 +77,10 @@ Two cases the rule does not flag:
 The examples below already carry a `reason` field so that the
 only difference between Bad and Good is the `allow` → `expect`
 swap. The `reason`-presence requirement is enforced by the
-sibling [`lint-silence-reason`](./lint-silence-reason.md), not
-by this rule; an `#[allow]` without `reason` would be flagged by
-both rules independently.
+sibling `perfectionist::lint_silence_reason`
+([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs)),
+not by this rule; an `#[allow]` without `reason` would be
+flagged by both rules independently.
 
 ```rust
 // Bad
@@ -225,11 +226,12 @@ Active by default.
   an adjacent comment into the attribute's `reason` field before
   this rule rewrites `allow` → `expect`. The two rewrites
   compose in either order.
-- [`lint-silence-reason`](./lint-silence-reason.md) requires a
-  `reason` field on every `#[allow]` and `#[expect]`. After this
-  rule rewrites `allow` → `expect`, the `reason` requirement
-  still applies; the two rules together produce the canonical
-  form `#[expect(<lint>, reason = "...")]`.
+- `perfectionist::lint_silence_reason`
+  ([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs))
+  requires a `reason` field on every `#[allow]` and `#[expect]`.
+  After this rule rewrites `allow` → `expect`, the `reason`
+  requirement still applies; the two rules together produce the
+  canonical form `#[expect(<lint>, reason = "...")]`.
 - [`lint-downgrade-reason`](./lint-downgrade-reason.md) is
   orthogonal: it cares about the level relative to the
   inherited level, and `allow` and `expect` rank equally in

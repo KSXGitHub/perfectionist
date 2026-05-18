@@ -1,7 +1,7 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
-#![allow(unknown_lints)]
-#![allow(dead_code)]
+#![allow(unknown_lints, reason = "ui fixture")]
+#![allow(dead_code, reason = "ui fixture")]
 #![warn(perfectionist::non_exhaustive_error)]
 
 // Bad: public error enum missing `#[non_exhaustive]`.

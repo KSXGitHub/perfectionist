@@ -21,7 +21,10 @@ mod macro_path;
 mod rules;
 
 #[unsafe(no_mangle)]
-#[allow(clippy::no_mangle_with_rust_abi)]
+#[allow(
+    clippy::no_mangle_with_rust_abi,
+    reason = "dylint's plugin entry point requires the Rust ABI"
+)]
 pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
     dylint_linting::init_config(session);
     common::init_global_config();
@@ -37,6 +40,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         arc_rc_clone
         derive_ordering
         flat_module_pattern
+        lint_silence_reason
         macro_argument_binding
         macro_trailing_comma
         non_exhaustive_error

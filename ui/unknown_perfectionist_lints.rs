@@ -1,6 +1,6 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
-#![allow(unknown_lints)]
+#![allow(unknown_lints, perfectionist::lint_silence_reason, reason = "ui fixture")]
 
 // Bad: typo of `unicode_ellipsis_in_comments` (missing trailing `s`).
 #[allow(perfectionist::unicode_ellipsis_in_comment)]
