@@ -347,6 +347,25 @@ json_macro_path = "serde_json::json"
   re-parsing the template. See
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
 
+### Difficulty
+
+**Hard.** Two layers of analysis stack:
+
+- The activation probe requires reading and parsing
+  `Cargo.toml` files from disk before pass setup completes —
+  the catalogue's only rule that performs filesystem I/O
+  outside the source tree.
+- The format-mode JSON detection requires parsing the format
+  template *and* speculatively parsing the result as JSON. The
+  combinators exist; chaining them is straightforward, but the
+  edge cases (placeholder inside a string literal vs. outside,
+  placeholder spanning a structural position) require care.
+
+Literal-mode detection is straightforward
+(`serde_json::from_str` on the decoded value); the format-mode
+detection is where the work concentrates. The autofix is
+best-effort and `MaybeIncorrect` regardless.
+
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing
@@ -383,25 +402,6 @@ suggestion cannot rule out:
 When no `use serde_json::json;` is in scope the suggestion
 includes the import; the path is configurable via
 `json_macro_path`.
-
-### Difficulty
-
-**Hard.** Two layers of analysis stack:
-
-- The activation probe requires reading and parsing
-  `Cargo.toml` files from disk before pass setup completes —
-  the catalogue's only rule that performs filesystem I/O
-  outside the source tree.
-- The format-mode JSON detection requires parsing the format
-  template *and* speculatively parsing the result as JSON. The
-  combinators exist; chaining them is straightforward, but the
-  edge cases (placeholder inside a string literal vs. outside,
-  placeholder spanning a structural position) require care.
-
-Literal-mode detection is straightforward
-(`serde_json::from_str` on the decoded value); the format-mode
-detection is where the work concentrates. The autofix is
-best-effort and `MaybeIncorrect` regardless.
 
 ## Severity
 
