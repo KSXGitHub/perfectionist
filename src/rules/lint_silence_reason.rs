@@ -118,13 +118,7 @@ impl EarlyLintPass for LintSilenceReason {
                 let Some(meta_item) = wrapped.meta_item() else {
                     continue;
                 };
-                if !is_silencing_meta_item(meta_item) {
-                    continue;
-                }
-                let MetaItemKind::List(args) = &meta_item.kind else {
-                    continue;
-                };
-                self.check_silencing(lint_context, meta_item.span, args);
+                self.walk_cfg_attr_inner(lint_context, meta_item);
             }
         }
     }
@@ -138,6 +132,34 @@ fn is_silencing_attribute_name(name: Option<Symbol>) -> bool {
 
 fn is_silencing_meta_item(meta_item: &MetaItem) -> bool {
     SILENCING_NAMES.iter().any(|name| meta_item.has_name(*name))
+}
+
+impl LintSilenceReason {
+    /// Recursively walk a meta-item that appears inside a
+    /// `cfg_attr` argument list. `cfg_attr` accepts another
+    /// `cfg_attr` as its payload — `#[cfg_attr(<cfg_a>,
+    /// cfg_attr(<cfg_b>, allow(<lints>)))]` is valid Rust and
+    /// the inner `allow` still needs the same check.
+    fn walk_cfg_attr_inner(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem) {
+        if is_silencing_meta_item(meta_item) {
+            let MetaItemKind::List(args) = &meta_item.kind else {
+                return;
+            };
+            self.check_silencing(lint_context, meta_item.span, args);
+            return;
+        }
+        if meta_item.has_name(sym::cfg_attr) {
+            let MetaItemKind::List(cfg_attr_args) = &meta_item.kind else {
+                return;
+            };
+            for wrapped in cfg_attr_args.iter().skip(1) {
+                let Some(inner) = wrapped.meta_item() else {
+                    continue;
+                };
+                self.walk_cfg_attr_inner(lint_context, inner);
+            }
+        }
+    }
 }
 
 impl LintSilenceReason {
@@ -186,7 +208,6 @@ impl LintSilenceReason {
     }
 
     fn every_named_lint_is_exempt(&self, args: &[MetaItemInner]) -> bool {
-        let mut saw_any_lint_name = false;
         for arg in args {
             let MetaItemInner::MetaItem(meta) = arg else {
                 continue;
@@ -195,63 +216,45 @@ impl LintSilenceReason {
             if matches!(meta.kind, MetaItemKind::NameValue(_)) {
                 continue;
             }
-            saw_any_lint_name = true;
             let name = render_lint_name(meta);
             if !self.exempt_lints.contains(&name) {
                 return false;
             }
         }
-        // An attribute with zero lint names (e.g., `#[allow()]`) is
-        // syntactically valid but semantically silences nothing; treat
-        // it as "every named lint is exempt" so the rule doesn't fire.
-        saw_any_lint_name
+        // Vacuously true for an attribute with zero lint names
+        // (`#[allow()]`): the attribute is syntactically valid but
+        // silences nothing, so the rule has nothing to flag.
+        true
     }
 
     fn emit_missing_field(&self, lint_context: &EarlyContext<'_>, invocation_span: Span) {
-        let source_map = lint_context.sess().source_map();
-        let Ok(snippet) = source_map.span_to_snippet(invocation_span) else {
-            span_lint_and_then(
-                lint_context,
-                LINT_SILENCE_REASON,
-                invocation_span,
-                r#"lint-silencing attribute lacks an explanatory `reason = "..."` field"#,
-                |diagnostic| {
-                    diagnostic.help(r#"add a `reason = "..."` argument inside the attribute"#);
-                },
-            );
+        let insertion = lint_context
+            .sess()
+            .source_map()
+            .span_to_snippet(invocation_span)
+            .ok()
+            .and_then(|snippet| build_insertion(&snippet));
+        let Some(Insertion {
+            start,
+            end,
+            replacement,
+        }) = insertion
+        else {
+            emit_missing_field_no_sugg(lint_context, invocation_span);
             return;
         };
-        match build_insertion(&snippet) {
-            Some(Insertion {
-                start,
-                end,
-                replacement,
-            }) => {
-                let lo = invocation_span.lo() + BytePos(start as u32);
-                let hi = invocation_span.lo() + BytePos(end as u32);
-                let suggestion_span = invocation_span.with_lo(lo).with_hi(hi);
-                span_lint_and_sugg(
-                    lint_context,
-                    LINT_SILENCE_REASON,
-                    suggestion_span,
-                    r#"lint-silencing attribute lacks an explanatory `reason = "..."` field"#,
-                    "add a `reason` field",
-                    replacement,
-                    Applicability::HasPlaceholders,
-                );
-            }
-            None => {
-                span_lint_and_then(
-                    lint_context,
-                    LINT_SILENCE_REASON,
-                    invocation_span,
-                    r#"lint-silencing attribute lacks an explanatory `reason = "..."` field"#,
-                    |diagnostic| {
-                        diagnostic.help(r#"add a `reason = "..."` argument inside the attribute"#);
-                    },
-                );
-            }
-        }
+        let lo = invocation_span.lo() + BytePos(start as u32);
+        let hi = invocation_span.lo() + BytePos(end as u32);
+        let suggestion_span = invocation_span.with_lo(lo).with_hi(hi);
+        span_lint_and_sugg(
+            lint_context,
+            LINT_SILENCE_REASON,
+            suggestion_span,
+            r#"lint-silencing attribute lacks an explanatory `reason = "..."` field"#,
+            "add a `reason` field",
+            replacement,
+            Applicability::HasPlaceholders,
+        );
     }
 
     fn emit_empty_reason(&self, lint_context: &EarlyContext<'_>, literal_span: Span) {
@@ -283,6 +286,21 @@ impl LintSilenceReason {
     }
 }
 
+/// Emit the "missing reason" diagnostic without a code suggestion.
+/// Used when the source snippet is unavailable (macro expansion) or
+/// when [`build_insertion`] cannot make sense of the snippet.
+fn emit_missing_field_no_sugg(lint_context: &EarlyContext<'_>, invocation_span: Span) {
+    span_lint_and_then(
+        lint_context,
+        LINT_SILENCE_REASON,
+        invocation_span,
+        r#"lint-silencing attribute lacks an explanatory `reason = "..."` field"#,
+        |diagnostic| {
+            diagnostic.help(r#"add a `reason = "..."` argument inside the attribute"#);
+        },
+    );
+}
+
 fn render_lint_name(meta: &MetaItem) -> String {
     let mut result = String::new();
     for (index, segment) in meta.path.segments.iter().enumerate() {
@@ -303,9 +321,13 @@ struct Insertion {
 }
 
 /// Compute the byte-offset edit that inserts `reason = ""` into the
-/// attribute's argument list. `snippet` is the source text of the
-/// meta-item span (`allow(...)` / `expect(...)`); offsets are
-/// relative to its start.
+/// attribute's argument list. `snippet` is the source text covering
+/// at least `allow(...)` / `expect(...)`; offsets are relative to
+/// its start. The bare-attribute caller passes `attribute.span`
+/// (which includes the `#[` / `#![` wrapper) and the cfg_attr
+/// caller passes the inner `meta_item.span` (no wrapper); the
+/// scanner relies only on the first `(` and the last `)`, so either
+/// shape works.
 ///
 /// The three layouts the planning file enumerates each map to a
 /// different splice:

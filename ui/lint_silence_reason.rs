@@ -31,9 +31,23 @@ fn missing_reason_multiline() {}
 #[cfg_attr(all(), expect(dead_code))]
 fn missing_reason_cfg_attr() {}
 
+// Bad: nested `cfg_attr` — the rule walks through both layers and
+// flags the inner `allow`.
+#[cfg_attr(all(), cfg_attr(all(), allow(dead_code)))]
+fn missing_reason_nested_cfg_attr() {}
+
 // Bad: `reason` is shorter than the default minimum of 3.
 #[allow(dead_code, reason = "x")]
 fn reason_too_short() {}
+
+// Bad: `reason` length counted in characters, not bytes. "ré" is
+// two chars (three bytes), still below the default floor of 3.
+#[allow(dead_code, reason = "ré")]
+fn reason_too_short_multibyte() {}
+
+// Good: three multi-byte characters meet the floor.
+#[allow(dead_code, reason = "résu")]
+fn good_multibyte() {}
 
 // Bad: empty `reason` is treated as if the field were absent.
 // The autofix itself emits `reason = ""` as a placeholder, so an
@@ -41,6 +55,11 @@ fn reason_too_short() {}
 // this diagnostic until the placeholder is filled in.
 #[allow(dead_code, reason = "")]
 fn reason_empty() {}
+
+// Good: empty argument list — silences no lint, so the rule
+// doesn't fire even without a `reason`.
+#[allow()]
+fn allow_no_lints() {}
 
 // Good: `reason` of length 3.
 #[allow(dead_code, reason = "ok!")]

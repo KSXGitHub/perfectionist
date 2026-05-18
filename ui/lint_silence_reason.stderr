@@ -41,21 +41,35 @@ warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
 LL | #[cfg_attr(all(), expect(dead_code))]
    |                                   ^ help: add a `reason` field: `, reason = ""`
 
+warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
+  --> $DIR/lint_silence_reason.rs:36:50
+   |
+LL | #[cfg_attr(all(), cfg_attr(all(), allow(dead_code)))]
+   |                                                  ^ help: add a `reason` field: `, reason = ""`
+
 warning: `reason` is shorter than the configured minimum
-  --> $DIR/lint_silence_reason.rs:35:29
+  --> $DIR/lint_silence_reason.rs:40:29
    |
 LL | #[allow(dead_code, reason = "x")]
    |                             ^^^
    |
    = help: write a rationale of at least 3 characters
 
+warning: `reason` is shorter than the configured minimum
+  --> $DIR/lint_silence_reason.rs:45:29
+   |
+LL | #[allow(dead_code, reason = "ré")]
+   |                             ^^^^
+   |
+   = help: write a rationale of at least 3 characters
+
 warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
-  --> $DIR/lint_silence_reason.rs:42:29
+  --> $DIR/lint_silence_reason.rs:56:29
    |
 LL | #[allow(dead_code, reason = "")]
    |                             ^^
    |
    = help: write a rationale into the empty `reason` literal
 
-warning: 8 warnings emitted
+warning: 10 warnings emitted
 
