@@ -159,15 +159,26 @@ impl LintSilenceReason {
             return;
         }
         match attr_has_reason(args) {
-            None => self.emit_missing(lint_context, invocation_span),
+            None => self.emit_missing_field(lint_context, invocation_span),
             Some(literal) => {
-                if self.min_reason_length == 0 {
-                    return;
-                }
                 let LitKind::Str(value, _) = literal.kind else {
                     return;
                 };
-                if value.as_str().chars().count() < self.min_reason_length {
+                let char_count = value.as_str().chars().count();
+                // An empty literal — `reason = ""` — carries no
+                // rationale; the autofix even emits one as its
+                // placeholder. Treat it as if the field were
+                // missing so the diagnostic message matches and
+                // the author is pointed at the literal that needs
+                // filling in.
+                if char_count == 0 {
+                    self.emit_empty_reason(lint_context, literal.span);
+                    return;
+                }
+                if self.min_reason_length == 0 {
+                    return;
+                }
+                if char_count < self.min_reason_length {
                     self.emit_too_short(lint_context, literal.span);
                 }
             }
@@ -196,7 +207,7 @@ impl LintSilenceReason {
         saw_any_lint_name
     }
 
-    fn emit_missing(&self, lint_context: &EarlyContext<'_>, invocation_span: Span) {
+    fn emit_missing_field(&self, lint_context: &EarlyContext<'_>, invocation_span: Span) {
         let source_map = lint_context.sess().source_map();
         let Ok(snippet) = source_map.span_to_snippet(invocation_span) else {
             span_lint_and_then(
@@ -241,6 +252,18 @@ impl LintSilenceReason {
                 );
             }
         }
+    }
+
+    fn emit_empty_reason(&self, lint_context: &EarlyContext<'_>, literal_span: Span) {
+        span_lint_and_then(
+            lint_context,
+            LINT_SILENCE_REASON,
+            literal_span,
+            r#"lint-silencing attribute lacks an explanatory `reason = "..."` field"#,
+            |diagnostic| {
+                diagnostic.help("write a rationale into the empty `reason` literal");
+            },
+        );
     }
 
     fn emit_too_short(&self, lint_context: &EarlyContext<'_>, literal_span: Span) {

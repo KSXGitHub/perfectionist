@@ -49,5 +49,13 @@ LL | #[allow(dead_code, reason = "x")]
    |
    = help: write a rationale of at least 3 characters
 
-warning: 7 warnings emitted
+warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
+  --> $DIR/lint_silence_reason.rs:42:29
+   |
+LL | #[allow(dead_code, reason = "")]
+   |                             ^^
+   |
+   = help: write a rationale into the empty `reason` literal
+
+warning: 8 warnings emitted
 

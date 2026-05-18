@@ -1,10 +1,18 @@
 warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
-  --> $DIR/fixture.rs:13:18
+  --> $DIR/fixture.rs:15:18
    |
 LL | #[allow(dead_code)]
    |                  ^ help: add a `reason` field: `, reason = ""`
    |
    = note: `#[warn(perfectionist::lint_silence_reason)]` on by default
 
-warning: 1 warning emitted
+warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
+  --> $DIR/fixture.rs:20:29
+   |
+LL | #[allow(dead_code, reason = "")]
+   |                             ^^
+   |
+   = help: write a rationale into the empty `reason` literal
+
+warning: 2 warnings emitted
 

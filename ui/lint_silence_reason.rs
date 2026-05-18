@@ -35,6 +35,13 @@ fn missing_reason_cfg_attr() {}
 #[allow(dead_code, reason = "x")]
 fn reason_too_short() {}
 
+// Bad: empty `reason` is treated as if the field were absent.
+// The autofix itself emits `reason = ""` as a placeholder, so an
+// author who applies the suggestion and re-runs the linter sees
+// this diagnostic until the placeholder is filled in.
+#[allow(dead_code, reason = "")]
+fn reason_empty() {}
+
 // Good: `reason` of length 3.
 #[allow(dead_code, reason = "ok!")]
 fn good_min_length() {}
