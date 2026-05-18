@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 use clippy_utils::diagnostics::{span_lint_and_sugg, span_lint_and_then};
 use rustc_ast::{Attribute, LitKind, MetaItem, MetaItemInner, MetaItemKind};
 use rustc_errors::Applicability;
+use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{BytePos, Span, Symbol, sym};
@@ -326,14 +327,47 @@ struct Insertion {
     replacement: String,
 }
 
+/// Locate the byte offsets of the outermost `(` and its matching
+/// `)` in `snippet`, using `rustc_lexer::tokenize` so comments,
+/// string literals, and char literals don't trip the scan. Returns
+/// `None` if the snippet contains no top-level parenthesised group.
+fn locate_outermost_parens(snippet: &str) -> Option<(usize, usize)> {
+    let mut open: Option<usize> = None;
+    let mut depth: usize = 0;
+    let mut offset: usize = 0;
+    for token in tokenize(snippet, FrontmatterAllowed::No) {
+        let len = token.len as usize;
+        match token.kind {
+            TokenKind::OpenParen => {
+                if open.is_none() {
+                    open = Some(offset);
+                }
+                depth += 1;
+            }
+            TokenKind::CloseParen => {
+                if depth == 0 {
+                    return None;
+                }
+                depth -= 1;
+                if depth == 0 {
+                    return open.map(|open_offset| (open_offset, offset));
+                }
+            }
+            _ => {}
+        }
+        offset += len;
+    }
+    None
+}
+
 /// Compute the byte-offset edit that inserts `reason = ""` into the
 /// attribute's argument list. `snippet` is the source text covering
 /// at least `allow(...)` / `expect(...)`; offsets are relative to
 /// its start. The bare-attribute caller passes `attribute.span`
 /// (which includes the `#[` / `#![` wrapper) and the cfg_attr
 /// caller passes the inner `meta_item.span` (no wrapper); the
-/// scanner relies only on the first `(` and the last `)`, so either
-/// shape works.
+/// scanner is anchored at the outermost `(` / `)` of the snippet
+/// regardless of the wrapper.
 ///
 /// The three layouts the planning file enumerates each map to a
 /// different splice:
@@ -352,12 +386,14 @@ struct Insertion {
 /// `(...)` layout (e.g. macro-expanded sources where
 /// `span_to_snippet` returns a synthetic placeholder).
 fn build_insertion(snippet: &str) -> Option<Insertion> {
-    let close_paren_offset = snippet.rfind(')')?;
+    // Use rustc's own tokenizer to locate the outermost `(` and
+    // matching `)` rather than scanning bytes. A naive `rfind(')')`
+    // would land inside any block / line comment containing `)` and
+    // produce a splice that breaks the attribute. The tokenizer
+    // handles comments, string literals, raw strings, and char
+    // literals the same way rustc itself does.
+    let (open_paren_offset, close_paren_offset) = locate_outermost_parens(snippet)?;
     let head = &snippet[..close_paren_offset];
-    let open_paren_offset = snippet.find('(')?;
-    if open_paren_offset >= close_paren_offset {
-        return None;
-    }
 
     if !head[open_paren_offset..].contains('\n') {
         // Single-line layout: trim trailing ASCII whitespace from
@@ -464,6 +500,32 @@ mod tests {
     fn multi_line_tab_indent() {
         let input = "expect(\n\tfoo,\n)";
         let expected = "expect(\n\tfoo,\n\treason = \"\",\n)";
+        assert_eq!(run(input), expected);
+    }
+
+    /// `rfind(')')` would land inside the block comment; the
+    /// tokenizer-backed scan skips comment contents and finds the
+    /// real outer `)`.
+    #[test]
+    fn snippet_with_block_comment_containing_paren() {
+        let input = "#[allow(foo) /* ) */]";
+        let expected = r#"#[allow(foo, reason = "") /* ) */]"#;
+        assert_eq!(run(input), expected);
+    }
+
+    /// Same but with a line comment after the close-paren.
+    #[test]
+    fn snippet_with_line_comment_after_args() {
+        let input = "#[allow(foo) // trailing comment\n]";
+        let expected = concat!(r#"#[allow(foo, reason = "") // trailing comment"#, "\n]");
+        assert_eq!(run(input), expected);
+    }
+
+    /// Block comment *between* arguments.
+    #[test]
+    fn snippet_with_block_comment_between_args() {
+        let input = "#[allow(/* ) */ foo)]";
+        let expected = r#"#[allow(/* ) */ foo, reason = "")]"#;
         assert_eq!(run(input), expected);
     }
 }
