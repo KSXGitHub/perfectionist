@@ -10,7 +10,16 @@
 ## What it does
 Flags closure parameters whose identifier is one ASCII
 letter, unless the closure is a trivial single-expression
-callback. Two shapes qualify as trivial:
+callback or the identifier is in the conventional-name
+allowlist (`n` for an unsigned count, `f` for a
+`fmt::Formatter`, `i` / `j` / `k` for indices).
+"Single-expression" is a shared precondition for the
+trivial-callback exception: the body must be a bare
+expression or a block whose only content is a trailing
+expression — a body with any `let` binding or other
+statement before the trailing expression disqualifies the
+closure regardless of which branch below would otherwise
+apply. Given that, one of two further shapes must hold:
 - the closure is the immediate argument of a call whose
   callee name is in the trivial-callback allowlist
   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
@@ -29,6 +38,14 @@ callback. Two shapes qualify as trivial:
   operators around the parameter inside any of the
   non-macro shapes are peeled before the match, so
   `|s| (*s).foo()` qualifies.
+
+The conventional-name allowlist matches the one used by
+`perfectionist::single_letter_function_param`: `|i| ...`
+is the canonical index closure, just as `fn step(i: usize)`
+is the canonical index parameter. Bodies that use the
+index for slicing or arithmetic (`|i| &hex[i..i + 2]`)
+are not structurally trivial, so the allowlist is what
+keeps them out of the diagnostic.
 
 ## Why restrict this?
 This is a stylistic preference, not a correctness issue.
@@ -77,3 +94,18 @@ they appear in the built-in defaults or in
 after the merge with the built-ins, so this knob always
 wins. Useful for opting back into linting on a default
 entry the project does not consider trivial.
+
+### `extra_allowed_idents`: `[string]` (optional)
+
+Additional identifiers to allow as closure parameter names.
+Merged with the built-in defaults
+(`["n", "f", "i", "j", "k"]`); empty by default. Use this
+to whitelist project-specific conventional names without
+having to re-state the standard ones.
+
+### `ignore_allowed_idents`: `[string]` (optional)
+
+Identifiers to drop from the allowlist, even if they appear
+in the built-in defaults or in `extra_allowed_idents`.
+Empty by default; checked after the merge with the
+built-ins, so this knob always wins.
