@@ -363,13 +363,26 @@ Placeholders that occupy a string position in the JSON become
 directly when the surrounding string is empty), preserving the
 escape semantics that `json!` then handles.
 
-`Applicability::MaybeIncorrect`. The suggestion compiles and
-produces the same JSON only when the placeholder expressions
-serialise to plain strings (a `PathBuf`'s `Display` output on
-Unix matches its JSON serialisation, but `Debug` output does
-not, so the rewrite is conservative). When no `use
-serde_json::json;` is in scope the suggestion includes the
-import; the path is configurable via `json_macro_path`.
+`Applicability::MaybeIncorrect`. Two failure modes the
+suggestion cannot rule out:
+
+- *Placeholder serialisation.* The rewrite produces the same
+  JSON only when the placeholder expressions serialise to plain
+  strings (a `PathBuf`'s `Display` output on Unix matches its
+  JSON serialisation, but `Debug` output does not).
+- *Byte-equivalence of the output.* `serde_json::Value::to_string()`
+  produces compact JSON (`{"a":1}`). A hand-written literal may
+  be pretty-printed or whitespace-padded
+  (`{ "a": 1 }` or a multi-line block). If the test compares the
+  produced bytes against an expected string (`assert_eq!(actual,
+  manifest)`), the rewrite changes the outcome. Tests that feed
+  the JSON into a parser (the more common shape — `fs::write`
+  then a subprocess that parses, or `serde_json::from_str` on
+  the round-trip) are unaffected.
+
+When no `use serde_json::json;` is in scope the suggestion
+includes the import; the path is configurable via
+`json_macro_path`.
 
 ### Difficulty
 
