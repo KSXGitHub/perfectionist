@@ -104,6 +104,12 @@ pattern that several rules call out by reference — live in
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
   `#[cfg_attr(..., ignore = "...")]` over `#[cfg(...)]` on `#[test]`s, and
   require an `ignore` reason string.
+- [`prefer-json-macro.md`](./prefer-json-macro.md) — in test
+  code, when a string literal or `format!` invocation produces a
+  non-trivial JSON document, prefer
+  `serde_json::json!({ ... }).to_string()`. Silent in production
+  code (performance trade-off is reviewer's call) and in
+  workspaces that do not depend on `serde_json` anywhere.
 
 ### Cloning
 - [`arc-rc-clone.md`](./arc-rc-clone.md) — require `Arc::clone(&x)` /
