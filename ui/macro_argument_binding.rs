@@ -205,6 +205,11 @@ fn _all_pure_shapes_accepted() {
     debug_assert_eq!(*pointer, *pointer, "deref of a path");
     debug_assert_eq!(0u32 as u64, MAX as u64, "pure cast");
     debug_assert_eq!(::std::u32::MAX, std::u32::MAX, "rooted path");
+    let flag: bool = true;
+    let mask: u32 = 0;
+    debug_assert!(!flag, "unary not on a path");
+    debug_assert_eq!(!mask, !MAX, "unary not on paths");
+    debug_assert_eq!(!buffer[0], !buffer[INDEX], "unary not on pure suffix");
 }
 
 // Single-argument deny-listed call with an impure expression.

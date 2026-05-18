@@ -272,6 +272,11 @@ The lint accepts any argument whose outermost shape is one of:
 - An index `base[index]` where both `base` and `index` are
   themselves pure (`buffer[0]`, `lookup[Foo::KEY]`).
 - A unary deref of a pure expression (`*ptr`).
+- A unary not of a pure expression (`!ready`,
+  `!state.is_full()`). Like the side-effect-free binary
+  operators below, the `Not` trait impl is overridable in
+  principle; the rule classifies by syntactic shape, so
+  `!`-prefixed pure operands stay pure.
 - A pure expression annotated with a type (`x as u64`).
 - The unit literal `()`, a parenthesised pure expression
   (`(x)`), or a tuple whose every element is pure

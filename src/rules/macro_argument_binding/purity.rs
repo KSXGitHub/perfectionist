@@ -341,6 +341,16 @@ fn take_pure_atom<'a>(tokens: &'a [TokenTree], ctx: PurityContext<'_>) -> Option
             TokenKind::AndAnd => take_reference_tail(rest, ctx),
             // `*expr` (deref).
             TokenKind::Star => take_pure_expression(rest, ctx),
+            // `!expr` (logical / bitwise not). Side-effect-free over
+            // a pure operand for the same reason `*expr` is: the
+            // trait impl is overridable, but the rule classifies by
+            // syntactic shape rather than semantics — the binary
+            // operators in `take_pure_binary_operator` are accepted
+            // on the same basis. Without this arm, `debug_assert!(!ready)`
+            // and `debug_assert!(!state.is_full())` would be flagged
+            // and the suggested let-bind would force the negation to
+            // evaluate in release builds.
+            TokenKind::Bang => take_pure_expression(rest, ctx),
             // Path: ident (`::` ident)*. If the path is followed by
             // `!` and the path's final segment names a curated
             // pure macro (`concat!`, `env!`, `include_str!`, ...),
