@@ -1,0 +1,70 @@
+#![feature(register_tool)]
+#![register_tool(perfectionist)]
+#![allow(unknown_lints, reason = "ui fixture")]
+
+// Bad: `#[allow]` with no `reason`.
+#[allow(dead_code)]
+fn missing_reason() {}
+
+// Bad: `#[expect]` with no `reason`. The function is not called so
+// the underlying `dead_code` actually fires, fulfilling the
+// expectation and leaving only this rule's diagnostic.
+#[expect(dead_code)]
+fn missing_reason_expect() {}
+
+// Bad: multiple lints, none exempt, no `reason`.
+#[allow(dead_code, unused_variables)]
+fn missing_reason_multi() {}
+
+// Bad: trailing comma, no `reason`.
+#[allow(dead_code,)]
+fn missing_reason_trailing_comma() {}
+
+// Bad: multi-line, no `reason`.
+#[allow(
+    dead_code,
+)]
+fn missing_reason_multiline() {}
+
+// Bad: `cfg_attr`-wrapped `#[expect]` with no `reason`. The
+// expectation is fulfilled by `dead_code`.
+#[cfg_attr(all(), expect(dead_code))]
+fn missing_reason_cfg_attr() {}
+
+// Bad: `reason` is shorter than the default minimum of 3.
+#[allow(dead_code, reason = "x")]
+fn reason_too_short() {}
+
+// Good: `reason` of length 3.
+#[allow(dead_code, reason = "ok!")]
+fn good_min_length() {}
+
+// Good: full rationale.
+#[allow(dead_code, reason = "exercised by the integration tests")]
+fn good_full_reason() {}
+
+// Good: `#[expect]` with a `reason`. Uncalled so `dead_code` fires
+// and the expectation fulfills.
+#[expect(dead_code, reason = "stub for upcoming change")]
+fn good_expect_reason() {}
+
+// Good: `#[warn]` is out of scope for this rule.
+#[warn(dead_code)]
+fn warn_out_of_scope() {}
+
+// Good: `#[deny]` is out of scope.
+#[deny(dead_code)]
+fn deny_out_of_scope() {}
+
+// Good: `#[forbid]` is out of scope.
+#[forbid(dead_code)]
+fn forbid_out_of_scope() {}
+
+// Call the `warn`/`deny`/`forbid`-attributed functions so their
+// own `dead_code` doesn't fire; leave every `#[expect]` function
+// uncalled so each expectation fulfills.
+fn main() {
+    warn_out_of_scope();
+    deny_out_of_scope();
+    forbid_out_of_scope();
+}

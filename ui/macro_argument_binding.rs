@@ -175,7 +175,7 @@ fn _brace_argument_with_dsl_markers_skipped() {
 // policy.
 fn _brace_argument_with_attributed_let_flagged() {
     let _ = dsl_macro!({
-        #[allow(unused)]
+        #[allow(unused, reason = "ui fixture")]
         let x: u32 = MAX;
         x
     });
@@ -463,7 +463,7 @@ fn _compile_time_macros_accepted() {
     debug_assert_eq!(::std::stringify!(x), std::stringify!(x));
 }
 
-#[allow(dead_code)]
+#[allow(dead_code, reason = "ui fixture")]
 struct NameType;
 
 struct Map;

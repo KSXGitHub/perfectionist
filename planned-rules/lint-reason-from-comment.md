@@ -119,7 +119,8 @@ Text normalisation:
 Splice into the attribute. The insertion site and surrounding
 punctuation depend on the attribute's existing layout — the
 three cases match
-[`lint-silence-reason`](./lint-silence-reason.md)'s autofix:
+`perfectionist::lint_silence_reason`'s autofix in
+[`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs):
 
 - **Single line, no trailing comma**: insert
   `, reason = "<text>"` before the closing `)`.
@@ -156,7 +157,9 @@ sites = ["trailing", "leading"]
 - `EarlyLintPass::check_attribute`. Use
   `src/common.rs::attr_has_reason` to check whether the
   attribute already has a `reason` field (shared with
-  [`lint-silence-reason`](./lint-silence-reason.md) and
+  `perfectionist::lint_silence_reason`
+  ([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs))
+  and
   [`lint-downgrade-reason`](./lint-downgrade-reason.md)); if
   present, skip.
 - For trailing-comment detection: read the attribute's span, walk
@@ -201,8 +204,10 @@ Active by default.
 - [`prefer-expect-over-allow`](./prefer-expect-over-allow.md) acts
   on the same attributes but does not touch the `reason` field.
   The two rewrites compose in either order.
-- [`lint-silence-reason`](./lint-silence-reason.md) requires
-  that every `#[allow]` / `#[expect]` carry a `reason` field;
+- `perfectionist::lint_silence_reason`
+  ([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs))
+  requires that every `#[allow]` / `#[expect]` carry a `reason`
+  field;
   [`lint-downgrade-reason`](./lint-downgrade-reason.md) extends
   the same requirement to `#[warn]` / `#[allow]` / `#[expect]`
   that lower an inherited level. When the rationale is

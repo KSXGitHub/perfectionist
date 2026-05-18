@@ -66,7 +66,7 @@ fn _bad_chained(arcs: &[Arc<u32>]) {
     let _ = arcs.first().unwrap().clone();
 }
 
-#[allow(suspicious_double_ref_op)]
+#[allow(suspicious_double_ref_op, reason = "intentional `&&Arc<_>` probe")]
 fn _good_double_reference(value: &&Arc<u32>) {
     // Receiver is `&&Arc<T>`. Method probe finds the blanket
     // `<&Arc<T> as Clone>::clone` (self type `&&Arc<T>`) at the

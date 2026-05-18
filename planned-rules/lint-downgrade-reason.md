@@ -12,9 +12,10 @@ tighten, or that match the inherited level, are not flagged.
 
 The local case — every `#[allow]` / `#[expect]` regardless of
 inherited level — is covered by the sibling
-[`lint-silence-reason`](./lint-silence-reason.md). This rule
-covers the ancestry-aware case: any explicit step down relative
-to the surrounding scope.
+`perfectionist::lint_silence_reason`
+([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs)).
+This rule covers the ancestry-aware case: any explicit step
+down relative to the surrounding scope.
 
 ## Why restrict this?
 
@@ -57,7 +58,7 @@ If the attribute's level is strictly lower than the resolved
 enclosing level (`deny → warn`, `deny → allow`,
 `deny → expect`, `warn → allow`, `warn → expect`), apply the
 same presence / length check as
-[`lint-silence-reason`](./lint-silence-reason.md):
+`perfectionist::lint_silence_reason`:
 
 - **`reason` absent.** Emit a "missing reason" diagnostic at
   the attribute's span.
@@ -76,13 +77,13 @@ The lint-level ordering used for "strictly lower" is
 `Forbid > Deny > Warn > Expect ≈ Allow`. `Expect` and `Allow`
 are treated equally — both fully silence output.
 
-## Relationship to `lint-silence-reason`
+## Relationship to `lint_silence_reason`
 
 The two rules overlap when the inherited level is `warn` or
 `deny`:
 
-- [`lint-silence-reason`](./lint-silence-reason.md) fires on
-  every `#[allow]` / `#[expect]` regardless of inherited level.
+- `perfectionist::lint_silence_reason` fires on every
+  `#[allow]` / `#[expect]` regardless of inherited level.
 - `lint_downgrade_reason` fires on every level lower than
   ambient, which includes `#[allow]` / `#[expect]` whose
   inherited level is `warn` or `deny` — and additionally
@@ -148,8 +149,9 @@ before the closing `)` of the attribute's argument list.
 `Applicability::HasPlaceholders` — the empty string is a
 placeholder the author fills in. Layout and the `cfg_attr` /
 inner-attribute scope handling are the same as for
-[`lint-silence-reason`](./lint-silence-reason.md): the
-insertion point is the inner `warn(...)` / `allow(...)` /
+`perfectionist::lint_silence_reason`
+([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs)):
+the insertion point is the inner `warn(...)` / `allow(...)` /
 `expect(...)` argument list, not any wrapping `cfg_attr`.
 
 The too-short case has no autofix; the diagnostic points at the
@@ -187,15 +189,15 @@ min_reason_length = 3
 - Compare the attribute's level against the inherited level
   using the `Forbid > Deny > Warn > Expect ≈ Allow` ordering.
   If not strictly lower, accept. If strictly lower, run the
-  presence / length check from
-  [`lint-silence-reason`](./lint-silence-reason.md) and emit
-  the corresponding "missing reason" or "reason too short"
-  diagnostic.
+  same presence / length check as
+  `perfectionist::lint_silence_reason`
+  ([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs))
+  and emit the corresponding "missing reason" or "reason too
+  short" diagnostic.
 - The `reason`-presence check is shared with
   [`lint-reason-from-comment`](./lint-reason-from-comment.md)
-  and
-  [`lint-silence-reason`](./lint-silence-reason.md). All three
-  consume `src/common.rs::attr_has_reason`.
+  and `perfectionist::lint_silence_reason`. All three consume
+  `src/common.rs::attr_has_reason`.
 
 ### Difficulty
 
@@ -223,10 +225,11 @@ min_reason_length = 3
   walk the ancestry manually, skipping the attribute under
   inspection.
 
-Ship [`lint-silence-reason`](./lint-silence-reason.md) first
-(easy, `EarlyLintPass`, no ancestry); this rule in a follow-up
-once the lint-level query interface is pinned for the target
-nightly.
+`perfectionist::lint_silence_reason`
+([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs))
+ships the easy half (`EarlyLintPass`, no ancestry); this rule
+is the follow-up once the lint-level query interface is pinned
+for the target nightly.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
@@ -239,10 +242,11 @@ Active by default.
 
 ## Interaction with sibling rules
 
-- [`lint-silence-reason`](./lint-silence-reason.md) covers the
-  local case (every `#[allow]` / `#[expect]` regardless of
-  inherited level). See "Relationship to `lint-silence-reason`"
-  above.
+- `perfectionist::lint_silence_reason`
+  ([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs))
+  covers the local case (every `#[allow]` / `#[expect]`
+  regardless of inherited level). See "Relationship to
+  `lint_silence_reason`" above.
 - [`lint-reason-from-comment`](./lint-reason-from-comment.md)
   lifts an adjacent comment into the attribute's `reason` field
   and so satisfies this rule preemptively when the rationale is

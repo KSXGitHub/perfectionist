@@ -1,6 +1,7 @@
 pub mod arc_rc_clone;
 pub mod derive_ordering;
 pub mod flat_module_pattern;
+pub mod lint_silence_reason;
 pub mod macro_argument_binding;
 pub mod macro_trailing_comma;
 pub mod non_exhaustive_error;

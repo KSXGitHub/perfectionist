@@ -6,7 +6,7 @@
 // `SynthArcClone` derive imported below mirrors the `clap_derive`
 // span shape on a minimal `#[synth_arc]` attribute.
 
-#![allow(dead_code, unused_variables)]
+#![allow(dead_code, unused_variables, reason = "ui fixture")]
 
 extern crate proc_macro_synth_binding;
 

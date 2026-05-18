@@ -1,6 +1,6 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
-#![allow(unknown_lints)]
+#![allow(unknown_lints, reason = "ui fixture")]
 #![warn(perfectionist::non_exhaustive_error)]
 
 // Under `require_for = "pub_crate"`, an enum literally declared
