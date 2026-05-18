@@ -284,8 +284,7 @@ json_macro_path = "serde_json::json"
   if no workspace exists. Parse it with the `toml` crate and
   inspect every `members = [...]` entry's `Cargo.toml`,
   expanding glob entries (`"crates/*"`) the same way cargo
-  does. Search
-  the four relevant tables —
+  does. Search the four relevant tables —
   `workspace.dependencies`, `workspace.dev-dependencies`,
   `dependencies`, `dev-dependencies` — for an entry named
   `serde_json`. Stop at the first match. Cache the boolean on
