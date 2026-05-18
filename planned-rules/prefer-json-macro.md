@@ -49,19 +49,24 @@ string-literal and `format!` forms produce valid JSON when
 written correctly; the issue is that "written correctly" is a
 property the author has to maintain by hand:
 
+Arguments that apply to both literal and `format!` modes:
+
+- Structural typos (missing comma, stray `}`, mismatched
+  bracket) pass `cargo build` and surface only when the
+  downstream consumer parses the result. `json!` rejects an
+  invalid document at the call site.
+- The macro syntax matches the document's structure, so editing
+  one field is a structural edit a `cargo fmt` pass handles
+  rather than a whitespace-and-quoting rebalance.
+
+Arguments specific to `format!`-mode literals:
+
 - Escapes inside interpolated runtime values silently corrupt the
   output. `{marker}` for a path containing `"` produces invalid
   JSON; `json!` routes the value through `serde_json::Value` and
   escapes it per the JSON grammar.
-- Structural typos (missing comma, stray `}}`, mismatched
-  bracket) pass `cargo build` and surface only when the
-  downstream consumer parses the result. `json!` rejects an
-  invalid document at the call site.
 - The doubled-brace `{{` / `}}` noise in `format!` templates is
   visual clutter that the macro form removes.
-- The macro syntax matches the document's structure, so editing
-  one field is a structural edit a `cargo fmt` pass handles
-  rather than a whitespace-and-quoting rebalance.
 
 These costs are usually worth paying in production code where
 the construction is on a hot path; in test code, where the JSON
@@ -74,8 +79,10 @@ The rule is silent in workspaces that do not use `serde_json` at
 all. It activates when **any** of the following holds:
 
 1. The workspace's root `Cargo.toml` declares `serde_json` in
-   `[workspace.dependencies]` (or any workspace-level dependency
-   table).
+   `[workspace.dependencies]` (the only workspace-level
+   dependency table cargo supports — individual crates opt in
+   per-table via `serde_json = { workspace = true }` in their
+   own `[dependencies]` or `[dev-dependencies]`).
 2. The local crate's own `Cargo.toml` declares `serde_json` in
    `[dependencies]` or `[dev-dependencies]`.
 3. *Any* other crate in the same workspace declares `serde_json`
@@ -278,28 +285,33 @@ json_macro_path = "serde_json::json"
 
 ## Implementation notes
 
-- **Activation probe.** At pass construction, locate the
-  workspace root by walking parents of
-  `tcx.sess.opts.working_dir` until a `Cargo.toml` containing a
-  `[workspace]` table is found, or the crate's own `Cargo.toml`
-  if no workspace exists. Parse it with the `toml` crate and
-  inspect every `members = [...]` entry's `Cargo.toml`,
-  expanding glob entries (`"crates/*"`) the same way cargo
-  does. Search the four relevant tables —
-  `workspace.dependencies`, `workspace.dev-dependencies`,
-  `dependencies`, `dev-dependencies` — for an entry named
-  `serde_json`. Stop at the first match. Cache the boolean on
-  the pass struct; subsequent `check_expr` invocations
-  short-circuit on `false`.
+- **Activation probe.** At pass construction, resolve the
+  workspace via the [`cargo_metadata`](https://crates.io/crates/cargo_metadata)
+  crate (which shells out to `cargo metadata --no-deps` and
+  handles globs, `default-members`, `exclude`, and virtual
+  manifests with no `[package]`). Iterate the resolved packages
+  and search each one's `dependencies` array — including those
+  with kind `dev` — for an entry named `serde_json`. Also
+  check the workspace root's `[workspace.dependencies]` table
+  (the only workspace-level dependency table cargo supports).
+  Stop at the first match. Cache the boolean on the pass
+  struct; subsequent `check_expr` invocations short-circuit on
+  `false`.
+
+  Hand-parsing the manifest with the `toml` crate is also an
+  option, but the resolution rules (`exclude`, glob expansion,
+  virtual manifests) are easy to get subtly wrong; deferring to
+  `cargo_metadata` keeps the probe correct.
 
   This is the only rule in the catalogue that performs
-  filesystem I/O outside the source tree. Keep the probe small
-  and defensive: a malformed `Cargo.toml` should disable the
-  lint, not panic the compiler.
+  filesystem I/O outside the source tree. Keep the probe
+  defensive: an unparseable manifest should disable the lint,
+  not panic the compiler.
 
 - **Test-context detection.** `LateLintPass::check_expr`. From
-  the expression's `HirId`, walk parents via `tcx.hir_parents`
-  until an item is reached:
+  the expression's `HirId`, walk parents via
+  `tcx.hir().parent_iter(hir_id)` (or `tcx.parent_hir_node` on
+  newer compilers) until an item is reached:
   - If the item is a `fn` with one of `test_attributes` applied,
     fire.
   - If any ancestor module carries `#[cfg(test)]` (detected via
@@ -324,9 +336,11 @@ json_macro_path = "serde_json::json"
 
 - **JSON detection — format mode.** For a macro invocation that
   resolves to `format!`, locate the template literal (first
-  positional argument) via
-  `clippy_utils::macros::FormatArgsExpn`. Walk the template
-  with the catalogue's shared format-template combinators (see
+  positional argument) via the current clippy_utils
+  format-args helpers (`FormatArgsStorage` + `find_format_args`
+  in current Clippy; `FormatArgsExpn` was removed). Walk the
+  template with the catalogue's shared format-template
+  combinators (see
   [`derive-more-inlined-args`](./derive-more-inlined-args.md)
   and [`format-macro-wrap`](./format-macro-wrap.md)) and emit a
   synthetic string where each `{...}` placeholder is replaced
