@@ -63,6 +63,7 @@ abstract.
 
 The recognised pure shapes are: literals, paths, field
 accesses, indexing of pure bases, dereferences, references,
+the logical / bitwise not of a pure expression (`!ready`),
 casts, the unit literal `()`, parenthesised / tuple /
 array-literal / array-repeat groups whose elements are all
 pure, binary chains of pure operands joined by
