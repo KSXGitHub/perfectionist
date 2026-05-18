@@ -431,12 +431,13 @@ Warn.
   look at multi-line string literals, but operate on disjoint
   classes. `prefer_text_block` rewrites the literal's *shape*
   (newlines split across source lines); this rule rewrites the
-  literal's *construction* (string → `json!` macro). When a
-  literal triggers both, this rule's suggestion supersedes
-  `prefer_text_block`'s — the `json!` macro produces structured
-  data, not a multi-line string, so the text-block reshape
-  becomes moot. Run this rule first; if the user accepts the
-  suggestion, the text-block lint no longer applies.
+  literal's *construction* (string → `json!` macro). To avoid
+  emitting two diagnostics on the same literal,
+  `prefer_text_block`'s implementation should suppress its own
+  diagnostic when the literal parses as a structurally
+  interesting JSON document — the `json!` rewrite produces
+  structured data rather than a multi-line string, so the
+  text-block reshape becomes moot once the user applies it.
 - [`format-macro-wrap`](./format-macro-wrap.md) — when a
   `format!` invocation triggers both rules, prefer this one for
   the same reason: the `json!` rewrite eliminates the
