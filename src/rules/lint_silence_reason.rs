@@ -39,7 +39,7 @@ declare_tool_lint! {
     /// ```
     /// Use instead:
     /// ```rust,ignore
-    /// #[allow(clippy::too_many_arguments, reason = "matches pnpm's signature")]
+    /// #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
     /// fn build_fetcher(/* ... */) {}
     /// ```
     pub perfectionist::LINT_SILENCE_REASON,
