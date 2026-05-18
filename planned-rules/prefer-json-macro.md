@@ -251,8 +251,9 @@ fn not_json() {
 enabled = true
 
 # Attribute paths whose presence on the enclosing function counts
-# as "this is a test". Match against the attribute's last path
-# segment when no dot is present, against the full path otherwise.
+# as "this is a test". Entries without `::` match against the
+# attribute's last path segment; entries containing `::` match
+# against the full path.
 test_attributes = [
   "test",
   "tokio::test",
@@ -281,7 +282,9 @@ json_macro_path = "serde_json::json"
   `tcx.sess.opts.working_dir` until a `Cargo.toml` containing a
   `[workspace]` table is found, or the crate's own `Cargo.toml`
   if no workspace exists. Parse it with the `toml` crate and
-  inspect every `members = [...]` entry's `Cargo.toml`. Search
+  inspect every `members = [...]` entry's `Cargo.toml`,
+  expanding glob entries (`"crates/*"`) the same way cargo
+  does. Search
   the four relevant tables —
   `workspace.dependencies`, `workspace.dev-dependencies`,
   `dependencies`, `dev-dependencies` — for an entry named
