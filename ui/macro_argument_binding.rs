@@ -94,7 +94,7 @@ fn _unknown_macro_default_flags(count: u32) {
     let _ = my_macro!(value(), count);
 }
 
-// Allow-set `format!` evaluates each argument exactly once. Even a
+// Allowed `format!` evaluates each argument exactly once. Even a
 // impure expression in a format-args slot is accepted.
 fn _format_in_allow_set() {
     let mut count: u32 = 0;
@@ -104,14 +104,14 @@ fn _format_in_allow_set() {
     });
 }
 
-// Allow-set `vec!`. Comma-form is the array-like shape the rule
+// Allowed `vec!`. Comma-form is the array-like shape the rule
 // targets, but `vec!` is in the allow set, so impure elements
 // are accepted under the default config.
 fn _vec_in_allow_set() {
     let _ = vec![value(), value(), value()];
 }
 
-// Allow-set `insta` snapshot-assertion macros. Each variant
+// Allowed `insta` snapshot-assertion macros. Each variant
 // evaluates its value argument exactly once before serialising, so
 // the rule accepts impure arguments under the default config.
 // Tail-segment matching means the rule recognises both bare and
@@ -131,7 +131,7 @@ fn _vec_repeat_form_skipped() {
 
 // Curly-brace invocation is out of scope: by convention the body is
 // the macro's DSL, not a comma-separated argument list. Skipped even
-// for a deny-set macro name. `debug_assert!` accepts the brace
+// for a denied macro name. `debug_assert!` accepts the brace
 // form via the surrounding `macro_rules!` dispatch.
 fn _brace_delimiter_skipped() {
     debug_assert! { value().is_some() }
@@ -212,7 +212,7 @@ fn _all_pure_shapes_accepted() {
     debug_assert_eq!(!buffer[0], !buffer[INDEX], "unary not on pure suffix");
 }
 
-// Single-argument deny-set call with an impure expression.
+// Single-argument denied call with an impure expression.
 fn _single_argument_deny() {
     debug_assert!(value().is_some());
 }
@@ -456,7 +456,7 @@ fn _compile_time_macros_accepted() {
     let _ = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
     let _ = stringify!(let x = compute(););
     // Inner compile-time macros are pure atoms inside any
-    // surrounding (even deny-set) macro: there is no runtime
+    // surrounding (even denied) macro: there is no runtime
     // expression to bind.
     debug_assert_eq!(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_NAME"));
     debug_assert!(cfg!(any()) || cfg!(all()));

@@ -573,7 +573,7 @@ debug_assert_eq!(ejected, None, "duplicate key");
 debug_assert_eq!(count, MAX_RETRIES, "expected {MAX_RETRIES} retries");
 ```
 
-### Allow-set macros pass through
+### Allowed macros pass through
 
 ```rust
 // Accepted — `format!` is in the curated allow set; arguments
