@@ -87,10 +87,10 @@ struct Config {
     /// before the lint fires. Default `1` catches every escapable
     /// string; set to `2` to skip single-escape literals where the
     /// raw form is arguably noisier than the original. The lower
-    /// bound is `1` — `0` is rejected at parse time, since a
-    /// literal with zero eliminable escapes already cannot be
-    /// rewritten as a raw string and is skipped regardless of this
-    /// knob.
+    /// bound is `1` — `0` is rejected at parse time, since
+    /// suggesting `r"hello"` for `"hello"` would just trip
+    /// `clippy::needless_raw_strings` on the next pass, and a
+    /// minimum of `1` already excludes that case.
     min_escapes_to_trigger: NonZeroUsize,
     /// Escape sequences considered eliminable by switching to raw
     /// form. Only the three Rust escapes whose decoded character
