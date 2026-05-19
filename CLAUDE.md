@@ -4,7 +4,8 @@ This repository's lint rules are documented in `planned-rules/`
 before they are implemented. Each markdown file describes one
 rule's intent, configuration knobs, examples, implementation
 notes, and difficulty. Cross-cutting conventions (parser style,
-lint-name namespacing) live in
+markdown parsing, lint-name namespacing, rule activation /
+default state) live in
 `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
 
 This guide tells you how to implement those rules and how to
@@ -26,16 +27,28 @@ Read three things first, in this order:
    one-sentence summary; check that the rule you're implementing
    still says what you think it says.
 3. **`planned-rules/IMPLEMENTATION_CONVENTIONS.md`** — applies
-   to every rule. Currently covers two cross-cutting conventions:
+   to every rule. Currently covers four cross-cutting conventions:
    - **Parser style.** Non-trivial string scanners (URLs,
      emails, format templates, markdown spans, serde-attribute
      type literals) are written as parser-combinator-style
      `take_*` functions, not regex.
+   - **Markdown parsing.** The handful of rules that scan
+     rustdoc-flavoured markdown share one hand-rolled
+     `take_*`-based helper at `src/markdown.rs`, not a vendored
+     parser library.
    - **Lint name namespacing.** Every lint registers under the
      `perfectionist` tool namespace via
      `rustc_session::declare_tool_lint!`. The planning files use
      the unqualified form (`qualified_paths`) for readability;
      the registered name is `perfectionist::qualified_paths`.
+   - **Rule activation model.** Every rule declares a
+     `DEFAULT_STATE` (`Active` or `Inactive`) and surfaces it as
+     a `**Default state:** \`active\` | \`inactive\`` frontmatter
+     line near the top of its planning file and generated rule
+     doc. The crate-wide on/off knob lives in `dylint.toml`'s
+     `[perfectionist] enable / disable` table — described in
+     `CONTROLLING_RULES.md` — and replaces any per-rule
+     `enabled = true` config field.
 
 If the rule is one of several that share a helper (markdown
 exclusion, format-string parsing, URL discovery, unicode-width
