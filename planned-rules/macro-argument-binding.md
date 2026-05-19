@@ -18,8 +18,8 @@ Still pending:
   shared with the equivalent eligibility check planned for
   `macro-trailing-comma`; both will land together.
 - **Identifier-path-aware allow / deny matching.** Multi-segment
-  entries — both the built-in deny / allow sets and the
-  user-supplied `deny_extra`, `allow_extra`, and `ignore` sets
+  entries — both those in the built-in deny / allow sets and
+  those configured via `deny_extra`, `allow_extra`, and `ignore`
   — currently tail-match the *syntactic* path the user wrote
   at the call site. A configured entry of
   `their_crate::their_macro` matches any invocation whose
