@@ -17,6 +17,10 @@ const LINT_NAME: &str = "perfectionist::single_letter_function_param";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
+/// The rule's user-facing configuration shape, mirrored here for
+/// serialisation. Kept as a separate type from the lint's own internal
+/// `Config` so the test surface is independent of the implementation's
+/// private struct.
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
