@@ -37,6 +37,7 @@ serde = { version = "1.0.228", features = ["derive"] }
 [dev-dependencies]
 _utils = { path = "utils" }
 dylint_testing = "6.0.0"
+pipe-trait = "0.4.0"
 text-block-macros = "0.2.0"
 toml = "1.1.2"
 
