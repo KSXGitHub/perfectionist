@@ -11,6 +11,7 @@
 //! parallel test harness.
 
 use std::collections::BTreeMap;
+use std::num::NonZeroUsize;
 use std::sync::Mutex;
 
 const LINT_NAME: &str = "perfectionist::prefer_raw_string";
@@ -24,7 +25,7 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    min_escapes_to_trigger: Option<usize>,
+    min_escapes_to_trigger: Option<NonZeroUsize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     escapes_eligible: Option<Vec<String>>,
 }
@@ -49,7 +50,7 @@ fn min_escapes_to_trigger_skips_single_escape_literals() {
     run(
         "ui-toml/prefer_raw_string/min_escapes_to_trigger",
         RuleConfig {
-            min_escapes_to_trigger: Some(2),
+            min_escapes_to_trigger: Some(NonZeroUsize::new(2).expect("2 is non-zero")),
             ..Default::default()
         },
     );
