@@ -1,5 +1,6 @@
 # `prefer_json_macro`
 
+**Default state:** `enabled`  
 **Source:** project convention.
 
 ## Statement
@@ -36,11 +37,12 @@ let manifest = format!(
 fs::write(&manifest_path, manifest).expect("write package.json");
 ```
 
-This rule rewrites the second form into the first whenever it
-appears in test code. It is silent in production code, where the
+By default the rule rewrites the second form into the first
+only inside test code. Production code is exempt because the
 overhead of building a `serde_json::Value` and re-serialising it
-is sometimes the deciding factor and reviewers are best placed to
-choose case by case.
+is sometimes the deciding factor and reviewers are best placed
+to choose case by case. Projects that want the rewrite
+everywhere can flip `restrict_to_tests = false`.
 
 ## Why restrict this?
 
@@ -75,8 +77,10 @@ wins.
 
 ## Activation
 
-The rule is silent in workspaces that do not use `serde_json` at
-all. It activates when **any** of the following holds:
+By default the rule is silent in workspaces that do not use
+`serde_json` at all; under the default
+`require_serde_json_dependency = true`, it activates when **any**
+of the following holds:
 
 1. The workspace's root `Cargo.toml` declares `serde_json` in
    `[workspace.dependencies]` (the only workspace-level
@@ -100,11 +104,19 @@ opted into, which the user cannot apply without a separate
 is the correct behaviour for a project that has legitimately
 opted out by not depending on `serde_json`.
 
+A project that has its own `json!` re-export (private wrapper,
+vendored crate, etc.) and wants the lint to fire regardless of
+the workspace probe can set
+`require_serde_json_dependency = false`; the probe is skipped
+and activation is always `true`. Combine with `json_macro_path`
+to point the autofix at the wrapper.
+
 ## What to lint
 
 Fire only on expressions that satisfy **all** of:
 
-1. **The expression is in a test context.** Test context is any
+1. **The expression is in a test context** *or*
+   `restrict_to_tests` is set to `false`. Test context is any
    of:
    - the enclosing `fn` carries `#[test]`, `#[tokio::test]`,
      `#[async_std::test]`, or any other attribute matching
@@ -117,6 +129,12 @@ Fire only on expressions that satisfy **all** of:
      performance-sensitive, the same rationale that excludes
      production code — but a project can opt in by adding
      `"benches"` to `test_directories`.
+
+   Setting `restrict_to_tests = false` skips this test-context
+   check entirely; every other trigger condition still applies.
+   The trade-off — `json!` allocates a `Value` tree where a
+   string literal allocates nothing — then becomes the
+   project's call.
 2. **The expression's runtime value is a JSON document.** Two
    detection modes:
    - *Literal mode.* The expression is a string literal whose
@@ -253,10 +271,24 @@ fn not_json() {
 
 ```toml
 [prefer_json_macro]
-# Disable the rule entirely. Useful for workspaces that already
-# have a strong reason to hand-write JSON in test code (e.g.,
-# tests that verify byte-exact serializer output).
-enabled = true
+# Whether to gate the rule on detecting `serde_json` as a
+# dependency anywhere in the workspace (see "Activation"). When
+# `true` (default), the rule is silent in workspaces that don't
+# declare `serde_json`. Set to `false` to fire regardless — the
+# autofix will then suggest `json!` even when the project hasn't
+# opted into `serde_json` yet, which makes sense for projects
+# that are about to adopt it or have a private `json!` re-export
+# behind `json_macro_path`.
+require_serde_json_dependency = true
+
+# Whether to restrict the rule to test code (see "What to lint",
+# trigger 1). When `true` (default), the rule fires only inside
+# `#[test]`-family functions, `#[cfg(test)]` modules, and the
+# directories named in `test_directories`. Set to `false` to
+# also lint production code — the performance trade-off
+# (allocating a `Value` and re-serialising) is then the
+# project's call, not the lint's.
+restrict_to_tests = true
 
 # Attribute paths whose presence on the enclosing function counts
 # as "this is a test". Entries without `::` match against the
@@ -420,10 +452,6 @@ suggestion cannot rule out:
 When no `use serde_json::json;` is in scope the suggestion
 includes the import; the path is configurable via
 `json_macro_path`.
-
-## Severity
-
-Warn.
 
 ## Interaction with sibling rules
 
