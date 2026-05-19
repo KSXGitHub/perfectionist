@@ -107,9 +107,11 @@ pattern that several rules call out by reference — live in
 - [`prefer-json-macro.md`](./prefer-json-macro.md) — in test
   code, when a string literal or `format!` invocation produces a
   non-trivial JSON document, prefer
-  `serde_json::json!({ ... }).to_string()`. Silent in production
-  code (performance trade-off is reviewer's call) and in
-  workspaces that do not depend on `serde_json` anywhere.
+  `serde_json::json!({ ... }).to_string()`. By default silent in
+  production code (performance trade-off is reviewer's call;
+  `restrict_to_tests = false` opts in) and in workspaces that
+  do not depend on `serde_json` anywhere
+  (`require_serde_json_dependency = false` opts in).
 
 ### Cloning
 - [`arc-rc-clone.md`](./arc-rc-clone.md) — require `Arc::clone(&x)` /
