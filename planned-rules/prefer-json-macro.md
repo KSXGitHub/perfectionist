@@ -381,9 +381,11 @@ json_macro_path = "serde_json::json"
 
 - **JSON detection — format mode.** For a macro invocation that
   resolves to `format!`, locate the template literal (first
-  positional argument) via the current clippy_utils
-  format-args helpers (`FormatArgsStorage` + `find_format_args`
-  in current Clippy; `FormatArgsExpn` was removed). Walk the
+  positional argument) via whichever clippy_utils format-args
+  helper is current for the pinned Rust toolchain — sibling rule
+  [`format-macro-wrap`](./format-macro-wrap.md) leans on the same
+  helper; pick the live API name at implementation time rather
+  than baking it into the planning doc. Walk the
   template with the catalogue's shared format-template
   combinators (see
   [`derive-more-inlined-args`](./derive-more-inlined-args.md)
@@ -445,22 +447,32 @@ format specifier — `{count:04}`, `{name:>10}`, `{value:.3}` —
 is carried into the wrapping `format!`'s template (`"{:04}"`
 etc.) so the formatted output is byte-identical to the original.
 
-`Applicability::MaybeIncorrect`. Two failure modes the
+`Applicability::MaybeIncorrect`. Three failure modes the
 suggestion cannot rule out:
 
 - *Placeholder serialisation.* The rewrite produces the same
   JSON only when the placeholder expressions serialise to plain
   strings (a `PathBuf`'s `Display` output on Unix matches its
   JSON serialisation, but `Debug` output does not).
-- *Byte-equivalence of the output.* `serde_json::Value::to_string()`
+- *Whitespace and indentation.* `serde_json::Value::to_string()`
   produces compact JSON (`{"a":1}`). A hand-written literal may
   be pretty-printed or whitespace-padded
-  (`{ "a": 1 }` or a multi-line block). If the test compares the
-  produced bytes against an expected string (`assert_eq!(actual,
-  manifest)`), the rewrite changes the outcome. Tests that feed
-  the JSON into a parser (the more common shape — `fs::write`
-  then a subprocess that parses, or `serde_json::from_str` on
-  the round-trip) are unaffected.
+  (`{ "a": 1 }` or a multi-line block); the rewrite drops that
+  formatting.
+- *Object key order.* `serde_json::Map` is a `BTreeMap` by
+  default (keys serialised alphabetically) and only switches to
+  insertion order when the consumer's `serde_json` is built with
+  the `preserve_order` feature. A hand-written literal in
+  insertion order will reorder under the rewrite unless that
+  feature is enabled.
+
+All three are byte-level mismatches that surface only if the
+test compares the produced JSON against an expected string
+(`assert_eq!(actual, manifest)`). Tests that feed the JSON into
+a parser (the more common shape — `fs::write` then a
+subprocess that parses, or `serde_json::from_str` on the
+round-trip) are unaffected, because all three failure modes
+preserve the parsed `Value`.
 
 When no `use serde_json::json;` is in scope the suggestion
 includes the import; the path is configurable via
