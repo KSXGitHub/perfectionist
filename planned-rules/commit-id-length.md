@@ -1,5 +1,6 @@
 # `commit_id_length`
 
+**Default state:** `active`  
 **Source:** project convention. Sibling lint to
 [`unpinned-repo-ref`](./unpinned-repo-ref.md), which decides whether
 a forge URL's ref is pinned at all. This rule decides whether the
@@ -192,7 +193,7 @@ the window themselves.
 
 ## Default state
 
-Active by default. The default window (`6..=40`) rejects SHAs
+The default window (`6..=40`) rejects SHAs
 shorter than Git's default abbreviation length while accepting
 everything from 6-char prefixes up to the full 40-char hash; a
 project tightens the window further by raising the minimum or

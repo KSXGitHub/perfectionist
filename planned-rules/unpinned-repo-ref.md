@@ -1,5 +1,6 @@
 # `unpinned_repo_ref`
 
+**Default state:** `active`  
 **Source:** project convention. The pacquet `CODE_STYLE_GUIDE.md` calls
 the principle out as a *cardinal rule* — every upstream permalink must
 be pinned to a SHA — but the rule itself appears across many
@@ -187,10 +188,6 @@ when the ref is hex.
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
-
-## Default state
-
-Active by default.
 
 ## Interaction with sibling lints
 

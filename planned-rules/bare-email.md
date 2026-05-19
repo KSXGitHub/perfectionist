@@ -1,5 +1,6 @@
 # `bare_email`
 
+**Default state:** `active`  
 **Source:** project convention.
 
 ## Statement
@@ -128,7 +129,3 @@ skip_domains = ["example.com", "example.org"]
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
-
-## Default state
-
-Active by default.

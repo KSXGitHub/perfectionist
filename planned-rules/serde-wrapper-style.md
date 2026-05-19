@@ -1,5 +1,6 @@
 # `serde_wrapper_style`
 
+**Default state:** `active`  
 **Source:** project convention.
 
 ## Statement
@@ -253,7 +254,7 @@ apply it without manual review.
 
 ## Default state
 
-Active by default, but the default `style = "preserve"` keeps the
+The default `style = "preserve"` keeps the
 pass a no-op so the rule is zero-friction to adopt. A project
 that has audited the trivial-impl recogniser on its codebase opts
 in by setting `style` to `transparent` or `from_into`.

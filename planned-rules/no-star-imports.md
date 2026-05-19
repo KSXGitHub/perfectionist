@@ -1,5 +1,6 @@
 # `no_star_imports`
 
+**Default state:** `active`  
 **Source:** pacquet *No star imports*.
 
 ## Statement
@@ -125,7 +126,3 @@ exception enabled) lets `use foo::prelude::*;` through and forbids
 Together they say: "preludes must be glob-imported, and globs are only
 allowed for preludes". Enabling both is the recommended posture for
 projects that follow the prelude convention strictly.
-
-## Default state
-
-Active by default.

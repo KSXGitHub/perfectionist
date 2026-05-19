@@ -1,5 +1,6 @@
 # `prefer_owned_parameter`
 
+**Default state:** `active`  
 **Source:** pacquet *When to use owned parameter? When to use
 borrowed parameter?*. The pacquet guide gives both directions of
 the trade-off; this lint covers the *prefer owned* direction. The
@@ -183,10 +184,6 @@ A conservative starting implementation:
   and that use is the conversion to owned. No dominance analysis
   needed; the predicate degenerates to a single-use check.
 - Defer the multi-use / branching cases to a later pass.
-
-## Default state
-
-Active by default.
 
 ## Interaction with clippy
 

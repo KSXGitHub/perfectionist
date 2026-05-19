@@ -1,5 +1,6 @@
 # `cfg_attr_ignore_tests`
 
+**Default state:** `active`  
 **Sources:** parallel-disk-usage *Conditional Test Skipping*; pacquet
 *Conditional Test Skipping*.
 
@@ -84,7 +85,3 @@ fn unix_permissions() {
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
-
-## Default state
-
-Active by default.

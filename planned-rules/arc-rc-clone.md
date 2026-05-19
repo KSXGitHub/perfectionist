@@ -1,5 +1,6 @@
 # `arc_rc_clone`
 
+**Default state:** `active`  
 **Source:** pacquet *Cloning `Arc` and `Rc`*.
 
 ## Status

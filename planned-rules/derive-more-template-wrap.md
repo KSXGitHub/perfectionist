@@ -1,5 +1,6 @@
 # `derive_more_template_wrap`
 
+**Default state:** `active`  
 **Source:** project convention. Sibling to
 [`format-macro-wrap`](./format-macro-wrap.md) and
 [`print-macro-split`](./print-macro-split.md). The same
@@ -169,10 +170,6 @@ re-formatting would interact with the rewrite.
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing
   (`perfectionist::*`) that every registered lint follows.
-
-## Default state
-
-Active by default.
 
 ## Interaction with sibling rules
 

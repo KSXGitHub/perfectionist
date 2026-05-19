@@ -1,5 +1,6 @@
 # `bare_issue_reference`
 
+**Default state:** `active`  
 **Source:** project convention.
 
 ## Statement
@@ -124,7 +125,7 @@ form = "inline"
 
 ## Default state
 
-Active by default. With `repo_base_url` unset and
+With `repo_base_url` unset and
 `suggestion_mode = "help_only"`, the lint becomes informational
 and a project can run it without further configuration to flag
 the bare references for manual triage.

@@ -1,5 +1,6 @@
 # `pipe_style`
 
+**Default state:** `active`  
 **Sources:** parallel-disk-usage *Using `pipe-trait`* and pacquet
 *Using `pipe-trait`*. Both source documents prescribe the same
 two-direction policy: pipe is wrong at the entry point of an
@@ -209,5 +210,5 @@ point convergence in two passes.
 
 ## Default state
 
-Active by default. Both sub-checks (`leading_pipe` and
+Both sub-checks (`leading_pipe` and
 `wrapped_chain`) run when the rule is active.

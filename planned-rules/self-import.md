@@ -1,5 +1,6 @@
 # `self_import`
 
+**Default state:** `active`  
 **Source:** project convention. Companion lint to
 [`import-granularity`](./import-granularity.md), which intentionally
 defers all `self`-import decisions here.
@@ -136,7 +137,7 @@ The lint emits nothing. Useful as a project-wide acknowledgement that
 
 ## Default state
 
-Active by default, but the default `style = "preserve"` keeps the
+The default `style = "preserve"` keeps the
 pass a no-op until the project opts into `forbid` or `combined`.
 
 ## Why a separate lint from `import-granularity`

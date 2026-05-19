@@ -1,5 +1,6 @@
 # `clap_help_length`
 
+**Default state:** `active`  
 **Source:** project convention. Sibling lint to
 [`clap-help-no-markdown`](./clap-help-no-markdown.md); both share the
 same "is this a clap-derived item, and is the help text overridden?"
@@ -131,10 +132,6 @@ count_graphemes = false
 
 A project that wants a single budget can set the same value for all
 four `*_max_*` knobs.
-
-## Default state
-
-Active by default.
 
 ## Autofix
 

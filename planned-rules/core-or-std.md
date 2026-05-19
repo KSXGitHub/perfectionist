@@ -1,5 +1,6 @@
 # `core_or_std`
 
+**Default state:** `active`  
 **Source:** project convention.
 
 ## Statement
@@ -149,6 +150,6 @@ The lint emits nothing. Default.
 
 ## Default state
 
-Active by default, but the default `style = "preserve"` keeps the
+The default `style = "preserve"` keeps the
 pass a no-op until the project opts into `prefer_core` or
 `prefer_std`.

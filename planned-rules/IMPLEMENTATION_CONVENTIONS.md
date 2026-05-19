@@ -355,6 +355,14 @@ pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 ```
 
+The consumer-facing description of the same mechanism — the
+`[perfectionist] enable = [...]` / `disable = [...]` table in
+`dylint.toml`, the per-site `#[allow / expect / deny / forbid]`
+attributes, and the `DYLINT_RUSTFLAGS` escape hatch — lives in
+[`CONTROLLING_RULES.md`](../CONTROLLING_RULES.md). This section is the
+author-side convention: how a rule declares its default and what
+`DefaultState` to pick.
+
 The two states map to the consumer-visible behaviour as follows:
 
 - **Active by default.** The pass installs unconditionally,
@@ -371,12 +379,63 @@ The two states map to the consumer-visible behaviour as follows:
   attributes at user call sites continue to resolve regardless
   of which array the rule appears under.
 
+Because the `[perfectionist] enable / disable` table is a single
+crate-wide switch for every rule, **do not add a per-rule
+`enabled = true` (or `enabled = false`) field** to a rule's own
+`[perfectionist::<rule>]` config table. The global switch already
+covers the "turn this rule on or off" case, and a within-table
+master switch is redundant with it. A rule's config table holds
+only the knobs that change *how* the rule behaves when its pass
+is installed.
+
 Reserve `Inactive by default` for rules whose triggers are
 known to false-positive in real codebases, advisory sub-checks
 gated behind a "are you sure?" knob, or rules whose preferred
 configuration genuinely varies per project to the point that
 shipping a baseline policy would be presumptuous. Everything
 else is `Active by default`.
+
+### Documenting the default state
+
+Every planning file in this directory and every generated rule
+doc in [`../rules/`](../rules/) carries the default state as a
+**frontmatter line near the top**, immediately under the H1.
+The form matches `rules/*.md` exactly:
+
+```markdown
+# `rule_name`
+
+**Default state:** `active`
+**Source:** ...
+```
+
+(`active` or `inactive` is the only payload — the planning file
+does not say "Warn" or "Allow" here; severity escalation is the
+consumer's choice and lives in `declare_tool_lint!` and
+[`CONTROLLING_RULES.md`](../CONTROLLING_RULES.md), not in the
+catalogue.)
+
+A planning file that bundles several sub-checks with different
+defaults — i.e. a file that the "One rule per file" convention
+says will be split — may instead point the frontmatter at a
+per-sub-check breakdown later in the file:
+
+```markdown
+**Default state:** per sub-check; see [Default state](#default-state).
+```
+
+A trailing `## Default state` section is only required when the
+default needs prose to explain — typically when a `style` knob
+defaults to `preserve` and effectively renders the active pass a
+no-op until the project picks a style. In that case the section
+expands on the frontmatter rather than repeating it; the bare
+"Active by default." sentence belongs in the frontmatter alone.
+
+Old planning files used a `## Severity` heading (typically just
+"Warn.") that captured the lint level instead. That convention
+is retired: the user-facing concept is the default state, the
+lint level is fixed at `Warn` in `declare_tool_lint!`, and the
+heading is not expected in new planning files.
 
 Severity escalation (`Warn → Deny → Forbid`) is the consumer's
 prerogative and lives entirely outside the planning file. The

@@ -1,5 +1,6 @@
 # `where_clause_bounds`
 
+**Default state:** `active`  
 **Sources:** parallel-disk-usage *Trait Bounds*; pacquet *Trait Bounds*.
 
 ## Statement
@@ -60,7 +61,3 @@ where
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
-
-## Default state
-
-Active by default.

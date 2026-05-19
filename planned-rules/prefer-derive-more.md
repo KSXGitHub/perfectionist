@@ -1,5 +1,6 @@
 # `prefer_derive_more`
 
+**Default state:** `active`  
 **Source:** project convention. AI assistants frequently expand
 `#[derive(From)]` / `#[derive(Display)]` patterns into hand-rolled
 `impl` blocks, particularly in code that began life inside a chat
@@ -198,9 +199,9 @@ crate_path = "derive_more"
 
 ## Default state
 
-Active by default for the easy and medium sub-lints. The hard
-sub-lints ship inactive by default; a project opts in via the
-configuration knobs documented above.
+The easy and medium sub-lints are active by
+default. The hard sub-lints ship inactive by default; a project
+opts in via the configuration knobs documented above.
 
 ## Why restrict this?
 

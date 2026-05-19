@@ -1,5 +1,6 @@
 # `import_granularity`
 
+**Default state:** `active`  
 **Sources:** parallel-disk-usage *Code Style › Import Organization*; pacquet
 *Import Organization*. Both source documents show examples in the **`crate`**
 shape; the default in this catalogue is **`module`** because it is the
@@ -186,7 +187,7 @@ The style names map 1-to-1 to rustfmt's `imports_granularity`:
 
 ## Default state
 
-Active by default. None of the three styles is "wrong" in the
+None of the three styles is "wrong" in the
 abstract; a mismatch with the project's configured `style` is
 the violation, so the rule is purely about consistency with the
 chosen layout.

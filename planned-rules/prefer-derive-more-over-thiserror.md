@@ -1,5 +1,6 @@
 # `prefer_derive_more_over_thiserror`
 
+**Default state:** `active`  
 **Source:** project convention. Sibling to
 [`prefer-derive-more`](./prefer-derive-more.md), which catches
 hand-written `impl` blocks. This rule catches the *other* common
@@ -127,10 +128,6 @@ hand, not in the lint itself.
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing
   (`perfectionist::*`) that every registered lint follows.
-
-## Default state
-
-Active by default.
 
 ## Interaction with sibling lints
 

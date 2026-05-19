@@ -1,5 +1,6 @@
 # `lint_reason_from_comment`
 
+**Default state:** `active`  
 **Source:** project convention.
 
 ## Statement
@@ -194,10 +195,6 @@ lines.
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing
   (`perfectionist::*`) that every registered lint follows.
-
-## Default state
-
-Active by default.
 
 ## Interaction with sibling rules
 

@@ -1,5 +1,6 @@
 # `intra_doc_links`
 
+**Default state:** `active`  
 **Source:** pacquet *Doc comment intra-links*.
 
 ## Statement
@@ -73,10 +74,6 @@ deliberately *did not* want to link (e.g., a future type, or a
 historical reference). Provide a project-level allowlist
 (`intra_doc_links.skip_idents = ["LegacyCache"]`) and respect
 `#[allow(...)]`.
-
-## Default state
-
-Active by default.
 
 ## Autofix
 

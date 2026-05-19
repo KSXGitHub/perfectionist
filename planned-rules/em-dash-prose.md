@@ -1,5 +1,6 @@
 # `em_dash_prose`
 
+**Default state:** `active`  
 **Source:** parallel-disk-usage *Writing Style*.
 
 ## Statement
@@ -134,7 +135,3 @@ action.
   Useful for projects that want to localise the diagnostic or expand
   it with a link to an internal style guide. The default message
   above is used when this is unset.
-
-## Default state
-
-Active by default.

@@ -1,5 +1,6 @@
 # `error_type_derives`
 
+**Default state:** `active`  
 **Sources:** parallel-disk-usage *Error Handling*; pacquet *Error
 Handling*.
 
@@ -235,8 +236,8 @@ pub enum ParsedValue { /* ... */ }
 
 ## Default state
 
-Each sub-check has its own default state once it is split into a
-sibling planning file per the Status section above. The expected
-shape: `unused_display`, `unused_error`, `copyable_error`,
-`unconventional_error_name`, and `missing_error` are all active
-by default.
+The five sub-checks (`unused_display`, `unused_error`,
+`copyable_error`, `unconventional_error_name`, and `missing_error`)
+are all active by default. Once the rule is split into one
+planning file per sub-check per the Status section above, each
+resulting file inherits this default.

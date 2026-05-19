@@ -1,5 +1,6 @@
 # `prefer_expect_over_allow`
 
+**Default state:** `active`  
 **Source:** project convention.
 
 ## Statement
@@ -215,10 +216,6 @@ original span but the bookkeeping is worth its own helper.
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing
   (`perfectionist::*`) that every registered lint follows.
-
-## Default state
-
-Active by default.
 
 ## Interaction with sibling rules
 

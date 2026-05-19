@@ -1,5 +1,6 @@
 # `unicode_ellipsis_in_docs`
 
+**Default state:** `active`  
 **Source:** project convention (not present in either source document;
 parallel to [`em-dash-prose`](./em-dash-prose.md), which targets U+2014).
 
@@ -80,7 +81,3 @@ Replace `…` with `...`. `Applicability::MachineApplicable`.
   ellipsis (`⋯`) or two-dot leader (`‥`).
 - `unicode_ellipsis_in_docs.allow_in_code_spans = true` — defaults to
   `true`; set to `false` to enforce the rule even inside `` `...` ``.
-
-## Default state
-
-Active by default.

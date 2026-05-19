@@ -1,5 +1,6 @@
 # `prefer_text_block`
 
+**Default state:** `active`  
 **Source:** project convention.
 
 ## Statement
@@ -321,7 +322,7 @@ The autofix:
 
 ## Default state
 
-Active by default. The default `style = "text_block_macros"`
+The default `style = "text_block_macros"`
 reflects the catalogue's preferred form; projects that don't
 want the external-crate dependency switch to `line_continuation`.
 

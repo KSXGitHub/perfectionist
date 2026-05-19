@@ -1,5 +1,6 @@
 # `bare_url`
 
+**Default state:** `active`  
 **Source:** project convention.
 
 ## Statement
@@ -148,7 +149,3 @@ skip_hosts = ["example.com", "example.org", "localhost"]
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
-
-## Default state
-
-Active by default.

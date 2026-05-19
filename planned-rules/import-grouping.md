@@ -1,5 +1,6 @@
 # `import_grouping`
 
+**Default state:** `active`  
 **Source:** project convention. Distinct from
 [`import-granularity`](./import-granularity.md), which decides
 *merge vs separate*; this rule decides *how use statements are
@@ -156,6 +157,6 @@ options; this lint exists for projects on stable.
 
 ## Default state
 
-Active by default. A mismatch with the configured `style` is the
+A mismatch with the configured `style` is the
 violation; neither style is "wrong" in the abstract, so the rule
 is purely about consistency with the project's chosen layout.

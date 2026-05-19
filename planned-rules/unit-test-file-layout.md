@@ -1,5 +1,6 @@
 # `unit_test_file_layout`
 
+**Default state:** `active`  
 **Sources:** parallel-disk-usage *Unit Tests › Where the external file
 sits*; pacquet *Unit test file layout*. The two source documents
 **diverge** on the inline-vs-external question, so this rule exposes
@@ -264,10 +265,6 @@ file's position relative to its parent matters.
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
-
-## Default state
-
-Active by default.
 
 ## Autofix
 

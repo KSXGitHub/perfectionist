@@ -1,5 +1,6 @@
 # `derive_more_inlined_args`
 
+**Default state:** `active`  
 **Source:** project convention. Clippy's `clippy::uninlined_format_args`
 catches the `format!("... {} ...", name)` → `format!("... {name} ...")`
 rewrite for the standard formatting macros, but it does not extend
@@ -147,10 +148,6 @@ but the inlined form for positional ones can flip
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
-
-## Default state
-
-Active by default.
 
 ## Autofix
 

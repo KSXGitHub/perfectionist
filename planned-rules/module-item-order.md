@@ -1,5 +1,6 @@
 # `module_item_order`
 
+**Default state:** `active`  
 **Sources:** parallel-disk-usage *Module Organization*; pacquet *Module
 Organization*.
 
@@ -70,7 +71,3 @@ pub use parser::Parser;
 - `cfg`-gated blocks of imports (e.g., a trailing `#[cfg(unix)] use ...`
   block) are explicitly permitted by both source documents and must not
   trigger the lint when they sit *after* the main import block.
-
-## Default state
-
-Active by default.

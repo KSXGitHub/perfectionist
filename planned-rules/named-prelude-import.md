@@ -1,5 +1,6 @@
 # `named_prelude_import`
 
+**Default state:** `active`  
 **Source:** project convention. Dual of
 [`no-star-imports`](./no-star-imports.md): that rule restricts globs in
 general but lets preludes glob freely; this rule restricts named
@@ -98,7 +99,3 @@ prelude_segment_names = ["prelude"]
 # project's internal prelude that is intentionally cherry-picked).
 allowed_paths = []
 ```
-
-## Default state
-
-Active by default.

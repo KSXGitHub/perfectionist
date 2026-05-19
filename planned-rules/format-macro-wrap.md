@@ -1,5 +1,6 @@
 # `format_macro_wrap`
 
+**Default state:** `active`  
 **Source:** project convention. Sibling to
 [`print-macro-split`](./print-macro-split.md), which covers the
 splittable side-effect macros. This rule handles the *un*splittable
@@ -180,10 +181,6 @@ behaviour is unchanged.
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing
   (`perfectionist::*`) that every registered lint follows.
-
-## Default state
-
-Active by default.
 
 ## Interaction with sibling rules
 

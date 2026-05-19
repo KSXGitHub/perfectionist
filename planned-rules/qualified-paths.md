@@ -1,5 +1,6 @@
 # `qualified_paths`
 
+**Default state:** `active`  
 **Source:** project convention; parallel-disk-usage's codebase
 implicitly enforces the unqualified form by always importing items
 before use. AI assistants — particularly those producing
@@ -254,7 +255,7 @@ For each path:
 
 ## Default state
 
-Active by default, but the default `style = "preserve"` keeps the
+The default `style = "preserve"` keeps the
 pass a no-op until the project opts into `prefer_imported` or
 `prefer_qualified`.
 

@@ -1,5 +1,6 @@
 # `serde_source_types`
 
+**Default state:** per sub-check; see [Default state](#default-state).  
 **Source:** pacquet *Serde `Cow<'de, str>` vs `String` source types*.
 
 ## Statement

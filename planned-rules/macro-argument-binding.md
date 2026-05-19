@@ -1,5 +1,7 @@
 # `macro_argument_binding`
 
+**Default state:** `active`
+
 ## Status
 
 Partially implemented. Modes 0-2 (`deny_only`, `blanket`,
@@ -769,10 +771,6 @@ modes 0-2 first; mode 3 as a follow-up.
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions, in particular the lint-name
   namespacing under `perfectionist::*`.
-
-## Default state
-
-Active by default.
 
 ## Interaction with sibling rules
 

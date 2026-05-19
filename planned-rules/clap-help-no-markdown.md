@@ -1,5 +1,6 @@
 # `clap_help_no_markdown`
 
+**Default state:** `active`  
 **Source:** project convention.
 
 ## Statement
@@ -149,10 +150,6 @@ extra_forbid = ["bold", "italic", "list"]   # empty by default
 # Recognise these attribute keys as overrides that disable the lint.
 override_keys = ["about", "long_about", "help", "long_help"]
 ```
-
-## Default state
-
-Active by default.
 
 ## Autofix
 

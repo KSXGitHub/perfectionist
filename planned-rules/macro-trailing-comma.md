@@ -1,5 +1,7 @@
 # `macro_trailing_comma`
 
+**Default state:** `active`
+
 ## Status
 
 Name-based eligibility is **implemented** in `src/rules/macro_trailing_comma.rs`
@@ -564,10 +566,6 @@ new configuration knob added at the same time.
   for cross-cutting conventions that apply to every rule in
   this catalogue, in particular the lint-name namespacing
   (`perfectionist::*`) that every registered lint follows.
-
-## Default state
-
-Active by default.
 
 ## Interaction with sibling rules
 
