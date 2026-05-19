@@ -11,7 +11,7 @@
 Flags closure parameters whose identifier is one ASCII
 letter, unless the closure is a trivial single-expression
 callback or the identifier is in the conventional-name
-allowlist (`n` for an unsigned count, `f` for a
+exempt set (`n` for an unsigned count, `f` for a
 `fmt::Formatter`, `i` / `j` / `k` for indices).
 "Single-expression" is a shared precondition for the
 trivial-callback exception: the body must be a bare
@@ -21,10 +21,10 @@ statement before the trailing expression disqualifies the
 closure regardless of which branch below would otherwise
 apply. Given that, one of two further shapes must hold:
 - the closure is the immediate argument of a call whose
-  callee name is in the trivial-callback allowlist
+  callee name is in the trivial-callback method set
   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
   `binary_search_by`, `cmp_by`, `partial_cmp_by`,
-  `fold`, `try_fold`, …). The allowlist also covers the
+  `fold`, `try_fold`, …). The set also covers the
   matching adaptors from `itertools` (`sorted_by`,
   `k_smallest_by`, `minmax_by_key`, …) and `into-sorted`
   (`into_sorted_by`, `into_sorted_by_key`, …);
@@ -39,12 +39,12 @@ apply. Given that, one of two further shapes must hold:
   non-macro shapes are peeled before the match, so
   `|s| (*s).foo()` qualifies.
 
-The conventional-name allowlist matches the one used by
+The conventional-name exempt set matches the one used by
 `perfectionist::single_letter_function_param`: `|i| ...`
 is the canonical index closure, just as `fn step(i: usize)`
 is the canonical index parameter. Bodies that use the
 index for slicing or arithmetic (`|i| &hex[i..i + 2]`)
-are not structurally trivial, so the allowlist is what
+are not structurally trivial, so the exempt set is what
 keeps them out of the diagnostic.
 
 ## Why restrict this?
@@ -88,8 +88,8 @@ to re-state the standard ones.
 
 ### `ignore_trivial_callback_methods`: `[string]` (optional)
 
-Method / function names to drop from the allowlist, even if
-they appear in the built-in defaults or in
+Method / function names to drop from the trivial-callback
+set, even if they appear in the built-in defaults or in
 `extra_trivial_callback_methods`. Empty by default; checked
 after the merge with the built-ins, so this knob always
 wins. Useful for opting back into linting on a default
@@ -105,7 +105,7 @@ having to re-state the standard ones.
 
 ### `ignore_allowed_idents`: `[string]` (optional)
 
-Identifiers to drop from the allowlist, even if they appear
-in the built-in defaults or in `extra_allowed_idents`.
-Empty by default; checked after the merge with the
-built-ins, so this knob always wins.
+Identifiers to drop from the exempt set, even if they
+appear in the built-in defaults or in
+`extra_allowed_idents`. Empty by default; checked after
+the merge with the built-ins, so this knob always wins.

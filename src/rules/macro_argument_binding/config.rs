@@ -1,17 +1,17 @@
 //! Configuration for `macro_argument_binding`. Owns the `Mode` enum,
 //! the user-facing `Config` shape, the curated built-in deny / allow
-//! lists, and the in-memory `MacroArgumentBinding` state the early
+//! sets, and the in-memory `MacroArgumentBinding` state the early
 //! pass holds.
 //!
 //! Path-set construction goes through the helpers at the bottom of
-//! this file so each list (`deny`, `allow`, `allow_extra`, `ignore`)
+//! this file so each set (`deny`, `allow`, `allow_extra`, `ignore`)
 //! is built consistently.
 
 use std::collections::BTreeSet;
 
 use rustc_ast::Path;
 
-use crate::common::merge_string_allowlist;
+use crate::common::resolve_string_set;
 use crate::macro_path::{matches_any, merge_with_builtins, parse_path_list};
 
 const CONFIG_KEY: &str = "perfectionist::macro_argument_binding";
@@ -190,17 +190,17 @@ const BUILTIN_PURE_METHODS: &[&str] = &[
 #[derive(Debug, Clone, Copy, Default, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum Mode {
-    /// Flag only invocations of the curated deny list (`debug_assert*`
+    /// Flag only invocations of the curated deny set (`debug_assert*`
     /// plus `deny_extra`). Every other macro is silently accepted.
     DenyOnly,
     /// Flag every function-like or array-like invocation that carries
     /// an impure top-level argument, regardless of any built-in
     /// classification — unless the invocation matches an `allow_extra`
-    /// entry. The built-in allow list is deliberately ignored in this
+    /// entry. The built-in allow set is deliberately ignored in this
     /// mode; project exceptions go in `allow_extra`.
     Blanket,
-    /// Curated deny list plus curated allow list, both extensible via
-    /// `deny_extra` / `allow_extra`. Macros on neither list are
+    /// Curated deny set plus curated allow set, both extensible via
+    /// `deny_extra` / `allow_extra`. Macros classified by neither are
     /// flagged — flagging unrecognised macros is deliberate so the
     /// rule remains useful in projects that depend on uncatalogued
     /// proc macros.
@@ -213,16 +213,16 @@ pub(super) enum Mode {
 pub(super) struct Config {
     /// Eligibility mode.
     pub mode: Mode,
-    /// Macros added to the built-in deny list. Each entry is a
+    /// Macros added to the built-in deny set. Each entry is a
     /// fully-qualified macro path (no trailing `!`) or a bare macro
     /// name to match by final segment only.
     pub deny_extra: Vec<String>,
-    /// Macros added to the built-in allow list. Same matching rules
+    /// Macros added to the built-in allow set. Same matching rules
     /// as `deny_extra`. Only meaningful in `AllowAndDeny` and
-    /// `Blanket` modes; in `DenyOnly` the allow list is unused.
+    /// `Blanket` modes; in `DenyOnly` the allow set is unused.
     pub allow_extra: Vec<String>,
-    /// Macros to skip entirely, regardless of which list they would
-    /// otherwise hit. Same matching rules as `deny_extra`.
+    /// Macros to skip entirely, regardless of which set they would
+    /// otherwise match. Same matching rules as `deny_extra`.
     pub ignore: Vec<String>,
     /// Method names added to the built-in pure-method list. Each
     /// entry is a bare method identifier (no `()`, no receiver). A
@@ -262,15 +262,15 @@ pub(super) struct Config {
 
 pub(super) struct MacroArgumentBinding {
     mode: Mode,
-    /// Built-in deny list plus `deny_extra`. Used in `DenyOnly` and
+    /// Built-in deny set plus `deny_extra`. Used in `DenyOnly` and
     /// `AllowAndDeny`.
     deny: BTreeSet<Vec<String>>,
-    /// Built-in allow list plus `allow_extra`. Used only in
+    /// Built-in allow set plus `allow_extra`. Used only in
     /// `AllowAndDeny`; `Blanket` deliberately ignores the built-in
-    /// allow list and consults `allow_extra` alone.
+    /// allow set and consults `allow_extra` alone.
     allow: BTreeSet<Vec<String>>,
     /// Only the user-supplied `allow_extra` entries. Used in
-    /// `Blanket` mode, which has no built-in allow list per the rule
+    /// `Blanket` mode, which has no built-in allow set per the rule
     /// docs (`planned-rules/macro-argument-binding.md`).
     allow_extra: BTreeSet<Vec<String>>,
     /// Macros to skip entirely. Checked before deny / allow lookup, so
@@ -297,12 +297,12 @@ impl MacroArgumentBinding {
         let deny = merge_with_builtins(BUILTIN_DENY, &extra_deny);
         let allow = merge_with_builtins(BUILTIN_ALLOW, &extra_allow);
         let ignore = parse_path_list(&config.ignore);
-        let pure_methods = merge_string_allowlist(
+        let pure_methods = resolve_string_set(
             BUILTIN_PURE_METHODS,
             config.extra_pure_methods,
             config.ignore_pure_methods,
         );
-        let pure_macros = merge_string_allowlist(
+        let pure_macros = resolve_string_set(
             BUILTIN_PURE_MACROS,
             config.extra_pure_macros,
             config.ignore_pure_macros,

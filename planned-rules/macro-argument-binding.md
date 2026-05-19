@@ -18,8 +18,8 @@ Still pending:
   shared with the equivalent eligibility check planned for
   `macro-trailing-comma`; both will land together.
 - **Identifier-path-aware allow / deny matching.** Multi-segment
-  entries — both the built-in deny / allow lists and the
-  user-supplied `deny_extra`, `allow_extra`, and `ignore` lists
+  entries — both those in the built-in deny / allow sets and
+  those configured via `deny_extra`, `allow_extra`, and `ignore`
   — currently tail-match the *syntactic* path the user wrote
   at the call site. A configured entry of
   `their_crate::their_macro` matches any invocation whose
@@ -215,9 +215,9 @@ what the macro does with its captures.
 For a function-like (`name!(...)`) or array-like (`name![...]`)
 macro invocation:
 
-- If the macro is on the **deny list**, every impure
+- If the macro is in the **deny set**, every impure
   top-level argument is flagged.
-- If the macro is on the **allow list**, the argument shape is
+- If the macro is in the **allow set**, the argument shape is
   unconstrained.
 - For every other macro, behaviour depends on the configured
   `mode` (see "Eligibility modes" below).
@@ -373,7 +373,7 @@ Four modes ordered by implementation cost. The default is
 
 ### Mode 0 — `deny_only`
 
-Flag only invocations of the curated deny list (`debug_assert!`,
+Flag only invocations of the curated deny set (`debug_assert!`,
 `debug_assert_eq!`, `debug_assert_ne!`) plus any `deny_extra`
 entries. Every other macro is silently accepted.
 
@@ -386,7 +386,7 @@ macros.
 Flag every function-like or array-like invocation that carries
 an impure top-level argument, regardless of macro. Add
 specific exceptions to `allow_extra`; there is no built-in
-allow list in this mode.
+allow set in this mode.
 
 The maximum-paranoia stance. Not the default because
 `format!("hello {name}", compute())` is fine in practice and
@@ -396,13 +396,13 @@ flagging every macro invocation is exhausting.
 
 Three name-set lookups decide each invocation:
 
-1. **Deny-list hit** (`debug_assert*` plus `deny_extra`) → flag
+1. **Deny-set hit** (`debug_assert*` plus `deny_extra`) → flag
    every impure argument.
-2. **Allow-list hit** (the curated set below plus `allow_extra`)
+2. **Allow-set hit** (the curated set below plus `allow_extra`)
    → accept unconditionally.
 3. **Neither** → flag every impure argument.
 
-The default allow list has three parts.
+The default allow set has three parts.
 
 The first part overlaps with
 [`macro-trailing-comma`](./macro-trailing-comma.md)'s built-in
@@ -482,7 +482,7 @@ trust to evaluate each argument exactly once.
 
 ### Mode 3 — `matcher_based`
 
-Layers on top of mode 2. The allow list and deny list are
+Layers on top of mode 2. The allow set and deny set are
 consulted first; the matcher walk runs only on `macro_rules!`
 macros that would otherwise be unknown.
 
@@ -492,7 +492,7 @@ count occurrences of `$name` in the expansion:
 
 - Exactly one, not nested inside any `$( ... )*` / `$( ... )+` /
   `$( ... )?` repetition → the argument is evaluated exactly
-  once. Treat the invocation as allow-listed.
+  once. Treat the invocation as if it were in the allow set.
 - Zero, two or more, or any occurrence inside a repetition or
   conditional fragment → flag the invocation.
 
@@ -573,10 +573,10 @@ debug_assert_eq!(ejected, None, "duplicate key");
 debug_assert_eq!(count, MAX_RETRIES, "expected {MAX_RETRIES} retries");
 ```
 
-### Allow-listed macros pass through
+### Allowed macros pass through
 
 ```rust
-// Accepted — `format!` is on the curated allow list; arguments
+// Accepted — `format!` is in the curated allow set; arguments
 // are evaluated exactly once.
 let msg = format!("retrying {} ({} failures)", endpoint, count.fetch_add(1, Ordering::Relaxed));
 ```
@@ -585,7 +585,7 @@ let msg = format!("retrying {} ({} failures)", endpoint, count.fetch_add(1, Orde
 
 ```rust
 // Accepted — `concat!`, `env!`, `include_str!`, and the rest of
-// the compile-time family are on the allow list, and their
+// the compile-time family are in the allow set, and their
 // expansion is itself a literal so they also count as pure
 // atoms when used inside another macro. Both rules together
 // make these idioms invisible to the lint:
@@ -596,13 +596,13 @@ debug_assert_eq!(env!("EXPECTED"), include_str!("expected.txt"));
 ### Array-like invocation is in scope
 
 ```rust
-// Accepted under default config — `vec!` is on the allow list.
+// Accepted under default config — `vec!` is in the allow set.
 let xs = vec![compute(), compute(), compute()];
 ```
 
 ```rust
 // Flagged under blanket mode — every impure argument is
-// a candidate, allow list or not.
+// a candidate, allow set or not.
 let xs = vec![compute(), compute(), compute()];
 
 // Good (blanket-mode rewrite)
@@ -636,7 +636,7 @@ the expansion, so the macro fails the exactly-once check.
 ```rust
 // Whether this is safe depends on the proc macro's expansion,
 // which the lint cannot inspect. `serde_json::json` already
-// ships on the built-in allow list (the macro walks its input
+// ships in the built-in allow set (the macro walks its input
 // once and evaluates each captured expression once); a project
 // that uses a *different* proc macro with the same contract
 // adds its path to `allow_extra` once project-wide after
@@ -651,20 +651,20 @@ let payload = serde_json::json!({ "id": next_id(), "ts": now() });
 # Eligibility mode. Defaults to "allow_and_deny".
 mode = "allow_and_deny"
 
-# Macros added to the built-in deny list. Each entry is a
+# Macros added to the built-in deny set. Each entry is a
 # fully-qualified macro path (no trailing `!`) or a bare macro
 # name to match by final segment only.
 deny_extra = [
   # "my_crate::sometimes_evaluates",
 ]
 
-# Macros added to the built-in allow list.
+# Macros added to the built-in allow set.
 allow_extra = [
   # "my_crate::tt_builder_macro",
 ]
 
-# Macros to skip entirely, regardless of which list they would
-# otherwise hit.
+# Macros to skip entirely, regardless of which set they would
+# otherwise match.
 ignore = [
   # "my_crate::ad_hoc",
 ]
@@ -784,4 +784,4 @@ Active by default.
 - [`format-macro-wrap`](./format-macro-wrap.md) and
   [`print-macro-split`](./print-macro-split.md) operate on the
   *template literal* inside their target macros. Those rules'
-  target macros are all on this rule's default allow list.
+  target macros are all in this rule's default allow set.

@@ -8,8 +8,8 @@ use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Span, Symbol};
 
 use crate::common::{
-    DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter,
-    merge_symbol_allowlist, resolved_state,
+    DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter, resolve_symbol_set,
+    resolved_state,
 };
 
 declare_tool_lint! {
@@ -42,11 +42,11 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::single_letter_function_param";
 
-/// Default allowlist for function and method parameters: the
-/// canonical names from both source documents (`n` for an
-/// unsigned count, `f` for `fmt::Formatter`, `i` / `j` / `k` for
-/// indices).
-const DEFAULT_FN_PARAM_ALLOWLIST: &[&str] = &["n", "f", "i", "j", "k"];
+/// Default exempt identifiers for function and method
+/// parameters: the canonical names from both source documents
+/// (`n` for an unsigned count, `f` for `fmt::Formatter`, `i` /
+/// `j` / `k` for indices).
+const DEFAULT_FN_PARAM_EXEMPTIONS: &[&str] = &["n", "f", "i", "j", "k"];
 
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
@@ -57,10 +57,10 @@ struct Config {
     /// to whitelist project-specific conventional names without
     /// having to re-state the standard ones.
     extra_allowed_idents: Vec<String>,
-    /// Identifiers to drop from the allowlist, even if they appear
-    /// in the built-in defaults or in `extra_allowed_idents`.
-    /// Empty by default; checked after the merge with the
-    /// built-ins, so this knob always wins.
+    /// Identifiers to drop from the exempt set, even if they
+    /// appear in the built-in defaults or in
+    /// `extra_allowed_idents`. Empty by default; checked after
+    /// the merge with the built-ins, so this knob always wins.
     ignore_allowed_idents: Vec<String>,
 }
 
@@ -71,8 +71,8 @@ pub struct SingleLetterFunctionParam {
 impl SingleLetterFunctionParam {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let allowed_idents = merge_symbol_allowlist(
-            DEFAULT_FN_PARAM_ALLOWLIST,
+        let allowed_idents = resolve_symbol_set(
+            DEFAULT_FN_PARAM_EXEMPTIONS,
             config.extra_allowed_idents,
             config.ignore_allowed_idents,
         );

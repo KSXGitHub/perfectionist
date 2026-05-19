@@ -58,8 +58,8 @@ a field/variant of one (the same container set as in
 4. Emit a separate diagnostic when either threshold is exceeded.
 
 The lint **does not fire** when an override key is present
-(`about` / `long_about` / `help` / `long_help`), the same allowlist as
-the markdown rule.
+(`about` / `long_about` / `help` / `long_help`), the same set of
+override keys as the markdown rule.
 
 ## Examples
 
@@ -150,5 +150,5 @@ The two lints are independent:
   into `--help` output.
 - `clap-help-length` catches sheer volume.
 
-Both share the clap-container detection and the override allowlist;
+Both share the clap-container detection and the override-key set;
 disabling one does not affect the other.

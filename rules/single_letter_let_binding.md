@@ -16,10 +16,11 @@ This is a stylistic preference, not a correctness issue.
 A descriptive `let` binding documents what the right-hand
 side computed; a single-letter name does not. The rule
 allows `let n = ...` and other names in a configurable
-allowlist for the well-worn cases (unsigned counts), and
-switches off entirely under `#[cfg(test)]` where fixtures
-such as `let a = ...; let b = ...;` for interchangeable
-specimens are a recognised idiom.
+set of exempt identifiers for the well-worn cases
+(unsigned counts), and switches off entirely under
+`#[cfg(test)]` where fixtures such as `let a = ...;
+let b = ...;` for interchangeable specimens are a
+recognised idiom.
 
 ## Example
 ```rust,ignore
@@ -44,7 +45,7 @@ having to re-state the standard ones.
 
 ### `ignore_allowed_idents`: `[string]` (optional)
 
-Identifiers to drop from the allowlist, even if they
+Identifiers to drop from the exempt set, even if they
 appear in the built-in defaults or in
 `extra_allowed_idents`. Empty by default; checked after
 the merge with the built-ins, so this knob always wins.
