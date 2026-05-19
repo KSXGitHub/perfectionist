@@ -344,10 +344,14 @@ json_macro_path = "serde_json::json"
   defensive: an unparseable manifest should disable the lint,
   not panic the compiler.
 
-- **Test-context detection.** `LateLintPass::check_expr`. From
-  the expression's `HirId`, walk parents via
-  `tcx.hir().parent_iter(hir_id)` (or `tcx.parent_hir_node` on
-  newer compilers) until an item is reached:
+- **Test-context detection.** `LateLintPass::check_expr`. When
+  `restrict_to_tests = false`, skip this detection entirely and
+  treat trigger #1 as satisfied for every expression — the
+  rule then evaluates triggers #2 and #3 against production
+  code too. Otherwise, from the expression's `HirId`, walk
+  parents via `tcx.hir().parent_iter(hir_id)` (or
+  `tcx.parent_hir_node` on newer compilers) until an item is
+  reached:
   - If the item is a `fn` with one of `test_attributes` applied,
     fire.
   - If any ancestor module carries `#[cfg(test)]` (detected via
