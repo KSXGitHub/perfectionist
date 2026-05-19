@@ -127,8 +127,10 @@ Fire only on expressions that satisfy **all** of:
    - the enclosing `fn` carries `#[test]`, `#[tokio::test]`,
      `#[async_std::test]`, or any other attribute matching
      `test_attributes` (configurable);
-   - the enclosing module or any ancestor module carries
-     `#[cfg(test)]`;
+   - the enclosing `fn`, the enclosing module, or any ancestor
+     module carries `#[cfg(test)]` (or any cfg predicate that
+     positively requires the `test` flag — `cfg(test)`,
+     `cfg(any(..., test, ...))`, `cfg(all(..., test))`);
    - the source file is at or under a directory named in
      `test_directories` at the crate root (default `tests/`).
      `benches/` is **not** included by default — bench code is
@@ -359,10 +361,14 @@ json_macro_path = "serde_json::json"
   reached:
   - If the item is a `fn` with one of `test_attributes` applied,
     fire.
-  - If any ancestor module carries `#[cfg(test)]` (detected via
-    `attr.has_name(sym::cfg)` and a meta-item walk for
-    `cfg(test)` / `cfg(any(..., test, ...))` /
-    `cfg(all(..., test))`), fire.
+  - If any ancestor — the enclosing `fn` itself, an enclosing
+    module, or any module further up — carries `#[cfg(test)]`
+    (detected via `attr.has_name(sym::cfg)` and a meta-item walk
+    for `cfg(test)` / `cfg(any(..., test, ...))` /
+    `cfg(all(..., test))`), fire. Don't restrict this check to
+    modules: a `#[cfg(test)] fn helper()` is just as test-only
+    as a `#[cfg(test)] mod tests` and should be treated the same
+    way.
   - If the source file's path (from
     `tcx.sess.source_map()`) is at or under one of the
     configured `test_directories` at the crate root, fire.
