@@ -14,6 +14,8 @@ use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
 use std::sync::Mutex;
 
+use pipe_trait::Pipe;
+
 const LINT_NAME: &str = "perfectionist::prefer_raw_string";
 
 static SERIAL: Mutex<()> = Mutex::new(());
@@ -50,7 +52,7 @@ fn min_escapes_to_trigger_skips_single_escape_literals() {
     run(
         "ui-toml/prefer_raw_string/min_escapes_to_trigger",
         RuleConfig {
-            min_escapes_to_trigger: Some(NonZeroUsize::new(2).expect("2 is non-zero")),
+            min_escapes_to_trigger: 2.pipe(NonZeroUsize::new).unwrap().pipe(Some),
             ..Default::default()
         },
     );

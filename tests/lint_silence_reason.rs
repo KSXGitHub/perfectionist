@@ -14,6 +14,7 @@ use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
 use std::sync::Mutex;
 
+use pipe_trait::Pipe;
 use text_block_macros::text_block_fnl;
 
 const LINT_NAME: &str = "perfectionist::lint_silence_reason";
@@ -60,7 +61,7 @@ fn min_reason_length_one_accepts_any_non_blank_reason() {
     run(
         "ui-toml/lint_silence_reason/min_reason_length_one",
         dylint_toml(RuleConfig {
-            min_reason_length: Some(NonZeroUsize::new(1).expect("1 is non-zero")),
+            min_reason_length: 1.pipe(NonZeroUsize::new).unwrap().pipe(Some),
             ..Default::default()
         }),
     );
@@ -71,7 +72,7 @@ fn min_reason_length_eight_raises_the_floor() {
     run(
         "ui-toml/lint_silence_reason/min_reason_length_eight",
         dylint_toml(RuleConfig {
-            min_reason_length: Some(NonZeroUsize::new(8).expect("8 is non-zero")),
+            min_reason_length: 8.pipe(NonZeroUsize::new).unwrap().pipe(Some),
             ..Default::default()
         }),
     );
