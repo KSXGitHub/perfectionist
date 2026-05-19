@@ -1,0 +1,23 @@
+warning: closure parameter `a` has a single-letter name
+  --> $DIR/fixture.rs:24:20
+   |
+LL |     pairs.sort_by(|a, b| a.0.cmp(&b.0));
+   |                    ^
+   |
+   = help: rename to a descriptive identifier, or rewrite the closure as a trivial single-expression callback
+note: the lint level is defined here
+  --> $DIR/fixture.rs:5:9
+   |
+LL | #![warn(perfectionist::single_letter_closure_param)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: closure parameter `b` has a single-letter name
+  --> $DIR/fixture.rs:24:23
+   |
+LL |     pairs.sort_by(|a, b| a.0.cmp(&b.0));
+   |                       ^
+   |
+   = help: rename to a descriptive identifier, or rewrite the closure as a trivial single-expression callback
+
+warning: 2 warnings emitted
+
