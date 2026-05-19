@@ -74,12 +74,13 @@ the construction is on a hot path; in test code, where the JSON
 construction runs once per case and clarity dominates, `json!`
 wins.
 
-## Activation
+## Workspace gate
 
 By default the rule is silent in workspaces that do not use
 `serde_json` at all; under the default
-`require_serde_json_dependency = true`, it activates when **any**
-of the following holds:
+`require_serde_json_dependency = true`, the gate opens (the rule
+proceeds to its per-expression triggers) when **any** of the
+following holds:
 
 1. The workspace's root `Cargo.toml` declares `serde_json` in
    `[workspace.dependencies]` (the only workspace-level
@@ -94,21 +95,27 @@ of the following holds:
    fixtures counts; the lint expects the same convention across
    the workspace.
 
-Activation is computed once per `dylint` run, before per-file
+The gate is evaluated once per `dylint` run, before per-file
 analysis begins, and cached as a single boolean on the lint
-pass. When activation fails the rule emits no diagnostics — the
-autofix would otherwise suggest a dependency the project hasn't
-opted into, which the user cannot apply without a separate
-`cargo add`. No "rule was skipped" warning is produced; silence
-is the correct behaviour for a project that has legitimately
-opted out by not depending on `serde_json`.
+pass. When the gate is closed the rule emits no diagnostics —
+the autofix would otherwise suggest a dependency the project
+hasn't opted into, which the user cannot apply without a
+separate `cargo add`. No "rule was skipped" warning is produced;
+silence is the correct behaviour for a project that has
+legitimately opted out by not depending on `serde_json`. (This
+is a per-expression gate, separate from the catalogue-wide
+default-state mechanism described in
+[`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md#rule-activation-model).
+The rule is `Active by default` in the catalogue-wide sense; the
+workspace gate then controls whether each diagnostic actually
+fires.)
 
 A project that has its own `json!` re-export (private wrapper,
 vendored crate, etc.) and wants the lint to fire regardless of
 the workspace probe can set
-`require_serde_json_dependency = false`; the probe is skipped
-and activation is always `true`. Combine with `json_macro_path`
-to point the autofix at the wrapper.
+`require_serde_json_dependency = false`; the gate is forced
+open. Combine with `json_macro_path` to point the autofix at
+the wrapper.
 
 ## What to lint
 
@@ -271,7 +278,7 @@ fn not_json() {
 ```toml
 [prefer_json_macro]
 # Whether to gate the rule on detecting `serde_json` as a
-# dependency anywhere in the workspace (see "Activation"). When
+# dependency anywhere in the workspace (see "Workspace gate"). When
 # `true` (default), the rule is silent in workspaces that don't
 # declare `serde_json`. Set to `false` to fire regardless — the
 # autofix will then suggest `json!` even when the project hasn't
@@ -316,11 +323,10 @@ json_macro_path = "serde_json::json"
 
 ## Implementation notes
 
-- **Activation probe.** At pass construction, first read the
+- **Workspace-gate probe.** At pass construction, first read the
   `require_serde_json_dependency` config value. If it's `false`,
-  skip the probe entirely and seed the cached activation
-  boolean to `true` — no filesystem I/O happens in that
-  configuration. Otherwise, resolve the workspace via the
+  skip the probe entirely and seed the cached gate-open boolean
+  to `true` — no filesystem I/O happens in that configuration. Otherwise, resolve the workspace via the
   [`cargo_metadata`](https://crates.io/crates/cargo_metadata)
   crate (which shells out to `cargo metadata --no-deps` and
   handles globs, `default-members`, `exclude`, and virtual
@@ -405,7 +411,7 @@ json_macro_path = "serde_json::json"
 
 **Hard.** Two layers of analysis stack:
 
-- The activation probe requires reading and parsing
+- The workspace-gate probe requires reading and parsing
   `Cargo.toml` files from disk before pass setup completes —
   the catalogue's only rule that performs filesystem I/O
   outside the source tree.
