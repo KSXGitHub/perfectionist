@@ -64,8 +64,9 @@ same presence / length check as
   the attribute's span.
 - **`reason` present but shorter than `min_reason_length`
   (default 3).** Emit a "reason too short" diagnostic at the
-  literal's span. Set `min_reason_length = 0` to disable the
-  length branch (presence still enforced).
+  literal's span. The knob is a `NonZeroUsize` — `0` is rejected
+  at parse time, since an empty literal is already treated as a
+  missing reason regardless of this knob.
 - **`reason` present and long enough.** Accept.
 
 `#[deny]` and `#[forbid]` are never flagged — they tighten, not
@@ -170,8 +171,9 @@ exempt_lints = [
 # reason ("x", "ok") satisfies the literal presence requirement
 # but conveys nothing; the default floor of 3 excludes those
 # cases. Projects that want a higher bar (e.g. require a full
-# sentence) can raise it. Set to 0 to disable the length branch
-# entirely.
+# sentence) can raise it. The lower bound is 1 — 0 is rejected at
+# parse time, since an empty literal is already treated as a
+# missing reason regardless of this knob.
 min_reason_length = 3
 ```
 
