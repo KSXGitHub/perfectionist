@@ -1,6 +1,5 @@
 # `prefer_json_macro`
 
-**Default state:** `enabled`  
 **Source:** project convention.
 
 ## Statement
@@ -460,6 +459,16 @@ suggestion cannot rule out:
 When no `use serde_json::json;` is in scope the suggestion
 includes the import; the path is configurable via
 `json_macro_path`.
+
+## Default state
+
+Active by default. The two default-true gating knobs
+(`require_serde_json_dependency`, `restrict_to_tests`) make the
+"active" default conservative: the rule fires only in test code
+of workspaces that already depend on `serde_json`. Projects can
+flip either knob to expand the scope, or list the rule under
+`[perfectionist].disable` in `dylint.toml` to turn it off
+entirely.
 
 ## Interaction with sibling rules
 
