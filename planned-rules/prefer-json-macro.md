@@ -353,8 +353,8 @@ json_macro_path = "serde_json::json"
 
 - **Test-context detection.** `LateLintPass::check_expr`. When
   `restrict_to_tests = false`, skip this detection entirely and
-  treat trigger #1 as satisfied for every expression — the
-  rule then evaluates triggers #2 and #3 against production
+  treat trigger 1 as satisfied for every expression — the
+  rule then evaluates triggers 2 and 3 against production
   code too. Otherwise, from the expression's `HirId`, walk
   parents via `tcx.hir().parent_iter(hir_id)` (or
   `tcx.parent_hir_node` on newer compilers) until an item is
