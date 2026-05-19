@@ -93,7 +93,7 @@ targets = ["doc", "comment"]
 skip_addresses = []
 
 # Skip addresses whose domain matches any of these patterns. Useful
-# alongside `skip_addresses` for blanket allowlists.
+# alongside `skip_addresses` for blanket domain exemptions.
 skip_domains = ["example.com", "example.org"]
 ```
 

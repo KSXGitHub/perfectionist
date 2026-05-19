@@ -103,20 +103,20 @@ Eligibility mode.
 
 ### `deny_extra`: `[string]` (optional)
 
-Macros added to the built-in deny list. Each entry is a
+Macros added to the built-in deny set. Each entry is a
 fully-qualified macro path (no trailing `!`) or a bare macro
 name to match by final segment only.
 
 ### `allow_extra`: `[string]` (optional)
 
-Macros added to the built-in allow list. Same matching rules
+Macros added to the built-in allow set. Same matching rules
 as `deny_extra`. Only meaningful in `AllowAndDeny` and
-`Blanket` modes; in `DenyOnly` the allow list is unused.
+`Blanket` modes; in `DenyOnly` the allow set is unused.
 
 ### `ignore`: `[string]` (optional)
 
-Macros to skip entirely, regardless of which list they would
-otherwise hit. Same matching rules as `deny_extra`.
+Macros to skip entirely, regardless of which set they would
+otherwise match. Same matching rules as `deny_extra`.
 
 ### `extra_pure_methods`: `[string]` (optional)
 
@@ -172,7 +172,7 @@ useful error.
 
 ##### `"deny_only"` (Rust: `DenyOnly`)
 
-Flag only invocations of the curated deny list (`debug_assert*`
+Flag only invocations of the curated deny set (`debug_assert*`
 plus `deny_extra`). Every other macro is silently accepted.
 
 ##### `"blanket"` (Rust: `Blanket`)
@@ -180,13 +180,13 @@ plus `deny_extra`). Every other macro is silently accepted.
 Flag every function-like or array-like invocation that carries
 an impure top-level argument, regardless of any built-in
 classification — unless the invocation matches an `allow_extra`
-entry. The built-in allow list is deliberately ignored in this
+entry. The built-in allow set is deliberately ignored in this
 mode; project exceptions go in `allow_extra`.
 
 ##### `"allow_and_deny"` (Rust: `AllowAndDeny`)
 
-Curated deny list plus curated allow list, both extensible via
-`deny_extra` / `allow_extra`. Macros on neither list are
+Curated deny set plus curated allow set, both extensible via
+`deny_extra` / `allow_extra`. Macros classified by neither are
 flagged — flagging unrecognised macros is deliberate so the
 rule remains useful in projects that depend on uncatalogued
 proc macros.

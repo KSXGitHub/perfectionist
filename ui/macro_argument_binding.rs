@@ -63,7 +63,7 @@ macro_rules! ensure {
     ($($tokens:tt)*) => {{ 0 }};
 }
 
-// `debug_assert_eq!` is on the built-in deny list. The first argument
+// `debug_assert_eq!` is in the built-in deny set. The first argument
 // is an impure method call; in release builds the macro folds to
 // `if false { ... }` and the call never runs, leaving the map in a
 // state the author did not intend. The literal `None` and the string
@@ -94,9 +94,9 @@ fn _unknown_macro_default_flags(count: u32) {
     let _ = my_macro!(value(), count);
 }
 
-// Allow-listed `format!` evaluates each argument exactly once. Even a
+// Allow-set `format!` evaluates each argument exactly once. Even a
 // impure expression in a format-args slot is accepted.
-fn _format_allow_listed() {
+fn _format_in_allow_set() {
     let mut count: u32 = 0;
     let _ = format!("retrying {} times", {
         count += 1;
@@ -104,19 +104,19 @@ fn _format_allow_listed() {
     });
 }
 
-// Allow-listed `vec!`. Comma-form is the array-like shape the rule
-// targets, but `vec!` is on the allow list, so impure elements
+// Allow-set `vec!`. Comma-form is the array-like shape the rule
+// targets, but `vec!` is in the allow set, so impure elements
 // are accepted under the default config.
-fn _vec_allow_listed() {
+fn _vec_in_allow_set() {
     let _ = vec![value(), value(), value()];
 }
 
-// Allow-listed `insta` snapshot-assertion macros. Each variant
+// Allow-set `insta` snapshot-assertion macros. Each variant
 // evaluates its value argument exactly once before serialising, so
 // the rule accepts impure arguments under the default config.
 // Tail-segment matching means the rule recognises both bare and
 // path-qualified call sites.
-fn _insta_snapshots_allow_listed() {
+fn _insta_snapshots_in_allow_set() {
     assert_snapshot!(value().unwrap());
     assert_debug_snapshot!(value().unwrap());
     assert_yaml_snapshot!(value().unwrap());
@@ -131,7 +131,7 @@ fn _vec_repeat_form_skipped() {
 
 // Curly-brace invocation is out of scope: by convention the body is
 // the macro's DSL, not a comma-separated argument list. Skipped even
-// for a deny-listed macro name. `debug_assert!` accepts the brace
+// for a deny-set macro name. `debug_assert!` accepts the brace
 // form via the surrounding `macro_rules!` dispatch.
 fn _brace_delimiter_skipped() {
     debug_assert! { value().is_some() }
@@ -184,7 +184,7 @@ fn _brace_argument_with_attributed_let_flagged() {
 // The atom-shaped pure arguments — literal, path, reference,
 // mut-reference, tuple-index, deref, indexed pure base, pure
 // cast, rooted path — accepted under every mode. The outer
-// `debug_assert_eq!` is on the deny list, so any impure argument
+// `debug_assert_eq!` is in the deny set, so any impure argument
 // here would otherwise be flagged. The grammar is open-ended
 // (array literals / repeats are exercised in a dedicated fixture
 // below; binary chains and pure-getter postfixes likewise); this
@@ -212,7 +212,7 @@ fn _all_pure_shapes_accepted() {
     debug_assert_eq!(!buffer[0], !buffer[INDEX], "unary not on pure suffix");
 }
 
-// Single-argument deny-listed call with an impure expression.
+// Single-argument deny-set call with an impure expression.
 fn _single_argument_deny() {
     debug_assert!(value().is_some());
 }
@@ -408,15 +408,15 @@ fn _turbofish_method_call_flagged(text: &str) {
 // `::serde_json::json!`, and the bare `json!` form all line up
 // with the same entry.
 //
-// Each call below was chosen so the allow-list entry is *load-
+// Each call below was chosen so the allow-set entry is *load-
 // bearing*: the impure argument shape would otherwise be flagged
 // by the default `AllowAndDeny` mode. Without that property the
 // test passes trivially and a regression that drops the entry
 // from `BUILTIN_ALLOW` would slip through.
 //
 // - `json!(value().unwrap())` — direct impure expression, no
-//   DSL marker, not brace-delimited. Without `json` on the allow
-//   list, the rule reaches `is_pure_expression` and flags it.
+//   DSL marker, not brace-delimited. Without `json` in the allow
+//   set, the rule reaches `is_pure_expression` and flags it.
 // - `bail!("error: {}", value())` — second argument is an impure
 //   function call. Without `bail`, the second-argument check
 //   flags it.
@@ -430,9 +430,9 @@ fn _turbofish_method_call_flagged(text: &str) {
 //   not as load-bearing assertions. The `maplit::*` entries are
 //   in the same boat by design: every form of the macros emits
 //   `=>` at top level, which the DSL-marker check already
-//   skips. The allow-list entries serve as documentation of
+//   skips. The allow-set entries serve as documentation of
 //   intent more than functional gates.
-fn _third_party_allow_listed_accepted() {
+fn _third_party_in_allow_set_accepted() {
     let _ = json!(value().unwrap());
     let _ = json!({ "ts": value(), "items": [value(), value()] });
     let _ = hashmap!("a" => value(), "b" => value());
@@ -443,20 +443,20 @@ fn _third_party_allow_listed_accepted() {
 // `core` / `std` compile-time macros (`concat!`, `env!`,
 // `option_env!`, `include_str!`, `include_bytes!`, `stringify!`,
 // `cfg!`, `line!`, `column!`, `file!`, `module_path!`) are on the
-// allow list AND count as pure atoms when nested inside another
+// allow set AND count as pure atoms when nested inside another
 // macro. The expansion is a compile-time constant — a literal, a
 // `&'static str`, a `bool`, a span marker — with no runtime
 // evaluation to disturb. Both behaviours together make the patterns
 // flagged in issue #71 invisible to the lint.
 fn _compile_time_macros_accepted() {
-    // Outer compile-time macros are allow-listed: their arguments
+    // Outer compile-time macros are in the allow set: their arguments
     // (literals, paths, other compile-time macro calls) are
     // unconditionally accepted.
     let _ = concat!("home is at ", env!("CARGO_PKG_NAME"));
     let _ = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
     let _ = stringify!(let x = compute(););
     // Inner compile-time macros are pure atoms inside any
-    // surrounding (even deny-listed) macro: there is no runtime
+    // surrounding (even deny-set) macro: there is no runtime
     // expression to bind.
     debug_assert_eq!(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_NAME"));
     debug_assert!(cfg!(any()) || cfg!(all()));

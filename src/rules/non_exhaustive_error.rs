@@ -13,7 +13,7 @@ use rustc_middle::ty::{self, TyCtxt};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::def_id::{CRATE_DEF_ID, LocalDefId};
 
-use crate::common::{DefaultState, merge_string_allowlist, resolved_state};
+use crate::common::{DefaultState, resolve_string_set, resolved_state};
 
 declare_tool_lint! {
     /// ### What it does
@@ -115,8 +115,9 @@ struct Config {
     /// vocabulary here (`Failure`, `Fault`, …) without having to
     /// re-state the standard suffix.
     extra_suffixes: Vec<String>,
-    /// Identifier suffixes to drop from the allowlist, even if
-    /// they appear in the built-in defaults or in `extra_suffixes`.
+    /// Identifier suffixes to drop from the by-name match set,
+    /// even if they appear in the built-in defaults or in
+    /// `extra_suffixes`.
     /// Empty by default; checked after the merge with the
     /// built-ins, so this knob always wins. Use it when a project
     /// deliberately does not want the `Error` suffix to trigger
@@ -133,7 +134,7 @@ pub struct NonExhaustiveError {
 impl NonExhaustiveError {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let suffixes = merge_string_allowlist(
+        let suffixes = resolve_string_set(
             DEFAULT_SUFFIXES,
             config.extra_suffixes,
             config.ignore_suffixes,

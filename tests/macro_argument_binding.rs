@@ -59,7 +59,7 @@ fn deny_only_silently_accepts_uncatalogued_macros() {
 }
 
 #[test]
-fn blanket_flags_allow_listed_macros_too() {
+fn blanket_flags_allow_set_macros_too() {
     run(
         "ui-toml/macro_argument_binding/mode_blanket",
         RuleConfig {
@@ -70,7 +70,7 @@ fn blanket_flags_allow_listed_macros_too() {
 }
 
 #[test]
-fn deny_extra_adds_a_qualified_macro_to_the_deny_list() {
+fn deny_extra_adds_a_qualified_macro_to_the_deny_set() {
     run(
         "ui-toml/macro_argument_binding/deny_extra",
         RuleConfig {
@@ -136,7 +136,7 @@ fn ignore_pure_macros_drops_a_built_in_compile_time_macro() {
 }
 
 #[test]
-fn ignore_suppresses_a_built_in_deny_listed_macro() {
+fn ignore_suppresses_a_built_in_deny_set_macro() {
     run(
         "ui-toml/macro_argument_binding/ignore",
         RuleConfig {

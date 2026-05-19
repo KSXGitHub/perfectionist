@@ -471,7 +471,7 @@ name_based_extra = [
 # Use this for macros where the project's own convention
 # diverges (for example, macros whose body is more readable
 # with the comma always present even on a single line). The
-# name is `ignore` rather than `deny_list` because the lint
+# name is `ignore` rather than `forbidden_macros` because the lint
 # never forbids the macro itself — it only declines to act on
 # the invocation's trailing comma.
 ignore = [

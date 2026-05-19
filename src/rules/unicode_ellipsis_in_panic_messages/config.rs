@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 
 use rustc_span::Symbol;
 
-use crate::common::merge_symbol_allowlist;
+use crate::common::resolve_symbol_set;
 
 const CONFIG_KEY: &str = "perfectionist::unicode_ellipsis_in_panic_messages";
 
@@ -77,12 +77,8 @@ impl UnicodeEllipsisInPanicMessages {
         }
         Self {
             flagged_chars,
-            macros: merge_symbol_allowlist(
-                DEFAULT_MACROS,
-                config.extra_macros,
-                config.ignore_macros,
-            ),
-            methods: merge_symbol_allowlist(
+            macros: resolve_symbol_set(DEFAULT_MACROS, config.extra_macros, config.ignore_macros),
+            methods: resolve_symbol_set(
                 DEFAULT_METHODS,
                 config.extra_methods,
                 config.ignore_methods,

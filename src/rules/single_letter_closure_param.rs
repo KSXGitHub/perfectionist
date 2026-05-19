@@ -16,8 +16,8 @@ use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Symbol;
 
 use crate::common::{
-    DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter,
-    merge_symbol_allowlist, resolved_state,
+    DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter, resolve_symbol_set,
+    resolved_state,
 };
 
 mod triviality;
@@ -29,7 +29,7 @@ declare_tool_lint! {
     /// Flags closure parameters whose identifier is one ASCII
     /// letter, unless the closure is a trivial single-expression
     /// callback or the identifier is in the conventional-name
-    /// allowlist (`n` for an unsigned count, `f` for a
+    /// exempt set (`n` for an unsigned count, `f` for a
     /// `fmt::Formatter`, `i` / `j` / `k` for indices).
     /// "Single-expression" is a shared precondition for the
     /// trivial-callback exception: the body must be a bare
@@ -39,10 +39,10 @@ declare_tool_lint! {
     /// closure regardless of which branch below would otherwise
     /// apply. Given that, one of two further shapes must hold:
     /// - the closure is the immediate argument of a call whose
-    ///   callee name is in the trivial-callback allowlist
+    ///   callee name is in the trivial-callback method set
     ///   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
     ///   `binary_search_by`, `cmp_by`, `partial_cmp_by`,
-    ///   `fold`, `try_fold`, …). The allowlist also covers the
+    ///   `fold`, `try_fold`, …). The set also covers the
     ///   matching adaptors from `itertools` (`sorted_by`,
     ///   `k_smallest_by`, `minmax_by_key`, …) and `into-sorted`
     ///   (`into_sorted_by`, `into_sorted_by_key`, …);
@@ -57,12 +57,12 @@ declare_tool_lint! {
     ///   non-macro shapes are peeled before the match, so
     ///   `|s| (*s).foo()` qualifies.
     ///
-    /// The conventional-name allowlist matches the one used by
+    /// The conventional-name exempt set matches the one used by
     /// `perfectionist::single_letter_function_param`: `|i| ...`
     /// is the canonical index closure, just as `fn step(i: usize)`
     /// is the canonical index parameter. Bodies that use the
     /// index for slicing or arithmetic (`|i| &hex[i..i + 2]`)
-    /// are not structurally trivial, so the allowlist is what
+    /// are not structurally trivial, so the exempt set is what
     /// keeps them out of the diagnostic.
     ///
     /// ### Why restrict this?
@@ -96,19 +96,19 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::single_letter_closure_param";
 
-/// Default allowlist for closure parameter identifiers, mirroring
-/// the `single_letter_function_param` defaults: `n` for an unsigned
-/// count, `f` for a `fmt::Formatter`, and `i` / `j` / `k` for
-/// indices. Closures use the same conventional one-letter names as
-/// function and method signatures; an `|i| &hex[i..i + 2]`
-/// indexing closure is just as canonical as a `fn step(i: usize)`
-/// signature, and is not covered by the structural trivial-wrapper
-/// shapes.
-const DEFAULT_CLOSURE_PARAM_ALLOWLIST: &[&str] = &["n", "f", "i", "j", "k"];
+/// Default exempt identifiers for closure parameter names,
+/// mirroring the `single_letter_function_param` defaults: `n` for
+/// an unsigned count, `f` for a `fmt::Formatter`, and `i` / `j`
+/// / `k` for indices. Closures use the same conventional
+/// one-letter names as function and method signatures; an
+/// `|i| &hex[i..i + 2]` indexing closure is just as canonical as
+/// a `fn step(i: usize)` signature, and is not covered by the
+/// structural trivial-wrapper shapes.
+const DEFAULT_CLOSURE_PARAM_EXEMPTIONS: &[&str] = &["n", "f", "i", "j", "k"];
 
-/// Default allowlist of method names whose closure argument may
-/// use single-letter parameters when the body is a single
-/// expression. Both source documents agree on this list.
+/// Default trivial-callback method names whose closure argument
+/// may use single-letter parameters when the body is a single
+/// expression. Both source documents agree on this set.
 const DEFAULT_TRIVIAL_CALLBACK_METHODS: &[&str] = &[
     "sort_by",
     "sort_unstable_by",
@@ -181,8 +181,8 @@ struct Config {
     /// callbacks such as `into_sorted_by`, …) here without having
     /// to re-state the standard ones.
     extra_trivial_callback_methods: Vec<String>,
-    /// Method / function names to drop from the allowlist, even if
-    /// they appear in the built-in defaults or in
+    /// Method / function names to drop from the trivial-callback
+    /// set, even if they appear in the built-in defaults or in
     /// `extra_trivial_callback_methods`. Empty by default; checked
     /// after the merge with the built-ins, so this knob always
     /// wins. Useful for opting back into linting on a default
@@ -194,10 +194,10 @@ struct Config {
     /// to whitelist project-specific conventional names without
     /// having to re-state the standard ones.
     extra_allowed_idents: Vec<String>,
-    /// Identifiers to drop from the allowlist, even if they appear
-    /// in the built-in defaults or in `extra_allowed_idents`.
-    /// Empty by default; checked after the merge with the
-    /// built-ins, so this knob always wins.
+    /// Identifiers to drop from the exempt set, even if they
+    /// appear in the built-in defaults or in
+    /// `extra_allowed_idents`. Empty by default; checked after
+    /// the merge with the built-ins, so this knob always wins.
     ignore_allowed_idents: Vec<String>,
 }
 
@@ -209,13 +209,13 @@ pub struct SingleLetterClosureParam {
 impl SingleLetterClosureParam {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let trivial_callback_methods = merge_symbol_allowlist(
+        let trivial_callback_methods = resolve_symbol_set(
             DEFAULT_TRIVIAL_CALLBACK_METHODS,
             config.extra_trivial_callback_methods,
             config.ignore_trivial_callback_methods,
         );
-        let allowed_idents = merge_symbol_allowlist(
-            DEFAULT_CLOSURE_PARAM_ALLOWLIST,
+        let allowed_idents = resolve_symbol_set(
+            DEFAULT_CLOSURE_PARAM_EXEMPTIONS,
             config.extra_allowed_idents,
             config.ignore_allowed_idents,
         );

@@ -6,7 +6,7 @@
 //!
 //! - [`config`] — user-facing configuration (`Mode`, `Config`,
 //!   `MacroArgumentBinding` state) and the curated built-in deny /
-//!   allow lists.
+//!   allow sets.
 //! - [`purity`] — top-level argument splitter, the
 //!   `looks_like_expression` heuristic, and the pure-expression
 //!   token-stream walker.
