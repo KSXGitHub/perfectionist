@@ -317,8 +317,12 @@ json_macro_path = "serde_json::json"
 
 ## Implementation notes
 
-- **Activation probe.** At pass construction, resolve the
-  workspace via the [`cargo_metadata`](https://crates.io/crates/cargo_metadata)
+- **Activation probe.** At pass construction, first read the
+  `require_serde_json_dependency` config value. If it's `false`,
+  skip the probe entirely and seed the cached activation
+  boolean to `true` — no filesystem I/O happens in that
+  configuration. Otherwise, resolve the workspace via the
+  [`cargo_metadata`](https://crates.io/crates/cargo_metadata)
   crate (which shells out to `cargo metadata --no-deps` and
   handles globs, `default-members`, `exclude`, and virtual
   manifests with no `[package]`). Iterate the resolved packages
