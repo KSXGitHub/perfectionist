@@ -156,8 +156,11 @@ declaration. Diagnostic-only matches
 
 ## Implementation notes
 
-- `LateLintPass`. Mirrors `single_letter_generic`'s pass shape;
-  use `check_generic_param`.
+- `LateLintPass` is required: the short-trait-impl exemption
+  walks `tcx.hir_parent_iter(...)` and queries
+  `sess().source_map()` for the line span (see
+  `src/rules/single_letter_generic.rs`), neither of which is
+  available in early context. Use the `check_generic_param` hook.
 - Share the short-trait-impl helper with `single_letter_generic`
   rather than re-implementing it. On the first PR to add this
   rule, lift `enclosing_short_trait_impl` and `span_line_count`
