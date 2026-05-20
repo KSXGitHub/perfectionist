@@ -111,10 +111,6 @@ For each visited `const` item:
    the help
    ``"rename to a descriptive identifier (e.g. `DIMENSION`, `BUFFER_LEN`, `MAX_RETRIES`)"``.
 
-The rule has no test-code exemption: `const` items in
-`#[cfg(test)]` modules and `#[test]` functions are flagged the
-same way as production code.
-
 No autofix. Renaming a `const` item touches every reference; the
 edit is large and `MachineApplicable` only with a
 crate-wide rename that the lint pass cannot safely emit. A
