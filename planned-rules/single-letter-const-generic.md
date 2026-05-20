@@ -43,9 +43,7 @@ filter by enclosing item kind.
 
 - **Type generic parameters** (`<T>`, `<K, V>`). Covered by the
   existing `perfectionist::single_letter_generic` lint at
-  `src/rules/single_letter_generic.rs`. The two rules are
-  disjoint at the trigger level and share only the short-trait-
-  impl exemption helper.
+  `src/rules/single_letter_generic.rs`. Disjoint trigger.
 - **Lifetime parameters** (`<'a>`, `<'de>`). Single-letter
   lifetime names are the universal Rust idiom; a lint that
   flagged them would fire on essentially every lifetime in the
@@ -57,17 +55,8 @@ filter by enclosing item kind.
 
 ```toml
 [single_letter_const_generic]
-short_impl_max_lines = 0     # default rejects every impl
-allowed_idents       = []    # default empty
+allowed_idents = []   # default empty
 ```
-
-### `short_impl_max_lines`: `unsigned integer` (optional)
-
-Maximum number of source lines a trait `impl` block may span and
-still permit single-letter const generic parameter names. Defaults
-to `0`, which rejects every impl from the exemption (no impl spans
-zero or fewer lines). A project that wants the short-trait-impl
-carve-out raises the threshold.
 
 ### `allowed_idents`: `[string]` (optional)
 
@@ -94,10 +83,7 @@ For each visited generic parameter:
    helper in `src/common.rs`).
 6. Skip if the identifier is in the configured `allowed_idents`
    set.
-7. Skip if the enclosing item is a trait `impl` block whose span
-   covers `≤ short_impl_max_lines` lines (shared with
-   `single_letter_generic`).
-8. Emit `span_lint_and_help` on the parameter's span with the
+7. Emit `span_lint_and_help` on the parameter's span with the
    message ``"const generic parameter `{ident}` has a single-letter name"``
    and the help
    ``"rename to a descriptive identifier (e.g. `LEN`, `COLS`, `LANES`)"``.
@@ -111,44 +97,30 @@ declaration. Diagnostic-only matches
 
 ## Implementation notes
 
-- `LateLintPass` is required: the short-trait-impl exemption
-  walks `tcx.hir_parent_iter(...)` and queries
-  `sess().source_map()` for the line span (see
-  `src/rules/single_letter_generic.rs`), neither of which is
-  available in early context. Use the `check_generic_param` hook.
-- Share the short-trait-impl helper with `single_letter_generic`
-  rather than re-implementing it. On the first PR to add this
-  rule, lift `enclosing_short_trait_impl` and `span_line_count`
-  out of `src/rules/single_letter_generic.rs` into a crate-
-  internal module — `src/common.rs` if they remain trivial, or a
-  dedicated `src/short_impl.rs` if either grows its own
-  invariants. The existing rule's call site updates to import the
-  helper from the new home.
-- `allowed_idents` parses straight into a `BTreeSet<Symbol>`. No
-  `extra_*` / `ignore_*` split — without built-in defaults there
-  is nothing to subtract from, so the single-field shape is
-  enough.
+- Use `LateLintPass` for consistency with `single_letter_generic`
+  and the rest of the `single_letter_*` family. The rule doesn't
+  need `TyCtxt` or resolver queries, so `EarlyLintPass` would
+  also work. Use the `check_generic_param` hook.
+- `allowed_idents` parses straight into a `BTreeSet<Symbol>`.
 
 ### Difficulty
 
-**Easy.** The trigger is a seven-step predicate over a single
-`GenericParam` visitor hook. The only non-trivial part is the
-short-trait-impl helper hoist, which is mechanical.
+**Easy.** The trigger is a six-step predicate over a single
+`GenericParam` visitor hook.
 
 ## Default state
 
-Active by default. Empty `allowed_idents`;
-`short_impl_max_lines = 0`.
+Active by default. Empty `allowed_idents`.
 
 ## Interaction with sibling rules
 
 - `perfectionist::single_letter_generic`
   (`src/rules/single_letter_generic.rs`) — the type-parameter
   counterpart. Disjoint trigger (`GenericParamKind::Type` vs.
-  `::Const`), shared short-trait-impl helper. A single
-  declaration with both type and const parameters can produce one
-  diagnostic per offending parameter, one from each rule — that
-  is the intended behaviour, not an interaction bug.
+  `::Const`). A single declaration with both type and const
+  parameters can produce one diagnostic per offending parameter,
+  one from each rule — that is the intended behaviour, not an
+  interaction bug.
 - [`single-letter-const-item`](./single-letter-const-item.md) —
   the const-item counterpart. Disjoint trigger
   (`ItemKind::Const` vs. `GenericParamKind::Const`); the two

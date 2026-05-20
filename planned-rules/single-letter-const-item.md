@@ -66,8 +66,7 @@ names; the default is empty.
 - **Const generic parameters** (`<const N: usize>`). Covered by
   the sibling [`single-letter-const-generic`](./single-letter-const-generic.md)
   rule. The trigger lives on `GenericParamKind::Const`, not on
-  `ItemKind::Const`, and the configuration shape adds the
-  short-trait-impl exemption that doesn't apply to items.
+  `ItemKind::Const`.
 
 ## Configuration
 
