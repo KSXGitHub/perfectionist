@@ -29,8 +29,8 @@ impl Buffer {
 The rule fires on the declaration of the `const` item — not on
 its use sites. The trigger position is the item analogue of
 `single_letter_let_binding`'s local-binding trigger; the
-configuration and exemption shapes differ (see
-*Interaction with sibling rules* below).
+configuration shape differs (see *Interaction with sibling rules*
+below).
 
 ## Why restrict this?
 
@@ -162,7 +162,7 @@ fires only on cases the project genuinely objects to.
   simpler configuration shape (single `allowed_idents` field
   rather than let_binding's `extra_allowed_idents` /
   `ignore_allowed_idents` pair, because this rule has no built-in
-  defaults to subtract from); no test-code exemption.
+  defaults to subtract from).
 - `perfectionist::single_letter_generic`
   (`src/rules/single_letter_generic.rs`) — the type-parameter
   counterpart. Cited here only for completeness; the const-item

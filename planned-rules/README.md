@@ -67,8 +67,8 @@ pattern that several rules call out by reference — live in
   `const N: usize = 2;`-style `const` items (free, associated, and
   block-level) whose name is one ASCII letter. Sibling of the four
   existing `single_letter_*` rules. Single `allowed_idents` knob,
-  empty default; no test-code exemption (unlike
-  `single_letter_let_binding`).
+  empty default; fires in test code as well as production, in line
+  with the rest of the family.
 - [`single-letter-const-generic.md`](./single-letter-const-generic.md) —
   flag const generic parameter declarations
   (`<const N: usize>`) whose name is one ASCII letter. Mirrors
