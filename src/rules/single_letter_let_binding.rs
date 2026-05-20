@@ -1,7 +1,6 @@
 use std::collections::BTreeSet;
 
 use clippy_utils::diagnostics::span_lint_and_help;
-use clippy_utils::is_in_test;
 use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -15,7 +14,7 @@ use crate::common::{
 declare_tool_lint! {
     /// ### What it does
     /// Flags `let x = ...;` bindings whose identifier is one ASCII
-    /// letter, outside `#[cfg(test)]` code.
+    /// letter.
     ///
     /// ### Why restrict this?
     /// This is a stylistic preference, not a correctness issue.
@@ -23,10 +22,7 @@ declare_tool_lint! {
     /// side computed; a single-letter name does not. The rule
     /// allows `let n = ...` and other names in a configurable
     /// set of exempt identifiers for the well-worn cases
-    /// (unsigned counts), and switches off entirely under
-    /// `#[cfg(test)]` where fixtures such as `let a = ...;
-    /// let b = ...;` for interchangeable specimens are a
-    /// recognised idiom.
+    /// (unsigned counts).
     ///
     /// ### Example
     /// ```rust,ignore
@@ -44,19 +40,18 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::single_letter_let_binding";
 
-/// Default exempt identifiers for `let` bindings, applied on top
-/// of the `#[cfg(test)]` exemption. A short unsigned count (`n`)
-/// is the most common idiom that survives outside test code.
+/// Default exempt identifiers for `let` bindings. A short
+/// unsigned count (`n`) is the most common idiom.
 const DEFAULT_LET_EXEMPTIONS: &[&str] = &["n"];
 
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Additional identifiers to allow as `let` binding names,
-    /// even outside `#[cfg(test)]` code. Merged with the built-in
-    /// defaults (`["n"]`); empty by default. Use this to
-    /// whitelist project-specific conventional names without
-    /// having to re-state the standard ones.
+    /// Additional identifiers to allow as `let` binding names.
+    /// Merged with the built-in defaults (`["n"]`); empty by
+    /// default. Use this to whitelist project-specific
+    /// conventional names without having to re-state the
+    /// standard ones.
     extra_allowed_idents: Vec<String>,
     /// Identifiers to drop from the exempt set, even if they
     /// appear in the built-in defaults or in
@@ -113,9 +108,6 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterLetBinding {
             return;
         }
         if self.allowed_idents.contains(&ident.name) {
-            return;
-        }
-        if is_in_test(lint_context.tcx, local.hir_id) {
             return;
         }
         span_lint_and_help(
