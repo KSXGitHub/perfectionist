@@ -20,7 +20,8 @@ declare_tool_lint! {
     /// keep complex signatures self-documenting. Genuinely
     /// canonical cases — `impl<T> From<T> for Wrapper<T>` and
     /// friends, where the trait already imposes the role of `T` —
-    /// can be silenced site-by-site with `#[allow]`.
+    /// can be silenced site-by-site with
+    /// `#[allow(perfectionist::single_letter_generic)]`.
     ///
     /// ### Example
     /// ```rust,ignore
