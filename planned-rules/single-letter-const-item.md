@@ -42,7 +42,7 @@ The rule is configurable rather than absolute because a small set
 of single-letter constants do carry conventional meaning in
 specific domains — a numerics module that mirrors a paper's
 notation (`K` for the iteration bound, `R` for the radius of
-convergence) is the canonical case. An allowlist exempts those
+convergence) is the canonical case. The exempt set covers those
 cases without re-opening the door for arbitrary single letters.
 
 ## What it covers
@@ -69,8 +69,8 @@ cases without re-opening the door for arbitrary single letters.
 - **Const generic parameters** (`<const N: usize>`). Covered by
   the sibling [`single-letter-const-generic`](./single-letter-const-generic.md)
   rule. The trigger lives on `GenericParamKind::Const`, not on
-  `ItemKind::Const`, and the configuration shapes diverge
-  (short-trait-impl exemption, idiomatic-name allowlist).
+  `ItemKind::Const`, and the configuration shape adds the
+  short-trait-impl exemption that doesn't apply to items.
 
 ## Configuration
 
@@ -119,10 +119,9 @@ For each visited `const` item:
 5. Skip if the identifier is in the resolved `allowed_idents`
    set.
 6. Emit `span_lint_and_help` on the identifier's span with the
-   message
-   `"const item `{ident}` has a single-letter name"` and the help
-   `"rename to a descriptive identifier (e.g. `DIMENSION`,
-   `BUFFER_LEN`, `MAX_RETRIES`)"`.
+   message ``"const item `{ident}` has a single-letter name"`` and
+   the help
+   ``"rename to a descriptive identifier (e.g. `DIMENSION`, `BUFFER_LEN`, `MAX_RETRIES`)"``.
 
 No autofix. Renaming a `const` item touches every reference; the
 edit is large and `MachineApplicable` only with a
@@ -154,7 +153,7 @@ node kinds; the configuration is a copy of
 
 Active by default. Same justification as
 `single_letter_let_binding`: the rule reflects the project's
-baseline naming policy, and the empty allowlist means the rule
+baseline naming policy, and the empty exempt set means the rule
 fires only on cases the project genuinely objects to.
 
 ## Interaction with sibling rules

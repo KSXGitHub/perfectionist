@@ -66,16 +66,17 @@ pattern that several rules call out by reference — live in
 - [`single-letter-const-item.md`](./single-letter-const-item.md) — flag
   `const N: usize = 2;`-style `const` items (free, associated, and
   block-level) whose name is one ASCII letter. Sibling of the four
-  existing `single_letter_*` rules; uses the same allow/ignore-list
-  configuration shape as `single_letter_let_binding`, with an empty
-  default allowlist and a `#[cfg(test)]` exemption.
+  existing `single_letter_*` rules; uses the same
+  `extra_allowed_idents` / `ignore_allowed_idents` knobs as
+  `single_letter_let_binding`, with an empty default exempt set and
+  a `#[cfg(test)]` exemption.
 - [`single-letter-const-generic.md`](./single-letter-const-generic.md) —
   flag const generic parameter declarations
   (`<const N: usize>`) whose name is one ASCII letter. Mirrors
   `perfectionist::single_letter_generic` (`src/rules/single_letter_generic.rs`)
-  for the const-parameter side, shares its short-trait-impl
-  exemption, and adds a default `["N", "M"]` allowlist covering the
-  universally-idiomatic array-length names.
+  for the const-parameter side and shares its short-trait-impl
+  exemption. Empty default exempt set; projects that want to keep
+  `N` / `M` add them via `extra_allowed_idents`.
 
 ### Trait bounds and signatures
 - [`where-clause-bounds.md`](./where-clause-bounds.md) — prefer `where` clauses

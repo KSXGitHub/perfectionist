@@ -15,7 +15,7 @@ out by early-returning on every `GenericParamKind` other than
 ```rust
 // Bad
 struct Data<Left, Right, const M: usize, const N: usize> {
-    left:  [Left;  N],
+    left:  [Left;  M],
     right: [Right; N],
 }
 
@@ -34,23 +34,22 @@ declaration to scroll back to recover its role, and in a long
 that the canonical `impl<const N: usize> Foo for [T; N]` shape
 remains readable. The rule reuses the existing
 `single_letter_generic` exemption mechanism — short trait `impl`
-blocks — and adds an idiomatic-name allowlist that const generics
-need but type generics do not.
+blocks — and adds the same `extra_allowed_idents` /
+`ignore_allowed_idents` knob shape that `single_letter_let_binding`
+uses, so projects can opt single letters into the exempt set per
+their own conventions.
 
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. The same
 "readers must keep the parameter's role in head while reading the
 type signature" argument that motivates
-`single_letter_generic` applies here. The difference is that
-const generics carry more weight of *idiom*: `N` and `M` for
-array dimensions, matrix sizes, and slice lengths are
-overwhelmingly the names rustc's own examples and the wider Rust
-ecosystem use. The rule's default allowlist therefore admits the
-small set of names that have crystallised as universally
-understood, and the project can extend or restrict the set per
-crate. Beyond that small set, the same readability argument
-applies.
+`single_letter_generic` applies here. Const generics do carry
+some idiomatic weight — `N` and `M` for array dimensions, matrix
+sizes, and slice lengths appear in rustc's own examples — but
+that weight is not so settled that the rule should ship a default
+exempt set; projects that want to keep those names add them
+locally via `extra_allowed_idents`.
 
 ## What it covers
 
@@ -92,34 +91,22 @@ const generic parameters instead of type parameters.
 
 ### `extra_allowed_idents`: `[string]` (optional)
 
-Additional identifiers allowed as const generic parameter names,
-merged with the built-in defaults.
-
-The built-in default set is `["N", "M"]`. Both are the
-overwhelmingly conventional names for "the length of an array" /
-"the dimension of a matrix" in Rust's const-generic ecosystem;
-flagging them by default would produce noise that obscures the
-cases the rule is actually meant to catch (project-specific
-single letters with no shared meaning). This mirrors the
-`single_letter_let_binding` rule's built-in `["n"]` — both
-defaults encode well-attested single-letter conventions for the
-position the rule targets.
-
-A project that wants the strict form bans the defaults via
-`ignore_allowed_idents`:
+Additional identifiers added to the exempt set. Empty by default
+— the rule ships no built-in exempt single letters for const
+generics. A project that wants to keep the array-dimension idiom
+adds the names explicitly:
 
 ```toml
 [single_letter_const_generic]
-ignore_allowed_idents = ["N", "M"]
+extra_allowed_idents = ["N", "M"]
 ```
 
 ### `ignore_allowed_idents`: `[string]` (optional)
 
 Identifiers to drop from the exempt set, even if they appear in
-`extra_allowed_idents` or in the built-in defaults. Empty by
-default; checked after the merge, so this knob always wins. Same
-shape as `single_letter_let_binding` and
-`single_letter_const_item`.
+`extra_allowed_idents`. Empty by default; checked after the
+merge, so this knob always wins. Same shape as
+`single_letter_let_binding` and `single_letter_const_item`.
 
 ## What to lint
 
@@ -141,11 +128,9 @@ For each visited generic parameter:
    covers `≤ short_impl_max_lines` lines (shared with
    `single_letter_generic`).
 8. Emit `span_lint_and_help` on the parameter's span with the
-   message
-   `"const generic parameter `{ident}` has a single-letter name"`
+   message ``"const generic parameter `{ident}` has a single-letter name"``
    and the help
-   `"rename to a descriptive identifier (e.g. `LEN`, `COLS`,
-   `LANES`)"`.
+   ``"rename to a descriptive identifier (e.g. `LEN`, `COLS`, `LANES`)"``.
 
 No autofix. Renaming a const generic parameter rewrites every
 reference in the parameter's type, where clause, body, and every
@@ -185,10 +170,9 @@ is the helper hoist, which is mechanical.
 
 ## Default state
 
-Active by default. The built-in `["N", "M"]` allowlist neutralises
-the cases that would otherwise dominate the diagnostic noise; the
-remaining single letters are exactly the ones the rule is meant to
-flag.
+Active by default with an empty exempt set. Projects that want to
+keep `N` / `M` as const generic names opt in via
+`extra_allowed_idents`.
 
 ## Interaction with sibling rules
 
