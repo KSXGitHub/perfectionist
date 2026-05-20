@@ -70,15 +70,14 @@ For each visited generic parameter:
 
 1. Match `param.kind` against `hir::GenericParamKind::Const`;
    reject every other kind.
-2. Skip synthetic parameters.
-3. Skip parameters inside external macros
+2. Skip parameters inside external macros
    (`hir_in_external_macro`).
-4. Extract the parameter's identifier `Symbol`.
-5. Require `is_single_ascii_letter(symbol.as_str())` (shared
+3. Extract the parameter's identifier `Symbol`.
+4. Require `is_single_ascii_letter(symbol.as_str())` (shared
    helper in `src/common.rs`).
-6. Skip if the identifier is in the configured `allowed_idents`
+5. Skip if the identifier is in the configured `allowed_idents`
    set.
-7. Emit `span_lint_and_help` on the parameter's span with the
+6. Emit `span_lint_and_help` on the parameter's span with the
    message ``"const generic parameter `{ident}` has a single-letter name"``
    and the help
    ``"rename to a descriptive identifier (e.g. `LEN`, `COLS`, `LANES`)"``.
@@ -96,7 +95,7 @@ declaration.
 
 ### Difficulty
 
-**Easy.** The trigger is a six-step predicate over a single
+**Easy.** The trigger is a five-step predicate over a single
 `GenericParam` visitor hook.
 
 ## Default state
