@@ -15,11 +15,27 @@ LL | fn map_pairs<K, V>(input: Vec<(K, V)>) -> Vec<(V, K)> {
    |
    = help: rename to a descriptive identifier (e.g. `Element`, `Key`, `Reader`)
 
+warning: generic type parameter `T` has a single-letter name
+  --> $DIR/single_letter_names.rs:17:6
+   |
+LL | impl<T> Trivial for Option<T> {
+   |      ^
+   |
+   = help: rename to a descriptive identifier (e.g. `Element`, `Key`, `Reader`)
+
 warning: generic type parameter `U` has a single-letter name
   --> $DIR/single_letter_names.rs:25:16
    |
 LL |     fn convert<U>(&self, value: U) -> U;
    |                ^
+   |
+   = help: rename to a descriptive identifier (e.g. `Element`, `Key`, `Reader`)
+
+warning: generic type parameter `T` has a single-letter name
+  --> $DIR/single_letter_names.rs:28:6
+   |
+LL | impl<T> Convert for Option<T> {
+   |      ^
    |
    = help: rename to a descriptive identifier (e.g. `Element`, `Key`, `Reader`)
 
@@ -106,5 +122,5 @@ LL |     let c = a + b;
    |
    = help: rename to a descriptive identifier
 
-warning: 13 warnings emitted
+warning: 15 warnings emitted
 
