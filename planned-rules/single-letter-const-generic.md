@@ -77,7 +77,7 @@ filter by enclosing item kind.
 ```toml
 [single_letter_const_generic]
 short_impl_max_lines  = 20            # mirrors `single_letter_generic`
-extra_allowed_idents  = []            # default empty; merged with built-ins
+extra_allowed_idents  = []            # default empty
 ignore_allowed_idents = []            # default empty
 ```
 
@@ -164,9 +164,10 @@ declaration. Diagnostic-only matches
 **Easy.** The trigger is a three-line predicate over a single
 `GenericParam` visitor hook. The configuration replays
 `single_letter_generic`'s `short_impl_max_lines` plus
-`single_letter_let_binding`'s allow/ignore-list pair; both
-shapes already exist in the codebase. The only non-trivial part
-is the helper hoist, which is mechanical.
+`single_letter_let_binding`'s `extra_allowed_idents` /
+`ignore_allowed_idents` knobs; both shapes already exist in the
+codebase. The only non-trivial part is the helper hoist, which is
+mechanical.
 
 ## Default state
 
@@ -190,5 +191,5 @@ keep `N` / `M` as const generic names opt in via
   same node.
 - `perfectionist::single_letter_let_binding`
   (`src/rules/single_letter_let_binding.rs`) — cited here for
-  configuration shape only; the allow/ignore-list pair is the
-  same.
+  configuration shape only; the `extra_allowed_idents` /
+  `ignore_allowed_idents` knobs work the same way.

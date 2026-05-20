@@ -82,27 +82,24 @@ ignore_allowed_idents = []   # default empty
 
 ### `extra_allowed_idents`: `[string]` (optional)
 
-Additional identifiers allowed as `const`-item names, even outside
-`#[cfg(test)]` code. Merged with the built-in defaults. Use this
-for project-wide conventional names (e.g. a numerics module that
-mirrors a paper's notation: `K` for the iteration bound, `R` for
-the radius of convergence).
-
-The built-in default set is **empty**. The convention for `const`
-items is SCREAMING_SNAKE_CASE descriptive identifiers; the cases
-where a single capital letter is more readable than a word are
-rare enough that the project lint baseline should not encode any
-of them implicitly. (This is the deliberate divergence from
+Additional identifiers added to the exempt set, even outside
+`#[cfg(test)]` code. Empty by default — the rule ships no
+built-in exempt single letters for `const` items, because the
+convention for `const` items is SCREAMING_SNAKE_CASE descriptive
+identifiers. (This is the deliberate divergence from
 `single_letter_let_binding`'s built-in `["n"]`: `let n = …` for a
 local count is well-attested; `const N: usize = …` for a
-module-wide constant is not.)
+module-wide constant is not.) Use this knob to opt in to
+project-specific conventions (e.g. a numerics module that mirrors
+a paper's notation: `K` for the iteration bound, `R` for the
+radius of convergence).
 
 ### `ignore_allowed_idents`: `[string]` (optional)
 
 Identifiers to drop from the exempt set, even if they appear in
-`extra_allowed_idents` or in a future expansion of the built-in
-defaults. Empty by default; checked after the merge, so this knob
-always wins. Same shape as `single_letter_let_binding`.
+`extra_allowed_idents`. Empty by default; checked after the
+merge, so this knob always wins. Same shape as
+`single_letter_let_binding`.
 
 ## What to lint
 
