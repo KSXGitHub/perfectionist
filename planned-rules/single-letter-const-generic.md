@@ -55,9 +55,9 @@ applies.
 ## What it covers
 
 `hir::GenericParamKind::Const { .. }` — the const-generic
-declaration syntax `<const NAME: T>` in any context that accepts
-generics: items (`struct`, `enum`, `union`, `trait`, `type
-alias`, `impl`), associated items, free functions, and methods.
+declaration syntax `<const NAME: T>`, anywhere generics are
+syntactically allowed. The trigger is positional and does not
+filter by enclosing item kind.
 
 ## What it does *not* cover
 

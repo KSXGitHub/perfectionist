@@ -26,17 +26,9 @@ impl Buffer {
 }
 ```
 
-The rule fires on the declaration of the `const` item — not on the
-use sites — and exactly mirrors the shape of
-`single_letter_let_binding` but for items rather than locals. A
-`let` binding tells the reader what a value computed; a `const`
-item is a *named* compile-time constant that propagates through
-type signatures, array lengths, and downstream documentation. The
-information loss from `N` vs. `DIMENSION_COUNT` is at least as
-large at the item level as at the `let` level, and often worse —
-the item is referenced from anywhere in the module (or anywhere
-in the crate, for `pub const`), so the reader doesn't have the
-RHS of a nearby `let` to fall back on.
+The rule fires on the declaration of the `const` item — not on
+its use sites — and mirrors `single_letter_let_binding` in shape,
+swapping items for locals.
 
 ## Why restrict this?
 
@@ -64,10 +56,6 @@ cases without re-opening the door for arbitrary single letters.
 - `hir::TraitItemKind::Const` — associated const *declarations*
   inside a `trait` body (`const NAME: T;` with or without a
   default expression).
-
-All three are the same syntactic shape (a `const` keyword followed
-by a name); they are listed separately because the HIR walks them
-through three distinct visitor hooks.
 
 ## What it does *not* cover
 
@@ -145,9 +133,8 @@ despite locals being easier to rename than items).
 
 ## Implementation notes
 
-- `LateLintPass`. The trigger does not need resolver state; an
-  early pass would work too, but late keeps the rule consistent
-  with the rest of the `single_letter_*` family.
+- `LateLintPass` is required: step 2's `clippy_utils::is_in_test`
+  takes a `TyCtxt`, which the early-pass context does not expose.
 - Hook up the three `check_*` callbacks listed in
   [What it covers](#what-it-covers).
 - The `Symbol`-set configuration parsing reuses
