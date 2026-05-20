@@ -103,18 +103,21 @@ merge, so this knob always wins. Same shape as
 
 ## What to lint
 
-For each visited `const` item:
+For each visited `const` item, in the same check order as
+`single_letter_let_binding.rs`:
 
 1. Skip items inside external macros
    (`hir_in_external_macro`).
-2. Skip items whose enclosing context returns true from
-   `clippy_utils::is_in_test`.
-3. Extract the item's identifier `Symbol`.
-4. Require `is_single_ascii_letter(symbol.as_str())` (shared with
+2. Extract the item's identifier `Symbol`.
+3. Require `is_single_ascii_letter(symbol.as_str())` (shared with
    the other `single_letter_*` rules; lives in
    `src/common.rs`).
-5. Skip if the identifier is in the resolved `allowed_idents`
+4. Skip if the identifier is in the resolved `allowed_idents`
    set.
+5. Skip items whose enclosing context returns true from
+   `clippy_utils::is_in_test`. (Deferred to last because it walks
+   the HIR parent chain; the cheap single-letter and exempt-set
+   tests above fast-path the common cases.)
 6. Emit `span_lint_and_help` on the identifier's span with the
    message ``"const item `{ident}` has a single-letter name"`` and
    the help
@@ -129,7 +132,7 @@ despite locals being easier to rename than items).
 
 ## Implementation notes
 
-- `LateLintPass` is required: step 2's `clippy_utils::is_in_test`
+- `LateLintPass` is required: step 5's `clippy_utils::is_in_test`
   takes a `TyCtxt`, which the early-pass context does not expose.
 - Hook up the three `check_*` callbacks listed in
   [What it covers](#what-it-covers).
