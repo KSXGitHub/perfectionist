@@ -27,8 +27,10 @@ impl Buffer {
 ```
 
 The rule fires on the declaration of the `const` item — not on
-its use sites — and mirrors `single_letter_let_binding` in shape,
-swapping items for locals.
+its use sites. The trigger position is the item analogue of
+`single_letter_let_binding`'s local-binding trigger; the
+configuration and exemption shapes differ (see
+*Interaction with sibling rules* below).
 
 ## Why restrict this?
 
@@ -129,13 +131,11 @@ despite locals being easier to rename than items).
   to pick late.
 - Hook up the three `check_*` callbacks listed in
   [What it covers](#what-it-covers).
-- The `Symbol`-set configuration parsing reuses the
-  `extra_allowed_idents` / `ignore_allowed_idents` machinery that
-  `single_letter_let_binding` already runs through
-  `resolve_symbol_set`. Since this rule has only a single
-  `allowed_idents` field (no defaults to subtract from, so no
-  `ignore_*` companion), it parses straight into a
-  `BTreeSet<Symbol>` without going through `resolve_symbol_set`.
+- `allowed_idents` parses straight into a `BTreeSet<Symbol>`. No
+  reuse of `resolve_symbol_set` (the helper
+  `single_letter_let_binding` uses for its `extra_*` /
+  `ignore_*` pair) — without built-in defaults there is nothing
+  to subtract from, so the single-field shape doesn't need it.
 
 ### Difficulty
 
