@@ -27,10 +27,7 @@ impl Buffer {
 ```
 
 The rule fires on the declaration of the `const` item — not on
-its use sites. The trigger position is the item analogue of
-`single_letter_let_binding`'s local-binding trigger; the
-configuration shape differs (see *Interaction with sibling rules*
-below).
+its use sites.
 
 ## Why restrict this?
 
@@ -98,19 +95,13 @@ For each visited `const` item:
    ``"rename to a descriptive identifier (e.g. `DIMENSION`, `BUFFER_LEN`, `MAX_RETRIES`)"``.
 
 No autofix. Renaming a `const` item touches every reference; the
-edit is large and `MachineApplicable` only with a
-crate-wide rename that the lint pass cannot safely emit. A
-diagnostic-only rule matches the existing
-`single_letter_let_binding` shape (which also offers no autofix
-despite locals being easier to rename than items).
+edit is large and `MachineApplicable` only with a crate-wide
+rename that the lint pass cannot safely emit.
 
 ## Implementation notes
 
-- `allowed_idents` parses straight into a `BTreeSet<Symbol>`. No
-  reuse of `resolve_symbol_set` (the helper
-  `single_letter_let_binding` uses for its `extra_*` /
-  `ignore_*` pair) — without built-in defaults there is nothing
-  to subtract from, so the single-field shape doesn't need it.
+- `allowed_idents` deserialises as `Vec<String>` and is interned
+  into a `BTreeSet<Symbol>`.
 
 ### Difficulty
 
@@ -119,26 +110,14 @@ node kinds; the configuration is a single `BTreeSet<Symbol>`.
 
 ## Default state
 
-Active by default. Same justification as
-`single_letter_let_binding`: the rule reflects the project's
-baseline naming policy, and the empty exempt set means the rule
-fires only on cases the project genuinely objects to.
+Active by default. Empty `allowed_idents`.
 
 ## Interaction with sibling rules
 
 - [`single-letter-const-generic`](./single-letter-const-generic.md)
-  — covers the const-generic parameter shape
-  (`<const N: usize>`). The two rules are disjoint at the trigger
-  level (item vs. generic parameter); a single site cannot fire
-  both.
-- `perfectionist::single_letter_let_binding`
-  (`src/rules/single_letter_let_binding.rs`) — the closest
-  existing relative. Different trigger position (item vs. local);
-  simpler configuration shape (single `allowed_idents` field
-  rather than let_binding's `extra_allowed_idents` /
-  `ignore_allowed_idents` pair, because this rule has no built-in
-  defaults to subtract from).
-- `perfectionist::single_letter_generic`
-  (`src/rules/single_letter_generic.rs`) — the type-parameter
-  counterpart. Cited here only for completeness; the const-item
-  rule has no overlap with type generics.
+  — the const-generic counterpart. Disjoint trigger
+  (`ItemKind::Const` vs. `GenericParamKind::Const`); a single
+  site cannot fire both.
+- [`single-letter-static-item`](./single-letter-static-item.md)
+  — the static-item counterpart. Disjoint trigger
+  (`ItemKind::Const` vs. `ItemKind::Static`).

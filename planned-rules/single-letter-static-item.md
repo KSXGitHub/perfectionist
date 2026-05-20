@@ -86,7 +86,8 @@ rename that the lint pass cannot safely emit.
 
 ## Implementation notes
 
-- `allowed_idents` parses straight into a `BTreeSet<Symbol>`.
+- `allowed_idents` deserialises as `Vec<String>` and is interned
+  into a `BTreeSet<Symbol>`.
 
 ### Difficulty
 
