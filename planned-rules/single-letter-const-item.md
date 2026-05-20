@@ -110,8 +110,6 @@ despite locals being easier to rename than items).
 
 ## Implementation notes
 
-- Use `LateLintPass` with the three `check_*` callbacks listed
-  in [What it covers](#what-it-covers).
 - `allowed_idents` parses straight into a `BTreeSet<Symbol>`. No
   reuse of `resolve_symbol_set` (the helper
   `single_letter_let_binding` uses for its `extra_*` /

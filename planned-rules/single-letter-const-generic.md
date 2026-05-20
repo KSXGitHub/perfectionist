@@ -95,7 +95,6 @@ declaration. Diagnostic-only matches
 
 ## Implementation notes
 
-- Use `LateLintPass` with the `check_generic_param` hook.
 - `allowed_idents` parses straight into a `BTreeSet<Symbol>`.
 
 ### Difficulty
