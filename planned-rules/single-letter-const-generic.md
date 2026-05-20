@@ -26,28 +26,11 @@ struct Data<Left, Right, const LEFT_LEN: usize, const RIGHT_LEN: usize> {
 }
 ```
 
-This is the const-parameter counterpart of
-`perfectionist::single_letter_generic`. The same arguments apply:
-a single-letter parameter forces every reader downstream of the
-declaration to scroll back to recover its role, and in a long
-`impl` block the cost is large; in a short one it is small enough
-that the canonical `impl<const N: usize> Foo for [T; N]` shape
-remains readable. The rule reuses the existing
-`single_letter_generic` exemption mechanism — short trait `impl`
-blocks — and adds an `allowed_idents` knob so projects can opt
-single letters into the exempt set per their own conventions.
-
 ## Why restrict this?
 
-This is a stylistic preference, not a correctness issue. The same
-"readers must keep the parameter's role in head while reading the
-type signature" argument that motivates
-`single_letter_generic` applies here. Const generics do carry
-some idiomatic weight — `N` and `M` for array dimensions, matrix
-sizes, and slice lengths appear in rustc's own examples — but
-that weight is not so settled that the rule should ship a default
-exempt set; projects that want to keep those names add them
-locally via `allowed_idents`.
+This is a stylistic preference, not a correctness issue. A
+single-letter const generic parameter is opaque at every use
+site; a descriptive identifier documents the parameter's role.
 
 ## What it covers
 
@@ -74,28 +57,25 @@ filter by enclosing item kind.
 
 ```toml
 [single_letter_const_generic]
-short_impl_max_lines = 20    # mirrors `single_letter_generic`
+short_impl_max_lines = 0     # default rejects every impl
 allowed_idents       = []    # default empty
 ```
 
 ### `short_impl_max_lines`: `unsigned integer` (optional)
 
-Maximum number of source lines an `impl Trait for Type` block
-may span and still permit single-letter const generic parameter
-names. Defaults to `20`. The semantics are identical to the
-existing `single_letter_generic` knob — same exemption, applied to
-const generic parameters instead of type parameters.
+Maximum number of source lines a trait `impl` block may span and
+still permit single-letter const generic parameter names. Defaults
+to `0`, which rejects every impl from the exemption (no impl spans
+zero or fewer lines). A project that wants the short-trait-impl
+carve-out raises the threshold.
 
 ### `allowed_idents`: `[string]` (optional)
 
-The exempt set: identifiers the rule will not flag. Empty by
-default — the rule ships no built-in exempt single letters for
-const generics. A project that wants to keep the array-dimension
-idiom lists the names explicitly:
+Identifiers the rule will not flag. Empty by default. Example:
 
 ```toml
 [single_letter_const_generic]
-allowed_idents = ["N", "M"]
+allowed_idents = ["X"]
 ```
 
 ## What to lint
@@ -152,16 +132,13 @@ declaration. Diagnostic-only matches
 ### Difficulty
 
 **Easy.** The trigger is a seven-step predicate over a single
-`GenericParam` visitor hook. The configuration replays
-`single_letter_generic`'s `short_impl_max_lines` and adds an
-`allowed_idents: BTreeSet<Symbol>`. The only non-trivial part is
-the short-trait-impl helper hoist, which is mechanical.
+`GenericParam` visitor hook. The only non-trivial part is the
+short-trait-impl helper hoist, which is mechanical.
 
 ## Default state
 
-Active by default with an empty exempt set. Projects that want to
-keep `N` / `M` as const generic names opt in via
-`allowed_idents`.
+Active by default. Empty `allowed_idents`;
+`short_impl_max_lines = 0`.
 
 ## Interaction with sibling rules
 

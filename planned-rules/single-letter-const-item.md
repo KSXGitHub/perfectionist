@@ -34,18 +34,13 @@ below).
 
 ## Why restrict this?
 
-This is a stylistic preference, not a correctness issue. Const
-items spread further than `let` bindings — a `pub const` is read
-from anywhere the item is in scope, and every reader has to map
-the single letter back to its definition site. A descriptive
-identifier carries its own documentation; `N`, `M`, `K` do not.
-
-The rule is configurable rather than absolute because a small set
-of single-letter constants do carry conventional meaning in
-specific domains — a numerics module that mirrors a paper's
-notation (`K` for the iteration bound, `R` for the radius of
-convergence) is the canonical case. The exempt set covers those
-cases without re-opening the door for arbitrary single letters.
+This is a stylistic preference, not a correctness issue. A
+single-letter `const` item is opaque at every use site, and the
+item's scope (module-wide or crate-wide for `pub const`) makes
+that opacity propagate further than a `let` binding's would. A
+descriptive identifier carries its own documentation. The
+`allowed_idents` knob exists for project-specific conventional
+names; the default is empty.
 
 ## What it covers
 
@@ -83,16 +78,12 @@ allowed_idents = []   # default empty
 
 ### `allowed_idents`: `[string]` (optional)
 
-The exempt set: identifiers the rule will not flag. Empty by
-default — the rule ships no built-in exempt single letters for
-`const` items, because the convention for `const` items is
-SCREAMING_SNAKE_CASE descriptive identifiers. (This is the
-deliberate divergence from `single_letter_let_binding`'s built-in
-`["n"]`: `let n = …` for a local count is well-attested;
-`const N: usize = …` for a module-wide constant is not.) Use this
-knob to opt in to project-specific conventions (e.g. a numerics
-module that mirrors a paper's notation: `K` for the iteration
-bound, `R` for the radius of convergence).
+Identifiers the rule will not flag. Empty by default. Example:
+
+```toml
+[single_letter_const_item]
+allowed_idents = ["X"]
+```
 
 ## What to lint
 

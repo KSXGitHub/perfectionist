@@ -72,9 +72,9 @@ pattern that several rules call out by reference — live in
   flag const generic parameter declarations
   (`<const N: usize>`) whose name is one ASCII letter. Mirrors
   `perfectionist::single_letter_generic` (`src/rules/single_letter_generic.rs`)
-  for the const-parameter side and shares its short-trait-impl
-  exemption. Single `allowed_idents` knob, empty default; projects
-  that want to keep `N` / `M` add them explicitly.
+  for the const-parameter side. Single `allowed_idents` knob and a
+  `short_impl_max_lines` opt-in for the short-trait-impl
+  exemption; both empty/zero by default.
 
 ### Trait bounds and signatures
 - [`where-clause-bounds.md`](./where-clause-bounds.md) — prefer `where` clauses
