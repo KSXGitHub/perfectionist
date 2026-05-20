@@ -11,8 +11,10 @@
 //! parallel test harness.
 
 use std::collections::BTreeMap;
+use std::num::NonZeroUsize;
 use std::sync::Mutex;
 
+use pipe_trait::Pipe;
 use text_block_macros::text_block_fnl;
 
 const LINT_NAME: &str = "perfectionist::lint_silence_reason";
@@ -28,7 +30,7 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     exempt_lints: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    min_reason_length: Option<usize>,
+    min_reason_length: Option<NonZeroUsize>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -55,11 +57,11 @@ fn exempt_lints_skips_attributes_whose_every_lint_is_exempt() {
 }
 
 #[test]
-fn min_reason_length_zero_disables_the_length_branch() {
+fn min_reason_length_one_accepts_any_non_blank_reason() {
     run(
-        "ui-toml/lint_silence_reason/min_reason_length_zero",
+        "ui-toml/lint_silence_reason/min_reason_length_one",
         dylint_toml(RuleConfig {
-            min_reason_length: Some(0),
+            min_reason_length: 1.pipe(NonZeroUsize::new).unwrap().pipe(Some),
             ..Default::default()
         }),
     );
@@ -70,7 +72,7 @@ fn min_reason_length_eight_raises_the_floor() {
     run(
         "ui-toml/lint_silence_reason/min_reason_length_eight",
         dylint_toml(RuleConfig {
-            min_reason_length: Some(8),
+            min_reason_length: 8.pipe(NonZeroUsize::new).unwrap().pipe(Some),
             ..Default::default()
         }),
     );

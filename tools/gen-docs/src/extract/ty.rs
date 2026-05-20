@@ -95,6 +95,18 @@ pub(crate) const BUILTIN_TYPES: &[&str] = &[
     "isize",
     "f32",
     "f64",
+    "NonZeroU8",
+    "NonZeroU16",
+    "NonZeroU32",
+    "NonZeroU64",
+    "NonZeroU128",
+    "NonZeroUsize",
+    "NonZeroI8",
+    "NonZeroI16",
+    "NonZeroI32",
+    "NonZeroI64",
+    "NonZeroI128",
+    "NonZeroIsize",
     // Common std types likely to appear in serde-deserialised configs.
     "String",
     "Vec",
@@ -194,6 +206,8 @@ pub(crate) fn find_type_doc(file: &syn::File, ident: &str) -> Option<TypeDoc> {
 /// - `bool` → `boolean`
 /// - `u*` / `usize` → `unsigned integer`
 /// - `i*` / `isize` → `integer`
+/// - `NonZeroU*` / `NonZeroUsize` → `non-zero unsigned integer`
+/// - `NonZeroI*` / `NonZeroIsize` → `non-zero integer`
 /// - `f32` / `f64` → `float`
 /// - `String` / `&str` / `char` / `OsString` / `PathBuf` / `Cow<…>` → `string`
 /// - `Vec<T>` / `HashSet<T>` / `BTreeSet<T>` / `VecDeque<T>` /
@@ -236,6 +250,10 @@ pub(crate) fn toml_type_label(ty: &Type) -> String {
                 }
                 "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => "unsigned integer".to_owned(),
                 "i8" | "i16" | "i32" | "i64" | "i128" | "isize" => "integer".to_owned(),
+                "NonZeroU8" | "NonZeroU16" | "NonZeroU32" | "NonZeroU64" | "NonZeroU128"
+                | "NonZeroUsize" => "non-zero unsigned integer".to_owned(),
+                "NonZeroI8" | "NonZeroI16" | "NonZeroI32" | "NonZeroI64" | "NonZeroI128"
+                | "NonZeroIsize" => "non-zero integer".to_owned(),
                 "f32" | "f64" => "float".to_owned(),
                 "Vec" | "HashSet" | "BTreeSet" | "VecDeque" | "LinkedList" => {
                     match inner_types.first() {
@@ -279,6 +297,22 @@ mod tests {
         assert_eq!(toml_type_label(&parse_type("bool")), "boolean");
         assert_eq!(toml_type_label(&parse_type("usize")), "unsigned integer");
         assert_eq!(toml_type_label(&parse_type("i32")), "integer");
+        assert_eq!(
+            toml_type_label(&parse_type("NonZeroUsize")),
+            "non-zero unsigned integer",
+        );
+        assert_eq!(
+            toml_type_label(&parse_type("NonZeroU32")),
+            "non-zero unsigned integer",
+        );
+        assert_eq!(
+            toml_type_label(&parse_type("NonZeroIsize")),
+            "non-zero integer",
+        );
+        assert_eq!(
+            toml_type_label(&parse_type("NonZeroI64")),
+            "non-zero integer",
+        );
         assert_eq!(toml_type_label(&parse_type("f64")), "float");
         assert_eq!(toml_type_label(&parse_type("String")), "string");
         assert_eq!(toml_type_label(&parse_type("char")), "string");

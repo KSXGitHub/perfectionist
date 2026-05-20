@@ -1,7 +1,8 @@
-// `min_reason_length = 0` disables the length branch entirely;
-// `reason` presence is still enforced, and an empty literal is
-// treated as if the field were missing regardless of the length
-// floor.
+// `min_reason_length = 1` is the floor's lowest legal value
+// (`0` is rejected at parse time by the `NonZeroUsize` field).
+// At this setting every non-blank reason satisfies the length
+// branch; presence is still enforced, and a blank literal is
+// still treated as if the field were missing.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -15,13 +16,13 @@ fn one_char_reason() {}
 #[allow(dead_code)]
 fn no_reason() {}
 
-// Bad — empty literal counts as missing even with the length
-// floor disabled.
+// Bad — empty literal counts as missing regardless of the
+// length floor.
 #[allow(dead_code, reason = "")]
 fn empty_reason() {}
 
 // Bad — whitespace-only literal also counts as missing,
-// regardless of the length-floor setting.
+// regardless of the length floor.
 #[allow(dead_code, reason = "   ")]
 fn whitespace_only_reason() {}
 

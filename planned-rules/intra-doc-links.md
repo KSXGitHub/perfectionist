@@ -21,7 +21,7 @@ Resolution rules:
   shell command names, file paths (contain `/` or `.`), all-caps
   shouting, leading punctuation, etc.
 - Skip well-known non-Rust tokens (`null`, `true`, `false`, `Bash`,
-  `JSON`, etc.) via a configurable allowlist.
+  `JSON`, etc.) via a configurable set of skipped tokens.
 - Resolve through the *item's* surrounding scope, not the crate root, so
   that `[Foo]` works in a private module that has `use crate::foo::Foo;`.
 
@@ -70,7 +70,7 @@ pub fn install(manifest: &PackageManifest, store: &Store) { /* ... */ }
 
 False positives: backticks around an identifier that the writer
 deliberately *did not* want to link (e.g., a future type, or a
-historical reference). Provide a project-level allowlist
+historical reference). Provide a project-level skip set
 (`intra_doc_links.skip_idents = ["LegacyCache"]`) and respect
 `#[allow(...)]`.
 

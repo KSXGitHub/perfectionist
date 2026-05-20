@@ -73,8 +73,9 @@ re-state the standard suffix.
 
 ### `ignore_suffixes`: `[string]` (optional)
 
-Identifier suffixes to drop from the allowlist, even if
-they appear in the built-in defaults or in `extra_suffixes`.
+Identifier suffixes to drop from the by-name match set,
+even if they appear in the built-in defaults or in
+`extra_suffixes`.
 Empty by default; checked after the merge with the
 built-ins, so this knob always wins. Use it when a project
 deliberately does not want the `Error` suffix to trigger

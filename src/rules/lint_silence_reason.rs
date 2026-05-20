@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use std::num::NonZeroUsize;
 
 use clippy_utils::diagnostics::{span_lint_and_sugg, span_lint_and_then};
 use rustc_ast::{Attribute, LitKind, MetaItem, MetaItemInner, MetaItemKind};
@@ -63,23 +64,29 @@ struct Config {
     /// reason (`"x"`, `"ok"`) satisfies the literal presence
     /// requirement but conveys nothing; the default floor of 3
     /// excludes those cases. Projects that want a higher bar (e.g.
-    /// require a full sentence) can raise it. Set to `0` to disable
-    /// the length branch entirely (presence is still enforced).
-    min_reason_length: usize,
+    /// require a full sentence) can raise it. The lower bound is `1`
+    /// — `0` is rejected at parse time, since an empty literal is
+    /// already treated as a missing reason regardless of this knob.
+    min_reason_length: NonZeroUsize,
 }
+
+/// Default floor for `min_reason_length`. Three characters excludes
+/// the obviously-content-free reasons `"x"`, `"ok"`, while still
+/// accepting anything that could plausibly be a word.
+const DEFAULT_MIN_REASON_LENGTH: NonZeroUsize = NonZeroUsize::new(3).expect("3 is non-zero");
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             exempt_lints: Vec::new(),
-            min_reason_length: 3,
+            min_reason_length: DEFAULT_MIN_REASON_LENGTH,
         }
     }
 }
 
 pub struct LintSilenceReason {
     exempt_lints: BTreeSet<String>,
-    min_reason_length: usize,
+    min_reason_length: NonZeroUsize,
 }
 
 impl LintSilenceReason {
@@ -205,10 +212,7 @@ impl LintSilenceReason {
                     self.emit_blank_reason(lint_context, literal.span);
                     return;
                 }
-                if self.min_reason_length == 0 {
-                    return;
-                }
-                if value_str.chars().count() < self.min_reason_length {
+                if value_str.chars().count() < self.min_reason_length.get() {
                     self.emit_too_short(lint_context, literal.span);
                 }
             }
@@ -285,10 +289,10 @@ impl LintSilenceReason {
             literal_span,
             "`reason` is shorter than the configured minimum",
             |diagnostic| {
+                let min = self.min_reason_length.get();
                 diagnostic.help(format!(
-                    "write a rationale of at least {} character{}",
-                    self.min_reason_length,
-                    if self.min_reason_length == 1 { "" } else { "s" },
+                    "write a rationale of at least {min} character{}",
+                    if min == 1 { "" } else { "s" },
                 ));
             },
         );

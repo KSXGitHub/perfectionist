@@ -246,18 +246,18 @@ pub(crate) fn binding_hir_id<'hir>(pat: &'hir hir::Pat<'hir>) -> Option<hir::Hir
     }
 }
 
-/// Merge a curated built-in allowlist of `&str` defaults with a
-/// user-supplied `extras` list, then subtract every entry in
-/// `ignore`. Used by rules whose runtime allowlist key remains
-/// a `String` (currently just `non_exhaustive_error`, whose
-/// suffix lookup is `str::ends_with`-shaped); the four rules
-/// whose late-pass lookup key is a [`Symbol`] use the sibling
-/// [`merge_symbol_allowlist`] instead. The `BTreeSet` return is
+/// Resolve a `&str` set from a curated built-in default, a
+/// user-supplied `extras` list, and a user-supplied `ignore`
+/// list. Used by rules whose runtime set key remains a `String`
+/// (currently just `non_exhaustive_error`, whose suffix lookup is
+/// `str::ends_with`-shaped); the four rules whose late-pass
+/// lookup key is a [`Symbol`] use the sibling
+/// [`resolve_symbol_set`] instead. The `BTreeSet` return is
 /// convenient for set membership lookups and has the side
 /// benefit of dropping duplicates when defaults and extras
 /// overlap; callers that need a `Vec`-shaped result can
 /// `.into_iter().collect()` it themselves.
-pub(crate) fn merge_string_allowlist(
+pub(crate) fn resolve_string_set(
     defaults: &[&str],
     extras: Vec<String>,
     ignore: Vec<String>,
@@ -271,7 +271,7 @@ pub(crate) fn merge_string_allowlist(
         .collect()
 }
 
-/// Sibling of [`merge_string_allowlist`] that interns each name as
+/// Sibling of [`resolve_string_set`] that interns each name as
 /// a [`Symbol`] in one pass — skipping the intermediate
 /// `BTreeSet<String>` of the string-shaped variant. Used by rules
 /// whose late-pass lookup key is already a `Symbol`
@@ -281,7 +281,7 @@ pub(crate) fn merge_string_allowlist(
 ///
 /// Must be called inside a rustc session, since [`Symbol::intern`]
 /// reaches into the per-session symbol table.
-pub(crate) fn merge_symbol_allowlist(
+pub(crate) fn resolve_symbol_set(
     defaults: &[&str],
     extras: Vec<String>,
     ignore: Vec<String>,

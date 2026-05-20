@@ -1075,6 +1075,7 @@ dependencies = [
  "clippy_utils",
  "dylint_linting",
  "dylint_testing",
+ "pipe-trait",
  "serde",
  "text-block-macros",
  "toml 1.1.2+spec-1.1.0",

@@ -82,5 +82,29 @@ LL | fn write_label(w: &mut String, t: &str) {
    |
    = help: rename to a descriptive identifier
 
-warning: 10 warnings emitted
+warning: `let` binding `a` has a single-letter name
+  --> $DIR/single_letter_names.rs:148:9
+   |
+LL |     let a = 1_u32;
+   |         ^
+   |
+   = help: rename to a descriptive identifier
+
+warning: `let` binding `b` has a single-letter name
+  --> $DIR/single_letter_names.rs:149:9
+   |
+LL |     let b = 2_u32;
+   |         ^
+   |
+   = help: rename to a descriptive identifier
+
+warning: `let` binding `c` has a single-letter name
+  --> $DIR/single_letter_names.rs:150:9
+   |
+LL |     let c = a + b;
+   |         ^
+   |
+   = help: rename to a descriptive identifier
+
+warning: 13 warnings emitted
 

@@ -166,8 +166,8 @@ pattern that several rules call out by reference — live in
   (release builds skip evaluation entirely) and the general
   class of "macros don't promise exactly-once argument
   evaluation". Four `mode` values ordered by implementation
-  cost: a tiny deny list of `debug_assert*`, an opt-in blanket
-  ban, the default curated allow + deny lists, and
+  cost: a tiny deny set of `debug_assert*`, an opt-in blanket
+  ban, the default curated allow + deny sets, and
   matcher-based analysis for unknown `macro_rules!` macros that
   counts each `$name:expr` capture's `$name` references in the
   expansion. Curly-brace invocations are out of scope.
@@ -238,7 +238,7 @@ pattern that several rules call out by reference — live in
   (`#[arg(help = ...)]`, `#[clap(about = ...)]`, etc.).
 - [`clap-help-length.md`](./clap-help-length.md) — flag clap-bound doc
   comments that exceed configurable line / character budgets (catches
-  AI-generated bloat). Same override allowlist.
+  AI-generated bloat). Same override set of doc-comment containers.
 
 ## Out of scope (cannot be linted by Dylint)
 

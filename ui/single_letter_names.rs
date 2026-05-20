@@ -66,7 +66,7 @@ struct Wrapper<T> {
 fn run() {
     // Bad: single-letter `let` binding outside test code.
     let m = 5_u32;
-    // OK: `n` is in the default `let` allowlist.
+    // OK: `n` is in the default `let` exempt set.
     let n = 10_u32;
 
     let items = vec![3_i32, 1, 2];
@@ -93,15 +93,15 @@ fn run() {
     // any of the HIR-level trivial-wrapper arms, so the rule relies
     // on the body's expansion-origin span to recognise it.
     let _nested: Vec<Vec<i32>> = sorted.iter().copied().map(|x| vec![x]).collect();
-    // OK: `n` is in the default closure-parameter allowlist, so the
+    // OK: `n` is in the default closure-parameter exempt set, so the
     // body shape doesn't matter for this one — the conventional-name
     // filter exempts the closure before the trivial-wrapper check.
     let _shouted: Vec<String> = sorted.iter().map(|n| format!("{n}!")).collect();
 
-    // OK: `i` is in the default closure-parameter allowlist (index
-    // convention). The body slices `hex` by `i`, which is not a
-    // trivial-wrapper shape, so the allowlist is what keeps the
-    // closure quiet.
+    // OK: `i` is in the default closure-parameter exempt set
+    // (index convention). The body slices `hex` by `i`, which is
+    // not a trivial-wrapper shape, so the exempt set is what keeps
+    // the closure quiet.
     let hex = "deadbeef";
     let _pairs: Vec<&str> = (0..hex.len() - 1)
         .step_by(2)
@@ -130,12 +130,12 @@ fn write_label(w: &mut String, t: &str) {
     w.push_str(t);
 }
 
-// OK: `n` is in the default function-parameter allowlist.
+// OK: `n` is in the default function-parameter exempt set.
 fn take_n(n: usize) -> usize {
     n + 1
 }
 
-// OK: `f` is in the default allowlist (formatter convention).
+// OK: `f` is in the default exempt set (formatter convention).
 struct DisplayMe;
 impl std::fmt::Display for DisplayMe {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -143,15 +143,12 @@ impl std::fmt::Display for DisplayMe {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    // OK: single-letter `let` bindings under `#[cfg(test)]` are exempt.
-    fn fixtures() {
-        let a = 1_u32;
-        let b = 2_u32;
-        let c = a + b;
-        let _ = c;
-    }
+// Bad: single-letter `let` bindings outside the default exempt set.
+fn fixtures() {
+    let a = 1_u32;
+    let b = 2_u32;
+    let c = a + b;
+    let _ = c;
 }
 
 fn main() {

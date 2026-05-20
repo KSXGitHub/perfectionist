@@ -51,11 +51,12 @@ rather than per-site. Each entry is the lint's full name as
 it appears inside the attribute (`clippy::module_name_repetitions`,
 `dead_code`, …).
 
-### `min_reason_length`: `unsigned integer` (optional)
+### `min_reason_length`: `non-zero unsigned integer` (optional)
 
 Minimum length of the `reason` value. A one- or two-character
 reason (`"x"`, `"ok"`) satisfies the literal presence
 requirement but conveys nothing; the default floor of 3
 excludes those cases. Projects that want a higher bar (e.g.
-require a full sentence) can raise it. Set to `0` to disable
-the length branch entirely (presence is still enforced).
+require a full sentence) can raise it. The lower bound is `1`
+— `0` is rejected at parse time, since an empty literal is
+already treated as a missing reason regardless of this knob.

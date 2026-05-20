@@ -43,7 +43,7 @@ having to re-state the standard ones.
 
 ### `ignore_allowed_idents`: `[string]` (optional)
 
-Identifiers to drop from the allowlist, even if they appear
-in the built-in defaults or in `extra_allowed_idents`.
-Empty by default; checked after the merge with the
-built-ins, so this knob always wins.
+Identifiers to drop from the exempt set, even if they
+appear in the built-in defaults or in
+`extra_allowed_idents`. Empty by default; checked after
+the merge with the built-ins, so this knob always wins.

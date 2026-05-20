@@ -1,4 +1,4 @@
-// Skipped: `debug_assert_eq!` is on the built-in deny list and the
+// Skipped: `debug_assert_eq!` is in the built-in deny set and the
 // first argument is an impure method call, but the test driver
 // supplies a `[perfectionist] disable = ["macro_argument_binding"]`
 // global config, so the rule's pass is never installed and no

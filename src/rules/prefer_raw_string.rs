@@ -5,6 +5,8 @@
 //! file owns the lint declaration, the configuration, and the late
 //! pass that drives it.
 
+use std::num::NonZeroUsize;
+
 use clippy_utils::diagnostics::span_lint_and_sugg;
 use rustc_ast::{LitKind, StrStyle};
 use rustc_errors::Applicability;
@@ -82,10 +84,14 @@ const CONFIG_KEY: &str = "perfectionist::prefer_raw_string";
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Minimum number of eliminable escapes a string must contain
-    /// before the lint fires. Default 1 catches every escapable
-    /// string; set to 2 to skip single-escape literals where the
-    /// raw form is arguably noisier than the original.
-    min_escapes_to_trigger: usize,
+    /// before the lint fires. Default `1` catches every escapable
+    /// string; set to `2` to skip single-escape literals where the
+    /// raw form is arguably noisier than the original. The lower
+    /// bound is `1` — `0` is rejected at parse time, since
+    /// suggesting `r"hello"` for `"hello"` would just trip
+    /// `clippy::needless_raw_strings` on the next pass, and a
+    /// minimum of `1` already excludes that case.
+    min_escapes_to_trigger: NonZeroUsize,
     /// Escape sequences considered eliminable by switching to raw
     /// form. Only the three Rust escapes whose decoded character
     /// is exactly the byte after the backslash — `"\""`, `"\\"`,
@@ -99,10 +105,14 @@ struct Config {
     escapes_eligible: Vec<String>,
 }
 
+/// Default floor for `min_escapes_to_trigger`. One eliminable
+/// escape is enough to make the raw form an unambiguous win.
+const DEFAULT_MIN_ESCAPES_TO_TRIGGER: NonZeroUsize = NonZeroUsize::new(1).expect("1 is non-zero");
+
 impl Default for Config {
     fn default() -> Self {
         Self {
-            min_escapes_to_trigger: 1,
+            min_escapes_to_trigger: DEFAULT_MIN_ESCAPES_TO_TRIGGER,
             escapes_eligible: DEFAULT_ESCAPES_ELIGIBLE
                 .iter()
                 .map(|entry| (*entry).to_owned())
@@ -112,7 +122,7 @@ impl Default for Config {
 }
 
 pub struct PreferRawString {
-    min_escapes_to_trigger: usize,
+    min_escapes_to_trigger: NonZeroUsize,
     escapes_eligible: Vec<String>,
 }
 
@@ -179,14 +189,13 @@ impl<'tcx> LateLintPass<'tcx> for PreferRawString {
         let Some(scan) = scan_body(body, &self.escapes_eligible) else {
             return;
         };
-        // The `eliminable_count == 0` guard is stricter than the
-        // planning file's `count >= threshold` rule and deliberate:
-        // suggesting `r"hello"` for `"hello"` would just trip
-        // `clippy::needless_raw_strings` on the next pass. The
-        // guard kicks in if a user sets `min_escapes_to_trigger`
-        // to 0, which the planning file doesn't expect but the
-        // schema doesn't forbid.
-        if scan.eliminable_count == 0 || scan.eliminable_count < self.min_escapes_to_trigger {
+        // A literal with zero eliminable escapes is skipped by the
+        // threshold itself: `min_escapes_to_trigger: NonZeroUsize`
+        // forces the minimum to at least 1, so `count < min` already
+        // catches `count == 0`. Suggesting `r"hello"` for `"hello"`
+        // would just trip `clippy::needless_raw_strings` on the next
+        // pass; the type system now guarantees we never do.
+        if scan.eliminable_count < self.min_escapes_to_trigger.get() {
             return;
         }
         let n_hashes = minimal_hash_count(&scan.decoded);

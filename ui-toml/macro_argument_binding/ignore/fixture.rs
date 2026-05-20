@@ -1,7 +1,7 @@
-// Skipped: `debug_assert_eq!` is on the built-in deny list and the
+// Skipped: `debug_assert_eq!` is in the built-in deny set and the
 // first argument is an impure method call, but the fixture's
 // `dylint.toml` adds `debug_assert_eq` to `ignore`, which always
-// wins over the deny / allow lists. The rule emits no diagnostic.
+// wins over the deny / allow sets. The rule emits no diagnostic.
 
 fn main() {
     let mut value: u32 = 0;

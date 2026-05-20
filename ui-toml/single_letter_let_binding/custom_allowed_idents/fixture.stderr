@@ -1,0 +1,15 @@
+warning: `let` binding `n` has a single-letter name
+  --> $DIR/fixture.rs:13:9
+   |
+LL |     let n = 5_u32;
+   |         ^
+   |
+   = help: rename to a descriptive identifier
+note: the lint level is defined here
+  --> $DIR/fixture.rs:5:9
+   |
+LL | #![warn(perfectionist::single_letter_let_binding)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: 1 warning emitted
+

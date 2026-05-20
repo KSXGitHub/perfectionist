@@ -471,9 +471,9 @@ name_based_extra = [
 # Use this for macros where the project's own convention
 # diverges (for example, macros whose body is more readable
 # with the comma always present even on a single line). The
-# name is `ignore` rather than `deny_list` because the lint
-# never forbids the macro itself — it only declines to act on
-# the invocation's trailing comma.
+# name is `ignore` rather than something forbid-flavoured
+# because the lint never forbids the macro itself — it only
+# declines to act on the invocation's trailing comma.
 ignore = [
   # "my_crate::ascii_table",
 ]
