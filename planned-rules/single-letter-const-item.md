@@ -84,10 +84,6 @@ through three distinct visitor hooks.
   `ItemKind::Const`, and the configuration shapes diverge
   (short-trait-impl exemption, idiomatic-name allowlist).
 
-The rule also exempts items inside `#[cfg(test)]` code via
-`clippy_utils::is_in_test`, following the same idiom that
-`single_letter_let_binding` already applies for test fixtures.
-
 ## Configuration
 
 ```toml
@@ -152,11 +148,8 @@ despite locals being easier to rename than items).
 - `LateLintPass`. The trigger does not need resolver state; an
   early pass would work too, but late keeps the rule consistent
   with the rest of the `single_letter_*` family.
-- Use `check_item`, `check_impl_item`, `check_trait_item` for the
-  three item-position cases. The block-level case
-  (`StmtKind::Item`) is reached transitively by `check_item`
-  because HIR lowers a function-body `const` into an `Item`
-  attached to the enclosing body's HIR map.
+- Hook up the three `check_*` callbacks listed in
+  [What it covers](#what-it-covers).
 - The `Symbol`-set configuration parsing reuses
   `resolve_symbol_set` from `single_letter_let_binding`. If the
   helper isn't already crate-internal, lift it to

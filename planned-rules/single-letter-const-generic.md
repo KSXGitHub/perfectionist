@@ -87,15 +87,8 @@ ignore_allowed_idents = []            # default empty
 Maximum number of source lines an `impl Trait for Type` block
 may span and still permit single-letter const generic parameter
 names. Defaults to `20`. The semantics are identical to the
-existing `single_letter_generic` knob; the helper that implements
-the check should be lifted into `src/common.rs` (or a dedicated
-internal module) so both rules call into one definition rather
-than maintaining parallel copies. CLAUDE.md's "factor it into
-`src/common.rs`" guidance applies here directly: the
-`enclosing_short_trait_impl` method on
-`SingleLetterGeneric` and a `span_line_count` helper currently
-live in `src/rules/single_letter_generic.rs`; the first PR to
-need them in a second rule should hoist them.
+existing `single_letter_generic` knob — same exemption, applied to
+const generic parameters instead of type parameters.
 
 ### `extra_allowed_idents`: `[string]` (optional)
 
