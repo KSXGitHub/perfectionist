@@ -197,11 +197,10 @@ impl UnknownPerfectionistLints {
         if self.suggestion_distance == 0 {
             return None;
         }
-        let max_distance = usize::from(self.suggestion_distance);
         let mut closest: Option<(&str, usize)> = None;
         for registered in &self.registered_lints {
             let distance = levenshtein(candidate, registered);
-            if distance <= max_distance
+            if distance <= self.suggestion_distance as usize
                 && closest.is_none_or(|(_, closest_distance)| distance < closest_distance)
             {
                 closest = Some((registered.as_str(), distance));
