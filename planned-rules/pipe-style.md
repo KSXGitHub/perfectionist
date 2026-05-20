@@ -87,11 +87,21 @@ forbids.
 let name = Some(OsStringDisplay::from(entry.file_name()));
 let wrapped = Ok(items.iter().map(|x| x.id).collect::<Vec<_>>());
 let err = Err(parser.tokens().peek().cloned());
+let lock = Arc::clone(
+    locks.entry(file_path.to_path_buf())
+        .or_insert_with(|| Arc::new(Mutex::new(())))
+        .value(),
+);
 
 // Good
 let name = entry.file_name().pipe(OsStringDisplay::from).pipe(Some);
 let wrapped = items.iter().map(|x| x.id).collect::<Vec<_>>().pipe(Ok);
 let err = parser.tokens().peek().cloned().pipe(Err);
+let lock = locks
+    .entry(file_path.to_path_buf())
+    .or_insert_with(|| Arc::new(Mutex::new(())))
+    .value()
+    .pipe(Arc::clone);
 
 // Not flagged: arg is a free function call, not a method call
 let data = serde_json::from_reader::<_, JsonData>(stdin());
