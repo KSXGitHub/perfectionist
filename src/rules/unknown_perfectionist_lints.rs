@@ -48,7 +48,7 @@ struct Config {
     /// catches single-character typos and short transpositions
     /// without producing wild guesses. Set to `0` to disable
     /// suggestions entirely.
-    suggestion_distance: usize,
+    suggestion_distance: u8,
 }
 
 impl Default for Config {
@@ -60,7 +60,7 @@ impl Default for Config {
 }
 
 pub struct UnknownPerfectionistLints {
-    suggestion_distance: usize,
+    suggestion_distance: u8,
     registered_lints: Vec<String>,
 }
 
@@ -197,10 +197,11 @@ impl UnknownPerfectionistLints {
         if self.suggestion_distance == 0 {
             return None;
         }
+        let max_distance = usize::from(self.suggestion_distance);
         let mut closest: Option<(&str, usize)> = None;
         for registered in &self.registered_lints {
             let distance = levenshtein(candidate, registered);
-            if distance <= self.suggestion_distance
+            if distance <= max_distance
                 && closest.is_none_or(|(_, closest_distance)| distance < closest_distance)
             {
                 closest = Some((registered.as_str(), distance));
