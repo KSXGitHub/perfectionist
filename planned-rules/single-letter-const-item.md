@@ -3,7 +3,7 @@
 **Source:** sibling of the four existing `single_letter_*` rules
 (`single_letter_generic`, `single_letter_let_binding`,
 `single_letter_function_param`, `single_letter_closure_param`),
-extended to cover named `const` items — both free and associated.
+covering the `const`-item position those rules scope out.
 
 ## Statement
 

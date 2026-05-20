@@ -1,10 +1,9 @@
 # `single_letter_const_generic`
 
 **Source:** sibling of `perfectionist::single_letter_generic`
-(`src/rules/single_letter_generic.rs`), extended to cover const
-generic parameters, which the existing rule deliberately scopes
-out by early-returning on every `GenericParamKind` other than
-`Type`.
+(`src/rules/single_letter_generic.rs`), covering the
+const-generic-parameter position the existing rule scopes out by
+early-returning on every `GenericParamKind` other than `Type`.
 
 ## Statement
 
