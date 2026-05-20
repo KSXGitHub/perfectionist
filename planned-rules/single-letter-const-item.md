@@ -14,13 +14,16 @@ extended to cover named `const` items — both free and associated.
 // Bad
 const N: usize = 2;
 
-struct Data<Left, Right, const M: usize, const N: usize> {
-    left:  [Left;  N],
-    right: [Right; N],
+impl Buffer {
+    const D: usize = 64;
 }
 
 // Good
 const DIMENSION_COUNT: usize = 2;
+
+impl Buffer {
+    const DEFAULT_CAPACITY: usize = 64;
+}
 ```
 
 The rule fires on the declaration of the `const` item — not on the
@@ -45,27 +48,26 @@ identifier carries its own documentation; `N`, `M`, `K` do not.
 
 The rule is configurable rather than absolute because a small set
 of single-letter constants do carry conventional meaning in
-specific domains (`E` for Euler's number when defining
-`const E: f64 = std::f64::consts::E;` for ergonomic reach,
-`N`/`M` inside a fixture module that mirrors a paper's notation).
-An allowlist exempts those cases without re-opening the door for
-arbitrary single letters.
+specific domains — a numerics module that mirrors a paper's
+notation (`K` for the iteration bound, `R` for the radius of
+convergence) is the canonical case. An allowlist exempts those
+cases without re-opening the door for arbitrary single letters.
 
 ## What it covers
 
-- `hir::ItemKind::Const` — free `const NAME: T = expr;`.
+- `hir::ItemKind::Const` — free `const NAME: T = expr;`, including
+  the block-level form (`const NAME: T = ...;` declared inside a
+  function body), which the HIR lowers to a nested `Item` reached
+  through the same `check_item` hook.
 - `hir::ImplItemKind::Const` — associated `const NAME: T = expr;`
   inside an `impl` block (inherent or trait).
 - `hir::TraitItemKind::Const` — associated const *declarations*
   inside a `trait` body (`const NAME: T;` with or without a
   default expression).
-- `hir::StmtKind::Item` constants — block-level
-  `const NAME: T = ...;` declared inside a function or `const`-eval
-  context.
 
-All four are the same syntactic shape (a `const` keyword followed
-by a name); they are listed separately only because the HIR walks
-them through different visitor hooks.
+All three are the same syntactic shape (a `const` keyword followed
+by a name); they are listed separately because the HIR walks them
+through three distinct visitor hooks.
 
 ## What it does *not* cover
 
@@ -81,9 +83,10 @@ them through different visitor hooks.
   rule. The trigger lives on `GenericParamKind::Const`, not on
   `ItemKind::Const`, and the configuration shapes diverge
   (short-trait-impl exemption, idiomatic-name allowlist).
-- **Const items inside `#[cfg(test)]` modules.** Test fixtures
-  follow the same idiom that exempts `single_letter_let_binding`
-  under `cfg(test)`; reuse `clippy_utils::is_in_test`.
+
+The rule also exempts items inside `#[cfg(test)]` code via
+`clippy_utils::is_in_test`, following the same idiom that
+`single_letter_let_binding` already applies for test fixtures.
 
 ## Configuration
 
@@ -92,10 +95,6 @@ them through different visitor hooks.
 extra_allowed_idents  = []   # default empty
 ignore_allowed_idents = []   # default empty
 ```
-
-(Per [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
-the actual `dylint.toml` table is `[perfectionist::single_letter_const_item]`;
-planning files use the unqualified form for readability.)
 
 ### `extra_allowed_idents`: `[string]` (optional)
 

@@ -82,10 +82,6 @@ extra_allowed_idents  = []            # default empty; merged with built-ins
 ignore_allowed_idents = []            # default empty
 ```
 
-(Per [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
-the actual `dylint.toml` table is `[perfectionist::single_letter_const_generic]`;
-planning files use the unqualified form for readability.)
-
 ### `short_impl_max_lines`: `unsigned integer` (optional)
 
 Maximum number of source lines an `impl Trait for Type` block
