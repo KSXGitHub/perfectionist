@@ -143,15 +143,12 @@ impl std::fmt::Display for DisplayMe {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    // OK: single-letter `let` bindings under `#[cfg(test)]` are exempt.
-    fn fixtures() {
-        let a = 1_u32;
-        let b = 2_u32;
-        let c = a + b;
-        let _ = c;
-    }
+// Bad: single-letter `let` bindings outside the default exempt set.
+fn fixtures() {
+    let a = 1_u32;
+    let b = 2_u32;
+    let c = a + b;
+    let _ = c;
 }
 
 fn main() {
