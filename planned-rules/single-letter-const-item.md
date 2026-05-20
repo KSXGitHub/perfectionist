@@ -56,13 +56,9 @@ names; the default is empty.
 
 ## What it does *not* cover
 
-- **`static` items.** A `static N: AtomicUsize = ...;` is a
-  distinct construct with distinct conventions (interior
-  mutability, address stability). If a `single_letter_static`
-  rule is wanted later it should be a sibling; do not extend this
-  one. The two rules' configuration knobs would be the same
-  shape, but bundling them obscures which one a reader needs to
-  silence at a given site.
+- **`static` items.** Covered by the sibling
+  [`single-letter-static-item`](./single-letter-static-item.md)
+  rule.
 - **Const generic parameters** (`<const N: usize>`). Covered by
   the sibling [`single-letter-const-generic`](./single-letter-const-generic.md)
   rule. The trigger lives on `GenericParamKind::Const`, not on

@@ -68,6 +68,11 @@ pattern that several rules call out by reference — live in
   block-level) whose name is one ASCII letter. Sibling of the four
   existing `single_letter_*` rules. Single `allowed_idents` knob,
   empty default.
+- [`single-letter-static-item.md`](./single-letter-static-item.md) — flag
+  `static N: AtomicUsize = ...;`-style `static` items (free and
+  block-level) whose name is one ASCII letter. Sibling of
+  `single-letter-const-item`. Single `allowed_idents` knob, empty
+  default.
 - [`single-letter-const-generic.md`](./single-letter-const-generic.md) —
   flag const generic parameter declarations
   (`<const N: usize>`) whose name is one ASCII letter. Mirrors
