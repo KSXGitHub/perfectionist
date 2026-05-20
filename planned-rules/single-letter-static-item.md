@@ -43,6 +43,9 @@ specific conventional names; the default is empty.
   [`single-letter-const-item`](./single-letter-const-item.md).
 - **Const generic parameters.** Covered by
   [`single-letter-const-generic`](./single-letter-const-generic.md).
+- **Foreign statics in `extern` blocks**
+  (`extern { static N: c_int; }`). Different HIR node
+  (`ForeignItemKind::Static`).
 
 ## Configuration
 
