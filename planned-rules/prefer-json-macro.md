@@ -122,21 +122,31 @@ the wrapper.
 Fire only on expressions that satisfy **all** of:
 
 1. **The expression is in a test context** *or*
-   `restrict_to_tests` is set to `false`. Test context is any
-   of:
-   - the enclosing `fn` carries `#[test]`, `#[tokio::test]`,
-     `#[async_std::test]`, or any other attribute matching
-     `test_attributes` (configurable);
-   - the enclosing `fn`, the enclosing module, or any ancestor
-     module carries `#[cfg(test)]` (or any cfg predicate that
-     positively requires the `test` flag — `cfg(test)`,
-     `cfg(any(..., test, ...))`, `cfg(all(..., test))`);
-   - the source file is at or under a directory named in
-     `test_directories` at the crate root (default `tests/`).
-     `benches/` is **not** included by default — bench code is
+   `restrict_to_tests` is set to `false`. Test context is
+   either:
+   - `clippy_utils::is_in_test(tcx, hir_id)` returns `true` —
+     i.e., the expression is inside a `#[test]`-marked function
+     (after macro expansion, so `#[tokio::test]`,
+     `#[async_std::test]`, `#[rstest::rstest]`,
+     `#[test_case::test_case]`, and any other proc-macro test
+     attribute that ultimately produces a `#[test]` fn are all
+     covered), or it has an ancestor — fn, module, or anything
+     else on the HIR parent chain — carrying `#[cfg(test)]` (or
+     any cfg predicate that positively requires the `test`
+     flag); or
+   - the source file is at or under a directory in the curated
+     test-directory set (built-in default `["tests"]`, plus
+     anything in `extra_test_directories`, minus anything in
+     `ignore_test_directories`). This second check exists to
+     catch integration-test helper functions that aren't
+     themselves `#[test]`-marked and aren't inside a
+     `#[cfg(test)]` wrapper — Cargo flips the `test` cfg for
+     the whole `tests/` binary at the rustc-flag level, not via
+     in-source attributes, so `is_in_test` doesn't see them.
+     `benches/` is **not** in the default — bench code is
      performance-sensitive, the same rationale that excludes
      production code — but a project can opt in by adding
-     `"benches"` to `test_directories`.
+     `"benches"` to `extra_test_directories`.
 
    Setting `restrict_to_tests = false` skips this test-context
    check entirely; every other trigger condition still applies.
@@ -290,32 +300,32 @@ fn not_json() {
 require_serde_json_dependency = true
 
 # Whether to restrict the rule to test code (see "What to lint",
-# trigger 1). When `true` (default), the rule fires only inside
-# `#[test]`-family functions, `#[cfg(test)]` modules, and the
-# directories named in `test_directories`. Set to `false` to
-# also lint production code — the performance trade-off
-# (allocating a `Value` and re-serialising) is then the
-# project's call, not the lint's.
+# trigger 1). When `true` (default), the rule fires only where
+# `clippy_utils::is_in_test` returns true (any `#[test]`-marked
+# function — including proc-macro frameworks like
+# `tokio::test`, `rstest`, `test_case` that expand to one — and
+# any descendant of a `#[cfg(test)]` ancestor) or in directories
+# treated as test code per `extra_test_directories` /
+# `ignore_test_directories`. Set to `false` to also lint
+# production code — the performance trade-off (allocating a
+# `Value` and re-serialising) is then the project's call, not
+# the lint's.
 restrict_to_tests = true
 
-# Attribute paths whose presence on the enclosing function counts
-# as "this is a test". Entries without `::` match against the
-# attribute's last path segment; entries containing `::` match
-# against the full path.
-test_attributes = [
-  "test",
-  "tokio::test",
-  "async_std::test",
-  "actix_web::test",
-  "actix_rt::test",
-  "rstest::rstest",
-  "test_case::test_case",
-]
+# Additional directory names (at the crate root) whose contents
+# are treated as test code, on top of the curated default
+# (`["tests"]`). Empty by default. Add `"benches"` to include
+# bench code — kept out of the default because bench code is
+# performance-sensitive, the same rationale that excludes
+# production code.
+extra_test_directories = []
 
-# Directory names directly under the crate root whose contents
-# are treated as test code. Files under any subdirectory of these
-# count too.
-test_directories = ["tests"]
+# Directory names to drop from the test-code set, even if they
+# appear in the curated default. Empty by default; checked
+# after the merge with the default, so this knob always wins.
+# Use it for projects that ship a `tests/` directory holding
+# non-test fixtures (rare).
+ignore_test_directories = []
 
 # Override the import path the autofix uses for the `json!` macro.
 # Set this if the project re-exports `json!` from a wrapper
@@ -353,28 +363,30 @@ json_macro_path = "serde_json::json"
 
 - **Test-context detection.** `LateLintPass::check_expr`. When
   `restrict_to_tests = false`, skip this detection entirely and
-  treat trigger 1 as satisfied for every expression — the
-  rule then evaluates triggers 2 and 3 against production
-  code too. Otherwise, from the expression's `HirId`, walk
-  parents via `tcx.hir().parent_iter(hir_id)` (or
-  `tcx.parent_hir_node` on newer compilers) until an item is
-  reached:
-  - If the item is a `fn` with one of `test_attributes` applied,
-    fire.
-  - If any ancestor — the enclosing `fn` itself, an enclosing
-    module, or any module further up — carries `#[cfg(test)]`
-    (detected via `attr.has_name(sym::cfg)` and a meta-item walk
-    for `cfg(test)` / `cfg(any(..., test, ...))` /
-    `cfg(all(..., test))`), fire. Don't restrict this check to
-    modules: a `#[cfg(test)] fn helper()` is just as test-only
-    as a `#[cfg(test)] mod tests` and should be treated the same
-    way.
-  - If the source file's path (from
-    `tcx.sess.source_map()`) is at or under one of the
-    configured `test_directories` at the crate root, fire.
+  treat trigger 1 as satisfied for every expression. Otherwise:
+  - Call `clippy_utils::is_in_test(tcx, expr.hir_id)`. That
+    helper combines `is_in_test_function` (walks parents looking
+    for a `fn` whose post-expansion ident is tagged with rustc's
+    internal `RustcTestMarker` — catches every proc-macro test
+    framework, since they all expand to `#[test]`-marked fns) and
+    `is_in_cfg_test` (walks `hir_parent_id_iter` for an ancestor
+    carrying a positive `#[cfg(test)]` predicate, including the
+    enclosing fn itself, not just modules). Fire if it returns
+    true.
+  - Otherwise, resolve the test-directory set
+    (`["tests"]` + `extra_test_directories`,
+    minus `ignore_test_directories`) via the catalogue's
+    standard `resolve_string_set` helper. Check whether the
+    expression's source file path (from
+    `tcx.sess.source_map()`) is at or under any of those
+    directories at the crate root. Fire if so. This branch is
+    what catches integration-test helper functions in
+    `tests/foo.rs` that aren't themselves `#[test]`-marked.
 
-  Cache per-`HirId` to keep repeated `check_expr` calls on
-  expressions inside the same function cheap.
+  Don't roll a custom `#[test]` / `#[cfg(test)]` walk: the
+  catalogue's existing rules (e.g.
+  `src/rules/single_letter_let_binding.rs` historically) lean on
+  `is_in_test` for exactly this reason.
 
 - **JSON detection — literal mode.** For
   `ExprKind::Lit(LitKind::Str(..))`, run `serde_json::from_str`
