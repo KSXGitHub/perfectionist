@@ -143,7 +143,7 @@ impl std::fmt::Display for DisplayMe {
     }
 }
 
-// Bad: single-letter `let` bindings are flagged regardless of context.
+// Bad: single-letter `let` bindings outside the default exempt set.
 fn fixtures() {
     let a = 1_u32;
     let b = 2_u32;
