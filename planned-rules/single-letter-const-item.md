@@ -76,35 +76,25 @@ cases without re-opening the door for arbitrary single letters.
 
 ```toml
 [single_letter_const_item]
-extra_allowed_idents  = []   # default empty
-ignore_allowed_idents = []   # default empty
+allowed_idents = []   # default empty
 ```
 
-### `extra_allowed_idents`: `[string]` (optional)
+### `allowed_idents`: `[string]` (optional)
 
-Additional identifiers added to the exempt set, even outside
-`#[cfg(test)]` code. Empty by default — the rule ships no
-built-in exempt single letters for `const` items, because the
-convention for `const` items is SCREAMING_SNAKE_CASE descriptive
-identifiers. (This is the deliberate divergence from
-`single_letter_let_binding`'s built-in `["n"]`: `let n = …` for a
-local count is well-attested; `const N: usize = …` for a
-module-wide constant is not.) Use this knob to opt in to
-project-specific conventions (e.g. a numerics module that mirrors
-a paper's notation: `K` for the iteration bound, `R` for the
-radius of convergence).
-
-### `ignore_allowed_idents`: `[string]` (optional)
-
-Identifiers to drop from the exempt set, even if they appear in
-`extra_allowed_idents`. Empty by default; checked after the
-merge, so this knob always wins. Same shape as
-`single_letter_let_binding`.
+The exempt set: identifiers the rule will not flag. Empty by
+default — the rule ships no built-in exempt single letters for
+`const` items, because the convention for `const` items is
+SCREAMING_SNAKE_CASE descriptive identifiers. (This is the
+deliberate divergence from `single_letter_let_binding`'s built-in
+`["n"]`: `let n = …` for a local count is well-attested;
+`const N: usize = …` for a module-wide constant is not.) Use this
+knob to opt in to project-specific conventions (e.g. a numerics
+module that mirrors a paper's notation: `K` for the iteration
+bound, `R` for the radius of convergence).
 
 ## What to lint
 
-For each visited `const` item, in the same check order as
-`single_letter_let_binding.rs`:
+For each visited `const` item:
 
 1. Skip items inside external macros
    (`hir_in_external_macro`).
@@ -112,16 +102,16 @@ For each visited `const` item, in the same check order as
 3. Require `is_single_ascii_letter(symbol.as_str())` (shared with
    the other `single_letter_*` rules; lives in
    `src/common.rs`).
-4. Skip if the identifier is in the resolved `allowed_idents`
+4. Skip if the identifier is in the configured `allowed_idents`
    set.
-5. Skip items whose enclosing context returns true from
-   `clippy_utils::is_in_test`. (Deferred to last because it walks
-   the HIR parent chain; the cheap single-letter and exempt-set
-   tests above fast-path the common cases.)
-6. Emit `span_lint_and_help` on the identifier's span with the
+5. Emit `span_lint_and_help` on the identifier's span with the
    message ``"const item `{ident}` has a single-letter name"`` and
    the help
    ``"rename to a descriptive identifier (e.g. `DIMENSION`, `BUFFER_LEN`, `MAX_RETRIES`)"``.
+
+The rule has no test-code exemption: `const` items in
+`#[cfg(test)]` modules and `#[test]` functions are flagged the
+same way as production code.
 
 No autofix. Renaming a `const` item touches every reference; the
 edit is large and `MachineApplicable` only with a
@@ -132,22 +122,25 @@ despite locals being easier to rename than items).
 
 ## Implementation notes
 
-- `LateLintPass` is required: step 5's `clippy_utils::is_in_test`
-  takes a `TyCtxt`, which the early-pass context does not expose.
+- Use `LateLintPass` for consistency with the rest of the
+  `single_letter_*` family. The rule itself doesn't need
+  `TyCtxt` (no `is_in_test`, no resolver queries), so
+  `EarlyLintPass` would also work; consistency is the only reason
+  to pick late.
 - Hook up the three `check_*` callbacks listed in
   [What it covers](#what-it-covers).
-- The `Symbol`-set configuration parsing reuses
-  `resolve_symbol_set` from `single_letter_let_binding`. If the
-  helper isn't already crate-internal, lift it to
-  `src/common.rs` when implementing this rule — per CLAUDE.md's
-  "factor it into `src/common.rs`" guidance for cross-rule
-  helpers.
+- The `Symbol`-set configuration parsing reuses the
+  `extra_allowed_idents` / `ignore_allowed_idents` machinery that
+  `single_letter_let_binding` already runs through
+  `resolve_symbol_set`. Since this rule has only a single
+  `allowed_idents` field (no defaults to subtract from, so no
+  `ignore_*` companion), it parses straight into a
+  `BTreeSet<Symbol>` without going through `resolve_symbol_set`.
 
 ### Difficulty
 
-**Easy.** The trigger is a four-line predicate over three HIR
-node kinds; the configuration is a copy of
-`single_letter_let_binding`'s with one default-set change.
+**Easy.** The trigger is a four-step predicate over three HIR
+node kinds; the configuration is a single `[Symbol]` set.
 
 ## Default state
 
@@ -165,8 +158,11 @@ fires only on cases the project genuinely objects to.
   both.
 - `perfectionist::single_letter_let_binding`
   (`src/rules/single_letter_let_binding.rs`) — the closest
-  existing relative. Same configuration shape, different trigger
-  position (item vs. local).
+  existing relative. Different trigger position (item vs. local);
+  simpler configuration shape (single `allowed_idents` field
+  rather than let_binding's `extra_allowed_idents` /
+  `ignore_allowed_idents` pair, because this rule has no built-in
+  defaults to subtract from); no test-code exemption.
 - `perfectionist::single_letter_generic`
   (`src/rules/single_letter_generic.rs`) — the type-parameter
   counterpart. Cited here only for completeness; the const-item

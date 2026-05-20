@@ -34,10 +34,8 @@ declaration to scroll back to recover its role, and in a long
 that the canonical `impl<const N: usize> Foo for [T; N]` shape
 remains readable. The rule reuses the existing
 `single_letter_generic` exemption mechanism — short trait `impl`
-blocks — and adds the same `extra_allowed_idents` /
-`ignore_allowed_idents` knob shape that `single_letter_let_binding`
-uses, so projects can opt single letters into the exempt set per
-their own conventions.
+blocks — and adds an `allowed_idents` knob so projects can opt
+single letters into the exempt set per their own conventions.
 
 ## Why restrict this?
 
@@ -49,7 +47,7 @@ some idiomatic weight — `N` and `M` for array dimensions, matrix
 sizes, and slice lengths appear in rustc's own examples — but
 that weight is not so settled that the rule should ship a default
 exempt set; projects that want to keep those names add them
-locally via `extra_allowed_idents`.
+locally via `allowed_idents`.
 
 ## What it covers
 
@@ -76,9 +74,8 @@ filter by enclosing item kind.
 
 ```toml
 [single_letter_const_generic]
-short_impl_max_lines  = 20            # mirrors `single_letter_generic`
-extra_allowed_idents  = []            # default empty
-ignore_allowed_idents = []            # default empty
+short_impl_max_lines = 20    # mirrors `single_letter_generic`
+allowed_idents       = []    # default empty
 ```
 
 ### `short_impl_max_lines`: `unsigned integer` (optional)
@@ -89,24 +86,17 @@ names. Defaults to `20`. The semantics are identical to the
 existing `single_letter_generic` knob — same exemption, applied to
 const generic parameters instead of type parameters.
 
-### `extra_allowed_idents`: `[string]` (optional)
+### `allowed_idents`: `[string]` (optional)
 
-Additional identifiers added to the exempt set. Empty by default
-— the rule ships no built-in exempt single letters for const
-generics. A project that wants to keep the array-dimension idiom
-adds the names explicitly:
+The exempt set: identifiers the rule will not flag. Empty by
+default — the rule ships no built-in exempt single letters for
+const generics. A project that wants to keep the array-dimension
+idiom lists the names explicitly:
 
 ```toml
 [single_letter_const_generic]
-extra_allowed_idents = ["N", "M"]
+allowed_idents = ["N", "M"]
 ```
-
-### `ignore_allowed_idents`: `[string]` (optional)
-
-Identifiers to drop from the exempt set, even if they appear in
-`extra_allowed_idents`. Empty by default; checked after the
-merge, so this knob always wins. Same shape as
-`single_letter_let_binding` and `single_letter_const_item`.
 
 ## What to lint
 
@@ -122,7 +112,7 @@ For each visited generic parameter:
 4. Extract the parameter's identifier `Symbol`.
 5. Require `is_single_ascii_letter(symbol.as_str())` (shared
    helper in `src/common.rs`).
-6. Skip if the identifier is in the resolved `allowed_idents`
+6. Skip if the identifier is in the configured `allowed_idents`
    set.
 7. Skip if the enclosing item is a trait `impl` block whose span
    covers `≤ short_impl_max_lines` lines (shared with
@@ -154,26 +144,24 @@ declaration. Diagnostic-only matches
   dedicated `src/short_impl.rs` if either grows its own
   invariants. The existing rule's call site updates to import the
   helper from the new home.
-- The `Symbol`-set configuration parsing reuses
-  `resolve_symbol_set` (see `single_letter_let_binding`); if it
-  isn't already in `src/common.rs`, lift it there at the same
-  time as the short-impl helper.
+- `allowed_idents` parses straight into a `BTreeSet<Symbol>`. No
+  `extra_*` / `ignore_*` split — without built-in defaults there
+  is nothing to subtract from, so the single-field shape is
+  enough.
 
 ### Difficulty
 
-**Easy.** The trigger is a three-line predicate over a single
+**Easy.** The trigger is a small predicate over a single
 `GenericParam` visitor hook. The configuration replays
-`single_letter_generic`'s `short_impl_max_lines` plus
-`single_letter_let_binding`'s `extra_allowed_idents` /
-`ignore_allowed_idents` knobs; both shapes already exist in the
-codebase. The only non-trivial part is the helper hoist, which is
-mechanical.
+`single_letter_generic`'s `short_impl_max_lines` and adds a plain
+`allowed_idents` `BTreeSet`. The only non-trivial part is the
+short-trait-impl helper hoist, which is mechanical.
 
 ## Default state
 
 Active by default with an empty exempt set. Projects that want to
 keep `N` / `M` as const generic names opt in via
-`extra_allowed_idents`.
+`allowed_idents`.
 
 ## Interaction with sibling rules
 
@@ -190,6 +178,8 @@ keep `N` / `M` as const generic names opt in via
   rules can fire on adjacent lines of source but never on the
   same node.
 - `perfectionist::single_letter_let_binding`
-  (`src/rules/single_letter_let_binding.rs`) — cited here for
-  configuration shape only; the `extra_allowed_idents` /
-  `ignore_allowed_idents` knobs work the same way.
+  (`src/rules/single_letter_let_binding.rs`) — cited for context.
+  This rule's `allowed_idents` is the simplified single-field
+  version of let_binding's `extra_allowed_idents` /
+  `ignore_allowed_idents` pair; no built-in defaults here means
+  no need for the subtract-from-defaults knob.
