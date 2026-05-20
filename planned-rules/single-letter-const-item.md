@@ -81,32 +81,29 @@ them through different visitor hooks.
   rule. The trigger lives on `GenericParamKind::Const`, not on
   `ItemKind::Const`, and the configuration shapes diverge
   (short-trait-impl exemption, idiomatic-name allowlist).
-- **`const fn` declarations.** `const fn n() -> usize { 2 }` is a
-  function with a single-letter name; that case belongs to a
-  hypothetical `single_letter_function_name` rule, not here.
 - **Const items inside `#[cfg(test)]` modules.** Test fixtures
   follow the same idiom that exempts `single_letter_let_binding`
   under `cfg(test)`; reuse `clippy_utils::is_in_test`.
 
 ## Configuration
 
-Configure via `dylint.toml` under
-`["perfectionist::single_letter_const_item"]`. Every field is
-optional.
-
 ```toml
-[perfectionist::single_letter_const_item]
+[single_letter_const_item]
 extra_allowed_idents  = []   # default empty
 ignore_allowed_idents = []   # default empty
 ```
+
+(Per [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+the actual `dylint.toml` table is `[perfectionist::single_letter_const_item]`;
+planning files use the unqualified form for readability.)
 
 ### `extra_allowed_idents`: `[string]` (optional)
 
 Additional identifiers allowed as `const`-item names, even outside
 `#[cfg(test)]` code. Merged with the built-in defaults. Use this
-for project-wide conventional names (e.g. `["E", "PI"]` in a
-numerics-heavy crate that imports `std::f64::consts::*` constants
-under shorter aliases).
+for project-wide conventional names (e.g. a numerics module that
+mirrors a paper's notation: `K` for the iteration bound, `R` for
+the radius of convergence).
 
 The built-in default set is **empty**. The convention for `const`
 items is SCREAMING_SNAKE_CASE descriptive identifiers; the cases

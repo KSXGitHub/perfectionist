@@ -72,23 +72,19 @@ alias`, `impl`), associated items, free functions, and methods.
   ecosystem. Out of scope here and not planned.
 - **`const NAME: T = ...;` items.** Covered by
   [`single-letter-const-item`](./single-letter-const-item.md).
-- **Synthetic / compiler-introduced const generics.** If a future
-  rustc version desugars something to a synthetic const generic
-  (analogous to `impl Trait`'s synthetic type parameter), the
-  rule must skip it — there is no user-written identifier to flag.
 
 ## Configuration
 
-Configure via `dylint.toml` under
-`["perfectionist::single_letter_const_generic"]`. Every field is
-optional.
-
 ```toml
-[perfectionist::single_letter_const_generic]
+[single_letter_const_generic]
 short_impl_max_lines  = 20            # mirrors `single_letter_generic`
 extra_allowed_idents  = []            # default empty; merged with built-ins
 ignore_allowed_idents = []            # default empty
 ```
+
+(Per [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+the actual `dylint.toml` table is `[perfectionist::single_letter_const_generic]`;
+planning files use the unqualified form for readability.)
 
 ### `short_impl_max_lines`: `unsigned integer` (optional)
 
@@ -124,7 +120,7 @@ A project that wants the strict form bans the defaults via
 `ignore_allowed_idents`:
 
 ```toml
-[perfectionist::single_letter_const_generic]
+[single_letter_const_generic]
 ignore_allowed_idents = ["N", "M"]
 ```
 
