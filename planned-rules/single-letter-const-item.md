@@ -140,7 +140,7 @@ despite locals being easier to rename than items).
 ### Difficulty
 
 **Easy.** The trigger is a four-step predicate over three HIR
-node kinds; the configuration is a single `[Symbol]` set.
+node kinds; the configuration is a single `BTreeSet<Symbol>`.
 
 ## Default state
 

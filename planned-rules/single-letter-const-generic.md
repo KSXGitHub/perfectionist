@@ -151,11 +151,11 @@ declaration. Diagnostic-only matches
 
 ### Difficulty
 
-**Easy.** The trigger is a small predicate over a single
+**Easy.** The trigger is a seven-step predicate over a single
 `GenericParam` visitor hook. The configuration replays
-`single_letter_generic`'s `short_impl_max_lines` and adds a plain
-`allowed_idents` `BTreeSet`. The only non-trivial part is the
-short-trait-impl helper hoist, which is mechanical.
+`single_letter_generic`'s `short_impl_max_lines` and adds an
+`allowed_idents: BTreeSet<Symbol>`. The only non-trivial part is
+the short-trait-impl helper hoist, which is mechanical.
 
 ## Default state
 
