@@ -9,20 +9,19 @@
 
 ## What it does
 Flags generic type parameters whose identifier is one ASCII
-letter (`T`, `U`, `K`, `V`, …), except inside trait `impl`
-blocks whose body fits within a small line threshold.
+letter (`T`, `U`, `K`, `V`, …).
 
 ## Why restrict this?
 This is a stylistic preference, not a correctness issue.
 Single-letter generic names propagate through the type
-signatures and bounds; in a long impl block they force
-every reader to scroll back to the `impl` header to recover
-the role of each parameter. Descriptive names
-(`Element`, `Key`, `Reader`) keep complex signatures
-self-documenting. The short-trait-impl exception covers
-the canonical `impl<T> From<T> for Wrapper<T>` shape
-where the body is small enough that a reader cannot lose
-track of `T`.
+signatures and bounds; they force every reader to scroll
+back to the declaration to recover the role of each
+parameter. Descriptive names (`Element`, `Key`, `Reader`)
+keep complex signatures self-documenting. Genuinely
+canonical cases — `impl<T> From<T> for Wrapper<T>` and
+friends, where the trait already imposes the role of `T` —
+can be silenced site-by-site with `#[allow]` or
+`#[expect]`.
 
 ## Example
 ```rust,ignore
@@ -39,10 +38,4 @@ pub fn collect_keys<Key, Value>(map: BTreeMap<Key, Value>) -> Vec<Key> {
 
 ## Configuration
 
-Configure via `dylint.toml` under `["perfectionist::single_letter_generic"]`. Every field is optional; the per-field prose below states the default.
-
-### `short_impl_max_lines`: `unsigned integer` (optional)
-
-Maximum number of source lines an `impl Trait for Type`
-block may span and still permit single-letter generic
-parameter names. Defaults to `20`.
+None.

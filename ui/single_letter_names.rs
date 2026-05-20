@@ -13,26 +13,26 @@ trait Trivial {
     fn done(&self);
 }
 
-// OK: short trait impl, single-letter generic permitted.
+// Bad: every trait impl with a single-letter generic is flagged.
 impl<T> Trivial for Option<T> {
     fn done(&self) {}
 }
 
-// The short-trait-impl exemption applies only to generics owned by
-// the impl block itself. A generic on a method inside a short impl
-// is still flagged.
+// A generic on a method inside an impl is owned by the method,
+// not by the impl. Both are flagged independently — neither gets
+// any structural exemption.
 trait Convert {
     fn convert<U>(&self, value: U) -> U;
 }
 
 impl<T> Convert for Option<T> {
-    // Bad: `U` is owned by the method, not by the short impl.
+    // Bad: `U` is owned by the method, not by the impl.
     fn convert<U>(&self, value: U) -> U {
         value
     }
 }
 
-// Bad: long trait impl, even though it implements a trait.
+// Bad: trait impl with a single-letter generic.
 impl<T> Iterator for Wrapper<T> {
     type Item = T;
     fn next(&mut self) -> Option<T> {
