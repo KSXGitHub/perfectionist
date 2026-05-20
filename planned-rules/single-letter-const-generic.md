@@ -70,9 +70,7 @@ allowed_idents = ["X"]
 For each visited generic parameter:
 
 1. Match `param.kind` against `hir::GenericParamKind::Const`;
-   reject every other kind (this rule does *not* fire on
-   `Type` or `Lifetime` — those are covered by
-   `single_letter_generic` and out-of-scope respectively).
+   reject every other kind.
 2. Skip synthetic parameters.
 3. Skip parameters inside external macros
    (`hir_in_external_macro`).
@@ -90,8 +88,7 @@ No autofix. Renaming a const generic parameter rewrites every
 reference in the parameter's type, where clause, body, and every
 generic argument supplied at every call site — the edit is
 project-wide and not safely `MachineApplicable` from a single
-declaration. Diagnostic-only matches
-`single_letter_generic`'s behaviour for the same reason.
+declaration.
 
 ## Implementation notes
 
@@ -114,16 +111,7 @@ Active by default. Empty `allowed_idents`.
   counterpart. Disjoint trigger (`GenericParamKind::Type` vs.
   `::Const`). A single declaration with both type and const
   parameters can produce one diagnostic per offending parameter,
-  one from each rule — that is the intended behaviour, not an
-  interaction bug.
+  one from each rule — intended behaviour, not an interaction bug.
 - [`single-letter-const-item`](./single-letter-const-item.md) —
   the const-item counterpart. Disjoint trigger
-  (`ItemKind::Const` vs. `GenericParamKind::Const`); the two
-  rules can fire on adjacent lines of source but never on the
-  same node.
-- `perfectionist::single_letter_let_binding`
-  (`src/rules/single_letter_let_binding.rs`) — cited for context.
-  This rule's `allowed_idents` is the simplified single-field
-  version of let_binding's `extra_allowed_idents` /
-  `ignore_allowed_idents` pair; no built-in defaults here means
-  no need for the subtract-from-defaults knob.
+  (`ItemKind::Const` vs. `GenericParamKind::Const`).

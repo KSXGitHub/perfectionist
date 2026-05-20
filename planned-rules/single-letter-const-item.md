@@ -34,10 +34,9 @@ its use sites.
 This is a stylistic preference, not a correctness issue. A
 single-letter `const` item is opaque at every use site, and the
 item's scope (module-wide or crate-wide for `pub const`) makes
-that opacity propagate further than a `let` binding's would. A
-descriptive identifier carries its own documentation. The
-`allowed_idents` knob exists for project-specific conventional
-names; the default is empty.
+that opacity propagate. A descriptive identifier carries its own
+documentation. The `allowed_idents` knob exists for
+project-specific conventional names; the default is empty.
 
 ## What it covers
 
@@ -58,8 +57,7 @@ names; the default is empty.
   rule.
 - **Const generic parameters** (`<const N: usize>`). Covered by
   the sibling [`single-letter-const-generic`](./single-letter-const-generic.md)
-  rule. The trigger lives on `GenericParamKind::Const`, not on
-  `ItemKind::Const`.
+  rule.
 
 ## Configuration
 
