@@ -63,6 +63,22 @@ pattern that several rules call out by reference — live in
   via `use` and called by the simple identifier. AI tends to produce
   the former; parallel-disk-usage prefers the latter. Configurable
   per project.
+- [`single-letter-const-item.md`](./single-letter-const-item.md) — flag
+  `const N: usize = 2;`-style `const` items (free, associated, and
+  block-level) whose name is one ASCII letter. Sibling of the four
+  existing `single_letter_*` rules. Single `allowed_idents` knob,
+  empty default.
+- [`single-letter-static-item.md`](./single-letter-static-item.md) — flag
+  `static N: AtomicUsize = ...;`-style `static` items (free and
+  block-level) whose name is one ASCII letter. Sibling of
+  `single-letter-const-item`. Single `allowed_idents` knob, empty
+  default.
+- [`single-letter-const-generic.md`](./single-letter-const-generic.md) —
+  flag const generic parameter declarations
+  (`<const N: usize>`) whose name is one ASCII letter. Mirrors
+  `perfectionist::single_letter_generic` (`src/rules/single_letter_generic.rs`)
+  for the const-parameter side. Single `allowed_idents` knob,
+  empty default.
 
 ### Trait bounds and signatures
 - [`where-clause-bounds.md`](./where-clause-bounds.md) — prefer `where` clauses
