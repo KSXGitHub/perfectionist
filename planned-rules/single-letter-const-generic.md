@@ -44,10 +44,8 @@ filter by enclosing item kind.
 - **Type generic parameters** (`<T>`, `<K, V>`). Covered by the
   existing `perfectionist::single_letter_generic` lint at
   `src/rules/single_letter_generic.rs`. Disjoint trigger.
-- **Lifetime parameters** (`<'a>`, `<'de>`). Single-letter
-  lifetime names are the universal Rust idiom; a lint that
-  flagged them would fire on essentially every lifetime in the
-  ecosystem. Out of scope here and not planned.
+- **Lifetime parameters** (`<'a>`, `<'de>`). Not
+  `GenericParamKind::Const`.
 - **`const NAME: T = ...;` items.** Covered by
   [`single-letter-const-item`](./single-letter-const-item.md).
 
@@ -97,10 +95,7 @@ declaration. Diagnostic-only matches
 
 ## Implementation notes
 
-- Use `LateLintPass` for consistency with `single_letter_generic`
-  and the rest of the `single_letter_*` family. The rule doesn't
-  need `TyCtxt` or resolver queries, so `EarlyLintPass` would
-  also work. Use the `check_generic_param` hook.
+- Use `LateLintPass` with the `check_generic_param` hook.
 - `allowed_idents` parses straight into a `BTreeSet<Symbol>`.
 
 ### Difficulty

@@ -110,13 +110,8 @@ despite locals being easier to rename than items).
 
 ## Implementation notes
 
-- Use `LateLintPass` for consistency with the rest of the
-  `single_letter_*` family. The rule itself doesn't need
-  `TyCtxt` (no `is_in_test`, no resolver queries), so
-  `EarlyLintPass` would also work; consistency is the only reason
-  to pick late.
-- Hook up the three `check_*` callbacks listed in
-  [What it covers](#what-it-covers).
+- Use `LateLintPass` with the three `check_*` callbacks listed
+  in [What it covers](#what-it-covers).
 - `allowed_idents` parses straight into a `BTreeSet<Symbol>`. No
   reuse of `resolve_symbol_set` (the helper
   `single_letter_let_binding` uses for its `extra_*` /
