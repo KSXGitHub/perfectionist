@@ -9,7 +9,7 @@
 
 ## What it does
 Flags `let x = ...;` bindings whose identifier is one ASCII
-letter, outside `#[cfg(test)]` code.
+letter.
 
 ## Why restrict this?
 This is a stylistic preference, not a correctness issue.
@@ -17,10 +17,7 @@ A descriptive `let` binding documents what the right-hand
 side computed; a single-letter name does not. The rule
 allows `let n = ...` and other names in a configurable
 set of exempt identifiers for the well-worn cases
-(unsigned counts), and switches off entirely under
-`#[cfg(test)]` where fixtures such as `let a = ...;
-let b = ...;` for interchangeable specimens are a
-recognised idiom.
+(unsigned counts).
 
 ## Example
 ```rust,ignore
@@ -37,11 +34,11 @@ Configure via `dylint.toml` under `["perfectionist::single_letter_let_binding"]`
 
 ### `extra_allowed_idents`: `[string]` (optional)
 
-Additional identifiers to allow as `let` binding names,
-even outside `#[cfg(test)]` code. Merged with the built-in
-defaults (`["n"]`); empty by default. Use this to
-whitelist project-specific conventional names without
-having to re-state the standard ones.
+Additional identifiers to allow as `let` binding names.
+Merged with the built-in defaults (`["n"]`); empty by
+default. Use this to whitelist project-specific
+conventional names without having to re-state the
+standard ones.
 
 ### `ignore_allowed_idents`: `[string]` (optional)
 
