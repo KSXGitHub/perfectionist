@@ -95,7 +95,7 @@ after the merge with the built-ins, so this knob always
 wins. Useful for opting back into linting on a default
 entry the project does not consider trivial.
 
-### `extra_allowed_idents`: `[single-letter string]` (optional)
+### `extra_allowed_idents`: `[single-character string]` (optional)
 
 Additional identifiers to allow as closure parameter names.
 Merged with the built-in defaults
@@ -103,7 +103,7 @@ Merged with the built-in defaults
 to whitelist project-specific conventional names without
 having to re-state the standard ones.
 
-### `ignore_allowed_idents`: `[single-letter string]` (optional)
+### `ignore_allowed_idents`: `[single-character string]` (optional)
 
 Identifiers to drop from the exempt set, even if they
 appear in the built-in defaults or in

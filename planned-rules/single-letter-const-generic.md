@@ -55,7 +55,7 @@ filter by enclosing item kind.
 allowed_idents = []   # default empty
 ```
 
-### `allowed_idents`: `[single-letter string]` (optional)
+### `allowed_idents`: `[single-character string]` (optional)
 
 Identifiers the rule will not flag. Each entry is a single ASCII
 letter (deserialised as `char`, rejected with a config-parse

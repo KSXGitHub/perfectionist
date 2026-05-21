@@ -209,15 +209,11 @@ pub(crate) fn find_type_doc(file: &syn::File, ident: &str) -> Option<TypeDoc> {
 /// - `NonZeroU*` / `NonZeroUsize` → `non-zero unsigned integer`
 /// - `NonZeroI*` / `NonZeroIsize` → `non-zero integer`
 /// - `f32` / `f64` → `float`
-/// - `char` → `single-letter string` (strictly a lie: `char` is a
-///   Unicode scalar value, so the honest label is
-///   `single-codepoint string`. We get away with the narrower
-///   "letter" wording because every `Vec<char>` field in this
-///   catalogue today happens to be a letter-shaped allow-list
-///   (`single_letter_*::*_allowed_idents`) or a near-letter
-///   ellipsis-relative (`unicode_ellipsis_*::also_flag`). Tracked
-///   for replacement by an `AsciiLetter(char)` newtype at
-///   <https://github.com/KSXGitHub/perfectionist/issues/120>.)
+/// - `char` → `single-character string` (a TOML string of length
+///   one, which is what `serde-toml` accepts for `char`). A
+///   tighter `single-letter string` label is reserved for an
+///   eventual `AsciiLetter(char)` newtype — see
+///   <https://github.com/KSXGitHub/perfectionist/issues/120>.
 /// - `String` / `&str` / `OsString` / `PathBuf` / `Cow<…>` → `string`
 /// - `Vec<T>` / `HashSet<T>` / `BTreeSet<T>` / `VecDeque<T>` /
 ///   `LinkedList<T>` → `[label-of-T]`
@@ -254,9 +250,10 @@ pub(crate) fn toml_type_label(ty: &Type) -> String {
             };
             match ident.as_str() {
                 "bool" => "boolean".to_owned(),
-                // The "letter" framing is narrower than `char` itself; see the
-                // rustdoc above and <https://github.com/KSXGitHub/perfectionist/issues/120>.
-                "char" => "single-letter string".to_owned(),
+                // A tighter `single-letter string` label is reserved for an
+                // eventual `AsciiLetter(char)` newtype; see the rustdoc above
+                // and <https://github.com/KSXGitHub/perfectionist/issues/120>.
+                "char" => "single-character string".to_owned(),
                 "String" | "str" | "OsString" | "OsStr" | "Path" | "PathBuf" | "Cow" => {
                     "string".to_owned()
                 }
@@ -327,14 +324,17 @@ mod tests {
         );
         assert_eq!(toml_type_label(&parse_type("f64")), "float");
         assert_eq!(toml_type_label(&parse_type("String")), "string");
-        assert_eq!(toml_type_label(&parse_type("char")), "single-letter string");
+        assert_eq!(
+            toml_type_label(&parse_type("char")),
+            "single-character string"
+        );
     }
 
     #[test]
     fn toml_type_label_arrays_and_maps() {
         assert_eq!(
             toml_type_label(&parse_type("Vec<char>")),
-            "[single-letter string]"
+            "[single-character string]"
         );
         assert_eq!(
             toml_type_label(&parse_type("Vec<Vec<u8>>")),
