@@ -49,8 +49,8 @@ don't apply there — plain comments aren't markdown — but the
 left-context guard (no word character, no `[` before the `#`)
 and the URL-fragment skip still do.
 
-The match is case-insensitive when alternative tokens like `GH-`,
-`gh-`, or `pr#` are configured.
+In both targets, the match is case-insensitive when alternative
+tokens like `GH-`, `gh-`, or `pr#` are configured.
 
 ## Examples
 
@@ -124,8 +124,13 @@ form = "inline"
 # comments aren't markdown-rendered), so the substitution uses
 # the URL form selected by `plain_comment_form` instead. `form`
 # only governs doc-comment fixes and is ignored for plain
-# comments. Plain *block* comments (`/* ... */`) are out of
-# scope for this lint regardless of this setting.
+# comments. Under `suggestion_mode = "help_only"` (or whenever
+# `repo_base_url` is unset), plain-comment diagnostics are still
+# emitted informationally; no URL substitution is attempted.
+# Plain *block* comments (`/* ... */`) are out of scope for this
+# lint regardless of this setting — issue references appear in
+# line and doc comments in practice, and excluding block comments
+# keeps the comment scanner free of `/* ... */` boundary handling.
 include_plain_comments = false
 
 # Replacement form used inside plain `//` comments when
@@ -156,9 +161,15 @@ plain_comment_form = "bare"
   `//` comments via an `EarlyLintPass` over the source map (or a
   pre-expansion source-text walk over each file's comment tokens).
   The markdown scanner is not invoked here; instead reuse the
-  same `take_*` token scanner over the raw comment text. The
-  URL-fragment skip (described in "What to lint" above) applies
-  to both targets.
+  same `take_*` token scanner over the raw comment text.
+- **URL-fragment detection.** For each candidate match in either
+  target, run a small URL-recognition pass (recognise
+  `http://` / `https://` followed by a non-whitespace run) and
+  skip the match when it lies inside that run. The combinators
+  for URL discovery (`take_scheme`, `take_authority`, `take_path`)
+  are the same ones [`perfectionist::bare_url`](./bare-url.md)
+  uses; factor them into a crate-internal helper shared by the
+  two rules rather than duplicating the scanner.
 - The autofix substitutes the bare span with the rendered link.
   Suggestion applicability:
   - `suggestion_mode = "issue_url"` → `MachineApplicable`. The
@@ -194,12 +205,19 @@ plain_comment_form = "bare"
 When `include_plain_comments = true` and `plain_comment_form = "bare"`,
 the autofix produces a bare URL inside a plain comment — exactly
 what [`perfectionist::bare_url`](./bare-url.md) is designed to
-flag. With both rules enabled and `bare_url`'s `targets` including
-`"comment"`, the rewrite chain is `#123 → https://... → <https://...>`
-across two passes. To avoid the second pass, set
-`plain_comment_form = "bracketed"`, which produces the
-`<https://...>` form directly.
+flag. Since `bare_url`'s default `targets = ["doc", "comment"]`
+includes the `"comment"` target, the rewrite chain
+`#123 → https://... → <https://...>` materialises iteratively
+across `cargo dylint --fix` invocations (the second hop only
+fires on a re-run, after the first autofix lands). Either set
+`plain_comment_form = "bracketed"` so the first fix already
+produces `<https://...>`, or drop `"comment"` from `bare_url`'s
+`targets` if bare URLs in comments are acceptable in the
+project.
 
 ## Default state
 
-Active by default.
+Active by default. With `repo_base_url` unset and
+`suggestion_mode = "help_only"`, the lint runs informationally
+(diagnostic-only, no autofix) and can be adopted without further
+configuration.
