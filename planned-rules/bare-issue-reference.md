@@ -91,7 +91,7 @@ With `include_plain_comments = true`:
 [bare_issue_reference]
 # Base URL used to construct the suggested target. Required for
 # `MachineApplicable` autofix. When unset, every `suggestion_mode`
-# degrades to help-text-only output (no URL can be constructed),
+# degrades to help-only output (no URL can be constructed),
 # so the lint stays usable with zero configuration — it just
 # flags bare references for manual triage.
 repo_base_url = "https://github.com/owner/repo"
@@ -112,11 +112,10 @@ suggestion_mode = "issue_url"
 # "help_only"  — emit no Suggestion, only help text. Use when
 #                `repo_base_url` cannot be configured statically
 #                (e.g., a workspace with multiple repositories).
-#                Selecting this mode explicitly is independent of
-#                the unset-`repo_base_url` degradation described
-#                above — the explicit form is portable across
-#                configurations where `repo_base_url` happens to
-#                be set.
+#                Distinct from the unset-`repo_base_url`
+#                degradation described above: setting this mode
+#                explicitly keeps the lint help-only even when
+#                `repo_base_url` is configured.
 
 # Additional bare-reference tokens to recognise. Default empty.
 extra_tokens = []                # e.g., ["GH-", "gh-", "pr#"]
@@ -132,12 +131,14 @@ form = "inline"
 # only governs doc-comment fixes and is ignored for plain
 # comments. Under `suggestion_mode = "help_only"` (or whenever
 # `repo_base_url` is unset), plain-comment diagnostics are still
-# emitted help-text-only; no URL substitution is attempted.
+# emitted help-only; no URL substitution is attempted.
 # Plain *block* comments (`/* ... */`) are out of scope for this
-# lint regardless of this setting — issue references appear in
-# `//` and `///` comments in practice, not `/* ... */` ones, and
-# narrowing the scope avoids speculative scope growth without a
-# real adopter need.
+# lint regardless of this setting. The sibling `bare_url` scans
+# block comments by default (via the shared
+# `unicode_ellipsis_in_comments` retokenizer); this rule
+# deliberately doesn't, because the working assumption is that
+# `#NNN` references in Rust code live in `//` and `///` comments.
+# If a real codebase surfaces block-comment references, revisit.
 include_plain_comments = false
 
 # Replacement form used inside plain `//` comments when
@@ -175,13 +176,17 @@ plain_comment_form = "bare"
   target, and at the same step as the markdown scanner's skip
   decisions for the doc-comment target — not after them — so
   bare URLs in doc text are recognised too), walk backward from
-  the `#` looking for `https://` or `http://` with no intervening
-  whitespace. If the candidate sits inside that contiguous run,
-  skip the match. [`perfectionist::bare_url`](./bare-url.md)
-  already needs a forward URL scanner; if either rule grows past
-  the trivial "backward to scheme, no whitespace" check, factor
-  URL discovery into a crate-internal helper shared by the two
-  rules rather than duplicating the scanner.
+  the `#`, within the current comment line's text content, for
+  a `<ASCII letters>://` prefix with no intervening whitespace.
+  If found, skip the match. The check therefore covers `http`,
+  `https`, `ftp`, `git`, `ssh`, and any other URL scheme that
+  happens to land in source comments.
+  [`perfectionist::bare_url`](./bare-url.md) commits forward from
+  the scheme to do its URL discovery; the two scanners walk in
+  opposite directions but agree on what counts as a URL run. If
+  either rule grows past the trivial "scheme + non-whitespace"
+  check, factor URL discovery into a crate-internal helper
+  shared by the two rules rather than duplicating the scanner.
 - The autofix substitutes the bare span with the rendered link.
   Suggestion applicability:
   - `suggestion_mode = "issue_url"` → `MachineApplicable`. The
@@ -226,17 +231,15 @@ re-lints will see a `bare_url` violation on the intermediate
 output and fail.
 
 Set `plain_comment_form = "bracketed"` to make the first fix
-already produce `<https://...>`, which both rules accept. Per-
-project relaxations are available too — narrowing `bare_url`'s
-`targets` or adding the URL to its `skip_hosts` — but those
-disable `bare_url` checking beyond just this rule's autofix
-output and are usually the wrong knob.
-
-The two rules' planning files also disagree on plain `/* ... */`
-block-comment scope: `bare_url` scans block comments by default;
-this rule does not (see the `include_plain_comments` knob for
-the rationale).
+already produce `<https://...>`, which both rules accept. A
+project that has consciously decided bare URLs in comments are
+fine can instead narrow `bare_url`'s `targets` or add the issue
+host to its `skip_hosts` — those choices are valid project
+postures, just broader in effect than the `"bracketed"` swap.
 
 ## Default state
 
-Active by default.
+Active by default. With `repo_base_url` unset, every
+`suggestion_mode` degrades to help-only output, so the lint is
+adoptable with zero configuration (see `repo_base_url` in
+Configuration).
