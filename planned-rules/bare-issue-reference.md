@@ -133,9 +133,10 @@ form = "inline"
 # `repo_base_url` is unset), plain-comment diagnostics are still
 # emitted help-only; no URL substitution is attempted.
 # Plain *block* comments (`/* ... */`) are out of scope for this
-# lint regardless of this setting. The sibling `bare_url` scans
-# block comments by default (via the shared
-# `unicode_ellipsis_in_comments` retokenizer); this rule
+# lint regardless of this setting. The sibling `bare_url`'s plan
+# is to scan block comments by reusing the regular-comment
+# retokenizer of the already-implemented
+# `perfectionist::unicode_ellipsis_in_comments`; this rule
 # deliberately doesn't, because the working assumption is that
 # `#NNN` references in Rust code live in `//` and `///` comments.
 # If a real codebase surfaces block-comment references, revisit.
@@ -172,17 +173,21 @@ plain_comment_form = "bare"
   pre-expansion source-text walk over each file's comment tokens).
   The markdown scanner is not invoked here; instead reuse the
   same `take_*` token scanner over the raw comment text.
-- **URL-fragment detection.** For each `#N` candidate (in either
-  target, and at the same step as the markdown scanner's skip
-  decisions for the doc-comment target — not after them — so
-  bare URLs in doc text are recognised too), walk backward from
-  the `#`, within the current comment line's text content, for
-  a `<ASCII letters>://` prefix with no intervening whitespace.
-  If found, skip the match. The check therefore covers `http`,
-  `https`, `ftp`, `git`, `ssh`, and any other URL scheme that
-  happens to land in source comments.
-  [`perfectionist::bare_url`](./bare-url.md) commits forward from
-  the scheme to do its URL discovery; the two scanners walk in
+- **URL-fragment detection.** Run this check in the same pass as
+  the markdown scanner's structural classification (the bare URL
+  it protects is plain markdown text the structural scanner
+  doesn't classify as a skip region — so a post-filter ordering
+  would miss it). For each `#N` candidate in either target, walk
+  backward from the `#` — bounded to the current comment line's
+  text content — for a `<ASCII letters>://` prefix with no
+  intervening whitespace. If found, skip the match. The check
+  covers `http`, `https`, `ftp`, `git`, `ssh`, and any other
+  scheme that lands in source comments. A `#NNN` on the line
+  after a URL that wrapped across `//` lines is flagged (the
+  rule treats line breaks as URL terminators, deliberately giving
+  up on wrapped-URL fragments).
+  [`perfectionist::bare_url`](./bare-url.md)'s planned scanner
+  commits forward from the scheme; the two scanners walk in
   opposite directions but agree on what counts as a URL run. If
   either rule grows past the trivial "scheme + non-whitespace"
   check, factor URL discovery into a crate-internal helper
@@ -206,10 +211,10 @@ plain_comment_form = "bare"
 - **Parser style.** Decompose the bare-reference scanner into
   parser-combinator-style `take_*` functions per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
-  `take_token_prefix` (`#`, `GH-`, `gh-`, or any user-configured
-  alternative), `take_digits`, and a left-context check that the
-  preceding byte is not a word character or a `[`. Each
-  `extra_tokens` entry becomes one alternative in the
+  `take_token_prefix` (`#`, `GH-`, `gh-`, `pr#`, or any
+  user-configured alternative), `take_digits`, and a left-context
+  check that the preceding byte is not a word character or a `[`.
+  Each `extra_tokens` entry becomes one alternative in the
   `take_token_prefix` step.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
