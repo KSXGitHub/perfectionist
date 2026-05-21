@@ -49,8 +49,9 @@ don't apply there — plain comments aren't markdown — but the
 left-context guard (no word character, no `[` before the `#`)
 and the URL-fragment skip still do.
 
-In both targets, the match is case-insensitive when alternative
-tokens like `GH-`, `gh-`, or `pr#` are configured.
+In both doc and plain comments, the match is case-insensitive
+when alternative tokens like `GH-`, `gh-`, or `pr#` are
+configured.
 
 ## Examples
 
@@ -89,7 +90,10 @@ With `include_plain_comments = true`:
 ```toml
 [bare_issue_reference]
 # Base URL used to construct the suggested target. Required for
-# `MachineApplicable` autofix.
+# `MachineApplicable` autofix. When unset, every `suggestion_mode`
+# degrades to help-text-only output (no URL can be constructed),
+# so the lint stays usable with zero configuration — it just
+# flags bare references for manual triage.
 repo_base_url = "https://github.com/owner/repo"
 
 # Templates for the suggested URL. `{number}` is substituted.
@@ -108,9 +112,11 @@ suggestion_mode = "issue_url"
 # "help_only"  — emit no Suggestion, only help text. Use when
 #                `repo_base_url` cannot be configured statically
 #                (e.g., a workspace with multiple repositories).
-#                With `repo_base_url` unset, this mode runs the
-#                lint informationally to flag bare references for
-#                manual triage with no further configuration.
+#                Selecting this mode explicitly is independent of
+#                the unset-`repo_base_url` degradation described
+#                above — the explicit form is portable across
+#                configurations where `repo_base_url` happens to
+#                be set.
 
 # Additional bare-reference tokens to recognise. Default empty.
 extra_tokens = []                # e.g., ["GH-", "gh-", "pr#"]
@@ -126,15 +132,18 @@ form = "inline"
 # only governs doc-comment fixes and is ignored for plain
 # comments. Under `suggestion_mode = "help_only"` (or whenever
 # `repo_base_url` is unset), plain-comment diagnostics are still
-# emitted informationally; no URL substitution is attempted.
+# emitted help-text-only; no URL substitution is attempted.
 # Plain *block* comments (`/* ... */`) are out of scope for this
 # lint regardless of this setting — issue references appear in
-# line and doc comments in practice, and excluding block comments
-# keeps the comment scanner free of `/* ... */` boundary handling.
+# `//` and `///` comments in practice, not `/* ... */` ones, and
+# narrowing the scope avoids speculative scope growth without a
+# real adopter need.
 include_plain_comments = false
 
 # Replacement form used inside plain `//` comments when
-# `include_plain_comments = true`. Ignored for doc comments.
+# `include_plain_comments = true`. Ignored for doc comments and
+# ignored whenever no URL can be substituted (see the unset-
+# `repo_base_url` / `help_only` notes above).
 plain_comment_form = "bare"
 # "bare"      — substitute the bare URL (https://...). Many editors
 #               and code-view UIs auto-detect bare URLs as
@@ -162,14 +171,17 @@ plain_comment_form = "bare"
   pre-expansion source-text walk over each file's comment tokens).
   The markdown scanner is not invoked here; instead reuse the
   same `take_*` token scanner over the raw comment text.
-- **URL-fragment detection.** For each candidate match in either
-  target, run a small URL-recognition pass (recognise
-  `http://` / `https://` followed by a non-whitespace run) and
-  skip the match when it lies inside that run. The combinators
-  for URL discovery (`take_scheme`, `take_authority`, `take_path`)
-  are the same ones [`perfectionist::bare_url`](./bare-url.md)
-  uses; factor them into a crate-internal helper shared by the
-  two rules rather than duplicating the scanner.
+- **URL-fragment detection.** For each `#N` candidate (in either
+  target, and at the same step as the markdown scanner's skip
+  decisions for the doc-comment target — not after them — so
+  bare URLs in doc text are recognised too), walk backward from
+  the `#` looking for `https://` or `http://` with no intervening
+  whitespace. If the candidate sits inside that contiguous run,
+  skip the match. [`perfectionist::bare_url`](./bare-url.md)
+  already needs a forward URL scanner; if either rule grows past
+  the trivial "backward to scheme, no whitespace" check, factor
+  URL discovery into a crate-internal helper shared by the two
+  rules rather than duplicating the scanner.
 - The autofix substitutes the bare span with the rendered link.
   Suggestion applicability:
   - `suggestion_mode = "issue_url"` → `MachineApplicable`. The
@@ -209,15 +221,22 @@ flag. Since `bare_url`'s default `targets = ["doc", "comment"]`
 includes the `"comment"` target, the rewrite chain
 `#123 → https://... → <https://...>` materialises iteratively
 across `cargo dylint --fix` invocations (the second hop only
-fires on a re-run, after the first autofix lands). Either set
-`plain_comment_form = "bracketed"` so the first fix already
-produces `<https://...>`, or drop `"comment"` from `bare_url`'s
-`targets` if bare URLs in comments are acceptable in the
-project.
+fires on a re-run). A CI that runs `--fix` once and immediately
+re-lints will see a `bare_url` violation on the intermediate
+output and fail.
+
+Set `plain_comment_form = "bracketed"` to make the first fix
+already produce `<https://...>`, which both rules accept. Per-
+project relaxations are available too — narrowing `bare_url`'s
+`targets` or adding the URL to its `skip_hosts` — but those
+disable `bare_url` checking beyond just this rule's autofix
+output and are usually the wrong knob.
+
+The two rules' planning files also disagree on plain `/* ... */`
+block-comment scope: `bare_url` scans block comments by default;
+this rule does not (see the `include_plain_comments` knob for
+the rationale).
 
 ## Default state
 
-Active by default. With `repo_base_url` unset and
-`suggestion_mode = "help_only"`, the lint runs informationally
-(diagnostic-only, no autofix) and can be adopted without further
-configuration.
+Active by default.
