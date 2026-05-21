@@ -11,8 +11,14 @@ written as the bare token `#<digits>` (or a configured equivalent like
 - Inline: `[#123](https://github.com/owner/repo/issues/123)`.
 - Reference: `[#123]` paired with `[#123]: https://github.com/owner/repo/issues/123`.
 
-The rule applies only to *doc comments*. Plain `//` comments are
-out of scope (they don't render anywhere) and are not linked anyway.
+By default the rule applies only to *doc comments*. Plain `//`
+comments are not processed as markdown, so the standard
+`[#N](url)` suggestion would appear there as literal syntax
+rather than a link — there is no useful fix to offer in
+labelled-link form. Opt in via `include_plain_comments` to lint
+plain comments too; the autofix in that mode substitutes an
+autolink (bare URL, or angle-bracketed URL) instead of a
+labelled markdown link. See `plain_comment_form` below.
 
 ## What to lint
 
@@ -29,6 +35,15 @@ Skip:
   (`[#123]`, `[#123](...)`, `[label](#123)`).
 - Inside a markdown reference-link definition trailing target
   (`[#123]: https://...`).
+
+When `include_plain_comments = true`, the same token-shape match
+runs over `//` comment text as well. Markdown-specific skips
+(code spans, existing markdown links, reference-link definitions)
+don't apply there — plain comments aren't markdown — but the
+scanner still skips a `#NNN` that appears inside an existing URL
+(i.e., the bare span sits within a contiguous URL-shaped run such
+as `https://github.com/owner/repo/issues/123`), so a URL the
+author already wrote isn't reported as a bare reference.
 
 The match is case-insensitive when alternative tokens like `GH-`,
 `gh-`, or `pr#` are configured.
@@ -48,6 +63,21 @@ The match is case-insensitive when alternative tokens like `GH-`,
 ///
 /// [#123]: https://github.com/owner/repo/issues/123
 /// [#124]: https://github.com/owner/repo/issues/124
+```
+
+With `include_plain_comments = true`:
+
+```rust
+// Bad
+// Workaround for #123; revisit once upstream lands #124.
+
+// Good (plain_comment_form = "bare")
+// Workaround for https://github.com/owner/repo/issues/123; revisit
+// once upstream lands https://github.com/owner/repo/issues/124.
+
+// Good (plain_comment_form = "bracketed")
+// Workaround for <https://github.com/owner/repo/issues/123>; revisit
+// once upstream lands <https://github.com/owner/repo/issues/124>.
 ```
 
 ## Configuration
@@ -81,6 +111,24 @@ extra_tokens = []                # e.g., ["GH-", "gh-", "pr#"]
 # Defaults to "inline". When set to "reference", the lint emits the
 # `[#N] / [#N]: <url>` two-piece form instead of `[#N](<url>)`.
 form = "inline"
+
+# When true, also lint plain `//` comments. The autofix in plain
+# comments cannot use markdown `[#N](url)` syntax (plain comments
+# aren't markdown-rendered), so the substitution uses the URL form
+# selected by `plain_comment_form` instead. `form` only governs
+# doc-comment fixes and is ignored for plain comments.
+include_plain_comments = false
+
+# Replacement form used inside plain `//` comments when
+# `include_plain_comments = true`. Ignored for doc comments.
+plain_comment_form = "bare"
+# "bare"      — substitute the bare URL (https://...). Many editors
+#               and code-view UIs auto-detect bare URLs as
+#               clickable.
+# "bracketed" — substitute <https://...>. A pre-markdown convention
+#               for delimiting a URL inside prose; the angle
+#               brackets give the URL a clear boundary when it
+#               abuts surrounding punctuation.
 ```
 
 ## Implementation notes
@@ -92,6 +140,14 @@ form = "inline"
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md#markdown-parsing)
   to skip code regions, existing links, and reference-link
   definitions.
+- When `include_plain_comments = true`, additionally walk plain
+  `//` comments via an `EarlyLintPass` over the source map (or a
+  pre-expansion source-text walk over each file's comment tokens).
+  The markdown scanner is not invoked here; instead reuse the same
+  `take_*` token scanner over the raw comment text, plus a small
+  "is the match inside a contiguous URL run?" check to avoid
+  re-reporting `#123` that already lives inside a written-out
+  URL.
 - The autofix substitutes the bare span with the rendered link.
   Suggestion applicability:
   - `suggestion_mode = "issue_url"` → `MachineApplicable`. The
