@@ -118,13 +118,20 @@ skip_domains = ["example.com", "example.org"]
 - **Parser style.** Implement the address scanner as
   parser-combinator-style `take_*` functions per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
-  The grammar splits cleanly into `take_local_part` (consumes a run
-  of `[A-Za-z0-9._%+-]`), `take_at` (a single `@` byte), and
-  `take_domain` (one or more `[A-Za-z0-9-]+` labels separated by
-  `.`, with a final TLD of two or more letters). Composing these
-  three keeps the email match readable and the failure points
-  visible, and avoids dragging a regex engine through the lint
-  pass.
+  The grammar splits cleanly into three combinators that match the
+  "What to lint" description above: `take_local_part` consumes a
+  run of ASCII letters, ASCII digits, or any of `.`, `_`, `%`,
+  `+`, `-`; `take_at` consumes a single `@` byte; `take_domain`
+  consumes one or more labels of ASCII letters, ASCII digits, and
+  `-` separated by `.`, ending in a TLD of two or more ASCII
+  letters. Composing these three keeps the email match readable
+  and the failure points visible, and — per
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)'s
+  "What to avoid" — keeps a regex engine out of the lint pass.
+  Describe each combinator's accepted characters in prose; do not
+  use regex character-class notation (`[A-Za-z0-9...]`) in the
+  source, as that is the notation the convention exists to
+  replace.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
