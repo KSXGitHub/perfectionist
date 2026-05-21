@@ -25,9 +25,10 @@ rendering. See `plain_comment_form` below.
 
 Scan every `///` and `//!` comment for a `#` followed by one or
 more ASCII digits, ending at a word boundary, and not already
-preceded by a word character or an opening bracket. For each match
-outside a code span / code block, emit a diagnostic at the
-bare-reference span.
+preceded by a word character or by the `[` character (the
+opening of an existing markdown link). For each match outside a
+code span / code block, emit a diagnostic at the bare-reference
+span.
 
 Skip:
 
@@ -36,15 +37,17 @@ Skip:
   (`[#123]`, `[#123](...)`, `[label](#123)`).
 - Inside a markdown reference-link definition trailing target
   (`[#123]: https://...`).
+- When the match is the fragment of a written-out URL (e.g., the
+  `#123` in `https://example.com/article#123`) — applies whether
+  the URL appears as a bare URL in doc text or wrapped as a
+  markdown link.
 
 When `include_plain_comments = true`, the same token-shape match
 runs over `//` comment text as well. Markdown-specific skips
 (code spans, existing markdown links, reference-link definitions)
 don't apply there — plain comments aren't markdown — but the
-scanner still skips a `#NNN` span that occurs as the fragment of
-an existing URL (e.g., the `#123` in
-`https://example.com/article#123`), so a URL fragment the author
-already wrote isn't mistaken for a bare reference.
+left-context guard (no word character, no `[` before the `#`)
+and the URL-fragment skip still do.
 
 The match is case-insensitive when alternative tokens like `GH-`,
 `gh-`, or `pr#` are configured.
@@ -105,6 +108,9 @@ suggestion_mode = "issue_url"
 # "help_only"  — emit no Suggestion, only help text. Use when
 #                `repo_base_url` cannot be configured statically
 #                (e.g., a workspace with multiple repositories).
+#                With `repo_base_url` unset, this mode runs the
+#                lint informationally to flag bare references for
+#                manual triage with no further configuration.
 
 # Additional bare-reference tokens to recognise. Default empty.
 extra_tokens = []                # e.g., ["GH-", "gh-", "pr#"]
@@ -127,7 +133,10 @@ include_plain_comments = false
 plain_comment_form = "bare"
 # "bare"      — substitute the bare URL (https://...). Many editors
 #               and code-view UIs auto-detect bare URLs as
-#               clickable.
+#               clickable, but they disagree on whether trailing
+#               punctuation (`;`, `,`, `.`) belongs to the URL;
+#               pick "bracketed" if the surrounding prose tends to
+#               put punctuation immediately after the reference.
 # "bracketed" — substitute <https://...>. A pre-markdown convention
 #               for delimiting a URL inside prose; the angle
 #               brackets give the URL a clear boundary when it
@@ -146,11 +155,10 @@ plain_comment_form = "bare"
 - When `include_plain_comments = true`, additionally walk plain
   `//` comments via an `EarlyLintPass` over the source map (or a
   pre-expansion source-text walk over each file's comment tokens).
-  The markdown scanner is not invoked here; instead reuse the same
-  `take_*` token scanner over the raw comment text, plus a small
-  "is the match a URL fragment?" check to avoid re-reporting an
-  `#N` that already lives inside a written-out URL (e.g., the
-  `#123` in `https://example.com/article#123`).
+  The markdown scanner is not invoked here; instead reuse the
+  same `take_*` token scanner over the raw comment text. The
+  URL-fragment skip (described in "What to lint" above) applies
+  to both targets.
 - The autofix substitutes the bare span with the rendered link.
   Suggestion applicability:
   - `suggestion_mode = "issue_url"` → `MachineApplicable`. The
@@ -172,8 +180,8 @@ plain_comment_form = "bare"
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
   `take_token_prefix` (`#`, `GH-`, `gh-`, or any user-configured
   alternative), `take_digits`, and a left-context check that the
-  preceding byte is not a word character or an opening bracket.
-  Each `extra_tokens` entry becomes one alternative in the
+  preceding byte is not a word character or a `[`. Each
+  `extra_tokens` entry becomes one alternative in the
   `take_token_prefix` step.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
@@ -181,9 +189,17 @@ plain_comment_form = "bare"
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
+## Interaction with sibling rules
+
+When `include_plain_comments = true` and `plain_comment_form = "bare"`,
+the autofix produces a bare URL inside a plain comment — exactly
+what [`perfectionist::bare_url`](./bare-url.md) is designed to
+flag. With both rules enabled and `bare_url`'s `targets` including
+`"comment"`, the rewrite chain is `#123 → https://... → <https://...>`
+across two passes. To avoid the second pass, set
+`plain_comment_form = "bracketed"`, which produces the
+`<https://...>` form directly.
+
 ## Default state
 
-Active by default. With `repo_base_url` unset and
-`suggestion_mode = "help_only"`, the lint becomes informational
-and a project can run it without further configuration to flag
-the bare references for manual triage.
+Active by default.
