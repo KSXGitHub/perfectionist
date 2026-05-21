@@ -209,10 +209,15 @@ pub(crate) fn find_type_doc(file: &syn::File, ident: &str) -> Option<TypeDoc> {
 /// - `NonZeroU*` / `NonZeroUsize` → `non-zero unsigned integer`
 /// - `NonZeroI*` / `NonZeroIsize` → `non-zero integer`
 /// - `f32` / `f64` → `float`
-/// - `char` → `single-letter string` (TOML's one-byte-string idiom
-///   for a Rust `char`; rendered distinctly from the multi-character
-///   string family because the `single_letter_*` rules' allow-lists
-///   reject any entry that isn't a single ASCII letter)
+/// - `char` → `single-letter string` (strictly a lie: `char` is a
+///   Unicode scalar value, so the honest label is
+///   `single-codepoint string`. We get away with the narrower
+///   "letter" wording because every `Vec<char>` field in this
+///   catalogue today happens to be a letter-shaped allow-list
+///   (`single_letter_*::*_allowed_idents`) or a near-letter
+///   ellipsis-relative (`unicode_ellipsis_*::also_flag`). Tracked
+///   for replacement by an `AsciiLetter(char)` newtype at
+///   <https://github.com/KSXGitHub/perfectionist/issues/120>.)
 /// - `String` / `&str` / `OsString` / `PathBuf` / `Cow<…>` → `string`
 /// - `Vec<T>` / `HashSet<T>` / `BTreeSet<T>` / `VecDeque<T>` /
 ///   `LinkedList<T>` → `[label-of-T]`
@@ -249,6 +254,8 @@ pub(crate) fn toml_type_label(ty: &Type) -> String {
             };
             match ident.as_str() {
                 "bool" => "boolean".to_owned(),
+                // The "letter" framing is narrower than `char` itself; see the
+                // rustdoc above and <https://github.com/KSXGitHub/perfectionist/issues/120>.
                 "char" => "single-letter string".to_owned(),
                 "String" | "str" | "OsString" | "OsStr" | "Path" | "PathBuf" | "Cow" => {
                     "string".to_owned()
