@@ -41,10 +41,10 @@ When `include_plain_comments = true`, the same token-shape match
 runs over `//` comment text as well. Markdown-specific skips
 (code spans, existing markdown links, reference-link definitions)
 don't apply there — plain comments aren't markdown — but the
-scanner still skips a `#NNN` that appears inside an existing URL
-(i.e., the bare span sits within a contiguous URL-shaped run such
-as `https://github.com/owner/repo/issues/123`), so a URL the
-author already wrote isn't reported as a bare reference.
+scanner still skips a `#NNN` span that occurs as the fragment of
+an existing URL (e.g., the `#123` in
+`https://example.com/article#123`), so a URL fragment the author
+already wrote isn't mistaken for a bare reference.
 
 The match is case-insensitive when alternative tokens like `GH-`,
 `gh-`, or `pr#` are configured.
@@ -148,9 +148,9 @@ plain_comment_form = "bare"
   pre-expansion source-text walk over each file's comment tokens).
   The markdown scanner is not invoked here; instead reuse the same
   `take_*` token scanner over the raw comment text, plus a small
-  "is the match inside a contiguous URL run?" check to avoid
-  re-reporting an `#N` token that already lives inside a
-  written-out URL.
+  "is the match a URL fragment?" check to avoid re-reporting an
+  `#N` that already lives inside a written-out URL (e.g., the
+  `#123` in `https://example.com/article#123`).
 - The autofix substitutes the bare span with the rendered link.
   Suggestion applicability:
   - `suggestion_mode = "issue_url"` → `MachineApplicable`. The
