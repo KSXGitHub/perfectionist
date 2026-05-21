@@ -16,11 +16,11 @@ out of scope (they don't render anywhere) and are not linked anyway.
 
 ## What to lint
 
-Scan every `///` and `//!` comment for the regex equivalent of
-`(?<![\w\[])#\d+\b` (a `#` followed by digits, not already preceded
-by a word character or an opening bracket). For each match outside
-a code span / code block, emit a diagnostic at the bare-reference
-span.
+Scan every `///` and `//!` comment for a `#` followed by one or
+more ASCII digits, ending at a word boundary, and not already
+preceded by a word character or an opening bracket. For each match
+outside a code span / code block, emit a diagnostic at the
+bare-reference span.
 
 Skip:
 

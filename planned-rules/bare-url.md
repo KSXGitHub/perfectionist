@@ -18,9 +18,10 @@ portable form and signals the author's intent explicitly.
 
 ## What to lint
 
-Scan every doc comment and regular comment for the regex equivalent of
-`(?<![<\[(])\bhttps?://\S+` (an `http://` or `https://` followed by
-non-whitespace, not already preceded by `<`, `[`, or `(`).
+Scan every doc comment and regular comment for an `http://` or
+`https://` (starting at a word boundary) followed by one or more
+non-whitespace characters, not already preceded by `<`, `[`, or
+`(`.
 
 For each match outside a code span / code block, emit a diagnostic at
 the URL span.

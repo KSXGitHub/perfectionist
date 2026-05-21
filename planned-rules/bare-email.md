@@ -20,10 +20,12 @@ are:
 
 ## What to lint
 
-Scan every doc comment and regular comment for the regex equivalent of
-`(?<![<:\w])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b` (a
-local-part / `@` / domain pattern not already preceded by `<`, `:`,
-or a word character).
+Scan every doc comment and regular comment for a local-part / `@` /
+domain pattern not already preceded by `<`, `:`, or a word
+character. The local-part is one or more characters from
+`A-Za-z0-9._%+-`. The domain is one or more characters from
+`A-Za-z0-9.-`, followed by a `.` and at least two ASCII letters,
+ending at a word boundary.
 
 For each match outside a code span / code block, emit a diagnostic
 at the email span.
