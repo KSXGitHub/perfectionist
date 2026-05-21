@@ -51,13 +51,17 @@ struct Config {
     /// Merged with the built-in defaults (`["n"]`); empty by
     /// default. Use this to whitelist project-specific
     /// conventional names without having to re-state the
-    /// standard ones.
+    /// standard ones. Each entry is a single ASCII letter
+    /// (`a`-`z`, `A`-`Z`); any other character is rejected at
+    /// config-parse time.
     #[serde(deserialize_with = "deserialize_ascii_letters")]
     extra_allowed_idents: Vec<char>,
     /// Identifiers to drop from the exempt set, even if they
     /// appear in the built-in defaults or in
     /// `extra_allowed_idents`. Empty by default; checked after
     /// the merge with the built-ins, so this knob always wins.
+    /// Each entry is a single ASCII letter (`a`-`z`, `A`-`Z`);
+    /// any other character is rejected at config-parse time.
     #[serde(deserialize_with = "deserialize_ascii_letters")]
     ignore_allowed_idents: Vec<char>,
 }

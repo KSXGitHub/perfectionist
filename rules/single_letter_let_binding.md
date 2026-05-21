@@ -38,7 +38,9 @@ Additional identifiers to allow as `let` binding names.
 Merged with the built-in defaults (`["n"]`); empty by
 default. Use this to whitelist project-specific
 conventional names without having to re-state the
-standard ones.
+standard ones. Each entry is a single ASCII letter
+(`a`-`z`, `A`-`Z`); any other character is rejected at
+config-parse time.
 
 ### `ignore_allowed_idents`: `[single-character string]` (optional)
 
@@ -46,3 +48,5 @@ Identifiers to drop from the exempt set, even if they
 appear in the built-in defaults or in
 `extra_allowed_idents`. Empty by default; checked after
 the merge with the built-ins, so this knob always wins.
+Each entry is a single ASCII letter (`a`-`z`, `A`-`Z`);
+any other character is rejected at config-parse time.
