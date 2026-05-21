@@ -66,9 +66,12 @@ project-specific conventional names; the default is empty.
 allowed_idents = []   # default empty
 ```
 
-### `allowed_idents`: `[string]` (optional)
+### `allowed_idents`: `[single-character string]` (optional)
 
-Identifiers the rule will not flag. Empty by default. Example:
+Identifiers the rule will not flag. Each entry is a single ASCII
+letter (deserialised as `char`, rejected with a config-parse
+error otherwise — a typo like `["xy"]` or `["1"]` does not pass
+through silently). Empty by default. Example:
 
 ```toml
 [single_letter_const_item]
@@ -98,7 +101,9 @@ rename that the lint pass cannot safely emit.
 
 ## Implementation notes
 
-- `allowed_idents` deserialises as `Vec<String>` and is interned
+- `allowed_idents` deserialises as `Vec<char>` (via the shared
+  `common::deserialize_ascii_letters` helper that rejects any
+  non-ASCII-letter entry at config-parse time) and is interned
   into a `BTreeSet<Symbol>`.
 
 ### Difficulty

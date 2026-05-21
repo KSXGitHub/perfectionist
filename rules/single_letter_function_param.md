@@ -33,17 +33,21 @@ fn write_row(writer: &mut Writer, tree_row: &TreeRow) -> io::Result<()> { ... }
 
 Configure via `dylint.toml` under `["perfectionist::single_letter_function_param"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_allowed_idents`: `[string]` (optional)
+### `extra_allowed_idents`: `[single-character string]` (optional)
 
 Additional identifiers to allow as function or method
 parameter names. Merged with the built-in defaults
 (`["n", "f", "i", "j", "k"]`); empty by default. Use this
 to whitelist project-specific conventional names without
-having to re-state the standard ones.
+having to re-state the standard ones. Each entry is a
+single ASCII letter (`a`-`z`, `A`-`Z`); any other
+character is rejected at config-parse time.
 
-### `ignore_allowed_idents`: `[string]` (optional)
+### `ignore_allowed_idents`: `[single-character string]` (optional)
 
 Identifiers to drop from the exempt set, even if they
 appear in the built-in defaults or in
 `extra_allowed_idents`. Empty by default; checked after
 the merge with the built-ins, so this knob always wins.
+Each entry is a single ASCII letter (`a`-`z`, `A`-`Z`);
+any other character is rejected at config-parse time.

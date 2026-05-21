@@ -275,9 +275,10 @@ pub(crate) fn resolve_string_set(
 /// a [`Symbol`] in one pass — skipping the intermediate
 /// `BTreeSet<String>` of the string-shaped variant. Used by rules
 /// whose late-pass lookup key is already a `Symbol`
-/// (`unicode_ellipsis_in_panic_messages`, the three `single_letter_*`
-/// rules), so that membership checks reduce to integer compares
-/// instead of `Symbol::as_str` → `String` round-trips.
+/// (`unicode_ellipsis_in_panic_messages`, `single_letter_closure_param`'s
+/// trivial-callback list), so that membership checks reduce to
+/// integer compares instead of `Symbol::as_str` → `String`
+/// round-trips.
 ///
 /// Must be called inside a rustc session, since [`Symbol::intern`]
 /// reaches into the per-session symbol table.
@@ -293,4 +294,115 @@ pub(crate) fn resolve_symbol_set(
         .chain(extras.iter().map(|name| Symbol::intern(name)))
         .filter(|sym| !ignore.contains(sym))
         .collect()
+}
+
+/// Sibling of [`resolve_symbol_set`] keyed on [`char`] instead of
+/// `String`, for the `single_letter_*` rules' `extra_allowed_idents`
+/// and `ignore_allowed_idents` knobs. `char::encode_utf8` writes
+/// into a small stack buffer and hands [`Symbol::intern`] the
+/// resulting `&str`, so the function works for any `char`; callers
+/// that want the entries restricted to ASCII letters route the
+/// `extras` / `ignore` lists through [`deserialize_ascii_letters`]
+/// at the serde layer, and pick hand-written defaults that obey
+/// the same invariant.
+///
+/// Must be called inside a rustc session.
+pub(crate) fn resolve_symbol_set_from_chars(
+    defaults: &[char],
+    extras: Vec<char>,
+    ignore: Vec<char>,
+) -> BTreeSet<Symbol> {
+    let intern = |ch: char| {
+        let mut buf = [0u8; 4];
+        Symbol::intern(ch.encode_utf8(&mut buf))
+    };
+    let ignore: BTreeSet<Symbol> = ignore.iter().copied().map(intern).collect();
+    defaults
+        .iter()
+        .copied()
+        .chain(extras)
+        .map(intern)
+        .filter(|sym| !ignore.contains(sym))
+        .collect()
+}
+
+/// Deserialise a TOML array of single-character strings into a
+/// `Vec<char>`, rejecting any entry that is not a single ASCII
+/// letter. Used by the `single_letter_*` rules so that a typo like
+/// `["xy"]` or `["1"]` in `dylint.toml` surfaces as a clean
+/// deserialisation error instead of silently never matching.
+pub(crate) fn deserialize_ascii_letters<'de, Deserializer>(
+    deserializer: Deserializer,
+) -> Result<Vec<char>, Deserializer::Error>
+where
+    Deserializer: serde::Deserializer<'de>,
+{
+    use serde::Deserialize;
+    let chars = Vec::<char>::deserialize(deserializer)?;
+    for ch in &chars {
+        if !ch.is_ascii_alphabetic() {
+            return Err(serde::de::Error::custom(format!(
+                "expected a single ASCII letter (a-z, A-Z), got {ch:?}",
+            )));
+        }
+    }
+    Ok(chars)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::deserialize_ascii_letters;
+
+    /// Driver that pipes a TOML array through
+    /// [`deserialize_ascii_letters`] via a synthetic struct,
+    /// mirroring how the real rule `Config`s use it. Returns the
+    /// deserialised letters on success or the serde error message
+    /// on failure, so the tests can pin both the happy and the
+    /// rejection paths.
+    fn parse(toml_text: &str) -> Result<Vec<char>, String> {
+        #[derive(serde::Deserialize)]
+        struct Wrap {
+            #[serde(deserialize_with = "deserialize_ascii_letters")]
+            letters: Vec<char>,
+        }
+        toml::from_str::<Wrap>(toml_text)
+            .map(|wrap| wrap.letters)
+            .map_err(|err| err.to_string())
+    }
+
+    #[test]
+    fn empty_list_is_accepted() {
+        assert_eq!(parse("letters = []").unwrap(), Vec::<char>::new());
+    }
+
+    #[test]
+    fn ascii_letters_are_accepted() {
+        assert_eq!(parse(r#"letters = ["x", "Y"]"#).unwrap(), vec!['x', 'Y']);
+    }
+
+    #[test]
+    fn multi_character_string_is_rejected_at_parse_time() {
+        // serde-toml rejects a multi-codepoint string before our
+        // validator gets a chance to run; the error message
+        // doesn't matter as long as the TOML fails to parse.
+        assert!(parse(r#"letters = ["xy"]"#).is_err());
+    }
+
+    #[test]
+    fn ascii_digit_is_rejected_with_our_message() {
+        let error = parse(r#"letters = ["1"]"#).unwrap_err();
+        assert!(
+            error.contains("expected a single ASCII letter"),
+            "unexpected error message: {error}",
+        );
+    }
+
+    #[test]
+    fn non_ascii_letter_is_rejected_with_our_message() {
+        let error = parse(r#"letters = ["é"]"#).unwrap_err();
+        assert!(
+            error.contains("expected a single ASCII letter"),
+            "unexpected error message: {error}",
+        );
+    }
 }

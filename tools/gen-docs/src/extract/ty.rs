@@ -209,7 +209,12 @@ pub(crate) fn find_type_doc(file: &syn::File, ident: &str) -> Option<TypeDoc> {
 /// - `NonZeroU*` / `NonZeroUsize` → `non-zero unsigned integer`
 /// - `NonZeroI*` / `NonZeroIsize` → `non-zero integer`
 /// - `f32` / `f64` → `float`
-/// - `String` / `&str` / `char` / `OsString` / `PathBuf` / `Cow<…>` → `string`
+/// - `char` → `single-character string` (a TOML string of length
+///   one, which is what `serde-toml` accepts for `char`). A
+///   tighter `single-letter string` label is reserved for an
+///   eventual `AsciiLetter(char)` newtype — see
+///   <https://github.com/KSXGitHub/perfectionist/issues/120>.
+/// - `String` / `&str` / `OsString` / `PathBuf` / `Cow<…>` → `string`
 /// - `Vec<T>` / `HashSet<T>` / `BTreeSet<T>` / `VecDeque<T>` /
 ///   `LinkedList<T>` → `[label-of-T]`
 /// - `HashMap<_, V>` / `BTreeMap<_, V>` → `table of label-of-V`
@@ -245,7 +250,11 @@ pub(crate) fn toml_type_label(ty: &Type) -> String {
             };
             match ident.as_str() {
                 "bool" => "boolean".to_owned(),
-                "String" | "str" | "char" | "OsString" | "OsStr" | "Path" | "PathBuf" | "Cow" => {
+                // A tighter `single-letter string` label is reserved for an
+                // eventual `AsciiLetter(char)` newtype; see the rustdoc above
+                // and <https://github.com/KSXGitHub/perfectionist/issues/120>.
+                "char" => "single-character string".to_owned(),
+                "String" | "str" | "OsString" | "OsStr" | "Path" | "PathBuf" | "Cow" => {
                     "string".to_owned()
                 }
                 "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => "unsigned integer".to_owned(),
@@ -315,12 +324,18 @@ mod tests {
         );
         assert_eq!(toml_type_label(&parse_type("f64")), "float");
         assert_eq!(toml_type_label(&parse_type("String")), "string");
-        assert_eq!(toml_type_label(&parse_type("char")), "string");
+        assert_eq!(
+            toml_type_label(&parse_type("char")),
+            "single-character string"
+        );
     }
 
     #[test]
     fn toml_type_label_arrays_and_maps() {
-        assert_eq!(toml_type_label(&parse_type("Vec<char>")), "[string]");
+        assert_eq!(
+            toml_type_label(&parse_type("Vec<char>")),
+            "[single-character string]"
+        );
         assert_eq!(
             toml_type_label(&parse_type("Vec<Vec<u8>>")),
             "[[unsigned integer]]"

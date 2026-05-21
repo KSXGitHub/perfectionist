@@ -24,9 +24,9 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    extra_allowed_idents: Option<Vec<String>>,
+    extra_allowed_idents: Option<Vec<char>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    ignore_allowed_idents: Option<Vec<String>>,
+    ignore_allowed_idents: Option<Vec<char>>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -46,8 +46,8 @@ fn custom_allowed_idents_extend_and_subtract_the_default_list() {
     run(
         "ui-toml/single_letter_let_binding/custom_allowed_idents",
         RuleConfig {
-            extra_allowed_idents: Some(vec!["x".into()]),
-            ignore_allowed_idents: Some(vec!["n".into()]),
+            extra_allowed_idents: Some(vec!['x']),
+            ignore_allowed_idents: Some(vec!['n']),
         },
     );
 }
