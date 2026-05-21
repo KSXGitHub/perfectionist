@@ -16,9 +16,10 @@ comments are not processed as markdown, so the standard
 `[#N](url)` suggestion would appear there as literal syntax
 rather than a link — there is no useful fix to offer in
 labelled-link form. Opt in via `include_plain_comments` to lint
-plain comments too; the autofix in that mode substitutes an
-autolink (bare URL, or angle-bracketed URL) instead of a
-labelled markdown link. See `plain_comment_form` below.
+plain comments too; the autofix in that mode substitutes the URL
+itself (bare, or wrapped in angle brackets), relying on the
+editor / code-viewer's URL autolinkification rather than markdown
+rendering. See `plain_comment_form` below.
 
 ## What to lint
 
@@ -112,11 +113,13 @@ extra_tokens = []                # e.g., ["GH-", "gh-", "pr#"]
 # `[#N] / [#N]: <url>` two-piece form instead of `[#N](<url>)`.
 form = "inline"
 
-# When true, also lint plain `//` comments. The autofix in plain
-# comments cannot use markdown `[#N](url)` syntax (plain comments
-# aren't markdown-rendered), so the substitution uses the URL form
-# selected by `plain_comment_form` instead. `form` only governs
-# doc-comment fixes and is ignored for plain comments.
+# When true, also lint plain `//` line comments. The autofix in
+# plain comments cannot use markdown `[#N](url)` syntax (plain
+# comments aren't markdown-rendered), so the substitution uses
+# the URL form selected by `plain_comment_form` instead. `form`
+# only governs doc-comment fixes and is ignored for plain
+# comments. Plain *block* comments (`/* ... */`) are out of
+# scope for this lint regardless of this setting.
 include_plain_comments = false
 
 # Replacement form used inside plain `//` comments when
