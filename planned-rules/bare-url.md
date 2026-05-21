@@ -132,8 +132,9 @@ skip_hosts = ["example.com", "example.org", "localhost"]
   replacement is `<{matched}>`. For the `MaybeIncorrect` cases,
   emit two suggestions — one keeping the trailing character inside
   `<...>`, one moving it outside — so the author can pick.
-- The match is greedy on `\S+` but stops before a closing bracket
-  or angle bracket that would invalidate the wrap.
+- The URL body matcher consumes non-whitespace bytes greedily but
+  stops before a closing bracket or angle bracket (`>`, `]`, `)`)
+  that would invalidate the `<...>` wrap.
 - **Parser style.** Implement URL discovery as parser-combinator-
   style `take_*` functions per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
