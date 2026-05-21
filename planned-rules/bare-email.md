@@ -22,10 +22,10 @@ are:
 
 Scan every doc comment and regular comment for a local-part / `@` /
 domain pattern not already preceded by `<`, `:`, or a word
-character. The local-part is one or more characters from
-`A-Za-z0-9._%+-`. The domain is one or more characters from
-`A-Za-z0-9.-`, followed by a `.` and at least two ASCII letters,
-ending at a word boundary.
+character. The local-part is one or more ASCII letters, ASCII
+digits, or any of `.`, `_`, `%`, `+`, `-`. The domain is one or
+more ASCII letters, ASCII digits, `.`, or `-`, followed by a `.`
+and at least two ASCII letters, ending at a word boundary.
 
 For each match outside a code span / code block, emit a diagnostic
 at the email span.
