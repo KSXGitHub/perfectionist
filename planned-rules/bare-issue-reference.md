@@ -146,8 +146,8 @@ plain_comment_form = "bare"
   The markdown scanner is not invoked here; instead reuse the same
   `take_*` token scanner over the raw comment text, plus a small
   "is the match inside a contiguous URL run?" check to avoid
-  re-reporting `#123` that already lives inside a written-out
-  URL.
+  re-reporting an `#N` token that already lives inside a
+  written-out URL.
 - The autofix substitutes the bare span with the rendered link.
   Suggestion applicability:
   - `suggestion_mode = "issue_url"` → `MachineApplicable`. The
