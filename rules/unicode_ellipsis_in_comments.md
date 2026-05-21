@@ -32,7 +32,7 @@ Use instead:
 
 Configure via `dylint.toml` under `["perfectionist::unicode_ellipsis_in_comments"]`. Every field is optional; the per-field prose below states the default.
 
-### `also_flag`: `[string]` (optional)
+### `also_flag`: `[single-letter string]` (optional)
 
 Extra characters to flag alongside U+2026. Useful for catching
 near-relatives such as U+22EF MIDLINE HORIZONTAL ELLIPSIS (`⋯`)

@@ -7,8 +7,8 @@ use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Symbol;
 
 use crate::common::{
-    DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter, resolve_symbol_set,
-    resolved_state,
+    DefaultState, binding_ident, deserialize_ascii_letters, hir_in_external_macro,
+    is_single_ascii_letter, resolve_symbol_set_from_chars, resolved_state,
 };
 
 declare_tool_lint! {
@@ -42,7 +42,7 @@ const CONFIG_KEY: &str = "perfectionist::single_letter_let_binding";
 
 /// Default exempt identifiers for `let` bindings. A short
 /// unsigned count (`n`) is the most common idiom.
-const DEFAULT_LET_EXEMPTIONS: &[&str] = &["n"];
+const DEFAULT_LET_EXEMPTIONS: &[char] = &['n'];
 
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
@@ -52,12 +52,14 @@ struct Config {
     /// default. Use this to whitelist project-specific
     /// conventional names without having to re-state the
     /// standard ones.
-    extra_allowed_idents: Vec<String>,
+    #[serde(deserialize_with = "deserialize_ascii_letters")]
+    extra_allowed_idents: Vec<char>,
     /// Identifiers to drop from the exempt set, even if they
     /// appear in the built-in defaults or in
     /// `extra_allowed_idents`. Empty by default; checked after
     /// the merge with the built-ins, so this knob always wins.
-    ignore_allowed_idents: Vec<String>,
+    #[serde(deserialize_with = "deserialize_ascii_letters")]
+    ignore_allowed_idents: Vec<char>,
 }
 
 pub struct SingleLetterLetBinding {
@@ -67,7 +69,7 @@ pub struct SingleLetterLetBinding {
 impl SingleLetterLetBinding {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let allowed_idents = resolve_symbol_set(
+        let allowed_idents = resolve_symbol_set_from_chars(
             DEFAULT_LET_EXEMPTIONS,
             config.extra_allowed_idents,
             config.ignore_allowed_idents,

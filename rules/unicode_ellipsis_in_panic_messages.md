@@ -80,7 +80,7 @@ in the built-in defaults or in `extra_methods`. Empty by
 default; checked after the merge with the built-ins, so
 this knob always wins.
 
-### `also_flag`: `[string]` (optional)
+### `also_flag`: `[single-letter string]` (optional)
 
 Extra characters to flag alongside U+2026, in the same spirit
 as `unicode_ellipsis_in_comments.also_flag`. Empty by default.

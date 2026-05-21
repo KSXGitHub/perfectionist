@@ -209,7 +209,11 @@ pub(crate) fn find_type_doc(file: &syn::File, ident: &str) -> Option<TypeDoc> {
 /// - `NonZeroU*` / `NonZeroUsize` → `non-zero unsigned integer`
 /// - `NonZeroI*` / `NonZeroIsize` → `non-zero integer`
 /// - `f32` / `f64` → `float`
-/// - `String` / `&str` / `char` / `OsString` / `PathBuf` / `Cow<…>` → `string`
+/// - `char` → `single-letter string` (TOML's one-byte-string idiom
+///   for a Rust `char`; rendered distinctly from the multi-character
+///   string family because the `single_letter_*` rules' allow-lists
+///   reject any entry that isn't a single ASCII letter)
+/// - `String` / `&str` / `OsString` / `PathBuf` / `Cow<…>` → `string`
 /// - `Vec<T>` / `HashSet<T>` / `BTreeSet<T>` / `VecDeque<T>` /
 ///   `LinkedList<T>` → `[label-of-T]`
 /// - `HashMap<_, V>` / `BTreeMap<_, V>` → `table of label-of-V`
@@ -245,7 +249,8 @@ pub(crate) fn toml_type_label(ty: &Type) -> String {
             };
             match ident.as_str() {
                 "bool" => "boolean".to_owned(),
-                "String" | "str" | "char" | "OsString" | "OsStr" | "Path" | "PathBuf" | "Cow" => {
+                "char" => "single-letter string".to_owned(),
+                "String" | "str" | "OsString" | "OsStr" | "Path" | "PathBuf" | "Cow" => {
                     "string".to_owned()
                 }
                 "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => "unsigned integer".to_owned(),
@@ -315,12 +320,15 @@ mod tests {
         );
         assert_eq!(toml_type_label(&parse_type("f64")), "float");
         assert_eq!(toml_type_label(&parse_type("String")), "string");
-        assert_eq!(toml_type_label(&parse_type("char")), "string");
+        assert_eq!(toml_type_label(&parse_type("char")), "single-letter string");
     }
 
     #[test]
     fn toml_type_label_arrays_and_maps() {
-        assert_eq!(toml_type_label(&parse_type("Vec<char>")), "[string]");
+        assert_eq!(
+            toml_type_label(&parse_type("Vec<char>")),
+            "[single-letter string]"
+        );
         assert_eq!(
             toml_type_label(&parse_type("Vec<Vec<u8>>")),
             "[[unsigned integer]]"

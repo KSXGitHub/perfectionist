@@ -28,9 +28,9 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     ignore_trivial_callback_methods: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    extra_allowed_idents: Option<Vec<String>>,
+    extra_allowed_idents: Option<Vec<char>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    ignore_allowed_idents: Option<Vec<String>>,
+    ignore_allowed_idents: Option<Vec<char>>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {

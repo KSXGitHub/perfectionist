@@ -32,7 +32,7 @@ let metadata = entry.metadata()?;
 
 Configure via `dylint.toml` under `["perfectionist::single_letter_let_binding"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_allowed_idents`: `[string]` (optional)
+### `extra_allowed_idents`: `[single-letter string]` (optional)
 
 Additional identifiers to allow as `let` binding names.
 Merged with the built-in defaults (`["n"]`); empty by
@@ -40,7 +40,7 @@ default. Use this to whitelist project-specific
 conventional names without having to re-state the
 standard ones.
 
-### `ignore_allowed_idents`: `[string]` (optional)
+### `ignore_allowed_idents`: `[single-letter string]` (optional)
 
 Identifiers to drop from the exempt set, even if they
 appear in the built-in defaults or in

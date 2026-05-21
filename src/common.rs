@@ -275,9 +275,10 @@ pub(crate) fn resolve_string_set(
 /// a [`Symbol`] in one pass — skipping the intermediate
 /// `BTreeSet<String>` of the string-shaped variant. Used by rules
 /// whose late-pass lookup key is already a `Symbol`
-/// (`unicode_ellipsis_in_panic_messages`, the three `single_letter_*`
-/// rules), so that membership checks reduce to integer compares
-/// instead of `Symbol::as_str` → `String` round-trips.
+/// (`unicode_ellipsis_in_panic_messages`, `single_letter_closure_param`'s
+/// trivial-callback list), so that membership checks reduce to
+/// integer compares instead of `Symbol::as_str` → `String`
+/// round-trips.
 ///
 /// Must be called inside a rustc session, since [`Symbol::intern`]
 /// reaches into the per-session symbol table.
@@ -293,4 +294,54 @@ pub(crate) fn resolve_symbol_set(
         .chain(extras.iter().map(|name| Symbol::intern(name)))
         .filter(|sym| !ignore.contains(sym))
         .collect()
+}
+
+/// Sibling of [`resolve_symbol_set`] keyed on [`char`] instead of
+/// `String`, for the `single_letter_*` rules' `extra_allowed_idents`
+/// and `ignore_allowed_idents` knobs. Every entry is guaranteed to
+/// be a single ASCII letter by [`deserialize_ascii_letters`], so
+/// `char::encode_utf8` always produces a one-byte buffer that
+/// [`Symbol::intern`] can take as `&str`.
+///
+/// Must be called inside a rustc session.
+pub(crate) fn resolve_symbol_set_from_chars(
+    defaults: &[char],
+    extras: Vec<char>,
+    ignore: Vec<char>,
+) -> BTreeSet<Symbol> {
+    let intern = |ch: char| {
+        let mut buf = [0u8; 4];
+        Symbol::intern(ch.encode_utf8(&mut buf))
+    };
+    let ignore: BTreeSet<Symbol> = ignore.iter().copied().map(intern).collect();
+    defaults
+        .iter()
+        .copied()
+        .chain(extras)
+        .map(intern)
+        .filter(|sym| !ignore.contains(sym))
+        .collect()
+}
+
+/// Deserialise a TOML array of single-character strings into a
+/// `Vec<char>`, rejecting any entry that is not a single ASCII
+/// letter. Used by the `single_letter_*` rules so that a typo like
+/// `["xy"]` or `["1"]` in `dylint.toml` surfaces as a clean
+/// deserialisation error instead of silently never matching.
+pub(crate) fn deserialize_ascii_letters<'de, Deserializer>(
+    deserializer: Deserializer,
+) -> Result<Vec<char>, Deserializer::Error>
+where
+    Deserializer: serde::Deserializer<'de>,
+{
+    use serde::Deserialize;
+    let chars = Vec::<char>::deserialize(deserializer)?;
+    for ch in &chars {
+        if !ch.is_ascii_alphabetic() {
+            return Err(serde::de::Error::custom(format!(
+                "expected a single ASCII letter (a-z, A-Z), got {ch:?}",
+            )));
+        }
+    }
+    Ok(chars)
 }
