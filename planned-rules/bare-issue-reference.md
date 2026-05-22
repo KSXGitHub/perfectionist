@@ -37,10 +37,17 @@ Skip:
   (`[#123]`, `[#123](...)`, `[label](#123)`).
 - Inside a markdown reference-link definition trailing target
   (`[#123]: https://...`).
-- When the match is the fragment of a written-out URL (e.g., the
-  `#123` in `https://example.com/article#123`) — applies whether
-  the URL appears as a bare URL in doc text or wrapped as a
-  markdown link.
+- When the match is the fragment of a written-out URL — applies
+  whether the URL appears as a bare URL in doc text or wrapped
+  as a markdown link. Note that the left-context guard already
+  catches the common case where the `#` is preceded by a word
+  character (e.g., `https://example.com/article#123` — the `e`
+  before `#` is a word char, so the bare match never fires); the
+  URL-fragment skip exists for fragments whose `#` is preceded
+  by a non-word character that the left-context guard alone
+  would let through, e.g.
+  `https://example.com/issues/#123`,
+  `https://example.com/path?ref=#123`.
 
 When `include_plain_comments = true`, the same token-shape match
 runs over `//` comment text as well. Markdown-specific skips
