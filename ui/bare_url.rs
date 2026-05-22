@@ -20,19 +20,32 @@ fn _doc_good_wrapped() {}
 /// Good: [Rust homepage](https://rust-lang.org) as a labelled link.
 fn _doc_good_labelled() {}
 
-/// Inside a code span: `https://example.com` should not fire.
+/// Inside a code span: `https://rust-lang.org` should not fire.
+/// (Uses a non-skipped host so the test actually exercises code-span
+/// detection — `example.com` would be suppressed by `skip_hosts`
+/// regardless.)
 fn _doc_code_span_skip() {}
 
 /// Inside a code block, also fine:
 /// ```
-/// let url = "https://example.com";
+/// let url = "https://rust-lang.org";
 /// ```
 fn _doc_code_block_skip() {}
 
 /// In a reference-link definition is fine too:
 ///
-/// [home]: https://example.com
+/// [home]: https://rust-lang.org
 fn _doc_ref_def_skip() {}
+
+/// Regression for the `at_line_start` fix: a fenced code block
+/// immediately followed by a reference-link definition. Both must
+/// be classified as skip regions, even though the first ends at a
+/// line boundary that the second relies on.
+/// ```
+/// let url = "https://rust-lang.org";
+/// ```
+/// [home]: https://rust-lang.org
+fn _doc_adjacent_block_constructs() {}
 
 /// Default skip-host `example.com` should not fire: https://example.com here.
 fn _doc_skip_host() {}
