@@ -4,9 +4,9 @@
 
 ## Statement
 
-In doc comments (`///`, `//!`), references to issues or pull requests
-written as the bare token `#<digits>` (or a configured equivalent like
-`GH-123`) must be rendered as markdown links. Two acceptable forms:
+In doc comments (`///`, `//!`), references to issues or pull
+requests written as the bare token `#<digits>` must be rendered
+as markdown links. Two acceptable forms:
 
 - Inline: `[#123](https://github.com/owner/repo/issues/123)`.
 - Reference: `[#123]` paired with `[#123]: https://github.com/owner/repo/issues/123`.
@@ -55,10 +55,6 @@ runs over `//` comment text as well. Markdown-specific skips
 don't apply there — plain comments aren't markdown — but the
 left-context guard (no word character, no `[` before the `#`)
 and the URL-fragment skip still do.
-
-In both doc and plain comments, the match is case-insensitive
-when alternative tokens like `GH-`, `gh-`, or `pr#` are
-configured.
 
 ## Examples
 
@@ -123,9 +119,6 @@ suggestion_mode = "issue_url"
 #                degradation described above: setting this mode
 #                explicitly keeps the lint help-only even when
 #                `repo_base_url` is configured.
-
-# Additional bare-reference tokens to recognise. Default empty.
-extra_tokens = []                # e.g., ["GH-", "gh-", "pr#"]
 
 # Defaults to "inline". When set to "reference", the lint emits the
 # `[#N] / [#N]: <url>` two-piece form instead of `[#N](<url>)`.
@@ -218,11 +211,8 @@ plain_comment_form = "bare"
 - **Parser style.** Decompose the bare-reference scanner into
   parser-combinator-style `take_*` functions per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
-  `take_token_prefix` (`#`, `GH-`, `gh-`, `pr#`, or any
-  user-configured alternative), `take_digits`, and a left-context
+  `take_hash` (the literal `#`), `take_digits`, and a left-context
   check that the preceding byte is not a word character or a `[`.
-  Each `extra_tokens` entry becomes one alternative in the
-  `take_token_prefix` step.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
