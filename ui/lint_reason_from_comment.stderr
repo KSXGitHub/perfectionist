@@ -157,5 +157,30 @@ LL - #[cfg_attr(all(), cfg_attr(all(), allow(dead_code)))] // nested wrap
 LL + #[cfg_attr(all(), cfg_attr(all(), allow(dead_code, reason = "nested wrap")))]
    |
 
-warning: 13 warnings emitted
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:84:85
+   |
+LL | #[cfg_attr(all(), allow(dead_code, reason = "explained"), allow(unused_variables))] // for second synth
+   |                                                                                     ^^^^^^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL - #[cfg_attr(all(), allow(dead_code, reason = "explained"), allow(unused_variables))] // for second synth
+LL + #[cfg_attr(all(), allow(dead_code, reason = "explained"), allow(unused_variables, reason = "for second synth"))]
+   |
+
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:91:1
+   |
+LL | // real leading rationale
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL - // real leading rationale
+LL - #[allow(dead_code)] //
+LL + #[allow(dead_code, reason = "real leading rationale")] //
+   |
+
+warning: 15 warnings emitted
 

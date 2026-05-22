@@ -183,20 +183,21 @@ impl EarlyLintPass for LintReasonFromComment {
         if is_lint_level_attribute_name(attribute.name())
             && let Some(args) = attribute.meta_item_list()
         {
-            self.check(lint_context, outer_span, attribute.span, &args);
+            let emitted = self.check(lint_context, outer_span, attribute.span, &args);
             // A cfg_attr trace is one comment anchor for *one* adjacent
             // source comment; if the cfg_attr expands into multiple
             // lint-level synth attributes (e.g.
             // `#[cfg_attr(all(), allow(a), warn(b))]`), only the first
-            // one should lift the comment — otherwise every synth attr
-            // would emit a duplicate suggestion whose `delete_span`
-            // overlaps the others on the same comment bytes, and
-            // rustfix would refuse to apply the conflicting edits.
-            // Subsequent synth lint-level attrs in the same cfg_attr
-            // fall back to their own narrow spans (and a sibling like
-            // `lint_silence_reason` can flag them for missing
-            // `reason` independently).
-            if self.pending_cfg_attr_outer == Some(outer_span) {
+            // one to actually lift the comment should consume the
+            // trace — otherwise every synth attr would emit a duplicate
+            // suggestion whose `delete_span` overlaps the others on the
+            // same comment bytes, and rustfix would refuse to apply
+            // the conflicting edits. Conversely, if `check` declined
+            // to emit (e.g. the first synth already carries a `reason`
+            // field, or no adjacent comment was found), the trace must
+            // stay live so the next synth in the same cfg_attr can
+            // still find it.
+            if emitted && self.pending_cfg_attr_outer == Some(outer_span) {
                 self.pending_cfg_attr_outer = None;
             }
         }
@@ -212,42 +213,47 @@ impl LintReasonFromComment {
     /// `forbid(...)` meta-item's span — the insertion target for the
     /// lifted `reason` field. For a bare `#[allow(...)]` the two are
     /// the same.
+    /// Returns `true` iff the rule actually emitted a diagnostic
+    /// (used by [`check_attribute`] to decide whether to consume
+    /// the pending `cfg_attr_trace` outer span).
     fn check(
         &self,
         lint_context: &EarlyContext<'_>,
         outer_span: Span,
         invocation_span: Span,
         args: &[MetaItemInner],
-    ) {
+    ) -> bool {
         if attr_has_reason(args).is_some() {
-            return;
+            return false;
         }
 
         let source_map = lint_context.sess().source_map();
         let source_file = source_map.lookup_source_file(outer_span.lo());
         let Some(source_text) = source_file.src.as_deref() else {
-            return;
+            return false;
         };
         let file_start = source_file.start_pos;
         // `BytePos`es from a span living inside this source file are
         // always `>= start_pos`; the `checked_sub` is defensive only.
         let Some(outer_lo) = outer_span.lo().0.checked_sub(file_start.0) else {
-            return;
+            return false;
         };
         let Some(outer_hi) = outer_span.hi().0.checked_sub(file_start.0) else {
-            return;
+            return false;
         };
         let outer_lo = outer_lo as usize;
         let outer_hi = outer_hi as usize;
         if outer_hi > source_text.len() {
-            return;
+            return false;
         }
 
         // Try the higher-confidence trailing placement first. The
         // planning file makes the two placements mutually exclusive —
         // a comment immediately before the attribute and a comment
         // on the same line as the closing `]` are unrelated source
-        // edits — so the first match wins.
+        // edits — so the first match wins. `find_*_comment` filter
+        // out empty-normalised matches, so an unhelpful trailing `//`
+        // does not pre-empt a real leading comment.
         if self.sites.contains(&Site::Trailing)
             && let Some(comment) = find_trailing_comment(source_text, outer_hi)
         {
@@ -258,7 +264,7 @@ impl LintReasonFromComment {
                 &comment,
                 Applicability::MachineApplicable,
             );
-            return;
+            return true;
         }
         if self.sites.contains(&Site::Leading)
             && let Some(comment) = find_leading_comment(source_text, outer_lo)
@@ -270,7 +276,9 @@ impl LintReasonFromComment {
                 &comment,
                 Applicability::MaybeIncorrect,
             );
+            return true;
         }
+        false
     }
 
     fn emit(
@@ -281,14 +289,6 @@ impl LintReasonFromComment {
         comment: &Comment,
         applicability: Applicability,
     ) {
-        // A bare `//` or whitespace-only `//   ` line normalises to
-        // an empty string. Lifting it would produce a vacuous
-        // `reason = ""` autofix that the sibling `lint_silence_reason`
-        // would immediately flag again — strictly worse than leaving
-        // the empty comment alone.
-        if comment.text.is_empty() {
-            return;
-        }
         let snippet = match lint_context
             .sess()
             .source_map()
@@ -390,6 +390,13 @@ fn find_trailing_comment(source: &str, attr_hi: usize) -> Option<Comment> {
         end
     };
     let text = normalise_comment_text(&source[comment_start..text_end]);
+    // A `//` / `//   ` line normalises to empty; lifting it would
+    // produce a vacuous `reason = ""`. Treating it as no-match here
+    // lets `check` fall through to the leading-comment placement
+    // instead of short-circuiting.
+    if text.is_empty() {
+        return None;
+    }
     Some(Comment {
         text,
         delete_start: attr_hi,
@@ -454,6 +461,11 @@ fn find_leading_comment(source: &str, attr_lo: usize) -> Option<Comment> {
         return None;
     }
     let text = normalise_comment_text(&source[comment_start..prev_line_terminator_start]);
+    // Same empty-normalised-text filter as `find_trailing_comment`:
+    // a blank `//` line is not a rationale to lift.
+    if text.is_empty() {
+        return None;
+    }
     Some(Comment {
         text,
         delete_start: prev_line_start,

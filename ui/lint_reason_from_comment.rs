@@ -76,6 +76,22 @@ fn trailing_cfg_attr_multi_synth() {}
 #[cfg_attr(all(), cfg_attr(all(), allow(dead_code)))] // nested wrap
 fn trailing_nested_cfg_attr() {}
 
+// Bad once: cfg_attr's first synth already carries `reason`, so it
+// doesn't emit; the pending trace must stay live so the *second*
+// synth can still lift the trailing comment. (The bug version
+// consumed the trace unconditionally after the first synth was
+// visited, regardless of whether anything was emitted.)
+#[cfg_attr(all(), allow(dead_code, reason = "explained"), allow(unused_variables))] // for second synth
+fn cfg_attr_first_synth_has_reason() {}
+
+// Bad once: a real leading comment paired with a vacuous trailing
+// `// ` must not be pre-empted by the trailing match — the
+// trailing branch filters out empty-normalised text and falls
+// through to the leading placement.
+// real leading rationale
+#[allow(dead_code)] //
+fn trailing_empty_falls_through_to_leading() {}
+
 // Good: attribute already carries `reason`; rule must not fire.
 #[allow(dead_code, reason = "explicit reason")] // separate trailing note
 fn already_has_reason() {}
@@ -113,6 +129,8 @@ fn main() {
     trailing_cfg_attr();
     trailing_cfg_attr_multi_synth();
     trailing_nested_cfg_attr();
+    cfg_attr_first_synth_has_reason();
+    trailing_empty_falls_through_to_leading();
     already_has_reason();
     doc_comment_is_not_a_leading_comment();
     comment_on_next_line();
