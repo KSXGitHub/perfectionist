@@ -510,13 +510,22 @@ fn normalise_comment_text(content: &str) -> String {
     while run < bytes.len() && matches!(bytes[run], b'-' | b'=' | b'*') {
         run += 1;
     }
-    if run > 0
-        && bytes
+    if run > 0 {
+        // A run that fills the entire trimmed slice is an
+        // all-decoration line — `//-----------` or `//=== ` (the
+        // trailing whitespace was already stripped by `trim_matches`).
+        // It carries no rationale, so return empty and let
+        // `find_*_comment` treat it as a no-match.
+        if run == bytes.len() {
+            return String::new();
+        }
+        if bytes
             .get(run)
             .is_some_and(|byte| is_horizontal_whitespace(*byte))
-    {
-        let after = &trimmed[run..];
-        return after.trim_start_matches([' ', '\t']).to_owned();
+        {
+            let after = &trimmed[run..];
+            return after.trim_start_matches([' ', '\t']).to_owned();
+        }
     }
     trimmed.to_owned()
 }
@@ -743,16 +752,28 @@ mod tests {
     }
 
     /// A bare `//` or whitespace-only `//   ` line normalises to an
-    /// empty string. The `emit` guard turns these into no-ops; the
-    /// scanner itself still matches them so the scanner stays
-    /// position-agnostic (the planning file's filter set is "`//`
-    /// line comments that aren't doc comments", and "non-empty" is
-    /// not part of that filter).
+    /// empty string, which `find_*_comment` use to skip the match so
+    /// `check` falls through to the next placement.
     #[test]
     fn normalise_collapses_empty_and_whitespace_only_comments() {
         assert_eq!(normalise_comment_text("//"), "");
         assert_eq!(normalise_comment_text("//   "), "");
         assert_eq!(normalise_comment_text("//\t"), "");
+    }
+
+    /// All-decoration lines (visual dividers) normalise to empty so
+    /// they don't get lifted as a vacuous `reason = "==="`-style
+    /// rationale.
+    #[test]
+    fn normalise_collapses_all_decoration_comments() {
+        assert_eq!(normalise_comment_text("//----------"), "");
+        assert_eq!(normalise_comment_text("//=========="), "");
+        assert_eq!(normalise_comment_text("//**********"), "");
+        // Mixed decoration runs collapse the same way.
+        assert_eq!(normalise_comment_text("//-=-=-=-="), "");
+        // Trailing whitespace was already trimmed, so a divider with
+        // trailing space behaves identically.
+        assert_eq!(normalise_comment_text("//---   "), "");
     }
 
     fn assert_comment(actual: Option<Comment>, expected_text: &str) {
@@ -779,6 +800,42 @@ mod tests {
         let source = "#[allow(foo)] //! hello\n";
         let attr_hi = source.find(']').unwrap() + 1;
         assert!(find_trailing_comment(source, attr_hi).is_none());
+    }
+
+    /// An empty-normalised trailing comment (bare `//`, whitespace
+    /// only, all-decoration divider) returns `None` so `check` can
+    /// fall through to the leading-comment placement instead of
+    /// short-circuiting with a vacuous trailing match.
+    #[test]
+    fn trailing_empty_normalised_returns_none() {
+        for source in [
+            "#[allow(foo)] //\n",
+            "#[allow(foo)] //   \n",
+            "#[allow(foo)] //----------\n",
+        ] {
+            let attr_hi = source.find(']').unwrap() + 1;
+            assert!(
+                find_trailing_comment(source, attr_hi).is_none(),
+                "expected no match for {source:?}",
+            );
+        }
+    }
+
+    /// Symmetric to `trailing_empty_normalised_returns_none`: a
+    /// leading line that normalises to empty doesn't lift either.
+    #[test]
+    fn leading_empty_normalised_returns_none() {
+        for source in [
+            "//\n#[allow(foo)]\n",
+            "//   \n#[allow(foo)]\n",
+            "//----------\n#[allow(foo)]\n",
+        ] {
+            let attr_lo = source.find('#').unwrap();
+            assert!(
+                find_leading_comment(source, attr_lo).is_none(),
+                "expected no match for {source:?}",
+            );
+        }
     }
 
     #[test]
