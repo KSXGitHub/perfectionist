@@ -48,7 +48,7 @@ impl TryFrom<char> for AsciiLetter {
             // value, so without this the user only learns that
             // "some" entry failed.
             Err(format!(
-                "expected a single ASCII letter (a-z, A-Z), got {value:?}"
+                "expected a single ASCII letter (a-z, A-Z), got {value:?}",
             ))
         }
     }
