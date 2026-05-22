@@ -15,5 +15,13 @@ LL | /// Bad: closes #123 and supersedes #124.
    |
    = help: set `repo_base_url` in dylint.toml under `[perfectionist::bare_issue_reference]` to enable URL suggestions
 
-warning: 2 warnings emitted
+warning: bare issue / PR reference `#200`; use a markdown link
+  --> $DIR/bare_issue_reference.rs:7:17
+   |
+LL | /** Bad: closes #200 (in a `/** */` block doc comment). */
+   |                 ^^^^
+   |
+   = help: set `repo_base_url` in dylint.toml under `[perfectionist::bare_issue_reference]` to enable URL suggestions
+
+warning: 3 warnings emitted
 

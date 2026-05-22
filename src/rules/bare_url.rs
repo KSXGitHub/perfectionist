@@ -132,7 +132,13 @@ impl BareUrl {
         // The host ends at the first `/`, `?`, `#`, `:` or end of string.
         let host_end = rest.find(['/', '?', '#', ':']).unwrap_or(rest.len());
         let host = &rest[..host_end];
-        self.skip_hosts.iter().any(|skip| skip == host)
+        // RFC 3986 §3.2.2: host comparisons are case-insensitive. The
+        // configured `skip_hosts` entries are stored as-is; do the
+        // case-fold on the lookup side so users can write the host in
+        // any casing.
+        self.skip_hosts
+            .iter()
+            .any(|skip| skip.eq_ignore_ascii_case(host))
     }
 }
 

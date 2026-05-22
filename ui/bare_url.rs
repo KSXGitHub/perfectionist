@@ -7,6 +7,13 @@
 /// Bad: bare URL in a doc comment — see https://rust-lang.org for details.
 fn _doc_bad() {}
 
+/** Bad: bare URL in a `/** */` doc-block comment — https://rust-lang.org. */
+fn _doc_block_bad() {}
+
+mod _inner_doc_block {
+    /*! Bad: bare URL in an inner `/*! */` doc-block — https://rust-lang.org. */
+}
+
 /// Good: <https://rust-lang.org> wrapped explicitly.
 fn _doc_good_wrapped() {}
 

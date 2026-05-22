@@ -47,5 +47,21 @@ help: or prefix with `mailto:`
 LL | /// Bad: bare email in a doc comment — write to mailto:security@rust-lang.org.
    |                                                 +++++++
 
-warning: 3 warnings emitted
+warning: bare email address `security@rust-lang.org`
+  --> $DIR/bare_email.rs:10:55
+   |
+LL | /** Bad: bare email in a `/** */` doc-block comment — security@rust-lang.org. */
+   |                                                       ^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: wrap in `<...>`
+   |
+LL - /** Bad: bare email in a `/** */` doc-block comment — security@rust-lang.org. */
+LL + /** Bad: bare email in a `/** */` doc-block comment — <security@rust-lang.org>. */
+   |
+help: or prefix with `mailto:`
+   |
+LL | /** Bad: bare email in a `/** */` doc-block comment — mailto:security@rust-lang.org. */
+   |                                                       +++++++
+
+warning: 4 warnings emitted
 

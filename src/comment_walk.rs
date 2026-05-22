@@ -268,7 +268,12 @@ fn gather_line_plain_comments<'a>(
     (chunk, consumed)
 }
 
-/// Build a [`CommentChunk`] for a `/** ... */` block doc comment.
+/// Build a [`CommentChunk`] for a `/** ... */` (outer) or
+/// `/*! ... */` (inner) block doc comment. The two share every
+/// downstream concern but differ in their three-byte opening
+/// delimiter — and the opening byte length is what anchors every
+/// per-line source offset, so picking the wrong delimiter
+/// silently misaligns diagnostic spans.
 fn build_block_doc_comment<'a>(
     source_text: &'a str,
     source_file: &'a SourceFile,
@@ -276,7 +281,12 @@ fn build_block_doc_comment<'a>(
     end: u32,
 ) -> CommentChunk<'a> {
     let body_text = &source_text[start as usize..end as usize];
-    let (rendered, lines) = render_block_comment(body_text, start, "/**", "*/");
+    let open = if body_text.starts_with("/*!") {
+        "/*!"
+    } else {
+        "/**"
+    };
+    let (rendered, lines) = render_block_comment(body_text, start, open, "*/");
     let span = Span::new(
         source_file.absolute_position(RelativeBytePos::from_u32(start)),
         source_file.absolute_position(RelativeBytePos::from_u32(end)),

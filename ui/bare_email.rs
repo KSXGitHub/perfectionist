@@ -7,6 +7,9 @@
 /// Bad: bare email in a doc comment — write to security@rust-lang.org.
 fn _doc_bad() {}
 
+/** Bad: bare email in a `/** */` doc-block comment — security@rust-lang.org. */
+fn _doc_block_bad() {}
+
 /// Good: <security@rust-lang.org> wrapped explicitly.
 fn _doc_wrapped() {}
 

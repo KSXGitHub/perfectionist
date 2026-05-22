@@ -4,6 +4,9 @@
 /// Bad: closes #123 and supersedes #124.
 fn _doc_bad() {}
 
+/** Bad: closes #200 (in a `/** */` block doc comment). */
+fn _doc_block_bad() {}
+
 /// Good (inline): [#123](https://github.com/owner/repo/issues/123).
 fn _doc_inline_good() {}
 
