@@ -27,6 +27,9 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`non_exhaustive_error`](./non_exhaustive_error.md) (default: `inactive`).
 
   error-shaped type is missing `#[non_exhaustive]`
+- [`prefer_derive_more_over_thiserror`](./prefer_derive_more_over_thiserror.md) (default: `active`).
+
+  error type derived through `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
 - [`prefer_raw_string`](./prefer_raw_string.md) (default: `active`).
 
   string literal contains only raw-expressible escapes; prefer the raw-string form

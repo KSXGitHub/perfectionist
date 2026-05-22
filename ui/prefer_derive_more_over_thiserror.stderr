@@ -1,0 +1,43 @@
+warning: `use` of `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/prefer_derive_more_over_thiserror.rs:33:1
+   |
+LL | use thiserror::Error;
+   | ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+   = note: `#[warn(perfectionist::prefer_derive_more_over_thiserror)]` on by default
+
+warning: `use` of `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/prefer_derive_more_over_thiserror.rs:37:1
+   |
+LL | use thiserror::*;
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: `use` of `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/prefer_derive_more_over_thiserror.rs:41:1
+   |
+LL | use thiserror::Error as RenamedErrorMacro;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: `use` of `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/prefer_derive_more_over_thiserror.rs:44:1
+   |
+LL | pub use thiserror::Error as ReexportedError;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: `use` of `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/prefer_derive_more_over_thiserror.rs:47:1
+   |
+LL | use thiserror::{Error as _GroupedAlias};
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: 5 warnings emitted
+
