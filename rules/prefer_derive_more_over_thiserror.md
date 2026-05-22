@@ -5,7 +5,7 @@
 **Default state:** `active`  
 **Source:** [`src/rules/prefer_derive_more_over_thiserror.rs`](../src/rules/prefer_derive_more_over_thiserror.rs)
 
-> error type derived through `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
+> `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`
 
 ## What it does
 Flags every use of [`thiserror`](https://docs.rs/thiserror) in

@@ -87,7 +87,7 @@ declare_tool_lint! {
     /// ```
     pub perfectionist::PREFER_DERIVE_MORE_OVER_THISERROR,
     Warn,
-    "error type derived through `thiserror`; this catalogue prefers `derive_more::{Display, Error}`",
+    "`thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`",
     report_in_external_macro: false
 }
 
