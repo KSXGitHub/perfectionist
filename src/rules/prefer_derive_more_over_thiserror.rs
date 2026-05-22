@@ -268,18 +268,26 @@ fn walk_use_tree_for_aliases(
     parent: &[Symbol],
 ) {
     let mut path: Vec<Symbol> = parent.to_vec();
-    for segment in &tree.prefix.segments {
+    for (idx, segment) in tree.prefix.segments.iter().enumerate() {
         // `kw::PathRoot` is the synthetic leading-`::` segment; skip
         // it so `use ::thiserror::Error;` and `use thiserror::Error;`
         // produce the same `path`.
+        if segment.ident.name == kw::PathRoot {
+            continue;
+        }
+        // `kw::SelfLower` at position 0 of a *nested child's* prefix
+        // (`use thiserror::{self};` / `use thiserror::{self as te};`)
+        // names the parent itself — semantically equivalent to `use
+        // thiserror;` / `use thiserror as te;`. Drop the segment so
+        // the nested form joins the parent path and falls into the
+        // single-segment crate-alias branch below.
         //
-        // `kw::SelfLower` inside a nested tree (`use
-        // thiserror::{self};` / `use thiserror::{self as te};`) names
-        // the parent itself — semantically equivalent to `use
-        // thiserror;` / `use thiserror as te;`. Skipping the segment
-        // makes the nested form fall into the `path.len() == 1`
-        // crate-alias branch below.
-        if segment.ident.name == kw::PathRoot || segment.ident.name == kw::SelfLower {
+        // At the top level (`use self::Error;`) `self` is a real
+        // module reference and must NOT be filtered, since
+        // `self::Error` resolves through the current module rather
+        // than the crate root. Gating on `!parent.is_empty()`
+        // distinguishes the two positions.
+        if !parent.is_empty() && idx == 0 && segment.ident.name == kw::SelfLower {
             continue;
         }
         path.push(segment.ident.name);
@@ -507,11 +515,7 @@ fn flag_error_attrs(cx: &EarlyContext<'_>, attrs: &[Attribute]) {
     }
 }
 
-fn flag_error_in_cfg_attr_payload(
-    cx: &EarlyContext<'_>,
-    items: &[MetaItemInner],
-    error: Symbol,
-) {
+fn flag_error_in_cfg_attr_payload(cx: &EarlyContext<'_>, items: &[MetaItemInner], error: Symbol) {
     for item in items {
         let Some(meta) = item.meta_item() else {
             continue;
