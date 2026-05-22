@@ -169,6 +169,108 @@ pub fn synth_closure(input: TokenStream) -> TokenStream {
     wrap_fn_block("_synth_closure_body", body)
 }
 
+/// `#[derive(SynthConstItem)]` + `#[synth_const_item]` →
+/// `const _: () = { const X: u32 = 1; let _ = X; };` where the
+/// inner `X` const identifier inherits the user-span of
+/// `synth_const_item`. Exercises the single-letter-const-item
+/// rule's `hir_in_external_macro` guard.
+#[proc_macro_derive(SynthConstItem, attributes(synth_const_item))]
+pub fn synth_const_item(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_const_item")
+        .expect("`#[derive(SynthConstItem)]` requires a `#[synth_const_item]`");
+    let x_ident = Ident::new("X", attr_span);
+    let call_site = Span::call_site();
+
+    let mut body = TokenStream::new();
+    body.extend([
+        TokenTree::Ident(Ident::new("const", call_site)),
+        TokenTree::Ident(x_ident.clone()),
+        TokenTree::Punct(Punct::new(':', Spacing::Alone)),
+        TokenTree::Ident(Ident::new("u32", call_site)),
+        TokenTree::Punct(Punct::new('=', Spacing::Alone)),
+        TokenTree::Literal(Literal::u32_unsuffixed(1)),
+        TokenTree::Punct(Punct::new(';', Spacing::Alone)),
+        TokenTree::Ident(Ident::new("let", call_site)),
+        TokenTree::Ident(Ident::new("_", call_site)),
+        TokenTree::Punct(Punct::new('=', Spacing::Alone)),
+        TokenTree::Ident(x_ident),
+        TokenTree::Punct(Punct::new(';', Spacing::Alone)),
+    ]);
+    wrap_const_block(body)
+}
+
+/// `#[derive(SynthStaticItem)]` + `#[synth_static_item]` →
+/// `fn _synth_static_item_body() { static X: u32 = 1; let _ = X; }`
+/// where the inner `X` static identifier inherits the user-span of
+/// `synth_static_item`. Exercises the single-letter-static-item
+/// rule's `hir_in_external_macro` guard.
+#[proc_macro_derive(SynthStaticItem, attributes(synth_static_item))]
+pub fn synth_static_item(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_static_item")
+        .expect("`#[derive(SynthStaticItem)]` requires a `#[synth_static_item]`");
+    let x_ident = Ident::new("X", attr_span);
+    let call_site = Span::call_site();
+
+    let mut body = TokenStream::new();
+    body.extend([
+        TokenTree::Ident(Ident::new("static", call_site)),
+        TokenTree::Ident(x_ident.clone()),
+        TokenTree::Punct(Punct::new(':', Spacing::Alone)),
+        TokenTree::Ident(Ident::new("u32", call_site)),
+        TokenTree::Punct(Punct::new('=', Spacing::Alone)),
+        TokenTree::Literal(Literal::u32_unsuffixed(1)),
+        TokenTree::Punct(Punct::new(';', Spacing::Alone)),
+        TokenTree::Ident(Ident::new("let", call_site)),
+        TokenTree::Ident(Ident::new("_", call_site)),
+        TokenTree::Punct(Punct::new('=', Spacing::Alone)),
+        TokenTree::Ident(x_ident),
+        TokenTree::Punct(Punct::new(';', Spacing::Alone)),
+    ]);
+    wrap_fn_block("_synth_static_item_body", body)
+}
+
+/// `#[derive(SynthConstGeneric)]` + `#[synth_const_generic]` →
+/// `const _: () = { fn _synth<const X: usize>() { let _ = X; } };`
+/// where the `X` const generic parameter inherits the user-span of
+/// `synth_const_generic`. Exercises the single-letter-const-generic
+/// rule's `hir_in_external_macro` guard.
+#[proc_macro_derive(SynthConstGeneric, attributes(synth_const_generic))]
+pub fn synth_const_generic(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_const_generic")
+        .expect("`#[derive(SynthConstGeneric)]` requires a `#[synth_const_generic]`");
+    let x_ident = Ident::new("X", attr_span);
+    let call_site = Span::call_site();
+
+    let mut generics = TokenStream::new();
+    generics.extend([
+        TokenTree::Punct(Punct::new('<', Spacing::Alone)),
+        TokenTree::Ident(Ident::new("const", call_site)),
+        TokenTree::Ident(x_ident.clone()),
+        TokenTree::Punct(Punct::new(':', Spacing::Alone)),
+        TokenTree::Ident(Ident::new("usize", call_site)),
+        TokenTree::Punct(Punct::new('>', Spacing::Alone)),
+    ]);
+    let mut fn_body = TokenStream::new();
+    fn_body.extend([
+        TokenTree::Ident(Ident::new("let", call_site)),
+        TokenTree::Ident(Ident::new("_", call_site)),
+        TokenTree::Punct(Punct::new('=', Spacing::Alone)),
+        TokenTree::Ident(x_ident),
+        TokenTree::Punct(Punct::new(';', Spacing::Alone)),
+    ]);
+    let mut body = TokenStream::new();
+    body.extend([
+        TokenTree::Ident(Ident::new("fn", call_site)),
+        TokenTree::Ident(Ident::new("_synth", call_site)),
+    ]);
+    body.extend(generics);
+    body.extend([
+        TokenTree::Group(Group::new(Delimiter::Parenthesis, TokenStream::new())),
+        TokenTree::Group(Group::new(Delimiter::Brace, fn_body)),
+    ]);
+    wrap_const_block(body)
+}
+
 /// `#[derive(SynthArcClone)]` + `#[synth_arc]` →
 /// `fn _synth_arc_clone_body() { let arc = std::sync::Arc::new(1u32); let _ = arc.clone(); }`
 /// where the `.clone()` method-call segment inherits the user-span
