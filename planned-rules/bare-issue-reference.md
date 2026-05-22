@@ -121,8 +121,10 @@ suggestion_mode = "issue_url"
 #                explicitly keeps the lint help-only even when
 #                `repo_base_url` is configured.
 
-# Defaults to "inline". When set to "reference", the lint emits the
-# `[#N] / [#N]: <url>` two-piece form instead of `[#N](<url>)`.
+# Doc-comment fix form. Defaults to "inline". When set to
+# "reference", the lint emits the `[#N] / [#N]: <url>` two-piece
+# form instead of `[#N](<url>)`. Ignored for plain-comment fixes,
+# which use `plain_comment_form` instead.
 form = "inline"
 
 # When true, also lint plain `//` line comments. The autofix in
@@ -154,10 +156,12 @@ plain_comment_form = "bare"
 #               punctuation (`;`, `,`, `.`) belongs to the URL;
 #               pick "bracketed" if the surrounding prose tends to
 #               put punctuation immediately after the reference.
-# "bracketed" — substitute <https://...>. A pre-markdown convention
-#               for delimiting a URL inside prose; the angle
-#               brackets give the URL a clear boundary when it
-#               abuts surrounding punctuation.
+# "bracketed" — substitute <https://...>. This is CommonMark's
+#               autolink syntax (which plain comments don't
+#               render, but the brackets still give the URL a
+#               clear textual boundary when it abuts surrounding
+#               punctuation). `perfectionist::bare_url` accepts
+#               the same form for its own checks.
 ```
 
 ## Implementation notes
