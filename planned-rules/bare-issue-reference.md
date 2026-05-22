@@ -58,11 +58,12 @@ left-context guard (no word character, no `[` before the `#`)
 and the URL-fragment skip still do. The `[` half of the guard
 deserves a note: in plain comments, `[#123]` isn't a markdown
 link, so the guard's doc-comment rationale doesn't transfer.
-Skipping it anyway is deliberate — the brackets in plain text
-read as the author's manual emphasis or quotation, and
-rewriting `[#123]` to a URL form would damage that authorial
-choice. Users who want the URL form should drop the brackets
-themselves.
+Skipping it anyway is deliberate — the bracketed token in plain
+text could be the author's deliberate styling (emphasis, a
+citation marker, a Markdown habit carried over) and the lint
+can't disambiguate, so leaving the span alone respects the
+explicit input. Users who want the URL form should drop the
+brackets themselves.
 
 ## Examples
 
@@ -145,13 +146,14 @@ form = "inline"
 # emitted help-only; no URL substitution is attempted.
 # Plain *block* comments (`/* ... */`) are out of scope for this
 # lint regardless of this setting. The sibling `bare_url`'s plan
-# is to scan block comments by reusing the regular-comment
-# retokenizer that `perfectionist::unicode_ellipsis_in_comments`
-# would expose if factored out (it currently inlines that walk);
-# this rule deliberately doesn't scan block comments at all,
-# because the working assumption is that `#NNN` references in
-# Rust code live in `//` and `///` comments. If a real codebase
-# surfaces block-comment references, revisit.
+# is to scan block comments via the same `rustc_lexer::tokenize`
+# walk that `perfectionist::unicode_ellipsis_in_comments` uses
+# inline (matching on `TokenKind::LineComment { doc_style: None }`
+# and `TokenKind::BlockComment { doc_style: None }`); this rule
+# deliberately doesn't scan block comments at all, because the
+# working assumption is that `#NNN` references in Rust code live
+# in `//` and `///` comments. If a real codebase surfaces
+# block-comment references, revisit.
 include_plain_comments = false
 
 # Replacement form used inside plain `//` comments when
@@ -174,8 +176,12 @@ plain_comment_form = "bare"
 #               recognise it, and the brackets give the URL a
 #               clear boundary when it abuts surrounding
 #               punctuation. `perfectionist::bare_url` accepts
-#               the same form for its own checks, so the two
-#               rules don't ping-pong.
+#               this form by default (`accept` includes
+#               `"angle_brackets"`); a project that has narrowed
+#               `bare_url.accept = ["labelled"]` would still see
+#               a `bare_url` violation on the autofix output and
+#               should pick one of the broader relaxations from
+#               the Interaction-with-sibling-rules section.
 ```
 
 ## Implementation notes
@@ -221,7 +227,12 @@ plain_comment_form = "bare"
     not implement the same redirect; the spec defaults
     conservatively to `MaybeIncorrect` on those and emits a
     note explaining why. The forge is detected by parsing the
-    host out of `repo_base_url`; no extra config knob.
+    host out of `repo_base_url`; no extra config knob. (Future
+    work: if self-hosted-GHE support becomes a real adopter
+    need, align with
+    [`unpinned-repo-ref`](./unpinned-repo-ref.md)'s
+    `hosts = [{ hostname, kind }]` pattern so users can
+    register an instance as `kind = "github"`.)
   - `suggestion_mode = "both"` → two `MaybeIncorrect` suggestions.
     `cargo clippy --fix` will not apply either; the author picks
     manually.
