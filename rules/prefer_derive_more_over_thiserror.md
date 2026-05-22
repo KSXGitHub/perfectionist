@@ -13,12 +13,15 @@ the consumer crate. Three syntactic shapes trigger the lint:
 
 1. `#[derive(thiserror::Error)]` — or `#[derive(Error)]` when a
    sibling `use thiserror::Error;` brings the derive macro into
-   scope under any local name.
+   scope under any local name, anywhere in the crate.
 2. `#[error(...)]` attributes attached to an item that this
    rule has already classified as thiserror-derived.
 3. `use thiserror::*`, `use thiserror::Error`,
    `use thiserror::Error as MyError;`, and similar imports
-   that bring `thiserror`'s items into scope.
+   that bring `thiserror`'s items into scope. Crate-rename
+   forms (`use thiserror as te;`,
+   `extern crate thiserror as te;`) and `#[cfg_attr]`-wrapped
+   derives are caught too.
 
 The lint is detection-only: it emits a help-style diagnostic
 pointing at the offending site and suggests migrating to
@@ -29,6 +32,15 @@ format-string positional translation (`thiserror`'s `{0}` ↔
 `#[display(...)]`), and edge cases (`#[error(transparent)]`,
 `#[backtrace]`) whose mechanical rewrite is too risky to apply
 without review.
+
+Because the pass runs pre-expansion and does not consult
+name resolution, alias collection is crate-wide rather than
+per-module: a `use thiserror::Error;` anywhere in the crate
+makes the bare `#[derive(Error)]` short-hand resolve as
+thiserror everywhere. In practice that overlap is rare and
+the rule treats it as acceptable false-positive surface; a
+project that hits it can suppress individual sites with
+`#[allow(perfectionist::prefer_derive_more_over_thiserror)]`.
 
 ## Why restrict this?
 This is a stylistic preference, not a correctness issue. The
@@ -69,4 +81,5 @@ Configure via `dylint.toml` under `["perfectionist::prefer_derive_more_over_this
 Paths whose presence in a `#[derive(...)]` list (or whose
 crate's presence in a `use` statement) flags the site. Each
 entry is a `::`-separated path string. Replaces the default
-`["thiserror::Error"]` when supplied.
+`["thiserror::Error"]` when supplied; the empty list `[]`
+disables the rule.

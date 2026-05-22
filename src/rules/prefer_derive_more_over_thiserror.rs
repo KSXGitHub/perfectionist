@@ -1,8 +1,10 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use clippy_utils::diagnostics::span_lint_and_help;
+use rustc_ast::visit::{self, Visitor};
 use rustc_ast::{
-    AttrVec, Attribute, Crate, EnumDef, Item, ItemKind, ModKind, UseTree, UseTreeKind, VariantData,
+    AttrVec, Attribute, Crate, EnumDef, Item, ItemKind, MetaItemInner, MetaItemKind, UseTree,
+    UseTreeKind, VariantData,
 };
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -17,12 +19,15 @@ declare_tool_lint! {
     ///
     /// 1. `#[derive(thiserror::Error)]` — or `#[derive(Error)]` when a
     ///    sibling `use thiserror::Error;` brings the derive macro into
-    ///    scope under any local name.
+    ///    scope under any local name, anywhere in the crate.
     /// 2. `#[error(...)]` attributes attached to an item that this
     ///    rule has already classified as thiserror-derived.
     /// 3. `use thiserror::*`, `use thiserror::Error`,
     ///    `use thiserror::Error as MyError;`, and similar imports
-    ///    that bring `thiserror`'s items into scope.
+    ///    that bring `thiserror`'s items into scope. Crate-rename
+    ///    forms (`use thiserror as te;`,
+    ///    `extern crate thiserror as te;`) and `#[cfg_attr]`-wrapped
+    ///    derives are caught too.
     ///
     /// The lint is detection-only: it emits a help-style diagnostic
     /// pointing at the offending site and suggests migrating to
@@ -33,6 +38,15 @@ declare_tool_lint! {
     /// `#[display(...)]`), and edge cases (`#[error(transparent)]`,
     /// `#[backtrace]`) whose mechanical rewrite is too risky to apply
     /// without review.
+    ///
+    /// Because the pass runs pre-expansion and does not consult
+    /// name resolution, alias collection is crate-wide rather than
+    /// per-module: a `use thiserror::Error;` anywhere in the crate
+    /// makes the bare `#[derive(Error)]` short-hand resolve as
+    /// thiserror everywhere. In practice that overlap is rare and
+    /// the rule treats it as acceptable false-positive surface; a
+    /// project that hits it can suppress individual sites with
+    /// `#[allow(perfectionist::prefer_derive_more_over_thiserror)]`.
     ///
     /// ### Why restrict this?
     /// This is a stylistic preference, not a correctness issue. The
@@ -86,7 +100,8 @@ struct Config {
     /// Paths whose presence in a `#[derive(...)]` list (or whose
     /// crate's presence in a `use` statement) flags the site. Each
     /// entry is a `::`-separated path string. Replaces the default
-    /// `["thiserror::Error"]` when supplied.
+    /// `["thiserror::Error"]` when supplied; the empty list `[]`
+    /// disables the rule.
     thiserror_paths: Option<Vec<String>>,
 }
 
@@ -97,13 +112,19 @@ pub struct PreferDeriveMoreOverThiserror {
     /// First segments of every configured path — the crate names a
     /// `use` statement must start with to be flagged.
     thiserror_crates: BTreeSet<Symbol>,
-    /// Identifiers that, anywhere in the crate, are bound by a
-    /// `use thiserror::...` (or aliased form). A bare `#[derive(X)]`
-    /// where `X` is in this set is treated as thiserror-derived.
-    /// Populated by [`Self::collect_aliases`] from the
-    /// [`EarlyLintPass::check_crate`] hook, before any
-    /// [`EarlyLintPass::check_item`] callback runs.
+    /// Identifiers that, anywhere in the crate, name a configured
+    /// path's terminal item. A bare `#[derive(X)]` where `X` is in
+    /// this set is treated as thiserror-derived. Populated by the
+    /// [`AliasCollector`] visitor from the [`EarlyLintPass::check_crate`]
+    /// hook, before any [`EarlyLintPass::check_item`] callback runs.
     aliases: BTreeSet<Symbol>,
+    /// Local names that alias a configured thiserror *crate*.
+    /// Populated from `use thiserror as te;` and
+    /// `extern crate thiserror as te;`. The value is the original
+    /// crate name (e.g. `thiserror`) so that a derive path
+    /// `[te, Error]` can be expanded to `[thiserror, Error]` and
+    /// matched against [`Self::thiserror_paths`].
+    crate_aliases: BTreeMap<Symbol, Symbol>,
 }
 
 impl PreferDeriveMoreOverThiserror {
@@ -133,6 +154,7 @@ impl PreferDeriveMoreOverThiserror {
             thiserror_paths,
             thiserror_crates,
             aliases: BTreeSet::new(),
+            crate_aliases: BTreeMap::new(),
         }
     }
 }
@@ -159,12 +181,29 @@ pub fn register_pass(lint_store: &mut LintStore) {
 
 impl EarlyLintPass for PreferDeriveMoreOverThiserror {
     fn check_crate(&mut self, _cx: &EarlyContext<'_>, krate: &Crate) {
-        for item in &krate.items {
-            self.collect_aliases(item);
+        // `thiserror_paths` is empty when the user opts out via
+        // `thiserror_paths = []` in `dylint.toml`. Skip the
+        // crate-wide alias scan and short-circuit every per-item
+        // check below — there is nothing to match against.
+        if self.thiserror_paths.is_empty() {
+            return;
         }
+        // Reset state. dylint currently constructs a fresh pass per
+        // crate, so the clear is defensive; a future host that reuses
+        // instances would otherwise see aliases leak between crates.
+        self.aliases.clear();
+        self.crate_aliases.clear();
+        // Use the AST visitor (not a hand-rolled mod-only walk) so
+        // that `use thiserror::Error;` inside fn bodies, blocks,
+        // `impl`s, and trait items still feeds the alias set.
+        let mut collector = AliasCollector { rule: self };
+        visit::walk_crate(&mut collector, krate);
     }
 
     fn check_item(&mut self, cx: &EarlyContext<'_>, item: &Item) {
+        if self.thiserror_paths.is_empty() {
+            return;
+        }
         match &item.kind {
             ItemKind::Use(use_tree) => self.check_use(cx, item, use_tree),
             ItemKind::Struct(_, _, data) => self.check_struct(cx, &item.attrs, data),
@@ -174,65 +213,99 @@ impl EarlyLintPass for PreferDeriveMoreOverThiserror {
     }
 }
 
-impl PreferDeriveMoreOverThiserror {
-    /// Recurse through inline modules to find `use` statements that
-    /// pull a configured `thiserror_paths` entry into scope. Each
-    /// such import contributes its local name (rename, or the path's
-    /// last segment) to [`Self::aliases`].
-    fn collect_aliases(&mut self, item: &Item) {
+/// AST visitor used by [`EarlyLintPass::check_crate`] to populate
+/// the rule's alias maps. Walking the AST through the visitor (rather
+/// than a hand-rolled `ItemKind::Mod`-only recursion) ensures that
+/// `use thiserror::...` and `extern crate thiserror as ...;` items
+/// nested inside function bodies, blocks, `impl`s, or trait items are
+/// recorded — the rule's `check_item` callback still visits those
+/// inner items individually for diagnostic emission, but the alias
+/// scan must happen up front so that bare `#[derive(Error)]` in any
+/// scope can be resolved against a sibling `use thiserror::Error;`
+/// in any other scope.
+struct AliasCollector<'a> {
+    rule: &'a mut PreferDeriveMoreOverThiserror,
+}
+
+impl<'ast> Visitor<'ast> for AliasCollector<'_> {
+    fn visit_item(&mut self, item: &'ast Item) {
         match &item.kind {
             ItemKind::Use(use_tree) => {
-                self.walk_use_tree(use_tree, &[]);
+                walk_use_tree_for_aliases(self.rule, use_tree, &[]);
             }
-            ItemKind::Mod(_, _, ModKind::Loaded(items, _, _)) => {
-                for nested in items {
-                    self.collect_aliases(nested);
+            ItemKind::ExternCrate(orig, ident) => {
+                // `extern crate thiserror;` — `orig` is `None`,
+                // `ident` is `thiserror`. `extern crate thiserror as te;`
+                // — `orig` is `Some(thiserror)`, `ident` is `te`. The
+                // local-name binding is `ident.name`, the original
+                // crate name is `orig.unwrap_or(ident.name)`.
+                let original = orig.unwrap_or(ident.name);
+                if self.rule.thiserror_crates.contains(&original) {
+                    self.rule.crate_aliases.insert(ident.name, original);
                 }
             }
             _ => {}
         }
+        visit::walk_item(self, item);
     }
+}
 
-    fn walk_use_tree(&mut self, tree: &UseTree, parent: &[Symbol]) {
-        let mut path: Vec<Symbol> = parent.to_vec();
-        for segment in &tree.prefix.segments {
-            if segment.ident.name == kw::PathRoot {
-                continue;
-            }
-            path.push(segment.ident.name);
+fn walk_use_tree_for_aliases(
+    rule: &mut PreferDeriveMoreOverThiserror,
+    tree: &UseTree,
+    parent: &[Symbol],
+) {
+    let mut path: Vec<Symbol> = parent.to_vec();
+    for segment in &tree.prefix.segments {
+        if segment.ident.name == kw::PathRoot {
+            continue;
         }
-        match &tree.kind {
-            UseTreeKind::Simple(rename) => {
-                if !path_matches_thiserror(&self.thiserror_paths, &path) {
-                    return;
-                }
+        path.push(segment.ident.name);
+    }
+    match &tree.kind {
+        UseTreeKind::Simple(rename) => {
+            // `use thiserror::Error;` / `use thiserror::Error as X;` —
+            // path matches a configured leaf; record the local name as
+            // an alias for that leaf.
+            if path_matches_thiserror(&rule.thiserror_paths, &path) {
                 let local = rename
                     .map(|ident| ident.name)
                     .or_else(|| path.last().copied());
                 if let Some(local) = local {
-                    self.aliases.insert(local);
+                    rule.aliases.insert(local);
                 }
+                return;
             }
-            UseTreeKind::Glob(_) => {
-                for cfg in &self.thiserror_paths {
-                    if cfg.len() > path.len()
-                        && cfg.starts_with(&path)
-                        && let Some(&last) = cfg.last()
-                    {
-                        self.aliases.insert(last);
-                    }
-                }
+            // `use thiserror as te;` / `use thiserror;` — single-segment
+            // path that names a thiserror crate root; record the local
+            // name as a crate-level alias so a later `te::Error` derive
+            // path can be expanded.
+            if path.len() == 1 && rule.thiserror_crates.contains(&path[0]) {
+                let local = rename.map(|ident| ident.name).unwrap_or(path[0]);
+                rule.crate_aliases.insert(local, path[0]);
             }
-            UseTreeKind::Nested { items, .. } => {
-                for (nested, _) in items {
-                    self.walk_use_tree(nested, &path);
+        }
+        UseTreeKind::Glob(_) => {
+            for cfg in &rule.thiserror_paths {
+                if cfg.len() > path.len()
+                    && cfg.starts_with(&path)
+                    && let Some(&last) = cfg.last()
+                {
+                    rule.aliases.insert(last);
                 }
             }
         }
+        UseTreeKind::Nested { items, .. } => {
+            for (nested, _) in items {
+                walk_use_tree_for_aliases(rule, nested, &path);
+            }
+        }
     }
+}
 
+impl PreferDeriveMoreOverThiserror {
     fn check_struct(&self, cx: &EarlyContext<'_>, attrs: &AttrVec, data: &VariantData) {
-        if !self.check_derive_list(cx, attrs) {
+        if !self.check_derive_attrs(cx, attrs) {
             return;
         }
         flag_error_attrs(cx, attrs);
@@ -240,57 +313,117 @@ impl PreferDeriveMoreOverThiserror {
     }
 
     fn check_enum(&self, cx: &EarlyContext<'_>, attrs: &AttrVec, def: &EnumDef) {
-        if !self.check_derive_list(cx, attrs) {
+        if !self.check_derive_attrs(cx, attrs) {
             return;
         }
         flag_error_attrs(cx, attrs);
         flag_enum_error_attrs(cx, def);
     }
 
+    /// Emit on every `use` statement whose tree touches a configured
+    /// thiserror crate at any depth. Handles the three common shapes
+    /// in one pass:
+    ///
+    /// - `use thiserror::Error;` — outer prefix's first segment is
+    ///   `thiserror`, matches immediately.
+    /// - `use thiserror::{Error, ErrorKind};` — same as above; the
+    ///   nested children inherit the outer prefix, so we don't have
+    ///   to walk them.
+    /// - `use {thiserror::Error, std::io};` — top-level braced form
+    ///   with an empty outer prefix; recurse into the children and
+    ///   flag if any child's prefix names a thiserror crate.
     fn check_use(&self, cx: &EarlyContext<'_>, item: &Item, use_tree: &UseTree) {
-        let first = use_tree
+        if self.use_tree_references_thiserror(use_tree) {
+            emit_use(cx, item.span);
+        }
+    }
+
+    fn use_tree_references_thiserror(&self, tree: &UseTree) -> bool {
+        let first = tree
             .prefix
             .segments
             .iter()
             .map(|segment| segment.ident.name)
             .find(|name| *name != kw::PathRoot);
-        let Some(first) = first else {
-            return;
-        };
-        if !self.thiserror_crates.contains(&first) {
-            return;
+        if let Some(name) = first {
+            return self.thiserror_crates.contains(&name);
         }
-        emit_use(cx, item.span);
+        // Empty outer prefix — recurse into nested children. (A
+        // glob with an empty prefix is `use *;` and not valid Rust;
+        // a simple with an empty prefix is also invalid. Only the
+        // nested form needs handling here.)
+        if let UseTreeKind::Nested { items, .. } = &tree.kind {
+            return items
+                .iter()
+                .any(|(nested, _)| self.use_tree_references_thiserror(nested));
+        }
+        false
     }
 
     /// Walk a struct or enum's outer attributes and emit a
     /// diagnostic on every derive entry that resolves to a
-    /// configured thiserror path. Returns `true` when at least one
-    /// entry matched, signalling that the caller should also flag
-    /// `#[error(...)]` attributes elsewhere on the item.
-    fn check_derive_list(&self, cx: &EarlyContext<'_>, attrs: &AttrVec) -> bool {
+    /// configured thiserror path. Recurses through `#[cfg_attr]`
+    /// wrappers so that conditional derives are not silently
+    /// missed. Returns `true` when at least one entry matched,
+    /// signalling that the caller should also flag `#[error(...)]`
+    /// attributes elsewhere on the item.
+    fn check_derive_attrs(&self, cx: &EarlyContext<'_>, attrs: &AttrVec) -> bool {
         let mut thiserror_derived = false;
         for attr in attrs {
-            if !attr.has_name(sym::derive) {
-                continue;
+            if attr.has_name(sym::derive)
+                && let Some(entries) = attr.meta_item_list()
+                && self.check_derive_entries(cx, &entries)
+            {
+                thiserror_derived = true;
+            } else if attr.has_name(sym::cfg_attr)
+                && let Some(args) = attr.meta_item_list()
+                && self.check_cfg_attr_payload(cx, args.get(1..).unwrap_or(&[]))
+            {
+                thiserror_derived = true;
             }
-            let Some(entries) = attr.meta_item_list() else {
+        }
+        thiserror_derived
+    }
+
+    /// Inspect the attribute-list payload of a `#[cfg_attr(pred, ...)]`
+    /// — the slice after the predicate. Each payload entry is itself
+    /// an attribute shape; recognise nested `derive(...)` and
+    /// further nested `cfg_attr(...)` and recurse.
+    fn check_cfg_attr_payload(&self, cx: &EarlyContext<'_>, items: &[MetaItemInner]) -> bool {
+        let mut found = false;
+        for item in items {
+            let Some(meta) = item.meta_item() else {
                 continue;
             };
-            for entry in &entries {
-                let Some(meta) = entry.meta_item() else {
-                    continue;
-                };
-                let segments: Vec<Symbol> = meta
-                    .path
-                    .segments
-                    .iter()
-                    .map(|segment| segment.ident.name)
-                    .filter(|name| *name != kw::PathRoot)
-                    .collect();
-                if !self.is_thiserror_derive(&segments) {
-                    continue;
-                }
+            if meta.has_name(sym::derive)
+                && let MetaItemKind::List(entries) = &meta.kind
+                && self.check_derive_entries(cx, entries)
+            {
+                found = true;
+            } else if meta.has_name(sym::cfg_attr)
+                && let MetaItemKind::List(args) = &meta.kind
+                && self.check_cfg_attr_payload(cx, args.get(1..).unwrap_or(&[]))
+            {
+                found = true;
+            }
+        }
+        found
+    }
+
+    fn check_derive_entries(&self, cx: &EarlyContext<'_>, entries: &[MetaItemInner]) -> bool {
+        let mut thiserror_derived = false;
+        for entry in entries {
+            let Some(meta) = entry.meta_item() else {
+                continue;
+            };
+            let segments: Vec<Symbol> = meta
+                .path
+                .segments
+                .iter()
+                .map(|segment| segment.ident.name)
+                .filter(|name| *name != kw::PathRoot)
+                .collect();
+            if self.is_thiserror_derive(&segments) {
                 thiserror_derived = true;
                 emit_derive(cx, entry.span());
             }
@@ -305,7 +438,24 @@ impl PreferDeriveMoreOverThiserror {
         // Single-segment derive entry (`#[derive(Error)]`) matches
         // when the crate has a sibling `use thiserror::Error;` (or
         // aliased / glob form) somewhere in scope.
-        matches!(segments, [name] if self.aliases.contains(name))
+        if let [name] = segments
+            && self.aliases.contains(name)
+        {
+            return true;
+        }
+        // Crate-aliased derive entry (`#[derive(te::Error)]` paired
+        // with `use thiserror as te;`): expand the first segment to
+        // the original crate name and re-match against configured
+        // paths.
+        if let [first, rest @ ..] = segments
+            && let Some(&expanded_first) = self.crate_aliases.get(first)
+        {
+            let mut expanded = Vec::with_capacity(segments.len());
+            expanded.push(expanded_first);
+            expanded.extend_from_slice(rest);
+            return path_matches_thiserror(&self.thiserror_paths, &expanded);
+        }
+        false
     }
 }
 

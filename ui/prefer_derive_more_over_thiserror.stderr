@@ -39,5 +39,21 @@ LL | use thiserror::{Error as _GroupedAlias};
    |
    = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
 
-warning: 5 warnings emitted
+warning: `use` of `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/prefer_derive_more_over_thiserror.rs:53:1
+   |
+LL | use thiserror as te;
+   | ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: `use` of `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/prefer_derive_more_over_thiserror.rs:59:1
+   |
+LL | use {thiserror::Error as _BracedTopLevel, std::io};
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: 7 warnings emitted
 
