@@ -52,6 +52,13 @@ use thiserror::{Error as _GroupedAlias};
 // `#[derive(te::Error)]` derive would resolve back to thiserror.
 use thiserror as te;
 
+// Bad: nested-`self` crate-rename form. `use thiserror::{self as
+// nested_te};` is semantically equivalent to `use thiserror as
+// nested_te;`; the rule filters the synthetic `self` segment so
+// the inner tree's effective path is `[thiserror]`, falling into
+// the same single-segment crate-alias branch.
+use thiserror::{self as _nested_te};
+
 // Bad: top-level braced form with an empty outer prefix. The
 // `check_use` recursion descends into the child `thiserror::Error`
 // branch and flags the whole `use` item even though the outer tree

@@ -206,6 +206,18 @@ impl EarlyLintPass for PreferDeriveMoreOverThiserror {
         }
         match &item.kind {
             ItemKind::Use(use_tree) => self.check_use(cx, item, use_tree),
+            ItemKind::ExternCrate(orig, ident) => {
+                // `extern crate thiserror;` — `orig` is `None`,
+                // `ident.name` is the crate name. `extern crate
+                // thiserror as te;` — `orig` is `Some(thiserror)`,
+                // `ident.name` is `te`. The alias side is recorded by
+                // `AliasCollector`; emit the `use`-shaped diagnostic
+                // on the item span here.
+                let original = orig.unwrap_or(ident.name);
+                if self.thiserror_crates.contains(&original) {
+                    emit_use(cx, item.span);
+                }
+            }
             ItemKind::Struct(_, _, data) => self.check_struct(cx, &item.attrs, data),
             ItemKind::Enum(_, _, def) => self.check_enum(cx, &item.attrs, def),
             _ => {}
@@ -257,7 +269,17 @@ fn walk_use_tree_for_aliases(
 ) {
     let mut path: Vec<Symbol> = parent.to_vec();
     for segment in &tree.prefix.segments {
-        if segment.ident.name == kw::PathRoot {
+        // `kw::PathRoot` is the synthetic leading-`::` segment; skip
+        // it so `use ::thiserror::Error;` and `use thiserror::Error;`
+        // produce the same `path`.
+        //
+        // `kw::SelfLower` inside a nested tree (`use
+        // thiserror::{self};` / `use thiserror::{self as te};`) names
+        // the parent itself — semantically equivalent to `use
+        // thiserror;` / `use thiserror as te;`. Skipping the segment
+        // makes the nested form fall into the `path.len() == 1`
+        // crate-alias branch below.
+        if segment.ident.name == kw::PathRoot || segment.ident.name == kw::SelfLower {
             continue;
         }
         path.push(segment.ident.name);
@@ -473,6 +495,33 @@ fn flag_error_attrs(cx: &EarlyContext<'_>, attrs: &[Attribute]) {
     for attr in attrs {
         if attr.has_name(error) {
             emit_error_attr(cx, attr.span);
+        } else if attr.has_name(sym::cfg_attr)
+            && let Some(args) = attr.meta_item_list()
+        {
+            // Symmetric to `check_derive_attrs`: unwrap
+            // `#[cfg_attr(pred, error(...))]` so conditional
+            // `#[error(...)]` attributes are caught alongside their
+            // sibling `#[cfg_attr(pred, derive(thiserror::Error))]`.
+            flag_error_in_cfg_attr_payload(cx, args.get(1..).unwrap_or(&[]), error);
+        }
+    }
+}
+
+fn flag_error_in_cfg_attr_payload(
+    cx: &EarlyContext<'_>,
+    items: &[MetaItemInner],
+    error: Symbol,
+) {
+    for item in items {
+        let Some(meta) = item.meta_item() else {
+            continue;
+        };
+        if meta.has_name(error) {
+            emit_error_attr(cx, meta.span);
+        } else if meta.has_name(sym::cfg_attr)
+            && let MetaItemKind::List(args) = &meta.kind
+        {
+            flag_error_in_cfg_attr_payload(cx, args.get(1..).unwrap_or(&[]), error);
         }
     }
 }

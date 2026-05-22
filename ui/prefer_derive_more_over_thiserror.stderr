@@ -48,12 +48,20 @@ LL | use thiserror as te;
    = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
 
 warning: `use` of `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
-  --> $DIR/prefer_derive_more_over_thiserror.rs:59:1
+  --> $DIR/prefer_derive_more_over_thiserror.rs:60:1
+   |
+LL | use thiserror::{self as _nested_te};
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: `use` of `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/prefer_derive_more_over_thiserror.rs:66:1
    |
 LL | use {thiserror::Error as _BracedTopLevel, std::io};
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
 
-warning: 7 warnings emitted
+warning: 8 warnings emitted
 
