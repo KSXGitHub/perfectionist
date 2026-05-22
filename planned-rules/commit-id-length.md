@@ -149,7 +149,7 @@ A compare URL emits up to two diagnostics, one per SHA.
 ## Implementation notes
 
 - `LateLintPass`. Share the URL scanner with
-  [`bare-url`](./bare-url.md) and
+  `perfectionist::bare_url` (`src/url_scan.rs`) and
   [`unpinned-repo-ref`](./unpinned-repo-ref.md). Discovery happens
   once per source comment; classification is per-lint.
 - Each `kind` has a small, fixed set of SHA-bearing path patterns,
