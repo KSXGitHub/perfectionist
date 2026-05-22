@@ -36,7 +36,8 @@ const BUILTIN_DENY: &[&str] = &["debug_assert", "debug_assert_eq", "debug_assert
 ///    `is_x86_feature_detected!` family takes a string literal, the
 ///    `line!` / `column!` / `file!` / `module_path!` family takes
 ///    no argument, `compile_error!` aborts compilation — or, in the
-///    matryoshka case from issue #71, is itself a call to another
+///    matryoshka case from issue [#71](https://github.com/KSXGitHub/perfectionist/issues/71),
+///    is itself a call to another
 ///    macro from this group. None of these evaluates a user
 ///    expression at runtime, so no exactly-once-vs.-zero hazard
 ///    surfaces at the call site.
