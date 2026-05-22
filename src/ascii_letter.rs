@@ -35,13 +35,21 @@ pub(crate) const TOML_LABEL: &str = "single-letter string";
 pub(crate) struct AsciiLetter(char);
 
 impl TryFrom<char> for AsciiLetter {
-    type Error = &'static str;
+    type Error = String;
 
     fn try_from(value: char) -> Result<Self, Self::Error> {
         if value.is_ascii_alphabetic() {
             Ok(Self(value))
         } else {
-            Err("expected a single ASCII letter (a-z, A-Z)")
+            // Embed the offending codepoint so a TOML author with a
+            // mixed-valid/invalid list (`["a", "1", "c"]`) can see
+            // *which* entry the validator rejected. Serde-toml's
+            // wrapping error reports the source span, but not the
+            // value, so without this the user only learns that
+            // "some" entry failed.
+            Err(format!(
+                "expected a single ASCII letter (a-z, A-Z), got {value:?}"
+            ))
         }
     }
 }
@@ -96,6 +104,13 @@ mod tests {
             error.contains("expected a single ASCII letter"),
             "unexpected error message: {error}",
         );
+        // The offending codepoint must round-trip into the rendered
+        // error so a user with a mixed-valid/invalid array can find
+        // which entry failed without counting indices.
+        assert!(
+            error.contains("'1'"),
+            "error should name the offending character: {error}",
+        );
     }
 
     #[test]
@@ -104,6 +119,10 @@ mod tests {
         assert!(
             error.contains("expected a single ASCII letter"),
             "unexpected error message: {error}",
+        );
+        assert!(
+            error.contains("'é'") || error.contains(r"'\u"),
+            "error should name the offending character: {error}",
         );
     }
 }

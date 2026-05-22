@@ -375,8 +375,18 @@ mod tests {
     /// can't silently come back.
     #[test]
     fn collect_rules_finds_config_in_submodule_file() {
+        // Mirror the real layout: `base` stands in for the project
+        // root, `base/rules` for `src/rules`. Nesting the rules
+        // directory one level deep matters because `collect_rules`
+        // walks `rules_dir.parent()` for shared-newtype `TOML_LABEL`
+        // constants; if rules_dir's parent were `std::env::temp_dir()`
+        // itself, the discovery would scan every stray `.rs` file at
+        // the top of /tmp and could pick up unrelated definitions
+        // dropped by parallel processes.
         let base = tempdir("merge-submodule");
-        let parent_path = base.join("demo_rule.rs");
+        let rules_dir = base.join("rules");
+        fs::create_dir_all(&rules_dir).unwrap();
+        let parent_path = rules_dir.join("demo_rule.rs");
         fs::write(
             &parent_path,
             r#"
@@ -394,7 +404,7 @@ mod tests {
             "#,
         )
         .unwrap();
-        let submodule_dir = base.join("demo_rule");
+        let submodule_dir = rules_dir.join("demo_rule");
         fs::create_dir_all(&submodule_dir).unwrap();
         fs::write(
             submodule_dir.join("config.rs"),
@@ -411,7 +421,7 @@ mod tests {
         )
         .unwrap();
 
-        let rules = collect_rules(&base);
+        let rules = collect_rules(&rules_dir);
         assert_eq!(rules.len(), 1, "exactly one rule should be discovered");
         let config = rules[0]
             .config
