@@ -201,11 +201,21 @@ impl EarlyLintPass for PreferDeriveMoreOverThiserror {
         // instances would otherwise see aliases leak between crates.
         self.aliases.clear();
         self.crate_aliases.clear();
-        // Use the AST visitor (not a hand-rolled mod-only walk) so
-        // that `use thiserror::Error;` inside fn bodies, blocks,
-        // `impl`s, and trait items still feeds the alias set.
-        let mut collector = AliasCollector { rule: self };
-        visit::walk_crate(&mut collector, krate);
+        // Two-pass alias collection: the leaf-alias pass needs to
+        // expand a crate-aliased first segment (`use te::Error;` after
+        // `use thiserror as te;`) through `crate_aliases`, but the
+        // visitor walks items in source order, and the two `use`
+        // statements may appear in either order. The first pass
+        // therefore fills `crate_aliases` only, so the second pass
+        // always sees a complete map regardless of declaration order.
+        // Both passes use the same AST visitor (rather than a
+        // hand-rolled mod-only walk) so that `use thiserror::...`
+        // inside fn bodies, blocks, `impl`s, and trait items still
+        // feeds the alias set.
+        for phase in [CollectPhase::CrateAliases, CollectPhase::LeafAliases] {
+            let mut collector = AliasCollector { rule: self, phase };
+            visit::walk_crate(&mut collector, krate);
+        }
     }
 
     fn check_item(&mut self, cx: &EarlyContext<'_>, item: &Item) {
@@ -233,6 +243,17 @@ impl EarlyLintPass for PreferDeriveMoreOverThiserror {
     }
 }
 
+/// Phase tag for the two-pass alias collection driven by
+/// [`AliasCollector`]. The first pass fills `crate_aliases` from
+/// every `use thiserror as te;` / `extern crate thiserror as te;`
+/// item; the second pass fills `aliases`, expanding crate-aliased
+/// first segments (`use te::Error;`) through `crate_aliases`.
+#[derive(Clone, Copy)]
+enum CollectPhase {
+    CrateAliases,
+    LeafAliases,
+}
+
 /// AST visitor used by [`EarlyLintPass::check_crate`] to populate
 /// the rule's alias maps. Walking the AST through the visitor (rather
 /// than a hand-rolled `ItemKind::Mod`-only recursion) ensures that
@@ -245,23 +266,27 @@ impl EarlyLintPass for PreferDeriveMoreOverThiserror {
 /// in any other scope.
 struct AliasCollector<'a> {
     rule: &'a mut PreferDeriveMoreOverThiserror,
+    phase: CollectPhase,
 }
 
 impl<'ast> Visitor<'ast> for AliasCollector<'_> {
     fn visit_item(&mut self, item: &'ast Item) {
         match &item.kind {
             ItemKind::Use(use_tree) => {
-                walk_use_tree_for_aliases(self.rule, use_tree, &[]);
+                walk_use_tree_for_aliases(self.rule, use_tree, &[], self.phase);
             }
             ItemKind::ExternCrate(orig, ident) => {
                 // `extern crate thiserror;` — `orig` is `None`,
                 // `ident` is `thiserror`. `extern crate thiserror as te;`
-                // — `orig` is `Some(thiserror)`, `ident` is `te`. The
-                // local-name binding is `ident.name`, the original
-                // crate name is `orig.unwrap_or(ident.name)`.
-                let original = orig.unwrap_or(ident.name);
-                if self.rule.thiserror_crates.contains(&original) {
-                    self.rule.crate_aliases.insert(ident.name, original);
+                // — `orig` is `Some(thiserror)`, `ident` is `te`. Only
+                // relevant during the crate-alias pass; the leaf-alias
+                // pass relies on the already-populated map without
+                // re-inserting.
+                if matches!(self.phase, CollectPhase::CrateAliases) {
+                    let original = orig.unwrap_or(ident.name);
+                    if self.rule.thiserror_crates.contains(&original) {
+                        self.rule.crate_aliases.insert(ident.name, original);
+                    }
                 }
             }
             _ => {}
@@ -274,6 +299,7 @@ fn walk_use_tree_for_aliases(
     rule: &mut PreferDeriveMoreOverThiserror,
     tree: &UseTree,
     parent: &[Symbol],
+    phase: CollectPhase,
 ) {
     let mut path: Vec<Symbol> = parent.to_vec();
     for (idx, segment) in tree.prefix.segments.iter().enumerate() {
@@ -301,29 +327,53 @@ fn walk_use_tree_for_aliases(
         path.push(segment.ident.name);
     }
     match &tree.kind {
-        UseTreeKind::Simple(rename) => {
-            // `use thiserror::Error;` / `use thiserror::Error as X;` —
-            // path matches a configured leaf; record the local name as
-            // an alias for that leaf.
-            if path_matches_thiserror(&rule.thiserror_paths, &path) {
-                let local = rename
-                    .map(|ident| ident.name)
-                    .or_else(|| path.last().copied());
-                if let Some(local) = local {
-                    rule.aliases.insert(local);
+        UseTreeKind::Simple(rename) => match phase {
+            CollectPhase::CrateAliases => {
+                // `use thiserror as te;` / `use thiserror;` —
+                // single-segment path naming a thiserror crate root.
+                // Record the local name as a crate-level alias so a
+                // later `te::Error` derive (or `use te::Error;`) can
+                // be expanded.
+                if path.len() == 1 && rule.thiserror_crates.contains(&path[0]) {
+                    let local = rename.map(|ident| ident.name).unwrap_or(path[0]);
+                    rule.crate_aliases.insert(local, path[0]);
                 }
+            }
+            CollectPhase::LeafAliases => {
+                // `use thiserror::Error;` / `use thiserror::Error as
+                // X;` — direct leaf match. `use te::Error;` after a
+                // sibling `use thiserror as te;` — same shape after
+                // first-segment expansion through `crate_aliases`.
+                let matches_direct = path_matches_thiserror(&rule.thiserror_paths, &path);
+                let matches_via_alias = !matches_direct
+                    && match path.split_first() {
+                        Some((first, rest)) => rule
+                            .crate_aliases
+                            .get(first)
+                            .map(|&expanded| {
+                                let mut expanded_path = Vec::with_capacity(path.len());
+                                expanded_path.push(expanded);
+                                expanded_path.extend_from_slice(rest);
+                                path_matches_thiserror(&rule.thiserror_paths, &expanded_path)
+                            })
+                            .unwrap_or(false),
+                        None => false,
+                    };
+                if matches_direct || matches_via_alias {
+                    let local = rename
+                        .map(|ident| ident.name)
+                        .or_else(|| path.last().copied());
+                    if let Some(local) = local {
+                        rule.aliases.insert(local);
+                    }
+                }
+            }
+        },
+        UseTreeKind::Glob(_) => {
+            if matches!(phase, CollectPhase::CrateAliases) {
+                // Globs don't introduce crate aliases.
                 return;
             }
-            // `use thiserror as te;` / `use thiserror;` — single-segment
-            // path that names a thiserror crate root; record the local
-            // name as a crate-level alias so a later `te::Error` derive
-            // path can be expanded.
-            if path.len() == 1 && rule.thiserror_crates.contains(&path[0]) {
-                let local = rename.map(|ident| ident.name).unwrap_or(path[0]);
-                rule.crate_aliases.insert(local, path[0]);
-            }
-        }
-        UseTreeKind::Glob(_) => {
             // `use a::b::*;` brings the *direct* children of `a::b`
             // into scope, so the glob exposes the configured leaf
             // only when the configured path is exactly one segment
@@ -334,9 +384,25 @@ fn walk_use_tree_for_aliases(
             // `["foo::bar::Error"]` plus `use foo::*;` it is
             // `3 == 1 + 1 ⇒ false` and the rule does not falsely
             // claim `Error` is in scope.
+            //
+            // The glob's path is also expanded through `crate_aliases`
+            // so `use te::*;` after `use thiserror as te;` behaves
+            // like `use thiserror::*;`.
+            let expanded_path = match path.split_first() {
+                Some((first, rest)) => match rule.crate_aliases.get(first) {
+                    Some(&expanded_first) => {
+                        let mut out = Vec::with_capacity(path.len());
+                        out.push(expanded_first);
+                        out.extend_from_slice(rest);
+                        out
+                    }
+                    None => path.clone(),
+                },
+                None => path.clone(),
+            };
             for cfg in &rule.thiserror_paths {
-                if cfg.len() == path.len() + 1
-                    && cfg.starts_with(&path)
+                if cfg.len() == expanded_path.len() + 1
+                    && cfg.starts_with(&expanded_path)
                     && let Some(&last) = cfg.last()
                 {
                     rule.aliases.insert(last);
@@ -345,7 +411,7 @@ fn walk_use_tree_for_aliases(
         }
         UseTreeKind::Nested { items, .. } => {
             for (nested, _) in items {
-                walk_use_tree_for_aliases(rule, nested, &path);
+                walk_use_tree_for_aliases(rule, nested, &path, phase);
             }
         }
     }
@@ -394,7 +460,11 @@ impl PreferDeriveMoreOverThiserror {
             .map(|segment| segment.ident.name)
             .find(|name| *name != kw::PathRoot);
         if let Some(name) = first {
-            return self.thiserror_crates.contains(&name);
+            // Direct match — `use thiserror::...`. Also match through
+            // `crate_aliases` so that `use te::Error;` after a sibling
+            // `use thiserror as te;` is flagged on its own line, not
+            // just on the rename.
+            return self.thiserror_crates.contains(&name) || self.crate_aliases.contains_key(&name);
         }
         // Empty outer prefix — recurse into nested children. (A
         // glob with an empty prefix is `use *;` and not valid Rust;

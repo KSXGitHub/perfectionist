@@ -59,6 +59,14 @@ use thiserror as te;
 // the same single-segment crate-alias branch.
 use thiserror::{self as _nested_te};
 
+// Bad: chain re-export through a crate alias. `te` was recorded as
+// a crate alias for `thiserror` by `use thiserror as te;` above, so
+// `te::Error` here resolves to `thiserror::Error`. The two-pass
+// alias collector expands the first segment through `crate_aliases`
+// during the leaf pass, and `use_tree_references_thiserror`
+// expands the same way at the use-site check.
+use te::Error as _ChainedAlias;
+
 // Bad: top-level braced form with an empty outer prefix. The
 // `check_use` recursion descends into the child `thiserror::Error`
 // branch and flags the whole `use` item even though the outer tree
