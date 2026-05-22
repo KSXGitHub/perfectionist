@@ -37,6 +37,12 @@ fn _doc_ref_def_skip() {}
 /// Default skip-host `example.com` should not fire: https://example.com here.
 fn _doc_skip_host() {}
 
+/// Skip-host comparison is case-insensitive (RFC 3986): https://EXAMPLE.COM stays quiet.
+fn _doc_skip_host_case_insensitive() {}
+
+/// URL already inside an HTML attribute: <a href="https://rust-lang.org">click</a>.
+fn _doc_html_attribute_skip() {}
+
 // URL with trailing dot: https://rust-lang.org. — should be `MaybeIncorrect`.
 fn _plain_trailing_dot() {}
 

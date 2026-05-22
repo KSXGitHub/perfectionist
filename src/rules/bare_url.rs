@@ -209,15 +209,17 @@ impl BareUrl {
                 continue;
             }
             // Left-context guard: skip if the byte immediately before
-            // `index` is a word character or one of `<`, `[`, `(` — the
-            // last three meaning the URL is already wrapped.
+            // `index` is a word character or one of `<`, `[`, `(`,
+            // `"`, `'` — the last five meaning the URL is already
+            // wrapped (markdown autolink / labelled link / inline
+            // delimiter / HTML attribute / quoted-prose pair).
             if index > 0 {
                 let prev = bytes[index - 1];
                 if prev.is_ascii_alphanumeric() || prev == b'_' {
                     index += 1;
                     continue;
                 }
-                if prev == b'<' || prev == b'[' || prev == b'(' {
+                if prev == b'<' || prev == b'[' || prev == b'(' || prev == b'"' || prev == b'\'' {
                     // Advance past the URL if it matches, to keep the
                     // scanner forward-progressing.
                     if let Some(url_match) = take_url(&text[index..], schemes) {

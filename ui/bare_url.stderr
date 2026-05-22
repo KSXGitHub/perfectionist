@@ -31,7 +31,7 @@ LL |     /*! Bad: bare URL in an inner `/*! */` doc-block — https://rust-lang.
    |                                                        ^^^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://rust-lang.org.>`
 
 warning: bare URL `https://rust-lang.org.`; wrap in `<...>` or use a labelled markdown link
-  --> $DIR/bare_url.rs:40:27
+  --> $DIR/bare_url.rs:46:27
    |
 LL | // URL with trailing dot: https://rust-lang.org. — should be `MaybeIncorrect`.
    |                           ^^^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://rust-lang.org.>`
