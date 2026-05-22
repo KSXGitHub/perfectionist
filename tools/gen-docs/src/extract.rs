@@ -8,6 +8,7 @@
 
 pub(crate) mod config;
 pub(crate) mod serde_attrs;
+pub(crate) mod shared;
 pub(crate) mod ty;
 
 use std::fs;
@@ -22,9 +23,19 @@ use syn::{
 
 use crate::extract::config::extract_config;
 use crate::extract::serde_attrs::doc_attrs_to_markdown;
+use crate::extract::shared::SharedTypes;
 use crate::model::{DefaultState, Level, NAMESPACE, Rule};
 
 pub(crate) fn collect_rules(rules_dir: &Path) -> Vec<Rule> {
+    // Shared-newtype labels (currently just `AsciiLetter`'s
+    // `single-letter string`) live in `src/*.rs` next to the rules
+    // directory. The parent of `rules_dir` is the canonical `src/`;
+    // when the layout doesn't match (an unusual standalone test
+    // layout, perhaps), the discovery quietly finds nothing.
+    let shared = rules_dir
+        .parent()
+        .map(SharedTypes::discover)
+        .unwrap_or_default();
     let entries = fs::read_dir(rules_dir).expect("failed to read src/rules/");
     let mut rules = Vec::new();
     for entry in entries {
@@ -33,12 +44,12 @@ pub(crate) fn collect_rules(rules_dir: &Path) -> Vec<Rule> {
         if path.extension().is_none_or(|extension| extension != "rs") {
             continue;
         }
-        rules.extend(extract_rules(&path));
+        rules.extend(extract_rules(&path, &shared));
     }
     rules
 }
 
-fn extract_rules(source_path: &Path) -> Vec<Rule> {
+fn extract_rules(source_path: &Path, shared: &SharedTypes) -> Vec<Rule> {
     let source = fs::read_to_string(source_path)
         .unwrap_or_else(|error| panic!("failed to read {}: {error}", source_path.display()));
     let file = syn::parse_file(&source)
@@ -104,7 +115,7 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
     // code below still handles a multi-lint file defensively —
     // every emitted rule receives the same `config` value — but
     // no rule in the catalogue uses that shape today.
-    let config = extract_config(source_path, &merged_file);
+    let config = extract_config(source_path, &merged_file, shared);
     let default_state = extract_default_state(source_path, &merged_file);
     let relative_source: std::path::PathBuf = source_path
         .components()

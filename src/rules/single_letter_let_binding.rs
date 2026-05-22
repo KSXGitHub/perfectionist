@@ -6,9 +6,10 @@ use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Symbol;
 
+use crate::ascii_letter::AsciiLetter;
 use crate::common::{
-    DefaultState, binding_ident, deserialize_ascii_letters, hir_in_external_macro,
-    is_single_ascii_letter, resolve_symbol_set_from_chars, resolved_state,
+    DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter,
+    resolve_symbol_set_from_chars, resolved_state,
 };
 
 declare_tool_lint! {
@@ -54,16 +55,14 @@ struct Config {
     /// standard ones. Each entry is a single ASCII letter
     /// (`a`-`z`, `A`-`Z`); any other character is rejected at
     /// config-parse time.
-    #[serde(deserialize_with = "deserialize_ascii_letters")]
-    extra_allowed_idents: Vec<char>,
+    extra_allowed_idents: Vec<AsciiLetter>,
     /// Identifiers to drop from the exempt set, even if they
     /// appear in the built-in defaults or in
     /// `extra_allowed_idents`. Empty by default; checked after
     /// the merge with the built-ins, so this knob always wins.
     /// Each entry is a single ASCII letter (`a`-`z`, `A`-`Z`);
     /// any other character is rejected at config-parse time.
-    #[serde(deserialize_with = "deserialize_ascii_letters")]
-    ignore_allowed_idents: Vec<char>,
+    ignore_allowed_idents: Vec<AsciiLetter>,
 }
 
 pub struct SingleLetterLetBinding {
@@ -75,8 +74,16 @@ impl SingleLetterLetBinding {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         let allowed_idents = resolve_symbol_set_from_chars(
             DEFAULT_LET_EXEMPTIONS,
-            config.extra_allowed_idents,
-            config.ignore_allowed_idents,
+            config
+                .extra_allowed_idents
+                .into_iter()
+                .map(char::from)
+                .collect(),
+            config
+                .ignore_allowed_idents
+                .into_iter()
+                .map(char::from)
+                .collect(),
         );
         Self { allowed_idents }
     }

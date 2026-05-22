@@ -93,10 +93,10 @@ declaration.
 
 ## Implementation notes
 
-- `allowed_idents` deserialises as `Vec<char>` (via the shared
-  `common::deserialize_ascii_letters` helper that rejects any
-  non-ASCII-letter entry at config-parse time) and is interned
-  into a `BTreeSet<Symbol>`.
+- `allowed_idents` deserialises as `Vec<AsciiLetter>` (the shared
+  newtype in `src/ascii_letter.rs` whose `TryFrom<char>` impl
+  rejects any non-ASCII-letter entry at config-parse time) and is
+  interned into a `BTreeSet<Symbol>`.
 
 ### Difficulty
 

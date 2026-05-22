@@ -9,49 +9,56 @@ use quote::ToTokens;
 use syn::{Item, Type};
 
 use crate::extract::serde_attrs::{apply_rename_all, doc_attrs_to_markdown, serde_str_attr};
+use crate::extract::shared::SharedTypes;
 use crate::model::{EnumVariant, StructField, TypeDoc, TypeKind};
 
 /// Walk a `syn::Type` and collect every type identifier that isn't a
-/// well-known built-in. Only the *last* segment of each path is
-/// considered, matching [`toml_type_label`]'s rule: leading
+/// well-known built-in *or* a shared newtype carrying its own
+/// definition-site TOML label. Only the *last* segment of each path
+/// is considered, matching [`toml_type_label`]'s rule: leading
 /// segments like `std::vec` in `std::vec::Vec<T>` are noise (the
 /// generator only looks up types against the rule file's local
 /// items, so qualified paths would never resolve anyway).
 /// Insertion order matches the order each distinct ident is first
 /// encountered, so the rendered docs list types in the order a
 /// reader scanning the field list will meet them. The `seen` set
-/// deduplicates across multiple fields.
+/// deduplicates across multiple fields. Shared types are skipped at
+/// this layer (rather than dropped silently downstream by
+/// [`find_type_doc`]) so the per-rule custom-types listing doesn't
+/// accumulate idents the renderer already encoded into the
+/// field-type column.
 pub(crate) fn collect_referenced_idents(
     ty: &Type,
     out: &mut Vec<String>,
     seen: &mut BTreeSet<String>,
+    shared: &SharedTypes,
 ) {
     match ty {
         Type::Path(type_path) => {
             if let Some(segment) = type_path.path.segments.last() {
                 let name = segment.ident.to_string();
-                if !is_builtin_type(&name) && seen.insert(name.clone()) {
+                if !is_builtin_type(&name) && !shared.contains(&name) && seen.insert(name.clone()) {
                     out.push(name);
                 }
                 if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
                     for arg in &args.args {
                         if let syn::GenericArgument::Type(inner) = arg {
-                            collect_referenced_idents(inner, out, seen);
+                            collect_referenced_idents(inner, out, seen, shared);
                         }
                     }
                 }
             }
         }
-        Type::Reference(type_ref) => collect_referenced_idents(&type_ref.elem, out, seen),
+        Type::Reference(type_ref) => collect_referenced_idents(&type_ref.elem, out, seen, shared),
         Type::Tuple(type_tuple) => {
             for elem in &type_tuple.elems {
-                collect_referenced_idents(elem, out, seen);
+                collect_referenced_idents(elem, out, seen, shared);
             }
         }
-        Type::Array(type_array) => collect_referenced_idents(&type_array.elem, out, seen),
-        Type::Slice(type_slice) => collect_referenced_idents(&type_slice.elem, out, seen),
-        Type::Paren(type_paren) => collect_referenced_idents(&type_paren.elem, out, seen),
-        Type::Group(type_group) => collect_referenced_idents(&type_group.elem, out, seen),
+        Type::Array(type_array) => collect_referenced_idents(&type_array.elem, out, seen, shared),
+        Type::Slice(type_slice) => collect_referenced_idents(&type_slice.elem, out, seen, shared),
+        Type::Paren(type_paren) => collect_referenced_idents(&type_paren.elem, out, seen, shared),
+        Type::Group(type_group) => collect_referenced_idents(&type_group.elem, out, seen, shared),
         _ => {}
     }
 }
@@ -135,7 +142,11 @@ pub(crate) const BUILTIN_TYPES: &[&str] = &[
 /// from another crate); those are silently dropped rather than
 /// faked, since the docs are only useful when we can show the real
 /// shape.
-pub(crate) fn find_type_doc(file: &syn::File, ident: &str) -> Option<TypeDoc> {
+pub(crate) fn find_type_doc(
+    file: &syn::File,
+    ident: &str,
+    shared: &SharedTypes,
+) -> Option<TypeDoc> {
     for item in &file.items {
         match item {
             Item::Enum(item_enum) if item_enum.ident == ident => {
@@ -177,7 +188,7 @@ pub(crate) fn find_type_doc(file: &syn::File, ident: &str) -> Option<TypeDoc> {
                                 .as_ref()
                                 .expect("named field always has an ident")
                                 .to_string(),
-                            type_label: toml_type_label(&field.ty),
+                            type_label: toml_type_label(&field.ty, shared),
                             doc_markdown: doc_attrs_to_markdown(&field.attrs),
                         })
                         .collect(),
@@ -210,10 +221,12 @@ pub(crate) fn find_type_doc(file: &syn::File, ident: &str) -> Option<TypeDoc> {
 /// - `NonZeroI*` / `NonZeroIsize` → `non-zero integer`
 /// - `f32` / `f64` → `float`
 /// - `char` → `single-character string` (a TOML string of length
-///   one, which is what `serde-toml` accepts for `char`). A
-///   tighter `single-letter string` label is reserved for an
-///   eventual `AsciiLetter(char)` newtype — see
-///   <https://github.com/KSXGitHub/perfectionist/issues/120>.
+///   one, which is what `serde-toml` accepts for `char`). Stricter
+///   subtypes that refine `char` — currently `AsciiLetter` from
+///   `src/ascii_letter.rs`, whose own label is
+///   `single-letter string` — are looked up via [`SharedTypes`]
+///   rather than hard-coded here, so adding a new shared newtype
+///   does not require editing this function.
 /// - `String` / `&str` / `OsString` / `PathBuf` / `Cow<…>` → `string`
 /// - `Vec<T>` / `HashSet<T>` / `BTreeSet<T>` / `VecDeque<T>` /
 ///   `LinkedList<T>` → `[label-of-T]`
@@ -230,7 +243,7 @@ pub(crate) fn find_type_doc(file: &syn::File, ident: &str) -> Option<TypeDoc> {
 /// **Keep in sync with [`is_builtin_type`].** Both functions must
 /// recognise the same set of identifiers; see the note on
 /// `is_builtin_type` for why.
-pub(crate) fn toml_type_label(ty: &Type) -> String {
+pub(crate) fn toml_type_label(ty: &Type, shared: &SharedTypes) -> String {
     match ty {
         Type::Path(type_path) => {
             let Some(segment) = type_path.path.segments.last() else {
@@ -250,9 +263,6 @@ pub(crate) fn toml_type_label(ty: &Type) -> String {
             };
             match ident.as_str() {
                 "bool" => "boolean".to_owned(),
-                // A tighter `single-letter string` label is reserved for an
-                // eventual `AsciiLetter(char)` newtype; see the rustdoc above
-                // and <https://github.com/KSXGitHub/perfectionist/issues/120>.
                 "char" => "single-character string".to_owned(),
                 "String" | "str" | "OsString" | "OsStr" | "Path" | "PathBuf" | "Cow" => {
                     "string".to_owned()
@@ -266,24 +276,30 @@ pub(crate) fn toml_type_label(ty: &Type) -> String {
                 "f32" | "f64" => "float".to_owned(),
                 "Vec" | "HashSet" | "BTreeSet" | "VecDeque" | "LinkedList" => {
                     match inner_types.first() {
-                        Some(inner) => format!("[{}]", toml_type_label(inner)),
+                        Some(inner) => format!("[{}]", toml_type_label(inner, shared)),
                         None => "array".to_owned(),
                     }
                 }
                 "HashMap" | "BTreeMap" => match inner_types.get(1) {
-                    Some(value) => format!("table of {}", toml_type_label(value)),
+                    Some(value) => format!("table of {}", toml_type_label(value, shared)),
                     None => "table".to_owned(),
                 },
                 "Option" | "Box" | "Rc" | "Arc" => match inner_types.first() {
-                    Some(inner) => toml_type_label(inner),
+                    Some(inner) => toml_type_label(inner, shared),
                     None => ident,
                 },
-                _ => ident,
+                // Shared newtypes from `src/*.rs` carry their own
+                // label next to the type definition — consult the
+                // discovered table before falling through to the
+                // Rust-ident fallback so the field-type column
+                // surfaces e.g. `single-letter string` rather than
+                // `AsciiLetter`.
+                _ => shared.label_for(&ident).map(str::to_owned).unwrap_or(ident),
             }
         }
-        Type::Reference(type_ref) => toml_type_label(&type_ref.elem),
-        Type::Paren(type_paren) => toml_type_label(&type_paren.elem),
-        Type::Group(type_group) => toml_type_label(&type_group.elem),
+        Type::Reference(type_ref) => toml_type_label(&type_ref.elem, shared),
+        Type::Paren(type_paren) => toml_type_label(&type_paren.elem, shared),
+        Type::Group(type_group) => toml_type_label(&type_group.elem, shared),
         // Tuples, trait objects, function pointers, raw pointers,
         // etc. fall through to a Rust-syntax fallback. No current
         // `Config` field uses any of these; if one ever does, add
@@ -301,47 +317,60 @@ mod tests {
         syn::parse_str(source).expect("test input should parse as a syn::Type")
     }
 
+    /// Empty shared-type table for the primitive / wrapper tests
+    /// that don't care about shared newtypes. The discovery is
+    /// exercised in `extract::shared`'s own tests; here we just
+    /// need a value to thread through.
+    fn no_shared() -> SharedTypes {
+        SharedTypes::default()
+    }
+
     #[test]
     fn toml_type_label_primitives() {
-        assert_eq!(toml_type_label(&parse_type("bool")), "boolean");
-        assert_eq!(toml_type_label(&parse_type("usize")), "unsigned integer");
-        assert_eq!(toml_type_label(&parse_type("i32")), "integer");
+        let shared = no_shared();
+        assert_eq!(toml_type_label(&parse_type("bool"), &shared), "boolean");
         assert_eq!(
-            toml_type_label(&parse_type("NonZeroUsize")),
+            toml_type_label(&parse_type("usize"), &shared),
+            "unsigned integer"
+        );
+        assert_eq!(toml_type_label(&parse_type("i32"), &shared), "integer");
+        assert_eq!(
+            toml_type_label(&parse_type("NonZeroUsize"), &shared),
             "non-zero unsigned integer",
         );
         assert_eq!(
-            toml_type_label(&parse_type("NonZeroU32")),
+            toml_type_label(&parse_type("NonZeroU32"), &shared),
             "non-zero unsigned integer",
         );
         assert_eq!(
-            toml_type_label(&parse_type("NonZeroIsize")),
+            toml_type_label(&parse_type("NonZeroIsize"), &shared),
             "non-zero integer",
         );
         assert_eq!(
-            toml_type_label(&parse_type("NonZeroI64")),
+            toml_type_label(&parse_type("NonZeroI64"), &shared),
             "non-zero integer",
         );
-        assert_eq!(toml_type_label(&parse_type("f64")), "float");
-        assert_eq!(toml_type_label(&parse_type("String")), "string");
+        assert_eq!(toml_type_label(&parse_type("f64"), &shared), "float");
+        assert_eq!(toml_type_label(&parse_type("String"), &shared), "string");
         assert_eq!(
-            toml_type_label(&parse_type("char")),
+            toml_type_label(&parse_type("char"), &shared),
             "single-character string"
         );
     }
 
     #[test]
     fn toml_type_label_arrays_and_maps() {
+        let shared = no_shared();
         assert_eq!(
-            toml_type_label(&parse_type("Vec<char>")),
+            toml_type_label(&parse_type("Vec<char>"), &shared),
             "[single-character string]"
         );
         assert_eq!(
-            toml_type_label(&parse_type("Vec<Vec<u8>>")),
+            toml_type_label(&parse_type("Vec<Vec<u8>>"), &shared),
             "[[unsigned integer]]"
         );
         assert_eq!(
-            toml_type_label(&parse_type("HashMap<String, usize>")),
+            toml_type_label(&parse_type("HashMap<String, usize>"), &shared),
             "table of unsigned integer",
         );
     }
@@ -349,22 +378,30 @@ mod tests {
     #[test]
     fn toml_type_label_transparent_wrappers() {
         // Option, Box, Rc, Arc unwrap to the inner type.
-        assert_eq!(toml_type_label(&parse_type("Option<String>")), "string");
+        let shared = no_shared();
         assert_eq!(
-            toml_type_label(&parse_type("Box<usize>")),
+            toml_type_label(&parse_type("Option<String>"), &shared),
+            "string"
+        );
+        assert_eq!(
+            toml_type_label(&parse_type("Box<usize>"), &shared),
             "unsigned integer"
         );
-        assert_eq!(toml_type_label(&parse_type("Arc<Vec<String>>")), "[string]");
+        assert_eq!(
+            toml_type_label(&parse_type("Arc<Vec<String>>"), &shared),
+            "[string]"
+        );
     }
 
     #[test]
     fn toml_type_label_qualified_paths_use_last_segment() {
+        let shared = no_shared();
         assert_eq!(
-            toml_type_label(&parse_type("std::vec::Vec<String>")),
+            toml_type_label(&parse_type("std::vec::Vec<String>"), &shared),
             "[string]"
         );
         assert_eq!(
-            toml_type_label(&parse_type("alloc::string::String")),
+            toml_type_label(&parse_type("alloc::string::String"), &shared),
             "string"
         );
     }
@@ -373,8 +410,52 @@ mod tests {
     fn toml_type_label_custom_idents_pass_through() {
         // Project-local enums/structs surface verbatim; readers
         // follow them to the per-rule Types subsection.
-        assert_eq!(toml_type_label(&parse_type("Scope")), "Scope");
-        assert_eq!(toml_type_label(&parse_type("Vec<Scope>")), "[Scope]");
+        let shared = no_shared();
+        assert_eq!(toml_type_label(&parse_type("Scope"), &shared), "Scope");
+        assert_eq!(
+            toml_type_label(&parse_type("Vec<Scope>"), &shared),
+            "[Scope]"
+        );
+    }
+
+    #[test]
+    fn toml_type_label_shared_newtype_uses_definition_label() {
+        // Synthetic shared-type table standing in for the real
+        // discovery (which is exercised in `extract::shared`'s own
+        // tests). The label is *not* an `is_builtin_type` arm, so
+        // without the shared lookup `toml_type_label` would fall
+        // through to the Rust ident.
+        //
+        // Round-trip through the discovery helper to populate the
+        // table without exposing its internals to the test.
+        let tmp = std::env::temp_dir().join(format!(
+            "perfectionist-gen-docs-ty-shared-{}",
+            std::process::id(),
+        ));
+        let _ = std::fs::remove_dir_all(&tmp);
+        std::fs::create_dir_all(&tmp).unwrap();
+        std::fs::write(
+            tmp.join("ascii_letter.rs"),
+            r#"
+                pub(crate) const TOML_LABEL: &str = "single-letter string";
+
+                pub(crate) struct AsciiLetter(char);
+            "#,
+        )
+        .unwrap();
+        let shared = SharedTypes::discover(&tmp);
+        assert_eq!(
+            toml_type_label(&parse_type("AsciiLetter"), &shared),
+            "single-letter string",
+        );
+        // The wrapper-aware paths see the same lookup, so a
+        // `Vec<AsciiLetter>` field surfaces as `[single-letter
+        // string]` — the goal of the whole exercise.
+        assert_eq!(
+            toml_type_label(&parse_type("Vec<AsciiLetter>"), &shared),
+            "[single-letter string]",
+        );
+        let _ = std::fs::remove_dir_all(&tmp);
     }
 
     #[test]
@@ -382,7 +463,7 @@ mod tests {
         let ty = parse_type("HashMap<String, Vec<Scope>>");
         let mut out = Vec::new();
         let mut seen = BTreeSet::new();
-        collect_referenced_idents(&ty, &mut out, &mut seen);
+        collect_referenced_idents(&ty, &mut out, &mut seen, &no_shared());
         assert_eq!(out, vec!["Scope".to_owned()]);
     }
 
@@ -393,8 +474,40 @@ mod tests {
         let ty = parse_type("std::vec::Vec<my_crate::Inner>");
         let mut out = Vec::new();
         let mut seen = BTreeSet::new();
-        collect_referenced_idents(&ty, &mut out, &mut seen);
+        collect_referenced_idents(&ty, &mut out, &mut seen, &no_shared());
         assert_eq!(out, vec!["Inner".to_owned()]);
+    }
+
+    #[test]
+    fn collect_referenced_idents_skips_shared_newtypes() {
+        // Shared newtypes are surfaced via the field-type column,
+        // not as nested custom-types blocks. Skipping them in the
+        // collection pass keeps the per-rule Types section from
+        // listing them alongside genuine project-local enums.
+        let tmp = std::env::temp_dir().join(format!(
+            "perfectionist-gen-docs-ty-shared-collect-{}",
+            std::process::id(),
+        ));
+        let _ = std::fs::remove_dir_all(&tmp);
+        std::fs::create_dir_all(&tmp).unwrap();
+        std::fs::write(
+            tmp.join("ascii_letter.rs"),
+            r#"
+                pub(crate) const TOML_LABEL: &str = "single-letter string";
+                pub(crate) struct AsciiLetter(char);
+            "#,
+        )
+        .unwrap();
+        let shared = SharedTypes::discover(&tmp);
+        let ty = parse_type("Vec<AsciiLetter>");
+        let mut out = Vec::new();
+        let mut seen = BTreeSet::new();
+        collect_referenced_idents(&ty, &mut out, &mut seen, &shared);
+        assert!(
+            out.is_empty(),
+            "shared newtypes should be skipped, got: {out:?}",
+        );
+        let _ = std::fs::remove_dir_all(&tmp);
     }
 
     #[test]
@@ -412,6 +525,7 @@ mod tests {
         // Generic types need a concrete instantiation to exercise
         // the arm (a bare `Option` with no inner type would hit
         // the `_ => ident` fallback). `bool` is harmless filler.
+        let shared = no_shared();
         for &name in BUILTIN_TYPES {
             if name == "Config" {
                 continue;
@@ -422,7 +536,7 @@ mod tests {
                 "HashMap" | "BTreeMap" => format!("{name}<String, bool>"),
                 _ => name.to_owned(),
             };
-            let label = toml_type_label(&parse_type(&source));
+            let label = toml_type_label(&parse_type(&source), &shared);
             assert_ne!(
                 label, name,
                 "builtin `{name}` is missing a `toml_type_label` arm \
