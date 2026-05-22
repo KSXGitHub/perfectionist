@@ -122,8 +122,9 @@ suggestion_mode = "issue_url"
 #                `repo_base_url` is configured.
 
 # Doc-comment fix form. Defaults to "inline". When set to
-# "reference", the lint emits the `[#N] / [#N]: <url>` two-piece
-# form instead of `[#N](<url>)`. Ignored for plain-comment fixes,
+# "reference", the lint emits the `[#N] / [#N]: URL` two-piece
+# form instead of `[#N](URL)` (where `URL` is the substituted
+# target, not literal text). Ignored for plain-comment fixes,
 # which use `plain_comment_form` instead.
 form = "inline"
 
@@ -138,15 +139,17 @@ form = "inline"
 # Plain *block* comments (`/* ... */`) are out of scope for this
 # lint regardless of this setting. The sibling `bare_url`'s plan
 # is to scan block comments by reusing the regular-comment
-# retokenizer of the already-implemented
-# `perfectionist::unicode_ellipsis_in_comments`; this rule
-# deliberately doesn't, because the working assumption is that
-# `#NNN` references in Rust code live in `//` and `///` comments.
-# If a real codebase surfaces block-comment references, revisit.
+# retokenizer that `perfectionist::unicode_ellipsis_in_comments`
+# would expose if factored out (it currently inlines that walk);
+# this rule deliberately doesn't scan block comments at all,
+# because the working assumption is that `#NNN` references in
+# Rust code live in `//` and `///` comments. If a real codebase
+# surfaces block-comment references, revisit.
 include_plain_comments = false
 
 # Replacement form used inside plain `//` comments when
-# `include_plain_comments = true`. Ignored for doc comments and
+# `include_plain_comments = true`. Counterpart to `form` above,
+# which governs doc-comment fixes. Ignored for doc comments, and
 # ignored whenever no URL can be substituted (see the unset-
 # `repo_base_url` / `help_only` notes above).
 plain_comment_form = "bare"
@@ -156,12 +159,16 @@ plain_comment_form = "bare"
 #               punctuation (`;`, `,`, `.`) belongs to the URL;
 #               pick "bracketed" if the surrounding prose tends to
 #               put punctuation immediately after the reference.
-# "bracketed" — substitute <https://...>. This is CommonMark's
-#               autolink syntax (which plain comments don't
-#               render, but the brackets still give the URL a
-#               clear textual boundary when it abuts surrounding
-#               punctuation). `perfectionist::bare_url` accepts
-#               the same form for its own checks.
+# "bracketed" — substitute <https://...>. The angle-bracket
+#               delimiter predates markdown as a URL-in-prose
+#               convention (RFC-style "<URL>" wrapping) and is
+#               what CommonMark later codified as autolink
+#               syntax. Editors that auto-link URLs typically
+#               recognise it, and the brackets give the URL a
+#               clear boundary when it abuts surrounding
+#               punctuation. `perfectionist::bare_url` accepts
+#               the same form for its own checks, so the two
+#               rules don't ping-pong.
 ```
 
 ## Implementation notes
@@ -193,16 +200,20 @@ plain_comment_form = "bare"
   up on wrapped-URL fragments).
   [`perfectionist::bare_url`](./bare-url.md)'s planned scanner
   commits forward from the scheme; the two scanners walk in
-  opposite directions but agree on what counts as a URL run. If
+  opposite directions but agree on what counts as a URL span. If
   either rule grows past the trivial "scheme + non-whitespace"
   check, factor URL discovery into a crate-internal helper
   shared by the two rules rather than duplicating the scanner.
 - The autofix substitutes the bare span with the rendered link.
   Suggestion applicability:
-  - `suggestion_mode = "issue_url"` → `MachineApplicable`. The
-    `/issues/<n>` URL works for both issues and PRs on GitHub thanks
-    to redirect; on configured non-GitHub forges, mark this mode as
-    `MaybeIncorrect` and emit a note explaining why.
+  - `suggestion_mode = "issue_url"` → `MachineApplicable` when
+    `repo_base_url`'s host is `github.com` (or `*.github.com`),
+    because GitHub redirects `/issues/<n>` to `/pull/<n>` when
+    the number names a PR. Otherwise (the URL points at a
+    self-hosted forge that may not redirect) downgrade to
+    `MaybeIncorrect` and emit a note explaining why. The forge
+    is detected by parsing the host out of `repo_base_url`; no
+    extra config knob.
   - `suggestion_mode = "both"` → two `MaybeIncorrect` suggestions.
     `cargo clippy --fix` will not apply either; the author picks
     manually.
