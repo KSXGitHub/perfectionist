@@ -100,6 +100,15 @@ pub struct BareUrl {
 impl BareUrl {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        // `config.accept` is deserialised but not yet consumed — the
+        // narrowing semantics ("`["angle_brackets"]` only accepts
+        // `<url>`, rejects `[text](url)`") need typed markdown events
+        // from `crate::markdown` (autolink vs inline link) and a
+        // sensible suggestion when translating between the two
+        // forms. Leaving the field on `Config` so users can set it
+        // without a deserialisation error; the field reads as
+        // `[AngleBrackets, Labelled]` today regardless of input.
+        let _accept_acknowledged = config.accept;
         Self {
             targets: config.targets.into_iter().collect(),
             safe_trailing_chars: config.safe_trailing_chars,

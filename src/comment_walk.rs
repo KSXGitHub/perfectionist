@@ -417,8 +417,6 @@ fn render_block_comment(
         .strip_prefix(open)
         .and_then(|inner| inner.strip_suffix(close))
         .unwrap_or(body_text);
-    let body_start_offset = (body_text.len() - body.len() - close.len()) as u32;
-    let _ = body_start_offset;
     let prefix_len = open.len() as u32;
     let mut rendered = String::with_capacity(body.len());
     let mut lines: Vec<LineMapping> = Vec::new();
@@ -427,9 +425,13 @@ fn render_block_comment(
         let has_newline = raw_line.ends_with('\n');
         let line_content = raw_line.strip_suffix('\n').unwrap_or(raw_line);
         let line_content = line_content.strip_suffix('\r').unwrap_or(line_content);
-        // For inner lines of a block comment, strip a leading run of
-        // whitespace and (optionally) a single `*` followed by a
-        // space.
+        // For block comments, strip a leading run of whitespace
+        // followed by a single `*` and an optional space — the
+        // standard rustdoc-style block-comment continuation
+        // prefix. When the leading non-space byte isn't `*`, the
+        // line wasn't using the convention, so we keep its
+        // original content unmodified (no whitespace stripping).
+        // Applies to every line, not just the first.
         let bytes = line_content.as_bytes();
         let mut content_start: usize = 0;
         while content_start < bytes.len() && bytes[content_start] == b' ' {
@@ -441,8 +443,6 @@ fn render_block_comment(
                 content_start += 1;
             }
         } else {
-            // First line has no leading `*`; keep the original
-            // content with no whitespace stripping.
             content_start = 0;
         }
         let content = &line_content[content_start..];

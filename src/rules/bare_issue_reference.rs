@@ -161,7 +161,6 @@ pub fn register_pass(lint_store: &mut LintStore) {
 
 impl EarlyLintPass for BareIssueReference {
     fn check_crate(&mut self, lint_context: &EarlyContext<'_>, _: &Crate) {
-        let _ = lint_context;
         walk_local_comments(lint_context, |chunk| match chunk.surface {
             CommentSurface::DocBlock | CommentSurface::DocBlockBlock => {
                 self.scan_doc(lint_context, chunk);
@@ -330,7 +329,6 @@ impl BareIssueReference {
                 }
             },
         );
-        let _ = (span, lint_context);
     }
 }
 
