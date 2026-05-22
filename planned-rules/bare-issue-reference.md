@@ -23,12 +23,13 @@ rendering. See `plain_comment_form` below.
 
 ## What to lint
 
-Scan every `///` and `//!` comment for a `#` followed by one or
-more ASCII digits, ending at a word boundary, and not already
-preceded by a word character or by the `[` character (the
-opening of an existing markdown link). For each match outside a
-code span / code block, emit a diagnostic at the bare-reference
-span.
+Scan every `///` and `//!` doc comment — and, when
+`include_plain_comments = true`, every plain `//` comment too —
+for a `#` followed by one or more ASCII digits, ending at a word
+boundary, and not already preceded by a word character or by the
+`[` character (the opening of an existing markdown link). For
+each match outside a code span / code block, emit a diagnostic
+at the bare-reference span.
 
 Skip:
 
@@ -208,12 +209,13 @@ plain_comment_form = "bare"
   arbitrary files). Document the pattern of duplicating the URL in
   `dylint.toml`, and offer a small build-script snippet in the
   project's README that synchronises the two.
-- **Parser style.** Decompose the bare-reference scanner into
-  parser-combinator-style `take_*` functions per
-  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
-  `take_hash` (the literal `#`), `take_digits`, and a left-context
-  check that the preceding byte is not a word character or a `[`.
-
+- The bare-reference scanner itself is trivial enough (a literal
+  `#`, a digit run, and a one-byte left-context check) that the
+  parser-combinator scaffolding called out in
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  is not required. The URL-fragment backward walk and the
+  markdown structural classifier are the parts of this rule that
+  do follow the combinator convention.
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
