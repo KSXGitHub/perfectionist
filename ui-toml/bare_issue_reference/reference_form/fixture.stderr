@@ -1,0 +1,15 @@
+warning: bare issue / PR reference `#99`; use a markdown link
+  --> $DIR/fixture.rs:1:17
+   |
+LL | /// Bad: closes #99 — under `form = "reference"`, the suggestion
+   |                 ^^^
+   |
+   = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
+help: use a reference-style markdown link (define `[#N]: URL` at the end of the doc block)
+   |
+LL - /// Bad: closes #99 — under `form = "reference"`, the suggestion
+LL + /// Bad: closes [#99] — under `form = "reference"`, the suggestion
+   |
+
+warning: 1 warning emitted
+

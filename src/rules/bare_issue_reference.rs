@@ -285,11 +285,22 @@ impl BareIssueReference {
                 let issue_url = issue_url.unwrap();
                 if is_doc {
                     let suggestion = render_doc_suggestion(doc_form, &token, &issue_url);
-                    let applicability = match mode {
-                        SuggestionMode::IssueUrl if is_github => Applicability::MachineApplicable,
-                        SuggestionMode::IssueUrl => Applicability::MaybeIncorrect,
-                        SuggestionMode::Both => Applicability::MaybeIncorrect,
-                        SuggestionMode::HelpOnly => unreachable!(),
+                    // The reference form (`[#123]`) emits an
+                    // incomplete suggestion — the matching
+                    // `[#123]: URL` definition is the author's
+                    // responsibility — so applying it as-is leaves
+                    // the doc block with an undefined reference
+                    // link (which rustdoc itself warns about via
+                    // `rustdoc::broken_intra_doc_links`). Always
+                    // degrade to `MaybeIncorrect` for the reference
+                    // form so `cargo dylint --fix` doesn't apply
+                    // it unprompted.
+                    let applicability = match (mode, doc_form) {
+                        (SuggestionMode::IssueUrl, DocForm::Inline) if is_github => {
+                            Applicability::MachineApplicable
+                        }
+                        (SuggestionMode::HelpOnly, _) => unreachable!(),
+                        _ => Applicability::MaybeIncorrect,
                     };
                     diag.span_suggestion(
                         span,

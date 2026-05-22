@@ -1,0 +1,10 @@
+warning: bare email address `security@rust-lang.org`
+  --> $DIR/fixture.rs:3:5
+   |
+LL | /// security@rust-lang.org.
+   |     ^^^^^^^^^^^^^^^^^^^^^^ help: prefix with `mailto:`: `mailto:security@rust-lang.org`
+   |
+   = note: `#[warn(perfectionist::bare_email)]` on by default
+
+warning: 1 warning emitted
+
