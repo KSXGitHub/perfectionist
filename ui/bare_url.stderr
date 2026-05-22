@@ -1,0 +1,28 @@
+warning: bare URL `https://rust-lang.org`; wrap in `<...>` or use a labelled markdown link
+  --> $DIR/bare_url.rs:1:48
+   |
+LL | // Bad: bare URL in a plain line comment — see https://rust-lang.org for details.
+   |                                                ^^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://rust-lang.org>`
+   |
+   = note: `#[warn(perfectionist::bare_url)]` on by default
+
+warning: bare URL `https://rust-lang.org.`; wrap in `<...>` or use a labelled markdown link
+  --> $DIR/bare_url.rs:4:39
+   |
+LL | /* Bad: bare URL in a block comment — https://rust-lang.org. */
+   |                                       ^^^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://rust-lang.org.>`
+
+warning: bare URL `https://rust-lang.org`; wrap in `<...>` or use a labelled markdown link
+  --> $DIR/bare_url.rs:7:42
+   |
+LL | /// Bad: bare URL in a doc comment — see https://rust-lang.org for details.
+   |                                          ^^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://rust-lang.org>`
+
+warning: bare URL `https://rust-lang.org.`; wrap in `<...>` or use a labelled markdown link
+  --> $DIR/bare_url.rs:33:27
+   |
+LL | // URL with trailing dot: https://rust-lang.org. — should be `MaybeIncorrect`.
+   |                           ^^^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://rust-lang.org.>`
+
+warning: 4 warnings emitted
+
