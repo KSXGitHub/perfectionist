@@ -17,17 +17,25 @@ declare_tool_lint! {
     /// Flags every use of [`thiserror`](https://docs.rs/thiserror) in
     /// the consumer crate. Three syntactic shapes trigger the lint:
     ///
-    /// 1. `#[derive(thiserror::Error)]` — or `#[derive(Error)]` when a
-    ///    sibling `use thiserror::Error;` brings the derive macro into
-    ///    scope under any local name, anywhere in the crate.
-    /// 2. `#[error(...)]` attributes attached to an item that this
-    ///    rule has already classified as thiserror-derived.
-    /// 3. `use thiserror::*`, `use thiserror::Error`,
-    ///    `use thiserror::Error as MyError;`, and similar imports
-    ///    that bring `thiserror`'s items into scope. Crate-rename
-    ///    forms (`use thiserror as te;`,
-    ///    `extern crate thiserror as te;`) and `#[cfg_attr]`-wrapped
-    ///    derives are caught too.
+    /// 1. **Derives.** `#[derive(thiserror::Error)]` directly, or
+    ///    `#[derive(Error)]` / `#[derive(te::Error)]` when a sibling
+    ///    `use thiserror::Error;` / `use thiserror as te;` brings the
+    ///    derive macro into scope under any local name, anywhere in
+    ///    the crate. `#[cfg_attr(_, derive(thiserror::Error))]` is
+    ///    unwrapped (including nested `cfg_attr`).
+    /// 2. **Attributes.** `#[error(...)]` attributes attached to an
+    ///    item the rule has already classified as thiserror-derived,
+    ///    on the item, its enum variants, or its fields.
+    ///    `#[cfg_attr(_, error(...))]` is unwrapped symmetrically
+    ///    with the derive side.
+    /// 3. **Imports.** Every `use` or `extern crate` statement that
+    ///    brings a configured `thiserror` path into scope:
+    ///    `use thiserror::*`, `use thiserror::Error`,
+    ///    `use thiserror::Error as MyError;`,
+    ///    `use thiserror::{self as te};`, `use thiserror as te;`,
+    ///    `extern crate thiserror;`, `extern crate thiserror as te;`,
+    ///    the braced top-level form `use {thiserror::Error, ...};`,
+    ///    and `pub use` re-exports.
     ///
     /// The lint is detection-only: it emits a help-style diagnostic
     /// pointing at the offending site and suggests migrating to
@@ -316,8 +324,18 @@ fn walk_use_tree_for_aliases(
             }
         }
         UseTreeKind::Glob(_) => {
+            // `use a::b::*;` brings the *direct* children of `a::b`
+            // into scope, so the glob exposes the configured leaf
+            // only when the configured path is exactly one segment
+            // deeper than the glob's path. For default config
+            // `[[thiserror, Error]]` plus `use thiserror::*;` the
+            // check is `2 == 1 + 1` and `Error` is inserted; for a
+            // hypothetical multi-segment config like
+            // `["foo::bar::Error"]` plus `use foo::*;` it is
+            // `3 == 1 + 1 ⇒ false` and the rule does not falsely
+            // claim `Error` is in scope.
             for cfg in &rule.thiserror_paths {
-                if cfg.len() > path.len()
+                if cfg.len() == path.len() + 1
                     && cfg.starts_with(&path)
                     && let Some(&last) = cfg.last()
                 {
@@ -544,11 +562,15 @@ fn flag_enum_error_attrs(cx: &EarlyContext<'_>, def: &EnumDef) {
 }
 
 fn emit_use(cx: &EarlyContext<'_>, span: Span) {
+    // The helper is shared between `use thiserror::...`, `extern
+    // crate thiserror`, and the braced top-level `use {...}` form,
+    // so the message uses the neutral word "import" rather than
+    // saying "`use`".
     span_lint_and_help(
         cx,
         PREFER_DERIVE_MORE_OVER_THISERROR,
         span,
-        "`use` of `thiserror`; this catalogue prefers `derive_more::{Display, Error}`",
+        "`thiserror` import; this catalogue prefers `derive_more::{Display, Error}`",
         None,
         "drop the import and migrate the error type to `#[derive(derive_more::Display, \
          derive_more::Error)]`",

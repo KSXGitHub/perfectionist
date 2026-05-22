@@ -11,17 +11,25 @@
 Flags every use of [`thiserror`](https://docs.rs/thiserror) in
 the consumer crate. Three syntactic shapes trigger the lint:
 
-1. `#[derive(thiserror::Error)]` — or `#[derive(Error)]` when a
-   sibling `use thiserror::Error;` brings the derive macro into
-   scope under any local name, anywhere in the crate.
-2. `#[error(...)]` attributes attached to an item that this
-   rule has already classified as thiserror-derived.
-3. `use thiserror::*`, `use thiserror::Error`,
-   `use thiserror::Error as MyError;`, and similar imports
-   that bring `thiserror`'s items into scope. Crate-rename
-   forms (`use thiserror as te;`,
-   `extern crate thiserror as te;`) and `#[cfg_attr]`-wrapped
-   derives are caught too.
+1. **Derives.** `#[derive(thiserror::Error)]` directly, or
+   `#[derive(Error)]` / `#[derive(te::Error)]` when a sibling
+   `use thiserror::Error;` / `use thiserror as te;` brings the
+   derive macro into scope under any local name, anywhere in
+   the crate. `#[cfg_attr(_, derive(thiserror::Error))]` is
+   unwrapped (including nested `cfg_attr`).
+2. **Attributes.** `#[error(...)]` attributes attached to an
+   item the rule has already classified as thiserror-derived,
+   on the item, its enum variants, or its fields.
+   `#[cfg_attr(_, error(...))]` is unwrapped symmetrically
+   with the derive side.
+3. **Imports.** Every `use` or `extern crate` statement that
+   brings a configured `thiserror` path into scope:
+   `use thiserror::*`, `use thiserror::Error`,
+   `use thiserror::Error as MyError;`,
+   `use thiserror::{self as te};`, `use thiserror as te;`,
+   `extern crate thiserror;`, `extern crate thiserror as te;`,
+   the braced top-level form `use {thiserror::Error, ...};`,
+   and `pub use` re-exports.
 
 The lint is detection-only: it emits a help-style diagnostic
 pointing at the offending site and suggests migrating to
