@@ -161,7 +161,16 @@ impl EarlyLintPass for LintReasonFromComment {
         // visit the trace and use it as the comment-search anchor
         // for the synth lint-level attributes that follow.
         if attribute.has_name(sym::cfg_attr_trace) {
-            self.pending_cfg_attr_outer = Some(attribute.span);
+            // Nested cfg_attr: a `#[cfg_attr(<a>, cfg_attr(<b>, allow(...)))]`
+            // produces an outer trace, then an inner trace, then the synth
+            // `allow(...)`. The inner trace's span covers only the inner
+            // `cfg_attr(<b>, allow(...))` and would miss a trailing comment
+            // on the outermost `]`. Preserve the outermost trace when its
+            // span already encloses the new one.
+            match self.pending_cfg_attr_outer {
+                Some(existing) if existing.contains(attribute.span) => {}
+                _ => self.pending_cfg_attr_outer = Some(attribute.span),
+            }
             return;
         }
         let outer_span = match self.pending_cfg_attr_outer {
@@ -175,6 +184,21 @@ impl EarlyLintPass for LintReasonFromComment {
             && let Some(args) = attribute.meta_item_list()
         {
             self.check(lint_context, outer_span, attribute.span, &args);
+            // A cfg_attr trace is one comment anchor for *one* adjacent
+            // source comment; if the cfg_attr expands into multiple
+            // lint-level synth attributes (e.g.
+            // `#[cfg_attr(all(), allow(a), warn(b))]`), only the first
+            // one should lift the comment — otherwise every synth attr
+            // would emit a duplicate suggestion whose `delete_span`
+            // overlaps the others on the same comment bytes, and
+            // rustfix would refuse to apply the conflicting edits.
+            // Subsequent synth lint-level attrs in the same cfg_attr
+            // fall back to their own narrow spans (and a sibling like
+            // `lint_silence_reason` can flag them for missing
+            // `reason` independently).
+            if self.pending_cfg_attr_outer == Some(outer_span) {
+                self.pending_cfg_attr_outer = None;
+            }
         }
     }
 }
@@ -257,6 +281,14 @@ impl LintReasonFromComment {
         comment: &Comment,
         applicability: Applicability,
     ) {
+        // A bare `//` or whitespace-only `//   ` line normalises to
+        // an empty string. Lifting it would produce a vacuous
+        // `reason = ""` autofix that the sibling `lint_silence_reason`
+        // would immediately flag again — strictly worse than leaving
+        // the empty comment alone.
+        if comment.text.is_empty() {
+            return;
+        }
         let snippet = match lint_context
             .sess()
             .source_map()
@@ -696,6 +728,19 @@ mod tests {
         assert_eq!(normalise_comment_text("//--hello"), "--hello");
         // A non-recognised decoration prefix passes through.
         assert_eq!(normalise_comment_text("// > quoted"), "> quoted");
+    }
+
+    /// A bare `//` or whitespace-only `//   ` line normalises to an
+    /// empty string. The `emit` guard turns these into no-ops; the
+    /// scanner itself still matches them so the scanner stays
+    /// position-agnostic (the planning file's filter set is "`//`
+    /// line comments that aren't doc comments", and "non-empty" is
+    /// not part of that filter).
+    #[test]
+    fn normalise_collapses_empty_and_whitespace_only_comments() {
+        assert_eq!(normalise_comment_text("//"), "");
+        assert_eq!(normalise_comment_text("//   "), "");
+        assert_eq!(normalise_comment_text("//\t"), "");
     }
 
     fn assert_comment(actual: Option<Comment>, expected_text: &str) {

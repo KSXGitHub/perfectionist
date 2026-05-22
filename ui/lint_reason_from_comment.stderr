@@ -133,5 +133,29 @@ LL - #[cfg_attr(all(), allow(dead_code))] // cfg_attr wrap
 LL + #[cfg_attr(all(), allow(dead_code, reason = "cfg_attr wrap"))]
    |
 
-warning: 11 warnings emitted
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:69:63
+   |
+LL | #[cfg_attr(all(), allow(dead_code), allow(unused_variables))] // shared rationale
+   |                                                               ^^^^^^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL - #[cfg_attr(all(), allow(dead_code), allow(unused_variables))] // shared rationale
+LL + #[cfg_attr(all(), allow(dead_code, reason = "shared rationale"), allow(unused_variables))]
+   |
+
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:76:55
+   |
+LL | #[cfg_attr(all(), cfg_attr(all(), allow(dead_code)))] // nested wrap
+   |                                                       ^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL - #[cfg_attr(all(), cfg_attr(all(), allow(dead_code)))] // nested wrap
+LL + #[cfg_attr(all(), cfg_attr(all(), allow(dead_code, reason = "nested wrap")))]
+   |
+
+warning: 13 warnings emitted
 

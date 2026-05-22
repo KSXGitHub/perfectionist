@@ -61,6 +61,21 @@ fn trailing_escapes() {}
 #[cfg_attr(all(), allow(dead_code))] // cfg_attr wrap
 fn trailing_cfg_attr() {}
 
+// Bad once: `cfg_attr` expanding to *two* synth lint-level attrs
+// shares a single trailing comment. The rule lifts the comment
+// onto the first synth attr only — emitting a suggestion for
+// every synth would produce overlapping `delete_span`s on the
+// shared comment that rustfix cannot apply.
+#[cfg_attr(all(), allow(dead_code), allow(unused_variables))] // shared rationale
+fn trailing_cfg_attr_multi_synth() {}
+
+// Bad: nested `cfg_attr` keeps the *outermost* trace span as the
+// comment-search anchor. If the rule overwrote the pending trace
+// on each nested visit, the inner trace's narrower span would
+// miss the trailing comment after the outer `]`.
+#[cfg_attr(all(), cfg_attr(all(), allow(dead_code)))] // nested wrap
+fn trailing_nested_cfg_attr() {}
+
 // Good: attribute already carries `reason`; rule must not fire.
 #[allow(dead_code, reason = "explicit reason")] // separate trailing note
 fn already_has_reason() {}
@@ -96,6 +111,8 @@ fn main() {
     trailing_multiline_comma();
     trailing_escapes();
     trailing_cfg_attr();
+    trailing_cfg_attr_multi_synth();
+    trailing_nested_cfg_attr();
     already_has_reason();
     doc_comment_is_not_a_leading_comment();
     comment_on_next_line();
