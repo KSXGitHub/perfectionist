@@ -6,6 +6,10 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(unknown_lints, reason = "ui fixture")]
+#![allow(
+    perfectionist::lint_reason_from_comment,
+    reason = "fixture targets `lint_silence_reason`; the trailing/leading comments are documentation, not rationales to lift",
+)]
 
 // Good — every named lint is exempt.
 #[allow(clippy::module_name_repetitions)]

@@ -4,6 +4,10 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(unknown_lints, reason = "ui fixture")]
+#![allow(
+    perfectionist::lint_reason_from_comment,
+    reason = "fixture targets `lint_silence_reason`; the trailing/leading comments are documentation, not rationales to lift",
+)]
 
 // Bad — five characters, below the new floor of 8.
 #[allow(dead_code, reason = "short")]

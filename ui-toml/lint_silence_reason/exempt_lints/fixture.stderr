@@ -1,5 +1,5 @@
 warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
-  --> $DIR/fixture.rs:16:51
+  --> $DIR/fixture.rs:20:51
    |
 LL | #[allow(clippy::module_name_repetitions, dead_code)]
    |                                                   ^ help: add a `reason` field: `, reason = ""`

@@ -222,10 +222,11 @@ Active by default.
 
 ## Interaction with sibling rules
 
-- [`lint-reason-from-comment`](./lint-reason-from-comment.md) lifts
-  an adjacent comment into the attribute's `reason` field before
-  this rule rewrites `allow` → `expect`. The two rewrites
-  compose in either order.
+- `perfectionist::lint_reason_from_comment`
+  ([`src/rules/lint_reason_from_comment.rs`](../src/rules/lint_reason_from_comment.rs))
+  lifts an adjacent comment into the attribute's `reason` field
+  before this rule rewrites `allow` → `expect`. The two
+  rewrites compose in either order.
 - `perfectionist::lint_silence_reason`
   ([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs))
   requires a `reason` field on every `#[allow]` and `#[expect]`.

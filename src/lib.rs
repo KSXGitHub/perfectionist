@@ -40,6 +40,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         arc_rc_clone
         derive_ordering
         flat_module_pattern
+        lint_reason_from_comment
         lint_silence_reason
         macro_argument_binding
         macro_trailing_comma

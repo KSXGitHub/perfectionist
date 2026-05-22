@@ -1,0 +1,137 @@
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:12:21
+   |
+LL | #[allow(dead_code)] // matches upstream signature
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::lint_reason_from_comment)]` on by default
+help: lift the comment into a `reason` field
+   |
+LL - #[allow(dead_code)] // matches upstream signature
+LL + #[allow(dead_code, reason = "matches upstream signature")]
+   |
+
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:18:22
+   |
+LL | #[expect(dead_code)] // stub for upcoming change
+   |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL - #[expect(dead_code)] // stub for upcoming change
+LL + #[expect(dead_code, reason = "stub for upcoming change")]
+   |
+
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:22:20
+   |
+LL | #[warn(dead_code)] // downgrade during migration
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL - #[warn(dead_code)] // downgrade during migration
+LL + #[warn(dead_code, reason = "downgrade during migration")]
+   |
+
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:26:20
+   |
+LL | #[deny(dead_code)] // hot path; tolerate nothing
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL - #[deny(dead_code)] // hot path; tolerate nothing
+LL + #[deny(dead_code, reason = "hot path; tolerate nothing")]
+   |
+
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:30:22
+   |
+LL | #[forbid(dead_code)] // module-wide policy
+   |                      ^^^^^^^^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL - #[forbid(dead_code)] // module-wide policy
+LL + #[forbid(dead_code, reason = "module-wide policy")]
+   |
+
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:34:1
+   |
+LL | // pnpm's wire format is JSON-stringly typed
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL - // pnpm's wire format is JSON-stringly typed
+LL - #[allow(dead_code)]
+LL + #[allow(dead_code, reason = "pnpm's wire format is JSON-stringly typed")]
+   |
+
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:41:21
+   |
+LL | #[allow(dead_code)] //-- matches upstream signature
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL - #[allow(dead_code)] //-- matches upstream signature
+LL + #[allow(dead_code, reason = "matches upstream signature")]
+   |
+
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:47:4
+   |
+LL | )] // multi-line layout
+   |    ^^^^^^^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL ~     dead_code,
+LL +     reason = "multi-line layout",
+LL ~ )]
+   |
+
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:53:4
+   |
+LL | )] // multi-line with comma
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL +     reason = "multi-line with comma",
+LL ~ )]
+   |
+
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:57:21
+   |
+LL | #[allow(dead_code)] // he said "yes" and used a / backslash
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL - #[allow(dead_code)] // he said "yes" and used a / backslash
+LL + #[allow(dead_code, reason = "he said /"yes/" and used a / backslash")]
+   |
+
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:61:38
+   |
+LL | #[cfg_attr(all(), allow(dead_code))] // cfg_attr wrap
+   |                                      ^^^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL - #[cfg_attr(all(), allow(dead_code))] // cfg_attr wrap
+LL + #[cfg_attr(all(), allow(dead_code, reason = "cfg_attr wrap"))]
+   |
+
+warning: 11 warnings emitted
+
