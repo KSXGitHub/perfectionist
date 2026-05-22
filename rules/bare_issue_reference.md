@@ -38,64 +38,110 @@ Configure via `dylint.toml` under `["perfectionist::bare_issue_reference"]`. Eve
 
 ### `repo_base_url`: `string` (optional)
 
-*Undocumented.*
+Base URL used to construct the suggested target — e.g.
+`"https://github.com/owner/repo"`. Required for a non-
+help-only suggestion; when unset, every `suggestion_mode`
+degrades to help-only output so the lint stays adoptable
+with zero configuration. Defaults to `None`.
 
 ### `issue_url_template`: `string` (optional)
 
-*Undocumented.*
+Template for the suggested issue URL. `{repo_base_url}` and
+`{number}` are substituted. Defaults to
+`"{repo_base_url}/issues/{number}"`.
 
 ### `pr_url_template`: `string` (optional)
 
-*Undocumented.*
+Template for the suggested PR URL (used by
+`suggestion_mode = "both"`). Defaults to
+`"{repo_base_url}/pull/{number}"`.
 
 ### `suggestion_mode`: `SuggestionMode` (optional)
 
-*Undocumented.*
+How the lint suggests the link. See [`SuggestionMode`] for
+the available modes. Defaults to `issue_url`.
 
 ### `form`: `DocForm` (optional)
 
-*Undocumented.*
+Doc-comment fix form: `inline` for `[#N](URL)`, `reference`
+for the two-piece `[#N]` + `[#N]: URL` form. The reference
+form's autofix only rewrites the `#N` token; the matching
+definition is the author's responsibility. Defaults to
+`inline`. Ignored for plain-comment fixes — those follow
+`plain_comment_form` instead.
 
 ### `include_plain_comments`: `boolean` (optional)
 
-*Undocumented.*
+When `true`, also lint plain `//` line comments. The
+autofix in plain comments uses `plain_comment_form`'s URL
+shape (since plain comments aren't markdown). Plain block
+comments (`/* ... */`) are out of scope regardless.
+Defaults to `false`.
 
 ### `plain_comment_form`: `PlainForm` (optional)
 
-*Undocumented.*
+Replacement form used inside plain `//` comments when
+`include_plain_comments = true`. Defaults to `bare`.
+Ignored for doc comments and when `repo_base_url` is unset.
 
 ### Types
 
 #### `SuggestionMode` (enum)
 
+How the lint should suggest the link target.
+
 ##### `"issue_url"` (Rust: `IssueUrl`)
 
-*Undocumented.*
+Single suggestion using `issue_url_template`. Safe on GitHub
+because public GitHub redirects `/issues/<n>` to `/pull/<n>`
+when the number names a PR — the suggestion is
+`MachineApplicable` on `github.com` hosts and `MaybeIncorrect`
+elsewhere. Default.
 
 ##### `"both"` (Rust: `Both`)
 
-*Undocumented.*
+Emit two `MaybeIncorrect` suggestions — one issue URL, one
+PR URL — and let the author pick. Use on forges that don't
+redirect `/issues` to `/pull` (some GitLab self-hosts).
 
 ##### `"help_only"` (Rust: `HelpOnly`)
 
-*Undocumented.*
+Emit no Suggestion, only help text. Use when `repo_base_url`
+cannot be configured statically (e.g., a workspace with
+multiple repositories). Distinct from the unset-`repo_base_url`
+degradation: setting this mode explicitly keeps the lint
+help-only even when `repo_base_url` is configured.
 
 #### `DocForm` (enum)
 
+Markdown-link shape produced by the autofix inside doc comments.
+
 ##### `"inline"` (Rust: `Inline`)
 
-*Undocumented.*
+`[#123](URL)` — the URL is inlined. Default.
 
 ##### `"reference"` (Rust: `Reference`)
 
-*Undocumented.*
+`[#123]` — the matching `[#123]: URL` reference-link
+definition is the author's responsibility (the lint can't
+safely synthesise a multi-line definition without knowing
+where the doc block ends). Applicability is always
+`MaybeIncorrect` for this form so `cargo dylint --fix`
+doesn't apply an incomplete suggestion unprompted.
 
 #### `PlainForm` (enum)
 
+URL shape used inside plain `//` comments when
+`include_plain_comments = true`.
+
 ##### `"bare"` (Rust: `Bare`)
 
-*Undocumented.*
+Substitute the bare URL (`https://...`). Default. Many
+editors auto-detect bare URLs as clickable.
 
 ##### `"bracketed"` (Rust: `Bracketed`)
 
-*Undocumented.*
+Substitute `<https://...>`. The angle-bracket delimiter
+gives the URL a clear boundary when it abuts surrounding
+punctuation; editors that auto-link URLs typically
+recognise it.

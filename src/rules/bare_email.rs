@@ -48,20 +48,34 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::bare_email";
 
+/// Required form for compliant email addresses.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum Style {
+    /// Wrap the address with `<` and `>` — `<user@example.com>`.
     AngleBrackets,
+    /// Prefix the address with `mailto:` — `mailto:user@example.com`.
     Mailto,
+    /// Combine both — `<mailto:user@example.com>`.
     Both,
+    /// Accept any of the wrapped forms above (`<email>`,
+    /// `mailto:email`, or `<mailto:email>`); the autofix emits two
+    /// `MaybeIncorrect` suggestions for the author to pick from.
+    /// Default.
     Either,
+    /// Forbid email addresses outright — no autofix, just a help
+    /// note recommending the address be moved to an external file
+    /// or removed entirely.
     Forbid,
 }
 
+/// Comment surface the rule scans.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum Target {
+    /// `///`, `//!`, `/** */`, `/*! */` doc comments.
     Doc,
+    /// `//` and `/* */` non-doc comments.
     Comment,
 }
 
@@ -70,9 +84,22 @@ const DEFAULT_SKIP_DOMAINS: &[&str] = &["example.com", "example.org"];
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
+    /// Required form for compliant email addresses. See the [`Style`]
+    /// variants for the available options. Defaults to `either` (any
+    /// of the wrapped forms is accepted; the autofix degrades to two
+    /// `MaybeIncorrect` suggestions).
     style: Style,
+    /// Comment surfaces the rule scans. Defaults to both `doc`
+    /// (`///`, `//!`, `/** */`, `/*! */`) and `comment` (`//`,
+    /// `/* */`).
     targets: Vec<Target>,
+    /// Skip these exact addresses. Useful for `noreply@github.com`
+    /// and similar placeholders that the project deliberately leaves
+    /// bare in changelog entries. Empty by default.
     skip_addresses: Vec<String>,
+    /// Skip addresses whose domain matches any of these patterns.
+    /// Defaults to `["example.com", "example.org"]`. Useful
+    /// alongside `skip_addresses` for blanket domain exemptions.
     skip_domains: Vec<String>,
 }
 

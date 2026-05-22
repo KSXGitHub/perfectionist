@@ -39,50 +39,68 @@ Configure via `dylint.toml` under `["perfectionist::bare_email"]`. Every field i
 
 ### `style`: `Style` (optional)
 
-*Undocumented.*
+Required form for compliant email addresses. See the [`Style`]
+variants for the available options. Defaults to `either` (any
+of the wrapped forms is accepted; the autofix degrades to two
+`MaybeIncorrect` suggestions).
 
 ### `targets`: `[Target]` (optional)
 
-*Undocumented.*
+Comment surfaces the rule scans. Defaults to both `doc`
+(`///`, `//!`, `/** */`, `/*! */`) and `comment` (`//`,
+`/* */`).
 
 ### `skip_addresses`: `[string]` (optional)
 
-*Undocumented.*
+Skip these exact addresses. Useful for `noreply@github.com`
+and similar placeholders that the project deliberately leaves
+bare in changelog entries. Empty by default.
 
 ### `skip_domains`: `[string]` (optional)
 
-*Undocumented.*
+Skip addresses whose domain matches any of these patterns.
+Defaults to `["example.com", "example.org"]`. Useful
+alongside `skip_addresses` for blanket domain exemptions.
 
 ### Types
 
 #### `Style` (enum)
 
+Required form for compliant email addresses.
+
 ##### `"angle_brackets"` (Rust: `AngleBrackets`)
 
-*Undocumented.*
+Wrap the address with `<` and `>` — `<user@example.com>`.
 
 ##### `"mailto"` (Rust: `Mailto`)
 
-*Undocumented.*
+Prefix the address with `mailto:` — `mailto:user@example.com`.
 
 ##### `"both"` (Rust: `Both`)
 
-*Undocumented.*
+Combine both — `<mailto:user@example.com>`.
 
 ##### `"either"` (Rust: `Either`)
 
-*Undocumented.*
+Accept any of the wrapped forms above (`<email>`,
+`mailto:email`, or `<mailto:email>`); the autofix emits two
+`MaybeIncorrect` suggestions for the author to pick from.
+Default.
 
 ##### `"forbid"` (Rust: `Forbid`)
 
-*Undocumented.*
+Forbid email addresses outright — no autofix, just a help
+note recommending the address be moved to an external file
+or removed entirely.
 
 #### `Target` (enum)
 
+Comment surface the rule scans.
+
 ##### `"doc"` (Rust: `Doc`)
 
-*Undocumented.*
+`///`, `//!`, `/** */`, `/*! */` doc comments.
 
 ##### `"comment"` (Rust: `Comment`)
 
-*Undocumented.*
+`//` and `/* */` non-doc comments.

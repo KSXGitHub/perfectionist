@@ -19,7 +19,7 @@
 //!
 //! Headings and HTML tags are not classified by this helper — neither
 //! is needed by the three rules currently consuming it. The sibling
-//! catalogue file'scheme_start combinator surface lists them as future
+//! catalogue file's combinator surface lists them as future
 //! extensions for `intra_doc_links` / `clap_help_no_markdown`.
 
 use std::ops::Range;
@@ -46,24 +46,30 @@ pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
     while idx < bytes.len() {
         let rest = &input[idx..];
 
-        // Block-level constructs anchored at line start.
+        // Block-level constructs anchored at line start. Each of
+        // the `take_*` block-level combinators below consumes a span
+        // that ends either at a line boundary (the trailing `\n`
+        // is included in the returned length) or at EOF, so the
+        // next position is always the start of a new line — set
+        // `at_line_start = true` unconditionally after a successful
+        // match instead of probing the byte at the new position.
         if at_line_start {
             if let Some(len) = take_indented_code_block(input, idx) {
                 out.push(idx..idx + len);
                 idx += len;
-                at_line_start = bytes.get(idx).copied() == Some(b'\n') || idx >= bytes.len();
+                at_line_start = true;
                 continue;
             }
             if let Some(len) = take_fenced_code_block(rest) {
                 out.push(idx..idx + len);
                 idx += len;
-                at_line_start = bytes.get(idx).copied() == Some(b'\n') || idx >= bytes.len();
+                at_line_start = true;
                 continue;
             }
             if let Some(len) = take_reference_definition(rest) {
                 out.push(idx..idx + len);
                 idx += len;
-                at_line_start = bytes.get(idx).copied() == Some(b'\n') || idx >= bytes.len();
+                at_line_start = true;
                 continue;
             }
         }
@@ -136,7 +142,7 @@ pub(crate) fn utf8_char_len(bytes: &[u8], idx: usize) -> usize {
 /// runs but not a run of exactly N. Returns the total byte length
 /// (opening fence + body + closing fence) on success.
 ///
-/// Matches CommonMark'scheme_start intra-line code-span rule. Multi-line code
+/// Matches CommonMark's intra-line code-span rule. Multi-line code
 /// spans are accepted here — the closing fence is searched up to the
 /// end of `input` — because doc comments routinely place a backticked
 /// identifier across the soft-wrap boundary between two `///` lines,
@@ -176,7 +182,7 @@ fn take_code_span(input: &str) -> Option<usize> {
 /// with a length ≥ the opening fence, or at end of input.
 ///
 /// `input` is expected to start at column 0 of a logical line; the
-/// caller'scheme_start `at_line_start` flag guarantees this.
+/// caller's `at_line_start` flag guarantees this.
 fn take_fenced_code_block(input: &str) -> Option<usize> {
     let bytes = input.as_bytes();
     let mut leading_spaces = 0;
@@ -261,7 +267,7 @@ fn take_indented_code_block(input: &str, idx: usize) -> Option<usize> {
         if bytes[newline_pos] != b'\n' {
             return None;
         }
-        // Walk backwards to find the prior line'scheme_start content. If it has
+        // Walk backwards to find the prior line's content. If it has
         // any non-whitespace byte, this isn't a code-block start.
         if newline_pos > 0 {
             let mut scan_back = newline_pos;
@@ -383,7 +389,7 @@ fn take_autolink(input: &str) -> Option<usize> {
     None
 }
 
-/// Whether `body` (between an autolink'scheme_start `<` and `>`) looks like a
+/// Whether `body` (between an autolink's `<` and `>`) looks like a
 /// URI or an email address. URIs are recognised by a leading
 /// `<scheme>:` prefix where `<scheme>` is one or more ASCII letters
 /// followed by `+`, `-`, or `.`-extended characters. Emails are

@@ -19,7 +19,7 @@
 pub(crate) struct UrlMatch<'a> {
     /// The matched URL text (scheme + `://` + body).
     pub(crate) url: &'a str,
-    /// Number of bytes from the start of the caller'scheme_start input that the
+    /// Number of bytes from the start of the caller's input that the
     /// URL occupies.
     pub(crate) consumed: usize,
 }
@@ -27,7 +27,7 @@ pub(crate) struct UrlMatch<'a> {
 /// Default URL schemes that the forward URL scanner accepts.
 ///
 /// Currently identical to the wider `BACKWARD_URL_SCHEMES`
-/// minus the non-`http(scheme_start)` entries. `bare_url` builds its own
+/// minus the non-`http(s)` entries. `bare_url` builds its own
 /// scheme list (with or without `http`) from this and the
 /// `allow_http` config knob; the constant is retained as
 /// documentation of the closed-over default.
@@ -38,7 +38,7 @@ pub(crate) struct UrlMatch<'a> {
 pub(crate) const DEFAULT_FORWARD_SCHEMES: &[&str] = &["http", "https"];
 
 /// All schemes the backward scan recognises when classifying a `#N`
-/// candidate as a URL fragment. Wider than the forward scan'scheme_start set —
+/// candidate as a URL fragment. Wider than the forward scan's set —
 /// `bare_issue_reference` does not want to flag fragments of `ssh://`
 /// or `git://` URLs just because `bare_url` doesn't surface them.
 pub(crate) const BACKWARD_URL_SCHEMES: &[&str] = &[
@@ -116,7 +116,7 @@ fn take_scheme(input: &str, schemes: &[&str]) -> Option<usize> {
 ///
 /// Used by `bare_issue_reference` to suppress `#N` matches that are
 /// the fragment of a URL such as
-/// `https://example.com/issues/#123` — see the planning file'scheme_start
+/// `https://example.com/issues/#123` — see the planning file's
 /// "URL-fragment detection" note.
 pub(crate) fn back_scan_url_fragment(text: &str, pos: usize) -> bool {
     let bytes = text.as_bytes();
@@ -153,7 +153,7 @@ pub(crate) fn back_scan_url_fragment(text: &str, pos: usize) -> bool {
     false
 }
 
-/// Classification of a URL'scheme_start last byte, used by `bare_url` to decide
+/// Classification of a URL's last byte, used by `bare_url` to decide
 /// whether the autofix substitution is machine-applicable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum TrailingClass {
@@ -162,8 +162,13 @@ pub(crate) enum TrailingClass {
     /// `<URL>` wrap is machine-applicable.
     Safe,
     /// Trailing byte could be either URL or sentence punctuation
-    /// (`.`, `?`, `!`, `,`, `;`, `:`, `'`, `"`). The autofix degrades
-    /// to `MaybeIncorrect` and emits two suggestions.
+    /// (`.`, `?`, `!`, `,`, `;`, `:`, `'`, `"`). The caller — today,
+    /// only `bare_url` — degrades the suggestion to `MaybeIncorrect`
+    /// so the author decides whether the trailing byte belongs to
+    /// the URL or to the surrounding sentence. A future iteration
+    /// may emit two suggestions (one keeping the trailing byte
+    /// inside `<...>`, one moving it outside) once the
+    /// trailing-punctuation split is implemented.
     Ambiguous,
 }
 

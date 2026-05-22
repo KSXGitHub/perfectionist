@@ -57,10 +57,26 @@ const DEFAULT_SKIP_HOSTS: &[&str] = &["example.com", "example.org", "localhost"]
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
+    /// Comment surfaces the rule scans. Defaults to both `doc`
+    /// (`///`, `//!`, `/** */`, `/*! */`) and `comment` (`//`,
+    /// `/* */`). Narrow to one of these if a project deliberately
+    /// uses one surface for prose URLs and wants the lint to leave
+    /// it alone.
     targets: Vec<Target>,
-    accept: Vec<AcceptForm>,
+    /// Characters that, when the URL ends in one of them, keep the
+    /// autofix at `MachineApplicable`. Defaults to `["/", "_", "-",
+    /// "=", "&", "+"]`. ASCII alphanumerics and `/` are always
+    /// treated as safe regardless of this list; entries here
+    /// supplement that built-in set.
     safe_trailing_chars: Vec<char>,
+    /// When `false`, the rule only recognises `https://` URLs;
+    /// `http://` URLs in comments are ignored. Defaults to `true`
+    /// (both schemes are flagged).
     allow_http: bool,
+    /// Hosts to skip — placeholder hosts that frequently appear
+    /// bare in docs for illustrative purposes. Compared
+    /// case-insensitively per RFC 3986 §3.2.2. Defaults to
+    /// `["example.com", "example.org", "localhost"]`.
     skip_hosts: Vec<String>,
 }
 
@@ -68,7 +84,6 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             targets: vec![Target::Doc, Target::Comment],
-            accept: vec![AcceptForm::AngleBrackets, AcceptForm::Labelled],
             safe_trailing_chars: DEFAULT_SAFE_TRAILING_CHARS.to_vec(),
             allow_http: true,
             skip_hosts: DEFAULT_SKIP_HOSTS.iter().map(|s| (*s).to_owned()).collect(),
@@ -76,18 +91,14 @@ impl Default for Config {
     }
 }
 
+/// Comment surface the rule scans.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum Target {
+    /// `///`, `//!`, `/** */`, `/*! */` doc comments.
     Doc,
+    /// `//` and `/* */` non-doc comments.
     Comment,
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum AcceptForm {
-    AngleBrackets,
-    Labelled,
 }
 
 pub struct BareUrl {
@@ -100,15 +111,6 @@ pub struct BareUrl {
 impl BareUrl {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        // `config.accept` is deserialised but not yet consumed — the
-        // narrowing semantics ("`["angle_brackets"]` only accepts
-        // `<url>`, rejects `[text](url)`") need typed markdown events
-        // from `crate::markdown` (autolink vs inline link) and a
-        // sensible suggestion when translating between the two
-        // forms. Leaving the field on `Config` so users can set it
-        // without a deserialisation error; the field reads as
-        // `[AngleBrackets, Labelled]` today regardless of input.
-        let _accept_acknowledged = config.accept;
         Self {
             targets: config.targets.into_iter().collect(),
             safe_trailing_chars: config.safe_trailing_chars,

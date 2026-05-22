@@ -35,42 +35,43 @@ Configure via `dylint.toml` under `["perfectionist::bare_url"]`. Every field is 
 
 ### `targets`: `[Target]` (optional)
 
-*Undocumented.*
-
-### `accept`: `[AcceptForm]` (optional)
-
-*Undocumented.*
+Comment surfaces the rule scans. Defaults to both `doc`
+(`///`, `//!`, `/** */`, `/*! */`) and `comment` (`//`,
+`/* */`). Narrow to one of these if a project deliberately
+uses one surface for prose URLs and wants the lint to leave
+it alone.
 
 ### `safe_trailing_chars`: `[single-character string]` (optional)
 
-*Undocumented.*
+Characters that, when the URL ends in one of them, keep the
+autofix at `MachineApplicable`. Defaults to `["/", "_", "-",
+"=", "&", "+"]`. ASCII alphanumerics and `/` are always
+treated as safe regardless of this list; entries here
+supplement that built-in set.
 
 ### `allow_http`: `boolean` (optional)
 
-*Undocumented.*
+When `false`, the rule only recognises `https://` URLs;
+`http://` URLs in comments are ignored. Defaults to `true`
+(both schemes are flagged).
 
 ### `skip_hosts`: `[string]` (optional)
 
-*Undocumented.*
+Hosts to skip — placeholder hosts that frequently appear
+bare in docs for illustrative purposes. Compared
+case-insensitively per RFC 3986 §3.2.2. Defaults to
+`["example.com", "example.org", "localhost"]`.
 
 ### Types
 
 #### `Target` (enum)
 
+Comment surface the rule scans.
+
 ##### `"doc"` (Rust: `Doc`)
 
-*Undocumented.*
+`///`, `//!`, `/** */`, `/*! */` doc comments.
 
 ##### `"comment"` (Rust: `Comment`)
 
-*Undocumented.*
-
-#### `AcceptForm` (enum)
-
-##### `"angle_brackets"` (Rust: `AngleBrackets`)
-
-*Undocumented.*
-
-##### `"labelled"` (Rust: `Labelled`)
-
-*Undocumented.*
+`//` and `/* */` non-doc comments.
