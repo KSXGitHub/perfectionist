@@ -182,5 +182,18 @@ LL - #[allow(dead_code)] //
 LL + #[allow(dead_code, reason = "real leading rationale")] //
    |
 
-warning: 15 warnings emitted
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/lint_reason_from_comment.rs:98:1
+   |
+LL | // real rationale on the leading line
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: lift the comment into a `reason` field
+   |
+LL - // real rationale on the leading line
+LL - #[allow(dead_code)] //----------
+LL + #[allow(dead_code, reason = "real rationale on the leading line")] //----------
+   |
+
+warning: 16 warnings emitted
 

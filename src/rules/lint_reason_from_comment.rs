@@ -499,6 +499,12 @@ fn is_doc_comment_prefix(rest_after_slashes: &[u8]) -> bool {
 /// run of decoration characters (`-`, `=`, `*`) followed by
 /// whitespace.
 ///
+/// Returns the empty string for inputs that carry no rationale text:
+/// a bare `//`, a whitespace-only `//   `, or an all-decoration
+/// visual divider like `//----------`. `find_*_comment` use the
+/// empty return to skip those matches so `check` falls through to
+/// the next placement instead of lifting a vacuous reason.
+///
 /// The input `content` is expected to start with `//`. It is not the
 /// raw line — trailing `\r` and similar line-terminator bytes are
 /// already removed by the caller.

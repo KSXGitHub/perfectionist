@@ -92,6 +92,18 @@ fn cfg_attr_first_synth_has_reason() {}
 #[allow(dead_code)] //
 fn trailing_empty_falls_through_to_leading() {}
 
+// Bad once: same fall-through, but with an all-decoration trailing
+// divider instead of a bare `//`. The divider must normalise to
+// empty so the leading comment wins.
+// real rationale on the leading line
+#[allow(dead_code)] //----------
+fn trailing_divider_falls_through_to_leading() {}
+
+// Good: an all-decoration trailing divider with no real comment
+// anywhere doesn't fire at all (the divider is not a rationale).
+#[allow(dead_code, reason = "unrelated to the divider below")] //==========
+fn trailing_divider_alone_is_silent() {}
+
 // Good: attribute already carries `reason`; rule must not fire.
 #[allow(dead_code, reason = "explicit reason")] // separate trailing note
 fn already_has_reason() {}
@@ -131,6 +143,8 @@ fn main() {
     trailing_nested_cfg_attr();
     cfg_attr_first_synth_has_reason();
     trailing_empty_falls_through_to_leading();
+    trailing_divider_falls_through_to_leading();
+    trailing_divider_alone_is_silent();
     already_has_reason();
     doc_comment_is_not_a_leading_comment();
     comment_on_next_line();
