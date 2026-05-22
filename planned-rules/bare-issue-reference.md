@@ -55,7 +55,14 @@ runs over `//` comment text as well. Markdown-specific skips
 (code spans, existing markdown links, reference-link definitions)
 don't apply there — plain comments aren't markdown — but the
 left-context guard (no word character, no `[` before the `#`)
-and the URL-fragment skip still do.
+and the URL-fragment skip still do. The `[` half of the guard
+deserves a note: in plain comments, `[#123]` isn't a markdown
+link, so the guard's doc-comment rationale doesn't transfer.
+Skipping it anyway is deliberate — the brackets in plain text
+read as the author's manual emphasis or quotation, and
+rewriting `[#123]` to a URL form would damage that authorial
+choice. Users who want the URL form should drop the brackets
+themselves.
 
 ## Examples
 
@@ -207,13 +214,14 @@ plain_comment_form = "bare"
 - The autofix substitutes the bare span with the rendered link.
   Suggestion applicability:
   - `suggestion_mode = "issue_url"` → `MachineApplicable` when
-    `repo_base_url`'s host is `github.com` (or `*.github.com`),
-    because GitHub redirects `/issues/<n>` to `/pull/<n>` when
-    the number names a PR. Otherwise (the URL points at a
-    self-hosted forge that may not redirect) downgrade to
-    `MaybeIncorrect` and emit a note explaining why. The forge
-    is detected by parsing the host out of `repo_base_url`; no
-    extra config knob.
+    `repo_base_url`'s host is exactly `github.com`, because
+    public GitHub redirects `/issues/<n>` to `/pull/<n>` when
+    the number names a PR. Other hosts — GitHub Enterprise
+    Server (custom hostnames), GitLab, Gitea, etc. — may or may
+    not implement the same redirect; the spec defaults
+    conservatively to `MaybeIncorrect` on those and emits a
+    note explaining why. The forge is detected by parsing the
+    host out of `repo_base_url`; no extra config knob.
   - `suggestion_mode = "both"` → two `MaybeIncorrect` suggestions.
     `cargo clippy --fix` will not apply either; the author picks
     manually.
@@ -252,9 +260,10 @@ output and fail.
 Set `plain_comment_form = "bracketed"` to make the first fix
 already produce `<https://...>`, which both rules accept. A
 project that has consciously decided bare URLs in comments are
-fine can instead narrow `bare_url`'s `targets` or add the issue
-host to its `skip_hosts` — those choices are valid project
-postures, just broader in effect than the `"bracketed"` swap.
+fine can instead narrow `bare_url`'s `targets` (universally
+valid) or — when `repo_base_url` is set — add the issue host to
+`bare_url`'s `skip_hosts`. Both are broader in effect than the
+`"bracketed"` swap.
 
 ## Default state
 
