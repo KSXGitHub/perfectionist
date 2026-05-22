@@ -1,0 +1,27 @@
+warning: static item `N` has a single-letter name
+  --> $DIR/single_letter_static_item.rs:6:8
+   |
+LL | static N: AtomicUsize = AtomicUsize::new(0);
+   |        ^
+   |
+   = help: rename to a descriptive identifier (e.g. `BUFFER`, `CACHE`, `COUNTER`)
+   = note: `#[warn(perfectionist::single_letter_static_item)]` on by default
+
+warning: static item `D` has a single-letter name
+  --> $DIR/single_letter_static_item.rs:9:8
+   |
+LL | static D: u64 = 64;
+   |        ^
+   |
+   = help: rename to a descriptive identifier (e.g. `BUFFER`, `CACHE`, `COUNTER`)
+
+warning: static item `A` has a single-letter name
+  --> $DIR/single_letter_static_item.rs:16:12
+   |
+LL |     static A: u32 = 1;
+   |            ^
+   |
+   = help: rename to a descriptive identifier (e.g. `BUFFER`, `CACHE`, `COUNTER`)
+
+warning: 3 warnings emitted
+
