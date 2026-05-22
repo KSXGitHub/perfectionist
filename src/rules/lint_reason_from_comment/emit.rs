@@ -9,12 +9,10 @@ use rustc_errors::Applicability;
 use rustc_lint::{EarlyContext, LintContext};
 use rustc_span::{BytePos, Pos, RelativeBytePos, SourceFile, Span};
 
+use super::insertion::{build_reason_insertion, escape_for_rust_string};
 use super::scan::{Comment, find_leading_comment, find_trailing_comment};
 use super::{LINT_REASON_FROM_COMMENT, LintReasonFromComment, Site};
 use crate::common::attr_has_reason;
-use crate::rules::lint_reason_from_comment::insertion::{
-    build_reason_insertion, escape_for_rust_string,
-};
 
 impl LintReasonFromComment {
     /// Apply the trigger and emission for one lint-level invocation.
