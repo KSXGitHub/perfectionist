@@ -203,10 +203,14 @@ impl BareIssueReference {
                 index += utf8_char_len(bytes, index);
                 continue;
             }
-            // Left-context guard.
+            // Left-context guard: skip if preceded by a word
+            // character (would make the `#NNN` part of a larger
+            // identifier), `[` (existing markdown link label), or
+            // `` ` `` (markdown code span / plain-comment
+            // backtick-quoted code).
             if index > 0 {
                 let prev = bytes[index - 1];
-                if prev.is_ascii_alphanumeric() || prev == b'_' || prev == b'[' {
+                if prev.is_ascii_alphanumeric() || prev == b'_' || prev == b'[' || prev == b'`' {
                     index += 1;
                     continue;
                 }

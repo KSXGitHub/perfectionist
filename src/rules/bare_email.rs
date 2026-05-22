@@ -184,7 +184,12 @@ impl BareEmail {
                 }
             };
             // Left-context guard: skip if preceded by a word
-            // character, `<`, `:`, or `/` (URL path).
+            // character (would make the match part of a larger
+            // identifier), `<` (autolink), `:` (`mailto:` prefix),
+            // `/` (URL path containing the `@` in user-info),
+            // `.` (would join the local-part to preceding text),
+            // or `` ` `` (markdown code span or plain-comment
+            // backtick-quoted code).
             if index > 0 {
                 let prev = bytes[index - 1];
                 if prev.is_ascii_alphanumeric()
@@ -193,6 +198,7 @@ impl BareEmail {
                     || prev == b'<'
                     || prev == b':'
                     || prev == b'/'
+                    || prev == b'`'
                 {
                     index += local_len.max(1);
                     continue;

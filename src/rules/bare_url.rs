@@ -184,9 +184,10 @@ impl BareUrl {
     }
 
     fn scan_plain_chunk(&self, lint_context: &EarlyContext<'_>, chunk: &CommentChunk<'_>) {
-        // Plain comments aren't markdown; only the left-context guard
-        // (`<`, `[`, `(`) applies, and that's enforced inside
-        // [`Self::scan`] via the `prev_byte` check.
+        // Plain comments aren't markdown, so no skip-region pass is
+        // run; only the left-context guard inside [`Self::scan`]
+        // (the `prev_byte` check against `<`, `[`, `(`, `"`, `'`,
+        // `` ` ``, and word chars) applies.
         self.scan(lint_context, chunk, &[]);
     }
 
