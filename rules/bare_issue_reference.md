@@ -34,12 +34,12 @@ and any other markdown engine.
 ```rust,ignore
 /// Closes #123 and supersedes #124.
 ```
-Use instead (with `repo_base_url = "https://github.com/owner/repo"`
-and `suggest_issue_url`/`suggest_pr_url` enabled, having picked
-the issue interpretation):
+Use instead (with `repo_base_url = "https://github.com/owner/repo"`),
+picking the issue link for one and the pull-request link for
+the other:
 ```rust,ignore
 /// Closes [#123](https://github.com/owner/repo/issues/123) and
-/// supersedes [#124](https://github.com/owner/repo/issues/124).
+/// supersedes [#124](https://github.com/owner/repo/pull/124).
 ```
 
 ## Configuration
