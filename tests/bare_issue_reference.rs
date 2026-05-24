@@ -168,6 +168,22 @@ fn reference_form_appends_definition() {
 }
 
 #[test]
+fn indented_continuation_line_is_scanned() {
+    // A reference on an indented continuation line (a doc block inside
+    // an `impl`) is scanned, and the reference-form fix appends the
+    // definition with the same indented `///` prefix.
+    run(
+        "ui-toml/bare_issue_reference/indented",
+        github_repo(RuleConfig {
+            suggest_issue_url: Some(true),
+            suggest_pr_url: Some(false),
+            form: Some("reference".into()),
+            ..Default::default()
+        }),
+    );
+}
+
+#[test]
 fn reference_form_skips_existing_definition() {
     // When the block already defines `[#99]: URL`, the fix rewrites
     // only the `#99` token and does not append a duplicate definition.

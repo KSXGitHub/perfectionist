@@ -338,14 +338,21 @@ fn render_line_doc_block(block_src: &str, block_source_start: u32) -> (String, V
         let line_content = line_content.strip_suffix('\r').unwrap_or(line_content);
 
         let bytes = line_content.as_bytes();
-        if !bytes.starts_with(b"//") {
+        // A continuation line inside an indented item (`impl`, `mod`,
+        // nested `fn`, ...) carries the indentation before its `///`,
+        // so skip leading ASCII whitespace before looking for `//`.
+        let indent = bytes
+            .iter()
+            .take_while(|&&byte| byte == b' ' || byte == b'\t')
+            .count();
+        if !bytes[indent..].starts_with(b"//") {
             // Whitespace between doc-comment tokens; skip without
             // emitting a line.
             offset_in_block += raw_line.len() as u32;
             continue;
         }
         // Past the `//` lies `/`, `!`, or `/<text>` for `////...`.
-        let mut prefix_end = 2;
+        let mut prefix_end = indent + 2;
         // `///`, `//!`, or `////...`
         if prefix_end < bytes.len() && (bytes[prefix_end] == b'/' || bytes[prefix_end] == b'!') {
             prefix_end += 1;
@@ -386,11 +393,17 @@ fn render_line_plain_block(block_src: &str, block_source_start: u32) -> (String,
         let line_content = raw_line.strip_suffix('\n').unwrap_or(raw_line);
         let line_content = line_content.strip_suffix('\r').unwrap_or(line_content);
         let bytes = line_content.as_bytes();
-        if !bytes.starts_with(b"//") {
+        // Skip leading indentation on continuation lines (see
+        // `render_line_doc_block`).
+        let indent = bytes
+            .iter()
+            .take_while(|&&byte| byte == b' ' || byte == b'\t')
+            .count();
+        if !bytes[indent..].starts_with(b"//") {
             offset_in_block += raw_line.len() as u32;
             continue;
         }
-        let mut content_start = 2;
+        let mut content_start = indent + 2;
         if content_start < bytes.len() && bytes[content_start] == b' ' {
             content_start += 1;
         }
