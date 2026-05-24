@@ -19,8 +19,6 @@
 //! the outer source span for `cfg_attr`-wrapped synth lint-level
 //! attrs.
 
-use std::collections::BTreeSet;
-
 use rustc_ast::Attribute;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -84,35 +82,29 @@ const CONFIG_KEY: &str = "perfectionist::lint_reason_from_comment";
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Comment placements considered candidates. Subset of
-    /// `["trailing", "leading"]`. The trailing placement is the
-    /// canonical one and is the highest-confidence case; the leading
-    /// placement is lower confidence because the comment may also be
-    /// documentation for the next item.
-    sites: Vec<Site>,
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub(super) enum Site {
-    /// `// ...` comment on the same source line as the attribute's
-    /// closing `]`.
-    Trailing,
-    /// `// ...` comment on the previous source line, with no blank
-    /// line between the comment and the attribute.
-    Leading,
+    /// Lift a `// ...` comment trailing the attribute's closing `]`
+    /// (on the same source line). The canonical, highest-confidence
+    /// placement. Defaults to `true`.
+    lift_trailing_comments: bool,
+    /// Lift a `// ...` comment on the source line immediately above
+    /// the attribute (no blank line between, the line consists only
+    /// of the comment). Lower confidence — the comment may instead
+    /// be documentation for the next item. Defaults to `true`.
+    lift_leading_comments: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            sites: vec![Site::Trailing, Site::Leading],
+            lift_trailing_comments: true,
+            lift_leading_comments: true,
         }
     }
 }
 
 pub struct LintReasonFromComment {
-    pub(super) sites: BTreeSet<Site>,
+    pub(super) lift_trailing_comments: bool,
+    pub(super) lift_leading_comments: bool,
     /// Source span of the most recently-visited
     /// `sym::cfg_attr_trace` attribute. rustc replaces a
     /// successfully-applied `#[cfg_attr(<cond>, <inner>)]` with a
@@ -133,7 +125,8 @@ impl LintReasonFromComment {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
-            sites: config.sites.into_iter().collect(),
+            lift_trailing_comments: config.lift_trailing_comments,
+            lift_leading_comments: config.lift_leading_comments,
             pending_cfg_attr_outer: None,
         }
     }
@@ -167,7 +160,7 @@ impl EarlyLintPass for LintReasonFromComment {
     /// outer span) and one or more synth `#[allow(...)]` attributes
     /// — see the cfg_attr-trace handling below.
     fn check_attribute(&mut self, lint_context: &EarlyContext<'_>, attribute: &Attribute) {
-        if self.sites.is_empty() {
+        if !self.lift_trailing_comments && !self.lift_leading_comments {
             return;
         }
         // rustc replaces a `#[cfg_attr(<cond>, <inner>)]` whose

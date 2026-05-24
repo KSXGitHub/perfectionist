@@ -1,0 +1,15 @@
+warning: comment can be lifted into the attribute's `reason` field
+  --> $DIR/fixture.rs:13:21
+   |
+LL | #[allow(dead_code)] // trailing fires
+   |                     ^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::lint_reason_from_comment)]` on by default
+help: lift the comment into a `reason` field
+   |
+LL - #[allow(dead_code)] // trailing fires
+LL + #[allow(dead_code, reason = "trailing fires")]
+   |
+
+warning: 1 warning emitted
+

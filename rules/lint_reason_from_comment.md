@@ -52,24 +52,15 @@ fn build_fetcher(/* ... */) {}
 
 Configure via `dylint.toml` under `["perfectionist::lint_reason_from_comment"]`. Every field is optional; the per-field prose below states the default.
 
-### `sites`: `[Site]` (optional)
+### `lift_trailing_comments`: `boolean` (optional)
 
-Comment placements considered candidates. Subset of
-`["trailing", "leading"]`. The trailing placement is the
-canonical one and is the highest-confidence case; the leading
-placement is lower confidence because the comment may also be
-documentation for the next item.
+Lift a `// ...` comment trailing the attribute's closing `]`
+(on the same source line). The canonical, highest-confidence
+placement. Defaults to `true`.
 
-### Types
+### `lift_leading_comments`: `boolean` (optional)
 
-#### `Site` (enum)
-
-##### `"trailing"` (Rust: `Trailing`)
-
-`// ...` comment on the same source line as the attribute's
-closing `]`.
-
-##### `"leading"` (Rust: `Leading`)
-
-`// ...` comment on the previous source line, with no blank
-line between the comment and the attribute.
+Lift a `// ...` comment on the source line immediately above
+the attribute (no blank line between, the line consists only
+of the comment). Lower confidence — the comment may instead
+be documentation for the next item. Defaults to `true`.

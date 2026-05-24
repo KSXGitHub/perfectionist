@@ -11,7 +11,7 @@ use rustc_span::{BytePos, Pos, RelativeBytePos, SourceFile, Span};
 
 use super::insertion::{build_reason_insertion, escape_for_rust_string};
 use super::scan::{Comment, find_leading_comment, find_trailing_comment};
-use super::{LINT_REASON_FROM_COMMENT, LintReasonFromComment, Site};
+use super::{LINT_REASON_FROM_COMMENT, LintReasonFromComment};
 use crate::common::attr_has_reason;
 
 impl LintReasonFromComment {
@@ -59,13 +59,13 @@ impl LintReasonFromComment {
         }
 
         // Try the higher-confidence trailing placement first. The
-        // planning file makes the two placements mutually exclusive
-        // — a comment immediately before the attribute and a
-        // comment on the same line as the closing `]` are unrelated
-        // source edits — so the first match wins. `find_*_comment`
-        // filter out empty-normalised matches, so an unhelpful
-        // trailing `//` does not pre-empt a real leading comment.
-        if self.sites.contains(&Site::Trailing)
+        // two placements are mutually exclusive — a comment
+        // immediately before the attribute and a comment on the same
+        // line as the closing `]` are unrelated source edits — so
+        // the first match wins. `find_*_comment` filter out
+        // empty-normalised matches, so an unhelpful trailing `//`
+        // does not pre-empt a real leading comment.
+        if self.lift_trailing_comments
             && let Some(comment) = find_trailing_comment(source_text, outer_hi)
         {
             self.emit(
@@ -77,7 +77,7 @@ impl LintReasonFromComment {
             );
             return true;
         }
-        if self.sites.contains(&Site::Leading)
+        if self.lift_leading_comments
             && let Some(comment) = find_leading_comment(source_text, outer_lo)
         {
             self.emit(
