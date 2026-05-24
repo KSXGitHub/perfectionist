@@ -62,11 +62,11 @@ service.
 ### `repo_base_url`: `string` (optional)
 
 Base URL of the repository, e.g.
-`"https://github.com/owner/repo"` (or a self-hosted
-instance's equivalent). Carries the owner/repo path the
-issue / PR link needs, so it is required for an autofix; when
-unset the lint flags bare references but emits help-only
-output. No fixed default.
+`"https://github.com/owner/repo"`, or a self-hosted instance
+such as `"https://gitlab.example.com/owner/repo"`. Carries the
+owner/repo path the issue / PR link needs, so it is required
+for an autofix; when unset the lint flags bare references but
+emits help-only output. No fixed default.
 
 ### `suggest_issue_url`: `boolean` (optional)
 
