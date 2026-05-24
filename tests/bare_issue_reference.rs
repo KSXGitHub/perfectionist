@@ -76,6 +76,22 @@ fn gitlab_host_is_detected() {
 }
 
 #[test]
+fn unrecognised_host_without_forge_is_help_only() {
+    // The negative counterpart to `gitlab_host_is_detected`:
+    // `repo_base_url` is set, but to a self-hosted host the lint
+    // can't classify, and `forge` is omitted. With no detectable
+    // forge and no fallback, the lint can't build a URL — so it
+    // degrades to help-only, telling the author to set `forge`.
+    run(
+        "ui-toml/bare_issue_reference/unrecognised_host",
+        RuleConfig {
+            repo_base_url: Some("https://git.example.com/owner/repo".into()),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
 fn self_hosted_needs_explicit_forge() {
     // A self-hosted instance's host isn't recognised, so the forge
     // can't be detected — it's given explicitly. `gitlab` paths are

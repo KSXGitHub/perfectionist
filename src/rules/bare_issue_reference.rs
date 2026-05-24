@@ -667,6 +667,26 @@ mod tests {
     }
 
     #[test]
+    fn no_urls_when_repo_base_url_host_is_unrecognised() {
+        // The deliberate non-case: `repo_base_url` is set but its host
+        // isn't a recognised service and `forge` is left unset. There
+        // is no fallback forge, so both URLs are `None` — the rule
+        // emits help-only output rather than guessing a layout.
+        let lint = BareIssueReference {
+            forge: None,
+            repo_base_url: Some("https://git.example.com/owner/repo".to_owned()),
+            suggest_issue_url: true,
+            suggest_pr_url: true,
+            form: DocForm::Inline,
+            include_plain_comments: false,
+            plain_comment_form: PlainForm::BareUrl,
+        };
+        assert_eq!(lint.effective_forge(), None);
+        assert_eq!(lint.issue_url("123"), None);
+        assert_eq!(lint.pr_url("123"), None);
+    }
+
+    #[test]
     fn renders_inline_doc_suggestion() {
         assert_eq!(
             render_doc_suggestion(DocForm::Inline, "#42", "https://example.com/issues/42"),
