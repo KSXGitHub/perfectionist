@@ -14,7 +14,7 @@ Lint-control attributes use the `perfectionist::` namespace.
   bare email address in comment or doc comment; wrap in `<...>` or prefix with `mailto:`
 - [`bare_issue_reference`](./bare_issue_reference.md) (default: `active`).
 
-  bare issue / PR reference in comment; use a markdown link
+  ambiguous bare `#NNN` issue / PR reference in comment
 - [`bare_url`](./bare_url.md) (default: `active`).
 
   bare URL in comment or doc comment; wrap in `<...>` or use a labelled markdown link

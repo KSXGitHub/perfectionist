@@ -121,11 +121,11 @@ fn self_hosted_needs_explicit_forge() {
 }
 
 #[test]
-fn single_selection_is_machine_applicable() {
-    // With exactly one of the two knobs enabled (here
-    // `suggest_issue_url`) and the default `form = "inline"`, the
-    // author has told the lint which kind the number names, so the
-    // single suggestion is `MachineApplicable`.
+fn single_selection_is_still_maybe_incorrect() {
+    // Even with exactly one knob enabled (here `suggest_issue_url`)
+    // the lone suggestion stays `MaybeIncorrect`: a bare `#NNN` is
+    // ambiguous about whether it names a reference at all, so the
+    // lint is never confident enough for a machine-applicable fix.
     run(
         "ui-toml/bare_issue_reference/issue_only",
         github_repo(RuleConfig {
@@ -137,13 +137,10 @@ fn single_selection_is_machine_applicable() {
 }
 
 #[test]
-fn reference_form_always_degrades_to_maybe_incorrect() {
+fn reference_form_emits_two_piece_link() {
     // The `form = "reference"` suggestion produces just `[#NNN]`,
-    // without the matching `[#NNN]: URL` definition (which the
-    // author must add). Applying that suggestion as-is would leave
-    // the doc block with an undefined reference link — so
-    // applicability degrades to `MaybeIncorrect` even for a single
-    // selection that would otherwise be machine-applicable.
+    // without the matching `[#NNN]: URL` definition (which the author
+    // must add), and carries its own reference-style help message.
     run(
         "ui-toml/bare_issue_reference/reference_form",
         github_repo(RuleConfig {

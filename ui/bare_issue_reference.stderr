@@ -1,27 +1,33 @@
-warning: bare issue / PR reference `#123`; use a markdown link
+warning: ambiguous `#123`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
   --> $DIR/bare_issue_reference.rs:4:17
    |
 LL | /// Bad: closes #123 and supersedes #124.
    |                 ^^^^
    |
-   = help: set `repo_base_url` (and `forge`, if its host isn't a recognised service) in dylint.toml under `[perfectionist::bare_issue_reference]` to enable URL suggestions
+   = help: set `repo_base_url` (and `forge`, if its host isn't a recognised service) in dylint.toml under `[perfectionist::bare_issue_reference]` to enable issue / PR link suggestions
+   = help: if `#123` is not an issue or pull request, enclose it in backticks so it renders as code
+   = help: or refer to the numbered item with a spelling that has no leading `#`
    = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
 
-warning: bare issue / PR reference `#124`; use a markdown link
+warning: ambiguous `#124`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
   --> $DIR/bare_issue_reference.rs:4:37
    |
 LL | /// Bad: closes #123 and supersedes #124.
    |                                     ^^^^
    |
-   = help: set `repo_base_url` (and `forge`, if its host isn't a recognised service) in dylint.toml under `[perfectionist::bare_issue_reference]` to enable URL suggestions
+   = help: set `repo_base_url` (and `forge`, if its host isn't a recognised service) in dylint.toml under `[perfectionist::bare_issue_reference]` to enable issue / PR link suggestions
+   = help: if `#124` is not an issue or pull request, enclose it in backticks so it renders as code
+   = help: or refer to the numbered item with a spelling that has no leading `#`
 
-warning: bare issue / PR reference `#200`; use a markdown link
+warning: ambiguous `#200`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
   --> $DIR/bare_issue_reference.rs:7:17
    |
 LL | /** Bad: closes #200 (in a `/** */` block doc comment). */
    |                 ^^^^
    |
-   = help: set `repo_base_url` (and `forge`, if its host isn't a recognised service) in dylint.toml under `[perfectionist::bare_issue_reference]` to enable URL suggestions
+   = help: set `repo_base_url` (and `forge`, if its host isn't a recognised service) in dylint.toml under `[perfectionist::bare_issue_reference]` to enable issue / PR link suggestions
+   = help: if `#200` is not an issue or pull request, enclose it in backticks so it renders as code
+   = help: or refer to the numbered item with a spelling that has no leading `#`
 
 warning: 3 warnings emitted
 

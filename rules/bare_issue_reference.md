@@ -5,7 +5,7 @@
 **Default state:** `active`  
 **Source:** [`src/rules/bare_issue_reference.rs`](../src/rules/bare_issue_reference.rs)
 
-> bare issue / PR reference in comment; use a markdown link
+> ambiguous bare `#NNN` issue / PR reference in comment
 
 ## What it does
 Flags bare `#NNN` issue / pull-request references in doc
@@ -14,14 +14,15 @@ line comments. The autofix rewrites the reference; the `form`
 knob selects the shape (inline `[#123](URL)`, reference
 `[#123]`, a bare URL, or a `<URL>` autolink).
 
-A bare `#NNN` is ambiguous between an issue and a pull
-request, so the two `suggest_issue_url` / `suggest_pr_url`
-knobs choose which target(s) the autofix offers: exactly one
-enabled gives a single `MachineApplicable` suggestion; both
-enabled give two `MaybeIncorrect` suggestions for the author
-to choose between; neither gives help-only output. (The
-`reference` doc form is always `MaybeIncorrect` regardless,
-since its `[#N]` output needs a hand-written definition.)
+A bare `#NNN` is deeply ambiguous: it might be an issue, a
+pull request, a colour like `#123`, or any other numbered
+item, so no suggestion is ever `MachineApplicable`. The
+`suggest_issue_url` / `suggest_pr_url` knobs choose which link
+target(s) the autofix offers — each `MaybeIncorrect` — and
+with neither enabled the lint is help-only. The author can
+also resolve the ambiguity by enclosing the token in backticks
+(so it reads as code) or by using a spelling without a leading
+`#`.
 
 ## Why restrict this?
 This is a stylistic preference, not a correctness issue. A
@@ -149,9 +150,8 @@ visible link text.
 `[#123]` — the matching `[#123]: URL` reference-link
 definition is the author's responsibility (the lint can't
 safely synthesise a multi-line definition without knowing
-where the doc block ends). Applicability is always
-`MaybeIncorrect` for this form so `cargo dylint --fix`
-doesn't apply an incomplete suggestion unprompted.
+where the doc block ends), so this suggestion is incomplete
+on its own.
 
 ##### `"bare_url"` (Rust: `BareUrl`)
 

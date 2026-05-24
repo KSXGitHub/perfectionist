@@ -1,9 +1,11 @@
-warning: bare issue / PR reference `#77`; use a markdown link
+warning: ambiguous `#77`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
   --> $DIR/fixture.rs:1:17
    |
 LL | /// Bad: closes #77 — with both `suggest_issue_url` and
    |                 ^^^
    |
+   = help: if `#77` is not an issue or pull request, enclose it in backticks so it renders as code
+   = help: or refer to the numbered item with a spelling that has no leading `#`
    = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
 help: use an inline markdown link to the issue
    |

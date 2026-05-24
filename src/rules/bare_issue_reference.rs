@@ -22,14 +22,15 @@ declare_tool_lint! {
     /// knob selects the shape (inline `[#123](URL)`, reference
     /// `[#123]`, a bare URL, or a `<URL>` autolink).
     ///
-    /// A bare `#NNN` is ambiguous between an issue and a pull
-    /// request, so the two `suggest_issue_url` / `suggest_pr_url`
-    /// knobs choose which target(s) the autofix offers: exactly one
-    /// enabled gives a single `MachineApplicable` suggestion; both
-    /// enabled give two `MaybeIncorrect` suggestions for the author
-    /// to choose between; neither gives help-only output. (The
-    /// `reference` doc form is always `MaybeIncorrect` regardless,
-    /// since its `[#N]` output needs a hand-written definition.)
+    /// A bare `#NNN` is deeply ambiguous: it might be an issue, a
+    /// pull request, a colour like `#123`, or any other numbered
+    /// item, so no suggestion is ever `MachineApplicable`. The
+    /// `suggest_issue_url` / `suggest_pr_url` knobs choose which link
+    /// target(s) the autofix offers — each `MaybeIncorrect` — and
+    /// with neither enabled the lint is help-only. The author can
+    /// also resolve the ambiguity by enclosing the token in backticks
+    /// (so it reads as code) or by using a spelling without a leading
+    /// `#`.
     ///
     /// ### Why restrict this?
     /// This is a stylistic preference, not a correctness issue. A
@@ -53,7 +54,7 @@ declare_tool_lint! {
     /// ```
     pub perfectionist::BARE_ISSUE_REFERENCE,
     Warn,
-    "bare issue / PR reference in comment; use a markdown link",
+    "ambiguous bare `#NNN` issue / PR reference in comment",
     report_in_external_macro: false
 }
 
@@ -70,9 +71,8 @@ enum DocForm {
     /// `[#123]` — the matching `[#123]: URL` reference-link
     /// definition is the author's responsibility (the lint can't
     /// safely synthesise a multi-line definition without knowing
-    /// where the doc block ends). Applicability is always
-    /// `MaybeIncorrect` for this form so `cargo dylint --fix`
-    /// doesn't apply an incomplete suggestion unprompted.
+    /// where the doc block ends), so this suggestion is incomplete
+    /// on its own.
     Reference,
     /// `https://.../issues/123` — the bare URL replaces the `#123`
     /// token outright (the `#123` text is not kept). NB: in a doc
@@ -448,73 +448,71 @@ impl BareIssueReference {
             lint_context,
             BARE_ISSUE_REFERENCE,
             span,
-            format!("bare issue / PR reference `{token}`; use a markdown link"),
+            format!(
+                "ambiguous `{token}`; a bare `#NNN` could be an issue or pull request, \
+                 a colour, or any other numbered item",
+            ),
             move |diag| {
-                // Help-only when no URL can be built or when the
-                // author has turned both suggestion knobs off.
-                if issue_url.is_none() {
-                    diag.help(
-                        "set `repo_base_url` (and `forge`, if its host isn't a recognised \
-                         service) in dylint.toml under \
-                         `[perfectionist::bare_issue_reference]` to enable URL suggestions",
-                    );
-                    return;
+                // Offer the issue / PR link suggestions when a
+                // repository is configured and at least one knob is
+                // on. These are only ever `MaybeIncorrect`: the token
+                // is ambiguous, so the lint can't be sure it even
+                // names a reference.
+                match issue_url {
+                    None => {
+                        diag.help(
+                            "set `repo_base_url` (and `forge`, if its host isn't a recognised \
+                             service) in dylint.toml under \
+                             `[perfectionist::bare_issue_reference]` to enable issue / PR link \
+                             suggestions",
+                        );
+                    }
+                    Some(_) if !(suggest_issue || suggest_pr) => {
+                        diag.help(
+                            "enable `suggest_issue_url` and/or `suggest_pr_url` in dylint.toml \
+                             under `[perfectionist::bare_issue_reference]` to get a link \
+                             suggestion",
+                        );
+                    }
+                    Some(issue_url) => {
+                        if suggest_issue {
+                            emit_one(
+                                diag, span, &token, &issue_url, "issue", is_doc, doc_form,
+                                plain_form,
+                            );
+                        }
+                        if suggest_pr {
+                            let pr_url = pr_url.expect("pr_url renders whenever issue_url does");
+                            emit_one(
+                                diag,
+                                span,
+                                &token,
+                                &pr_url,
+                                "pull request",
+                                is_doc,
+                                doc_form,
+                                plain_form,
+                            );
+                        }
+                    }
                 }
-                if !(suggest_issue || suggest_pr) {
-                    diag.help(
-                        "enable `suggest_issue_url` and/or `suggest_pr_url` in dylint.toml \
-                         under `[perfectionist::bare_issue_reference]` to get a fix suggestion",
-                    );
-                    return;
-                }
-                // Exactly one knob set → the author has told the lint
-                // which kind the number names, so the single
-                // suggestion is machine-applicable. Both set → the
-                // number is ambiguous, so each suggestion is only
-                // `MaybeIncorrect`.
-                let base_applicability = if suggest_issue != suggest_pr {
-                    Applicability::MachineApplicable
-                } else {
-                    Applicability::MaybeIncorrect
-                };
-                let issue_url = issue_url.unwrap();
-                let pr_url = pr_url.expect("pr_url renders whenever issue_url does");
-                if suggest_issue {
-                    emit_one(
-                        diag,
-                        span,
-                        &token,
-                        &issue_url,
-                        "issue",
-                        is_doc,
-                        doc_form,
-                        plain_form,
-                        base_applicability,
-                    );
-                }
-                if suggest_pr {
-                    emit_one(
-                        diag,
-                        span,
-                        &token,
-                        &pr_url,
-                        "pull request",
-                        is_doc,
-                        doc_form,
-                        plain_form,
-                        base_applicability,
-                    );
-                }
+                // Two disambiguations that apply whatever the config:
+                // mark the token as not-a-reference, or avoid the
+                // `#NNN` spelling entirely.
+                diag.help(format!(
+                    "if `{token}` is not an issue or pull request, enclose it in backticks \
+                     so it renders as code",
+                ));
+                diag.help("or refer to the numbered item with a spelling that has no leading `#`");
             },
         );
     }
 }
 
-/// Emit one issue-or-PR suggestion. `target_label` is `"issue"` or
-/// `"pull request"`. The `reference` doc form is forced to
-/// `MaybeIncorrect` regardless of `base_applicability`, because its
-/// `[#N]` output needs a hand-written `[#N]: URL` definition the
-/// lint can't synthesise.
+/// Emit one issue-or-PR link suggestion. `target_label` is `"issue"`
+/// or `"pull request"`. Every suggestion is `MaybeIncorrect`: a bare
+/// `#NNN` is ambiguous, so the lint can never be confident the token
+/// names a reference at all, let alone which kind.
 #[expect(
     clippy::too_many_arguments,
     reason = "a small private emit helper; bundling these into a struct would obscure the call"
@@ -528,15 +526,8 @@ fn emit_one(
     is_doc: bool,
     doc_form: DocForm,
     plain_form: PlainForm,
-    base_applicability: Applicability,
 ) {
     if is_doc {
-        let applicability = match doc_form {
-            // Reference output is incomplete (needs a hand-written
-            // definition); the other forms are complete substitutions.
-            DocForm::Reference => Applicability::MaybeIncorrect,
-            DocForm::Inline | DocForm::BareUrl | DocForm::BracketedUrl => base_applicability,
-        };
         let message = match doc_form {
             DocForm::Inline => format!("use an inline markdown link to the {target_label}"),
             DocForm::Reference => format!(
@@ -552,7 +543,7 @@ fn emit_one(
             span,
             message,
             render_doc_suggestion(doc_form, token, url),
-            applicability,
+            Applicability::MaybeIncorrect,
         );
     } else {
         let message = match plain_form {
@@ -565,7 +556,7 @@ fn emit_one(
             span,
             message,
             render_plain_suggestion(plain_form, url),
-            base_applicability,
+            Applicability::MaybeIncorrect,
         );
     }
 }
