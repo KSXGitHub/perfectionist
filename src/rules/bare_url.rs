@@ -57,12 +57,13 @@ const DEFAULT_SKIP_HOSTS: &[&str] = &["example.com", "example.org", "localhost"]
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Comment surfaces the rule scans. Defaults to both `doc`
-    /// (`///`, `//!`, `/** */`, `/*! */`) and `comment` (`//`,
-    /// `/* */`). Narrow to one of these if a project deliberately
-    /// uses one surface for prose URLs and wants the lint to leave
-    /// it alone.
-    targets: Vec<Target>,
+    /// Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
+    /// Defaults to `true`. Set to `false` if a project deliberately
+    /// writes bare URLs in doc comments and wants the lint to leave
+    /// them alone.
+    scan_doc_comments: bool,
+    /// Scan regular comments (`//`, `/* */`). Defaults to `true`.
+    scan_regular_comments: bool,
     /// Characters that, when the URL ends in one of them, keep the
     /// autofix at `MachineApplicable`. Defaults to `["/", "_", "-",
     /// "=", "&", "+"]`. ASCII alphanumerics and `/` are always
@@ -79,25 +80,17 @@ struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            targets: vec![Target::Doc, Target::Comment],
+            scan_doc_comments: true,
+            scan_regular_comments: true,
             safe_trailing_chars: DEFAULT_SAFE_TRAILING_CHARS.to_vec(),
             skip_hosts: DEFAULT_SKIP_HOSTS.iter().map(|s| (*s).to_owned()).collect(),
         }
     }
 }
 
-/// Comment surface the rule scans.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum Target {
-    /// `///`, `//!`, `/** */`, `/*! */` doc comments.
-    Doc,
-    /// `//` and `/* */` non-doc comments.
-    Comment,
-}
-
 pub struct BareUrl {
-    targets: BTreeSet<Target>,
+    scan_doc_comments: bool,
+    scan_regular_comments: bool,
     safe_trailing_chars: Vec<char>,
     skip_hosts: BTreeSet<String>,
 }
@@ -106,7 +99,8 @@ impl BareUrl {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
-            targets: config.targets.into_iter().collect(),
+            scan_doc_comments: config.scan_doc_comments,
+            scan_regular_comments: config.scan_regular_comments,
             safe_trailing_chars: config.safe_trailing_chars,
             skip_hosts: config.skip_hosts.into_iter().collect(),
         }
@@ -144,19 +138,17 @@ pub fn register_pass(lint_store: &mut LintStore) {
 
 impl EarlyLintPass for BareUrl {
     fn check_crate(&mut self, lint_context: &EarlyContext<'_>, _: &Crate) {
-        if self.targets.is_empty() {
+        if !(self.scan_doc_comments || self.scan_regular_comments) {
             return;
         }
-        let scan_docs = self.targets.contains(&Target::Doc);
-        let scan_comments = self.targets.contains(&Target::Comment);
         walk_local_comments(lint_context, |chunk| match chunk.surface {
             CommentSurface::DocBlock | CommentSurface::DocBlockBlock => {
-                if scan_docs {
+                if self.scan_doc_comments {
                     self.scan_doc_chunk(lint_context, chunk);
                 }
             }
             CommentSurface::PlainLine | CommentSurface::PlainBlock => {
-                if scan_comments {
+                if self.scan_regular_comments {
                     self.scan_plain_chunk(lint_context, chunk);
                 }
             }

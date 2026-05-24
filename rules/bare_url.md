@@ -33,13 +33,16 @@ Use instead:
 
 Configure via `dylint.toml` under `["perfectionist::bare_url"]`. Every field is optional; the per-field prose below states the default.
 
-### `targets`: `[Target]` (optional)
+### `scan_doc_comments`: `boolean` (optional)
 
-Comment surfaces the rule scans. Defaults to both `doc`
-(`///`, `//!`, `/** */`, `/*! */`) and `comment` (`//`,
-`/* */`). Narrow to one of these if a project deliberately
-uses one surface for prose URLs and wants the lint to leave
-it alone.
+Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
+Defaults to `true`. Set to `false` if a project deliberately
+writes bare URLs in doc comments and wants the lint to leave
+them alone.
+
+### `scan_regular_comments`: `boolean` (optional)
+
+Scan regular comments (`//`, `/* */`). Defaults to `true`.
 
 ### `safe_trailing_chars`: `[single-character string]` (optional)
 
@@ -55,17 +58,3 @@ Hosts to skip — placeholder hosts that frequently appear
 bare in docs for illustrative purposes. Compared
 case-insensitively per RFC 3986 §3.2.2. Defaults to
 `["example.com", "example.org", "localhost"]`.
-
-### Types
-
-#### `Target` (enum)
-
-Comment surface the rule scans.
-
-##### `"doc"` (Rust: `Doc`)
-
-`///`, `//!`, `/** */`, `/*! */` doc comments.
-
-##### `"comment"` (Rust: `Comment`)
-
-`//` and `/* */` non-doc comments.

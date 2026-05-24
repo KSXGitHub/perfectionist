@@ -70,15 +70,6 @@ enum Style {
 }
 
 /// Comment surface the rule scans.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum Target {
-    /// `///`, `//!`, `/** */`, `/*! */` doc comments.
-    Doc,
-    /// `//` and `/* */` non-doc comments.
-    Comment,
-}
-
 const DEFAULT_SKIP_DOMAINS: &[&str] = &["example.com", "example.org"];
 
 #[derive(Debug, serde::Deserialize)]
@@ -89,10 +80,11 @@ struct Config {
     /// of the wrapped forms is accepted; the autofix degrades to two
     /// `MaybeIncorrect` suggestions).
     style: Style,
-    /// Comment surfaces the rule scans. Defaults to both `doc`
-    /// (`///`, `//!`, `/** */`, `/*! */`) and `comment` (`//`,
-    /// `/* */`).
-    targets: Vec<Target>,
+    /// Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
+    /// Defaults to `true`.
+    scan_doc_comments: bool,
+    /// Scan regular comments (`//`, `/* */`). Defaults to `true`.
+    scan_regular_comments: bool,
     /// Skip these exact addresses. Useful for `noreply@github.com`
     /// and similar placeholders that the project deliberately leaves
     /// bare in changelog entries. Empty by default.
@@ -107,7 +99,8 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             style: Style::Either,
-            targets: vec![Target::Doc, Target::Comment],
+            scan_doc_comments: true,
+            scan_regular_comments: true,
             skip_addresses: Vec::new(),
             skip_domains: DEFAULT_SKIP_DOMAINS
                 .iter()
@@ -119,7 +112,8 @@ impl Default for Config {
 
 pub struct BareEmail {
     style: Style,
-    targets: BTreeSet<Target>,
+    scan_doc_comments: bool,
+    scan_regular_comments: bool,
     skip_addresses: BTreeSet<String>,
     skip_domains: BTreeSet<String>,
 }
@@ -129,7 +123,8 @@ impl BareEmail {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
             style: config.style,
-            targets: config.targets.into_iter().collect(),
+            scan_doc_comments: config.scan_doc_comments,
+            scan_regular_comments: config.scan_regular_comments,
             skip_addresses: config.skip_addresses.into_iter().collect(),
             skip_domains: config.skip_domains.into_iter().collect(),
         }
@@ -151,20 +146,18 @@ pub fn register_pass(lint_store: &mut LintStore) {
 
 impl EarlyLintPass for BareEmail {
     fn check_crate(&mut self, lint_context: &EarlyContext<'_>, _: &Crate) {
-        if self.targets.is_empty() {
+        if !(self.scan_doc_comments || self.scan_regular_comments) {
             return;
         }
-        let scan_docs = self.targets.contains(&Target::Doc);
-        let scan_comments = self.targets.contains(&Target::Comment);
         walk_local_comments(lint_context, |chunk| {
             let is_doc = matches!(
                 chunk.surface,
                 CommentSurface::DocBlock | CommentSurface::DocBlockBlock,
             );
-            if is_doc && !scan_docs {
+            if is_doc && !self.scan_doc_comments {
                 return;
             }
-            if !is_doc && !scan_comments {
+            if !is_doc && !self.scan_regular_comments {
                 return;
             }
             let skips = if is_doc {

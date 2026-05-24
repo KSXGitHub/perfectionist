@@ -44,11 +44,14 @@ variants for the available options. Defaults to `either` (any
 of the wrapped forms is accepted; the autofix degrades to two
 `MaybeIncorrect` suggestions).
 
-### `targets`: `[Target]` (optional)
+### `scan_doc_comments`: `boolean` (optional)
 
-Comment surfaces the rule scans. Defaults to both `doc`
-(`///`, `//!`, `/** */`, `/*! */`) and `comment` (`//`,
-`/* */`).
+Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
+Defaults to `true`.
+
+### `scan_regular_comments`: `boolean` (optional)
+
+Scan regular comments (`//`, `/* */`). Defaults to `true`.
 
 ### `skip_addresses`: `[string]` (optional)
 
@@ -92,15 +95,3 @@ Default.
 Forbid email addresses outright — no autofix, just a help
 note recommending the address be moved to an external file
 or removed entirely.
-
-#### `Target` (enum)
-
-Comment surface the rule scans.
-
-##### `"doc"` (Rust: `Doc`)
-
-`///`, `//!`, `/** */`, `/*! */` doc comments.
-
-##### `"comment"` (Rust: `Comment`)
-
-`//` and `/* */` non-doc comments.
