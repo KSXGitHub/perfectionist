@@ -33,7 +33,9 @@ declare_tool_lint! {
     /// ```rust,ignore
     /// /// Closes #123 and supersedes #124.
     /// ```
-    /// Use instead (with `repo_base_url = "https://github.com/owner/repo"`):
+    /// Use instead (with `repo_base_url = "https://github.com/owner/repo"`,
+    /// having picked the issue interpretation — the default
+    /// `suggestion_mode = "both"` offers a `/pull/` alternative too):
     /// ```rust,ignore
     /// /// Closes [#123](https://github.com/owner/repo/issues/123) and
     /// /// supersedes [#124](https://github.com/owner/repo/issues/124).
@@ -54,12 +56,16 @@ enum SuggestionMode {
     /// because public GitHub redirects `/issues/<n>` to `/pull/<n>`
     /// when the number names a PR — the suggestion is
     /// `MachineApplicable` on `github.com` hosts and `MaybeIncorrect`
-    /// elsewhere. Default.
-    #[default]
+    /// elsewhere.
     IssueUrl,
     /// Emit two `MaybeIncorrect` suggestions — one issue URL, one
-    /// PR URL — and let the author pick. Use on forges that don't
-    /// redirect `/issues` to `/pull` (some GitLab self-hosts).
+    /// PR URL — and let the author pick. Default: a bare `#NNN` can
+    /// name either an issue or a PR, and the lint can't tell which,
+    /// so offering both and letting the author choose is the
+    /// honest behaviour. Forges that redirect `/issues/<n>` to
+    /// `/pull/<n>` (notably public GitHub) can narrow to `issue_url`
+    /// for a single machine-applicable suggestion.
+    #[default]
     Both,
     /// Emit no Suggestion, only help text. Use when `repo_base_url`
     /// cannot be configured statically (e.g., a workspace with
@@ -119,7 +125,9 @@ struct Config {
     /// `"{repo_base_url}/pull/{number}"`.
     pr_url_template: String,
     /// How the lint suggests the link. See [`SuggestionMode`] for
-    /// the available modes. Defaults to `issue_url`.
+    /// the available modes. Defaults to `both` — a bare `#NNN` is
+    /// ambiguous between an issue and a PR, so the lint offers one
+    /// suggestion for each rather than guessing.
     suggestion_mode: SuggestionMode,
     /// Doc-comment fix form: `inline` for `[#N](URL)`, `reference`
     /// for the two-piece `[#N]` + `[#N]: URL` form. The reference
@@ -146,7 +154,7 @@ impl Default for Config {
             repo_base_url: None,
             issue_url_template: "{repo_base_url}/issues/{number}".to_owned(),
             pr_url_template: "{repo_base_url}/pull/{number}".to_owned(),
-            suggestion_mode: SuggestionMode::IssueUrl,
+            suggestion_mode: SuggestionMode::Both,
             form: DocForm::Inline,
             include_plain_comments: false,
             plain_comment_form: PlainForm::Bare,

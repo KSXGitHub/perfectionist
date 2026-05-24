@@ -1,0 +1,20 @@
+warning: bare issue / PR reference `#77`; use a markdown link
+  --> $DIR/fixture.rs:1:17
+   |
+LL | /// Bad: closes #77 — the default `suggestion_mode = "both"` offers
+   |                 ^^^
+   |
+   = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
+help: use an inline markdown link
+   |
+LL - /// Bad: closes #77 — the default `suggestion_mode = "both"` offers
+LL + /// Bad: closes [#77](https://github.com/owner/repo/issues/77) — the default `suggestion_mode = "both"` offers
+   |
+help: or treat the number as a PR
+   |
+LL - /// Bad: closes #77 — the default `suggestion_mode = "both"` offers
+LL + /// Bad: closes [#77](https://github.com/owner/repo/pull/77) — the default `suggestion_mode = "both"` offers
+   |
+
+warning: 1 warning emitted
+
