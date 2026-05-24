@@ -54,7 +54,9 @@ supplement that built-in set.
 
 ### `skip_hosts`: `[string]` (optional)
 
-Hosts to skip — placeholder hosts that frequently appear
-bare in docs for illustrative purposes. Compared
-case-insensitively per RFC 3986 §3.2.2. Defaults to
-`["example.com", "example.org", "localhost"]`.
+Hosts to skip — placeholder hosts that genuinely never want
+wrapping in docs. Compared case-insensitively per RFC 3986
+§3.2.2. Defaults to `["localhost"]`. RFC 2606 documentation
+domains (`example.com`, etc.) are intentionally not skipped
+by default; add them here if your project prefers bare
+example URLs in prose.

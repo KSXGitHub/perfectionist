@@ -62,8 +62,9 @@ bare in changelog entries. Empty by default.
 ### `skip_domains`: `[string]` (optional)
 
 Skip addresses whose domain matches any of these patterns.
-Defaults to `["example.com", "example.org"]`. Useful
-alongside `skip_addresses` for blanket domain exemptions.
+Empty by default — RFC 2606 documentation domains are not
+exempted automatically. Useful alongside `skip_addresses`
+for blanket domain exemptions.
 
 ### Types
 

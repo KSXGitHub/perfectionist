@@ -18,9 +18,11 @@ fn _doc_reference_good() {}
 /// Inside a code span: `#42` should not fire.
 fn _doc_code_span() {}
 
-/// URL fragments must not fire:
-/// see https://example.com/issues/#999 and
-/// https://example.com/path?ref=#1000 for more.
+/// URL fragments must not fire (host is `localhost` so the sibling
+/// `bare_url` lint stays quiet — only the `#NNN`-fragment guard is
+/// under test here):
+/// see https://localhost/issues/#999 and
+/// https://localhost/path?ref=#1000 for more.
 fn _doc_url_fragment() {}
 
 fn main() {

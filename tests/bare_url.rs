@@ -55,7 +55,7 @@ fn custom_skip_hosts_replaces_the_default_list() {
     run(
         "ui-toml/bare_url/custom_skip_hosts",
         RuleConfig {
-            skip_hosts: Some(vec!["rust-lang.org".to_owned()]),
+            skip_hosts: Some(vec!["example.net".to_owned()]),
         },
     );
 }

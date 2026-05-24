@@ -50,9 +50,14 @@ const CONFIG_KEY: &str = "perfectionist::bare_url";
 /// the autofix as machine-applicable.
 const DEFAULT_SAFE_TRAILING_CHARS: &[char] = &['/', '_', '-', '=', '&', '+'];
 
-/// Hosts that the rule skips by default — placeholder hosts that
-/// frequently appear bare in docs for illustrative purposes.
-const DEFAULT_SKIP_HOSTS: &[&str] = &["example.com", "example.org", "localhost"];
+/// Hosts that the rule skips by default. Only `localhost` — a host
+/// that genuinely never wants wrapping in docs (it points nowhere
+/// public). The RFC 2606 documentation domains (`example.com`,
+/// `example.org`, `example.net`) are deliberately *not* skipped:
+/// a bare `https://example.com` in prose still benefits from the
+/// portable `<...>` wrap, and keeping them lint-able lets the
+/// project's own fixtures use them as ordinary firing cases.
+const DEFAULT_SKIP_HOSTS: &[&str] = &["localhost"];
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
@@ -70,10 +75,12 @@ struct Config {
     /// treated as safe regardless of this list; entries here
     /// supplement that built-in set.
     safe_trailing_chars: Vec<char>,
-    /// Hosts to skip — placeholder hosts that frequently appear
-    /// bare in docs for illustrative purposes. Compared
-    /// case-insensitively per RFC 3986 §3.2.2. Defaults to
-    /// `["example.com", "example.org", "localhost"]`.
+    /// Hosts to skip — placeholder hosts that genuinely never want
+    /// wrapping in docs. Compared case-insensitively per RFC 3986
+    /// §3.2.2. Defaults to `["localhost"]`. RFC 2606 documentation
+    /// domains (`example.com`, etc.) are intentionally not skipped
+    /// by default; add them here if your project prefers bare
+    /// example URLs in prose.
     skip_hosts: Vec<String>,
 }
 

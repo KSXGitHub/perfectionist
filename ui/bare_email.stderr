@@ -1,66 +1,66 @@
-warning: bare email address `security@rust-lang.org`
+warning: bare email address `security@example.com`
   --> $DIR/bare_email.rs:1:56
    |
-LL | // Bad: bare email in a plain line comment — report to security@rust-lang.org.
-   |                                                        ^^^^^^^^^^^^^^^^^^^^^^
+LL | // Bad: bare email in a plain line comment — report to security@example.com.
+   |                                                        ^^^^^^^^^^^^^^^^^^^^
    |
    = note: `#[warn(perfectionist::bare_email)]` on by default
 help: wrap in `<...>`
    |
-LL - // Bad: bare email in a plain line comment — report to security@rust-lang.org.
-LL + // Bad: bare email in a plain line comment — report to <security@rust-lang.org>.
+LL - // Bad: bare email in a plain line comment — report to security@example.com.
+LL + // Bad: bare email in a plain line comment — report to <security@example.com>.
    |
 help: or prefix with `mailto:`
    |
-LL | // Bad: bare email in a plain line comment — report to mailto:security@rust-lang.org.
+LL | // Bad: bare email in a plain line comment — report to mailto:security@example.com.
    |                                                        +++++++
 
-warning: bare email address `security@rust-lang.org`
+warning: bare email address `security@example.org`
   --> $DIR/bare_email.rs:5:41
    |
-LL | /* Bad: bare email in a block comment — security@rust-lang.org. */
-   |                                         ^^^^^^^^^^^^^^^^^^^^^^
+LL | /* Bad: bare email in a block comment — security@example.org. */
+   |                                         ^^^^^^^^^^^^^^^^^^^^
    |
 help: wrap in `<...>`
    |
-LL - /* Bad: bare email in a block comment — security@rust-lang.org. */
-LL + /* Bad: bare email in a block comment — <security@rust-lang.org>. */
+LL - /* Bad: bare email in a block comment — security@example.org. */
+LL + /* Bad: bare email in a block comment — <security@example.org>. */
    |
 help: or prefix with `mailto:`
    |
-LL | /* Bad: bare email in a block comment — mailto:security@rust-lang.org. */
+LL | /* Bad: bare email in a block comment — mailto:security@example.org. */
    |                                         +++++++
 
-warning: bare email address `security@rust-lang.org`
+warning: bare email address `security@example.com`
   --> $DIR/bare_email.rs:7:49
    |
-LL | /// Bad: bare email in a doc comment — write to security@rust-lang.org.
-   |                                                 ^^^^^^^^^^^^^^^^^^^^^^
+LL | /// Bad: bare email in a doc comment — write to security@example.com.
+   |                                                 ^^^^^^^^^^^^^^^^^^^^
    |
 help: wrap in `<...>`
    |
-LL - /// Bad: bare email in a doc comment — write to security@rust-lang.org.
-LL + /// Bad: bare email in a doc comment — write to <security@rust-lang.org>.
+LL - /// Bad: bare email in a doc comment — write to security@example.com.
+LL + /// Bad: bare email in a doc comment — write to <security@example.com>.
    |
 help: or prefix with `mailto:`
    |
-LL | /// Bad: bare email in a doc comment — write to mailto:security@rust-lang.org.
+LL | /// Bad: bare email in a doc comment — write to mailto:security@example.com.
    |                                                 +++++++
 
-warning: bare email address `security@rust-lang.org`
+warning: bare email address `security@example.org`
   --> $DIR/bare_email.rs:10:55
    |
-LL | /** Bad: bare email in a `/** */` doc-block comment — security@rust-lang.org. */
-   |                                                       ^^^^^^^^^^^^^^^^^^^^^^
+LL | /** Bad: bare email in a `/** */` doc-block comment — security@example.org. */
+   |                                                       ^^^^^^^^^^^^^^^^^^^^
    |
 help: wrap in `<...>`
    |
-LL - /** Bad: bare email in a `/** */` doc-block comment — security@rust-lang.org. */
-LL + /** Bad: bare email in a `/** */` doc-block comment — <security@rust-lang.org>. */
+LL - /** Bad: bare email in a `/** */` doc-block comment — security@example.org. */
+LL + /** Bad: bare email in a `/** */` doc-block comment — <security@example.org>. */
    |
 help: or prefix with `mailto:`
    |
-LL | /** Bad: bare email in a `/** */` doc-block comment — mailto:security@rust-lang.org. */
+LL | /** Bad: bare email in a `/** */` doc-block comment — mailto:security@example.org. */
    |                                                       +++++++
 
 warning: 4 warnings emitted
