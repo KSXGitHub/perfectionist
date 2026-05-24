@@ -56,6 +56,21 @@ fn both_suggestions_are_maybe_incorrect_by_default() {
 }
 
 #[test]
+fn gitlab_base_url_infers_gitlab_paths() {
+    // The issue / PR path defaults are inferred from
+    // `repo_base_url`'s host. A `gitlab.com` base yields GitLab's
+    // `/-/issues/` and `/-/merge_requests/` paths rather than
+    // GitHub's `/issues/` and `/pull/`, with no template override.
+    run(
+        "ui-toml/bare_issue_reference/gitlab",
+        RuleConfig {
+            repo_base_url: Some("https://gitlab.com/owner/repo".into()),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
 fn single_selection_is_machine_applicable() {
     // With exactly one of the two knobs enabled (here
     // `suggest_issue_url`) and the default `form = "inline"`, the

@@ -57,19 +57,22 @@ Defaults to `None`.
 ### `issue_url_template`: `string` (optional)
 
 Path appended to `repo_base_url` to form the suggested issue
-URL. `{number}` is substituted; the `repo_base_url` prefix is
-joined on automatically (with exactly one `/` between).
-Defaults to `/issues/{number}`. Override per forge — e.g.
-`/-/issues/{number}` for GitLab.
+URL; `{number}` is substituted and the base is joined on
+automatically. When unset, the default is inferred from
+`repo_base_url`'s host: `/issues/{number}` for GitHub,
+Gitea, and Bitbucket; `/-/issues/{number}` for GitLab. A
+self-hosted instance whose host isn't recognised falls back
+to the GitHub layout — set this explicitly to override.
 
 ### `pr_url_template`: `string` (optional)
 
 Path appended to `repo_base_url` to form the suggested
-pull-request URL (used when `suggest_pr_url` is enabled).
-`{number}` is substituted. Defaults to `/pull/{number}`.
-Override per forge — e.g. `/pulls/{number}` (Gitea),
-`/pull-requests/{number}` (Bitbucket), or
-`/-/merge_requests/{number}` (GitLab).
+pull-request URL (used when `suggest_pr_url` is enabled);
+`{number}` is substituted. When unset, the default is
+inferred from `repo_base_url`'s host: `/pull/{number}` for
+GitHub, `/pulls/{number}` for Gitea,
+`/pull-requests/{number}` for Bitbucket, and
+`/-/merge_requests/{number}` for GitLab.
 
 ### `suggest_issue_url`: `boolean` (optional)
 
