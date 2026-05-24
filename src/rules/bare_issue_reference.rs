@@ -18,8 +18,9 @@ declare_tool_lint! {
     /// ### What it does
     /// Flags bare `#NNN` issue / pull-request references in doc
     /// comments (`///`, `//!`) — and, when opted in, in plain `//`
-    /// line comments. The autofix substitutes a markdown-link form
-    /// (`[#123](URL)` inline, or the `[#123]` reference form).
+    /// line comments. The autofix rewrites the reference; the `form`
+    /// knob selects the shape (inline `[#123](URL)`, reference
+    /// `[#123]`, a bare URL, or a `<URL>` autolink).
     ///
     /// A bare `#NNN` is ambiguous between an issue and a pull
     /// request, so the two `suggest_issue_url` / `suggest_pr_url`
@@ -61,7 +62,8 @@ const CONFIG_KEY: &str = "perfectionist::bare_issue_reference";
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum DocForm {
-    /// `[#123](URL)` — the URL is inlined.
+    /// `[#123](URL)` — the URL is inlined. Keeps `#123` as the
+    /// visible link text.
     #[default]
     Inline,
     /// `[#123]` — the matching `[#123]: URL` reference-link
@@ -71,6 +73,15 @@ enum DocForm {
     /// `MaybeIncorrect` for this form so `cargo dylint --fix`
     /// doesn't apply an incomplete suggestion unprompted.
     Reference,
+    /// `https://.../issues/123` — the bare URL replaces the `#123`
+    /// token outright (the `#123` text is not kept). NB: in a doc
+    /// comment the sibling `perfectionist::bare_url` lint then flags
+    /// the substituted URL; pick `bracketed_url` for a form it
+    /// accepts.
+    BareUrl,
+    /// `<https://.../issues/123>` — a markdown autolink replaces the
+    /// `#123` token outright. `bare_url` accepts this form.
+    BracketedUrl,
 }
 
 /// URL shape used inside plain `//` comments when
@@ -477,8 +488,10 @@ fn emit_one(
 ) {
     if is_doc {
         let applicability = match doc_form {
+            // Reference output is incomplete (needs a hand-written
+            // definition); the other forms are complete substitutions.
             DocForm::Reference => Applicability::MaybeIncorrect,
-            DocForm::Inline => base_applicability,
+            DocForm::Inline | DocForm::BareUrl | DocForm::BracketedUrl => base_applicability,
         };
         let message = match doc_form {
             DocForm::Inline => format!("use an inline markdown link to the {target_label}"),
@@ -486,6 +499,10 @@ fn emit_one(
                 "use a reference-style markdown link to the {target_label} \
                  (define `[#N]: URL` at the end of the doc block)",
             ),
+            DocForm::BareUrl => format!("substitute the {target_label} URL"),
+            DocForm::BracketedUrl => {
+                format!("substitute the {target_label} URL wrapped in `<...>`")
+            }
         };
         diag.span_suggestion(
             span,
@@ -518,6 +535,10 @@ fn render_doc_suggestion(form: DocForm, token: &str, url: &str) -> String {
         // a multi-line definition without knowing where the block
         // ends). Same shape as rustdoc's collapsed-reference form.
         DocForm::Reference => format!("[{token}]"),
+        // The URL forms replace the `#N` token outright; the `token`
+        // is intentionally dropped.
+        DocForm::BareUrl => url.to_owned(),
+        DocForm::BracketedUrl => format!("<{url}>"),
     }
 }
 
@@ -595,6 +616,27 @@ mod tests {
         assert_eq!(
             render_doc_suggestion(DocForm::Reference, "#42", "https://example.com/issues/42"),
             "[#42]",
+        );
+    }
+
+    #[test]
+    fn renders_bare_url_doc_suggestion() {
+        // The URL forms drop the `#N` token and substitute the URL.
+        assert_eq!(
+            render_doc_suggestion(DocForm::BareUrl, "#42", "https://example.com/issues/42"),
+            "https://example.com/issues/42",
+        );
+    }
+
+    #[test]
+    fn renders_bracketed_url_doc_suggestion() {
+        assert_eq!(
+            render_doc_suggestion(
+                DocForm::BracketedUrl,
+                "#42",
+                "https://example.com/issues/42"
+            ),
+            "<https://example.com/issues/42>",
         );
     }
 

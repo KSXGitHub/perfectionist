@@ -10,8 +10,9 @@
 ## What it does
 Flags bare `#NNN` issue / pull-request references in doc
 comments (`///`, `//!`) — and, when opted in, in plain `//`
-line comments. The autofix substitutes a markdown-link form
-(`[#123](URL)` inline, or the `[#123]` reference form).
+line comments. The autofix rewrites the reference; the `form`
+knob selects the shape (inline `[#123](URL)`, reference
+`[#123]`, a bare URL, or a `<URL>` autolink).
 
 A bare `#NNN` is ambiguous between an issue and a pull
 request, so the two `suggest_issue_url` / `suggest_pr_url`
@@ -114,7 +115,8 @@ Markdown-link shape produced by the autofix inside doc comments.
 
 ##### `"inline"` (Rust: `Inline`)
 
-`[#123](URL)` — the URL is inlined.
+`[#123](URL)` — the URL is inlined. Keeps `#123` as the
+visible link text.
 
 ##### `"reference"` (Rust: `Reference`)
 
@@ -124,6 +126,19 @@ safely synthesise a multi-line definition without knowing
 where the doc block ends). Applicability is always
 `MaybeIncorrect` for this form so `cargo dylint --fix`
 doesn't apply an incomplete suggestion unprompted.
+
+##### `"bare_url"` (Rust: `BareUrl`)
+
+`https://.../issues/123` — the bare URL replaces the `#123`
+token outright (the `#123` text is not kept). NB: in a doc
+comment the sibling `perfectionist::bare_url` lint then flags
+the substituted URL; pick `bracketed_url` for a form it
+accepts.
+
+##### `"bracketed_url"` (Rust: `BracketedUrl`)
+
+`<https://.../issues/123>` — a markdown autolink replaces the
+`#123` token outright. `bare_url` accepts this form.
 
 #### `PlainForm` (enum)
 
