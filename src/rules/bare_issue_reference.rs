@@ -184,12 +184,29 @@ pub struct BareIssueReference {
     plain_comment_form: PlainForm,
 }
 
+/// Resolve the `repository` config value to its canonical web base.
+/// `None` when unset — the lint then runs help-only. **Panics** when
+/// it is set but unparseable, so a malformed URL fails loudly at
+/// launch rather than silently disabling the autofix and leaving the
+/// author to wonder why no link is suggested.
+fn resolve_repository(repository: Option<&str>) -> Option<String> {
+    repository.map(|raw| {
+        repo_url::normalize(raw).unwrap_or_else(|| {
+            panic!(
+                "perfectionist::bare_issue_reference: `repository = {raw:?}` is not a \
+                 parseable git URL; expected an HTTP(S) URL, an `ssh://` URL, or the \
+                 scp-like `git@host:owner/repo.git` form, with an `owner/repo` path",
+            )
+        })
+    })
+}
+
 impl BareIssueReference {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
             forge: config.forge,
-            repo_web_base: config.repository.as_deref().and_then(repo_url::normalize),
+            repo_web_base: resolve_repository(config.repository.as_deref()),
             suggest_issue_url: config.suggest_issue_url,
             suggest_pr_url: config.suggest_pr_url,
             form: config.form,
@@ -743,6 +760,28 @@ mod tests {
         assert!(!lint("https://gitlab.example.com/o/r").hash_can_mean_pr());
         assert!(lint("https://github.com/o/r").hash_can_mean_pr());
         assert!(lint("https://gitea.com/o/r").hash_can_mean_pr());
+    }
+
+    #[test]
+    fn resolve_repository_passes_valid_url() {
+        assert_eq!(
+            resolve_repository(Some("git@github.com:owner/repo.git")).as_deref(),
+            Some("https://github.com/owner/repo"),
+        );
+    }
+
+    #[test]
+    fn resolve_repository_is_none_when_unset() {
+        // Unset is legitimate — the lint runs help-only, no panic.
+        assert_eq!(resolve_repository(None), None);
+    }
+
+    #[test]
+    #[should_panic(expected = "is not a parseable git URL")]
+    fn resolve_repository_panics_on_unparseable() {
+        // A single-segment URL is a configuration mistake; fail loudly
+        // at launch rather than silently degrade to help-only.
+        resolve_repository(Some("https://github.com/owner"));
     }
 
     #[test]
