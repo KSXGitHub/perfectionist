@@ -152,12 +152,27 @@ fn single_selection_is_still_maybe_incorrect() {
 }
 
 #[test]
-fn reference_form_emits_two_piece_link() {
-    // The `form = "reference"` suggestion produces just `[#NNN]`,
-    // without the matching `[#NNN]: URL` definition (which the author
-    // must add), and carries its own reference-style help message.
+fn reference_form_appends_definition() {
+    // The `form = "reference"` fix is a multipart edit: it rewrites
+    // `#99` to `[#99]` and appends the matching `[#99]: URL`
+    // definition (after a blank `///` line) at the end of the block.
     run(
         "ui-toml/bare_issue_reference/reference_form",
+        github_repo(RuleConfig {
+            suggest_issue_url: Some(true),
+            suggest_pr_url: Some(false),
+            form: Some("reference".into()),
+            ..Default::default()
+        }),
+    );
+}
+
+#[test]
+fn reference_form_skips_existing_definition() {
+    // When the block already defines `[#99]: URL`, the fix rewrites
+    // only the `#99` token and does not append a duplicate definition.
+    run(
+        "ui-toml/bare_issue_reference/reference_defined",
         github_repo(RuleConfig {
             suggest_issue_url: Some(true),
             suggest_pr_url: Some(false),

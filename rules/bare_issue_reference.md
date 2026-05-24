@@ -86,11 +86,11 @@ so only the issue suggestion is offered there.
 ### `form`: `DocForm` (optional)
 
 Doc-comment fix form: `inline` for `[#N](URL)`, `reference`
-for the two-piece `[#N]` + `[#N]: URL` form. The reference
-form's autofix only rewrites the `#N` token; the matching
-definition is the author's responsibility. Defaults to
-`inline`. Ignored for plain-comment fixes — those follow
-`plain_comment_form` instead.
+for the two-piece `[#N]` + `[#N]: URL` form (the definition is
+appended to the doc block; in a `/** */` block doc comment only
+the `#N` token is rewritten and the definition is left to the
+author). Defaults to `inline`. Ignored for plain-comment fixes
+— those follow `plain_comment_form` instead.
 
 ### `include_plain_comments`: `boolean` (optional)
 
@@ -142,10 +142,11 @@ visible link text.
 
 ##### `"reference"` (Rust: `Reference`)
 
-`[#123]` — the autofix rewrites only the `#123` token; the
-matching `[#123]: URL` definition (which belongs on its own
-line at the end of the doc block) is the author's
-responsibility, so this suggestion is incomplete on its own.
+`[#123]`, with a matching `[#123]: URL` definition appended to
+the end of the doc block (after a blank line so it parses as a
+definition). In a `/** */` block doc comment the definition
+can't be placed safely, so there the fix rewrites only the
+`#123` token and leaves the definition to the author.
 
 ##### `"bare_url"` (Rust: `BareUrl`)
 

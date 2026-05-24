@@ -70,10 +70,11 @@ enum DocForm {
     /// visible link text.
     #[default]
     Inline,
-    /// `[#123]` — the autofix rewrites only the `#123` token; the
-    /// matching `[#123]: URL` definition (which belongs on its own
-    /// line at the end of the doc block) is the author's
-    /// responsibility, so this suggestion is incomplete on its own.
+    /// `[#123]`, with a matching `[#123]: URL` definition appended to
+    /// the end of the doc block (after a blank line so it parses as a
+    /// definition). In a `/** */` block doc comment the definition
+    /// can't be placed safely, so there the fix rewrites only the
+    /// `#123` token and leaves the definition to the author.
     Reference,
     /// `https://.../issues/123` — the bare URL replaces the `#123`
     /// token outright (the `#123` text is not kept). NB: in a doc
@@ -135,11 +136,11 @@ struct Config {
     /// so only the issue suggestion is offered there.
     suggest_pr_url: bool,
     /// Doc-comment fix form: `inline` for `[#N](URL)`, `reference`
-    /// for the two-piece `[#N]` + `[#N]: URL` form. The reference
-    /// form's autofix only rewrites the `#N` token; the matching
-    /// definition is the author's responsibility. Defaults to
-    /// `inline`. Ignored for plain-comment fixes — those follow
-    /// `plain_comment_form` instead.
+    /// for the two-piece `[#N]` + `[#N]: URL` form (the definition is
+    /// appended to the doc block; in a `/** */` block doc comment only
+    /// the `#N` token is rewritten and the definition is left to the
+    /// author). Defaults to `inline`. Ignored for plain-comment fixes
+    /// — those follow `plain_comment_form` instead.
     form: DocForm,
     /// When `true`, also lint plain `//` line comments. The
     /// autofix in plain comments uses `plain_comment_form`'s URL
@@ -461,6 +462,14 @@ impl BareIssueReference {
         let suggest_pr = self.suggest_pr_url && self.hash_can_mean_pr();
         let doc_form = self.form;
         let plain_form = self.plain_comment_form;
+        // For the `reference` form, work out where (and with what
+        // prefix) to append the `[#N]: URL` definition, so the fix is
+        // complete rather than leaving the definition to the author.
+        // `None` for other forms, block doc comments, or a block that
+        // already defines the reference.
+        let ref_site = (doc_form == DocForm::Reference)
+            .then(|| reference_definition_site(chunk, rendered_pos, number))
+            .flatten();
         span_lint_and_then(
             lint_context,
             BARE_ISSUE_REFERENCE,
@@ -494,8 +503,15 @@ impl BareIssueReference {
                     Some(issue_url) => {
                         if suggest_issue {
                             emit_one(
-                                diag, span, &token, &issue_url, "issue", is_doc, doc_form,
+                                diag,
+                                span,
+                                &token,
+                                &issue_url,
+                                "issue",
+                                is_doc,
+                                doc_form,
                                 plain_form,
+                                ref_site.as_ref(),
                             );
                         }
                         if suggest_pr {
@@ -509,6 +525,7 @@ impl BareIssueReference {
                                 is_doc,
                                 doc_form,
                                 plain_form,
+                                ref_site.as_ref(),
                             );
                         }
                     }
@@ -526,10 +543,73 @@ impl BareIssueReference {
     }
 }
 
+/// Where to append a `reference`-form `[#N]: URL` definition, so the
+/// fix is complete instead of leaving the definition to the author.
+struct RefDefinitionSite {
+    /// Zero-width span at the end of the doc block.
+    block_end: Span,
+    /// The `///` / `//!` prefix (with indentation) the appended
+    /// definition lines start with, so they stay part of the block.
+    doc_prefix: String,
+}
+
+/// Resolve the `reference`-form definition site for a `#NNN` at
+/// `rendered_pos`, or `None` when the definition shouldn't be
+/// appended: a `/** */` block doc comment (the definition would need
+/// to go before `*/`, which this doesn't handle), or a block that
+/// already defines the reference.
+fn reference_definition_site(
+    chunk: &CommentChunk<'_>,
+    rendered_pos: usize,
+    number: &str,
+) -> Option<RefDefinitionSite> {
+    if chunk.surface != CommentSurface::DocBlock {
+        return None;
+    }
+    if block_defines_reference(&chunk.rendered, number) {
+        return None;
+    }
+    Some(RefDefinitionSite {
+        block_end: chunk.source_span.shrink_to_hi(),
+        doc_prefix: doc_line_prefix(chunk, rendered_pos)?,
+    })
+}
+
+/// Whether the rendered doc block already carries a `[#NNN]: ...`
+/// reference-link definition, so the completed fix shouldn't append a
+/// duplicate.
+fn block_defines_reference(rendered: &str, number: &str) -> bool {
+    let label = format!("[#{number}]:");
+    rendered
+        .lines()
+        .any(|line| line.trim_start().starts_with(&label))
+}
+
+/// The `///` / `//!` prefix (with leading indentation, the optional
+/// content space trimmed) of the source line holding `rendered_pos`.
+/// The appended definition lines reuse it so they remain part of the
+/// same doc block at the same indentation.
+fn doc_line_prefix(chunk: &CommentChunk<'_>, rendered_pos: usize) -> Option<String> {
+    let line = chunk.lines.iter().find(|line| {
+        rendered_pos >= line.rendered_start
+            && rendered_pos < line.rendered_start + line.rendered_len
+    })?;
+    let src = chunk.source_file.src.as_deref()?;
+    let content_offset = line.source_offset as usize;
+    let line_start = src
+        .get(..content_offset)?
+        .rfind('\n')
+        .map_or(0, |nl| nl + 1);
+    let prefix = src.get(line_start..content_offset)?;
+    Some(prefix.trim_end_matches(' ').to_owned())
+}
+
 /// Emit one issue-or-PR link suggestion. `target_label` is `"issue"`
 /// or `"pull request"`. Every suggestion is `MaybeIncorrect`: a bare
 /// `#NNN` is ambiguous, so the lint can never be confident the token
-/// names a reference at all, let alone which kind.
+/// names a reference at all, let alone which kind. When `ref_site` is
+/// set (the `reference` form on a line doc block), the suggestion is a
+/// multipart edit that also appends the `[#N]: URL` definition.
 #[expect(
     clippy::too_many_arguments,
     reason = "a small private emit helper; bundling these into a struct would obscure the call"
@@ -543,13 +623,36 @@ fn emit_one(
     is_doc: bool,
     doc_form: DocForm,
     plain_form: PlainForm,
+    ref_site: Option<&RefDefinitionSite>,
 ) {
     if is_doc {
+        if let (DocForm::Reference, Some(site)) = (doc_form, ref_site) {
+            // A blank doc line precedes the definition so CommonMark
+            // doesn't fold `[#N]: URL` into the preceding paragraph
+            // as lazy continuation (a definition can't interrupt a
+            // paragraph).
+            let definition = format!(
+                "\n{prefix}\n{prefix} [{token}]: {url}",
+                prefix = site.doc_prefix,
+            );
+            diag.multipart_suggestion(
+                format!(
+                    "use a reference-style markdown link to the {target_label} \
+                     (its `[#N]: URL` definition is appended to the doc block)",
+                ),
+                vec![
+                    (span, render_doc_suggestion(DocForm::Reference, token, url)),
+                    (site.block_end, definition),
+                ],
+                Applicability::MaybeIncorrect,
+            );
+            return;
+        }
         let message = match doc_form {
             DocForm::Inline => format!("use an inline markdown link to the {target_label}"),
             DocForm::Reference => format!(
                 "use a reference-style markdown link to the {target_label} \
-                 (define `[#N]: URL` at the end of the doc block)",
+                 (ensure a `[#N]: URL` definition exists in the doc block)",
             ),
             DocForm::BareUrl => format!("substitute the {target_label} URL"),
             DocForm::BracketedUrl => {
@@ -581,11 +684,11 @@ fn emit_one(
 fn render_doc_suggestion(form: DocForm, token: &str, url: &str) -> String {
     match form {
         DocForm::Inline => format!("[{token}]({url})"),
-        // For the reference form, the suggestion only rewrites the
-        // matched span — the matching `[#N]: url` definition is the
-        // author's responsibility (the lint can't safely synthesise
-        // a multi-line definition without knowing where the block
-        // ends). Same shape as rustdoc's collapsed-reference form.
+        // For the reference form the matched span becomes `[#N]`; the
+        // matching `[#N]: url` definition is appended separately by
+        // `emit_one` (line doc blocks) or left to the author (`/** */`
+        // block doc comments). Same shape as rustdoc's
+        // collapsed-reference form.
         DocForm::Reference => format!("[{token}]"),
         // The URL forms replace the `#N` token outright; the `token`
         // is intentionally dropped.
@@ -695,6 +798,15 @@ mod tests {
         // matched.
         assert_eq!(Forge::detect("https://bitbucket.org/o/r"), None);
         assert_eq!(Forge::detect("https://bitbucket.example.com/o/r"), None);
+    }
+
+    #[test]
+    fn block_defines_reference_detects_existing_definition() {
+        let block = "Closes [#99].\n\n[#99]: https://example.com/issues/99";
+        assert!(block_defines_reference(block, "99"));
+        // A different number, or no definition at all, is not a match.
+        assert!(!block_defines_reference(block, "98"));
+        assert!(!block_defines_reference("Closes #99.", "99"));
     }
 
     #[test]

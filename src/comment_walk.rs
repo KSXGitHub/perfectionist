@@ -53,12 +53,9 @@ pub(crate) struct CommentChunk<'a> {
     /// byte offset inside `rendered` back to an absolute source
     /// position.
     pub(crate) lines: Vec<LineMapping>,
-    /// Span of the entire comment chunk as it appears in source,
-    /// used by callbacks that don't need per-position mapping.
-    #[allow(
-        dead_code,
-        reason = "available for future callbacks that need a chunk-level span"
-    )]
+    /// Span of the entire comment chunk as it appears in source.
+    /// `bare_issue_reference` uses its end position to append a
+    /// reference-link definition to the doc block.
     pub(crate) source_span: Span,
     /// Borrowed source file the chunk lives in.
     pub(crate) source_file: &'a SourceFile,
