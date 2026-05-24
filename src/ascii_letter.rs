@@ -37,14 +37,10 @@ pub(crate) struct AsciiLetter(char);
 impl TryFrom<char> for AsciiLetter {
     type Error = String;
 
-    fn try_from(value: char) -> Result<Self, Self::Error> {
-        if value.is_ascii_alphabetic() {
-            Ok(Self(value))
-        } else {
-            Err(format!(
-                "expected a single ASCII letter (a-z, A-Z), got {value:?}",
-            ))
-        }
+    fn try_from(char: char) -> Result<Self, Self::Error> {
+        char.is_ascii_alphabetic()
+            .then_some(AsciiLetter(char))
+            .ok_or_else(|| format!("expected a single ASCII letter (a-z, A-Z), got {char:?}"))
     }
 }
 
