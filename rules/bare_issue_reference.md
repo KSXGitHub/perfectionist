@@ -37,7 +37,7 @@ and any other markdown engine.
 /// Closes #123 and supersedes #124.
 ```
 Use instead (with
-`repo_base_url = "https://github.com/owner/repo"` — `forge`
+`repository = "https://github.com/owner/repo"` — `forge`
 is detected from the host), picking the issue link for one
 and the pull-request link for the other:
 ```rust,ignore
@@ -53,7 +53,7 @@ Configure via `dylint.toml` under `["perfectionist::bare_issue_reference"]`. Eve
 
 Git-hosting service the repository is on — one of `github`,
 `gitlab`, `gitea` — which fixes the issue / PR path layout.
-When unset, it is detected from `repo_base_url`'s host: the
+When unset, it is detected from the `repository` host: the
 public instances (`github.com`, `gitlab.com`, `codeberg.org`,
 `gitea.com`) and the conventional self-hosted subdomains
 `gitlab.*`, `github.*`, `gitea.*` and `forgejo.*` all need no
@@ -61,14 +61,17 @@ public instances (`github.com`, `gitlab.com`, `codeberg.org`,
 host that gives no such hint (e.g. `git.example.com`). No
 fixed default — the rule prefers no service.
 
-### `repo_base_url`: `string` (optional)
+### `repository`: `string` (optional)
 
-Base URL of the repository, e.g.
-`"https://github.com/owner/repo"`, or a self-hosted instance
-such as `"https://gitlab.example.com/owner/repo"`. Carries the
-owner/repo path the issue / PR link needs, so it is required
-for an autofix; when unset the lint flags bare references but
-emits help-only output. No fixed default.
+The repository's URL, in any form you'd clone or paste: an
+HTTP(S) URL (`"https://github.com/owner/repo"`), an `ssh://`
+URL (`"ssh://git@github.com/owner/repo.git"`), or the scp-like
+shorthand (`"git@github.com:owner/repo.git"`). The `git@`
+userinfo, any `:port`, an optional `.git` suffix, and trailing
+slashes are all ignored. It supplies the host (for forge
+detection) and the owner/repo path the issue / PR link needs,
+so it is required for an autofix; when unset the lint flags
+bare references but emits help-only output. No fixed default.
 
 ### `suggest_issue_url`: `boolean` (optional)
 
@@ -113,7 +116,7 @@ configured.
 A recognised git-hosting service. The chosen forge fixes the
 issue / PR URL layout. It can be given explicitly (needed for a
 self-hosted instance, whose host isn't recognised) or detected
-from `repo_base_url`'s host via [`Forge::detect`].
+from the repository's host via [`Forge::detect`].
 
 ##### `"github"` (Rust: `GitHub`)
 

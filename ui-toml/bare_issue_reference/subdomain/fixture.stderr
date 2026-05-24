@@ -1,7 +1,7 @@
 warning: ambiguous `#88`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
   --> $DIR/fixture.rs:1:17
    |
-LL | /// Bad: closes #88 — `repo_base_url` is a self-hosted GitLab at
+LL | /// Bad: closes #88 — `repository` is a self-hosted GitLab at
    |                 ^^^ help: use an inline markdown link to the issue: `[#88](https://gitlab.example.com/owner/repo/-/issues/88)`
    |
    = help: if `#88` is not an issue or pull request, enclose it in backticks so it renders as code

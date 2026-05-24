@@ -13,7 +13,7 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     forge: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    repo_base_url: Option<String>,
+    repository: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     suggest_issue_url: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -45,7 +45,7 @@ fn run(src_base: &str, config: RuleConfig) {
 /// forge is detected from the host. Used by most fixtures.
 fn github_repo(config: RuleConfig) -> RuleConfig {
     RuleConfig {
-        repo_base_url: Some("https://github.com/owner/repo".into()),
+        repository: Some("https://github.com/owner/repo".into()),
         ..config
     }
 }
@@ -69,7 +69,22 @@ fn gitlab_host_is_detected() {
     run(
         "ui-toml/bare_issue_reference/gitlab",
         RuleConfig {
-            repo_base_url: Some("https://gitlab.com/owner/repo".into()),
+            repository: Some("https://gitlab.com/owner/repo".into()),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn ssh_url_is_parsed() {
+    // An scp-like SSH clone URL (`git@host:owner/repo.git`) is parsed
+    // into the canonical `https://github.com/owner/repo` web base, so
+    // the GitHub forge is detected and the issue / PR links resolve —
+    // the `git@` userinfo and `.git` suffix are dropped.
+    run(
+        "ui-toml/bare_issue_reference/ssh_url",
+        RuleConfig {
+            repository: Some("git@github.com:owner/repo.git".into()),
             ..Default::default()
         },
     );
@@ -78,14 +93,14 @@ fn gitlab_host_is_detected() {
 #[test]
 fn unrecognised_host_without_forge_is_help_only() {
     // The negative counterpart to `gitlab_host_is_detected`:
-    // `repo_base_url` is set, but to a self-hosted host the lint
-    // can't classify, and `forge` is omitted. With no detectable
-    // forge and no fallback, the lint can't build a URL — so it
-    // degrades to help-only, telling the author to set `forge`.
+    // `repository` is set, but to a self-hosted host the lint can't
+    // classify, and `forge` is omitted. With no detectable forge and
+    // no fallback, the lint can't build a URL — so it degrades to
+    // help-only, telling the author to set `forge`.
     run(
         "ui-toml/bare_issue_reference/unrecognised_host",
         RuleConfig {
-            repo_base_url: Some("https://git.example.com/owner/repo".into()),
+            repository: Some("https://git.example.com/owner/repo".into()),
             ..Default::default()
         },
     );
@@ -99,7 +114,7 @@ fn self_hosted_subdomain_is_detected() {
     run(
         "ui-toml/bare_issue_reference/subdomain",
         RuleConfig {
-            repo_base_url: Some("https://gitlab.example.com/owner/repo".into()),
+            repository: Some("https://gitlab.example.com/owner/repo".into()),
             ..Default::default()
         },
     );
@@ -114,7 +129,7 @@ fn self_hosted_needs_explicit_forge() {
         "ui-toml/bare_issue_reference/self_hosted",
         RuleConfig {
             forge: Some("gitlab".into()),
-            repo_base_url: Some("https://git.example.com/owner/repo".into()),
+            repository: Some("https://git.example.com/owner/repo".into()),
             ..Default::default()
         },
     );

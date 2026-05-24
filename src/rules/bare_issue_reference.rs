@@ -14,6 +14,8 @@ use crate::common::{DefaultState, resolved_state};
 use crate::markdown::{position_in_skip, scan_skip_regions, utf8_char_len};
 use crate::url_scan::back_scan_url_fragment;
 
+mod repo_url;
+
 declare_tool_lint! {
     /// ### What it does
     /// Flags bare `#NNN` issue / pull-request references in doc
@@ -45,7 +47,7 @@ declare_tool_lint! {
     /// /// Closes #123 and supersedes #124.
     /// ```
     /// Use instead (with
-    /// `repo_base_url = "https://github.com/owner/repo"` — `forge`
+    /// `repository = "https://github.com/owner/repo"` — `forge`
     /// is detected from the host), picking the issue link for one
     /// and the pull-request link for the other:
     /// ```rust,ignore
@@ -109,7 +111,7 @@ enum PlainForm {
 struct Config {
     /// Git-hosting service the repository is on — one of `github`,
     /// `gitlab`, `gitea` — which fixes the issue / PR path layout.
-    /// When unset, it is detected from `repo_base_url`'s host: the
+    /// When unset, it is detected from the `repository` host: the
     /// public instances (`github.com`, `gitlab.com`, `codeberg.org`,
     /// `gitea.com`) and the conventional self-hosted subdomains
     /// `gitlab.*`, `github.*`, `gitea.*` and `forgejo.*` all need no
@@ -117,13 +119,16 @@ struct Config {
     /// host that gives no such hint (e.g. `git.example.com`). No
     /// fixed default — the rule prefers no service.
     forge: Option<Forge>,
-    /// Base URL of the repository, e.g.
-    /// `"https://github.com/owner/repo"`, or a self-hosted instance
-    /// such as `"https://gitlab.example.com/owner/repo"`. Carries the
-    /// owner/repo path the issue / PR link needs, so it is required
-    /// for an autofix; when unset the lint flags bare references but
-    /// emits help-only output. No fixed default.
-    repo_base_url: Option<String>,
+    /// The repository's URL, in any form you'd clone or paste: an
+    /// HTTP(S) URL (`"https://github.com/owner/repo"`), an `ssh://`
+    /// URL (`"ssh://git@github.com/owner/repo.git"`), or the scp-like
+    /// shorthand (`"git@github.com:owner/repo.git"`). The `git@`
+    /// userinfo, any `:port`, an optional `.git` suffix, and trailing
+    /// slashes are all ignored. It supplies the host (for forge
+    /// detection) and the owner/repo path the issue / PR link needs,
+    /// so it is required for an autofix; when unset the lint flags
+    /// bare references but emits help-only output. No fixed default.
+    repository: Option<String>,
     /// Offer a suggestion that links the reference as an *issue*.
     /// Defaults to `true`.
     suggest_issue_url: bool,
@@ -156,7 +161,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             forge: None,
-            repo_base_url: None,
+            repository: None,
             suggest_issue_url: true,
             suggest_pr_url: true,
             form: DocForm::Inline,
@@ -168,7 +173,10 @@ impl Default for Config {
 
 pub struct BareIssueReference {
     forge: Option<Forge>,
-    repo_base_url: Option<String>,
+    /// The repository's `repository` URL normalised to the canonical
+    /// web base `https://host/owner/repo` (see [`repo_url::normalize`]),
+    /// or `None` when unset or unparseable.
+    repo_web_base: Option<String>,
     suggest_issue_url: bool,
     suggest_pr_url: bool,
     form: DocForm,
@@ -181,7 +189,7 @@ impl BareIssueReference {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
             forge: config.forge,
-            repo_base_url: config.repo_base_url,
+            repo_web_base: config.repository.as_deref().and_then(repo_url::normalize),
             suggest_issue_url: config.suggest_issue_url,
             suggest_pr_url: config.suggest_pr_url,
             form: config.form,
@@ -191,20 +199,20 @@ impl BareIssueReference {
     }
 
     /// The forge whose path layout to use: the explicit `forge` if
-    /// set, otherwise one detected from `repo_base_url`'s host.
-    /// `None` when neither yields a recognised forge — there is no
-    /// fallback, so the rule never prefers one service.
+    /// set, otherwise one detected from the repository's host. `None`
+    /// when neither yields a recognised forge — there is no fallback,
+    /// so the rule never prefers one service.
     fn effective_forge(&self) -> Option<Forge> {
         self.forge
-            .or_else(|| self.repo_base_url.as_deref().and_then(Forge::detect))
+            .or_else(|| self.repo_web_base.as_deref().and_then(Forge::detect))
     }
 
     /// Suggested issue URL for `number`. `None` (so: help-only)
-    /// unless `repo_base_url` is set — it carries the owner/repo
-    /// path the link needs — and a forge is known (explicit or
-    /// detected from the host).
+    /// unless `repository` is set — it carries the owner/repo path
+    /// the link needs — and a forge is known (explicit or detected
+    /// from the host).
     fn issue_url(&self, number: &str) -> Option<String> {
-        let base = self.repo_base_url.as_deref()?;
+        let base = self.repo_web_base.as_deref()?;
         let forge = self.effective_forge()?;
         Some(join_url(base, forge.issue_path(), number))
     }
@@ -212,7 +220,7 @@ impl BareIssueReference {
     /// Suggested pull-request URL for `number`; see [`Self::issue_url`]
     /// for when it is `None`.
     fn pr_url(&self, number: &str) -> Option<String> {
-        let base = self.repo_base_url.as_deref()?;
+        let base = self.repo_web_base.as_deref()?;
         let forge = self.effective_forge()?;
         Some(join_url(base, forge.pr_path(), number))
     }
@@ -238,7 +246,7 @@ fn join_url(base_url: &str, path: &str, number: &str) -> String {
 /// A recognised git-hosting service. The chosen forge fixes the
 /// issue / PR URL layout. It can be given explicitly (needed for a
 /// self-hosted instance, whose host isn't recognised) or detected
-/// from `repo_base_url`'s host via [`Forge::detect`].
+/// from the repository's host via [`Forge::detect`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum Forge {
@@ -274,8 +282,8 @@ impl Forge {
     /// / `gitea.*` / `forgejo.*` self-hosted subdomains. Returns
     /// `None` for a host that gives no such hint, so it needs an
     /// explicit `forge`.
-    fn detect(repo_base_url: &str) -> Option<Forge> {
-        let host = host_of(repo_base_url)?.to_ascii_lowercase();
+    fn detect(repo_url: &str) -> Option<Forge> {
+        let host = host_of(repo_url)?.to_ascii_lowercase();
         // Public instances, matched on the full host.
         match host.as_str() {
             "github.com" => return Some(Forge::GitHub),
@@ -456,7 +464,7 @@ impl BareIssueReference {
                 match issue_url {
                     None => {
                         diag.help(
-                            "set `repo_base_url` (and `forge`, if its host isn't a recognised \
+                            "set `repository` (and `forge`, if its host isn't a recognised \
                              service) in dylint.toml under \
                              `[perfectionist::bare_issue_reference]` to enable issue / PR link \
                              suggestions",
@@ -676,17 +684,17 @@ mod tests {
     }
 
     #[test]
-    fn urls_are_derived_when_only_repo_base_url_is_set() {
-        // The headline scenario: `repo_base_url` is set, `forge` is
-        // left unset, and no path layout is configured. The forge is
+    fn urls_are_derived_when_only_repository_is_set() {
+        // The headline scenario: `repository` is set, `forge` is left
+        // unset, and no path layout is configured. The forge is
         // detected from the recognised host and both URLs resolve to a
         // correct address — so the autofix works, not just help-only.
         // The GitHub and GitLab pair also confirms the derived layout
         // is forge-specific (`/pull/` vs `/-/merge_requests/`), not a
         // single hard-coded shape.
-        let lint = |repo_base_url: &str| BareIssueReference {
+        let lint = |web_base: &str| BareIssueReference {
             forge: None,
-            repo_base_url: Some(repo_base_url.to_owned()),
+            repo_web_base: Some(web_base.to_owned()),
             suggest_issue_url: true,
             suggest_pr_url: true,
             form: DocForm::Inline,
@@ -722,9 +730,9 @@ mod tests {
         // `#NNN` denotes a merge request on no forge — GitLab spells
         // those `!NNN` — so the PR suggestion is suppressed there but
         // offered on the others.
-        let lint = |repo_base_url: &str| BareIssueReference {
+        let lint = |web_base: &str| BareIssueReference {
             forge: None,
-            repo_base_url: Some(repo_base_url.to_owned()),
+            repo_web_base: Some(web_base.to_owned()),
             suggest_issue_url: true,
             suggest_pr_url: true,
             form: DocForm::Inline,
@@ -738,14 +746,14 @@ mod tests {
     }
 
     #[test]
-    fn no_urls_when_repo_base_url_host_is_unrecognised() {
-        // The deliberate non-case: `repo_base_url` is set but its host
+    fn no_urls_when_repository_host_is_unrecognised() {
+        // The deliberate non-case: `repository` is set but its host
         // isn't a recognised service and `forge` is left unset. There
         // is no fallback forge, so both URLs are `None` — the rule
         // emits help-only output rather than guessing a layout.
         let lint = BareIssueReference {
             forge: None,
-            repo_base_url: Some("https://git.example.com/owner/repo".to_owned()),
+            repo_web_base: Some("https://git.example.com/owner/repo".to_owned()),
             suggest_issue_url: true,
             suggest_pr_url: true,
             form: DocForm::Inline,
