@@ -67,9 +67,8 @@ suggested.
 The repository's URL, in any form you'd clone or paste: an
 `http(s)://` URL (`"https://github.com/owner/repo"`), an
 `ssh://` URL (`"ssh://git@github.com/owner/repo.git"`), or the
-scp-like shorthand (`"git@github.com:owner/repo.git"`). The
-`git@` userinfo, any `:port`, an optional `.git` suffix, and
-trailing slashes are all ignored. No fixed default.
+scp-like shorthand (`"git@github.com:owner/repo.git"`). No
+fixed default.
 
 ### `suggest_issue_url`: `boolean` (optional)
 
