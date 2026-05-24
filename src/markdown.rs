@@ -35,9 +35,9 @@ pub(crate) type SkipRange = Range<usize>;
 /// spans, code blocks, autolinks, inline / reference links, and
 /// reference-link definitions.
 ///
-/// The returned vector is sorted by start byte and contains no
-/// overlapping or touching entries: adjacent same-kind constructs
-/// (two code spans on one line) produce two non-touching ranges.
+/// The returned vector is sorted by start byte and non-overlapping.
+/// Adjacent constructs (e.g. an autolink immediately followed by a
+/// code span) can produce touching ranges, but ranges never overlap.
 pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
     let mut out: Vec<SkipRange> = Vec::new();
     let bytes = input.as_bytes();

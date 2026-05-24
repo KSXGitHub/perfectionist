@@ -1,8 +1,8 @@
 warning: bare URL `https://example.com/`; wrap in `<...>` or use a labelled markdown link
-  --> $DIR/fixture.rs:7:16
+  --> $DIR/fixture.rs:7:26
    |
-LL | /// again now: https://example.com/ here.
-   |                ^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.com/>`
+LL | /// `localhost` default: https://example.com/ here.
+   |                          ^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.com/>`
    |
    = note: `#[warn(perfectionist::bare_url)]` on by default
 

@@ -45,10 +45,11 @@ pub(crate) const BACKWARD_URL_SCHEMES: &[&str] = &[
 /// by `://`.
 ///
 /// The URL body extends greedily over non-whitespace bytes, but stops
-/// before closing delimiters that would invalidate a `<URL>` wrap:
-/// `>`, `]`, `)`. Trailing punctuation is *kept inside* the returned
-/// slice — the caller (`bare_url`) classifies the last byte to decide
-/// `MachineApplicable` vs `MaybeIncorrect`.
+/// before delimiters that would break a `<URL>` wrap or an enclosing
+/// markdown link: `<`, `>`, `[`, `]`, `)`. Trailing punctuation is
+/// *kept inside* the returned slice — the caller (`bare_url`)
+/// classifies the last byte to decide `MachineApplicable` vs
+/// `MaybeIncorrect`.
 pub(crate) fn take_url<'a>(input: &'a str, schemes: &[&str]) -> Option<UrlMatch<'a>> {
     let scheme_len = take_scheme(input, schemes)?;
     let bytes = input.as_bytes();
