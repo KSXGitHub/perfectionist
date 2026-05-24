@@ -27,11 +27,7 @@ use crate::extract::shared::SharedTypes;
 use crate::model::{DefaultState, Level, NAMESPACE, Rule};
 
 pub(crate) fn collect_rules(rules_dir: &Path) -> Vec<Rule> {
-    // Shared-newtype labels (currently just `AsciiLetter`'s
-    // `single-letter string`) live in `src/*.rs` next to the rules
-    // directory. The parent of `rules_dir` is the canonical `src/`;
-    // when the layout doesn't match (an unusual standalone test
-    // layout, perhaps), the discovery quietly finds nothing.
+    // Shared newtypes live in `src/`, one level up from `src/rules`.
     let shared = rules_dir
         .parent()
         .map(SharedTypes::discover)
@@ -375,14 +371,8 @@ mod tests {
     /// can't silently come back.
     #[test]
     fn collect_rules_finds_config_in_submodule_file() {
-        // Mirror the real layout: `base` stands in for the project
-        // root, `base/rules` for `src/rules`. Nesting the rules
-        // directory one level deep matters because `collect_rules`
-        // walks `rules_dir.parent()` for shared-newtype `TOML_LABEL`
-        // constants; if rules_dir's parent were `std::env::temp_dir()`
-        // itself, the discovery would scan every stray `.rs` file at
-        // the top of /tmp and could pick up unrelated definitions
-        // dropped by parallel processes.
+        // Nested so `rules_dir.parent()` is an empty stand-in `src/`,
+        // not the shared temp root that `collect_rules` would scan.
         let base = tempdir("merge-submodule");
         let rules_dir = base.join("rules");
         fs::create_dir_all(&rules_dir).unwrap();

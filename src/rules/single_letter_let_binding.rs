@@ -74,16 +74,8 @@ impl SingleLetterLetBinding {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         let allowed_idents = resolve_symbol_set_from_chars(
             DEFAULT_LET_EXEMPTIONS,
-            config
-                .extra_allowed_idents
-                .into_iter()
-                .map(char::from)
-                .collect(),
-            config
-                .ignore_allowed_idents
-                .into_iter()
-                .map(char::from)
-                .collect(),
+            config.extra_allowed_idents,
+            config.ignore_allowed_idents,
         );
         Self { allowed_idents }
     }

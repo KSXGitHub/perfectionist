@@ -288,12 +288,6 @@ pub(crate) fn toml_type_label(ty: &Type, shared: &SharedTypes) -> String {
                     Some(inner) => toml_type_label(inner, shared),
                     None => ident,
                 },
-                // Shared newtypes from `src/*.rs` carry their own
-                // label next to the type definition — consult the
-                // discovered table before falling through to the
-                // Rust-ident fallback so the field-type column
-                // surfaces e.g. `single-letter string` rather than
-                // `AsciiLetter`.
                 _ => shared.label_for(&ident).map(str::to_owned).unwrap_or(ident),
             }
         }
@@ -317,10 +311,6 @@ mod tests {
         syn::parse_str(source).expect("test input should parse as a syn::Type")
     }
 
-    /// Empty shared-type table for the primitive / wrapper tests
-    /// that don't care about shared newtypes. The discovery is
-    /// exercised in `extract::shared`'s own tests; here we just
-    /// need a value to thread through.
     fn no_shared() -> SharedTypes {
         SharedTypes::default()
     }
@@ -420,14 +410,6 @@ mod tests {
 
     #[test]
     fn toml_type_label_shared_newtype_uses_definition_label() {
-        // Synthetic shared-type table standing in for the real
-        // discovery (which is exercised in `extract::shared`'s own
-        // tests). The label is *not* an `is_builtin_type` arm, so
-        // without the shared lookup `toml_type_label` would fall
-        // through to the Rust ident.
-        //
-        // Round-trip through the discovery helper to populate the
-        // table without exposing its internals to the test.
         let tmp = std::env::temp_dir().join(format!(
             "perfectionist-gen-docs-ty-shared-{}",
             std::process::id(),
@@ -448,9 +430,6 @@ mod tests {
             toml_type_label(&parse_type("AsciiLetter"), &shared),
             "single-letter string",
         );
-        // The wrapper-aware paths see the same lookup, so a
-        // `Vec<AsciiLetter>` field surfaces as `[single-letter
-        // string]` — the goal of the whole exercise.
         assert_eq!(
             toml_type_label(&parse_type("Vec<AsciiLetter>"), &shared),
             "[single-letter string]",
@@ -480,10 +459,6 @@ mod tests {
 
     #[test]
     fn collect_referenced_idents_skips_shared_newtypes() {
-        // Shared newtypes are surfaced via the field-type column,
-        // not as nested custom-types blocks. Skipping them in the
-        // collection pass keeps the per-rule Types section from
-        // listing them alongside genuine project-local enums.
         let tmp = std::env::temp_dir().join(format!(
             "perfectionist-gen-docs-ty-shared-collect-{}",
             std::process::id(),

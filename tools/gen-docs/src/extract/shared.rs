@@ -153,9 +153,6 @@ mod tests {
 
     #[test]
     fn discover_picks_up_struct_and_label_pair() {
-        // The canonical shape mirrored from `src/ascii_letter.rs`:
-        // one struct alongside a `TOML_LABEL` constant. The
-        // discovery should produce a single mapping.
         let base = tempdir("happy-path");
         fs::write(
             base.join("ascii_letter.rs"),
@@ -179,9 +176,6 @@ mod tests {
 
     #[test]
     fn discover_skips_files_with_no_toml_label_constant() {
-        // `src/common.rs` declares multiple structs (GlobalConfig,
-        // RuleSelector, …) but no `TOML_LABEL`. The discovery must
-        // not invent a label for them.
         let base = tempdir("no-label");
         fs::write(
             base.join("common.rs"),
@@ -199,9 +193,6 @@ mod tests {
 
     #[test]
     fn discover_skips_files_with_multiple_structs() {
-        // A file with more than one struct is ambiguous: there's no
-        // way to tell which struct the label is for. Skip rather
-        // than guess.
         let base = tempdir("ambiguous");
         fs::write(
             base.join("mixed.rs"),
@@ -221,8 +212,6 @@ mod tests {
 
     #[test]
     fn discover_returns_empty_for_missing_src_dir() {
-        // Non-existent `src_dir` returns an empty table — no panic,
-        // no error, just "no shared types".
         let shared = SharedTypes::discover(Path::new("/nonexistent/path/that/does/not/exist"));
         assert!(shared.label_for("AsciiLetter").is_none());
     }

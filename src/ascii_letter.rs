@@ -81,9 +81,6 @@ mod tests {
 
     #[test]
     fn multi_character_string_is_rejected_at_parse_time() {
-        // serde-toml rejects a multi-codepoint string before our
-        // `TryFrom<char>` gets a chance to run; the error message
-        // doesn't matter as long as the TOML fails to parse.
         assert!(parse(r#"letters = ["xy"]"#).is_err());
     }
 
@@ -94,9 +91,6 @@ mod tests {
             error.contains("expected a single ASCII letter"),
             "unexpected error message: {error}",
         );
-        // The offending codepoint must round-trip into the rendered
-        // error so a user with a mixed-valid/invalid array can find
-        // which entry failed without counting indices.
         assert!(
             error.contains("'1'"),
             "error should name the offending character: {error}",

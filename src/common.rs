@@ -300,28 +300,28 @@ pub(crate) fn resolve_symbol_set(
 /// `String`, for the `single_letter_*` rules' `extra_allowed_idents`
 /// and `ignore_allowed_idents` knobs. `char::encode_utf8` writes
 /// into a small stack buffer and hands [`Symbol::intern`] the
-/// resulting `&str`, so the function works for any `char`; callers
-/// that want the entries restricted to ASCII letters carry the
-/// `extras` / `ignore` lists as `Vec<crate::ascii_letter::AsciiLetter>`
-/// at the [`serde::Deserialize`] layer and `.into()`-convert each
-/// entry to `char` here, so the type system enforces the invariant
-/// rather than a `#[serde(deserialize_with = "...")]` validator.
+/// resulting `&str`. `extras` and `ignore` accept anything that
+/// iterates into `char` — notably the rules'
+/// `Vec<crate::ascii_letter::AsciiLetter>` knobs, whose `Into<char>`
+/// keeps the ASCII-letter restriction in the type rather than at
+/// this boundary — so each caller hands its config field straight
+/// in without a per-call conversion.
 ///
 /// Must be called inside a rustc session.
 pub(crate) fn resolve_symbol_set_from_chars(
     defaults: &[char],
-    extras: Vec<char>,
-    ignore: Vec<char>,
+    extras: impl IntoIterator<Item: Into<char>>,
+    ignore: impl IntoIterator<Item: Into<char>>,
 ) -> BTreeSet<Symbol> {
     let intern = |ch: char| {
         let mut buf = [0u8; 4];
         Symbol::intern(ch.encode_utf8(&mut buf))
     };
-    let ignore: BTreeSet<Symbol> = ignore.iter().copied().map(intern).collect();
+    let ignore: BTreeSet<Symbol> = ignore.into_iter().map(Into::into).map(intern).collect();
     defaults
         .iter()
         .copied()
-        .chain(extras)
+        .chain(extras.into_iter().map(Into::into))
         .map(intern)
         .filter(|sym| !ignore.contains(sym))
         .collect()
