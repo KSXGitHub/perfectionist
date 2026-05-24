@@ -19,8 +19,16 @@ declare_tool_lint! {
     /// Flags bare `#NNN` issue / pull-request references in doc
     /// comments (`///`, `//!`) — and, when opted in, in plain `//`
     /// line comments. The autofix substitutes a markdown-link form
-    /// (`[#123](URL)` or `[#123]`, plus a matching reference-link
-    /// definition).
+    /// (`[#123](URL)` inline, or the `[#123]` reference form).
+    ///
+    /// A bare `#NNN` is ambiguous between an issue and a pull
+    /// request, so the two `suggest_issue_url` / `suggest_pr_url`
+    /// knobs choose which target(s) the autofix offers: exactly one
+    /// enabled gives a single `MachineApplicable` suggestion; both
+    /// enabled give two `MaybeIncorrect` suggestions for the author
+    /// to choose between; neither gives help-only output. (The
+    /// `reference` doc form is always `MaybeIncorrect` regardless,
+    /// since its `[#N]` output needs a hand-written definition.)
     ///
     /// ### Why restrict this?
     /// This is a stylistic preference, not a correctness issue. A
@@ -53,7 +61,7 @@ const CONFIG_KEY: &str = "perfectionist::bare_issue_reference";
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum DocForm {
-    /// `[#123](URL)` — the URL is inlined. Default.
+    /// `[#123](URL)` — the URL is inlined.
     #[default]
     Inline,
     /// `[#123]` — the matching `[#123]: URL` reference-link
@@ -70,7 +78,7 @@ enum DocForm {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum PlainForm {
-    /// Substitute the URL itself (`https://...`), unwrapped. Default.
+    /// Substitute the URL itself (`https://...`), unwrapped.
     /// Many editors auto-detect a bare URL as clickable. NB: the
     /// sibling `perfectionist::bare_url` lint, whose default also
     /// scans regular comments, will then flag the substituted URL —
@@ -103,25 +111,10 @@ struct Config {
     /// `"{repo_base_url}/pull/{number}"`.
     pr_url_template: String,
     /// Offer a suggestion that links the reference as an *issue*
-    /// (via `issue_url_template`). Defaults to `true`. See the
-    /// applicability note on `suggest_pr_url`.
+    /// (via `issue_url_template`). Defaults to `true`.
     suggest_issue_url: bool,
     /// Offer a suggestion that links the reference as a *pull
     /// request* (via `pr_url_template`). Defaults to `true`.
-    ///
-    /// The two `suggest_*` knobs together determine what the lint
-    /// emits:
-    /// - exactly one `true` → a single `MachineApplicable`
-    ///   suggestion (the author has told the lint which kind the
-    ///   number names);
-    /// - both `true` → two `MaybeIncorrect` suggestions (a bare
-    ///   `#NNN` is ambiguous between an issue and a PR, so the
-    ///   author picks);
-    /// - both `false` → help-only output, no suggestion.
-    ///
-    /// (The `reference` doc form is always `MaybeIncorrect`
-    /// regardless, since its `[#N]` output needs a hand-written
-    /// definition.)
     suggest_pr_url: bool,
     /// Doc-comment fix form: `inline` for `[#N](URL)`, `reference`
     /// for the two-piece `[#N]` + `[#N]: URL` form. The reference

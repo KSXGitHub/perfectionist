@@ -40,8 +40,7 @@ Configure via `dylint.toml` under `["perfectionist::bare_email"]`. Every field i
 ### `style`: `Style` (optional)
 
 Required form for compliant email addresses. Defaults to
-`either` (any of the wrapped forms is accepted; the autofix
-degrades to two `MaybeIncorrect` suggestions).
+`either`.
 
 ### `scan_doc_comments`: `boolean` (optional)
 
@@ -88,7 +87,6 @@ Combine both — `<mailto:user@example.com>`.
 Accept any of the wrapped forms above (`<email>`,
 `mailto:email`, or `<mailto:email>`); the autofix emits two
 `MaybeIncorrect` suggestions for the author to pick from.
-Default.
 
 ##### `"forbid"` (Rust: `Forbid`)
 

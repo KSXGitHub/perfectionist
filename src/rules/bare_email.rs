@@ -61,7 +61,6 @@ enum Style {
     /// Accept any of the wrapped forms above (`<email>`,
     /// `mailto:email`, or `<mailto:email>`); the autofix emits two
     /// `MaybeIncorrect` suggestions for the author to pick from.
-    /// Default.
     Either,
     /// Forbid email addresses outright — no autofix, just a help
     /// note recommending the address be moved to an external file
@@ -80,8 +79,7 @@ const DEFAULT_SKIP_DOMAINS: &[&str] = &[];
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Required form for compliant email addresses. Defaults to
-    /// `either` (any of the wrapped forms is accepted; the autofix
-    /// degrades to two `MaybeIncorrect` suggestions).
+    /// `either`.
     style: Style,
     /// Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
     /// Defaults to `true`.
