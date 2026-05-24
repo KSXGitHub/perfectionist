@@ -109,12 +109,14 @@ enum PlainForm {
 struct Config {
     /// Git-hosting service the repository is on — one of `github`,
     /// `gitlab`, `gitea`, `bitbucket` — which fixes the issue / PR
-    /// path layout. When unset, it is detected from
-    /// `repo_base_url`'s host (so a `github.com` / `gitlab.com` /
-    /// `codeberg.org` / `gitea.com` / `bitbucket.org` URL needs no
-    /// `forge`); set it explicitly for a self-hosted instance whose
-    /// host isn't recognised. No fixed default — the rule prefers no
-    /// service.
+    /// path layout. When unset, it is detected from `repo_base_url`'s
+    /// host: the public instances (`github.com`, `gitlab.com`,
+    /// `codeberg.org`, `gitea.com`, `bitbucket.org`) and the
+    /// conventional self-hosted subdomains `gitlab.*`, `github.*`,
+    /// `gitea.*` and `forgejo.*` all need no `forge`. Set it
+    /// explicitly for a self-hosted instance on a host that gives no
+    /// such hint (e.g. `git.example.com`). No fixed default — the
+    /// rule prefers no service.
     forge: Option<Forge>,
     /// Base URL of the repository, e.g.
     /// `"https://github.com/owner/repo"`, or a self-hosted instance
@@ -263,19 +265,35 @@ impl Forge {
         }
     }
 
-    /// Detect the forge from a repository URL's host. Returns `None`
-    /// for an unrecognised / self-hosted host — there is no
-    /// fallback, so an undetected host needs an explicit `forge`.
+    /// Detect the forge from a repository URL's host — both the
+    /// public instances and the conventional `gitlab.*` / `github.*`
+    /// / `gitea.*` / `forgejo.*` self-hosted subdomains. Returns
+    /// `None` for a host that gives no such hint, so it needs an
+    /// explicit `forge`.
     fn detect(repo_base_url: &str) -> Option<Forge> {
-        match host_of(repo_base_url)
-            .map(str::to_ascii_lowercase)
-            .as_deref()
-        {
-            Some("github.com") => Some(Forge::GitHub),
-            Some("gitlab.com") => Some(Forge::GitLab),
-            Some("bitbucket.org") => Some(Forge::Bitbucket),
+        let host = host_of(repo_base_url)?.to_ascii_lowercase();
+        // Public instances, matched on the full host.
+        match host.as_str() {
+            "github.com" => return Some(Forge::GitHub),
+            "gitlab.com" => return Some(Forge::GitLab),
+            "bitbucket.org" => return Some(Forge::Bitbucket),
             // Forgejo (Codeberg) shares Gitea's URL layout.
-            Some("codeberg.org" | "gitea.com") => Some(Forge::Gitea),
+            "codeberg.org" | "gitea.com" => return Some(Forge::Gitea),
+            _ => {}
+        }
+        // Self-hosted instances conventionally live under a subdomain
+        // named after the software (`gitlab.example.com`,
+        // `gitea.example.com`, `github.example.com` for GitHub
+        // Enterprise), so the leading DNS label names the forge.
+        // Two omissions are deliberate: `git.*` is the most common
+        // generic prefix but ambiguous (Gitea, GitLab, cgit, gitweb),
+        // and self-hosted Bitbucket (Server / Data Center) uses a URL
+        // layout unlike the cloud's, so `Bitbucket` paths would be
+        // wrong for a `bitbucket.*` instance.
+        match host.split('.').next()? {
+            "gitlab" => Some(Forge::GitLab),
+            "github" => Some(Forge::GitHub),
+            "gitea" | "forgejo" => Some(Forge::Gitea),
             _ => None,
         }
     }
@@ -615,13 +633,46 @@ mod tests {
     #[test]
     fn forge_detection_is_host_case_insensitive() {
         assert_eq!(Forge::detect("https://GitHub.com/o/r"), Some(Forge::GitHub));
+        assert_eq!(
+            Forge::detect("https://GitLab.Example.com/o/r"),
+            Some(Forge::GitLab),
+        );
+    }
+
+    #[test]
+    fn forge_detects_self_hosted_subdomain_pattern() {
+        // Self-hosted instances conventionally sit under a subdomain
+        // named after the software; the leading label names the forge.
+        assert_eq!(
+            Forge::detect("https://gitlab.example.com/o/r"),
+            Some(Forge::GitLab),
+        );
+        assert_eq!(
+            Forge::detect("https://gitea.example.com/o/r"),
+            Some(Forge::Gitea),
+        );
+        assert_eq!(
+            Forge::detect("https://forgejo.example.com/o/r"),
+            Some(Forge::Gitea),
+        );
+        // GitHub Enterprise Server shares github.com's path layout.
+        assert_eq!(
+            Forge::detect("https://github.example.com/o/r"),
+            Some(Forge::GitHub),
+        );
     }
 
     #[test]
     fn forge_detection_has_no_fallback_for_unknown_hosts() {
-        // No preference for any service: an unrecognised / self-hosted
-        // host yields `None`, not a default forge.
+        // No preference for any service: a host that names no forge
+        // yields `None`, not a default forge.
+        assert_eq!(Forge::detect("https://code.example.com/o/r"), None);
+        // `git.*` is the most common generic prefix but ambiguous
+        // across Gitea / GitLab / cgit / gitweb, so it's not matched.
         assert_eq!(Forge::detect("https://git.example.com/o/r"), None);
+        // Self-hosted Bitbucket (Server / Data Center) uses a URL
+        // layout unlike the cloud's, so its subdomain isn't matched.
+        assert_eq!(Forge::detect("https://bitbucket.example.com/o/r"), None);
     }
 
     #[test]

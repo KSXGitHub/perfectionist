@@ -92,15 +92,29 @@ fn unrecognised_host_without_forge_is_help_only() {
 }
 
 #[test]
+fn self_hosted_subdomain_is_detected() {
+    // A self-hosted GitLab under the conventional `gitlab.` subdomain
+    // is recognised without an explicit `forge`, yielding GitLab's
+    // `/-/issues/` and `/-/merge_requests/` paths on the custom host.
+    run(
+        "ui-toml/bare_issue_reference/subdomain",
+        RuleConfig {
+            repo_base_url: Some("https://gitlab.example.com/owner/repo".into()),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
 fn self_hosted_needs_explicit_forge() {
-    // A self-hosted instance's host isn't recognised, so the forge
-    // can't be detected — it's given explicitly. `gitlab` paths are
-    // then used on the custom host.
+    // A self-hosted instance on a host that names no forge
+    // (`git.example.com`) can't be detected, so the forge is given
+    // explicitly. `gitlab` paths are then used on the custom host.
     run(
         "ui-toml/bare_issue_reference/self_hosted",
         RuleConfig {
             forge: Some("gitlab".into()),
-            repo_base_url: Some("https://gitlab.example.com/owner/repo".into()),
+            repo_base_url: Some("https://git.example.com/owner/repo".into()),
             ..Default::default()
         },
     );

@@ -52,12 +52,14 @@ Configure via `dylint.toml` under `["perfectionist::bare_issue_reference"]`. Eve
 
 Git-hosting service the repository is on — one of `github`,
 `gitlab`, `gitea`, `bitbucket` — which fixes the issue / PR
-path layout. When unset, it is detected from
-`repo_base_url`'s host (so a `github.com` / `gitlab.com` /
-`codeberg.org` / `gitea.com` / `bitbucket.org` URL needs no
-`forge`); set it explicitly for a self-hosted instance whose
-host isn't recognised. No fixed default — the rule prefers no
-service.
+path layout. When unset, it is detected from `repo_base_url`'s
+host: the public instances (`github.com`, `gitlab.com`,
+`codeberg.org`, `gitea.com`, `bitbucket.org`) and the
+conventional self-hosted subdomains `gitlab.*`, `github.*`,
+`gitea.*` and `forgejo.*` all need no `forge`. Set it
+explicitly for a self-hosted instance on a host that gives no
+such hint (e.g. `git.example.com`). No fixed default — the
+rule prefers no service.
 
 ### `repo_base_url`: `string` (optional)
 
