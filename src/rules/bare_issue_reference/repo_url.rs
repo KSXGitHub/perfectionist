@@ -28,7 +28,12 @@ enum Sep {
 /// (the scheme is preserved for an HTTP(S) input). Returns `None` when
 /// no host and `owner/repo` path can be extracted.
 pub(super) fn normalize(input: &str) -> Option<String> {
-    let transport = take_transport(input.trim())?;
+    // A `?query` / `#fragment` is never part of a repo URL's host or
+    // owner/repo path; drop it up front so it can't leak into the
+    // authority (a `?` before the path) or the path itself.
+    let input = input.trim();
+    let input = input.split(['?', '#']).next().unwrap_or(input);
+    let transport = take_transport(input)?;
     let (authority, path) = split_once_char(transport.rest, transport.sep)?;
     let host = take_host(authority, transport.keep_port);
     let path = take_repo_path(path)?;
@@ -143,15 +148,12 @@ fn take_host(authority: &str, keep_port: bool) -> &str {
     }
 }
 
-/// Take the `owner/repo` path: drop any `?query` / `#fragment`, the
-/// surrounding slashes, and a single trailing `.git`. Requires at
-/// least two segments (an `owner/repo` pair, or a deeper GitLab
-/// subgroup path), so a lone `owner` with no repository yields `None`.
+/// Take the `owner/repo` path: drop the surrounding slashes and a
+/// single trailing `.git`. Requires at least two segments (an
+/// `owner/repo` pair, or a deeper GitLab subgroup path), so a lone
+/// `owner` with no repository yields `None`. Any `?query`/`#fragment`
+/// was already removed in [`normalize`].
 fn take_repo_path(path: &str) -> Option<&str> {
-    // A pasted browser URL can carry `?tab=...` or `#anchor`; neither
-    // is part of the repository path, and leaving them in would bake
-    // them into every issue / PR link.
-    let path = path.split(['?', '#']).next().unwrap_or(path);
     let path = path.trim_matches('/');
     let path = path.strip_suffix(".git").unwrap_or(path);
     let path = path.trim_end_matches('/');
@@ -264,6 +266,14 @@ mod tests {
             normalize("https://github.com/owner/repo.git?x=1").as_deref(),
             Some("https://github.com/owner/repo"),
         );
+    }
+
+    #[test]
+    fn query_before_path_is_rejected() {
+        // A `?`/`#` ahead of the path is malformed; stripping it
+        // leaves no `owner/repo`, so the URL is rejected rather than
+        // leaking the query into the host and emitting a broken link.
+        assert_eq!(normalize("https://github.com?x=1/owner/repo"), None);
     }
 
     #[test]
