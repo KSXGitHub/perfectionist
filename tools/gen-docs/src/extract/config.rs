@@ -9,6 +9,7 @@ use std::path::Path;
 use syn::{Expr, ExprLit, Item, Lit};
 
 use crate::extract::serde_attrs::{apply_rename_all, doc_attrs_to_markdown, serde_str_attr};
+use crate::extract::shared::SharedTypes;
 use crate::extract::ty::{collect_referenced_idents, find_type_doc, toml_type_label};
 use crate::model::{ConfigDoc, ConfigField};
 
@@ -20,7 +21,11 @@ use crate::model::{ConfigDoc, ConfigField};
 /// and still returns `None`: the convention in this repo is that
 /// every rule has both, and a half-defined Config is almost always
 /// the author having dropped the other half.
-pub(crate) fn extract_config(source_path: &Path, file: &syn::File) -> Option<ConfigDoc> {
+pub(crate) fn extract_config(
+    source_path: &Path,
+    file: &syn::File,
+    shared: &SharedTypes,
+) -> Option<ConfigDoc> {
     let key = file.items.iter().find_map(|item| match item {
         Item::Const(item_const) if item_const.ident == "CONFIG_KEY" => match &*item_const.expr {
             Expr::Lit(ExprLit {
@@ -80,7 +85,7 @@ pub(crate) fn extract_config(source_path: &Path, file: &syn::File) -> Option<Con
             });
             ConfigField {
                 name,
-                type_label: toml_type_label(&field.ty),
+                type_label: toml_type_label(&field.ty, shared),
                 doc_markdown: doc_attrs_to_markdown(&field.attrs),
             }
         })
@@ -89,11 +94,11 @@ pub(crate) fn extract_config(source_path: &Path, file: &syn::File) -> Option<Con
     let mut referenced = Vec::new();
     let mut seen = BTreeSet::new();
     for field in &named_fields {
-        collect_referenced_idents(&field.ty, &mut referenced, &mut seen);
+        collect_referenced_idents(&field.ty, &mut referenced, &mut seen, shared);
     }
     let custom_types = referenced
         .into_iter()
-        .filter_map(|ident| find_type_doc(file, &ident))
+        .filter_map(|ident| find_type_doc(file, &ident, shared))
         .collect();
 
     Some(ConfigDoc {
@@ -124,7 +129,7 @@ mod tests {
             }
         "#;
         let file = syn::parse_file(source).unwrap();
-        let config = extract_config(Path::new("synthetic.rs"), &file)
+        let config = extract_config(Path::new("synthetic.rs"), &file, &SharedTypes::default())
             .expect("demo file declares CONFIG_KEY and Config");
         let names: Vec<&str> = config.fields.iter().map(|f| f.name.as_str()).collect();
         assert_eq!(names, vec!["renamed-key", "plain_name"]);
@@ -148,7 +153,7 @@ mod tests {
             }
         "#;
         let file = syn::parse_file(source).unwrap();
-        let config = extract_config(Path::new("synthetic.rs"), &file)
+        let config = extract_config(Path::new("synthetic.rs"), &file, &SharedTypes::default())
             .expect("demo file declares CONFIG_KEY and Config");
         let names: Vec<&str> = config.fields.iter().map(|f| f.name.as_str()).collect();
         assert_eq!(names, vec!["also-flag", "some-other-key", "explicit"]);

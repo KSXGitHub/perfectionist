@@ -7,9 +7,10 @@ use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Span, Symbol};
 
+use crate::ascii_letter::AsciiLetter;
 use crate::common::{
-    DefaultState, binding_ident, deserialize_ascii_letters, hir_in_external_macro,
-    is_single_ascii_letter, resolve_symbol_set_from_chars, resolved_state,
+    DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter,
+    resolve_symbol_set_from_chars, resolved_state,
 };
 
 declare_tool_lint! {
@@ -58,16 +59,14 @@ struct Config {
     /// having to re-state the standard ones. Each entry is a
     /// single ASCII letter (`a`-`z`, `A`-`Z`); any other
     /// character is rejected at config-parse time.
-    #[serde(deserialize_with = "deserialize_ascii_letters")]
-    extra_allowed_idents: Vec<char>,
+    extra_allowed_idents: Vec<AsciiLetter>,
     /// Identifiers to drop from the exempt set, even if they
     /// appear in the built-in defaults or in
     /// `extra_allowed_idents`. Empty by default; checked after
     /// the merge with the built-ins, so this knob always wins.
     /// Each entry is a single ASCII letter (`a`-`z`, `A`-`Z`);
     /// any other character is rejected at config-parse time.
-    #[serde(deserialize_with = "deserialize_ascii_letters")]
-    ignore_allowed_idents: Vec<char>,
+    ignore_allowed_idents: Vec<AsciiLetter>,
 }
 
 pub struct SingleLetterFunctionParam {
