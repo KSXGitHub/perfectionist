@@ -1,7 +1,7 @@
-/// Bad: closes #55 — with a `gitlab.com` `repo_base_url`, the issue
-/// / PR paths are inferred as GitLab's `/-/issues/55` and
-/// `/-/merge_requests/55` rather than GitHub's `/issues/` and
-/// `/pull/`.
+/// Bad: closes #55 — with a `gitlab.com` `repo_base_url`, the forge
+/// is inferred as GitLab. A bare `#55` is always an issue on GitLab
+/// (merge requests are `!55`), so only the `/-/issues/55` suggestion
+/// is offered, and it is machine-applicable.
 fn _doc_gitlab() {}
 
 fn main() {}

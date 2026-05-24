@@ -129,7 +129,9 @@ struct Config {
     /// Defaults to `true`.
     suggest_issue_url: bool,
     /// Offer a suggestion that links the reference as a *pull
-    /// request*. Defaults to `true`.
+    /// request*. Defaults to `true`. Ignored on GitLab, where a bare
+    /// `#NNN` is always an issue (merge requests are written `!NNN`),
+    /// so only the issue suggestion is offered there.
     suggest_pr_url: bool,
     /// Doc-comment fix form: `inline` for `[#N](URL)`, `reference`
     /// for the two-piece `[#N]` + `[#N]: URL` form. The reference
@@ -214,6 +216,13 @@ impl BareIssueReference {
         let base = self.repo_base_url.as_deref()?;
         let forge = self.effective_forge()?;
         Some(join_url(base, forge.pr_path(), number))
+    }
+
+    /// Whether a bare `#NNN` reference can denote a pull request on
+    /// the effective forge. False on GitLab, where `#NNN` is always an
+    /// issue (merge requests are written `!NNN`); true otherwise.
+    fn hash_can_mean_pr(&self) -> bool {
+        self.effective_forge() != Some(Forge::GitLab)
     }
 }
 
@@ -429,7 +438,10 @@ impl BareIssueReference {
         let issue_url = self.issue_url(number);
         let pr_url = self.pr_url(number);
         let suggest_issue = self.suggest_issue_url;
-        let suggest_pr = self.suggest_pr_url;
+        // On GitLab a bare `#NNN` always denotes an issue — merge
+        // requests are written `!NNN` — so the PR suggestion never
+        // applies to it, whatever `suggest_pr_url` says.
+        let suggest_pr = self.suggest_pr_url && self.hash_can_mean_pr();
         let doc_form = self.form;
         let plain_form = self.plain_comment_form;
         span_lint_and_then(
@@ -718,6 +730,27 @@ mod tests {
             gitlab.pr_url("123").as_deref(),
             Some("https://gitlab.com/owner/repo/-/merge_requests/123"),
         );
+    }
+
+    #[test]
+    fn hash_reference_is_issue_only_on_gitlab() {
+        // `#NNN` denotes a merge request on no forge — GitLab spells
+        // those `!NNN` — so the PR suggestion is suppressed there but
+        // offered on the others.
+        let lint = |repo_base_url: &str| BareIssueReference {
+            forge: None,
+            repo_base_url: Some(repo_base_url.to_owned()),
+            suggest_issue_url: true,
+            suggest_pr_url: true,
+            form: DocForm::Inline,
+            include_plain_comments: false,
+            plain_comment_form: PlainForm::BareUrl,
+        };
+        assert!(!lint("https://gitlab.com/o/r").hash_can_mean_pr());
+        assert!(!lint("https://gitlab.example.com/o/r").hash_can_mean_pr());
+        assert!(lint("https://github.com/o/r").hash_can_mean_pr());
+        assert!(lint("https://gitea.com/o/r").hash_can_mean_pr());
+        assert!(lint("https://bitbucket.org/o/r").hash_can_mean_pr());
     }
 
     #[test]

@@ -78,7 +78,9 @@ Defaults to `true`.
 ### `suggest_pr_url`: `boolean` (optional)
 
 Offer a suggestion that links the reference as a *pull
-request*. Defaults to `true`.
+request*. Defaults to `true`. Ignored on GitLab, where a bare
+`#NNN` is always an issue (merge requests are written `!NNN`),
+so only the issue suggestion is offered there.
 
 ### `form`: `DocForm` (optional)
 
