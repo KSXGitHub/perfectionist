@@ -85,8 +85,8 @@ Defaults to `false`.
 ### `plain_comment_form`: `PlainForm` (optional)
 
 Replacement form used inside plain `//` comments when
-`include_plain_comments = true`. Defaults to `bare`.
-Ignored for doc comments and when `repo_base_url` is unset.
+`include_plain_comments = true`. Defaults to `url`. Ignored
+for doc comments and when `repo_base_url` is unset.
 
 ### Types
 
@@ -142,14 +142,18 @@ doesn't apply an incomplete suggestion unprompted.
 URL shape used inside plain `//` comments when
 `include_plain_comments = true`.
 
-##### `"bare"` (Rust: `Bare`)
+##### `"url"` (Rust: `Url`)
 
-Substitute the bare URL (`https://...`). Default. Many
-editors auto-detect bare URLs as clickable.
+Substitute the URL itself (`https://...`), unwrapped. Default.
+Many editors auto-detect a bare URL as clickable. NB: the
+sibling `perfectionist::bare_url` lint, whose default also
+scans regular comments, will then flag the substituted URL —
+pick `angle_brackets` to produce a form both rules accept.
 
-##### `"bracketed"` (Rust: `Bracketed`)
+##### `"angle_brackets"` (Rust: `AngleBrackets`)
 
-Substitute `<https://...>`. The angle-bracket delimiter
-gives the URL a clear boundary when it abuts surrounding
-punctuation; editors that auto-link URLs typically
-recognise it.
+Substitute `<https://...>`. The angle-bracket delimiter gives
+the URL a clear boundary when it abuts surrounding
+punctuation; editors that auto-link URLs typically recognise
+it, and `bare_url` accepts it. Named to match
+`bare_email`'s `Style::AngleBrackets`.

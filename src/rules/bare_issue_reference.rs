@@ -96,15 +96,19 @@ enum DocForm {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum PlainForm {
-    /// Substitute the bare URL (`https://...`). Default. Many
-    /// editors auto-detect bare URLs as clickable.
+    /// Substitute the URL itself (`https://...`), unwrapped. Default.
+    /// Many editors auto-detect a bare URL as clickable. NB: the
+    /// sibling `perfectionist::bare_url` lint, whose default also
+    /// scans regular comments, will then flag the substituted URL —
+    /// pick `angle_brackets` to produce a form both rules accept.
     #[default]
-    Bare,
-    /// Substitute `<https://...>`. The angle-bracket delimiter
-    /// gives the URL a clear boundary when it abuts surrounding
-    /// punctuation; editors that auto-link URLs typically
-    /// recognise it.
-    Bracketed,
+    Url,
+    /// Substitute `<https://...>`. The angle-bracket delimiter gives
+    /// the URL a clear boundary when it abuts surrounding
+    /// punctuation; editors that auto-link URLs typically recognise
+    /// it, and `bare_url` accepts it. Named to match
+    /// `bare_email`'s `Style::AngleBrackets`.
+    AngleBrackets,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -143,8 +147,8 @@ struct Config {
     /// Defaults to `false`.
     include_plain_comments: bool,
     /// Replacement form used inside plain `//` comments when
-    /// `include_plain_comments = true`. Defaults to `bare`.
-    /// Ignored for doc comments and when `repo_base_url` is unset.
+    /// `include_plain_comments = true`. Defaults to `url`. Ignored
+    /// for doc comments and when `repo_base_url` is unset.
     plain_comment_form: PlainForm,
 }
 
@@ -157,7 +161,7 @@ impl Default for Config {
             suggestion_mode: SuggestionMode::Both,
             form: DocForm::Inline,
             include_plain_comments: false,
-            plain_comment_form: PlainForm::Bare,
+            plain_comment_form: PlainForm::Url,
         }
     }
 }
@@ -400,8 +404,8 @@ impl BareIssueReference {
                     diag.span_suggestion(
                         span,
                         match plain_form {
-                            PlainForm::Bare => "substitute with the bare URL",
-                            PlainForm::Bracketed => "substitute with `<URL>`",
+                            PlainForm::Url => "substitute with the bare URL",
+                            PlainForm::AngleBrackets => "substitute with `<URL>`",
                         },
                         suggestion,
                         Applicability::MaybeIncorrect,
@@ -426,8 +430,8 @@ fn render_doc_suggestion(form: DocForm, token: &str, url: &str) -> String {
 
 fn render_plain_suggestion(form: PlainForm, url: &str) -> String {
     match form {
-        PlainForm::Bare => url.to_owned(),
-        PlainForm::Bracketed => format!("<{url}>"),
+        PlainForm::Url => url.to_owned(),
+        PlainForm::AngleBrackets => format!("<{url}>"),
     }
 }
 
@@ -485,7 +489,7 @@ mod tests {
     #[test]
     fn renders_plain_suggestion_bracketed() {
         assert_eq!(
-            render_plain_suggestion(PlainForm::Bracketed, "https://example.com/issues/42"),
+            render_plain_suggestion(PlainForm::AngleBrackets, "https://example.com/issues/42"),
             "<https://example.com/issues/42>",
         );
     }
