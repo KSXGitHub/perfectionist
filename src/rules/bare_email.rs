@@ -68,11 +68,7 @@ enum Style {
     Forbid,
 }
 
-/// Domains skipped by default. Empty — the RFC 2606 documentation
-/// domains are intentionally lint-able (a bare `user@example.com`
-/// in prose still benefits from wrapping, and the project's own
-/// fixtures use them as ordinary firing cases). Add domains here
-/// to exempt them.
+/// Domains skipped by default — none.
 const DEFAULT_SKIP_DOMAINS: &[&str] = &[];
 
 #[derive(Debug, serde::Deserialize)]
@@ -91,9 +87,8 @@ struct Config {
     /// bare in changelog entries. Empty by default.
     skip_addresses: Vec<String>,
     /// Skip addresses whose domain matches any of these patterns.
-    /// Empty by default — RFC 2606 documentation domains are not
-    /// exempted automatically. Useful alongside `skip_addresses`
-    /// for blanket domain exemptions.
+    /// Empty by default. Useful alongside `skip_addresses` for
+    /// blanket domain exemptions.
     skip_domains: Vec<String>,
 }
 

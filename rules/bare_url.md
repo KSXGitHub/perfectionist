@@ -36,9 +36,7 @@ Configure via `dylint.toml` under `["perfectionist::bare_url"]`. Every field is 
 ### `scan_doc_comments`: `boolean` (optional)
 
 Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
-Defaults to `true`. Set to `false` if a project deliberately
-writes bare URLs in doc comments and wants the lint to leave
-them alone.
+Defaults to `true`.
 
 ### `scan_regular_comments`: `boolean` (optional)
 
@@ -54,9 +52,5 @@ supplement that built-in set.
 
 ### `skip_hosts`: `[string]` (optional)
 
-Hosts to skip — placeholder hosts that genuinely never want
-wrapping in docs. Compared case-insensitively per RFC 3986
-§3.2.2. Defaults to `["localhost"]`. RFC 2606 documentation
-domains (`example.com`, etc.) are intentionally not skipped
-by default; add them here if your project prefers bare
-example URLs in prose.
+Hosts to skip, compared case-insensitively. Defaults to
+`["localhost"]`.
