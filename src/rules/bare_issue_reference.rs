@@ -285,11 +285,14 @@ impl Forge {
         // named after the software (`gitlab.example.com`,
         // `gitea.example.com`, `github.example.com` for GitHub
         // Enterprise), so the leading DNS label names the forge.
-        // Two omissions are deliberate: `git.*` is the most common
-        // generic prefix but ambiguous (Gitea, GitLab, cgit, gitweb),
-        // and self-hosted Bitbucket (Server / Data Center) uses a URL
+        // Three omissions are deliberate. `git.*` is the most common
+        // generic prefix but ambiguous (Gitea, GitLab, cgit, gitweb).
+        // Self-hosted Bitbucket (Server / Data Center) uses a URL
         // layout unlike the cloud's, so `Bitbucket` paths would be
-        // wrong for a `bitbucket.*` instance.
+        // wrong for a `bitbucket.*` instance. Gitee (`gitee.com`) is
+        // skipped despite sharing Gitea's `/issues/` + `/pulls/`
+        // layout, because its issue IDs are alphanumeric tokens, not
+        // the integers a bare `#NNN` reference assumes.
         match host.split('.').next()? {
             "gitlab" => Some(Forge::GitLab),
             "github" => Some(Forge::GitHub),
