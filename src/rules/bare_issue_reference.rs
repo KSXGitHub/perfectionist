@@ -625,6 +625,48 @@ mod tests {
     }
 
     #[test]
+    fn urls_are_derived_when_only_repo_base_url_is_set() {
+        // The headline scenario: `repo_base_url` is set, `forge` is
+        // left unset, and no path layout is configured. The forge is
+        // detected from the recognised host and both URLs resolve to a
+        // correct address — so the autofix works, not just help-only.
+        // The GitHub and GitLab pair also confirms the derived layout
+        // is forge-specific (`/pull/` vs `/-/merge_requests/`), not a
+        // single hard-coded shape.
+        let lint = |repo_base_url: &str| BareIssueReference {
+            forge: None,
+            repo_base_url: Some(repo_base_url.to_owned()),
+            suggest_issue_url: true,
+            suggest_pr_url: true,
+            form: DocForm::Inline,
+            include_plain_comments: false,
+            plain_comment_form: PlainForm::BareUrl,
+        };
+
+        let github = lint("https://github.com/owner/repo");
+        assert_eq!(github.effective_forge(), Some(Forge::GitHub));
+        assert_eq!(
+            github.issue_url("123").as_deref(),
+            Some("https://github.com/owner/repo/issues/123"),
+        );
+        assert_eq!(
+            github.pr_url("123").as_deref(),
+            Some("https://github.com/owner/repo/pull/123"),
+        );
+
+        let gitlab = lint("https://gitlab.com/owner/repo");
+        assert_eq!(gitlab.effective_forge(), Some(Forge::GitLab));
+        assert_eq!(
+            gitlab.issue_url("123").as_deref(),
+            Some("https://gitlab.com/owner/repo/-/issues/123"),
+        );
+        assert_eq!(
+            gitlab.pr_url("123").as_deref(),
+            Some("https://gitlab.com/owner/repo/-/merge_requests/123"),
+        );
+    }
+
+    #[test]
     fn renders_inline_doc_suggestion() {
         assert_eq!(
             render_doc_suggestion(DocForm::Inline, "#42", "https://example.com/issues/42"),
