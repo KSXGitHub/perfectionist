@@ -96,19 +96,24 @@ enum PlainForm {
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Base URL used to construct the suggested target — e.g.
-    /// `"https://github.com/owner/repo"`. Required for any
+    /// Repository base URL the issue / PR paths are appended to —
+    /// e.g. `"https://github.com/owner/repo"`. Required for any
     /// suggestion; when unset, the lint degrades to help-only
     /// output so it stays adoptable with zero configuration.
     /// Defaults to `None`.
     repo_base_url: Option<String>,
-    /// Template for the suggested issue URL. `{repo_base_url}` and
-    /// `{number}` are substituted. Defaults to
-    /// `"{repo_base_url}/issues/{number}"`.
+    /// Path appended to `repo_base_url` to form the suggested issue
+    /// URL. `{number}` is substituted; the `repo_base_url` prefix is
+    /// joined on automatically (with exactly one `/` between).
+    /// Defaults to `/issues/{number}`. Override per forge — e.g.
+    /// `/-/issues/{number}` for GitLab.
     issue_url_template: String,
-    /// Template for the suggested PR URL (used when
-    /// `suggest_pr_url` is enabled). Defaults to
-    /// `"{repo_base_url}/pull/{number}"`.
+    /// Path appended to `repo_base_url` to form the suggested
+    /// pull-request URL (used when `suggest_pr_url` is enabled).
+    /// `{number}` is substituted. Defaults to `/pull/{number}`.
+    /// Override per forge — e.g. `/pulls/{number}` (Gitea),
+    /// `/pull-requests/{number}` (Bitbucket), or
+    /// `/-/merge_requests/{number}` (GitLab).
     pr_url_template: String,
     /// Offer a suggestion that links the reference as an *issue*
     /// (via `issue_url_template`). Defaults to `true`.
@@ -139,8 +144,8 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             repo_base_url: None,
-            issue_url_template: "{repo_base_url}/issues/{number}".to_owned(),
-            pr_url_template: "{repo_base_url}/pull/{number}".to_owned(),
+            issue_url_template: "/issues/{number}".to_owned(),
+            pr_url_template: "/pull/{number}".to_owned(),
             suggest_issue_url: true,
             suggest_pr_url: true,
             form: DocForm::Inline,
@@ -178,12 +183,19 @@ impl BareIssueReference {
 
     fn render_url(&self, template: &str, number: &str) -> Option<String> {
         let base = self.repo_base_url.as_deref()?;
-        Some(
-            template
-                .replace("{repo_base_url}", base)
-                .replace("{number}", number),
-        )
+        Some(join_url(base, template, number))
     }
+}
+
+/// Join `repo_base_url` with a relative path `template` (the part
+/// after the base), substituting `{number}`. Exactly one `/`
+/// separates the base from the path regardless of a trailing slash
+/// on the base or a leading slash on the template, so both
+/// `/issues/{number}` and `issues/{number}` produce the same URL.
+fn join_url(repo_base_url: &str, template: &str, number: &str) -> String {
+    let base = repo_base_url.trim_end_matches('/');
+    let path = template.replace("{number}", number);
+    format!("{base}/{}", path.trim_start_matches('/'))
 }
 
 impl_lint_pass!(BareIssueReference => [BARE_ISSUE_REFERENCE]);
@@ -448,6 +460,30 @@ fn render_plain_suggestion(form: PlainForm, url: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn join_url_appends_path_to_base() {
+        assert_eq!(
+            join_url("https://github.com/owner/repo", "/issues/{number}", "42"),
+            "https://github.com/owner/repo/issues/42",
+        );
+    }
+
+    #[test]
+    fn join_url_collapses_double_slash_from_trailing_base() {
+        assert_eq!(
+            join_url("https://github.com/owner/repo/", "/pull/{number}", "7"),
+            "https://github.com/owner/repo/pull/7",
+        );
+    }
+
+    #[test]
+    fn join_url_adds_separator_when_template_lacks_leading_slash() {
+        assert_eq!(
+            join_url("https://example.com/o/r", "issues/{number}", "9"),
+            "https://example.com/o/r/issues/9",
+        );
+    }
 
     #[test]
     fn renders_inline_doc_suggestion() {

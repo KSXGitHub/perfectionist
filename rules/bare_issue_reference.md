@@ -48,23 +48,28 @@ Configure via `dylint.toml` under `["perfectionist::bare_issue_reference"]`. Eve
 
 ### `repo_base_url`: `string` (optional)
 
-Base URL used to construct the suggested target — e.g.
-`"https://github.com/owner/repo"`. Required for any
+Repository base URL the issue / PR paths are appended to —
+e.g. `"https://github.com/owner/repo"`. Required for any
 suggestion; when unset, the lint degrades to help-only
 output so it stays adoptable with zero configuration.
 Defaults to `None`.
 
 ### `issue_url_template`: `string` (optional)
 
-Template for the suggested issue URL. `{repo_base_url}` and
-`{number}` are substituted. Defaults to
-`"{repo_base_url}/issues/{number}"`.
+Path appended to `repo_base_url` to form the suggested issue
+URL. `{number}` is substituted; the `repo_base_url` prefix is
+joined on automatically (with exactly one `/` between).
+Defaults to `/issues/{number}`. Override per forge — e.g.
+`/-/issues/{number}` for GitLab.
 
 ### `pr_url_template`: `string` (optional)
 
-Template for the suggested PR URL (used when
-`suggest_pr_url` is enabled). Defaults to
-`"{repo_base_url}/pull/{number}"`.
+Path appended to `repo_base_url` to form the suggested
+pull-request URL (used when `suggest_pr_url` is enabled).
+`{number}` is substituted. Defaults to `/pull/{number}`.
+Override per forge — e.g. `/pulls/{number}` (Gitea),
+`/pull-requests/{number}` (Bitbucket), or
+`/-/merge_requests/{number}` (GitLab).
 
 ### `suggest_issue_url`: `boolean` (optional)
 
