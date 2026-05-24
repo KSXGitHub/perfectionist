@@ -41,12 +41,6 @@ impl TryFrom<char> for AsciiLetter {
         if value.is_ascii_alphabetic() {
             Ok(Self(value))
         } else {
-            // Embed the offending codepoint so a TOML author with a
-            // mixed-valid/invalid list (`["a", "1", "c"]`) can see
-            // *which* entry the validator rejected. Serde-toml's
-            // wrapping error reports the source span, but not the
-            // value, so without this the user only learns that
-            // "some" entry failed.
             Err(format!(
                 "expected a single ASCII letter (a-z, A-Z), got {value:?}",
             ))
