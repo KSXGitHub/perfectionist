@@ -70,11 +70,10 @@ enum DocForm {
     /// visible link text.
     #[default]
     Inline,
-    /// `[#123]` — the matching `[#123]: URL` reference-link
-    /// definition is the author's responsibility (the lint can't
-    /// safely synthesise a multi-line definition without knowing
-    /// where the doc block ends), so this suggestion is incomplete
-    /// on its own.
+    /// `[#123]` — the autofix rewrites only the `#123` token; the
+    /// matching `[#123]: URL` definition (which belongs on its own
+    /// line at the end of the doc block) is the author's
+    /// responsibility, so this suggestion is incomplete on its own.
     Reference,
     /// `https://.../issues/123` — the bare URL replaces the `#123`
     /// token outright (the `#123` text is not kept). NB: in a doc
