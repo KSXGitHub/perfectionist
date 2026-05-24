@@ -285,12 +285,20 @@ fn take_indented_code_block(input: &str, idx: usize) -> Option<usize> {
     let mut consumed_any = false;
     loop {
         let line_start = index;
-        let mut spaces = 0;
-        while index < bytes.len() && bytes[index] == b' ' && spaces < 4 {
-            spaces += 1;
+        // Measure indentation in columns, expanding a tab to the next
+        // multiple of 4 (CommonMark §2.2): four columns of indentation
+        // open an indented code block. Counting bytes would miss a
+        // tab-indented code line and wrongly scan its content.
+        let mut columns = 0;
+        while index < bytes.len() && columns < 4 {
+            match bytes[index] {
+                b' ' => columns += 1,
+                b'\t' => columns += 4 - (columns % 4),
+                _ => break,
+            }
             index += 1;
         }
-        if spaces < 4 {
+        if columns < 4 {
             // Blank line: allow as continuation.
             let mut end = line_start;
             while end < bytes.len() && (bytes[end] == b' ' || bytes[end] == b'\t') {
@@ -593,6 +601,16 @@ mod tests {
         let region = &text[skips[0].clone()];
         assert!(region.starts_with("```"));
         assert!(region.contains("https://example.com"));
+    }
+
+    #[test]
+    fn tab_indented_code_block_is_skip() {
+        // A single leading tab is 4 columns (CommonMark §2.2), so the
+        // line is an indented code block and its content is skipped.
+        let text = "intro\n\n\tcode #123 here\n";
+        let skips = scan_skip_regions(text);
+        assert_eq!(skips.len(), 1);
+        assert!(text[skips[0].clone()].contains("#123"));
     }
 
     #[test]
