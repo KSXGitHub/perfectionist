@@ -52,7 +52,6 @@ Repository base URL the issue / PR paths are appended to —
 e.g. `"https://github.com/owner/repo"`. Required for any
 suggestion; when unset, the lint degrades to help-only
 output so it stays adoptable with zero configuration.
-Defaults to `None`.
 
 ### `issue_url_template`: `string` (optional)
 

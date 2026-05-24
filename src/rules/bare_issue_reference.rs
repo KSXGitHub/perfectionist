@@ -100,7 +100,6 @@ struct Config {
     /// e.g. `"https://github.com/owner/repo"`. Required for any
     /// suggestion; when unset, the lint degrades to help-only
     /// output so it stays adoptable with zero configuration.
-    /// Defaults to `None`.
     repo_base_url: Option<String>,
     /// Path appended to `repo_base_url` to form the suggested issue
     /// URL; `{number}` is substituted and the base is joined on
