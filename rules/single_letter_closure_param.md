@@ -95,7 +95,7 @@ after the merge with the built-ins, so this knob always
 wins. Useful for opting back into linting on a default
 entry the project does not consider trivial.
 
-### `extra_allowed_idents`: `[single-character string]` (optional)
+### `extra_allowed_idents`: `[single-letter string]` (optional)
 
 Additional identifiers to allow as closure parameter names.
 Merged with the built-in defaults
@@ -105,7 +105,7 @@ having to re-state the standard ones. Each entry is a
 single ASCII letter (`a`-`z`, `A`-`Z`); any other
 character is rejected at config-parse time.
 
-### `ignore_allowed_idents`: `[single-character string]` (optional)
+### `ignore_allowed_idents`: `[single-letter string]` (optional)
 
 Identifiers to drop from the exempt set, even if they
 appear in the built-in defaults or in
