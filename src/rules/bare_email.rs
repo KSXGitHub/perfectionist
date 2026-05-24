@@ -232,7 +232,13 @@ impl BareEmail {
                 index += address_len;
                 continue;
             }
-            if self.skip_domains.iter().any(|skip| skip == domain) {
+            // Domains are case-insensitive (DNS / RFC 1035 §2.3.3),
+            // so case-fold the comparison like `bare_url`'s skip_hosts.
+            if self
+                .skip_domains
+                .iter()
+                .any(|skip| skip.eq_ignore_ascii_case(domain))
+            {
                 index += address_len;
                 continue;
             }
