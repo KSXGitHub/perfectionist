@@ -3,6 +3,12 @@
 //! and is picked up by `tests/ui.rs`; this test points at a fixture
 //! directory under `ui-toml/single_letter_const_generic/` and passes a
 //! per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
+//!
+//! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
+//! the duration of `run_tests`. The env var is process-global, so the
+//! `#[test]`s in this binary serialise themselves on a shared
+//! `Mutex` to avoid clobbering each other under the default
+//! parallel test harness.
 
 use std::collections::BTreeMap;
 use std::sync::Mutex;
