@@ -6,9 +6,10 @@ use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Symbol;
 
+use crate::ascii_letter::AsciiLetter;
 use crate::common::{
-    DefaultState, deserialize_ascii_letters, hir_in_external_macro, is_single_ascii_letter,
-    resolve_symbol_set_from_chars, resolved_state,
+    DefaultState, hir_in_external_macro, is_single_ascii_letter, resolve_symbol_set_from_chars,
+    resolved_state,
 };
 
 declare_tool_lint! {
@@ -51,8 +52,7 @@ struct Config {
     /// Identifiers the rule will not flag. Empty by default. Each
     /// entry is a single ASCII letter (`a`-`z`, `A`-`Z`); any other
     /// character is rejected at config-parse time.
-    #[serde(deserialize_with = "deserialize_ascii_letters")]
-    allowed_idents: Vec<char>,
+    allowed_idents: Vec<AsciiLetter>,
 }
 
 pub struct SingleLetterConstGeneric {
@@ -62,7 +62,8 @@ pub struct SingleLetterConstGeneric {
 impl SingleLetterConstGeneric {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let allowed_idents = resolve_symbol_set_from_chars(&[], config.allowed_idents, Vec::new());
+        let allowed_idents =
+            resolve_symbol_set_from_chars(&[], config.allowed_idents, Vec::<AsciiLetter>::new());
         Self { allowed_idents }
     }
 }

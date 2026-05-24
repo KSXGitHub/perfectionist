@@ -8,6 +8,7 @@
 
 pub(crate) mod config;
 pub(crate) mod serde_attrs;
+pub(crate) mod shared;
 pub(crate) mod ty;
 
 use std::fs;
@@ -22,9 +23,15 @@ use syn::{
 
 use crate::extract::config::extract_config;
 use crate::extract::serde_attrs::doc_attrs_to_markdown;
+use crate::extract::shared::SharedTypes;
 use crate::model::{DefaultState, Level, NAMESPACE, Rule};
 
 pub(crate) fn collect_rules(rules_dir: &Path) -> Vec<Rule> {
+    // Shared newtypes live in `src/`, one level up from `src/rules`.
+    let shared = rules_dir
+        .parent()
+        .map(SharedTypes::discover)
+        .unwrap_or_default();
     let entries = fs::read_dir(rules_dir).expect("failed to read src/rules/");
     let mut rules = Vec::new();
     for entry in entries {
@@ -33,12 +40,12 @@ pub(crate) fn collect_rules(rules_dir: &Path) -> Vec<Rule> {
         if path.extension().is_none_or(|extension| extension != "rs") {
             continue;
         }
-        rules.extend(extract_rules(&path));
+        rules.extend(extract_rules(&path, &shared));
     }
     rules
 }
 
-fn extract_rules(source_path: &Path) -> Vec<Rule> {
+fn extract_rules(source_path: &Path, shared: &SharedTypes) -> Vec<Rule> {
     let source = fs::read_to_string(source_path)
         .unwrap_or_else(|error| panic!("failed to read {}: {error}", source_path.display()));
     let file = syn::parse_file(&source)
@@ -104,7 +111,7 @@ fn extract_rules(source_path: &Path) -> Vec<Rule> {
     // code below still handles a multi-lint file defensively —
     // every emitted rule receives the same `config` value — but
     // no rule in the catalogue uses that shape today.
-    let config = extract_config(source_path, &merged_file);
+    let config = extract_config(source_path, &merged_file, shared);
     let default_state = extract_default_state(source_path, &merged_file);
     let relative_source: std::path::PathBuf = source_path
         .components()
@@ -364,8 +371,12 @@ mod tests {
     /// can't silently come back.
     #[test]
     fn collect_rules_finds_config_in_submodule_file() {
+        // Nested so `rules_dir.parent()` is an empty stand-in `src/`,
+        // not the shared temp root that `collect_rules` would scan.
         let base = tempdir("merge-submodule");
-        let parent_path = base.join("demo_rule.rs");
+        let rules_dir = base.join("rules");
+        fs::create_dir_all(&rules_dir).unwrap();
+        let parent_path = rules_dir.join("demo_rule.rs");
         fs::write(
             &parent_path,
             r#"
@@ -383,7 +394,7 @@ mod tests {
             "#,
         )
         .unwrap();
-        let submodule_dir = base.join("demo_rule");
+        let submodule_dir = rules_dir.join("demo_rule");
         fs::create_dir_all(&submodule_dir).unwrap();
         fs::write(
             submodule_dir.join("config.rs"),
@@ -400,7 +411,7 @@ mod tests {
         )
         .unwrap();
 
-        let rules = collect_rules(&base);
+        let rules = collect_rules(&rules_dir);
         assert_eq!(rules.len(), 1, "exactly one rule should be discovered");
         let config = rules[0]
             .config

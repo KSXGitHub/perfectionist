@@ -31,7 +31,7 @@ static REQUEST_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 Configure via `dylint.toml` under `["perfectionist::single_letter_static_item"]`. Every field is optional; the per-field prose below states the default.
 
-### `allowed_idents`: `[single-character string]` (optional)
+### `allowed_idents`: `[single-letter string]` (optional)
 
 Identifiers the rule will not flag. Empty by default. Each
 entry is a single ASCII letter (`a`-`z`, `A`-`Z`); any other
