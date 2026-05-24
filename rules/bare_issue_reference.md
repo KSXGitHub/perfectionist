@@ -58,20 +58,18 @@ public instances (`github.com`, `gitlab.com`, `codeberg.org`,
 `gitea.com`) and the conventional self-hosted subdomains
 `gitlab.*`, `github.*`, `gitea.*` and `forgejo.*` all need no
 `forge`. Set it explicitly for a self-hosted instance on a
-host that gives no such hint (e.g. `git.example.com`). No
-fixed default — the rule prefers no service.
+host that gives no such hint (e.g. `git.example.com`). If it is
+neither set nor detected from the host, no issue / PR link is
+suggested.
 
 ### `repository`: `string` (optional)
 
 The repository's URL, in any form you'd clone or paste: an
-HTTP(S) URL (`"https://github.com/owner/repo"`), an `ssh://`
-URL (`"ssh://git@github.com/owner/repo.git"`), or the scp-like
-shorthand (`"git@github.com:owner/repo.git"`). The `git@`
-userinfo, any `:port`, an optional `.git` suffix, and trailing
-slashes are all ignored. It supplies the host (for forge
-detection) and the owner/repo path the issue / PR link needs,
-so it is required for an autofix; when unset the lint flags
-bare references but emits help-only output. No fixed default.
+`http(s)://` URL (`"https://github.com/owner/repo"`), an
+`ssh://` URL (`"ssh://git@github.com/owner/repo.git"`), or the
+scp-like shorthand (`"git@github.com:owner/repo.git"`). The
+`git@` userinfo, any `:port`, an optional `.git` suffix, and
+trailing slashes are all ignored. No fixed default.
 
 ### `suggest_issue_url`: `boolean` (optional)
 

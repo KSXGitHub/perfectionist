@@ -116,18 +116,16 @@ struct Config {
     /// `gitea.com`) and the conventional self-hosted subdomains
     /// `gitlab.*`, `github.*`, `gitea.*` and `forgejo.*` all need no
     /// `forge`. Set it explicitly for a self-hosted instance on a
-    /// host that gives no such hint (e.g. `git.example.com`). No
-    /// fixed default — the rule prefers no service.
+    /// host that gives no such hint (e.g. `git.example.com`). If it is
+    /// neither set nor detected from the host, no issue / PR link is
+    /// suggested.
     forge: Option<Forge>,
     /// The repository's URL, in any form you'd clone or paste: an
-    /// HTTP(S) URL (`"https://github.com/owner/repo"`), an `ssh://`
-    /// URL (`"ssh://git@github.com/owner/repo.git"`), or the scp-like
-    /// shorthand (`"git@github.com:owner/repo.git"`). The `git@`
-    /// userinfo, any `:port`, an optional `.git` suffix, and trailing
-    /// slashes are all ignored. It supplies the host (for forge
-    /// detection) and the owner/repo path the issue / PR link needs,
-    /// so it is required for an autofix; when unset the lint flags
-    /// bare references but emits help-only output. No fixed default.
+    /// `http(s)://` URL (`"https://github.com/owner/repo"`), an
+    /// `ssh://` URL (`"ssh://git@github.com/owner/repo.git"`), or the
+    /// scp-like shorthand (`"git@github.com:owner/repo.git"`). The
+    /// `git@` userinfo, any `:port`, an optional `.git` suffix, and
+    /// trailing slashes are all ignored. No fixed default.
     repository: Option<String>,
     /// Offer a suggestion that links the reference as an *issue*.
     /// Defaults to `true`.
@@ -698,6 +696,17 @@ mod tests {
         // matched.
         assert_eq!(Forge::detect("https://bitbucket.org/o/r"), None);
         assert_eq!(Forge::detect("https://bitbucket.example.com/o/r"), None);
+    }
+
+    #[test]
+    fn unknown_forge_value_is_rejected() {
+        // A recognised `forge` deserialises; an unrecognised one is a
+        // hard deserialisation error. `dylint_linting::config_or_default`
+        // surfaces that error as a panic at launch — it only falls
+        // back to the default when the key is *absent*, not when it's
+        // present-but-invalid — so a typo'd forge fails loudly.
+        assert!(toml::from_str::<Config>(r#"forge = "gitlab""#).is_ok());
+        assert!(toml::from_str::<Config>(r#"forge = "bitbucket""#).is_err());
     }
 
     #[test]
