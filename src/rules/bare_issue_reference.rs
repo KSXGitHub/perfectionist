@@ -103,11 +103,11 @@ struct Config {
     /// `"{repo_base_url}/pull/{number}"`.
     pr_url_template: String,
     /// Offer a suggestion that links the reference as an *issue*
-    /// (via `issue_url_template`). See the applicability note on
-    /// `suggest_pr_url`.
+    /// (via `issue_url_template`). Defaults to `true`. See the
+    /// applicability note on `suggest_pr_url`.
     suggest_issue_url: bool,
     /// Offer a suggestion that links the reference as a *pull
-    /// request* (via `pr_url_template`).
+    /// request* (via `pr_url_template`). Defaults to `true`.
     ///
     /// The two `suggest_*` knobs together determine what the lint
     /// emits:
@@ -148,8 +148,8 @@ impl Default for Config {
             repo_base_url: None,
             issue_url_template: "{repo_base_url}/issues/{number}".to_owned(),
             pr_url_template: "{repo_base_url}/pull/{number}".to_owned(),
-            suggest_issue_url: false,
-            suggest_pr_url: false,
+            suggest_issue_url: true,
+            suggest_pr_url: true,
             form: DocForm::Inline,
             include_plain_comments: false,
             plain_comment_form: PlainForm::Url,

@@ -61,13 +61,13 @@ Template for the suggested PR URL (used when
 ### `suggest_issue_url`: `boolean` (optional)
 
 Offer a suggestion that links the reference as an *issue*
-(via `issue_url_template`). See the applicability note on
-`suggest_pr_url`.
+(via `issue_url_template`). Defaults to `true`. See the
+applicability note on `suggest_pr_url`.
 
 ### `suggest_pr_url`: `boolean` (optional)
 
 Offer a suggestion that links the reference as a *pull
-request* (via `pr_url_template`).
+request* (via `pr_url_template`). Defaults to `true`.
 
 The two `suggest_*` knobs together determine what the lint
 emits:

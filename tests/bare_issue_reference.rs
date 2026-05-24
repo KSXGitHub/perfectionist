@@ -40,17 +40,16 @@ fn run(src_base: &str, config: RuleConfig) {
 }
 
 #[test]
-fn both_suggestions_are_maybe_incorrect() {
-    // With both `suggest_issue_url` and `suggest_pr_url` enabled, a
-    // bare `#NNN` is ambiguous between an issue and a PR, so the
+fn both_suggestions_are_maybe_incorrect_by_default() {
+    // Both `suggest_issue_url` and `suggest_pr_url` default to
+    // `true`, so setting only `repo_base_url` exercises the default:
+    // a bare `#NNN` is ambiguous between an issue and a PR, so the
     // rule emits two `MaybeIncorrect` suggestions (one `/issues/`
     // URL, one `/pull/` URL) and lets the author pick.
     run(
         "ui-toml/bare_issue_reference/both",
         RuleConfig {
             repo_base_url: Some("https://github.com/owner/repo".into()),
-            suggest_issue_url: Some(true),
-            suggest_pr_url: Some(true),
             ..Default::default()
         },
     );
