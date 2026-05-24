@@ -49,12 +49,6 @@ autofix at `MachineApplicable`. Defaults to `["/", "_", "-",
 treated as safe regardless of this list; entries here
 supplement that built-in set.
 
-### `allow_http`: `boolean` (optional)
-
-When `false`, the rule only recognises `https://` URLs;
-`http://` URLs in comments are ignored. Defaults to `true`
-(both schemes are flagged).
-
 ### `skip_hosts`: `[string]` (optional)
 
 Hosts to skip — placeholder hosts that frequently appear

@@ -14,7 +14,7 @@ use rustc_span::Span;
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
 use crate::common::{DefaultState, resolved_state};
 use crate::markdown::{position_in_skip, scan_skip_regions, utf8_char_len};
-use crate::url_scan::{TrailingClass, classify_trailing, take_url};
+use crate::url_scan::{DEFAULT_FORWARD_SCHEMES, TrailingClass, classify_trailing, take_url};
 
 declare_tool_lint! {
     /// ### What it does
@@ -69,10 +69,6 @@ struct Config {
     /// treated as safe regardless of this list; entries here
     /// supplement that built-in set.
     safe_trailing_chars: Vec<char>,
-    /// When `false`, the rule only recognises `https://` URLs;
-    /// `http://` URLs in comments are ignored. Defaults to `true`
-    /// (both schemes are flagged).
-    allow_http: bool,
     /// Hosts to skip — placeholder hosts that frequently appear
     /// bare in docs for illustrative purposes. Compared
     /// case-insensitively per RFC 3986 §3.2.2. Defaults to
@@ -85,7 +81,6 @@ impl Default for Config {
         Self {
             targets: vec![Target::Doc, Target::Comment],
             safe_trailing_chars: DEFAULT_SAFE_TRAILING_CHARS.to_vec(),
-            allow_http: true,
             skip_hosts: DEFAULT_SKIP_HOSTS.iter().map(|s| (*s).to_owned()).collect(),
         }
     }
@@ -104,7 +99,6 @@ enum Target {
 pub struct BareUrl {
     targets: BTreeSet<Target>,
     safe_trailing_chars: Vec<char>,
-    allow_http: bool,
     skip_hosts: BTreeSet<String>,
 }
 
@@ -114,16 +108,7 @@ impl BareUrl {
         Self {
             targets: config.targets.into_iter().collect(),
             safe_trailing_chars: config.safe_trailing_chars,
-            allow_http: config.allow_http,
             skip_hosts: config.skip_hosts.into_iter().collect(),
-        }
-    }
-
-    fn schemes(&self) -> &'static [&'static str] {
-        if self.allow_http {
-            &["http", "https"]
-        } else {
-            &["https"]
         }
     }
 
@@ -201,7 +186,7 @@ impl BareUrl {
     ) {
         let text = &chunk.rendered;
         let bytes = text.as_bytes();
-        let schemes = self.schemes();
+        let schemes = DEFAULT_FORWARD_SCHEMES;
         let mut index = 0;
         while index < bytes.len() {
             // Look for a scheme start: an ASCII letter at the start

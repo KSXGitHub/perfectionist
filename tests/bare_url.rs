@@ -24,8 +24,6 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    allow_http: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     skip_hosts: Option<Vec<String>>,
 }
 
@@ -49,15 +47,15 @@ fn run(src_base: &str, config: RuleConfig) {
 }
 
 #[test]
-fn allow_http_false_rejects_http_urls() {
-    // With `allow_http = false`, only `https://` is recognised as a
-    // scheme. The `http://` URL in the fixture should not fire — the
-    // entire rule's URL grammar narrows to the `https://` form.
+fn custom_skip_hosts_replaces_the_default_list() {
+    // A user-supplied `skip_hosts` replaces the built-in defaults
+    // (`example.com` / `example.org` / `localhost`). The fixture
+    // verifies that the configured host is suppressed while a host
+    // that was in the defaults but is no longer listed fires again.
     run(
-        "ui-toml/bare_url/allow_http_false",
+        "ui-toml/bare_url/custom_skip_hosts",
         RuleConfig {
-            allow_http: Some(false),
-            ..Default::default()
+            skip_hosts: Some(vec!["rust-lang.org".to_owned()]),
         },
     );
 }

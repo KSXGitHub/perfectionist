@@ -24,17 +24,12 @@ pub(crate) struct UrlMatch<'a> {
     pub(crate) consumed: usize,
 }
 
-/// Default URL schemes that the forward URL scanner accepts.
-///
-/// Currently identical to the wider `BACKWARD_URL_SCHEMES`
-/// minus the non-`http(s)` entries. `bare_url` builds its own
-/// scheme list (with or without `http`) from this and the
-/// `allow_http` config knob; the constant is retained as
-/// documentation of the closed-over default.
-#[allow(
-    dead_code,
-    reason = "documentation constant; bare_url derives its own scheme list"
-)]
+/// URL schemes the forward scanner ([`take_url`]) recognises — the
+/// schemes `bare_url` flags as bare URLs in comments. A narrow
+/// subset of the wider [`BACKWARD_URL_SCHEMES`] used by the
+/// `#N`-fragment back-scan: the wrapping concern that motivates
+/// `bare_url` applies to `http` and `https` URLs, the only schemes
+/// commonly written as prose links in doc comments.
 pub(crate) const DEFAULT_FORWARD_SCHEMES: &[&str] = &["http", "https"];
 
 /// All schemes the backward scan recognises when classifying a `#N`
