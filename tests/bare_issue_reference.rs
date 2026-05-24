@@ -13,7 +13,9 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     repo_base_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    suggestion_mode: Option<String>,
+    suggest_issue_url: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    suggest_pr_url: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     form: Option<String>,
 }
@@ -38,35 +40,34 @@ fn run(src_base: &str, config: RuleConfig) {
 }
 
 #[test]
-fn default_both_mode_emits_issue_and_pr_suggestions() {
-    // The default `suggestion_mode = "both"`: a bare `#NNN` is
-    // ambiguous between an issue and a PR, so the rule emits two
-    // `MaybeIncorrect` suggestions (one `/issues/` URL, one
-    // `/pull/` URL) and lets the author pick. Setting only
-    // `repo_base_url` exercises this default path.
+fn both_suggestions_are_maybe_incorrect() {
+    // With both `suggest_issue_url` and `suggest_pr_url` enabled, a
+    // bare `#NNN` is ambiguous between an issue and a PR, so the
+    // rule emits two `MaybeIncorrect` suggestions (one `/issues/`
+    // URL, one `/pull/` URL) and lets the author pick.
     run(
-        "ui-toml/bare_issue_reference/default_both",
+        "ui-toml/bare_issue_reference/both",
         RuleConfig {
             repo_base_url: Some("https://github.com/owner/repo".into()),
+            suggest_issue_url: Some(true),
+            suggest_pr_url: Some(true),
             ..Default::default()
         },
     );
 }
 
 #[test]
-fn issue_url_mode_emits_machine_applicable_inline_link() {
-    // With `suggestion_mode = "issue_url"`, `repo_base_url` on
-    // `github.com`, and the default `form = "inline"`, the rule
-    // emits a single `MachineApplicable` suggestion
-    // `[#NNN](https://github.com/owner/repo/issues/NNN)`. GitHub
-    // redirects `/issues/<n>` to `/pull/<n>` when the number names
-    // a PR, which is why this combination is the only path that
-    // earns `MachineApplicable`.
+fn single_selection_is_machine_applicable() {
+    // With exactly one of the two knobs enabled (here
+    // `suggest_issue_url`) and the default `form = "inline"`, the
+    // author has told the lint which kind the number names, so the
+    // single suggestion is `MachineApplicable`.
     run(
-        "ui-toml/bare_issue_reference/github_inline",
+        "ui-toml/bare_issue_reference/issue_only",
         RuleConfig {
             repo_base_url: Some("https://github.com/owner/repo".into()),
-            suggestion_mode: Some("issue_url".into()),
+            suggest_issue_url: Some(true),
+            suggest_pr_url: Some(false),
             ..Default::default()
         },
     );
@@ -76,18 +77,16 @@ fn issue_url_mode_emits_machine_applicable_inline_link() {
 fn reference_form_always_degrades_to_maybe_incorrect() {
     // The `form = "reference"` suggestion produces just `[#NNN]`,
     // without the matching `[#NNN]: URL` definition (which the
-    // author must add). Applying that suggestion as-is would
-    // leave the doc block with an undefined reference link — so
-    // applicability degrades to `MaybeIncorrect` even on GitHub,
-    // where the inline form would otherwise be machine-applicable.
-    // Pinned to `suggestion_mode = "issue_url"` to isolate the
-    // applicability behaviour from the default `both` mode's
-    // second suggestion.
+    // author must add). Applying that suggestion as-is would leave
+    // the doc block with an undefined reference link — so
+    // applicability degrades to `MaybeIncorrect` even for a single
+    // selection that would otherwise be machine-applicable.
     run(
         "ui-toml/bare_issue_reference/reference_form",
         RuleConfig {
             repo_base_url: Some("https://github.com/owner/repo".into()),
-            suggestion_mode: Some("issue_url".into()),
+            suggest_issue_url: Some(true),
+            suggest_pr_url: Some(false),
             form: Some("reference".into()),
         },
     );

@@ -1,0 +1,20 @@
+warning: bare issue / PR reference `#77`; use a markdown link
+  --> $DIR/fixture.rs:1:17
+   |
+LL | /// Bad: closes #77 — with both `suggest_issue_url` and
+   |                 ^^^
+   |
+   = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
+help: use an inline markdown link to the issue
+   |
+LL - /// Bad: closes #77 — with both `suggest_issue_url` and
+LL + /// Bad: closes [#77](https://github.com/owner/repo/issues/77) — with both `suggest_issue_url` and
+   |
+help: use an inline markdown link to the pull request
+   |
+LL - /// Bad: closes #77 — with both `suggest_issue_url` and
+LL + /// Bad: closes [#77](https://github.com/owner/repo/pull/77) — with both `suggest_issue_url` and
+   |
+
+warning: 1 warning emitted
+

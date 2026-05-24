@@ -5,7 +5,7 @@ LL | /// Bad: closes #99 — under `form = "reference"`, the suggestion
    |                 ^^^
    |
    = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
-help: use a reference-style markdown link (define `[#N]: URL` at the end of the doc block)
+help: use a reference-style markdown link to the issue (define `[#N]: URL` at the end of the doc block)
    |
 LL - /// Bad: closes #99 — under `form = "reference"`, the suggestion
 LL + /// Bad: closes [#99] — under `form = "reference"`, the suggestion

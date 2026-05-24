@@ -1,8 +1,8 @@
 warning: bare issue / PR reference `#42`; use a markdown link
   --> $DIR/fixture.rs:1:17
    |
-LL | /// Bad: closes #42 — should emit a `MachineApplicable` inline link
-   |                 ^^^ help: use an inline markdown link: `[#42](https://github.com/owner/repo/issues/42)`
+LL | /// Bad: closes #42 — with only `suggest_issue_url` enabled, the
+   |                 ^^^ help: use an inline markdown link to the issue: `[#42](https://github.com/owner/repo/issues/42)`
    |
    = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
 

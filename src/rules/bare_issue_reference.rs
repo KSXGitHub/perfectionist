@@ -7,6 +7,7 @@ use rustc_ast::Crate;
 use rustc_errors::Applicability;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
+use rustc_span::Span;
 
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
 use crate::common::{DefaultState, resolved_state};
@@ -33,9 +34,9 @@ declare_tool_lint! {
     /// ```rust,ignore
     /// /// Closes #123 and supersedes #124.
     /// ```
-    /// Use instead (with `repo_base_url = "https://github.com/owner/repo"`,
-    /// having picked the issue interpretation — the default
-    /// `suggestion_mode = "both"` offers a `/pull/` alternative too):
+    /// Use instead (with `repo_base_url = "https://github.com/owner/repo"`
+    /// and `suggest_issue_url`/`suggest_pr_url` enabled, having picked
+    /// the issue interpretation):
     /// ```rust,ignore
     /// /// Closes [#123](https://github.com/owner/repo/issues/123) and
     /// /// supersedes [#124](https://github.com/owner/repo/issues/124).
@@ -47,33 +48,6 @@ declare_tool_lint! {
 }
 
 const CONFIG_KEY: &str = "perfectionist::bare_issue_reference";
-
-/// How the lint should suggest the link target.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Default, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum SuggestionMode {
-    /// Single suggestion using `issue_url_template`. Safe on GitHub
-    /// because public GitHub redirects `/issues/<n>` to `/pull/<n>`
-    /// when the number names a PR — the suggestion is
-    /// `MachineApplicable` on `github.com` hosts and `MaybeIncorrect`
-    /// elsewhere.
-    IssueUrl,
-    /// Emit two `MaybeIncorrect` suggestions — one issue URL, one
-    /// PR URL — and let the author pick. Default: a bare `#NNN` can
-    /// name either an issue or a PR, and the lint can't tell which,
-    /// so offering both and letting the author choose is the
-    /// honest behaviour. Forges that redirect `/issues/<n>` to
-    /// `/pull/<n>` (notably public GitHub) can narrow to `issue_url`
-    /// for a single machine-applicable suggestion.
-    #[default]
-    Both,
-    /// Emit no Suggestion, only help text. Use when `repo_base_url`
-    /// cannot be configured statically (e.g., a workspace with
-    /// multiple repositories). Distinct from the unset-`repo_base_url`
-    /// degradation: setting this mode explicitly keeps the lint
-    /// help-only even when `repo_base_url` is configured.
-    HelpOnly,
-}
 
 /// Markdown-link shape produced by the autofix inside doc comments.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default, serde::Deserialize)]
@@ -115,24 +89,40 @@ enum PlainForm {
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Base URL used to construct the suggested target — e.g.
-    /// `"https://github.com/owner/repo"`. Required for a non-
-    /// help-only suggestion; when unset, every `suggestion_mode`
-    /// degrades to help-only output so the lint stays adoptable
-    /// with zero configuration. Defaults to `None`.
+    /// `"https://github.com/owner/repo"`. Required for any
+    /// suggestion; when unset, the lint degrades to help-only
+    /// output so it stays adoptable with zero configuration.
+    /// Defaults to `None`.
     repo_base_url: Option<String>,
     /// Template for the suggested issue URL. `{repo_base_url}` and
     /// `{number}` are substituted. Defaults to
     /// `"{repo_base_url}/issues/{number}"`.
     issue_url_template: String,
-    /// Template for the suggested PR URL (used by
-    /// `suggestion_mode = "both"`). Defaults to
+    /// Template for the suggested PR URL (used when
+    /// `suggest_pr_url` is enabled). Defaults to
     /// `"{repo_base_url}/pull/{number}"`.
     pr_url_template: String,
-    /// How the lint suggests the link. See [`SuggestionMode`] for
-    /// the available modes. Defaults to `both` — a bare `#NNN` is
-    /// ambiguous between an issue and a PR, so the lint offers one
-    /// suggestion for each rather than guessing.
-    suggestion_mode: SuggestionMode,
+    /// Offer a suggestion that links the reference as an *issue*
+    /// (via `issue_url_template`). See the applicability note on
+    /// `suggest_pr_url`.
+    suggest_issue_url: bool,
+    /// Offer a suggestion that links the reference as a *pull
+    /// request* (via `pr_url_template`).
+    ///
+    /// The two `suggest_*` knobs together determine what the lint
+    /// emits:
+    /// - exactly one `true` → a single `MachineApplicable`
+    ///   suggestion (the author has told the lint which kind the
+    ///   number names);
+    /// - both `true` → two `MaybeIncorrect` suggestions (a bare
+    ///   `#NNN` is ambiguous between an issue and a PR, so the
+    ///   author picks);
+    /// - both `false` → help-only output, no suggestion.
+    ///
+    /// (The `reference` doc form is always `MaybeIncorrect`
+    /// regardless, since its `[#N]` output needs a hand-written
+    /// definition — see [`DocForm::Reference`].)
+    suggest_pr_url: bool,
     /// Doc-comment fix form: `inline` for `[#N](URL)`, `reference`
     /// for the two-piece `[#N]` + `[#N]: URL` form. The reference
     /// form's autofix only rewrites the `#N` token; the matching
@@ -158,7 +148,8 @@ impl Default for Config {
             repo_base_url: None,
             issue_url_template: "{repo_base_url}/issues/{number}".to_owned(),
             pr_url_template: "{repo_base_url}/pull/{number}".to_owned(),
-            suggestion_mode: SuggestionMode::Both,
+            suggest_issue_url: false,
+            suggest_pr_url: false,
             form: DocForm::Inline,
             include_plain_comments: false,
             plain_comment_form: PlainForm::Url,
@@ -170,34 +161,25 @@ pub struct BareIssueReference {
     repo_base_url: Option<String>,
     issue_url_template: String,
     pr_url_template: String,
-    suggestion_mode: SuggestionMode,
+    suggest_issue_url: bool,
+    suggest_pr_url: bool,
     form: DocForm,
     include_plain_comments: bool,
     plain_comment_form: PlainForm,
-    /// Cached lowercased host parsed out of `repo_base_url`, used to
-    /// decide whether the `IssueUrl` suggestion is machine-applicable
-    /// (true only for `github.com`, which redirects `/issues/<n>` to
-    /// `/pull/<n>`).
-    repo_host: Option<String>,
 }
 
 impl BareIssueReference {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let repo_host = config
-            .repo_base_url
-            .as_deref()
-            .and_then(parse_host_from_url)
-            .map(|h| h.to_ascii_lowercase());
         Self {
             repo_base_url: config.repo_base_url,
             issue_url_template: config.issue_url_template,
             pr_url_template: config.pr_url_template,
-            suggestion_mode: config.suggestion_mode,
+            suggest_issue_url: config.suggest_issue_url,
+            suggest_pr_url: config.suggest_pr_url,
             form: config.form,
             include_plain_comments: config.include_plain_comments,
             plain_comment_form: config.plain_comment_form,
-            repo_host,
         }
     }
 
@@ -208,10 +190,6 @@ impl BareIssueReference {
                 .replace("{repo_base_url}", base)
                 .replace("{number}", number),
         )
-    }
-
-    fn is_github(&self) -> bool {
-        self.repo_host.as_deref() == Some("github.com")
     }
 }
 
@@ -332,86 +310,125 @@ impl BareIssueReference {
         let token = format!("#{number}");
         let issue_url = self.render_url(&self.issue_url_template, number);
         let pr_url = self.render_url(&self.pr_url_template, number);
-        let mode = self.suggestion_mode;
+        let suggest_issue = self.suggest_issue_url;
+        let suggest_pr = self.suggest_pr_url;
         let doc_form = self.form;
         let plain_form = self.plain_comment_form;
-        let is_github = self.is_github();
         span_lint_and_then(
             lint_context,
             BARE_ISSUE_REFERENCE,
             span,
             format!("bare issue / PR reference `{token}`; use a markdown link"),
             move |diag| {
-                if matches!(mode, SuggestionMode::HelpOnly) || issue_url.is_none() {
-                    if let Some(url) = &issue_url {
-                        diag.help(format!(
-                            "candidate URL: {url} — apply the link form manually",
-                        ));
-                    } else {
-                        diag.help(
-                            "set `repo_base_url` in dylint.toml under \
-                             `[perfectionist::bare_issue_reference]` to enable URL suggestions",
-                        );
-                    }
+                // Help-only when no URL can be built or when the
+                // author has turned both suggestion knobs off.
+                if issue_url.is_none() {
+                    diag.help(
+                        "set `repo_base_url` in dylint.toml under \
+                         `[perfectionist::bare_issue_reference]` to enable URL suggestions",
+                    );
                     return;
                 }
-                let issue_url = issue_url.unwrap();
-                if is_doc {
-                    let suggestion = render_doc_suggestion(doc_form, &token, &issue_url);
-                    // The reference form (`[#123]`) emits an
-                    // incomplete suggestion — the matching
-                    // `[#123]: URL` definition is the author's
-                    // responsibility — so applying it as-is leaves
-                    // the doc block with an undefined reference
-                    // link (which rustdoc itself warns about via
-                    // `rustdoc::broken_intra_doc_links`). Always
-                    // degrade to `MaybeIncorrect` for the reference
-                    // form so `cargo dylint --fix` doesn't apply
-                    // it unprompted.
-                    let applicability = match (mode, doc_form) {
-                        (SuggestionMode::IssueUrl, DocForm::Inline) if is_github => {
-                            Applicability::MachineApplicable
-                        }
-                        (SuggestionMode::HelpOnly, _) => unreachable!(),
-                        _ => Applicability::MaybeIncorrect,
-                    };
-                    diag.span_suggestion(
-                        span,
-                        match doc_form {
-                            DocForm::Inline => "use an inline markdown link",
-                            DocForm::Reference => {
-                                "use a reference-style markdown link \
-                                 (define `[#N]: URL` at the end of the doc block)"
-                            }
-                        },
-                        suggestion,
-                        applicability,
+                if !(suggest_issue || suggest_pr) {
+                    diag.help(
+                        "enable `suggest_issue_url` and/or `suggest_pr_url` in dylint.toml \
+                         under `[perfectionist::bare_issue_reference]` to get a fix suggestion",
                     );
-                    if matches!(mode, SuggestionMode::Both)
-                        && let Some(pr_url) = &pr_url
-                    {
-                        let alt = render_doc_suggestion(doc_form, &token, pr_url);
-                        diag.span_suggestion(
-                            span,
-                            "or treat the number as a PR",
-                            alt,
-                            Applicability::MaybeIncorrect,
-                        );
-                    }
+                    return;
+                }
+                // Exactly one knob set → the author has told the lint
+                // which kind the number names, so the single
+                // suggestion is machine-applicable. Both set → the
+                // number is ambiguous, so each suggestion is only
+                // `MaybeIncorrect`.
+                let base_applicability = if suggest_issue != suggest_pr {
+                    Applicability::MachineApplicable
                 } else {
-                    // Plain `//` comment — never markdown.
-                    let suggestion = render_plain_suggestion(plain_form, &issue_url);
-                    diag.span_suggestion(
+                    Applicability::MaybeIncorrect
+                };
+                let issue_url = issue_url.unwrap();
+                let pr_url = pr_url.expect("pr_url renders whenever issue_url does");
+                if suggest_issue {
+                    emit_one(
+                        diag,
                         span,
-                        match plain_form {
-                            PlainForm::Url => "substitute with the bare URL",
-                            PlainForm::AngleBrackets => "substitute with `<URL>`",
-                        },
-                        suggestion,
-                        Applicability::MaybeIncorrect,
+                        &token,
+                        &issue_url,
+                        "issue",
+                        is_doc,
+                        doc_form,
+                        plain_form,
+                        base_applicability,
+                    );
+                }
+                if suggest_pr {
+                    emit_one(
+                        diag,
+                        span,
+                        &token,
+                        &pr_url,
+                        "pull request",
+                        is_doc,
+                        doc_form,
+                        plain_form,
+                        base_applicability,
                     );
                 }
             },
+        );
+    }
+}
+
+/// Emit one issue-or-PR suggestion. `target_label` is `"issue"` or
+/// `"pull request"`. The `reference` doc form is forced to
+/// `MaybeIncorrect` regardless of `base_applicability`, because its
+/// `[#N]` output needs a hand-written `[#N]: URL` definition the
+/// lint can't synthesise.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "a small private emit helper; bundling these into a struct would obscure the call"
+)]
+fn emit_one(
+    diag: &mut rustc_errors::Diag<'_, ()>,
+    span: Span,
+    token: &str,
+    url: &str,
+    target_label: &str,
+    is_doc: bool,
+    doc_form: DocForm,
+    plain_form: PlainForm,
+    base_applicability: Applicability,
+) {
+    if is_doc {
+        let applicability = match doc_form {
+            DocForm::Reference => Applicability::MaybeIncorrect,
+            DocForm::Inline => base_applicability,
+        };
+        let message = match doc_form {
+            DocForm::Inline => format!("use an inline markdown link to the {target_label}"),
+            DocForm::Reference => format!(
+                "use a reference-style markdown link to the {target_label} \
+                 (define `[#N]: URL` at the end of the doc block)",
+            ),
+        };
+        diag.span_suggestion(
+            span,
+            message,
+            render_doc_suggestion(doc_form, token, url),
+            applicability,
+        );
+    } else {
+        let message = match plain_form {
+            PlainForm::Url => format!("substitute the {target_label} URL"),
+            PlainForm::AngleBrackets => {
+                format!("substitute the {target_label} URL wrapped in `<...>`")
+            }
+        };
+        diag.span_suggestion(
+            span,
+            message,
+            render_plain_suggestion(plain_form, url),
+            base_applicability,
         );
     }
 }
@@ -435,40 +452,9 @@ fn render_plain_suggestion(form: PlainForm, url: &str) -> String {
     }
 }
 
-/// Extract the host component out of a URL like
-/// `https://github.com/owner/repo` — returns `"github.com"`. Returns
-/// `None` if the URL doesn't contain `://`.
-fn parse_host_from_url(url: &str) -> Option<&str> {
-    let after_scheme = url.find("://")?;
-    let rest = &url[after_scheme + 3..];
-    let host_end = rest.find(['/', '?', '#', ':']).unwrap_or(rest.len());
-    Some(&rest[..host_end])
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn parses_github_host() {
-        assert_eq!(
-            parse_host_from_url("https://github.com/owner/repo"),
-            Some("github.com"),
-        );
-    }
-
-    #[test]
-    fn parses_host_with_port() {
-        assert_eq!(
-            parse_host_from_url("https://gitlab.example.org:8080/owner/repo"),
-            Some("gitlab.example.org"),
-        );
-    }
-
-    #[test]
-    fn rejects_url_without_scheme() {
-        assert_eq!(parse_host_from_url("github.com/owner/repo"), None);
-    }
 
     #[test]
     fn renders_inline_doc_suggestion() {

@@ -26,9 +26,9 @@ and any other markdown engine.
 ```rust,ignore
 /// Closes #123 and supersedes #124.
 ```
-Use instead (with `repo_base_url = "https://github.com/owner/repo"`,
-having picked the issue interpretation — the default
-`suggestion_mode = "both"` offers a `/pull/` alternative too):
+Use instead (with `repo_base_url = "https://github.com/owner/repo"`
+and `suggest_issue_url`/`suggest_pr_url` enabled, having picked
+the issue interpretation):
 ```rust,ignore
 /// Closes [#123](https://github.com/owner/repo/issues/123) and
 /// supersedes [#124](https://github.com/owner/repo/issues/124).
@@ -41,10 +41,10 @@ Configure via `dylint.toml` under `["perfectionist::bare_issue_reference"]`. Eve
 ### `repo_base_url`: `string` (optional)
 
 Base URL used to construct the suggested target — e.g.
-`"https://github.com/owner/repo"`. Required for a non-
-help-only suggestion; when unset, every `suggestion_mode`
-degrades to help-only output so the lint stays adoptable
-with zero configuration. Defaults to `None`.
+`"https://github.com/owner/repo"`. Required for any
+suggestion; when unset, the lint degrades to help-only
+output so it stays adoptable with zero configuration.
+Defaults to `None`.
 
 ### `issue_url_template`: `string` (optional)
 
@@ -54,16 +54,34 @@ Template for the suggested issue URL. `{repo_base_url}` and
 
 ### `pr_url_template`: `string` (optional)
 
-Template for the suggested PR URL (used by
-`suggestion_mode = "both"`). Defaults to
+Template for the suggested PR URL (used when
+`suggest_pr_url` is enabled). Defaults to
 `"{repo_base_url}/pull/{number}"`.
 
-### `suggestion_mode`: `SuggestionMode` (optional)
+### `suggest_issue_url`: `boolean` (optional)
 
-How the lint suggests the link. See [`SuggestionMode`] for
-the available modes. Defaults to `both` — a bare `#NNN` is
-ambiguous between an issue and a PR, so the lint offers one
-suggestion for each rather than guessing.
+Offer a suggestion that links the reference as an *issue*
+(via `issue_url_template`). See the applicability note on
+`suggest_pr_url`.
+
+### `suggest_pr_url`: `boolean` (optional)
+
+Offer a suggestion that links the reference as a *pull
+request* (via `pr_url_template`).
+
+The two `suggest_*` knobs together determine what the lint
+emits:
+- exactly one `true` → a single `MachineApplicable`
+  suggestion (the author has told the lint which kind the
+  number names);
+- both `true` → two `MaybeIncorrect` suggestions (a bare
+  `#NNN` is ambiguous between an issue and a PR, so the
+  author picks);
+- both `false` → help-only output, no suggestion.
+
+(The `reference` doc form is always `MaybeIncorrect`
+regardless, since its `[#N]` output needs a hand-written
+definition — see [`DocForm::Reference`].)
 
 ### `form`: `DocForm` (optional)
 
@@ -89,36 +107,6 @@ Replacement form used inside plain `//` comments when
 for doc comments and when `repo_base_url` is unset.
 
 ### Types
-
-#### `SuggestionMode` (enum)
-
-How the lint should suggest the link target.
-
-##### `"issue_url"` (Rust: `IssueUrl`)
-
-Single suggestion using `issue_url_template`. Safe on GitHub
-because public GitHub redirects `/issues/<n>` to `/pull/<n>`
-when the number names a PR — the suggestion is
-`MachineApplicable` on `github.com` hosts and `MaybeIncorrect`
-elsewhere.
-
-##### `"both"` (Rust: `Both`)
-
-Emit two `MaybeIncorrect` suggestions — one issue URL, one
-PR URL — and let the author pick. Default: a bare `#NNN` can
-name either an issue or a PR, and the lint can't tell which,
-so offering both and letting the author choose is the
-honest behaviour. Forges that redirect `/issues/<n>` to
-`/pull/<n>` (notably public GitHub) can narrow to `issue_url`
-for a single machine-applicable suggestion.
-
-##### `"help_only"` (Rust: `HelpOnly`)
-
-Emit no Suggestion, only help text. Use when `repo_base_url`
-cannot be configured statically (e.g., a workspace with
-multiple repositories). Distinct from the unset-`repo_base_url`
-degradation: setting this mode explicitly keeps the lint
-help-only even when `repo_base_url` is configured.
 
 #### `DocForm` (enum)
 
