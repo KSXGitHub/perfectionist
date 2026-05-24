@@ -1,0 +1,20 @@
+warning: bare issue / PR reference `#88`; use a markdown link
+  --> $DIR/fixture.rs:1:17
+   |
+LL | /// Bad: closes #88 — on a self-hosted GitLab (host not recognised),
+   |                 ^^^
+   |
+   = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
+help: use an inline markdown link to the issue
+   |
+LL - /// Bad: closes #88 — on a self-hosted GitLab (host not recognised),
+LL + /// Bad: closes [#88](https://gitlab.example.com/owner/repo/-/issues/88) — on a self-hosted GitLab (host not recognised),
+   |
+help: use an inline markdown link to the pull request
+   |
+LL - /// Bad: closes #88 — on a self-hosted GitLab (host not recognised),
+LL + /// Bad: closes [#88](https://gitlab.example.com/owner/repo/-/merge_requests/88) — on a self-hosted GitLab (host not recognised),
+   |
+
+warning: 1 warning emitted
+

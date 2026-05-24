@@ -11,6 +11,8 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
+    forge: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     repo_base_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     suggest_issue_url: Option<bool>,
@@ -39,32 +41,50 @@ fn run(src_base: &str, config: RuleConfig) {
         .run();
 }
 
+/// A repository on a `github.com` URL with `forge` omitted, so the
+/// forge is detected from the host. Used by most fixtures.
+fn github_repo(config: RuleConfig) -> RuleConfig {
+    RuleConfig {
+        repo_base_url: Some("https://github.com/owner/repo".into()),
+        ..config
+    }
+}
+
 #[test]
 fn both_suggestions_are_maybe_incorrect_by_default() {
-    // Both `suggest_issue_url` and `suggest_pr_url` default to
-    // `true`, so setting only `repo_base_url` exercises the default:
-    // a bare `#NNN` is ambiguous between an issue and a PR, so the
-    // rule emits two `MaybeIncorrect` suggestions (one `/issues/`
-    // URL, one `/pull/` URL) and lets the author pick.
+    // `forge` is omitted and detected from the `github.com` host;
+    // `suggest_issue_url` / `suggest_pr_url` both default to `true`,
+    // so a bare `#NNN` (ambiguous between issue and PR) yields two
+    // `MaybeIncorrect` suggestions (`/issues/` and `/pull/`).
     run(
         "ui-toml/bare_issue_reference/both",
+        github_repo(RuleConfig::default()),
+    );
+}
+
+#[test]
+fn gitlab_host_is_detected() {
+    // `forge` omitted: detected as GitLab from the `gitlab.com`
+    // host, yielding `/-/issues/` and `/-/merge_requests/`.
+    run(
+        "ui-toml/bare_issue_reference/gitlab",
         RuleConfig {
-            repo_base_url: Some("https://github.com/owner/repo".into()),
+            repo_base_url: Some("https://gitlab.com/owner/repo".into()),
             ..Default::default()
         },
     );
 }
 
 #[test]
-fn gitlab_base_url_infers_gitlab_paths() {
-    // The issue / PR path defaults are inferred from
-    // `repo_base_url`'s host. A `gitlab.com` base yields GitLab's
-    // `/-/issues/` and `/-/merge_requests/` paths rather than
-    // GitHub's `/issues/` and `/pull/`, with no template override.
+fn self_hosted_needs_explicit_forge() {
+    // A self-hosted instance's host isn't recognised, so the forge
+    // can't be detected — it's given explicitly. `gitlab` paths are
+    // then used on the custom host.
     run(
-        "ui-toml/bare_issue_reference/gitlab",
+        "ui-toml/bare_issue_reference/self_hosted",
         RuleConfig {
-            repo_base_url: Some("https://gitlab.com/owner/repo".into()),
+            forge: Some("gitlab".into()),
+            repo_base_url: Some("https://gitlab.example.com/owner/repo".into()),
             ..Default::default()
         },
     );
@@ -78,12 +98,11 @@ fn single_selection_is_machine_applicable() {
     // single suggestion is `MachineApplicable`.
     run(
         "ui-toml/bare_issue_reference/issue_only",
-        RuleConfig {
-            repo_base_url: Some("https://github.com/owner/repo".into()),
+        github_repo(RuleConfig {
             suggest_issue_url: Some(true),
             suggest_pr_url: Some(false),
             ..Default::default()
-        },
+        }),
     );
 }
 
@@ -97,11 +116,11 @@ fn reference_form_always_degrades_to_maybe_incorrect() {
     // selection that would otherwise be machine-applicable.
     run(
         "ui-toml/bare_issue_reference/reference_form",
-        RuleConfig {
-            repo_base_url: Some("https://github.com/owner/repo".into()),
+        github_repo(RuleConfig {
             suggest_issue_url: Some(true),
             suggest_pr_url: Some(false),
             form: Some("reference".into()),
-        },
+            ..Default::default()
+        }),
     );
 }

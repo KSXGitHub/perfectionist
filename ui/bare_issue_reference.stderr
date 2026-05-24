@@ -4,7 +4,7 @@ warning: bare issue / PR reference `#123`; use a markdown link
 LL | /// Bad: closes #123 and supersedes #124.
    |                 ^^^^
    |
-   = help: set `repo_base_url` in dylint.toml under `[perfectionist::bare_issue_reference]` to enable URL suggestions
+   = help: set `repo_base_url` (and `forge`, if its host isn't a recognised service) in dylint.toml under `[perfectionist::bare_issue_reference]` to enable URL suggestions
    = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
 
 warning: bare issue / PR reference `#124`; use a markdown link
@@ -13,7 +13,7 @@ warning: bare issue / PR reference `#124`; use a markdown link
 LL | /// Bad: closes #123 and supersedes #124.
    |                                     ^^^^
    |
-   = help: set `repo_base_url` in dylint.toml under `[perfectionist::bare_issue_reference]` to enable URL suggestions
+   = help: set `repo_base_url` (and `forge`, if its host isn't a recognised service) in dylint.toml under `[perfectionist::bare_issue_reference]` to enable URL suggestions
 
 warning: bare issue / PR reference `#200`; use a markdown link
   --> $DIR/bare_issue_reference.rs:7:17
@@ -21,7 +21,7 @@ warning: bare issue / PR reference `#200`; use a markdown link
 LL | /** Bad: closes #200 (in a `/** */` block doc comment). */
    |                 ^^^^
    |
-   = help: set `repo_base_url` in dylint.toml under `[perfectionist::bare_issue_reference]` to enable URL suggestions
+   = help: set `repo_base_url` (and `forge`, if its host isn't a recognised service) in dylint.toml under `[perfectionist::bare_issue_reference]` to enable URL suggestions
 
 warning: 3 warnings emitted
 

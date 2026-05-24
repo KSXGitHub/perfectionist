@@ -43,9 +43,10 @@ declare_tool_lint! {
     /// ```rust,ignore
     /// /// Closes #123 and supersedes #124.
     /// ```
-    /// Use instead (with `repo_base_url = "https://github.com/owner/repo"`),
-    /// picking the issue link for one and the pull-request link for
-    /// the other:
+    /// Use instead (with
+    /// `repo_base_url = "https://github.com/owner/repo"` — `forge`
+    /// is detected from the host), picking the issue link for one
+    /// and the pull-request link for the other:
     /// ```rust,ignore
     /// /// Closes [#123](https://github.com/owner/repo/issues/123) and
     /// /// supersedes [#124](https://github.com/owner/repo/pull/124).
@@ -106,32 +107,27 @@ enum PlainForm {
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Repository base URL the issue / PR paths are appended to —
-    /// e.g. `"https://github.com/owner/repo"`. Required for any
-    /// suggestion; when unset, the lint degrades to help-only
-    /// output so it stays adoptable with zero configuration.
+    /// Git-hosting service the repository is on — one of `github`,
+    /// `gitlab`, `gitea`, `bitbucket` — which fixes the issue / PR
+    /// path layout. When unset, it is detected from
+    /// `repo_base_url`'s host (so a `github.com` / `gitlab.com` /
+    /// `codeberg.org` / `gitea.com` / `bitbucket.org` URL needs no
+    /// `forge`); set it explicitly for a self-hosted instance whose
+    /// host isn't recognised. No fixed default — the rule prefers no
+    /// service.
+    forge: Option<Forge>,
+    /// Base URL of the repository, e.g.
+    /// `"https://github.com/owner/repo"` (or a self-hosted
+    /// instance's equivalent). Carries the owner/repo path the
+    /// issue / PR link needs, so it is required for an autofix; when
+    /// unset the lint flags bare references but emits help-only
+    /// output. No fixed default.
     repo_base_url: Option<String>,
-    /// Path appended to `repo_base_url` to form the suggested issue
-    /// URL; `{number}` is substituted and the base is joined on
-    /// automatically. When unset, the default is inferred from
-    /// `repo_base_url`'s host: `/issues/{number}` for GitHub,
-    /// Gitea, and Bitbucket; `/-/issues/{number}` for GitLab. A
-    /// self-hosted instance whose host isn't recognised falls back
-    /// to the GitHub layout — set this explicitly to override.
-    issue_url_template: Option<String>,
-    /// Path appended to `repo_base_url` to form the suggested
-    /// pull-request URL (used when `suggest_pr_url` is enabled);
-    /// `{number}` is substituted. When unset, the default is
-    /// inferred from `repo_base_url`'s host: `/pull/{number}` for
-    /// GitHub, `/pulls/{number}` for Gitea,
-    /// `/pull-requests/{number}` for Bitbucket, and
-    /// `/-/merge_requests/{number}` for GitLab.
-    pr_url_template: Option<String>,
-    /// Offer a suggestion that links the reference as an *issue*
-    /// (via `issue_url_template`). Defaults to `true`.
+    /// Offer a suggestion that links the reference as an *issue*.
+    /// Defaults to `true`.
     suggest_issue_url: bool,
     /// Offer a suggestion that links the reference as a *pull
-    /// request* (via `pr_url_template`). Defaults to `true`.
+    /// request*. Defaults to `true`.
     suggest_pr_url: bool,
     /// Doc-comment fix form: `inline` for `[#N](URL)`, `reference`
     /// for the two-piece `[#N]` + `[#N]: URL` form. The reference
@@ -148,16 +144,16 @@ struct Config {
     include_plain_comments: bool,
     /// Replacement form used inside plain `//` comments when
     /// `include_plain_comments = true`. Defaults to `bare_url`.
-    /// Ignored for doc comments and when `repo_base_url` is unset.
+    /// Ignored for doc comments and when no repository is
+    /// configured.
     plain_comment_form: PlainForm,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
+            forge: None,
             repo_base_url: None,
-            issue_url_template: None,
-            pr_url_template: None,
             suggest_issue_url: true,
             suggest_pr_url: true,
             form: DocForm::Inline,
@@ -168,9 +164,8 @@ impl Default for Config {
 }
 
 pub struct BareIssueReference {
+    forge: Option<Forge>,
     repo_base_url: Option<String>,
-    issue_url_template: String,
-    pr_url_template: String,
     suggest_issue_url: bool,
     suggest_pr_url: bool,
     form: DocForm,
@@ -181,25 +176,9 @@ pub struct BareIssueReference {
 impl BareIssueReference {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        // The issue / PR path defaults adapt to the forge inferred
-        // from `repo_base_url`'s host; an explicit template wins.
-        // When `repo_base_url` is unset no URL is ever built, so the
-        // `GitHub` fallback here is inconsequential.
-        let forge = config
-            .repo_base_url
-            .as_deref()
-            .map(Forge::detect)
-            .unwrap_or(Forge::GitHub);
-        let issue_url_template = config
-            .issue_url_template
-            .unwrap_or_else(|| forge.issue_path().to_owned());
-        let pr_url_template = config
-            .pr_url_template
-            .unwrap_or_else(|| forge.pr_path().to_owned());
         Self {
+            forge: config.forge,
             repo_base_url: config.repo_base_url,
-            issue_url_template,
-            pr_url_template,
             suggest_issue_url: config.suggest_issue_url,
             suggest_pr_url: config.suggest_pr_url,
             form: config.form,
@@ -208,52 +187,66 @@ impl BareIssueReference {
         }
     }
 
-    fn render_url(&self, template: &str, number: &str) -> Option<String> {
+    /// The forge whose path layout to use: the explicit `forge` if
+    /// set, otherwise one detected from `repo_base_url`'s host.
+    /// `None` when neither yields a recognised forge — there is no
+    /// fallback, so the rule never prefers one service.
+    fn effective_forge(&self) -> Option<Forge> {
+        self.forge
+            .or_else(|| self.repo_base_url.as_deref().and_then(Forge::detect))
+    }
+
+    /// Suggested issue URL for `number`. `None` (so: help-only)
+    /// unless `repo_base_url` is set — it carries the owner/repo
+    /// path the link needs — and a forge is known (explicit or
+    /// detected from the host).
+    fn issue_url(&self, number: &str) -> Option<String> {
         let base = self.repo_base_url.as_deref()?;
-        Some(join_url(base, template, number))
+        let forge = self.effective_forge()?;
+        Some(join_url(base, forge.issue_path(), number))
+    }
+
+    /// Suggested pull-request URL for `number`; see [`Self::issue_url`]
+    /// for when it is `None`.
+    fn pr_url(&self, number: &str) -> Option<String> {
+        let base = self.repo_base_url.as_deref()?;
+        let forge = self.effective_forge()?;
+        Some(join_url(base, forge.pr_path(), number))
     }
 }
 
-/// Join `repo_base_url` with a relative path `template` (the part
-/// after the base), substituting `{number}`. Exactly one `/`
-/// separates the base from the path regardless of a trailing slash
-/// on the base or a leading slash on the template, so both
-/// `/issues/{number}` and `issues/{number}` produce the same URL.
-fn join_url(repo_base_url: &str, template: &str, number: &str) -> String {
-    let base = repo_base_url.trim_end_matches('/');
-    let path = template.replace("{number}", number);
+/// Join a repository base URL with a relative path (the part after
+/// the base), substituting `{number}`. Exactly one `/` separates the
+/// base from the path regardless of a trailing slash on the base or a
+/// leading slash on the path.
+fn join_url(base_url: &str, path: &str, number: &str) -> String {
+    let base = base_url.trim_end_matches('/');
+    let path = path.replace("{number}", number);
     format!("{base}/{}", path.trim_start_matches('/'))
 }
 
-/// Forge family inferred from `repo_base_url`'s host. Used only to
-/// pick the default issue / PR path templates when the user hasn't
-/// set them explicitly. Detection is by exact public-SaaS hostname;
-/// a self-hosted instance (any other host) falls back to `GitHub`,
-/// the most common layout — such a project sets `issue_url_template`
-/// / `pr_url_template` explicitly if its forge differs.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// A recognised git-hosting service. The chosen forge fixes the
+/// issue / PR URL layout. It can be given explicitly (needed for a
+/// self-hosted instance, whose host isn't recognised) or detected
+/// from `repo_base_url`'s host via [`Forge::detect`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 enum Forge {
+    /// GitHub or a GitHub Enterprise instance. Paths:
+    /// `/issues/{number}`, `/pull/{number}`.
     GitHub,
+    /// GitLab (gitlab.com or self-hosted). Paths:
+    /// `/-/issues/{number}`, `/-/merge_requests/{number}`.
     GitLab,
+    /// Gitea / Forgejo (including Codeberg). Paths:
+    /// `/issues/{number}`, `/pulls/{number}`.
     Gitea,
+    /// Bitbucket. Paths: `/issues/{number}`,
+    /// `/pull-requests/{number}`.
     Bitbucket,
 }
 
 impl Forge {
-    fn detect(repo_base_url: &str) -> Forge {
-        match host_of(repo_base_url)
-            .map(str::to_ascii_lowercase)
-            .as_deref()
-        {
-            Some("gitlab.com") => Forge::GitLab,
-            Some("bitbucket.org") => Forge::Bitbucket,
-            // Forgejo (Codeberg) shares Gitea's URL layout.
-            Some("codeberg.org" | "gitea.com") => Forge::Gitea,
-            // github.com, plus every unrecognised / self-hosted host.
-            _ => Forge::GitHub,
-        }
-    }
-
     fn issue_path(self) -> &'static str {
         match self {
             Forge::GitHub | Forge::Gitea | Forge::Bitbucket => "/issues/{number}",
@@ -269,10 +262,27 @@ impl Forge {
             Forge::GitLab => "/-/merge_requests/{number}",
         }
     }
+
+    /// Detect the forge from a repository URL's host. Returns `None`
+    /// for an unrecognised / self-hosted host — there is no
+    /// fallback, so an undetected host needs an explicit `forge`.
+    fn detect(repo_base_url: &str) -> Option<Forge> {
+        match host_of(repo_base_url)
+            .map(str::to_ascii_lowercase)
+            .as_deref()
+        {
+            Some("github.com") => Some(Forge::GitHub),
+            Some("gitlab.com") => Some(Forge::GitLab),
+            Some("bitbucket.org") => Some(Forge::Bitbucket),
+            // Forgejo (Codeberg) shares Gitea's URL layout.
+            Some("codeberg.org" | "gitea.com") => Some(Forge::Gitea),
+            _ => None,
+        }
+    }
 }
 
 /// Host component of a URL like `https://github.com/owner/repo` →
-/// `"github.com"`. Returns `None` if the URL has no `://`.
+/// `"github.com"`. `None` if the URL has no `://`.
 fn host_of(url: &str) -> Option<&str> {
     let after_scheme = url.find("://")?;
     let rest = &url[after_scheme + 3..];
@@ -395,8 +405,8 @@ impl BareIssueReference {
             return;
         };
         let token = format!("#{number}");
-        let issue_url = self.render_url(&self.issue_url_template, number);
-        let pr_url = self.render_url(&self.pr_url_template, number);
+        let issue_url = self.issue_url(number);
+        let pr_url = self.pr_url(number);
         let suggest_issue = self.suggest_issue_url;
         let suggest_pr = self.suggest_pr_url;
         let doc_form = self.form;
@@ -411,7 +421,8 @@ impl BareIssueReference {
                 // author has turned both suggestion knobs off.
                 if issue_url.is_none() {
                     diag.help(
-                        "set `repo_base_url` in dylint.toml under \
+                        "set `repo_base_url` (and `forge`, if its host isn't a recognised \
+                         service) in dylint.toml under \
                          `[perfectionist::bare_issue_reference]` to enable URL suggestions",
                     );
                     return;
@@ -578,29 +589,39 @@ mod tests {
     }
 
     #[test]
-    fn forge_detects_known_public_hosts() {
-        assert_eq!(Forge::detect("https://github.com/o/r"), Forge::GitHub);
-        assert_eq!(Forge::detect("https://gitlab.com/o/r"), Forge::GitLab);
-        assert_eq!(Forge::detect("https://bitbucket.org/o/r"), Forge::Bitbucket);
-        assert_eq!(Forge::detect("https://codeberg.org/o/r"), Forge::Gitea);
-    }
-
-    #[test]
-    fn forge_detection_is_host_case_insensitive() {
-        assert_eq!(Forge::detect("https://GitLab.com/o/r"), Forge::GitLab);
-    }
-
-    #[test]
-    fn forge_unknown_host_falls_back_to_github() {
-        assert_eq!(Forge::detect("https://git.example.com/o/r"), Forge::GitHub);
-    }
-
-    #[test]
     fn forge_paths_are_layout_specific() {
+        assert_eq!(Forge::GitHub.issue_path(), "/issues/{number}");
+        assert_eq!(Forge::GitHub.pr_path(), "/pull/{number}");
         assert_eq!(Forge::GitLab.issue_path(), "/-/issues/{number}");
         assert_eq!(Forge::GitLab.pr_path(), "/-/merge_requests/{number}");
         assert_eq!(Forge::Gitea.pr_path(), "/pulls/{number}");
         assert_eq!(Forge::Bitbucket.pr_path(), "/pull-requests/{number}");
+    }
+
+    #[test]
+    fn forge_detects_known_hosts() {
+        assert_eq!(Forge::detect("https://github.com/o/r"), Some(Forge::GitHub));
+        assert_eq!(Forge::detect("https://gitlab.com/o/r"), Some(Forge::GitLab));
+        assert_eq!(
+            Forge::detect("https://bitbucket.org/o/r"),
+            Some(Forge::Bitbucket),
+        );
+        assert_eq!(
+            Forge::detect("https://codeberg.org/o/r"),
+            Some(Forge::Gitea),
+        );
+    }
+
+    #[test]
+    fn forge_detection_is_host_case_insensitive() {
+        assert_eq!(Forge::detect("https://GitHub.com/o/r"), Some(Forge::GitHub));
+    }
+
+    #[test]
+    fn forge_detection_has_no_fallback_for_unknown_hosts() {
+        // No preference for any service: an unrecognised / self-hosted
+        // host yields `None`, not a default forge.
+        assert_eq!(Forge::detect("https://git.example.com/o/r"), None);
     }
 
     #[test]

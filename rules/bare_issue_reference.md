@@ -35,9 +35,10 @@ and any other markdown engine.
 ```rust,ignore
 /// Closes #123 and supersedes #124.
 ```
-Use instead (with `repo_base_url = "https://github.com/owner/repo"`),
-picking the issue link for one and the pull-request link for
-the other:
+Use instead (with
+`repo_base_url = "https://github.com/owner/repo"` — `forge`
+is detected from the host), picking the issue link for one
+and the pull-request link for the other:
 ```rust,ignore
 /// Closes [#123](https://github.com/owner/repo/issues/123) and
 /// supersedes [#124](https://github.com/owner/repo/pull/124).
@@ -47,42 +48,35 @@ the other:
 
 Configure via `dylint.toml` under `["perfectionist::bare_issue_reference"]`. Every field is optional; the per-field prose below states the default.
 
+### `forge`: `Forge` (optional)
+
+Git-hosting service the repository is on — one of `github`,
+`gitlab`, `gitea`, `bitbucket` — which fixes the issue / PR
+path layout. When unset, it is detected from
+`repo_base_url`'s host (so a `github.com` / `gitlab.com` /
+`codeberg.org` / `gitea.com` / `bitbucket.org` URL needs no
+`forge`); set it explicitly for a self-hosted instance whose
+host isn't recognised. No fixed default — the rule prefers no
+service.
+
 ### `repo_base_url`: `string` (optional)
 
-Repository base URL the issue / PR paths are appended to —
-e.g. `"https://github.com/owner/repo"`. Required for any
-suggestion; when unset, the lint degrades to help-only
-output so it stays adoptable with zero configuration.
-
-### `issue_url_template`: `string` (optional)
-
-Path appended to `repo_base_url` to form the suggested issue
-URL; `{number}` is substituted and the base is joined on
-automatically. When unset, the default is inferred from
-`repo_base_url`'s host: `/issues/{number}` for GitHub,
-Gitea, and Bitbucket; `/-/issues/{number}` for GitLab. A
-self-hosted instance whose host isn't recognised falls back
-to the GitHub layout — set this explicitly to override.
-
-### `pr_url_template`: `string` (optional)
-
-Path appended to `repo_base_url` to form the suggested
-pull-request URL (used when `suggest_pr_url` is enabled);
-`{number}` is substituted. When unset, the default is
-inferred from `repo_base_url`'s host: `/pull/{number}` for
-GitHub, `/pulls/{number}` for Gitea,
-`/pull-requests/{number}` for Bitbucket, and
-`/-/merge_requests/{number}` for GitLab.
+Base URL of the repository, e.g.
+`"https://github.com/owner/repo"` (or a self-hosted
+instance's equivalent). Carries the owner/repo path the
+issue / PR link needs, so it is required for an autofix; when
+unset the lint flags bare references but emits help-only
+output. No fixed default.
 
 ### `suggest_issue_url`: `boolean` (optional)
 
-Offer a suggestion that links the reference as an *issue*
-(via `issue_url_template`). Defaults to `true`.
+Offer a suggestion that links the reference as an *issue*.
+Defaults to `true`.
 
 ### `suggest_pr_url`: `boolean` (optional)
 
 Offer a suggestion that links the reference as a *pull
-request* (via `pr_url_template`). Defaults to `true`.
+request*. Defaults to `true`.
 
 ### `form`: `DocForm` (optional)
 
@@ -105,9 +99,37 @@ Defaults to `false`.
 
 Replacement form used inside plain `//` comments when
 `include_plain_comments = true`. Defaults to `bare_url`.
-Ignored for doc comments and when `repo_base_url` is unset.
+Ignored for doc comments and when no repository is
+configured.
 
 ### Types
+
+#### `Forge` (enum)
+
+A recognised git-hosting service. The chosen forge fixes the
+issue / PR URL layout. It can be given explicitly (needed for a
+self-hosted instance, whose host isn't recognised) or detected
+from `repo_base_url`'s host via [`Forge::detect`].
+
+##### `"github"` (Rust: `GitHub`)
+
+GitHub or a GitHub Enterprise instance. Paths:
+`/issues/{number}`, `/pull/{number}`.
+
+##### `"gitlab"` (Rust: `GitLab`)
+
+GitLab (gitlab.com or self-hosted). Paths:
+`/-/issues/{number}`, `/-/merge_requests/{number}`.
+
+##### `"gitea"` (Rust: `Gitea`)
+
+Gitea / Forgejo (including Codeberg). Paths:
+`/issues/{number}`, `/pulls/{number}`.
+
+##### `"bitbucket"` (Rust: `Bitbucket`)
+
+Bitbucket. Paths: `/issues/{number}`,
+`/pull-requests/{number}`.
 
 #### `DocForm` (enum)
 
