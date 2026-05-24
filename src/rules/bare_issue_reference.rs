@@ -82,15 +82,14 @@ enum PlainForm {
     /// Many editors auto-detect a bare URL as clickable. NB: the
     /// sibling `perfectionist::bare_url` lint, whose default also
     /// scans regular comments, will then flag the substituted URL —
-    /// pick `angle_brackets` to produce a form both rules accept.
+    /// pick `bracketed_url` to produce a form both rules accept.
     #[default]
-    Url,
+    BareUrl,
     /// Substitute `<https://...>`. The angle-bracket delimiter gives
     /// the URL a clear boundary when it abuts surrounding
     /// punctuation; editors that auto-link URLs typically recognise
-    /// it, and `bare_url` accepts it. Named to match
-    /// `bare_email`'s `Style::AngleBrackets`.
-    AngleBrackets,
+    /// it, and `bare_url` accepts it.
+    BracketedUrl,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -137,8 +136,8 @@ struct Config {
     /// Defaults to `false`.
     include_plain_comments: bool,
     /// Replacement form used inside plain `//` comments when
-    /// `include_plain_comments = true`. Defaults to `url`. Ignored
-    /// for doc comments and when `repo_base_url` is unset.
+    /// `include_plain_comments = true`. Defaults to `bare_url`.
+    /// Ignored for doc comments and when `repo_base_url` is unset.
     plain_comment_form: PlainForm,
 }
 
@@ -152,7 +151,7 @@ impl Default for Config {
             suggest_pr_url: true,
             form: DocForm::Inline,
             include_plain_comments: false,
-            plain_comment_form: PlainForm::Url,
+            plain_comment_form: PlainForm::BareUrl,
         }
     }
 }
@@ -496,8 +495,8 @@ fn emit_one(
         );
     } else {
         let message = match plain_form {
-            PlainForm::Url => format!("substitute the {target_label} URL"),
-            PlainForm::AngleBrackets => {
+            PlainForm::BareUrl => format!("substitute the {target_label} URL"),
+            PlainForm::BracketedUrl => {
                 format!("substitute the {target_label} URL wrapped in `<...>`")
             }
         };
@@ -524,8 +523,8 @@ fn render_doc_suggestion(form: DocForm, token: &str, url: &str) -> String {
 
 fn render_plain_suggestion(form: PlainForm, url: &str) -> String {
     match form {
-        PlainForm::Url => url.to_owned(),
-        PlainForm::AngleBrackets => format!("<{url}>"),
+        PlainForm::BareUrl => url.to_owned(),
+        PlainForm::BracketedUrl => format!("<{url}>"),
     }
 }
 
@@ -602,7 +601,7 @@ mod tests {
     #[test]
     fn renders_plain_suggestion_bracketed() {
         assert_eq!(
-            render_plain_suggestion(PlainForm::AngleBrackets, "https://example.com/issues/42"),
+            render_plain_suggestion(PlainForm::BracketedUrl, "https://example.com/issues/42"),
             "<https://example.com/issues/42>",
         );
     }
