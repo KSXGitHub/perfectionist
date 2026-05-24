@@ -32,7 +32,10 @@ pub(super) fn normalize(input: &str) -> Option<String> {
     let (authority, path) = split_once_char(transport.rest, transport.sep)?;
     let host = take_host(authority, transport.keep_port);
     let path = take_repo_path(path)?;
-    if host.is_empty() {
+    // Reject a missing host. `starts_with(':')` catches the
+    // port-only authority (`https://:8443/o/r`) that survives with
+    // `keep_port` because the kept `:8443` is non-empty.
+    if host.is_empty() || host.starts_with(':') {
         return None;
     }
     Some(format!("{}://{host}/{path}", transport.scheme))
@@ -230,6 +233,14 @@ mod tests {
     #[test]
     fn missing_path_is_rejected() {
         assert_eq!(normalize("https://github.com"), None);
+    }
+
+    #[test]
+    fn empty_host_is_rejected() {
+        // A port-only authority has no host — reject it (the kept
+        // `:port` must not masquerade as a host under `keep_port`).
+        assert_eq!(normalize("https://:8443/owner/repo"), None);
+        assert_eq!(normalize("ssh://:22/owner/repo"), None);
     }
 
     #[test]
