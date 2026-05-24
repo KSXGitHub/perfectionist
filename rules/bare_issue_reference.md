@@ -81,7 +81,7 @@ emits:
 
 (The `reference` doc form is always `MaybeIncorrect`
 regardless, since its `[#N]` output needs a hand-written
-definition — see [`DocForm::Reference`].)
+definition.)
 
 ### `form`: `DocForm` (optional)
 

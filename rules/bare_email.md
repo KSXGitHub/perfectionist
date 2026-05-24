@@ -39,10 +39,9 @@ Configure via `dylint.toml` under `["perfectionist::bare_email"]`. Every field i
 
 ### `style`: `Style` (optional)
 
-Required form for compliant email addresses. See the [`Style`]
-variants for the available options. Defaults to `either` (any
-of the wrapped forms is accepted; the autofix degrades to two
-`MaybeIncorrect` suggestions).
+Required form for compliant email addresses. Defaults to
+`either` (any of the wrapped forms is accepted; the autofix
+degrades to two `MaybeIncorrect` suggestions).
 
 ### `scan_doc_comments`: `boolean` (optional)
 

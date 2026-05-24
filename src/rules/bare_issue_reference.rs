@@ -121,7 +121,7 @@ struct Config {
     ///
     /// (The `reference` doc form is always `MaybeIncorrect`
     /// regardless, since its `[#N]` output needs a hand-written
-    /// definition — see [`DocForm::Reference`].)
+    /// definition.)
     suggest_pr_url: bool,
     /// Doc-comment fix form: `inline` for `[#N](URL)`, `reference`
     /// for the two-piece `[#N]` + `[#N]: URL` form. The reference

@@ -79,10 +79,9 @@ const DEFAULT_SKIP_DOMAINS: &[&str] = &[];
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Required form for compliant email addresses. See the [`Style`]
-    /// variants for the available options. Defaults to `either` (any
-    /// of the wrapped forms is accepted; the autofix degrades to two
-    /// `MaybeIncorrect` suggestions).
+    /// Required form for compliant email addresses. Defaults to
+    /// `either` (any of the wrapped forms is accepted; the autofix
+    /// degrades to two `MaybeIncorrect` suggestions).
     style: Style,
     /// Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
     /// Defaults to `true`.
