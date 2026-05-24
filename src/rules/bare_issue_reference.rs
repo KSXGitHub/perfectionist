@@ -108,15 +108,14 @@ enum PlainForm {
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Git-hosting service the repository is on — one of `github`,
-    /// `gitlab`, `gitea`, `bitbucket` — which fixes the issue / PR
-    /// path layout. When unset, it is detected from `repo_base_url`'s
-    /// host: the public instances (`github.com`, `gitlab.com`,
-    /// `codeberg.org`, `gitea.com`, `bitbucket.org`) and the
-    /// conventional self-hosted subdomains `gitlab.*`, `github.*`,
-    /// `gitea.*` and `forgejo.*` all need no `forge`. Set it
-    /// explicitly for a self-hosted instance on a host that gives no
-    /// such hint (e.g. `git.example.com`). No fixed default — the
-    /// rule prefers no service.
+    /// `gitlab`, `gitea` — which fixes the issue / PR path layout.
+    /// When unset, it is detected from `repo_base_url`'s host: the
+    /// public instances (`github.com`, `gitlab.com`, `codeberg.org`,
+    /// `gitea.com`) and the conventional self-hosted subdomains
+    /// `gitlab.*`, `github.*`, `gitea.*` and `forgejo.*` all need no
+    /// `forge`. Set it explicitly for a self-hosted instance on a
+    /// host that gives no such hint (e.g. `git.example.com`). No
+    /// fixed default — the rule prefers no service.
     forge: Option<Forge>,
     /// Base URL of the repository, e.g.
     /// `"https://github.com/owner/repo"`, or a self-hosted instance
@@ -252,15 +251,12 @@ enum Forge {
     /// Gitea / Forgejo (including Codeberg). Paths:
     /// `/issues/{number}`, `/pulls/{number}`.
     Gitea,
-    /// Bitbucket. Paths: `/issues/{number}`,
-    /// `/pull-requests/{number}`.
-    Bitbucket,
 }
 
 impl Forge {
     fn issue_path(self) -> &'static str {
         match self {
-            Forge::GitHub | Forge::Gitea | Forge::Bitbucket => "/issues/{number}",
+            Forge::GitHub | Forge::Gitea => "/issues/{number}",
             Forge::GitLab => "/-/issues/{number}",
         }
     }
@@ -269,7 +265,6 @@ impl Forge {
         match self {
             Forge::GitHub => "/pull/{number}",
             Forge::Gitea => "/pulls/{number}",
-            Forge::Bitbucket => "/pull-requests/{number}",
             Forge::GitLab => "/-/merge_requests/{number}",
         }
     }
@@ -285,7 +280,6 @@ impl Forge {
         match host.as_str() {
             "github.com" => return Some(Forge::GitHub),
             "gitlab.com" => return Some(Forge::GitLab),
-            "bitbucket.org" => return Some(Forge::Bitbucket),
             // Forgejo (Codeberg) shares Gitea's URL layout.
             "codeberg.org" | "gitea.com" => return Some(Forge::Gitea),
             _ => {}
@@ -294,14 +288,15 @@ impl Forge {
         // named after the software (`gitlab.example.com`,
         // `gitea.example.com`, `github.example.com` for GitHub
         // Enterprise), so the leading DNS label names the forge.
-        // Three omissions are deliberate. `git.*` is the most common
-        // generic prefix but ambiguous (Gitea, GitLab, cgit, gitweb).
-        // Self-hosted Bitbucket (Server / Data Center) uses a URL
-        // layout unlike the cloud's, so `Bitbucket` paths would be
-        // wrong for a `bitbucket.*` instance. Gitee (`gitee.com`) is
-        // skipped despite sharing Gitea's `/issues/` + `/pulls/`
-        // layout, because its issue IDs are alphanumeric tokens, not
-        // the integers a bare `#NNN` reference assumes.
+        // `git.*` is the most common generic prefix but ambiguous
+        // (Gitea, GitLab, cgit, gitweb), so it isn't matched.
+        //
+        // Two whole services are deliberately unsupported, because a
+        // bare `#NNN` doesn't reliably map to one of their URLs:
+        // Gitee (`gitee.com`) numbers issues with alphanumeric tokens
+        // rather than the integers `#NNN` assumes, and Bitbucket's
+        // `#NNN` convention (issue? PR? neither?) we couldn't pin
+        // down, so we don't guess at its links.
         match host.split('.').next()? {
             "gitlab" => Some(Forge::GitLab),
             "github" => Some(Forge::GitHub),
@@ -618,18 +613,15 @@ mod tests {
         assert_eq!(Forge::GitHub.pr_path(), "/pull/{number}");
         assert_eq!(Forge::GitLab.issue_path(), "/-/issues/{number}");
         assert_eq!(Forge::GitLab.pr_path(), "/-/merge_requests/{number}");
+        assert_eq!(Forge::Gitea.issue_path(), "/issues/{number}");
         assert_eq!(Forge::Gitea.pr_path(), "/pulls/{number}");
-        assert_eq!(Forge::Bitbucket.pr_path(), "/pull-requests/{number}");
     }
 
     #[test]
     fn forge_detects_known_hosts() {
         assert_eq!(Forge::detect("https://github.com/o/r"), Some(Forge::GitHub));
         assert_eq!(Forge::detect("https://gitlab.com/o/r"), Some(Forge::GitLab));
-        assert_eq!(
-            Forge::detect("https://bitbucket.org/o/r"),
-            Some(Forge::Bitbucket),
-        );
+        assert_eq!(Forge::detect("https://gitea.com/o/r"), Some(Forge::Gitea));
         assert_eq!(
             Forge::detect("https://codeberg.org/o/r"),
             Some(Forge::Gitea),
@@ -676,8 +668,10 @@ mod tests {
         // `git.*` is the most common generic prefix but ambiguous
         // across Gitea / GitLab / cgit / gitweb, so it's not matched.
         assert_eq!(Forge::detect("https://git.example.com/o/r"), None);
-        // Self-hosted Bitbucket (Server / Data Center) uses a URL
-        // layout unlike the cloud's, so its subdomain isn't matched.
+        // Bitbucket is unsupported (its `#NNN` convention is unclear),
+        // so neither its cloud host nor a `bitbucket.*` subdomain is
+        // matched.
+        assert_eq!(Forge::detect("https://bitbucket.org/o/r"), None);
         assert_eq!(Forge::detect("https://bitbucket.example.com/o/r"), None);
     }
 
@@ -741,7 +735,6 @@ mod tests {
         assert!(!lint("https://gitlab.example.com/o/r").hash_can_mean_pr());
         assert!(lint("https://github.com/o/r").hash_can_mean_pr());
         assert!(lint("https://gitea.com/o/r").hash_can_mean_pr());
-        assert!(lint("https://bitbucket.org/o/r").hash_can_mean_pr());
     }
 
     #[test]
