@@ -28,32 +28,72 @@ enum Sep {
 /// (the scheme is preserved for an HTTP(S) input). Returns `None` when
 /// no host and `owner/repo` path can be extracted.
 pub(super) fn normalize(input: &str) -> Option<String> {
-    let (scheme, rest, sep) = take_transport(input.trim())?;
-    let (authority, path) = split_once_char(rest, sep)?;
-    let host = take_host(authority);
+    let transport = take_transport(input.trim())?;
+    let (authority, path) = split_once_char(transport.rest, transport.sep)?;
+    let host = take_host(authority, transport.keep_port);
     let path = take_repo_path(path)?;
     if host.is_empty() {
         return None;
     }
-    Some(format!("{scheme}://{host}/{path}"))
+    Some(format!("{}://{host}/{path}", transport.scheme))
 }
 
-/// Strip a recognised transport prefix, returning the web scheme to
-/// emit, the remaining `authority<sep>path`, and which separator
-/// splits them. The scp-like form has no prefix to strip, so the whole
-/// string is handed back for the colon split.
-fn take_transport(input: &str) -> Option<(&'static str, &str, Sep)> {
-    if let Some(rest) = input.strip_prefix("https://") {
-        Some(("https", rest, Sep::Slash))
-    } else if let Some(rest) = input.strip_prefix("http://") {
-        Some(("http", rest, Sep::Slash))
-    } else if let Some(rest) = input.strip_prefix("ssh://") {
-        Some(("https", rest, Sep::Slash))
+/// A recognised transport prefix stripped from the input.
+struct Transport<'a> {
+    /// Web scheme to emit (`http`/`https`).
+    scheme: &'static str,
+    /// The remaining `authority<sep>path`.
+    rest: &'a str,
+    /// Separator between authority and path.
+    sep: Sep,
+    /// Whether the authority's `:port` is a *web* port to keep. True
+    /// only for `http(s)://` inputs; for `ssh://` the port is the SSH
+    /// port (not a web port), and the scp-like form has no port.
+    keep_port: bool,
+}
+
+/// Strip a recognised transport prefix. The scheme is matched
+/// case-insensitively (RFC 3986 §3.1). The scp-like form has no prefix
+/// to strip, so the whole string is handed back for the colon split.
+fn take_transport(input: &str) -> Option<Transport<'_>> {
+    if let Some(rest) = strip_prefix_ci(input, "https://") {
+        Some(Transport {
+            scheme: "https",
+            rest,
+            sep: Sep::Slash,
+            keep_port: true,
+        })
+    } else if let Some(rest) = strip_prefix_ci(input, "http://") {
+        Some(Transport {
+            scheme: "http",
+            rest,
+            sep: Sep::Slash,
+            keep_port: true,
+        })
+    } else if let Some(rest) = strip_prefix_ci(input, "ssh://") {
+        Some(Transport {
+            scheme: "https",
+            rest,
+            sep: Sep::Slash,
+            keep_port: false,
+        })
     } else if is_scp_like(input) {
-        Some(("https", input, Sep::Colon))
+        Some(Transport {
+            scheme: "https",
+            rest: input,
+            sep: Sep::Colon,
+            keep_port: false,
+        })
     } else {
         None
     }
+}
+
+/// `str::strip_prefix`, but matching `prefix` case-insensitively.
+fn strip_prefix_ci<'a>(input: &'a str, prefix: &str) -> Option<&'a str> {
+    let head = input.get(..prefix.len())?;
+    head.eq_ignore_ascii_case(prefix)
+        .then(|| &input[prefix.len()..])
 }
 
 /// Whether `input` is the scp-like shorthand `[user@]host:path`: it
@@ -82,13 +122,18 @@ fn split_once_char(input: &str, sep: Sep) -> Option<(&str, &str)> {
     input.split_once(delim)
 }
 
-/// Take the host out of an authority component `[user@]host[:port]`,
-/// dropping the userinfo before any `@` and the port after any `:`.
-fn take_host(authority: &str) -> &str {
+/// Take the host (with its port when `keep_port`) out of an authority
+/// component `[user@]host[:port]`, always dropping the userinfo before
+/// any `@`. For an `http(s)://` input the port is the web port and is
+/// kept; for `ssh://` it is the SSH port and is dropped.
+fn take_host(authority: &str, keep_port: bool) -> &str {
     let after_user = match authority.rsplit_once('@') {
         Some((_, host)) => host,
         None => authority,
     };
+    if keep_port {
+        return after_user;
+    }
     match after_user.split_once(':') {
         Some((host, _port)) => host,
         None => after_user,
@@ -191,5 +236,38 @@ mod tests {
     fn unparseable_input_is_rejected() {
         assert_eq!(normalize("not a url"), None);
         assert_eq!(normalize(""), None);
+    }
+
+    #[test]
+    fn http_port_is_preserved() {
+        // A self-hosted forge on a non-default web port must keep it,
+        // or every suggested link points at the wrong (default) port.
+        assert_eq!(
+            normalize("https://git.example.com:8443/owner/repo").as_deref(),
+            Some("https://git.example.com:8443/owner/repo"),
+        );
+    }
+
+    #[test]
+    fn ssh_port_is_dropped() {
+        // The SSH port is not the web port, so the web base drops it.
+        assert_eq!(
+            normalize("ssh://git@git.example.com:2222/owner/repo.git").as_deref(),
+            Some("https://git.example.com/owner/repo"),
+        );
+    }
+
+    #[test]
+    fn scheme_match_is_case_insensitive() {
+        // RFC 3986 §3.1: schemes are case-insensitive. A valid
+        // uppercase scheme must parse, not fall through to a panic.
+        assert_eq!(
+            normalize("HTTPS://github.com/owner/repo").as_deref(),
+            Some("https://github.com/owner/repo"),
+        );
+        assert_eq!(
+            normalize("SSH://git@github.com/owner/repo.git").as_deref(),
+            Some("https://github.com/owner/repo"),
+        );
     }
 }
