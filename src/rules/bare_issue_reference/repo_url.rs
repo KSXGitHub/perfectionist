@@ -143,11 +143,15 @@ fn take_host(authority: &str, keep_port: bool) -> &str {
     }
 }
 
-/// Take the `owner/repo` path: drop surrounding slashes and a single
-/// trailing `.git`. Requires at least two segments (an `owner/repo`
-/// pair, or a deeper GitLab subgroup path), so a lone `owner` with no
-/// repository yields `None`.
+/// Take the `owner/repo` path: drop any `?query` / `#fragment`, the
+/// surrounding slashes, and a single trailing `.git`. Requires at
+/// least two segments (an `owner/repo` pair, or a deeper GitLab
+/// subgroup path), so a lone `owner` with no repository yields `None`.
 fn take_repo_path(path: &str) -> Option<&str> {
+    // A pasted browser URL can carry `?tab=...` or `#anchor`; neither
+    // is part of the repository path, and leaving them in would bake
+    // them into every issue / PR link.
+    let path = path.split(['?', '#']).next().unwrap_or(path);
     let path = path.trim_matches('/');
     let path = path.strip_suffix(".git").unwrap_or(path);
     let path = path.trim_end_matches('/');
@@ -241,6 +245,25 @@ mod tests {
         // `:port` must not masquerade as a host under `keep_port`).
         assert_eq!(normalize("https://:8443/owner/repo"), None);
         assert_eq!(normalize("ssh://:22/owner/repo"), None);
+    }
+
+    #[test]
+    fn query_and_fragment_are_stripped() {
+        // A pasted browser URL may carry `?tab=...` / `#anchor`;
+        // neither belongs in the repo path or the generated links.
+        assert_eq!(
+            normalize("https://github.com/owner/repo?tab=readme").as_deref(),
+            Some("https://github.com/owner/repo"),
+        );
+        assert_eq!(
+            normalize("https://github.com/owner/repo#section").as_deref(),
+            Some("https://github.com/owner/repo"),
+        );
+        // `.git` followed by a query is still stripped to the repo.
+        assert_eq!(
+            normalize("https://github.com/owner/repo.git?x=1").as_deref(),
+            Some("https://github.com/owner/repo"),
+        );
     }
 
     #[test]
