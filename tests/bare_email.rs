@@ -13,7 +13,7 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     style: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    skip_domains: Option<Vec<String>>,
+    skip_domains: Option<Vec<&'static str>>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -43,7 +43,7 @@ fn skip_domains_matches_case_insensitively() {
     run(
         "ui-toml/bare_email/skip_domains_case_insensitive",
         RuleConfig {
-            skip_domains: Some(vec!["EXAMPLE.COM".to_owned()]),
+            skip_domains: Some(vec!["EXAMPLE.COM"]),
             ..Default::default()
         },
     );

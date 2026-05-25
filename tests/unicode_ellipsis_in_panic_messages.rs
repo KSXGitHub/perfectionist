@@ -25,13 +25,13 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    extra_macros: Option<Vec<String>>,
+    extra_macros: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    ignore_macros: Option<Vec<String>>,
+    ignore_macros: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    extra_methods: Option<Vec<String>>,
+    extra_methods: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    ignore_methods: Option<Vec<String>>,
+    ignore_methods: Option<Vec<&'static str>>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -51,10 +51,10 @@ fn custom_macros_and_methods_extend_and_subtract_the_default_lists() {
     run(
         "ui-toml/unicode_ellipsis_in_panic_messages/custom_macros_and_methods",
         RuleConfig {
-            extra_macros: Some(vec!["my_panic".into()]),
-            ignore_macros: Some(vec!["panic".into()]),
-            extra_methods: Some(vec!["expect_with".into()]),
-            ignore_methods: Some(vec!["expect".into()]),
+            extra_macros: Some(vec!["my_panic"]),
+            ignore_macros: Some(vec!["panic"]),
+            extra_methods: Some(vec!["expect_with"]),
+            ignore_methods: Some(vec!["expect"]),
         },
     );
 }

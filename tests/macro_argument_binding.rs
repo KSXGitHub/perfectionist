@@ -20,19 +20,19 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     mode: Option<&'static str>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    deny_extra: Vec<String>,
+    deny_extra: Vec<&'static str>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    allow_extra: Vec<String>,
+    allow_extra: Vec<&'static str>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    ignore: Vec<String>,
+    ignore: Vec<&'static str>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    extra_pure_methods: Vec<String>,
+    extra_pure_methods: Vec<&'static str>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    ignore_pure_methods: Vec<String>,
+    ignore_pure_methods: Vec<&'static str>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    extra_pure_macros: Vec<String>,
+    extra_pure_macros: Vec<&'static str>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    ignore_pure_macros: Vec<String>,
+    ignore_pure_macros: Vec<&'static str>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -74,7 +74,7 @@ fn deny_extra_adds_a_qualified_macro_to_the_deny_set() {
     run(
         "ui-toml/macro_argument_binding/deny_extra",
         RuleConfig {
-            deny_extra: vec!["inner::their_macro".into()],
+            deny_extra: vec!["inner::their_macro"],
             ..Default::default()
         },
     );
@@ -85,7 +85,7 @@ fn allow_extra_silences_an_uncatalogued_macro() {
     run(
         "ui-toml/macro_argument_binding/allow_extra",
         RuleConfig {
-            allow_extra: vec!["my_macro".into()],
+            allow_extra: vec!["my_macro"],
             ..Default::default()
         },
     );
@@ -96,7 +96,7 @@ fn extra_pure_methods_adds_a_pure_getter_to_the_postfix_set() {
     run(
         "ui-toml/macro_argument_binding/extra_pure_methods",
         RuleConfig {
-            extra_pure_methods: vec!["cached_size".into()],
+            extra_pure_methods: vec!["cached_size"],
             ..Default::default()
         },
     );
@@ -107,7 +107,7 @@ fn ignore_pure_methods_drops_a_built_in_pure_getter() {
     run(
         "ui-toml/macro_argument_binding/ignore_pure_methods",
         RuleConfig {
-            ignore_pure_methods: vec!["as_ref".into()],
+            ignore_pure_methods: vec!["as_ref"],
             ..Default::default()
         },
     );
@@ -118,7 +118,7 @@ fn extra_pure_macros_adds_a_compile_time_macro_to_the_atom_set() {
     run(
         "ui-toml/macro_argument_binding/extra_pure_macros",
         RuleConfig {
-            extra_pure_macros: vec!["literal_table".into()],
+            extra_pure_macros: vec!["literal_table"],
             ..Default::default()
         },
     );
@@ -129,7 +129,7 @@ fn ignore_pure_macros_drops_a_built_in_compile_time_macro() {
     run(
         "ui-toml/macro_argument_binding/ignore_pure_macros",
         RuleConfig {
-            ignore_pure_macros: vec!["cfg".into()],
+            ignore_pure_macros: vec!["cfg"],
             ..Default::default()
         },
     );
@@ -140,7 +140,7 @@ fn ignore_suppresses_a_built_in_deny_set_macro() {
     run(
         "ui-toml/macro_argument_binding/ignore",
         RuleConfig {
-            ignore: vec!["debug_assert_eq".into()],
+            ignore: vec!["debug_assert_eq"],
             ..Default::default()
         },
     );
@@ -151,8 +151,8 @@ fn ignore_wins_over_deny_extra_for_the_same_macro() {
     run(
         "ui-toml/macro_argument_binding/ignore_overrides_deny_extra",
         RuleConfig {
-            deny_extra: vec!["my_macro".into()],
-            ignore: vec!["my_macro".into()],
+            deny_extra: vec!["my_macro"],
+            ignore: vec!["my_macro"],
             ..Default::default()
         },
     );

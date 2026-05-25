@@ -26,9 +26,9 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     require_for: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    extra_suffixes: Option<Vec<String>>,
+    extra_suffixes: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    ignore_suffixes: Option<Vec<String>>,
+    ignore_suffixes: Option<Vec<&'static str>>,
 }
 
 /// The `[perfectionist]` table, kept minimal so every fixture below
@@ -110,8 +110,8 @@ fn custom_suffixes_extend_and_subtract_the_default_list() {
     run(
         "ui-toml/non_exhaustive_error/custom_suffixes",
         RuleConfig {
-            extra_suffixes: Some(vec!["Failure".into()]),
-            ignore_suffixes: Some(vec!["Error".into()]),
+            extra_suffixes: Some(vec!["Failure"]),
+            ignore_suffixes: Some(vec!["Error"]),
             ..Default::default()
         },
     );

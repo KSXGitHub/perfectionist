@@ -24,9 +24,9 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    extra_macros: Vec<String>,
+    extra_macros: Vec<&'static str>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    ignore: Vec<String>,
+    ignore: Vec<&'static str>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -52,7 +52,7 @@ fn extra_macros_enables_a_macro_by_bare_name() {
     run(
         "ui-toml/macro_trailing_comma/extra_macros",
         RuleConfig {
-            extra_macros: vec!["my_macro".into()],
+            extra_macros: vec!["my_macro"],
             ..Default::default()
         },
     );
@@ -66,7 +66,7 @@ fn extra_macros_enables_a_macro_by_qualified_path() {
     run(
         "ui-toml/macro_trailing_comma/extra_macros_qualified",
         RuleConfig {
-            extra_macros: vec!["inner::their_macro".into()],
+            extra_macros: vec!["inner::their_macro"],
             ..Default::default()
         },
     );
@@ -77,7 +77,7 @@ fn ignore_suppresses_a_built_in_curated_macro() {
     run(
         "ui-toml/macro_trailing_comma/ignore",
         RuleConfig {
-            ignore: vec!["vec".into()],
+            ignore: vec!["vec"],
             ..Default::default()
         },
     );
@@ -88,8 +88,8 @@ fn ignore_wins_over_extra_macros_for_the_same_macro() {
     run(
         "ui-toml/macro_trailing_comma/ignore_overrides_extra",
         RuleConfig {
-            extra_macros: vec!["my_macro".into()],
-            ignore: vec!["my_macro".into()],
+            extra_macros: vec!["my_macro"],
+            ignore: vec!["my_macro"],
         },
     );
 }
@@ -104,7 +104,7 @@ fn ignore_supports_qualified_path_and_whitespace_padding() {
     run(
         "ui-toml/macro_trailing_comma/ignore_qualified_with_whitespace",
         RuleConfig {
-            ignore: vec!["  std::vec  ".into()],
+            ignore: vec!["  std::vec  "],
             ..Default::default()
         },
     );

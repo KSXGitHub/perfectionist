@@ -28,7 +28,7 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    exempt_lints: Option<Vec<String>>,
+    exempt_lints: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     min_reason_length: Option<NonZeroUsize>,
 }
@@ -38,7 +38,7 @@ fn dylint_toml(config: RuleConfig) -> String {
     toml::to_string(&table).expect("serialise rule config as dylint.toml")
 }
 
-fn run(src_base: &str, contents: String) {
+fn run(src_base: &str, contents: &str) {
     let _serial = SERIAL.lock().unwrap_or_else(|err| err.into_inner());
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), src_base)
         .dylint_toml(contents)
@@ -49,8 +49,8 @@ fn run(src_base: &str, contents: String) {
 fn exempt_lints_skips_attributes_whose_every_lint_is_exempt() {
     run(
         "ui-toml/lint_silence_reason/exempt_lints",
-        dylint_toml(RuleConfig {
-            exempt_lints: Some(vec!["clippy::module_name_repetitions".into()]),
+        &dylint_toml(RuleConfig {
+            exempt_lints: Some(vec!["clippy::module_name_repetitions"]),
             ..Default::default()
         }),
     );
@@ -60,7 +60,7 @@ fn exempt_lints_skips_attributes_whose_every_lint_is_exempt() {
 fn min_reason_length_one_accepts_any_non_blank_reason() {
     run(
         "ui-toml/lint_silence_reason/min_reason_length_one",
-        dylint_toml(RuleConfig {
+        &dylint_toml(RuleConfig {
             min_reason_length: 1.pipe(NonZeroUsize::new).unwrap().pipe(Some),
             ..Default::default()
         }),
@@ -71,7 +71,7 @@ fn min_reason_length_one_accepts_any_non_blank_reason() {
 fn min_reason_length_eight_raises_the_floor() {
     run(
         "ui-toml/lint_silence_reason/min_reason_length_eight",
-        dylint_toml(RuleConfig {
+        &dylint_toml(RuleConfig {
             min_reason_length: 8.pipe(NonZeroUsize::new).unwrap().pipe(Some),
             ..Default::default()
         }),
@@ -88,7 +88,6 @@ fn disable_in_global_table_suppresses_the_rule() {
         text_block_fnl! {
             "[perfectionist]"
             r#"disable = ["lint_silence_reason"]"#
-        }
-        .to_owned(),
+        },
     );
 }
