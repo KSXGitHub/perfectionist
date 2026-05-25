@@ -214,7 +214,6 @@ fn take_fenced_code_block(input: &str) -> Option<usize> {
     }
     // Walk lines until a closing fence is found.
     while index < bytes.len() {
-        let line_start = index;
         let mut spaces = 0;
         while spaces < 3 && index + spaces < bytes.len() && bytes[index + spaces] == b' ' {
             spaces += 1;
@@ -236,7 +235,6 @@ fn take_fenced_code_block(input: &str) -> Option<usize> {
                 }
             }
         }
-        let _ = line_start;
         // Advance past this line.
         while index < bytes.len() && bytes[index] != b'\n' {
             index += 1;

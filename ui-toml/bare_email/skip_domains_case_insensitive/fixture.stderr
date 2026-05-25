@@ -1,0 +1,19 @@
+warning: bare email address `other@elsewhere.test`
+  --> $DIR/fixture.rs:7:24
+   |
+LL | /// email still fires: other@elsewhere.test here.
+   |                        ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::bare_email)]` on by default
+help: wrap in `<...>`
+   |
+LL - /// email still fires: other@elsewhere.test here.
+LL + /// email still fires: <other@elsewhere.test> here.
+   |
+help: or prefix with `mailto:`
+   |
+LL | /// email still fires: mailto:other@elsewhere.test here.
+   |                        +++++++
+
+warning: 1 warning emitted
+

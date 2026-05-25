@@ -36,6 +36,20 @@ fn run(src_base: &str, config: RuleConfig) {
 }
 
 #[test]
+fn skip_domains_matches_case_insensitively() {
+    // `skip_domains` compares case-insensitively (per DNS): an
+    // uppercase `EXAMPLE.COM` entry suppresses a lowercase
+    // `user@example.com`, while an address on another domain fires.
+    run(
+        "ui-toml/bare_email/skip_domains_case_insensitive",
+        RuleConfig {
+            skip_domains: Some(vec!["EXAMPLE.COM".to_owned()]),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
 fn mailto_style_emits_single_mailto_suggestion() {
     // `style = "mailto"` produces one `MachineApplicable` suggestion
     // that prefixes the address with `mailto:`. Distinguished from

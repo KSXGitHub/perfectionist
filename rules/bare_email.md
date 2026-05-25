@@ -59,9 +59,10 @@ bare in changelog entries. Empty by default.
 
 ### `skip_domains`: `[string]` (optional)
 
-Skip addresses whose domain matches any of these patterns.
-Empty by default. Useful alongside `skip_addresses` for
-blanket domain exemptions.
+Skip addresses whose domain exactly equals any of these
+(compared case-insensitively, per DNS). Not glob/pattern
+matching. Empty by default. Useful alongside `skip_addresses`
+for blanket domain exemptions.
 
 ### Types
 

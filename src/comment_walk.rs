@@ -454,7 +454,9 @@ fn render_block_comment(
         // Applies to every line, not just the first.
         let bytes = line_content.as_bytes();
         let mut content_start: usize = 0;
-        while content_start < bytes.len() && bytes[content_start] == b' ' {
+        while content_start < bytes.len()
+            && (bytes[content_start] == b' ' || bytes[content_start] == b'\t')
+        {
             content_start += 1;
         }
         if content_start < bytes.len() && bytes[content_start] == b'*' {
