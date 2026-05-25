@@ -74,6 +74,18 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
+const CONFIG_KEY: &str = "perfectionist::lint_reason_from_comment";
+
+/// The rule has no options. The empty struct still exists so that a
+/// stray `[perfectionist::lint_reason_from_comment]` table in
+/// `dylint.toml` deserialises rather than producing a confusing
+/// parse error, and so the generated catalogue renders a
+/// `Configuration: none.` entry consistent with the other
+/// option-free rules.
+#[derive(Debug, Default, serde::Deserialize)]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
+struct Config {}
+
 pub struct LintReasonFromComment {
     /// Source span of the most recently-visited
     /// `sym::cfg_attr_trace` attribute. rustc replaces a
@@ -93,6 +105,7 @@ pub struct LintReasonFromComment {
 
 impl LintReasonFromComment {
     fn new() -> Self {
+        let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
             pending_cfg_attr_outer: None,
         }
