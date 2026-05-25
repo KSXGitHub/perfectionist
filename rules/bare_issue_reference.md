@@ -10,8 +10,9 @@
 ## What it does
 Flags bare `#NNN` issue / pull-request references in doc
 comments (`///`, `//!`) — and, when opted in, in plain `//`
-line comments. The autofix rewrites the reference; the `form`
-knob selects the shape (inline `[#123](URL)`, reference
+line comments. The autofix rewrites the reference; the
+`doc_comment_form` knob selects the shape (inline `[#123](URL)`,
+reference
 `[#123]`, a bare URL, or a `<URL>` autolink).
 
 A bare `#NNN` is deeply ambiguous: it might be an issue, a
@@ -82,7 +83,7 @@ request*. Defaults to `true`. Ignored on GitLab, where a bare
 `#NNN` is always an issue (merge requests are written `!NNN`),
 so only the issue suggestion is offered there.
 
-### `form`: `DocForm` (optional)
+### `doc_comment_form`: `DocForm` (optional)
 
 Doc-comment fix form: `inline` for `[#N](URL)`, `reference`
 for the two-piece `[#N]` + `[#N]: URL` form (the definition is

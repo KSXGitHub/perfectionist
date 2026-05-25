@@ -11,9 +11,9 @@
 
 /// Default eligible escape sequences: the three escapes that a raw
 /// string can express verbatim with no escape at all. Also used as
-/// the closed set against which user-supplied `escapes_eligible`
+/// the closed set against which user-supplied `eligible_escapes`
 /// entries are validated.
-pub(super) const DEFAULT_ESCAPES_ELIGIBLE: &[&str] = &[r#"\""#, r"\\", r"\'"];
+pub(super) const DEFAULT_ELIGIBLE_ESCAPES: &[&str] = &[r#"\""#, r"\\", r"\'"];
 
 pub(super) struct ScanResult {
     pub(super) eliminable_count: usize,
@@ -24,7 +24,7 @@ pub(super) struct ScanResult {
 /// surrounding quotes) and classify each escape. Returns `None` if
 /// the body contains any non-raw escape — `\n`, `\t`, `\r`, `\0`,
 /// `\xNN`, `\u{...}`, line continuations, or any other backslash
-/// sequence that is not listed in the configured `escapes_eligible`.
+/// sequence that is not listed in the configured `eligible_escapes`.
 pub(super) fn scan_body(body: &str, eligible: &[String]) -> Option<ScanResult> {
     let mut rest = body;
     let mut eliminable_count: usize = 0;
@@ -151,21 +151,21 @@ pub(super) fn minimal_hash_count(decoded: &str) -> usize {
     }
 }
 
-/// A supported `escapes_eligible` entry is one of the three Rust
+/// A supported `eligible_escapes` entry is one of the three Rust
 /// escapes that self-decode — that is, whose decoded character is
 /// exactly the byte that follows the backslash: `\"`, `\\`, `\'`.
 /// [`eliminable_decoded`]'s contract is "strip the leading backslash",
 /// which only holds for these three. Every other valid Rust escape
 /// (`\n`, `\t`, `\r`, `\0`, `\xNN`, `\u{...}`) decodes to a
 /// different character, so accepting it here would let the autofix
-/// silently corrupt strings — e.g. `escapes_eligible = ["\\n"]`
+/// silently corrupt strings — e.g. `eligible_escapes = ["\\n"]`
 /// would rewrite a newline-containing literal to one containing the
 /// letter `n`.
 ///
 /// The supported set is the same one named by
-/// [`DEFAULT_ESCAPES_ELIGIBLE`]; matching against that constant
+/// [`DEFAULT_ELIGIBLE_ESCAPES`]; matching against that constant
 /// keeps the two definitions from drifting apart if a future
 /// extension to [`eliminable_decoded`] ever adds a fourth entry.
 pub(super) fn is_supported_eligible_entry(entry: &str) -> bool {
-    DEFAULT_ESCAPES_ELIGIBLE.contains(&entry)
+    DEFAULT_ELIGIBLE_ESCAPES.contains(&entry)
 }

@@ -18,7 +18,7 @@ Eligibility is name-based — a curated list of `core` / `std` and
 well-known third-party macros (`vec!`, `format!`, `println!`,
 `assert_eq!`, `dbg!`, `log::info!`, `tracing::debug!`,
 `anyhow::bail!`, `maplit::hashmap!`, …), extended via
-`name_based_extra` and overridden via `ignore`.
+`extra_macros` and overridden via `ignore`.
 
 Attribute-style invocations (`#[derive(...)]`, `#[serde(...)]`,
 etc.) are out of scope.
@@ -62,7 +62,7 @@ let ys = vec![1, 2, 3];
 
 Configure via `dylint.toml` under `["perfectionist::macro_trailing_comma"]`. Every field is optional; the per-field prose below states the default.
 
-### `name_based_extra`: `[string]` (optional)
+### `extra_macros`: `[string]` (optional)
 
 Additional macro paths to treat as name-based eligible, on top
 of the curated built-in list. Each entry is matched by its
@@ -77,6 +77,6 @@ than only at the tail) should not be listed here.
 
 Macro paths to opt out of the rule, even if they would
 otherwise be eligible via the built-in list or
-`name_based_extra`. Matched by final path segment, like
-`name_based_extra`. Checked first, so this knob always wins
+`extra_macros`. Matched by final path segment, like
+`extra_macros`. Checked first, so this knob always wins
 over eligibility. Empty by default.
