@@ -11,9 +11,9 @@
 Flags bare `#NNN` issue / pull-request references in doc
 comments (`///`, `//!`) — and, when opted in, in plain `//`
 line comments. The autofix rewrites the reference; the
-`doc_comment_form` knob selects the shape (inline `[#123](URL)`,
-reference
-`[#123]`, a bare URL, or a `<URL>` autolink).
+`doc_comment_form` knob selects the shape (inline
+`[#123](URL)`, reference `[#123]`, a bare URL, or a `<URL>`
+autolink).
 
 A bare `#NNN` is deeply ambiguous: it might be an issue, a
 pull request, a colour like `#123`, or any other numbered
