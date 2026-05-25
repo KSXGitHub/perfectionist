@@ -39,23 +39,14 @@ near-relatives such as U+22EF MIDLINE HORIZONTAL ELLIPSIS (`⋯`)
 or U+2025 TWO DOT LEADER (`‥`) that the same autocorrect
 pipelines occasionally insert. Empty by default.
 
-### `scope`: `[Scope]` (optional)
+### `scan_line_comments`: `boolean` (optional)
 
-Which comment forms to scan. Defaults to both `line` (`//`)
-and `block` (`/* */`). Narrow this if a project intentionally
-uses one form for prose and wants the lint to ignore it.
+Scan `//` line comments, including consecutive runs that rustc
+treats as a single logical comment. Defaults to `true`. Narrow
+this if a project intentionally uses one comment form for prose
+and wants the lint to ignore it.
 
-### Types
+### `scan_block_comments`: `boolean` (optional)
 
-#### `Scope` (enum)
-
-Selector for which comment syntaxes the rule scans.
-
-##### `"line"` (Rust: `Line`)
-
-`//`-prefixed line comments, including consecutive runs that
-rustc treats as a single logical comment.
-
-##### `"block"` (Rust: `Block`)
-
-`/* ... */` block comments, including nested ones.
+Scan `/* ... */` block comments, including nested ones.
+Defaults to `true`.

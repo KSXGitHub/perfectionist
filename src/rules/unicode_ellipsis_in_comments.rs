@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use rustc_ast::Crate;
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
@@ -48,35 +46,30 @@ struct Config {
     /// or U+2025 TWO DOT LEADER (`‥`) that the same autocorrect
     /// pipelines occasionally insert. Empty by default.
     extra_flagged_chars: Vec<char>,
-    /// Which comment forms to scan. Defaults to both `line` (`//`)
-    /// and `block` (`/* */`). Narrow this if a project intentionally
-    /// uses one form for prose and wants the lint to ignore it.
-    scope: Vec<Scope>,
+    /// Scan `//` line comments, including consecutive runs that rustc
+    /// treats as a single logical comment. Defaults to `true`. Narrow
+    /// this if a project intentionally uses one comment form for prose
+    /// and wants the lint to ignore it.
+    scan_line_comments: bool,
+    /// Scan `/* ... */` block comments, including nested ones.
+    /// Defaults to `true`.
+    scan_block_comments: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             extra_flagged_chars: Vec::new(),
-            scope: vec![Scope::Line, Scope::Block],
+            scan_line_comments: true,
+            scan_block_comments: true,
         }
     }
 }
 
-/// Selector for which comment syntaxes the rule scans.
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum Scope {
-    /// `//`-prefixed line comments, including consecutive runs that
-    /// rustc treats as a single logical comment.
-    Line,
-    /// `/* ... */` block comments, including nested ones.
-    Block,
-}
-
 pub struct UnicodeEllipsisInComments {
     flagged_chars: Vec<char>,
-    scopes: BTreeSet<Scope>,
+    scan_line_comments: bool,
+    scan_block_comments: bool,
 }
 
 impl UnicodeEllipsisInComments {
@@ -90,7 +83,8 @@ impl UnicodeEllipsisInComments {
         }
         Self {
             flagged_chars,
-            scopes: config.scope.into_iter().collect(),
+            scan_line_comments: config.scan_line_comments,
+            scan_block_comments: config.scan_block_comments,
         }
     }
 }
@@ -113,9 +107,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
 impl EarlyLintPass for UnicodeEllipsisInComments {
     fn check_crate(&mut self, lint_context: &EarlyContext<'_>, _: &Crate) {
         let source_map = lint_context.sess().source_map();
-        let scan_line_comments = self.scopes.contains(&Scope::Line);
-        let scan_block_comments = self.scopes.contains(&Scope::Block);
-        if !(scan_line_comments || scan_block_comments) {
+        if !(self.scan_line_comments || self.scan_block_comments) {
             return;
         }
         for source_file in source_map.files().iter() {
@@ -129,10 +121,10 @@ impl EarlyLintPass for UnicodeEllipsisInComments {
             for token in tokenize(source_text, FrontmatterAllowed::Yes) {
                 let token_len = token.len;
                 let should_scan_token = match token.kind {
-                    TokenKind::LineComment { doc_style: None } => scan_line_comments,
+                    TokenKind::LineComment { doc_style: None } => self.scan_line_comments,
                     TokenKind::BlockComment {
                         doc_style: None, ..
-                    } => scan_block_comments,
+                    } => self.scan_block_comments,
                     _ => false,
                 };
                 if should_scan_token {
