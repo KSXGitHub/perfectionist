@@ -86,13 +86,11 @@ article.rule h2 {
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
-/* The glyph is positioned against the heading's <code> box, not the
-   whole <h2>: `right: 100%` parks it entirely left of <code> (so the
-   rule name stays aligned with the body's paragraphs), and spanning the
-   <code> box with `top`/`bottom: 0` centres it on the text rather than
-   the taller line box. The combined width + margin reach (~0.95rem)
-   stays inside the body's 1rem side padding, so it never forces
-   horizontal scrolling on phones. */
+/* `right: 100%` parks the glyph left of the heading's <code>, so the
+   rule name stays aligned with body paragraphs; spanning <code> with
+   `top`/`bottom: 0` centres it on the text, not the taller line box.
+   The ~0.95rem reach stays within the body's 1rem padding to avoid
+   horizontal scroll on phones. */
 article.rule h2 code {
   position: relative;
 }
