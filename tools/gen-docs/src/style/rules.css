@@ -86,6 +86,32 @@ article.rule h2 {
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
+/* `right: 100%` parks the glyph left of the heading's <code>, so the
+   rule name stays aligned with body paragraphs; spanning <code> with
+   `top`/`bottom: 0` centres it on the text, not the taller line box.
+   The ~0.95rem reach stays within the body's 1rem padding to avoid
+   horizontal scroll on phones. */
+article.rule h2 code {
+  position: relative;
+}
+
+article.rule h2 .rule-anchor {
+  position: absolute;
+  right: 100%;
+  top: 0;
+  bottom: 0;
+  width: 0.8rem;
+  margin-right: 0.15rem;
+  background: url("rule-anchor.svg") no-repeat center / 0.8rem;
+  opacity: 0;
+  transition: opacity 0.12s ease-in-out;
+}
+
+article.rule h2:hover .rule-anchor,
+article.rule h2 .rule-anchor:focus {
+  opacity: 1;
+}
+
 article.rule h2 .lint-prefix {
   font-size: 0.89em;
   color: #57606a;
