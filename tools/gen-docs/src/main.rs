@@ -42,7 +42,7 @@ use pipe_trait::Pipe;
 use crate::check_md::{CheckOutcome, check_rules_dir, write_rules_dir};
 use crate::extract::collect_rules;
 use crate::model::{RenderContext, Rule};
-use crate::render::render_page;
+use crate::render::{RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME, render_page};
 
 #[derive(Parser)]
 #[clap(about = "Render perfectionist's lint catalogue")]
@@ -176,6 +176,12 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     let html = render_page(&rules, &context);
     let index_path = out_dir.join("index.html");
     fs::write(&index_path, html).expect("failed to write index.html");
+
+    // The heading-anchor chain-link glyph is referenced by the
+    // stylesheet's `url(...)`, not inlined into the page, so it has to
+    // land beside `index.html` for that relative URL to resolve.
+    let icon_path = out_dir.join(RULE_ANCHOR_ICON_FILENAME);
+    fs::write(&icon_path, RULE_ANCHOR_ICON).expect("failed to write rule-anchor icon");
 
     eprintln!("wrote {} rule(s) to {}", rules.len(), index_path.display());
     ExitCode::SUCCESS

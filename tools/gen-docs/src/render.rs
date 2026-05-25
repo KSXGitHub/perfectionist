@@ -22,6 +22,19 @@ const STYLE: &str = concat!(
 );
 const NAV_TOGGLE_SCRIPT: &str = include_str!("nav_toggle.js");
 
+/// The chain-link glyph rendered beside each rule-name heading. It is
+/// shipped as a standalone file alongside `index.html` and referenced
+/// from the stylesheet by [`RULE_ANCHOR_ICON_FILENAME`] rather than
+/// inlined into the page, so the SVG markup stays out of every served
+/// byte of HTML.
+pub(crate) const RULE_ANCHOR_ICON: &str = include_str!("assets/rule-anchor.svg");
+
+/// File name the [`RULE_ANCHOR_ICON`] is written under in the output
+/// directory. `rules.css` references the same name in a relative
+/// `url(...)`, so the two must agree; `style_references_rule_anchor_icon`
+/// pins that.
+pub(crate) const RULE_ANCHOR_ICON_FILENAME: &str = "rule-anchor.svg";
+
 pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String {
     let RenderContext {
         crate_version,
@@ -176,6 +189,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
     html! {
         article.rule id=(anchor_for(&rule.namespaced)) {
             h2 {
+                a.rule-anchor href={ "#" (anchor_for(&rule.namespaced)) } aria-label="Permalink to this rule" {}
                 code {
                     span.lint-prefix { (NAMESPACE) }
                     span.lint-name { (unnamespaced(&rule.namespaced)) }
@@ -375,6 +389,75 @@ mod tests {
             STYLE.contains("[hidden]") && STYLE.contains("display: none !important"),
             "style/base.css must keep the `[hidden] {{ display: none !important }}` reset; \
              without it the JS-driven toggle's `hidden`-by-default fallback is broken",
+        );
+    }
+
+    #[test]
+    fn rule_heading_emits_left_side_permalink_anchor() {
+        let html = render_page(&[fake_rule("alpha")], &fake_context());
+        // The rule-name heading carries a self-link whose href is the
+        // article's own id, placed *before* the <code> (left side) and
+        // before the "↑ top" jump link. The CSS parks it in the left
+        // gutter and hides it until hover; the markup just has to emit
+        // the empty, labelled anchor pointing at the rule's anchor.
+        assert!(
+            html.contains(
+                "<a class=\"rule-anchor\" href=\"#perfectionist-alpha\" \
+                 aria-label=\"Permalink to this rule\"></a>"
+            ),
+            "rule heading must emit a left-side permalink anchor to its own id",
+        );
+        let heading = "<h2><a class=\"rule-anchor\"";
+        assert!(
+            html.contains(heading),
+            "the permalink anchor must be the first child of the rule <h2> (left side)",
+        );
+        // Use tag-prefixed needles: the inlined stylesheet mentions
+        // `.rule-anchor` / `.rule-jump-link` as bare selectors, so a
+        // class-only search would match the CSS in <head> long before
+        // the body markup and scramble the ordering check.
+        let anchor_pos = html
+            .find("<a class=\"rule-anchor\"")
+            .expect("rule-anchor missing");
+        let code_pos = html
+            .find("<span class=\"lint-prefix\"")
+            .expect("lint-prefix missing");
+        let jump_pos = html
+            .find("<a class=\"rule-jump-link\"")
+            .expect("jump link missing");
+        assert!(
+            anchor_pos < code_pos && code_pos < jump_pos,
+            "permalink anchor must precede the rule name, which precedes the jump link",
+        );
+    }
+
+    #[test]
+    fn page_does_not_inline_the_anchor_icon_svg() {
+        // The chain-link glyph is shipped as an external file referenced
+        // by the stylesheet's `url(...)`; per the design it must never
+        // be inlined into the served HTML. No `<svg` should appear
+        // anywhere on the page.
+        let html = render_page(&[fake_rule("alpha")], &fake_context());
+        assert!(
+            !html.contains("<svg"),
+            "the heading-anchor icon must stay an external resource, not inlined SVG",
+        );
+    }
+
+    #[test]
+    fn style_references_rule_anchor_icon() {
+        // `rules.css` pulls the glyph in via a relative `url(...)`, and
+        // `run_html` writes the file under RULE_ANCHOR_ICON_FILENAME
+        // beside index.html. The two names must agree or the icon 404s.
+        let expected = format!("url(\"{RULE_ANCHOR_ICON_FILENAME}\")");
+        assert!(
+            STYLE.contains(&expected),
+            "rules.css must reference the anchor icon as {expected}",
+        );
+        // The vendored asset must keep its Octicons MIT attribution.
+        assert!(
+            RULE_ANCHOR_ICON.contains("Octicons") && RULE_ANCHOR_ICON.contains("MIT"),
+            "the bundled rule-anchor.svg must retain its Octicons MIT attribution",
         );
     }
 
