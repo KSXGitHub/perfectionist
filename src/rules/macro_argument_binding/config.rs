@@ -183,11 +183,7 @@ const BUILTIN_PURE_METHODS: &[&str] = &[
     "as_bytes", "as_deref", "as_mut", "as_ref", "as_slice", "as_str", "is_empty", "len",
 ];
 
-/// Eligibility mode. The default is `AllowAndDeny`. The matcher-based
-/// mode described in `planned-rules/macro-argument-binding.md` is not
-/// yet implemented and is therefore not exposed as a value here; a
-/// `dylint.toml` that names it will fail to deserialise with a
-/// useful error.
+/// Eligibility mode. The default is `AllowAndDeny`.
 #[derive(Debug, Clone, Copy, Default, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum Mode {

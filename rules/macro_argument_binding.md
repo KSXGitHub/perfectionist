@@ -164,11 +164,7 @@ Checked after the merge, so this knob always wins.
 
 #### `Mode` (enum)
 
-Eligibility mode. The default is `AllowAndDeny`. The matcher-based
-mode described in `planned-rules/macro-argument-binding.md` is not
-yet implemented and is therefore not exposed as a value here; a
-`dylint.toml` that names it will fail to deserialise with a
-useful error.
+Eligibility mode. The default is `AllowAndDeny`.
 
 ##### `"deny_only"` (Rust: `DenyOnly`)
 
