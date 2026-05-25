@@ -17,18 +17,19 @@ pub(super) struct Insertion {
 }
 
 /// Compute the byte-offset edit that inserts
-/// `reason = "<escaped>"` into the attribute's argument list. The
-/// three layout cases match the planning file (and the sibling
-/// `lint_silence_reason`'s autofix):
+/// `reason = "<escaped>"` into the attribute's argument list. Two
+/// strategies, chosen by whether the closing `)` sits on its own
+/// line:
 ///
-/// - **Single line, no trailing comma**: insert
-///   `, reason = "<escaped>"` before the closing `)`.
-/// - **Single line, trailing comma**: insert
-///   ` reason = "<escaped>",` before the closing `)`.
-/// - **Multi-line**: insert a new line `reason = "<escaped>",`
-///   immediately before the line carrying the closing `)`, matching
-///   the indentation of the preceding argument. If the last argument
-///   lacks a trailing comma, one is added when inserting.
+/// - **Inline** (`)` shares its line with the last argument — both
+///   `allow(foo)` and the wrapped `allow(\n    foo)`): splice before
+///   the closing `)`. `, reason = "<escaped>"` when the last arg has
+///   no trailing comma, ` reason = "<escaped>",` when it does, and a
+///   bare `reason = "<escaped>"` into an empty `allow()`.
+/// - **New line** (`)` alone on its own line, `allow(\n    foo,\n)`):
+///   insert a `reason = "<escaped>",` line immediately before the
+///   `)` line, matching the indentation of the preceding argument.
+///   If that argument lacks a trailing comma, one is added.
 ///
 /// Returns `None` if the snippet does not contain the expected
 /// `(...)` layout (e.g. macro-expanded sources where
@@ -37,7 +38,21 @@ pub(super) fn build_reason_insertion(snippet: &str, escaped: &str) -> Option<Ins
     let (open_paren_offset, close_paren_offset) = locate_outermost_parens(snippet)?;
     let head = &snippet[..close_paren_offset];
 
-    if !head[open_paren_offset..].contains('\n') {
+    // Pick the insertion strategy by whether the closing `)` sits on
+    // its own line, *not* by whether the argument list contains a
+    // newline anywhere. A true single-line list (`allow(foo)`) and a
+    // wrapped list whose `)` rides the last argument's line
+    // (`allow(\n    foo)`) both want the inline splice — only a `)`
+    // alone on its own line (`allow(\n    foo,\n)`) wants a new
+    // indented `reason` line. Keying off "any newline in the parens"
+    // mis-handled the wrapped case, inserting an unindented line in
+    // the wrong place.
+    let close_line_start = head.rfind('\n').map_or(0, |index| index + 1);
+    let close_on_own_line = head[close_line_start..]
+        .trim_matches([' ', '\t', '\r'])
+        .is_empty();
+
+    if !close_on_own_line {
         let trimmed = head.trim_end_matches([' ', '\t', '\r']);
         // An empty argument list (`#[allow()]`) and a trailing-comma
         // list collapse into the same edit shape if we look only at
@@ -181,6 +196,18 @@ mod tests {
         let input = "allow(\n    foo,\n)";
         let expected = "allow(\n    foo,\n    reason = \"why\",\n)";
         assert_eq!(run_insertion(input, "why"), expected);
+    }
+
+    /// Wrapped argument list whose closing `)` rides the last
+    /// argument's line. The `)` is not on its own line, so the
+    /// inline strategy applies — splice before `)` rather than
+    /// emitting a stray unindented `reason` line.
+    #[test]
+    fn insertion_wrapped_close_paren_on_last_arg_line() {
+        assert_eq!(
+            run_insertion("allow(\n    foo)", "why"),
+            "allow(\n    foo, reason = \"why\")",
+        );
     }
 
     #[test]
