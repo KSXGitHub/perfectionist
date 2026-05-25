@@ -5,11 +5,11 @@
 #![warn(perfectionist::single_letter_function_param)]
 
 // `extra_allowed_idents = ["x"]` adds to the built-in
-// `["n", "f", "i", "j", "k"]` list, and `ignore_allowed_idents = ["n"]`
+// `["n", "f", "i", "j", "k"]` list, and `extra_denied_idents = ["n"]`
 // drops the default back out. After the merge `n` is no longer
 // allowed and `x` is.
 
-// `n` is dropped from the allowlist by `ignore_allowed_idents`: fires.
+// `n` is dropped from the allowlist by `extra_denied_idents`: fires.
 fn count(n: usize) -> usize {
     n + 1
 }

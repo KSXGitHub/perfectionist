@@ -56,8 +56,9 @@ struct Config {
     /// this knob always wins.
     ignore_methods: Vec<String>,
     /// Extra characters to flag alongside U+2026, in the same spirit
-    /// as `unicode_ellipsis_in_comments.also_flag`. Empty by default.
-    also_flag: Vec<char>,
+    /// as `unicode_ellipsis_in_comments.extra_flagged_chars`. Empty by
+    /// default.
+    extra_flagged_chars: Vec<char>,
 }
 
 pub(super) struct UnicodeEllipsisInPanicMessages {
@@ -70,7 +71,7 @@ impl UnicodeEllipsisInPanicMessages {
     pub(super) fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         let mut flagged_chars = vec!['\u{2026}'];
-        for character in config.also_flag {
+        for character in config.extra_flagged_chars {
             if !flagged_chars.contains(&character) {
                 flagged_chars.push(character);
             }
