@@ -88,19 +88,7 @@ pub(crate) fn render_rule_md(rule: &Rule, source_link_prefix: &str) -> String {
         }
         out.push('\n');
     }
-    if let Some(config) = &rule.config {
-        render_config_section(config, &mut out);
-    } else {
-        // Rules without a `Config`/`CONFIG_KEY` pair (in practice,
-        // only `unknown_perfectionist_lints` today) get the same
-        // "Configuration: none." stub the HTML renderer emits, for
-        // the same reason: silence about configurability is
-        // ambiguous; an explicit "none" is not.
-        let _ = writeln!(out, "## Configuration");
-        out.push('\n');
-        let _ = writeln!(out, "None.");
-        out.push('\n');
-    }
+    render_config_section(&rule.config, &mut out);
     trim_trailing_blank_lines(&mut out);
     out
 }
@@ -422,7 +410,11 @@ mod tests {
             short_desc: "demo rule used in tests".to_owned(),
             doc_markdown: "### What it does\nDoes a demo.".to_owned(),
             relative_source: PathBuf::from("src/rules/demo_rule.rs"),
-            config: None,
+            config: ConfigDoc {
+                key: "perfectionist::demo_rule".to_owned(),
+                fields: Vec::new(),
+                custom_types: Vec::new(),
+            },
         }
     }
 
@@ -460,7 +452,7 @@ mod tests {
     #[test]
     fn rule_md_with_config_lists_fields_and_types() {
         let mut rule = fake_rule();
-        rule.config = Some(ConfigDoc {
+        rule.config = ConfigDoc {
             key: "perfectionist::demo_rule".to_owned(),
             fields: vec![ConfigField {
                 name: "style".to_owned(),
@@ -485,7 +477,7 @@ mod tests {
                     ],
                 },
             }],
-        });
+        };
         let md = render_rule_md(&rule, "../");
         assert!(md.contains("### `style`: `Style` (optional)"));
         assert!(md.contains("Pick a style."));

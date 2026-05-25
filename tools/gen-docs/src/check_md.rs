@@ -235,7 +235,7 @@ mod tests {
     use std::path::PathBuf;
 
     use super::*;
-    use crate::model::DefaultState;
+    use crate::model::{ConfigDoc, DefaultState};
 
     fn fake_rule(name: &str) -> Rule {
         Rule {
@@ -244,7 +244,11 @@ mod tests {
             short_desc: format!("{name} short desc"),
             doc_markdown: "Body.".to_owned(),
             relative_source: PathBuf::from(format!("src/rules/{name}.rs")),
-            config: None,
+            config: ConfigDoc {
+                key: format!("perfectionist::{name}"),
+                fields: Vec::new(),
+                custom_types: Vec::new(),
+            },
         }
     }
 

@@ -413,10 +413,7 @@ mod tests {
 
         let rules = collect_rules(&rules_dir);
         assert_eq!(rules.len(), 1, "exactly one rule should be discovered");
-        let config = rules[0]
-            .config
-            .as_ref()
-            .expect("config in submodule should be merged into the rule's ConfigDoc");
+        let config = &rules[0].config;
         assert_eq!(config.key, "perfectionist::demo_rule");
         let names: Vec<&str> = config.fields.iter().map(|f| f.name.as_str()).collect();
         assert_eq!(names, vec!["knob"]);
