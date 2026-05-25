@@ -43,11 +43,11 @@ having to re-state the standard ones. Each entry is a
 single ASCII letter (`a`-`z`, `A`-`Z`); any other
 character is rejected at config-parse time.
 
-### `ignore_allowed_idents`: `[single-letter string]` (optional)
+### `extra_denied_idents`: `[single-letter string]` (optional)
 
-Identifiers to drop from the exempt set, even if they
-appear in the built-in defaults or in
-`extra_allowed_idents`. Empty by default; checked after
+Identifiers to deny (always flag), removing them from the
+exempt set even if they appear in the built-in defaults or
+in `extra_allowed_idents`. Empty by default; checked after
 the merge with the built-ins, so this knob always wins.
 Each entry is a single ASCII letter (`a`-`z`, `A`-`Z`);
 any other character is rejected at config-parse time.

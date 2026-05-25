@@ -11,7 +11,7 @@
 ///
 /// `char` keeps the broader `single-character string` label for the
 /// codepoint-shaped fields that genuinely accept any Unicode
-/// character (`unicode_ellipsis_*::also_flag`); `AsciiLetter`'s
+/// character (`unicode_ellipsis_*::extra_flagged_chars`); `AsciiLetter`'s
 /// label is strictly narrower because every value satisfies
 /// `char::is_ascii_alphabetic`.
 #[expect(
@@ -26,7 +26,7 @@ pub(crate) const TOML_LABEL: &str = "single-letter string";
 /// non-alphabetic codepoint with a clear error message at
 /// config-parse time. The `single_letter_*` rules use
 /// `Vec<AsciiLetter>` for their `extra_allowed_idents` /
-/// `ignore_allowed_idents` knobs so the invariant the rule
+/// `extra_denied_idents` knobs so the invariant the rule
 /// documentation advertises ("each entry is a single ASCII letter,
 /// `a`-`z`, `A`-`Z`") is part of the type rather than carried by a
 /// `#[serde(deserialize_with = "...")]` attribute by convention.

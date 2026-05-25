@@ -30,7 +30,7 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     extra_allowed_idents: Option<Vec<char>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    ignore_allowed_idents: Option<Vec<char>>,
+    extra_denied_idents: Option<Vec<char>>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {

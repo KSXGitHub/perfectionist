@@ -298,7 +298,7 @@ pub(crate) fn resolve_symbol_set(
 
 /// Sibling of [`resolve_symbol_set`] keyed on [`char`] instead of
 /// `String`, for the `single_letter_*` rules' `extra_allowed_idents`
-/// and `ignore_allowed_idents` knobs. `char::encode_utf8` writes
+/// and `extra_denied_idents` knobs. `char::encode_utf8` writes
 /// into a small stack buffer and hands [`Symbol::intern`] the
 /// resulting `&str`. `extras` and `ignore` accept anything that
 /// iterates into `char` — notably the rules'
