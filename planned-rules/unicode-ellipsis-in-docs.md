@@ -75,7 +75,7 @@ Replace `…` with `...`. `Applicability::MachineApplicable`.
 
 ## Configuration
 
-- `unicode_ellipsis_in_docs.also_flag = ["\u{22EF}", "\u{2025}"]` —
+- `unicode_ellipsis_in_docs.extra_flagged_chars = ["\u{22EF}", "\u{2025}"]` —
   empty by default. Lets a project extend the rule to midline
   ellipsis (`⋯`) or two-dot leader (`‥`).
 - `unicode_ellipsis_in_docs.allow_in_code_spans = true` — defaults to

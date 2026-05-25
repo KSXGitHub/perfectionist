@@ -26,7 +26,7 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     extra_allowed_idents: Option<Vec<char>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    ignore_allowed_idents: Option<Vec<char>>,
+    extra_denied_idents: Option<Vec<char>>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -47,7 +47,7 @@ fn custom_allowed_idents_extend_and_subtract_the_default_list() {
         "ui-toml/single_letter_function_param/custom_allowed_idents",
         RuleConfig {
             extra_allowed_idents: Some(vec!['x']),
-            ignore_allowed_idents: Some(vec!['n']),
+            extra_denied_idents: Some(vec!['n']),
         },
     );
 }

@@ -47,7 +47,7 @@ struct Config {
     /// near-relatives such as U+22EF MIDLINE HORIZONTAL ELLIPSIS (`⋯`)
     /// or U+2025 TWO DOT LEADER (`‥`) that the same autocorrect
     /// pipelines occasionally insert. Empty by default.
-    also_flag: Vec<char>,
+    extra_flagged_chars: Vec<char>,
     /// Which comment forms to scan. Defaults to both `line` (`//`)
     /// and `block` (`/* */`). Narrow this if a project intentionally
     /// uses one form for prose and wants the lint to ignore it.
@@ -57,7 +57,7 @@ struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            also_flag: Vec::new(),
+            extra_flagged_chars: Vec::new(),
             scope: vec![Scope::Line, Scope::Block],
         }
     }
@@ -83,7 +83,7 @@ impl UnicodeEllipsisInComments {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         let mut flagged_chars = vec!['\u{2026}'];
-        for character in config.also_flag {
+        for character in config.extra_flagged_chars {
             if !flagged_chars.contains(&character) {
                 flagged_chars.push(character);
             }

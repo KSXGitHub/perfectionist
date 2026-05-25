@@ -80,7 +80,7 @@ in the built-in defaults or in `extra_methods`. Empty by
 default; checked after the merge with the built-ins, so
 this knob always wins.
 
-### `also_flag`: `[single-character string]` (optional)
+### `extra_flagged_chars`: `[single-character string]` (optional)
 
 Extra characters to flag alongside U+2026. Useful for catching
 near-relatives such as U+22EF MIDLINE HORIZONTAL ELLIPSIS (`⋯`)

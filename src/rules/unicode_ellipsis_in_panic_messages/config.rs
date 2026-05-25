@@ -59,7 +59,7 @@ struct Config {
     /// near-relatives such as U+22EF MIDLINE HORIZONTAL ELLIPSIS (`⋯`)
     /// or U+2025 TWO DOT LEADER (`‥`) that the same autocorrect
     /// pipelines occasionally insert. Empty by default.
-    also_flag: Vec<char>,
+    extra_flagged_chars: Vec<char>,
 }
 
 pub(super) struct UnicodeEllipsisInPanicMessages {
@@ -72,7 +72,7 @@ impl UnicodeEllipsisInPanicMessages {
     pub(super) fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         let mut flagged_chars = vec!['\u{2026}'];
-        for character in config.also_flag {
+        for character in config.extra_flagged_chars {
             if !flagged_chars.contains(&character) {
                 flagged_chars.push(character);
             }
