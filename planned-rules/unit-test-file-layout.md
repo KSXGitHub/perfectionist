@@ -43,18 +43,31 @@ inline_style = "external_when_long"
 #                        threshold; beyond that, must be moved to a file
 #                        (matching parallel-disk-usage's guidance).
 
-# Threshold for `external_when_long`. The lint sums the line spans of
+# Thresholds for `external_when_long`. The lint sums the line spans of
 # every inline test item in a file (the fixed set defined under
-# "What to lint" below) and compares the total against both limits. The lint fires when either
-# is exceeded. The percentage is `(inline_test_lines / file_lines) *
-# 100`, where `file_lines` is the total line count of the parent
-# source file.
+# "What to lint" below) and compares the total against both limits,
+# firing when either is exceeded.
 #
-# Defaults are set so that `inline_max_lines` is the active constraint
-# in typical projects; bump or drop `inline_max_percent_of_file` to
-# add the relative cap.
+# `inline_max_lines` is the absolute cap and is always active.
 inline_max_lines = 50
-inline_max_percent_of_file = 100   # 100 = effectively disabled
+
+# `inline_max_fraction_of_file` is the optional relative cap: a
+# fraction `inline_test_lines / file_lines`, where `file_lines` is the
+# parent source file's total line count. It is stored internally as an
+# optional float (`Option<f32>`) and is unset (`None`) by default,
+# which disables the relative limit and leaves `inline_max_lines` as
+# the active constraint in typical projects.
+#
+# Accepted values are `0.0 <= x < 1.0`. A value `>= 1.0` or `< 0.0` is
+# a configuration error — the lint refuses to start rather than
+# silently clamping. Disabling the relative cap is expressed by
+# *omitting* the key, never by a sentinel value: the measured fraction
+# is always strictly below 1.0 for any checked file (a file whose
+# top-level items are *entirely* `#[cfg(test)]`-gated is exempt — see
+# "What to lint"), so `1.0` could never fire anyway and is rejected so
+# that "disabled" and "cap at the ceiling" cannot share a value.
+#
+# inline_max_fraction_of_file = 0.5
 
 # How external test files must be laid out on disk.
 external_layout = "nested"
@@ -121,8 +134,9 @@ toward the footprint.
      inline test item in the file, then compute the sum's share of
      the parent file's total line count. Emit a single per-file
      diagnostic when *either* the absolute total exceeds
-     `inline_max_lines` *or* the share exceeds
-     `inline_max_percent_of_file`. The diagnostic spans the contiguous
+     `inline_max_lines` *or* — when `inline_max_fraction_of_file` is
+     set — the share exceeds it. With the fraction left unset only the
+     absolute cap applies. The diagnostic spans the contiguous
      run of inline test items (or the union of their spans, if they
      are not contiguous), names which limit was tripped, and points
      at the canonical extraction target. A file that has only one or
@@ -254,7 +268,7 @@ file's position relative to its parent matters.
   `cx.sess().source_map().span_to_lines(span)`; the
   `FileLines.lines.len()` is its line count. Sum across items. Use
   `SourceFile::count_lines()` on the parent file for the denominator
-  of the percentage check. Cache the per-file total per crate to
+  of the fraction check. Cache the per-file total per crate to
   avoid recounting.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
