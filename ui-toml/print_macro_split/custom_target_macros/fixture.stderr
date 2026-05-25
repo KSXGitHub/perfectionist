@@ -1,0 +1,17 @@
+warning: print macro with an embedded newline exceeds the configured line width
+  --> $DIR/fixture.rs:8:5
+   |
+LL |     my_log!("a long diagnostic line padded out to comfortably exceed the configured width limit here/nsecond line of the diagnostic");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::print_macro_split)]` on by default
+help: fold the template across lines with a backslash-newline continuation
+   |
+LL ~     my_log!(
+LL +         "a long diagnostic line padded out to comfortably exceed the configured width limit here/n/
+LL +         second line of the diagnostic",
+LL ~     );
+   |
+
+warning: 1 warning emitted
+

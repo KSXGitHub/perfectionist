@@ -2,6 +2,38 @@
 
 **Source:** project convention.
 
+## Status
+
+**Partially implemented** in `src/rules/print_macro_split.rs`. The
+`line_continuation` rewrite ships today as an always-on
+`MachineApplicable` autofix: it wraps an over-wide,
+`\n`-containing call and folds the template across lines with
+backslash-newline continuations. Implemented now are "What to
+lint" steps 1–5 and the `line_continuation` branch of step 6, plus
+the `max_line_width` and `target_macros` configuration below.
+
+Still pending:
+
+- The **`multiple_calls`** style (the `multiple_calls` branch of
+  step 6 and the entire "Splitting positional vs named args"
+  section) — the hard half, which has to slice the argument list
+  per template fragment.
+- The **`style`** configuration knob itself. While only one rewrite
+  exists, a single-variant `style` enum carries no information, so
+  the field is deliberately absent and the rule always applies
+  `line_continuation`. It returns when `multiple_calls` lands and
+  there are two styles to choose between; until then the
+  `style = "..."` line in the Configuration block below is
+  forward-looking, not yet a recognised key.
+
+One byte-equivalence guard the implementation adds beyond the prose
+below: a `\n` is folded only when the source text immediately after
+it is neither end-of-template nor a literal whitespace character.
+The `\<newline>` continuation strips the newline *and* the leading
+whitespace of the next source line, so folding `"a\n  b"` would
+silently swallow the two spaces; such a `\n` is left inline, and a
+call whose only interior `\n` is followed by whitespace is skipped.
+
 ## Statement
 
 A `println!`-style macro call whose format template contains

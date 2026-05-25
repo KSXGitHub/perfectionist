@@ -7,7 +7,10 @@
 //! The walk decides whether a literal contains *only* escapes that a
 //! raw string would express verbatim (`\"`, `\\`, `\'`). A single
 //! escape outside that set — `\n`, `\t`, `\xNN`, `\u{...}`, line
-//! continuations — makes the whole literal ineligible.
+//! continuations — makes the whole literal ineligible. The generic
+//! "take any backslash escape" step is the crate-internal
+//! [`crate::literal_scan::take_string_escape`]; this module layers the
+//! eligible-escape recognition on top.
 
 /// Default eligible escape sequences: the three escapes that a raw
 /// string can express verbatim with no escape at all. Also used as
@@ -36,7 +39,11 @@ pub(super) fn scan_body(body: &str, eligible: &[String]) -> Option<ScanResult> {
             rest = remainder;
             continue;
         }
-        if take_escape_non_raw(rest).is_some() {
+        // Any backslash escape reaching here is necessarily *not* one
+        // of the eligible self-decoding escapes (those are taken by
+        // the branch above), so its mere presence makes the literal
+        // ineligible.
+        if crate::literal_scan::take_string_escape(rest).is_some() {
             return None;
         }
         let (literal, remainder) = take_literal_char(rest)?;
@@ -70,52 +77,6 @@ fn take_escape_eliminable<'a>(input: &'a str, eligible: &[String]) -> Option<(&'
 /// removed.
 fn eliminable_decoded(escape: &str) -> &str {
     &escape['\\'.len_utf8()..]
-}
-
-/// Take any backslash escape from the front of `input`. Recognises
-/// `\xNN` (4 bytes), `\u{...}` (variable length), and any
-/// single-character escape (`\n`, `\t`, `\r`, `\0`, `\"`, `\\`,
-/// `\'`, line continuation, ...). Returns `None` if `input` does not
-/// start with `\` or the escape is malformed (incomplete `\u{...}`
-/// without a closing brace, dangling backslash at the end of input,
-/// truncated `\xNN`).
-fn take_escape_non_raw(input: &str) -> Option<(&str, &str)> {
-    let bytes = input.as_bytes();
-    if bytes.first() != Some(&b'\\') {
-        return None;
-    }
-    let second_byte = *bytes.get(1)?;
-    let escape_len = match second_byte {
-        b'x' => 4,
-        b'u' => {
-            // `\u{...}`: scan to the closing `}`. The bytes between
-            // `{` and `}` are constrained to ASCII hex by the rustc
-            // lexer, so a byte-level scan is sufficient.
-            let mut length: usize = 2;
-            let mut closing_found = false;
-            for &byte in &bytes[2..] {
-                length = length.saturating_add(1);
-                if byte == b'}' {
-                    closing_found = true;
-                    break;
-                }
-            }
-            if !closing_found {
-                return None;
-            }
-            length
-        }
-        _ => {
-            // `\` + a single UTF-8 character (e.g. `\n`, `\"`,
-            // or the line-continuation `\<newline>`).
-            let second_char = input['\\'.len_utf8()..].chars().next()?;
-            '\\'.len_utf8() + second_char.len_utf8()
-        }
-    };
-    if escape_len > input.len() {
-        return None;
-    }
-    Some(input.split_at(escape_len))
 }
 
 /// Take a single non-backslash UTF-8 character from the front of
