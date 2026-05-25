@@ -44,6 +44,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         macro_argument_binding
         macro_trailing_comma
         non_exhaustive_error
+        prefer_derive_more_over_thiserror
         prefer_raw_string
         single_letter_closure_param
         single_letter_const_generic
