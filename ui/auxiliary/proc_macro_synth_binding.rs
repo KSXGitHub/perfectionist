@@ -169,49 +169,6 @@ pub fn synth_closure(input: TokenStream) -> TokenStream {
     wrap_fn_block("_synth_closure_body", body)
 }
 
-/// `#[derive(SynthArcClone)]` + `#[synth_arc]` →
-/// `fn _synth_arc_clone_body() { let arc = std::sync::Arc::new(1u32); let _ = arc.clone(); }`
-/// where the `.clone()` method-call segment inherits the user-span
-/// of `synth_arc`. Exercises the method-call shape the
-/// `arc_rc_clone` rule fires on.
-#[proc_macro_derive(SynthArcClone, attributes(synth_arc))]
-pub fn synth_arc_clone(input: TokenStream) -> TokenStream {
-    let attr_span = find_attr_span(input, "synth_arc")
-        .expect("`#[derive(SynthArcClone)]` requires a `#[synth_arc]`");
-    let clone_ident = Ident::new("clone", attr_span);
-    let call_site = Span::call_site();
-
-    let mut new_args = TokenStream::new();
-    new_args.extend([TokenTree::Literal(Literal::u32_suffixed(1))]);
-    let mut body = TokenStream::new();
-    body.extend([
-        TokenTree::Ident(Ident::new("let", call_site)),
-        TokenTree::Ident(Ident::new("arc", call_site)),
-        TokenTree::Punct(Punct::new('=', Spacing::Alone)),
-        TokenTree::Ident(Ident::new("std", call_site)),
-        TokenTree::Punct(Punct::new(':', Spacing::Joint)),
-        TokenTree::Punct(Punct::new(':', Spacing::Alone)),
-        TokenTree::Ident(Ident::new("sync", call_site)),
-        TokenTree::Punct(Punct::new(':', Spacing::Joint)),
-        TokenTree::Punct(Punct::new(':', Spacing::Alone)),
-        TokenTree::Ident(Ident::new("Arc", call_site)),
-        TokenTree::Punct(Punct::new(':', Spacing::Joint)),
-        TokenTree::Punct(Punct::new(':', Spacing::Alone)),
-        TokenTree::Ident(Ident::new("new", call_site)),
-        TokenTree::Group(Group::new(Delimiter::Parenthesis, new_args)),
-        TokenTree::Punct(Punct::new(';', Spacing::Alone)),
-        TokenTree::Ident(Ident::new("let", call_site)),
-        TokenTree::Ident(Ident::new("_", call_site)),
-        TokenTree::Punct(Punct::new('=', Spacing::Alone)),
-        TokenTree::Ident(Ident::new("arc", call_site)),
-        TokenTree::Punct(Punct::new('.', Spacing::Alone)),
-        TokenTree::Ident(clone_ident),
-        TokenTree::Group(Group::new(Delimiter::Parenthesis, TokenStream::new())),
-        TokenTree::Punct(Punct::new(';', Spacing::Alone)),
-    ]);
-    wrap_fn_block("_synth_arc_clone_body", body)
-}
-
 fn wrap_const_block(body: TokenStream) -> TokenStream {
     let call_site = Span::call_site();
     let mut out = TokenStream::new();

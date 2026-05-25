@@ -37,7 +37,7 @@ Each rule is either *enabled* (its pass runs) or *disabled* (its pass is never i
 ```toml
 [perfectionist]
 enable = ["non_exhaustive_error"]
-disable = ["arc_rc_clone"]
+disable = ["prefer_raw_string"]
 ```
 
 Each entry can also be an inline table carrying a `reason` for the human reading the config later:
@@ -46,7 +46,7 @@ Each entry can also be an inline table carrying a `reason` for the human reading
 [perfectionist]
 enable = [{ name = "non_exhaustive_error", reason = "we publish libraries and care about SemVer surface" }]
 disable = [
-    "arc_rc_clone",
+    "prefer_raw_string",
     { name = "single_letter_closure_param", reason = "we use single-letter binders in math-heavy code" },
 ]
 ```
@@ -59,7 +59,7 @@ name = "non_exhaustive_error"
 reason = "we publish libraries and care about SemVer surface"
 
 [[perfectionist.disable]]
-name = "arc_rc_clone"
+name = "prefer_raw_string"
 ```
 
 (TOML rejects mixing `enable = [...]` and `[[perfectionist.enable]]` in the same file as a duplicate-key error, so a config uses one or the other for each key.)

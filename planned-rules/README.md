@@ -121,10 +121,6 @@ pattern that several rules call out by reference — live in
   do not depend on `serde_json` anywhere
   (`require_serde_json_dependency = false` opts in).
 
-### Cloning
-- [`arc-rc-clone.md`](./arc-rc-clone.md) — require `Arc::clone(&x)` /
-  `Rc::clone(&x)` instead of `x.clone()` when `x: Arc<_>` / `Rc<_>`.
-
 ### String literals
 - [`prefer-text-block.md`](./prefer-text-block.md) — when a string
   literal contains 2+ embedded `\n` newlines (and isn't a format
@@ -283,6 +279,16 @@ external state, or judgement calls that a static lint cannot evaluate:
 - **Test logging guidance** (`assert_eq!` with multi-line strings should
   log via `eprintln!`, complex structures via `dbg!`) — the rule branches
   on the runtime *shape* of values, which a static lint cannot inspect.
+- **Cloning `Arc` / `Rc` via `.clone()`** (pacquet *Cloning `Arc` and
+  `Rc`*) — already covered by `clippy::clone_on_ref_ptr`, which flags
+  `x.clone()` on a ref-counted pointer and suggests the qualified
+  `Arc::clone(&x)` / `Rc::clone(&x)` form. It is a `restriction` lint
+  (allow-by-default); a project that wants it enables the single line
+  `clone_on_ref_ptr = "warn"` under `[lints.clippy]`. This was briefly
+  implemented as `perfectionist::arc_rc_clone`, but a verbatim
+  reimplementation of a stock Clippy lint earned no keep and forced an
+  interop downgrade to avoid double-firing when both were on, so it was
+  removed (KSXGitHub/parallel-disk-usage#422, pnpm/pnpm#11839).
 - **Doc comments referencing items more private than the documented item**
   (pacquet *Documentation comments*) — already covered by rustdoc's
   built-in `rustdoc::private_intra_doc_links` lint (default `warn`).
