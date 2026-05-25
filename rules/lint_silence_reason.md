@@ -49,7 +49,7 @@ Lints excluded from the requirement. Useful for project-wide
 suppressions whose rationale lives in the project README
 rather than per-site. Each entry is the lint's full name as
 it appears inside the attribute (`clippy::module_name_repetitions`,
-`dead_code`, …).
+`dead_code`, ...).
 
 ### `min_reason_length`: `non-zero unsigned integer` (optional)
 

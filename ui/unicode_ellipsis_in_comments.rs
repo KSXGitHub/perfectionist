@@ -9,11 +9,11 @@
  * multiple lines, each scanned independently…
  */
 
-/// Doc comment with ellipsis… (must be ignored).
+/// Doc comment with ellipsis… (this rule ignores it; the docs rule flags it).
 fn _doc_outer() {}
 
 mod inner {
-    //! Inner doc comment with ellipsis… (must be ignored).
+    //! Inner doc comment with ellipsis… (this rule ignores it; the docs rule flags it).
 }
 
 fn main() {

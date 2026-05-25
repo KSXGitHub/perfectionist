@@ -1,13 +1,21 @@
-//! Markdown structural classifier (Tier A) shared by sibling rules
-//! that scan doc-comment text. The helper produces a vector of
-//! byte-range skip regions that the consumer (`bare_url`,
-//! `bare_email`, `bare_issue_reference`) applies as a post-filter
-//! before emitting diagnostics.
+//! Markdown scanners shared by sibling rules that walk doc-comment
+//! text. Two consumer tiers sit on the same `take_*` combinators (see
+//! the "Markdown parsing" section of
+//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`):
+//!
+//! - **Tier A — structural classification.** [`scan_skip_regions`]
+//!   produces a vector of byte-range skip regions the consumer
+//!   (`bare_url`, `bare_email`, `bare_issue_reference`) applies as a
+//!   post-filter before emitting diagnostics.
+//! - **Tier B — code-region mask.** [`scan_code_regions`] returns only
+//!   the byte ranges of code spans and code blocks, for rules
+//!   (`unicode_ellipsis_in_docs`) that just need to exclude code from
+//!   a prose scan rather than classify every construct.
 //!
 //! The implementation is a hand-written parser-combinator walk per
 //! the convention documented in
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`. Only the constructs
-//! the three bare-* rules need to skip are recognised:
+//! the consuming rules need to skip are recognised:
 //!
 //! - `` `...` `` code spans.
 //! - ` ``` ... ``` ` and `~~~ ... ~~~` fenced code blocks.
@@ -18,7 +26,7 @@
 //! - `[id]: dest` reference-link definitions.
 //!
 //! Headings and HTML tags are not classified by this helper — neither
-//! is needed by the three rules currently consuming it. The sibling
+//! is needed by the rules currently consuming it. The sibling
 //! catalogue file's combinator surface lists them as future
 //! extensions for `intra_doc_links` / `clap_help_no_markdown`.
 
@@ -115,6 +123,75 @@ pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
         // diagnostic spans precisely.
         let ch_len = utf8_char_len(bytes, idx);
         idx += ch_len;
+        at_line_start = false;
+    }
+    out
+}
+
+/// Tier B code-region mask: the byte ranges of CommonMark code
+/// regions — inline code spans and block-level code (fenced and
+/// four-space-indented blocks, which is where doc-test code lives).
+/// Used by rules that scan doc-comment prose and need only to exclude
+/// code from the scan, not classify every construct
+/// (`unicode_ellipsis_in_docs`).
+///
+/// Block-level code is always part of the mask. `include_code_spans`
+/// controls whether inline `` `...` `` spans are masked too: the
+/// `unicode_ellipsis_in_docs` rule exposes this as its
+/// `allow_in_code_spans` knob, since a project may want a flagged
+/// character caught even inside an inline code span. A code span is
+/// always *parsed* — so a backtick run inside it never spuriously
+/// opens a second span — and only added to the mask when
+/// `include_code_spans` is `true`.
+///
+/// Like [`scan_skip_regions`], the returned ranges are sorted by start
+/// byte and never overlap.
+pub(crate) fn scan_code_regions(input: &str, include_code_spans: bool) -> Vec<SkipRange> {
+    let mut out: Vec<SkipRange> = Vec::new();
+    let bytes = input.as_bytes();
+    let mut idx = 0;
+    let mut at_line_start = true;
+    while idx < bytes.len() {
+        let rest = &input[idx..];
+
+        // Block-level code anchored at line start. Both combinators
+        // consume through a line boundary (or EOF), so the next
+        // position always begins a new line.
+        if at_line_start {
+            if let Some(len) = take_indented_code_block(input, idx) {
+                out.push(idx..idx + len);
+                idx += len;
+                at_line_start = true;
+                continue;
+            }
+            if let Some(len) = take_fenced_code_block(rest) {
+                out.push(idx..idx + len);
+                idx += len;
+                at_line_start = true;
+                continue;
+            }
+        }
+
+        match bytes[idx] {
+            b'`' => {
+                if let Some(len) = take_code_span(rest) {
+                    if include_code_spans {
+                        out.push(idx..idx + len);
+                    }
+                    idx += len;
+                    at_line_start = false;
+                    continue;
+                }
+            }
+            b'\n' => {
+                idx += 1;
+                at_line_start = true;
+                continue;
+            }
+            _ => {}
+        }
+
+        idx += utf8_char_len(bytes, idx);
         at_line_start = false;
     }
     out
@@ -609,6 +686,37 @@ mod tests {
         let skips = scan_skip_regions(text);
         assert_eq!(skips.len(), 1);
         assert!(text[skips[0].clone()].contains("#123"));
+    }
+
+    #[test]
+    fn code_regions_mask_a_code_span_when_requested() {
+        let text = "a `byte c` d";
+        let with = scan_code_regions(text, true);
+        assert_eq!(with.len(), 1);
+        assert_eq!(&text[with[0].clone()], "`byte c`");
+        // With code spans excluded from the mask, the span body is
+        // left open to the prose scan, so no range is produced.
+        assert!(scan_code_regions(text, false).is_empty());
+    }
+
+    #[test]
+    fn code_regions_always_mask_a_fenced_block() {
+        let text = "before\n```\nlet x = \"…\";\n```\nafter";
+        // The fence is masked regardless of the code-span knob.
+        for include_code_spans in [true, false] {
+            let skips = scan_code_regions(text, include_code_spans);
+            assert_eq!(skips.len(), 1);
+            assert!(text[skips[0].clone()].starts_with("```"));
+            assert!(text[skips[0].clone()].contains('…'));
+        }
+    }
+
+    #[test]
+    fn code_regions_ignore_links_and_autolinks() {
+        // Unlike Tier A's `scan_skip_regions`, the code-region mask
+        // leaves links and autolinks open to the prose scan.
+        let text = "see [click](https://example.com) and <https://example.org>";
+        assert!(scan_code_regions(text, true).is_empty());
     }
 
     #[test]

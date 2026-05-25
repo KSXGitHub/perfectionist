@@ -68,7 +68,7 @@ Additional identifier suffixes that mark a type as "an
 error" purely by name, without inspecting its trait
 implementations. Merged with the built-in defaults
 (`["Error"]`); empty by default. List project-specific
-vocabulary here (`Failure`, `Fault`, …) without having to
+vocabulary here (`Failure`, `Fault`, ...) without having to
 re-state the standard suffix.
 
 ### `ignore_suffixes`: `[string]` (optional)

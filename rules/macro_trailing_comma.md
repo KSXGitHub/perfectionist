@@ -17,7 +17,7 @@ invocations must not.
 Eligibility is name-based — a curated list of `core` / `std` and
 well-known third-party macros (`vec!`, `format!`, `println!`,
 `assert_eq!`, `dbg!`, `log::info!`, `tracing::debug!`,
-`anyhow::bail!`, `maplit::hashmap!`, …), extended via
+`anyhow::bail!`, `maplit::hashmap!`, ...), extended via
 `name_based_extra` and overridden via `ignore`.
 
 Attribute-style invocations (`#[derive(...)]`, `#[serde(...)]`,

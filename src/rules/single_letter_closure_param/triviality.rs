@@ -43,7 +43,7 @@ pub(super) fn single_expression_body<'hir>(
 /// Return the callee name of the parent call expression of
 /// `closure_expr`, if any. `MethodCall` returns the method's final
 /// segment; `Call` returns the final segment of the callee path.
-/// Anything else (`if`, indexing, …) returns `None`.
+/// Anything else (`if`, indexing, ...) returns `None`.
 pub(super) fn parent_call_callee_name<'tcx>(
     lint_context: &LateContext<'tcx>,
     closure_expr: &'tcx hir::Expr<'tcx>,
@@ -77,7 +77,7 @@ fn path_final_segment<'hir>(expr: &'hir hir::Expr<'hir>) -> Option<Symbol> {
 /// - a one-argument call `f(param)`,
 /// - a reference `&param`,
 /// - a macro call (`vec![param]`, `dbg!(param)`,
-///   `format!("{param}")`, …).
+///   `format!("{param}")`, ...).
 ///
 /// In every non-macro shape, `*` / `&` operators around the
 /// reference to the parameter are peeled by `is_param_ref`

@@ -177,8 +177,6 @@ pattern that several rules call out by reference — live in
   rustdoc comments that resolve in scope must be written as intra-doc links.
 - [`em-dash-prose.md`](./em-dash-prose.md) — flag em dashes in doc comments
   and string literals reachable from `format!` / `println!` style macros.
-- [`unicode-ellipsis-in-docs.md`](./unicode-ellipsis-in-docs.md) — flag
-  U+2026 (`…`) in `///` and `//!` doc comments; prefer `...`.
 - [`unpinned-repo-ref.md`](./unpinned-repo-ref.md) — require URLs that
   reference files in a hosted git repository (GitHub, GitLab,
   Bitbucket, Codeberg / Gitea, sourcehut, …) to be pinned to a

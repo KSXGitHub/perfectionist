@@ -75,7 +75,7 @@ fn eliminable_decoded(escape: &str) -> &str {
 /// Take any backslash escape from the front of `input`. Recognises
 /// `\xNN` (4 bytes), `\u{...}` (variable length), and any
 /// single-character escape (`\n`, `\t`, `\r`, `\0`, `\"`, `\\`,
-/// `\'`, line continuation, …). Returns `None` if `input` does not
+/// `\'`, line continuation, ...). Returns `None` if `input` does not
 /// start with `\` or the escape is malformed (incomplete `\u{...}`
 /// without a closing brace, dangling backslash at the end of input,
 /// truncated `\xNN`).

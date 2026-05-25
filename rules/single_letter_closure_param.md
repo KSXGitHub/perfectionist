@@ -24,10 +24,10 @@ apply. Given that, one of two further shapes must hold:
   callee name is in the trivial-callback method set
   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
   `binary_search_by`, `cmp_by`, `partial_cmp_by`,
-  `fold`, `try_fold`, …). The set also covers the
+  `fold`, `try_fold`, ...). The set also covers the
   matching adaptors from `itertools` (`sorted_by`,
-  `k_smallest_by`, `minmax_by_key`, …) and `into-sorted`
-  (`into_sorted_by`, `into_sorted_by_key`, …);
+  `k_smallest_by`, `minmax_by_key`, ...) and `into-sorted`
+  (`into_sorted_by`, `into_sorted_by_key`, ...);
 - the body is a trivial wrapper around the parameter —
   a field access (`|x| x.field`), a method call
   (`|x| x.foo()`), a one-argument call where the
@@ -83,7 +83,7 @@ single expression. Merged with the built-in defaults (the
 curated `core` / `std` callbacks plus selected `itertools`
 and `into-sorted` adaptors); empty by default. List
 project-specific DSL helpers (`when`, `iter_by`, third-party
-callbacks such as `into_sorted_by`, …) here without having
+callbacks such as `into_sorted_by`, ...) here without having
 to re-state the standard ones.
 
 ### `ignore_trivial_callback_methods`: `[string]` (optional)

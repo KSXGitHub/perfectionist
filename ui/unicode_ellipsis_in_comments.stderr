@@ -24,5 +24,19 @@ warning: Unicode `…` (U+2026) in comment
 LL |  * multiple lines, each scanned independently…
    |                                              ^ help: use ASCII `...` instead: `...`
 
-warning: 4 warnings emitted
+warning: Unicode `…` (U+2026) in doc comment
+  --> $DIR/unicode_ellipsis_in_comments.rs:12:30
+   |
+LL | /// Doc comment with ellipsis… (this rule ignores it; the docs rule flags it).
+   |                              ^ help: use ASCII `...` instead: `...`
+   |
+   = note: `#[warn(perfectionist::unicode_ellipsis_in_docs)]` on by default
+
+warning: Unicode `…` (U+2026) in doc comment
+  --> $DIR/unicode_ellipsis_in_comments.rs:16:40
+   |
+LL |     //! Inner doc comment with ellipsis… (this rule ignores it; the docs rule flags it).
+   |                                        ^ help: use ASCII `...` instead: `...`
+
+warning: 6 warnings emitted
 
