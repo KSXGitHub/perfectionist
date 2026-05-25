@@ -1,4 +1,3 @@
-pub mod arc_rc_clone;
 pub mod bare_email;
 pub mod bare_issue_reference;
 pub mod bare_url;

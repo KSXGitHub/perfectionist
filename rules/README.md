@@ -6,9 +6,6 @@ Auto-generated catalogue of implemented lints. Each entry links to a per-rule ma
 
 Lint-control attributes use the `perfectionist::` namespace.
 
-- [`arc_rc_clone`](./arc_rc_clone.md) (default: `active`).
-
-  calling `.clone()` on an `Arc<T>` or `Rc<T>`; prefer the qualified `Arc::clone` / `Rc::clone` form
 - [`bare_email`](./bare_email.md) (default: `active`).
 
   bare email address in comment or doc comment; wrap in `<...>` or prefix with `mailto:`

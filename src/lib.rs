@@ -41,7 +41,6 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
     }
 
     register! {
-        arc_rc_clone
         bare_email
         bare_issue_reference
         bare_url
