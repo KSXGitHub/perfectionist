@@ -34,8 +34,9 @@ use rustc_span::Span;
 ///
 /// Applicability is [`MachineApplicable`] for U+2026 (the rule's
 /// primary target, which always maps cleanly to `...`) and
-/// [`MaybeIncorrect`] for any user-configured `also_flag` characters
-/// (whose visual equivalence to `...` is up to the project to assert).
+/// [`MaybeIncorrect`] for any user-configured `extra_flagged_chars`
+/// entries (whose visual equivalence to `...` is up to the project to
+/// assert).
 ///
 /// [`MachineApplicable`]: Applicability::MachineApplicable
 /// [`MaybeIncorrect`]: Applicability::MaybeIncorrect

@@ -60,13 +60,13 @@ struct Config {
     /// single ASCII letter (`a`-`z`, `A`-`Z`); any other
     /// character is rejected at config-parse time.
     extra_allowed_idents: Vec<AsciiLetter>,
-    /// Identifiers to drop from the exempt set, even if they
-    /// appear in the built-in defaults or in
-    /// `extra_allowed_idents`. Empty by default; checked after
+    /// Identifiers to deny (always flag), removing them from the
+    /// exempt set even if they appear in the built-in defaults or
+    /// in `extra_allowed_idents`. Empty by default; checked after
     /// the merge with the built-ins, so this knob always wins.
     /// Each entry is a single ASCII letter (`a`-`z`, `A`-`Z`);
     /// any other character is rejected at config-parse time.
-    ignore_allowed_idents: Vec<AsciiLetter>,
+    extra_denied_idents: Vec<AsciiLetter>,
 }
 
 pub struct SingleLetterFunctionParam {
@@ -79,7 +79,7 @@ impl SingleLetterFunctionParam {
         let allowed_idents = resolve_symbol_set_from_chars(
             DEFAULT_FN_PARAM_EXEMPTIONS,
             config.extra_allowed_idents,
-            config.ignore_allowed_idents,
+            config.extra_denied_idents,
         );
         Self { allowed_idents }
     }
