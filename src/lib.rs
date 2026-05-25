@@ -38,7 +38,6 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
     }
 
     register! {
-        arc_rc_clone
         derive_ordering
         flat_module_pattern
         lint_reason_from_comment
