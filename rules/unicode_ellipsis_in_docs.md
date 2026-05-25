@@ -44,12 +44,12 @@ near-relatives such as U+22EF MIDLINE HORIZONTAL ELLIPSIS (`⋯`)
 or U+2025 TWO DOT LEADER (`‥`) that the same autocorrect
 pipelines occasionally insert. Empty by default.
 
-### `allow_in_code_spans`: `boolean` (optional)
+### `scan_code_spans`: `boolean` (optional)
 
-Whether to leave a flagged character alone when it sits inside
-an inline code span (`` `…` ``). Defaults to `true`: code spans
-often quote example text where the ellipsis is meaningful. Set
-to `false` to enforce the rule inside code spans too. Code
-*blocks* — fenced (` ``` … ``` `), `~~~`-fenced, four-space
-indented, and the doc-test code they hold — are always skipped
-regardless of this knob.
+Whether to also flag a character inside an inline code span
+(`` `…` ``). Defaults to `false`: code spans often quote example
+text where the ellipsis is meaningful, so they are left alone
+unless this is set to `true`. Code *blocks* — fenced
+(` ``` … ``` `), `~~~`-fenced, four-space indented, and the
+doc-test code they hold — are always skipped regardless of this
+knob.

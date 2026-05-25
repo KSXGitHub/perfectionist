@@ -20,7 +20,7 @@ use text_block_macros::text_block_fnl;
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
-fn run(src_base: &str, contents: String) {
+fn run(src_base: &str, contents: &str) {
     let _serial = SERIAL.lock().unwrap_or_else(|err| err.into_inner());
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), src_base)
         .dylint_toml(contents)
@@ -38,7 +38,6 @@ fn comment_rule_does_not_intrude_into_doc_comments() {
         text_block_fnl! {
             "[perfectionist]"
             r#"disable = ["unicode_ellipsis_in_docs"]"#
-        }
-        .to_owned(),
+        },
     );
 }

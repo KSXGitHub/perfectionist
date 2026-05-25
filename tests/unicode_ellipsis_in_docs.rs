@@ -29,7 +29,7 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     extra_flagged_chars: Option<Vec<char>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    allow_in_code_spans: Option<bool>,
+    scan_code_spans: Option<bool>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -37,7 +37,7 @@ fn dylint_toml(config: RuleConfig) -> String {
     toml::to_string(&table).expect("serialise rule config as dylint.toml")
 }
 
-fn run(src_base: &str, contents: String) {
+fn run(src_base: &str, contents: &str) {
     let _serial = SERIAL.lock().unwrap_or_else(|err| err.into_inner());
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), src_base)
         .dylint_toml(contents)
@@ -48,7 +48,7 @@ fn run(src_base: &str, contents: String) {
 fn extra_flagged_chars_extends_the_default_set() {
     run(
         "ui-toml/unicode_ellipsis_in_docs/extra_flagged_chars",
-        dylint_toml(RuleConfig {
+        &dylint_toml(RuleConfig {
             extra_flagged_chars: Some(vec!['\u{22EF}']),
             ..RuleConfig::default()
         }),
@@ -56,11 +56,11 @@ fn extra_flagged_chars_extends_the_default_set() {
 }
 
 #[test]
-fn allow_in_code_spans_false_flags_inside_code_spans() {
+fn scan_code_spans_true_flags_inside_code_spans() {
     run(
         "ui-toml/unicode_ellipsis_in_docs/flag_in_code_spans",
-        dylint_toml(RuleConfig {
-            allow_in_code_spans: Some(false),
+        &dylint_toml(RuleConfig {
+            scan_code_spans: Some(true),
             ..RuleConfig::default()
         }),
     );
@@ -79,7 +79,6 @@ fn docs_rule_does_not_intrude_into_regular_comments() {
         text_block_fnl! {
             "[perfectionist]"
             r#"disable = ["unicode_ellipsis_in_comments"]"#
-        }
-        .to_owned(),
+        },
     );
 }

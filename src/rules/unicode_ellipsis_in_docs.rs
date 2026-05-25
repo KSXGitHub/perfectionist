@@ -41,7 +41,7 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::unicode_ellipsis_in_docs";
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Extra characters to flag alongside U+2026. Useful for catching
@@ -49,28 +49,19 @@ struct Config {
     /// or U+2025 TWO DOT LEADER (`‥`) that the same autocorrect
     /// pipelines occasionally insert. Empty by default.
     extra_flagged_chars: Vec<char>,
-    /// Whether to leave a flagged character alone when it sits inside
-    /// an inline code span (`` `…` ``). Defaults to `true`: code spans
-    /// often quote example text where the ellipsis is meaningful. Set
-    /// to `false` to enforce the rule inside code spans too. Code
-    /// *blocks* — fenced (` ``` … ``` `), `~~~`-fenced, four-space
-    /// indented, and the doc-test code they hold — are always skipped
-    /// regardless of this knob.
-    allow_in_code_spans: bool,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            extra_flagged_chars: Vec::new(),
-            allow_in_code_spans: true,
-        }
-    }
+    /// Whether to also flag a character inside an inline code span
+    /// (`` `…` ``). Defaults to `false`: code spans often quote example
+    /// text where the ellipsis is meaningful, so they are left alone
+    /// unless this is set to `true`. Code *blocks* — fenced
+    /// (` ``` … ``` `), `~~~`-fenced, four-space indented, and the
+    /// doc-test code they hold — are always skipped regardless of this
+    /// knob.
+    scan_code_spans: bool,
 }
 
 pub struct UnicodeEllipsisInDocs {
     flagged_chars: Vec<char>,
-    allow_in_code_spans: bool,
+    scan_code_spans: bool,
 }
 
 impl UnicodeEllipsisInDocs {
@@ -84,7 +75,7 @@ impl UnicodeEllipsisInDocs {
         }
         Self {
             flagged_chars,
-            allow_in_code_spans: config.allow_in_code_spans,
+            scan_code_spans: config.scan_code_spans,
         }
     }
 }
@@ -116,9 +107,9 @@ impl EarlyLintPass for UnicodeEllipsisInDocs {
 
 impl UnicodeEllipsisInDocs {
     fn scan_doc_chunk(&self, lint_context: &EarlyContext<'_>, chunk: &CommentChunk<'_>) {
-        // `allow_in_code_spans` maps directly onto the mask: an
-        // allowed code span is one we add to the skip set.
-        let skips = scan_code_regions(&chunk.rendered, self.allow_in_code_spans);
+        // Code spans join the skip mask unless the user opts into
+        // scanning them; code blocks are always masked.
+        let skips = scan_code_regions(&chunk.rendered, !self.scan_code_spans);
         for (byte_offset, character) in chunk.rendered.char_indices() {
             if !self.flagged_chars.contains(&character) {
                 continue;
