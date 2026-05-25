@@ -114,10 +114,13 @@ impl LintReasonFromComment {
                         (arg_span, insertion.replacement),
                         (delete_span, String::new()),
                     ],
-                    // A same-line trailing comment is unambiguously
-                    // the attribute's rationale, so the rewrite is
-                    // safe to apply mechanically.
-                    Applicability::MachineApplicable,
+                    // The comment's attachment to the attribute is
+                    // unambiguous, but its prose was written as a
+                    // margin note, not as a `reason` value — the
+                    // author may want to reword it before committing.
+                    // `MaybeIncorrect` offers the rewrite without
+                    // letting `cargo fix` apply it unreviewed.
+                    Applicability::MaybeIncorrect,
                 );
             },
         );
