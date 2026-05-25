@@ -1,0 +1,16 @@
+warning: Unicode `…` (U+2026) in doc comment
+  --> $DIR/fixture.rs:1:51
+   |
+LL | /// Ellipsis inside an inline code span `let s = "…";` is flagged here.
+   |                                                   ^ help: use ASCII `...` instead: `...`
+   |
+   = note: `#[warn(perfectionist::unicode_ellipsis_in_docs)]` on by default
+
+warning: Unicode `…` (U+2026) in doc comment
+  --> $DIR/fixture.rs:11:19
+   |
+LL | /// Prose ellipsis… is flagged regardless.
+   |                   ^ help: use ASCII `...` instead: `...`
+
+warning: 2 warnings emitted
+

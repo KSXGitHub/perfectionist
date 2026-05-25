@@ -9,13 +9,6 @@
  * multiple lines, each scanned independently…
  */
 
-/// Doc comment with ellipsis… (must be ignored).
-fn _doc_outer() {}
-
-mod inner {
-    //! Inner doc comment with ellipsis… (must be ignored).
-}
-
 fn main() {
     let _ = "string literal with …"; // not a comment, ignored
 }

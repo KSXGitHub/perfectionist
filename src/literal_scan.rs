@@ -1,12 +1,18 @@
 //! Helpers shared by rules that scan string-literal / comment text.
 //!
-//! [`emit_flagged_chars`] is used by both Unicode-ellipsis rules
-//! (`unicode_ellipsis_in_comments` and
-//! `unicode_ellipsis_in_panic_messages`): walk a stretch of source
-//! text, emit a diagnostic for each flagged character, and offer the
-//! same `...` autofix. The per-character logic is identical; the only
-//! per-rule pieces are the lint name, a context label, and how to
-//! turn a byte offset within the text into a [`Span`].
+//! [`emit_flagged_chars`] is used by the Unicode-ellipsis rules that
+//! scan a contiguous stretch of text (`unicode_ellipsis_in_comments`
+//! and `unicode_ellipsis_in_panic_messages`): walk it, emit a
+//! diagnostic for each flagged character, and offer the same `...`
+//! autofix. The per-character logic is identical; the only per-rule
+//! pieces are the lint name, a context label, and how to turn a byte
+//! offset within the text into a [`Span`].
+//!
+//! [`emit_flagged_char`] is the single-character core, factored out so
+//! a rule that does its own scanning — `unicode_ellipsis_in_docs`,
+//! which must consult a markdown code-region mask and a fallible
+//! span map before emitting — shares the exact message, suggestion,
+//! and applicability without duplicating them.
 //!
 //! [`string_literal_quote_lengths`] is the companion parser for any
 //! rule that needs to scan a string-literal body without its opening
@@ -56,24 +62,50 @@ pub(crate) fn emit_flagged_chars<Cx>(
         }
         let character_length = character.len_utf8() as u32;
         let span = span_for(byte_offset, character_length);
-        let applicability = if character == '\u{2026}' {
-            Applicability::MachineApplicable
-        } else {
-            Applicability::MaybeIncorrect
-        };
-        span_lint_and_sugg(
-            lint_context,
-            lint,
-            span,
-            format!(
-                "Unicode `{character}` (U+{:04X}) in {context_label}",
-                character as u32,
-            ),
-            "use ASCII `...` instead",
-            "...".to_owned(),
-            applicability,
-        );
+        emit_flagged_char(lint_context, lint, character, span, context_label);
     }
+}
+
+/// Emit a single flagged-character diagnostic at `span`, suggesting
+/// the ASCII `...` replacement. Factored out of [`emit_flagged_chars`]
+/// so rules that run their own scan loop (the doc-comment scanner,
+/// which filters against a code-region mask and a fallible span map)
+/// reuse the same message text and applicability.
+///
+/// Applicability is [`MachineApplicable`] for U+2026 (the rules'
+/// primary target, which always maps cleanly to `...`) and
+/// [`MaybeIncorrect`] for any user-configured `extra_flagged_chars`
+/// entry (whose visual equivalence to `...` is up to the project to
+/// assert).
+///
+/// [`MachineApplicable`]: Applicability::MachineApplicable
+/// [`MaybeIncorrect`]: Applicability::MaybeIncorrect
+pub(crate) fn emit_flagged_char<Cx>(
+    lint_context: &Cx,
+    lint: &'static Lint,
+    character: char,
+    span: Span,
+    context_label: &str,
+) where
+    Cx: LintContext,
+{
+    let applicability = if character == '\u{2026}' {
+        Applicability::MachineApplicable
+    } else {
+        Applicability::MaybeIncorrect
+    };
+    span_lint_and_sugg(
+        lint_context,
+        lint,
+        span,
+        format!(
+            "Unicode `{character}` (U+{:04X}) in {context_label}",
+            character as u32,
+        ),
+        "use ASCII `...` instead",
+        "...".to_owned(),
+        applicability,
+    );
 }
 
 /// Return `(prefix_length, suffix_length)` covering the opening and
@@ -81,7 +113,7 @@ pub(crate) fn emit_flagged_chars<Cx>(
 /// the snippet does not look like a string literal whose body we can
 /// scan as plain text.
 ///
-/// Recognises plain (`"..."`) and raw (`r"..."`, `r#"..."#`, …)
+/// Recognises plain (`"..."`) and raw (`r"..."`, `r#"..."#`, ...)
 /// strings. Byte / C-string forms are excluded — the helper is for
 /// rules that operate on display strings.
 pub(crate) fn string_literal_quote_lengths(snippet: &str) -> Option<(usize, usize)> {

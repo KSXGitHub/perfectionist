@@ -123,7 +123,7 @@ fn is_display_string_literal(kind: LiteralKind) -> bool {
 
 /// How many comma-separated top-level arguments precede the message
 /// argument for a given macro. `0` for macros whose first argument is
-/// itself the message (`panic!`, `todo!`, …); `1` for `assert!` /
+/// itself the message (`panic!`, `todo!`, ...); `1` for `assert!` /
 /// `debug_assert!` (the condition comes first); `2` for `assert_eq!`
 /// / `assert_ne!` / `debug_assert_eq!` / `debug_assert_ne!` (the two
 /// values come first).

@@ -24,7 +24,7 @@ const BUILTIN_DENY: &[&str] = &["debug_assert", "debug_assert_eq", "debug_assert
 /// Macros for which the call site is known not to introduce the
 /// "evaluate zero, one, or many times" hazard. Three disjoint groups:
 ///
-/// 1. Runtime macros (`format!`, `vec!`, `assert!`, `dbg!`, …) that
+/// 1. Runtime macros (`format!`, `vec!`, `assert!`, `dbg!`, ...) that
 ///    promise to evaluate every top-level argument exactly once.
 ///    Shares its core with `macro_trailing_comma`'s built-in set,
 ///    minus the conditional-evaluation families (`log::*`,

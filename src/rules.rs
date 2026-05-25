@@ -18,5 +18,6 @@ pub mod single_letter_generic;
 pub mod single_letter_let_binding;
 pub mod single_letter_static_item;
 pub mod unicode_ellipsis_in_comments;
+pub mod unicode_ellipsis_in_docs;
 pub mod unicode_ellipsis_in_panic_messages;
 pub mod unknown_perfectionist_lints;

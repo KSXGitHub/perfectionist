@@ -1,0 +1,16 @@
+warning: Unicode `…` (U+2026) in doc comment
+  --> $DIR/fixture.rs:4:36
+   |
+LL | /// Outer doc comment with ellipsis…
+   |                                    ^ help: use ASCII `...` instead: `...`
+   |
+   = note: `#[warn(perfectionist::unicode_ellipsis_in_docs)]` on by default
+
+warning: Unicode `…` (U+2026) in doc comment
+  --> $DIR/fixture.rs:8:40
+   |
+LL |     //! Inner doc comment with ellipsis…
+   |                                        ^ help: use ASCII `...` instead: `...`
+
+warning: 2 warnings emitted
+

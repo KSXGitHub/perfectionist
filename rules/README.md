@@ -66,6 +66,9 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`unicode_ellipsis_in_comments`](./unicode_ellipsis_in_comments.md) (default: `active`).
 
   U+2026 HORIZONTAL ELLIPSIS in non-doc comments; prefer `...`
+- [`unicode_ellipsis_in_docs`](./unicode_ellipsis_in_docs.md) (default: `active`).
+
+  U+2026 HORIZONTAL ELLIPSIS in doc comments; prefer `...`
 - [`unicode_ellipsis_in_panic_messages`](./unicode_ellipsis_in_panic_messages.md) (default: `active`).
 
   U+2026 HORIZONTAL ELLIPSIS in panic / assertion / expect messages; prefer `...`

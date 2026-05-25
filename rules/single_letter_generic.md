@@ -9,7 +9,7 @@
 
 ## What it does
 Flags generic type parameters whose identifier is one ASCII
-letter (`T`, `U`, `K`, `V`, …).
+letter (`T`, `U`, `K`, `V`, ...).
 
 ## Why restrict this?
 This is a stylistic preference, not a correctness issue.

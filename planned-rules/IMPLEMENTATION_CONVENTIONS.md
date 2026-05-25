@@ -98,8 +98,9 @@ Six rules in this catalogue scan a slice of markdown:
 - `perfectionist::bare_url` (`src/rules/bare_url.rs`) — skips code
   regions, autolinks (`<...>`), labelled links, and reference-link
   definitions before flagging bare `http(s)://` URLs.
-- [`unicode-ellipsis-in-docs`](./unicode-ellipsis-in-docs.md) —
-  strips code regions, then byte-scans for U+2026.
+- `perfectionist::unicode_ellipsis_in_docs`
+  (`src/rules/unicode_ellipsis_in_docs.rs`) — strips code regions,
+  then byte-scans for U+2026.
 - [`em-dash-prose`](./em-dash-prose.md) — strips code regions, then
   byte-scans for `—` / `–`.
 
@@ -123,9 +124,10 @@ Two needs sit on top of the same primitives.
   `bare_url`.
 - **Tier B — code-region mask.** Only needs the predicate "is this
   byte inside a code span or code block?". Consumers:
-  `unicode_ellipsis_in_docs`, `em_dash_prose`. The mask is
-  `take_code_span` plus `take_code_block` in a loop over the input;
-  no separate scanner.
+  `perfectionist::unicode_ellipsis_in_docs` (implemented);
+  `em_dash_prose` (planned). The mask is `take_code_span` plus
+  `take_code_block` in a loop over the input — `src/markdown.rs`'s
+  `scan_code_regions`, not a separate Tier-A-style classifier.
 
 ### Combinator surface
 

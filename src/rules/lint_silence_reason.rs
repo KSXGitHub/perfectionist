@@ -58,7 +58,7 @@ struct Config {
     /// suppressions whose rationale lives in the project README
     /// rather than per-site. Each entry is the lint's full name as
     /// it appears inside the attribute (`clippy::module_name_repetitions`,
-    /// `dead_code`, …).
+    /// `dead_code`, ...).
     exempt_lints: Vec<String>,
     /// Minimum length of the `reason` value. A one- or two-character
     /// reason (`"x"`, `"ok"`) satisfies the literal presence

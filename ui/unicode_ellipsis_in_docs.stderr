@@ -1,0 +1,40 @@
+warning: Unicode `…` (U+2026) in doc comment
+  --> $DIR/unicode_ellipsis_in_docs.rs:1:48
+   |
+LL | //! Crate-level inner doc comment with ellipsis… is flagged.
+   |                                                ^ help: use ASCII `...` instead: `...`
+   |
+   = note: `#[warn(perfectionist::unicode_ellipsis_in_docs)]` on by default
+
+warning: Unicode `…` (U+2026) in doc comment
+  --> $DIR/unicode_ellipsis_in_docs.rs:3:36
+   |
+LL | /// Outer doc comment with ellipsis… is flagged.
+   |                                    ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in doc comment
+  --> $DIR/unicode_ellipsis_in_docs.rs:24:39
+   |
+LL | /// Multi-line doc comment, first line…
+   |                                       ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in doc comment
+  --> $DIR/unicode_ellipsis_in_docs.rs:25:36
+   |
+LL | /// and a second line with ellipsis… too.
+   |                                    ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in doc comment
+  --> $DIR/unicode_ellipsis_in_docs.rs:28:36
+   |
+LL | /** Block doc comment with ellipsis… is flagged. */
+   |                                    ^ help: use ASCII `...` instead: `...`
+
+warning: Unicode `…` (U+2026) in doc comment
+  --> $DIR/unicode_ellipsis_in_docs.rs:32:40
+   |
+LL |     //! Inner doc comment with ellipsis… is flagged.
+   |                                        ^ help: use ASCII `...` instead: `...`
+
+warning: 6 warnings emitted
+
