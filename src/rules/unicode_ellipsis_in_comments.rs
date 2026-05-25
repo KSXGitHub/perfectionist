@@ -4,9 +4,8 @@ use rustc_ast::Crate;
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::{
-    BytePos, Pos, RelativeBytePos, SourceFile, Span, SyntaxContext, def_id::LOCAL_CRATE,
-};
+use rustc_span::def_id::LOCAL_CRATE;
+use rustc_span::{BytePos, Pos, RelativeBytePos, SourceFile, Span, SyntaxContext};
 
 use crate::common::{DefaultState, resolved_state};
 use crate::literal_scan::emit_flagged_chars;

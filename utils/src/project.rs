@@ -2,7 +2,8 @@
 //! `Cargo.toml`, `dylint.toml`, and the supplied source files into
 //! a target directory.
 
-use std::{collections::BTreeMap, path::Path};
+use std::collections::BTreeMap;
+use std::path::Path;
 
 use build_fs_tree::{Build, FileSystemTree, MergeableFileSystemTree};
 

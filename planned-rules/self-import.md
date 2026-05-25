@@ -1,8 +1,8 @@
 # `self_import`
 
 **Source:** project convention. Companion lint to
-[`import-granularity`](./import-granularity.md), which intentionally
-defers all `self`-import decisions here.
+`perfectionist::import_granularity` (`src/rules/import_granularity.rs`),
+which intentionally defers all `self`-import decisions here.
 
 ## Statement
 
@@ -113,8 +113,9 @@ namespace).
 ## Implementation notes
 
 - Adjacency detection mirrors the grouping logic in
-  [`import-granularity`](./import-granularity.md); factor the helper
-  into a shared module.
+  `perfectionist::import_granularity` (the `check_items` partitioning
+  in `src/rules/import_granularity.rs`); factor the helper into a
+  shared module.
 - Span construction for the autofix needs both the original `use`
   span and the trailing semicolon. `clippy_utils::source::snippet`
   helps, but `Applicability::MachineApplicable` requires no
@@ -138,7 +139,7 @@ preference, so the rule ships no baseline; enable it in
 enabled — see
 [Mandatory configuration on opt-in rules](./IMPLEMENTATION_CONVENTIONS.md#mandatory-configuration-on-opt-in-rules).
 
-## Why a separate lint from `import-granularity`
+## Why a separate lint from `perfectionist::import_granularity`
 
 Granularity decides *how* items are grouped across `use` statements;
 `self_import` decides *whether `self` is the right way to name a

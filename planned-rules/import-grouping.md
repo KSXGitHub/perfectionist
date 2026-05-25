@@ -1,9 +1,9 @@
 # `import_grouping`
 
 **Source:** project convention. Distinct from
-[`import-granularity`](./import-granularity.md), which decides
-*merge vs separate*; this rule decides *how use statements are
-partitioned into blocks*.
+`perfectionist::import_granularity` (`src/rules/import_granularity.rs`),
+which decides *merge vs separate*; this rule decides *how use
+statements are partitioned into blocks*.
 
 ## Statement
 
@@ -23,7 +23,7 @@ configurable. Within each group, the inner ordering is left to
 
 This rule only governs the *partitioning* of imports. Whether items
 within each `use` are merged or split is the job of
-[`import-granularity`](./import-granularity.md).
+`perfectionist::import_granularity`.
 
 ## Configuration
 
@@ -129,10 +129,10 @@ Special cases:
     text of each `use` (preserved via `snippet_opt`) plus the
     computed group assignments — no semantic changes, only
     re-ordering and blank-line insertion.
-- Interaction with `import-granularity`: run `import-granularity`
-  *first* (or apply both sequentially in a fix pass) so the merged
-  output matches the granularity style before grouping decides where
-  each `use` line lives.
+- Interaction with `perfectionist::import_granularity`: run
+  granularity *first* (or apply both sequentially in a fix pass) so the
+  merged output matches the granularity style before grouping decides
+  where each `use` line lives.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this

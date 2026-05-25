@@ -1,0 +1,35 @@
+warning: imports are not grouped into one `use` per module
+  --> $DIR/import_granularity.rs:16:5
+   |
+LL | /     use std::collections::BTreeMap;
+LL | |     use std::collections::HashMap;
+   | |__________________________________^ help: reorganize the imports: `use std::collections::{BTreeMap, HashMap};`
+   |
+   = note: `#[warn(perfectionist::import_granularity)]` on by default
+
+warning: imports are not grouped into one `use` per module
+  --> $DIR/import_granularity.rs:23:5
+   |
+LL |     use std::{collections::HashMap, io::Read};
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: reorganize the imports
+   |
+LL ~     use std::collections::HashMap;
+LL +     use std::io::Read;
+   |
+
+warning: imports are not grouped into one `use` per module
+  --> $DIR/import_granularity.rs:28:5
+   |
+LL |     use std::collections::{BTreeMap, btree_map::Entry};
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: reorganize the imports
+   |
+LL ~     use std::collections::BTreeMap;
+LL +     use std::collections::btree_map::Entry;
+   |
+
+warning: 3 warnings emitted
+
