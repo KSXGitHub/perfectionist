@@ -192,11 +192,6 @@ pattern that several rules call out by reference — live in
   pin a fixed length such as 12 or 40.
 
 ### Lint-level attributes
-- [`lint-reason-from-comment.md`](./lint-reason-from-comment.md) — when
-  a lint-level attribute (`#[allow]`, `#[expect]`, `#[warn]`,
-  `#[deny]`, `#[forbid]`) carries an adjacent comment that
-  documents *why*, lift the comment into the attribute's
-  `reason = "..."` field.
 - [`prefer-expect-over-allow.md`](./prefer-expect-over-allow.md) —
   rewrite `#[allow(...)]` to `#[expect(...)]` for lints that fire
   deterministically, so a future fix that removes the underlying

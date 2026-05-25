@@ -21,6 +21,9 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`flat_module_pattern`](./flat_module_pattern.md) (default: `active`).
 
   submodule defined as `module/mod.rs`; prefer the flat `module.rs` layout
+- [`lint_reason_from_comment`](./lint_reason_from_comment.md) (default: `active`).
+
+  trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field
 - [`lint_silence_reason`](./lint_silence_reason.md) (default: `active`).
 
   `#[allow]` / `#[expect]` attribute lacks an explanatory `reason = "..."` field

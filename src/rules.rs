@@ -3,6 +3,7 @@ pub mod bare_issue_reference;
 pub mod bare_url;
 pub mod derive_ordering;
 pub mod flat_module_pattern;
+pub mod lint_reason_from_comment;
 pub mod lint_silence_reason;
 pub mod macro_argument_binding;
 pub mod macro_trailing_comma;

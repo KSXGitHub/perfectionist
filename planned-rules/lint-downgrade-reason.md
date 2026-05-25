@@ -197,7 +197,8 @@ min_reason_length = 3
   and emit the corresponding "missing reason" or "reason too
   short" diagnostic.
 - The `reason`-presence check is shared with
-  [`lint-reason-from-comment`](./lint-reason-from-comment.md)
+  `perfectionist::lint_reason_from_comment`
+  ([`src/rules/lint_reason_from_comment.rs`](../src/rules/lint_reason_from_comment.rs))
   and `perfectionist::lint_silence_reason`. All three consume
   `src/common.rs::attr_has_reason`.
 
@@ -249,7 +250,8 @@ Active by default.
   covers the local case (every `#[allow]` / `#[expect]`
   regardless of inherited level). See "Relationship to
   `lint_silence_reason`" above.
-- [`lint-reason-from-comment`](./lint-reason-from-comment.md)
+- `perfectionist::lint_reason_from_comment`
+  ([`src/rules/lint_reason_from_comment.rs`](../src/rules/lint_reason_from_comment.rs))
   lifts an adjacent comment into the attribute's `reason` field
   and so satisfies this rule preemptively when the rationale is
   already present in source.
