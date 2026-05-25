@@ -18,15 +18,34 @@ pub fn build_project(
     perfectionist_dir: &Path,
     sources: &[(&str, &str)],
 ) {
+    build_project_with_config(project_dir, package_name, perfectionist_dir, sources, "");
+}
+
+/// Like [`build_project`], but appends `extra_dylint_toml` to the
+/// generated `dylint.toml`. Use it to add a per-rule
+/// `["perfectionist::<rule>"]` configuration table next to the library
+/// metadata — library discovery only reads `workspace.metadata.dylint`,
+/// so unrelated top-level tables are ignored by it while still being
+/// visible to `dylint_linting::config_or_default`. Quote the `::` key,
+/// since a bare `perfectionist::<rule>` is invalid TOML.
+pub fn build_project_with_config(
+    project_dir: &Path,
+    package_name: &str,
+    perfectionist_dir: &Path,
+    sources: &[(&str, &str)],
+    extra_dylint_toml: &str,
+) {
     let mut entries: BTreeMap<String, FileSystemTree<String, String>> = BTreeMap::new();
     entries.insert(
         "Cargo.toml".to_owned(),
         FileSystemTree::File(fixture_cargo_toml(package_name)),
     );
-    entries.insert(
-        "dylint.toml".to_owned(),
-        FileSystemTree::File(fixture_dylint_toml(perfectionist_dir)),
-    );
+    let mut dylint_toml = fixture_dylint_toml(perfectionist_dir);
+    if !extra_dylint_toml.is_empty() {
+        dylint_toml.push('\n');
+        dylint_toml.push_str(extra_dylint_toml);
+    }
+    entries.insert("dylint.toml".to_owned(), FileSystemTree::File(dylint_toml));
     for (path, contents) in sources {
         entries.insert(
             (*path).to_owned(),
