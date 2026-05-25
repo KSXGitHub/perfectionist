@@ -112,7 +112,8 @@ pub(super) fn split_top_level_arguments(stream: &TokenStream) -> Option<Vec<Vec<
 ///    rather than emit a confusing `let`-bind hint inside a DSL
 ///    matcher (false positive). The latter has been reported in the
 ///    wild; the former has not. A future re-parse-based
-///    implementation (see issue #64) will subsume the whole
+///    implementation (see issue [#64](https://github.com/KSXGitHub/perfectionist/issues/64))
+///    will subsume the whole
 ///    heuristic and resolve the trade-off properly.
 pub(super) fn looks_like_expression(argument: &[TokenTree]) -> bool {
     if let Some(TokenTree::Token(token, _)) = argument.first()

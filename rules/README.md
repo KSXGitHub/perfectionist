@@ -6,6 +6,15 @@ Auto-generated catalogue of implemented lints. Each entry links to a per-rule ma
 
 Lint-control attributes use the `perfectionist::` namespace.
 
+- [`bare_email`](./bare_email.md) (default: `active`).
+
+  bare email address in comment or doc comment; wrap in `<...>` or prefix with `mailto:`
+- [`bare_issue_reference`](./bare_issue_reference.md) (default: `active`).
+
+  ambiguous bare `#NNN` issue / PR reference in comment
+- [`bare_url`](./bare_url.md) (default: `active`).
+
+  bare URL in comment or doc comment; wrap in `<...>` or use a labelled markdown link
 - [`derive_ordering`](./derive_ordering.md) (default: `inactive`).
 
   trait names in a `#[derive(...)]` list are not in the configured order
@@ -27,6 +36,9 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`non_exhaustive_error`](./non_exhaustive_error.md) (default: `inactive`).
 
   error-shaped type is missing `#[non_exhaustive]`
+- [`prefer_derive_more_over_thiserror`](./prefer_derive_more_over_thiserror.md) (default: `active`).
+
+  `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`
 - [`prefer_raw_string`](./prefer_raw_string.md) (default: `active`).
 
   string literal contains only raw-expressible escapes; prefer the raw-string form

@@ -1,3 +1,6 @@
+pub mod bare_email;
+pub mod bare_issue_reference;
+pub mod bare_url;
 pub mod derive_ordering;
 pub mod flat_module_pattern;
 pub mod lint_reason_from_comment;
@@ -5,6 +8,7 @@ pub mod lint_silence_reason;
 pub mod macro_argument_binding;
 pub mod macro_trailing_comma;
 pub mod non_exhaustive_error;
+pub mod prefer_derive_more_over_thiserror;
 pub mod prefer_raw_string;
 pub mod single_letter_closure_param;
 pub mod single_letter_const_generic;

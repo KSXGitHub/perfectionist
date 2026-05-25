@@ -1,0 +1,20 @@
+warning: ambiguous `#51`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
+  --> $DIR/fixture.rs:5:47
+   |
+LL |     /// sits on the continuation line: closes #51 — which earlier was
+   |                                               ^^^
+   |
+   = help: if `#51` is not an issue or pull request, enclose it in backticks so it renders as code
+   = help: or refer to the numbered item with a spelling that has no leading `#`
+   = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
+help: use a reference-style markdown link to the issue (its `[#N]: URL` definition is appended to the doc block)
+   |
+LL ~     /// sits on the continuation line: closes [#51] — which earlier was
+LL |     /// silently skipped. The appended `[#51]: URL` definition reuses
+LL ~     /// the indented `///` prefix.
+LL +     ///
+LL +     /// [#51]: https://github.com/owner/repo/issues/51
+   |
+
+warning: 1 warning emitted
+

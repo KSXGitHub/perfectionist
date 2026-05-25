@@ -15,11 +15,14 @@ use rustc_session::Session;
 dylint_linting::dylint_library!();
 
 mod ascii_letter;
+mod comment_walk;
 mod common;
 mod enclosing_hir;
 mod literal_scan;
 mod macro_path;
+mod markdown;
 mod rules;
+mod url_scan;
 
 #[unsafe(no_mangle)]
 #[allow(
@@ -38,6 +41,9 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
     }
 
     register! {
+        bare_email
+        bare_issue_reference
+        bare_url
         derive_ordering
         flat_module_pattern
         lint_reason_from_comment
@@ -45,6 +51,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         macro_argument_binding
         macro_trailing_comma
         non_exhaustive_error
+        prefer_derive_more_over_thiserror
         prefer_raw_string
         single_letter_closure_param
         single_letter_const_generic

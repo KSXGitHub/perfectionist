@@ -82,14 +82,6 @@ pattern that several rules call out by reference — live in
   `impl` blocks that could be replaced by a `derive_more` derive
   (`From`, `Into`, `AsRef`, `Deref`, etc., with `Display` and
   `Error` available behind opt-in flags due to detection difficulty).
-- [`prefer-derive-more-over-thiserror.md`](./prefer-derive-more-over-thiserror.md)
-  — blanket-ban detection-only rule that flags every
-  `#[derive(thiserror::Error)]`, every `#[error(...)]` attribute on
-  a thiserror-derived item, and every `use thiserror::*` import.
-  Diagnostic suggests the target shape `#[derive(Display, Error)]`;
-  no autofix (the migration involves manual format-string
-  positional translation `{0}` → `{_0}` and other case-by-case
-  edits that aren't safe to apply mechanically).
 - [`derive-more-inlined-args.md`](./derive-more-inlined-args.md) —
   `clippy::uninlined_format_args` for `#[display(...)]` and
   `#[debug(...)]` attributes from `derive_more`.
@@ -187,17 +179,6 @@ pattern that several rules call out by reference — live in
   and string literals reachable from `format!` / `println!` style macros.
 - [`unicode-ellipsis-in-docs.md`](./unicode-ellipsis-in-docs.md) — flag
   U+2026 (`…`) in `///` and `//!` doc comments; prefer `...`.
-- [`bare-issue-reference.md`](./bare-issue-reference.md) — require
-  `#123` issue / PR references in doc comments to be markdown
-  links; optionally extend to plain `//` comments with a
-  URL-substitution autofix.
-- [`bare-url.md`](./bare-url.md) — require bare URLs in doc comments
-  and regular comments to be wrapped in `<...>` or labelled
-  `[text](url)`.
-- [`bare-email.md`](./bare-email.md) — require bare email addresses in
-  doc comments and regular comments to be wrapped, prefixed
-  `mailto:`, or both. A `forbid` style bans them outright for
-  privacy-conscious projects.
 - [`unpinned-repo-ref.md`](./unpinned-repo-ref.md) — require URLs that
   reference files in a hosted git repository (GitHub, GitLab,
   Bitbucket, Codeberg / Gitea, sourcehut, …) to be pinned to a
