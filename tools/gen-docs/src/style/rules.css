@@ -87,17 +87,10 @@ article.rule h2 {
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
-/* GitHub-style heading permalink: a chain-link glyph in the left
-   gutter of each rule-name heading, hidden until the heading is
-   hovered or the link itself is focused. Taking it out of flow with
-   `position: absolute` + `right: 100%` parks it entirely to the left
-   of the heading box, so the rule name stays aligned with the body's
-   paragraphs and the link is "pushed off" into the gutter. The icon
-   is an external `rule-anchor.svg` (Octicons, MIT) pulled in via
-   `background-image` — never inlined into the page. The combined
-   `width` + `margin-right` reach (~0.95rem) stays inside the body's
-   1rem side padding, so the glyph never spills past the viewport edge
-   to force horizontal scrolling on phones. */
+/* `right: 100%` parks the glyph entirely left of the heading box, so
+   the rule name stays aligned with the body's paragraphs. The combined
+   width + margin reach (~0.95rem) stays inside the body's 1rem side
+   padding, so it never forces horizontal scrolling on phones. */
 article.rule h2 .rule-anchor {
   position: absolute;
   right: 100%;

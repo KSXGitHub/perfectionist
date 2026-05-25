@@ -177,9 +177,8 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     let index_path = out_dir.join("index.html");
     fs::write(&index_path, html).expect("failed to write index.html");
 
-    // The heading-anchor chain-link glyph is referenced by the
-    // stylesheet's `url(...)`, not inlined into the page, so it has to
-    // land beside `index.html` for that relative URL to resolve.
+    // Lands beside index.html so the stylesheet's relative `url(...)`
+    // resolves.
     let icon_path = out_dir.join(RULE_ANCHOR_ICON_FILENAME);
     fs::write(&icon_path, RULE_ANCHOR_ICON).expect("failed to write rule-anchor icon");
 
