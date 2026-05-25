@@ -1,4 +1,3 @@
-pub mod arc_rc_clone;
 pub mod derive_ordering;
 pub mod flat_module_pattern;
 pub mod lint_silence_reason;
