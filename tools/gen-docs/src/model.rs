@@ -63,9 +63,15 @@ pub(crate) struct Rule {
     pub(crate) doc_markdown: String,
     /// Source path relative to the repo root, for cross-linking.
     pub(crate) relative_source: PathBuf,
-    /// `Config` struct contents when the rule declares one. `None`
-    /// means the rule file has no `Config` / `CONFIG_KEY` pair.
-    pub(crate) config: Option<ConfigDoc>,
+    /// The rule's configuration surface. Every rule declares both a
+    /// `CONFIG_KEY` constant and a `Config` struct; a rule with no
+    /// knobs uses an empty `Config {}` (e.g. `flat_module_pattern`).
+    /// "No configuration" therefore has a single representation —
+    /// an empty `ConfigDoc` — that both output modes render as
+    /// "Configuration: none." The extractor enforces this, panicking
+    /// on any rule file that omits either half, so the field is never
+    /// absent here.
+    pub(crate) config: ConfigDoc,
 }
 
 /// Whether a rule's pass is installed by default. Mirrors the

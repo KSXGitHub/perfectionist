@@ -187,9 +187,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                 (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
             }
             (PreEscaped(markdown_to_html(&rule.doc_markdown)))
-            @if let Some(config) = &rule.config {
-                (config_section(config))
-            }
+            (config_section(&rule.config))
             p.source {
                 "Source: "
                 a href=(source_url) { code { (source_path) } }
@@ -217,6 +215,7 @@ mod tests {
     use std::path::PathBuf;
 
     use super::*;
+    use crate::model::ConfigDoc;
 
     fn fake_rule(name: &str) -> Rule {
         Rule {
@@ -225,7 +224,11 @@ mod tests {
             short_desc: format!("demo rule {name}"),
             doc_markdown: "### What it does\nDoes a demo.".to_owned(),
             relative_source: PathBuf::from(format!("src/rules/{name}.rs")),
-            config: None,
+            config: ConfigDoc {
+                key: format!("perfectionist::{name}"),
+                fields: Vec::new(),
+                custom_types: Vec::new(),
+            },
         }
     }
 
