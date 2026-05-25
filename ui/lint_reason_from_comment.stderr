@@ -97,19 +97,7 @@ LL ~ )]
    |
 
 warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:50:21
-   |
-LL | #[allow(dead_code)] // he said "yes" and used a / backslash
-   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-help: lift the comment into a `reason` field
-   |
-LL - #[allow(dead_code)] // he said "yes" and used a / backslash
-LL + #[allow(dead_code, reason = "he said /"yes/" and used a / backslash")]
-   |
-
-warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:54:38
+  --> $DIR/lint_reason_from_comment.rs:56:38
    |
 LL | #[cfg_attr(all(), allow(dead_code))] // cfg_attr wrap
    |                                      ^^^^^^^^^^^^^^^^
@@ -121,7 +109,7 @@ LL + #[cfg_attr(all(), allow(dead_code, reason = "cfg_attr wrap"))]
    |
 
 warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:62:63
+  --> $DIR/lint_reason_from_comment.rs:64:63
    |
 LL | #[cfg_attr(all(), allow(dead_code), allow(unused_variables))] // shared rationale
    |                                                               ^^^^^^^^^^^^^^^^^^^
@@ -133,7 +121,7 @@ LL + #[cfg_attr(all(), allow(dead_code, reason = "shared rationale"), allow(unus
    |
 
 warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:69:55
+  --> $DIR/lint_reason_from_comment.rs:71:55
    |
 LL | #[cfg_attr(all(), cfg_attr(all(), allow(dead_code)))] // nested wrap
    |                                                       ^^^^^^^^^^^^^^
@@ -145,7 +133,7 @@ LL + #[cfg_attr(all(), cfg_attr(all(), allow(dead_code, reason = "nested wrap"))
    |
 
 warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:77:85
+  --> $DIR/lint_reason_from_comment.rs:79:85
    |
 LL | #[cfg_attr(all(), allow(dead_code, reason = "explained"), allow(unused_variables))] // for second synth
    |                                                                                     ^^^^^^^^^^^^^^^^^^^
@@ -156,5 +144,5 @@ LL - #[cfg_attr(all(), allow(dead_code, reason = "explained"), allow(unused_vari
 LL + #[cfg_attr(all(), allow(dead_code, reason = "explained"), allow(unused_variables, reason = "for second synth"))]
    |
 
-warning: 13 warnings emitted
+warning: 12 warnings emitted
 

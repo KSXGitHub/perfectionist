@@ -46,9 +46,11 @@ fn trailing_multiline_no_comma() {}
 )] // multi-line with comma
 fn trailing_multiline_comma() {}
 
-// Bad: comment containing characters that need escaping.
-#[allow(dead_code)] // he said "yes" and used a \ backslash
-fn trailing_escapes() {}
+// (Escaping of `"` / `\` / control chars in the lifted text is
+// covered by the `escape_for_rust_string` unit tests, not here: the
+// UI harness normalises `\` to `/` in rendered `.stderr`, which would
+// make an escaped-suggestion fixture render as misleading,
+// invalid-looking Rust.)
 
 // Bad: `cfg_attr`-wrapped attribute with trailing comment.
 #[cfg_attr(all(), allow(dead_code))] // cfg_attr wrap
@@ -112,7 +114,6 @@ fn main() {
     trailing_decoration();
     trailing_multiline_no_comma();
     trailing_multiline_comma();
-    trailing_escapes();
     trailing_cfg_attr();
     trailing_cfg_attr_multi_synth();
     trailing_nested_cfg_attr();

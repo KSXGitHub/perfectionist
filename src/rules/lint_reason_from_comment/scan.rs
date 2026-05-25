@@ -11,8 +11,9 @@ pub(super) struct Comment {
     pub(super) text: String,
     /// Range of bytes whose removal makes the comment disappear from
     /// source: the run of horizontal whitespace after the closing
-    /// `]` plus the `// ...` text (not the newline that terminates
-    /// the line).
+    /// `]` plus the `// ...` text. Excludes the line terminator —
+    /// including a trailing `\r` of a `\r\n` ending — so applying the
+    /// fix never rewrites the line's ending.
     pub(super) delete_start: usize,
     pub(super) delete_end: usize,
     /// Range of bytes covering the comment text proper (`//` through
@@ -61,7 +62,12 @@ pub(super) fn find_trailing_comment(source: &str, attr_hi: usize) -> Option<Comm
     Some(Comment {
         text,
         delete_start: attr_hi,
-        delete_end: end,
+        // `text_end`, not `end`: for a `\r\n` ending `end` points at
+        // the `\n` and the deletion range `[attr_hi, end)` would
+        // include the preceding `\r`, silently rewriting that line's
+        // ending to LF. Stopping at `text_end` deletes only the
+        // whitespace + comment and leaves the `\r\n` intact.
+        delete_end: text_end,
         diag_start: comment_start,
         diag_end: text_end,
     })
@@ -237,5 +243,18 @@ mod tests {
         let source = "#[allow(foo)] // hello\r\n";
         let attr_hi = source.find(']').unwrap() + 1;
         assert_comment(find_trailing_comment(source, attr_hi), "hello");
+    }
+
+    /// On a `\r\n` line the deletion range must stop before the `\r`,
+    /// so applying the fix removes only the comment and leaves the
+    /// `\r\n` ending intact (rather than silently flipping it to LF).
+    #[test]
+    fn trailing_crlf_delete_range_excludes_carriage_return() {
+        let source = "#[allow(foo)] // hello\r\n";
+        let attr_hi = source.find(']').unwrap() + 1;
+        let comment = find_trailing_comment(source, attr_hi).expect("expected a match");
+        // The byte at `delete_end` is the `\r`; it (and the `\n`) must
+        // survive the deletion.
+        assert_eq!(&source[comment.delete_end..], "\r\n");
     }
 }
