@@ -7,7 +7,7 @@ defers all `self`-import decisions here.
 ## Statement
 
 A project picks one style for handling `self` in `use` statements and
-enforces it consistently. The three styles supported by this lint are:
+enforces it consistently. The two styles supported by this lint are:
 
 - **`forbid`** — every form that imports a module via `self` is bad.
   Prefer the simpler bare form.
@@ -19,19 +19,21 @@ enforces it consistently. The three styles supported by this lint are:
     `use foo::bar;` and `use foo::bar::Baz;`.
 - **`combined`** — adjacent `use foo::bar; use foo::bar::Baz;` should
   fold into a single `use foo::bar::{self, Baz};`.
-- **`preserve`** (default) — no-op. Existing forms are accepted as
-  written.
 
-The default is `preserve` so the lint is zero-friction to adopt; a
-project that has a preference enables `forbid` or `combined`
-explicitly.
+The rule is inactive by default, so it is zero-friction to adopt; a
+project that has a preference enables it and sets `style` to `forbid`
+or `combined`.
 
 ## Configuration
 
 ```toml
 # dylint.toml
+#
+# Inactive by default. Enable in `[perfectionist].enable`, then set
+# `style` — it is mandatory and has no default. The value below is an
+# example, not a default.
 [self_import]
-style = "preserve"   # or "forbid" or "combined"
+style = "forbid"   # or "combined"
 ```
 
 ## Style: `forbid`
@@ -87,11 +89,6 @@ source is a bare `use foo::bar;` (the same namespace caveat applies in
 reverse — the combined form *narrows* the import to the module
 namespace).
 
-## Style: `preserve`
-
-The lint emits nothing. Useful as a project-wide acknowledgement that
-`self_import` exists but neither extreme is enforced. Default.
-
 ## What to lint
 
 - `EarlyLintPass::check_mod`. Walk `ItemKind::Use` items in source
@@ -112,7 +109,6 @@ The lint emits nothing. Useful as a project-wide acknowledgement that
     and visibility. If statement A imports `foo::bar` (or
     `foo::bar::{self}`) and statement B imports `foo::bar::Baz`, fold
     them into `foo::bar::{self, Baz}`.
-- Under `preserve`: nothing.
 
 ## Implementation notes
 
@@ -136,8 +132,11 @@ The lint emits nothing. Useful as a project-wide acknowledgement that
 
 ## Default state
 
-Active by default, but the default `style = "preserve"` keeps the
-pass a no-op until the project opts into `forbid` or `combined`.
+Inactive by default. `forbid` vs. `combined` is a per-project
+preference, so the rule ships no baseline; enable it in
+`[perfectionist].enable` and set `style`. `style` is mandatory once
+enabled — see
+[Mandatory configuration on opt-in rules](./IMPLEMENTATION_CONVENTIONS.md#mandatory-configuration-on-opt-in-rules).
 
 ## Why a separate lint from `import-granularity`
 

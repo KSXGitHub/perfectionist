@@ -57,8 +57,10 @@ external module.
 
 ```toml
 [qualified_paths]
-style = "preserve"
-# "preserve"     — no-op (default).
+# Inactive by default. Enable in `[perfectionist].enable`, then set
+# `style` — it is mandatory and has no default. The value below is an
+# example, not a default.
+style = "unqualified"
 # "unqualified"  — flag any module-qualified path; suggest a `use`
 #                  for the leaf and replace with the simple ident.
 # "qualified"    — flag any simple-ident path that resolves to an
@@ -254,9 +256,11 @@ For each path:
 
 ## Default state
 
-Active by default, but the default `style = "preserve"` keeps the
-pass a no-op until the project opts into `prefer_imported` or
-`prefer_qualified`.
+Inactive by default. `unqualified` vs. `qualified` is a per-project
+preference, so the rule ships no baseline; enable it in
+`[perfectionist].enable` and set `style`. `style` is mandatory once
+enabled — see
+[Mandatory configuration on opt-in rules](./IMPLEMENTATION_CONVENTIONS.md#mandatory-configuration-on-opt-in-rules).
 
 ## Why one rule instead of two
 
