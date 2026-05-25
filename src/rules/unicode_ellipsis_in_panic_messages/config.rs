@@ -55,9 +55,10 @@ struct Config {
     /// default; checked after the merge with the built-ins, so
     /// this knob always wins.
     ignore_methods: Vec<String>,
-    /// Extra characters to flag alongside U+2026, in the same spirit
-    /// as `unicode_ellipsis_in_comments.extra_flagged_chars`. Empty by
-    /// default.
+    /// Extra characters to flag alongside U+2026. Useful for catching
+    /// near-relatives such as U+22EF MIDLINE HORIZONTAL ELLIPSIS (`⋯`)
+    /// or U+2025 TWO DOT LEADER (`‥`) that the same autocorrect
+    /// pipelines occasionally insert. Empty by default.
     extra_flagged_chars: Vec<char>,
 }
 
