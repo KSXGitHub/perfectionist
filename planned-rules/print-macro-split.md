@@ -80,7 +80,6 @@ For every invocation of a target macro:
      `\n\<newline><indent>` where `<indent>` matches the source
      indentation of the original literal. Wrap the macro
      invocation across multiple lines if needed.
-   - `preserve`: emit nothing.
 
 ## Examples
 
@@ -138,7 +137,7 @@ println!("a\nb");
 
 ```toml
 [print_macro_split]
-style = "multiple_calls"   # or "line_continuation" or "preserve"
+style = "multiple_calls"   # or "line_continuation"
 
 # Source-line width that triggers the rule. Default 100 matches
 # rustfmt's column default. Common alternatives are 80 (terminal)

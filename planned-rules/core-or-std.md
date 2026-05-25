@@ -5,7 +5,7 @@
 ## Statement
 
 A project picks one style for naming items that exist in both `core` (or
-`alloc`) and `std`, and enforces it consistently. The three styles
+`alloc`) and `std`, and enforces it consistently. The two styles
 supported by this lint are:
 
 - **`prefer_core`** — flag any `std::` path that names an item canonically
@@ -14,8 +14,6 @@ supported by this lint are:
   both of which live in clippy's `restriction` group (off by default).
 - **`prefer_std`** — flag any `core::` or `alloc::` path that names an
   item also reachable through `std::`. Suggest the `std::` path.
-- **`preserve`** (default) — no-op. Useful as a project-wide
-  acknowledgement that the rule exists but neither extreme is enforced.
 
 The choice is project-driven:
 
@@ -30,8 +28,12 @@ The choice is project-driven:
 
 ```toml
 # dylint.toml
+#
+# Inactive by default. Enable in `[perfectionist].enable`, then set
+# `style` — it is mandatory and has no default. The value below is an
+# example, not a default.
 [core_or_std]
-style = "preserve"   # or "prefer_core" or "prefer_std"
+style = "prefer_core"   # or "prefer_std"
 ```
 
 Optional knobs:
@@ -84,10 +86,6 @@ The lint should *not* fire inside a module gated by `#![no_std]` or
 Detect via `tcx.sess.contains_name(.., sym::no_std)` on the crate's
 attributes for the global case, and by walking enclosing items for the
 `cfg`-gated case.
-
-## Style: `preserve`
-
-The lint emits nothing. Default.
 
 ## Examples across both styles
 
@@ -149,6 +147,8 @@ The lint emits nothing. Default.
 
 ## Default state
 
-Active by default, but the default `style = "preserve"` keeps the
-pass a no-op until the project opts into `prefer_core` or
-`prefer_std`.
+Inactive by default. `prefer_core` vs. `prefer_std` genuinely varies
+per project, so the rule ships no baseline; enable it in
+`[perfectionist].enable` and set `style`. `style` is mandatory once
+enabled — see
+[Mandatory configuration on opt-in rules](./IMPLEMENTATION_CONVENTIONS.md#mandatory-configuration-on-opt-in-rules).

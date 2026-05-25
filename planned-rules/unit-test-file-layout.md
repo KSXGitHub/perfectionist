@@ -35,14 +35,13 @@ layout rules apply to whatever name the project picks.
 # dylint.toml
 [unit_test_file_layout]
 
-# How inline test modules are handled.
-inline_style = "preserve"
+# How inline test modules are handled. Defaults to `external_when_long`.
+inline_style = "external_when_long"
 # "external_only"      — every `#[cfg(test)] mod X;` must be external
 #                        (matching pacquet's strict policy).
-# "external_when_long" — inline allowed up to the configured threshold;
-#                        beyond that, must be moved to a file
+# "external_when_long" — (default) inline allowed up to the configured
+#                        threshold; beyond that, must be moved to a file
 #                        (matching parallel-disk-usage's guidance).
-# "preserve"           — no preference about inline vs external.
 
 # Threshold for `external_when_long`. The lint sums the line spans of
 # every inline test item in a file (the fixed set defined under
@@ -129,7 +128,6 @@ toward the footprint.
      at the canonical extraction target. A file that has only one or
      two short tests stays under the budget and is not flagged, even
      when it has no `mod tests { ... }` block at all.
-   - `preserve`: emit nothing.
 
 A file that contains **only** test items — for example, the
 `src/foo/tests.rs` that a parent file's `mod tests;` resolves to,
@@ -148,9 +146,8 @@ configured `external_layout` pattern.
 ```rust
 // src/foo.rs
 //
-// Acceptable when `inline_style = "preserve"` or
-// `inline_style = "external_when_long"` and the inline-test footprint
-// is small.
+// Acceptable when `inline_style = "external_when_long"` and the
+// inline-test footprint is small.
 #[cfg(test)]
 mod tests {
     use super::parse;
