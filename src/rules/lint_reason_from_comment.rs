@@ -7,8 +7,8 @@
 //! - [`scan`] — the source-text walker (`find_trailing_comment`) and
 //!   the shared `normalise_comment_text` that turns a raw `// ...`
 //!   slice into the rationale-string body.
-//! - [`insertion`] — `build_reason_insertion` (the three-layout
-//!   args-list edit) and `escape_for_rust_string`.
+//! - [`insertion`] — `build_reason_insertion` (the args-list edit)
+//!   and `escape_for_rust_string`.
 //! - [`emit`] — `LintReasonFromComment::check` and `::emit`, plus
 //!   the `file_span` helper that anchors comment-derived spans to
 //!   the same `SyntaxContext` as the attribute they belong to.
@@ -87,19 +87,11 @@ const CONFIG_KEY: &str = "perfectionist::lint_reason_from_comment";
 struct Config {}
 
 pub struct LintReasonFromComment {
-    /// Source span of the most recently-visited
-    /// `sym::cfg_attr_trace` attribute. rustc replaces a
-    /// successfully-applied `#[cfg_attr(<cond>, <inner>)]` with a
-    /// trace attribute (whose span covers the original
-    /// `#[cfg_attr(...)]`) followed by the synthesised `<inner>`
-    /// attributes; the synthesised inner attributes carry source
-    /// spans pointing at the inner positions *within* the
-    /// cfg_attr source, which is too narrow to scan for adjacent
-    /// comments. Stashing the trace's outer span here lets the
-    /// next synth lint-level attribute use it for the
-    /// comment-search anchor. Cleared when we visit an attribute
-    /// whose span lies outside the trace's range — the trace's
-    /// influence ends as soon as the AST walks past it.
+    /// Outer span of the enclosing `#[cfg_attr(...)]`, carried from
+    /// its `cfg_attr_trace` to the synthesised inner lint-level
+    /// attribute so the latter anchors its comment search to the
+    /// original source rather than its own narrow span. See
+    /// [`Self::check_attribute`] for the mechanism.
     pending_cfg_attr_outer: Option<Span>,
 }
 
@@ -133,24 +125,15 @@ fn is_lint_level_attribute_name(name: Option<Symbol>) -> bool {
 }
 
 impl EarlyLintPass for LintReasonFromComment {
-    /// `EarlyLintPass::check_attribute` visits each syntactic
-    /// attribute once. A bare `#[allow(...)]` arrives directly; a
-    /// `cfg_attr`-wrapped `#[cfg_attr(<cond>, allow(...))]` is split
-    /// by rustc into a `sym::cfg_attr_trace` attribute (carrying the
-    /// outer span) and one or more synth `#[allow(...)]` attributes
-    /// — see the cfg_attr-trace handling below.
     fn check_attribute(&mut self, lint_context: &EarlyContext<'_>, attribute: &Attribute) {
-        // rustc replaces a `#[cfg_attr(<cond>, <inner>)]` whose
-        // condition evaluates true with a *trace* attribute named
-        // `sym::cfg_attr_trace` (whose span still covers the original
-        // `#[cfg_attr(...)]`) followed by the synthesised `<inner>`
-        // attribute(s). The trace's `args` are already parsed into a
-        // private `AttrItemKind::Parsed(CfgAttrTrace)` payload that
-        // is opaque to the public `Attribute` API — there's no way
-        // to walk its inner meta items directly. The trace's outer
-        // *span* is still available, though, so we stash it as we
-        // visit the trace and use it as the comment-search anchor
-        // for the synth lint-level attributes that follow.
+        // For an applied `#[cfg_attr(<cond>, <inner>)]`, rustc emits a
+        // `cfg_attr_trace` attribute (whose span still covers the
+        // original `#[cfg_attr(...)]`) followed by the synthesised
+        // `<inner>` attribute(s). The trace's args are an opaque
+        // `AttrItemKind::Parsed(CfgAttrTrace)` the public `Attribute`
+        // API can't walk, but its outer *span* is available — so we
+        // stash it for the synth inner attribute to anchor its
+        // comment search to, instead of its own narrower span.
         if attribute.has_name(sym::cfg_attr_trace) {
             // Nested cfg_attr: a `#[cfg_attr(<a>, cfg_attr(<b>, allow(...)))]`
             // produces an outer trace, then an inner trace, then the synth
@@ -175,19 +158,14 @@ impl EarlyLintPass for LintReasonFromComment {
             && let Some(args) = attribute.meta_item_list()
         {
             let emitted = self.check(lint_context, outer_span, attribute.span, &args);
-            // A cfg_attr trace is one comment anchor for *one* adjacent
-            // source comment; if the cfg_attr expands into multiple
-            // lint-level synth attributes (e.g.
-            // `#[cfg_attr(all(), allow(a), warn(b))]`), only the first
-            // one to actually lift the comment should consume the
-            // trace — otherwise every synth attr would emit a duplicate
-            // suggestion whose `delete_span` overlaps the others on the
-            // same comment bytes, and rustfix would refuse to apply
-            // the conflicting edits. Conversely, if `check` declined
-            // to emit (e.g. the first synth already carries a `reason`
-            // field, or no adjacent comment was found), the trace must
-            // stay live so the next synth in the same cfg_attr can
-            // still find it.
+            // One `cfg_attr` is the anchor for one adjacent comment. If
+            // it expands to several lint-level synth attrs
+            // (`#[cfg_attr(all(), allow(a), warn(b))]`), only the first
+            // to actually emit consumes the trace — otherwise each
+            // would delete the same comment bytes and rustfix would
+            // reject the overlapping edits. Gating on `emitted` keeps
+            // the trace live when `check` declines (synth already has a
+            // `reason`, or no comment) so a later synth can still find it.
             if emitted && self.pending_cfg_attr_outer == Some(outer_span) {
                 self.pending_cfg_attr_outer = None;
             }
