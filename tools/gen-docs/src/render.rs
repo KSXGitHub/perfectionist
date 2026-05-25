@@ -184,8 +184,8 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
     html! {
         article.rule id=(anchor_for(&rule.namespaced)) {
             h2 {
-                a.rule-anchor href={ "#" (anchor_for(&rule.namespaced)) } aria-label="Permalink to this rule" {}
                 code {
+                    a.rule-anchor href={ "#" (anchor_for(&rule.namespaced)) } aria-label="Permalink to this rule" {}
                     span.lint-prefix { (NAMESPACE) }
                     span.lint-name { (unnamespaced(&rule.namespaced)) }
                 }
@@ -397,10 +397,10 @@ mod tests {
             ),
             "rule heading must emit a left-side permalink anchor to its own id",
         );
-        let heading = "<h2><a class=\"rule-anchor\"";
+        let heading = "<h2><code><a class=\"rule-anchor\"";
         assert!(
             html.contains(heading),
-            "the permalink anchor must be the first child of the rule <h2> (left side)",
+            "the permalink anchor must be the first child of the rule heading's <code> (left side)",
         );
         // Tag-prefixed needles: the inlined stylesheet mentions these
         // as bare selectors, so a class-only search would match the CSS
