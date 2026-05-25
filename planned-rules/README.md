@@ -143,7 +143,7 @@ pattern that several rules call out by reference — live in
   like `#[derive(...)]` are out of scope. Two eligibility modes:
   **name-based**, a curated list of core/std and well-known
   third-party macros (easy, configurable via
-  `name_based_extra`), and **matcher-based**, an automatic walk
+  `extra_macros`), and **matcher-based**, an automatic walk
   of `macro_rules!` matchers to detect the `$(,)?` / `$(,)*`
   optional-trailing-comma idioms (harder, not yet implemented
   and therefore not configurable).

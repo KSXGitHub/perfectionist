@@ -29,7 +29,7 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     min_escapes_to_trigger: Option<NonZeroUsize>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    escapes_eligible: Option<Vec<String>>,
+    eligible_escapes: Option<Vec<String>>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -59,33 +59,33 @@ fn min_escapes_to_trigger_skips_single_escape_literals() {
 }
 
 #[test]
-fn escapes_eligible_subset_narrows_what_counts_as_eliminable() {
-    // Restricting `escapes_eligible` to just `\"` means `\\` is
+fn eligible_escapes_subset_narrows_what_counts_as_eliminable() {
+    // Restricting `eligible_escapes` to just `\"` means `\\` is
     // no longer considered eliminable. A literal whose only
     // escapes are `\\` therefore looks like it has non-raw
     // escapes and stays untouched; a `\"`-only literal still
     // fires.
     run(
-        "ui-toml/prefer_raw_string/escapes_eligible_subset",
+        "ui-toml/prefer_raw_string/eligible_escapes_subset",
         RuleConfig {
-            escapes_eligible: Some(vec![r#"\""#.into()]),
+            eligible_escapes: Some(vec![r#"\""#.into()]),
             ..Default::default()
         },
     );
 }
 
 #[test]
-fn escapes_eligible_rejects_non_self_decoding_entries() {
-    // Misconfigured `escapes_eligible = ["\\n"]`: `\n` decodes to
+fn eligible_escapes_rejects_non_self_decoding_entries() {
+    // Misconfigured `eligible_escapes = ["\\n"]`: `\n` decodes to
     // a newline, not the letter `n`, so accepting it as eliminable
     // would let the autofix corrupt newline-containing literals.
     // The filter at config load must drop the entry; the resulting
     // empty eligible set silently disables the rule for this
     // fixture.
     run(
-        "ui-toml/prefer_raw_string/escapes_eligible_rejects_non_self_decoding",
+        "ui-toml/prefer_raw_string/eligible_escapes_rejects_non_self_decoding",
         RuleConfig {
-            escapes_eligible: Some(vec![r"\n".into()]),
+            eligible_escapes: Some(vec![r"\n".into()]),
             ..Default::default()
         },
     );

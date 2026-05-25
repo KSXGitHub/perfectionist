@@ -78,11 +78,11 @@ struct Config {
     /// syntactically optional at the top level; macros that treat
     /// the comma as a fully optional separator throughout (rather
     /// than only at the tail) should not be listed here.
-    name_based_extra: Vec<String>,
+    extra_macros: Vec<String>,
     /// Macro paths to opt out of the rule, even if they would
     /// otherwise be eligible via the built-in list or
-    /// `name_based_extra`. Matched by final path segment, like
-    /// `name_based_extra`. Checked first, so this knob always wins
+    /// `extra_macros`. Matched by final path segment, like
+    /// `extra_macros`. Checked first, so this knob always wins
     /// over eligibility. Empty by default.
     ignore: Vec<String>,
 }
@@ -102,13 +102,13 @@ pub(super) struct MacroTrailingComma {
 impl MacroTrailingComma {
     pub(super) fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let name_based_extra: BTreeSet<Vec<String>> = config
-            .name_based_extra
+        let extra_macros: BTreeSet<Vec<String>> = config
+            .extra_macros
             .iter()
             .map(|entry| parse_path(entry))
             .filter(|parsed| !parsed.is_empty())
             .collect();
-        let name_based = merge_with_builtins(BUILTIN_NAME_BASED, &name_based_extra);
+        let name_based = merge_with_builtins(BUILTIN_NAME_BASED, &extra_macros);
         let ignore = parse_path_list(&config.ignore);
         Self { name_based, ignore }
     }

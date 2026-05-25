@@ -20,9 +20,10 @@ declare_tool_lint! {
     /// ### What it does
     /// Flags bare `#NNN` issue / pull-request references in doc
     /// comments (`///`, `//!`) — and, when opted in, in plain `//`
-    /// line comments. The autofix rewrites the reference; the `form`
-    /// knob selects the shape (inline `[#123](URL)`, reference
-    /// `[#123]`, a bare URL, or a `<URL>` autolink).
+    /// line comments. The autofix rewrites the reference; the
+    /// `doc_comment_form` knob selects the shape (inline
+    /// `[#123](URL)`, reference `[#123]`, a bare URL, or a `<URL>`
+    /// autolink).
     ///
     /// A bare `#NNN` is deeply ambiguous: it might be an issue, a
     /// pull request, a colour like `#123`, or any other numbered
@@ -140,7 +141,7 @@ struct Config {
     /// the `#N` token is rewritten and the definition is left to the
     /// author). Defaults to `inline`. Ignored for plain-comment fixes
     /// — those follow `plain_comment_form` instead.
-    form: DocForm,
+    doc_comment_form: DocForm,
     /// When `true`, also lint plain `//` line comments. The
     /// autofix in plain comments uses `plain_comment_form`'s URL
     /// shape (since plain comments aren't markdown). Plain block
@@ -161,7 +162,7 @@ impl Default for Config {
             repository: None,
             suggest_issue_url: true,
             suggest_pr_url: true,
-            form: DocForm::Inline,
+            doc_comment_form: DocForm::Inline,
             include_plain_comments: false,
             plain_comment_form: PlainForm::BareUrl,
         }
@@ -176,7 +177,7 @@ pub struct BareIssueReference {
     repo_web_base: Option<String>,
     suggest_issue_url: bool,
     suggest_pr_url: bool,
-    form: DocForm,
+    doc_comment_form: DocForm,
     include_plain_comments: bool,
     plain_comment_form: PlainForm,
 }
@@ -206,7 +207,7 @@ impl BareIssueReference {
             repo_web_base: resolve_repository(config.repository.as_deref()),
             suggest_issue_url: config.suggest_issue_url,
             suggest_pr_url: config.suggest_pr_url,
-            form: config.form,
+            doc_comment_form: config.doc_comment_form,
             include_plain_comments: config.include_plain_comments,
             plain_comment_form: config.plain_comment_form,
         }
@@ -459,7 +460,7 @@ impl BareIssueReference {
         // requests are written `!NNN` — so the PR suggestion never
         // applies to it, whatever `suggest_pr_url` says.
         let suggest_pr = self.suggest_pr_url && self.hash_can_mean_pr();
-        let doc_form = self.form;
+        let doc_form = self.doc_comment_form;
         let plain_form = self.plain_comment_form;
         // For the `reference` form, work out where (and with what
         // prefix) to append the `[#N]: URL` definition, so the fix is
@@ -833,7 +834,7 @@ mod tests {
             repo_web_base: Some(web_base.to_owned()),
             suggest_issue_url: true,
             suggest_pr_url: true,
-            form: DocForm::Inline,
+            doc_comment_form: DocForm::Inline,
             include_plain_comments: false,
             plain_comment_form: PlainForm::BareUrl,
         };
@@ -871,7 +872,7 @@ mod tests {
             repo_web_base: Some(web_base.to_owned()),
             suggest_issue_url: true,
             suggest_pr_url: true,
-            form: DocForm::Inline,
+            doc_comment_form: DocForm::Inline,
             include_plain_comments: false,
             plain_comment_form: PlainForm::BareUrl,
         };
@@ -914,7 +915,7 @@ mod tests {
             repo_web_base: Some("https://git.example.com/owner/repo".to_owned()),
             suggest_issue_url: true,
             suggest_pr_url: true,
-            form: DocForm::Inline,
+            doc_comment_form: DocForm::Inline,
             include_plain_comments: false,
             plain_comment_form: PlainForm::BareUrl,
         };

@@ -19,7 +19,7 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     suggest_pr_url: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    form: Option<String>,
+    doc_comment_form: Option<String>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -153,15 +153,15 @@ fn single_selection_is_still_maybe_incorrect() {
 
 #[test]
 fn reference_form_appends_definition() {
-    // The `form = "reference"` fix is a multipart edit: it rewrites
-    // `#99` to `[#99]` and appends the matching `[#99]: URL`
+    // The `doc_comment_form = "reference"` fix is a multipart edit:
+    // it rewrites `#99` to `[#99]` and appends the matching `[#99]: URL`
     // definition (after a blank `///` line) at the end of the block.
     run(
         "ui-toml/bare_issue_reference/reference_form",
         github_repo(RuleConfig {
             suggest_issue_url: Some(true),
             suggest_pr_url: Some(false),
-            form: Some("reference".into()),
+            doc_comment_form: Some("reference".into()),
             ..Default::default()
         }),
     );
@@ -177,7 +177,7 @@ fn indented_continuation_line_is_scanned() {
         github_repo(RuleConfig {
             suggest_issue_url: Some(true),
             suggest_pr_url: Some(false),
-            form: Some("reference".into()),
+            doc_comment_form: Some("reference".into()),
             ..Default::default()
         }),
     );
@@ -192,7 +192,7 @@ fn reference_form_skips_existing_definition() {
         github_repo(RuleConfig {
             suggest_issue_url: Some(true),
             suggest_pr_url: Some(false),
-            form: Some("reference".into()),
+            doc_comment_form: Some("reference".into()),
             ..Default::default()
         }),
     );
