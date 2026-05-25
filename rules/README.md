@@ -30,6 +30,12 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`single_letter_closure_param`](./single_letter_closure_param.md) (default: `active`).
 
   closure parameter has a single-letter name
+- [`single_letter_const_generic`](./single_letter_const_generic.md) (default: `active`).
+
+  const generic parameter has a single-letter name
+- [`single_letter_const_item`](./single_letter_const_item.md) (default: `active`).
+
+  const item has a single-letter name
 - [`single_letter_function_param`](./single_letter_function_param.md) (default: `active`).
 
   function parameter has a single-letter name
@@ -39,6 +45,9 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`single_letter_let_binding`](./single_letter_let_binding.md) (default: `active`).
 
   `let` binding has a single-letter name
+- [`single_letter_static_item`](./single_letter_static_item.md) (default: `active`).
+
+  static item has a single-letter name
 - [`unicode_ellipsis_in_comments`](./unicode_ellipsis_in_comments.md) (default: `active`).
 
   U+2026 HORIZONTAL ELLIPSIS in non-doc comments; prefer `...`
