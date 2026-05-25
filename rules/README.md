@@ -42,6 +42,9 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`prefer_raw_string`](./prefer_raw_string.md) (default: `active`).
 
   string literal contains only raw-expressible escapes; prefer the raw-string form
+- [`self_import`](./self_import.md) (default: `inactive`).
+
+  module imported through `self` against the project's configured `self`-import style
 - [`single_letter_closure_param`](./single_letter_closure_param.md) (default: `active`).
 
   closure parameter has a single-letter name

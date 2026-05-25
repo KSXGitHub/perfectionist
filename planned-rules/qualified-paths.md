@@ -272,6 +272,6 @@ a `style` knob keeps the policy expressible in one place — the
 same shape as
 [`import-granularity`](./import-granularity.md),
 [`core-or-std`](./core-or-std.md),
-[`self-import`](./self-import.md),
+`perfectionist::self_import`,
 `perfectionist::derive_ordering`, and
 [`serde-wrapper-style`](./serde-wrapper-style.md).

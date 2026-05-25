@@ -110,7 +110,7 @@ canonical idiom for "import this module along with items from it" and
 splitting it would produce noisy diffs without semantic benefit.
 
 Whether `{self, ...}` itself is an acceptable form is the
-[`self_import`](./self-import.md) lint's job, not this one's.
+`perfectionist::self_import` lint's job, not this one's.
 
 ## Style: `item`
 

@@ -36,11 +36,6 @@ pattern that several rules call out by reference — live in
   one contiguous block) or `grouped` (partitioned into std / internal /
   third-party blocks separated by blank lines, with the order
   configurable).
-- [`self-import.md`](./self-import.md) — decide how `self` in `use`
-  statements is handled. Configurable as `forbid` (always prefer the
-  bare `use foo::bar;`) or `combined` (fold adjacent module + item
-  imports into `use foo::bar::{self, X};`). Inactive by default; opt
-  in and pick a direction.
 - [`core-or-std.md`](./core-or-std.md) — decide whether items that
   exist in both `core`/`alloc` and `std` should be named through the
   narrower or wider path. Configurable as `prefer_core` (matches
