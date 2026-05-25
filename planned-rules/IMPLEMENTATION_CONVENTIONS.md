@@ -92,24 +92,25 @@ Six rules in this catalogue scan a slice of markdown:
   every banned construct (links, code spans, code blocks, HTML
   tags, headings, reference definitions) and emits a per-construct
   diagnostic.
-- [`bare-issue-reference`](./bare-issue-reference.md) — skips code
-  regions, existing links, and reference-link definitions before
-  flagging bare `#123` tokens.
-- [`bare-url`](./bare-url.md) — skips code regions, autolinks
-  (`<...>`), labelled links, and reference-link definitions before
-  flagging bare `http(s)://` URLs.
+- `perfectionist::bare_issue_reference` (`src/rules/bare_issue_reference.rs`)
+  — skips code regions, existing links, and reference-link
+  definitions before flagging bare `#123` tokens.
+- `perfectionist::bare_url` (`src/rules/bare_url.rs`) — skips code
+  regions, autolinks (`<...>`), labelled links, and reference-link
+  definitions before flagging bare `http(s)://` URLs.
 - [`unicode-ellipsis-in-docs`](./unicode-ellipsis-in-docs.md) —
   strips code regions, then byte-scans for U+2026.
 - [`em-dash-prose`](./em-dash-prose.md) — strips code regions, then
   byte-scans for `—` / `–`.
 
-They share one crate-internal scanner, to be added at
-`src/markdown.rs`, built from `take_*` combinators per the
-"Parser style" section above. The helper does not exist yet — the
-first rule to need it implements it; subsequent rules consume it.
-The helper is hand-written. **Do not pull in `pulldown_cmark`,
-`comrak`, `markdown-rs`, or `markdown-it`** for any of these rules
-without first revisiting the rationale below.
+They share one crate-internal scanner at `src/markdown.rs`, built
+from `take_*` combinators per the "Parser style" section above.
+The bare-* family already populates Tier A of the surface
+described below; the rules listed above as still-planned extend it
+as they're implemented. The helper is hand-written. **Do not pull
+in `pulldown_cmark`, `comrak`, `markdown-rs`, or `markdown-it`**
+for any of these rules without first revisiting the rationale
+below.
 
 ### Two tiers of consumer
 

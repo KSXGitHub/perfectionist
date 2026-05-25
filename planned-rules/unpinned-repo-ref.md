@@ -150,10 +150,10 @@ when the ref is hex.
 ## Implementation notes
 
 - `LateLintPass`. Reuse the URL discovery logic from
-  [`bare-url`](./bare-url.md) — same scanner, same code-span / code-
-  block exclusions, same retokenization for regular comments. The
-  same URL match feeds this lint, `bare-url`, and
-  `commit-id-length`.
+  `perfectionist::bare_url` (`src/url_scan.rs`) — same scanner,
+  same code-span / code-block exclusions, same retokenization for
+  regular comments. The same URL match feeds this lint,
+  `perfectionist::bare_url`, and `commit-id-length`.
 - Parse each candidate URL with `url::Url` or a small hand-written
   parser. Match the host against the configured `hosts` list (after
   glob expansion); look up the matched entry's `kind`; dispatch to
@@ -194,7 +194,7 @@ Active by default.
 
 ## Interaction with sibling lints
 
-- [`bare-url`](./bare-url.md) ensures the URL is wrapped (`<...>` or
+- `perfectionist::bare_url` ensures the URL is wrapped (`<...>` or
   labelled).
 - [`commit-id-length`](./commit-id-length.md) ensures any commit SHA
   in the URL has the project's required length.

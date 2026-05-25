@@ -179,17 +179,6 @@ pattern that several rules call out by reference — live in
   and string literals reachable from `format!` / `println!` style macros.
 - [`unicode-ellipsis-in-docs.md`](./unicode-ellipsis-in-docs.md) — flag
   U+2026 (`…`) in `///` and `//!` doc comments; prefer `...`.
-- [`bare-issue-reference.md`](./bare-issue-reference.md) — require
-  `#123` issue / PR references in doc comments to be markdown
-  links; optionally extend to plain `//` comments with a
-  URL-substitution autofix.
-- [`bare-url.md`](./bare-url.md) — require bare URLs in doc comments
-  and regular comments to be wrapped in `<...>` or labelled
-  `[text](url)`.
-- [`bare-email.md`](./bare-email.md) — require bare email addresses in
-  doc comments and regular comments to be wrapped, prefixed
-  `mailto:`, or both. A `forbid` style bans them outright for
-  privacy-conscious projects.
 - [`unpinned-repo-ref.md`](./unpinned-repo-ref.md) — require URLs that
   reference files in a hosted git repository (GitHub, GitLab,
   Bitbucket, Codeberg / Gitea, sourcehut, …) to be pinned to a

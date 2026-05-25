@@ -1,0 +1,22 @@
+warning: ambiguous `#321`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
+  --> $DIR/fixture.rs:1:17
+   |
+LL | /// Bad: closes #321 — `repository` is given as an scp-like SSH clone
+   |                 ^^^^
+   |
+   = help: if `#321` is not an issue or pull request, enclose it in backticks so it renders as code
+   = help: or refer to the numbered item with a spelling that has no leading `#`
+   = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
+help: use an inline markdown link to the issue
+   |
+LL - /// Bad: closes #321 — `repository` is given as an scp-like SSH clone
+LL + /// Bad: closes [#321](https://github.com/owner/repo/issues/321) — `repository` is given as an scp-like SSH clone
+   |
+help: use an inline markdown link to the pull request
+   |
+LL - /// Bad: closes #321 — `repository` is given as an scp-like SSH clone
+LL + /// Bad: closes [#321](https://github.com/owner/repo/pull/321) — `repository` is given as an scp-like SSH clone
+   |
+
+warning: 1 warning emitted
+
