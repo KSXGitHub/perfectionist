@@ -24,7 +24,7 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    skip_hosts: Option<Vec<String>>,
+    skip_hosts: Option<Vec<&'static str>>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -55,7 +55,7 @@ fn custom_skip_hosts_replaces_the_default_list() {
     run(
         "ui-toml/bare_url/custom_skip_hosts",
         RuleConfig {
-            skip_hosts: Some(vec!["example.net".to_owned()]),
+            skip_hosts: Some(vec!["example.net"]),
         },
     );
 }

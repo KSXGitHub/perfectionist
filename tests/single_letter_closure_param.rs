@@ -24,9 +24,9 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    extra_trivial_callback_methods: Option<Vec<String>>,
+    extra_trivial_callback_methods: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    ignore_trivial_callback_methods: Option<Vec<String>>,
+    ignore_trivial_callback_methods: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     extra_allowed_idents: Option<Vec<char>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -50,8 +50,8 @@ fn custom_trivial_callback_methods_extend_and_subtract_the_default_list() {
     run(
         "ui-toml/single_letter_closure_param/custom_trivial_callback_methods",
         RuleConfig {
-            extra_trivial_callback_methods: Some(vec!["when".into()]),
-            ignore_trivial_callback_methods: Some(vec!["sort_by".into()]),
+            extra_trivial_callback_methods: Some(vec!["when"]),
+            ignore_trivial_callback_methods: Some(vec!["sort_by"]),
             ..Default::default()
         },
     );

@@ -29,7 +29,7 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     min_escapes_to_trigger: Option<NonZeroUsize>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    eligible_escapes: Option<Vec<String>>,
+    eligible_escapes: Option<Vec<&'static str>>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -68,7 +68,7 @@ fn eligible_escapes_subset_narrows_what_counts_as_eliminable() {
     run(
         "ui-toml/prefer_raw_string/eligible_escapes_subset",
         RuleConfig {
-            eligible_escapes: Some(vec![r#"\""#.into()]),
+            eligible_escapes: Some(vec![r#"\""#]),
             ..Default::default()
         },
     );
@@ -85,7 +85,7 @@ fn eligible_escapes_rejects_non_self_decoding_entries() {
     run(
         "ui-toml/prefer_raw_string/eligible_escapes_rejects_non_self_decoding",
         RuleConfig {
-            eligible_escapes: Some(vec![r"\n".into()]),
+            eligible_escapes: Some(vec![r"\n"]),
             ..Default::default()
         },
     );
