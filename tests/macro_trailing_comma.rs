@@ -24,7 +24,7 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    name_based_extra: Vec<String>,
+    extra_macros: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     ignore: Vec<String>,
 }
@@ -48,25 +48,25 @@ fn run(src_base: &str, config: RuleConfig) {
 }
 
 #[test]
-fn name_based_extra_enables_a_macro_by_bare_name() {
+fn extra_macros_enables_a_macro_by_bare_name() {
     run(
-        "ui-toml/macro_trailing_comma/name_based_extra",
+        "ui-toml/macro_trailing_comma/extra_macros",
         RuleConfig {
-            name_based_extra: vec!["my_macro".into()],
+            extra_macros: vec!["my_macro".into()],
             ..Default::default()
         },
     );
 }
 
 #[test]
-fn name_based_extra_enables_a_macro_by_qualified_path() {
+fn extra_macros_enables_a_macro_by_qualified_path() {
     // Multi-segment entries tail-match the invocation path, so a
     // third-party macro invoked as `inner::their_macro!` is matched
     // by the qualified entry `inner::their_macro`.
     run(
-        "ui-toml/macro_trailing_comma/name_based_extra_qualified",
+        "ui-toml/macro_trailing_comma/extra_macros_qualified",
         RuleConfig {
-            name_based_extra: vec!["inner::their_macro".into()],
+            extra_macros: vec!["inner::their_macro".into()],
             ..Default::default()
         },
     );
@@ -84,11 +84,11 @@ fn ignore_suppresses_a_built_in_curated_macro() {
 }
 
 #[test]
-fn ignore_wins_over_name_based_extra_for_the_same_macro() {
+fn ignore_wins_over_extra_macros_for_the_same_macro() {
     run(
         "ui-toml/macro_trailing_comma/ignore_overrides_extra",
         RuleConfig {
-            name_based_extra: vec!["my_macro".into()],
+            extra_macros: vec!["my_macro".into()],
             ignore: vec!["my_macro".into()],
         },
     );
@@ -97,7 +97,7 @@ fn ignore_wins_over_name_based_extra_for_the_same_macro() {
 #[test]
 fn ignore_supports_qualified_path_and_whitespace_padding() {
     // Two coverage gaps in one fixture: a multi-segment `ignore`
-    // entry (only `name_based_extra`'s multi-segment branch was
+    // entry (only `extra_macros`'s multi-segment branch was
     // previously exercised), and `parse_path`'s per-segment
     // whitespace trim — the literal `"  std::vec  "` should still
     // match a `std::vec!(...)` invocation.

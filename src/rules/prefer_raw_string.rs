@@ -17,7 +17,7 @@ use rustc_session::{declare_tool_lint, impl_lint_pass};
 mod parser;
 
 use parser::{
-    DEFAULT_ESCAPES_ELIGIBLE, is_supported_eligible_entry, minimal_hash_count, scan_body,
+    DEFAULT_ELIGIBLE_ESCAPES, is_supported_eligible_entry, minimal_hash_count, scan_body,
 };
 
 use crate::common::{DefaultState, resolved_state};
@@ -102,7 +102,7 @@ struct Config {
     /// so they have no place in this list.) Use this knob to
     /// narrow eligibility — e.g. `["\\\""]` to only flag literals
     /// whose sole escapes are escaped quotes — not to extend it.
-    escapes_eligible: Vec<String>,
+    eligible_escapes: Vec<String>,
 }
 
 /// Default floor for `min_escapes_to_trigger`. One eliminable
@@ -113,7 +113,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             min_escapes_to_trigger: DEFAULT_MIN_ESCAPES_TO_TRIGGER,
-            escapes_eligible: DEFAULT_ESCAPES_ELIGIBLE
+            eligible_escapes: DEFAULT_ELIGIBLE_ESCAPES
                 .iter()
                 .map(|entry| (*entry).to_owned())
                 .collect(),
@@ -123,7 +123,7 @@ impl Default for Config {
 
 pub struct PreferRawString {
     min_escapes_to_trigger: NonZeroUsize,
-    escapes_eligible: Vec<String>,
+    eligible_escapes: Vec<String>,
 }
 
 impl PreferRawString {
@@ -136,14 +136,14 @@ impl PreferRawString {
         // and let the `MachineApplicable` autofix silently corrupt
         // user code. Filter rather than reject so a stray entry in
         // the config table doesn't take the whole rule offline.
-        let escapes_eligible = config
-            .escapes_eligible
+        let eligible_escapes = config
+            .eligible_escapes
             .into_iter()
             .filter(|entry| is_supported_eligible_entry(entry))
             .collect();
         Self {
             min_escapes_to_trigger: config.min_escapes_to_trigger,
-            escapes_eligible,
+            eligible_escapes,
         }
     }
 }
@@ -186,7 +186,7 @@ impl<'tcx> LateLintPass<'tcx> for PreferRawString {
         else {
             return;
         };
-        let Some(scan) = scan_body(body, &self.escapes_eligible) else {
+        let Some(scan) = scan_body(body, &self.eligible_escapes) else {
             return;
         };
         // A literal with zero eliminable escapes is skipped by the

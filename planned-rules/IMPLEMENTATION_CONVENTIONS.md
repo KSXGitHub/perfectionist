@@ -322,14 +322,14 @@ shows:
 
 ```toml
 [qualified_paths]
-style = "preserve"
+style = "unqualified"
 ```
 
 The actual `dylint.toml` reads:
 
 ```toml
 [perfectionist::qualified_paths]
-style = "preserve"
+style = "unqualified"
 ```
 
 A user-side suppression reads:
@@ -380,6 +380,28 @@ gated behind a "are you sure?" knob, or rules whose preferred
 configuration genuinely varies per project to the point that
 shipping a baseline policy would be presumptuous. Everything
 else is `Active by default`.
+
+### Mandatory configuration on opt-in rules
+
+A handful of `Inactive by default` rules express a *direction*
+with no neutral baseline — `core_or_std` (`prefer_core` vs.
+`prefer_std`), `qualified_paths` (`unqualified` vs. `qualified`),
+`self_import` (`forbid` vs. `combined`), and `serde_wrapper_style`
+(`transparent` vs. `from_into`). These rules deliberately do **not**
+offer a `preserve`/no-op `style` value. "I don't want this rule" is
+already expressed by leaving it out of `[perfectionist].enable`, so
+a do-nothing `style` would only duplicate that — and a no-op enum
+variant that shadows the activation mechanism is exactly the
+redundancy this convention forbids.
+
+The consequence is that `style` is **mandatory whenever the rule is
+enabled** and has no default value. The validation is scoped to
+activation: a rule reads and validates its `style` only when it
+appears in `[perfectionist].enable`. A rule that is *not* enabled
+never reads its configuration block, so omitting `style` for a
+disabled direction rule is harmless and does not fail the run. Only
+an *enabled* rule with a missing or invalid `style` is a
+configuration error.
 
 Severity escalation (`Warn → Deny → Forbid`) is the consumer's
 prerogative and lives entirely outside the planning file. The

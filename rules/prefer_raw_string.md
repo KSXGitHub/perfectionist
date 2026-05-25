@@ -64,7 +64,7 @@ suggesting `r"hello"` for `"hello"` would just trip
 `clippy::needless_raw_strings` on the next pass, and a
 minimum of `1` already excludes that case.
 
-### `escapes_eligible`: `[string]` (optional)
+### `eligible_escapes`: `[string]` (optional)
 
 Escape sequences considered eliminable by switching to raw
 form. Only the three Rust escapes whose decoded character

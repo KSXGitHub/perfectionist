@@ -38,14 +38,14 @@ pattern that several rules call out by reference — live in
   configurable).
 - [`self-import.md`](./self-import.md) — decide how `self` in `use`
   statements is handled. Configurable as `forbid` (always prefer the
-  bare `use foo::bar;`), `combined` (fold adjacent module + item
-  imports into `use foo::bar::{self, X};`), or `preserve` (default
-  no-op).
+  bare `use foo::bar;`) or `combined` (fold adjacent module + item
+  imports into `use foo::bar::{self, X};`). Inactive by default; opt
+  in and pick a direction.
 - [`core-or-std.md`](./core-or-std.md) — decide whether items that
   exist in both `core`/`alloc` and `std` should be named through the
   narrower or wider path. Configurable as `prefer_core` (matches
-  `clippy::std_instead_of_core` + `std_instead_of_alloc`),
-  `prefer_std`, or `preserve` (default).
+  `clippy::std_instead_of_core` + `std_instead_of_alloc`) or
+  `prefer_std`. Inactive by default; opt in and pick a direction.
 - [`no-star-imports.md`](./no-star-imports.md) — forbid `use foo::*` inside
   module bodies. Two exceptions are enabled by default and individually
   configurable: the prelude form (`use foo::prelude::*`) and root-of-
@@ -61,8 +61,8 @@ pattern that several rules call out by reference — live in
   outside the current scope are named by their full path
   (`std::fs::create_dir_all`, `#[derive(clap::Parser)]`) or imported
   via `use` and called by the simple identifier. AI tends to produce
-  the former; parallel-disk-usage prefers the latter. Configurable
-  per project.
+  the former; parallel-disk-usage prefers the latter. Inactive by
+  default; opt in and pick `unqualified` or `qualified`.
 
 ### Trait bounds and signatures
 - [`where-clause-bounds.md`](./where-clause-bounds.md) — prefer `where` clauses
@@ -143,7 +143,7 @@ pattern that several rules call out by reference — live in
   like `#[derive(...)]` are out of scope. Two eligibility modes:
   **name-based**, a curated list of core/std and well-known
   third-party macros (easy, configurable via
-  `name_based_extra`), and **matcher-based**, an automatic walk
+  `extra_macros`), and **matcher-based**, an automatic walk
   of `macro_rules!` matchers to detect the `$(,)?` / `$(,)*`
   optional-trailing-comma idioms (harder, not yet implemented
   and therefore not configurable).
@@ -169,8 +169,8 @@ pattern that several rules call out by reference — live in
   `#[serde(transparent)]` and `#[serde(from = "T", into = "T")]`
   produce the same wire format. The lint enforces a project-wide
   choice between the two (`transparent` for zero-cost,
-  `from_into` to keep a validation hook ready). Default
-  `preserve`.
+  `from_into` to keep a validation hook ready). Inactive by
+  default; opt in and choose `transparent` or `from_into`.
 
 ### Documentation
 - [`intra-doc-links.md`](./intra-doc-links.md) — backticked identifiers in

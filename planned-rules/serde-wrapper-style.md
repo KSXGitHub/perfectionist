@@ -44,8 +44,10 @@ two forms would produce identical behaviour.
 
 ```toml
 [serde_wrapper_style]
-style = "preserve"
-# "preserve"          — no-op (default).
+# Inactive by default. Enable in `[perfectionist].enable`, then set
+# `style` — it is mandatory and has no default. The value below is an
+# example, not a default.
+style = "transparent"
 # "transparent"       — flag trivial `#[serde(from, into)]` and
 #                       suggest `#[serde(transparent)]`. Existing
 #                       non-trivial `from`/`into` (where the
@@ -253,10 +255,13 @@ apply it without manual review.
 
 ## Default state
 
-Active by default, but the default `style = "preserve"` keeps the
-pass a no-op so the rule is zero-friction to adopt. A project
-that has audited the trivial-impl recogniser on its codebase opts
-in by setting `style` to `transparent` or `from_into`.
+Inactive by default — also the safe choice given the high
+false-positive risk noted above. `transparent` vs. `from_into` is a
+per-project preference, so the rule ships no baseline; a project that
+has audited the trivial-impl recogniser on its codebase enables it in
+`[perfectionist].enable` and sets `style`. `style` is mandatory once
+enabled — see
+[Mandatory configuration on opt-in rules](./IMPLEMENTATION_CONVENTIONS.md#mandatory-configuration-on-opt-in-rules).
 
 ## Why a single rule instead of two
 
