@@ -1,23 +1,22 @@
-//! `perfectionist::lint_reason_from_comment` — lift an adjacent
-//! `// ...` line comment on a lint-level attribute into the
-//! attribute's `reason = "..."` field.
+//! `perfectionist::lint_reason_from_comment` — lift a `// ...` line
+//! comment trailing a lint-level attribute into the attribute's
+//! `reason = "..."` field.
 //!
 //! Module layout:
 //!
-//! - [`scan`] — source-text walkers (`find_trailing_comment`,
-//!   `find_leading_comment`) and the shared `normalise_comment_text`
-//!   that turns a raw `// ...` slice into the rationale-string body.
+//! - [`scan`] — the source-text walker (`find_trailing_comment`) and
+//!   the shared `normalise_comment_text` that turns a raw `// ...`
+//!   slice into the rationale-string body.
 //! - [`insertion`] — `build_reason_insertion` (the three-layout
 //!   args-list edit) and `escape_for_rust_string`.
 //! - [`emit`] — `LintReasonFromComment::check` and `::emit`, plus
 //!   the `file_span` helper that anchors comment-derived spans to
 //!   the same `SyntaxContext` as the attribute they belong to.
 //!
-//! This flat entry keeps the lint declaration, config / state, the
-//! `register_*` functions, and the `EarlyLintPass::check_attribute`
-//! driver — including the `cfg_attr_trace` state needed to recover
-//! the outer source span for `cfg_attr`-wrapped synth lint-level
-//! attrs.
+//! This flat entry keeps the lint declaration, the `register_*`
+//! functions, and the `EarlyLintPass::check_attribute` driver —
+//! including the `cfg_attr_trace` state needed to recover the outer
+//! source span for `cfg_attr`-wrapped synth lint-level attrs.
 
 use rustc_ast::Attribute;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
@@ -33,19 +32,17 @@ mod scan;
 declare_tool_lint! {
     /// ### What it does
     /// When a lint-level attribute (`#[allow]`, `#[expect]`, `#[warn]`,
-    /// `#[deny]`, `#[forbid]`) carries an adjacent line comment that
-    /// documents *why* the level was chosen, lifts the comment into
-    /// the attribute's `reason = "..."` field and removes the
+    /// `#[deny]`, `#[forbid]`) carries a trailing `// ...` line comment
+    /// — on the same source line as the attribute's closing `]` —
+    /// that documents *why* the level was chosen, lifts the comment
+    /// into the attribute's `reason = "..."` field and removes the
     /// original comment.
     ///
-    /// Two placements count:
-    ///
-    /// - **Trailing.** A `// ...` comment on the same source line as
-    ///   the attribute's closing `]`. Highest confidence.
-    /// - **Leading.** A `// ...` comment on the previous source line
-    ///   (no blank line between, no other attribute between). Lower
-    ///   confidence — the comment may also be documentation for the
-    ///   next item.
+    /// Only the trailing placement counts: a same-line comment after
+    /// `]` is unambiguously about the attribute. A comment on the
+    /// *preceding* line is intentionally out of scope — it is just as
+    /// often documentation for the next item as it is attribute
+    /// rationale, and a static check cannot tell the two apart.
     ///
     /// Doc comments (`///`, `//!`) and block comments (`/* ... */`)
     /// are out of scope.
@@ -73,38 +70,11 @@ declare_tool_lint! {
     /// ```
     pub perfectionist::LINT_REASON_FROM_COMMENT,
     Warn,
-    r#"adjacent comment on a lint-level attribute should be lifted into a `reason = "..."` field"#,
+    r#"trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field"#,
     report_in_external_macro: false
 }
 
-const CONFIG_KEY: &str = "perfectionist::lint_reason_from_comment";
-
-#[derive(Debug, serde::Deserialize)]
-#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
-struct Config {
-    /// Lift a `// ...` comment trailing the attribute's closing `]`
-    /// (on the same source line). The canonical, highest-confidence
-    /// placement. Defaults to `true`.
-    lift_trailing_comments: bool,
-    /// Lift a `// ...` comment on the source line immediately above
-    /// the attribute (no blank line between, the line consists only
-    /// of the comment). Lower confidence — the comment may instead
-    /// be documentation for the next item. Defaults to `true`.
-    lift_leading_comments: bool,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            lift_trailing_comments: true,
-            lift_leading_comments: true,
-        }
-    }
-}
-
 pub struct LintReasonFromComment {
-    pub(super) lift_trailing_comments: bool,
-    pub(super) lift_leading_comments: bool,
     /// Source span of the most recently-visited
     /// `sym::cfg_attr_trace` attribute. rustc replaces a
     /// successfully-applied `#[cfg_attr(<cond>, <inner>)]` with a
@@ -123,10 +93,7 @@ pub struct LintReasonFromComment {
 
 impl LintReasonFromComment {
     fn new() -> Self {
-        let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
-            lift_trailing_comments: config.lift_trailing_comments,
-            lift_leading_comments: config.lift_leading_comments,
             pending_cfg_attr_outer: None,
         }
     }
@@ -160,9 +127,6 @@ impl EarlyLintPass for LintReasonFromComment {
     /// outer span) and one or more synth `#[allow(...)]` attributes
     /// — see the cfg_attr-trace handling below.
     fn check_attribute(&mut self, lint_context: &EarlyContext<'_>, attribute: &Attribute) {
-        if !self.lift_trailing_comments && !self.lift_leading_comments {
-            return;
-        }
         // rustc replaces a `#[cfg_attr(<cond>, <inner>)]` whose
         // condition evaluates true with a *trace* attribute named
         // `sym::cfg_attr_trace` (whose span still covers the original

@@ -30,13 +30,6 @@ fn trailing_deny() {}
 #[forbid(dead_code)] // module-wide policy
 fn trailing_forbid() {}
 
-// Bad: leading comment.
-// pnpm's wire format is JSON-stringly typed
-#[allow(dead_code)]
-struct LeadingComment {
-    field: u32,
-}
-
 // Bad: decoration prefix is stripped.
 #[allow(dead_code)] //-- matches upstream signature
 fn trailing_decoration() {}
@@ -84,56 +77,38 @@ fn trailing_nested_cfg_attr() {}
 #[cfg_attr(all(), allow(dead_code, reason = "explained"), allow(unused_variables))] // for second synth
 fn cfg_attr_first_synth_has_reason() {}
 
-// Bad once: a real leading comment paired with a vacuous trailing
-// `// ` must not be pre-empted by the trailing match — the
-// trailing branch filters out empty-normalised text and falls
-// through to the leading placement.
-// real leading rationale
+// Good: a bare `//` trailing comment normalises to empty and is not
+// lifted (no vacuous `reason = ""`).
 #[allow(dead_code)] //
-fn trailing_empty_falls_through_to_leading() {}
+fn bare_trailing_comment_ignored() {}
 
-// Bad once: same fall-through, but with an all-decoration trailing
-// divider instead of a bare `//`. The divider must normalise to
-// empty so the leading comment wins.
-// real rationale on the leading line
+// Good: an all-decoration trailing divider normalises to empty and
+// is not lifted.
 #[allow(dead_code)] //----------
-fn trailing_divider_falls_through_to_leading() {}
+fn divider_trailing_comment_ignored() {}
 
-// Good: an all-decoration trailing divider with no real comment
-// anywhere doesn't fire at all (the divider is not a rationale).
-#[allow(dead_code, reason = "unrelated to the divider below")] //==========
-fn trailing_divider_alone_is_silent() {}
+// Good: a comment on the line *above* the attribute is out of scope
+// — only same-line trailing comments are lifted, never a comment
+// that might instead be documenting the item below.
+// documentation for the function, not the attribute
+#[allow(dead_code)]
+fn leading_comment_is_out_of_scope() {}
+
+// Good: a comment on the line *after* the attribute is not trailing
+// (it is not on the same line as the closing `]`).
+#[allow(dead_code)]
+// not a trailing comment
+fn comment_on_next_line_is_out_of_scope() {}
 
 // Good: attribute already carries `reason`; rule must not fire.
 #[allow(dead_code, reason = "explicit reason")] // separate trailing note
 fn already_has_reason() {}
-
-// Good: doc comment is not in scope.
-/// Outer doc comment on the next item, not a leading comment for
-/// the attribute.
-#[allow(dead_code, reason = "documented above")]
-fn doc_comment_is_not_a_leading_comment() {}
-
-// Good: comment on its own line after the attribute is not a
-// trailing comment (the attribute has no comment on the same line
-// as its `]`). The comment below documents the next item.
-#[allow(dead_code, reason = "comment below is for the function")]
-// not a trailing comment
-fn comment_on_next_line() {}
-
-// Good: blank line between comment and attribute disqualifies the
-// leading placement.
-// this comment is unrelated
-
-#[allow(dead_code, reason = "blank line disqualifies leading lift")]
-fn blank_line_between() {}
 
 fn main() {
     trailing_allow();
     trailing_warn();
     trailing_deny();
     trailing_forbid();
-    let _ = LeadingComment { field: 0 };
     trailing_decoration();
     trailing_multiline_no_comma();
     trailing_multiline_comma();
@@ -142,11 +117,9 @@ fn main() {
     trailing_cfg_attr_multi_synth();
     trailing_nested_cfg_attr();
     cfg_attr_first_synth_has_reason();
-    trailing_empty_falls_through_to_leading();
-    trailing_divider_falls_through_to_leading();
-    trailing_divider_alone_is_silent();
+    bare_trailing_comment_ignored();
+    divider_trailing_comment_ignored();
+    leading_comment_is_out_of_scope();
+    comment_on_next_line_is_out_of_scope();
     already_has_reason();
-    doc_comment_is_not_a_leading_comment();
-    comment_on_next_line();
-    blank_line_between();
 }

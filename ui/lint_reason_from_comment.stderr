@@ -60,20 +60,7 @@ LL + #[forbid(dead_code, reason = "module-wide policy")]
    |
 
 warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:34:1
-   |
-LL | // pnpm's wire format is JSON-stringly typed
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-help: lift the comment into a `reason` field
-   |
-LL - // pnpm's wire format is JSON-stringly typed
-LL - #[allow(dead_code)]
-LL + #[allow(dead_code, reason = "pnpm's wire format is JSON-stringly typed")]
-   |
-
-warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:41:21
+  --> $DIR/lint_reason_from_comment.rs:34:21
    |
 LL | #[allow(dead_code)] //-- matches upstream signature
    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -85,7 +72,7 @@ LL + #[allow(dead_code, reason = "matches upstream signature")]
    |
 
 warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:47:4
+  --> $DIR/lint_reason_from_comment.rs:40:4
    |
 LL | )] // multi-line layout
    |    ^^^^^^^^^^^^^^^^^^^^
@@ -98,7 +85,7 @@ LL ~ )]
    |
 
 warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:53:4
+  --> $DIR/lint_reason_from_comment.rs:46:4
    |
 LL | )] // multi-line with comma
    |    ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -110,7 +97,7 @@ LL ~ )]
    |
 
 warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:57:21
+  --> $DIR/lint_reason_from_comment.rs:50:21
    |
 LL | #[allow(dead_code)] // he said "yes" and used a / backslash
    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -122,7 +109,7 @@ LL + #[allow(dead_code, reason = "he said /"yes/" and used a / backslash")]
    |
 
 warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:61:38
+  --> $DIR/lint_reason_from_comment.rs:54:38
    |
 LL | #[cfg_attr(all(), allow(dead_code))] // cfg_attr wrap
    |                                      ^^^^^^^^^^^^^^^^
@@ -134,7 +121,7 @@ LL + #[cfg_attr(all(), allow(dead_code, reason = "cfg_attr wrap"))]
    |
 
 warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:69:63
+  --> $DIR/lint_reason_from_comment.rs:62:63
    |
 LL | #[cfg_attr(all(), allow(dead_code), allow(unused_variables))] // shared rationale
    |                                                               ^^^^^^^^^^^^^^^^^^^
@@ -146,7 +133,7 @@ LL + #[cfg_attr(all(), allow(dead_code, reason = "shared rationale"), allow(unus
    |
 
 warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:76:55
+  --> $DIR/lint_reason_from_comment.rs:69:55
    |
 LL | #[cfg_attr(all(), cfg_attr(all(), allow(dead_code)))] // nested wrap
    |                                                       ^^^^^^^^^^^^^^
@@ -158,7 +145,7 @@ LL + #[cfg_attr(all(), cfg_attr(all(), allow(dead_code, reason = "nested wrap"))
    |
 
 warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:84:85
+  --> $DIR/lint_reason_from_comment.rs:77:85
    |
 LL | #[cfg_attr(all(), allow(dead_code, reason = "explained"), allow(unused_variables))] // for second synth
    |                                                                                     ^^^^^^^^^^^^^^^^^^^
@@ -169,31 +156,5 @@ LL - #[cfg_attr(all(), allow(dead_code, reason = "explained"), allow(unused_vari
 LL + #[cfg_attr(all(), allow(dead_code, reason = "explained"), allow(unused_variables, reason = "for second synth"))]
    |
 
-warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:91:1
-   |
-LL | // real leading rationale
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-help: lift the comment into a `reason` field
-   |
-LL - // real leading rationale
-LL - #[allow(dead_code)] //
-LL + #[allow(dead_code, reason = "real leading rationale")] //
-   |
-
-warning: comment can be lifted into the attribute's `reason` field
-  --> $DIR/lint_reason_from_comment.rs:98:1
-   |
-LL | // real rationale on the leading line
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-help: lift the comment into a `reason` field
-   |
-LL - // real rationale on the leading line
-LL - #[allow(dead_code)] //----------
-LL + #[allow(dead_code, reason = "real rationale on the leading line")] //----------
-   |
-
-warning: 16 warnings emitted
+warning: 13 warnings emitted
 

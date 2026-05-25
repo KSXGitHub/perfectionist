@@ -10,19 +10,19 @@ use rustc_lint::{EarlyContext, LintContext};
 use rustc_span::{BytePos, Pos, RelativeBytePos, SourceFile, Span};
 
 use super::insertion::{build_reason_insertion, escape_for_rust_string};
-use super::scan::{Comment, find_leading_comment, find_trailing_comment};
+use super::scan::{Comment, find_trailing_comment};
 use super::{LINT_REASON_FROM_COMMENT, LintReasonFromComment};
 use crate::common::attr_has_reason;
 
 impl LintReasonFromComment {
     /// Apply the trigger and emission for one lint-level invocation.
     ///
-    /// `outer_span` is the syntactic attribute's span (the one to
-    /// scan for adjacent comments). `invocation_span` is the inner
-    /// `allow(...)` / `expect(...)` / `warn(...)` / `deny(...)` /
-    /// `forbid(...)` meta-item's span — the insertion target for
-    /// the lifted `reason` field. For a bare `#[allow(...)]` the
-    /// two are the same.
+    /// `outer_span` is the syntactic attribute's span (the one whose
+    /// closing `]` the trailing comment follows). `invocation_span`
+    /// is the inner `allow(...)` / `expect(...)` / `warn(...)` /
+    /// `deny(...)` / `forbid(...)` meta-item's span — the insertion
+    /// target for the lifted `reason` field. For a bare
+    /// `#[allow(...)]` the two are the same.
     ///
     /// Returns `true` iff the rule actually emitted a diagnostic
     /// (used by `check_attribute` to decide whether to consume the
@@ -46,50 +46,23 @@ impl LintReasonFromComment {
         let file_start = source_file.start_pos;
         // `BytePos`es from a span living inside this source file are
         // always `>= start_pos`; the `checked_sub` is defensive only.
-        let Some(outer_lo) = outer_span.lo().0.checked_sub(file_start.0) else {
-            return false;
-        };
         let Some(outer_hi) = outer_span.hi().0.checked_sub(file_start.0) else {
             return false;
         };
-        let outer_lo = outer_lo as usize;
         let outer_hi = outer_hi as usize;
         if outer_hi > source_text.len() {
             return false;
         }
 
-        // Try the higher-confidence trailing placement first. The
-        // two placements are mutually exclusive — a comment
-        // immediately before the attribute and a comment on the same
-        // line as the closing `]` are unrelated source edits — so
-        // the first match wins. `find_*_comment` filter out
-        // empty-normalised matches, so an unhelpful trailing `//`
-        // does not pre-empt a real leading comment.
-        if self.lift_trailing_comments
-            && let Some(comment) = find_trailing_comment(source_text, outer_hi)
-        {
-            self.emit(
-                lint_context,
-                &source_file,
-                invocation_span,
-                &comment,
-                Applicability::MachineApplicable,
-            );
-            return true;
-        }
-        if self.lift_leading_comments
-            && let Some(comment) = find_leading_comment(source_text, outer_lo)
-        {
-            self.emit(
-                lint_context,
-                &source_file,
-                invocation_span,
-                &comment,
-                Applicability::MaybeIncorrect,
-            );
-            return true;
-        }
-        false
+        // `find_trailing_comment` filters out empty-normalised
+        // matches (a bare `//` or an all-decoration divider), so an
+        // unhelpful trailing comment does not produce a vacuous
+        // `reason = ""`.
+        let Some(comment) = find_trailing_comment(source_text, outer_hi) else {
+            return false;
+        };
+        self.emit(lint_context, &source_file, invocation_span, &comment);
+        true
     }
 
     fn emit(
@@ -98,7 +71,6 @@ impl LintReasonFromComment {
         source_file: &SourceFile,
         invocation_span: Span,
         comment: &Comment,
-        applicability: Applicability,
     ) {
         let snippet = match lint_context
             .sess()
@@ -142,7 +114,10 @@ impl LintReasonFromComment {
                         (arg_span, insertion.replacement),
                         (delete_span, String::new()),
                     ],
-                    applicability,
+                    // A same-line trailing comment is unambiguously
+                    // the attribute's rationale, so the rewrite is
+                    // safe to apply mechanically.
+                    Applicability::MachineApplicable,
                 );
             },
         );

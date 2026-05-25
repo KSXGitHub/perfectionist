@@ -5,23 +5,21 @@
 **Default state:** `active`  
 **Source:** [`src/rules/lint_reason_from_comment.rs`](../src/rules/lint_reason_from_comment.rs)
 
-> adjacent comment on a lint-level attribute should be lifted into a `reason = "..."` field
+> trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field
 
 ## What it does
 When a lint-level attribute (`#[allow]`, `#[expect]`, `#[warn]`,
-`#[deny]`, `#[forbid]`) carries an adjacent line comment that
-documents *why* the level was chosen, lifts the comment into
-the attribute's `reason = "..."` field and removes the
+`#[deny]`, `#[forbid]`) carries a trailing `// ...` line comment
+— on the same source line as the attribute's closing `]` —
+that documents *why* the level was chosen, lifts the comment
+into the attribute's `reason = "..."` field and removes the
 original comment.
 
-Two placements count:
-
-- **Trailing.** A `// ...` comment on the same source line as
-  the attribute's closing `]`. Highest confidence.
-- **Leading.** A `// ...` comment on the previous source line
-  (no blank line between, no other attribute between). Lower
-  confidence — the comment may also be documentation for the
-  next item.
+Only the trailing placement counts: a same-line comment after
+`]` is unambiguously about the attribute. A comment on the
+*preceding* line is intentionally out of scope — it is just as
+often documentation for the next item as it is attribute
+rationale, and a static check cannot tell the two apart.
 
 Doc comments (`///`, `//!`) and block comments (`/* ... */`)
 are out of scope.
@@ -50,17 +48,4 @@ fn build_fetcher(/* ... */) {}
 
 ## Configuration
 
-Configure via `dylint.toml` under `["perfectionist::lint_reason_from_comment"]`. Every field is optional; the per-field prose below states the default.
-
-### `lift_trailing_comments`: `boolean` (optional)
-
-Lift a `// ...` comment trailing the attribute's closing `]`
-(on the same source line). The canonical, highest-confidence
-placement. Defaults to `true`.
-
-### `lift_leading_comments`: `boolean` (optional)
-
-Lift a `// ...` comment on the source line immediately above
-the attribute (no blank line between, the line consists only
-of the comment). Lower confidence — the comment may instead
-be documentation for the next item. Defaults to `true`.
+None.
