@@ -17,16 +17,9 @@ use crate::model::{ConfigDoc, ConfigField};
 /// and bundle them — along with any project-local types the fields
 /// reference — into a `ConfigDoc`.
 ///
-/// Every rule must declare *both* halves; a rule with no configurable
-/// knobs uses an empty `Config {}` (e.g. `flat_module_pattern`) rather
-/// than omitting the pair. This keeps "no configuration" to a single
-/// representation across the catalogue — an empty `ConfigDoc` that
-/// both output modes render as "Configuration: none." — instead of
-/// the silently-divergent "empty struct vs. no struct" the docs used
-/// to allow. Any rule file that drops one or both halves is therefore
-/// a convention violation, and this function panics (naming the file)
-/// rather than returning, just as the level / `DEFAULT_STATE` checks
-/// in `extract.rs` do.
+/// Every rule must declare both halves; a rule with no configurable
+/// knobs uses an empty `Config {}`. Panics, naming the file, when a
+/// rule declares neither half or only one of them.
 pub(crate) fn extract_config(
     source_path: &Path,
     file: &syn::File,
@@ -51,9 +44,7 @@ pub(crate) fn extract_config(
         (None, None) => panic!(
             "{}: a rule must declare both a `CONFIG_KEY` constant and a \
              `Config` struct. A rule with no configurable knobs uses an \
-             empty `Config {{}}` (e.g. `flat_module_pattern`) so that \
-             \"no configuration\" has a single representation across the \
-             catalogue and always renders as \"Configuration: none.\".",
+             empty `Config {{}}`.",
             source_path.display(),
         ),
         (Some(_), None) => panic!(
@@ -173,9 +164,7 @@ mod tests {
         // as an empty `Config {}`, never as an absent pair. The
         // extractor panics so a doc regeneration catches it instead of
         // silently dropping the configuration section.
-        let source = r#"
-            pub struct SomeRule;
-        "#;
+        let source = "pub struct SomeRule;";
         let file = syn::parse_file(source).unwrap();
         let _ = extract_config(Path::new("no_config.rs"), &file, &SharedTypes::default());
     }
@@ -185,9 +174,7 @@ mod tests {
     fn extract_config_rejects_a_half_defined_config_key_only() {
         // Declaring `CONFIG_KEY` without a `Config` struct is the
         // usual shape of an author having dropped one half; reject it.
-        let source = r#"
-            const CONFIG_KEY: &str = "perfectionist::demo";
-        "#;
+        let source = r#"const CONFIG_KEY: &str = "perfectionist::demo";"#;
         let file = syn::parse_file(source).unwrap();
         let _ = extract_config(Path::new("half.rs"), &file, &SharedTypes::default());
     }
@@ -195,10 +182,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "no `CONFIG_KEY` const")]
     fn extract_config_rejects_a_half_defined_struct_only() {
-        let source = r#"
-            #[derive(serde::Deserialize)]
-            struct Config {}
-        "#;
+        let source = "struct Config {}";
         let file = syn::parse_file(source).unwrap();
         let _ = extract_config(Path::new("half.rs"), &file, &SharedTypes::default());
     }
