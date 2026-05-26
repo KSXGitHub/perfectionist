@@ -82,3 +82,28 @@ fn docs_rule_does_not_intrude_into_regular_comments() {
         },
     );
 }
+
+/// Regression test for
+/// <https://github.com/KSXGitHub/perfectionist/issues/165>: a per-item
+/// / per-module `#[expect]` both suppresses the doc-comment finding and
+/// is fulfilled by it. The fixture produces no diagnostics; before the
+/// fix it emitted the finding *and* an `unfulfilled_lint_expectations`.
+#[test]
+fn per_item_expect_fulfils_and_suppresses() {
+    run(
+        "ui-toml/unicode_ellipsis_in_docs/expect_at_item",
+        &dylint_toml(RuleConfig::default()),
+    );
+}
+
+/// Companion to [`per_item_expect_fulfils_and_suppresses`]: a per-item
+/// `#[allow]` silences only that item's doc comment, while a sibling
+/// item with no attribute still fires — so per-site control no longer
+/// requires a crate-root `#![allow]` that exempts every doc comment.
+#[test]
+fn per_item_allow_suppresses_only_that_item() {
+    run(
+        "ui-toml/unicode_ellipsis_in_docs/allow_at_item",
+        &dylint_toml(RuleConfig::default()),
+    );
+}

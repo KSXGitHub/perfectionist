@@ -1,0 +1,10 @@
+warning: Unicode `…` (U+2026) in doc comment
+  --> $DIR/fixture.rs:20:23
+   |
+LL | /// But this ellipsis … is still flagged.
+   |                       ^ help: use ASCII `...` instead: `...`
+   |
+   = note: `#[warn(perfectionist::unicode_ellipsis_in_docs)]` on by default
+
+warning: 1 warning emitted
+

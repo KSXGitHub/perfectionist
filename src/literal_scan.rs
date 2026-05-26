@@ -31,9 +31,10 @@
 //! folds without being fooled by `\\n` (an escaped backslash followed
 //! by the letter `n`, which is *not* a newline).
 
-use clippy_utils::diagnostics::span_lint_and_sugg;
+use clippy_utils::diagnostics::{span_lint_and_sugg, span_lint_hir_and_then};
 use rustc_errors::Applicability;
-use rustc_lint::{Lint, LintContext};
+use rustc_hir::HirId;
+use rustc_lint::{LateContext, Lint, LintContext};
 use rustc_span::Span;
 
 /// For each character in `text` that appears in `flagged`, emit a
@@ -98,23 +99,65 @@ pub(crate) fn emit_flagged_char<Cx>(
 ) where
     Cx: LintContext,
 {
-    let applicability = if character == '\u{2026}' {
-        Applicability::MachineApplicable
-    } else {
-        Applicability::MaybeIncorrect
-    };
     span_lint_and_sugg(
         lint_context,
         lint,
         span,
-        format!(
-            "Unicode `{character}` (U+{:04X}) in {context_label}",
-            character as u32,
-        ),
+        flagged_char_message(character, context_label),
         "use ASCII `...` instead",
         "...".to_owned(),
-        applicability,
+        flagged_char_applicability(character),
     );
+}
+
+/// HIR-anchored counterpart of [`emit_flagged_char`] for the
+/// comment-scanning rules (`unicode_ellipsis_in_comments` and
+/// `unicode_ellipsis_in_docs`). They run in a late pass and emit at the
+/// comment's enclosing HIR node — resolved by
+/// [`crate::enclosing_hir::emit_at_enclosing_hir`] — so a per-item /
+/// per-module `#[allow]` / `#[expect]` resolves, not just a crate-root
+/// `#![allow]`. The message, suggestion, and applicability match
+/// [`emit_flagged_char`] exactly.
+pub(crate) fn emit_flagged_char_hir(
+    lint_context: &LateContext<'_>,
+    lint: &'static Lint,
+    hir_id: HirId,
+    character: char,
+    span: Span,
+    context_label: &str,
+) {
+    let applicability = flagged_char_applicability(character);
+    span_lint_hir_and_then(
+        lint_context,
+        lint,
+        hir_id,
+        span,
+        flagged_char_message(character, context_label),
+        |diag| {
+            diag.span_suggestion(span, "use ASCII `...` instead", "...", applicability);
+        },
+    );
+}
+
+/// Diagnostic message for a flagged character, shared by the
+/// current-context [`emit_flagged_char`] and HIR-anchored
+/// [`emit_flagged_char_hir`] emitters so the two stay identical.
+fn flagged_char_message(character: char, context_label: &str) -> String {
+    format!(
+        "Unicode `{character}` (U+{:04X}) in {context_label}",
+        character as u32,
+    )
+}
+
+/// Suggestion applicability for a flagged character: `MachineApplicable`
+/// for U+2026 (always maps cleanly to `...`), `MaybeIncorrect` for any
+/// user-configured `extra_flagged_chars` entry.
+fn flagged_char_applicability(character: char) -> Applicability {
+    if character == '\u{2026}' {
+        Applicability::MachineApplicable
+    } else {
+        Applicability::MaybeIncorrect
+    }
 }
 
 /// Return `(prefix_length, suffix_length)` covering the opening and

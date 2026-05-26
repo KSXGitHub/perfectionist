@@ -17,7 +17,7 @@
 //! into the source map.
 
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
-use rustc_lint::{EarlyContext, LintContext};
+use rustc_session::Session;
 use rustc_span::def_id::LOCAL_CRATE;
 use rustc_span::{BytePos, Pos, RelativeBytePos, SourceFile, Span, SyntaxContext};
 
@@ -97,13 +97,13 @@ impl CommentChunk<'_> {
 
 /// Walk every comment in the local crate's source files, handing each
 /// chunk to `callback`. The callback receives a borrowed
-/// [`CommentChunk`] together with the lint context's session
-/// information.
-pub(crate) fn walk_local_comments(
-    lint_context: &EarlyContext<'_>,
-    mut callback: impl FnMut(&CommentChunk<'_>),
-) {
-    let source_map = lint_context.sess().source_map();
+/// [`CommentChunk`]. Takes the session directly rather than a lint
+/// context so it can run from either an early or a late pass — the
+/// comment-walking rules emit from a late pass (see
+/// [`crate::enclosing_hir::emit_at_enclosing_hir`]) so per-site
+/// `#[allow]` / `#[expect]` resolve at the comment's enclosing item.
+pub(crate) fn walk_local_comments(sess: &Session, mut callback: impl FnMut(&CommentChunk<'_>)) {
+    let source_map = sess.source_map();
     for source_file in source_map.files().iter() {
         if source_file.cnum != LOCAL_CRATE {
             continue;

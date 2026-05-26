@@ -63,3 +63,14 @@ fn mailto_style_emits_single_mailto_suggestion() {
         },
     );
 }
+
+/// Regression test for
+/// <https://github.com/KSXGitHub/perfectionist/issues/165>: a per-item
+/// `#[expect]` on the documented item both suppresses the bare-email
+/// finding in its doc comment and is fulfilled by it. The fixture
+/// produces no diagnostics; before the fix the finding resolved to the
+/// crate root, firing anyway and leaving the expectation unfulfilled.
+#[test]
+fn per_item_expect_fulfils_and_suppresses() {
+    run("ui-toml/bare_email/expect_at_item", RuleConfig::default());
+}

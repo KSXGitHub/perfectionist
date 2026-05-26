@@ -1,10 +1,11 @@
-use rustc_ast::Crate;
-use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
+use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
+use rustc_span::Span;
 
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
 use crate::common::{DefaultState, resolved_state};
-use crate::literal_scan::emit_flagged_char;
+use crate::enclosing_hir::emit_at_enclosing_hir;
+use crate::literal_scan::emit_flagged_char_hir;
 use crate::markdown::{position_in_skip, scan_code_regions};
 
 declare_tool_lint! {
@@ -91,22 +92,33 @@ pub fn register_pass(lint_store: &mut LintStore) {
     {
         return;
     }
-    lint_store.register_early_pass(|| Box::new(UnicodeEllipsisInDocs::new()));
+    lint_store.register_late_pass(|_| Box::new(UnicodeEllipsisInDocs::new()));
 }
 
-impl EarlyLintPass for UnicodeEllipsisInDocs {
-    fn check_crate(&mut self, lint_context: &EarlyContext<'_>, _: &Crate) {
-        walk_local_comments(lint_context, |chunk| match chunk.surface {
+impl<'tcx> LateLintPass<'tcx> for UnicodeEllipsisInDocs {
+    fn check_crate_post(&mut self, lint_context: &LateContext<'tcx>) {
+        let mut violations: Vec<(Span, char)> = Vec::new();
+        walk_local_comments(lint_context.sess(), |chunk| match chunk.surface {
             CommentSurface::DocBlock | CommentSurface::DocBlockBlock => {
-                self.scan_doc_chunk(lint_context, chunk);
+                self.collect_doc_chunk(chunk, &mut violations);
             }
             CommentSurface::PlainLine | CommentSurface::PlainBlock => {}
+        });
+        emit_at_enclosing_hir(lint_context.tcx, violations, |hir_id, span, character| {
+            emit_flagged_char_hir(
+                lint_context,
+                UNICODE_ELLIPSIS_IN_DOCS,
+                hir_id,
+                character,
+                span,
+                "doc comment",
+            );
         });
     }
 }
 
 impl UnicodeEllipsisInDocs {
-    fn scan_doc_chunk(&self, lint_context: &EarlyContext<'_>, chunk: &CommentChunk<'_>) {
+    fn collect_doc_chunk(&self, chunk: &CommentChunk<'_>, out: &mut Vec<(Span, char)>) {
         // Code spans join the skip mask unless the user opts into
         // scanning them; code blocks are always masked.
         let skips = scan_code_regions(&chunk.rendered, !self.scan_code_spans);
@@ -123,13 +135,7 @@ impl UnicodeEllipsisInDocs {
             let Some(span) = chunk.span_for(byte_offset, character.len_utf8() as u32) else {
                 continue;
             };
-            emit_flagged_char(
-                lint_context,
-                UNICODE_ELLIPSIS_IN_DOCS,
-                character,
-                span,
-                "doc comment",
-            );
+            out.push((span, character));
         }
     }
 }

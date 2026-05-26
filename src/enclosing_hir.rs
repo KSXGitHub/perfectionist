@@ -1,12 +1,20 @@
-//! Shared helper for the pre-expansion → late-pass split that
-//! `macro_trailing_comma` and `macro_argument_binding` both use.
-//!
-//! Both rules emit their diagnostics from a late pass, after parking
-//! violation spans during a pre-expansion pass. The late pass then
-//! anchors each pending span at the deepest enclosing HIR node so
+//! Shared helper for rules that discover violation spans outside the
+//! HIR walk and need to emit them at the enclosing HIR node so
 //! `cfg_attr`-wrapped `#[expect]` / `#[allow]` attributes resolve
-//! correctly. The walk shape is identical between the two rules; this
-//! module provides the generic walker.
+//! correctly.
+//!
+//! Two families of rules use it:
+//!
+//! - The pre-expansion → late-pass split of `macro_trailing_comma` and
+//!   `macro_argument_binding`. They park macro-call spans during a
+//!   pre-expansion pass and, in a late pass, anchor each at the deepest
+//!   enclosing HIR node via [`find_enclosing_hir_ids`].
+//! - The comment-walking rules (`bare_url`, `bare_email`,
+//!   `bare_issue_reference`, `unicode_ellipsis_in_comments`,
+//!   `unicode_ellipsis_in_docs`). They scan source text in a late pass
+//!   and emit through [`emit_at_enclosing_hir`], which uses the
+//!   attribute-aware [`find_comment_anchor_hir_ids`] so a doc comment
+//!   resolves to the item it documents.
 //!
 //! Callers feed in the spans they care about and get back, for each
 //! one, the deepest HIR node whose span contains it (or
@@ -28,23 +36,105 @@ use rustc_span::Span;
 /// enclosing item's span does not cover the call site — maps to
 /// [`hir::CRATE_HIR_ID`].
 pub(crate) fn find_enclosing_hir_ids(tcx: TyCtxt<'_>, target_spans: &[Span]) -> Vec<hir::HirId> {
+    walk(tcx, target_spans, false)
+}
+
+/// Like [`find_enclosing_hir_ids`], but a node's outer attributes —
+/// including the `#[doc]` attributes that `///` / `//!` / `/** */` doc
+/// comments lower to — count toward containment alongside the node's
+/// own span.
+///
+/// This is what the comment-walking rules need. An item's own span
+/// starts at the item keyword, *after* its leading doc comment, so a
+/// `…` inside `/// …` is not contained by the documented item's span
+/// and plain [`find_enclosing_hir_ids`] would resolve it to the
+/// enclosing module / crate. Folding each node's attribute spans in
+/// re-attaches the doc comment to the item it documents, so a per-item
+/// / per-field / per-variant `#[allow]` / `#[expect]` resolves. A plain
+/// `//` / `/* */` comment carries no attribute, so it still anchors at
+/// the deepest node whose body span contains it (the enclosing block /
+/// item), which is the same place a user puts the suppressing
+/// attribute.
+fn find_comment_anchor_hir_ids(tcx: TyCtxt<'_>, target_spans: &[Span]) -> Vec<hir::HirId> {
+    walk(tcx, target_spans, true)
+}
+
+fn walk(tcx: TyCtxt<'_>, target_spans: &[Span], include_attr_spans: bool) -> Vec<hir::HirId> {
     let mut best: Vec<hir::HirId> = vec![hir::CRATE_HIR_ID; target_spans.len()];
     let mut finder = EnclosingHirFinder {
         tcx,
         targets: target_spans,
         best: &mut best,
+        include_attr_spans,
     };
     tcx.hir_walk_toplevel_module(&mut finder);
     best
+}
+
+/// Resolve each violation's primary span to its deepest enclosing HIR
+/// node — in a single [`find_comment_anchor_hir_ids`] walk — then hand
+/// that node id, the span, and the payload to `emit`.
+///
+/// The companion to [`find_enclosing_hir_ids`] for the comment-walking
+/// rules (`bare_url`, `bare_email`, `bare_issue_reference`, the two
+/// `unicode_ellipsis_in_*` rules). Those discover violation spans by
+/// scanning source text in a late pass, outside the HIR walk, so the
+/// early-pass lint-level builder would sit at the crate root at
+/// emission time and only a crate-root `#![allow]` / `#![expect]`
+/// would apply. Anchoring each diagnostic at its enclosing node — and
+/// emitting through `clippy_utils::diagnostics::span_lint_hir_and_then`
+/// from `emit` — is what lets a per-item / per-field / per-module
+/// `#[allow]` / `#[expect]` resolve.
+pub(crate) fn emit_at_enclosing_hir<Payload>(
+    tcx: TyCtxt<'_>,
+    violations: Vec<(Span, Payload)>,
+    mut emit: impl FnMut(hir::HirId, Span, Payload),
+) {
+    if violations.is_empty() {
+        return;
+    }
+    let target_spans: Vec<Span> = violations.iter().map(|(span, _)| *span).collect();
+    let hir_ids = find_comment_anchor_hir_ids(tcx, &target_spans);
+    for ((span, payload), hir_id) in violations.into_iter().zip(hir_ids) {
+        emit(hir_id, span, payload);
+    }
 }
 
 struct EnclosingHirFinder<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     targets: &'a [Span],
     best: &'a mut [hir::HirId],
+    /// When set, a node's outer-attribute spans (the `#[doc]`
+    /// attributes doc comments lower to, plus any other attributes)
+    /// count toward containment alongside its own span. See
+    /// [`find_comment_anchor_hir_ids`].
+    include_attr_spans: bool,
 }
 
 impl<'a, 'tcx> EnclosingHirFinder<'a, 'tcx> {
+    /// Record `hir_id` as the best anchor for every target its `span`
+    /// contains — and, in comment-anchoring mode, every target one of
+    /// its outer-attribute spans contains. The latter is what attaches
+    /// a `///` / `//!` / `/** */` doc comment to the item it documents,
+    /// whose own span begins after the comment.
+    fn visit_node(&mut self, hir_id: hir::HirId, span: Span) {
+        self.update(hir_id, span);
+        if self.include_attr_spans {
+            // Only doc comments are folded in: they are what `///`,
+            // `//!`, and `/** */` lower to, and the comment-walking
+            // rules anchor on them. `is_doc_comment` hands back the
+            // comment's own span; other attributes are skipped, which
+            // also sidesteps `Attribute::span` panicking on parsed
+            // attribute kinds that carry no span (e.g. the synthesised
+            // prelude import).
+            for attr in self.tcx.hir_attrs(hir_id) {
+                if let Some(doc_span) = attr.is_doc_comment() {
+                    self.update(hir_id, doc_span);
+                }
+            }
+        }
+    }
+
     fn update(&mut self, hir_id: hir::HirId, span: Span) {
         for (index, &target) in self.targets.iter().enumerate() {
             if !contains(span, target) {
@@ -98,47 +188,57 @@ impl<'tcx> Visitor<'tcx> for EnclosingHirFinder<'_, 'tcx> {
     }
 
     fn visit_item(&mut self, item: &'tcx hir::Item<'tcx>) {
-        self.update(item.hir_id(), item.span);
+        self.visit_node(item.hir_id(), item.span);
         intravisit::walk_item(self, item);
     }
 
     fn visit_trait_item(&mut self, item: &'tcx hir::TraitItem<'tcx>) {
-        self.update(item.hir_id(), item.span);
+        self.visit_node(item.hir_id(), item.span);
         intravisit::walk_trait_item(self, item);
     }
 
     fn visit_impl_item(&mut self, item: &'tcx hir::ImplItem<'tcx>) {
-        self.update(item.hir_id(), item.span);
+        self.visit_node(item.hir_id(), item.span);
         intravisit::walk_impl_item(self, item);
     }
 
     fn visit_foreign_item(&mut self, item: &'tcx hir::ForeignItem<'tcx>) {
-        self.update(item.hir_id(), item.span);
+        self.visit_node(item.hir_id(), item.span);
         intravisit::walk_foreign_item(self, item);
     }
 
+    fn visit_variant(&mut self, variant: &'tcx hir::Variant<'tcx>) {
+        self.visit_node(variant.hir_id, variant.span);
+        intravisit::walk_variant(self, variant);
+    }
+
+    fn visit_field_def(&mut self, field: &'tcx hir::FieldDef<'tcx>) {
+        self.visit_node(field.hir_id, field.span);
+        intravisit::walk_field_def(self, field);
+    }
+
     fn visit_block(&mut self, block: &'tcx hir::Block<'tcx>) {
-        self.update(block.hir_id, block.span);
+        self.visit_node(block.hir_id, block.span);
         intravisit::walk_block(self, block);
     }
 
     fn visit_stmt(&mut self, stmt: &'tcx hir::Stmt<'tcx>) {
-        self.update(stmt.hir_id, stmt.span);
+        self.visit_node(stmt.hir_id, stmt.span);
         intravisit::walk_stmt(self, stmt);
     }
 
     fn visit_local(&mut self, local: &'tcx hir::LetStmt<'tcx>) {
-        self.update(local.hir_id, local.span);
+        self.visit_node(local.hir_id, local.span);
         intravisit::walk_local(self, local);
     }
 
     fn visit_expr(&mut self, expr: &'tcx hir::Expr<'tcx>) {
-        self.update(expr.hir_id, expr.span);
+        self.visit_node(expr.hir_id, expr.span);
         intravisit::walk_expr(self, expr);
     }
 
     fn visit_pat(&mut self, pat: &'tcx hir::Pat<'tcx>) {
-        self.update(pat.hir_id, pat.span);
+        self.visit_node(pat.hir_id, pat.span);
         intravisit::walk_pat(self, pat);
     }
 }

@@ -69,3 +69,18 @@ fn scan_block_only() {
         },
     );
 }
+
+/// Regression test for
+/// <https://github.com/KSXGitHub/perfectionist/issues/165>: a plain
+/// `//` comment anchors at the function body that lexically contains
+/// it, so a `#[expect]` on the enclosing function both suppresses the
+/// finding and is fulfilled by it. The fixture produces no diagnostics;
+/// before the fix every finding resolved to the crate root, firing
+/// anyway and leaving the expectation unfulfilled.
+#[test]
+fn per_item_expect_fulfils_and_suppresses() {
+    run(
+        "ui-toml/unicode_ellipsis_in_comments/expect_at_item",
+        r#"["perfectionist::unicode_ellipsis_in_comments"]"#,
+    );
+}

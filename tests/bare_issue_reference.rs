@@ -197,3 +197,17 @@ fn reference_form_skips_existing_definition() {
         }),
     );
 }
+
+/// Regression test for
+/// <https://github.com/KSXGitHub/perfectionist/issues/165>: a per-item
+/// `#[expect]` on the documented item both suppresses the bare `#NNN`
+/// finding in its doc comment and is fulfilled by it. The fixture
+/// produces no diagnostics; before the fix the finding resolved to the
+/// crate root, firing anyway and leaving the expectation unfulfilled.
+#[test]
+fn per_item_expect_fulfils_and_suppresses() {
+    run(
+        "ui-toml/bare_issue_reference/expect_at_item",
+        RuleConfig::default(),
+    );
+}
