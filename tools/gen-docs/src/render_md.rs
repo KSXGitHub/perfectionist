@@ -154,10 +154,18 @@ fn render_config_section(config: &ConfigDoc, out: &mut String) {
         out.push('\n');
         return;
     }
+    // Only nuance the optionality note when a field is actually
+    // mandatory; rules whose fields are all optional keep the simpler
+    // wording (and unchanged output).
+    let optionality_note = if config.fields.iter().any(|field| field.required) {
+        "Each field is optional unless marked mandatory"
+    } else {
+        "Every field is optional"
+    };
     let _ = writeln!(
         out,
-        "Configure via `dylint.toml` under `[\"{}\"]`. Every field is optional; the \
-         per-field prose below states the default.",
+        "Configure via `dylint.toml` under `[\"{}\"]`. {optionality_note}; the per-field prose \
+         below states the default.",
         config.key,
     );
     out.push('\n');
@@ -179,9 +187,14 @@ fn render_field(field: &ConfigField, out: &mut String) {
     // prose. The HTML renderer uses `:` for the same reason.
     let _ = writeln!(
         out,
-        "### `{name}`: `{ty}` (optional)",
+        "### `{name}`: `{ty}` ({optionality})",
         name = field.name,
         ty = field.type_label,
+        optionality = if field.required {
+            "mandatory"
+        } else {
+            "optional"
+        },
     );
     out.push('\n');
     append_doc(&field.doc_markdown, out);
@@ -454,11 +467,23 @@ mod tests {
         let mut rule = fake_rule();
         rule.config = ConfigDoc {
             key: "perfectionist::demo_rule".to_owned(),
-            fields: vec![ConfigField {
-                name: "style".to_owned(),
-                type_label: "Style".to_owned(),
-                doc_markdown: "Pick a style.".to_owned(),
-            }],
+            fields: vec![
+                // `doc_markdown` is post-extraction: the `**Mandatory.**`
+                // sentinel has already been stripped (see
+                // `extract::config::split_mandatory_sentinel`).
+                ConfigField {
+                    name: "style".to_owned(),
+                    type_label: "Style".to_owned(),
+                    doc_markdown: "Pick a style.".to_owned(),
+                    required: true,
+                },
+                ConfigField {
+                    name: "extras".to_owned(),
+                    type_label: "[string]".to_owned(),
+                    doc_markdown: "Extra entries.".to_owned(),
+                    required: false,
+                },
+            ],
             custom_types: vec![TypeDoc {
                 name: "Style".to_owned(),
                 doc_markdown: "Style enum.".to_owned(),
@@ -479,7 +504,11 @@ mod tests {
             }],
         };
         let md = render_rule_md(&rule, "../");
-        assert!(md.contains("### `style`: `Style` (optional)"));
+        // A `required` field renders the `mandatory` marker, not `optional`.
+        assert!(md.contains("### `style`: `Style` (mandatory)"));
+        assert!(!md.contains("### `style`: `Style` (optional)"));
+        // An ordinary field still renders `optional`.
+        assert!(md.contains("### `extras`: `[string]` (optional)"));
         assert!(md.contains("Pick a style."));
         assert!(md.contains("#### `Style` (enum)"));
         // Renamed variant carries the Rust-side annotation.

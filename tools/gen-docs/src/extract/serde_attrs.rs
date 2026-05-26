@@ -35,6 +35,35 @@ pub(crate) fn serde_str_attr(attrs: &[Attribute], key: &str) -> Option<String> {
     None
 }
 
+/// Whether the item carries a serde `default` directive — the bare
+/// flag `#[serde(default)]` or `#[serde(default = "path")]`. On a
+/// container it means any missing field is filled from a default; on a
+/// field it means that one field is. Used to tell a required config
+/// field (no default, not `Option`) from an optional one.
+pub(crate) fn serde_has_default(attrs: &[Attribute]) -> bool {
+    for attr in attrs {
+        if !attr.path().is_ident("serde") {
+            continue;
+        }
+        let Ok(items) =
+            attr.parse_args_with(syn::punctuated::Punctuated::<Meta, Token![,]>::parse_terminated)
+        else {
+            continue;
+        };
+        for item in items {
+            let path = match &item {
+                Meta::Path(path) => path,
+                Meta::NameValue(name_value) => &name_value.path,
+                Meta::List(list) => &list.path,
+            };
+            if path.is_ident("default") {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 /// Apply one of serde's `rename_all` styles to a Rust identifier.
 /// Covers the styles serde itself documents: `snake_case`,
 /// `kebab-case`, their SCREAMING variants, `lowercase`, `UPPERCASE`,
@@ -174,6 +203,23 @@ mod tests {
         // Non-string value is rejected (only `Lit::Str` is accepted).
         let attrs = parse_attrs(r#"#[serde(skip = true)] struct S;"#);
         assert_eq!(serde_str_attr(&attrs, "skip"), None);
+    }
+
+    #[test]
+    fn serde_has_default_detects_flag_and_path_forms() {
+        // Bare flag.
+        let attrs = parse_attrs(r#"#[serde(default, rename_all = "snake_case")] struct S;"#);
+        assert!(serde_has_default(&attrs));
+        // `default = "path"` form.
+        let attrs = parse_attrs(r#"#[serde(default = "make")] struct S;"#);
+        assert!(serde_has_default(&attrs));
+        // No default directive.
+        let attrs =
+            parse_attrs(r#"#[serde(deny_unknown_fields, rename_all = "snake_case")] struct S;"#);
+        assert!(!serde_has_default(&attrs));
+        // Non-`serde` attributes are ignored.
+        let attrs = parse_attrs(r#"#[other(default)] struct S;"#);
+        assert!(!serde_has_default(&attrs));
     }
 
     #[test]

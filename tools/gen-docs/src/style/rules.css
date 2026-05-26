@@ -227,6 +227,11 @@ dl.config dd p {
   color: #57606a;
 }
 
+.badge-mandatory {
+  background: #ffebe9;
+  color: #cf222e;
+}
+
 article.rule h4 {
   margin-top: 1.25rem;
   margin-bottom: 0.4rem;
