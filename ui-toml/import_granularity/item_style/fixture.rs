@@ -30,4 +30,16 @@ mod glob_left_alone {
     use std::io::*;
 }
 
+// Bad: a `self` import mixed with a sibling splits, but the `self` part
+// keeps its irreducible braces.
+mod self_with_sibling {
+    use std::io::{self, Read};
+}
+
+// Good: a lone `self` import cannot be unbraced, so item style accepts
+// it as-is.
+mod lone_self {
+    use std::fmt::{self};
+}
+
 fn main() {}

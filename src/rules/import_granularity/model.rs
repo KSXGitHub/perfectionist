@@ -179,12 +179,34 @@ fn is_collapsed(tree: &UseTree) -> bool {
     if firsts.iter().any(Option::is_none) {
         return false;
     }
-    for index in 0..firsts.len() {
-        if firsts[(index + 1)..].contains(&firsts[index]) {
+    // Two entries that share a leading segment are mergeable — and thus
+    // not collapsed — only when at least one of them continues past that
+    // segment (`{path::Path, path::PathBuf}` → `path::{Path, PathBuf}`,
+    // or `{b, b::C}` → `b::{self, C}`). Two terminal leaves that merely
+    // share a name (`{B, B as C}`, distinct local bindings of the same
+    // path) cannot be folded further, so they stay collapsed.
+    for index in 0..items.len() {
+        let mut shared = false;
+        let mut mergeable = continues(&items[index].0);
+        for other in &items[(index + 1)..] {
+            if firsts[index] == other.0.prefix.segments.first().map(|seg| seg.ident.name) {
+                shared = true;
+                mergeable |= continues(&other.0);
+            }
+        }
+        if shared && mergeable {
             return false;
         }
     }
     items.iter().all(|(sub, _)| is_collapsed(sub))
+}
+
+/// Whether a brace entry has structure past its leading segment — a
+/// multi-segment path (`path::Path`), a nested group (`b::{...}`), or a
+/// glob (`b::*`). A bare single-segment `Simple` (`B`, `B as C`) does
+/// not.
+fn continues(tree: &UseTree) -> bool {
+    tree.prefix.segments.len() > 1 || !matches!(tree.kind, UseTreeKind::Simple(_))
 }
 
 fn is_lone_self(tree: &UseTree) -> bool {

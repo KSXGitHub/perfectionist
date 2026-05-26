@@ -23,5 +23,17 @@ LL ~     use std::collections::HashMap;
 LL +     use std::io::Read;
    |
 
-warning: 2 warnings emitted
+warning: imports are not split into one `use` per item
+  --> $DIR/fixture.rs:36:5
+   |
+LL |     use std::io::{self, Read};
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: reorganize the imports
+   |
+LL ~     use std::io::Read;
+LL +     use std::io::{self};
+   |
+
+warning: 3 warnings emitted
 

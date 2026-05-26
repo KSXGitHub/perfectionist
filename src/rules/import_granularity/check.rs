@@ -7,7 +7,7 @@
 use std::collections::HashSet;
 
 use super::config::Style;
-use super::model::{StmtInfo, TopKind};
+use super::model::{LeafItem, StmtInfo, TopKind};
 
 pub(super) fn is_compliant(style: Style, stmts: &[&StmtInfo]) -> bool {
     match style {
@@ -18,11 +18,18 @@ pub(super) fn is_compliant(style: Style, stmts: &[&StmtInfo]) -> bool {
 }
 
 /// `item` style: every statement imports exactly one flat leaf, so its
-/// top-level tree is a plain path (`Simple`) or a glob (`Glob`). Any
-/// brace group (`Nested`) carries more than one leaf — or redundant
-/// braces around one — and must be split.
+/// top-level tree is a plain path (`Simple`) or a glob (`Glob`). A brace
+/// group (`Nested`) carries more than one leaf — or redundant braces —
+/// and must be split. The one exception is the irreducible single
+/// `self` (`use a::b::{self}`): it is one leaf, and `self` cannot be
+/// written without braces, so no item-style rewrite can remove them.
 fn is_item_shaped(stmt: &StmtInfo) -> bool {
-    !matches!(stmt.top_kind, TopKind::Nested)
+    match stmt.top_kind {
+        TopKind::Simple | TopKind::Glob => true,
+        TopKind::Nested => {
+            matches!(stmt.leaves.as_slice(), [leaf] if matches!(leaf.item, LeafItem::SelfMod))
+        }
+    }
 }
 
 /// `module` style: every statement's leaves come from a single module

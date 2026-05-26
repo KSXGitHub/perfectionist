@@ -29,6 +29,12 @@ mod already_crate {
     use std::{collections::HashMap, io::Read, mem::swap};
 }
 
+// Good: two distinct bindings of the same path can't collapse further,
+// so the single braced statement is already canonical.
+mod rename_dup {
+    use std::cmp::{Ordering, Ordering as Ordering2};
+}
+
 mod thing {
     pub struct T;
 }
