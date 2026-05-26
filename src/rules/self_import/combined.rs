@@ -173,27 +173,30 @@ fn emit_fold(
 ) {
     let module = render_prefix(&module_tree.prefix);
     let folded = format!("{module}::{{self, {tail}}}");
+    let delete = first.span.shrink_to_hi().to(second.span);
+    let source_map = cx.sess().source_map();
     // The deletion removes everything from the end of `first`'s
     // statement through the end of `second` — the whitespace gap, any
-    // attributes on `second`, and all of `second`'s statement. The gap
-    // probe spans that same region up to `second`'s `use` keyword
-    // (`second.span` excludes outer attributes), so a comment anywhere
-    // before `second` is seen and downgrades the fix to
-    // `MaybeIncorrect`, never silently deleting it. A matching attribute
-    // on `second` also lands in this region, so an attributed fold is
-    // conservatively `MaybeIncorrect` — which is appropriate, since
-    // folding across attributes warrants review.
-    let gap = cx
-        .sess()
-        .source_map()
+    // attributes on `second`, and all of `second`'s statement. Two
+    // things downgrade the fold to `MaybeIncorrect` so an auto-applied
+    // fix never silently discards content or merges across review-worthy
+    // boundaries:
+    //   - a non-blank gap up to `second`'s `use` keyword (`second.span`
+    //     excludes outer attributes), i.e. a comment or an attribute on
+    //     `second`;
+    //   - a comment anywhere in the deleted region, including one *inside*
+    //     `second`'s statement (between its `use` keyword and `;`), which
+    //     the gap probe alone would miss.
+    let gap = source_map
         .span_to_snippet(first.span.between(second.span))
         .unwrap_or_default();
-    let applicability = if bare || !gap.trim().is_empty() {
+    let deleted = source_map.span_to_snippet(delete).unwrap_or_default();
+    let has_comment = deleted.contains("//") || deleted.contains("/*");
+    let applicability = if bare || !gap.trim().is_empty() || has_comment {
         Applicability::MaybeIncorrect
     } else {
         Applicability::MachineApplicable
     };
-    let delete = first.span.shrink_to_hi().to(second.span);
     span_lint_and_then(
         cx,
         SELF_IMPORT,
