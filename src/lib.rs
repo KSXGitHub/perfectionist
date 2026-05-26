@@ -46,6 +46,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         bare_url
         derive_ordering
         flat_module_pattern
+        import_granularity
         lint_reason_from_comment
         lint_silence_reason
         macro_argument_binding

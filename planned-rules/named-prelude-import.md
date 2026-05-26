@@ -70,8 +70,8 @@ of the two lints is also coherent:
   knob in `no-star-imports`.
 - For nested brace lists (`use serde::prelude::{A, B};`), expand each
   leaf into its own diagnostic span via the segment-walk machinery
-  used by [`import-granularity`](./import-granularity.md). Reuse the
-  same helper.
+  used by `perfectionist::import_granularity` (the leaf flattening in
+  `src/rules/import_granularity/model.rs`). Reuse the same helper.
 - Suggested fix: replace the `prelude::` segment with the canonical
   module of each item. Resolving the canonical module requires the
   item's `DefId` (`tcx.def_path` reports the *definition* path,

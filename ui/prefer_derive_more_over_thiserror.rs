@@ -1,7 +1,7 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(
-    unknown_lints,
+    unknown_lints, perfectionist::import_granularity,
     dead_code,
     unused_imports,
     unused_extern_crates,
