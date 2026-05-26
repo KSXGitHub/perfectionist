@@ -108,10 +108,13 @@ pub(super) fn check_external_mod(
 /// every such file would be flagged. The rule only speaks to where a
 /// library or binary keeps its unit tests, so skip these crates whole.
 ///
-/// Detection keys off the crate root's path: Cargo always roots these
-/// targets under a `tests/`, `benches/`, or `examples/` directory,
-/// while a library/binary roots under `src/` (`lib.rs`, `main.rs`,
-/// `bin/<name>.rs`).
+/// Detection keys off the crate root's *own* directory: Cargo roots
+/// these targets at `<dir>/<name>.rs` or `<dir>/<name>/main.rs`, where
+/// `<dir>` is `tests`, `benches`, or `examples`, while a library/binary
+/// roots under `src/` (`lib.rs`, `main.rs`, `bin/<name>.rs`). Matching
+/// the immediate directory rather than any ancestor keeps a library
+/// that merely lives below such a directory — a workspace member at
+/// `tests/<crate>/src/lib.rs`, say — in scope.
 pub(super) fn is_separate_test_target(cx: &LateContext<'_>) -> bool {
     let Some(root) = cx.sess().local_crate_source_file() else {
         return false;
@@ -119,12 +122,19 @@ pub(super) fn is_separate_test_target(cx: &LateContext<'_>) -> bool {
     let Some(path) = root.local_path() else {
         return false;
     };
-    path.components().any(|component| {
-        let Component::Normal(name) = component else {
-            return false;
-        };
-        matches!(name.to_str(), Some("tests" | "benches" | "examples"))
-    })
+    // `<dir>/<name>/main.rs` puts the discriminating directory one level
+    // further up than the flat `<dir>/<name>.rs` form.
+    let target_dir = if path.file_name().and_then(|name| name.to_str()) == Some("main.rs") {
+        path.parent().and_then(Path::parent)
+    } else {
+        path.parent()
+    };
+    matches!(
+        target_dir
+            .and_then(Path::file_name)
+            .and_then(|name| name.to_str()),
+        Some("tests" | "benches" | "examples"),
+    )
 }
 
 fn source_file_path(cx: &LateContext<'_>, span: Span) -> Option<PathBuf> {

@@ -310,28 +310,36 @@ fn help_names_the_actual_inline_module() {
     );
 }
 
+/// A small integration-test body with a top-level `use` and helper
+/// `fn` (both counted as production, which defeats the all-test-file
+/// exemption) followed by 60 `#[test] fn`s — well over the inline
+/// budget. Reused by the flat and subdirectory layout tests below.
+fn integration_test_body() -> String {
+    let mut body = String::from("use std::cmp::max;\n\nfn helper() -> i32 {\n    max(1, 0)\n}\n\n");
+    for index in 0..60 {
+        body.push_str(&format!(
+            "#[test]\nfn case_{index}() {{ assert_eq!(helper(), 1); }}\n",
+        ));
+    }
+    body
+}
+
 /// Integration tests live in their own crate under `tests/`, which a
 /// `--all-targets` run hands the rule too. Their top-level `#[test]`
 /// functions are the target itself, not unit tests misplaced inside a
 /// production file, so the rule must not flag them — even when the
 /// test footprint dwarfs the inline budget and the file also carries
-/// an ordinary helper `fn` (which would otherwise count as production
-/// and defeat the all-test-file exemption).
+/// top-level `use`s and helper `fn`s the rule would otherwise count as
+/// production.
 #[test]
 fn does_not_flag_integration_tests() {
-    let mut integration = String::from("fn helper() -> i32 {\n    1\n}\n\n");
-    for index in 0..60 {
-        integration.push_str(&format!(
-            "#[test]\nfn case_{index}() {{ assert_eq!(helper(), 1); }}\n",
-        ));
-    }
     let (_temp, stderr, success) = run_project_with_config(
         "fixture_utfl_integration_tests",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
             ("src/lib.rs", "pub fn calculate() -> i32 {\n    1\n}\n"),
-            ("tests/integration.rs", &integration),
+            ("tests/integration.rs", &integration_test_body()),
         ],
         "",
     );
@@ -339,6 +347,29 @@ fn does_not_flag_integration_tests() {
     assert!(
         !stderr.contains(LINT),
         "integration tests under `tests/` must not be flagged; stderr was:\n{stderr}",
+    );
+}
+
+/// Cargo also auto-discovers the subdirectory form `tests/<name>/main.rs`
+/// as an integration-test crate. Its discriminating `tests` directory is
+/// one level further up than the flat form, so this guards the path
+/// arithmetic that walks past the `main.rs` stem.
+#[test]
+fn does_not_flag_integration_test_subdir_main() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_integration_subdir",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub fn calculate() -> i32 {\n    1\n}\n"),
+            ("tests/suite/main.rs", &integration_test_body()),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(LINT),
+        "the `tests/<name>/main.rs` form must not be flagged; stderr was:\n{stderr}",
     );
 }
 
