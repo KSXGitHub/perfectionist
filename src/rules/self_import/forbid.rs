@@ -46,8 +46,8 @@ fn visit(cx: &EarlyContext<'_>, item: &Item, node: &UseTree, at_root: bool) {
                     node.span(),
                     with_rename(module_path, *rename),
                     Some(
-                        "the `a::b::self` form is redundant and rejected in some positions; \
-                         import the module directly",
+                        "the trailing `self` is redundant here — it re-names the module the \
+                         path already gives; import it directly",
                     ),
                 );
             }

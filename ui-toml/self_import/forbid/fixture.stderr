@@ -30,7 +30,7 @@ warning: this `use` imports a module through `self`
 LL |     use crate::defs::{inner::self};
    |                       ^^^^^^^^^^^ help: import the module by its bare path: `inner`
    |
-   = note: the `a::b::self` form is redundant and rejected in some positions; import the module directly
+   = note: the trailing `self` is redundant here — it re-names the module the path already gives; import it directly
 
 warning: this `use` imports a module through `self`
   --> $DIR/fixture.rs:38:23
