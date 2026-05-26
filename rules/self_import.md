@@ -13,10 +13,13 @@ through `self` in `use` statements. The rule is inactive by
 default; a project opts in and sets `style` to one of:
 
 - `forbid` — every form that imports a module via `self` is a
-  violation. `use foo::bar::{self};`, `use foo::bar::self;`, and
-  the `self` member of `use foo::bar::{self, Baz};` are all
-  rewritten to the bare `use foo::bar;` (the braced form splits
-  the module import out into its own statement).
+  violation. `use foo::bar::{self};`, the brace-nested
+  `use foo::{bar::self};` form, and the `self` member of
+  `use foo::bar::{self, Baz};` are all rewritten to the bare
+  `use foo::bar;` (the braced-with-items form splits the module
+  import out into its own statement). The bare `use foo::bar::self;`
+  (no braces) is a hard error in current Rust, so the rule only
+  encounters the brace-list forms.
 - `combined` — two adjacent statements that import a module and
   an item from it (`use foo::bar; use foo::bar::Baz;`) fold into
   a single `use foo::bar::{self, Baz};`.

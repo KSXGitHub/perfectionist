@@ -167,11 +167,15 @@ fn emit_fold(
     // The deletion removes everything from the end of `first`'s
     // statement through the end of `second`'s — the whitespace gap and
     // all of `second`. If a comment sits in that gap the deletion would
-    // discard it, so a non-blank gap downgrades to `MaybeIncorrect`.
+    // discard it, so a non-blank gap downgrades to `MaybeIncorrect`. The
+    // gap is measured up to `second`'s *attributes* (via
+    // `span_with_attributes`), not its `use` keyword, so a matching
+    // attribute on `second` isn't mistaken for gap content and doesn't
+    // needlessly downgrade an otherwise-clean fold.
     let gap = cx
         .sess()
         .source_map()
-        .span_to_snippet(first.span.between(second.span))
+        .span_to_snippet(first.span.between(second.span_with_attributes()))
         .unwrap_or_default();
     let applicability = if bare || !gap.trim().is_empty() {
         Applicability::MaybeIncorrect

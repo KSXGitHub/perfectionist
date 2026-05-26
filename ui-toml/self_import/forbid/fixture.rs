@@ -54,6 +54,16 @@ mod attr_split {
     use crate::defs::inner::{self, Baz};
 }
 
+// The split preserves visibility on both synthesised statements.
+mod pub_split {
+    pub use crate::defs::inner::{self, Baz};
+}
+
+// A `{self, *}` group splits the module import out from the glob.
+mod glob_with_self {
+    use crate::defs::inner::{self, *};
+}
+
 // A bare module import is already compliant — no diagnostic.
 mod clean {
     use crate::defs::sibling;

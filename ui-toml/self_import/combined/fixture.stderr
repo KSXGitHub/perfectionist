@@ -78,5 +78,18 @@ LL -     use crate::defs::inner::Baz;
 LL +     use crate::defs::inner::{self, Baz};
    |
 
-warning: 6 warnings emitted
+warning: adjacent module and item imports can be combined through `self`
+  --> $DIR/fixture.rs:53:5
+   |
+LL |     pub use crate::defs::inner;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: combine into a single `use` with `self`
+   |
+LL -     pub use crate::defs::inner;
+LL -     pub use crate::defs::inner::Baz;
+LL +     pub use crate::defs::inner::{self, Baz};
+   |
+
+warning: 7 warnings emitted
 

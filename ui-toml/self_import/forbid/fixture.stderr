@@ -63,5 +63,29 @@ LL +     #[allow(unused_imports, reason = "self_import attribute-preservation fi
 LL ~     use crate::defs::inner::Baz;
    |
 
-warning: 8 warnings emitted
+warning: this `use` imports a module through `self`
+  --> $DIR/fixture.rs:59:13
+   |
+LL |     pub use crate::defs::inner::{self, Baz};
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: import the module by its bare path
+   |
+LL ~     pub use crate::defs::inner;
+LL ~     pub use crate::defs::inner::Baz;
+   |
+
+warning: this `use` imports a module through `self`
+  --> $DIR/fixture.rs:64:9
+   |
+LL |     use crate::defs::inner::{self, *};
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: import the module by its bare path
+   |
+LL ~     use crate::defs::inner;
+LL ~     use crate::defs::inner::*;
+   |
+
+warning: 10 warnings emitted
 
