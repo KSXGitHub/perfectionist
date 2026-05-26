@@ -468,9 +468,9 @@ mod tests {
         rule.config = ConfigDoc {
             key: "perfectionist::demo_rule".to_owned(),
             fields: vec![
-                // `doc_markdown` is post-extraction: the `**Mandatory.**`
-                // sentinel has already been stripped (see
-                // `extract::config::split_mandatory_sentinel`).
+                // `required` is set directly on these fixtures; the real
+                // extractor derives it syntactically from each field's
+                // type and serde attributes (see `extract::config`).
                 ConfigField {
                     name: "style".to_owned(),
                     type_label: "Style".to_owned(),
