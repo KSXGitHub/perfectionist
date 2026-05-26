@@ -11,6 +11,7 @@ use rustc_hir as hir;
 use rustc_hir::HirId;
 use rustc_lint::{LateContext, LintContext};
 use rustc_span::{Span, Symbol, sym};
+use unicode_width::UnicodeWidthStr;
 
 /// Whether the HIR node at `hir_id` (whose own span is `span`)
 /// originates in an external proc-macro (or `macro_rules!`)
@@ -212,6 +213,17 @@ pub(crate) fn attr_has_reason(args: &[MetaItemInner]) -> Option<&MetaItemLit> {
         return Some(literal);
     }
     None
+}
+
+/// Unicode display width of a line of source text, in terminal
+/// columns — the measure an editor's column ruler reports, not the
+/// byte length. A CJK ideograph counts as two columns, a combining
+/// mark as zero, an ASCII character as one. Used by the rules that
+/// gate on a source line being "too wide" (`print_macro_split`, and
+/// the planned `prefer_text_block`), so the threshold means the same
+/// thing across scripts.
+pub(crate) fn display_width(text: &str) -> usize {
+    UnicodeWidthStr::width(text)
 }
 
 /// Whether `name` is exactly one ASCII letter (`a`..=`z` or
