@@ -166,6 +166,39 @@ fn flags_unexpected_sibling() {
     );
 }
 
+/// A `<stem>_<name>.rs` that is itself a live module (loaded by its own
+/// `mod` declaration) is not a migration straggler, so it must not be
+/// flagged for deletion even when a correct nested test file coexists.
+#[test]
+fn does_not_flag_loaded_module_as_unexpected_sibling() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_loaded_not_sibling",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub mod good;\npub mod good_tests;\n"),
+            (
+                "src/good.rs",
+                "pub fn parse() -> i32 {\n    1\n}\n\n#[cfg(test)]\nmod tests;\n",
+            ),
+            (
+                "src/good/tests.rs",
+                "#[test]\nfn works() { assert_eq!(super::parse(), 1); }\n",
+            ),
+            (
+                "src/good_tests.rs",
+                "pub fn unrelated_helper() -> i32 {\n    2\n}\n",
+            ),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains("unexpected sibling test file"),
+        "a genuinely loaded module must not be flagged as a stray sibling; stderr was:\n{stderr}",
+    );
+}
+
 #[test]
 fn exempts_file_of_only_test_items() {
     let (_temp, stderr, success) = run_project_with_config(

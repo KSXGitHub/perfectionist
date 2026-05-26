@@ -54,8 +54,14 @@ struct Config {
     /// left on disk for a module whose nested file already exists.
     /// Defaults to true.
     flag_unexpected_sibling: bool,
-    /// Module names the inline-style check applies to. Empty (the
-    /// default) applies it to every `#[cfg(test)]` module.
+    /// Module names the inline-style footprint is scoped to. Empty (the
+    /// default) counts every inline test item — `#[cfg(test)] mod`
+    /// blocks of any name, `#[test] fn`s, and other `#[cfg(test)]`
+    /// items. When non-empty, the budget is measured *only* over
+    /// `#[cfg(test)] mod <name>` blocks whose `<name>` is listed; bare
+    /// top-level test items (which have no module name) are then out of
+    /// scope. Set this when a project keeps its inline tests in named
+    /// modules and wants the budget to track those specifically.
     test_module_names: Vec<String>,
 }
 

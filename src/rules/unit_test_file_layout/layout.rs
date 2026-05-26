@@ -52,6 +52,7 @@ pub(super) fn check_external_mod(
                 && let Some(sibling) = sibling_target(&parent, name)
                 && !same_path(&sibling, &nested)
                 && sibling.exists()
+                && !is_loaded_module(cx, &sibling)
             {
                 span_lint_and_help(
                     cx,
@@ -104,6 +105,21 @@ pub(super) fn real_path(file: &SourceFile) -> Option<PathBuf> {
         FileName::Real(real) => real.local_path().map(Path::to_path_buf),
         _ => None,
     }
+}
+
+/// Whether `path` is a source file the compiler actually loaded. The
+/// unexpected-sibling check only wants to flag *stragglers* — files
+/// left on disk by a half-finished migration that no `mod` declaration
+/// loads. A `<stem>_<name>.rs` that is itself a live module (declared
+/// elsewhere as `mod <stem>_<name>;`) is in the source map, so it is
+/// not a straggler and must not be flagged for deletion.
+fn is_loaded_module(cx: &LateContext<'_>, path: &Path) -> bool {
+    cx.sess()
+        .source_map()
+        .files()
+        .iter()
+        .filter_map(|file| real_path(file))
+        .any(|loaded| same_path(&loaded, path))
 }
 
 /// The canonical extraction target for a module of `name` declared in
