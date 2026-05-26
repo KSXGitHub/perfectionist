@@ -126,6 +126,13 @@ pub(super) fn is_separate_test_target(cx: &LateContext<'_>) -> bool {
     let Some(path) = root.local_path() else {
         return false;
     };
+    is_separate_target_path(path)
+}
+
+/// The crate-root-path predicate behind [`is_separate_test_target`],
+/// split out as a pure function so the path arithmetic can be
+/// unit-tested without a compiler context.
+fn is_separate_target_path(path: &Path) -> bool {
     let parent = path.parent();
     // Flat form `<dir>/<name>.rs` — including `<dir>/main.rs`, a target
     // literally named `main` — roots directly in the target directory,
@@ -235,4 +242,53 @@ fn normalize(path: &Path) -> PathBuf {
     path.components()
         .filter(|component| !matches!(component, Component::CurDir))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::is_separate_target_path;
+
+    #[test]
+    fn separate_targets_are_recognised() {
+        // Flat `<dir>/<name>.rs`, the `<dir>/main.rs` named-`main` case,
+        // the `<dir>/<name>/main.rs` subdirectory form, and an absolute
+        // integration-test root — for tests, benches, and examples alike.
+        for path in [
+            "tests/integration.rs",
+            "tests/main.rs",
+            "tests/suite/main.rs",
+            "benches/bench.rs",
+            "benches/suite/main.rs",
+            "examples/demo.rs",
+            "examples/demo/main.rs",
+            "/abs/tests/integration.rs",
+        ] {
+            assert!(
+                is_separate_target_path(Path::new(path)),
+                "`{path}` should be treated as a separate test target",
+            );
+        }
+    }
+
+    #[test]
+    fn library_and_binary_roots_are_checked() {
+        // Library, default binary, extra binaries (flat and the
+        // `src/bin/<name>/main.rs` multi-file form), and a nested module
+        // file all stay in scope.
+        for path in [
+            "src/lib.rs",
+            "src/main.rs",
+            "src/bin/cli.rs",
+            "src/bin/cli/main.rs",
+            "src/rules/unit_test_file_layout/layout.rs",
+            "lib.rs",
+        ] {
+            assert!(
+                !is_separate_target_path(Path::new(path)),
+                "`{path}` should be checked, not skipped",
+            );
+        }
+    }
 }
