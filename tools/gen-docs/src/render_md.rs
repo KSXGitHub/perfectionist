@@ -138,6 +138,11 @@ pub(crate) fn render_index_md(rules: &[Rule]) -> String {
         );
         let _ = writeln!(out);
         let _ = writeln!(out, "  {desc}", desc = rule.short_desc);
+        // Blank line between entries so each rule's link-and-
+        // description pair reads as its own block in the raw
+        // source. The trailing blank after the final entry is
+        // stripped by `trim_trailing_blank_lines` below.
+        let _ = writeln!(out);
     }
     trim_trailing_blank_lines(&mut out);
     out
