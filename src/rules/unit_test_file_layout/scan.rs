@@ -45,6 +45,12 @@ struct FileAcc {
 }
 
 pub(super) fn run(state: &UnitTestFileLayout, cx: &LateContext<'_>) {
+    // Integration tests, benchmarks, and examples are separate crates
+    // Cargo hands the rule under `--all-targets`; their test code is the
+    // target itself, not misplaced unit tests, so leave them untouched.
+    if layout::is_separate_test_target(cx) {
+        return;
+    }
     let mut files: HashMap<BytePos, FileAcc> = HashMap::new();
     walk(state, cx, cx.tcx.hir_root_module(), &mut files);
     for acc in files.values() {

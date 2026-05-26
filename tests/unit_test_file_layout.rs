@@ -310,6 +310,38 @@ fn help_names_the_actual_inline_module() {
     );
 }
 
+/// Integration tests live in their own crate under `tests/`, which a
+/// `--all-targets` run hands the rule too. Their top-level `#[test]`
+/// functions are the target itself, not unit tests misplaced inside a
+/// production file, so the rule must not flag them — even when the
+/// test footprint dwarfs the inline budget and the file also carries
+/// an ordinary helper `fn` (which would otherwise count as production
+/// and defeat the all-test-file exemption).
+#[test]
+fn does_not_flag_integration_tests() {
+    let mut integration = String::from("fn helper() -> i32 {\n    1\n}\n\n");
+    for index in 0..60 {
+        integration.push_str(&format!(
+            "#[test]\nfn case_{index}() {{ assert_eq!(helper(), 1); }}\n",
+        ));
+    }
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_integration_tests",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub fn calculate() -> i32 {\n    1\n}\n"),
+            ("tests/integration.rs", &integration),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(LINT),
+        "integration tests under `tests/` must not be flagged; stderr was:\n{stderr}",
+    );
+}
+
 #[test]
 fn external_only_flags_inline_tests() {
     let (_temp, stderr, success) = run_project_with_config(

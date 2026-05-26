@@ -95,6 +95,38 @@ pub(super) fn check_external_mod(
     }
 }
 
+/// Whether the crate currently being compiled is a *separate*
+/// non-library target — an integration test (`tests/`), benchmark
+/// (`benches/`), or example (`examples/`) crate — rather than the
+/// library or binary whose unit-test layout this rule governs.
+///
+/// Cargo compiles each of those as its own crate, so a `--all-targets`
+/// run hands them to the rule too. But an integration test's top-level
+/// `#[test]` functions *are the target*, not unit tests misplaced
+/// inside a production file; they routinely sit beside ordinary helper
+/// `fn`s that this rule would otherwise miscount as production, so
+/// every such file would be flagged. The rule only speaks to where a
+/// library or binary keeps its unit tests, so skip these crates whole.
+///
+/// Detection keys off the crate root's path: Cargo always roots these
+/// targets under a `tests/`, `benches/`, or `examples/` directory,
+/// while a library/binary roots under `src/` (`lib.rs`, `main.rs`,
+/// `bin/<name>.rs`).
+pub(super) fn is_separate_test_target(cx: &LateContext<'_>) -> bool {
+    let Some(root) = cx.sess().local_crate_source_file() else {
+        return false;
+    };
+    let Some(path) = root.local_path() else {
+        return false;
+    };
+    path.components().any(|component| {
+        let Component::Normal(name) = component else {
+            return false;
+        };
+        matches!(name.to_str(), Some("tests" | "benches" | "examples"))
+    })
+}
+
 fn source_file_path(cx: &LateContext<'_>, span: Span) -> Option<PathBuf> {
     let file = cx.sess().source_map().lookup_source_file(span.lo());
     real_path(&file)

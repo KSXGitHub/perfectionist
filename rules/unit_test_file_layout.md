@@ -36,6 +36,12 @@ axes are checked:
 The module identifier is irrelevant to the layout rule; only the
 file's position relative to its parent matters.
 
+Only the library or binary crate is checked. Integration tests
+(`tests/`), benchmarks (`benches/`), and examples (`examples/`)
+are separate crates whose top-level `#[test]` functions *are*
+the target rather than unit tests misplaced in a production
+file, so they are left untouched.
+
 ## Why restrict this?
 This is a stylistic preference, not a correctness issue. Both
 source projects keep large test suites out of the production
