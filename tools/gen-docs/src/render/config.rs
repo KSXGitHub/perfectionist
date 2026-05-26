@@ -170,13 +170,20 @@ mod tests {
             custom_types: Vec::new(),
         };
         let html = config_section(&config).into_string();
+        // Tie each badge to its field so an inverted `field.required`
+        // branch (mandatory <-> optional) is caught, not just badge
+        // presence.
         assert!(
-            html.contains(r#"<span class="badge badge-mandatory">mandatory</span>"#),
-            "mandatory field should render the mandatory badge: {html}"
+            html.contains(
+                r#"<code class="config-key">style</code> : <code class="config-type">Style</code> <span class="badge badge-mandatory">mandatory</span>"#
+            ),
+            "the required field `style` should render the mandatory badge: {html}"
         );
         assert!(
-            html.contains(r#"<span class="badge badge-optional">optional</span>"#),
-            "optional field should render the optional badge: {html}"
+            html.contains(
+                r#"<code class="config-key">extras</code> : <code class="config-type">[string]</code> <span class="badge badge-optional">optional</span>"#
+            ),
+            "the optional field `extras` should render the optional badge: {html}"
         );
     }
 }
