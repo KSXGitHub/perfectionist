@@ -72,11 +72,10 @@ Configure via `dylint.toml` under `["perfectionist::self_import"]`. Each field i
 
 ### `style`: `Style` (mandatory)
 
-**Mandatory when the rule is enabled.** The `self`-import
-direction to enforce: `forbid` or `combined` — it has no
-default, because the two directions are opposites with no
-neutral baseline. Validated only when the rule is enabled, so
-omitting it on a disabled rule is harmless.
+The `self`-import direction to enforce: `forbid`
+or `combined` — it has no default, because the two directions
+are opposites with no neutral baseline. Validated only when the
+rule is enabled, so omitting it on a disabled rule is harmless.
 
 ### Types
 

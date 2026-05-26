@@ -153,8 +153,10 @@ pub(crate) struct ConfigField {
     /// Whether the field is mandatory rather than optional. True for a
     /// "Mandatory configuration on opt-in rules" direction field, whose
     /// doc comment leads with a bold `**Mandatory…**` sentinel (see
-    /// `extract::config`). Drives a `mandatory` badge in place of the
-    /// default `optional` one.
+    /// `extract::config::split_mandatory_sentinel`). Drives a `mandatory`
+    /// badge in place of the default `optional` one; the sentinel itself
+    /// is stripped from [`Self::doc_markdown`] so the badge doesn't get
+    /// echoed in the prose.
     pub(crate) required: bool,
 }
 

@@ -83,10 +83,11 @@ pub(crate) fn extract_config(
                     .unwrap_or(rust_name)
             });
             let doc_markdown = doc_attrs_to_markdown(&field.attrs);
+            let (required, doc_markdown) = split_mandatory_sentinel(doc_markdown);
             ConfigField {
                 name,
                 type_label: toml_type_label(&field.ty, shared),
-                required: is_mandatory(&doc_markdown),
+                required,
                 doc_markdown,
             }
         })
@@ -109,23 +110,54 @@ pub(crate) fn extract_config(
     }
 }
 
-/// Whether a `Config` field is mandatory rather than optional.
+/// Split a leading bold `**Mandatory…**` sentinel off a field's doc
+/// comment, returning whether the field is mandatory and the doc with
+/// the sentinel removed.
 ///
 /// There is no syntactic signal to key off: a mandatory direction
 /// field (`self_import`'s `style`) is `Option<T>` with no default, which
 /// looks identical to a genuinely-optional `Option<T>` field. The
 /// convention is therefore that a mandatory field's doc comment leads
-/// with a bold `**Mandatory…**` sentinel — ordinary emphasis in
-/// rustdoc, recognised here to drive the `mandatory` badge. See the
-/// "Mandatory configuration on opt-in rules" section of
-/// `IMPLEMENTATION_CONVENTIONS.md`.
-fn is_mandatory(doc_markdown: &str) -> bool {
-    doc_markdown.trim_start().starts_with("**Mandatory")
+/// with a bold `**Mandatory…**` sentinel (see the "Mandatory
+/// configuration on opt-in rules" section of
+/// `IMPLEMENTATION_CONVENTIONS.md`). The sentinel drives the `mandatory`
+/// badge and is stripped here so it isn't rendered as prose too — the
+/// badge already conveys it, and repeating it would be redundant. (The
+/// sentinel stays in the rustdoc source, where there is no badge.)
+fn split_mandatory_sentinel(doc_markdown: String) -> (bool, String) {
+    let trimmed = doc_markdown.trim_start();
+    let Some(after_open) = trimmed.strip_prefix("**Mandatory") else {
+        return (false, doc_markdown);
+    };
+    let Some(close) = after_open.find("**") else {
+        return (false, doc_markdown);
+    };
+    let rest = after_open[close + "**".len()..].trim_start().to_owned();
+    (true, rest)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn mandatory_sentinel_is_detected_and_stripped() {
+        // The bold sentinel marks the field mandatory and is removed
+        // from the prose (the badge conveys it).
+        let (required, doc) = split_mandatory_sentinel("**Mandatory.** The direction.".to_owned());
+        assert!(required);
+        assert_eq!(doc, "The direction.");
+
+        // The trailing period is optional; only the bold span matters.
+        let (required, doc) = split_mandatory_sentinel("**Mandatory** do it.".to_owned());
+        assert!(required);
+        assert_eq!(doc, "do it.");
+
+        // A field without the sentinel is left untouched and optional.
+        let (required, doc) = split_mandatory_sentinel("Just a normal field.".to_owned());
+        assert!(!required);
+        assert_eq!(doc, "Just a normal field.");
+    }
 
     #[test]
     fn config_field_honours_serde_rename() {
