@@ -9,8 +9,8 @@ use rustc_span::{Symbol, kw};
 
 use super::SELF_IMPORT;
 use super::render::{
-    attr_snippets, is_self_leaf, real_segments, render_segments, render_use_tree,
-    render_visibility, segment_names, with_rename,
+    attr_snippets, has_path_root, is_self_leaf, real_segments, render_prefix, render_segments,
+    render_use_tree, render_visibility, segment_names, with_rename,
 };
 
 /// Scan an ordered sequence of items for adjacent module + item
@@ -51,6 +51,11 @@ fn try_fold(cx: &EarlyContext<'_>, first: &Item, second: &Item) -> bool {
     else {
         return false;
     };
+    // `::foo` and `foo` can resolve to different modules, so never fold
+    // across a leading-`::` mismatch.
+    if has_path_root(&first_tree.prefix) != has_path_root(&second_tree.prefix) {
+        return false;
+    }
     // The module import can be either statement; the item import is the
     // other. Whichever order, the folded statement is placed at `first`
     // and `second` is deleted.
@@ -162,20 +167,22 @@ fn emit_fold(
     bare: bool,
     tail: &str,
 ) {
-    let module = render_segments(real_segments(&module_tree.prefix));
+    let module = render_prefix(&module_tree.prefix);
     let folded = format!("{module}::{{self, {tail}}}");
     // The deletion removes everything from the end of `first`'s
-    // statement through the end of `second`'s — the whitespace gap and
-    // all of `second`. If a comment sits in that gap the deletion would
-    // discard it, so a non-blank gap downgrades to `MaybeIncorrect`. The
-    // gap is measured up to `second`'s *attributes* (via
-    // `span_with_attributes`), not its `use` keyword, so a matching
-    // attribute on `second` isn't mistaken for gap content and doesn't
-    // needlessly downgrade an otherwise-clean fold.
+    // statement through the end of `second` — the whitespace gap, any
+    // attributes on `second`, and all of `second`'s statement. The gap
+    // probe spans that same region up to `second`'s `use` keyword
+    // (`second.span` excludes outer attributes), so a comment anywhere
+    // before `second` is seen and downgrades the fix to
+    // `MaybeIncorrect`, never silently deleting it. A matching attribute
+    // on `second` also lands in this region, so an attributed fold is
+    // conservatively `MaybeIncorrect` — which is appropriate, since
+    // folding across attributes warrants review.
     let gap = cx
         .sess()
         .source_map()
-        .span_to_snippet(first.span.between(second.span_with_attributes()))
+        .span_to_snippet(first.span.between(second.span))
         .unwrap_or_default();
     let applicability = if bare || !gap.trim().is_empty() {
         Applicability::MaybeIncorrect

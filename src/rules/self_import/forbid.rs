@@ -11,7 +11,7 @@ use rustc_span::Span;
 
 use super::SELF_IMPORT;
 use super::render::{
-    attr_snippets, is_self_leaf, real_segments, render_segments, render_use_tree,
+    attr_snippets, is_self_leaf, real_segments, render_prefix, render_rooted, render_use_tree,
     render_visibility, segment_names, simple_self_module, with_rename,
 };
 
@@ -37,9 +37,10 @@ fn visit(cx: &EarlyContext<'_>, item: &Item, node: &UseTree, at_root: bool) {
                 // `a::b::self` — names module `a::b` through a trailing
                 // `self`. (The bare `{self}` leaf has an empty module
                 // here and is rewritten by its enclosing brace group.)
-                // Drop the final `self` segment and render the rest.
+                // Drop the final `self` segment and render the rest,
+                // keeping any leading `::`.
                 let segments = real_segments(&node.prefix);
-                let module_path = render_segments(&segments[..segments.len() - 1]);
+                let module_path = render_rooted(&node.prefix, &segments[..segments.len() - 1]);
                 emit_replacement(
                     cx,
                     node.span(),
@@ -95,7 +96,7 @@ fn rewrite_self_group(
         .filter(|(index, _)| *index != self_idx)
         .map(|(_, (child, _))| child)
         .collect();
-    let base = render_segments(real_segments(&node.prefix));
+    let base = render_prefix(&node.prefix);
     let module = with_rename(base.clone(), self_rename);
 
     if others.is_empty() {

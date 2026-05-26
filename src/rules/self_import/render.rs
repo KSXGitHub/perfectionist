@@ -17,6 +17,16 @@ pub(super) fn real_segments(path: &Path) -> &[PathSegment] {
     }
 }
 
+/// Whether the path is rooted at a leading `::` (a `{{root}}`
+/// `PathRoot` segment). The leading `::` is load-bearing: `::foo` names
+/// an external crate, while `foo` is resolved through the extern
+/// prelude / crate-relative, and the two can differ when a local item
+/// shadows a crate name. Rewrites must preserve it, and `combined` must
+/// not treat `::foo` and `foo` as the same module.
+pub(super) fn has_path_root(path: &Path) -> bool {
+    matches!(path.segments.first(), Some(first) if first.ident.name == kw::PathRoot)
+}
+
 /// Segment names of a path, dropping the synthetic `{{root}}`
 /// leading-`::` segment so `::foo::bar` and `foo::bar` compare
 /// identically. Used for the rule's structural comparisons; rendering
@@ -43,6 +53,25 @@ pub(super) fn render_segments(segments: &[PathSegment]) -> String {
         .join("::")
 }
 
+/// Render `segments` (already `PathRoot`-stripped) with `path`'s
+/// leading `::` restored when it had one. Use this — not bare
+/// [`render_segments`] — whenever the rendered text is the *start* of a
+/// path, so an absolute `::foo` import is not silently rewritten to the
+/// crate-relative `foo`.
+pub(super) fn render_rooted(path: &Path, segments: &[PathSegment]) -> String {
+    let body = render_segments(segments);
+    if has_path_root(path) {
+        format!("::{body}")
+    } else {
+        body
+    }
+}
+
+/// Render a path's full prefix (root and all segments).
+pub(super) fn render_prefix(path: &Path) -> String {
+    render_rooted(path, real_segments(path))
+}
+
 /// Append an optional `as rename` to an already-rendered path. The
 /// rename is rendered through its `Ident` so a raw alias keeps `r#`.
 pub(super) fn with_rename(path: String, rename: Option<Ident>) -> String {
@@ -56,7 +85,7 @@ pub(super) fn with_rename(path: String, rename: Option<Ident>) -> String {
 /// spacing). Renames become `path as rename`, globs `path::*`, and
 /// nested groups `path::{a, b}`.
 pub(super) fn render_use_tree(tree: &UseTree) -> String {
-    let path = render_segments(real_segments(&tree.prefix));
+    let path = render_prefix(&tree.prefix);
     match &tree.kind {
         UseTreeKind::Simple(rename) => with_rename(path, *rename),
         UseTreeKind::Glob(_) => {

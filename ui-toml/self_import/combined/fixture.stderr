@@ -91,5 +91,18 @@ LL -     pub use crate::defs::inner::Baz;
 LL +     pub use crate::defs::inner::{self, Baz};
    |
 
-warning: 7 warnings emitted
+warning: adjacent module and item imports can be combined through `self`
+  --> $DIR/fixture.rs:72:5
+   |
+LL |     use ::std::collections;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: combine into a single `use` with `self`
+   |
+LL -     use ::std::collections;
+LL -     use ::std::collections::HashMap;
+LL +     use ::std::collections::{self, HashMap};
+   |
+
+warning: 8 warnings emitted
 

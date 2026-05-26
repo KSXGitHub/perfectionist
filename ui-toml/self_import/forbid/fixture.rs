@@ -64,6 +64,11 @@ mod glob_with_self {
     use crate::defs::inner::{self, *};
 }
 
+// A leading `::` (absolute path) is preserved in the rewrite.
+mod rooted_path {
+    use ::std::collections::{self};
+}
+
 // A bare module import is already compliant — no diagnostic.
 mod clean {
     use crate::defs::sibling;

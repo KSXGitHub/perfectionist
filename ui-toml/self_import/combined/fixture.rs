@@ -67,6 +67,18 @@ mod vis_mismatch {
     use crate::defs::inner::Baz;
 }
 
+// Two absolute imports fold and the leading `::` is preserved.
+mod root_match {
+    use ::std::collections;
+    use ::std::collections::HashMap;
+}
+
+// An absolute and a relative import must NOT fold (`::std` vs `std`).
+mod root_mismatch {
+    use ::std::collections;
+    use std::collections::HashMap;
+}
+
 // An intervening item breaks adjacency — no fold.
 mod non_adjacent {
     use crate::defs::inner;
