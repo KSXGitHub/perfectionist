@@ -53,7 +53,7 @@ struct Config {
     /// (`` `…` ``). Defaults to `false`: code spans often quote example
     /// text where the ellipsis is meaningful, so they are left alone
     /// unless this is set to `true`. Code *blocks* — fenced
-    /// (` ``` ... ``` `), `~~~`-fenced, four-space indented, and the
+    /// (` ``` … ``` `), `~~~`-fenced, four-space indented, and the
     /// doc-test code they hold — are always skipped regardless of this
     /// knob.
     scan_code_spans: bool,
