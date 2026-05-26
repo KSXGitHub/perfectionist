@@ -14,6 +14,7 @@
 use clap::Parser;
 use std::path::PathBuf;
 use std::process::ExitCode;
+use std::time::Instant;
 
 #[derive(Parser)]
 #[clap(about = "Pre-warm the shared integration-test target dir")]
@@ -52,11 +53,14 @@ fn main() -> ExitCode {
         &[("src/lib.rs", "")],
     );
 
+    let started = Instant::now();
     let (stderr, success) = _utils::run_dylint(&warmup_project_dir, &shared_target_dir);
+    let elapsed = started.elapsed();
     if !success {
         eprintln!("{stderr}");
         return ExitCode::FAILURE;
     }
+    eprintln!("warmup: cargo dylint --all took {elapsed:.2?}");
 
     ExitCode::SUCCESS
 }

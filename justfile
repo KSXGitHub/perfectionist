@@ -57,7 +57,7 @@ self-lint:
 
 # Pre-warm `target/integration-fixtures`
 warmup-integration-tests:
-  time cargo run {{locked}} --package _utils --bin warmup -- "$(pwd)"
+  cargo run {{locked}} --package _utils --bin warmup -- "$(pwd)"
 
 # Install cargo-dylint and dylint-link into `.dev-tools/`
 install-dev-tools:
