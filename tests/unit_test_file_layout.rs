@@ -414,7 +414,7 @@ fn flags_equivalent_body_in_src_module() {
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     assert!(
-        stderr.contains("inline test code spans") && stderr.contains("src/thing"),
+        stderr.contains("inline test code spans") && stderr.contains("src/thing/tests.rs"),
         "the same over-budget body in a `src/` module must be flagged with the inline-footprint \
          diagnostic; stderr was:\n{stderr}",
     );

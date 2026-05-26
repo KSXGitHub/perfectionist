@@ -62,9 +62,11 @@ declare_tool_lint! {
     ///
     /// Only the library or binary crate is checked. Integration tests
     /// (`tests/`), benchmarks (`benches/`), and examples (`examples/`)
-    /// are separate crates whose top-level `#[test]` functions *are*
-    /// the target rather than unit tests misplaced in a production
-    /// file, so they are left untouched.
+    /// are separate targets, not the library or binary whose unit-test
+    /// layout this rule governs; for those compiled under `cfg(test)`
+    /// their top-level `#[test]` functions *are* the target rather than
+    /// unit tests misplaced in a production file, so they are left
+    /// untouched.
     ///
     /// ### Why restrict this?
     /// This is a stylistic preference, not a correctness issue. Both
