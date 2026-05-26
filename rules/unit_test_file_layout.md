@@ -15,10 +15,14 @@ axes are checked:
    `#[cfg(test)] mod <name>;` must resolve to the canonical
    on-disk location. By default that is the nested
    `<parent>/<name>.rs` form (tests of `src/foo.rs` live in
-   `src/foo/tests.rs`); the flattened sibling `src/foo_tests.rs`
-   and the skipped-intermediate `src/tests.rs` are flagged. The
-   `sibling` style also accepts the flattened form; `any` skips
-   the layout check.
+   `src/foo/tests.rs`); for such a file the flattened sibling
+   `src/foo_tests.rs` and the skipped-intermediate `src/tests.rs`
+   are flagged. A directory-owning parent (`lib.rs` / `main.rs` /
+   `mod.rs`) is the exception: its children already live beside
+   it, so `mod tests;` in `src/lib.rs` canonically resolves to
+   `src/tests.rs` (not `src/lib/tests.rs`) and is *not* flagged —
+   matching where Cargo loads it. The `sibling` style also
+   accepts the flattened form; `any` skips the layout check.
 2. **Inline footprint.** Inline test code — `#[cfg(test)] mod X
    { ... }` blocks, `#[test] fn`s, `#[cfg(test)] fn` helpers,
    and any other `#[cfg(test)]` item — is summed per file. The

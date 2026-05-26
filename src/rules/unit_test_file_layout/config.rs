@@ -78,7 +78,7 @@ impl Default for Config {
     }
 }
 
-pub struct UnitTestFileLayout {
+pub(super) struct UnitTestFileLayout {
     pub(super) inline_style: InlineStyle,
     pub(super) inline_max_lines: usize,
     pub(super) inline_max_fraction_of_file: Option<f32>,
