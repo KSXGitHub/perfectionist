@@ -18,7 +18,8 @@
 use std::fmt::Write as _;
 
 use crate::model::{
-    ConfigDoc, ConfigField, EnumVariant, NAMESPACE, Rule, StructField, TypeDoc, TypeKind,
+    ConfigDoc, ConfigField, EnumVariant, NAMESPACE, Optionality, Rule, StructField, TypeDoc,
+    TypeKind,
 };
 
 /// Per-rule markdown filename. Mirrors the source layout
@@ -154,10 +155,24 @@ fn render_config_section(config: &ConfigDoc, out: &mut String) {
         out.push('\n');
         return;
     }
+    // Only nuance the optionality note when a field is actually
+    // mandatory; rules whose fields are all optional keep the simpler
+    // wording (and unchanged output). A mandatory field has no default,
+    // so the "states the default" clause is scoped to optional fields
+    // once any field is mandatory.
+    let optionality_note = if config
+        .fields
+        .iter()
+        .any(|field| field.optionality == Optionality::Mandatory)
+    {
+        "A field marked mandatory must be set; an optional field can be omitted and the per-field \
+         prose below states its default"
+    } else {
+        "Every field is optional; the per-field prose below states the default"
+    };
     let _ = writeln!(
         out,
-        "Configure via `dylint.toml` under `[\"{}\"]`. Every field is optional; the \
-         per-field prose below states the default.",
+        "Configure via `dylint.toml` under `[\"{}\"]`. {optionality_note}.",
         config.key,
     );
     out.push('\n');
@@ -179,9 +194,10 @@ fn render_field(field: &ConfigField, out: &mut String) {
     // prose. The HTML renderer uses `:` for the same reason.
     let _ = writeln!(
         out,
-        "### `{name}`: `{ty}` (optional)",
+        "### `{name}`: `{ty}` ({optionality})",
         name = field.name,
         ty = field.type_label,
+        optionality = field.optionality.as_ref(),
     );
     out.push('\n');
     append_doc(&field.doc_markdown, out);
@@ -401,7 +417,7 @@ mod tests {
     use std::path::PathBuf;
 
     use super::*;
-    use crate::model::{ConfigField, DefaultState, EnumVariant, TypeDoc, TypeKind};
+    use crate::model::{ConfigField, DefaultState, EnumVariant, Optionality, TypeDoc, TypeKind};
 
     fn fake_rule() -> Rule {
         Rule {
@@ -454,11 +470,23 @@ mod tests {
         let mut rule = fake_rule();
         rule.config = ConfigDoc {
             key: "perfectionist::demo_rule".to_owned(),
-            fields: vec![ConfigField {
-                name: "style".to_owned(),
-                type_label: "Style".to_owned(),
-                doc_markdown: "Pick a style.".to_owned(),
-            }],
+            fields: vec![
+                // `optionality` is set directly on these fixtures; the
+                // real extractor derives it syntactically from each
+                // field's type and serde attributes (see `extract::config`).
+                ConfigField {
+                    name: "style".to_owned(),
+                    type_label: "Style".to_owned(),
+                    doc_markdown: "Pick a style.".to_owned(),
+                    optionality: Optionality::Mandatory,
+                },
+                ConfigField {
+                    name: "extras".to_owned(),
+                    type_label: "[string]".to_owned(),
+                    doc_markdown: "Extra entries.".to_owned(),
+                    optionality: Optionality::Optional,
+                },
+            ],
             custom_types: vec![TypeDoc {
                 name: "Style".to_owned(),
                 doc_markdown: "Style enum.".to_owned(),
@@ -479,7 +507,17 @@ mod tests {
             }],
         };
         let md = render_rule_md(&rule, "../");
-        assert!(md.contains("### `style`: `Style` (optional)"));
+        // The intro note uses the mandatory-branch wording because a
+        // required field is present.
+        assert!(
+            md.contains("A field marked mandatory must be set;"),
+            "got:\n{md}"
+        );
+        // A `required` field renders the `mandatory` marker, not `optional`.
+        assert!(md.contains("### `style`: `Style` (mandatory)"));
+        assert!(!md.contains("### `style`: `Style` (optional)"));
+        // An ordinary field still renders `optional`.
+        assert!(md.contains("### `extras`: `[string]` (optional)"));
         assert!(md.contains("Pick a style."));
         assert!(md.contains("#### `Style` (enum)"));
         // Renamed variant carries the Rust-side annotation.
