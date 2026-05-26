@@ -373,6 +373,52 @@ fn does_not_flag_integration_test_subdir_main() {
     );
 }
 
+/// A flat integration test may be named `main` (`tests/main.rs`),
+/// which is *not* the `tests/<name>/main.rs` subdirectory form: its
+/// discriminating `tests` directory is the immediate parent, not two
+/// levels up. It must still be recognised as a separate target.
+#[test]
+fn does_not_flag_integration_test_named_main() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_integration_named_main",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub fn calculate() -> i32 {\n    1\n}\n"),
+            ("tests/main.rs", &integration_test_body()),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(LINT),
+        "an integration test named `main` must not be flagged; stderr was:\n{stderr}",
+    );
+}
+
+/// Positive control for the integration-test cases above: the same body
+/// in a `src/`-rooted module *is* over budget and flagged. Without it,
+/// those negatives could pass vacuously — a missing warning is otherwise
+/// indistinguishable from the rule never running on the crate.
+#[test]
+fn flags_equivalent_body_in_src_module() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_src_body_positive_control",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub mod thing;\n"),
+            ("src/thing.rs", &integration_test_body()),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        stderr.contains(LINT),
+        "the same over-budget body in a `src/` module must be flagged; stderr was:\n{stderr}",
+    );
+}
+
 #[test]
 fn external_only_flags_inline_tests() {
     let (_temp, stderr, success) = run_project_with_config(

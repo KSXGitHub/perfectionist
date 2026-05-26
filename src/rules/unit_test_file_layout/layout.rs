@@ -108,13 +108,13 @@ pub(super) fn check_external_mod(
 /// every such file would be flagged. The rule only speaks to where a
 /// library or binary keeps its unit tests, so skip these crates whole.
 ///
-/// Detection keys off the crate root's *own* directory: Cargo roots
-/// these targets at `<dir>/<name>.rs` or `<dir>/<name>/main.rs`, where
-/// `<dir>` is `tests`, `benches`, or `examples`, while a library/binary
-/// roots under `src/` (`lib.rs`, `main.rs`, `bin/<name>.rs`). Matching
-/// the immediate directory rather than any ancestor keeps a library
-/// that merely lives below such a directory — a workspace member at
-/// `tests/<crate>/src/lib.rs`, say — in scope.
+/// Detection keys off the crate root's directory: Cargo roots these
+/// targets at `<dir>/<name>.rs` or `<dir>/<name>/main.rs`, where `<dir>`
+/// is `tests`, `benches`, or `examples`, while a library/binary roots
+/// under `src/` (`lib.rs`, `main.rs`, `bin/<name>.rs`). Matching the
+/// target directory itself — not some farther ancestor — keeps a
+/// library that merely lives below such a directory (a workspace member
+/// at `tests/<crate>/src/lib.rs`, say) in scope.
 pub(super) fn is_separate_test_target(cx: &LateContext<'_>) -> bool {
     let Some(root) = cx.sess().local_crate_source_file() else {
         return false;
@@ -122,17 +122,24 @@ pub(super) fn is_separate_test_target(cx: &LateContext<'_>) -> bool {
     let Some(path) = root.local_path() else {
         return false;
     };
-    // `<dir>/<name>/main.rs` puts the discriminating directory one level
-    // further up than the flat `<dir>/<name>.rs` form.
-    let target_dir = if path.file_name().and_then(|name| name.to_str()) == Some("main.rs") {
-        path.parent().and_then(Path::parent)
-    } else {
-        path.parent()
-    };
+    let parent = path.parent();
+    // Flat form `<dir>/<name>.rs` — including `<dir>/main.rs`, a target
+    // literally named `main` — roots directly in the target directory,
+    // so check the immediate parent first. The subdirectory form
+    // `<dir>/<name>/main.rs` roots one level deeper, so for a `main.rs`
+    // leaf also accept the grandparent. Checking the parent first is
+    // what keeps `tests/main.rs` matched instead of walking past `tests`
+    // to nothing.
+    is_target_directory(parent)
+        || (path.file_name().and_then(|name| name.to_str()) == Some("main.rs")
+            && is_target_directory(parent.and_then(Path::parent)))
+}
+
+/// Whether `dir`'s final component is one of Cargo's separate-target
+/// directories (`tests`, `benches`, `examples`).
+fn is_target_directory(dir: Option<&Path>) -> bool {
     matches!(
-        target_dir
-            .and_then(Path::file_name)
-            .and_then(|name| name.to_str()),
+        dir.and_then(Path::file_name).and_then(|name| name.to_str()),
         Some("tests" | "benches" | "examples"),
     )
 }
