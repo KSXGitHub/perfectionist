@@ -506,6 +506,12 @@ mod tests {
             }],
         };
         let md = render_rule_md(&rule, "../");
+        // The intro note uses the mandatory-branch wording because a
+        // required field is present.
+        assert!(
+            md.contains("A field marked mandatory must be set;"),
+            "got:\n{md}"
+        );
         // A `required` field renders the `mandatory` marker, not `optional`.
         assert!(md.contains("### `style`: `Style` (mandatory)"));
         assert!(!md.contains("### `style`: `Style` (optional)"));
