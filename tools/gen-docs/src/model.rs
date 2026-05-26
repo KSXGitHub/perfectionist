@@ -150,11 +150,7 @@ pub(crate) struct ConfigField {
     pub(crate) type_label: String,
     /// Per-field `///` doc comment, in markdown form.
     pub(crate) doc_markdown: String,
-    /// Whether the field is mandatory rather than optional. Detected
-    /// syntactically (see `extract::config`): a field that is neither
-    /// `Option<…>` nor covered by a serde `default` (container or field)
-    /// has no default and so must be set. Drives a `mandatory` badge in
-    /// place of the default `optional` one.
+    /// Whether the field is mandatory rather than optional.
     pub(crate) required: bool,
 }
 
