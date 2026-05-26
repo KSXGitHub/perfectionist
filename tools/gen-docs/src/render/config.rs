@@ -47,7 +47,11 @@ pub(crate) fn config_section(config: &ConfigDoc) -> Markup {
                         " : "
                         code.config-type { (field.type_label) }
                         " "
-                        span.badge.badge-optional { "optional" }
+                        @if field.required {
+                            span.badge.badge-mandatory { "mandatory" }
+                        } @else {
+                            span.badge.badge-optional { "optional" }
+                        }
                     }
                     dd {
                         @if field.doc_markdown.is_empty() {

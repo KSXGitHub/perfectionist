@@ -8,9 +8,11 @@ use std::path::Path;
 
 use syn::{Expr, ExprLit, Item, Lit};
 
-use crate::extract::serde_attrs::{apply_rename_all, doc_attrs_to_markdown, serde_str_attr};
+use crate::extract::serde_attrs::{
+    apply_rename_all, doc_attrs_to_markdown, serde_has_default, serde_str_attr,
+};
 use crate::extract::shared::SharedTypes;
-use crate::extract::ty::{collect_referenced_idents, find_type_doc, toml_type_label};
+use crate::extract::ty::{collect_referenced_idents, find_type_doc, is_option, toml_type_label};
 use crate::model::{ConfigDoc, ConfigField};
 
 /// Locate the rule's `Config` struct and its `CONFIG_KEY` constant
@@ -60,6 +62,12 @@ pub(crate) fn extract_config(
         ),
     };
     let rename_all = serde_str_attr(&config_struct.attrs, "rename_all");
+    // A container `#[serde(default)]` fills every missing field from a
+    // default, so all the struct's fields are optional. Without it, a
+    // field that is neither `Option<…>` nor individually defaulted is
+    // required — the syntactic signal for a "Mandatory configuration on
+    // opt-in rules" direction field such as `self_import`'s `style`.
+    let container_default = serde_has_default(&config_struct.attrs);
 
     let named_fields = match &config_struct.fields {
         syn::Fields::Named(named) => named.named.iter().collect::<Vec<_>>(),
@@ -82,9 +90,12 @@ pub(crate) fn extract_config(
                     .map(|style| apply_rename_all(style, &rust_name))
                     .unwrap_or(rust_name)
             });
+            let required =
+                !container_default && !serde_has_default(&field.attrs) && !is_option(&field.ty);
             ConfigField {
                 name,
                 type_label: toml_type_label(&field.ty, shared),
+                required,
                 doc_markdown: doc_attrs_to_markdown(&field.attrs),
             }
         })
@@ -110,6 +121,55 @@ pub(crate) fn extract_config(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn required_field_is_detected_syntactically() {
+        // A `Config` without a container `#[serde(default)]` makes a
+        // non-`Option`, non-defaulted field required — the signal for a
+        // mandatory direction field. `Option` fields and defaulted
+        // fields stay optional.
+        let source = r#"
+            const CONFIG_KEY: &str = "perfectionist::demo";
+
+            #[derive(serde::Deserialize)]
+            #[serde(deny_unknown_fields, rename_all = "snake_case")]
+            struct Config {
+                style: Style,
+                maybe: Option<Style>,
+                #[serde(default)]
+                with_default: Style,
+            }
+        "#;
+        let file = syn::parse_file(source).unwrap();
+        let config = extract_config(Path::new("synthetic.rs"), &file, &SharedTypes::default());
+        let required: Vec<(&str, bool)> = config
+            .fields
+            .iter()
+            .map(|f| (f.name.as_str(), f.required))
+            .collect();
+        assert_eq!(
+            required,
+            vec![("style", true), ("maybe", false), ("with_default", false)],
+        );
+    }
+
+    #[test]
+    fn container_default_makes_all_fields_optional() {
+        // With a container `#[serde(default)]`, even a non-`Option`
+        // field is optional (filled from the struct's default).
+        let source = r#"
+            const CONFIG_KEY: &str = "perfectionist::demo";
+
+            #[derive(Default, serde::Deserialize)]
+            #[serde(default, rename_all = "snake_case")]
+            struct Config {
+                count: usize,
+            }
+        "#;
+        let file = syn::parse_file(source).unwrap();
+        let config = extract_config(Path::new("synthetic.rs"), &file, &SharedTypes::default());
+        assert!(!config.fields[0].required);
+    }
 
     #[test]
     fn config_field_honours_serde_rename() {

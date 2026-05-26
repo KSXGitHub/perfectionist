@@ -243,6 +243,18 @@ pub(crate) fn find_type_doc(
 /// **Keep in sync with [`is_builtin_type`].** Both functions must
 /// recognise the same set of identifiers; see the note on
 /// `is_builtin_type` for why.
+/// Whether `ty` is `Option<...>` (matched on the final path segment,
+/// so `Option<T>` and `std::option::Option<T>` both count). An
+/// `Option<T>` config field is optional regardless of any serde
+/// `default`; a non-`Option` field with no default is required.
+pub(crate) fn is_option(ty: &Type) -> bool {
+    matches!(
+        ty,
+        Type::Path(type_path)
+            if type_path.path.segments.last().is_some_and(|segment| segment.ident == "Option"),
+    )
+}
+
 pub(crate) fn toml_type_label(ty: &Type, shared: &SharedTypes) -> String {
     match ty {
         Type::Path(type_path) => {
