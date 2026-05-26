@@ -3,8 +3,5 @@ libraries = [
   { path = "." },
 ]
 
-# The crate dogfoods `unicode_ellipsis_in_docs` against its own doc
-# comments, including the ones inside inline code spans, so the rule's
-# own prose may not smuggle a `…` glyph past the code-span exemption.
 ["perfectionist::unicode_ellipsis_in_docs"]
 scan_code_spans = true
