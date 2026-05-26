@@ -42,6 +42,9 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`prefer_raw_string`](./prefer_raw_string.md) (default: `active`).
 
   string literal contains only raw-expressible escapes; prefer the raw-string form
+- [`print_macro_split`](./print_macro_split.md) (default: `active`).
+
+  splittable print macro with an embedded-newline template exceeds the configured line width
 - [`self_import`](./self_import.md) (default: `inactive`).
 
   module imported through `self` against the project's configured `self`-import style

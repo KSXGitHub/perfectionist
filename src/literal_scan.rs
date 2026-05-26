@@ -21,6 +21,15 @@
 //! sits here rather than inside that rule because the shape it
 //! recognises (plain and raw display strings) is a generic property
 //! of Rust string literals, not specific to ellipsis detection.
+//!
+//! [`take_string_escape`] is the escape-aware front-of-body scanner
+//! shared by every rule that walks a *cooked* string literal's body
+//! and must tell a real backslash escape (`\n`, `\\`, `\xNN`,
+//! `\u{...}`, a line continuation, ...) apart from the bytes around
+//! it. `prefer_raw_string` uses it to bail on the first non-eligible
+//! escape; `print_macro_split` uses it to locate the `\n` escapes it
+//! folds without being fooled by `\\n` (an escaped backslash followed
+//! by the letter `n`, which is *not* a newline).
 
 use clippy_utils::diagnostics::span_lint_and_sugg;
 use rustc_errors::Applicability;
@@ -145,4 +154,60 @@ pub(crate) fn string_literal_quote_lengths(snippet: &str) -> Option<(usize, usiz
         }
     }
     Some((prefix_length, expected_suffix_length))
+}
+
+/// Take a single backslash escape from the front of a *cooked*
+/// string-literal body and return `(escape_text, remainder)`, or
+/// `None` if `input` does not start with `\` or the escape is
+/// malformed (incomplete `\u{...}` without a closing brace, dangling
+/// backslash at end of input, truncated `\xNN`).
+///
+/// Recognises `\xNN` (4 bytes), `\u{...}` (variable length), and any
+/// single-character escape (`\n`, `\t`, `\r`, `\0`, `\"`, `\\`, `\'`,
+/// the line-continuation `\<newline>`, ...). The returned slice is the
+/// verbatim source spelling of the escape, escapes are not decoded —
+/// callers that need the decoded character derive it from the slice.
+///
+/// The "cooked" qualifier is load-bearing: in a *raw* string literal a
+/// backslash is an ordinary character, so running this scanner over a
+/// raw body would misread `r"\n"` (literal backslash, literal `n`) as
+/// a newline escape. Callers must gate on the literal being cooked
+/// before scanning its body with this function.
+pub(crate) fn take_string_escape(input: &str) -> Option<(&str, &str)> {
+    let bytes = input.as_bytes();
+    if bytes.first() != Some(&b'\\') {
+        return None;
+    }
+    let second_byte = *bytes.get(1)?;
+    let escape_len = match second_byte {
+        b'x' => 4,
+        b'u' => {
+            // `\u{...}`: scan to the closing `}`. The bytes between
+            // `{` and `}` are constrained to ASCII hex by the rustc
+            // lexer, so a byte-level scan is sufficient.
+            let mut length: usize = 2;
+            let mut closing_found = false;
+            for &byte in &bytes[2..] {
+                length = length.saturating_add(1);
+                if byte == b'}' {
+                    closing_found = true;
+                    break;
+                }
+            }
+            if !closing_found {
+                return None;
+            }
+            length
+        }
+        _ => {
+            // `\` + a single UTF-8 character (e.g. `\n`, `\"`,
+            // or the line-continuation `\<newline>`).
+            let second_char = input['\\'.len_utf8()..].chars().next()?;
+            '\\'.len_utf8() + second_char.len_utf8()
+        }
+    };
+    if escape_len > input.len() {
+        return None;
+    }
+    Some(input.split_at(escape_len))
 }

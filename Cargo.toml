@@ -33,6 +33,7 @@ crate-type = ["cdylib"]
 clippy_utils = "=0.1.97"
 dylint_linting = "6.0.0"
 serde = { version = "1.0.228", features = ["derive"] }
+unicode-width = "0.2.2"
 
 [dev-dependencies]
 _utils = { path = "utils" }
