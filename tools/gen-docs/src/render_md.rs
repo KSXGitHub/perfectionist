@@ -156,16 +156,18 @@ fn render_config_section(config: &ConfigDoc, out: &mut String) {
     }
     // Only nuance the optionality note when a field is actually
     // mandatory; rules whose fields are all optional keep the simpler
-    // wording (and unchanged output).
+    // wording (and unchanged output). A mandatory field has no default,
+    // so the "states the default" clause is scoped to optional fields
+    // once any field is mandatory.
     let optionality_note = if config.fields.iter().any(|field| field.required) {
-        "Each field is optional unless marked mandatory"
+        "Each field is optional unless marked mandatory; the per-field prose below states each \
+         optional field's default"
     } else {
-        "Every field is optional"
+        "Every field is optional; the per-field prose below states the default"
     };
     let _ = writeln!(
         out,
-        "Configure via `dylint.toml` under `[\"{}\"]`. {optionality_note}; the per-field prose \
-         below states the default.",
+        "Configure via `dylint.toml` under `[\"{}\"]`. {optionality_note}.",
         config.key,
     );
     out.push('\n');
