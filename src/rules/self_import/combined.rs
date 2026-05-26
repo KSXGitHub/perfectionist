@@ -175,23 +175,30 @@ fn emit_fold(
     let folded = format!("{module}::{{self, {tail}}}");
     let delete = first.span.shrink_to_hi().to(second.span);
     let source_map = cx.sess().source_map();
-    // The deletion removes everything from the end of `first`'s
-    // statement through the end of `second` — the whitespace gap, any
-    // attributes on `second`, and all of `second`'s statement. Two
-    // things downgrade the fold to `MaybeIncorrect` so an auto-applied
-    // fix never silently discards content or merges across review-worthy
-    // boundaries:
+    // The fold edits two regions: it replaces `first`'s tree with
+    // `folded` and deletes everything from the end of `first`'s
+    // statement through the end of `second` (the whitespace gap, any
+    // attributes on `second`, and all of `second`'s statement). Anything
+    // dropped by either edit that an auto-applied fix shouldn't silently
+    // discard downgrades the fold to `MaybeIncorrect`:
     //   - a non-blank gap up to `second`'s `use` keyword (`second.span`
     //     excludes outer attributes), i.e. a comment or an attribute on
     //     `second`;
     //   - a comment anywhere in the deleted region, including one *inside*
     //     `second`'s statement (between its `use` keyword and `;`), which
-    //     the gap probe alone would miss.
+    //     the gap probe alone would miss;
+    //   - a comment inside `first`'s tree, which the replacement edit
+    //     discards (a `use` tree contains no `//` or `/*` except a comment).
     let gap = source_map
         .span_to_snippet(first.span.between(second.span))
         .unwrap_or_default();
     let deleted = source_map.span_to_snippet(delete).unwrap_or_default();
-    let has_comment = deleted.contains("//") || deleted.contains("/*");
+    let replaced = source_map
+        .span_to_snippet(first_tree.span())
+        .unwrap_or_default();
+    let has_comment = [&deleted, &replaced]
+        .iter()
+        .any(|text| text.contains("//") || text.contains("/*"));
     let applicability = if bare || !gap.trim().is_empty() || has_comment {
         Applicability::MaybeIncorrect
     } else {
