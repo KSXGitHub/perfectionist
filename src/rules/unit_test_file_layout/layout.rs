@@ -133,8 +133,16 @@ fn nested_target(parent: &Path, name: &str) -> Option<PathBuf> {
     Some(dir.join(stem).join(format!("{name}.rs")))
 }
 
-/// `<parent_dir>/<parent_stem>_<name>.rs`.
+/// `<parent_dir>/<parent_stem>_<name>.rs`, or `None` for a
+/// directory-owning parent (`lib.rs` / `main.rs` / `mod.rs`): such a
+/// file's children already live beside it as `<parent_dir>/<name>.rs`
+/// (the nested form), so there is no distinct flattened sibling — a
+/// `lib_<name>.rs` is a path Cargo never loads, and offering it as an
+/// accepted location or flagging it as a stray would both be nonsense.
 fn sibling_target(parent: &Path, name: &str) -> Option<PathBuf> {
+    if is_mod_root(parent) {
+        return None;
+    }
     let dir = parent.parent()?;
     let stem = parent.file_stem()?.to_str()?;
     Some(dir.join(format!("{stem}_{name}.rs")))

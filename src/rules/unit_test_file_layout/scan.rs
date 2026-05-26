@@ -58,6 +58,19 @@ fn classify(
     item: &Item<'_>,
     files: &mut HashMap<BytePos, FileAcc>,
 ) {
+    // The rule only ever runs in a `cfg(test)` build, where the test
+    // harness injects synthetic crate-root items (the generated `main`,
+    // `extern crate test`, the test-descriptor const) and where
+    // test-generating macros expand to `#[test]` / `#[cfg(test)]`
+    // items. None of those are the author's hand-written layout:
+    // counting a synthetic item as production would break the
+    // all-test-file exemption, and counting macro-expanded test items
+    // would charge a single macro call against the inline budget. Skip
+    // anything not written in source, matching the lint's
+    // `report_in_external_macro: false` stance.
+    if item.span.from_expansion() {
+        return;
+    }
     let cfg_test = is_cfg_test(cx.tcx, item.hir_id());
     if let ItemKind::Mod(ident, module) = &item.kind {
         match (cfg_test, is_external_module(cx, item.span, module)) {
@@ -202,12 +215,13 @@ fn help_extract(state: &UnitTestFileLayout, file: &SourceFile) -> String {
         .and_then(|path| layout::canonical_target(&path, "tests", state.external_layout))
     {
         Some(target) => format!(
-            "move the inline test code into `{}` and declare `mod tests;` in its place",
+            "move the inline test code into a separate file (e.g. `{}`) and replace it with an \
+             external `mod` declaration",
             target.display(),
         ),
-        None => {
-            "move the inline test code into an external module declared as `mod tests;`".to_owned()
-        }
+        None => "move the inline test code into a separate file and replace it with an external \
+                 `mod` declaration"
+            .to_owned(),
     }
 }
 

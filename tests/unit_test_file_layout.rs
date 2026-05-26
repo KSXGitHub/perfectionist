@@ -188,6 +188,35 @@ fn exempts_file_of_only_test_items() {
     );
 }
 
+/// The crate root itself, when it contains only inline test code, must
+/// stay exempt. The rule runs in the `cfg(test)` build, where the test
+/// harness injects synthetic crate-root items (the generated `main`,
+/// `extern crate test`, the descriptor const); those must not be
+/// counted as production and rob the file of its exemption.
+#[test]
+fn exempts_all_test_crate_root() {
+    let mut lib = String::from("#[cfg(test)]\nmod tests {\n");
+    for index in 0..60 {
+        lib.push_str(&format!(
+            "    #[test]\n    fn case_{index}() {{ assert!(true); }}\n",
+        ));
+    }
+    lib.push_str("}\n");
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_all_test_crate_root",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[("src/lib.rs", &lib)],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(LINT),
+        "a crate root of only test items must be exempt despite harness-injected items; \
+         stderr was:\n{stderr}",
+    );
+}
+
 #[test]
 fn external_only_flags_inline_tests() {
     let (_temp, stderr, success) = run_project_with_config(
