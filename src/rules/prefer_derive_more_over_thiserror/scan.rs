@@ -168,15 +168,14 @@ fn walk_use_tree_for_aliases(
                 return;
             }
             // `use a::b::*;` brings the *direct* children of `a::b`
-            // into scope, so the glob exposes the configured leaf
-            // only when the configured path is exactly one segment
-            // deeper than the glob's path. For default config
-            // `[[thiserror, Error]]` plus `use thiserror::*;` the
-            // check is `2 == 1 + 1` and `Error` is inserted; for a
-            // hypothetical multi-segment config like
-            // `["foo::bar::Error"]` plus `use foo::*;` it is
-            // `3 == 1 + 1 ⇒ false` and the rule does not falsely
-            // claim `Error` is in scope.
+            // into scope, so the glob exposes a recognised leaf
+            // only when the recognised path is exactly one segment
+            // deeper than the glob's path. For `[[thiserror, Error]]`
+            // plus `use thiserror::*;` the check is `2 == 1 + 1` and
+            // `Error` is inserted; a glob that stops more than one
+            // segment short of the leaf (e.g. a one-segment glob
+            // against a three-segment path) fails the `+ 1` check, so
+            // the rule does not falsely claim the leaf is in scope.
             //
             // The glob's path is also expanded through `crate_aliases`
             // so `use te::*;` after `use thiserror as te;` behaves

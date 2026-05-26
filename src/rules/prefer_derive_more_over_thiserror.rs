@@ -42,7 +42,7 @@ declare_tool_lint! {
     ///    `#[cfg_attr(_, error(...))]` is unwrapped symmetrically
     ///    with the derive side.
     /// 3. **Imports.** Every `use` or `extern crate` statement that
-    ///    brings a configured `thiserror` path into scope:
+    ///    brings a `thiserror` path into scope:
     ///    `use thiserror::*`, `use thiserror::Error`,
     ///    `use thiserror::Error as MyError;`,
     ///    `use thiserror::{self as te};`, `use thiserror as te;`,
@@ -130,20 +130,10 @@ pub fn register_pass(lint_store: &mut LintStore) {
 
 impl EarlyLintPass for PreferDeriveMoreOverThiserror {
     fn check_crate(&mut self, _cx: &EarlyContext<'_>, krate: &Crate) {
-        // `thiserror_paths` is empty when the user opts out via
-        // `thiserror_paths = []` in `dylint.toml`. Skip the
-        // crate-wide alias scan and short-circuit every per-item
-        // check below — there is nothing to match against.
-        if self.thiserror_paths.is_empty() {
-            return;
-        }
         scan::collect_aliases(self, krate);
     }
 
     fn check_item(&mut self, cx: &EarlyContext<'_>, item: &Item) {
-        if self.thiserror_paths.is_empty() {
-            return;
-        }
         match &item.kind {
             ItemKind::Use(use_tree) => self.check_use(cx, item, use_tree),
             ItemKind::ExternCrate(orig, ident) => {
