@@ -9,7 +9,9 @@
 
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::source::indent_of;
-use rustc_ast::{AttrKind, Attribute, Crate, Item, ItemKind, ModKind, Visibility, VisibilityKind};
+use rustc_ast::{
+    AttrKind, Attribute, Crate, Item, ItemKind, MetaItemKind, ModKind, Visibility, VisibilityKind,
+};
 use rustc_errors::Applicability;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -166,7 +168,14 @@ enum AttrClass {
 }
 
 fn attr_class(attr: &Attribute) -> AttrClass {
-    if matches!(attr.kind, AttrKind::DocComment(..)) || attr.has_name(sym::doc) {
+    // Only documentation *text* counts as a doc comment: `///`, `//!`,
+    // and `#[doc = "..."]`. The list form `#[doc(hidden)]` /
+    // `#[doc(alias = ...)]` changes the item's API surface, so it is a
+    // real attribute that must keep statements apart like any other.
+    let is_doc_comment = matches!(attr.kind, AttrKind::DocComment(..))
+        || (attr.has_name(sym::doc)
+            && matches!(attr.meta_kind(), Some(MetaItemKind::NameValue(_))));
+    if is_doc_comment {
         AttrClass::Doc
     } else if attr.has_name(sym::cfg) || attr.has_name(sym::cfg_attr) {
         AttrClass::Cfg
@@ -241,6 +250,10 @@ impl ImportGranularity {
             attrs.push(snippet);
         }
         attr_key.sort();
+        // Compared as an order-insensitive set: two statements carrying
+        // the same attributes in a different written order can still
+        // merge safely.
+        nondoc_attrs.sort();
 
         let vis = vis_text(lint_context, &item.vis);
         let vis_key = if self.respect_visibility {

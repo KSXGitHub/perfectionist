@@ -31,5 +31,17 @@ LL ~     use std::collections::BTreeMap;
 LL +     use std::collections::btree_map::Entry;
    |
 
-warning: 3 warnings emitted
+warning: imports are not grouped into one `use` per module
+  --> $DIR/import_granularity.rs:82:5
+   |
+LL |     use {a, b};
+   |     ^^^^^^^^^^^
+   |
+help: reorganize the imports
+   |
+LL ~     use a;
+LL +     use b;
+   |
+
+warning: 4 warnings emitted
 

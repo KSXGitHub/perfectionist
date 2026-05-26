@@ -73,4 +73,13 @@ mod cfg_respected {
     use std::collections::HashMap;
 }
 
+mod a {}
+mod b {}
+
+// Bad: a top-level brace grouping bare crate roots is split into one
+// `use` per root under module style.
+mod top_level_brace {
+    use {a, b};
+}
+
 fn main() {}
