@@ -42,7 +42,7 @@ struct Config {
     /// the built-in defaults or in `extra_macros`. Empty by
     /// default; checked after the merge with the built-ins, so
     /// this knob always wins. Use it when a project deliberately
-    /// uses `…` in one of the default macros.
+    /// uses an ellipsis in one of the default macros.
     ignore_macros: Vec<String>,
     /// Additional method names on `Option` / `Result` whose first
     /// argument is the panic message. Merged with the built-in
