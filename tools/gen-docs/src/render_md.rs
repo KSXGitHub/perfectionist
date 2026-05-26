@@ -160,8 +160,8 @@ fn render_config_section(config: &ConfigDoc, out: &mut String) {
     // so the "states the default" clause is scoped to optional fields
     // once any field is mandatory.
     let optionality_note = if config.fields.iter().any(|field| field.required) {
-        "Each field is optional unless marked mandatory; the per-field prose below states each \
-         optional field's default"
+        "A field marked mandatory must be set; an optional field can be omitted and the per-field \
+         prose below states its default"
     } else {
         "Every field is optional; the per-field prose below states the default"
     };
