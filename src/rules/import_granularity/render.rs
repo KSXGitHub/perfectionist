@@ -27,7 +27,6 @@ fn rename_suffix(rename: &Option<String>) -> String {
     }
 }
 
-/// Sort brace entries the way rustfmt does: `self` first, then names
 /// Order brace entries: `self` first, then names (case-insensitively),
 /// then the glob `*` last. The full entry text is the final tiebreaker,
 /// so entries that collide on the primary key (`self` vs `self as x`, or
