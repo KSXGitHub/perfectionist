@@ -68,15 +68,13 @@ use foo::bar::{self, Baz};
 
 ## Configuration
 
-Configure via `dylint.toml` under `["perfectionist::self_import"]`. Every field is optional; the per-field prose below states the default.
+Configure via `dylint.toml` under `["perfectionist::self_import"]`. Each field is optional unless marked mandatory; the per-field prose below states the default.
 
-### `style`: `Style` (optional)
+### `style`: `Style` (mandatory)
 
 The `self`-import direction to enforce: `forbid` or `combined`.
-Mandatory whenever the rule is enabled — it has no default,
-because the two directions are opposites with no neutral
-baseline. Validated only when the rule is enabled, so omitting
-it on a disabled rule is harmless.
+It has no default — the two directions are opposites with no
+neutral baseline — so it must be set when the rule is enabled.
 
 ### Types
 
