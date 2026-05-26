@@ -118,7 +118,7 @@ let parsed: Value = serde_json::from_str(&s)?;   // function name
 The autofix:
 
 1. Adds a `use` for the leaf identifier (or merges into an existing
-   `use` per [`import-granularity`](./import-granularity.md)).
+   `use` per `perfectionist::import_granularity`).
 2. Replaces the qualified site with the leaf ident.
 
 The fix is `MachineApplicable` only when adding the `use` does not
@@ -212,7 +212,7 @@ For each path:
   resolver, which is only available in late pass.
 - For `unqualified`, the lint must coordinate with the `use` block
   in the enclosing module: the suggestion adds an import, which
-  may interact with [`import-granularity`](./import-granularity.md)
+  may interact with `perfectionist::import_granularity`
   and [`import-grouping`](./import-grouping.md). When all three
   rules are enabled, a `cargo clippy --fix` pass should run
   iteratively until fixed-point — the diagnostic from this rule
@@ -270,7 +270,7 @@ coordinate so they never both fire on the same path (each
 direction's "good" form is the other's "bad" form). One rule with
 a `style` knob keeps the policy expressible in one place — the
 same shape as
-[`import-granularity`](./import-granularity.md),
+`perfectionist::import_granularity`,
 [`core-or-std`](./core-or-std.md),
 `perfectionist::self_import`,
 `perfectionist::derive_ordering`, and

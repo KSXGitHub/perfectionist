@@ -21,6 +21,9 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`flat_module_pattern`](./flat_module_pattern.md) (default: `active`).
 
   submodule defined as `module/mod.rs`; prefer the flat `module.rs` layout
+- [`import_granularity`](./import_granularity.md) (default: `active`).
+
+  import granularity does not match the configured `import_granularity.style`
 - [`lint_reason_from_comment`](./lint_reason_from_comment.md) (default: `active`).
 
   trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field

@@ -7,6 +7,11 @@
 //! Mirrors the structure of `tests/macro_argument_binding.rs` — shared
 //! `Mutex` serialisation (the `DYLINT_TOML` env var is process-global)
 //! and one fixture directory per case.
+//!
+//! `import_granularity` is disabled in each config: it is active by
+//! default and would also fire on these fixtures (which deliberately
+//! use crate-style nested `use`s to exercise nested-`self` handling),
+//! so disabling it keeps the snapshots focused on `self_import`.
 
 use std::sync::Mutex;
 
@@ -28,6 +33,7 @@ fn forbid_rewrites_every_self_form() {
         text_block_fnl! {
             "[perfectionist]"
             r#"enable = ["self_import"]"#
+            r#"disable = ["import_granularity"]"#
             ""
             r#"["perfectionist::self_import"]"#
             r#"style = "forbid""#
@@ -42,6 +48,7 @@ fn combined_folds_adjacent_module_and_item_imports() {
         text_block_fnl! {
             "[perfectionist]"
             r#"enable = ["self_import"]"#
+            r#"disable = ["import_granularity"]"#
             ""
             r#"["perfectionist::self_import"]"#
             r#"style = "combined""#

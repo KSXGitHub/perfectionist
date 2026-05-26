@@ -25,12 +25,6 @@ pattern that several rules call out by reference — live in
   `pub mod` first, then `pub use`, then private items.
 
 ### Imports
-- [`import-granularity.md`](./import-granularity.md) — enforce a project-wide
-  import-granularity style. Configurable as `crate` (one nested `use`
-  per crate root — the shape both source documents use in their
-  examples), `module` (default; one `use` per leaf module, items
-  from the same module merged), or `item` (one `use` per leaf path).
-  Names map 1-to-1 to rustfmt's `imports_granularity`.
 - [`import-grouping.md`](./import-grouping.md) — enforce a project-wide
   import-grouping style. Configurable as `single_group` (every `use` in
   one contiguous block) or `grouped` (partitioned into std / internal /
