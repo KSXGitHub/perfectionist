@@ -10,7 +10,7 @@ use crate::literal_scan::emit_flagged_chars;
 
 declare_tool_lint! {
     /// ### What it does
-    /// Forbids U+2026 HORIZONTAL ELLIPSIS in regular `//` and
+    /// Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in regular `//` and
     /// `/* */` comments. Doc comments (`///`, `//!`) are covered by a
     /// sibling lint.
     ///

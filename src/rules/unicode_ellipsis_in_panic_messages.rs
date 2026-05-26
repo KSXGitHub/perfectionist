@@ -1,5 +1,5 @@
 //! `perfectionist::unicode_ellipsis_in_panic_messages` — flag U+2026
-//! HORIZONTAL ELLIPSIS in panic / assertion / `expect` messages.
+//! HORIZONTAL ELLIPSIS (`…`) in panic / assertion / `expect` messages.
 //!
 //! Module layout:
 //!
@@ -32,7 +32,7 @@ use config::UnicodeEllipsisInPanicMessages;
 
 declare_tool_lint! {
     /// ### What it does
-    /// Forbids U+2026 HORIZONTAL ELLIPSIS in the message of a
+    /// Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in the message of a
     /// panic-family or assertion-style macro (`panic!`,
     /// `unimplemented!`, `todo!`, `unreachable!`, `assert!`,
     /// `assert_eq!`, `assert_ne!`, `debug_assert*!`) and in the

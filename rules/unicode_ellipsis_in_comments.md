@@ -8,7 +8,7 @@
 > U+2026 HORIZONTAL ELLIPSIS in non-doc comments; prefer `...`
 
 ## What it does
-Forbids U+2026 HORIZONTAL ELLIPSIS in regular `//` and
+Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in regular `//` and
 `/* */` comments. Doc comments (`///`, `//!`) are covered by a
 sibling lint.
 

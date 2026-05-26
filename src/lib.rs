@@ -1,4 +1,26 @@
 #![feature(rustc_private)]
+// Register the `perfectionist` tool namespace so this crate can carry
+// its own `#[expect(perfectionist::...)]` attributes (see
+// `CONTROLLING_RULES.md`). Gated on `cfg(dylint_lib = "perfectionist")`
+// so a plain `cargo build` / `cargo check` ignores it and needs no
+// nightly `register_tool` feature.
+#![cfg_attr(dylint_lib = "perfectionist", feature(register_tool))]
+#![cfg_attr(dylint_lib = "perfectionist", register_tool(perfectionist))]
+// The unicode-ellipsis rules' own rustdoc names the U+2026 glyph they
+// govern, which the crate-wide `scan_code_spans` dogfooding would
+// otherwise flag. `unicode_ellipsis_in_docs` scans comments crate-wide
+// (in `check_crate`), so its findings only ever resolve to the crate
+// root — per-item `#[expect]` is out of scope and unfulfilled — so the
+// expectation lives here, the project-wide site `CONTROLLING_RULES.md`
+// prescribes. Gated on the dylint cfg so a plain `cargo build`, where
+// the lint never runs, sees no unfulfilled expectation.
+#![cfg_attr(
+    dylint_lib = "perfectionist",
+    expect(
+        perfectionist::unicode_ellipsis_in_docs,
+        reason = "the unicode-ellipsis rules' rustdoc deliberately names the U+2026 glyph"
+    )
+)]
 
 extern crate rustc_ast;
 extern crate rustc_errors;

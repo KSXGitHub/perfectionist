@@ -8,7 +8,7 @@
 > U+2026 HORIZONTAL ELLIPSIS in panic / assertion / expect messages; prefer `...`
 
 ## What it does
-Forbids U+2026 HORIZONTAL ELLIPSIS in the message of a
+Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in the message of a
 panic-family or assertion-style macro (`panic!`,
 `unimplemented!`, `todo!`, `unreachable!`, `assert!`,
 `assert_eq!`, `assert_ne!`, `debug_assert*!`) and in the
@@ -63,7 +63,7 @@ Macros to drop from the scanned set, even if they appear in
 the built-in defaults or in `extra_macros`. Empty by
 default; checked after the merge with the built-ins, so
 this knob always wins. Use it when a project deliberately
-uses an ellipsis in one of the default macros.
+uses `…` in one of the default macros.
 
 ### `extra_methods`: `[string]` (optional)
 
