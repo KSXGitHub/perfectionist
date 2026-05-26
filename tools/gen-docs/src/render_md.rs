@@ -138,6 +138,7 @@ pub(crate) fn render_index_md(rules: &[Rule]) -> String {
         );
         let _ = writeln!(out);
         let _ = writeln!(out, "  {desc}", desc = rule.short_desc);
+        let _ = writeln!(out);
     }
     trim_trailing_blank_lines(&mut out);
     out
