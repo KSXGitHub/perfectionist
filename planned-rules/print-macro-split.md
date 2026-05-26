@@ -169,6 +169,11 @@ println!("a\nb");
 
 ```toml
 [print_macro_split]
+# NOT YET IMPLEMENTED — the `style` knob is absent from the current
+# config (only `line_continuation` ships). Setting it today is rejected
+# by `deny_unknown_fields` and aborts the lint driver; leave it out
+# until `multiple_calls` lands. Shown here only to document the
+# eventual two-style design.
 style = "multiple_calls"   # or "line_continuation"
 
 # Source-line width that triggers the rule. Default 100 matches
