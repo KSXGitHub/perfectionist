@@ -65,13 +65,13 @@ declare_tool_lint! {
     /// ```rust,ignore
     /// // style = "forbid"
     /// use foo::bar::{self};
-    /// use foo::bar::{self, Baz};
+    /// use foo::qux::{self, Baz};
     /// ```
-    /// Use instead:
+    /// Use instead (each statement is fixed independently):
     /// ```rust,ignore
     /// use foo::bar;
-    /// use foo::bar;
-    /// use foo::bar::Baz;
+    /// use foo::qux;
+    /// use foo::qux::Baz;
     /// ```
     ///
     /// ```rust,ignore

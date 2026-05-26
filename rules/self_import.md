@@ -47,13 +47,13 @@ the module's name in the same parent.
 ```rust,ignore
 // style = "forbid"
 use foo::bar::{self};
-use foo::bar::{self, Baz};
+use foo::qux::{self, Baz};
 ```
-Use instead:
+Use instead (each statement is fixed independently):
 ```rust,ignore
 use foo::bar;
-use foo::bar;
-use foo::bar::Baz;
+use foo::qux;
+use foo::qux::Baz;
 ```
 
 ```rust,ignore

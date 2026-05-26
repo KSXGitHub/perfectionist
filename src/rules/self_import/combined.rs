@@ -77,8 +77,12 @@ fn try_fold(cx: &EarlyContext<'_>, first: &Item, second: &Item) -> bool {
 /// If `tree` imports a module and nothing else, the module's path
 /// segments and whether it is the bare `use module;` form (`true`) as
 /// opposed to `use module::{self};` (`false`). The bareness drives the
-/// fix's applicability: bare narrows the import to the module
-/// namespace, so it is only `MaybeIncorrect`.
+/// fix's applicability: when the source is a bare `use module;`, folding
+/// it to `{self, ...}` narrows the import to just the module namespace
+/// (dropping any value or macro of the same name), so that fold is
+/// `MaybeIncorrect`. The `{self}` source form already imports only the
+/// module, so folding it changes no namespace and stays
+/// `MachineApplicable`.
 fn module_import(tree: &UseTree) -> Option<(Vec<Symbol>, bool)> {
     match &tree.kind {
         UseTreeKind::Simple(None) => {

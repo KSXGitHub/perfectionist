@@ -12,7 +12,7 @@ warning: this `use` imports a module through `self`
 LL |     use crate::defs::inner::{self, Baz};
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-help: import the module by its bare path
+help: split the module import into its own `use` statement
    |
 LL ~     use crate::defs::inner;
 LL ~     use crate::defs::inner::Baz;
@@ -42,7 +42,7 @@ warning: this `use` imports a module through `self`
   --> $DIR/fixture.rs:43:23
    |
 LL |     use crate::defs::{inner::{self, Baz}, sibling};
-   |                       ^^^^^^^^^^^^^^^^^^ help: import the module by its bare path: `inner, inner::Baz`
+   |                       ^^^^^^^^^^^^^^^^^^ help: import the module alongside the group's other items: `inner, inner::Baz`
 
 warning: this `use` imports a module through `self`
   --> $DIR/fixture.rs:48:9
@@ -56,7 +56,7 @@ warning: this `use` imports a module through `self`
 LL |     use crate::defs::inner::{self, Baz};
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-help: import the module by its bare path
+help: split the module import into its own `use` statement
    |
 LL ~     use crate::defs::inner;
 LL +     #[allow(unused_imports, reason = "self_import attribute-preservation fixture")]
@@ -69,7 +69,7 @@ warning: this `use` imports a module through `self`
 LL |     pub use crate::defs::inner::{self, Baz};
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-help: import the module by its bare path
+help: split the module import into its own `use` statement
    |
 LL ~     pub use crate::defs::inner;
 LL ~     pub use crate::defs::inner::Baz;
@@ -81,7 +81,7 @@ warning: this `use` imports a module through `self`
 LL |     use crate::defs::inner::{self, *};
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-help: import the module by its bare path
+help: split the module import into its own `use` statement
    |
 LL ~     use crate::defs::inner;
 LL ~     use crate::defs::inner::*;

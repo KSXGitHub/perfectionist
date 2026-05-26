@@ -16,7 +16,11 @@ use super::render::{
 };
 
 const MESSAGE: &str = "this `use` imports a module through `self`";
-const SUGGESTION_LABEL: &str = "import the module by its bare path";
+// Suggestion labels, chosen per rewrite shape so the help text matches
+// the actual replacement.
+const LABEL_BARE_PATH: &str = "import the module by its bare path";
+const LABEL_SPLIT: &str = "split the module import into its own `use` statement";
+const LABEL_EXPAND: &str = "import the module alongside the group's other items";
 
 /// Check one top-level `use` item under `forbid` style. `tree` is the
 /// item's own `use` tree.
@@ -44,6 +48,7 @@ fn visit(cx: &EarlyContext<'_>, item: &Item, node: &UseTree, at_root: bool) {
                 emit_replacement(
                     cx,
                     node.span(),
+                    LABEL_BARE_PATH,
                     with_rename(module_path, *rename),
                     Some(
                         "the trailing `self` is redundant here — it re-names the module the \
@@ -101,7 +106,7 @@ fn rewrite_self_group(
 
     if others.is_empty() {
         // `use prefix::{self};` -> `use prefix;`
-        emit_replacement(cx, node.span(), module, None);
+        emit_replacement(cx, node.span(), LABEL_BARE_PATH, module, None);
         return;
     }
 
@@ -119,11 +124,17 @@ fn rewrite_self_group(
             .map(|attr| format!("{attr}\n{indent}"))
             .collect();
         let replacement = format!("{module};\n{indent}{attrs}{visibility}use {rest}");
-        emit_replacement(cx, node.span(), replacement, None);
+        emit_replacement(cx, node.span(), LABEL_SPLIT, replacement, None);
     } else {
         // Nested `prefix::{self, X}` sits in a comma-separated parent
         // group, so it can expand in place: `prefix, prefix::{X}`.
-        emit_replacement(cx, node.span(), format!("{module}, {rest}"), None);
+        emit_replacement(
+            cx,
+            node.span(),
+            LABEL_EXPAND,
+            format!("{module}, {rest}"),
+            None,
+        );
     }
 }
 
@@ -151,6 +162,7 @@ fn render_rest(base: &str, others: &[&UseTree]) -> String {
 fn emit_replacement(
     cx: &EarlyContext<'_>,
     span: Span,
+    label: &'static str,
     replacement: String,
     note: Option<&'static str>,
 ) {
@@ -158,11 +170,6 @@ fn emit_replacement(
         if let Some(note) = note {
             diag.note(note);
         }
-        diag.span_suggestion(
-            span,
-            SUGGESTION_LABEL,
-            replacement,
-            Applicability::MaybeIncorrect,
-        );
+        diag.span_suggestion(span, label, replacement, Applicability::MaybeIncorrect);
     });
 }
