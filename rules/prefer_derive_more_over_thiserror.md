@@ -23,7 +23,7 @@ the consumer crate. Three syntactic shapes trigger the lint:
    `#[cfg_attr(_, error(...))]` is unwrapped symmetrically
    with the derive side.
 3. **Imports.** Every `use` or `extern crate` statement that
-   brings a configured `thiserror` path into scope:
+   brings a `thiserror` path into scope:
    `use thiserror::*`, `use thiserror::Error`,
    `use thiserror::Error as MyError;`,
    `use thiserror::{self as te};`, `use thiserror as te;`,
@@ -82,12 +82,4 @@ pub enum MyError {
 
 ## Configuration
 
-Configure via `dylint.toml` under `["perfectionist::prefer_derive_more_over_thiserror"]`. Every field is optional; the per-field prose below states the default.
-
-### `thiserror_paths`: `[string]` (optional)
-
-Paths whose presence in a `#[derive(...)]` list (or whose
-crate's presence in a `use` statement) flags the site. Each
-entry is a `::`-separated path string. Replaces the default
-`["thiserror::Error"]` when supplied; the empty list `[]`
-disables the rule.
+None.
