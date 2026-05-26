@@ -414,8 +414,32 @@ fn flags_equivalent_body_in_src_module() {
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     assert!(
-        stderr.contains(LINT),
-        "the same over-budget body in a `src/` module must be flagged; stderr was:\n{stderr}",
+        stderr.contains("inline test code spans") && stderr.contains("src/thing"),
+        "the same over-budget body in a `src/` module must be flagged with the inline-footprint \
+         diagnostic; stderr was:\n{stderr}",
+    );
+}
+
+/// Benchmarks are their own crate compiled under `cfg(test)`, like
+/// integration tests, so without the separate-target skip the same
+/// over-budget body would be flagged. This is the one load-bearing
+/// separate-target branch besides `tests/`, so guard it directly.
+#[test]
+fn does_not_flag_benchmarks() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_benchmarks",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub fn calculate() -> i32 {\n    1\n}\n"),
+            ("benches/bench.rs", &integration_test_body()),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(LINT),
+        "benchmarks under `benches/` must not be flagged; stderr was:\n{stderr}",
     );
 }
 

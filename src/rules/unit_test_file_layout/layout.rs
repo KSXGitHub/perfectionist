@@ -101,12 +101,16 @@ pub(super) fn check_external_mod(
 /// library or binary whose unit-test layout this rule governs.
 ///
 /// Cargo compiles each of those as its own crate, so a `--all-targets`
-/// run hands them to the rule too. But an integration test's top-level
-/// `#[test]` functions *are the target*, not unit tests misplaced
-/// inside a production file; they routinely sit beside ordinary helper
-/// `fn`s that this rule would otherwise miscount as production, so
-/// every such file would be flagged. The rule only speaks to where a
-/// library or binary keeps its unit tests, so skip these crates whole.
+/// run hands them to the rule too. For the ones built under `cfg(test)`
+/// — integration tests, benchmarks, and `test = true` examples — the
+/// top-level `#[test]` functions *are the target*, not unit tests
+/// misplaced inside a production file; sitting beside ordinary helper
+/// `fn`s the rule counts as production, they would otherwise be
+/// flagged. (A plain example builds without `cfg(test)`, so the rule
+/// sees no test items there regardless, but it is skipped for the same
+/// reason and to cover the `test = true` case.) The rule only governs
+/// where a library or binary keeps its unit tests, so skip these
+/// targets whole.
 ///
 /// Detection keys off the crate root's directory: Cargo roots these
 /// targets at `<dir>/<name>.rs` or `<dir>/<name>/main.rs`, where `<dir>`
