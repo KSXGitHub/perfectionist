@@ -21,6 +21,9 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`flat_module_pattern`](./flat_module_pattern.md) (default: `active`).
 
   submodule defined as `module/mod.rs`; prefer the flat `module.rs` layout
+- [`import_granularity`](./import_granularity.md) (default: `active`).
+
+  import granularity does not match the configured `import_granularity.style`
 - [`lint_reason_from_comment`](./lint_reason_from_comment.md) (default: `active`).
 
   trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field
@@ -42,6 +45,9 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`prefer_raw_string`](./prefer_raw_string.md) (default: `active`).
 
   string literal contains only raw-expressible escapes; prefer the raw-string form
+- [`print_macro_split`](./print_macro_split.md) (default: `active`).
+
+  splittable print macro with an embedded-newline template exceeds the configured line width
 - [`single_letter_closure_param`](./single_letter_closure_param.md) (default: `active`).
 
   closure parameter has a single-letter name

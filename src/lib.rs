@@ -46,6 +46,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         bare_url
         derive_ordering
         flat_module_pattern
+        import_granularity
         lint_reason_from_comment
         lint_silence_reason
         macro_argument_binding
@@ -53,6 +54,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         non_exhaustive_error
         prefer_derive_more_over_thiserror
         prefer_raw_string
+        print_macro_split
         single_letter_closure_param
         single_letter_const_generic
         single_letter_const_item

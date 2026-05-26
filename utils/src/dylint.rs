@@ -1,6 +1,7 @@
 //! Shell out to `cargo dylint --all` and capture its output.
 
-use std::{path::Path, process::Command};
+use std::path::Path;
+use std::process::Command;
 
 use command_extra::CommandExtra;
 use pipe_trait::Pipe;

@@ -41,3 +41,31 @@ fn comment_rule_does_not_intrude_into_doc_comments() {
         },
     );
 }
+
+/// `scan_block_comments = false` narrows the rule to `//` line
+/// comments: the line comment fires while the `/* */` block comment
+/// is left untouched.
+#[test]
+fn scan_line_only() {
+    run(
+        "ui-toml/unicode_ellipsis_in_comments/scan_line_only",
+        text_block_fnl! {
+            r#"["perfectionist::unicode_ellipsis_in_comments"]"#
+            "scan_block_comments = false"
+        },
+    );
+}
+
+/// `scan_line_comments = false` narrows the rule to `/* */` block
+/// comments: the block comment fires while the `//` line comment is
+/// left untouched.
+#[test]
+fn scan_block_only() {
+    run(
+        "ui-toml/unicode_ellipsis_in_comments/scan_block_only",
+        text_block_fnl! {
+            r#"["perfectionist::unicode_ellipsis_in_comments"]"#
+            "scan_line_comments = false"
+        },
+    );
+}

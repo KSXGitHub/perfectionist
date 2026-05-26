@@ -18,9 +18,8 @@
 
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 use rustc_lint::{EarlyContext, LintContext};
-use rustc_span::{
-    BytePos, Pos, RelativeBytePos, SourceFile, Span, SyntaxContext, def_id::LOCAL_CRATE,
-};
+use rustc_span::def_id::LOCAL_CRATE;
+use rustc_span::{BytePos, Pos, RelativeBytePos, SourceFile, Span, SyntaxContext};
 
 /// Surface kind for one chunk of comment text handed to the walker
 /// callback.

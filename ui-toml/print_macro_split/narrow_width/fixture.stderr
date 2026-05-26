@@ -1,0 +1,17 @@
+warning: print macro with an embedded newline exceeds the configured line width
+  --> $DIR/fixture.rs:6:5
+   |
+LL |     println!("processing item number {item}/nfinished processing it now");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::print_macro_split)]` on by default
+help: fold the template across lines with a backslash-newline continuation
+   |
+LL ~     println!(
+LL +         "processing item number {item}/n/
+LL +         finished processing it now",
+LL ~     );
+   |
+
+warning: 1 warning emitted
+
