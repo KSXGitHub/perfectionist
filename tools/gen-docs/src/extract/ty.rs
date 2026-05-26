@@ -243,11 +243,11 @@ pub(crate) fn is_option(ty: &Type) -> bool {
 /// - `Vec<T>` / `HashSet<T>` / `BTreeSet<T>` / `VecDeque<T>` /
 ///   `LinkedList<T>` → `[label-of-T]`
 /// - `HashMap<_, V>` / `BTreeMap<_, V>` → `table of label-of-V`
-/// - `Option<T>` → `label-of-T` (every config field is already
-///   marked optional, so the wrapper would just add noise)
-/// - `Option<T>` / `Box<T>` / `Rc<T>` / `Arc<T>` → `label-of-T`
-///   (every config field is already marked optional, and the
-///   smart-pointer wrappers are transparent at the serde layer)
+/// - `Option<T>` → `label-of-T` (an `Option<T>` field is optional and
+///   its badge already conveys that, so the wrapper would only add
+///   noise to the label)
+/// - `Box<T>` / `Rc<T>` / `Arc<T>` → `label-of-T` (the smart-pointer
+///   wrappers are transparent at the serde layer)
 /// - Anything else (project-local enums and structs) → the Rust
 ///   identifier verbatim, since those names appear in the per-rule
 ///   Types subsection below and the reader can scan to them.
