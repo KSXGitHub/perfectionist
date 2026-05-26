@@ -8,9 +8,11 @@ use std::path::Path;
 
 use syn::{Expr, ExprLit, Item, Lit};
 
-use crate::extract::serde_attrs::{apply_rename_all, doc_attrs_to_markdown, serde_str_attr};
+use crate::extract::serde_attrs::{
+    apply_rename_all, doc_attrs_to_markdown, serde_has_default, serde_str_attr,
+};
 use crate::extract::shared::SharedTypes;
-use crate::extract::ty::{collect_referenced_idents, find_type_doc, toml_type_label};
+use crate::extract::ty::{collect_referenced_idents, find_type_doc, is_option, toml_type_label};
 use crate::model::{ConfigDoc, ConfigField};
 
 /// Locate the rule's `Config` struct and its `CONFIG_KEY` constant
@@ -60,6 +62,12 @@ pub(crate) fn extract_config(
         ),
     };
     let rename_all = serde_str_attr(&config_struct.attrs, "rename_all");
+    // A container `#[serde(default)]` fills every missing field from a
+    // default, so all the struct's fields are optional. Without it, a
+    // field that is neither `Option<…>` nor individually defaulted is
+    // required — the syntactic signal for a "Mandatory configuration on
+    // opt-in rules" direction field such as `self_import`'s `style`.
+    let container_default = serde_has_default(&config_struct.attrs);
 
     let named_fields = match &config_struct.fields {
         syn::Fields::Named(named) => named.named.iter().collect::<Vec<_>>(),
@@ -82,13 +90,13 @@ pub(crate) fn extract_config(
                     .map(|style| apply_rename_all(style, &rust_name))
                     .unwrap_or(rust_name)
             });
-            let doc_markdown = doc_attrs_to_markdown(&field.attrs);
-            let (required, doc_markdown) = split_mandatory_sentinel(doc_markdown);
+            let required =
+                !container_default && !serde_has_default(&field.attrs) && !is_option(&field.ty);
             ConfigField {
                 name,
                 type_label: toml_type_label(&field.ty, shared),
                 required,
-                doc_markdown,
+                doc_markdown: doc_attrs_to_markdown(&field.attrs),
             }
         })
         .collect();
@@ -110,53 +118,57 @@ pub(crate) fn extract_config(
     }
 }
 
-/// Split a leading bold `**Mandatory…**` sentinel off a field's doc
-/// comment, returning whether the field is mandatory and the doc with
-/// the sentinel removed.
-///
-/// There is no syntactic signal to key off: a mandatory direction
-/// field (`self_import`'s `style`) is `Option<T>` with no default, which
-/// looks identical to a genuinely-optional `Option<T>` field. The
-/// convention is therefore that a mandatory field's doc comment leads
-/// with a bold `**Mandatory…**` sentinel (see the "Mandatory
-/// configuration on opt-in rules" section of
-/// `IMPLEMENTATION_CONVENTIONS.md`). The sentinel drives the `mandatory`
-/// badge and is stripped here so it isn't rendered as prose too — the
-/// badge already conveys it, and repeating it would be redundant. (The
-/// sentinel stays in the rustdoc source, where there is no badge.)
-fn split_mandatory_sentinel(doc_markdown: String) -> (bool, String) {
-    let trimmed = doc_markdown.trim_start();
-    let Some(after_open) = trimmed.strip_prefix("**Mandatory") else {
-        return (false, doc_markdown);
-    };
-    let Some(close) = after_open.find("**") else {
-        return (false, doc_markdown);
-    };
-    let rest = after_open[close + "**".len()..].trim_start().to_owned();
-    (true, rest)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn mandatory_sentinel_is_detected_and_stripped() {
-        // The bold sentinel marks the field mandatory and is removed
-        // from the prose (the badge conveys it).
-        let (required, doc) = split_mandatory_sentinel("**Mandatory.** The direction.".to_owned());
-        assert!(required);
-        assert_eq!(doc, "The direction.");
+    fn required_field_is_detected_syntactically() {
+        // A `Config` without a container `#[serde(default)]` makes a
+        // non-`Option`, non-defaulted field required — the signal for a
+        // mandatory direction field. `Option` fields and defaulted
+        // fields stay optional.
+        let source = r#"
+            const CONFIG_KEY: &str = "perfectionist::demo";
 
-        // The trailing period is optional; only the bold span matters.
-        let (required, doc) = split_mandatory_sentinel("**Mandatory** do it.".to_owned());
-        assert!(required);
-        assert_eq!(doc, "do it.");
+            #[derive(serde::Deserialize)]
+            #[serde(deny_unknown_fields, rename_all = "snake_case")]
+            struct Config {
+                style: Style,
+                maybe: Option<Style>,
+                #[serde(default)]
+                with_default: Style,
+            }
+        "#;
+        let file = syn::parse_file(source).unwrap();
+        let config = extract_config(Path::new("synthetic.rs"), &file, &SharedTypes::default());
+        let required: Vec<(&str, bool)> = config
+            .fields
+            .iter()
+            .map(|f| (f.name.as_str(), f.required))
+            .collect();
+        assert_eq!(
+            required,
+            vec![("style", true), ("maybe", false), ("with_default", false)],
+        );
+    }
 
-        // A field without the sentinel is left untouched and optional.
-        let (required, doc) = split_mandatory_sentinel("Just a normal field.".to_owned());
-        assert!(!required);
-        assert_eq!(doc, "Just a normal field.");
+    #[test]
+    fn container_default_makes_all_fields_optional() {
+        // With a container `#[serde(default)]`, even a non-`Option`
+        // field is optional (filled from the struct's default).
+        let source = r#"
+            const CONFIG_KEY: &str = "perfectionist::demo";
+
+            #[derive(Default, serde::Deserialize)]
+            #[serde(default, rename_all = "snake_case")]
+            struct Config {
+                count: usize,
+            }
+        "#;
+        let file = syn::parse_file(source).unwrap();
+        let config = extract_config(Path::new("synthetic.rs"), &file, &SharedTypes::default());
+        assert!(!config.fields[0].required);
     }
 
     #[test]

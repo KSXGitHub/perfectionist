@@ -105,14 +105,19 @@ enum Style {
     Combined,
 }
 
-#[derive(Debug, Default, serde::Deserialize)]
-#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
+#[derive(Debug, serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// **Mandatory.** The `self`-import direction to enforce: `forbid`
-    /// or `combined` — it has no default, because the two directions
-    /// are opposites with no neutral baseline. Validated only when the
-    /// rule is enabled, so omitting it on a disabled rule is harmless.
-    style: Option<Style>,
+    // A bare `Style` (not `Option<Style>`) with no `serde(default)`, so
+    // `style` is a required field: an enabled rule with no `style` fails
+    // to deserialize rather than silently defaulting to a direction.
+    // This is also the syntactic signal gen-docs reads to badge the
+    // field `mandatory`. The config is read only when the rule is
+    // enabled (see `register_pass`), so a disabled rule never needs it.
+    /// The `self`-import direction to enforce: `forbid` or `combined`.
+    /// It has no default — the two directions are opposites with no
+    /// neutral baseline — so it must be set when the rule is enabled.
+    style: Style,
 }
 
 pub struct SelfImport {
@@ -129,19 +134,31 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("self_import", DEFAULT_STATE) {
         return;
     }
-    // The rule is enabled, so `style` is mandatory. `config_or_default`
-    // falls back to the default (a `None` style) only when the table is
-    // absent; an enabled rule with no `style` is a configuration error
-    // we fail loudly on rather than silently doing nothing.
-    let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-    let style = config.style.unwrap_or_else(|| {
-        panic!(
-            "perfectionist::self_import is enabled but no `style` is set; add \
-             `style = \"forbid\"` or `style = \"combined\"` under \
-             `[perfectionist::self_import]` in dylint.toml",
-        )
+    // The rule is enabled, so `style` is mandatory and has no default.
+    // Read it with `config` rather than `config_or_default`: the latter
+    // needs `Config: Default`, which would force a default direction.
+    // `config` instead returns `Ok(None)` when the table is absent and
+    // `Err` when it is present but `style` is missing or invalid — both
+    // are configuration errors we fail loudly on.
+    let config = dylint_linting::config::<Config>(CONFIG_KEY)
+        .unwrap_or_else(|error| {
+            panic!(
+                "perfectionist::self_import: invalid `[perfectionist::self_import]` \
+                 configuration: {error}",
+            )
+        })
+        .unwrap_or_else(|| {
+            panic!(
+                "perfectionist::self_import is enabled but `style` is not set; add \
+                 `style = \"forbid\"` or `style = \"combined\"` under \
+                 `[perfectionist::self_import]` in dylint.toml",
+            )
+        });
+    lint_store.register_early_pass(move || {
+        Box::new(SelfImport {
+            style: config.style,
+        })
     });
-    lint_store.register_early_pass(move || Box::new(SelfImport { style }));
 }
 
 impl EarlyLintPass for SelfImport {
@@ -220,22 +237,25 @@ mod tests {
             toml::from_str::<Config>(r#"style = "forbid""#)
                 .unwrap()
                 .style,
-            Some(Style::Forbid),
+            Style::Forbid,
         );
         assert_eq!(
             toml::from_str::<Config>(r#"style = "combined""#)
                 .unwrap()
                 .style,
-            Some(Style::Combined),
+            Style::Combined,
         );
     }
 
     #[test]
-    fn missing_style_deserializes_to_none() {
-        // An absent `style` is not itself an error: the mandatory-when-
-        // enabled check lives in `register_pass`, which only runs for an
-        // enabled rule. A disabled rule never reads its config block.
-        assert_eq!(toml::from_str::<Config>("").unwrap().style, None);
+    fn missing_style_is_an_error() {
+        // `style` is a required field (bare `Style`, no `serde(default)`),
+        // so an empty config table fails to deserialize rather than
+        // silently defaulting to a direction. `register_pass` turns this
+        // into the "enabled but no `style`" diagnostic. (The config is
+        // only read for an enabled rule, so a disabled rule never hits
+        // this.)
+        assert!(toml::from_str::<Config>("").is_err());
     }
 
     #[test]

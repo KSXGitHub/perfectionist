@@ -124,15 +124,15 @@ pub(crate) struct ConfigDoc {
     pub(crate) custom_types: Vec<TypeDoc>,
 }
 
-/// One configurable knob. Each rule's `Config` derives
-/// `#[serde(default)]`, so most fields are optional in TOML; the
+/// One configurable knob. Most rules' `Config` derives
+/// `#[serde(default)]`, so their fields are optional in TOML; the
 /// renderer marks those with an `optional` badge rather than
 /// reproducing the Rust default expression — the prose doc comment
 /// states the default in human-readable form. The exception is the
 /// "Mandatory configuration on opt-in rules" direction fields (e.g.
-/// `self_import`'s `style`), which have no default and are validated
-/// as required-when-enabled; those carry [`ConfigField::required`] and
-/// render a `mandatory` badge instead.
+/// `self_import`'s `style`), which are a bare type with no default;
+/// those carry [`ConfigField::required`] and render a `mandatory`
+/// badge instead.
 #[derive(Clone)]
 pub(crate) struct ConfigField {
     /// The TOML key a reader writes in `dylint.toml`. Resolved in
@@ -150,13 +150,11 @@ pub(crate) struct ConfigField {
     pub(crate) type_label: String,
     /// Per-field `///` doc comment, in markdown form.
     pub(crate) doc_markdown: String,
-    /// Whether the field is mandatory rather than optional. True for a
-    /// "Mandatory configuration on opt-in rules" direction field, whose
-    /// doc comment leads with a bold `**Mandatory…**` sentinel (see
-    /// `extract::config::split_mandatory_sentinel`). Drives a `mandatory`
-    /// badge in place of the default `optional` one; the sentinel itself
-    /// is stripped from [`Self::doc_markdown`] so the badge doesn't get
-    /// echoed in the prose.
+    /// Whether the field is mandatory rather than optional. Detected
+    /// syntactically (see `extract::config`): a field that is neither
+    /// `Option<…>` nor covered by a serde `default` (container or field)
+    /// has no default and so must be set. Drives a `mandatory` badge in
+    /// place of the default `optional` one.
     pub(crate) required: bool,
 }
 
