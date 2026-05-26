@@ -82,10 +82,7 @@ it on a disabled rule is harmless.
 
 #### `Style` (enum)
 
-The direction this rule enforces. There is deliberately no
-`preserve`/no-op variant: "I don't want this rule" is expressed by
-leaving it out of `[perfectionist].enable`, so a do-nothing style
-would only duplicate that.
+The direction this rule enforces.
 
 ##### `"forbid"` (Rust: `Forbid`)
 

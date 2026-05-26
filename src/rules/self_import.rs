@@ -93,10 +93,7 @@ const CONFIG_KEY: &str = "perfectionist::self_import";
 
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 
-/// The direction this rule enforces. There is deliberately no
-/// `preserve`/no-op variant: "I don't want this rule" is expressed by
-/// leaving it out of `[perfectionist].enable`, so a do-nothing style
-/// would only duplicate that.
+/// The direction this rule enforces.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum Style {
