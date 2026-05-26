@@ -18,7 +18,8 @@
 use std::fmt::Write as _;
 
 use crate::model::{
-    ConfigDoc, ConfigField, EnumVariant, NAMESPACE, Rule, StructField, TypeDoc, TypeKind,
+    ConfigDoc, ConfigField, EnumVariant, NAMESPACE, Optionality, Rule, StructField, TypeDoc,
+    TypeKind,
 };
 
 /// Per-rule markdown filename. Mirrors the source layout
@@ -159,7 +160,11 @@ fn render_config_section(config: &ConfigDoc, out: &mut String) {
     // wording (and unchanged output). A mandatory field has no default,
     // so the "states the default" clause is scoped to optional fields
     // once any field is mandatory.
-    let optionality_note = if config.fields.iter().any(|field| field.required) {
+    let optionality_note = if config
+        .fields
+        .iter()
+        .any(|field| field.optionality == Optionality::Mandatory)
+    {
         "A field marked mandatory must be set; an optional field can be omitted and the per-field \
          prose below states its default"
     } else {
@@ -192,11 +197,7 @@ fn render_field(field: &ConfigField, out: &mut String) {
         "### `{name}`: `{ty}` ({optionality})",
         name = field.name,
         ty = field.type_label,
-        optionality = if field.required {
-            "mandatory"
-        } else {
-            "optional"
-        },
+        optionality = field.optionality.as_ref(),
     );
     out.push('\n');
     append_doc(&field.doc_markdown, out);
@@ -416,7 +417,7 @@ mod tests {
     use std::path::PathBuf;
 
     use super::*;
-    use crate::model::{ConfigField, DefaultState, EnumVariant, TypeDoc, TypeKind};
+    use crate::model::{ConfigField, DefaultState, EnumVariant, Optionality, TypeDoc, TypeKind};
 
     fn fake_rule() -> Rule {
         Rule {
@@ -470,20 +471,20 @@ mod tests {
         rule.config = ConfigDoc {
             key: "perfectionist::demo_rule".to_owned(),
             fields: vec![
-                // `required` is set directly on these fixtures; the real
-                // extractor derives it syntactically from each field's
-                // type and serde attributes (see `extract::config`).
+                // `optionality` is set directly on these fixtures; the
+                // real extractor derives it syntactically from each
+                // field's type and serde attributes (see `extract::config`).
                 ConfigField {
                     name: "style".to_owned(),
                     type_label: "Style".to_owned(),
                     doc_markdown: "Pick a style.".to_owned(),
-                    required: true,
+                    optionality: Optionality::Mandatory,
                 },
                 ConfigField {
                     name: "extras".to_owned(),
                     type_label: "[string]".to_owned(),
                     doc_markdown: "Extra entries.".to_owned(),
-                    required: false,
+                    optionality: Optionality::Optional,
                 },
             ],
             custom_types: vec![TypeDoc {

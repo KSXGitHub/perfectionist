@@ -13,7 +13,7 @@ use crate::extract::serde_attrs::{
 };
 use crate::extract::shared::SharedTypes;
 use crate::extract::ty::{collect_referenced_idents, find_type_doc, is_option, toml_type_label};
-use crate::model::{ConfigDoc, ConfigField};
+use crate::model::{ConfigDoc, ConfigField, Optionality};
 
 /// Locate the rule's `Config` struct and its `CONFIG_KEY` constant
 /// and bundle them — along with any project-local types the fields
@@ -90,12 +90,18 @@ pub(crate) fn extract_config(
                     .map(|style| apply_rename_all(style, &rust_name))
                     .unwrap_or(rust_name)
             });
-            let required =
-                !container_default && !serde_has_default(&field.attrs) && !is_option(&field.ty);
+            let optionality = if !container_default
+                && !serde_has_default(&field.attrs)
+                && !is_option(&field.ty)
+            {
+                Optionality::Mandatory
+            } else {
+                Optionality::Optional
+            };
             ConfigField {
                 name,
                 type_label: toml_type_label(&field.ty, shared),
-                required,
+                optionality,
                 doc_markdown: doc_attrs_to_markdown(&field.attrs),
             }
         })
@@ -142,14 +148,18 @@ mod tests {
         "#;
         let file = syn::parse_file(source).unwrap();
         let config = extract_config(Path::new("synthetic.rs"), &file, &SharedTypes::default());
-        let required: Vec<(&str, bool)> = config
+        let optionality: Vec<(&str, Optionality)> = config
             .fields
             .iter()
-            .map(|f| (f.name.as_str(), f.required))
+            .map(|f| (f.name.as_str(), f.optionality))
             .collect();
         assert_eq!(
-            required,
-            vec![("style", true), ("maybe", false), ("with_default", false)],
+            optionality,
+            vec![
+                ("style", Optionality::Mandatory),
+                ("maybe", Optionality::Optional),
+                ("with_default", Optionality::Optional),
+            ],
         );
     }
 
@@ -168,7 +178,7 @@ mod tests {
         "#;
         let file = syn::parse_file(source).unwrap();
         let config = extract_config(Path::new("synthetic.rs"), &file, &SharedTypes::default());
-        assert!(!config.fields[0].required);
+        assert_eq!(config.fields[0].optionality, Optionality::Optional);
     }
 
     #[test]

@@ -4,7 +4,7 @@
 
 use std::path::PathBuf;
 
-use strum::{Display, EnumString};
+use strum::{AsRefStr, Display, EnumString};
 
 /// The tool namespace every `perfectionist` lint registers under,
 /// including the trailing `::`. Shared between the extractor (which
@@ -131,8 +131,8 @@ pub(crate) struct ConfigDoc {
 /// states the default in human-readable form. The exception is the
 /// "Mandatory configuration on opt-in rules" direction fields (e.g.
 /// `self_import`'s `style`), which are a bare type with no default;
-/// those carry [`ConfigField::required`] and render a `mandatory`
-/// badge instead.
+/// those carry [`ConfigField::optionality`] set to
+/// [`Optionality::Mandatory`] and render a `mandatory` badge instead.
 #[derive(Clone)]
 pub(crate) struct ConfigField {
     /// The TOML key a reader writes in `dylint.toml`. Resolved in
@@ -150,8 +150,20 @@ pub(crate) struct ConfigField {
     pub(crate) type_label: String,
     /// Per-field `///` doc comment, in markdown form.
     pub(crate) doc_markdown: String,
-    /// Whether the field is mandatory rather than optional.
-    pub(crate) required: bool,
+    /// Whether the field is optional or mandatory in TOML.
+    pub(crate) optionality: Optionality,
+}
+
+/// Whether a [`ConfigField`] is optional or mandatory in TOML. Its
+/// string form (`"optional"` / `"mandatory"`) doubles as the rendered
+/// badge label and — prefixed with `badge-` — the badge's CSS class, so
+/// the renderers read it off the `strum`-derived `AsRef<str>` rather
+/// than hand-writing the two words.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, AsRefStr)]
+#[strum(serialize_all = "snake_case")]
+pub(crate) enum Optionality {
+    Optional,
+    Mandatory,
 }
 
 /// A non-built-in type that one of the `Config` fields references.

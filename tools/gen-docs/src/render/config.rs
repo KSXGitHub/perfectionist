@@ -47,10 +47,8 @@ pub(crate) fn config_section(config: &ConfigDoc) -> Markup {
                         " : "
                         code.config-type { (field.type_label) }
                         " "
-                        @if field.required {
-                            span.badge.badge-mandatory { "mandatory" }
-                        } @else {
-                            span.badge.badge-optional { "optional" }
+                        span class={ "badge badge-" (field.optionality.as_ref()) } {
+                            (field.optionality.as_ref())
                         }
                     }
                     dd {
@@ -144,11 +142,11 @@ fn custom_type_block(ty: &TypeDoc) -> Markup {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::ConfigField;
+    use crate::model::{ConfigField, Optionality};
 
     #[test]
     fn config_section_badges_mandatory_and_optional_fields() {
-        // A `required` field renders the `mandatory` badge; an ordinary
+        // A mandatory field renders the `mandatory` badge; an ordinary
         // field keeps `optional`. Guards the HTML path the way
         // `render_md`'s test guards the markdown path.
         let config = ConfigDoc {
@@ -158,21 +156,20 @@ mod tests {
                     name: "style".to_owned(),
                     type_label: "Style".to_owned(),
                     doc_markdown: "Pick a style.".to_owned(),
-                    required: true,
+                    optionality: Optionality::Mandatory,
                 },
                 ConfigField {
                     name: "extras".to_owned(),
                     type_label: "[string]".to_owned(),
                     doc_markdown: "Extra entries.".to_owned(),
-                    required: false,
+                    optionality: Optionality::Optional,
                 },
             ],
             custom_types: Vec::new(),
         };
         let html = config_section(&config).into_string();
-        // Tie each badge to its field so an inverted `field.required`
-        // branch (mandatory <-> optional) is caught, not just badge
-        // presence.
+        // Tie each badge to its field so a mis-mapping (mandatory <->
+        // optional) is caught, not just badge presence.
         assert!(
             html.contains(
                 r#"<code class="config-key">style</code> : <code class="config-type">Style</code> <span class="badge badge-mandatory">mandatory</span>"#
