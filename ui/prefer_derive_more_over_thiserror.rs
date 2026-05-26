@@ -33,7 +33,7 @@ mod thiserror {
 use thiserror::Error;
 
 // Bad: `use thiserror::*` glob form. Even more aggressive — adds
-// every configured path's last segment to the alias set.
+// each recognised path's last segment to the alias set.
 use thiserror::*;
 
 // Bad: aliased import. Still flagged — the rule keys on the use
