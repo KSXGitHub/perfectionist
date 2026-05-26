@@ -28,21 +28,25 @@ fn rename_suffix(rename: &Option<String>) -> String {
 }
 
 /// Sort brace entries the way rustfmt does: `self` first, then names
-/// (case-insensitively), then the glob `*` last. Deduplicates exact
-/// repeats.
+/// Order brace entries: `self` first, then names (case-insensitively),
+/// then the glob `*` last. The full entry text is the final tiebreaker,
+/// so entries that collide on the primary key (`self` vs `self as x`, or
+/// `Foo` vs `foo`) still have a total, deterministic order rather than
+/// relying on input order. Deduplicates exact repeats.
 fn sort_entries(entries: &mut Vec<String>) {
-    entries.sort_by_key(|entry| entry_key(entry));
+    entries.sort_by(|left, right| entry_key(left).cmp(&entry_key(right)));
     entries.dedup();
 }
 
-fn entry_key(entry: &str) -> (u8, String) {
-    if entry == "self" || entry.starts_with("self ") {
-        (0, String::new())
+fn entry_key(entry: &str) -> (u8, String, &str) {
+    let group = if entry == "self" || entry.starts_with("self ") {
+        0
     } else if entry == "*" {
-        (2, String::new())
+        2
     } else {
-        (1, entry.to_ascii_lowercase())
-    }
+        1
+    };
+    (group, entry.to_ascii_lowercase(), entry)
 }
 
 /// Wrap a module path's entries: a single non-`self` entry needs no

@@ -60,10 +60,16 @@ fn is_module_shaped(stmt: &StmtInfo) -> bool {
         // A single flat leaf is always its own module form.
         TopKind::Simple | TopKind::Glob => true,
         // A brace group is module-shaped only when every leaf lives in
-        // the same module and that module is the written prefix.
-        TopKind::Nested => stmt
-            .common_module()
-            .is_some_and(|module| module == stmt.prefix.as_slice()),
+        // the same module and that module is the written prefix. A
+        // top-level brace (`use {a, b};`, empty prefix) groups distinct
+        // crate roots that module style keeps on separate lines, so it
+        // is never shaped.
+        TopKind::Nested => {
+            !stmt.prefix.is_empty()
+                && stmt
+                    .common_module()
+                    .is_some_and(|module| module == stmt.prefix.as_slice())
+        }
     }
 }
 

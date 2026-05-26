@@ -85,3 +85,31 @@ fn respect_doc_comments_false_allows_merge() {
         },
     );
 }
+
+#[test]
+fn respect_visibility_false_flags_without_fixing() {
+    // With visibility ignored for grouping, a `pub use` and a private
+    // `use` from the same module are flagged together — but the fix is
+    // withheld because merging can't preserve both visibilities.
+    run(
+        "ui-toml/import_granularity/respect_visibility",
+        RuleConfig {
+            respect_visibility: Some(false),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn respect_cfg_blocks_false_flags_without_fixing() {
+    // With cfg gates ignored for grouping, a platform-gated `use` and an
+    // unconditional one from the same module are flagged together — but
+    // the fix is withheld because merging would drop the `#[cfg]` gate.
+    run(
+        "ui-toml/import_granularity/respect_cfg_blocks",
+        RuleConfig {
+            respect_cfg_blocks: Some(false),
+            ..Default::default()
+        },
+    );
+}

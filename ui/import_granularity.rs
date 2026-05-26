@@ -58,4 +58,19 @@ mod bare_glob {
     use {std::collections::HashMap, *};
 }
 
+// Good: under default `respect_visibility`, a `pub use` is not merged
+// with a private `use` from the same module.
+mod visibility_respected {
+    pub use std::collections::BTreeMap;
+    use std::collections::HashMap;
+}
+
+// Good: under default `respect_cfg_blocks`, a platform-gated import
+// stays on its own line rather than merging with an unconditional one.
+mod cfg_respected {
+    #[cfg(unix)]
+    use std::collections::BTreeMap;
+    use std::collections::HashMap;
+}
+
 fn main() {}

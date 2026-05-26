@@ -13,7 +13,7 @@ use rustc_ast::{AttrKind, Attribute, Crate, Item, ItemKind, ModKind, Visibility,
 use rustc_errors::Applicability;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::{BytePos, Span, sym};
+use rustc_span::{BytePos, sym};
 
 mod check;
 mod config;
@@ -109,12 +109,17 @@ pub fn register_lint(lint_store: &mut LintStore) {
     lint_store.register_lints(&[IMPORT_GRANULARITY]);
 }
 
-/// Install this rule's early pass.
+/// Install this rule's pass.
 pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("import_granularity", DEFAULT_STATE) {
         return;
     }
-    lint_store.register_early_pass(|| Box::new(ImportGranularity::new()));
+    // Pre-expansion: `#[cfg(...)]` attributes are evaluated and stripped
+    // during macro expansion, so a post-expansion pass can't see them
+    // and `respect_cfg_blocks` would be a no-op. Running before
+    // expansion keeps the cfg gates (and the source's original `use`
+    // structure) intact.
+    lint_store.register_pre_expansion_pass(|| Box::new(ImportGranularity::new()));
 }
 
 impl EarlyLintPass for ImportGranularity {
@@ -136,6 +141,12 @@ struct UseEntry<'ast> {
     /// Source text of every attribute, in order — reproduced verbatim
     /// onto each rendered statement.
     attrs: Vec<String>,
+    /// Source text of the non-doc attributes only (`#[cfg(...)]`,
+    /// `#[allow(...)]`, etc.). Two statements that differ here can't be
+    /// merged without changing what compiles, so the rewrite is
+    /// withheld; doc comments are excluded because dropping one only
+    /// loses documentation.
+    nondoc_attrs: Vec<String>,
     /// Trailing-space-terminated visibility text (`"pub "`), or empty.
     vis: String,
     /// What decides whether two adjacent statements may share a group.
@@ -211,16 +222,21 @@ impl ImportGranularity {
         let source_map = lint_context.sess().source_map();
 
         let mut attrs = Vec::with_capacity(item.attrs.len());
+        let mut nondoc_attrs = Vec::new();
         let mut attr_key = Vec::new();
         for attr in &item.attrs {
             let snippet = source_map.span_to_snippet(attr.span).ok()?;
-            let include = match attr_class(attr) {
+            let class = attr_class(attr);
+            let include = match class {
                 AttrClass::Doc => self.respect_doc_comments,
                 AttrClass::Cfg => self.respect_cfg_blocks,
                 AttrClass::Other => true,
             };
             if include {
                 attr_key.push(snippet.clone());
+            }
+            if !matches!(class, AttrClass::Doc) {
+                nondoc_attrs.push(snippet.clone());
             }
             attrs.push(snippet);
         }
@@ -250,6 +266,7 @@ impl ImportGranularity {
             item,
             info,
             attrs,
+            nondoc_attrs,
             vis,
             group_key: (vis_key, attr_key),
             force_singleton,
@@ -275,6 +292,36 @@ impl ImportGranularity {
             return;
         }
 
+        let replace_span = first
+            .item
+            .span
+            .with_lo(first.lo)
+            .with_hi(last.item.span.hi());
+
+        // A merge across statements that differ in visibility or in
+        // non-doc attributes (only reachable when `respect_visibility` /
+        // `respect_cfg_blocks` is off) cannot preserve what compiles or
+        // what is exported. Flag the group but withhold a mechanical
+        // fix, rather than silently rewriting semantics.
+        if group
+            .iter()
+            .any(|entry| entry.vis != first.vis || entry.nondoc_attrs != first.nondoc_attrs)
+        {
+            span_lint_and_then(
+                lint_context,
+                IMPORT_GRANULARITY,
+                replace_span,
+                self.message(),
+                |diagnostic| {
+                    diagnostic.help(
+                        "these statements differ in visibility or `#[cfg(...)]`; \
+                         merge them by hand to avoid changing what is compiled or exported",
+                    );
+                },
+            );
+            return;
+        }
+
         let indent = indent_of(lint_context, first.item.span).unwrap_or(0);
         let pad = " ".repeat(indent);
         let mut prefix = String::new();
@@ -290,12 +337,21 @@ impl ImportGranularity {
             .collect::<Vec<_>>()
             .join(&format!("\n{pad}"));
 
-        let replace_span = first
-            .item
-            .span
-            .with_lo(first.lo)
-            .with_hi(last.item.span.hi());
-        let applicability = self.applicability(lint_context, group, replace_span);
+        // Down to `MaybeIncorrect` when applying the fix would drop
+        // something the rewrite can't carry: an inline comment inside the
+        // replaced span, or a doc comment that differs across the merged
+        // statements (kept only from the first).
+        let has_comment = lint_context
+            .sess()
+            .source_map()
+            .span_to_snippet(replace_span)
+            .is_ok_and(|snippet| snippet.contains("//") || snippet.contains("/*"));
+        let drops_doc = group.iter().any(|entry| entry.attrs != first.attrs);
+        let applicability = if has_comment || drops_doc {
+            Applicability::MaybeIncorrect
+        } else {
+            Applicability::MachineApplicable
+        };
 
         span_lint_and_then(
             lint_context,
@@ -318,32 +374,6 @@ impl ImportGranularity {
             Style::Crate => "imports are not collapsed to one `use` per crate root",
             Style::Module => "imports are not grouped into one `use` per module",
             Style::Item => "imports are not split into one `use` per item",
-        }
-    }
-
-    /// `MachineApplicable` unless applying the fix would lose
-    /// information: an inline comment inside the replaced span, or a
-    /// merge across statements whose attributes / visibility differ
-    /// (only possible when a `respect_*` knob is off).
-    fn applicability(
-        &self,
-        lint_context: &EarlyContext<'_>,
-        group: &[UseEntry<'_>],
-        replace_span: Span,
-    ) -> Applicability {
-        let first = &group[0];
-        let mixed = group
-            .iter()
-            .any(|entry| entry.attrs != first.attrs || entry.vis != first.vis);
-        let has_comment = lint_context
-            .sess()
-            .source_map()
-            .span_to_snippet(replace_span)
-            .is_ok_and(|snippet| snippet.contains("//") || snippet.contains("/*"));
-        if mixed || has_comment {
-            Applicability::MaybeIncorrect
-        } else {
-            Applicability::MachineApplicable
         }
     }
 }
