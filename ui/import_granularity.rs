@@ -52,4 +52,10 @@ mod suppressed {
     use std::collections::HashMap;
 }
 
+// Declined: a brace carrying a bare `*` (no module path to anchor on)
+// is left untouched rather than rewritten.
+mod bare_glob {
+    use {std::collections::HashMap, *};
+}
+
 fn main() {}

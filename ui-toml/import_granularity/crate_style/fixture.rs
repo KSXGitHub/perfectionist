@@ -35,6 +35,13 @@ mod rename_dup {
     use std::cmp::{Ordering, Ordering as Ordering2};
 }
 
+// Bad: a glob and a sibling item from the same module collapse into one
+// braced statement (and the result, carrying a bare `*`, is stable).
+mod glob_sibling {
+    use std::io::Read;
+    use std::io::*;
+}
+
 mod thing {
     pub struct T;
 }

@@ -144,11 +144,18 @@ fn flatten_into(tree: &UseTree, prefix: &[String], out: &mut Vec<Leaf>) -> Optio
                 });
             }
         }
-        UseTreeKind::Glob(_) => out.push(Leaf {
-            module: combined,
-            item: LeafItem::Glob,
-            rename: None,
-        }),
+        UseTreeKind::Glob(_) => {
+            // A glob with no module path (`use *;` / `use {*};`) has
+            // nothing to anchor a rewrite onto; decline the statement.
+            if combined.is_empty() {
+                return None;
+            }
+            out.push(Leaf {
+                module: combined,
+                item: LeafItem::Glob,
+                rename: None,
+            });
+        }
         UseTreeKind::Nested { items, .. } => {
             for (subtree, _) in items {
                 flatten_into(subtree, &combined, out)?;
@@ -176,20 +183,22 @@ fn is_collapsed(tree: &UseTree) -> bool {
         .iter()
         .map(|(sub, _)| sub.prefix.segments.first().map(|seg| seg.ident.name))
         .collect();
-    if firsts.iter().any(Option::is_none) {
-        return false;
-    }
     // Two entries that share a leading segment are mergeable — and thus
     // not collapsed — only when at least one of them continues past that
     // segment (`{path::Path, path::PathBuf}` → `path::{Path, PathBuf}`,
     // or `{b, b::C}` → `b::{self, C}`). Two terminal leaves that merely
     // share a name (`{B, B as C}`, distinct local bindings of the same
-    // path) cannot be folded further, so they stay collapsed.
+    // path) cannot be folded further, so they stay collapsed. A bare
+    // glob (`*`) has no leading segment, shares with nothing, and is
+    // already canonical, so it is skipped.
     for index in 0..items.len() {
+        let Some(first) = firsts[index] else {
+            continue;
+        };
         let mut shared = false;
         let mut mergeable = continues(&items[index].0);
-        for other in &items[(index + 1)..] {
-            if firsts[index] == other.0.prefix.segments.first().map(|seg| seg.ident.name) {
+        for (other_index, other) in items.iter().enumerate().skip(index + 1) {
+            if firsts[other_index] == Some(first) {
                 shared = true;
                 mergeable |= continues(&other.0);
             }
