@@ -140,3 +140,43 @@ fn custom_type_block(ty: &TypeDoc) -> Markup {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::ConfigField;
+
+    #[test]
+    fn config_section_badges_mandatory_and_optional_fields() {
+        // A `required` field renders the `mandatory` badge; an ordinary
+        // field keeps `optional`. Guards the HTML path the way
+        // `render_md`'s test guards the markdown path.
+        let config = ConfigDoc {
+            key: "perfectionist::demo_rule".to_owned(),
+            fields: vec![
+                ConfigField {
+                    name: "style".to_owned(),
+                    type_label: "Style".to_owned(),
+                    doc_markdown: "Pick a style.".to_owned(),
+                    required: true,
+                },
+                ConfigField {
+                    name: "extras".to_owned(),
+                    type_label: "[string]".to_owned(),
+                    doc_markdown: "Extra entries.".to_owned(),
+                    required: false,
+                },
+            ],
+            custom_types: Vec::new(),
+        };
+        let html = config_section(&config).into_string();
+        assert!(
+            html.contains(r#"<span class="badge badge-mandatory">mandatory</span>"#),
+            "mandatory field should render the mandatory badge: {html}"
+        );
+        assert!(
+            html.contains(r#"<span class="badge badge-optional">optional</span>"#),
+            "optional field should render the optional badge: {html}"
+        );
+    }
+}
