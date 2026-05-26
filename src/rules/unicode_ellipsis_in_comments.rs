@@ -46,13 +46,9 @@ struct Config {
     /// or U+2025 TWO DOT LEADER (`‥`) that the same autocorrect
     /// pipelines occasionally insert. Empty by default.
     extra_flagged_chars: Vec<char>,
-    /// Scan `//` line comments, including consecutive runs that rustc
-    /// treats as a single logical comment. Defaults to `true`. Narrow
-    /// this if a project intentionally uses one comment form for prose
-    /// and wants the lint to ignore it.
+    /// Scan `//` line comments. Defaults to `true`.
     scan_line_comments: bool,
-    /// Scan `/* ... */` block comments, including nested ones.
-    /// Defaults to `true`.
+    /// Scan `/* ... */` block comments. Defaults to `true`.
     scan_block_comments: bool,
 }
 
