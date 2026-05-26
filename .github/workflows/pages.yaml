@@ -1,9 +1,28 @@
 name: Pages
 
 on:
+  # Only rebuild + redeploy the public catalogue when an input to the
+  # rendered site actually changes. gen-docs reads the rule sources
+  # under `src/`, its own renderer + assets under `tools/gen-docs/`, and
+  # `Cargo.toml` (crate version + repo URL); the build additionally
+  # depends on the pinned toolchain, the lockfile, and the linker config
+  # in `.cargo/`. Pure docs that never reach the page — `planned-rules/`,
+  # the generated `rules/` markdown mirror, `README.md` — are excluded.
+  # An allow-list fits a deploy workflow: a path missed here just leaves
+  # the live site untouched (the previous deploy stands), never broken.
+  # `workflow_dispatch` stays available for manual redeploys regardless
+  # of which paths changed.
   push:
     branches:
       - master
+    paths:
+      - 'src/**'
+      - 'tools/gen-docs/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain'
+      - '.cargo/**'
+      - '.github/workflows/pages.yaml'
   workflow_dispatch:
 
 permissions:
