@@ -108,11 +108,11 @@ enum Style {
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// The `self`-import direction to enforce: `forbid` or `combined`.
-    /// Mandatory whenever the rule is enabled — it has no default,
-    /// because the two directions are opposites with no neutral
-    /// baseline. Validated only when the rule is enabled, so omitting
-    /// it on a disabled rule is harmless.
+    /// **Mandatory when the rule is enabled.** The `self`-import
+    /// direction to enforce: `forbid` or `combined` — it has no
+    /// default, because the two directions are opposites with no
+    /// neutral baseline. Validated only when the rule is enabled, so
+    /// omitting it on a disabled rule is harmless.
     style: Option<Style>,
 }
 

@@ -125,10 +125,14 @@ pub(crate) struct ConfigDoc {
 }
 
 /// One configurable knob. Each rule's `Config` derives
-/// `#[serde(default)]`, so every field is optional in TOML; the
-/// renderer marks them with an `optional` badge rather than
+/// `#[serde(default)]`, so most fields are optional in TOML; the
+/// renderer marks those with an `optional` badge rather than
 /// reproducing the Rust default expression — the prose doc comment
-/// states the default in human-readable form.
+/// states the default in human-readable form. The exception is the
+/// "Mandatory configuration on opt-in rules" direction fields (e.g.
+/// `self_import`'s `style`), which have no default and are validated
+/// as required-when-enabled; those carry [`ConfigField::required`] and
+/// render a `mandatory` badge instead.
 #[derive(Clone)]
 pub(crate) struct ConfigField {
     /// The TOML key a reader writes in `dylint.toml`. Resolved in
@@ -146,6 +150,12 @@ pub(crate) struct ConfigField {
     pub(crate) type_label: String,
     /// Per-field `///` doc comment, in markdown form.
     pub(crate) doc_markdown: String,
+    /// Whether the field is mandatory rather than optional. True for a
+    /// "Mandatory configuration on opt-in rules" direction field, whose
+    /// doc comment leads with a bold `**Mandatory…**` sentinel (see
+    /// `extract::config`). Drives a `mandatory` badge in place of the
+    /// default `optional` one.
+    pub(crate) required: bool,
 }
 
 /// A non-built-in type that one of the `Config` fields references.

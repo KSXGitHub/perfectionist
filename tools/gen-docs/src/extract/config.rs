@@ -82,10 +82,12 @@ pub(crate) fn extract_config(
                     .map(|style| apply_rename_all(style, &rust_name))
                     .unwrap_or(rust_name)
             });
+            let doc_markdown = doc_attrs_to_markdown(&field.attrs);
             ConfigField {
                 name,
                 type_label: toml_type_label(&field.ty, shared),
-                doc_markdown: doc_attrs_to_markdown(&field.attrs),
+                required: is_mandatory(&doc_markdown),
+                doc_markdown,
             }
         })
         .collect();
@@ -105,6 +107,20 @@ pub(crate) fn extract_config(
         fields,
         custom_types,
     }
+}
+
+/// Whether a `Config` field is mandatory rather than optional.
+///
+/// There is no syntactic signal to key off: a mandatory direction
+/// field (`self_import`'s `style`) is `Option<T>` with no default, which
+/// looks identical to a genuinely-optional `Option<T>` field. The
+/// convention is therefore that a mandatory field's doc comment leads
+/// with a bold `**Mandatory…**` sentinel — ordinary emphasis in
+/// rustdoc, recognised here to drive the `mandatory` badge. See the
+/// "Mandatory configuration on opt-in rules" section of
+/// `IMPLEMENTATION_CONVENTIONS.md`.
+fn is_mandatory(doc_markdown: &str) -> bool {
+    doc_markdown.trim_start().starts_with("**Mandatory")
 }
 
 #[cfg(test)]
