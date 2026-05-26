@@ -14,11 +14,10 @@ const CONFIG_KEY: &str = "perfectionist::prefer_derive_more_over_thiserror";
 const THISERROR_PATHS: &[&str] = &["thiserror::Error"];
 
 /// Configuration is reserved for future knobs; the lint currently
-/// has no options. The empty struct still exists so that an empty
+/// has no options. The empty struct still exists so that a stray
 /// `[perfectionist::prefer_derive_more_over_thiserror]` table in
 /// `dylint.toml` deserialises rather than producing a confusing
-/// parse error. `deny_unknown_fields` is kept deliberately: an
-/// unrecognised key is rejected loudly instead of silently ignored.
+/// parse error.
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}
