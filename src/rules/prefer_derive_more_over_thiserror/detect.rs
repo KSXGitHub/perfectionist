@@ -34,7 +34,7 @@ impl PreferDeriveMoreOverThiserror {
         flag_enum_error_attrs(cx, def);
     }
 
-    /// Emit on every `use` statement whose tree touches a configured
+    /// Emit on every `use` statement whose tree touches a recognised
     /// thiserror crate at any depth. Handles the three common shapes
     /// in one pass:
     ///
@@ -80,7 +80,7 @@ impl PreferDeriveMoreOverThiserror {
 
     /// Walk a struct or enum's outer attributes and emit a
     /// diagnostic on every derive entry that resolves to a
-    /// configured thiserror path. Recurses through `#[cfg_attr]`
+    /// recognised thiserror path. Recurses through `#[cfg_attr]`
     /// wrappers so that conditional derives are not silently
     /// missed. Returns `true` when at least one entry matched,
     /// signalling that the caller should also flag `#[error(...)]`
@@ -163,7 +163,7 @@ impl PreferDeriveMoreOverThiserror {
         }
         // Crate-aliased derive entry (`#[derive(te::Error)]` paired
         // with `use thiserror as te;`): expand the first segment to
-        // the original crate name and re-match against configured
+        // the original crate name and re-match against the recognised
         // paths.
         if let [first, rest @ ..] = segments
             && let Some(&expanded_first) = self.crate_aliases.get(first)
