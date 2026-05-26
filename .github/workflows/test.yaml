@@ -3,9 +3,46 @@ name: Test
 on:
   # Branch pushes only — tag pushes are covered by the deploy workflow,
   # which invokes this workflow via `workflow_call` before publishing.
+  #
+  # `paths-ignore` is a deny-list of pure-documentation files that never
+  # feed `just all` (fmt / build / doc / lint / test / self-lint). A push
+  # or PR that touches *only* these paths skips the suite; touching even
+  # one other file still runs it. A deny-list is the safe shape here: an
+  # unlisted source path merely runs CI needlessly, whereas an incomplete
+  # *allow*-list would silently skip CI on code that needs it. The two
+  # lists are kept identical by hand. `workflow_call` is left unfiltered
+  # — path filters don't apply to it, and deploy.yaml relies on the suite
+  # always running before publish.
+  #
+  # Note: if "Test" is a required status check in branch protection, a
+  # docs-only PR will never report it and can't merge until the rule is
+  # relaxed (e.g. drop the check from "required", or merge docs-only PRs
+  # via a path that doesn't demand it).
   push:
     branches: ['**']
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE.md'
+      - 'CLAUDE.md'
+      - 'AGENTS.md'
+      - '.github/copilot-instructions.md'
+      - 'CONFIGURATION.md'
+      - 'CONTROLLING_RULES.md'
+      - 'planned-rules/**'
+      - '.vscode.template/**'
+      - '.github/dependabot.yml'
   pull_request:
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE.md'
+      - 'CLAUDE.md'
+      - 'AGENTS.md'
+      - '.github/copilot-instructions.md'
+      - 'CONFIGURATION.md'
+      - 'CONTROLLING_RULES.md'
+      - 'planned-rules/**'
+      - '.vscode.template/**'
+      - '.github/dependabot.yml'
   workflow_call:
 
 # `actions/checkout` plus the cargo build / test commands only need

@@ -1,8 +1,23 @@
 name: Pages preview
 
 on:
+  # Mirror the production Pages deploy's path filter (see pages.yaml): a
+  # preview is only worth building when the PR changes something the
+  # rendered site is derived from (rule sources under `src/`, the
+  # gen-docs renderer + assets, `Cargo.toml`) or a build input (lockfile,
+  # toolchain, linker config in `.cargo/`). PRs that only touch
+  # `planned-rules/`, the generated `rules/` markdown mirror, or
+  # `README.md` don't change the page, so they skip the Cloudflare deploy.
   pull_request:
     types: [opened, synchronize, reopened]
+    paths:
+      - 'src/**'
+      - 'tools/gen-docs/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain'
+      - '.cargo/**'
+      - '.github/workflows/pages-preview.yaml'
 
 permissions:
   contents: read
