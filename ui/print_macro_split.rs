@@ -81,4 +81,13 @@ fn _newline_then_whitespace() {
     println!("opening section padded out so that this source line comfortably exceeds the width limit\n    indented tail");
 }
 
+// Bad: a trailing line comment in the argument list. The inserted
+// trailing comma must land after the last token, before the comment —
+// not buried inside it.
+fn _trailing_line_comment() {
+    let value = 1;
+    println!("a long message padded out so that this source line comfortably exceeds the width limit\nsecond {}", value // keep this note
+    );
+}
+
 fn main() {}

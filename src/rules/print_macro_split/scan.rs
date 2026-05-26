@@ -121,19 +121,32 @@ pub(super) fn build_fold_suggestion(
     let inner = source_map
         .span_to_snippet(open_span.between(close_span))
         .ok()?;
+
+    // The wrapped form is multi-line, so rustfmt's vertical policy wants
+    // a trailing comma after the last argument. Insert it right after
+    // the last token (unless one is already there) rather than at the
+    // textual end of `inner`: a trailing line comment is not a token, so
+    // appending at the end would bury the comma inside the comment.
+    let last_token = mac_call.args.tokens.iter().last()?;
+    let already_has_trailing_comma =
+        matches!(last_token, TokenTree::Token(token, _) if token.kind == TokenKind::Comma);
+    let inner = if already_has_trailing_comma {
+        inner
+    } else {
+        let comma_at = (last_token.span().hi().0.checked_sub(open_span.hi().0)?) as usize;
+        let (head, tail) = (inner.get(..comma_at)?, inner.get(comma_at..)?);
+        format!("{head},{tail}")
+    };
+
+    // `comma_at` is at or after the template's end, so inserting the
+    // comma above leaves the `[..template_hi]` prefix — and therefore
+    // both template offsets — untouched.
     let template_lo = (template_span.lo().0.checked_sub(open_span.hi().0)?) as usize;
     let template_hi = (template_span.hi().0.checked_sub(open_span.hi().0)?) as usize;
     let before_template = inner.get(..template_lo)?;
     let after_template = inner.get(template_hi..)?;
     let mut new_inner = format!("{before_template}{folded_literal}{after_template}");
-
-    // The wrapped form is multi-line, so rustfmt's vertical policy
-    // wants a trailing comma after the last argument. Don't double one
-    // that's already there.
     new_inner.truncate(new_inner.trim_end().len());
-    if !new_inner.ends_with(',') {
-        new_inner.push(',');
-    }
 
     let replacement = format!("{header}\n{inner_indent}{new_inner}\n{base_indent}{footer}");
     Some((call_span, replacement))
