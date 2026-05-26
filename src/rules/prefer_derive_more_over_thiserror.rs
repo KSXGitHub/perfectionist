@@ -6,7 +6,7 @@
 //! and the pre-expansion `EarlyLintPass` driver. The work is split
 //! across submodules:
 //! - [`config`] — `Config`, the `PreferDeriveMoreOverThiserror` pass
-//!   state, and the configured-path matcher.
+//!   state, and the path matcher.
 //! - [`scan`] — crate-wide `use` / `extern crate` alias collection.
 //! - [`detect`] — per-item derive / attribute / import matching and
 //!   diagnostic dispatch.
