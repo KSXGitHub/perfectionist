@@ -18,9 +18,6 @@ pattern that several rules call out by reference — live in
 ## Index
 
 ### Module and file layout
-- [`unit-test-file-layout.md`](./unit-test-file-layout.md) — external test
-  modules must live at `<parent>/tests.rs`, never `<parent>_tests.rs` or
-  flattened into a sibling.
 - [`module-item-order.md`](./module-item-order.md) — within a module file,
   `pub mod` first, then `pub use`, then private items.
 
@@ -218,10 +215,6 @@ external state, or judgement calls that a static lint cannot evaluate:
 - **Build with no, default, and all features** — driven by CI matrix.
 - **Writing-style rules** beyond em dashes (formal tone, complete sentences,
   no long parentheticals) — judgement-based prose review.
-- **Inline vs external test module decision based on length** — any
-  threshold is arbitrary; flagged here as an *advisory* lint candidate but
-  rejected as a real rule. The hard rule (external file path layout) is
-  covered by [`unit-test-file-layout.md`](./unit-test-file-layout.md).
 - **"Use the most encompassing type" case** of the pacquet guide's
   owned-vs-borrowed section is already covered by
   `clippy::ptr_arg` (flags `&PathBuf` / `&String` / `&Vec<_>` and

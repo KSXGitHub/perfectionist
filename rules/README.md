@@ -78,6 +78,9 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`unicode_ellipsis_in_panic_messages`](./unicode_ellipsis_in_panic_messages.md) (default: `active`).
 
   U+2026 HORIZONTAL ELLIPSIS in panic / assertion / expect messages; prefer `...`
+- [`unit_test_file_layout`](./unit_test_file_layout.md) (default: `active`).
+
+  unit-test code is in the wrong file or exceeds the inline-test budget
 - [`unknown_perfectionist_lints`](./unknown_perfectionist_lints.md) (default: `active`).
 
   lint-control attribute references a `perfectionist::*` lint that this plugin does not register
