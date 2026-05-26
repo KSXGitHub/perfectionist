@@ -10,12 +10,23 @@ use clippy_utils::diagnostics::span_lint_and_help;
 use clippy_utils::{is_cfg_test, is_test_function};
 use rustc_hir::{Item, ItemKind, Mod};
 use rustc_lint::{LateContext, LintContext};
+use rustc_span::hygiene::ExpnKind;
 use rustc_span::source_map::SourceMap;
-use rustc_span::{BytePos, SourceFile, Span};
+use rustc_span::{BytePos, SourceFile, Span, Symbol};
 
 use super::UNIT_TEST_FILE_LAYOUT;
 use super::config::{InlineStyle, UnitTestFileLayout};
 use super::layout;
+
+/// One inline test item charged to a file's footprint.
+struct TestItem {
+    span: Span,
+    /// The identifier of an inline `#[cfg(test)] mod <name> { ... }`
+    /// block, or `None` for a bare top-level test item (a `#[test] fn`,
+    /// `#[cfg(test)] fn`, etc.) that has no module name. Used to name
+    /// the extraction target in the help text.
+    module_name: Option<Symbol>,
+}
 
 /// Per-source-file tally built up during the walk.
 #[derive(Default)]
@@ -24,9 +35,9 @@ struct FileAcc {
     /// of these is entirely test code and exempt from the inline-style
     /// check — it is itself a valid extraction target.
     production_count: usize,
-    /// Spans of the inline test items contributing to the footprint.
-    test_item_spans: Vec<Span>,
-    /// Sum of the line spans of every item in `test_item_spans`.
+    /// The inline test items contributing to the footprint.
+    test_items: Vec<TestItem>,
+    /// Sum of the line spans of every item in `test_items`.
     inline_test_lines: usize,
     /// The file these tallies belong to, kept for line counting and its
     /// path. `None` only before the first item is recorded.
@@ -58,20 +69,39 @@ fn classify(
     item: &Item<'_>,
     files: &mut HashMap<BytePos, FileAcc>,
 ) {
-    // The rule only ever runs in a `cfg(test)` build, where the test
-    // harness injects synthetic crate-root items (the generated `main`,
-    // `extern crate test`, the test-descriptor const) and where
-    // test-generating macros expand to `#[test]` / `#[cfg(test)]`
-    // items. None of those are the author's hand-written layout:
-    // counting a synthetic item as production would break the
-    // all-test-file exemption, and counting macro-expanded test items
-    // would charge a single macro call against the inline budget. Skip
-    // anything not written in source, matching the lint's
-    // `report_in_external_macro: false` stance.
-    if item.span.from_expansion() {
+    // The rule runs in a `cfg(test)` build, so the AST it sees contains
+    // items that are not the author's hand-written layout. Treat them by
+    // origin rather than skipping every expansion wholesale:
+    let expn_kind = item.span.ctxt().outer_expn_data().kind;
+    if matches!(expn_kind, ExpnKind::AstPass(_) | ExpnKind::Desugaring(_)) {
+        // Compiler-synthesised: the test harness `main`, `extern crate
+        // test`, the descriptor const, AST desugarings. Not the
+        // author's code and tied to no file they control — ignore them
+        // entirely so they neither charge the footprint nor inflate a
+        // file's production count (which would rob an all-test crate
+        // root of its exemption).
         return;
     }
+
     let cfg_test = is_cfg_test(cx.tcx, item.hir_id());
+    let is_test = cfg_test
+        || (matches!(item.kind, ItemKind::Fn { .. })
+            && is_test_function(cx.tcx, item.owner_id.def_id));
+
+    if matches!(expn_kind, ExpnKind::Macro(..)) {
+        // A user macro invocation is itself a hand-written item at its
+        // call site. Count a production expansion toward that file so a
+        // file whose only production is macro-generated still fails the
+        // all-test exemption; but never charge macro-expanded test code
+        // to the budget (a single macro call must not bust it), and do
+        // not recurse into the expansion.
+        if !is_test {
+            record_production(cx, item.span.source_callsite(), files);
+        }
+        return;
+    }
+
+    // Hand-written item (`ExpnKind::Root`).
     if let ItemKind::Mod(ident, module) = &item.kind {
         match (cfg_test, is_external_module(cx, item.span, module)) {
             // Inline `#[cfg(test)] mod X { ... }`: one footprint item
@@ -79,7 +109,7 @@ fn classify(
             // body is all test code, so we do not descend into it.
             (true, false) => {
                 if state.module_name_in_scope(ident.name) {
-                    record_test(cx, item.span, files);
+                    record_test(cx, item.span, Some(ident.name), files);
                 }
             }
             // External `#[cfg(test)] mod X;`: layout-checked, neutral
@@ -102,12 +132,9 @@ fn classify(
     // Bare test items (`#[test] fn`, `#[cfg(test)] fn`, any other
     // `#[cfg(test)]` item) contribute to the footprint only when no
     // `test_module_names` filter narrows it to named modules.
-    let is_test_item = cfg_test
-        || (matches!(item.kind, ItemKind::Fn { .. })
-            && is_test_function(cx.tcx, item.owner_id.def_id));
-    if is_test_item {
+    if is_test {
         if state.test_module_names.is_empty() {
-            record_test(cx, item.span, files);
+            record_test(cx, item.span, None, files);
         }
     } else {
         record_production(cx, item.span, files);
@@ -129,11 +156,16 @@ fn record_production(cx: &LateContext<'_>, span: Span, files: &mut HashMap<ByteP
     acc_for(cx.sess().source_map(), span, files).production_count += 1;
 }
 
-fn record_test(cx: &LateContext<'_>, span: Span, files: &mut HashMap<BytePos, FileAcc>) {
+fn record_test(
+    cx: &LateContext<'_>,
+    span: Span,
+    module_name: Option<Symbol>,
+    files: &mut HashMap<BytePos, FileAcc>,
+) {
     let source_map = cx.sess().source_map();
     let lines = line_count(source_map, span);
     let acc = acc_for(source_map, span, files);
-    acc.test_item_spans.push(span);
+    acc.test_items.push(TestItem { span, module_name });
     acc.inline_test_lines += lines;
 }
 
@@ -158,7 +190,7 @@ fn line_count(source_map: &SourceMap, span: Span) -> usize {
 }
 
 fn emit_inline_style(state: &UnitTestFileLayout, cx: &LateContext<'_>, acc: &FileAcc) {
-    if acc.test_item_spans.is_empty() || acc.production_count == 0 {
+    if acc.test_items.is_empty() || acc.production_count == 0 {
         return;
     }
     let Some(file) = &acc.file else {
@@ -166,15 +198,14 @@ fn emit_inline_style(state: &UnitTestFileLayout, cx: &LateContext<'_>, acc: &Fil
     };
     match state.inline_style {
         InlineStyle::ExternalOnly => {
-            let help = help_extract(state, file);
-            for &span in &acc.test_item_spans {
+            for item in &acc.test_items {
                 span_lint_and_help(
                     cx,
                     UNIT_TEST_FILE_LAYOUT,
-                    span,
+                    item.span,
                     "inline test code should live in an external module",
                     None,
-                    help.clone(),
+                    help_extract(state, file, item.module_name),
                 );
             }
         }
@@ -201,32 +232,53 @@ fn emit_inline_style(state: &UnitTestFileLayout, cx: &LateContext<'_>, acc: &Fil
             span_lint_and_help(
                 cx,
                 UNIT_TEST_FILE_LAYOUT,
-                union_span(&acc.test_item_spans),
+                union_span(acc.test_items.iter().map(|item| item.span)),
                 message,
                 None,
-                help_extract(state, file),
+                help_extract(state, file, common_module_name(&acc.test_items)),
             );
         }
     }
 }
 
-fn help_extract(state: &UnitTestFileLayout, file: &SourceFile) -> String {
+/// The single module name shared by every recorded test item, if they
+/// agree — e.g. a file with one over-budget `#[cfg(test)] mod tests`.
+/// `None` when the items disagree or any is a bare item, so the help
+/// falls back to the conventional `tests`.
+fn common_module_name(items: &[TestItem]) -> Option<Symbol> {
+    let mut names = items.iter().map(|item| item.module_name);
+    let first = names.next()??;
+    names.all(|name| name == Some(first)).then_some(first)
+}
+
+/// Help text naming the canonical extraction target. `module_name` is
+/// the inline module's own identifier when known; bare test items have
+/// none and fall back to the conventional `tests`.
+fn help_extract(
+    state: &UnitTestFileLayout,
+    file: &SourceFile,
+    module_name: Option<Symbol>,
+) -> String {
+    let name = module_name.map_or_else(|| "tests".to_owned(), |name| name.to_string());
     match layout::real_path(file)
-        .and_then(|path| layout::canonical_target(&path, "tests", state.external_layout))
+        .and_then(|path| layout::canonical_target(&path, &name, state.external_layout))
     {
         Some(target) => format!(
             "move the inline test code into a separate file (e.g. `{}`) and replace it with an \
-             external `mod` declaration",
+             external `mod {name};` declaration",
             target.display(),
         ),
-        None => "move the inline test code into a separate file and replace it with an external \
-                 `mod` declaration"
-            .to_owned(),
+        None => format!(
+            "move the inline test code into a separate file and replace it with an external \
+             `mod {name};` declaration",
+        ),
     }
 }
 
-fn union_span(spans: &[Span]) -> Span {
-    let mut iter = spans.iter().copied();
-    let first = iter.next().expect("caller guarantees a non-empty slice");
-    iter.fold(first, |union, span| union.to(span))
+fn union_span(spans: impl IntoIterator<Item = Span>) -> Span {
+    let mut spans = spans.into_iter();
+    let first = spans
+        .next()
+        .expect("caller guarantees a non-empty iterator");
+    spans.fold(first, |union, span| union.to(span))
 }

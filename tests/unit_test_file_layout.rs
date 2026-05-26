@@ -250,6 +250,66 @@ fn exempts_all_test_crate_root() {
     );
 }
 
+/// A file whose only production item is produced by a *user* macro
+/// expansion must still fail the all-test exemption — the expanded
+/// production item is counted (charged to the macro's call-site file),
+/// so an over-budget inline test block there is flagged.
+#[test]
+fn flags_inline_tests_when_production_is_macro_generated() {
+    let mut foo = String::from("crate::make_thing!();\n\n#[cfg(test)]\nmod tests {\n");
+    for index in 0..60 {
+        foo.push_str(&format!(
+            "    #[test]\n    fn case_{index}() {{ assert!(true); }}\n",
+        ));
+    }
+    foo.push_str("}\n");
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_macro_production",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            (
+                "src/lib.rs",
+                "#[macro_export]\nmacro_rules! make_thing {\n    () => {\n        pub fn thing() -> i32 {\n            0\n        }\n    };\n}\n\npub mod foo;\n",
+            ),
+            ("src/foo.rs", &foo),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        stderr.contains("inline test code spans"),
+        "macro-generated production must not grant the all-test exemption; stderr was:\n{stderr}",
+    );
+}
+
+/// The extraction help names the inline module's own file, not a
+/// hard-coded `tests`: an over-budget `#[cfg(test)] mod edge_cases`
+/// should point at `src/foo/edge_cases.rs`.
+#[test]
+fn help_names_the_actual_inline_module() {
+    let mut foo =
+        String::from("pub fn calculate() -> i32 {\n    1\n}\n\n#[cfg(test)]\nmod edge_cases {\n");
+    for index in 0..60 {
+        foo.push_str(&format!(
+            "    #[test]\n    fn case_{index}() {{ assert_eq!(super::calculate(), 1); }}\n",
+        ));
+    }
+    foo.push_str("}\n");
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_named_module_help",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[("src/lib.rs", "pub mod foo;\n"), ("src/foo.rs", &foo)],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        stderr.contains("src/foo/edge_cases.rs") && stderr.contains("mod edge_cases;"),
+        "help should name the actual module (`edge_cases`), not `tests`; stderr was:\n{stderr}",
+    );
+}
+
 #[test]
 fn external_only_flags_inline_tests() {
     let (_temp, stderr, success) = run_project_with_config(
