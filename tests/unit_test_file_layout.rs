@@ -310,6 +310,139 @@ fn help_names_the_actual_inline_module() {
     );
 }
 
+/// A small integration-test body with a top-level `use` and helper
+/// `fn` (both counted as production, which defeats the all-test-file
+/// exemption) followed by 60 `#[test] fn`s — well over the inline
+/// budget. Reused by the flat and subdirectory layout tests below.
+fn integration_test_body() -> String {
+    let mut body = String::from("use std::cmp::max;\n\nfn helper() -> i32 {\n    max(1, 0)\n}\n\n");
+    for index in 0..60 {
+        body.push_str(&format!(
+            "#[test]\nfn case_{index}() {{ assert_eq!(helper(), 1); }}\n",
+        ));
+    }
+    body
+}
+
+/// Integration tests live in their own crate under `tests/`, which a
+/// `--all-targets` run hands the rule too. Their top-level `#[test]`
+/// functions are the target itself, not unit tests misplaced inside a
+/// production file, so the rule must not flag them — even when the
+/// test footprint dwarfs the inline budget and the file also carries
+/// top-level `use`s and helper `fn`s the rule would otherwise count as
+/// production.
+#[test]
+fn does_not_flag_integration_tests() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_integration_tests",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub fn calculate() -> i32 {\n    1\n}\n"),
+            ("tests/integration.rs", &integration_test_body()),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(LINT),
+        "integration tests under `tests/` must not be flagged; stderr was:\n{stderr}",
+    );
+}
+
+/// Cargo also auto-discovers the subdirectory form `tests/<name>/main.rs`
+/// as an integration-test crate. Its discriminating `tests` directory is
+/// one level further up than the flat form, so this guards the path
+/// arithmetic that walks past the `main.rs` stem.
+#[test]
+fn does_not_flag_integration_test_subdir_main() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_integration_subdir",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub fn calculate() -> i32 {\n    1\n}\n"),
+            ("tests/suite/main.rs", &integration_test_body()),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(LINT),
+        "the `tests/<name>/main.rs` form must not be flagged; stderr was:\n{stderr}",
+    );
+}
+
+/// A flat integration test may be named `main` (`tests/main.rs`),
+/// which is *not* the `tests/<name>/main.rs` subdirectory form: its
+/// discriminating `tests` directory is the immediate parent, not two
+/// levels up. It must still be recognised as a separate target.
+#[test]
+fn does_not_flag_integration_test_named_main() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_integration_named_main",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub fn calculate() -> i32 {\n    1\n}\n"),
+            ("tests/main.rs", &integration_test_body()),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(LINT),
+        "an integration test named `main` must not be flagged; stderr was:\n{stderr}",
+    );
+}
+
+/// Positive control for the integration-test cases above: the same body
+/// in a `src/`-rooted module *is* over budget and flagged. Without it,
+/// those negatives could pass vacuously — a missing warning is otherwise
+/// indistinguishable from the rule never running on the crate.
+#[test]
+fn flags_equivalent_body_in_src_module() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_src_body_positive_control",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub mod thing;\n"),
+            ("src/thing.rs", &integration_test_body()),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        stderr.contains("inline test code spans") && stderr.contains("src/thing/tests.rs"),
+        "the same over-budget body in a `src/` module must be flagged with the inline-footprint \
+         diagnostic; stderr was:\n{stderr}",
+    );
+}
+
+/// Benchmarks are their own crate compiled under `cfg(test)`, like
+/// integration tests, so without the separate-target skip the same
+/// over-budget body would be flagged. This is the one load-bearing
+/// separate-target branch besides `tests/`, so guard it directly.
+#[test]
+fn does_not_flag_benchmarks() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_benchmarks",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub fn calculate() -> i32 {\n    1\n}\n"),
+            ("benches/bench.rs", &integration_test_body()),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(LINT),
+        "benchmarks under `benches/` must not be flagged; stderr was:\n{stderr}",
+    );
+}
+
 #[test]
 fn external_only_flags_inline_tests() {
     let (_temp, stderr, success) = run_project_with_config(
