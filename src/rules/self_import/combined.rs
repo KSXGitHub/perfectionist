@@ -8,7 +8,10 @@ use rustc_lint::{EarlyContext, LintContext};
 use rustc_span::{Symbol, kw};
 
 use super::SELF_IMPORT;
-use super::render::{is_self_leaf, render_path, render_use_tree, render_visibility, segment_names};
+use super::render::{
+    attr_snippets, is_self_leaf, real_segments, render_segments, render_use_tree,
+    render_visibility, segment_names, with_rename,
+};
 
 /// Scan an ordered sequence of items for adjacent module + item
 /// imports to fold. Each entry is `Some(item)` for an item in source
@@ -34,14 +37,14 @@ pub(super) fn scan<'ast>(cx: &EarlyContext<'_>, entries: impl Iterator<Item = Op
 }
 
 /// Attempt to fold the adjacent pair `first` then `second`. Returns
-/// whether a fold was emitted. The two must share visibility and carry
-/// no attributes; one must import a module and the other an item from
-/// that same module (in either order).
+/// whether a fold was emitted. The two must share visibility and have
+/// matching attributes; one must import a module and the other an item
+/// from that same module (in either order).
 fn try_fold(cx: &EarlyContext<'_>, first: &Item, second: &Item) -> bool {
-    if !first.attrs.is_empty() || !second.attrs.is_empty() {
+    if render_visibility(cx, first) != render_visibility(cx, second) {
         return false;
     }
-    if render_visibility(cx, first) != render_visibility(cx, second) {
+    if attr_snippets(cx, first) != attr_snippets(cx, second) {
         return false;
     }
     let (ItemKind::Use(first_tree), ItemKind::Use(second_tree)) = (&first.kind, &second.kind)
@@ -51,20 +54,19 @@ fn try_fold(cx: &EarlyContext<'_>, first: &Item, second: &Item) -> bool {
     // The module import can be either statement; the item import is the
     // other. Whichever order, the folded statement is placed at `first`
     // and `second` is deleted.
-    let fold = module_import(first_tree)
-        .and_then(|(module, bare)| {
-            item_tail_under(second_tree, &module).map(|tail| (module, bare, tail))
-        })
-        .or_else(|| {
-            module_import(second_tree).and_then(|(module, bare)| {
-                item_tail_under(first_tree, &module).map(|tail| (module, bare, tail))
-            })
-        });
-    let Some((module, bare, tail)) = fold else {
-        return false;
-    };
-    emit_fold(cx, first, second, first_tree, &module, bare, &tail);
-    true
+    if let Some((module, bare)) = module_import(first_tree)
+        && let Some(tail) = item_tail_under(second_tree, &module)
+    {
+        emit_fold(cx, first, second, first_tree, first_tree, bare, &tail);
+        return true;
+    }
+    if let Some((module, bare)) = module_import(second_tree)
+        && let Some(tail) = item_tail_under(first_tree, &module)
+    {
+        emit_fold(cx, first, second, first_tree, second_tree, bare, &tail);
+        return true;
+    }
+    false
 }
 
 /// If `tree` imports a module and nothing else, the module's path
@@ -112,22 +114,19 @@ fn item_tail_under(tree: &UseTree, module: &[Symbol]) -> Option<String> {
     if names.len() < module.len() || &names[..module.len()] != module {
         return None;
     }
-    let rest = &names[module.len()..];
-    if rest.contains(&kw::SelfLower) {
+    let rest_names = &names[module.len()..];
+    if rest_names.contains(&kw::SelfLower) {
         return None;
     }
+    let rest_segments = &real_segments(&tree.prefix)[module.len()..];
     match &tree.kind {
         UseTreeKind::Simple(rename) => {
             // `use module::rest` — rest must be non-empty (otherwise
             // `tree` is the module itself, not an item under it).
-            if rest.is_empty() {
+            if rest_segments.is_empty() {
                 return None;
             }
-            let base = render_path(rest);
-            Some(match rename {
-                Some(rename) => format!("{base} as {}", rename.name),
-                None => base,
-            })
+            Some(with_rename(render_segments(rest_segments), *rename))
         }
         UseTreeKind::Nested { items, .. } => {
             if items.iter().any(|(child, _)| is_self_leaf(child)) {
@@ -138,12 +137,12 @@ fn item_tail_under(tree: &UseTree, module: &[Symbol]) -> Option<String> {
                 .map(|(child, _)| render_use_tree(child))
                 .collect::<Vec<_>>()
                 .join(", ");
-            if rest.is_empty() {
+            if rest_segments.is_empty() {
                 // `use module::{a, b}` -> tail `a, b`
                 Some(inner)
             } else {
                 // `use module::sub::{a, b}` -> tail `sub::{a, b}`
-                Some(format!("{}::{{{inner}}}", render_path(rest)))
+                Some(format!("{}::{{{inner}}}", render_segments(rest_segments)))
             }
         }
         UseTreeKind::Glob(_) => None,
@@ -152,16 +151,19 @@ fn item_tail_under(tree: &UseTree, module: &[Symbol]) -> Option<String> {
 
 /// Emit the fold suggestion: replace `first`'s tree with
 /// `module::{self, tail}` and delete `second`'s whole statement.
+/// `module_tree` is whichever of the two statements is the module
+/// import — its prefix renders the `module` path (raw-identifier aware).
 fn emit_fold(
     cx: &EarlyContext<'_>,
     first: &Item,
     second: &Item,
     first_tree: &UseTree,
-    module: &[Symbol],
+    module_tree: &UseTree,
     bare: bool,
     tail: &str,
 ) {
-    let folded = format!("{}::{{self, {tail}}}", render_path(module));
+    let module = render_segments(real_segments(&module_tree.prefix));
+    let folded = format!("{module}::{{self, {tail}}}");
     // The deletion removes everything from the end of `first`'s
     // statement through the end of `second`'s — the whitespace gap and
     // all of `second`. If a comment sits in that gap the deletion would

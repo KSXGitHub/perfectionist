@@ -1,5 +1,5 @@
 warning: this `use` imports a module through `self`
-  --> $DIR/fixture.rs:15:9
+  --> $DIR/fixture.rs:18:9
    |
 LL |     use crate::defs::inner::{self};
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: import the module by its bare path: `crate::defs::inner`
@@ -7,7 +7,7 @@ LL |     use crate::defs::inner::{self};
    = note: `#[warn(perfectionist::self_import)]` on by default
 
 warning: this `use` imports a module through `self`
-  --> $DIR/fixture.rs:20:9
+  --> $DIR/fixture.rs:23:9
    |
 LL |     use crate::defs::inner::{self, Baz};
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -19,13 +19,13 @@ LL ~     use crate::defs::inner::Baz;
    |
 
 warning: this `use` imports a module through `self`
-  --> $DIR/fixture.rs:25:9
+  --> $DIR/fixture.rs:28:9
    |
 LL |     use crate::defs::inner::{self as renamed};
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: import the module by its bare path: `crate::defs::inner as renamed`
 
 warning: this `use` imports a module through `self`
-  --> $DIR/fixture.rs:30:23
+  --> $DIR/fixture.rs:33:23
    |
 LL |     use crate::defs::{inner::self};
    |                       ^^^^^^^^^^^ help: import the module by its bare path: `inner`
@@ -33,16 +33,35 @@ LL |     use crate::defs::{inner::self};
    = note: the `a::b::self` form is redundant and rejected in some positions; import the module directly
 
 warning: this `use` imports a module through `self`
-  --> $DIR/fixture.rs:35:23
+  --> $DIR/fixture.rs:38:23
    |
 LL |     use crate::defs::{inner::{self}, sibling};
    |                       ^^^^^^^^^^^^^ help: import the module by its bare path: `inner`
 
 warning: this `use` imports a module through `self`
-  --> $DIR/fixture.rs:40:23
+  --> $DIR/fixture.rs:43:23
    |
 LL |     use crate::defs::{inner::{self, Baz}, sibling};
    |                       ^^^^^^^^^^^^^^^^^^ help: import the module by its bare path: `inner, inner::Baz`
 
-warning: 6 warnings emitted
+warning: this `use` imports a module through `self`
+  --> $DIR/fixture.rs:48:9
+   |
+LL |     use crate::defs::r#match::{self};
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: import the module by its bare path: `crate::defs::r#match`
+
+warning: this `use` imports a module through `self`
+  --> $DIR/fixture.rs:54:9
+   |
+LL |     use crate::defs::inner::{self, Baz};
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: import the module by its bare path
+   |
+LL ~     use crate::defs::inner;
+LL +     #[allow(unused_imports, reason = "self_import attribute-preservation fixture")]
+LL ~     use crate::defs::inner::Baz;
+   |
+
+warning: 8 warnings emitted
 

@@ -25,7 +25,13 @@ default; a project opts in and sets `style` to one of:
 This is a stylistic preference, not a correctness issue. Both
 directions are coherent; a project simply picks one and applies
 it everywhere so `self`-in-`use` decisions stop being made
-case by case.
+case by case. The rule is inactive by default; enable it per
+crate and pick a direction in `dylint.toml`:
+
+```toml
+[perfectionist]
+enable = ["self_import"]
+```
 
 The autofix is always `MaybeIncorrect` when it changes the
 namespaces an import brings into scope. `use foo::bar;` imports
@@ -55,15 +61,6 @@ use foo::bar::Baz;
 Use instead:
 ```rust,ignore
 use foo::bar::{self, Baz};
-```
-
-## Configuration
-```toml
-[perfectionist]
-enable = ["self_import"]
-
-[perfectionist::self_import]
-style = "forbid" # or "combined" — mandatory, no default
 ```
 
 ## Configuration

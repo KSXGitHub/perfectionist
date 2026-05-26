@@ -7,12 +7,12 @@ use clippy_utils::source::indent_of;
 use rustc_ast::{Item, UseTree, UseTreeKind};
 use rustc_errors::Applicability;
 use rustc_lint::EarlyContext;
-use rustc_span::{Ident, Symbol};
+use rustc_span::Span;
 
 use super::SELF_IMPORT;
 use super::render::{
-    is_self_leaf, render_path, render_use_tree, render_visibility, segment_names,
-    simple_self_module,
+    attr_snippets, is_self_leaf, real_segments, render_segments, render_use_tree,
+    render_visibility, segment_names, simple_self_module, with_rename,
 };
 
 const MESSAGE: &str = "this `use` imports a module through `self`";
@@ -37,11 +37,13 @@ fn visit(cx: &EarlyContext<'_>, item: &Item, node: &UseTree, at_root: bool) {
                 // `a::b::self` — names module `a::b` through a trailing
                 // `self`. (The bare `{self}` leaf has an empty module
                 // here and is rewritten by its enclosing brace group.)
-                let replacement = render_simple(&module, rename.as_ref());
+                // Drop the final `self` segment and render the rest.
+                let segments = real_segments(&node.prefix);
+                let module_path = render_segments(&segments[..segments.len() - 1]);
                 emit_replacement(
                     cx,
                     node.span(),
-                    replacement,
+                    with_rename(module_path, *rename),
                     Some(
                         "the `a::b::self` form is redundant and rejected in some positions; \
                          import the module directly",
@@ -78,8 +80,7 @@ fn rewrite_self_group(
     self_idx: usize,
     at_root: bool,
 ) {
-    let prefix = segment_names(&node.prefix);
-    if prefix.is_empty() {
+    if segment_names(&node.prefix).is_empty() {
         // `use {self, ...};` with no prefix names nothing coherent;
         // leave it alone rather than emit a broken rewrite.
         return;
@@ -94,7 +95,8 @@ fn rewrite_self_group(
         .filter(|(index, _)| *index != self_idx)
         .map(|(_, (child, _))| child)
         .collect();
-    let module = render_simple(&prefix, self_rename.as_ref());
+    let base = render_segments(real_segments(&node.prefix));
+    let module = with_rename(base.clone(), self_rename);
 
     if others.is_empty() {
         // `use prefix::{self};` -> `use prefix;`
@@ -102,37 +104,32 @@ fn rewrite_self_group(
         return;
     }
 
+    let rest = render_rest(&base, &others);
     if at_root {
-        if !item.attrs.is_empty() {
-            // Splitting into two statements would have to duplicate the
-            // item's attributes (a `#[cfg(...)]` or doc comment) onto
-            // both; rather than risk dropping or wrongly cloning them,
-            // emit help-only here.
-            span_lint_and_then(cx, SELF_IMPORT, node.span(), MESSAGE, |diag| {
-                diag.help("split the `self` module import into its own `use` statement");
-            });
-            return;
-        }
         // `use prefix::{self, X};` -> two statements. Replacing only the
-        // tree span keeps the original `use`, visibility, and the
-        // trailing `;` (which terminates the injected second statement).
+        // tree span keeps the original `use`, visibility, attributes,
+        // and the trailing `;` (which terminates the injected second
+        // statement). The injected statement replays the item's
+        // attributes and visibility so neither is dropped.
         let visibility = render_visibility(cx, item);
         let indent = " ".repeat(indent_of(cx, item.span).unwrap_or(0));
-        let rest = render_rest(&prefix, &others);
-        let replacement = format!("{module};\n{indent}{visibility}use {rest}");
+        let attrs: String = attr_snippets(cx, item)
+            .iter()
+            .map(|attr| format!("{attr}\n{indent}"))
+            .collect();
+        let replacement = format!("{module};\n{indent}{attrs}{visibility}use {rest}");
         emit_replacement(cx, node.span(), replacement, None);
     } else {
         // Nested `prefix::{self, X}` sits in a comma-separated parent
         // group, so it can expand in place: `prefix, prefix::{X}`.
-        let rest = render_rest(&prefix, &others);
         emit_replacement(cx, node.span(), format!("{module}, {rest}"), None);
     }
 }
 
 /// Render the non-`self` members of a brace group under their shared
-/// module path: `prefix::X` for one member, `prefix::{X, Y}` for more.
-fn render_rest(prefix: &[Symbol], others: &[&UseTree]) -> String {
-    let base = render_path(prefix);
+/// module path `base`: `base::X` for one member, `base::{X, Y}` for
+/// more.
+fn render_rest(base: &str, others: &[&UseTree]) -> String {
     if let [single] = others {
         format!("{base}::{}", render_use_tree(single))
     } else {
@@ -145,16 +142,6 @@ fn render_rest(prefix: &[Symbol], others: &[&UseTree]) -> String {
     }
 }
 
-/// Render a module path with the optional `self`-leaf rename applied
-/// (`use foo::bar::{self as alias}` keeps `alias`).
-fn render_simple(names: &[Symbol], rename: Option<&Ident>) -> String {
-    let base = render_path(names);
-    match rename {
-        Some(rename) => format!("{base} as {}", rename.name),
-        None => base,
-    }
-}
-
 /// Emit the lint at `span` with a `MaybeIncorrect` suggestion. Every
 /// `forbid` rewrite is `MaybeIncorrect`: the bare form imports every
 /// namespace named by the final segment, while the `self` form imports
@@ -162,7 +149,7 @@ fn render_simple(names: &[Symbol], rename: Option<&Ident>) -> String {
 /// a value or macro shares the module's name in the same parent.
 fn emit_replacement(
     cx: &EarlyContext<'_>,
-    span: rustc_span::Span,
+    span: Span,
     replacement: String,
     note: Option<&'static str>,
 ) {

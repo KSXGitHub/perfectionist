@@ -8,6 +8,9 @@ mod defs {
     pub mod sibling {
         pub struct Thing;
     }
+    pub mod r#match {
+        pub struct Token;
+    }
 }
 
 // `use module::{self};` collapses to the bare module import.
@@ -38,6 +41,17 @@ mod nested_self_sole {
 // A nested `{self, X}` group expands into sibling brace entries.
 mod nested_self_item {
     use crate::defs::{inner::{self, Baz}, sibling};
+}
+
+// A raw-identifier module renders with its `r#` prefix intact.
+mod raw_ident {
+    use crate::defs::r#match::{self};
+}
+
+// The split preserves the item's attributes on both statements.
+mod attr_split {
+    #[allow(unused_imports, reason = "self_import attribute-preservation fixture")]
+    use crate::defs::inner::{self, Baz};
 }
 
 // A bare module import is already compliant — no diagnostic.

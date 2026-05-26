@@ -1,5 +1,5 @@
 warning: adjacent module and item imports can be combined through `self`
-  --> $DIR/fixture.rs:12:5
+  --> $DIR/fixture.rs:15:5
    |
 LL |     use crate::defs::inner;
    |     ^^^^^^^^^^^^^^^^^^^^^^^
@@ -13,7 +13,7 @@ LL +     use crate::defs::inner::{self, Baz};
    |
 
 warning: adjacent module and item imports can be combined through `self`
-  --> $DIR/fixture.rs:18:5
+  --> $DIR/fixture.rs:21:5
    |
 LL |     use crate::defs::inner::{self};
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -26,7 +26,7 @@ LL +     use crate::defs::inner::{self, Baz};
    |
 
 warning: adjacent module and item imports can be combined through `self`
-  --> $DIR/fixture.rs:24:5
+  --> $DIR/fixture.rs:27:5
    |
 LL |     use crate::defs::inner::Baz;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -39,7 +39,7 @@ LL +     use crate::defs::inner::{self, Baz};
    |
 
 warning: adjacent module and item imports can be combined through `self`
-  --> $DIR/fixture.rs:30:5
+  --> $DIR/fixture.rs:33:5
    |
 LL |     use crate::defs::inner;
    |     ^^^^^^^^^^^^^^^^^^^^^^^
@@ -51,5 +51,32 @@ LL -     use crate::defs::inner::{Baz, Qux};
 LL +     use crate::defs::inner::{self, Baz, Qux};
    |
 
-warning: 4 warnings emitted
+warning: adjacent module and item imports can be combined through `self`
+  --> $DIR/fixture.rs:39:5
+   |
+LL |     use crate::defs::r#match;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: combine into a single `use` with `self`
+   |
+LL -     use crate::defs::r#match;
+LL -     use crate::defs::r#match::Token;
+LL +     use crate::defs::r#match::{self, Token};
+   |
+
+warning: adjacent module and item imports can be combined through `self`
+  --> $DIR/fixture.rs:46:5
+   |
+LL |     use crate::defs::inner;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: combine into a single `use` with `self`
+   |
+LL -     use crate::defs::inner;
+LL -     #[allow(unused_imports, reason = "self_import matching-attrs fixture")]
+LL -     use crate::defs::inner::Baz;
+LL +     use crate::defs::inner::{self, Baz};
+   |
+
+warning: 6 warnings emitted
 

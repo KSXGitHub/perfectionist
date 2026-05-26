@@ -5,6 +5,9 @@ mod defs {
         pub struct Baz;
         pub struct Qux;
     }
+    pub mod r#match {
+        pub struct Token;
+    }
 }
 
 // Bare module import followed by an item from it folds into `{self, X}`.
@@ -29,6 +32,27 @@ mod item_then_module {
 mod module_then_group {
     use crate::defs::inner;
     use crate::defs::inner::{Baz, Qux};
+}
+
+// A raw-identifier module renders with its `r#` prefix intact.
+mod raw_ident {
+    use crate::defs::r#match;
+    use crate::defs::r#match::Token;
+}
+
+// Matching attributes on both statements fold into one (attrs kept).
+mod attr_matching {
+    #[allow(unused_imports, reason = "self_import matching-attrs fixture")]
+    use crate::defs::inner;
+    #[allow(unused_imports, reason = "self_import matching-attrs fixture")]
+    use crate::defs::inner::Baz;
+}
+
+// Mismatched attributes break the fold — no diagnostic.
+mod attr_mismatch {
+    use crate::defs::inner;
+    #[allow(unused_imports, reason = "self_import mismatched-attrs fixture")]
+    use crate::defs::inner::Baz;
 }
 
 // An intervening item breaks adjacency — no fold.
