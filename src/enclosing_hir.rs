@@ -61,10 +61,12 @@ fn find_comment_anchor_hir_ids(tcx: TyCtxt<'_>, target_spans: &[Span]) -> Vec<hi
 
 fn walk(tcx: TyCtxt<'_>, target_spans: &[Span], include_attr_spans: bool) -> Vec<hir::HirId> {
     let mut best: Vec<hir::HirId> = vec![hir::CRATE_HIR_ID; target_spans.len()];
+    let mut best_width: Vec<u32> = vec![u32::MAX; target_spans.len()];
     let mut finder = EnclosingHirFinder {
         tcx,
         targets: target_spans,
         best: &mut best,
+        best_width: &mut best_width,
         include_attr_spans,
     };
     tcx.hir_walk_toplevel_module(&mut finder);
@@ -104,6 +106,10 @@ struct EnclosingHirFinder<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     targets: &'a [Span],
     best: &'a mut [hir::HirId],
+    /// Byte width of the span that elected each `best[i]`, used only in
+    /// comment-anchoring mode to keep the *tightest* containing node
+    /// (see [`Self::update`]). `u32::MAX` until the first match.
+    best_width: &'a mut [u32],
     /// When set, a documentable node's `#[doc]` attribute spans (what
     /// `///` / `//!` / `/** */` lower to) count toward containment
     /// alongside its own span, and enum variants / struct fields are
@@ -141,13 +147,44 @@ impl<'a, 'tcx> EnclosingHirFinder<'a, 'tcx> {
 
     fn update(&mut self, hir_id: hir::HirId, span: Span) {
         for (index, &target) in self.targets.iter().enumerate() {
-            if !contains(span, target) {
-                continue;
+            if self.include_attr_spans {
+                // Comment-anchoring mode. The target is a pristine,
+                // root-context source span (a comment), so a strict
+                // byte-containment check identifies every node that
+                // lexically encloses it — no macro-hygiene fallback is
+                // wanted here (see the `else` branch for why that
+                // matters elsewhere).
+                if !span.contains(target) {
+                    continue;
+                }
+                // Keep the *tightest* enclosing node, not the
+                // last-visited one. A proc-macro `#[derive]`
+                // (e.g. `serde::Deserialize`) generates HIR nodes —
+                // `visit_map` / `visit_seq` bodies — whose root-context
+                // spans cover the whole field list and are visited
+                // *after* the struct's fields. With a depth/order tie-
+                // break those wider generated nodes would steal the
+                // anchor from the documented field, so the field-level
+                // `#[expect]` would neither suppress nor be fulfilled
+                // (issue #165 follow-up). Preferring the narrowest span
+                // keeps the field's own one-line `#[doc]` span.
+                let width = span.hi().0.saturating_sub(span.lo().0);
+                if width >= self.best_width[index] {
+                    continue;
+                }
+                self.best_width[index] = width;
+                self.best[index] = hir_id;
+            } else {
+                // Macro-call mode. Targets here are pre-expansion call
+                // sites, so [`contains`] resolves macro hygiene before
+                // comparing byte ranges. The walk is depth-first, so a
+                // parent is visited before its children and the last
+                // successful update lands on the deepest node seen.
+                if !contains(span, target) {
+                    continue;
+                }
+                self.best[index] = hir_id;
             }
-            // The walk is depth-first: a parent is visited before its
-            // children, so each successful containment update lands on
-            // the deepest node seen so far.
-            self.best[index] = hir_id;
         }
     }
 }

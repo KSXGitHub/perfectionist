@@ -271,6 +271,51 @@ pub fn synth_const_generic(input: TokenStream) -> TokenStream {
     wrap_const_block(body)
 }
 
+/// `#[derive(SynthFieldRefBody)]` → emits
+/// `const _: () = { let _ = (); };` whose `let _ = ();` statement is
+/// spanned over the derived type's body `{ ... }` — the span that
+/// covers its field / variant doc comments. The `const _` wrapper is
+/// anonymous, so the derive can be applied to several types in one
+/// crate without name collisions.
+///
+/// This mimics how a real proc-macro derive such as
+/// `serde::Deserialize` lays out its generated `visit_map` / `visit_seq`
+/// bodies: a root-context HIR node whose span spans the whole field
+/// list, lowered *after* the struct itself. The comment-anchor finder
+/// must keep the documented field/variant as the anchor (the tightest
+/// containing node) rather than letting this wider, later-visited
+/// generated node steal it — the bug reported in issue #165's
+/// follow-up. Built-in derives (`Debug`, `Default`, ...) don't produce
+/// such a node, which is why they don't reproduce it.
+#[proc_macro_derive(SynthFieldRefBody)]
+pub fn synth_field_ref_body(input: TokenStream) -> TokenStream {
+    // The body `{ ... }` group span covers the field / variant doc
+    // comments inside it.
+    let body_span = input
+        .into_iter()
+        .find_map(|tree| match tree {
+            TokenTree::Group(group) if group.delimiter() == Delimiter::Brace => Some(group.span()),
+            _ => None,
+        })
+        .unwrap_or_else(Span::call_site);
+    let at_body = |mut tree: TokenTree| {
+        tree.set_span(body_span);
+        tree
+    };
+    let mut body = TokenStream::new();
+    body.extend([
+        at_body(TokenTree::Ident(Ident::new("let", body_span))),
+        at_body(TokenTree::Ident(Ident::new("_", body_span))),
+        at_body(TokenTree::Punct(Punct::new('=', Spacing::Alone))),
+        at_body(TokenTree::Group(Group::new(
+            Delimiter::Parenthesis,
+            TokenStream::new(),
+        ))),
+        at_body(TokenTree::Punct(Punct::new(';', Spacing::Alone))),
+    ]);
+    wrap_const_block(body)
+}
+
 fn wrap_const_block(body: TokenStream) -> TokenStream {
     let call_site = Span::call_site();
     let mut out = TokenStream::new();
