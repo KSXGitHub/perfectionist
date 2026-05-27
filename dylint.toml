@@ -1,6 +1,6 @@
 [workspace.metadata.dylint]
 libraries = [
-  { path = "." },
+  { git = "https://github.com/KSXGitHub/perfectionist", rev = "a53a5d4" },
 ]
 
 ["perfectionist::unicode_ellipsis_in_docs"]

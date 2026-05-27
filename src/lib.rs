@@ -1,26 +1,6 @@
 #![feature(rustc_private)]
 #![cfg_attr(dylint_lib = "perfectionist", feature(register_tool))]
 #![cfg_attr(dylint_lib = "perfectionist", register_tool(perfectionist))]
-// The unicode-ellipsis rules' own rustdoc must quote the U+2026 glyph
-// they govern (naming the ellipsis character as the thing being
-// flagged), which the crate-wide `scan_code_spans` dogfooding would
-// otherwise flag. Ideally each such doc comment would carry its own
-// per-site `#[expect]`; that is desirable but impossible as of now:
-// `unicode_ellipsis_in_docs` scans comments crate-wide (in
-// `check_crate`), so every finding resolves to the crate root and a
-// per-site `#[expect]` is ignored and reported unfulfilled — see
-// <https://github.com/KSXGitHub/perfectionist/issues/165>. Until that is
-// fixed the expectation lives here, the project-wide site
-// `CONTROLLING_RULES.md` prescribes. Gated on the dylint cfg so a plain
-// `cargo build`, where the lint never runs, sees no unfulfilled
-// expectation.
-#![cfg_attr(
-    dylint_lib = "perfectionist",
-    expect(
-        perfectionist::unicode_ellipsis_in_docs,
-        reason = "the unicode-ellipsis rules' rustdoc deliberately names the U+2026 glyph"
-    )
-)]
 
 extern crate rustc_ast;
 extern crate rustc_errors;

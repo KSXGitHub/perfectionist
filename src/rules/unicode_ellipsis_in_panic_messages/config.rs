@@ -3,6 +3,18 @@
 //! lists, and the in-memory `UnicodeEllipsisInPanicMessages` state the
 //! late pass holds.
 
+// `ignore_macros`'s doc names the U+2026 glyph. A field-level `#[expect]`
+// is NOT honored inside a `#[derive(serde::Deserialize)]` struct (the
+// finding anchors at a coarser node), so the expectation lives at module
+// scope instead.
+#![cfg_attr(
+    dylint_lib = "perfectionist",
+    expect(
+        perfectionist::unicode_ellipsis_in_docs,
+        reason = "config-field rustdoc names the U+2026 glyph"
+    )
+)]
+
 use std::collections::BTreeSet;
 
 use rustc_span::Symbol;

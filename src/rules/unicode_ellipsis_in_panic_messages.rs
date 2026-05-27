@@ -15,6 +15,18 @@
 //! checked once as a possible root macro call, and once as a possible
 //! `expect` / `expect_err` method call.
 
+// Module scope because this rule's own `//!` doc (above) names the
+// U+2026 glyph, and a module `//!` doc can only be suppressed at module
+// scope. This also covers the lint declaration's rustdoc below and the
+// config-field doc in the `config` submodule.
+#![cfg_attr(
+    dylint_lib = "perfectionist",
+    expect(
+        perfectionist::unicode_ellipsis_in_docs,
+        reason = "this rule's module doc and rustdoc name the U+2026 glyph"
+    )
+)]
+
 use clippy_utils::macros::root_macro_call_first_node;
 use clippy_utils::res::MaybeDef;
 use rustc_ast::LitKind;
