@@ -104,29 +104,33 @@ struct EnclosingHirFinder<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     targets: &'a [Span],
     best: &'a mut [hir::HirId],
-    /// When set, a node's outer-attribute spans (the `#[doc]`
-    /// attributes doc comments lower to, plus any other attributes)
-    /// count toward containment alongside its own span. See
-    /// [`find_comment_anchor_hir_ids`].
+    /// When set, a documentable node's `#[doc]` attribute spans (what
+    /// `///` / `//!` / `/** */` lower to) count toward containment
+    /// alongside its own span, and enum variants / struct fields are
+    /// registered as anchors. See [`find_comment_anchor_hir_ids`].
     include_attr_spans: bool,
 }
 
 impl<'a, 'tcx> EnclosingHirFinder<'a, 'tcx> {
-    /// Record `hir_id` as the best anchor for every target its `span`
-    /// contains — and, in comment-anchoring mode, every target one of
-    /// its outer-attribute spans contains. The latter is what attaches
-    /// a `///` / `//!` / `/** */` doc comment to the item it documents,
-    /// whose own span begins after the comment.
-    fn visit_node(&mut self, hir_id: hir::HirId, span: Span) {
+    /// Record a node that can carry a doc comment: its own `span` and,
+    /// in comment-anchoring mode, the span of each `#[doc]` attribute it
+    /// bears. Folding the attribute spans in is what attaches a `///` /
+    /// `//!` / `/** */` doc comment to the item it documents, whose own
+    /// span begins after the comment.
+    ///
+    /// Only the node kinds a doc comment can actually attach to —
+    /// items, trait / impl / foreign items, enum variants, struct
+    /// fields — route through here. Blocks, statements, locals,
+    /// expressions, and patterns never carry a doc comment, so they
+    /// call [`Self::update`] directly and skip the per-node
+    /// `hir_attrs` lookup.
+    fn register_documentable(&mut self, hir_id: hir::HirId, span: Span) {
         self.update(hir_id, span);
         if self.include_attr_spans {
-            // Only doc comments are folded in: they are what `///`,
-            // `//!`, and `/** */` lower to, and the comment-walking
-            // rules anchor on them. `is_doc_comment` hands back the
-            // comment's own span; other attributes are skipped, which
-            // also sidesteps `Attribute::span` panicking on parsed
-            // attribute kinds that carry no span (e.g. the synthesised
-            // prelude import).
+            // `is_doc_comment` hands back the comment's own span; other
+            // attributes are skipped, which also sidesteps
+            // `Attribute::span` panicking on parsed attribute kinds that
+            // carry no span (e.g. the synthesised prelude import).
             for attr in self.tcx.hir_attrs(hir_id) {
                 if let Some(doc_span) = attr.is_doc_comment() {
                     self.update(hir_id, doc_span);
@@ -188,57 +192,66 @@ impl<'tcx> Visitor<'tcx> for EnclosingHirFinder<'_, 'tcx> {
     }
 
     fn visit_item(&mut self, item: &'tcx hir::Item<'tcx>) {
-        self.visit_node(item.hir_id(), item.span);
+        self.register_documentable(item.hir_id(), item.span);
         intravisit::walk_item(self, item);
     }
 
     fn visit_trait_item(&mut self, item: &'tcx hir::TraitItem<'tcx>) {
-        self.visit_node(item.hir_id(), item.span);
+        self.register_documentable(item.hir_id(), item.span);
         intravisit::walk_trait_item(self, item);
     }
 
     fn visit_impl_item(&mut self, item: &'tcx hir::ImplItem<'tcx>) {
-        self.visit_node(item.hir_id(), item.span);
+        self.register_documentable(item.hir_id(), item.span);
         intravisit::walk_impl_item(self, item);
     }
 
     fn visit_foreign_item(&mut self, item: &'tcx hir::ForeignItem<'tcx>) {
-        self.visit_node(item.hir_id(), item.span);
+        self.register_documentable(item.hir_id(), item.span);
         intravisit::walk_foreign_item(self, item);
     }
 
+    // Variants and fields are only registered in comment-anchoring mode
+    // (where a doc comment can anchor to them). The macro-call path
+    // (`find_enclosing_hir_ids`) never visited them, so guarding on the
+    // flag keeps that path byte-for-byte unchanged; the walk still
+    // recurses into them either way to reach nested expressions.
     fn visit_variant(&mut self, variant: &'tcx hir::Variant<'tcx>) {
-        self.visit_node(variant.hir_id, variant.span);
+        if self.include_attr_spans {
+            self.register_documentable(variant.hir_id, variant.span);
+        }
         intravisit::walk_variant(self, variant);
     }
 
     fn visit_field_def(&mut self, field: &'tcx hir::FieldDef<'tcx>) {
-        self.visit_node(field.hir_id, field.span);
+        if self.include_attr_spans {
+            self.register_documentable(field.hir_id, field.span);
+        }
         intravisit::walk_field_def(self, field);
     }
 
     fn visit_block(&mut self, block: &'tcx hir::Block<'tcx>) {
-        self.visit_node(block.hir_id, block.span);
+        self.update(block.hir_id, block.span);
         intravisit::walk_block(self, block);
     }
 
     fn visit_stmt(&mut self, stmt: &'tcx hir::Stmt<'tcx>) {
-        self.visit_node(stmt.hir_id, stmt.span);
+        self.update(stmt.hir_id, stmt.span);
         intravisit::walk_stmt(self, stmt);
     }
 
     fn visit_local(&mut self, local: &'tcx hir::LetStmt<'tcx>) {
-        self.visit_node(local.hir_id, local.span);
+        self.update(local.hir_id, local.span);
         intravisit::walk_local(self, local);
     }
 
     fn visit_expr(&mut self, expr: &'tcx hir::Expr<'tcx>) {
-        self.visit_node(expr.hir_id, expr.span);
+        self.update(expr.hir_id, expr.span);
         intravisit::walk_expr(self, expr);
     }
 
     fn visit_pat(&mut self, pat: &'tcx hir::Pat<'tcx>) {
-        self.visit_node(pat.hir_id, pat.span);
+        self.update(pat.hir_id, pat.span);
         intravisit::walk_pat(self, pat);
     }
 }
