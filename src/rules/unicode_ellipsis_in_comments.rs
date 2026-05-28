@@ -1,12 +1,12 @@
-use rustc_ast::Crate;
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
-use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
+use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::def_id::LOCAL_CRATE;
 use rustc_span::{BytePos, Pos, RelativeBytePos, SourceFile, Span, SyntaxContext};
 
 use crate::common::{DefaultState, resolved_state};
-use crate::literal_scan::emit_flagged_chars;
+use crate::enclosing_hir::emit_at_enclosing_hir;
+use crate::literal_scan::emit_flagged_char_hir;
 
 declare_tool_lint! {
     /// ### What it does
@@ -96,15 +96,16 @@ pub fn register_pass(lint_store: &mut LintStore) {
     {
         return;
     }
-    lint_store.register_early_pass(|| Box::new(UnicodeEllipsisInComments::new()));
+    lint_store.register_late_pass(|_| Box::new(UnicodeEllipsisInComments::new()));
 }
 
-impl EarlyLintPass for UnicodeEllipsisInComments {
-    fn check_crate(&mut self, lint_context: &EarlyContext<'_>, _: &Crate) {
-        let source_map = lint_context.sess().source_map();
+impl<'tcx> LateLintPass<'tcx> for UnicodeEllipsisInComments {
+    fn check_crate_post(&mut self, lint_context: &LateContext<'tcx>) {
         if !(self.scan_line_comments || self.scan_block_comments) {
             return;
         }
+        let source_map = lint_context.sess().source_map();
+        let mut violations: Vec<(Span, char)> = Vec::new();
         for source_file in source_map.files().iter() {
             if source_file.cnum != LOCAL_CRATE {
                 continue;
@@ -127,37 +128,46 @@ impl EarlyLintPass for UnicodeEllipsisInComments {
                         .checked_add(token_len)
                         .expect("source-file offset overflowed u32");
                     let comment = &source_text[offset as usize..end as usize];
-                    self.scan_comment(lint_context, source_file, offset, comment);
+                    self.collect_comment(source_file, offset, comment, &mut violations);
                 }
                 offset = offset
                     .checked_add(token_len)
                     .expect("source-file offset overflowed u32");
             }
         }
+        emit_at_enclosing_hir(lint_context.tcx, violations, |hir_id, span, character| {
+            emit_flagged_char_hir(
+                lint_context,
+                UNICODE_ELLIPSIS_IN_COMMENTS,
+                hir_id,
+                character,
+                span,
+                "comment",
+            );
+        });
     }
 }
 
 impl UnicodeEllipsisInComments {
-    fn scan_comment(
+    fn collect_comment(
         &self,
-        lint_context: &EarlyContext<'_>,
         source_file: &SourceFile,
         comment_offset: u32,
         comment: &str,
+        out: &mut Vec<(Span, char)>,
     ) {
-        emit_flagged_chars(
-            lint_context,
-            UNICODE_ELLIPSIS_IN_COMMENTS,
-            comment,
-            &self.flagged_chars,
-            "comment",
-            |byte_index, char_len| {
-                let span_start = source_file.absolute_position(RelativeBytePos::from_u32(
-                    comment_offset + byte_index as u32,
-                ));
-                let span_end = BytePos::from_u32(span_start.0 + char_len);
-                Span::new(span_start, span_end, SyntaxContext::root(), None)
-            },
-        );
+        for (byte_index, character) in comment.char_indices() {
+            if !self.flagged_chars.contains(&character) {
+                continue;
+            }
+            let span_start = source_file.absolute_position(RelativeBytePos::from_u32(
+                comment_offset + byte_index as u32,
+            ));
+            let span_end = BytePos::from_u32(span_start.0 + character.len_utf8() as u32);
+            out.push((
+                Span::new(span_start, span_end, SyntaxContext::root(), None),
+                character,
+            ));
+        }
     }
 }

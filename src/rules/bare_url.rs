@@ -4,15 +4,15 @@
 
 use std::collections::BTreeSet;
 
-use clippy_utils::diagnostics::span_lint_and_sugg;
-use rustc_ast::Crate;
+use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
-use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
+use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Span;
 
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
 use crate::common::{DefaultState, resolved_state};
+use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::markdown::{position_in_skip, scan_skip_regions, utf8_char_len};
 use crate::url_scan::{DEFAULT_FORWARD_SCHEMES, TrailingClass, classify_trailing, take_url};
 
@@ -129,48 +129,59 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("bare_url", DefaultState::Active) {
         return;
     }
-    lint_store.register_early_pass(|| Box::new(BareUrl::new()));
+    lint_store.register_late_pass(|_| Box::new(BareUrl::new()));
 }
 
-impl EarlyLintPass for BareUrl {
-    fn check_crate(&mut self, lint_context: &EarlyContext<'_>, _: &Crate) {
+/// One bare-URL finding, parked during the comment walk and emitted
+/// later at its enclosing HIR node.
+struct UrlViolation {
+    url: String,
+    applicability: Applicability,
+}
+
+impl<'tcx> LateLintPass<'tcx> for BareUrl {
+    fn check_crate_post(&mut self, lint_context: &LateContext<'tcx>) {
         if !(self.scan_doc_comments || self.scan_regular_comments) {
             return;
         }
-        walk_local_comments(lint_context, |chunk| match chunk.surface {
+        let mut violations: Vec<(Span, UrlViolation)> = Vec::new();
+        walk_local_comments(lint_context.sess(), |chunk| match chunk.surface {
             CommentSurface::DocBlock | CommentSurface::DocBlockBlock => {
                 if self.scan_doc_comments {
-                    self.scan_doc_chunk(lint_context, chunk);
+                    self.scan_doc_chunk(chunk, &mut violations);
                 }
             }
             CommentSurface::PlainLine | CommentSurface::PlainBlock => {
                 if self.scan_regular_comments {
-                    self.scan_plain_chunk(lint_context, chunk);
+                    self.scan_plain_chunk(chunk, &mut violations);
                 }
             }
+        });
+        emit_at_enclosing_hir(lint_context.tcx, violations, |hir_id, span, violation| {
+            emit_diag(lint_context, hir_id, span, &violation);
         });
     }
 }
 
 impl BareUrl {
-    fn scan_doc_chunk(&self, lint_context: &EarlyContext<'_>, chunk: &CommentChunk<'_>) {
+    fn scan_doc_chunk(&self, chunk: &CommentChunk<'_>, out: &mut Vec<(Span, UrlViolation)>) {
         let skips = scan_skip_regions(&chunk.rendered);
-        self.scan(lint_context, chunk, &skips);
+        self.scan(chunk, &skips, out);
     }
 
-    fn scan_plain_chunk(&self, lint_context: &EarlyContext<'_>, chunk: &CommentChunk<'_>) {
+    fn scan_plain_chunk(&self, chunk: &CommentChunk<'_>, out: &mut Vec<(Span, UrlViolation)>) {
         // Plain comments aren't markdown, so no skip-region pass is
         // run; only the left-context guard inside [`Self::scan`]
         // (the `prev_byte` check against `<`, `[`, `(`, `"`, `'`,
         // `` ` ``, and word chars) applies.
-        self.scan(lint_context, chunk, &[]);
+        self.scan(chunk, &[], out);
     }
 
     fn scan(
         &self,
-        lint_context: &EarlyContext<'_>,
         chunk: &CommentChunk<'_>,
         skips: &[std::ops::Range<usize>],
+        out: &mut Vec<(Span, UrlViolation)>,
     ) {
         let text = &chunk.rendered;
         let bytes = text.as_bytes();
@@ -226,17 +237,17 @@ impl BareUrl {
                 index += url_match.consumed;
                 continue;
             }
-            self.emit(lint_context, chunk, index, url_match.url);
+            self.collect(chunk, index, url_match.url, out);
             index += url_match.consumed;
         }
     }
 
-    fn emit(
+    fn collect(
         &self,
-        lint_context: &EarlyContext<'_>,
         chunk: &CommentChunk<'_>,
         rendered_pos: usize,
         url: &str,
+        out: &mut Vec<(Span, UrlViolation)>,
     ) {
         let Some(span) = chunk.span_for(rendered_pos, url.len() as u32) else {
             return;
@@ -245,25 +256,36 @@ impl BareUrl {
             TrailingClass::Safe => Applicability::MachineApplicable,
             TrailingClass::Ambiguous => Applicability::MaybeIncorrect,
         };
-        let suggestion = format!("<{url}>");
-        emit_diag(lint_context, span, url, suggestion, applicability);
+        out.push((
+            span,
+            UrlViolation {
+                url: url.to_owned(),
+                applicability,
+            },
+        ));
     }
 }
 
 fn emit_diag(
-    lint_context: &EarlyContext<'_>,
+    lint_context: &LateContext<'_>,
+    hir_id: rustc_hir::HirId,
     span: Span,
-    url: &str,
-    suggestion: String,
-    applicability: Applicability,
+    violation: &UrlViolation,
 ) {
-    span_lint_and_sugg(
+    let UrlViolation { url, applicability } = violation;
+    span_lint_hir_and_then(
         lint_context,
         BARE_URL,
+        hir_id,
         span,
         format!("bare URL `{url}`; wrap in `<...>` or use a labelled markdown link"),
-        "wrap in `<...>` for portable autolink syntax",
-        suggestion,
-        applicability,
+        |diag| {
+            diag.span_suggestion(
+                span,
+                "wrap in `<...>` for portable autolink syntax",
+                format!("<{url}>"),
+                *applicability,
+            );
+        },
     );
 }

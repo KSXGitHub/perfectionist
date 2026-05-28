@@ -4,14 +4,16 @@
 
 use std::collections::BTreeSet;
 
-use clippy_utils::diagnostics::span_lint_and_then;
-use rustc_ast::Crate;
+use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
-use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
+use rustc_hir::HirId;
+use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
+use rustc_span::Span;
 
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
 use crate::common::{DefaultState, resolved_state};
+use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::markdown::{position_in_skip, scan_skip_regions, utf8_char_len};
 
 declare_tool_lint! {
@@ -137,15 +139,19 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("bare_email", DefaultState::Active) {
         return;
     }
-    lint_store.register_early_pass(|| Box::new(BareEmail::new()));
+    lint_store.register_late_pass(|_| Box::new(BareEmail::new()));
 }
 
-impl EarlyLintPass for BareEmail {
-    fn check_crate(&mut self, lint_context: &EarlyContext<'_>, _: &Crate) {
+impl<'tcx> LateLintPass<'tcx> for BareEmail {
+    fn check_crate_post(&mut self, lint_context: &LateContext<'tcx>) {
         if !(self.scan_doc_comments || self.scan_regular_comments) {
             return;
         }
-        walk_local_comments(lint_context, |chunk| {
+        // Each parked finding is the bare address text; the required
+        // form (`self.style`) is uniform across the crate, so it's read
+        // once at emission time rather than stored per violation.
+        let mut violations: Vec<(Span, String)> = Vec::new();
+        walk_local_comments(lint_context.sess(), |chunk| {
             let is_doc = matches!(
                 chunk.surface,
                 CommentSurface::DocBlock | CommentSurface::DocBlockBlock,
@@ -161,7 +167,11 @@ impl EarlyLintPass for BareEmail {
             } else {
                 Vec::new()
             };
-            self.scan(lint_context, chunk, &skips);
+            self.scan(chunk, &skips, &mut violations);
+        });
+        let style = self.style;
+        emit_at_enclosing_hir(lint_context.tcx, violations, |hir_id, span, address| {
+            emit_email(lint_context, hir_id, span, style, address);
         });
     }
 }
@@ -169,9 +179,9 @@ impl EarlyLintPass for BareEmail {
 impl BareEmail {
     fn scan(
         &self,
-        lint_context: &EarlyContext<'_>,
         chunk: &CommentChunk<'_>,
         skips: &[std::ops::Range<usize>],
+        out: &mut Vec<(Span, String)>,
     ) {
         let text = &chunk.rendered;
         let bytes = text.as_bytes();
@@ -241,77 +251,79 @@ impl BareEmail {
                 index += address_len;
                 continue;
             }
-            self.emit(lint_context, chunk, index, address);
+            let Some(span) = chunk.span_for(index, address_len as u32) else {
+                index += address_len;
+                continue;
+            };
+            out.push((span, address.to_owned()));
             index += address_len;
         }
     }
+}
 
-    fn emit(
-        &self,
-        lint_context: &EarlyContext<'_>,
-        chunk: &CommentChunk<'_>,
-        rendered_pos: usize,
-        address: &str,
-    ) {
-        let Some(span) = chunk.span_for(rendered_pos, address.len() as u32) else {
-            return;
-        };
-        let style = self.style;
-        let address = address.to_owned();
-        span_lint_and_then(
-            lint_context,
-            BARE_EMAIL,
-            span,
-            format!("bare email address `{address}`"),
-            move |diag| match style {
-                Style::AngleBrackets => {
-                    diag.span_suggestion(
-                        span,
-                        "wrap in `<...>`",
-                        format!("<{address}>"),
-                        Applicability::MachineApplicable,
-                    );
-                }
-                Style::Mailto => {
-                    diag.span_suggestion(
-                        span,
-                        "prefix with `mailto:`",
-                        format!("mailto:{address}"),
-                        Applicability::MachineApplicable,
-                    );
-                }
-                Style::Both => {
-                    diag.span_suggestion(
-                        span,
-                        "wrap in `<mailto:...>`",
-                        format!("<mailto:{address}>"),
-                        Applicability::MachineApplicable,
-                    );
-                }
-                Style::Either => {
-                    diag.span_suggestion(
-                        span,
-                        "wrap in `<...>`",
-                        format!("<{address}>"),
-                        Applicability::MaybeIncorrect,
-                    );
-                    diag.span_suggestion(
-                        span,
-                        "or prefix with `mailto:`",
-                        format!("mailto:{address}"),
-                        Applicability::MaybeIncorrect,
-                    );
-                }
-                Style::Forbid => {
-                    diag.help(
-                        "move the email out of source — e.g. into a \
-                             CONTRIBUTING.md or SECURITY.md — or remove it \
-                             entirely",
-                    );
-                }
-            },
-        );
-    }
+/// Emit one bare-email finding at its enclosing HIR node, with the
+/// suggestion(s) the configured `style` calls for.
+fn emit_email(
+    lint_context: &LateContext<'_>,
+    hir_id: HirId,
+    span: Span,
+    style: Style,
+    address: String,
+) {
+    span_lint_hir_and_then(
+        lint_context,
+        BARE_EMAIL,
+        hir_id,
+        span,
+        format!("bare email address `{address}`"),
+        move |diag| match style {
+            Style::AngleBrackets => {
+                diag.span_suggestion(
+                    span,
+                    "wrap in `<...>`",
+                    format!("<{address}>"),
+                    Applicability::MachineApplicable,
+                );
+            }
+            Style::Mailto => {
+                diag.span_suggestion(
+                    span,
+                    "prefix with `mailto:`",
+                    format!("mailto:{address}"),
+                    Applicability::MachineApplicable,
+                );
+            }
+            Style::Both => {
+                diag.span_suggestion(
+                    span,
+                    "wrap in `<mailto:...>`",
+                    format!("<mailto:{address}>"),
+                    Applicability::MachineApplicable,
+                );
+            }
+            Style::Either => {
+                diag.span_suggestion(
+                    span,
+                    "wrap in `<...>`",
+                    format!("<{address}>"),
+                    Applicability::MaybeIncorrect,
+                );
+                diag.span_suggestion(
+                    span,
+                    "or prefix with `mailto:`",
+                    format!("mailto:{address}"),
+                    Applicability::MaybeIncorrect,
+                );
+            }
+            Style::Forbid => {
+                diag.help(
+                    "move the email out of source — e.g. into a \
+                         CONTRIBUTING.md or SECURITY.md — or remove it \
+                         entirely",
+                );
+            }
+        },
+    );
 }
 
 /// Take an email address from the start of `input`. Returns
