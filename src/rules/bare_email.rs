@@ -1,7 +1,3 @@
-//! `perfectionist::bare_email` — flag bare email addresses in doc
-//! comments and regular comments. The autofix wraps, `mailto:`-prefixes,
-//! or both, depending on configuration.
-
 use std::collections::BTreeSet;
 
 use clippy_utils::diagnostics::span_lint_hir_and_then;

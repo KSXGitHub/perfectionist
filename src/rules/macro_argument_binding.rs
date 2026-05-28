@@ -1,22 +1,3 @@
-//! `perfectionist::macro_argument_binding` — flag impure top-level
-//! arguments to function-like (`name!(...)`) and array-like (`name![...]`)
-//! macro invocations.
-//!
-//! Module layout:
-//!
-//! - [`config`] — user-facing configuration (`Mode`, `Config`,
-//!   `MacroArgumentBinding` state) and the curated built-in deny /
-//!   allow sets.
-//! - [`purity`] — top-level argument splitter, the
-//!   `looks_like_expression` heuristic, and the pure-expression
-//!   token-stream walker.
-//! - [`late`] — late pass that drains [`PENDING_VIOLATIONS`] and emits
-//!   each diagnostic at the deepest enclosing HIR node.
-//!
-//! The pre-expansion pass below threads the three together: split
-//! arguments, skip non-expression arguments, classify expressions,
-//! park violation spans for the late pass to emit.
-
 use std::sync::Mutex;
 
 use rustc_ast::MacCall;

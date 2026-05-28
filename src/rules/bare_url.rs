@@ -1,7 +1,3 @@
-//! `perfectionist::bare_url` — flag bare `http(s)://` URLs in doc
-//! comments and regular comments. The autofix wraps the URL in
-//! `<...>`, with applicability driven by the URL's last character.
-
 use std::collections::BTreeSet;
 
 use clippy_utils::diagnostics::span_lint_hir_and_then;

@@ -1,10 +1,3 @@
-//! `perfectionist::derive_ordering` — enforce a project-wide ordering
-//! of trait names inside a single `#[derive(...)]` list.
-//!
-//! The ordering algorithm itself lives in [`ordering`]; this file
-//! owns the lint declaration, the configuration, and the early
-//! pre-expansion pass that runs it.
-
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Attribute, MetaItemInner};
 use rustc_errors::Applicability;

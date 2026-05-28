@@ -1,20 +1,3 @@
-//! `perfectionist::unicode_ellipsis_in_panic_messages` — flag U+2026
-//! HORIZONTAL ELLIPSIS (`…`) in panic / assertion / `expect` messages.
-//!
-//! Module layout:
-//!
-//! - [`config`] — user-facing configuration and the curated default
-//!   macro / method lists.
-//! - [`scan`] — the two source-text scans the rule performs: a
-//!   tokenizer walk over a macro call's snippet, and a per-literal
-//!   body scan for `expect` / `expect_err`. Both forward to the
-//!   shared [`crate::literal_scan`] helpers for per-character
-//!   emission.
-//!
-//! The late pass below threads them together: every `Expr` is
-//! checked once as a possible root macro call, and once as a possible
-//! `expect` / `expect_err` method call.
-
 use clippy_utils::macros::root_macro_call_first_node;
 use clippy_utils::res::MaybeDef;
 use rustc_ast::LitKind;
