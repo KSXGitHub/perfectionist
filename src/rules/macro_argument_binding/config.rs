@@ -100,6 +100,16 @@ const BUILTIN_ALLOW: &[&str] = &[
     //   and evaluates each captured expression once; `ensure!(cond,
     //   args)` matches the shape of `assert!(cond, args)` already on
     //   group 1 — `cond` always evaluates, `args` only on failure.
+    // - `assert_cmp::assert_op_expr` asserts a binary comparison
+    //   of two expressions. It expands to `match ($left, $right)
+    //   { (left, right) => assert!(left $op right, ...) }`, moving
+    //   each operand into the scrutinee tuple exactly once (the
+    //   `stringify!` uses are compile-time only). The sibling
+    //   `assert_op!(a $op b)` takes only idents / literals, so it
+    //   never carries an impure argument and needs no entry; the
+    //   `debug_*` variants are deliberately omitted because they
+    //   compile to nothing in release builds (the same conditional-
+    //   evaluation hazard as `debug_assert!`).
     // - `insta`'s snapshot-assertion family. Each variant
     //   evaluates its value argument exactly once before
     //   serialising; `assert_display_snapshot` is deprecated
@@ -130,6 +140,7 @@ const BUILTIN_ALLOW: &[&str] = &[
     "assert_debug_snapshot",
     "assert_display_snapshot",
     "assert_json_snapshot",
+    "assert_op_expr",
     "assert_ron_snapshot",
     "assert_snapshot",
     "assert_toml_snapshot",
