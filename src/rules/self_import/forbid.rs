@@ -3,7 +3,7 @@
 //! bare module import.
 
 use clippy_utils::diagnostics::span_lint_and_then;
-use clippy_utils::source::indent_of;
+use clippy_utils::source::snippet_indent;
 use rustc_ast::{Item, UseTree, UseTreeKind};
 use rustc_errors::Applicability;
 use rustc_lint::EarlyContext;
@@ -118,7 +118,7 @@ fn rewrite_self_group(
         // statement). The injected statement replays the item's
         // attributes and visibility so neither is dropped.
         let visibility = render_visibility(cx, item);
-        let indent = " ".repeat(indent_of(cx, item.span).unwrap_or(0));
+        let indent = snippet_indent(cx, item.span).unwrap_or_default();
         let attrs: String = attr_snippets(cx, item)
             .iter()
             .map(|attr| format!("{attr}\n{indent}"))

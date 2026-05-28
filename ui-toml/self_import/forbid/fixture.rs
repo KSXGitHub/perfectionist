@@ -69,6 +69,13 @@ mod rooted_path {
     use ::std::collections::{self};
 }
 
+// A cfg-gated import is linted pre-expansion, even when the cfg would
+// strip it from the build (`any()` is always false).
+mod cfg_gated {
+    #[cfg(any())]
+    use crate::defs::inner::{self};
+}
+
 // A bare module import is already compliant — no diagnostic.
 mod clean {
     use crate::defs::sibling;

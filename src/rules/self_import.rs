@@ -154,7 +154,13 @@ pub fn register_pass(lint_store: &mut LintStore) {
                  `[perfectionist::self_import]` in dylint.toml",
             )
         });
-    lint_store.register_early_pass(move || {
+    // Pre-expansion, like the sibling `import_granularity` rule: `#[cfg(...)]`
+    // attributes are evaluated and stripped during macro expansion, so a
+    // post-expansion pass would never lint a cfg-gated `use` and `combined`'s
+    // adjacency window would shift with the active cfg flags (folding across a
+    // source-non-adjacent pair once an intervening item is stripped). Running
+    // before expansion keeps the source's original `use` structure intact.
+    lint_store.register_pre_expansion_pass(move || {
         Box::new(SelfImport {
             style: config.style,
         })

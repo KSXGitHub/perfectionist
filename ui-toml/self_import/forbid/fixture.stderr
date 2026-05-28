@@ -93,5 +93,11 @@ warning: this `use` imports a module through `self`
 LL |     use ::std::collections::{self};
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: import the module by its bare path: `::std::collections`
 
-warning: 11 warnings emitted
+warning: this `use` imports a module through `self`
+  --> $DIR/fixture.rs:76:9
+   |
+LL |     use crate::defs::inner::{self};
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: import the module by its bare path: `crate::defs::inner`
+
+warning: 12 warnings emitted
 
