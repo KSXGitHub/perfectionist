@@ -447,7 +447,7 @@ group.
 The third part collects third-party macros whose matchers are
 known to evaluate every top-level argument exactly once before
 forwarding it, so the rule's once-vs.-zero hazard does not apply.
-The current entries cover four crates; the group is open-ended
+The current entries cover five crates; the group is open-ended
 and further crates can be added as their matchers are vetted.
 
 - The `insta` snapshot-assertion family: `assert_snapshot!`,
@@ -464,6 +464,12 @@ and further crates can be added as their matchers are vetted.
   captured expression once; `ensure!(cond, args)` matches the
   conditional-arguments shape of `assert!(cond, args)` already
   on group 1.
+- `assert_cmp::assert_op_expr!($left, $op, $right)`. It expands to
+  `match ($left, $right) { (left, right) => assert!(left $op right,
+  ...) }`, moving each operand into the scrutinee tuple exactly
+  once. The sibling `assert_op!` takes only idents / literals and
+  so never carries an impure argument; the `debug_*` variants are
+  omitted because they compile to nothing in release builds.
 - The `maplit::{hashmap, btreemap, hashset, btreeset}!` builders.
   Each expands to one `.insert` call per key/value pair, so every
   captured expression is evaluated exactly once.
