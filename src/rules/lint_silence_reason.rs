@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 use std::num::NonZeroUsize;
 
 use clippy_utils::diagnostics::{span_lint_and_sugg, span_lint_and_then};
+use clippy_utils::is_from_proc_macro;
 use rustc_ast::{Attribute, LitKind, MetaItem, MetaItemInner, MetaItemKind};
 use rustc_errors::Applicability;
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
@@ -119,6 +120,21 @@ impl EarlyLintPass for LintSilenceReason {
     /// attribute exactly once: bare `#[allow]` / `#[expect]` through
     /// the first branch, `cfg_attr`-wrapped through the second.
     fn check_attribute(&mut self, lint_context: &EarlyContext<'_>, attribute: &Attribute) {
+        // Attributes synthesized by a derive / proc-macro expansion are
+        // not hand-written suppressions, so the author has no place to
+        // add a `reason`. Neither of rustc's usual filters catches them:
+        // macros such as `clap_derive` stamp the generated `#[allow(...)]`
+        // with the *call-site* span of a user `#[clap(...)]` attribute, so
+        // the span carries the root syntax context (`from_expansion` is
+        // `false`) and points at real source (`in_external_macro`, and
+        // hence `report_in_external_macro: false`, reports it as local).
+        // The tell is that the source text under the span reads
+        // `#[clap(...)]`, not `#[allow(...)]`; `is_from_proc_macro`
+        // compares the attribute's name against that text and flags the
+        // mismatch.
+        if is_from_proc_macro(lint_context, attribute) {
+            return;
+        }
         if is_silencing_attribute_name(attribute.name()) {
             if let Some(args) = attribute.meta_item_list() {
                 self.check_silencing(lint_context, attribute.span, &args);

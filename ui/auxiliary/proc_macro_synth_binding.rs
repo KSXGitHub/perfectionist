@@ -316,6 +316,53 @@ pub fn synth_field_ref_body(input: TokenStream) -> TokenStream {
     wrap_const_block(body)
 }
 
+/// `#[derive(SynthSilenceReason)]` + `#[synth_silence_reason]` →
+/// `#[allow(dead_code)] fn _synth_silence_reason() {}` where the
+/// synthesised `#[allow(dead_code)]` attribute inherits the user-span
+/// of `synth_silence_reason` rather than a call-site span. This is the
+/// exact shape `clap_derive` produces for its generated `#[allow(...)]`
+/// attributes (see <https://github.com/KSXGitHub/parallel-disk-usage/issues/430>):
+/// the attribute carries a root-context user span, so neither
+/// `Span::from_expansion` nor `report_in_external_macro: false` filters
+/// it. `lint_silence_reason` must instead notice that the source text
+/// under the span reads `#[synth_silence_reason]`, not `#[allow(...)]`,
+/// and stay quiet.
+#[proc_macro_derive(SynthSilenceReason, attributes(synth_silence_reason))]
+pub fn synth_silence_reason(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_silence_reason")
+        .expect("`#[derive(SynthSilenceReason)]` requires a `#[synth_silence_reason]`");
+    let call_site = Span::call_site();
+
+    // `allow(dead_code)`, every token stamped with the user span so the
+    // generated attribute looks (to span-based filters) like it was
+    // hand-written at the `#[synth_silence_reason]` site.
+    let at_attr = |mut tree: TokenTree| {
+        tree.set_span(attr_span);
+        tree
+    };
+    let mut allow_args = TokenStream::new();
+    allow_args.extend([at_attr(TokenTree::Ident(Ident::new("dead_code", attr_span)))]);
+    let mut attr_inner = TokenStream::new();
+    attr_inner.extend([
+        at_attr(TokenTree::Ident(Ident::new("allow", attr_span))),
+        at_attr(TokenTree::Group(Group::new(
+            Delimiter::Parenthesis,
+            allow_args,
+        ))),
+    ]);
+
+    let mut out = TokenStream::new();
+    out.extend([
+        at_attr(TokenTree::Punct(Punct::new('#', Spacing::Alone))),
+        at_attr(TokenTree::Group(Group::new(Delimiter::Bracket, attr_inner))),
+        TokenTree::Ident(Ident::new("fn", call_site)),
+        TokenTree::Ident(Ident::new("_synth_silence_reason", call_site)),
+        TokenTree::Group(Group::new(Delimiter::Parenthesis, TokenStream::new())),
+        TokenTree::Group(Group::new(Delimiter::Brace, TokenStream::new())),
+    ]);
+    out
+}
+
 fn wrap_const_block(body: TokenStream) -> TokenStream {
     let call_site = Span::call_site();
     let mut out = TokenStream::new();
