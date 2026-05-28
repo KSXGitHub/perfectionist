@@ -116,7 +116,7 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterFunctionParam {
         }
         // The first param of a method is `self`, whose pattern is the
         // implicit-self synthesised binding; the rule does not flag it.
-        let skip_self = !matches!(decl.implicit_self, hir::ImplicitSelfKind::None);
+        let skip_self = !matches!(decl.implicit_self(), hir::ImplicitSelfKind::None);
         let params_iter = body.params.iter().skip(usize::from(skip_self));
         for param in params_iter {
             if hir_in_external_macro(lint_context, param.hir_id, param.span) {
