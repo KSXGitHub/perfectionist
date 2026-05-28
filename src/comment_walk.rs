@@ -1,7 +1,8 @@
-//! Comment-stream walker shared by `bare_url`, `bare_email`, and
-//! `bare_issue_reference`.
+//! Comment-stream walker shared by `bare_url`, `bare_email`,
+//! `bare_issue_reference`, and `unicode_ellipsis_in_docs`.
 //!
-//! Each of these rules needs to scan two distinct surfaces:
+//! Each of these rules needs to scan one or both of two distinct
+//! surfaces:
 //!
 //! - **Doc-comment blocks** — `///` / `//!` line runs and `/** ... */`
 //!   block doc comments, each block treated as a single markdown
