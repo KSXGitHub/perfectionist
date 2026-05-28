@@ -2,15 +2,16 @@
 //! PR references in doc comments (and optionally plain `//` line
 //! comments), suggesting the markdown-link form.
 
-use clippy_utils::diagnostics::span_lint_and_then;
-use rustc_ast::Crate;
+use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
-use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
+use rustc_hir::HirId;
+use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Span;
 
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
 use crate::common::{DefaultState, resolved_state};
+use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::markdown::{position_in_skip, scan_skip_regions, utf8_char_len};
 use crate::url_scan::back_scan_url_fragment;
 
@@ -348,18 +349,42 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("bare_issue_reference", DefaultState::Active) {
         return;
     }
-    lint_store.register_early_pass(|| Box::new(BareIssueReference::new()));
+    lint_store.register_late_pass(|_| Box::new(BareIssueReference::new()));
 }
 
-impl EarlyLintPass for BareIssueReference {
-    fn check_crate(&mut self, lint_context: &EarlyContext<'_>, _: &Crate) {
-        walk_local_comments(lint_context, |chunk| match chunk.surface {
+/// One bare `#NNN` finding, parked during the comment walk and emitted
+/// later at its enclosing HIR node. Everything the diagnostic needs
+/// that depends on the comment chunk (the link URLs, the
+/// `reference`-form definition site) is precomputed here, since the
+/// chunk is gone by the time the late pass emits.
+struct IssueRefViolation {
+    token: String,
+    issue_url: Option<String>,
+    pr_url: Option<String>,
+    is_doc: bool,
+    ref_site: Option<RefDefinitionSite>,
+}
+
+/// The crate-uniform rendering choices for the bare `#NNN` autofix,
+/// resolved once and shared by every emitted finding.
+#[derive(Clone, Copy)]
+struct EmitOptions {
+    suggest_issue: bool,
+    suggest_pr: bool,
+    doc_form: DocForm,
+    plain_form: PlainForm,
+}
+
+impl<'tcx> LateLintPass<'tcx> for BareIssueReference {
+    fn check_crate_post(&mut self, lint_context: &LateContext<'tcx>) {
+        let mut violations: Vec<(Span, IssueRefViolation)> = Vec::new();
+        walk_local_comments(lint_context.sess(), |chunk| match chunk.surface {
             CommentSurface::DocBlock | CommentSurface::DocBlockBlock => {
-                self.scan_doc(lint_context, chunk);
+                self.scan_doc(chunk, &mut violations);
             }
             CommentSurface::PlainLine => {
                 if self.include_plain_comments {
-                    self.scan_plain(lint_context, chunk);
+                    self.scan_plain(chunk, &mut violations);
                 }
             }
             CommentSurface::PlainBlock => {
@@ -367,25 +392,37 @@ impl EarlyLintPass for BareIssueReference {
                 // deliberately doesn't scan plain block comments.
             }
         });
+        let options = EmitOptions {
+            suggest_issue: self.suggest_issue_url,
+            // On GitLab a bare `#NNN` always denotes an issue — merge
+            // requests are written `!NNN` — so the PR suggestion never
+            // applies to it, whatever `suggest_pr_url` says.
+            suggest_pr: self.suggest_pr_url && self.hash_can_mean_pr(),
+            doc_form: self.doc_comment_form,
+            plain_form: self.plain_comment_form,
+        };
+        emit_at_enclosing_hir(lint_context.tcx, violations, |hir_id, span, violation| {
+            emit_issue_ref(lint_context, hir_id, span, violation, options);
+        });
     }
 }
 
 impl BareIssueReference {
-    fn scan_doc(&self, lint_context: &EarlyContext<'_>, chunk: &CommentChunk<'_>) {
+    fn scan_doc(&self, chunk: &CommentChunk<'_>, out: &mut Vec<(Span, IssueRefViolation)>) {
         let skips = scan_skip_regions(&chunk.rendered);
-        self.scan(lint_context, chunk, &skips, true);
+        self.scan(chunk, &skips, true, out);
     }
 
-    fn scan_plain(&self, lint_context: &EarlyContext<'_>, chunk: &CommentChunk<'_>) {
-        self.scan(lint_context, chunk, &[], false);
+    fn scan_plain(&self, chunk: &CommentChunk<'_>, out: &mut Vec<(Span, IssueRefViolation)>) {
+        self.scan(chunk, &[], false, out);
     }
 
     fn scan(
         &self,
-        lint_context: &EarlyContext<'_>,
         chunk: &CommentChunk<'_>,
         skips: &[std::ops::Range<usize>],
         is_doc: bool,
+        out: &mut Vec<(Span, IssueRefViolation)>,
     ) {
         let text = &chunk.rendered;
         let bytes = text.as_bytes();
@@ -435,112 +472,138 @@ impl BareIssueReference {
                 continue;
             }
             let number = &text[digits_start..end];
-            self.emit(lint_context, chunk, index, end - index, number, is_doc);
+            self.collect(chunk, index, end - index, number, is_doc, out);
             index = end;
         }
     }
 
-    fn emit(
+    fn collect(
         &self,
-        lint_context: &EarlyContext<'_>,
         chunk: &CommentChunk<'_>,
         rendered_pos: usize,
         len: usize,
         number: &str,
         is_doc: bool,
+        out: &mut Vec<(Span, IssueRefViolation)>,
     ) {
         let Some(span) = chunk.span_for(rendered_pos, len as u32) else {
             return;
         };
-        let token = format!("#{number}");
-        let issue_url = self.issue_url(number);
-        let pr_url = self.pr_url(number);
-        let suggest_issue = self.suggest_issue_url;
-        // On GitLab a bare `#NNN` always denotes an issue — merge
-        // requests are written `!NNN` — so the PR suggestion never
-        // applies to it, whatever `suggest_pr_url` says.
-        let suggest_pr = self.suggest_pr_url && self.hash_can_mean_pr();
-        let doc_form = self.doc_comment_form;
-        let plain_form = self.plain_comment_form;
         // For the `reference` form, work out where (and with what
         // prefix) to append the `[#N]: URL` definition, so the fix is
         // complete rather than leaving the definition to the author.
         // `None` for other forms, block doc comments, or a block that
         // already defines the reference.
-        let ref_site = (doc_form == DocForm::Reference)
+        let ref_site = (self.doc_comment_form == DocForm::Reference)
             .then(|| reference_definition_site(chunk, rendered_pos, number))
             .flatten();
-        span_lint_and_then(
-            lint_context,
-            BARE_ISSUE_REFERENCE,
+        out.push((
             span,
-            format!(
-                "ambiguous `{token}`; a bare `#NNN` could be an issue or pull request, \
-                 a colour, or any other numbered item",
-            ),
-            move |diag| {
-                // Offer the issue / PR link suggestions when a
-                // repository is configured and at least one knob is
-                // on. These are only ever `MaybeIncorrect`: the token
-                // is ambiguous, so the lint can't be sure it even
-                // names a reference.
-                match issue_url {
-                    None => {
-                        diag.help(
-                            "set `repository` (and `forge`, if its host isn't a recognised \
-                             service) in dylint.toml under \
-                             `[perfectionist::bare_issue_reference]` to enable issue / PR link \
-                             suggestions",
+            IssueRefViolation {
+                token: format!("#{number}"),
+                issue_url: self.issue_url(number),
+                pr_url: self.pr_url(number),
+                is_doc,
+                ref_site,
+            },
+        ));
+    }
+}
+
+/// Emit one bare `#NNN` finding at its enclosing HIR node. The
+/// suggestion shape is driven by `doc_form` / `plain_form`; the issue /
+/// PR link URLs were resolved when the violation was parked.
+fn emit_issue_ref(
+    lint_context: &LateContext<'_>,
+    hir_id: HirId,
+    span: Span,
+    violation: IssueRefViolation,
+    options: EmitOptions,
+) {
+    let IssueRefViolation {
+        token,
+        issue_url,
+        pr_url,
+        is_doc,
+        ref_site,
+    } = violation;
+    let EmitOptions {
+        suggest_issue,
+        suggest_pr,
+        doc_form,
+        plain_form,
+    } = options;
+    span_lint_hir_and_then(
+        lint_context,
+        BARE_ISSUE_REFERENCE,
+        hir_id,
+        span,
+        format!(
+            "ambiguous `{token}`; a bare `#NNN` could be an issue or pull request, \
+             a colour, or any other numbered item",
+        ),
+        move |diag| {
+            // Offer the issue / PR link suggestions when a
+            // repository is configured and at least one knob is
+            // on. These are only ever `MaybeIncorrect`: the token
+            // is ambiguous, so the lint can't be sure it even
+            // names a reference.
+            match issue_url {
+                None => {
+                    diag.help(
+                        "set `repository` (and `forge`, if its host isn't a recognised \
+                         service) in dylint.toml under \
+                         `[perfectionist::bare_issue_reference]` to enable issue / PR link \
+                         suggestions",
+                    );
+                }
+                Some(_) if !(suggest_issue || suggest_pr) => {
+                    diag.help(
+                        "enable `suggest_issue_url` and/or `suggest_pr_url` in dylint.toml \
+                         under `[perfectionist::bare_issue_reference]` to get a link \
+                         suggestion",
+                    );
+                }
+                Some(issue_url) => {
+                    if suggest_issue {
+                        emit_one(
+                            diag,
+                            span,
+                            &token,
+                            &issue_url,
+                            "issue",
+                            is_doc,
+                            doc_form,
+                            plain_form,
+                            ref_site.as_ref(),
                         );
                     }
-                    Some(_) if !(suggest_issue || suggest_pr) => {
-                        diag.help(
-                            "enable `suggest_issue_url` and/or `suggest_pr_url` in dylint.toml \
-                             under `[perfectionist::bare_issue_reference]` to get a link \
-                             suggestion",
+                    if suggest_pr {
+                        let pr_url = pr_url.expect("pr_url renders whenever issue_url does");
+                        emit_one(
+                            diag,
+                            span,
+                            &token,
+                            &pr_url,
+                            "pull request",
+                            is_doc,
+                            doc_form,
+                            plain_form,
+                            ref_site.as_ref(),
                         );
-                    }
-                    Some(issue_url) => {
-                        if suggest_issue {
-                            emit_one(
-                                diag,
-                                span,
-                                &token,
-                                &issue_url,
-                                "issue",
-                                is_doc,
-                                doc_form,
-                                plain_form,
-                                ref_site.as_ref(),
-                            );
-                        }
-                        if suggest_pr {
-                            let pr_url = pr_url.expect("pr_url renders whenever issue_url does");
-                            emit_one(
-                                diag,
-                                span,
-                                &token,
-                                &pr_url,
-                                "pull request",
-                                is_doc,
-                                doc_form,
-                                plain_form,
-                                ref_site.as_ref(),
-                            );
-                        }
                     }
                 }
-                // Two disambiguations that apply whatever the config:
-                // mark the token as not-a-reference, or avoid the
-                // `#NNN` spelling entirely.
-                diag.help(format!(
-                    "if `{token}` is not an issue or pull request, enclose it in backticks \
-                     so it renders as code",
-                ));
-                diag.help("or refer to the numbered item with a spelling that has no leading `#`");
-            },
-        );
-    }
+            }
+            // Two disambiguations that apply whatever the config:
+            // mark the token as not-a-reference, or avoid the
+            // `#NNN` spelling entirely.
+            diag.help(format!(
+                "if `{token}` is not an issue or pull request, enclose it in backticks \
+                 so it renders as code",
+            ));
+            diag.help("or refer to the numbered item with a spelling that has no leading `#`");
+        },
+    );
 }
 
 /// Where to append a `reference`-form `[#N]: URL` definition, so the
