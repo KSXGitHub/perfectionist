@@ -287,9 +287,9 @@ checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 
 [[package]]
 name = "clippy_utils"
-version = "0.1.97"
+version = "0.1.98"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb170400201dae0f1738eadec962b57e5abd8743cf6a6c136a0fcd1994ae6c93"
+checksum = "8b1f053614b0c24f71fa679495f1c515b13513262068ddf7960977e357612924"
 dependencies = [
  "arrayvec",
  "itertools",
@@ -421,9 +421,9 @@ dependencies = [
 
 [[package]]
 name = "dylint"
-version = "6.0.0"
+version = "6.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b795f98802f87352aab60584eea87f942c53ab30edcafab4b31a6cbdd9e8a3ac"
+checksum = "c738fb72ea7d248df2995a31b3698beb63d0f1f9ca5a5dc0188c4b64cd0e86e4"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -439,9 +439,9 @@ dependencies = [
 
 [[package]]
 name = "dylint_internal"
-version = "6.0.0"
+version = "6.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a03ff51e671fceef87e50fef97ddc1569241af242d76e0b367dfcc812c860eb0"
+checksum = "9796d3441d7894cbaf4992640799efffc1661978f0cc1266ec788c32254fdfb3"
 dependencies = [
  "anstyle",
  "anyhow",
@@ -459,9 +459,9 @@ dependencies = [
 
 [[package]]
 name = "dylint_linting"
-version = "6.0.0"
+version = "6.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3efcb9b741bccdd6f1ce701c4b17b452112e8c0cd045c8b894a112584ff5d55"
+checksum = "c213635b3eaa84f43b9b497377f17d9a8d4feb413bab1d82e03ad1c73e4f6d8c"
 dependencies = [
  "cargo_metadata",
  "dylint_internal",
@@ -474,9 +474,9 @@ dependencies = [
 
 [[package]]
 name = "dylint_testing"
-version = "6.0.0"
+version = "6.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2eaa3ca6e1f740cd587630c321f61927b4cafdc2abf7c2fbacc3fca8635fcc48"
+checksum = "4f5f50ee06be9ebfb5b9538ba0d7bb08adc33e8f31c901e7d398de2a9b1ae290"
 dependencies = [
  "anyhow",
  "cargo_metadata",

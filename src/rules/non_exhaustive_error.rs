@@ -231,7 +231,11 @@ fn implements_error_trait(cx: &LateContext<'_>, def_id: LocalDefId) -> bool {
     let Some(error_trait) = cx.tcx.get_diagnostic_item(sym::Error) else {
         return false;
     };
-    let ty = cx.tcx.type_of(def_id).instantiate_identity();
+    let ty = cx
+        .tcx
+        .type_of(def_id)
+        .instantiate_identity()
+        .skip_normalization();
     implements_trait(cx, ty, error_trait, &[])
 }
 
@@ -254,7 +258,11 @@ fn is_sum_like(cx: &LateContext<'_>, data: &hir::VariantData<'_>) -> bool {
     if fields.len() != 1 {
         return false;
     }
-    let field_ty = cx.tcx.type_of(fields[0].def_id).instantiate_identity();
+    let field_ty = cx
+        .tcx
+        .type_of(fields[0].def_id)
+        .instantiate_identity()
+        .skip_normalization();
     matches!(field_ty.kind(), ty::Adt(adt_def, _) if adt_def.is_enum())
 }
 
