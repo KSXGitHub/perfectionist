@@ -14,9 +14,8 @@ use rustc_span::hygiene::ExpnKind;
 use rustc_span::source_map::SourceMap;
 use rustc_span::{BytePos, SourceFile, Span, Symbol};
 
-use super::UNIT_TEST_FILE_LAYOUT;
 use super::config::{InlineStyle, UnitTestFileLayout};
-use super::layout;
+use super::{UNIT_TEST_FILE_LAYOUT, layout};
 
 /// One inline test item charged to a file's footprint.
 struct TestItem {

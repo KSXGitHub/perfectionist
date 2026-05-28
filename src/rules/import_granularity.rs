@@ -1,12 +1,19 @@
-use clippy_utils::diagnostics::span_lint_and_then;
+use std::path::{Path, PathBuf};
+
+use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::source::indent_of;
 use rustc_ast::{
     AttrKind, Attribute, Crate, Item, ItemKind, MetaItemKind, ModKind, Visibility, VisibilityKind,
 };
-use rustc_errors::Applicability;
-use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
+use rustc_errors::emitter::SilentEmitter;
+use rustc_errors::{Applicability, DiagCtxt};
+use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
+use rustc_parse::lexer::StripTokens;
+use rustc_parse::new_parser_from_file;
+use rustc_session::parse::ParseSess;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::{BytePos, sym};
+use rustc_span::def_id::LOCAL_CRATE;
+use rustc_span::{BytePos, FileName, Span, sym};
 
 mod check;
 mod config;
@@ -18,6 +25,7 @@ use config::{Config, Style};
 use model::{Leaf, StmtInfo, stmt_info};
 
 use crate::common::{DefaultState, resolved_state};
+use crate::enclosing_hir::find_enclosing_hir_ids;
 
 declare_tool_lint! {
     /// ### What it does
@@ -107,22 +115,154 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("import_granularity", DEFAULT_STATE) {
         return;
     }
-    // Pre-expansion: `#[cfg(...)]` attributes are evaluated and stripped
-    // during macro expansion, so a post-expansion pass can't see them
-    // and `respect_cfg_blocks` would be a no-op. Running before
-    // expansion keeps the cfg gates (and the source's original `use`
-    // structure) intact.
-    lint_store.register_pre_expansion_pass(|| Box::new(ImportGranularity::new()));
+    // Late pass: by this point every one of the crate's source files —
+    // including separate-file submodules declared with `mod foo;` — has
+    // been loaded into the source map. A pre-expansion early pass only
+    // sees the crate-root file and its inline `mod { ... }` blocks,
+    // because out-of-line modules are still `ModKind::Unloaded` until
+    // macro expansion loads them; it would silently skip every
+    // `mod foo;` submodule. The late pass re-parses each source file
+    // itself (see `check_crate`), which both reaches those submodules
+    // and keeps the original `#[cfg(...)]` gates intact — parsing does
+    // not strip cfg attributes, whereas the post-expansion AST has them
+    // evaluated away, which would make `respect_cfg_blocks` a no-op.
+    lint_store.register_late_pass(|_| Box::new(ImportGranularity::new()));
 }
 
-impl EarlyLintPass for ImportGranularity {
-    fn check_crate(&mut self, lint_context: &EarlyContext<'_>, krate: &Crate) {
-        self.check_items(lint_context, &krate.items);
-    }
+/// A detected violation parked until the enclosing HIR node is known.
+/// Emission happens through [`span_lint_hir_and_then`] so a per-module /
+/// per-item `#[allow]` / `#[expect]` resolves (see
+/// [`crate::enclosing_hir`]).
+struct Pending {
+    /// The span used to resolve the lint-level anchor: the first `use`
+    /// statement of the group, always contained by its own HIR node.
+    anchor: Span,
+    /// The span the diagnostic points at and rewrites — the whole run of
+    /// merged statements.
+    span: Span,
+    violation: Violation,
+}
 
-    fn check_item(&mut self, lint_context: &EarlyContext<'_>, item: &Item) {
-        if let ItemKind::Mod(_, _, ModKind::Loaded(items, _, _)) = &item.kind {
-            self.check_items(lint_context, items);
+/// What to render for a [`Pending`] violation once its anchor is known.
+enum Violation {
+    /// The group is flagged but no mechanical fix is offered, because
+    /// merging would change what is compiled or exported.
+    ManualMerge,
+    /// The group can be rewritten into `replacement`.
+    Reorganize {
+        replacement: String,
+        applicability: Applicability,
+    },
+}
+
+impl<'tcx> LateLintPass<'tcx> for ImportGranularity {
+    fn check_crate(&mut self, lint_context: &LateContext<'tcx>) {
+        // Re-parse the crate's own source files from scratch. The
+        // resolved HIR has `#[cfg(...)]` gates already evaluated and the
+        // pre-expansion AST can't see out-of-line `mod foo;` submodules,
+        // so neither is suitable; a fresh parse preserves both the cfg
+        // attributes and every submodule's `use` structure.
+        let real_psess = &lint_context.sess().psess;
+        // Parse errors must not leak as real diagnostics: some source-map
+        // files are not standalone modules (e.g. fragments pulled in via
+        // `include!`, or text loaded with `include_str!`), and re-parsing
+        // them as a module would fail. Route every parse diagnostic to a
+        // throwaway, silenced `DiagCtxt`. The source map is shared with
+        // the real session, so spans still resolve to the real files and
+        // our own suggestions land in the right place.
+        let parse_psess = ParseSess::with_dcx(
+            DiagCtxt::new(Box::new(SilentEmitter)),
+            real_psess.clone_source_map(),
+        );
+
+        let paths: Vec<PathBuf> = {
+            let source_files = lint_context.sess().source_map().files();
+            source_files
+                .iter()
+                .filter(|source_file| source_file.cnum == LOCAL_CRATE)
+                .filter_map(|source_file| match &source_file.name {
+                    FileName::Real(real_file_name) => {
+                        real_file_name.local_path().map(Path::to_path_buf)
+                    }
+                    _ => None,
+                })
+                .collect()
+        };
+
+        let mut violations: Vec<Pending> = Vec::new();
+        for path in &paths {
+            if let Some(krate) = parse_crate_file(&parse_psess, path) {
+                self.check_items(lint_context, &krate.items, &mut violations);
+            }
+        }
+
+        // Anchor each violation at its deepest enclosing HIR node so a
+        // per-module / per-item `#[allow]` resolves; the re-parse happens
+        // outside the HIR walk, so emitting straight from `check_crate`
+        // would sit at the crate root and only honour a crate-level
+        // `#![allow]`. Resolve on the first `use` statement's own span,
+        // not the (possibly multi-statement) replacement span: an
+        // out-of-line `mod foo;` item's span is its declaration in the
+        // parent file, so it never contains a span inside the submodule's
+        // own file, and a merged span would fall back to the crate root.
+        // A single statement's span is always contained by its own HIR
+        // node, whose ancestry includes the submodule and the crate.
+        let anchors: Vec<Span> = violations.iter().map(|pending| pending.anchor).collect();
+        let hir_ids = find_enclosing_hir_ids(lint_context.tcx, &anchors);
+        for (pending, hir_id) in violations.into_iter().zip(hir_ids) {
+            let Pending {
+                span, violation, ..
+            } = pending;
+            span_lint_hir_and_then(
+                lint_context,
+                IMPORT_GRANULARITY,
+                hir_id,
+                span,
+                self.message(),
+                |diagnostic| match &violation {
+                    Violation::ManualMerge => {
+                        diagnostic.help(
+                            "these statements differ in visibility or `#[cfg(...)]`; \
+                             merge them by hand to avoid changing what is compiled or exported",
+                        );
+                    }
+                    Violation::Reorganize {
+                        replacement,
+                        applicability,
+                    } => {
+                        diagnostic.span_suggestion(
+                            span,
+                            "reorganize the imports",
+                            replacement.clone(),
+                            *applicability,
+                        );
+                    }
+                },
+            );
+        }
+    }
+}
+
+/// Re-parse a single source file as a module body. Returns `None` (and
+/// silently discards the buffered diagnostics) when the file is not a
+/// standalone parseable module — `parse_psess` is wired to a
+/// [`SilentEmitter`], so nothing reaches the user.
+fn parse_crate_file(parse_psess: &ParseSess, path: &Path) -> Option<Crate> {
+    let mut parser =
+        match new_parser_from_file(parse_psess, path, StripTokens::ShebangAndFrontmatter, None) {
+            Ok(parser) => parser,
+            Err(errors) => {
+                for error in errors {
+                    error.cancel();
+                }
+                return None;
+            }
+        };
+    match parser.parse_crate_mod() {
+        Ok(krate) => Some(krate),
+        Err(error) => {
+            error.cancel();
+            None
         }
     }
 }
@@ -176,7 +316,12 @@ fn attr_class(attr: &Attribute) -> AttrClass {
 }
 
 impl ImportGranularity {
-    fn check_items(&self, lint_context: &EarlyContext<'_>, items: &[Box<Item>]) {
+    fn check_items(
+        &self,
+        lint_context: &LateContext<'_>,
+        items: &[Box<Item>],
+        violations: &mut Vec<Pending>,
+    ) {
         let mut group: Vec<UseEntry<'_>> = Vec::new();
         let mut group_key: Option<(String, Vec<String>)> = None;
         for item in items {
@@ -184,19 +329,19 @@ impl ImportGranularity {
                 // A non-`use` item, a macro-expanded `use`, or one the
                 // rule declines to rewrite ends the current run.
                 None => {
-                    self.process_group(lint_context, &group);
+                    self.process_group(lint_context, &group, violations);
                     group.clear();
                     group_key = None;
                 }
                 Some(entry) if entry.force_singleton => {
-                    self.process_group(lint_context, &group);
+                    self.process_group(lint_context, &group, violations);
                     group.clear();
                     group_key = None;
-                    self.process_group(lint_context, std::slice::from_ref(&entry));
+                    self.process_group(lint_context, std::slice::from_ref(&entry), violations);
                 }
                 Some(entry) => {
                     if group_key.as_ref() != Some(&entry.group_key) {
-                        self.process_group(lint_context, &group);
+                        self.process_group(lint_context, &group, violations);
                         group.clear();
                         group_key = Some(entry.group_key.clone());
                     }
@@ -204,12 +349,22 @@ impl ImportGranularity {
                 }
             }
         }
-        self.process_group(lint_context, &group);
+        self.process_group(lint_context, &group, violations);
+
+        // Descend into inline `mod { ... }` bodies. Out-of-line
+        // `mod foo;` modules are `ModKind::Unloaded` here (a fresh parse
+        // does not load them), but their files appear in the source map
+        // in their own right and are re-parsed by `check_crate`.
+        for item in items {
+            if let ItemKind::Mod(_, _, ModKind::Loaded(items, _, _)) = &item.kind {
+                self.check_items(lint_context, items, violations);
+            }
+        }
     }
 
     fn use_entry<'ast>(
         &self,
-        lint_context: &EarlyContext<'_>,
+        lint_context: &LateContext<'_>,
         item: &'ast Item,
     ) -> Option<UseEntry<'ast>> {
         let ItemKind::Use(tree) = &item.kind else {
@@ -278,7 +433,12 @@ impl ImportGranularity {
         })
     }
 
-    fn process_group(&self, lint_context: &EarlyContext<'_>, group: &[UseEntry<'_>]) {
+    fn process_group(
+        &self,
+        lint_context: &LateContext<'_>,
+        group: &[UseEntry<'_>],
+        violations: &mut Vec<Pending>,
+    ) {
         let (Some(first), Some(last)) = (group.first(), group.last()) else {
             return;
         };
@@ -311,18 +471,11 @@ impl ImportGranularity {
             .iter()
             .any(|entry| entry.vis != first.vis || entry.nondoc_attrs != first.nondoc_attrs)
         {
-            span_lint_and_then(
-                lint_context,
-                IMPORT_GRANULARITY,
-                replace_span,
-                self.message(),
-                |diagnostic| {
-                    diagnostic.help(
-                        "these statements differ in visibility or `#[cfg(...)]`; \
-                         merge them by hand to avoid changing what is compiled or exported",
-                    );
-                },
-            );
+            violations.push(Pending {
+                anchor: first.item.span,
+                span: replace_span,
+                violation: Violation::ManualMerge,
+            });
             return;
         }
 
@@ -357,20 +510,14 @@ impl ImportGranularity {
             Applicability::MachineApplicable
         };
 
-        span_lint_and_then(
-            lint_context,
-            IMPORT_GRANULARITY,
-            replace_span,
-            self.message(),
-            |diagnostic| {
-                diagnostic.span_suggestion(
-                    replace_span,
-                    "reorganize the imports",
-                    replacement,
-                    applicability,
-                );
+        violations.push(Pending {
+            anchor: first.item.span,
+            span: replace_span,
+            violation: Violation::Reorganize {
+                replacement,
+                applicability,
             },
-        );
+        });
     }
 
     fn message(&self) -> &'static str {
@@ -382,7 +529,7 @@ impl ImportGranularity {
     }
 }
 
-fn vis_text(lint_context: &EarlyContext<'_>, vis: &Visibility) -> String {
+fn vis_text(lint_context: &LateContext<'_>, vis: &Visibility) -> String {
     if matches!(vis.kind, VisibilityKind::Inherited) {
         return String::new();
     }
