@@ -33,7 +33,7 @@ const DEFAULT_METHODS: &[&str] = &["expect", "expect_err"];
     dylint_lib = "perfectionist",
     expect(
         perfectionist::unicode_ellipsis_in_docs,
-        reason = "U+2026 is intentional"
+        reason = "this rule's config rustdoc names the U+2026 glyph it governs"
     )
 )]
 struct Config {
