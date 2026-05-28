@@ -148,27 +148,29 @@ impl<'a, 'tcx> EnclosingHirFinder<'a, 'tcx> {
     fn update(&mut self, hir_id: hir::HirId, span: Span) {
         for (index, &target) in self.targets.iter().enumerate() {
             if self.include_attr_spans {
-                // Comment-anchoring mode. The target is a pristine,
-                // root-context source span (a comment), so a strict
-                // byte-containment check identifies every node that
-                // lexically encloses it — no macro-hygiene fallback is
-                // wanted here (see the `else` branch for why that
-                // matters elsewhere).
-                if !span.contains(target) {
+                // Comment-anchoring mode. Resolve macro hygiene before
+                // comparing: a `///` forwarded through a `macro_rules!`
+                // (`declare_tool_lint!` does this for every lint here)
+                // lands on the generated item with an
+                // expansion-context `#[doc]` span that does not
+                // byte-match the root-context comment the walker
+                // scanned, so a raw `Span::contains` would miss it and
+                // the finding would fall back to the crate root.
+                let Some(width) = comment_enclosure_width(span, target) else {
                     continue;
-                }
-                // Keep the *tightest* enclosing node, not the
-                // last-visited one. A proc-macro `#[derive]`
-                // (e.g. `serde::Deserialize`) generates HIR nodes —
-                // `visit_map` / `visit_seq` bodies — whose root-context
+                };
+                // Keep the *tightest* enclosing node, measured at the
+                // source level (see [`comment_enclosure_width`]), not
+                // the last-visited one. A proc-macro `#[derive]`
+                // (e.g. `serde::Deserialize`) generates root-context
+                // HIR nodes — `visit_map` / `visit_seq` bodies — whose
                 // spans cover the whole field list and are visited
-                // *after* the struct's fields. With a depth/order tie-
-                // break those wider generated nodes would steal the
-                // anchor from the documented field, so the field-level
-                // `#[expect]` would neither suppress nor be fulfilled
-                // (issue #165 follow-up). Preferring the narrowest span
-                // keeps the field's own one-line `#[doc]` span.
-                let width = span.hi().0.saturating_sub(span.lo().0);
+                // *after* the struct's fields. A depth/order tie-break
+                // would let those wider generated nodes steal the
+                // anchor from the documented field, defeating a
+                // field-level `#[expect]` (issue #165 follow-up).
+                // Preferring the narrowest span keeps the field's own
+                // one-line `#[doc]` span.
                 if width >= self.best_width[index] {
                     continue;
                 }
@@ -219,6 +221,36 @@ fn contains(item_span: Span, target: Span) -> bool {
         || item_span
             .source_callsite()
             .contains(target.source_callsite())
+}
+
+/// For comment anchoring: if `candidate` encloses `target`, return the
+/// byte width to tie-break on (smaller = tighter); otherwise `None`.
+///
+/// Containment is checked the same hygiene-resolving way as [`contains`]
+/// — a direct byte check first, then a [`Span::source_callsite`] check
+/// so a `#[doc]` forwarded through a `macro_rules!` (whose span sits in
+/// the macro expansion) still matches the generated item it landed on.
+///
+/// The width is measured at the level the match held: the candidate's
+/// own span for a direct match, or its `source_callsite` for a
+/// hygiene match. Measuring the hygiene case at the resolved source
+/// span is what lets a macro-generated item's `#[doc]` (resolving to
+/// the one-line `///`) win the tightest-node tie-break over the
+/// enclosing module, while a root-context proc-macro-`derive` body
+/// keeps its wide field-list width and loses to the documented field.
+fn comment_enclosure_width(candidate: Span, target: Span) -> Option<u32> {
+    if candidate.contains(target) {
+        return Some(span_width(candidate));
+    }
+    let resolved = candidate.source_callsite();
+    if resolved.contains(target.source_callsite()) {
+        return Some(span_width(resolved));
+    }
+    None
+}
+
+fn span_width(span: Span) -> u32 {
+    span.hi().0.saturating_sub(span.lo().0)
 }
 
 impl<'tcx> Visitor<'tcx> for EnclosingHirFinder<'_, 'tcx> {
