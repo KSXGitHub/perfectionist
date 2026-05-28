@@ -34,6 +34,13 @@ declare_tool_lint! {
     /// ```rust,ignore
     /// /// Walk the tree, collecting sizes...
     /// ```
+    #[cfg_attr(
+        dylint_lib = "perfectionist",
+        expect(
+            perfectionist::unicode_ellipsis_in_docs,
+            reason = "this rule's own rustdoc names the U+2026 glyph it governs"
+        )
+    )]
     pub perfectionist::UNICODE_ELLIPSIS_IN_DOCS,
     Warn,
     "U+2026 HORIZONTAL ELLIPSIS in doc comments; prefer `...`",

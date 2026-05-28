@@ -39,6 +39,13 @@ pub(crate) fn find_enclosing_hir_ids(tcx: TyCtxt<'_>, target_spans: &[Span]) -> 
     walk(tcx, target_spans, false)
 }
 
+#[cfg_attr(
+    dylint_lib = "perfectionist",
+    expect(
+        perfectionist::unicode_ellipsis_in_docs,
+        reason = "this doc names the U+2026 glyph the comment-walking rules handle"
+    )
+)]
 /// Like [`find_enclosing_hir_ids`], but a node's outer attributes —
 /// including the `#[doc]` attributes that `///` / `//!` / `/** */` doc
 /// comments lower to — count toward containment alongside the node's
