@@ -1,24 +1,3 @@
-//! `perfectionist::macro_trailing_comma` — enforce rustfmt's
-//! `trailing_comma = "Vertical"` policy on the curated set of macros
-//! whose top-level argument list is comma-separated.
-//!
-//! Module layout:
-//!
-//! - [`config`] — user-facing configuration (`Config`,
-//!   `MacroTrailingComma` state) and the curated built-in name list.
-//! - [`mod@queue`] — the [`PendingViolation`] payload parked by the
-//!   pre-expansion pass for the late pass to emit.
-//! - [`late`] — late pass that drains [`PENDING_VIOLATIONS`] and emits
-//!   each diagnostic at the deepest enclosing HIR node via the shared
-//!   [`crate::enclosing_hir`] walker.
-//! - [`emit`] — diagnostic-emission helpers, one per violation shape.
-//!
-//! The pre-expansion pass below threads the early-side pieces
-//! together: gate on path eligibility, walk the top-level token stream
-//! exactly once to find the first / last trees and detect repeat
-//! (`v; n`) form, and park the resulting violation span for the late
-//! pass to emit.
-
 use std::sync::Mutex;
 
 use rustc_ast::MacCall;

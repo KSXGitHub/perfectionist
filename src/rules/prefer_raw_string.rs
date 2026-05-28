@@ -1,10 +1,3 @@
-//! `perfectionist::prefer_raw_string` — flag cooked string literals
-//! whose only escapes are ones a raw string would express verbatim.
-//!
-//! The hand-rolled parser-combinator scanner lives in [`parser`]; this
-//! file owns the lint declaration, the configuration, and the late
-//! pass that drives it.
-
 use std::num::NonZeroUsize;
 
 use clippy_utils::diagnostics::span_lint_and_sugg;

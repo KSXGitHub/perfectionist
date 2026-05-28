@@ -1,7 +1,3 @@
-//! `perfectionist::bare_issue_reference` — flag bare `#NNN` issue /
-//! PR references in doc comments (and optionally plain `//` line
-//! comments), suggesting the markdown-link form.
-
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir::HirId;

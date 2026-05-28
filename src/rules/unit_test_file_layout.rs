@@ -1,24 +1,3 @@
-//! `perfectionist::unit_test_file_layout` — enforce where a crate's
-//! unit-test code lives.
-//!
-//! Two independent axes are checked:
-//!
-//! - **External-file layout.** An external `#[cfg(test)] mod <name>;`
-//!   must resolve to the canonical on-disk location for the configured
-//!   `external_layout`.
-//! - **Inline footprint.** Inline test code is summed per source file
-//!   and held below the configured budget (or disallowed entirely).
-//!
-//! Module layout:
-//!
-//! - [`config`] — the `Config` table, its enums, and the resolved
-//!   [`config::UnitTestFileLayout`] pass state.
-//! - [`scan`] — the per-crate walk that classifies every item,
-//!   accumulates each source file's inline-test footprint, and emits
-//!   the inline-style diagnostics.
-//! - [`layout`] — the external-module on-disk layout and
-//!   unexpected-sibling checks, plus the path arithmetic they share.
-
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
