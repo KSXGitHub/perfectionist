@@ -29,6 +29,13 @@ const DEFAULT_METHODS: &[&str] = &["expect", "expect_err"];
 
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
+#[cfg_attr(
+    dylint_lib = "perfectionist",
+    expect(
+        perfectionist::unicode_ellipsis_in_docs,
+        reason = "this rule's config rustdoc names the U+2026 glyph it governs"
+    )
+)]
 struct Config {
     /// Additional macros whose call site should be scanned for
     /// the flagged characters. Merged with the built-in defaults

@@ -3,9 +3,5 @@ libraries = [
   { path = "." },
 ]
 
-# This crate deliberately keeps its unit tests inline in
-# `#[cfg(test)] mod tests { ... }` blocks, which is the style
-# `unit_test_file_layout`'s default `external_when_long` budget flags.
-# Opt the crate out of its own rule rather than restructure the suite.
-[perfectionist]
-disable = ["unit_test_file_layout"]
+["perfectionist::unicode_ellipsis_in_docs"]
+scan_code_spans = true

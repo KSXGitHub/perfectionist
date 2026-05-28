@@ -34,6 +34,13 @@ declare_tool_lint! {
     /// ```rust,ignore
     /// /// Walk the tree, collecting sizes...
     /// ```
+    #[cfg_attr(
+        dylint_lib = "perfectionist",
+        expect(
+            perfectionist::unicode_ellipsis_in_docs,
+            reason = "this rule's own rustdoc names the U+2026 glyph it governs"
+        )
+    )]
     pub perfectionist::UNICODE_ELLIPSIS_IN_DOCS,
     Warn,
     "U+2026 HORIZONTAL ELLIPSIS in doc comments; prefer `...`",
@@ -51,10 +58,10 @@ struct Config {
     /// pipelines occasionally insert. Empty by default.
     extra_flagged_chars: Vec<char>,
     /// Whether to also flag a character inside an inline code span
-    /// (`` `…` ``). Defaults to `false`: code spans often quote example
+    /// (`` `...` ``). Defaults to `false`: code spans often quote example
     /// text where the ellipsis is meaningful, so they are left alone
     /// unless this is set to `true`. Code *blocks* — fenced
-    /// (` ``` … ``` `), `~~~`-fenced, four-space indented, and the
+    /// (` ``` ... ``` `), `~~~`-fenced, four-space indented, and the
     /// doc-test code they hold — are always skipped regardless of this
     /// knob.
     scan_code_spans: bool,

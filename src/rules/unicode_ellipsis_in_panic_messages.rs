@@ -49,6 +49,13 @@ declare_tool_lint! {
     /// value-position literals. Adding per-macro skip counts
     /// requires extending the configuration schema and is out of
     /// scope for the initial rule.
+    #[cfg_attr(
+        dylint_lib = "perfectionist",
+        expect(
+            perfectionist::unicode_ellipsis_in_docs,
+            reason = "this rule's own rustdoc names the U+2026 glyph it governs"
+        )
+    )]
     pub perfectionist::UNICODE_ELLIPSIS_IN_PANIC_MESSAGES,
     Warn,
     "U+2026 HORIZONTAL ELLIPSIS in panic / assertion / expect messages; prefer `...`",

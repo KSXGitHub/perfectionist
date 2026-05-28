@@ -29,6 +29,12 @@ include = [
 [lib]
 crate-type = ["cdylib"]
 
+[lints.rust]
+# `dylint_lib` is set by the dylint driver when it loads this library;
+# declare it so a plain `cargo check` doesn't warn about the
+# `cfg(dylint_lib = "perfectionist")` gates in `src/lib.rs`.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(dylint_lib, values("perfectionist"))'] }
+
 [dependencies]
 clippy_utils = "=0.1.97"
 dylint_linting = "6.0.0"
