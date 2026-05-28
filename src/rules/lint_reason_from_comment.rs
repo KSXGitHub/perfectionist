@@ -1,23 +1,3 @@
-//! `perfectionist::lint_reason_from_comment` — lift a `// ...` line
-//! comment trailing a lint-level attribute into the attribute's
-//! `reason = "..."` field.
-//!
-//! Module layout:
-//!
-//! - [`scan`] — the source-text walker (`find_trailing_comment`) and
-//!   the shared `normalise_comment_text` that turns a raw `// ...`
-//!   slice into the rationale-string body.
-//! - [`insertion`] — `build_reason_insertion` (the args-list edit)
-//!   and `escape_for_rust_string`.
-//! - [`emit`] — `LintReasonFromComment::check` and `::emit`, plus
-//!   the `file_span` helper that anchors comment-derived spans to
-//!   the same `SyntaxContext` as the attribute they belong to.
-//!
-//! This flat entry keeps the lint declaration, the `register_*`
-//! functions, and the `EarlyLintPass::check_attribute` driver —
-//! including the `cfg_attr_trace` state needed to recover the outer
-//! source span for `cfg_attr`-wrapped synth lint-level attrs.
-
 use rustc_ast::Attribute;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};

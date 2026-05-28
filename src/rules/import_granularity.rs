@@ -1,12 +1,3 @@
-//! `perfectionist::import_granularity` — enforce a project-wide
-//! import-granularity style (`crate` / `module` / `item`).
-//!
-//! The flattening of `use` trees lives in [`model`], the per-style
-//! compliance predicates in [`check`], and the canonical rendering in
-//! [`render`]. This file owns the lint declaration, the configuration,
-//! the early pass that walks module bodies, and the diagnostic that
-//! replaces a non-conforming group of `use` statements.
-
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::source::indent_of;
 use rustc_ast::{

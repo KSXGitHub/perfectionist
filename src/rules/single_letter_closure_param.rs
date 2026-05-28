@@ -1,11 +1,3 @@
-//! `perfectionist::single_letter_closure_param` — flag closure
-//! parameters whose identifier is one ASCII letter, unless the
-//! closure is a trivial single-expression callback.
-//!
-//! The trivial-callback predicate lives in [`triviality`]; this file
-//! owns the lint declaration, the configuration, and the late pass
-//! that drives them.
-
 use std::collections::BTreeSet;
 
 use clippy_utils::diagnostics::span_lint_and_help;

@@ -1,27 +1,3 @@
-//! `perfectionist::print_macro_split` — fold the template of an
-//! over-wide print-style macro call across multiple source lines with
-//! backslash-newline continuations.
-//!
-//! Module layout:
-//!
-//! - [`config`] — user-facing configuration (`Config`,
-//!   `PrintMacroSplit` state) and the curated built-in `target_macros`
-//!   list.
-//! - [`scan`] — locating the format template in the token stream and
-//!   building the wrapped, continuation-folded rewrite.
-//! - [`mod@queue`] — the [`PendingViolation`] payload parked by the
-//!   pre-expansion pass for the late pass to emit.
-//! - [`late`] — late pass that drains [`PENDING_VIOLATIONS`] and emits
-//!   each diagnostic at the deepest enclosing HIR node.
-//! - [`emit`] — the diagnostic-emission helper.
-//!
-//! Only the `line_continuation` rewrite is implemented; the
-//! `multiple_calls` style (and the `style` knob that would select
-//! between the two) is still pending — see
-//! `planned-rules/print-macro-split.md`. The pre-expansion pass below
-//! threads the pieces together: gate on path eligibility, find the
-//! template literal, build the rewrite, and park it for the late pass.
-
 use std::sync::Mutex;
 
 use rustc_ast::MacCall;

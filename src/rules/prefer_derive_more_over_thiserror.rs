@@ -1,17 +1,3 @@
-//! `perfectionist::prefer_derive_more_over_thiserror` — flag every
-//! `thiserror` import, derive, or attribute and steer toward
-//! `derive_more::{Display, Error}`.
-//!
-//! This file owns the lint declaration, the registration functions,
-//! and the pre-expansion `EarlyLintPass` driver. The work is split
-//! across submodules:
-//! - [`config`] — `Config`, the `PreferDeriveMoreOverThiserror` pass
-//!   state, and the path matcher.
-//! - [`scan`] — crate-wide `use` / `extern crate` alias collection.
-//! - [`detect`] — per-item derive / attribute / import matching and
-//!   diagnostic dispatch.
-//! - [`emit`] — the diagnostic-emission helpers.
-
 use rustc_ast::{Crate, Item, ItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
