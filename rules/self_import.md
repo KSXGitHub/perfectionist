@@ -68,7 +68,7 @@ use foo::bar::{self, Baz};
 
 ## Configuration
 
-Configure via `dylint.toml` under `["perfectionist::self_import"]`. Each field is optional unless marked mandatory; the per-field prose below states the default.
+Configure via `dylint.toml` under `["perfectionist::self_import"]`. A field marked mandatory must be set; an optional field can be omitted and the per-field prose below states its default.
 
 ### `style`: `Style` (mandatory)
 

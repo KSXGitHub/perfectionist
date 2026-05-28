@@ -12,6 +12,7 @@ pub mod non_exhaustive_error;
 pub mod prefer_derive_more_over_thiserror;
 pub mod prefer_raw_string;
 pub mod print_macro_split;
+pub mod self_import;
 pub mod single_letter_closure_param;
 pub mod single_letter_const_generic;
 pub mod single_letter_const_item;
