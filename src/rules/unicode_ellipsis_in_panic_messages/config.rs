@@ -29,6 +29,13 @@ const DEFAULT_METHODS: &[&str] = &["expect", "expect_err"];
 
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
+#[cfg_attr(
+    dylint_lib = "perfectionist",
+    expect(
+        perfectionist::unicode_ellipsis_in_docs,
+        reason = "U+2026 is intentional"
+    )
+)]
 struct Config {
     /// Additional macros whose call site should be scanned for
     /// the flagged characters. Merged with the built-in defaults
@@ -38,13 +45,6 @@ struct Config {
     /// add project-specific assertion-shaped macros without having
     /// to re-state the standard ones.
     extra_macros: Vec<String>,
-    #[cfg_attr(
-        dylint_lib = "perfectionist",
-        expect(
-            perfectionist::unicode_ellipsis_in_docs,
-            reason = "this field's rustdoc deliberately names the U+2026 glyph"
-        )
-    )]
     /// Macros to drop from the scanned set, even if they appear in
     /// the built-in defaults or in `extra_macros`. Empty by
     /// default; checked after the merge with the built-ins, so
