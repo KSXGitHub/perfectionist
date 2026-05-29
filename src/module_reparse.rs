@@ -74,15 +74,14 @@ pub(crate) fn parse_crate_module_files(
     let tcx = lint_context.tcx;
     let source_map = lint_context.sess().psess.clone_source_map();
 
-    // The files that define a module in this crate's module tree, plus
-    // the body span of every live module (for the inline-recursion guard
+    // The files that define a module in this crate's module tree.
+    let module_files = crate_module_files(lint_context);
+
+    // The body span of every live module (for the inline-recursion guard
     // documented on this function's returned `live_module_spans`).
-    let mut module_files: HashSet<FileName> = HashSet::new();
     let mut live_module_spans: HashSet<SpanRange> = HashSet::new();
-    record_module_file(&source_map, &mut module_files, tcx.hir_root_module().spans);
     for item_id in tcx.hir_free_items() {
         if let rustc_hir::ItemKind::Mod(_, module) = &tcx.hir_item(item_id).kind {
-            record_module_file(&source_map, &mut module_files, module.spans);
             let inner = module.spans.inner_span;
             live_module_spans.insert((inner.lo(), inner.hi()));
         }
@@ -116,6 +115,39 @@ pub(crate) fn parse_crate_module_files(
         .collect();
 
     (crates, live_module_spans)
+}
+
+/// The on-disk source files that back a module in this crate's HIR
+/// module tree, keyed by [`FileName`].
+///
+/// This is the set of files the user actually wrote as Rust modules —
+/// the crate root and every out-of-line `mod foo;` file. It deliberately
+/// excludes everything that lands in the source map without being a
+/// module the user authored: `include_str!` / `include_bytes!` data
+/// files (which may be YAML, lock files, plain text, ...), `include!`
+/// fragments spliced inline rather than backing their own module, and
+/// proc-macro-synthesised `<proc-macro source>` modules.
+///
+/// The comment-scanning rules tokenize the local crate's files as Rust
+/// and must filter the source map through this set: `bare_url`,
+/// `bare_email`, `bare_issue_reference`, and `unicode_ellipsis_in_docs`
+/// via the shared [`crate::comment_walk::walk_local_comments`] walker, plus
+/// `unicode_ellipsis_in_comments` through its own token loop. Otherwise
+/// a bare `http(s)://` URL inside an
+/// `include_str!`-ed YAML file lexes as a `//` line comment and gets
+/// flagged (and, worse, autofix-rewritten) as if it were a Rust comment.
+/// See <https://github.com/KSXGitHub/perfectionist/issues/179>.
+pub(crate) fn crate_module_files(lint_context: &LateContext<'_>) -> HashSet<FileName> {
+    let tcx = lint_context.tcx;
+    let source_map = lint_context.sess().source_map();
+    let mut module_files: HashSet<FileName> = HashSet::new();
+    record_module_file(source_map, &mut module_files, tcx.hir_root_module().spans);
+    for item_id in tcx.hir_free_items() {
+        if let rustc_hir::ItemKind::Mod(_, module) = &tcx.hir_item(item_id).kind {
+            record_module_file(source_map, &mut module_files, module.spans);
+        }
+    }
+    module_files
 }
 
 /// Re-parse every on-disk source file that backs a module in the crate's

@@ -1,7 +1,7 @@
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir::HirId;
-use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
+use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Span;
 
@@ -374,7 +374,7 @@ struct EmitOptions {
 impl<'tcx> LateLintPass<'tcx> for BareIssueReference {
     fn check_crate_post(&mut self, lint_context: &LateContext<'tcx>) {
         let mut violations: Vec<(Span, IssueRefViolation)> = Vec::new();
-        walk_local_comments(lint_context.sess(), |chunk| match chunk.surface {
+        walk_local_comments(lint_context, |chunk| match chunk.surface {
             CommentSurface::DocBlock | CommentSurface::DocBlockBlock => {
                 self.scan_doc(chunk, &mut violations);
             }

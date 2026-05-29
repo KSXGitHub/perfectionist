@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir::HirId;
-use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
+use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Span;
 
@@ -147,7 +147,7 @@ impl<'tcx> LateLintPass<'tcx> for BareEmail {
         // form (`self.style`) is uniform across the crate, so it's read
         // once at emission time rather than stored per violation.
         let mut violations: Vec<(Span, String)> = Vec::new();
-        walk_local_comments(lint_context.sess(), |chunk| {
+        walk_local_comments(lint_context, |chunk| {
             let is_doc = matches!(
                 chunk.surface,
                 CommentSurface::DocBlock | CommentSurface::DocBlockBlock,

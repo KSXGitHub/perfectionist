@@ -7,6 +7,7 @@ use rustc_span::{BytePos, Pos, RelativeBytePos, SourceFile, Span, SyntaxContext}
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::literal_scan::emit_flagged_char_hir;
+use crate::module_reparse::crate_module_files;
 
 declare_tool_lint! {
     /// ### What it does
@@ -111,10 +112,19 @@ impl<'tcx> LateLintPass<'tcx> for UnicodeEllipsisInComments {
         if !(self.scan_line_comments || self.scan_block_comments) {
             return;
         }
+        // Only scan files the user wrote as Rust modules. A file pulled
+        // in via `include_str!` / `include_bytes!` is data, not Rust, so
+        // a U+2026 inside it (after a `//` the lexer reads as a comment)
+        // must not be flagged. See
+        // <https://github.com/KSXGitHub/perfectionist/issues/179>.
+        let module_files = crate_module_files(lint_context);
         let source_map = lint_context.sess().source_map();
         let mut violations: Vec<(Span, char)> = Vec::new();
         for source_file in source_map.files().iter() {
             if source_file.cnum != LOCAL_CRATE {
+                continue;
+            }
+            if !module_files.contains(&source_file.name) {
                 continue;
             }
             let Some(source_text) = source_file.src.as_deref() else {
