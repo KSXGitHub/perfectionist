@@ -107,6 +107,18 @@ use std::sync::atomic::AtomicBool;
 
 struct Sep10;
 
+// Good: a multi-line block comment with an interior blank line is still a
+// comment, not a blank separator between these same-group imports.
+use std::cell::Cell;
+/*
+   note
+
+   spanning lines
+*/
+use std::fmt::Debug;
+
+struct Sep11;
+
 // Suppressed: an `#[allow]` on the run's enclosing module silences the
 // rule even though std and internal are not blank-separated.
 #[allow(perfectionist::import_grouping, reason = "ui fixture")]

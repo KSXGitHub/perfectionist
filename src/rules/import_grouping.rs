@@ -326,8 +326,15 @@ impl ImportGrouping {
         // A comment sitting between two statements is dropped by the
         // re-render (only each statement's own text is reproduced) and,
         // under `grouped`, may end up describing a statement that moved.
-        // Down to `MaybeIncorrect` so the fix isn't applied unreviewed.
-        let applicability = if self.run_has_interstatement_comment(lint_context, run) {
+        // A leading comment immediately above the first statement is left
+        // in place by the rewrite but is stranded above a *different*
+        // statement when `grouped` reorders the first one downward. Either
+        // way, drop to `MaybeIncorrect` so the fix isn't applied unreviewed.
+        let first_statement_moves = matches!(self.config.style, Style::Grouped)
+            && run.iter().any(|stmt| stmt.rank < first.rank);
+        let applicability = if self.run_has_interstatement_comment(lint_context, run)
+            || (first_statement_moves && self.has_leading_comment(lint_context, first))
+        {
             Applicability::MaybeIncorrect
         } else {
             Applicability::MachineApplicable
@@ -358,6 +365,26 @@ impl ImportGrouping {
             source_map
                 .span_to_snippet(gap)
                 .is_ok_and(|snippet| snippet.contains("//") || snippet.contains("/*"))
+        })
+    }
+
+    /// Whether the source line directly above the first statement is a
+    /// comment. Such a comment is outside the replaced span (so the fix
+    /// preserves it in place); paired with `first_statement_moves` it
+    /// signals the comment would be left describing a different import.
+    fn has_leading_comment(&self, lint_context: &LateContext<'_>, first: &UseStmt<'_>) -> bool {
+        let location = lint_context.sess().source_map().lookup_char_pos(first.lo);
+        // `line` is 1-based; the line above is the 0-based index
+        // `line - 2`. Nothing sits above the first line of the file.
+        let Some(previous_line) = location.line.checked_sub(2) else {
+            return false;
+        };
+        location.file.get_line(previous_line).is_some_and(|line| {
+            let trimmed = line.trim();
+            trimmed.starts_with("//")
+                || trimmed.starts_with("/*")
+                || trimmed.starts_with('*')
+                || trimmed.ends_with("*/")
         })
     }
 
