@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 use std::num::NonZeroUsize;
 
 use clippy_utils::diagnostics::{span_lint_and_sugg, span_lint_and_then};
+use clippy_utils::is_from_proc_macro;
 use rustc_ast::{Attribute, LitKind, MetaItem, MetaItemInner, MetaItemKind};
 use rustc_errors::Applicability;
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
@@ -116,14 +117,21 @@ impl EarlyLintPass for LintSilenceReason {
     /// `EarlyLintPass::check_attribute` runs once per syntactic
     /// attribute in source — `cfg_attr` is not unwrapped before the
     /// callback. The walker below therefore reaches every silencing
-    /// attribute exactly once: bare `#[allow]` / `#[expect]` through
-    /// the first branch, `cfg_attr`-wrapped through the second.
+    /// attribute exactly once: bare `#[allow]` / `#[expect]` directly,
+    /// `cfg_attr`-wrapped ones via `walk_cfg_attr_inner`.
     fn check_attribute(&mut self, lint_context: &EarlyContext<'_>, attribute: &Attribute) {
-        if is_silencing_attribute_name(attribute.name()) {
+        let is_silencing = is_silencing_attribute_name(attribute.name());
+        if !is_silencing && !attribute.has_name(sym::cfg_attr) {
+            return;
+        }
+        if is_from_proc_macro(lint_context, attribute) {
+            return;
+        }
+        if is_silencing {
             if let Some(args) = attribute.meta_item_list() {
                 self.check_silencing(lint_context, attribute.span, &args);
             }
-        } else if attribute.has_name(sym::cfg_attr) {
+        } else {
             let Some(cfg_attr_args) = attribute.meta_item_list() else {
                 return;
             };

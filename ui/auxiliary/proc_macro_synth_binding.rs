@@ -316,6 +316,51 @@ pub fn synth_field_ref_body(input: TokenStream) -> TokenStream {
     wrap_const_block(body)
 }
 
+/// `#[derive(SynthSilenceReason)]` + `#[synth_silence_reason]` →
+/// `#[allow(dead_code)] const _: () = ();` whose generated `#[allow]`
+/// inherits the user-span of `synth_silence_reason`, mirroring the
+/// `#[allow(...)]` shape `clap_derive` emits (issue #430). The anchor is
+/// an anonymous `const _` so the derive can be applied to several types
+/// in one crate without colliding.
+#[proc_macro_derive(SynthSilenceReason, attributes(synth_silence_reason))]
+pub fn synth_silence_reason(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_silence_reason")
+        .expect("`#[derive(SynthSilenceReason)]` requires a `#[synth_silence_reason]`");
+    let call_site = Span::call_site();
+
+    // `allow(dead_code)`, every token stamped with the user span so the
+    // generated attribute looks (to span-based filters) like it was
+    // hand-written at the `#[synth_silence_reason]` site.
+    let at_attr = |mut tree: TokenTree| {
+        tree.set_span(attr_span);
+        tree
+    };
+    let mut allow_args = TokenStream::new();
+    allow_args.extend([at_attr(TokenTree::Ident(Ident::new("dead_code", attr_span)))]);
+    let mut attr_inner = TokenStream::new();
+    attr_inner.extend([
+        at_attr(TokenTree::Ident(Ident::new("allow", attr_span))),
+        at_attr(TokenTree::Group(Group::new(
+            Delimiter::Parenthesis,
+            allow_args,
+        ))),
+    ]);
+
+    let mut out = TokenStream::new();
+    out.extend([
+        at_attr(TokenTree::Punct(Punct::new('#', Spacing::Alone))),
+        at_attr(TokenTree::Group(Group::new(Delimiter::Bracket, attr_inner))),
+        TokenTree::Ident(Ident::new("const", call_site)),
+        TokenTree::Ident(Ident::new("_", call_site)),
+        TokenTree::Punct(Punct::new(':', Spacing::Alone)),
+        TokenTree::Group(Group::new(Delimiter::Parenthesis, TokenStream::new())),
+        TokenTree::Punct(Punct::new('=', Spacing::Alone)),
+        TokenTree::Group(Group::new(Delimiter::Parenthesis, TokenStream::new())),
+        TokenTree::Punct(Punct::new(';', Spacing::Alone)),
+    ]);
+    out
+}
+
 fn wrap_const_block(body: TokenStream) -> TokenStream {
     let call_site = Span::call_site();
     let mut out = TokenStream::new();
