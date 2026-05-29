@@ -44,7 +44,8 @@ that matters only in the rare case where a value or macro shares
 the module's name in the same parent.
 
 ## Example
-Under `style = "forbid"`:
+
+### Style: Forbid
 ```rust,ignore
 use foo::bar::{self};
 use foo::qux::{self, Baz};
@@ -56,7 +57,7 @@ use foo::qux;
 use foo::qux::Baz;
 ```
 
-Under `style = "combined"`:
+### Style: Combined
 ```rust,ignore
 use foo::bar;
 use foo::bar::Baz;
