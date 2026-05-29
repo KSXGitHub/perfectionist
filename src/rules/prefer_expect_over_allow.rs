@@ -1,6 +1,6 @@
 use std::collections::{BTreeSet, HashSet};
 
-use clippy_utils::diagnostics::span_lint_and_sugg;
+use clippy_utils::diagnostics::{span_lint_and_help, span_lint_and_sugg};
 use clippy_utils::is_from_proc_macro;
 use clippy_utils::source::{indent_of, snippet_opt};
 use rustc_ast::{AttrStyle, Attribute, Item, ItemKind, MetaItem, MetaItemInner, MetaItemKind};
@@ -9,7 +9,7 @@ use rustc_lint::{EarlyContext, EarlyLintPass, Lint, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Span, Symbol, sym};
 
-use crate::common::{DefaultState, resolved_state};
+use crate::common::{DefaultState, render_meta_path, resolved_state};
 
 #[cfg(test)]
 mod tests;
@@ -87,6 +87,29 @@ const DEFAULT_EXEMPT_LINTS: &[&str] = &[
     "unused_must_use",
     "unreachable_code",
 ];
+
+/// Clippy lint *group* names. A group fires only if some member lint
+/// fires, so `#[expect(clippy::<group>)]` is unfulfilled wherever no
+/// member triggers — the same non-determinism `DEFAULT_EXEMPT_LINTS`
+/// guards against. Unlike rustc's bare groups (`unused`, etc.), these are
+/// not in the `LintStore` snapshot (clippy is not loaded during a
+/// `cargo dylint` run), so they are listed explicitly.
+const CLIPPY_LINT_GROUPS: &[&str] = &[
+    "all",
+    "cargo",
+    "complexity",
+    "correctness",
+    "deprecated",
+    "nursery",
+    "pedantic",
+    "perf",
+    "restriction",
+    "style",
+    "suspicious",
+];
+
+/// Rustdoc lint *group* names, treated like [`CLIPPY_LINT_GROUPS`].
+const RUSTDOC_LINT_GROUPS: &[&str] = &["all"];
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
@@ -225,8 +248,13 @@ impl EarlyLintPass for PreferExpectOverAllow {
         let Some(args) = attribute.meta_item_list() else {
             return;
         };
-        let container = self.container_of(lint_context, attribute);
-        self.check_allow(lint_context, ident_span, container, &args);
+        self.check_allow(
+            lint_context,
+            ident_span,
+            attribute.span,
+            attribute.style,
+            &args,
+        );
     }
 }
 
@@ -257,37 +285,18 @@ impl PreferExpectOverAllow {
         !self.module_attr_spans.contains(&span)
     }
 
-    /// Classify where an `allow` attribute lives. A real bare
-    /// `#[allow(...)]` / `#![allow(...)]` keeps its `#` delimiter in the
-    /// source snippet; a `cfg_attr`-synthesised `allow(...)` does not,
-    /// so its split rewrite must stay inside the `cfg_attr` argument
-    /// list rather than emit standalone `#[ ]` attributes. When the
-    /// snippet is unavailable, assume the bare form — the common case.
-    fn container_of(&self, lint_context: &EarlyContext<'_>, attribute: &Attribute) -> Container {
-        let is_bare = snippet_opt(lint_context, attribute.span)
-            .is_none_or(|snippet| snippet.trim_start().starts_with('#'));
-        if is_bare {
-            Container::Bare {
-                span: attribute.span,
-                style: attribute.style,
-            }
-        } else {
-            Container::CfgAttrInner {
-                span: attribute.span,
-            }
-        }
-    }
-
     /// Apply the rule to a single `allow(...)` invocation.
     ///
     /// `ident_span` covers the `allow` keyword (the anchor for the
-    /// simple swap). `container` describes where the invocation lives
-    /// (for the split rewrite). `args` is the attribute's argument list.
+    /// simple swap). `attr_span` / `attr_style` locate the whole
+    /// attribute (used to render the split rewrite). `args` is the
+    /// attribute's argument list.
     fn check_allow(
         &self,
         lint_context: &EarlyContext<'_>,
         ident_span: Span,
-        container: Container,
+        attr_span: Span,
+        attr_style: AttrStyle,
         args: &[MetaItemInner],
     ) {
         let mut rewriteable: Vec<String> = Vec::new();
@@ -300,7 +309,7 @@ impl PreferExpectOverAllow {
             };
             match &meta.kind {
                 MetaItemKind::Word => {
-                    let name = lint_name(meta);
+                    let name = render_meta_path(meta);
                     if self.is_rewriteable(meta, &name) {
                         rewriteable.push(name);
                     } else {
@@ -337,13 +346,24 @@ impl PreferExpectOverAllow {
         }
 
         // Mixed: split the rewriteable lints into a separate `#[expect]`.
-        self.emit_split(
-            lint_context,
-            container,
-            &kept,
-            &rewriteable,
-            reason_snippet.as_deref(),
-        );
+        // The textual rewrite needs the source snippet to place the new
+        // attribute (bare vs inside a `cfg_attr` arg list) and to copy
+        // the `reason` verbatim. If either is unavailable — only
+        // reachable for spans `is_from_proc_macro` somehow let through —
+        // flag the site without an autofix rather than risk emitting a
+        // rewrite that drops the reason or injects `#[..]` inside a
+        // `cfg_attr`.
+        let reason_recoverable = reason.is_none() || reason_snippet.is_some();
+        match container_of(lint_context, attr_span, attr_style) {
+            Some(container) if reason_recoverable => self.emit_split(
+                lint_context,
+                container,
+                &kept,
+                &rewriteable,
+                reason_snippet.as_deref(),
+            ),
+            _ => emit_split_without_fix(lint_context, ident_span),
+        }
     }
 
     /// Whether a single lint name is one of the deterministically-firing
@@ -360,10 +380,18 @@ impl PreferExpectOverAllow {
             return self.builtin_lints.contains(name);
         }
         // Tool-namespaced. `clippy` and `rustdoc` ship deterministic
-        // lints and are always rewriteable; every other tool namespace
+        // lints and are always rewriteable — except their lint *groups*
+        // (`clippy::pedantic`, `rustdoc::all`, etc.), which fire only if
+        // some member fires, exactly the non-determinism the bare-name
+        // branch excludes for rustc groups. Every other tool namespace
         // is gated behind `apply_to_tool_namespaces`.
         let tool = segments[0].ident.name.as_str();
-        matches!(tool, "clippy" | "rustdoc") || self.apply_to_tool_namespaces
+        let lint = segments.last().map(|segment| segment.ident.name.as_str());
+        match tool {
+            "clippy" => lint.is_some_and(|lint| !CLIPPY_LINT_GROUPS.contains(&lint)),
+            "rustdoc" => lint.is_some_and(|lint| !RUSTDOC_LINT_GROUPS.contains(&lint)),
+            _ => self.apply_to_tool_namespaces,
+        }
     }
 
     fn emit_split(
@@ -402,6 +430,40 @@ impl PreferExpectOverAllow {
     }
 }
 
+/// Classify where an `allow` attribute lives, for the split rewrite. A
+/// real bare `#[allow(...)]` / `#![allow(...)]` keeps its `#` delimiter
+/// in the source snippet; a `cfg_attr`-synthesised `allow(...)` does
+/// not, so its split must stay inside the `cfg_attr` argument list
+/// rather than emit standalone `#[ ]` attributes. Returns `None` when
+/// the snippet is unavailable, so the caller declines the autofix
+/// instead of guessing the wrapper.
+fn container_of(
+    lint_context: &EarlyContext<'_>,
+    span: Span,
+    style: AttrStyle,
+) -> Option<Container> {
+    let snippet = snippet_opt(lint_context, span)?;
+    Some(if snippet.trim_start().starts_with('#') {
+        Container::Bare { span, style }
+    } else {
+        Container::CfgAttrInner { span }
+    })
+}
+
+/// Flag a mixed `#[allow]` without a machine-applicable suggestion,
+/// used when the source text needed to render a correct split rewrite
+/// is unavailable.
+fn emit_split_without_fix(lint_context: &EarlyContext<'_>, ident_span: Span) {
+    span_lint_and_help(
+        lint_context,
+        PREFER_EXPECT_OVER_ALLOW,
+        ident_span,
+        "the deterministically-firing lints here can move to `#[expect]`",
+        None,
+        "split the deterministic lints out into a separate `#[expect]`",
+    );
+}
+
 /// Render an `allow(...)` / `expect(...)` invocation from a list of
 /// lint names and an optional verbatim `reason = "..."` snippet.
 fn render_invocation(keyword: &str, names: &[String], reason: Option<&str>) -> String {
@@ -410,16 +472,6 @@ fn render_invocation(keyword: &str, names: &[String], reason: Option<&str>) -> S
         parts.push(reason);
     }
     format!("{keyword}({})", parts.join(", "))
-}
-
-/// Render a lint name from its meta-item path, joining segments with `::`.
-fn lint_name(meta: &MetaItem) -> String {
-    meta.path
-        .segments
-        .iter()
-        .map(|segment| segment.ident.name.as_str())
-        .collect::<Vec<_>>()
-        .join("::")
 }
 
 /// Span of the `allow` identifier in an attribute's path.

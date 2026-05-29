@@ -6,7 +6,7 @@
 use std::collections::{BTreeSet, HashMap};
 use std::sync::OnceLock;
 
-use rustc_ast::{MetaItemInner, MetaItemKind, MetaItemLit};
+use rustc_ast::{MetaItem, MetaItemInner, MetaItemKind, MetaItemLit};
 use rustc_hir as hir;
 use rustc_hir::HirId;
 use rustc_lint::{LateContext, LintContext};
@@ -187,6 +187,21 @@ pub(crate) fn resolved_state(name: &str, default: DefaultState) -> DefaultState 
         .get()
         .expect("resolved_state called before init_global_config");
     overrides.get(name).copied().unwrap_or(default)
+}
+
+/// Render a lint-control meta item's path as its fully-namespaced
+/// name (`clippy::too_many_arguments`, `dead_code`), joining the path
+/// segments with `::`. Shared by the lint-level rules that classify or
+/// report lint names by the printed form they wear in diagnostics and
+/// `#[allow(...)]` attributes — `lint_silence_reason`,
+/// `unknown_perfectionist_lints`, and `prefer_expect_over_allow`.
+pub(crate) fn render_meta_path(meta: &MetaItem) -> String {
+    meta.path
+        .segments
+        .iter()
+        .map(|segment| segment.ident.name.as_str())
+        .collect::<Vec<_>>()
+        .join("::")
 }
 
 /// Look up the `reason = "<literal>"` field in a lint-level attribute's

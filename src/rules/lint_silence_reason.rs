@@ -10,7 +10,7 @@ use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{BytePos, Span, Symbol, sym};
 
-use crate::common::{DefaultState, attr_has_reason, resolved_state};
+use crate::common::{DefaultState, attr_has_reason, render_meta_path, resolved_state};
 
 declare_tool_lint! {
     /// ### What it does
@@ -236,7 +236,7 @@ impl LintSilenceReason {
             if matches!(meta.kind, MetaItemKind::NameValue(_)) {
                 continue;
             }
-            let name = render_lint_name(meta);
+            let name = render_meta_path(meta);
             if !self.exempt_lints.contains(&name) {
                 return false;
             }
@@ -320,17 +320,6 @@ fn emit_missing_field_no_sugg(lint_context: &EarlyContext<'_>, invocation_span: 
             diagnostic.help(r#"add a `reason = "..."` argument inside the attribute"#);
         },
     );
-}
-
-fn render_lint_name(meta: &MetaItem) -> String {
-    let mut result = String::new();
-    for (index, segment) in meta.path.segments.iter().enumerate() {
-        if index > 0 {
-            result.push_str("::");
-        }
-        result.push_str(segment.ident.name.as_str());
-    }
-    result
 }
 
 /// The text edit produced for the missing-`reason` autofix, expressed

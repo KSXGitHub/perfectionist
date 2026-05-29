@@ -59,6 +59,11 @@ fn unknown_bare() {}
 #[allow(unused, reason = "group, not an individual lint")]
 fn group_left_alone() {}
 
+// Good: clippy lint *groups* are also non-deterministic — left alone,
+// even though individual `clippy::*` lints are rewriteable.
+#[allow(clippy::pedantic, reason = "group, not an individual lint")]
+fn clippy_group_left_alone() {}
+
 // Good: `#[warn]` / `#[deny]` / `#[forbid]` are out of scope.
 #[warn(non_snake_case)]
 fn warn_out_of_scope() {}
