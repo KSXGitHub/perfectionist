@@ -16,21 +16,31 @@ use _utils::{cargo_manifest_dir, run_project_with_sources, shared_target_dir};
 
 const LINT: &str = "perfectionist::import_granularity";
 
-/// The separate-file submodule both fixtures use: a same-module split
-/// that module style merges into one `use`.
-const SEPARATE: &str = include_str!("fixtures/import_granularity_submodules/separate.rs");
-
 /// The default `module` style flags a split that lives in a separate
 /// file (`mod foo;` → `src/separate.rs`), exactly as it already flags
-/// the identical split in the crate root and in an inline module.
+/// the identical split in the crate root and in an inline module. The
+/// submodule nests a further out-of-line module (`src/separate/deep.rs`)
+/// to cover modules reached only through another separate-file module.
 #[test]
 fn flags_split_in_separate_file_submodule() {
-    let lib = include_str!("fixtures/import_granularity_submodules/flags_lib.rs");
     let (_temp, stderr, success) = run_project_with_sources(
         "fixture_ig_separate_module",
         cargo_manifest_dir(),
         &shared_target_dir(),
-        &[("src/lib.rs", lib), ("src/separate.rs", SEPARATE)],
+        &[
+            (
+                "src/lib.rs",
+                include_str!("fixtures/import_granularity_submodules/flags_lib.rs"),
+            ),
+            (
+                "src/separate.rs",
+                include_str!("fixtures/import_granularity_submodules/separate.rs"),
+            ),
+            (
+                "src/separate/deep.rs",
+                include_str!("fixtures/import_granularity_submodules/deep.rs"),
+            ),
+        ],
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     assert!(
@@ -38,10 +48,15 @@ fn flags_split_in_separate_file_submodule() {
         "expected `{LINT}` warnings; stderr was:\n{stderr}",
     );
     // The regression: the split inside the separate-file submodule is now
-    // reported at `src/separate.rs` rather than skipped.
+    // reported at `src/separate.rs` rather than skipped...
     assert!(
         stderr.contains("src/separate.rs"),
         "expected the separate-file submodule to be flagged; stderr was:\n{stderr}",
+    );
+    // ...including one nested under another separate-file module.
+    assert!(
+        stderr.contains("src/separate/deep.rs"),
+        "expected the nested separate-file submodule to be flagged; stderr was:\n{stderr}",
     );
     // The crate root and inline module stay covered.
     assert!(
@@ -56,12 +71,20 @@ fn flags_split_in_separate_file_submodule() {
 /// module-level suppression resolve.
 #[test]
 fn respects_allow_on_separate_file_submodule() {
-    let lib = include_str!("fixtures/import_granularity_submodules/allowed_lib.rs");
     let (_temp, stderr, success) = run_project_with_sources(
         "fixture_ig_separate_module_allowed",
         cargo_manifest_dir(),
         &shared_target_dir(),
-        &[("src/lib.rs", lib), ("src/separate.rs", SEPARATE)],
+        &[
+            (
+                "src/lib.rs",
+                include_str!("fixtures/import_granularity_submodules/allowed_lib.rs"),
+            ),
+            (
+                "src/separate.rs",
+                include_str!("fixtures/import_granularity_submodules/allowed_separate.rs"),
+            ),
+        ],
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     assert!(

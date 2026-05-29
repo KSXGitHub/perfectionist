@@ -243,31 +243,40 @@ impl<'tcx> LateLintPass<'tcx> for ImportGranularity {
     }
 }
 
-/// Record the source file that holds a module's body, keyed by name. A
-/// dummy span (no real body) contributes nothing.
+/// Record the on-disk source file that holds a module's body, keyed by
+/// name. A dummy span (no real body) contributes nothing. Only
+/// [`FileName::Real`] files count: a module synthesised by a proc macro
+/// has a `<proc-macro source>` file that must not be re-parsed and
+/// flagged as if the user wrote it.
 fn record_module_file(
     source_map: &SourceMap,
     module_files: &mut HashSet<FileName>,
     spans: rustc_hir::ModSpans,
 ) {
     let inner_span = spans.inner_span;
-    if !inner_span.is_dummy() {
-        module_files.insert(source_map.lookup_source_file(inner_span.lo()).name.clone());
+    if inner_span.is_dummy() {
+        return;
+    }
+    let name = &source_map.lookup_source_file(inner_span.lo()).name;
+    if matches!(name, FileName::Real(_)) {
+        module_files.insert(name.clone());
     }
 }
 
 /// Re-parse a module's source file from its already-loaded text. Returns
 /// `None` (silently discarding buffered diagnostics — `parse_psess` is
 /// wired to a [`SilentEmitter`]) when the file does not parse as a
-/// standalone module. Parsing the in-memory source preserves the real
-/// spans (the shared source map deduplicates by file name) and avoids
-/// re-reading the file from disk.
+/// standalone module. The shared source map already holds this file and
+/// deduplicates by name, so the parser reuses the loaded `SourceFile`
+/// (preserving the real spans) and the passed source text is ignored —
+/// hence the empty string, which avoids both a disk re-read and a clone
+/// of the whole file.
 fn parse_module_file(parse_psess: &ParseSess, source_file: &SourceFile) -> Option<Crate> {
-    let source = source_file.src.as_deref()?.to_owned();
+    source_file.src.as_ref()?;
     let mut parser = match new_parser_from_source_str(
         parse_psess,
         source_file.name.clone(),
-        source,
+        String::new(),
         StripTokens::ShebangAndFrontmatter,
     ) {
         Ok(parser) => parser,
