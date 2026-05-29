@@ -151,9 +151,12 @@ pub(super) fn render_visibility(cx: &LateContext<'_>, item: &Item) -> String {
 /// Source snippets of an item's outer attributes, in source order.
 /// Used both to require two imports' attributes to match before
 /// folding them and to replay the attributes onto a statement a
-/// rewrite synthesises. Note that `#[cfg(...)]` attributes are already
-/// stripped by the time this early pass runs, so in practice these are
-/// doc comments, lint-level attributes, and tool attributes.
+/// rewrite synthesises. The rule re-parses source in a late pass, so
+/// `#[cfg(...)]` attributes are *not* stripped here — they appear in
+/// this list like any other attribute. That is what lets the fold's
+/// attribute-equality check refuse to merge two imports differing only
+/// in their `#[cfg(...)]`, and lets a `forbid` split replay the gate
+/// onto both halves.
 pub(super) fn attr_snippets(cx: &LateContext<'_>, item: &Item) -> Vec<String> {
     item.attrs
         .iter()
