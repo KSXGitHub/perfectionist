@@ -8,11 +8,14 @@
 //! These tests materialise a real Cargo project on disk (so the
 //! separate-file module is loaded the way a normal build loads it) and
 //! run `cargo dylint --all` against it, sharing the warmed
-//! `target/integration-fixtures`.
+//! `target/integration-fixtures`. The substantial crate-root sources
+//! live in `fixtures/` (`include_str!`); the trivial submodule splits
+//! are inlined with `text_block_fnl!`.
 
 pub mod _utils;
 
 use _utils::{cargo_manifest_dir, run_project_with_sources, shared_target_dir};
+use text_block_macros::text_block_fnl;
 
 const LINT: &str = "perfectionist::import_granularity";
 
@@ -23,6 +26,16 @@ const LINT: &str = "perfectionist::import_granularity";
 /// to cover modules reached only through another separate-file module.
 #[test]
 fn flags_split_in_separate_file_submodule() {
+    let separate = text_block_fnl! {
+        "use std::collections::BTreeMap;"
+        "use std::collections::HashMap;"
+        ""
+        "mod deep;"
+    };
+    let deep = text_block_fnl! {
+        "use std::collections::BTreeMap;"
+        "use std::collections::HashMap;"
+    };
     let (_temp, stderr, success) = run_project_with_sources(
         "fixture_ig_separate_module",
         cargo_manifest_dir(),
@@ -32,14 +45,8 @@ fn flags_split_in_separate_file_submodule() {
                 "src/lib.rs",
                 include_str!("fixtures/import_granularity_submodules/flags_lib.rs"),
             ),
-            (
-                "src/separate.rs",
-                include_str!("fixtures/import_granularity_submodules/separate.rs"),
-            ),
-            (
-                "src/separate/deep.rs",
-                include_str!("fixtures/import_granularity_submodules/deep.rs"),
-            ),
+            ("src/separate.rs", separate),
+            ("src/separate/deep.rs", deep),
         ],
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
@@ -71,6 +78,10 @@ fn flags_split_in_separate_file_submodule() {
 /// module-level suppression resolve.
 #[test]
 fn respects_allow_on_separate_file_submodule() {
+    let separate = text_block_fnl! {
+        "use std::collections::BTreeMap;"
+        "use std::collections::HashMap;"
+    };
     let (_temp, stderr, success) = run_project_with_sources(
         "fixture_ig_separate_module_allowed",
         cargo_manifest_dir(),
@@ -80,10 +91,7 @@ fn respects_allow_on_separate_file_submodule() {
                 "src/lib.rs",
                 include_str!("fixtures/import_granularity_submodules/allowed_lib.rs"),
             ),
-            (
-                "src/separate.rs",
-                include_str!("fixtures/import_granularity_submodules/allowed_separate.rs"),
-            ),
+            ("src/separate.rs", separate),
         ],
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
