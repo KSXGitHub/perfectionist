@@ -3,7 +3,7 @@
 
 use clippy_utils::source::snippet;
 use rustc_ast::{Item, Path, PathSegment, UseTree, UseTreeKind, VisibilityKind};
-use rustc_lint::EarlyContext;
+use rustc_lint::LateContext;
 use rustc_span::{Ident, Symbol, kw};
 
 /// A path's segments with the synthetic leading `{{root}}` (`::`)
@@ -141,7 +141,7 @@ pub(super) fn simple_self_module(tree: &UseTree) -> Option<Vec<Symbol>> {
 /// `"pub(crate) "`), or the empty string for inherited visibility. Used
 /// when a rewrite has to synthesise a fresh `use` statement that keeps
 /// the original's visibility.
-pub(super) fn render_visibility(cx: &EarlyContext<'_>, item: &Item) -> String {
+pub(super) fn render_visibility(cx: &LateContext<'_>, item: &Item) -> String {
     match item.vis.kind {
         VisibilityKind::Inherited => String::new(),
         _ => format!("{} ", snippet(cx, item.vis.span, "").trim()),
@@ -154,7 +154,7 @@ pub(super) fn render_visibility(cx: &EarlyContext<'_>, item: &Item) -> String {
 /// rewrite synthesises. Note that `#[cfg(...)]` attributes are already
 /// stripped by the time this early pass runs, so in practice these are
 /// doc comments, lint-level attributes, and tool attributes.
-pub(super) fn attr_snippets(cx: &EarlyContext<'_>, item: &Item) -> Vec<String> {
+pub(super) fn attr_snippets(cx: &LateContext<'_>, item: &Item) -> Vec<String> {
     item.attrs
         .iter()
         .map(|attr| snippet(cx, attr.span, "").trim().to_string())

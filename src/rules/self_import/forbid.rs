@@ -2,18 +2,16 @@
 //! `use` statement is a violation, and the autofix rewrites it to the
 //! bare module import.
 
-use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::source::snippet_indent;
 use rustc_ast::{Item, UseTree, UseTreeKind};
-use rustc_errors::Applicability;
-use rustc_lint::EarlyContext;
+use rustc_lint::LateContext;
 use rustc_span::Span;
 
-use super::SELF_IMPORT;
 use super::render::{
     attr_snippets, is_self_leaf, real_segments, render_prefix, render_rooted, render_use_tree,
     render_visibility, segment_names, simple_self_module, with_rename,
 };
+use super::{Fix, Pending};
 
 const MESSAGE: &str = "this `use` imports a module through `self`";
 // Suggestion labels, chosen per rewrite shape so the help text matches
@@ -23,16 +21,28 @@ const LABEL_SPLIT: &str = "split the module import into its own `use` statement"
 const LABEL_EXPAND: &str = "import the module alongside the group's other items";
 
 /// Check one top-level `use` item under `forbid` style. `tree` is the
-/// item's own `use` tree.
-pub(super) fn check_use_item(cx: &EarlyContext<'_>, item: &Item, tree: &UseTree) {
-    visit(cx, item, tree, true);
+/// item's own `use` tree. Detected violations are parked in `violations`
+/// for deferred, HIR-anchored emission.
+pub(super) fn check_use_item(
+    cx: &LateContext<'_>,
+    item: &Item,
+    tree: &UseTree,
+    violations: &mut Vec<Pending>,
+) {
+    visit(cx, item, tree, true, violations);
 }
 
-/// Walk `node` (a `use` tree, possibly nested), emitting a diagnostic
-/// for every `self`-as-module form. `at_root` marks the item's own
+/// Walk `node` (a `use` tree, possibly nested), parking a violation for
+/// every `self`-as-module form. `at_root` marks the item's own
 /// top-level tree, where a `{self, X}` group splits into two separate
 /// `use` statements; nested groups are rewritten in place.
-fn visit(cx: &EarlyContext<'_>, item: &Item, node: &UseTree, at_root: bool) {
+fn visit(
+    cx: &LateContext<'_>,
+    item: &Item,
+    node: &UseTree,
+    at_root: bool,
+    violations: &mut Vec<Pending>,
+) {
     match &node.kind {
         UseTreeKind::Simple(rename) => {
             if let Some(module) = simple_self_module(node)
@@ -46,7 +56,7 @@ fn visit(cx: &EarlyContext<'_>, item: &Item, node: &UseTree, at_root: bool) {
                 let segments = real_segments(&node.prefix);
                 let module_path = render_rooted(&node.prefix, &segments[..segments.len() - 1]);
                 emit_replacement(
-                    cx,
+                    item,
                     node.span(),
                     LABEL_BARE_PATH,
                     with_rename(module_path, *rename),
@@ -54,19 +64,20 @@ fn visit(cx: &EarlyContext<'_>, item: &Item, node: &UseTree, at_root: bool) {
                         "the trailing `self` is redundant here — it re-names the module the \
                          path already gives; import it directly",
                     ),
+                    violations,
                 );
             }
         }
         UseTreeKind::Nested { items, .. } => {
             if let Some(self_idx) = items.iter().position(|(child, _)| is_self_leaf(child)) {
-                rewrite_self_group(cx, item, node, items, self_idx, at_root);
+                rewrite_self_group(cx, item, node, items, self_idx, at_root, violations);
             }
             // Recurse into the non-`self` members to catch `self` forms
             // nested deeper inside the tree. The `self` leaf itself
             // names this node's module and is handled above.
             for (child, _) in items {
                 if !is_self_leaf(child) {
-                    visit(cx, item, child, false);
+                    visit(cx, item, child, false, violations);
                 }
             }
         }
@@ -79,12 +90,13 @@ fn visit(cx: &EarlyContext<'_>, item: &Item, node: &UseTree, at_root: bool) {
 /// members the module import is lifted out — into a separate statement
 /// at the item root, or a sibling brace-list entry when nested.
 fn rewrite_self_group(
-    cx: &EarlyContext<'_>,
+    cx: &LateContext<'_>,
     item: &Item,
     node: &UseTree,
     items: &[(UseTree, rustc_ast::NodeId)],
     self_idx: usize,
     at_root: bool,
+    violations: &mut Vec<Pending>,
 ) {
     if segment_names(&node.prefix).is_empty() {
         // `use {self, ...};` with no prefix names nothing coherent;
@@ -106,7 +118,7 @@ fn rewrite_self_group(
 
     if others.is_empty() {
         // `use prefix::{self};` -> `use prefix;`
-        emit_replacement(cx, node.span(), LABEL_BARE_PATH, module, None);
+        emit_replacement(item, node.span(), LABEL_BARE_PATH, module, None, violations);
         return;
     }
 
@@ -124,16 +136,24 @@ fn rewrite_self_group(
             .map(|attr| format!("{attr}\n{indent}"))
             .collect();
         let replacement = format!("{module};\n{indent}{attrs}{visibility}use {rest}");
-        emit_replacement(cx, node.span(), LABEL_SPLIT, replacement, None);
+        emit_replacement(
+            item,
+            node.span(),
+            LABEL_SPLIT,
+            replacement,
+            None,
+            violations,
+        );
     } else {
         // Nested `prefix::{self, X}` sits in a comma-separated parent
         // group, so it can expand in place: `prefix, prefix::{X}`.
         emit_replacement(
-            cx,
+            item,
             node.span(),
             LABEL_EXPAND,
             format!("{module}, {rest}"),
             None,
+            violations,
         );
     }
 }
@@ -154,22 +174,30 @@ fn render_rest(base: &str, others: &[&UseTree]) -> String {
     }
 }
 
-/// Emit the lint at `span` with a `MaybeIncorrect` suggestion. Every
-/// `forbid` rewrite is `MaybeIncorrect`: the bare form imports every
-/// namespace named by the final segment, while the `self` form imports
-/// only the module — a difference that surfaces in the rare case where
-/// a value or macro shares the module's name in the same parent.
+/// Park a violation at `span` with a `MaybeIncorrect` single-span
+/// suggestion. Every `forbid` rewrite is `MaybeIncorrect`: the bare form
+/// imports every namespace named by the final segment, while the `self`
+/// form imports only the module — a difference that surfaces in the rare
+/// case where a value or macro shares the module's name in the same
+/// parent. The lint-level anchor is the enclosing `use` item's span (an
+/// out-of-line module's `use` lives in its own file, so the item span is
+/// always a safe anchor for HIR resolution).
 fn emit_replacement(
-    cx: &EarlyContext<'_>,
+    item: &Item,
     span: Span,
     label: &'static str,
     replacement: String,
     note: Option<&'static str>,
+    violations: &mut Vec<Pending>,
 ) {
-    span_lint_and_then(cx, SELF_IMPORT, span, MESSAGE, |diag| {
-        if let Some(note) = note {
-            diag.note(note);
-        }
-        diag.span_suggestion(span, label, replacement, Applicability::MaybeIncorrect);
+    violations.push(Pending {
+        anchor: item.span,
+        span,
+        message: MESSAGE,
+        fix: Fix::Replace {
+            label,
+            replacement,
+            note,
+        },
     });
 }

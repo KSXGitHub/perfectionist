@@ -1,30 +1,33 @@
 //! `combined` style: adjacent imports of a module and an item from
 //! that module fold into a single `use module::{self, item};`.
 
-use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Item, ItemKind, UseTree, UseTreeKind};
 use rustc_errors::Applicability;
-use rustc_lint::{EarlyContext, LintContext};
+use rustc_lint::{LateContext, LintContext};
 use rustc_span::{Symbol, kw};
 
-use super::SELF_IMPORT;
 use super::render::{
     attr_snippets, has_path_root, is_self_leaf, real_segments, render_prefix, render_segments,
     render_use_tree, render_visibility, segment_names, with_rename,
 };
+use super::{Fix, Pending};
 
 /// Scan an ordered sequence of items for adjacent module + item
 /// imports to fold. Each entry is `Some(item)` for an item in source
 /// order, or `None` for an intervening non-item statement (a `let`,
 /// an expression) that breaks adjacency. A non-`use` item — or a `use`
 /// from a macro expansion — also breaks the window.
-pub(super) fn scan<'ast>(cx: &EarlyContext<'_>, entries: impl Iterator<Item = Option<&'ast Item>>) {
+pub(super) fn scan<'ast>(
+    cx: &LateContext<'_>,
+    entries: impl Iterator<Item = Option<&'ast Item>>,
+    violations: &mut Vec<Pending>,
+) {
     let mut previous: Option<&Item> = None;
     for entry in entries {
         match entry {
             Some(item) if matches!(item.kind, ItemKind::Use(_)) && !item.span.from_expansion() => {
                 if let Some(first) = previous
-                    && try_fold(cx, first, item)
+                    && try_fold(cx, first, item, violations)
                 {
                     previous = None;
                 } else {
@@ -40,7 +43,12 @@ pub(super) fn scan<'ast>(cx: &EarlyContext<'_>, entries: impl Iterator<Item = Op
 /// whether a fold was emitted. The two must share visibility and have
 /// matching attributes; one must import a module and the other an item
 /// from that same module (in either order).
-fn try_fold(cx: &EarlyContext<'_>, first: &Item, second: &Item) -> bool {
+fn try_fold(
+    cx: &LateContext<'_>,
+    first: &Item,
+    second: &Item,
+    violations: &mut Vec<Pending>,
+) -> bool {
     if render_visibility(cx, first) != render_visibility(cx, second) {
         return false;
     }
@@ -62,13 +70,13 @@ fn try_fold(cx: &EarlyContext<'_>, first: &Item, second: &Item) -> bool {
     if let Some((module, bare)) = module_import(first_tree)
         && let Some(tail) = item_tail_under(second_tree, &module)
     {
-        emit_fold(cx, first, second, first_tree, first_tree, bare, &tail);
+        emit_fold(cx, first, second, first_tree, bare, &tail, violations);
         return true;
     }
     if let Some((module, bare)) = module_import(second_tree)
         && let Some(tail) = item_tail_under(first_tree, &module)
     {
-        emit_fold(cx, first, second, first_tree, second_tree, bare, &tail);
+        emit_fold(cx, first, second, second_tree, bare, &tail, violations);
         return true;
     }
     false
@@ -162,15 +170,20 @@ fn item_tail_under(tree: &UseTree, module: &[Symbol]) -> Option<String> {
 /// `module::{self, tail}` and delete `second`'s whole statement.
 /// `module_tree` is whichever of the two statements is the module
 /// import — its prefix renders the `module` path (raw-identifier aware).
+/// `first` is always a `use` item (the caller checked), so its own tree
+/// is recovered here rather than threaded through a separate argument.
 fn emit_fold(
-    cx: &EarlyContext<'_>,
+    cx: &LateContext<'_>,
     first: &Item,
     second: &Item,
-    first_tree: &UseTree,
     module_tree: &UseTree,
     bare: bool,
     tail: &str,
+    violations: &mut Vec<Pending>,
 ) {
+    let ItemKind::Use(first_tree) = &first.kind else {
+        return;
+    };
     let module = render_prefix(&module_tree.prefix);
     let folded = format!("{module}::{{self, {tail}}}");
     let delete = first.span.shrink_to_hi().to(second.span);
@@ -204,17 +217,14 @@ fn emit_fold(
     } else {
         Applicability::MachineApplicable
     };
-    span_lint_and_then(
-        cx,
-        SELF_IMPORT,
-        first.span,
-        "adjacent module and item imports can be combined through `self`",
-        |diag| {
-            diag.multipart_suggestion(
-                "combine into a single `use` with `self`",
-                vec![(first_tree.span(), folded.clone()), (delete, String::new())],
-                applicability,
-            );
+    violations.push(Pending {
+        anchor: first.span,
+        span: first.span,
+        message: "adjacent module and item imports can be combined through `self`",
+        fix: Fix::Multipart {
+            label: "combine into a single `use` with `self`",
+            parts: vec![(first_tree.span(), folded), (delete, String::new())],
+            applicability,
         },
-    );
+    });
 }

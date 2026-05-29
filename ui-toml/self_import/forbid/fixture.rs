@@ -69,12 +69,19 @@ mod rooted_path {
     use ::std::collections::{self};
 }
 
-// A cfg-gated import is linted pre-expansion, even when the cfg would
-// strip it from the build (`any()` is always false).
+// A cfg-gated import is still linted: the rule re-parses the source,
+// which keeps `#[cfg(...)]` gates intact, so the `use` is seen even
+// though the cfg would strip it from the build (`any()` is always false).
 mod cfg_gated {
     #[cfg(any())]
     use crate::defs::inner::{self};
 }
+
+// An outline module (a separate source file) is linted too. Pre-expansion
+// it is `ModKind::Unloaded`, so the rule must descend through `check_item`
+// as the module loads rather than walk the crate root alone.
+#[path = "auxiliary/outline.rs"]
+mod outline;
 
 // A bare module import is already compliant — no diagnostic.
 mod clean {

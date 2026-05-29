@@ -94,10 +94,22 @@ LL |     use ::std::collections::{self};
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: import the module by its bare path: `::std::collections`
 
 warning: this `use` imports a module through `self`
-  --> $DIR/fixture.rs:76:9
+  --> $DIR/fixture.rs:77:9
    |
 LL |     use crate::defs::inner::{self};
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: import the module by its bare path: `crate::defs::inner`
 
-warning: 12 warnings emitted
+warning: this `use` imports a module through `self`
+  --> $DIR/auxiliary/outline.rs:7:5
+   |
+LL | use crate::defs::inner::{self, Baz};
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: split the module import into its own `use` statement
+   |
+LL ~ use crate::defs::inner;
+LL ~ use crate::defs::inner::Baz;
+   |
+
+warning: 13 warnings emitted
 

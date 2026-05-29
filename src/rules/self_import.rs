@@ -12,13 +12,37 @@
 //! - [`render`] — `use`-tree rendering helpers shared by both styles.
 //! - [`forbid`] — the `forbid` style's per-tree rewrite.
 //! - [`combined`] — the `combined` style's adjacency fold.
+//!
+//! The rule runs as a [`LateLintPass`] that **re-parses each of the
+//! crate's module source files** from a throwaway [`ParseSess`] sharing
+//! the real [`SourceMap`]. A pre-expansion pass would leave out-of-line
+//! `mod foo;` modules `ModKind::Unloaded` (their files are not read
+//! until macro expansion), so it would silently skip every separate-file
+//! submodule. Re-parsing reaches every submodule while keeping
+//! `#[cfg(...)]` gates intact (parsing does not strip cfg, unlike the
+//! post-expansion AST). This mirrors the sibling `import_granularity`
+//! rule.
 
+use std::collections::HashSet;
+use std::sync::Arc;
+
+use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_ast::visit::{self, Visitor};
 use rustc_ast::{Block, Crate, Item, ItemKind, ModKind, Stmt, StmtKind};
-use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
+use rustc_errors::emitter::SilentEmitter;
+use rustc_errors::{Applicability, DiagCtxt};
+use rustc_hir::HirId;
+use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
+use rustc_parse::lexer::StripTokens;
+use rustc_parse::new_parser_from_source_str;
+use rustc_session::parse::ParseSess;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
+use rustc_span::def_id::LOCAL_CRATE;
+use rustc_span::source_map::SourceMap;
+use rustc_span::{FileName, SourceFile, Span};
 
 use crate::common::{DefaultState, resolved_state};
+use crate::enclosing_hir::find_enclosing_hir_ids;
 
 mod combined;
 mod forbid;
@@ -154,63 +178,244 @@ pub fn register_pass(lint_store: &mut LintStore) {
                  `[perfectionist::self_import]` in dylint.toml",
             )
         });
-    // Pre-expansion, like the sibling `import_granularity` rule: `#[cfg(...)]`
-    // attributes are evaluated and stripped during macro expansion, so a
-    // post-expansion pass would never lint a cfg-gated `use` and `combined`'s
-    // adjacency window would shift with the active cfg flags (folding across a
-    // source-non-adjacent pair once an intervening item is stripped). Running
-    // before expansion keeps the source's original `use` structure intact.
-    lint_store.register_pre_expansion_pass(move || {
+    // Late pass: out-of-line `mod foo;` modules are `ModKind::Unloaded`
+    // until macro expansion, so a pre-expansion pass never sees them.
+    // `check_crate` re-parses each source file instead (see the module
+    // docs), reaching every submodule while keeping `#[cfg(...)]` gates
+    // intact.
+    lint_store.register_late_pass(move |_| {
         Box::new(SelfImport {
             style: config.style,
         })
     });
 }
 
-impl EarlyLintPass for SelfImport {
-    fn check_crate(&mut self, cx: &EarlyContext<'_>, krate: &Crate) {
-        let mut walker = SelfImportWalker {
-            cx,
-            style: self.style,
+/// A detected violation parked until its enclosing HIR node is known.
+/// The rule discovers violations by re-parsing source files (see
+/// [`SelfImport::check_crate`]), outside the HIR walk, so emission is
+/// deferred and routed through [`span_lint_hir_and_then`] at the
+/// enclosing node — that is what lets a per-module / per-item `#[allow]`
+/// / `#[expect]` resolve, instead of only a crate-root one.
+pub(super) struct Pending {
+    /// Resolves the lint-level anchor: the violating `use` item's own
+    /// span, always contained by its HIR node.
+    pub(super) anchor: Span,
+    /// The span the diagnostic points at.
+    pub(super) span: Span,
+    pub(super) message: &'static str,
+    pub(super) fix: Fix,
+}
+
+/// What to render for a [`Pending`] once its anchor is known.
+pub(super) enum Fix {
+    /// A single-span replacement (the `forbid` rewrites). Always
+    /// `MaybeIncorrect`: the bare form imports every namespace named by
+    /// the final segment, while the `self` form imports only the module.
+    Replace {
+        label: &'static str,
+        replacement: String,
+        note: Option<&'static str>,
+    },
+    /// A multi-part edit (`combined`'s fold: rewrite the kept statement,
+    /// delete the folded one).
+    Multipart {
+        label: &'static str,
+        parts: Vec<(Span, String)>,
+        applicability: Applicability,
+    },
+}
+
+impl<'tcx> LateLintPass<'tcx> for SelfImport {
+    fn check_crate(&mut self, cx: &LateContext<'tcx>) {
+        let tcx = cx.tcx;
+        let source_map = cx.sess().psess.clone_source_map();
+
+        // The files that define a module in this crate's module tree.
+        // Re-parsing is restricted to these so source-map files that are
+        // *not* standalone modules — `include_str!` data, `include!`
+        // fragments — are not re-parsed and wrongly flagged.
+        let mut module_files: HashSet<FileName> = HashSet::new();
+        record_module_file(&source_map, &mut module_files, tcx.hir_root_module().spans);
+        for item_id in tcx.hir_free_items() {
+            if let rustc_hir::ItemKind::Mod(_, module) = &tcx.hir_item(item_id).kind {
+                record_module_file(&source_map, &mut module_files, module.spans);
+            }
+        }
+
+        // Snapshot the files before parsing: re-parsing takes a write
+        // lock on the shared source map, so it must not run while the
+        // `files()` read guard is held.
+        let module_source_files: Vec<Arc<SourceFile>> = {
+            let source_files = source_map.files();
+            source_files
+                .iter()
+                .filter(|source_file| source_file.cnum == LOCAL_CRATE)
+                .filter(|source_file| module_files.contains(&source_file.name))
+                .cloned()
+                .collect()
         };
-        walker.scan_items(krate.items.iter().map(|item| Some(&**item)));
-        visit::walk_crate(&mut walker, krate);
+
+        // A throwaway `ParseSess` sharing the real `SourceMap` (so spans,
+        // and our suggestions, point at the real files) but with a
+        // silenced `DiagCtxt`, so a file that does not parse cleanly
+        // standalone is skipped rather than surfacing parse errors.
+        let parse_psess = ParseSess::with_dcx(
+            DiagCtxt::new(Box::new(SilentEmitter)),
+            Arc::clone(&source_map),
+        );
+
+        let mut violations: Vec<Pending> = Vec::new();
+        for source_file in &module_source_files {
+            if let Some(krate) = parse_module_file(&parse_psess, source_file) {
+                let mut walker = SelfImportWalker {
+                    cx,
+                    style: self.style,
+                    violations: &mut violations,
+                };
+                walker.scan_items(krate.items.iter().map(|item| Some(&**item)));
+                visit::walk_crate(&mut walker, &krate);
+            }
+        }
+
+        if violations.is_empty() {
+            return;
+        }
+
+        // Anchor each violation at its enclosing HIR node so a per-module
+        // / per-item `#[allow]` resolves (emitting from `check_crate`
+        // alone would sit at the crate root).
+        let anchors: Vec<Span> = violations.iter().map(|pending| pending.anchor).collect();
+        let hir_ids = find_enclosing_hir_ids(tcx, &anchors);
+        for (pending, hir_id) in violations.into_iter().zip(hir_ids) {
+            emit_pending(cx, hir_id, pending);
+        }
     }
 }
 
-/// Drives the rule across every module body and block in the crate.
-/// `check_crate`'s own pass handles the crate's top-level items; the
-/// `Visitor` impl then descends into nested modules and block bodies so
-/// the adjacency window (`combined`) and the per-tree rewrite
-/// (`forbid`) both see each `use` in its source-ordered sibling list.
-struct SelfImportWalker<'a, 'tcx> {
-    cx: &'a EarlyContext<'tcx>,
-    style: Style,
+/// Emit one parked [`Pending`] at its resolved enclosing HIR node.
+fn emit_pending(cx: &LateContext<'_>, hir_id: HirId, pending: Pending) {
+    let Pending {
+        span, message, fix, ..
+    } = pending;
+    span_lint_hir_and_then(
+        cx,
+        SELF_IMPORT,
+        hir_id,
+        span,
+        message,
+        |diagnostic| match fix {
+            Fix::Replace {
+                label,
+                replacement,
+                note,
+            } => {
+                if let Some(note) = note {
+                    diagnostic.note(note);
+                }
+                diagnostic.span_suggestion(span, label, replacement, Applicability::MaybeIncorrect);
+            }
+            Fix::Multipart {
+                label,
+                parts,
+                applicability,
+            } => {
+                diagnostic.multipart_suggestion(label, parts, applicability);
+            }
+        },
+    );
 }
 
-impl SelfImportWalker<'_, '_> {
+/// Record the on-disk source file that holds a module's body, keyed by
+/// name. A dummy span (no real body) contributes nothing. Only
+/// [`FileName::Real`] files count: a module synthesised by a proc macro
+/// has a `<proc-macro source>` file that must not be re-parsed and
+/// flagged as if the user wrote it.
+fn record_module_file(
+    source_map: &SourceMap,
+    module_files: &mut HashSet<FileName>,
+    spans: rustc_hir::ModSpans,
+) {
+    let inner_span = spans.inner_span;
+    if inner_span.is_dummy() {
+        return;
+    }
+    let name = &source_map.lookup_source_file(inner_span.lo()).name;
+    if matches!(name, FileName::Real(_)) {
+        module_files.insert(name.clone());
+    }
+}
+
+/// Re-parse a module's source file from its already-loaded text. Returns
+/// `None` (silently discarding buffered diagnostics — `parse_psess` is
+/// wired to a [`SilentEmitter`]) when the file does not parse as a
+/// standalone module. The shared source map already holds this file and
+/// deduplicates by name, so the parser reuses the loaded `SourceFile`
+/// (preserving the real spans) and the passed source text is ignored —
+/// hence the empty string, which avoids both a disk re-read and a clone
+/// of the whole file.
+fn parse_module_file(parse_psess: &ParseSess, source_file: &SourceFile) -> Option<Crate> {
+    // Load-bearing: a `SourceFile` without in-memory source makes the
+    // lexer ICE ("cannot lex `source_file` without source"). Local-crate
+    // `Real` files normally carry it, but bail rather than risk the ICE.
+    source_file.src.as_ref()?;
+    let mut parser = match new_parser_from_source_str(
+        parse_psess,
+        source_file.name.clone(),
+        String::new(),
+        StripTokens::ShebangAndFrontmatter,
+    ) {
+        Ok(parser) => parser,
+        Err(errors) => {
+            for error in errors {
+                error.cancel();
+            }
+            return None;
+        }
+    };
+    match parser.parse_crate_mod() {
+        Ok(krate) => Some(krate),
+        Err(error) => {
+            error.cancel();
+            None
+        }
+    }
+}
+
+/// Walks one re-parsed module file, scanning each scope that holds a
+/// source-ordered run of items — the file root, every inline `mod { ... }`
+/// body, and every block. Out-of-line `mod foo;` modules are
+/// `ModKind::Unloaded` in a fresh parse, but their files are re-parsed in
+/// their own right by [`SelfImport::check_crate`], so this walk stays
+/// within a single file.
+struct SelfImportWalker<'a, 'b, 'tcx> {
+    cx: &'a LateContext<'tcx>,
+    style: Style,
+    violations: &'b mut Vec<Pending>,
+}
+
+impl SelfImportWalker<'_, '_, '_> {
     /// Process one source-ordered sequence of entries: fold adjacent
-    /// imports under `combined`, and rewrite each `self`-importing
-    /// `use` under `forbid`. Each entry is `Some(item)` for an item in
+    /// imports under `combined`, and rewrite each `self`-importing `use`
+    /// under `forbid`. Each entry is `Some(item)` for an item in
     /// position, or `None` for an intervening statement (a `let`, an
     /// expression) that breaks the `combined` adjacency window.
-    fn scan_items<'ast>(&self, entries: impl Iterator<Item = Option<&'ast Item>> + Clone) {
+    fn scan_items<'ast>(&mut self, entries: impl Iterator<Item = Option<&'ast Item>> + Clone) {
         if let Style::Combined = self.style {
-            combined::scan(self.cx, entries.clone());
+            combined::scan(self.cx, entries.clone(), self.violations);
         }
         if let Style::Forbid = self.style {
             for item in entries.flatten() {
                 if let ItemKind::Use(tree) = &item.kind
                     && !item.span.from_expansion()
                 {
-                    forbid::check_use_item(self.cx, item, tree);
+                    forbid::check_use_item(self.cx, item, tree, self.violations);
                 }
             }
         }
     }
 }
 
-impl<'ast> Visitor<'ast> for SelfImportWalker<'_, '_> {
+impl<'ast> Visitor<'ast> for SelfImportWalker<'_, '_, '_> {
     fn visit_item(&mut self, item: &'ast Item) {
         if let ItemKind::Mod(_, _, ModKind::Loaded(items, ..)) = &item.kind {
             self.scan_items(items.iter().map(|item| Some(&**item)));
