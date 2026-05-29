@@ -58,6 +58,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`
 
+- [`prefer_expect_over_allow`](./prefer_expect_over_allow.md) (default: `active`).
+
+  `#[allow]` for a deterministically-firing lint should be `#[expect]`
+
 - [`prefer_raw_string`](./prefer_raw_string.md) (default: `active`).
 
   string literal contains only raw-expressible escapes; prefer the raw-string form

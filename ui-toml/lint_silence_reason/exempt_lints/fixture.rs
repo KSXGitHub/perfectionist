@@ -10,6 +10,10 @@
     perfectionist::lint_reason_from_comment,
     reason = "fixture targets `lint_silence_reason`; the trailing/leading comments are documentation, not rationales to lift",
 )]
+#![allow(
+    perfectionist::prefer_expect_over_allow,
+    reason = "fixture targets `lint_silence_reason`; the rewriteable `allow`s here are not the rule under test",
+)]
 
 // Good — every named lint is exempt.
 #[allow(clippy::module_name_repetitions)]

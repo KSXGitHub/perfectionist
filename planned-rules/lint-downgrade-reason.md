@@ -255,7 +255,8 @@ Active by default.
   lifts an adjacent comment into the attribute's `reason` field
   and so satisfies this rule preemptively when the rationale is
   already present in source.
-- [`prefer-expect-over-allow`](./prefer-expect-over-allow.md)
+- `perfectionist::prefer_expect_over_allow`
+  ([`src/rules/prefer_expect_over_allow.rs`](../src/rules/prefer_expect_over_allow.rs))
   rewrites `#[allow]` to `#[expect]`. The level under analysis
   here is the relaxation level, so the rewrite does not affect
   whether this rule fires — `allow` and `expect` rank equally
