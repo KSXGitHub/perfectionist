@@ -77,8 +77,8 @@ declare_tool_lint! {
     /// the module's name in the same parent.
     ///
     /// ### Example
+    /// Under `style = "forbid"`:
     /// ```rust,ignore
-    /// // style = "forbid"
     /// use foo::bar::{self};
     /// use foo::qux::{self, Baz};
     /// ```
@@ -89,8 +89,8 @@ declare_tool_lint! {
     /// use foo::qux::Baz;
     /// ```
     ///
+    /// Under `style = "combined"`:
     /// ```rust,ignore
-    /// // style = "combined"
     /// use foo::bar;
     /// use foo::bar::Baz;
     /// ```
