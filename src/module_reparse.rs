@@ -25,11 +25,30 @@ use rustc_parse::new_parser_from_source_str;
 use rustc_session::parse::ParseSess;
 use rustc_span::def_id::LOCAL_CRATE;
 use rustc_span::source_map::SourceMap;
-use rustc_span::{FileName, SourceFile};
+use rustc_span::{BytePos, FileName, SourceFile};
+
+/// The byte range `(lo, hi)` of a module body, used as a stable key
+/// across the re-parse / HIR boundary. Full [`rustc_span::Span`]
+/// equality also compares the `parent` `LocalDefId` and `SyntaxContext`,
+/// which differ between a freshly re-parsed span and the HIR-lowered
+/// span of the same source bytes; the byte range matches and uniquely
+/// identifies a module body.
+pub(crate) type SpanRange = (BytePos, BytePos);
 
 /// Re-parse every on-disk source file that backs a module in this
 /// crate's HIR module tree, returning each file's freshly parsed
-/// [`Crate`] (crate root plus every `mod`, inline or out-of-line).
+/// [`Crate`] (crate root plus every out-of-line `mod foo;` file) along
+/// with `live_module_spans`.
+///
+/// `live_module_spans` is the body [`SpanRange`] of every module live in
+/// the compiled crate (each inline `mod m { ... }` and out-of-line
+/// `mod foo;`). A re-parse keeps cfg-disabled modules — parsing does not
+/// strip cfg — so a caller walking the re-parsed AST must consult this
+/// set before descending into an inline module, or it would lint a
+/// `#[cfg(FALSE)] mod m { ... }` (e.g. `#[cfg(test)] mod tests`) that is
+/// not part of the build. The result is a tuple rather than a named
+/// struct because a struct field of type [`Vec<Crate>`] makes rustdoc's
+/// auto-trait synthesis overflow on the AST's recursive type graph.
 ///
 /// The throwaway [`ParseSess`] shares the real [`SourceMap`], so every
 /// span in the returned ASTs — and any suggestion built from them —
@@ -41,16 +60,23 @@ use rustc_span::{FileName, SourceFile};
 /// module tree, which excludes `include!` fragments, `include_str!`-ed
 /// `.rs` data, and proc-macro-synthesised modules — none of which should
 /// be re-parsed and flagged as if the user wrote them as a module.
-pub(crate) fn parse_crate_module_files(lint_context: &LateContext<'_>) -> Vec<Crate> {
+pub(crate) fn parse_crate_module_files(
+    lint_context: &LateContext<'_>,
+) -> (Vec<Crate>, HashSet<SpanRange>) {
     let tcx = lint_context.tcx;
     let source_map = lint_context.sess().psess.clone_source_map();
 
-    // The files that define a module in this crate's module tree.
+    // The files that define a module in this crate's module tree, plus
+    // the body span of every live module (for the inline-recursion guard
+    // documented on `CrateModules::live_module_spans`).
     let mut module_files: HashSet<FileName> = HashSet::new();
+    let mut live_module_spans: HashSet<SpanRange> = HashSet::new();
     record_module_file(&source_map, &mut module_files, tcx.hir_root_module().spans);
     for item_id in tcx.hir_free_items() {
         if let rustc_hir::ItemKind::Mod(_, module) = &tcx.hir_item(item_id).kind {
             record_module_file(&source_map, &mut module_files, module.spans);
+            let inner = module.spans.inner_span;
+            live_module_spans.insert((inner.lo(), inner.hi()));
         }
     }
 
@@ -76,10 +102,12 @@ pub(crate) fn parse_crate_module_files(lint_context: &LateContext<'_>) -> Vec<Cr
     // re-parses exactly as the crate compiles.
     parse_psess.edition = lint_context.sess().edition();
 
-    module_source_files
+    let crates = module_source_files
         .iter()
         .filter_map(|source_file| parse_module_file(&parse_psess, source_file))
-        .collect()
+        .collect();
+
+    (crates, live_module_spans)
 }
 
 /// Record the on-disk source file that holds a module's body, keyed by

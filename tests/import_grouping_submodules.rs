@@ -92,6 +92,65 @@ use std::time::Duration;
     );
 }
 
+/// A `#[cfg(...)]`-excluded inline module is not linted. The re-parse
+/// keeps it (parsing does not strip cfg), but it is absent from the
+/// compiled crate, so descending into it would flag — and, since it has
+/// no HIR node, fail to let a local `#[allow]` suppress — dead code. The
+/// common shape is `#[cfg(test)] mod tests`, excluded from a non-test
+/// `cargo dylint` run.
+#[test]
+fn does_not_flag_cfg_excluded_inline_module() {
+    let lib = "\
+#![allow(dead_code, unused_imports)]
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use std::time::Duration;
+}
+";
+    let (_temp, stderr, success) = run_project_with_sources(
+        "fixture_igrp_cfg_excluded_inline",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[("src/lib.rs", lib)],
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(LINT),
+        "a cfg-excluded inline module must not be linted; stderr was:\n{stderr}",
+    );
+}
+
+/// A `#[path = "..."]` out-of-line module is loaded like any other, so
+/// its split is flagged at the real file it points at.
+#[test]
+fn flags_path_attr_module() {
+    let lib = "\
+#![allow(dead_code, unused_imports)]
+
+#[path = \"renamed.rs\"]
+mod aliased;
+";
+    let renamed = "\
+use std::collections::BTreeMap;
+
+use std::time::Duration;
+";
+    let (_temp, stderr, success) = run_project_with_sources(
+        "fixture_igrp_path_attr",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[("src/lib.rs", lib), ("src/renamed.rs", renamed)],
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        stderr.contains(LINT) && stderr.contains("renamed.rs"),
+        "expected the `#[path]` module to be flagged; stderr was:\n{stderr}",
+    );
+}
+
 /// An `#[allow]` on the `mod foo;` declaration suppresses the rule inside
 /// the submodule's own file: anchoring at the enclosing HIR node lets the
 /// module-level suppression resolve.

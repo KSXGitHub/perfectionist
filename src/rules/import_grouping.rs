@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::source::indent_of;
 use rustc_ast::{Item, ItemKind, ModKind};
@@ -15,7 +17,7 @@ use config::{Config, Style};
 
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::find_enclosing_hir_ids;
-use crate::module_reparse::parse_crate_module_files;
+use crate::module_reparse::{SpanRange, parse_crate_module_files};
 
 declare_tool_lint! {
     /// ### What it does
@@ -145,10 +147,15 @@ struct Pending {
 
 impl<'tcx> LateLintPass<'tcx> for ImportGrouping {
     fn check_crate(&mut self, lint_context: &LateContext<'tcx>) {
-        let crates = parse_crate_module_files(lint_context);
+        let (crates, live_module_spans) = parse_crate_module_files(lint_context);
         let mut violations: Vec<Pending> = Vec::new();
         for krate in &crates {
-            self.check_items(lint_context, &krate.items, &mut violations);
+            self.check_items(
+                lint_context,
+                &krate.items,
+                &live_module_spans,
+                &mut violations,
+            );
         }
         if violations.is_empty() {
             return;
@@ -190,6 +197,7 @@ impl ImportGrouping {
         &self,
         lint_context: &LateContext<'_>,
         items: &[Box<Item>],
+        live_module_spans: &HashSet<SpanRange>,
         violations: &mut Vec<Pending>,
     ) {
         let mut run: Vec<UseStmt<'_>> = Vec::new();
@@ -207,13 +215,22 @@ impl ImportGrouping {
         }
         self.process_run(lint_context, &run, violations);
 
-        // Descend into inline `mod { ... }` bodies. Out-of-line `mod foo;`
-        // modules are `ModKind::Unloaded` in this fresh parse, but their
-        // files appear in the source map in their own right and are
-        // re-parsed by `check_crate`.
+        // Descend into inline `mod { ... }` bodies, but only those that
+        // survived `#[cfg(...)]`-stripping to the compiled crate. The
+        // re-parse keeps cfg-disabled modules (parsing does not strip
+        // cfg), so without this guard a `#[cfg(test)] mod tests { ... }`
+        // excluded from a non-test build would be linted — and, having no
+        // HIR node, could not be suppressed by a local `#[allow]`.
+        // Out-of-line `mod foo;` modules are `ModKind::Unloaded` here;
+        // their files are re-parsed in their own right by `check_crate`
+        // (and a cfg-disabled `mod foo;` is never loaded, so its file
+        // never enters the source map).
         for item in items {
-            if let ItemKind::Mod(_, _, ModKind::Loaded(items, _, _)) = &item.kind {
-                self.check_items(lint_context, items, violations);
+            if let ItemKind::Mod(_, _, ModKind::Loaded(items, _, mod_spans)) = &item.kind
+                && live_module_spans
+                    .contains(&(mod_spans.inner_span.lo(), mod_spans.inner_span.hi()))
+            {
+                self.check_items(lint_context, items, live_module_spans, violations);
             }
         }
     }
