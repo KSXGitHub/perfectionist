@@ -2,7 +2,8 @@
 //! by `syntect` so the rendered page doesn't need a runtime
 //! highlighter. The classed-HTML scheme lets every code span carry
 //! its own `<span class>`es, and the matching CSS is generated once
-//! from the bundled theme and folded into the page's `<style>`.
+//! from the bundled theme and written beside `index.html` as its own
+//! linked stylesheet.
 
 use std::sync::LazyLock;
 
