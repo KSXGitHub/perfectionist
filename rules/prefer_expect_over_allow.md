@@ -80,4 +80,6 @@ because `cfg`-conditional bodies inside the scope are common.
 
 When false, only `clippy::*`, `rustdoc::*`, and built-in lints
 are rewritten; other tool namespaces (`perfectionist::*` and
-similar) are left alone.
+similar) are left alone. Default `true` — a tool namespace's
+lints are assumed to fire deterministically like a built-in, so
+`perfectionist::*` (and similar) are rewritten by default.

@@ -131,7 +131,9 @@ struct Config {
     apply_to_outer_scopes: bool,
     /// When false, only `clippy::*`, `rustdoc::*`, and built-in lints
     /// are rewritten; other tool namespaces (`perfectionist::*` and
-    /// similar) are left alone.
+    /// similar) are left alone. Default `true` — a tool namespace's
+    /// lints are assumed to fire deterministically like a built-in, so
+    /// `perfectionist::*` (and similar) are rewritten by default.
     apply_to_tool_namespaces: bool,
 }
 
