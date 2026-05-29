@@ -9,7 +9,7 @@ use rustc_lint::{EarlyContext, EarlyLintPass, Lint, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Span, Symbol, sym};
 
-use crate::common::{DefaultState, render_meta_path, resolved_state};
+use crate::common::{DefaultState, render_meta_path, resolve_string_set, resolved_state};
 
 #[cfg(test)]
 mod tests;
@@ -114,14 +114,17 @@ const RUSTDOC_LINT_GROUPS: &[&str] = &["all"];
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Lints that are exempt — `#[allow]` for these stays. Names are
+    /// Extra lints to exempt, on top of the built-in default set (the
+    /// `cfg`-conditional `unused_*` / reachability lints). Names are
     /// matched against the fully-namespaced lint name shown in
-    /// diagnostics (e.g. `clippy::too_many_arguments`). The default is
-    /// the `cfg`-conditional `unused_*` / reachability set; supplying
-    /// this key replaces the default list outright, so a project that
-    /// wants to *extend* the defaults repeats them alongside its
-    /// additions.
-    exempt_lints: Vec<String>,
+    /// diagnostics (e.g. `clippy::too_many_arguments`). Merged with the
+    /// defaults rather than replacing them.
+    extra_exempt_lints: Vec<String>,
+    /// Lints to drop from the exempt set, even if they appear in the
+    /// built-in defaults or in `extra_exempt_lints`. Use this to opt a
+    /// default exemption back into rewriting (e.g. `["dead_code"]` in a
+    /// project with no `cfg`-gated dead code).
+    ignore_exempt_lints: Vec<String>,
     /// When true, also rewrite crate-level `#![allow(...)]` and
     /// module-level `#[allow(...)]` attributes. Default `false`
     /// because `cfg`-conditional bodies inside the scope are common.
@@ -135,10 +138,8 @@ struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            exempt_lints: DEFAULT_EXEMPT_LINTS
-                .iter()
-                .map(|name| (*name).to_owned())
-                .collect(),
+            extra_exempt_lints: Vec::new(),
+            ignore_exempt_lints: Vec::new(),
             apply_to_outer_scopes: false,
             apply_to_tool_namespaces: true,
         }
@@ -173,7 +174,11 @@ impl PreferExpectOverAllow {
     fn new(builtin_lints: HashSet<String>) -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
-            exempt_lints: config.exempt_lints.into_iter().collect(),
+            exempt_lints: resolve_string_set(
+                DEFAULT_EXEMPT_LINTS,
+                config.extra_exempt_lints,
+                config.ignore_exempt_lints,
+            ),
             apply_to_outer_scopes: config.apply_to_outer_scopes,
             apply_to_tool_namespaces: config.apply_to_tool_namespaces,
             builtin_lints,

@@ -26,7 +26,9 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    exempt_lints: Option<Vec<&'static str>>,
+    extra_exempt_lints: Option<Vec<&'static str>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ignore_exempt_lints: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     apply_to_outer_scopes: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -72,15 +74,17 @@ fn apply_to_tool_namespaces_false_skips_perfectionist_lints() {
     );
 }
 
-/// A custom `exempt_lints` replaces the default list outright, so a
-/// default member like `dead_code` becomes rewriteable and a freshly
-/// listed lint becomes exempt.
+/// `extra_exempt_lints` and `ignore_exempt_lints` compose with the
+/// built-in default set: `ignore_exempt_lints` opts `dead_code` (a
+/// default member) back into rewriting, while `extra_exempt_lints` adds
+/// `clippy::too_many_arguments` to the exempt set.
 #[test]
-fn exempt_lints_replaces_the_default_list() {
+fn extra_and_ignore_exempt_lints_compose_with_defaults() {
     run(
         "ui-toml/prefer_expect_over_allow/exempt_lints",
         &dylint_toml(RuleConfig {
-            exempt_lints: Some(vec!["clippy::too_many_arguments"]),
+            extra_exempt_lints: Some(vec!["clippy::too_many_arguments"]),
+            ignore_exempt_lints: Some(vec!["dead_code"]),
             ..Default::default()
         }),
     );

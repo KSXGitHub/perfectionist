@@ -55,15 +55,20 @@ fn build_fetcher(/* ... */) {}
 
 Configure via `dylint.toml` under `["perfectionist::prefer_expect_over_allow"]`. Every field is optional; the per-field prose below states the default.
 
-### `exempt_lints`: `[string]` (optional)
+### `extra_exempt_lints`: `[string]` (optional)
 
-Lints that are exempt — `#[allow]` for these stays. Names are
+Extra lints to exempt, on top of the built-in default set (the
+`cfg`-conditional `unused_*` / reachability lints). Names are
 matched against the fully-namespaced lint name shown in
-diagnostics (e.g. `clippy::too_many_arguments`). The default is
-the `cfg`-conditional `unused_*` / reachability set; supplying
-this key replaces the default list outright, so a project that
-wants to *extend* the defaults repeats them alongside its
-additions.
+diagnostics (e.g. `clippy::too_many_arguments`). Merged with the
+defaults rather than replacing them.
+
+### `ignore_exempt_lints`: `[string]` (optional)
+
+Lints to drop from the exempt set, even if they appear in the
+built-in defaults or in `extra_exempt_lints`. Use this to opt a
+default exemption back into rewriting (e.g. `["dead_code"]` in a
+project with no `cfg`-gated dead code).
 
 ### `apply_to_outer_scopes`: `boolean` (optional)
 

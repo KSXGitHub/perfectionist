@@ -1,17 +1,17 @@
-// `exempt_lints = ["clippy::too_many_arguments"]` replaces the default
-// exempt list outright: the configured lint becomes exempt, while a
-// former default member like `dead_code` becomes rewriteable again.
+// `extra_exempt_lints = ["clippy::too_many_arguments"]` adds an
+// exemption, and `ignore_exempt_lints = ["dead_code"]` drops a default
+// one: the clippy lint becomes exempt while `dead_code` is rewritten.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(unknown_lints, reason = "ui fixture")]
 
-// Good — now exempt by configuration.
+// Good — now exempt via `extra_exempt_lints`.
 #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
 fn now_exempt() {}
 
-// Bad — `dead_code` is no longer exempt once the default list is
-// replaced, so the rewrite applies.
+// Bad — `dead_code` was dropped from the exempt set via
+// `ignore_exempt_lints`, so the rewrite applies.
 #[allow(dead_code, reason = "kept around for symmetry")]
 fn dead_code_now_rewritten() {}
 
