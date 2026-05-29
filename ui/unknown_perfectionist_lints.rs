@@ -4,6 +4,7 @@
     unknown_lints,
     perfectionist::lint_silence_reason,
     perfectionist::lint_reason_from_comment,
+    perfectionist::prefer_expect_over_allow,
     reason = "ui fixture",
 )]
 

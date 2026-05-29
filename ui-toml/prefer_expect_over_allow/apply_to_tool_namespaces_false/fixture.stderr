@@ -1,0 +1,22 @@
+warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+  --> $DIR/fixture.rs:10:3
+   |
+LL | #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
+   |   ^^^^^ help: replace `allow` with `expect`: `expect`
+   |
+   = note: `#[warn(perfectionist::prefer_expect_over_allow)]` on by default
+
+warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+  --> $DIR/fixture.rs:14:3
+   |
+LL | #[allow(rustdoc::broken_intra_doc_links, reason = "links resolve downstream")]
+   |   ^^^^^ help: replace `allow` with `expect`: `expect`
+
+warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+  --> $DIR/fixture.rs:18:3
+   |
+LL | #[allow(non_snake_case, reason = "external API uses camelCase")]
+   |   ^^^^^ help: replace `allow` with `expect`: `expect`
+
+warning: 3 warnings emitted
+

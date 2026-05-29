@@ -4,7 +4,7 @@ use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Symbol, sym};
 
-use crate::common::{DefaultState, resolved_state};
+use crate::common::{DefaultState, render_meta_path, resolved_state};
 
 declare_tool_lint! {
     /// ### What it does
@@ -210,7 +210,7 @@ impl UnknownPerfectionistLints {
     }
 
     fn report(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem, candidate: &str) {
-        let path_text = path_to_string(meta_item);
+        let path_text = render_meta_path(meta_item);
         let suggestion = self.find_closest_match(candidate);
         span_lint_and_then(
             lint_context,
@@ -234,17 +234,6 @@ impl UnknownPerfectionistLints {
             |_| {},
         );
     }
-}
-
-fn path_to_string(meta_item: &MetaItem) -> String {
-    let mut result = String::new();
-    for (index, segment) in meta_item.path.segments.iter().enumerate() {
-        if index > 0 {
-            result.push_str("::");
-        }
-        result.push_str(segment.ident.name.as_str());
-    }
-    result
 }
 
 fn levenshtein(left: &str, right: &str) -> usize {

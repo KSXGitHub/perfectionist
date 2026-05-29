@@ -171,11 +171,6 @@ pattern that several rules call out by reference — live in
   pin a fixed length such as 12 or 40.
 
 ### Lint-level attributes
-- [`prefer-expect-over-allow.md`](./prefer-expect-over-allow.md) —
-  rewrite `#[allow(...)]` to `#[expect(...)]` for lints that fire
-  deterministically, so a future fix that removes the underlying
-  issue surfaces an `unfulfilled_lint_expectations` warning rather
-  than silently leaving a stale suppression.
 - [`lint-downgrade-reason.md`](./lint-downgrade-reason.md) —
   same presence-and-length requirement as
   `perfectionist::lint_silence_reason`, extended to any
