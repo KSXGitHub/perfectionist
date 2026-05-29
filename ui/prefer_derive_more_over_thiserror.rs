@@ -2,6 +2,7 @@
 #![register_tool(perfectionist)]
 #![allow(
     unknown_lints, perfectionist::import_granularity,
+    perfectionist::import_grouping,
     dead_code,
     unused_imports,
     unused_extern_crates,

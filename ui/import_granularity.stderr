@@ -32,7 +32,7 @@ LL +     use std::collections::btree_map::Entry;
    |
 
 warning: imports are not grouped into one `use` per module
-  --> $DIR/import_granularity.rs:82:5
+  --> $DIR/import_granularity.rs:86:5
    |
 LL |     use {a, b};
    |     ^^^^^^^^^^^

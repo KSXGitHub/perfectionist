@@ -14,9 +14,8 @@ use rustc_lexer::{FrontmatterAllowed, LiteralKind, TokenKind, tokenize};
 use rustc_lint::{LateContext, LintContext};
 use rustc_span::{BytePos, Pos, Span, Symbol};
 
-use crate::literal_scan::{emit_flagged_chars, string_literal_quote_lengths};
-
 use super::UNICODE_ELLIPSIS_IN_PANIC_MESSAGES;
+use crate::literal_scan::{emit_flagged_chars, string_literal_quote_lengths};
 
 pub(super) fn scan_macro_call_source(
     lint_context: &LateContext<'_>,

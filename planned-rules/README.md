@@ -22,11 +22,6 @@ pattern that several rules call out by reference — live in
   `pub mod` first, then `pub use`, then private items.
 
 ### Imports
-- [`import-grouping.md`](./import-grouping.md) — enforce a project-wide
-  import-grouping style. Configurable as `single_group` (every `use` in
-  one contiguous block) or `grouped` (partitioned into std / internal /
-  third-party blocks separated by blank lines, with the order
-  configurable).
 - [`self-import.md`](./self-import.md) — decide how `self` in `use`
   statements is handled. Configurable as `forbid` (always prefer the
   bare `use foo::bar;`) or `combined` (fold adjacent module + item
