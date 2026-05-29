@@ -27,17 +27,9 @@ mod rules;
 mod url_scan;
 
 #[unsafe(no_mangle)]
-#[allow(
+#[expect(
     clippy::no_mangle_with_rust_abi,
     reason = "dylint's plugin entry point requires the Rust ABI"
-)]
-#[cfg_attr(
-    dylint_lib = "perfectionist",
-    allow(
-        perfectionist::prefer_expect_over_allow,
-        reason = "the `allow` above must stay: clippy is not loaded during \
-                  `cargo dylint`, so an `#[expect]` would be unfulfilled there"
-    )
 )]
 pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
     dylint_linting::init_config(session);
