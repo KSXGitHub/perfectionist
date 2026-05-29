@@ -185,10 +185,14 @@ impl<'tcx> LateLintPass<'tcx> for ImportGranularity {
         // and our suggestions, point at the real files) but with a
         // silenced `DiagCtxt`, so a file that does not parse cleanly
         // standalone is skipped rather than surfacing parse errors.
-        let parse_psess = ParseSess::with_dcx(
+        let mut parse_psess = ParseSess::with_dcx(
             DiagCtxt::new(Box::new(SilentEmitter)),
             Arc::clone(&source_map),
         );
+        // `with_dcx` already derives this from the root expansion (the
+        // crate's edition), but set it explicitly so edition-sensitive
+        // syntax re-parses exactly as the crate compiles.
+        parse_psess.edition = lint_context.sess().edition();
 
         let mut violations: Vec<Pending> = Vec::new();
         for source_file in &module_source_files {
