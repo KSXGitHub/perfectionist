@@ -31,6 +31,14 @@ mod url_scan;
     clippy::no_mangle_with_rust_abi,
     reason = "dylint's plugin entry point requires the Rust ABI"
 )]
+#[cfg_attr(
+    dylint_lib = "perfectionist",
+    allow(
+        perfectionist::prefer_expect_over_allow,
+        reason = "the `allow` above must stay: clippy is not loaded during \
+                  `cargo dylint`, so an `#[expect]` would be unfulfilled there"
+    )
+)]
 pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
     dylint_linting::init_config(session);
     common::init_global_config();
@@ -55,6 +63,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         macro_trailing_comma
         non_exhaustive_error
         prefer_derive_more_over_thiserror
+        prefer_expect_over_allow
         prefer_raw_string
         print_macro_split
         single_letter_closure_param

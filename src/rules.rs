@@ -10,6 +10,7 @@ pub mod macro_argument_binding;
 pub mod macro_trailing_comma;
 pub mod non_exhaustive_error;
 pub mod prefer_derive_more_over_thiserror;
+pub mod prefer_expect_over_allow;
 pub mod prefer_raw_string;
 pub mod print_macro_split;
 pub mod single_letter_closure_param;
