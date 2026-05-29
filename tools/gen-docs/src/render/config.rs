@@ -61,7 +61,7 @@ pub(crate) fn config_section(config: &ConfigDoc) -> Markup {
                 }
             }
             @if !config.custom_types.is_empty() {
-                h4 { "Types" }
+                h4.config-types { "Types" }
                 @for ty in &config.custom_types {
                     (custom_type_block(ty))
                 }
