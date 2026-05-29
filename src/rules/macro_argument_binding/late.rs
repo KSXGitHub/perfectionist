@@ -10,9 +10,8 @@ use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass};
 use rustc_span::Span;
 
-use crate::enclosing_hir::find_enclosing_hir_ids;
-
 use super::{MACRO_ARGUMENT_BINDING, PENDING_VIOLATIONS};
+use crate::enclosing_hir::find_enclosing_hir_ids;
 
 pub(super) struct MacroArgumentBindingLate;
 

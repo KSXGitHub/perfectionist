@@ -8,6 +8,7 @@ extern crate rustc_hir;
 extern crate rustc_lexer;
 extern crate rustc_lint;
 extern crate rustc_middle;
+extern crate rustc_parse;
 extern crate rustc_session;
 extern crate rustc_span;
 
@@ -23,6 +24,7 @@ mod enclosing_hir;
 mod literal_scan;
 mod macro_path;
 mod markdown;
+mod module_reparse;
 mod rules;
 mod url_scan;
 

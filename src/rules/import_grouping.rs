@@ -1,10 +1,10 @@
-use clippy_utils::diagnostics::span_lint_and_then;
+use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::source::indent_of;
-use rustc_ast::{Crate, Item, ItemKind, ModKind};
+use rustc_ast::{Item, ItemKind, ModKind};
 use rustc_errors::Applicability;
-use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
+use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::{BytePos, sym};
+use rustc_span::{BytePos, Span, sym};
 
 mod check;
 mod classify;
@@ -14,6 +14,8 @@ mod render;
 use config::{Config, Style};
 
 use crate::common::{DefaultState, resolved_state};
+use crate::enclosing_hir::find_enclosing_hir_ids;
+use crate::module_reparse::parse_crate_module_files;
 
 declare_tool_lint! {
     /// ### What it does
@@ -97,12 +99,13 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("import_grouping", DEFAULT_STATE) {
         return;
     }
-    // Pre-expansion: `#[cfg(...)]` attributes are evaluated and stripped
-    // during macro expansion, so a post-expansion pass couldn't see them
-    // and `cfg_block_handling` would be a no-op. Running before
-    // expansion keeps the cfg gates — and the source's original
-    // blank-line layout — intact.
-    lint_store.register_pre_expansion_pass(|| Box::new(ImportGrouping::new()));
+    // Late pass: out-of-line `mod foo;` modules are `ModKind::Unloaded`
+    // until macro expansion, so a pre-expansion pass never sees them.
+    // `check_crate` re-parses each module file instead (see
+    // [`crate::module_reparse`]), reaching every submodule while keeping
+    // `#[cfg(...)]` gates intact — parsing does not strip cfg, the reason
+    // a pre-expansion pass would otherwise be needed.
+    lint_store.register_late_pass(|_| Box::new(ImportGrouping::new()));
 }
 
 /// One `use` statement admitted into a run. The submodules
@@ -124,20 +127,71 @@ pub(super) struct UseStmt<'ast> {
     lo: BytePos,
 }
 
-impl EarlyLintPass for ImportGrouping {
-    fn check_crate(&mut self, lint_context: &EarlyContext<'_>, krate: &Crate) {
-        self.check_items(lint_context, &krate.items);
-    }
+/// A detected violation parked until the enclosing HIR node is known.
+/// Emission happens through [`span_lint_hir_and_then`] so a per-module /
+/// per-item `#[allow]` / `#[expect]` resolves (see
+/// [`crate::enclosing_hir`]).
+struct Pending {
+    /// Span used to resolve the lint-level anchor: the first `use` of the
+    /// run, always contained by its own HIR node. Resolving on the run's
+    /// replacement span instead would fall back to the crate root for an
+    /// out-of-line `mod foo;`, whose item span lives in the parent file.
+    anchor: Span,
+    /// Span the diagnostic points at and rewrites — the whole run.
+    span: Span,
+    replacement: String,
+    applicability: Applicability,
+}
 
-    fn check_item(&mut self, lint_context: &EarlyContext<'_>, item: &Item) {
-        if let ItemKind::Mod(_, _, ModKind::Loaded(items, _, _)) = &item.kind {
-            self.check_items(lint_context, items);
+impl<'tcx> LateLintPass<'tcx> for ImportGrouping {
+    fn check_crate(&mut self, lint_context: &LateContext<'tcx>) {
+        let crates = parse_crate_module_files(lint_context);
+        let mut violations: Vec<Pending> = Vec::new();
+        for krate in &crates {
+            self.check_items(lint_context, &krate.items, &mut violations);
+        }
+        if violations.is_empty() {
+            return;
+        }
+
+        // Anchor each violation at its enclosing HIR node so a per-module
+        // / per-item `#[allow]` resolves (emitting from `check_crate`
+        // alone would sit at the crate root).
+        let anchors: Vec<Span> = violations.iter().map(|pending| pending.anchor).collect();
+        let hir_ids = find_enclosing_hir_ids(lint_context.tcx, &anchors);
+        for (pending, hir_id) in violations.into_iter().zip(hir_ids) {
+            let Pending {
+                span,
+                replacement,
+                applicability,
+                ..
+            } = pending;
+            span_lint_hir_and_then(
+                lint_context,
+                IMPORT_GROUPING,
+                hir_id,
+                span,
+                self.message(),
+                |diagnostic| {
+                    diagnostic.span_suggestion(
+                        span,
+                        "regroup the imports",
+                        replacement.clone(),
+                        applicability,
+                    );
+                },
+            );
         }
     }
 }
 
 impl ImportGrouping {
-    fn check_items(&self, lint_context: &EarlyContext<'_>, items: &[Box<Item>]) {
+    fn check_items(
+        &self,
+        lint_context: &LateContext<'_>,
+        items: &[Box<Item>],
+        violations: &mut Vec<Pending>,
+    ) {
         let mut run: Vec<UseStmt<'_>> = Vec::new();
         for item in items {
             match self.use_stmt(lint_context, item) {
@@ -146,17 +200,27 @@ impl ImportGrouping {
                 // the `use` block), a macro-expanded `use`, or one whose
                 // source can't be recovered ends the current run.
                 None => {
-                    self.process_run(lint_context, &run);
+                    self.process_run(lint_context, &run, violations);
                     run.clear();
                 }
             }
         }
-        self.process_run(lint_context, &run);
+        self.process_run(lint_context, &run, violations);
+
+        // Descend into inline `mod { ... }` bodies. Out-of-line `mod foo;`
+        // modules are `ModKind::Unloaded` in this fresh parse, but their
+        // files appear in the source map in their own right and are
+        // re-parsed by `check_crate`.
+        for item in items {
+            if let ItemKind::Mod(_, _, ModKind::Loaded(items, _, _)) = &item.kind {
+                self.check_items(lint_context, items, violations);
+            }
+        }
     }
 
     fn use_stmt<'ast>(
         &self,
-        lint_context: &EarlyContext<'_>,
+        lint_context: &LateContext<'_>,
         item: &'ast Item,
     ) -> Option<UseStmt<'ast>> {
         let ItemKind::Use(tree) = &item.kind else {
@@ -193,7 +257,12 @@ impl ImportGrouping {
         })
     }
 
-    fn process_run(&self, lint_context: &EarlyContext<'_>, run: &[UseStmt<'_>]) {
+    fn process_run(
+        &self,
+        lint_context: &LateContext<'_>,
+        run: &[UseStmt<'_>],
+        violations: &mut Vec<Pending>,
+    ) {
         // A run of one statement is a single group either way, so it
         // can never violate.
         if run.len() < 2 {
@@ -225,27 +294,19 @@ impl ImportGrouping {
             Applicability::MachineApplicable
         };
 
-        span_lint_and_then(
-            lint_context,
-            IMPORT_GROUPING,
-            replace_span,
-            self.message(),
-            |diagnostic| {
-                diagnostic.span_suggestion(
-                    replace_span,
-                    "regroup the imports",
-                    replacement,
-                    applicability,
-                );
-            },
-        );
+        violations.push(Pending {
+            anchor: first.item.span,
+            span: replace_span,
+            replacement,
+            applicability,
+        });
     }
 
     /// Whether any gap between two source-adjacent statements in the run
     /// carries a comment.
     fn run_has_interstatement_comment(
         &self,
-        lint_context: &EarlyContext<'_>,
+        lint_context: &LateContext<'_>,
         run: &[UseStmt<'_>],
     ) -> bool {
         let source_map = lint_context.sess().source_map();
