@@ -16,43 +16,32 @@ use _utils::{cargo_manifest_dir, run_project_with_sources, shared_target_dir};
 
 const LINT: &str = "perfectionist::import_granularity";
 
+/// The separate-file submodule both fixtures use: a same-module split
+/// that module style merges into one `use`.
+const SEPARATE: &str = "\
+    use std::collections::BTreeMap;\n\
+    use std::collections::HashMap;\n";
+
 /// The default `module` style flags a split that lives in a separate
 /// file (`mod foo;` → `src/separate.rs`), exactly as it already flags
 /// the identical split in the crate root and in an inline module.
 #[test]
 fn flags_split_in_separate_file_submodule() {
     let lib = "\
-mod separate;
-
-pub mod inline {
-    use std::collections::BTreeMap;
-    use std::collections::HashMap;
-
-    pub fn touch() -> (BTreeMap<u8, u8>, HashMap<u8, u8>) {
-        (BTreeMap::new(), HashMap::new())
-    }
-}
-
-use std::collections::BTreeMap;
-use std::collections::HashMap;
-
-pub fn touch() -> (BTreeMap<u8, u8>, HashMap<u8, u8>) {
-    (BTreeMap::new(), HashMap::new())
-}
-";
-    let separate = "\
-use std::collections::BTreeMap;
-use std::collections::HashMap;
-
-pub fn touch() -> (BTreeMap<u8, u8>, HashMap<u8, u8>) {
-    (BTreeMap::new(), HashMap::new())
-}
-";
+        mod separate;\n\
+        \n\
+        pub mod inline {\n\
+        use std::collections::BTreeMap;\n\
+        use std::collections::HashMap;\n\
+        }\n\
+        \n\
+        use std::collections::BTreeMap;\n\
+        use std::collections::HashMap;\n";
     let (_temp, stderr, success) = run_project_with_sources(
         "fixture_ig_separate_module",
         cargo_manifest_dir(),
         &shared_target_dir(),
-        &[("src/lib.rs", lib), ("src/separate.rs", separate)],
+        &[("src/lib.rs", lib), ("src/separate.rs", SEPARATE)],
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     assert!(
@@ -60,13 +49,12 @@ pub fn touch() -> (BTreeMap<u8, u8>, HashMap<u8, u8>) {
         "expected `{LINT}` warnings; stderr was:\n{stderr}",
     );
     // The regression: the split inside the separate-file submodule is now
-    // reported, pointing at `src/separate.rs` rather than being skipped.
+    // reported at `src/separate.rs` rather than skipped.
     assert!(
         stderr.contains("src/separate.rs"),
         "expected the separate-file submodule to be flagged; stderr was:\n{stderr}",
     );
-    // The crate root and the inline module were already covered and must
-    // stay covered.
+    // The crate root and inline module stay covered.
     assert!(
         stderr.contains("src/lib.rs"),
         "expected the crate-root and inline-module splits to stay flagged; \
@@ -74,31 +62,22 @@ pub fn touch() -> (BTreeMap<u8, u8>, HashMap<u8, u8>) {
     );
 }
 
-/// A separate-file submodule whose `#[allow]` sits on the `mod foo;`
-/// declaration in the parent file is honoured: emitting at the enclosing
-/// HIR node lets the module-level suppression resolve.
+/// An `#[allow]` on the `mod foo;` declaration suppresses the rule inside
+/// the submodule's own file: anchoring at the enclosing HIR node lets the
+/// module-level suppression resolve.
 #[test]
 fn respects_allow_on_separate_file_submodule() {
     let lib = "\
-#![feature(register_tool)]
-#![register_tool(perfectionist)]
-
-#[allow(perfectionist::import_granularity, reason = \"regression fixture\")]
-mod separate;
-";
-    let separate = "\
-use std::collections::BTreeMap;
-use std::collections::HashMap;
-
-pub fn touch() -> (BTreeMap<u8, u8>, HashMap<u8, u8>) {
-    (BTreeMap::new(), HashMap::new())
-}
-";
+        #![feature(register_tool)]\n\
+        #![register_tool(perfectionist)]\n\
+        \n\
+        #[allow(perfectionist::import_granularity, reason = \"regression fixture\")]\n\
+        mod separate;\n";
     let (_temp, stderr, success) = run_project_with_sources(
         "fixture_ig_separate_module_allowed",
         cargo_manifest_dir(),
         &shared_target_dir(),
-        &[("src/lib.rs", lib), ("src/separate.rs", separate)],
+        &[("src/lib.rs", lib), ("src/separate.rs", SEPARATE)],
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     assert!(

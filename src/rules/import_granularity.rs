@@ -115,17 +115,11 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("import_granularity", DEFAULT_STATE) {
         return;
     }
-    // Late pass: by this point every one of the crate's source files —
-    // including separate-file submodules declared with `mod foo;` — has
-    // been loaded into the source map. A pre-expansion early pass only
-    // sees the crate-root file and its inline `mod { ... }` blocks,
-    // because out-of-line modules are still `ModKind::Unloaded` until
-    // macro expansion loads them; it would silently skip every
-    // `mod foo;` submodule. The late pass re-parses each source file
-    // itself (see `check_crate`), which both reaches those submodules
-    // and keeps the original `#[cfg(...)]` gates intact — parsing does
-    // not strip cfg attributes, whereas the post-expansion AST has them
-    // evaluated away, which would make `respect_cfg_blocks` a no-op.
+    // Late pass: out-of-line `mod foo;` modules are `ModKind::Unloaded`
+    // until macro expansion, so a pre-expansion pass never sees them.
+    // `check_crate` re-parses each source file instead, which reaches
+    // every submodule while keeping `#[cfg(...)]` gates intact (parsing
+    // does not strip cfg, unlike the post-expansion AST).
     lint_store.register_late_pass(|_| Box::new(ImportGranularity::new()));
 }
 
@@ -157,22 +151,14 @@ enum Violation {
 
 impl<'tcx> LateLintPass<'tcx> for ImportGranularity {
     fn check_crate(&mut self, lint_context: &LateContext<'tcx>) {
-        // Re-parse the crate's own source files from scratch. The
-        // resolved HIR has `#[cfg(...)]` gates already evaluated and the
-        // pre-expansion AST can't see out-of-line `mod foo;` submodules,
-        // so neither is suitable; a fresh parse preserves both the cfg
-        // attributes and every submodule's `use` structure.
-        let real_psess = &lint_context.sess().psess;
-        // Parse errors must not leak as real diagnostics: some source-map
-        // files are not standalone modules (e.g. fragments pulled in via
-        // `include!`, or text loaded with `include_str!`), and re-parsing
-        // them as a module would fail. Route every parse diagnostic to a
-        // throwaway, silenced `DiagCtxt`. The source map is shared with
-        // the real session, so spans still resolve to the real files and
-        // our own suggestions land in the right place.
+        // A throwaway `ParseSess` sharing the real `SourceMap` (so spans,
+        // and our suggestions, point at the real files) but with a
+        // silenced `DiagCtxt`, so parse errors from non-module files in
+        // the source map (e.g. `include!` / `include_str!` targets) are
+        // swallowed rather than surfaced.
         let parse_psess = ParseSess::with_dcx(
             DiagCtxt::new(Box::new(SilentEmitter)),
-            real_psess.clone_source_map(),
+            lint_context.sess().psess.clone_source_map(),
         );
 
         let paths: Vec<PathBuf> = {
@@ -196,17 +182,12 @@ impl<'tcx> LateLintPass<'tcx> for ImportGranularity {
             }
         }
 
-        // Anchor each violation at its deepest enclosing HIR node so a
-        // per-module / per-item `#[allow]` resolves; the re-parse happens
-        // outside the HIR walk, so emitting straight from `check_crate`
-        // would sit at the crate root and only honour a crate-level
-        // `#![allow]`. Resolve on the first `use` statement's own span,
-        // not the (possibly multi-statement) replacement span: an
-        // out-of-line `mod foo;` item's span is its declaration in the
-        // parent file, so it never contains a span inside the submodule's
-        // own file, and a merged span would fall back to the crate root.
-        // A single statement's span is always contained by its own HIR
-        // node, whose ancestry includes the submodule and the crate.
+        // Anchor each violation at its enclosing HIR node so a per-module
+        // / per-item `#[allow]` resolves (emitting from `check_crate`
+        // alone would sit at the crate root). Resolve on the first `use`'s
+        // own span, not the merged replacement span: an out-of-line
+        // `mod foo;` item's span lives in the parent file, so a merged
+        // span there would fall back to the crate root.
         let anchors: Vec<Span> = violations.iter().map(|pending| pending.anchor).collect();
         let hir_ids = find_enclosing_hir_ids(lint_context.tcx, &anchors);
         for (pending, hir_id) in violations.into_iter().zip(hir_ids) {
