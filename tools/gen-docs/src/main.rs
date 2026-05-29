@@ -13,8 +13,9 @@
 //! The same extracted model feeds three output modes, selected via
 //! subcommand:
 //!
-//! - `html` writes the self-contained `index.html` GitHub Pages
-//!   reads (the project's public catalogue).
+//! - `html` writes the `index.html` GitHub Pages reads (the
+//!   project's public catalogue) plus the sibling assets it links —
+//!   one file per stylesheet and the navigation script.
 //! - `write-md` writes a `rules/` directory with one markdown file
 //!   per rule plus a `README.md` index, intended for in-repo
 //!   browsing alongside `src/rules/` and `planned-rules/`.
@@ -42,7 +43,11 @@ use pipe_trait::Pipe;
 use crate::check_md::{CheckOutcome, check_rules_dir, write_rules_dir};
 use crate::extract::collect_rules;
 use crate::model::{RenderContext, Rule};
-use crate::render::{RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME, render_page};
+use crate::render::markdown::HIGHLIGHT_CSS;
+use crate::render::{
+    HIGHLIGHT_CSS_FILENAME, NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, RULE_ANCHOR_ICON,
+    RULE_ANCHOR_ICON_FILENAME, STYLESHEETS, render_page,
+};
 
 #[derive(Parser)]
 #[clap(about = "Render perfectionist's lint catalogue")]
@@ -61,7 +66,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum CliCommand {
-    /// Render the catalogue to a self-contained HTML page.
+    /// Render the catalogue to an HTML page plus its sibling CSS/JS
+    /// assets.
     Html {
         #[clap(help = "Output directory; index.html will be written here")]
         out_dir: PathBuf,
@@ -176,6 +182,20 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     let html = render_page(&rules, &context);
     let index_path = out_dir.join("index.html");
     fs::write(&index_path, html).expect("failed to write index.html");
+
+    // Each stylesheet lands beside index.html as its own file, linked
+    // individually by the page rather than inlined or concatenated.
+    for (name, content) in STYLESHEETS {
+        let path = out_dir.join(name);
+        fs::write(&path, content).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
+    }
+    // The syntax-highlighting CSS is generated at runtime by syntect,
+    // so it's written from the live string rather than `include_str!`.
+    fs::write(out_dir.join(HIGHLIGHT_CSS_FILENAME), &*HIGHLIGHT_CSS)
+        .expect("failed to write highlight CSS");
+    // The navigation script, loaded by the page via `<script src>`.
+    fs::write(out_dir.join(NAV_TOGGLE_SCRIPT_FILENAME), NAV_TOGGLE_SCRIPT)
+        .expect("failed to write nav script");
 
     // Lands beside index.html so the stylesheet's relative `url(...)`
     // resolves.

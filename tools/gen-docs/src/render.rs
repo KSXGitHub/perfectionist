@@ -1,8 +1,12 @@
-//! Render the collected [`Rule`]s into a single self-contained
-//! `index.html`. The page is intentionally one file: every reader of
-//! the catalogue should be able to ctrl-F across every rule's prose
-//! without page loads, and the static-site host (GitHub Pages) is
-//! happiest with a directory it can serve verbatim.
+//! Render the collected [`Rule`]s into `index.html` plus the sibling
+//! assets it links — the stylesheets and the navigation script, each
+//! written as a standalone file. The page itself stays a single
+//! document so every reader of the catalogue can ctrl-F across every
+//! rule's prose without page loads; the CSS and JS live in their own
+//! files (rather than inlined) so each can be edited and cached
+//! independently and so future changes can add or split sheets without
+//! reflowing one monolith. GitHub Pages serves the whole output
+//! directory verbatim.
 
 pub(crate) mod config;
 pub(crate) mod markdown;
@@ -11,16 +15,33 @@ use maud::{DOCTYPE, Markup, PreEscaped, html};
 
 use crate::model::{DefaultState, NAMESPACE, RenderContext, Rule};
 use crate::render::config::config_section;
-use crate::render::markdown::{HIGHLIGHT_CSS, markdown_inline_to_html, markdown_to_html};
+use crate::render::markdown::{markdown_inline_to_html, markdown_to_html};
 
-const STYLE: &str = concat!(
-    include_str!("style/base.css"),
-    "\n",
-    include_str!("style/nav.css"),
-    "\n",
-    include_str!("style/rules.css"),
-);
-const NAV_TOGGLE_SCRIPT: &str = include_str!("nav_toggle.js");
+/// The static stylesheets, each emitted as its own file beside
+/// `index.html` and linked with a dedicated `<link rel="stylesheet">`.
+/// They are deliberately *not* concatenated into one sheet: keeping
+/// them separate lets each be edited and cached on its own and leaves
+/// room for future sheets without reflowing a monolith. The slice
+/// order is the cascade order the page links them in.
+pub(crate) const STYLESHEETS: &[(&str, &str)] = &[
+    ("base.css", include_str!("style/base.css")),
+    ("nav.css", include_str!("style/nav.css")),
+    ("rules.css", include_str!("style/rules.css")),
+];
+
+/// File name the syntect-generated highlight CSS (see
+/// [`markdown::HIGHLIGHT_CSS`]) is written under. It is linked *after*
+/// the static [`STYLESHEETS`] so its classes win where they overlap,
+/// matching the cascade order of the previous single inline `<style>`.
+pub(crate) const HIGHLIGHT_CSS_FILENAME: &str = "highlight.css";
+
+/// The navigation script, written beside `index.html` and loaded via
+/// `<script src>` rather than inlined.
+pub(crate) const NAV_TOGGLE_SCRIPT: &str = include_str!("nav_toggle.js");
+
+/// File name [`NAV_TOGGLE_SCRIPT`] is written under; the page's
+/// `<script src>` references the same name, so they must agree.
+pub(crate) const NAV_TOGGLE_SCRIPT_FILENAME: &str = "nav_toggle.js";
 
 /// The chain-link glyph for the rule-name heading anchors, shipped as
 /// a standalone file beside `index.html` rather than inlined.
@@ -48,7 +69,10 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     "perfectionist lints"
                     @if git_ref != "master" { " — " (git_ref) }
                 }
-                style { (PreEscaped(STYLE)) (PreEscaped(&*HIGHLIGHT_CSS)) }
+                @for &(href, _) in STYLESHEETS {
+                    link rel="stylesheet" href=(href);
+                }
+                link rel="stylesheet" href=(HIGHLIGHT_CSS_FILENAME);
             }
             body {
                 h1 id="catalogue" { "perfectionist lints" }
@@ -100,7 +124,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     "Generated from " code { "src/rules/" }
                     " at " code { (commit_sha) } "."
                 }
-                script { (PreEscaped(NAV_TOGGLE_SCRIPT)) }
+                script src=(NAV_TOGGLE_SCRIPT_FILENAME) {}
             }
         }
     };
@@ -117,10 +141,11 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
 /// The toggle is rendered with the HTML `hidden` attribute: the
 /// click handler, scroll lock, focus moves, and `inert` setup are
 /// all JS-driven, so a button visible to the reader without those
-/// installed would be inert (a CSP-blocked inline script, a
-/// stripped script tag, a parse error before the handler attaches
-/// — any of these leave the page with a visible, non-functional
-/// hamburger if the button isn't gated on script readiness).
+/// installed would be inert (a CSP-blocked or failed-to-load
+/// external script, a stripped script tag, a parse error before the
+/// handler attaches — any of these leave the page with a visible,
+/// non-functional hamburger if the button isn't gated on script
+/// readiness).
 /// `<noscript>` only covers "scripting disabled in the browser",
 /// not "script failed to run"; the `hidden` attribute covers both
 /// uniformly. The script reveals the button by clearing `hidden`
@@ -347,18 +372,23 @@ mod tests {
     }
 
     #[test]
-    fn page_inlines_nav_toggle_script() {
+    fn page_links_nav_toggle_script_externally() {
         let html = render_page(&[fake_rule("only")], &fake_context());
-        // Assert the full script body appears verbatim inside a
-        // <script> tag. `<script>` on its own would match an empty
-        // tag; substrings like `IntersectionObserver` also appear
-        // in the CSS comments that ship in the same HTML. The
-        // wrapped-content check pins both that the script is
-        // present and that NAV_TOGGLE_SCRIPT was the body.
-        let wrapped = format!("<script>{NAV_TOGGLE_SCRIPT}</script>");
+        // The script ships as a sibling file and is loaded via
+        // `<script src>`, not inlined. Pin the exact tag so a
+        // refactor that re-inlines the body (or renames the file
+        // out of sync with `NAV_TOGGLE_SCRIPT_FILENAME`) is caught.
         assert!(
-            html.contains(&wrapped),
-            "expected NAV_TOGGLE_SCRIPT to be inlined verbatim inside a <script> tag",
+            html.contains(&format!(
+                "<script src=\"{NAV_TOGGLE_SCRIPT_FILENAME}\"></script>"
+            )),
+            "expected the nav script to be referenced via <script src>",
+        );
+        // And the body must not be inlined any more: a `<script>`
+        // with content would carry the IIFE opener verbatim.
+        assert!(
+            !html.contains("<script>(function () {"),
+            "the nav script must not be inlined into the page",
         );
         // The page no longer ships a `<noscript>` rule: the toggle
         // is rendered with the HTML `hidden` attribute and the
@@ -372,6 +402,43 @@ mod tests {
     }
 
     #[test]
+    fn page_links_each_stylesheet_individually() {
+        let html = render_page(&[fake_rule("alpha")], &fake_context());
+        // Every static sheet gets its own `<link>`, in slice order,
+        // and the runtime-generated highlight sheet is linked last so
+        // its cascade position matches the old single `<style>`.
+        for &(name, _) in STYLESHEETS {
+            assert!(
+                html.contains(&format!("<link rel=\"stylesheet\" href=\"{name}\">")),
+                "expected a dedicated <link> for {name}",
+            );
+        }
+        assert!(
+            html.contains(&format!(
+                "<link rel=\"stylesheet\" href=\"{HIGHLIGHT_CSS_FILENAME}\">"
+            )),
+            "expected a dedicated <link> for the highlight CSS",
+        );
+        // Nothing is inlined any more: no `<style>` block survives.
+        assert!(
+            !html.contains("<style"),
+            "stylesheets must be external; no inline <style> should remain",
+        );
+    }
+
+    /// Look a stylesheet up by its emitted file name. Tests assert
+    /// against the specific sheet that owns a declaration rather
+    /// than the whole bundle, mirroring the one-file-per-sheet
+    /// layout the page now links.
+    fn stylesheet(name: &str) -> &'static str {
+        STYLESHEETS
+            .iter()
+            .find(|(sheet_name, _)| *sheet_name == name)
+            .map(|(_, content)| *content)
+            .unwrap_or_else(|| panic!("no stylesheet named {name}"))
+    }
+
+    #[test]
     fn style_sheet_contains_hidden_attribute_reset() {
         // The `hidden`-attribute + reveal-on-ready design only
         // works if author CSS doesn't silently override the UA's
@@ -381,10 +448,11 @@ mod tests {
         // reset is load-bearing — without it the toggle would be
         // visible despite the Rust template emitting `<button
         // hidden ...>`, defeating the whole "JS isn't running"
-        // fallback. Pin the reset's presence in the inlined CSS
-        // so a future edit can't quietly remove it.
+        // fallback. Pin the reset's presence in base.css so a
+        // future edit can't quietly remove it.
+        let base = stylesheet("base.css");
         assert!(
-            STYLE.contains("[hidden]") && STYLE.contains("display: none !important"),
+            base.contains("[hidden]") && base.contains("display: none !important"),
             "style/base.css must keep the `[hidden] {{ display: none !important }}` reset; \
              without it the JS-driven toggle's `hidden`-by-default fallback is broken",
         );
@@ -438,7 +506,7 @@ mod tests {
         // icon 404s.
         let expected = format!("url(\"{RULE_ANCHOR_ICON_FILENAME}\")");
         assert!(
-            STYLE.contains(&expected),
+            stylesheet("rules.css").contains(&expected),
             "rules.css must reference the anchor icon as {expected}",
         );
         assert!(
