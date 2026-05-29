@@ -317,16 +317,11 @@ pub fn synth_field_ref_body(input: TokenStream) -> TokenStream {
 }
 
 /// `#[derive(SynthSilenceReason)]` + `#[synth_silence_reason]` →
-/// `#[allow(dead_code)] fn _synth_silence_reason() {}` where the
-/// synthesised `#[allow(dead_code)]` attribute inherits the user-span
-/// of `synth_silence_reason` rather than a call-site span. This is the
-/// exact shape `clap_derive` produces for its generated `#[allow(...)]`
-/// attributes (see <https://github.com/KSXGitHub/parallel-disk-usage/issues/430>):
-/// the attribute carries a root-context user span, so neither
-/// `Span::from_expansion` nor `report_in_external_macro: false` filters
-/// it. `lint_silence_reason` must instead notice that the source text
-/// under the span reads `#[synth_silence_reason]`, not `#[allow(...)]`,
-/// and stay quiet.
+/// `#[allow(dead_code)] const _: () = ();` whose generated `#[allow]`
+/// inherits the user-span of `synth_silence_reason`, mirroring the
+/// `#[allow(...)]` shape `clap_derive` emits (issue #430). The anchor is
+/// an anonymous `const _` so the derive can be applied to several types
+/// in one crate without colliding.
 #[proc_macro_derive(SynthSilenceReason, attributes(synth_silence_reason))]
 pub fn synth_silence_reason(input: TokenStream) -> TokenStream {
     let attr_span = find_attr_span(input, "synth_silence_reason")
@@ -355,10 +350,13 @@ pub fn synth_silence_reason(input: TokenStream) -> TokenStream {
     out.extend([
         at_attr(TokenTree::Punct(Punct::new('#', Spacing::Alone))),
         at_attr(TokenTree::Group(Group::new(Delimiter::Bracket, attr_inner))),
-        TokenTree::Ident(Ident::new("fn", call_site)),
-        TokenTree::Ident(Ident::new("_synth_silence_reason", call_site)),
+        TokenTree::Ident(Ident::new("const", call_site)),
+        TokenTree::Ident(Ident::new("_", call_site)),
+        TokenTree::Punct(Punct::new(':', Spacing::Alone)),
         TokenTree::Group(Group::new(Delimiter::Parenthesis, TokenStream::new())),
-        TokenTree::Group(Group::new(Delimiter::Brace, TokenStream::new())),
+        TokenTree::Punct(Punct::new('=', Spacing::Alone)),
+        TokenTree::Group(Group::new(Delimiter::Parenthesis, TokenStream::new())),
+        TokenTree::Punct(Punct::new(';', Spacing::Alone)),
     ]);
     out
 }

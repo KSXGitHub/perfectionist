@@ -19,4 +19,10 @@ use proc_macro_synth_binding::SynthSilenceReason;
 #[synth_silence_reason]
 struct UsesSynthSilenceReason;
 
+// Applied a second time to confirm the derive's synthesised anchor does
+// not collide across uses in one crate.
+#[derive(SynthSilenceReason)]
+#[synth_silence_reason]
+struct UsesSynthSilenceReasonAgain;
+
 fn main() {}
