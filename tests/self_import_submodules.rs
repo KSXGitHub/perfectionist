@@ -81,7 +81,10 @@ fn flags_self_import_in_separate_file_submodule() {
 
 /// An `#[allow]` on the `mod foo;` declaration suppresses the rule inside
 /// the submodule's own file: anchoring each finding at its enclosing HIR
-/// node lets the module-level suppression resolve.
+/// node lets the module-level suppression resolve. A crate-root control
+/// import (not under the `#[allow]`) must still fire, so the test proves
+/// the suppression is specific rather than the rule silently skipping the
+/// separate file.
 #[test]
 fn respects_allow_on_separate_file_submodule() {
     let (_temp, stderr, success) = run_project_with_config(
@@ -101,9 +104,17 @@ fn respects_allow_on_separate_file_submodule() {
         CONFIG,
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    // The control crate-root import IS flagged, proving the rule runs...
     assert!(
-        !stderr.contains(LINT),
-        "expected the `#[allow]` on `mod separate;` to suppress the rule; \
+        stderr.contains(LINT) && stderr.contains("src/lib.rs"),
+        "expected the control crate-root `self`-import to be flagged; \
          stderr was:\n{stderr}",
+    );
+    // ...and the `#[allow]` on `mod separate;` specifically suppresses the
+    // separate file's finding.
+    assert!(
+        !stderr.contains("src/separate.rs"),
+        "expected the `#[allow]` on `mod separate;` to suppress the \
+         separate file's finding; stderr was:\n{stderr}",
     );
 }

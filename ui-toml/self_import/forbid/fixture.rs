@@ -4,6 +4,9 @@ mod defs {
     pub mod inner {
         pub struct Baz;
         pub struct Qux;
+        pub mod sub {
+            pub struct Item;
+        }
     }
     pub mod sibling {
         pub struct Thing;
@@ -77,9 +80,19 @@ mod cfg_gated {
     use crate::defs::inner::{self};
 }
 
-// An outline module (a separate source file) is linted too. Pre-expansion
-// it is `ModKind::Unloaded`, so the rule must descend through `check_item`
-// as the module loads rather than walk the crate root alone.
+// A brace group whose non-`self` sibling carries its own nested `self`
+// is left for a later pass: rewriting it now would emit a suggestion
+// overlapping the inner one and still leave a `self` import behind, so
+// only the inner `self` is flagged here (the outer follows once the
+// inner is fixed).
+mod nested_self_in_sibling {
+    use crate::defs::inner::{self, sub::{self}};
+}
+
+// An outline module (a separate source file) is linted too. The rule
+// re-parses each module source file (out-of-line `mod foo;` bodies are
+// not in the crate-root AST), so a separate file's `use` is reached just
+// like the crate root's.
 #[path = "auxiliary/outline.rs"]
 mod outline;
 

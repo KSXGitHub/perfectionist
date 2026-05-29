@@ -113,6 +113,17 @@ fn rewrite_self_group(
         .filter(|(index, _)| *index != self_idx)
         .map(|(_, (child, _))| child)
         .collect();
+    if others.iter().any(|tree| contains_self_form(tree)) {
+        // A non-`self` sibling carries its own `self` form. Rewriting
+        // this group now would (a) emit a suggestion whose span contains
+        // the sibling's own — overlapping rewrites rustfix can't both
+        // apply in one pass — and (b) reproduce that sibling verbatim, so
+        // the "fixed" text would still import a module through `self`.
+        // Leave this group for a later pass: the recursion in `visit`
+        // rewrites the inner form first, and once it is gone this group is
+        // rewritten cleanly.
+        return;
+    }
     let base = render_prefix(&node.prefix);
     let module = with_rename(base.clone(), self_rename);
 
@@ -155,6 +166,23 @@ fn rewrite_self_group(
             None,
             violations,
         );
+    }
+}
+
+/// Whether `tree` contains a `self`-as-module form this rule rewrites —
+/// a `{self}` / `{self, ...}` brace group or a trailing `x::self` — at any
+/// depth. Used to detect a brace group whose non-`self` sibling carries
+/// its own `self`, where rewriting the outer group would overlap the
+/// inner rewrite (see [`rewrite_self_group`]).
+fn contains_self_form(tree: &UseTree) -> bool {
+    match &tree.kind {
+        // A trailing `x::self`; the bare `{self}` leaf (empty module) is
+        // caught by its enclosing group's `is_self_leaf` arm below.
+        UseTreeKind::Simple(_) => simple_self_module(tree).is_some_and(|module| !module.is_empty()),
+        UseTreeKind::Nested { items, .. } => items
+            .iter()
+            .any(|(child, _)| is_self_leaf(child) || contains_self_form(child)),
+        UseTreeKind::Glob(_) => false,
     }
 }
 
