@@ -1,12 +1,14 @@
 //! Re-parsing a crate's module files from a `LateLintPass`.
 //!
-//! Rules that inspect the *source-level* layout of `use` statements —
-//! the blank-line grouping of `perfectionist::import_grouping`, the
-//! merge granularity of `perfectionist::import_granularity` — hit a wall
-//! in a pre-expansion `EarlyLintPass`: an out-of-line `mod foo;` module
-//! is still `ModKind::Unloaded` there (its file is not parsed until
-//! macro expansion), so the walk never sees it and silently skips every
-//! separate-file submodule.
+//! A rule that inspects the *source-level* layout of `use` statements —
+//! such as the blank-line grouping of `perfectionist::import_grouping`,
+//! this module's only consumer — hits a wall in a pre-expansion
+//! `EarlyLintPass`: an out-of-line `mod foo;` module is still
+//! `ModKind::Unloaded` there (its file is not parsed until macro
+//! expansion), so the walk never sees it and silently skips every
+//! separate-file submodule. (`perfectionist::import_granularity` has the
+//! same class of limitation but is still a pre-expansion pass and does
+//! not yet use this module.)
 //!
 //! Running in a `LateLintPass` and re-parsing each module file instead
 //! reaches every submodule while keeping `#[cfg(...)]` gates intact —
@@ -68,7 +70,7 @@ pub(crate) fn parse_crate_module_files(
 
     // The files that define a module in this crate's module tree, plus
     // the body span of every live module (for the inline-recursion guard
-    // documented on `CrateModules::live_module_spans`).
+    // documented on this function's returned `live_module_spans`).
     let mut module_files: HashSet<FileName> = HashSet::new();
     let mut live_module_spans: HashSet<SpanRange> = HashSet::new();
     record_module_file(&source_map, &mut module_files, tcx.hir_root_module().spans);
