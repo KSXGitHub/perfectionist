@@ -116,11 +116,6 @@ pub(super) struct UseStmt<'ast> {
     item: &'ast Item,
     /// Group rank — see [`classify::rank`]. Smaller sorts earlier.
     pub(super) rank: usize,
-    /// 1-based source line the statement (or its first attribute)
-    /// starts on.
-    pub(super) start_line: usize,
-    /// 1-based source line the statement ends on (its `;`).
-    pub(super) end_line: usize,
     /// Verbatim source text from the first attribute (or the `use`
     /// keyword) through the trailing `;`, reproduced unchanged.
     pub(super) text: String,
@@ -264,17 +259,35 @@ impl ImportGrouping {
             .unwrap_or(item.span.lo());
         let source_map = lint_context.sess().source_map();
         let text = source_map.span_to_snippet(item.span.with_lo(lo)).ok()?;
-        let start_line = source_map.lookup_char_pos(lo).line;
-        let end_line = source_map.lookup_char_pos(item.span.hi()).line;
 
         Some(UseStmt {
             item,
             rank,
-            start_line,
-            end_line,
             text,
             lo,
         })
+    }
+
+    /// Blank-line count between each adjacent pair of statements in the
+    /// run (length `run.len() - 1`). Counts genuinely blank lines from
+    /// the gap's source text, so a comment between two imports is not
+    /// read as a separator. A snippet that can't be recovered (never
+    /// expected for in-file gaps) contributes `0`.
+    fn blank_counts(&self, lint_context: &LateContext<'_>, run: &[UseStmt<'_>]) -> Vec<usize> {
+        let source_map = lint_context.sess().source_map();
+        run.windows(2)
+            .map(|pair| {
+                let gap = pair[0]
+                    .item
+                    .span
+                    .with_lo(pair[0].item.span.hi())
+                    .with_hi(pair[1].lo);
+                source_map
+                    .span_to_snippet(gap)
+                    .map(|snippet| check::count_blank_lines(&snippet))
+                    .unwrap_or(0)
+            })
+            .collect()
     }
 
     fn process_run(
@@ -288,7 +301,13 @@ impl ImportGrouping {
         if run.len() < 2 {
             return;
         }
-        if check::is_compliant(self.config.style, self.config.blank_line_count, run) {
+        let blanks = self.blank_counts(lint_context, run);
+        if check::is_compliant(
+            self.config.style,
+            self.config.blank_line_count,
+            run,
+            &blanks,
+        ) {
             return;
         }
 

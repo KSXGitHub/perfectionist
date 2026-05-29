@@ -99,6 +99,14 @@ use std::ffi::OsStr;
 
 struct Sep9;
 
+// Good: a comment between two same-group imports is not a blank line, so
+// it does not split the group.
+use std::sync::Mutex;
+// a note kept next to the import below
+use std::sync::atomic::AtomicBool;
+
+struct Sep10;
+
 // Suppressed: an `#[allow]` on the run's enclosing module silences the
 // rule even though std and internal are not blank-separated.
 #[allow(perfectionist::import_grouping, reason = "ui fixture")]
