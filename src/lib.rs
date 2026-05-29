@@ -49,6 +49,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         derive_ordering
         flat_module_pattern
         import_granularity
+        import_grouping
         lint_reason_from_comment
         lint_silence_reason
         macro_argument_binding

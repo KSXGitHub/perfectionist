@@ -5,3 +5,10 @@ libraries = [
 
 ["perfectionist::unicode_ellipsis_in_docs"]
 scan_code_spans = true
+
+# This crate groups imports std → external → internal (`crate::`),
+# matching rustfmt's `StdExternalCrate`. The rule's own default places
+# internal second, so configure the order to match the house style and
+# keep `self-lint` clean.
+["perfectionist::import_grouping"]
+order = ["std", "thirdparty", "internal"]

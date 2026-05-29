@@ -1,5 +1,5 @@
 warning: imports are not grouped into one `use` per module
-  --> $DIR/fixture.rs:16:5
+  --> $DIR/fixture.rs:20:5
    |
 LL | /     #[cfg(unix)]
 LL | |     use std::collections::BTreeMap;

@@ -30,6 +30,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   import granularity does not match the configured `import_granularity.style`
 
+- [`import_grouping`](./import_grouping.md) (default: `active`).
+
+  import grouping does not match the configured `import_grouping.style`
+
 - [`lint_reason_from_comment`](./lint_reason_from_comment.md) (default: `active`).
 
   trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field
