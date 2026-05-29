@@ -272,6 +272,9 @@ fn record_module_file(
 /// hence the empty string, which avoids both a disk re-read and a clone
 /// of the whole file.
 fn parse_module_file(parse_psess: &ParseSess, source_file: &SourceFile) -> Option<Crate> {
+    // Load-bearing: a `SourceFile` without in-memory source makes the
+    // lexer ICE ("cannot lex `source_file` without source"). Local-crate
+    // `Real` files normally carry it, but bail rather than risk the ICE.
     source_file.src.as_ref()?;
     let mut parser = match new_parser_from_source_str(
         parse_psess,
