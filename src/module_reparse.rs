@@ -15,8 +15,9 @@
 //! [`ParseSess`] that shares the real [`SourceMap`] (so spans — and the
 //! suggestions built from them — point at the real files) but routes
 //! parse errors to a [`SilentEmitter`]. Re-parsing reaches every
-//! submodule while keeping `#[cfg(...)]` gates intact, because parsing
-//! does not evaluate cfg.
+//! module-scoped submodule (the crate root and every `mod` declared at
+//! module scope, at any depth) while keeping `#[cfg(...)]` gates intact,
+//! because parsing does not evaluate cfg.
 
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -44,6 +45,12 @@ use rustc_span::{FileName, SourceFile};
 /// tree, so source-map files that are *not* standalone modules —
 /// `include!` fragments, `include_str!`-ed data, proc-macro-synthesised
 /// modules — are never re-parsed and wrongly flagged.
+///
+/// The module tree is enumerated from the crate root and the crate's
+/// *free* items, so a `mod` declared at module scope (nested to any
+/// depth) is covered, but an out-of-line module declared inside a
+/// function body — a `#[path]`-only construct, since a body `mod foo;`
+/// does not otherwise resolve to a file — is not.
 pub(crate) fn for_each_module_file(cx: &LateContext<'_>, mut handle: impl FnMut(&Crate)) {
     let tcx = cx.tcx;
     let source_map = cx.sess().psess.clone_source_map();

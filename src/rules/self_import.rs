@@ -18,9 +18,9 @@
 //! pre-expansion pass would leave out-of-line `mod foo;` modules
 //! `ModKind::Unloaded` (their files are not read until macro expansion),
 //! so it would silently skip every separate-file submodule. Re-parsing
-//! reaches every submodule while keeping `#[cfg(...)]` gates intact
-//! (parsing does not strip cfg, unlike the post-expansion AST). The
-//! sibling `import_granularity` rule shares the same machinery.
+//! reaches every module-scoped submodule while keeping `#[cfg(...)]`
+//! gates intact (parsing does not strip cfg, unlike the post-expansion
+//! AST). The sibling `import_granularity` rule shares the same machinery.
 
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_ast::visit::{self, Visitor};
@@ -172,8 +172,8 @@ pub fn register_pass(lint_store: &mut LintStore) {
     // Late pass: out-of-line `mod foo;` modules are `ModKind::Unloaded`
     // until macro expansion, so a pre-expansion pass never sees them.
     // `check_crate` re-parses each source file instead (see the module
-    // docs), reaching every submodule while keeping `#[cfg(...)]` gates
-    // intact.
+    // docs), reaching every module-scoped submodule while keeping
+    // `#[cfg(...)]` gates intact.
     lint_store.register_late_pass(move |_| {
         Box::new(SelfImport {
             style: config.style,
