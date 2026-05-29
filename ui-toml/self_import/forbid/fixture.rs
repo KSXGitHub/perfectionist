@@ -89,6 +89,15 @@ mod nested_self_in_sibling {
     use crate::defs::inner::{self, sub::{self}};
 }
 
+// A prefix-less brace group (`{self as e, sibling}`) is left alone — it
+// has no path to render — but it must NOT suppress the *outer* group's
+// own `self`: that one has a real prefix and is still split out. (The
+// deferral above only applies when a sibling carries a `self` the rule
+// would actually rewrite.)
+mod empty_prefix_sibling {
+    use crate::defs::{self as d, {self as e, sibling}};
+}
+
 // An outline module (a separate source file) is linted too. The rule
 // re-parses each module source file (out-of-line `mod foo;` bodies are
 // not in the crate-root AST), so a separate file's `use` is reached just

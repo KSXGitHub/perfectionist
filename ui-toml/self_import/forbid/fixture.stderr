@@ -106,6 +106,18 @@ LL |     use crate::defs::inner::{self, sub::{self}};
    |                                    ^^^^^^^^^^^ help: import the module by its bare path: `sub`
 
 warning: this `use` imports a module through `self`
+  --> $DIR/fixture.rs:98:9
+   |
+LL |     use crate::defs::{self as d, {self as e, sibling}};
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: split the module import into its own `use` statement
+   |
+LL ~     use crate::defs as d;
+LL ~     use crate::defs::{self as e, sibling};
+   |
+
+warning: this `use` imports a module through `self`
   --> $DIR/auxiliary/outline.rs:7:5
    |
 LL | use crate::defs::inner::{self, Baz};
@@ -117,5 +129,5 @@ LL ~ use crate::defs::inner;
 LL ~ use crate::defs::inner::Baz;
    |
 
-warning: 14 warnings emitted
+warning: 15 warnings emitted
 

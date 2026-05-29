@@ -169,19 +169,31 @@ fn rewrite_self_group(
     }
 }
 
-/// Whether `tree` contains a `self`-as-module form this rule rewrites —
-/// a `{self}` / `{self, ...}` brace group or a trailing `x::self` — at any
-/// depth. Used to detect a brace group whose non-`self` sibling carries
-/// its own `self`, where rewriting the outer group would overlap the
-/// inner rewrite (see [`rewrite_self_group`]).
+/// Whether `tree` contains a `self`-as-module form this rule actually
+/// *rewrites* — a `{self}` / `{self, ...}` brace group with a real
+/// prefix, or a trailing `x::self` — at any depth. Used to detect a
+/// brace group whose non-`self` sibling carries its own rewritable
+/// `self`, where rewriting the outer group would overlap the inner
+/// rewrite (see [`rewrite_self_group`]).
+///
+/// A `self` leaf is only counted when its enclosing group has a non-empty
+/// prefix: `rewrite_self_group` bails on a prefix-less group (`{self, x}`,
+/// the line-above guard), so such a leaf yields no suggestion and is not
+/// an overlap source. Counting it would defer the outer group expecting a
+/// rewrite that never happens, permanently suppressing the outer fix. The
+/// recursion still descends to catch a rewritable `self` nested deeper
+/// (e.g. `{x::{self}}`, where the prefix-less group wraps a real one).
 fn contains_self_form(tree: &UseTree) -> bool {
     match &tree.kind {
-        // A trailing `x::self`; the bare `{self}` leaf (empty module) is
-        // caught by its enclosing group's `is_self_leaf` arm below.
         UseTreeKind::Simple(_) => simple_self_module(tree).is_some_and(|module| !module.is_empty()),
-        UseTreeKind::Nested { items, .. } => items
-            .iter()
-            .any(|(child, _)| is_self_leaf(child) || contains_self_form(child)),
+        UseTreeKind::Nested { items, .. } => {
+            let own_self_rewritten = !segment_names(&tree.prefix).is_empty()
+                && items.iter().any(|(child, _)| is_self_leaf(child));
+            own_self_rewritten
+                || items
+                    .iter()
+                    .any(|(child, _)| !is_self_leaf(child) && contains_self_form(child))
+        }
         UseTreeKind::Glob(_) => false,
     }
 }
