@@ -18,25 +18,14 @@ const LINT: &str = "perfectionist::import_granularity";
 
 /// The separate-file submodule both fixtures use: a same-module split
 /// that module style merges into one `use`.
-const SEPARATE: &str = "\
-    use std::collections::BTreeMap;\n\
-    use std::collections::HashMap;\n";
+const SEPARATE: &str = include_str!("fixtures/import_granularity_submodules/separate.rs");
 
 /// The default `module` style flags a split that lives in a separate
 /// file (`mod foo;` → `src/separate.rs`), exactly as it already flags
 /// the identical split in the crate root and in an inline module.
 #[test]
 fn flags_split_in_separate_file_submodule() {
-    let lib = "\
-        mod separate;\n\
-        \n\
-        pub mod inline {\n\
-        use std::collections::BTreeMap;\n\
-        use std::collections::HashMap;\n\
-        }\n\
-        \n\
-        use std::collections::BTreeMap;\n\
-        use std::collections::HashMap;\n";
+    let lib = include_str!("fixtures/import_granularity_submodules/flags_lib.rs");
     let (_temp, stderr, success) = run_project_with_sources(
         "fixture_ig_separate_module",
         cargo_manifest_dir(),
@@ -67,12 +56,7 @@ fn flags_split_in_separate_file_submodule() {
 /// module-level suppression resolve.
 #[test]
 fn respects_allow_on_separate_file_submodule() {
-    let lib = "\
-        #![feature(register_tool)]\n\
-        #![register_tool(perfectionist)]\n\
-        \n\
-        #[allow(perfectionist::import_granularity, reason = \"regression fixture\")]\n\
-        mod separate;\n";
+    let lib = include_str!("fixtures/import_granularity_submodules/allowed_lib.rs");
     let (_temp, stderr, success) = run_project_with_sources(
         "fixture_ig_separate_module_allowed",
         cargo_manifest_dir(),

@@ -1,4 +1,5 @@
-use std::path::{Path, PathBuf};
+use std::collections::HashSet;
+use std::sync::Arc;
 
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::source::indent_of;
@@ -9,11 +10,12 @@ use rustc_errors::emitter::SilentEmitter;
 use rustc_errors::{Applicability, DiagCtxt};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_parse::lexer::StripTokens;
-use rustc_parse::new_parser_from_file;
+use rustc_parse::new_parser_from_source_str;
 use rustc_session::parse::ParseSess;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::def_id::LOCAL_CRATE;
-use rustc_span::{BytePos, FileName, Span, sym};
+use rustc_span::source_map::SourceMap;
+use rustc_span::{BytePos, FileName, SourceFile, Span, sym};
 
 mod check;
 mod config;
@@ -151,35 +153,52 @@ enum Violation {
 
 impl<'tcx> LateLintPass<'tcx> for ImportGranularity {
     fn check_crate(&mut self, lint_context: &LateContext<'tcx>) {
-        // A throwaway `ParseSess` sharing the real `SourceMap` (so spans,
-        // and our suggestions, point at the real files) but with a
-        // silenced `DiagCtxt`, so parse errors from non-module files in
-        // the source map (e.g. `include!` / `include_str!` targets) are
-        // swallowed rather than surfaced.
-        let parse_psess = ParseSess::with_dcx(
-            DiagCtxt::new(Box::new(SilentEmitter)),
-            lint_context.sess().psess.clone_source_map(),
-        );
+        let tcx = lint_context.tcx;
+        let source_map = lint_context.sess().psess.clone_source_map();
 
-        let paths: Vec<PathBuf> = {
-            let source_files = lint_context.sess().source_map().files();
+        // The files that define a module in this crate's module tree.
+        // Re-parsing is restricted to these so that source-map files
+        // which are *not* standalone modules — `include_str!` data and
+        // `include!` fragments — are not re-parsed and wrongly flagged.
+        let mut module_files: HashSet<FileName> = HashSet::new();
+        record_module_file(&source_map, &mut module_files, tcx.hir_root_module().spans);
+        for item_id in tcx.hir_free_items() {
+            if let rustc_hir::ItemKind::Mod(_, module) = &tcx.hir_item(item_id).kind {
+                record_module_file(&source_map, &mut module_files, module.spans);
+            }
+        }
+
+        // Snapshot the files before parsing: re-parsing takes a write
+        // lock on the shared source map, so it must not run while the
+        // `files()` read guard is held.
+        let module_source_files: Vec<Arc<SourceFile>> = {
+            let source_files = source_map.files();
             source_files
                 .iter()
                 .filter(|source_file| source_file.cnum == LOCAL_CRATE)
-                .filter_map(|source_file| match &source_file.name {
-                    FileName::Real(real_file_name) => {
-                        real_file_name.local_path().map(Path::to_path_buf)
-                    }
-                    _ => None,
-                })
+                .filter(|source_file| module_files.contains(&source_file.name))
+                .cloned()
                 .collect()
         };
 
+        // A throwaway `ParseSess` sharing the real `SourceMap` (so spans,
+        // and our suggestions, point at the real files) but with a
+        // silenced `DiagCtxt`, so a file that does not parse cleanly
+        // standalone is skipped rather than surfacing parse errors.
+        let parse_psess = ParseSess::with_dcx(
+            DiagCtxt::new(Box::new(SilentEmitter)),
+            Arc::clone(&source_map),
+        );
+
         let mut violations: Vec<Pending> = Vec::new();
-        for path in &paths {
-            if let Some(krate) = parse_crate_file(&parse_psess, path) {
+        for source_file in &module_source_files {
+            if let Some(krate) = parse_module_file(&parse_psess, source_file) {
                 self.check_items(lint_context, &krate.items, &mut violations);
             }
+        }
+
+        if violations.is_empty() {
+            return;
         }
 
         // Anchor each violation at its enclosing HIR node so a per-module
@@ -189,7 +208,7 @@ impl<'tcx> LateLintPass<'tcx> for ImportGranularity {
         // `mod foo;` item's span lives in the parent file, so a merged
         // span there would fall back to the crate root.
         let anchors: Vec<Span> = violations.iter().map(|pending| pending.anchor).collect();
-        let hir_ids = find_enclosing_hir_ids(lint_context.tcx, &anchors);
+        let hir_ids = find_enclosing_hir_ids(tcx, &anchors);
         for (pending, hir_id) in violations.into_iter().zip(hir_ids) {
             let Pending {
                 span, violation, ..
@@ -224,21 +243,41 @@ impl<'tcx> LateLintPass<'tcx> for ImportGranularity {
     }
 }
 
-/// Re-parse a single source file as a module body. Returns `None` (and
-/// silently discards the buffered diagnostics) when the file is not a
-/// standalone parseable module — `parse_psess` is wired to a
-/// [`SilentEmitter`], so nothing reaches the user.
-fn parse_crate_file(parse_psess: &ParseSess, path: &Path) -> Option<Crate> {
-    let mut parser =
-        match new_parser_from_file(parse_psess, path, StripTokens::ShebangAndFrontmatter, None) {
-            Ok(parser) => parser,
-            Err(errors) => {
-                for error in errors {
-                    error.cancel();
-                }
-                return None;
+/// Record the source file that holds a module's body, keyed by name. A
+/// dummy span (no real body) contributes nothing.
+fn record_module_file(
+    source_map: &SourceMap,
+    module_files: &mut HashSet<FileName>,
+    spans: rustc_hir::ModSpans,
+) {
+    let inner_span = spans.inner_span;
+    if !inner_span.is_dummy() {
+        module_files.insert(source_map.lookup_source_file(inner_span.lo()).name.clone());
+    }
+}
+
+/// Re-parse a module's source file from its already-loaded text. Returns
+/// `None` (silently discarding buffered diagnostics — `parse_psess` is
+/// wired to a [`SilentEmitter`]) when the file does not parse as a
+/// standalone module. Parsing the in-memory source preserves the real
+/// spans (the shared source map deduplicates by file name) and avoids
+/// re-reading the file from disk.
+fn parse_module_file(parse_psess: &ParseSess, source_file: &SourceFile) -> Option<Crate> {
+    let source = source_file.src.as_deref()?.to_owned();
+    let mut parser = match new_parser_from_source_str(
+        parse_psess,
+        source_file.name.clone(),
+        source,
+        StripTokens::ShebangAndFrontmatter,
+    ) {
+        Ok(parser) => parser,
+        Err(errors) => {
+            for error in errors {
+                error.cancel();
             }
-        };
+            return None;
+        }
+    };
     match parser.parse_crate_mod() {
         Ok(krate) => Some(krate),
         Err(error) => {
