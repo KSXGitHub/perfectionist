@@ -22,11 +22,6 @@ pattern that several rules call out by reference — live in
   `pub mod` first, then `pub use`, then private items.
 
 ### Imports
-- [`import-grouping.md`](./import-grouping.md) — enforce a project-wide
-  import-grouping style. Configurable as `single_group` (every `use` in
-  one contiguous block) or `grouped` (partitioned into std / internal /
-  third-party blocks separated by blank lines, with the order
-  configurable).
 - [`core-or-std.md`](./core-or-std.md) — decide whether items that
   exist in both `core`/`alloc` and `std` should be named through the
   narrower or wider path. Configurable as `prefer_core` (matches

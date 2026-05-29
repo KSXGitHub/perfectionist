@@ -213,7 +213,7 @@ For each path:
 - For `unqualified`, the lint must coordinate with the `use` block
   in the enclosing module: the suggestion adds an import, which
   may interact with `perfectionist::import_granularity`
-  and [`import-grouping`](./import-grouping.md). When all three
+  and `perfectionist::import_grouping`. When all three
   rules are enabled, a `cargo clippy --fix` pass should run
   iteratively until fixed-point — the diagnostic from this rule
   emits the new `use` line in its raw form (one per leaf), and

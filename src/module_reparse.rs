@@ -1,23 +1,25 @@
-//! Shared machinery for the import-rewriting rules that must reach
-//! out-of-line `mod foo;` submodules.
+//! Re-parsing a crate's module files from a `LateLintPass`.
 //!
-//! `import_granularity` and `self_import` both rewrite `use` statements
-//! and both need to see every `use` in the crate, including those in
-//! separate-file submodules. A pre-expansion `EarlyLintPass` cannot: an
-//! out-of-line `mod foo;` is still `ModKind::Unloaded` until macro
-//! expansion, so the pass only ever sees the crate-root file and inline
-//! `mod { ... }` blocks. A post-expansion AST has every module loaded but
-//! has also stripped `#[cfg(...)]`-gated code, which both rules want to
-//! keep linting.
+//! A rule that inspects the *source-level* layout of `use` statements —
+//! the blank-line grouping of `perfectionist::import_grouping`, the
+//! granularity of `perfectionist::import_granularity`, the `self`
+//! handling of `perfectionist::self_import` — hits a wall in a
+//! pre-expansion `EarlyLintPass`: an out-of-line `mod foo;` module is
+//! still `ModKind::Unloaded` there (its file is not parsed until macro
+//! expansion), so the walk never sees it and silently skips every
+//! separate-file submodule.
 //!
-//! [`for_each_module_file`] threads the needle: from a late pass it
-//! re-parses each of the crate's module source files from a throwaway
-//! [`ParseSess`] that shares the real [`SourceMap`] (so spans — and the
-//! suggestions built from them — point at the real files) but routes
-//! parse errors to a [`SilentEmitter`]. Re-parsing reaches every
-//! module-scoped submodule (the crate root and every `mod` declared at
-//! module scope, at any depth) while keeping `#[cfg(...)]` gates intact,
-//! because parsing does not evaluate cfg.
+//! Running in a `LateLintPass` and re-parsing each module file instead
+//! reaches every submodule while keeping `#[cfg(...)]` gates intact —
+//! parsing does not strip cfg, unlike the post-expansion AST, which is
+//! why the pre-expansion pass existed in the first place.
+//!
+//! Two entry points share the same re-parse machinery:
+//! [`parse_crate_module_files`] returns every file's freshly parsed
+//! [`Crate`] alongside the body spans of the crate's live modules (the
+//! inline-recursion guard a caller needs to skip cfg-disabled inline
+//! modules), and [`for_each_module_file`] is a thin callback wrapper for
+//! callers that handle one file at a time and do their own descent.
 
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -31,36 +33,58 @@ use rustc_parse::new_parser_from_source_str;
 use rustc_session::parse::ParseSess;
 use rustc_span::def_id::LOCAL_CRATE;
 use rustc_span::source_map::SourceMap;
-use rustc_span::{FileName, SourceFile};
+use rustc_span::{BytePos, FileName, SourceFile};
 
-/// Re-parse every on-disk source file that backs a module in the crate's
-/// HIR module tree, calling `handle` once with each successfully-parsed
-/// module as a standalone [`Crate`]. Within a single file, only that
-/// file's own items are present — an out-of-line `mod foo;` it declares
-/// is `ModKind::Unloaded` in a fresh parse, but `foo`'s file appears in
-/// the source map in its own right and is handled by its own `handle`
-/// call, so a caller's walk stays within one file at a time.
-///
-/// Re-parsing is scoped to files that define a module in the HIR module
-/// tree, so source-map files that are *not* standalone modules —
-/// `include!` fragments, `include_str!`-ed data, proc-macro-synthesised
-/// modules — are never re-parsed and wrongly flagged.
-///
-/// The module tree is enumerated from the crate root and the crate's
-/// *free* items, so a `mod` declared at module scope (nested to any
-/// depth) is covered, but an out-of-line module declared inside a
-/// function body — a `#[path]`-only construct, since a body `mod foo;`
-/// does not otherwise resolve to a file — is not.
-pub(crate) fn for_each_module_file(cx: &LateContext<'_>, mut handle: impl FnMut(&Crate)) {
-    let tcx = cx.tcx;
-    let source_map = cx.sess().psess.clone_source_map();
+/// The byte range `(lo, hi)` of a module body, used as a stable key
+/// across the re-parse / HIR boundary. Full [`rustc_span::Span`]
+/// equality also compares the `parent` `LocalDefId` and `SyntaxContext`,
+/// which differ between a freshly re-parsed span and the HIR-lowered
+/// span of the same source bytes; the byte range matches and uniquely
+/// identifies a module body.
+pub(crate) type SpanRange = (BytePos, BytePos);
 
-    // The files that define a module in this crate's module tree.
+/// Re-parse every on-disk source file that backs a module in this
+/// crate's HIR module tree, returning each file's freshly parsed
+/// [`Crate`] (crate root plus every out-of-line `mod foo;` file) along
+/// with `live_module_spans`.
+///
+/// `live_module_spans` is the body [`SpanRange`] of every module live in
+/// the compiled crate (each inline `mod m { ... }` and out-of-line
+/// `mod foo;`). A re-parse keeps cfg-disabled modules — parsing does not
+/// strip cfg — so a caller walking the re-parsed AST must consult this
+/// set before descending into an inline module, or it would lint a
+/// `#[cfg(FALSE)] mod m { ... }` (e.g. `#[cfg(test)] mod tests`) that is
+/// not part of the build. The result is a tuple rather than a named
+/// struct because a struct field of type [`Vec<Crate>`] makes rustdoc's
+/// auto-trait synthesis overflow on the AST's recursive type graph.
+///
+/// The throwaway [`ParseSess`] shares the real [`SourceMap`], so every
+/// span in the returned ASTs — and any suggestion built from them —
+/// points at the real files. Its [`DiagCtxt`] is wired to a
+/// [`SilentEmitter`], so a file that does not parse as a standalone
+/// module is skipped rather than surfacing parse errors.
+///
+/// Re-parsing is scoped to files that actually back a module in the HIR
+/// module tree, which excludes `include!` fragments, `include_str!`-ed
+/// `.rs` data, and proc-macro-synthesised modules — none of which should
+/// be re-parsed and flagged as if the user wrote them as a module.
+pub(crate) fn parse_crate_module_files(
+    lint_context: &LateContext<'_>,
+) -> (Vec<Crate>, HashSet<SpanRange>) {
+    let tcx = lint_context.tcx;
+    let source_map = lint_context.sess().psess.clone_source_map();
+
+    // The files that define a module in this crate's module tree, plus
+    // the body span of every live module (for the inline-recursion guard
+    // documented on this function's returned `live_module_spans`).
     let mut module_files: HashSet<FileName> = HashSet::new();
+    let mut live_module_spans: HashSet<SpanRange> = HashSet::new();
     record_module_file(&source_map, &mut module_files, tcx.hir_root_module().spans);
     for item_id in tcx.hir_free_items() {
         if let rustc_hir::ItemKind::Mod(_, module) = &tcx.hir_item(item_id).kind {
             record_module_file(&source_map, &mut module_files, module.spans);
+            let inner = module.spans.inner_span;
+            live_module_spans.insert((inner.lo(), inner.hi()));
         }
     }
 
@@ -77,23 +101,46 @@ pub(crate) fn for_each_module_file(cx: &LateContext<'_>, mut handle: impl FnMut(
             .collect()
     };
 
-    // A throwaway `ParseSess` sharing the real `SourceMap` (so spans, and
-    // suggestions, point at the real files) but with a silenced
-    // `DiagCtxt`, so a file that does not parse cleanly standalone is
-    // skipped rather than surfacing parse errors.
     let mut parse_psess = ParseSess::with_dcx(
         DiagCtxt::new(Box::new(SilentEmitter)),
         Arc::clone(&source_map),
     );
-    // `with_dcx` already derives this from the root expansion (the crate's
-    // edition), but set it explicitly so edition-sensitive syntax
+    // `with_dcx` already derives this from the root expansion (the
+    // crate's edition), but set it explicitly so edition-sensitive syntax
     // re-parses exactly as the crate compiles.
-    parse_psess.edition = cx.sess().edition();
+    parse_psess.edition = lint_context.sess().edition();
 
-    for source_file in &module_source_files {
-        if let Some(krate) = parse_module_file(&parse_psess, source_file) {
-            handle(&krate);
-        }
+    let crates = module_source_files
+        .iter()
+        .filter_map(|source_file| parse_module_file(&parse_psess, source_file))
+        .collect();
+
+    (crates, live_module_spans)
+}
+
+/// Re-parse every on-disk source file that backs a module in the crate's
+/// HIR module tree, calling `handle` once with each successfully-parsed
+/// module as a standalone [`Crate`]. Within a single file, only that
+/// file's own items are present — an out-of-line `mod foo;` it declares
+/// is `ModKind::Unloaded` in a fresh parse, but `foo`'s file appears in
+/// the source map in its own right and is handled by its own `handle`
+/// call, so a caller's walk stays within one file at a time.
+///
+/// This is a thin wrapper over [`parse_crate_module_files`] for callers
+/// that process one file at a time and do not need the
+/// `live_module_spans` inline-recursion guard. A caller that descends
+/// into inline `mod { ... }` bodies itself is responsible for whatever
+/// cfg handling it needs.
+///
+/// The module tree is enumerated from the crate root and the crate's
+/// *free* items, so a `mod` declared at module scope (nested to any
+/// depth) is covered, but an out-of-line module declared inside a
+/// function body — a `#[path]`-only construct, since a body `mod foo;`
+/// does not otherwise resolve to a file — is not.
+pub(crate) fn for_each_module_file(cx: &LateContext<'_>, mut handle: impl FnMut(&Crate)) {
+    let (crates, _live_module_spans) = parse_crate_module_files(cx);
+    for krate in &crates {
+        handle(krate);
     }
 }
 
