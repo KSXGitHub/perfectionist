@@ -111,6 +111,20 @@ fn blank_line_count_two_separates_groups() {
 }
 
 #[test]
+fn std_crates_extends_std_group() {
+    // Adding a crate to `std_crates` groups its imports with `std` /
+    // `core` / `alloc`, so a blank line splitting it from a real std
+    // import is a violation it would not be without the extension.
+    run(
+        "ui-toml/import_grouping/std_crates",
+        RuleConfig {
+            std_crates: Some(vec!["std", "core", "alloc", "my_std"]),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
 fn internal_prefixes_extends_workspace_root() {
     // Adding a workspace crate to `internal_prefixes` groups its
     // imports with `crate` / `super` / `self`, ahead of third-party.

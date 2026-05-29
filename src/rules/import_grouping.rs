@@ -229,17 +229,20 @@ impl ImportGrouping {
         if item.span.from_expansion() {
             return None;
         }
-        let is_cfg_gated = item
-            .attrs
-            .iter()
-            .any(|attr| attr.has_name(sym::cfg) || attr.has_name(sym::cfg_attr));
+        // Only `#[cfg(...)]` gates the import's *existence*, which is what
+        // the trailing cfg group is about. `#[cfg_attr(...)]` conditionally
+        // applies some other attribute — the import itself is always
+        // present — so it does not make a statement cfg-gated for grouping.
+        let is_cfg_gated = item.attrs.iter().any(|attr| attr.has_name(sym::cfg));
         let rank = classify::rank(tree, is_cfg_gated, &self.config);
 
+        // The replacement starts at the first attribute, or at the `use`
+        // keyword when there are none. Attributes precede the item span, so
+        // the minimum attribute `lo` is the lowest byte either way.
         let lo = item
             .attrs
             .iter()
             .map(|attr| attr.span.lo())
-            .chain(std::iter::once(item.span.lo()))
             .min()
             .unwrap_or(item.span.lo());
         let source_map = lint_context.sess().source_map();
