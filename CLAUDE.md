@@ -102,7 +102,8 @@ has two consequences for the implementer:
 4. **Cross-rule helpers are `pub(crate)`, not `pub`.** The crate is
    a dylint `cdylib` with no public API surface, so `pub`
    over-advertises. Items in `src/common.rs`, `src/macro_path.rs`,
-   `src/enclosing_hir.rs`, and `src/literal_scan.rs` should all be
+   `src/enclosing_hir.rs`, `src/literal_scan.rs`, and
+   `src/module_reparse.rs` should all be
    `pub(crate)` (or tighter). Use `pub(super)` for items that are
    only meant to leak one module level up — e.g. a rule's `Config`
    struct that's read by the rule's flat `.rs` driver but nowhere
@@ -344,12 +345,17 @@ coexist with either of the headings above.
 
 A handful of rules share helpers — the markdown exclusion
 scanner, the unicode-width helper, the format-template parser,
-the URL-discovery scanner. The planning files document who
-depends on whom in the "Interaction with sibling rules"
-sections. When implementing the *first* rule in a dependency
-cluster, factor the shared helper into a crate-internal module so
-the second rule can reuse it. The planning files name this
-expectation explicitly; don't duplicate the helper.
+the URL-discovery scanner, and the module-re-parsing helper
+(`src/module_reparse.rs`, which re-parses the crate's module
+source files from a shared `SourceMap` so the import-rewriting
+rules `import_granularity` and `self_import` reach separate-file
+submodules while keeping `#[cfg(...)]` gates intact). The
+planning files document who depends on whom in the "Interaction
+with sibling rules" sections. When implementing the *first* rule
+in a dependency cluster, factor the shared helper into a
+crate-internal module so the second rule can reuse it. The
+planning files name this expectation explicitly; don't duplicate
+the helper.
 
 ## Commit message style
 

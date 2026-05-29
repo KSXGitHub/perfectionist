@@ -1,19 +1,25 @@
 //! Re-parsing a crate's module files from a `LateLintPass`.
 //!
 //! A rule that inspects the *source-level* layout of `use` statements —
-//! such as the blank-line grouping of `perfectionist::import_grouping`,
-//! this module's only consumer — hits a wall in a pre-expansion
-//! `EarlyLintPass`: an out-of-line `mod foo;` module is still
-//! `ModKind::Unloaded` there (its file is not parsed until macro
+//! the blank-line grouping of `perfectionist::import_grouping`, the
+//! granularity of `perfectionist::import_granularity`, the `self`
+//! handling of `perfectionist::self_import` — hits a wall in a
+//! pre-expansion `EarlyLintPass`: an out-of-line `mod foo;` module is
+//! still `ModKind::Unloaded` there (its file is not parsed until macro
 //! expansion), so the walk never sees it and silently skips every
-//! separate-file submodule. (`perfectionist::import_granularity` has the
-//! same class of limitation but is still a pre-expansion pass and does
-//! not yet use this module.)
+//! separate-file submodule.
 //!
 //! Running in a `LateLintPass` and re-parsing each module file instead
 //! reaches every submodule while keeping `#[cfg(...)]` gates intact —
 //! parsing does not strip cfg, unlike the post-expansion AST, which is
 //! why the pre-expansion pass existed in the first place.
+//!
+//! Two entry points share the same re-parse machinery:
+//! [`parse_crate_module_files`] returns every file's freshly parsed
+//! [`Crate`] alongside the body spans of the crate's live modules (the
+//! inline-recursion guard a caller needs to skip cfg-disabled inline
+//! modules), and [`for_each_module_file`] is a thin callback wrapper for
+//! callers that handle one file at a time and do their own descent.
 
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -110,6 +116,32 @@ pub(crate) fn parse_crate_module_files(
         .collect();
 
     (crates, live_module_spans)
+}
+
+/// Re-parse every on-disk source file that backs a module in the crate's
+/// HIR module tree, calling `handle` once with each successfully-parsed
+/// module as a standalone [`Crate`]. Within a single file, only that
+/// file's own items are present — an out-of-line `mod foo;` it declares
+/// is `ModKind::Unloaded` in a fresh parse, but `foo`'s file appears in
+/// the source map in its own right and is handled by its own `handle`
+/// call, so a caller's walk stays within one file at a time.
+///
+/// This is a thin wrapper over [`parse_crate_module_files`] for callers
+/// that process one file at a time and do not need the
+/// `live_module_spans` inline-recursion guard. A caller that descends
+/// into inline `mod { ... }` bodies itself is responsible for whatever
+/// cfg handling it needs.
+///
+/// The module tree is enumerated from the crate root and the crate's
+/// *free* items, so a `mod` declared at module scope (nested to any
+/// depth) is covered, but an out-of-line module declared inside a
+/// function body — a `#[path]`-only construct, since a body `mod foo;`
+/// does not otherwise resolve to a file — is not.
+pub(crate) fn for_each_module_file(cx: &LateContext<'_>, mut handle: impl FnMut(&Crate)) {
+    let (crates, _live_module_spans) = parse_crate_module_files(cx);
+    for krate in &crates {
+        handle(krate);
+    }
 }
 
 /// Record the on-disk source file that holds a module's body, keyed by

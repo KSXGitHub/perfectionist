@@ -70,6 +70,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   splittable print macro with an embedded-newline template exceeds the configured line width
 
+- [`self_import`](./self_import.md) (default: `inactive`).
+
+  module imported through `self` against the project's configured `self`-import style
+
 - [`single_letter_closure_param`](./single_letter_closure_param.md) (default: `active`).
 
   closure parameter has a single-letter name

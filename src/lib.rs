@@ -61,6 +61,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         prefer_expect_over_allow
         prefer_raw_string
         print_macro_split
+        self_import
         single_letter_closure_param
         single_letter_const_generic
         single_letter_const_item
