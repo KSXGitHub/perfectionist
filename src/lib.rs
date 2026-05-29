@@ -24,6 +24,7 @@ mod enclosing_hir;
 mod literal_scan;
 mod macro_path;
 mod markdown;
+mod module_reparse;
 mod rules;
 mod url_scan;
 
