@@ -350,8 +350,15 @@ the URL-discovery scanner, and the module-re-parsing helper
 source files from a shared `SourceMap` so the import-rewriting
 rules `import_granularity` and `self_import` reach separate-file
 submodules while keeping `#[cfg(...)]` gates intact). The
-planning files document who depends on whom in the "Interaction
-with sibling rules" sections. When implementing the *first* rule
+module-re-parsing helper exists because this exact bug — a
+source-layout rule shipped as a pre-expansion `EarlyLintPass`
+silently skipping every separate-file submodule — has been
+written twice; before implementing any rule that reads the
+*written layout* of items across module scopes, read the
+"Reaching every module (source-layout rules)" section of
+`planned-rules/IMPLEMENTATION_CONVENTIONS.md`. The planning files
+document who depends on whom in the "Interaction with sibling
+rules" sections. When implementing the *first* rule
 in a dependency cluster, factor the shared helper into a
 crate-internal module so the second rule can reuse it. The
 planning files name this expectation explicitly; don't duplicate
