@@ -25,10 +25,11 @@ smart-quote setting — rather than as a deliberate choice in
 technical writing.
 
 ## Example
+**Bad:**
 ```rust,ignore
 /// Walk the tree, collecting sizes…
 ```
-Use instead:
+**Good:**
 ```rust,ignore
 /// Walk the tree, collecting sizes...
 ```

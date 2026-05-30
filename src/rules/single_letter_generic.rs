@@ -23,12 +23,13 @@ declare_tool_lint! {
     /// `#[expect]`.
     ///
     /// ### Example
+    /// **Bad:**
     /// ```rust,ignore
     /// pub fn collect_keys<K, V>(map: BTreeMap<K, V>) -> Vec<K> {
     ///     /* fifty lines */
     /// }
     /// ```
-    /// Use instead:
+    /// **Good:**
     /// ```rust,ignore
     /// pub fn collect_keys<Key, Value>(map: BTreeMap<Key, Value>) -> Vec<Key> {
     ///     /* fifty lines */

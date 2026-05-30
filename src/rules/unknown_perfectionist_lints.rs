@@ -21,11 +21,12 @@ declare_tool_lint! {
     /// "did you mean" hint against the registered set.
     ///
     /// ### Example
+    /// **Bad:**
     /// ```rust,ignore
     /// #[allow(perfectionist::unicode_ellipsis_in_comment)] // typo
     /// fn legacy() {}
     /// ```
-    /// Use instead:
+    /// **Good:**
     /// ```rust,ignore
     /// #[allow(perfectionist::unicode_ellipsis_in_comments)]
     /// fn legacy() {}

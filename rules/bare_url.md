@@ -21,10 +21,11 @@ them, GitHub renders them, but plain CommonMark does not. The
 `<...>` form is the explicit, portable spelling.
 
 ## Example
+**Bad:**
 ```rust,ignore
 /// See https://example.com for details.
 ```
-Use instead:
+**Good:**
 ```rust,ignore
 /// See <https://example.com> for details.
 ```

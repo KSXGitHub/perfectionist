@@ -29,11 +29,12 @@ suppression, and rustc renders it back in `unfulfilled_lint_expectations`
 notes when a stale `#[expect]` is encountered.
 
 ## Example
+**Bad:**
 ```rust,ignore
 #[allow(clippy::too_many_arguments)]
 fn build_fetcher(/* ... */) {}
 ```
-Use instead:
+**Good:**
 ```rust,ignore
 #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
 fn build_fetcher(/* ... */) {}

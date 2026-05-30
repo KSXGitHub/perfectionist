@@ -22,11 +22,12 @@ reporters, and on terminals whose locale or encoding may not
 be UTF-8. ASCII `...` renders identically everywhere.
 
 ## Example
+**Bad:**
 ```rust,ignore
 panic!("could not parse manifest…");
 let manifest = load().expect("config missing…");
 ```
-Use instead:
+**Good:**
 ```rust,ignore
 panic!("could not parse manifest...");
 let manifest = load().expect("config missing...");

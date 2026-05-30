@@ -39,11 +39,12 @@ declare_tool_lint! {
     /// question.
     ///
     /// ### Example
+    /// **Bad:**
     /// ```rust,ignore
     /// #[allow(clippy::too_many_arguments)] // matches upstream signature
     /// fn build_fetcher(/* ... */) {}
     /// ```
-    /// Use instead:
+    /// **Good:**
     /// ```rust,ignore
     /// #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
     /// fn build_fetcher(/* ... */) {}

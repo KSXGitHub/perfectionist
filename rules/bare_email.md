@@ -25,10 +25,11 @@ which is inconsistent across markdown engines. The
 explicit.
 
 ## Example
+**Bad:**
 ```rust,ignore
 /// Report security issues to security@example.com.
 ```
-Use instead:
+**Good:**
 ```rust,ignore
 /// Report security issues to <security@example.com>.
 ```

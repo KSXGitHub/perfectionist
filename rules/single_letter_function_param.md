@@ -21,10 +21,11 @@ messages). A descriptive parameter name carries that
 documentation; a single letter does not.
 
 ## Example
+**Bad:**
 ```rust,ignore
 fn write_row(w: &mut Writer, t: &TreeRow) -> io::Result<()> { ... }
 ```
-Use instead:
+**Good:**
 ```rust,ignore
 fn write_row(writer: &mut Writer, tree_row: &TreeRow) -> io::Result<()> { ... }
 ```

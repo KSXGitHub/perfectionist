@@ -84,10 +84,11 @@ same logic applies to `env!("HOME")` inside
 runtime.
 
 ## Example
+**Bad:**
 ```rust,ignore
 debug_assert_eq!(map.insert(key, value), None, "duplicate");
 ```
-Use instead:
+**Good:**
 ```rust,ignore
 let ejected = map.insert(key, value);
 debug_assert_eq!(ejected, None, "duplicate");

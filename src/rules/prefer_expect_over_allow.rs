@@ -49,11 +49,12 @@ declare_tool_lint! {
     /// issue is observed rather than hidden.
     ///
     /// ### Example
+    /// **Bad:**
     /// ```rust,ignore
     /// #[allow(clippy::too_many_arguments, reason = "matches pnpm's signature")]
     /// fn build_fetcher(/* ... */) {}
     /// ```
-    /// Use instead:
+    /// **Good:**
     /// ```rust,ignore
     /// #[expect(clippy::too_many_arguments, reason = "matches pnpm's signature")]
     /// fn build_fetcher(/* ... */) {}

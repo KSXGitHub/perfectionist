@@ -44,11 +44,13 @@ enable = ["derive_ordering"]
 
 ## Example
 Under `style = "alphabetical"`:
+
+**Bad:**
 ```rust,ignore
 #[derive(Debug, Clone, Copy)]
 struct Point;
 ```
-Use instead:
+**Good:**
 ```rust,ignore
 #[derive(Clone, Copy, Debug)]
 struct Point;

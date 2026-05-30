@@ -31,10 +31,11 @@ declare_tool_lint! {
     /// explicit.
     ///
     /// ### Example
+    /// **Bad:**
     /// ```rust,ignore
     /// /// Report security issues to security@example.com.
     /// ```
-    /// Use instead:
+    /// **Good:**
     /// ```rust,ignore
     /// /// Report security issues to <security@example.com>.
     /// ```

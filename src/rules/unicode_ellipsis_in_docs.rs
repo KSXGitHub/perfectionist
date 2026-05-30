@@ -27,10 +27,11 @@ declare_tool_lint! {
     /// technical writing.
     ///
     /// ### Example
+    /// **Bad:**
     /// ```rust,ignore
     /// /// Walk the tree, collecting sizes…
     /// ```
-    /// Use instead:
+    /// **Good:**
     /// ```rust,ignore
     /// /// Walk the tree, collecting sizes...
     /// ```

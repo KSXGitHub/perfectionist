@@ -48,11 +48,12 @@ declare_tool_lint! {
     /// otherwise be a sea of `\\` and `\"`.
     ///
     /// ### Example
+    /// **Bad:**
     /// ```rust,ignore
     /// let json = "{\"name\":\"foo\"}";
     /// let path = "C:\\Users\\foo\\bar";
     /// ```
-    /// Use instead:
+    /// **Good:**
     /// ```rust,ignore
     /// let json = r#"{"name":"foo"}"#;
     /// let path = r"C:\Users\foo\bar";
