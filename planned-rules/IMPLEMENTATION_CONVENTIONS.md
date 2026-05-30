@@ -213,6 +213,108 @@ walk while the other five continue on the hand-rolled helper.
 Open a follow-up PR; do not silently expand `src/markdown.rs`'s
 dependency surface for the other consumers.
 
+## Reaching every module (source-layout rules)
+
+A rule that inspects the **source-level layout of items** — the
+granularity of `use` trees (`perfectionist::import_granularity`,
+`src/rules/import_granularity.rs`), their blank-line grouping
+(`perfectionist::import_grouping`, `src/rules/import_grouping.rs`),
+the `self`-in-`use` handling
+(`perfectionist::self_import`, `src/rules/self_import.rs`), or
+anything else that reads the *written* shape of a module body rather
+than a semantic property — must reach **every module in the crate**,
+including separate-file `mod foo;` submodules nested to any depth.
+
+The obvious implementation is wrong, and has been written wrong
+**twice** so far. Both times the rule shipped as a pre-expansion
+`EarlyLintPass` that walked the AST module tree; both times it
+silently linted only the crate-root file and inline `mod { ... }`
+blocks, skipping every separate-file submodule; both times that was
+caught only later and fixed by moving to a `LateLintPass`:
+
+- `import_granularity` shipped buggy in
+  [#153](https://github.com/KSXGitHub/perfectionist/pull/153), fixed
+  in [#173](https://github.com/KSXGitHub/perfectionist/pull/173)
+  (`parallel-disk-usage#431`).
+- `import_grouping` shipped buggy in the first commits of
+  [#174](https://github.com/KSXGitHub/perfectionist/pull/174) and was
+  fixed within the same PR (commit `61c7f81`) — *even though that
+  PR's own description named the trap*. Knowing about the bug was not
+  enough to avoid writing it.
+
+### Why the obvious version is wrong
+
+A pre-expansion `EarlyLintPass` is the natural reach for a rule that
+needs the raw, un-cfg-stripped AST (cfg-disabled code is gone after
+macro expansion, and a layout rule wants to see what the author
+wrote). But **pre-expansion, an out-of-line `mod foo;` is still
+`ModKind::Unloaded`** — its file is not parsed until macro expansion
+runs. The AST walk reaches the declaration but not the body, so every
+separate-file submodule is invisible. The rule passes its
+single-file UI fixtures and then misses most of any real crate.
+
+### The required shape
+
+Run as a **`LateLintPass`** and **re-parse the crate's module files**
+through the shared `src/module_reparse.rs` helper. Re-parsing reaches
+every file while keeping `#[cfg(...)]` gates intact (parsing does not
+strip cfg — the property the pre-expansion pass was reaching for),
+and the throwaway `ParseSess` shares the real `SourceMap`, so spans
+and autofix suggestions still point at the real source. Do **not**
+write a fresh module-discovery or re-parse path; route through:
+
+1. **`module_reparse::parse_crate_module_files(cx)`** (or the thin
+   `for_each_module_file` wrapper) to get each file's freshly parsed
+   `Crate` plus `live_module_spans`. The set is already scoped to
+   real on-disk files that back a module in the HIR tree, so
+   `include!` fragments, `include_str!`-ed data, and
+   proc-macro-synthesised modules are excluded.
+2. **Guard descent into an inline `mod { ... }` with
+   `live_module_spans`.** A re-parse keeps cfg-*disabled* inline
+   modules (e.g. `#[cfg(test)] mod tests { ... }` in a non-test
+   build), so a walk that recurses into every `ModKind::Loaded`
+   body unconditionally lints code that is **not in the compiled
+   crate** — and, having no HIR node, those findings anchor at the
+   crate root and cannot be silenced by a local `#[allow]`.
+   `import_grouping` is the reference implementation: it consults
+   `live_module_spans` and descends only into live modules. (At the
+   time of writing, `import_granularity` and `self_import` route
+   through `for_each_module_file`, which drops `live_module_spans`,
+   so they descend unconditionally — an apparent divergence found by
+   code reading but **not** yet pinned by a cfg-disabled-inline-module
+   test. Confirm with such a test before treating either as a model
+   to copy or "fixing" them.)
+3. **`enclosing_hir::find_enclosing_hir_ids`** to anchor each parked
+   violation at its enclosing HIR node, emitting through
+   `clippy_utils::diagnostics::span_lint_hir_and_then`, so a
+   per-module / per-item `#[allow]` / `#[expect]` resolves. Anchor on
+   the **first `use`'s own span**, never the merged/replacement span:
+   an out-of-line `mod foo;` item's span lives in the *parent* file,
+   so a span there would fall back to the crate root.
+
+A comment-only or token-only scanner that does not need the parsed
+AST (the `bare_url` / `bare_email` / `bare_issue_reference` /
+`unicode_ellipsis_in_*` family) has the same "which files are really
+the crate's modules?" question and answers it with the same helper's
+`module_reparse::crate_module_files` (see `src/comment_walk.rs` and
+[#179](https://github.com/KSXGitHub/perfectionist/issues/179)) — do
+not re-derive the file set there either.
+
+### The decision rule, in one line
+
+If a rule reads the *written layout* of items across module scopes,
+it is a `LateLintPass` driven by `src/module_reparse.rs`, not an
+`EarlyLintPass` module walk. Neither `EarlyLintPass` mode fits: a
+**pre-expansion** pass keeps `#[cfg]`-gated code but leaves
+out-of-line `mod foo;` modules `ModKind::Unloaded` (so it skips every
+separate-file submodule — the bug above), while a **post-expansion**
+pass loads those modules but has already had `#[cfg]`-disabled code
+stripped (so it can't see what the author wrote under a false cfg).
+A layout rule needs both reach and cfg-preservation at once, which
+only re-parsing in a late pass gives. So if you reach for a
+pre-expansion pass and match `ModKind` to walk module bodies, stop —
+that is the trap.
+
 ## Lint name namespacing
 
 Every lint registered by this plugin lives in the `perfectionist`
