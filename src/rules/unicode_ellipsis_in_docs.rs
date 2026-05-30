@@ -1,4 +1,4 @@
-use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
+use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Span;
 
@@ -105,7 +105,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
 impl<'tcx> LateLintPass<'tcx> for UnicodeEllipsisInDocs {
     fn check_crate_post(&mut self, lint_context: &LateContext<'tcx>) {
         let mut violations: Vec<(Span, char)> = Vec::new();
-        walk_local_comments(lint_context.sess(), |chunk| match chunk.surface {
+        walk_local_comments(lint_context, |chunk| match chunk.surface {
             CommentSurface::DocBlock | CommentSurface::DocBlockBlock => {
                 self.collect_doc_chunk(chunk, &mut violations);
             }

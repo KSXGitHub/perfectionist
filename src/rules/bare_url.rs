@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
-use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
+use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Span;
 
@@ -141,7 +141,7 @@ impl<'tcx> LateLintPass<'tcx> for BareUrl {
             return;
         }
         let mut violations: Vec<(Span, UrlViolation)> = Vec::new();
-        walk_local_comments(lint_context.sess(), |chunk| match chunk.surface {
+        walk_local_comments(lint_context, |chunk| match chunk.surface {
             CommentSurface::DocBlock | CommentSurface::DocBlockBlock => {
                 if self.scan_doc_comments {
                     self.scan_doc_chunk(chunk, &mut violations);

@@ -1,0 +1,4 @@
+deprecated: please contact us at https://example.com for details
+dependencies:
+  forward-email:
+    resolution: {tarball: https://forwardemail.net/package.tgz}

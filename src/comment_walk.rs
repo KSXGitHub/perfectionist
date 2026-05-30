@@ -18,9 +18,11 @@
 //! into the source map.
 
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
-use rustc_session::Session;
+use rustc_lint::{LateContext, LintContext};
 use rustc_span::def_id::LOCAL_CRATE;
 use rustc_span::{BytePos, Pos, RelativeBytePos, SourceFile, Span, SyntaxContext};
+
+use crate::module_reparse::crate_module_files;
 
 /// Surface kind for one chunk of comment text handed to the walker
 /// callback.
@@ -98,15 +100,31 @@ impl CommentChunk<'_> {
 
 /// Walk every comment in the local crate's source files, handing each
 /// chunk to `callback`. The callback receives a borrowed
-/// [`CommentChunk`]. Takes the session directly rather than a lint
-/// context so it can run from either an early or a late pass — the
-/// comment-walking rules emit from a late pass (see
-/// [`crate::enclosing_hir::emit_at_enclosing_hir`]) so per-site
+/// [`CommentChunk`].
+///
+/// Only files that back a module in the crate's HIR module tree are
+/// walked (see [`crate_module_files`]); `include_str!` / `include_bytes!`
+/// data files, `include!` fragments, and proc-macro-synthesised modules
+/// are skipped. A bare `http(s)://` URL inside an included YAML file
+/// otherwise lexes as a `//` line comment and would be flagged — and
+/// autofix-rewritten — as if it were a Rust comment
+/// (<https://github.com/KSXGitHub/perfectionist/issues/179>).
+///
+/// Takes a [`LateContext`] both to reach the HIR module tree for that
+/// filter and because the comment-walking rules emit from a late pass
+/// (see [`crate::enclosing_hir::emit_at_enclosing_hir`]) so per-site
 /// `#[allow]` / `#[expect]` resolve at the comment's enclosing item.
-pub(crate) fn walk_local_comments(sess: &Session, mut callback: impl FnMut(&CommentChunk<'_>)) {
-    let source_map = sess.source_map();
+pub(crate) fn walk_local_comments(
+    lint_context: &LateContext<'_>,
+    mut callback: impl FnMut(&CommentChunk<'_>),
+) {
+    let module_files = crate_module_files(lint_context);
+    let source_map = lint_context.sess().source_map();
     for source_file in source_map.files().iter() {
         if source_file.cnum != LOCAL_CRATE {
+            continue;
+        }
+        if !module_files.contains(&source_file.name) {
             continue;
         }
         let Some(source_text) = source_file.src.as_deref() else {
