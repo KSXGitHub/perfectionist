@@ -67,14 +67,14 @@ declare_tool_lint! {
     /// parameter's role is unambiguous from the call site.
     ///
     /// ### Example
-    /// **Bad:**
+    /// **Avoid:**
     /// ```rust,ignore
     /// .map(|t| {
     ///     let columns = build_columns(t);
     ///     format_row(&columns)
     /// })
     /// ```
-    /// **Good:**
+    /// **Prefer:**
     /// ```rust,ignore
     /// .map(|tree_row| {
     ///     let columns = build_columns(tree_row);

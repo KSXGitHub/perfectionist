@@ -25,11 +25,11 @@ declare_tool_lint! {
     /// documentation.
     ///
     /// ### Example
-    /// **Bad:**
+    /// **Avoid:**
     /// ```rust,ignore
     /// static N: AtomicUsize = AtomicUsize::new(0);
     /// ```
-    /// **Good:**
+    /// **Prefer:**
     /// ```rust,ignore
     /// static REQUEST_COUNT: AtomicUsize = AtomicUsize::new(0);
     /// ```

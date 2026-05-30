@@ -50,12 +50,12 @@ declare_tool_lint! {
     /// ### Example
     /// Under `style = "alphabetical"`:
     ///
-    /// **Bad:**
+    /// **Avoid:**
     /// ```rust,ignore
     /// #[derive(Debug, Clone, Copy)]
     /// struct Point;
     /// ```
-    /// **Good:**
+    /// **Prefer:**
     /// ```rust,ignore
     /// #[derive(Clone, Copy, Debug)]
     /// struct Point;

@@ -41,12 +41,12 @@ at the site, so a future refactor that inadvertently fixes the
 issue is observed rather than hidden.
 
 ## Example
-**Bad:**
+**Avoid:**
 ```rust,ignore
 #[allow(clippy::too_many_arguments, reason = "matches pnpm's signature")]
 fn build_fetcher(/* ... */) {}
 ```
-**Good:**
+**Prefer:**
 ```rust,ignore
 #[expect(clippy::too_many_arguments, reason = "matches pnpm's signature")]
 fn build_fetcher(/* ... */) {}

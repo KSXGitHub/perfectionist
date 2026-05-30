@@ -23,11 +23,11 @@ declare_tool_lint! {
     /// by accident from autocorrect.
     ///
     /// ### Example
-    /// **Bad:**
+    /// **Avoid:**
     /// ```rust,ignore
     /// // TODO: handle the empty-tree case…
     /// ```
-    /// **Good:**
+    /// **Prefer:**
     /// ```rust,ignore
     /// // TODO: handle the empty-tree case...
     /// ```

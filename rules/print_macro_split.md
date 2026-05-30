@@ -45,11 +45,11 @@ lets each output line read as its own source line without
 changing a byte of what the program prints.
 
 ## Example
-**Bad:**
+**Avoid:**
 ```rust,ignore
 println!("error: The error was caused by {err_src}\nhint: Run {magic_cmd} to solve the problem");
 ```
-**Good:**
+**Prefer:**
 ```rust,ignore
 println!(
     "error: The error was caused by {err_src}\n\

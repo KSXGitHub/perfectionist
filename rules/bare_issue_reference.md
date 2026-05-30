@@ -34,11 +34,11 @@ view. The link form renders portably across rustdoc, GitHub,
 and any other markdown engine.
 
 ## Example
-**Bad:**
+**Avoid:**
 ```rust,ignore
 /// Closes #123 and supersedes #124.
 ```
-**Good:** (with
+**Prefer:** (with
 `repository = "https://github.com/owner/repo"` — `forge`
 is detected from the host), picking the issue link for one
 and the pull-request link for the other:

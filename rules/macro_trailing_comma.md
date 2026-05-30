@@ -40,7 +40,7 @@ own line, separate from the delimiter, and strips any comma
 added to the compact shape. The two tools have to agree.
 
 ## Example
-**Bad:**
+**Avoid:**
 ```rust,ignore
 let xs = vec![
     1,
@@ -49,7 +49,7 @@ let xs = vec![
 ];
 let ys = vec![1, 2, 3,];
 ```
-**Good:**
+**Prefer:**
 ```rust,ignore
 let xs = vec![
     1,

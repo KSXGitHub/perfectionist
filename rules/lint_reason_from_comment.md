@@ -36,12 +36,12 @@ One canonical location for the rationale also removes the
 question.
 
 ## Example
-**Bad:**
+**Avoid:**
 ```rust,ignore
 #[allow(clippy::too_many_arguments)] // matches upstream signature
 fn build_fetcher(/* ... */) {}
 ```
-**Good:**
+**Prefer:**
 ```rust,ignore
 #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
 fn build_fetcher(/* ... */) {}

@@ -50,13 +50,13 @@ declare_tool_lint! {
     /// ### Example
     /// Under the default `style = "grouped"`:
     ///
-    /// **Bad:**
+    /// **Avoid:**
     /// ```rust,ignore
     /// use clap::Parser;
     /// use std::time::Duration;
     /// use crate::args::Args;
     /// ```
-    /// **Good:**
+    /// **Prefer:**
     /// ```rust,ignore
     /// use std::time::Duration;
     ///

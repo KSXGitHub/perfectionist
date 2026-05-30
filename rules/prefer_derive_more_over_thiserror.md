@@ -60,7 +60,7 @@ project that wants the choice the other way around can disable
 this rule.
 
 ## Example
-**Bad:**
+**Avoid:**
 ```rust,ignore
 use thiserror::Error;
 
@@ -70,7 +70,7 @@ pub enum MyError {
     MissingField(String),
 }
 ```
-**Good:**
+**Prefer:**
 ```rust,ignore
 use derive_more::{Display, Error};
 

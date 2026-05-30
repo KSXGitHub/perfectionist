@@ -20,11 +20,11 @@ set of exempt identifiers for the well-worn cases
 (unsigned counts).
 
 ## Example
-**Bad:**
+**Avoid:**
 ```rust,ignore
 let m = entry.metadata()?;
 ```
-**Good:**
+**Prefer:**
 ```rust,ignore
 let metadata = entry.metadata()?;
 ```

@@ -26,11 +26,11 @@ declare_tool_lint! {
     /// (unsigned counts).
     ///
     /// ### Example
-    /// **Bad:**
+    /// **Avoid:**
     /// ```rust,ignore
     /// let m = entry.metadata()?;
     /// ```
-    /// **Good:**
+    /// **Prefer:**
     /// ```rust,ignore
     /// let metadata = entry.metadata()?;
     /// ```

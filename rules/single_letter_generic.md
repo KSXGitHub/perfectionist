@@ -24,13 +24,13 @@ can be silenced site-by-site with `#[allow]` or
 `#[expect]`.
 
 ## Example
-**Bad:**
+**Avoid:**
 ```rust,ignore
 pub fn collect_keys<K, V>(map: BTreeMap<K, V>) -> Vec<K> {
     /* fifty lines */
 }
 ```
-**Good:**
+**Prefer:**
 ```rust,ignore
 pub fn collect_keys<Key, Value>(map: BTreeMap<Key, Value>) -> Vec<Key> {
     /* fifty lines */
