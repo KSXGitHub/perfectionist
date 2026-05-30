@@ -4,7 +4,7 @@ This repository's lint rules are documented in `planned-rules/`
 before they are implemented. Each markdown file describes one
 rule's intent, configuration knobs, examples, implementation
 notes, and difficulty. Cross-cutting conventions (parser style,
-lint-name namespacing) live in
+lint-name namespacing, proc-macro-synthesis suppression) live in
 `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
 
 This guide tells you how to implement those rules and how to
@@ -356,6 +356,21 @@ in a dependency cluster, factor the shared helper into a
 crate-internal module so the second rule can reuse it. The
 planning files name this expectation explicitly; don't duplicate
 the helper.
+
+One shared helper is a suppression guard rather than a parser:
+`crate::common::hir_in_external_macro` (late passes) and
+`clippy_utils::is_from_proc_macro` (early passes) keep rules from
+false-positiving on proc-macro-synthesised nodes that carry a
+user-source span and so slip past `report_in_external_macro:
+false`. This bug class has recurred across rules; before you pick
+a new rule's diagnostic span, read the "Suppressing
+proc-macro-synthesised violations" section of
+`planned-rules/IMPLEMENTATION_CONVENTIONS.md` and add the guard
+plus a `ui/<rule>_proc_macro.rs` regression fixture if the rule is
+vulnerable. The fixture is only real if it fails with the guard
+removed: build it around a trigger the rule actually fires on (not
+an exempt or trivial node), and mutation-check it before trusting
+it.
 
 ## Commit message style
 

@@ -345,6 +345,153 @@ A crate-root suppression of the cross-toolchain warning is:
 #![allow(unknown_lints)]
 ```
 
+## Suppressing proc-macro-synthesised violations
+
+`declare_tool_lint! { ... report_in_external_macro: false }` is the
+flag every rule reaches for to avoid firing on code the user did not
+write. It is necessary but **not sufficient**: rustc applies that
+filter to the *diagnostic (primary) span* alone, and a whole class of
+proc-macro expansions defeats it. This section records the failure mode
+and the prescribed guards, because the gap has been rediscovered the
+hard way on more than one rule. (The late-pass helper's own mechanics
+are also documented at its definition in `src/common.rs`; this is the
+audience-facing version for rule authors.)
+
+### The failure mode
+
+Derive macros such as `clap_derive` synthesise statements, parameters,
+and attributes that exist only in the expansion — but they deliberately
+stamp the *key token* of each synthesised node (the binding identifier,
+the method-call segment, the `allow` in a generated `#[allow(...)]`)
+with the **user-source span** of the attribute that drove the
+expansion (`#[clap(default_value_t)]`, `#[clap(long)]`). The intent is
+ergonomic: if the generated code later fails to compile, the error
+points at an attribute the user can actually edit rather than at
+invisible expander output.
+
+The side effect is that the node's diagnostic span carries the *root*
+syntax context and resolves to real source. `report_in_external_macro:
+false` sees a user-authored span and lets the lint through, so the rule
+fires on a `#[clap(...)]` field — or a `default_value_t` binding — that
+the user cannot rename or annotate. A false positive on unfixable code.
+
+**A rule is vulnerable exactly when its diagnostic span is narrower
+than the syntactic node that produced the violation** — an identifier,
+a method segment, an attribute name. A rule whose primary span covers
+the whole offending construct is already handled by the built-in filter
+and needs nothing extra. Make this test the moment you choose the
+diagnostic span for a new rule.
+
+### The fix, keyed by pass kind
+
+The synthesised node *is* reachable as external-macro output; you just
+have to look past the diagnostic span. How you look depends on what the
+pass has in hand, which is why the two historical fixes took different
+routes:
+
+- **`LateLintPass`** — call
+  `crate::common::hir_in_external_macro(cx, hir_id, span)`. It checks
+  the node's own span *and* the enclosing item's `def_span`. The second
+  check is load-bearing for spans that are nothing but the identifier
+  (a `<T>` generic parameter has no surrounding tokens to carry the
+  expansion's `SyntaxContext`); the synthesised owner item's `def_span`
+  does carry it.
+- **`EarlyLintPass`** (and the pre-expansion half of a split rule,
+  before any HIR or `def_span` exists) — call
+  `clippy_utils::is_from_proc_macro(cx, node)`. It re-reads the source
+  text under the node's span and compares it against the text the node
+  *claims* to be; a generated `#[allow(...)]` whose underlying source
+  reads `#[clap(...)]` fails the comparison and is skipped.
+  `lint_silence_reason` and `prefer_expect_over_allow` apply it this
+  way.
+
+Reach for the variant your pass supports. Do not try to reproduce
+`hir_in_external_macro`'s `def_span` walk in an early pass — there is no
+HIR yet — and do not fall back to a bare `span.from_expansion()` /
+`span.in_external_macro()` on the diagnostic span, which is exactly the
+check this section exists to warn you is insufficient.
+
+### The regression fixture must actually exercise the guard
+
+A rule that the "vulnerable exactly when" test cleared needs nothing
+here — skip this subsection. For a rule that *is* vulnerable and now
+carries a guard, the guard is invisible in an ordinary UI test:
+hand-written source never produces the pathological span. Add a
+`ui/<rule>_proc_macro.rs` fixture that applies a derive from
+`ui/auxiliary/proc_macro_synth_binding.rs` reproducing the
+`clap_derive` span shape on your rule's node kind, and assert an empty
+`.stderr`.
+
+The trap — and it has already cost one round of work — is that the
+fixture is only meaningful if its synthesised trigger is one the rule
+**would otherwise fire on**. A fixture built around a node the rule
+exempts or treats as trivial passes whether or not the guard exists: it
+exercises nothing and bestows false confidence. Concretely:
+
+- `prefer_expect_over_allow` exempts `#[allow(dead_code)]`, so a fixture
+  using the `dead_code`-emitting `SynthSilenceReason` derive is vacuous.
+  It needs `SynthAllowRewriteable`, which emits a *rewriteable*
+  `#[allow(non_snake_case)]`.
+- `single_letter_closure_param` exempts trivial closures, so its
+  `SynthClosure` derive emits a deliberately non-trivial body.
+
+Two checks make non-vacuity concrete: (1) pick (or add) a derive whose
+synthesised node is one a hand-written equivalent *would* be flagged
+for — not an exempt or trivial shape; and (2) **mutation-check the
+fixture** — temporarily delete the guard, confirm the fixture turns
+red, then restore it. If removing the guard leaves the `.stderr` empty,
+the fixture protects nothing.
+
+The aux crate already exposes derives for the common node shapes
+(`SynthBinding`, `SynthFnParam`, `SynthGeneric`, `SynthClosure`,
+`SynthAllowRewriteable`, …); add a new one only when no existing derive
+emits a *non-exempt* node of the kind your rule triggers on. A fixture
+that passes both checks is what stops a later refactor from silently
+regressing the suppression.
+
+### Deliberate non-participants
+
+Two kinds of rule skip all of the above on purpose:
+
+- Rules declared `report_in_external_macro: true` (`prefer_raw_string`,
+  `unicode_ellipsis_in_panic_messages`) *want* to fire inside macro
+  output; the guard would defeat their purpose. The `true` flag is
+  itself the visible record of that intent.
+- A rule whose trigger cannot realistically be derive-generated may
+  forgo the guard. `non_exhaustive_error` was excluded on this basis —
+  it is off by default and its `pub` error-shaped trigger is an
+  unlikely derive output — though that reasoning currently lives only
+  in the PR that made the call, not in the rule's source. Prefer to
+  record such a decision where the next implementer will look: a short
+  comment at the rule's span-selection site, so the omission reads as
+  deliberate rather than forgotten.
+
+### History
+
+The class has surfaced in two shapes — a missing guard in production
+code, and a guard present but never actually tested:
+
+- `single_letter_let_binding` false-positived on `default_value_t`
+  bindings; patched inline first, then generalised into
+  `hir_in_external_macro` and applied across the sibling late rules.
+- `lint_silence_reason` false-positived on `clap_derive`'s generated
+  `#[allow(...)]`; fixed with the early-pass `is_from_proc_macro`
+  variant, since the late-pass helper did not apply.
+- `prefer_expect_over_allow` shipped *with* the early-pass guard in
+  place — it learned from `lint_silence_reason` — but its first
+  regression fixture reused the `dead_code` derive the rule exempts
+  anyway. The test was vacuous: it would have passed even with the
+  guard deleted. A follow-up commit added a rewriteable-`#[allow]`
+  derive (`SynthAllowRewriteable`) that genuinely exercises the guard.
+
+Two lessons, then. The first two say: apply the "vulnerable exactly
+when" test when you pick a diagnostic span, and add the pass-keyed
+guard. The third says: a regression fixture for this class is itself
+easy to get wrong — confirm it fails with the guard removed, or it is
+guarding nothing. If this section feels irrelevant to the rule you are
+adding, re-run both checks before moving on; that is the step every
+past regression skipped.
+
 ## Rule activation model
 
 Every rule registered by this plugin is declared at the `Warn`
