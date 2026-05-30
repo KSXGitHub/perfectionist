@@ -19,6 +19,7 @@ use queue::PendingViolation;
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// For function-like macro invocations whose top-level arguments are
     /// comma-separated, enforces rustfmt's `trailing_comma = "Vertical"`
     /// policy that rustfmt itself does not apply inside macro bodies:
@@ -35,6 +36,7 @@ declare_tool_lint! {
     /// etc.) are out of scope.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue. rustfmt's
     /// default `trailing_comma = "Vertical"` policy keeps argument lists
     /// uniform: every multi-line list ends with a comma, every single-line
@@ -51,7 +53,9 @@ declare_tool_lint! {
     /// added to the compact shape. The two tools have to agree.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// let xs = vec![
     ///     1,
@@ -60,7 +64,9 @@ declare_tool_lint! {
     /// ];
     /// let ys = vec![1, 2, 3,];
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// let xs = vec![
     ///     1,

@@ -23,6 +23,7 @@ use crate::module_reparse::for_each_module_file;
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Enforces a single project-wide import-granularity style, chosen
     /// via `style`:
     /// - `crate` — one `use` per crate root, with every shared prefix
@@ -45,6 +46,7 @@ declare_tool_lint! {
     /// not by this rule: a top-level glob is left alone under `item`.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue. None of
     /// the three shapes is wrong in the abstract — the violation is a
     /// mismatch with the project's configured `style`. Enforcing one
@@ -54,14 +56,18 @@ declare_tool_lint! {
     /// CI check instead of a silent reformat.
     ///
     /// ### Example
+    ///
     /// Under the default `style = "module"`:
     ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// use std::collections::HashMap;
     /// use std::collections::BTreeMap;
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// use std::collections::{BTreeMap, HashMap};
     /// ```

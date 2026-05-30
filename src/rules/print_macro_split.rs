@@ -19,6 +19,7 @@ use scan::{build_fold_suggestion, find_template_literal};
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Flags a `println!`-style macro call whose format template
     /// embeds a `\n` newline *and* whose source line is wider than
     /// `max_line_width` display columns, and folds the template across
@@ -49,6 +50,7 @@ declare_tool_lint! {
     /// interior `\n`, is left alone.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue. A long
     /// single line whose string already contains `\n` is hard to read
     /// and hard to scan in a diff; folding it at the embedded newlines
@@ -56,11 +58,15 @@ declare_tool_lint! {
     /// changing a byte of what the program prints.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// println!("error: The error was caused by {err_src}\nhint: Run {magic_cmd} to solve the problem");
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// println!(
     ///     "error: The error was caused by {err_src}\n\

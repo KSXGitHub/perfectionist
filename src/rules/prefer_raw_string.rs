@@ -17,6 +17,7 @@ use crate::common::{DefaultState, resolved_state};
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Forbids regular string literals whose only backslash escapes
     /// are ones a raw string would express verbatim — `\"`, `\\`,
     /// and `\'`. The autofix rewrites the literal to the raw form
@@ -40,6 +41,7 @@ declare_tool_lint! {
     /// `concat!`, which loses more than it gains.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue. The
     /// rule trades one noise source (interior backslash escapes)
     /// for a slightly more elaborate string syntax. The benefit is
@@ -48,12 +50,16 @@ declare_tool_lint! {
     /// otherwise be a sea of `\\` and `\"`.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// let json = "{\"name\":\"foo\"}";
     /// let path = "C:\\Users\\foo\\bar";
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// let json = r#"{"name":"foo"}"#;
     /// let path = r"C:\Users\foo\bar";

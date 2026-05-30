@@ -14,10 +14,12 @@ use crate::common::{
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Flags const generic parameter declarations
     /// (`<const N: usize>`) whose identifier is one ASCII letter.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue.
     /// A single-letter const generic parameter is opaque at every
     /// use site; a descriptive identifier (`LEN`, `COLS`, `LANES`)
@@ -25,14 +27,18 @@ declare_tool_lint! {
     /// at every substitution.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// struct Data<Left, Right, const M: usize, const N: usize> {
     ///     left:  [Left;  M],
     ///     right: [Right; N],
     /// }
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// struct Data<Left, Right, const LEFT_LEN: usize, const RIGHT_LEN: usize> {
     ///     left:  [Left;  LEFT_LEN],

@@ -41,6 +41,7 @@ mod render;
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Enforces a project-wide policy for naming a module's own export
     /// through `self` in `use` statements. The rule is inactive by
     /// default; a project opts in and sets `style` to one of:
@@ -58,6 +59,7 @@ declare_tool_lint! {
     ///   a single `use foo::bar::{self, Baz};`.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue. Both
     /// directions are coherent; a project simply picks one and applies
     /// it everywhere so `self`-in-`use` decisions stop being made
@@ -79,12 +81,16 @@ declare_tool_lint! {
     /// ### Example
     ///
     /// #### Style: Forbid
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// use foo::bar::{self};
     /// use foo::qux::{self, Baz};
     /// ```
+    ///
     /// **Prefer:** (each statement is fixed independently)
+    ///
     /// ```rust,ignore
     /// use foo::bar;
     /// use foo::qux;
@@ -92,12 +98,16 @@ declare_tool_lint! {
     /// ```
     ///
     /// #### Style: Combined
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// use foo::bar;
     /// use foo::bar::Baz;
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// use foo::bar::{self, Baz};
     /// ```

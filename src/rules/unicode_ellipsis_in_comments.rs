@@ -11,11 +11,13 @@ use crate::module_reparse::crate_module_files;
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in regular `//` and
     /// `/* */` comments. Doc comments (`///`, `//!`) are covered by a
     /// sibling lint.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue.
     /// ASCII `...` survives every encoding round-trip, every terminal,
     /// every `grep` invocation, and every `git diff` viewer without
@@ -23,11 +25,15 @@ declare_tool_lint! {
     /// by accident from autocorrect.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// // TODO: handle the empty-tree case…
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// // TODO: handle the empty-tree case...
     /// ```

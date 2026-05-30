@@ -7,10 +7,12 @@ use crate::common::{DefaultState, hir_in_external_macro, is_single_ascii_letter,
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Flags generic type parameters whose identifier is one ASCII
     /// letter (`T`, `U`, `K`, `V`, ...).
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue.
     /// Single-letter generic names propagate through the type
     /// signatures and bounds; they force every reader to scroll
@@ -23,13 +25,17 @@ declare_tool_lint! {
     /// `#[expect]`.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// pub fn collect_keys<K, V>(map: BTreeMap<K, V>) -> Vec<K> {
     ///     /* fifty lines */
     /// }
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// pub fn collect_keys<Key, Value>(map: BTreeMap<Key, Value>) -> Vec<Key> {
     ///     /* fifty lines */

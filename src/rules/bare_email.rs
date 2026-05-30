@@ -14,6 +14,7 @@ use crate::markdown::{position_in_skip, scan_skip_regions, utf8_char_len};
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Flags bare email addresses (`user@example.com`) in doc
     /// comments (`///`, `//!`) and regular comments (`//`, `/* */`).
     /// Wrapping in `<...>`, prefixing with `mailto:`, or both turns
@@ -24,6 +25,7 @@ declare_tool_lint! {
     /// keep contact information out of source entirely.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue. Bare
     /// email addresses rely on the renderer's autolinkification,
     /// which is inconsistent across markdown engines. The
@@ -31,11 +33,15 @@ declare_tool_lint! {
     /// explicit.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// /// Report security issues to security@example.com.
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// /// Report security issues to <security@example.com>.
     /// ```

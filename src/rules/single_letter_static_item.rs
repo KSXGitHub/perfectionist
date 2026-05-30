@@ -14,9 +14,11 @@ use crate::common::{
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Flags `static` items whose identifier is one ASCII letter.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue.
     /// A single-letter `static` item is opaque at every use site,
     /// and the item's scope (module-wide or crate-wide for
@@ -25,11 +27,15 @@ declare_tool_lint! {
     /// documentation.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// static N: AtomicUsize = AtomicUsize::new(0);
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// static REQUEST_COUNT: AtomicUsize = AtomicUsize::new(0);
     /// ```

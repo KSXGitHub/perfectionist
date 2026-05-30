@@ -14,6 +14,7 @@ use crate::common::{DefaultState, attr_has_reason, render_meta_path, resolved_st
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Requires every `#[allow(<lints>)]` and `#[expect(<lints>)]`
     /// attribute to carry an explanatory `reason = "..."` field.
     /// `#[allow]` and `#[expect]` are the two levels that fully
@@ -24,6 +25,7 @@ declare_tool_lint! {
     /// not depend on any inherited or ambient lint level.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue.
     /// Suppressions outlive the conditions that justify them. A
     /// bare `#[allow(clippy::too_many_arguments)]` told the original
@@ -35,12 +37,16 @@ declare_tool_lint! {
     /// notes when a stale `#[expect]` is encountered.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// #[allow(clippy::too_many_arguments)]
     /// fn build_fetcher(/* ... */) {}
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
     /// fn build_fetcher(/* ... */) {}

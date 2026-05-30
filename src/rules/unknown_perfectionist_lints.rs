@@ -8,12 +8,14 @@ use crate::common::{DefaultState, render_meta_path, resolved_state};
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Flags lint-control attributes (`allow`, `warn`, `deny`,
     /// `forbid`, `expect`, including under `cfg_attr`) whose lint
     /// name starts with `perfectionist::` but does not name a lint
     /// this plugin actually registers.
     ///
     /// ### Why is this bad?
+    ///
     /// Typos and stale references in `#[allow(perfectionist::...)]`
     /// silently neutralise the suppression they were written for.
     /// rustc's own `unknown_lints` covers tool-prefixed names
@@ -21,12 +23,16 @@ declare_tool_lint! {
     /// "did you mean" hint against the registered set.
     ///
     /// ### Example
+    ///
     /// **Bad:**
+    ///
     /// ```rust,ignore
     /// #[allow(perfectionist::unicode_ellipsis_in_comment)] // typo
     /// fn legacy() {}
     /// ```
+    ///
     /// **Good:**
+    ///
     /// ```rust,ignore
     /// #[allow(perfectionist::unicode_ellipsis_in_comments)]
     /// fn legacy() {}

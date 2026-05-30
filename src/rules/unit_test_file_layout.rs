@@ -11,6 +11,7 @@ use config::UnitTestFileLayout;
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Enforces where a crate's unit-test code lives. Two independent
     /// axes are checked:
     ///
@@ -48,6 +49,7 @@ declare_tool_lint! {
     /// untouched.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue. Both
     /// source projects keep large test suites out of the production
     /// file, so the file an editor tab, a `grep` hit, or a diff shows
@@ -58,7 +60,9 @@ declare_tool_lint! {
     /// the exact budget and directory shape vary by project.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// // File: foo.rs
     /// #[cfg(test)]
@@ -66,11 +70,14 @@ declare_tool_lint! {
     ///     /* ... 200 lines of test code ... */
     /// }
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// // File: foo.rs
     /// mod tests;
     /// ```
+    ///
     /// ```rust,ignore
     /// // File: foo/tests.rs
     /// /* ... 200 lines of test code ... */

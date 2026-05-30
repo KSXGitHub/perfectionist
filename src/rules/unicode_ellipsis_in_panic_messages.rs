@@ -15,6 +15,7 @@ use config::UnicodeEllipsisInPanicMessages;
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in the message of a
     /// panic-family or assertion-style macro (`panic!`,
     /// `unimplemented!`, `todo!`, `unreachable!`, `assert!`,
@@ -23,24 +24,30 @@ declare_tool_lint! {
     /// Prefer the three-ASCII-dot form `...`.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue.
     /// Panic and assertion messages surface in stderr, CI logs, crash
     /// reporters, and on terminals whose locale or encoding may not
     /// be UTF-8. ASCII `...` renders identically everywhere.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// panic!("could not parse manifest…");
     /// let manifest = load().expect("config missing…");
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// panic!("could not parse manifest...");
     /// let manifest = load().expect("config missing...");
     /// ```
     ///
     /// ### Custom macros
+    ///
     /// The `extra_macros` configuration accepts any macro name,
     /// but the lint's per-macro knowledge of which argument is
     /// the message only covers the built-in panic / assertion
