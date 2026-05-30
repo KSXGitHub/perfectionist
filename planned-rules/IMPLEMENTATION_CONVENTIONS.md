@@ -409,19 +409,41 @@ HIR yet — and do not fall back to a bare `span.from_expansion()` /
 `span.in_external_macro()` on the diagnostic span, which is exactly the
 check this section exists to warn you is insufficient.
 
-### Every vulnerable rule needs a regression fixture
+### The regression fixture must actually exercise the guard
 
 The guard is invisible in an ordinary UI test — hand-written source
 never produces the pathological span. Add a `ui/<rule>_proc_macro.rs`
 fixture that applies a derive from
 `ui/auxiliary/proc_macro_synth_binding.rs` reproducing the
 `clap_derive` span shape on your rule's node kind, and assert an empty
-`.stderr`. The aux crate already exposes derives for the common node
-shapes (`SynthBinding`, `SynthFnParam`, `SynthGeneric`, `SynthClosure`,
-`SynthSilenceReason`, …); add a new one only when no existing derive
-emits the node kind your rule triggers on. The fixture fails without
-the guard and passes with it — that is what stops a later refactor from
-silently regressing the suppression.
+`.stderr`.
+
+The trap — and it has already cost one round of work — is that the
+fixture is only meaningful if its synthesised trigger is one the rule
+**would otherwise fire on**. A fixture built around a node the rule
+exempts or treats as trivial passes whether or not the guard exists: it
+exercises nothing and bestows false confidence. Concretely:
+
+- `prefer_expect_over_allow` exempts `#[allow(dead_code)]`, so a fixture
+  using the `dead_code`-emitting `SynthSilenceReason` derive is vacuous.
+  It needs `SynthAllowRewriteable`, which emits a *rewriteable*
+  `#[allow(non_snake_case)]`.
+- `single_letter_closure_param` exempts trivial closures, so its
+  `SynthClosure` derive emits a deliberately non-trivial body.
+
+Two checks make non-vacuity concrete: (1) pick (or add) a derive whose
+synthesised node is one a hand-written equivalent *would* be flagged
+for — not an exempt or trivial shape; and (2) **mutation-check the
+fixture** — temporarily delete the guard, confirm the fixture turns
+red, then restore it. If removing the guard leaves the `.stderr` empty,
+the fixture protects nothing.
+
+The aux crate already exposes derives for the common node shapes
+(`SynthBinding`, `SynthFnParam`, `SynthGeneric`, `SynthClosure`,
+`SynthAllowRewriteable`, …); add a new one only when no existing derive
+emits a *non-exempt* node of the kind your rule triggers on. A fixture
+that passes both checks is what stops a later refactor from silently
+regressing the suppression.
 
 ### Deliberate non-participants
 
@@ -437,9 +459,8 @@ Two kinds of rule skip all of the above on purpose, and say so:
 
 ### History
 
-Each recurrence was the same oversight — trusting
-`report_in_external_macro` to inspect more than the diagnostic span — on
-a new rule:
+The class has surfaced in two shapes — a missing guard in production
+code, and a guard present but never actually tested:
 
 - `single_letter_let_binding` false-positived on `default_value_t`
   bindings; patched inline first, then generalised into
@@ -447,10 +468,20 @@ a new rule:
 - `lint_silence_reason` false-positived on `clap_derive`'s generated
   `#[allow(...)]`; fixed with the early-pass `is_from_proc_macro`
   variant, since the late-pass helper did not apply.
+- `prefer_expect_over_allow` shipped *with* the early-pass guard in
+  place — it learned from `lint_silence_reason` — but its first
+  regression fixture reused the `dead_code` derive the rule exempts
+  anyway. The test was vacuous: it would have passed even with the
+  guard deleted. A follow-up commit added a rewriteable-`#[allow]`
+  derive (`SynthAllowRewriteable`) that genuinely exercises the guard.
 
-If you are adding a rule and this section feels irrelevant, re-run the
-"vulnerable exactly when" test above before moving on — that is the
-step every past regression skipped.
+Two lessons, then. The first two say: apply the "vulnerable exactly
+when" test when you pick a diagnostic span, and add the pass-keyed
+guard. The third says: a regression fixture for this class is itself
+easy to get wrong — confirm it fails with the guard removed, or it is
+guarding nothing. If this section feels irrelevant to the rule you are
+adding, re-run both checks before moving on; that is the step every
+past regression skipped.
 
 ## Rule activation model
 

@@ -367,7 +367,10 @@ a new rule's diagnostic span, read the "Suppressing
 proc-macro-synthesised violations" section of
 `planned-rules/IMPLEMENTATION_CONVENTIONS.md` and add the guard
 plus a `ui/<rule>_proc_macro.rs` regression fixture if the rule is
-vulnerable.
+vulnerable. The fixture is only real if it fails with the guard
+removed: build it around a trigger the rule actually fires on (not
+an exempt or trivial node), and mutation-check it before trusting
+it.
 
 ## Commit message style
 
