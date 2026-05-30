@@ -345,6 +345,113 @@ A crate-root suppression of the cross-toolchain warning is:
 #![allow(unknown_lints)]
 ```
 
+## Suppressing proc-macro-synthesised violations
+
+`declare_tool_lint! { ... report_in_external_macro: false }` is the
+flag every rule reaches for to avoid firing on code the user did not
+write. It is necessary but **not sufficient**: rustc applies that
+filter to the *diagnostic (primary) span* alone, and a whole class of
+proc-macro expansions defeats it. This section is the one place that
+records the failure mode and the prescribed guard, because it has
+been rediscovered the hard way on more than one rule.
+
+### The failure mode
+
+Derive macros such as `clap_derive` synthesise statements, parameters,
+and attributes that exist only in the expansion — but they deliberately
+stamp the *key token* of each synthesised node (the binding identifier,
+the method-call segment, the `allow` in a generated `#[allow(...)]`)
+with the **user-source span** of the attribute that drove the
+expansion (`#[clap(default_value_t)]`, `#[clap(long)]`). The intent is
+ergonomic: if the generated code later fails to compile, the error
+points at an attribute the user can actually edit rather than at
+invisible expander output.
+
+The side effect is that the node's diagnostic span carries the *root*
+syntax context and resolves to real source. `report_in_external_macro:
+false` sees a user-authored span and lets the lint through, so the rule
+fires on a `#[clap(...)]` field — or a `default_value_t` binding — that
+the user cannot rename or annotate. A false positive on unfixable code.
+
+**A rule is vulnerable exactly when its diagnostic span is narrower
+than the syntactic node that produced the violation** — an identifier,
+a method segment, an attribute name. A rule whose primary span covers
+the whole offending construct is already handled by the built-in filter
+and needs nothing extra. Make this test the moment you choose the
+diagnostic span for a new rule.
+
+### The fix, keyed by pass kind
+
+The synthesised node *is* reachable as external-macro output; you just
+have to look past the diagnostic span. How you look depends on what the
+pass has in hand, which is why the two historical fixes could not share
+code:
+
+- **`LateLintPass`** — call
+  `crate::common::hir_in_external_macro(cx, hir_id, span)`. It checks
+  the node's own span *and* the enclosing item's `def_span`. The second
+  check is load-bearing for spans that are nothing but the identifier
+  (a `<T>` generic parameter has no surrounding tokens to carry the
+  expansion's `SyntaxContext`); the synthesised owner item's `def_span`
+  does carry it.
+- **`EarlyLintPass`** (and the pre-expansion half of a split rule,
+  before any HIR or `def_span` exists) — call
+  `clippy_utils::is_from_proc_macro(cx, node)`. It re-reads the source
+  text under the node's span and compares it against the text the node
+  *claims* to be; a generated `#[allow(...)]` whose underlying source
+  reads `#[clap(...)]` fails the comparison and is skipped.
+  `lint_silence_reason` and `prefer_expect_over_allow` apply it this
+  way.
+
+Reach for the variant your pass supports. Do not try to reproduce
+`hir_in_external_macro`'s `def_span` walk in an early pass — there is no
+HIR yet — and do not fall back to a bare `span.from_expansion()` /
+`span.in_external_macro()` on the diagnostic span, which is exactly the
+check this section exists to warn you is insufficient.
+
+### Every vulnerable rule needs a regression fixture
+
+The guard is invisible in an ordinary UI test — hand-written source
+never produces the pathological span. Add a `ui/<rule>_proc_macro.rs`
+fixture that applies a derive from
+`ui/auxiliary/proc_macro_synth_binding.rs` reproducing the
+`clap_derive` span shape on your rule's node kind, and assert an empty
+`.stderr`. The aux crate already exposes derives for the common node
+shapes (`SynthBinding`, `SynthFnParam`, `SynthGeneric`, `SynthClosure`,
+`SynthSilenceReason`, …); add a new one only when no existing derive
+emits the node kind your rule triggers on. The fixture fails without
+the guard and passes with it — that is what stops a later refactor from
+silently regressing the suppression.
+
+### Deliberate non-participants
+
+Two kinds of rule skip all of the above on purpose, and say so:
+
+- Rules declared `report_in_external_macro: true` (`prefer_raw_string`,
+  `unicode_ellipsis_in_panic_messages`) *want* to fire inside macro
+  output; the guard would defeat their purpose.
+- A rule whose trigger cannot realistically be derive-generated may
+  document the exclusion in its source rather than carry a guard
+  (`non_exhaustive_error` reports on a `pub` error-shaped item). State
+  the reasoning in the rule; don't leave the gap silent.
+
+### History
+
+Each recurrence was the same oversight — trusting
+`report_in_external_macro` to inspect more than the diagnostic span — on
+a new rule:
+
+- `single_letter_let_binding` false-positived on `default_value_t`
+  bindings; patched inline first, then generalised into
+  `hir_in_external_macro` and applied across the sibling late rules.
+- `lint_silence_reason` false-positived on `clap_derive`'s generated
+  `#[allow(...)]`; fixed with the early-pass `is_from_proc_macro`
+  variant, since the late-pass helper did not apply.
+
+If you are adding a rule and this section feels irrelevant, re-run the
+"vulnerable exactly when" test above before moving on — that is the
+step every past regression skipped.
+
 ## Rule activation model
 
 Every rule registered by this plugin is declared at the `Warn`
