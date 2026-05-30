@@ -351,9 +351,11 @@ A crate-root suppression of the cross-toolchain warning is:
 flag every rule reaches for to avoid firing on code the user did not
 write. It is necessary but **not sufficient**: rustc applies that
 filter to the *diagnostic (primary) span* alone, and a whole class of
-proc-macro expansions defeats it. This section is the one place that
-records the failure mode and the prescribed guard, because it has
-been rediscovered the hard way on more than one rule.
+proc-macro expansions defeats it. This section records the failure mode
+and the prescribed guards, because the gap has been rediscovered the
+hard way on more than one rule. (The late-pass helper's own mechanics
+are also documented at its definition in `src/common.rs`; this is the
+audience-facing version for rule authors.)
 
 ### The failure mode
 
@@ -384,8 +386,8 @@ diagnostic span for a new rule.
 
 The synthesised node *is* reachable as external-macro output; you just
 have to look past the diagnostic span. How you look depends on what the
-pass has in hand, which is why the two historical fixes could not share
-code:
+pass has in hand, which is why the two historical fixes took different
+routes:
 
 - **`LateLintPass`** — call
   `crate::common::hir_in_external_macro(cx, hir_id, span)`. It checks
@@ -411,9 +413,11 @@ check this section exists to warn you is insufficient.
 
 ### The regression fixture must actually exercise the guard
 
-The guard is invisible in an ordinary UI test — hand-written source
-never produces the pathological span. Add a `ui/<rule>_proc_macro.rs`
-fixture that applies a derive from
+A rule that the "vulnerable exactly when" test cleared needs nothing
+here — skip this subsection. For a rule that *is* vulnerable and now
+carries a guard, the guard is invisible in an ordinary UI test:
+hand-written source never produces the pathological span. Add a
+`ui/<rule>_proc_macro.rs` fixture that applies a derive from
 `ui/auxiliary/proc_macro_synth_binding.rs` reproducing the
 `clap_derive` span shape on your rule's node kind, and assert an empty
 `.stderr`.
@@ -447,15 +451,20 @@ regressing the suppression.
 
 ### Deliberate non-participants
 
-Two kinds of rule skip all of the above on purpose, and say so:
+Two kinds of rule skip all of the above on purpose:
 
 - Rules declared `report_in_external_macro: true` (`prefer_raw_string`,
   `unicode_ellipsis_in_panic_messages`) *want* to fire inside macro
-  output; the guard would defeat their purpose.
+  output; the guard would defeat their purpose. The `true` flag is
+  itself the visible record of that intent.
 - A rule whose trigger cannot realistically be derive-generated may
-  document the exclusion in its source rather than carry a guard
-  (`non_exhaustive_error` reports on a `pub` error-shaped item). State
-  the reasoning in the rule; don't leave the gap silent.
+  forgo the guard. `non_exhaustive_error` was excluded on this basis —
+  it is off by default and its `pub` error-shaped trigger is an
+  unlikely derive output — though that reasoning currently lives only
+  in the PR that made the call, not in the rule's source. Prefer to
+  record such a decision where the next implementer will look: a short
+  comment at the rule's span-selection site, so the omission reads as
+  deliberate rather than forgotten.
 
 ### History
 
