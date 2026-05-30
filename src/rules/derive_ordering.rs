@@ -49,11 +49,13 @@ declare_tool_lint! {
     ///
     /// ### Example
     /// Under `style = "alphabetical"`:
+    ///
+    /// **Avoid:**
     /// ```rust,ignore
     /// #[derive(Debug, Clone, Copy)]
     /// struct Point;
     /// ```
-    /// Use instead:
+    /// **Prefer:**
     /// ```rust,ignore
     /// #[derive(Clone, Copy, Debug)]
     /// struct Point;

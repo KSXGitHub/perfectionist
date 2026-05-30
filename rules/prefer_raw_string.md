@@ -39,11 +39,12 @@ snippets, or embedded source code — all of which would
 otherwise be a sea of `\\` and `\"`.
 
 ## Example
+**Avoid:**
 ```rust,ignore
 let json = "{\"name\":\"foo\"}";
 let path = "C:\\Users\\foo\\bar";
 ```
-Use instead:
+**Prefer:**
 ```rust,ignore
 let json = r#"{"name":"foo"}"#;
 let path = r"C:\Users\foo\bar";

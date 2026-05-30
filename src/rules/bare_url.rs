@@ -27,10 +27,11 @@ declare_tool_lint! {
     /// `<...>` form is the explicit, portable spelling.
     ///
     /// ### Example
+    /// **Avoid:**
     /// ```rust,ignore
     /// /// See https://example.com for details.
     /// ```
-    /// Use instead:
+    /// **Prefer:**
     /// ```rust,ignore
     /// /// See <https://example.com> for details.
     /// ```

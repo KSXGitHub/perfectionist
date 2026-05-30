@@ -25,10 +25,11 @@ smart-quote setting — rather than as a deliberate choice in
 technical writing.
 
 ## Example
+**Avoid:**
 ```rust,ignore
 /// Walk the tree, collecting sizes…
 ```
-Use instead:
+**Prefer:**
 ```rust,ignore
 /// Walk the tree, collecting sizes...
 ```

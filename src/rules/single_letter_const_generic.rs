@@ -25,13 +25,14 @@ declare_tool_lint! {
     /// at every substitution.
     ///
     /// ### Example
+    /// **Avoid:**
     /// ```rust,ignore
     /// struct Data<Left, Right, const M: usize, const N: usize> {
     ///     left:  [Left;  M],
     ///     right: [Right; N],
     /// }
     /// ```
-    /// Use instead:
+    /// **Prefer:**
     /// ```rust,ignore
     /// struct Data<Left, Right, const LEFT_LEN: usize, const RIGHT_LEN: usize> {
     ///     left:  [Left;  LEFT_LEN],

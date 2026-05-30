@@ -55,11 +55,13 @@ declare_tool_lint! {
     ///
     /// ### Example
     /// Under the default `style = "module"`:
+    ///
+    /// **Avoid:**
     /// ```rust,ignore
     /// use std::collections::HashMap;
     /// use std::collections::BTreeMap;
     /// ```
-    /// Use instead:
+    /// **Prefer:**
     /// ```rust,ignore
     /// use std::collections::{BTreeMap, HashMap};
     /// ```

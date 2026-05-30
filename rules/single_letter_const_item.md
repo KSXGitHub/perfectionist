@@ -20,10 +20,11 @@ identifier (`DIMENSION`, `BUFFER_LEN`, `MAX_RETRIES`)
 carries its own documentation.
 
 ## Example
+**Avoid:**
 ```rust,ignore
 const N: usize = 2;
 ```
-Use instead:
+**Prefer:**
 ```rust,ignore
 const DIMENSION_COUNT: usize = 2;
 ```

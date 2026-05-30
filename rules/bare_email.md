@@ -25,10 +25,11 @@ which is inconsistent across markdown engines. The
 explicit.
 
 ## Example
+**Avoid:**
 ```rust,ignore
 /// Report security issues to security@example.com.
 ```
-Use instead:
+**Prefer:**
 ```rust,ignore
 /// Report security issues to <security@example.com>.
 ```

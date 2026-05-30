@@ -39,13 +39,14 @@ enable = ["non_exhaustive_error"]
 ```
 
 ## Example
+**Avoid:**
 ```rust,ignore
 #[derive(Debug)]
 pub enum RuntimeError {
     SerializationFailure,
 }
 ```
-Use instead:
+**Prefer:**
 ```rust,ignore
 #[derive(Debug)]
 #[non_exhaustive]

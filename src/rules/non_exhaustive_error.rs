@@ -48,13 +48,14 @@ declare_tool_lint! {
     /// ```
     ///
     /// ### Example
+    /// **Avoid:**
     /// ```rust,ignore
     /// #[derive(Debug)]
     /// pub enum RuntimeError {
     ///     SerializationFailure,
     /// }
     /// ```
-    /// Use instead:
+    /// **Prefer:**
     /// ```rust,ignore
     /// #[derive(Debug)]
     /// #[non_exhaustive]

@@ -19,10 +19,11 @@ identifier (`BUFFER`, `CACHE`, `COUNTER`) carries its own
 documentation.
 
 ## Example
+**Avoid:**
 ```rust,ignore
 static N: AtomicUsize = AtomicUsize::new(0);
 ```
-Use instead:
+**Prefer:**
 ```rust,ignore
 static REQUEST_COUNT: AtomicUsize = AtomicUsize::new(0);
 ```

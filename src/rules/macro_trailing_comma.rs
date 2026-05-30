@@ -51,6 +51,7 @@ declare_tool_lint! {
     /// added to the compact shape. The two tools have to agree.
     ///
     /// ### Example
+    /// **Avoid:**
     /// ```rust,ignore
     /// let xs = vec![
     ///     1,
@@ -59,7 +60,7 @@ declare_tool_lint! {
     /// ];
     /// let ys = vec![1, 2, 3,];
     /// ```
-    /// Use instead:
+    /// **Prefer:**
     /// ```rust,ignore
     /// let xs = vec![
     ///     1,

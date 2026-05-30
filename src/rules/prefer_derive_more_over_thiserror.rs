@@ -65,6 +65,7 @@ declare_tool_lint! {
     /// this rule.
     ///
     /// ### Example
+    /// **Avoid:**
     /// ```rust,ignore
     /// use thiserror::Error;
     ///
@@ -74,7 +75,7 @@ declare_tool_lint! {
     ///     MissingField(String),
     /// }
     /// ```
-    /// Use instead:
+    /// **Prefer:**
     /// ```rust,ignore
     /// use derive_more::{Display, Error};
     ///

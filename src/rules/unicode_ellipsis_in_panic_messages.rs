@@ -29,11 +29,12 @@ declare_tool_lint! {
     /// be UTF-8. ASCII `...` renders identically everywhere.
     ///
     /// ### Example
+    /// **Avoid:**
     /// ```rust,ignore
     /// panic!("could not parse manifest…");
     /// let manifest = load().expect("config missing…");
     /// ```
-    /// Use instead:
+    /// **Prefer:**
     /// ```rust,ignore
     /// panic!("could not parse manifest...");
     /// let manifest = load().expect("config missing...");

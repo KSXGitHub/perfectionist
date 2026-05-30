@@ -46,11 +46,12 @@ the module's name in the same parent.
 ## Example
 
 ### Style: Forbid
+**Avoid:**
 ```rust,ignore
 use foo::bar::{self};
 use foo::qux::{self, Baz};
 ```
-Use instead (each statement is fixed independently):
+**Prefer:** (each statement is fixed independently)
 ```rust,ignore
 use foo::bar;
 use foo::qux;
@@ -58,11 +59,12 @@ use foo::qux::Baz;
 ```
 
 ### Style: Combined
+**Avoid:**
 ```rust,ignore
 use foo::bar;
 use foo::bar::Baz;
 ```
-Use instead:
+**Prefer:**
 ```rust,ignore
 use foo::bar::{self, Baz};
 ```

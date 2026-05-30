@@ -20,10 +20,11 @@ rendering as `?` or a tofu box. The Unicode form usually arrives
 by accident from autocorrect.
 
 ## Example
+**Avoid:**
 ```rust,ignore
 // TODO: handle the empty-tree case…
 ```
-Use instead:
+**Prefer:**
 ```rust,ignore
 // TODO: handle the empty-tree case...
 ```

@@ -28,10 +28,11 @@ declare_tool_lint! {
     /// documentation; a single letter does not.
     ///
     /// ### Example
+    /// **Avoid:**
     /// ```rust,ignore
     /// fn write_row(w: &mut Writer, t: &TreeRow) -> io::Result<()> { ... }
     /// ```
-    /// Use instead:
+    /// **Prefer:**
     /// ```rust,ignore
     /// fn write_row(writer: &mut Writer, tree_row: &TreeRow) -> io::Result<()> { ... }
     /// ```

@@ -26,10 +26,11 @@ declare_tool_lint! {
     /// carries its own documentation.
     ///
     /// ### Example
+    /// **Avoid:**
     /// ```rust,ignore
     /// const N: usize = 2;
     /// ```
-    /// Use instead:
+    /// **Prefer:**
     /// ```rust,ignore
     /// const DIMENSION_COUNT: usize = 2;
     /// ```

@@ -79,11 +79,12 @@ declare_tool_lint! {
     /// ### Example
     ///
     /// #### Style: Forbid
+    /// **Avoid:**
     /// ```rust,ignore
     /// use foo::bar::{self};
     /// use foo::qux::{self, Baz};
     /// ```
-    /// Use instead (each statement is fixed independently):
+    /// **Prefer:** (each statement is fixed independently)
     /// ```rust,ignore
     /// use foo::bar;
     /// use foo::qux;
@@ -91,11 +92,12 @@ declare_tool_lint! {
     /// ```
     ///
     /// #### Style: Combined
+    /// **Avoid:**
     /// ```rust,ignore
     /// use foo::bar;
     /// use foo::bar::Baz;
     /// ```
-    /// Use instead:
+    /// **Prefer:**
     /// ```rust,ignore
     /// use foo::bar::{self, Baz};
     /// ```

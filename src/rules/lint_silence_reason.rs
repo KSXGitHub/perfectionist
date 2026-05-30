@@ -35,11 +35,12 @@ declare_tool_lint! {
     /// notes when a stale `#[expect]` is encountered.
     ///
     /// ### Example
+    /// **Avoid:**
     /// ```rust,ignore
     /// #[allow(clippy::too_many_arguments)]
     /// fn build_fetcher(/* ... */) {}
     /// ```
-    /// Use instead:
+    /// **Prefer:**
     /// ```rust,ignore
     /// #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
     /// fn build_fetcher(/* ... */) {}

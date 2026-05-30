@@ -36,12 +36,14 @@ projects a hard CI check instead of a silent reformat.
 
 ## Example
 Under the default `style = "grouped"`:
+
+**Avoid:**
 ```rust,ignore
 use clap::Parser;
 use std::time::Duration;
 use crate::args::Args;
 ```
-Use instead:
+**Prefer:**
 ```rust,ignore
 use std::time::Duration;
 
