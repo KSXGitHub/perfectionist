@@ -290,7 +290,12 @@ write a fresh module-discovery or re-parse path; route through:
    per-module / per-item `#[allow]` / `#[expect]` resolves. Anchor on
    the **first `use`'s own span**, never the merged/replacement span:
    an out-of-line `mod foo;` item's span lives in the *parent* file,
-   so a span there would fall back to the crate root.
+   so a span there would fall back to the crate root. This is one
+   instance of the broader crate-root-fallback hazard described under
+   ["Suppression resolution across pass boundaries"](../CLAUDE.md) —
+   a violation that anchors at the crate root can only be silenced by
+   a crate-level `#![allow]`. The other instance, proc-macro-synthesised
+   spans, never reaches this walk: step 1's file set excludes them.
 
 A comment-only or token-only scanner that does not need the parsed
 AST (the `bare_url` / `bare_email` / `bare_issue_reference` /
