@@ -269,19 +269,21 @@ write a fresh module-discovery or re-parse path; route through:
    real on-disk files that back a module in the HIR tree, so
    `include!` fragments, `include_str!`-ed data, and
    proc-macro-synthesised modules are excluded.
-2. **The `live_module_spans` guard before descending into an inline
-   `mod { ... }`.** This is mandatory and is exactly where the two
-   rules drifted apart: a re-parse keeps cfg-*disabled* inline
+2. **Guard descent into an inline `mod { ... }` with
+   `live_module_spans`.** A re-parse keeps cfg-*disabled* inline
    modules (e.g. `#[cfg(test)] mod tests { ... }` in a non-test
    build), so a walk that recurses into every `ModKind::Loaded`
-   body unconditionally will lint code that is **not in the compiled
+   body unconditionally lints code that is **not in the compiled
    crate** — and, having no HIR node, those findings anchor at the
    crate root and cannot be silenced by a local `#[allow]`.
-   `import_grouping` consults `live_module_spans`;
-   `import_granularity` and `self_import` currently descend
-   unconditionally (via `for_each_module_file`, which drops the set)
-   and carry this latent bug. New rules must guard; the two existing
-   gaps should be closed when those rules are next touched.
+   `import_grouping` is the reference implementation: it consults
+   `live_module_spans` and descends only into live modules. (At the
+   time of writing, `import_granularity` and `self_import` route
+   through `for_each_module_file`, which drops `live_module_spans`,
+   so they descend unconditionally — an apparent divergence found by
+   code reading but **not** yet pinned by a cfg-disabled-inline-module
+   test. Confirm with such a test before treating either as a model
+   to copy or "fixing" them.)
 3. **`enclosing_hir::find_enclosing_hir_ids`** to anchor each parked
    violation at its enclosing HIR node, emitting through
    `clippy_utils::diagnostics::span_lint_hir_and_then`, so a
@@ -301,10 +303,17 @@ not re-derive the file set there either.
 ### The decision rule, in one line
 
 If a rule reads the *written layout* of items across module scopes,
-it is a `LateLintPass` driven by `src/module_reparse.rs`, never a
-bespoke `EarlyLintPass` module walk. If you find yourself matching
-`ModKind` or walking `Crate.items` from an `EarlyLintPass`, stop —
-that pass cannot see separate-file submodules.
+it is a `LateLintPass` driven by `src/module_reparse.rs`, not an
+`EarlyLintPass` module walk. Neither `EarlyLintPass` mode fits: a
+**pre-expansion** pass keeps `#[cfg]`-gated code but leaves
+out-of-line `mod foo;` modules `ModKind::Unloaded` (so it skips every
+separate-file submodule — the bug above), while a **post-expansion**
+pass loads those modules but has already had `#[cfg]`-disabled code
+stripped (so it can't see what the author wrote under a false cfg).
+A layout rule needs both reach and cfg-preservation at once, which
+only re-parsing in a late pass gives. So if you reach for a
+pre-expansion pass and match `ModKind` to walk module bodies, stop —
+that is the trap.
 
 ## Lint name namespacing
 
