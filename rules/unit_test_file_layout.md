@@ -55,23 +55,22 @@ nested-vs-sibling choice are deliberately configurable because
 the exact budget and directory shape vary by project.
 
 ## Example
-Under `external_layout = "nested"`:
-
 **Avoid:**
-```text
-src/
-├── lib.rs
-├── foo.rs         declares  #[cfg(test)] mod tests;
-└── foo_tests.rs   holds the test code
+```rust,ignore
+// File: foo.rs
+#[cfg(test)]
+mod tests {
+    /* ... 200 lines of test code ... */
+}
 ```
-
 **Prefer:**
-```text
-src/
-├── lib.rs
-├── foo.rs         declares  #[cfg(test)] mod tests;
-└── foo/
-    └── tests.rs   holds the test code
+```rust,ignore
+// File: foo.rs
+mod tests;
+```
+```rust,ignore
+// File: foo/tests.rs
+/* ... 200 lines of test code ... */
 ```
 
 ## Configuration
@@ -143,9 +142,24 @@ How external test files must be laid out on disk (the
 
 `src/foo.rs`'s `mod bar;` must resolve to `src/foo/bar.rs`.
 
+```text
+src/
+├── lib.rs
+├── foo.rs         declares  #[cfg(test)] mod tests;
+└── foo/
+    └── tests.rs   holds the test code
+```
+
 ##### `"sibling"` (Rust: `Sibling`)
 
 Also accept the flattened `src/foo_bar.rs` form.
+
+```text
+src/
+├── lib.rs
+├── foo.rs         declares  #[cfg(test)] mod tests;
+└── foo_tests.rs   holds the test code
+``````
 
 ##### `"any"` (Rust: `Any`)
 

@@ -58,23 +58,22 @@ declare_tool_lint! {
     /// the exact budget and directory shape vary by project.
     ///
     /// ### Example
-    /// Under `external_layout = "nested"`:
-    ///
     /// **Avoid:**
-    /// ```text
-    /// src/
-    /// ├── lib.rs
-    /// ├── foo.rs         declares  #[cfg(test)] mod tests;
-    /// └── foo_tests.rs   holds the test code
+    /// ```rust,ignore
+    /// // File: foo.rs
+    /// #[cfg(test)]
+    /// mod tests {
+    ///     /* ... 200 lines of test code ... */
+    /// }
     /// ```
-    ///
     /// **Prefer:**
-    /// ```text
-    /// src/
-    /// ├── lib.rs
-    /// ├── foo.rs         declares  #[cfg(test)] mod tests;
-    /// └── foo/
-    ///     └── tests.rs   holds the test code
+    /// ```rust,ignore
+    /// // File: foo.rs
+    /// mod tests;
+    /// ```
+    /// ```rust,ignore
+    /// // File: foo/tests.rs
+    /// /* ... 200 lines of test code ... */
     /// ```
     pub perfectionist::UNIT_TEST_FILE_LAYOUT,
     Warn,

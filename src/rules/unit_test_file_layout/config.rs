@@ -26,8 +26,23 @@ pub(super) enum InlineStyle {
 #[serde(rename_all = "snake_case")]
 pub(super) enum ExternalLayout {
     /// `src/foo.rs`'s `mod bar;` must resolve to `src/foo/bar.rs`.
+    ///
+    /// ```text
+    /// src/
+    /// ├── lib.rs
+    /// ├── foo.rs         declares  #[cfg(test)] mod tests;
+    /// └── foo/
+    ///     └── tests.rs   holds the test code
+    /// ```
     Nested,
     /// Also accept the flattened `src/foo_bar.rs` form.
+    ///
+    /// ```text
+    /// src/
+    /// ├── lib.rs
+    /// ├── foo.rs         declares  #[cfg(test)] mod tests;
+    /// └── foo_tests.rs   holds the test code
+    /// ``````
     Sibling,
     /// Accept whichever path Cargo loads; skip the layout check.
     Any,
