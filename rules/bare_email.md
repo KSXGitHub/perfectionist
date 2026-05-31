@@ -8,6 +8,7 @@
 > bare email address in comment or doc comment; wrap in `<...>` or prefix with `mailto:`
 
 ## What it does
+
 Flags bare email addresses (`user@example.com`) in doc
 comments (`///`, `//!`) and regular comments (`//`, `/* */`).
 Wrapping in `<...>`, prefixing with `mailto:`, or both turns
@@ -18,6 +19,7 @@ A `forbid` style is available for projects that prefer to
 keep contact information out of source entirely.
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue. Bare
 email addresses rely on the renderer's autolinkification,
 which is inconsistent across markdown engines. The
@@ -25,11 +27,15 @@ which is inconsistent across markdown engines. The
 explicit.
 
 ## Example
+
 **Avoid:**
+
 ```rust,ignore
 /// Report security issues to security@example.com.
 ```
+
 **Prefer:**
+
 ```rust,ignore
 /// Report security issues to <security@example.com>.
 ```

@@ -8,6 +8,7 @@
 > trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field
 
 ## What it does
+
 When a lint-level attribute (`#[allow]`, `#[expect]`, `#[warn]`,
 `#[deny]`, `#[forbid]`) carries a trailing `// ...` line comment
 — on the same source line as the attribute's closing `]` —
@@ -25,6 +26,7 @@ Doc comments (`///`, `//!`) and block comments (`/* ... */`)
 are out of scope.
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue.
 `reason = "..."` is part of the attribute and travels with it
 through every refactor; a free-floating comment can be
@@ -36,12 +38,16 @@ One canonical location for the rationale also removes the
 question.
 
 ## Example
+
 **Avoid:**
+
 ```rust,ignore
 #[allow(clippy::too_many_arguments)] // matches upstream signature
 fn build_fetcher(/* ... */) {}
 ```
+
 **Prefer:**
+
 ```rust,ignore
 #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
 fn build_fetcher(/* ... */) {}

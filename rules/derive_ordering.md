@@ -8,6 +8,7 @@
 > trait names in a `#[derive(...)]` list are not in the configured order
 
 ## What it does
+
 Enforces a project-wide ordering of trait names inside a single
 `#[derive(...)]` list. Two styles are configurable via
 `style`:
@@ -24,6 +25,7 @@ does not police how derives are partitioned across multiple
 author.
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue. The
 trait order inside `#[derive(...)]` has no semantic effect:
 `#[derive(Debug, Clone)]` and `#[derive(Clone, Debug)]`
@@ -43,14 +45,18 @@ enable = ["derive_ordering"]
 ```
 
 ## Example
+
 Under `style = "alphabetical"`:
 
 **Avoid:**
+
 ```rust,ignore
 #[derive(Debug, Clone, Copy)]
 struct Point;
 ```
+
 **Prefer:**
+
 ```rust,ignore
 #[derive(Clone, Copy, Debug)]
 struct Point;

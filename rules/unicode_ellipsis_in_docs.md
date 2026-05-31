@@ -8,6 +8,7 @@
 > U+2026 HORIZONTAL ELLIPSIS in doc comments; prefer `...`
 
 ## What it does
+
 Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in doc comments —
 `///` and `//!` line forms and the `/** */` / `/*! */` block
 forms. Prefer the three-ASCII-dot form `...`. Regular `//` and
@@ -15,6 +16,7 @@ forms. Prefer the three-ASCII-dot form `...`. Regular `//` and
 (`perfectionist::unicode_ellipsis_in_comments`).
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue.
 ASCII `...` survives every encoding round-trip, every terminal,
 every copy-paste, every `grep` invocation, and every `git diff`
@@ -25,11 +27,15 @@ smart-quote setting — rather than as a deliberate choice in
 technical writing.
 
 ## Example
+
 **Avoid:**
+
 ```rust,ignore
 /// Walk the tree, collecting sizes…
 ```
+
 **Prefer:**
+
 ```rust,ignore
 /// Walk the tree, collecting sizes...
 ```

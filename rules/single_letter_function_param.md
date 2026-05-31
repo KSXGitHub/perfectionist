@@ -8,12 +8,14 @@
 > function parameter has a single-letter name
 
 ## What it does
+
 Flags function and method parameters whose identifier is
 one ASCII letter, except for a curated set of conventional
 names (`n` for an unsigned count, `f` for a `fmt::Formatter`,
 `i` / `j` / `k` for indices).
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue.
 Parameter names are the first piece of documentation a
 caller reads (in rustdoc, in IDE hover tips, in error
@@ -21,11 +23,15 @@ messages). A descriptive parameter name carries that
 documentation; a single letter does not.
 
 ## Example
+
 **Avoid:**
+
 ```rust,ignore
 fn write_row(w: &mut Writer, t: &TreeRow) -> io::Result<()> { ... }
 ```
+
 **Prefer:**
+
 ```rust,ignore
 fn write_row(writer: &mut Writer, tree_row: &TreeRow) -> io::Result<()> { ... }
 ```

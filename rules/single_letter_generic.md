@@ -8,10 +8,12 @@
 > generic type parameter has a single-letter name
 
 ## What it does
+
 Flags generic type parameters whose identifier is one ASCII
 letter (`T`, `U`, `K`, `V`, ...).
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue.
 Single-letter generic names propagate through the type
 signatures and bounds; they force every reader to scroll
@@ -24,13 +26,17 @@ can be silenced site-by-site with `#[allow]` or
 `#[expect]`.
 
 ## Example
+
 **Avoid:**
+
 ```rust,ignore
 pub fn collect_keys<K, V>(map: BTreeMap<K, V>) -> Vec<K> {
     /* fifty lines */
 }
 ```
+
 **Prefer:**
+
 ```rust,ignore
 pub fn collect_keys<Key, Value>(map: BTreeMap<Key, Value>) -> Vec<Key> {
     /* fifty lines */

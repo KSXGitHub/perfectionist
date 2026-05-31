@@ -8,6 +8,7 @@
 > `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`
 
 ## What it does
+
 Flags every use of [`thiserror`](https://docs.rs/thiserror) in
 the consumer crate. Three syntactic shapes trigger the lint:
 
@@ -51,6 +52,7 @@ project that hits it can suppress individual sites with
 `#[allow(perfectionist::prefer_derive_more_over_thiserror)]`.
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue. The
 catalogue picks `derive_more` for error formatting and source
 chaining. Mixing in `thiserror` fragments the attribute
@@ -60,7 +62,9 @@ project that wants the choice the other way around can disable
 this rule.
 
 ## Example
+
 **Avoid:**
+
 ```rust,ignore
 use thiserror::Error;
 
@@ -70,7 +74,9 @@ pub enum MyError {
     MissingField(String),
 }
 ```
+
 **Prefer:**
+
 ```rust,ignore
 use derive_more::{Display, Error};
 

@@ -8,10 +8,12 @@
 > `let` binding has a single-letter name
 
 ## What it does
+
 Flags `let x = ...;` bindings whose identifier is one ASCII
 letter.
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue.
 A descriptive `let` binding documents what the right-hand
 side computed; a single-letter name does not. The rule
@@ -20,11 +22,15 @@ set of exempt identifiers for the well-worn cases
 (unsigned counts).
 
 ## Example
+
 **Avoid:**
+
 ```rust,ignore
 let m = entry.metadata()?;
 ```
+
 **Prefer:**
+
 ```rust,ignore
 let metadata = entry.metadata()?;
 ```

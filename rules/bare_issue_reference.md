@@ -8,6 +8,7 @@
 > ambiguous bare `#NNN` issue / PR reference in comment
 
 ## What it does
+
 Flags bare `#NNN` issue / pull-request references in doc
 comments (`///`, `//!`) — and, when opted in, in plain `//`
 line comments. The autofix rewrites the reference; the
@@ -26,6 +27,7 @@ also resolve the ambiguity by enclosing the token in backticks
 `#`.
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue. A
 bare `#123` renders as literal text in CommonMark; only
 GitHub's markdown flavour autolinks the token, and only when
@@ -34,14 +36,18 @@ view. The link form renders portably across rustdoc, GitHub,
 and any other markdown engine.
 
 ## Example
+
 **Avoid:**
+
 ```rust,ignore
 /// Closes #123 and supersedes #124.
 ```
+
 **Prefer:** (with
 `repository = "https://github.com/owner/repo"` — `forge`
 is detected from the host), picking the issue link for one
 and the pull-request link for the other:
+
 ```rust,ignore
 /// Closes [#123](https://github.com/owner/repo/issues/123) and
 /// supersedes [#124](https://github.com/owner/repo/pull/124).

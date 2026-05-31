@@ -8,6 +8,7 @@
 > `#[allow]` / `#[expect]` attribute lacks an explanatory `reason = "..."` field
 
 ## What it does
+
 Requires every `#[allow(<lints>)]` and `#[expect(<lints>)]`
 attribute to carry an explanatory `reason = "..."` field.
 `#[allow]` and `#[expect]` are the two levels that fully
@@ -18,6 +19,7 @@ The check is purely local — the attribute itself — and does
 not depend on any inherited or ambient lint level.
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue.
 Suppressions outlive the conditions that justify them. A
 bare `#[allow(clippy::too_many_arguments)]` told the original
@@ -29,12 +31,16 @@ suppression, and rustc renders it back in `unfulfilled_lint_expectations`
 notes when a stale `#[expect]` is encountered.
 
 ## Example
+
 **Avoid:**
+
 ```rust,ignore
 #[allow(clippy::too_many_arguments)]
 fn build_fetcher(/* ... */) {}
 ```
+
 **Prefer:**
+
 ```rust,ignore
 #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
 fn build_fetcher(/* ... */) {}

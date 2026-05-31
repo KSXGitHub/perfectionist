@@ -8,6 +8,7 @@
 > unit-test code is in the wrong file or exceeds the inline-test budget
 
 ## What it does
+
 Enforces where a crate's unit-test code lives. Two independent
 axes are checked:
 
@@ -45,6 +46,7 @@ unit tests misplaced in a production file, so they are left
 untouched.
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue. Both
 source projects keep large test suites out of the production
 file, so the file an editor tab, a `grep` hit, or a diff shows
@@ -55,7 +57,9 @@ nested-vs-sibling choice are deliberately configurable because
 the exact budget and directory shape vary by project.
 
 ## Example
+
 **Avoid:**
+
 ```rust,ignore
 // File: foo.rs
 #[cfg(test)]
@@ -63,11 +67,14 @@ mod tests {
     /* ... 200 lines of test code ... */
 }
 ```
+
 **Prefer:**
+
 ```rust,ignore
 // File: foo.rs
 mod tests;
 ```
+
 ```rust,ignore
 // File: foo/tests.rs
 /* ... 200 lines of test code ... */
