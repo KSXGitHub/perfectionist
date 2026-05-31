@@ -8,6 +8,7 @@
 > `#[allow]` for a deterministically-firing lint should be `#[expect]`
 
 ## What it does
+
 Rewrites `#[allow(<lints>)]` to `#[expect(<lints>)]` when every
 named lint fires deterministically — a built-in rustc lint (not
 on the exempt list), a `clippy::*` / `rustdoc::*` lint, or a
@@ -28,6 +29,7 @@ lint in one configuration and not another — set
 `apply_to_outer_scopes = true` to opt in.
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue.
 A suppression often outlives the problem it suppressed.
 `#[allow]` stays silent forever, including after the underlying
@@ -41,12 +43,16 @@ at the site, so a future refactor that inadvertently fixes the
 issue is observed rather than hidden.
 
 ## Example
+
 **Avoid:**
+
 ```rust,ignore
 #[allow(clippy::too_many_arguments, reason = "matches pnpm's signature")]
 fn build_fetcher(/* ... */) {}
 ```
+
 **Prefer:**
+
 ```rust,ignore
 #[expect(clippy::too_many_arguments, reason = "matches pnpm's signature")]
 fn build_fetcher(/* ... */) {}

@@ -17,6 +17,7 @@ use crate::common::{DefaultState, resolve_string_set, resolved_state};
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Flags publicly-exposed error enums that lack a `#[non_exhaustive]`
     /// attribute. An enum is treated as an error enum when its name ends
     /// in `Error` (configurable) or it implements `std::error::Error`.
@@ -27,6 +28,7 @@ declare_tool_lint! {
     /// whole-crate "every item" sweep are configurable.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue. Adding
     /// a variant to an error enum is one of the most common reasons to
     /// publish a new minor version of an error-producing library, and
@@ -48,14 +50,18 @@ declare_tool_lint! {
     /// ```
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// #[derive(Debug)]
     /// pub enum RuntimeError {
     ///     SerializationFailure,
     /// }
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// #[derive(Debug)]
     /// #[non_exhaustive]

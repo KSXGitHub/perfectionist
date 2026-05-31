@@ -8,6 +8,7 @@
 > error-shaped type is missing `#[non_exhaustive]`
 
 ## What it does
+
 Flags publicly-exposed error enums that lack a `#[non_exhaustive]`
 attribute. An enum is treated as an error enum when its name ends
 in `Error` (configurable) or it implements `std::error::Error`.
@@ -18,6 +19,7 @@ itself an enum) follow the same rule.
 whole-crate "every item" sweep are configurable.
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue. Adding
 a variant to an error enum is one of the most common reasons to
 publish a new minor version of an error-producing library, and
@@ -39,14 +41,18 @@ enable = ["non_exhaustive_error"]
 ```
 
 ## Example
+
 **Avoid:**
+
 ```rust,ignore
 #[derive(Debug)]
 pub enum RuntimeError {
     SerializationFailure,
 }
 ```
+
 **Prefer:**
+
 ```rust,ignore
 #[derive(Debug)]
 #[non_exhaustive]

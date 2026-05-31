@@ -14,10 +14,12 @@ use crate::common::{
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Flags `let x = ...;` bindings whose identifier is one ASCII
     /// letter.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue.
     /// A descriptive `let` binding documents what the right-hand
     /// side computed; a single-letter name does not. The rule
@@ -26,11 +28,15 @@ declare_tool_lint! {
     /// (unsigned counts).
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// let m = entry.metadata()?;
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// let metadata = entry.metadata()?;
     /// ```

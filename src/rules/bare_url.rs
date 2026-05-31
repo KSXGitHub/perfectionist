@@ -14,6 +14,7 @@ use crate::url_scan::{DEFAULT_FORWARD_SCHEMES, TrailingClass, classify_trailing,
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Flags bare `http://` and `https://` URLs in doc comments
     /// (`///`, `//!`) and regular comments (`//`, `/* */`). Wrapping
     /// the URL in `<...>` (or using the labelled `[text](url)` form)
@@ -21,17 +22,22 @@ declare_tool_lint! {
     /// markdown, and rustdoc.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue. Bare
     /// URLs rely on the renderer's autolinkification: rustdoc renders
     /// them, GitHub renders them, but plain CommonMark does not. The
     /// `<...>` form is the explicit, portable spelling.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// /// See https://example.com for details.
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// /// See <https://example.com> for details.
     /// ```

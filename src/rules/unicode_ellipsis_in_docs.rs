@@ -10,6 +10,7 @@ use crate::markdown::{position_in_skip, scan_code_regions};
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in doc comments —
     /// `///` and `//!` line forms and the `/** */` / `/*! */` block
     /// forms. Prefer the three-ASCII-dot form `...`. Regular `//` and
@@ -17,6 +18,7 @@ declare_tool_lint! {
     /// (`perfectionist::unicode_ellipsis_in_comments`).
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue.
     /// ASCII `...` survives every encoding round-trip, every terminal,
     /// every copy-paste, every `grep` invocation, and every `git diff`
@@ -27,11 +29,15 @@ declare_tool_lint! {
     /// technical writing.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// /// Walk the tree, collecting sizes…
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// /// Walk the tree, collecting sizes...
     /// ```

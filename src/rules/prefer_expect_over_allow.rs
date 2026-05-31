@@ -16,6 +16,7 @@ mod tests;
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Rewrites `#[allow(<lints>)]` to `#[expect(<lints>)]` when every
     /// named lint fires deterministically — a built-in rustc lint (not
     /// on the exempt list), a `clippy::*` / `rustdoc::*` lint, or a
@@ -36,6 +37,7 @@ declare_tool_lint! {
     /// `apply_to_outer_scopes = true` to opt in.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue.
     /// A suppression often outlives the problem it suppressed.
     /// `#[allow]` stays silent forever, including after the underlying
@@ -49,12 +51,16 @@ declare_tool_lint! {
     /// issue is observed rather than hidden.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// #[allow(clippy::too_many_arguments, reason = "matches pnpm's signature")]
     /// fn build_fetcher(/* ... */) {}
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// #[expect(clippy::too_many_arguments, reason = "matches pnpm's signature")]
     /// fn build_fetcher(/* ... */) {}

@@ -13,6 +13,7 @@ use crate::common::{DefaultState, resolved_state};
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Enforces a project-wide ordering of trait names inside a single
     /// `#[derive(...)]` list. Two styles are configurable via
     /// `style`:
@@ -29,6 +30,7 @@ declare_tool_lint! {
     /// author.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue. The
     /// trait order inside `#[derive(...)]` has no semantic effect:
     /// `#[derive(Debug, Clone)]` and `#[derive(Clone, Debug)]`
@@ -48,14 +50,18 @@ declare_tool_lint! {
     /// ```
     ///
     /// ### Example
+    ///
     /// Under `style = "alphabetical"`:
     ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// #[derive(Debug, Clone, Copy)]
     /// struct Point;
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// #[derive(Clone, Copy, Debug)]
     /// struct Point;

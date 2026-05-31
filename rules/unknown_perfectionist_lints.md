@@ -8,12 +8,14 @@
 > lint-control attribute references a `perfectionist::*` lint that this plugin does not register
 
 ## What it does
+
 Flags lint-control attributes (`allow`, `warn`, `deny`,
 `forbid`, `expect`, including under `cfg_attr`) whose lint
 name starts with `perfectionist::` but does not name a lint
 this plugin actually registers.
 
 ## Why is this bad?
+
 Typos and stale references in `#[allow(perfectionist::...)]`
 silently neutralise the suppression they were written for.
 rustc's own `unknown_lints` covers tool-prefixed names
@@ -21,12 +23,16 @@ inconsistently; this rule fills the gap and offers a
 "did you mean" hint against the registered set.
 
 ## Example
+
 **Bad:**
+
 ```rust,ignore
 #[allow(perfectionist::unicode_ellipsis_in_comment)] // typo
 fn legacy() {}
 ```
+
 **Good:**
+
 ```rust,ignore
 #[allow(perfectionist::unicode_ellipsis_in_comments)]
 fn legacy() {}

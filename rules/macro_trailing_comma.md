@@ -8,6 +8,7 @@
 > macro invocation does not follow rustfmt's vertical trailing-comma policy
 
 ## What it does
+
 For function-like macro invocations whose top-level arguments are
 comma-separated, enforces rustfmt's `trailing_comma = "Vertical"`
 policy that rustfmt itself does not apply inside macro bodies:
@@ -24,6 +25,7 @@ Attribute-style invocations (`#[derive(...)]`, `#[serde(...)]`,
 etc.) are out of scope.
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue. rustfmt's
 default `trailing_comma = "Vertical"` policy keeps argument lists
 uniform: every multi-line list ends with a comma, every single-line
@@ -40,7 +42,9 @@ own line, separate from the delimiter, and strips any comma
 added to the compact shape. The two tools have to agree.
 
 ## Example
+
 **Avoid:**
+
 ```rust,ignore
 let xs = vec![
     1,
@@ -49,7 +53,9 @@ let xs = vec![
 ];
 let ys = vec![1, 2, 3,];
 ```
+
 **Prefer:**
+
 ```rust,ignore
 let xs = vec![
     1,

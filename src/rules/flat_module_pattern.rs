@@ -10,12 +10,14 @@ use crate::common::{DefaultState, resolved_state};
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Forbids the `module/mod.rs` layout for submodules. Each
     /// submodule should be defined by a sibling file named after
     /// the module (`module.rs`), with any nested children placed
     /// inside the `module/` directory next to it.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue.
     /// The flat layout keeps the file name unique to its module,
     /// so editors, terminal tabs, and `grep` results identify the
@@ -24,6 +26,7 @@ declare_tool_lint! {
     /// don't disambiguate by directory.
     ///
     /// ### Example
+    ///
     /// ```text
     /// // Bad
     /// src/foo/mod.rs

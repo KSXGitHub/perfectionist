@@ -8,6 +8,7 @@
 > closure parameter has a single-letter name
 
 ## What it does
+
 Flags closure parameters whose identifier is one ASCII
 letter, unless the closure is a trivial single-expression
 callback or the identifier is in the conventional-name
@@ -48,6 +49,7 @@ are not structurally trivial, so the exempt set is what
 keeps them out of the diagnostic.
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue.
 A multi-line closure body whose parameter is a single
 letter forces the reader to scroll back to the closure
@@ -57,14 +59,18 @@ trivial-callback exception covers `sort_by(|a, b| ...)` and
 parameter's role is unambiguous from the call site.
 
 ## Example
+
 **Avoid:**
+
 ```rust,ignore
 .map(|t| {
     let columns = build_columns(t);
     format_row(&columns)
 })
 ```
+
 **Prefer:**
+
 ```rust,ignore
 .map(|tree_row| {
     let columns = build_columns(tree_row);

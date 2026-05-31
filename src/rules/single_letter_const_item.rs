@@ -14,10 +14,12 @@ use crate::common::{
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Flags `const` items (free, associated, and block-level)
     /// whose identifier is one ASCII letter.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue.
     /// A single-letter `const` item is opaque at every use site,
     /// and the item's scope (module-wide or crate-wide for
@@ -26,11 +28,15 @@ declare_tool_lint! {
     /// carries its own documentation.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// const N: usize = 2;
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// const DIMENSION_COUNT: usize = 2;
     /// ```

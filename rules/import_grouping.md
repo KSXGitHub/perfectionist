@@ -8,6 +8,7 @@
 > import grouping does not match the configured `import_grouping.style`
 
 ## What it does
+
 Enforces a single project-wide *grouping* style for the run of
 `use` statements at the top of a module body, chosen via `style`:
 - `single_group` — every `use` sits in one contiguous block with
@@ -26,6 +27,7 @@ Whether items within each `use` are merged or split is the job of
 `perfectionist::import_granularity`.
 
 ## Why restrict this?
+
 This is a stylistic preference, not a correctness issue. Neither
 layout is wrong in the abstract — the violation is a mismatch
 with the project's configured `style`. Enforcing one keeps import
@@ -35,15 +37,19 @@ only on the nightly channel; this lint gives stable-toolchain
 projects a hard CI check instead of a silent reformat.
 
 ## Example
+
 Under the default `style = "grouped"`:
 
 **Avoid:**
+
 ```rust,ignore
 use clap::Parser;
 use std::time::Duration;
 use crate::args::Args;
 ```
+
 **Prefer:**
+
 ```rust,ignore
 use std::time::Duration;
 

@@ -18,6 +18,7 @@ use triviality::{is_trivial_wrapper, parent_call_callee_name, single_expression_
 
 declare_tool_lint! {
     /// ### What it does
+    ///
     /// Flags closure parameters whose identifier is one ASCII
     /// letter, unless the closure is a trivial single-expression
     /// callback or the identifier is in the conventional-name
@@ -58,6 +59,7 @@ declare_tool_lint! {
     /// keeps them out of the diagnostic.
     ///
     /// ### Why restrict this?
+    ///
     /// This is a stylistic preference, not a correctness issue.
     /// A multi-line closure body whose parameter is a single
     /// letter forces the reader to scroll back to the closure
@@ -67,14 +69,18 @@ declare_tool_lint! {
     /// parameter's role is unambiguous from the call site.
     ///
     /// ### Example
+    ///
     /// **Avoid:**
+    ///
     /// ```rust,ignore
     /// .map(|t| {
     ///     let columns = build_columns(t);
     ///     format_row(&columns)
     /// })
     /// ```
+    ///
     /// **Prefer:**
+    ///
     /// ```rust,ignore
     /// .map(|tree_row| {
     ///     let columns = build_columns(tree_row);
