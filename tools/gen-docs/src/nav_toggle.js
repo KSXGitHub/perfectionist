@@ -328,12 +328,17 @@
     closeSidebar();
     var hash = link.hash;
     if (!hash) return;
-    var target;
+    // Rule fragments are `#/rule/<name>`, whose `/` characters make
+    // them invalid CSS id selectors — `querySelector("#/rule/...")`
+    // would throw. Resolve the raw id with getElementById instead,
+    // which matches the literal `id` attribute and accepts slashes.
+    var id = hash.slice(1);
     try {
-      target = document.querySelector(hash);
+      id = decodeURIComponent(id);
     } catch (_e) {
-      return;
+      // Malformed percent-encoding: fall back to the raw fragment.
     }
+    var target = document.getElementById(id);
     if (!target) return;
     target.setAttribute("tabindex", "-1");
     target.focus({ preventScroll: true });

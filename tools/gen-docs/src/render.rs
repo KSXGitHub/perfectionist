@@ -236,8 +236,19 @@ fn state_badge(default_state: DefaultState) -> Markup {
     }
 }
 
+/// Build the in-page anchor for a rule. The fragment is
+/// `/rule/<kebab-name>` — a `/rule/` prefix plus the rule's
+/// unnamespaced name with `_` swapped for `-` — so a permalink
+/// reads `#/rule/qualified-paths` rather than the old
+/// `#perfectionist-qualified_paths`. The leading slash makes the
+/// fragment look like a route, and the value doubles as the
+/// target element's `id`. Slashes are legal in an HTML `id`
+/// (only ASCII whitespace is forbidden) and in a URL fragment,
+/// but they are *not* legal in a bare CSS id selector, so any JS
+/// that resolves the fragment must use `getElementById`, not
+/// `querySelector("#" + …)`.
 fn anchor_for(namespaced: &str) -> String {
-    namespaced.replace("::", "-")
+    format!("/rule/{}", unnamespaced(namespaced).replace('_', "-"))
 }
 
 fn unnamespaced(namespaced: &str) -> &str {
@@ -281,8 +292,8 @@ mod tests {
     /// on adjacent-sibling ordering, so tests that want to count
     /// or inspect sidebar entries should do so against this slice
     /// — not the whole page, where the index table and rule
-    /// articles emit substrings (`href="#perfectionist-*"`,
-    /// `<code>name</code>`, `id="perfectionist-*"`) that overlap
+    /// articles emit substrings (`href="#/rule/*"`,
+    /// `<code>name</code>`, `id="/rule/*"`) that overlap
     /// the sidebar's markup.
     fn sidebar_list(html: &str) -> &str {
         let open = "<ul class=\"nav-sidebar-list\">";
@@ -293,6 +304,18 @@ mod tests {
                 .find(close)
                 .expect("sidebar <ul> unterminated");
         &html[start..end]
+    }
+
+    #[test]
+    fn anchor_for_builds_a_kebab_cased_rule_route() {
+        // The `/rule/` prefix plus a kebab-cased name: a single
+        // word is unchanged, a multi-word name has every `_`
+        // turned into `-`. The namespace prefix is dropped.
+        assert_eq!(anchor_for("perfectionist::alpha"), "/rule/alpha");
+        assert_eq!(
+            anchor_for("perfectionist::beta_gamma_delta"),
+            "/rule/beta-gamma-delta",
+        );
     }
 
     #[test]
@@ -358,17 +381,17 @@ mod tests {
         // the index table's rows and the rule articles can't make
         // these assertions pass on their own.
         assert_eq!(sidebar.matches("<li>").count(), rules.len());
+        assert!(sidebar.contains("<li><a href=\"#/rule/alpha\"><code>alpha</code></a></li>"));
+        // A multi-word rule name is rendered as-is (`beta_gamma`)
+        // but its anchor is kebab-cased (`beta-gamma`).
         assert!(
-            sidebar.contains("<li><a href=\"#perfectionist-alpha\"><code>alpha</code></a></li>")
+            sidebar.contains("<li><a href=\"#/rule/beta-gamma\"><code>beta_gamma</code></a></li>")
         );
-        assert!(sidebar.contains(
-            "<li><a href=\"#perfectionist-beta_gamma\"><code>beta_gamma</code></a></li>"
-        ));
         // The rule articles those anchors resolve to must exist
         // outside the sidebar slice, otherwise the sidebar links
         // dangle.
-        assert!(html.contains("id=\"perfectionist-alpha\""));
-        assert!(html.contains("id=\"perfectionist-beta_gamma\""));
+        assert!(html.contains("id=\"/rule/alpha\""));
+        assert!(html.contains("id=\"/rule/beta-gamma\""));
     }
 
     #[test]
@@ -463,7 +486,7 @@ mod tests {
         let html = render_page(&[fake_rule("alpha")], &fake_context());
         assert!(
             html.contains(
-                "<a class=\"rule-anchor\" href=\"#perfectionist-alpha\" \
+                "<a class=\"rule-anchor\" href=\"#/rule/alpha\" \
                  aria-label=\"Permalink to this rule\"></a>"
             ),
             "rule heading must emit a left-side permalink anchor to its own id",
