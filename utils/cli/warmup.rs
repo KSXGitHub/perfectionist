@@ -11,10 +11,11 @@
 //! Takes the perfectionist crate directory as a single argument; the
 //! shared target dir is computed relative to it.
 
-use clap::Parser;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Instant;
+
+use clap::Parser;
 
 #[derive(Parser)]
 #[clap(about = "Pre-warm the shared integration-test target dir")]

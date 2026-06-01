@@ -42,7 +42,10 @@ pub(crate) fn parse_cargo_lock_version(toml: &str) -> Result<String, RuntimeErro
     let lock: CargoLockFile = toml
         .pipe(toml::from_str)
         .map_err(RuntimeError::ParseCargoLock)?;
-    let mut matches = lock.package.into_iter().filter(|p| p.name == PACKAGE_NAME);
+    let mut matches = lock
+        .package
+        .into_iter()
+        .filter(|pkg| pkg.name == PACKAGE_NAME);
     let first = matches.next().ok_or(RuntimeError::NoLockPackageEntry)?;
     if matches.next().is_some() {
         return Err(RuntimeError::DuplicateLockPackageEntry);
