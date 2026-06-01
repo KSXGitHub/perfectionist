@@ -66,6 +66,15 @@ mod explicit_self {
     use crate::thing::{self, T};
 }
 
+// Good: the sibling-split form of the very same imports — the bare module
+// `thing` next to the item `T`. It is already one `use` per crate root
+// and preserves every namespace `thing` binds, so it is the minimal
+// crate-granularity shape and is left alone — never "collapsed" further
+// into the `self` form, which the rule cannot prove is equivalent.
+mod sibling_form {
+    use crate::{thing, thing::T};
+}
+
 // A name that is both a module and a value: `dual` is a module *and* a
 // function re-exported at the crate root under the same name.
 mod dual {
