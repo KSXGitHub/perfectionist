@@ -10,10 +10,6 @@ use super::model::{Leaf, LeafItem};
 
 pub(super) fn render(style: Style, leaves: &[Leaf]) -> Vec<String> {
     match style {
-        // The default `crate` shape keeps a bare item that shares a
-        // module's name as its own sibling entry (`{thing, thing::T}`)
-        // rather than folding it into `self`, preserving every namespace
-        // the item binds. See [`render_crate_self`].
         Style::Crate => render_crate(leaves, false),
         Style::Module => render_module(leaves),
         Style::Item => render_item(leaves),
