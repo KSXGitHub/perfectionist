@@ -69,10 +69,6 @@ jobs:
         timeout-minutes: 1
         continue-on-error: true
         with:
-          # The pinned nightly + rustc-dev + rust-src + llvm-tools is
-          # byte-identical every run, so cache `~/.rustup` and let
-          # `Install Rust` find the toolchain already present instead of
-          # re-downloading and re-extracting it each time.
           path: ~/.rustup
           key: rustup-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}
 

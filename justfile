@@ -59,14 +59,7 @@ self-lint:
 warmup-integration-tests:
   cargo run {{locked}} --package _utils --bin warmup -- "$(pwd)"
 
-# Install cargo-dylint and dylint-link into `.dev-tools/`.
-#
-# `_dev_tools` runs before dylint-link exists, so it builds with the
-# system `cc` linker via `--config`. Build it into a SEPARATE target dir
-# (`target/dev-tools-cc`) so its cc-linked dependency artifacts never land
-# in `target/`: sharing that dir with the main dylint-link build flips
-# every shared dep to `ConfigSettingsChanged` and forces a full recompile
-# despite a cache hit.
+# Install cargo-dylint and dylint-link into `.dev-tools/`
 install-dev-tools:
   cargo --config 'target."cfg(all())".linker="cc"' run --locked --target-dir target/dev-tools-cc --package _dev_tools -- "$(pwd)" install
 
@@ -83,13 +76,11 @@ install-git-hooks:
 uninstall-git-hooks:
   git config --unset core.hooksPath 2>/dev/null || true
 
-# Print the dylint_linting version pinned in Cargo.lock.
-# (Own target dir for the `cc` linker — see `install-dev-tools`.)
+# Print the dylint_linting version pinned in Cargo.lock
 dylint-version:
   @cargo --config 'target."cfg(all())".linker="cc"' run --locked --target-dir target/dev-tools-cc --quiet --package _dev_tools -- "$(pwd)" dylint-version
 
-# Append `version=<dylint version>` to $GITHUB_OUTPUT (for CI).
-# (Own target dir for the `cc` linker — see `install-dev-tools`.)
+# Append `version=<dylint version>` to $GITHUB_OUTPUT (for CI)
 gha-dylint-version:
   cargo --config 'target."cfg(all())".linker="cc"' run --locked --target-dir target/dev-tools-cc --package _dev_tools -- "$(pwd)" gha-dylint-version
 
