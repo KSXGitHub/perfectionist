@@ -1,7 +1,6 @@
 //! The per-crate HIR walk. Classifies every item as production or
-//! test, accumulates each source file's inline-test footprint, drives
-//! the external-module layout check, and emits the inline-style
-//! diagnostics once per file.
+//! test, accumulates each source file's inline-test footprint, and
+//! emits the inline-style diagnostics once per file.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -14,8 +13,8 @@ use rustc_span::hygiene::ExpnKind;
 use rustc_span::source_map::SourceMap;
 use rustc_span::{BytePos, SourceFile, Span, Symbol};
 
-use super::config::{InlineStyle, UnitTestFileLayout};
-use super::{UNIT_TEST_FILE_LAYOUT, layout};
+use super::config::{InlineStyle, InlineTestFootprint};
+use super::{INLINE_TEST_FOOTPRINT, paths};
 
 /// One inline test item charged to a file's footprint.
 struct TestItem {
@@ -43,11 +42,11 @@ struct FileAcc {
     file: Option<Arc<SourceFile>>,
 }
 
-pub(super) fn run(state: &UnitTestFileLayout, cx: &LateContext<'_>) {
+pub(super) fn run(state: &InlineTestFootprint, cx: &LateContext<'_>) {
     // Integration tests, benchmarks, and examples are separate crates
     // Cargo hands the rule under `--all-targets`; their test code is the
     // target itself, not misplaced unit tests, so leave them untouched.
-    if layout::is_separate_test_target(cx) {
+    if paths::is_separate_test_target(cx) {
         return;
     }
     let mut files: HashMap<BytePos, FileAcc> = HashMap::new();
@@ -58,7 +57,7 @@ pub(super) fn run(state: &UnitTestFileLayout, cx: &LateContext<'_>) {
 }
 
 fn walk(
-    state: &UnitTestFileLayout,
+    state: &InlineTestFootprint,
     cx: &LateContext<'_>,
     module: &Mod<'_>,
     files: &mut HashMap<BytePos, FileAcc>,
@@ -69,7 +68,7 @@ fn walk(
 }
 
 fn classify(
-    state: &UnitTestFileLayout,
+    state: &InlineTestFootprint,
     cx: &LateContext<'_>,
     item: &Item<'_>,
     files: &mut HashMap<BytePos, FileAcc>,
@@ -110,19 +109,15 @@ fn classify(
     if let ItemKind::Mod(ident, module) = &item.kind {
         match (cfg_test, is_external_module(cx, item.span, module)) {
             // Inline `#[cfg(test)] mod X { ... }`: one footprint item
-            // (its whole block), counted when its name is in scope. The
-            // body is all test code, so we do not descend into it.
+            // (its whole block). The body is all test code, so we do not
+            // descend into it.
             (true, false) => {
-                if state.module_name_in_scope(ident.name) {
-                    record_test(cx, item.span, Some(ident.name), files);
-                }
+                record_test(cx, item.span, Some(ident.name), files);
             }
-            // External `#[cfg(test)] mod X;`: layout-checked, neutral
+            // External `#[cfg(test)] mod X;`: already extracted, neutral
             // for the inline footprint. Its file is a valid extraction
             // target, so we do not descend into it.
-            (true, true) => {
-                layout::check_external_mod(state, cx, item, ident.name, module);
-            }
+            (true, true) => {}
             // Production module: count it and descend into its body
             // (inline children share this file; an external child file
             // gets its own accumulator entry keyed by its own span).
@@ -135,12 +130,9 @@ fn classify(
     }
 
     // Bare test items (`#[test] fn`, `#[cfg(test)] fn`, any other
-    // `#[cfg(test)]` item) contribute to the footprint only when no
-    // `test_module_names` filter narrows it to named modules.
+    // `#[cfg(test)]` item) contribute to the footprint.
     if is_test {
-        if state.test_module_names.is_empty() {
-            record_test(cx, item.span, None, files);
-        }
+        record_test(cx, item.span, None, files);
     } else {
         record_production(cx, item.span, files);
     }
@@ -194,7 +186,7 @@ fn line_count(source_map: &SourceMap, span: Span) -> usize {
         .unwrap_or(0)
 }
 
-fn emit_inline_style(state: &UnitTestFileLayout, cx: &LateContext<'_>, acc: &FileAcc) {
+fn emit_inline_style(state: &InlineTestFootprint, cx: &LateContext<'_>, acc: &FileAcc) {
     if acc.test_items.is_empty() || acc.production_count == 0 {
         return;
     }
@@ -206,11 +198,11 @@ fn emit_inline_style(state: &UnitTestFileLayout, cx: &LateContext<'_>, acc: &Fil
             for item in &acc.test_items {
                 span_lint_and_help(
                     cx,
-                    UNIT_TEST_FILE_LAYOUT,
+                    INLINE_TEST_FOOTPRINT,
                     item.span,
                     "inline test code should live in an external module",
                     None,
-                    help_extract(state, file, item.module_name),
+                    help_extract(file, item.module_name),
                 );
             }
         }
@@ -236,11 +228,11 @@ fn emit_inline_style(state: &UnitTestFileLayout, cx: &LateContext<'_>, acc: &Fil
             };
             span_lint_and_help(
                 cx,
-                UNIT_TEST_FILE_LAYOUT,
+                INLINE_TEST_FOOTPRINT,
                 union_span(acc.test_items.iter().map(|item| item.span)),
                 message,
                 None,
-                help_extract(state, file, common_module_name(&acc.test_items)),
+                help_extract(file, common_module_name(&acc.test_items)),
             );
         }
     }
@@ -259,15 +251,9 @@ fn common_module_name(items: &[TestItem]) -> Option<Symbol> {
 /// Help text naming the canonical extraction target. `module_name` is
 /// the inline module's own identifier when known; bare test items have
 /// none and fall back to the conventional `tests`.
-fn help_extract(
-    state: &UnitTestFileLayout,
-    file: &SourceFile,
-    module_name: Option<Symbol>,
-) -> String {
+fn help_extract(file: &SourceFile, module_name: Option<Symbol>) -> String {
     let name = module_name.map_or_else(|| "tests".to_owned(), |name| name.to_string());
-    match layout::real_path(file)
-        .and_then(|path| layout::canonical_target(&path, &name, state.external_layout))
-    {
+    match paths::real_path(file).and_then(|path| paths::canonical_target(&path, &name)) {
         Some(target) => format!(
             "move the inline test code into a separate file (e.g. `{}`) and replace it with an \
              external `mod {name};` declaration",

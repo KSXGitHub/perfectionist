@@ -1,4 +1,4 @@
-//! Integration tests for `unit_test_file_layout`.
+//! Integration tests for `inline_test_footprint`.
 //!
 //! Each test materialises a minimal Cargo project under a `TempDir` and
 //! runs `cargo dylint --all -- --all-targets` against it (sharing the
@@ -6,14 +6,14 @@
 //! the rule can only observe `#[cfg(test)]` / `#[test]` code in a build
 //! where `cfg(test)` is active, which is the unit-test target that flag
 //! adds. Per-rule configuration is appended to the fixture's
-//! `dylint.toml` as a quoted `["perfectionist::unit_test_file_layout"]`
+//! `dylint.toml` as a quoted `["perfectionist::inline_test_footprint"]`
 //! table; pass `""` for the default configuration.
 
 pub mod _utils;
 
 use _utils::{cargo_manifest_dir, run_project_with_config, shared_target_dir};
 
-const LINT: &str = "perfectionist::unit_test_file_layout";
+const LINT: &str = "perfectionist::inline_test_footprint";
 
 /// Build a `src/big.rs` whose inline `mod tests` block alone is well
 /// over the default 50-line budget.
@@ -33,7 +33,7 @@ fn big_inline_test_file() -> String {
 fn flags_inline_footprint_over_budget() {
     let big = big_inline_test_file();
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_inline_over_budget",
+        "fixture_itf_inline_over_budget",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[("src/lib.rs", "pub mod big;\n"), ("src/big.rs", &big)],
@@ -57,7 +57,7 @@ fn flags_inline_footprint_over_budget() {
 #[test]
 fn does_not_flag_small_inline_footprint() {
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_inline_under_budget",
+        "fixture_itf_inline_under_budget",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
@@ -76,10 +76,14 @@ fn does_not_flag_small_inline_footprint() {
     );
 }
 
+/// An external `#[cfg(test)] mod tests;` is already extracted, so it is
+/// neutral for the footprint: it charges nothing and the all-test file
+/// it points at is itself exempt. No warning regardless of where on
+/// disk the extracted file sits.
 #[test]
-fn does_not_flag_external_nested_layout() {
+fn does_not_flag_external_test_module() {
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_external_nested",
+        "fixture_itf_external_module",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
@@ -102,10 +106,14 @@ fn does_not_flag_external_nested_layout() {
     );
 }
 
+/// The on-disk position of an extracted test file is not the rule's
+/// concern: a flattened `src/sib_tests.rs` sibling (loaded via `#[path]`)
+/// is just as acceptable as the nested form. The rule only counts
+/// inline footprint, so this draws no warning.
 #[test]
-fn flags_external_module_in_sibling_location() {
+fn does_not_flag_external_module_regardless_of_path() {
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_external_sibling_under_nested",
+        "fixture_itf_external_sibling_path",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
@@ -123,86 +131,15 @@ fn flags_external_module_in_sibling_location() {
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     assert!(
-        stderr.contains("not in the canonical nested location"),
-        "expected the layout message; stderr was:\n{stderr}",
-    );
-    assert!(
-        stderr.contains("src/sib/tests.rs"),
-        "expected the nested target in the help; stderr was:\n{stderr}",
-    );
-}
-
-#[test]
-fn flags_unexpected_sibling() {
-    let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_unexpected_sibling",
-        cargo_manifest_dir(),
-        &shared_target_dir(),
-        &[
-            ("src/lib.rs", "pub mod good;\n"),
-            (
-                "src/good.rs",
-                "pub fn parse() -> i32 {\n    1\n}\n\n#[cfg(test)]\nmod tests;\n",
-            ),
-            (
-                "src/good/tests.rs",
-                "#[test]\nfn works() { assert_eq!(super::parse(), 1); }\n",
-            ),
-            (
-                "src/good_tests.rs",
-                "// stray file from a half-done migration\n",
-            ),
-        ],
-        "",
-    );
-    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
-    assert!(
-        stderr.contains("unexpected sibling test file"),
-        "expected the unexpected-sibling message; stderr was:\n{stderr}",
-    );
-    assert!(
-        stderr.contains("src/good_tests.rs"),
-        "expected the stray sibling path in the help; stderr was:\n{stderr}",
-    );
-}
-
-/// A `<stem>_<name>.rs` that is itself a live module (loaded by its own
-/// `mod` declaration) is not a migration straggler, so it must not be
-/// flagged for deletion even when a correct nested test file coexists.
-#[test]
-fn does_not_flag_loaded_module_as_unexpected_sibling() {
-    let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_loaded_not_sibling",
-        cargo_manifest_dir(),
-        &shared_target_dir(),
-        &[
-            ("src/lib.rs", "pub mod good;\npub mod good_tests;\n"),
-            (
-                "src/good.rs",
-                "pub fn parse() -> i32 {\n    1\n}\n\n#[cfg(test)]\nmod tests;\n",
-            ),
-            (
-                "src/good/tests.rs",
-                "#[test]\nfn works() { assert_eq!(super::parse(), 1); }\n",
-            ),
-            (
-                "src/good_tests.rs",
-                "pub fn unrelated_helper() -> i32 {\n    2\n}\n",
-            ),
-        ],
-        "",
-    );
-    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
-    assert!(
-        !stderr.contains("unexpected sibling test file"),
-        "a genuinely loaded module must not be flagged as a stray sibling; stderr was:\n{stderr}",
+        !stderr.contains(LINT),
+        "the on-disk path of an extracted test file is not checked; stderr was:\n{stderr}",
     );
 }
 
 #[test]
 fn exempts_file_of_only_test_items() {
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_all_test_file",
+        "fixture_itf_all_test_file",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
@@ -236,7 +173,7 @@ fn exempts_all_test_crate_root() {
     }
     lib.push_str("}\n");
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_all_test_crate_root",
+        "fixture_itf_all_test_crate_root",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[("src/lib.rs", &lib)],
@@ -264,7 +201,7 @@ fn flags_inline_tests_when_production_is_macro_generated() {
     }
     foo.push_str("}\n");
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_macro_production",
+        "fixture_itf_macro_production",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
@@ -297,7 +234,7 @@ fn help_names_the_actual_inline_module() {
     }
     foo.push_str("}\n");
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_named_module_help",
+        "fixture_itf_named_module_help",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[("src/lib.rs", "pub mod foo;\n"), ("src/foo.rs", &foo)],
@@ -334,7 +271,7 @@ fn integration_test_body() -> String {
 #[test]
 fn does_not_flag_integration_tests() {
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_integration_tests",
+        "fixture_itf_integration_tests",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
@@ -357,7 +294,7 @@ fn does_not_flag_integration_tests() {
 #[test]
 fn does_not_flag_integration_test_subdir_main() {
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_integration_subdir",
+        "fixture_itf_integration_subdir",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
@@ -380,7 +317,7 @@ fn does_not_flag_integration_test_subdir_main() {
 #[test]
 fn does_not_flag_integration_test_named_main() {
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_integration_named_main",
+        "fixture_itf_integration_named_main",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
@@ -403,7 +340,7 @@ fn does_not_flag_integration_test_named_main() {
 #[test]
 fn flags_equivalent_body_in_src_module() {
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_src_body_positive_control",
+        "fixture_itf_src_body_positive_control",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
@@ -427,7 +364,7 @@ fn flags_equivalent_body_in_src_module() {
 #[test]
 fn does_not_flag_benchmarks() {
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_benchmarks",
+        "fixture_itf_benchmarks",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
@@ -446,7 +383,7 @@ fn does_not_flag_benchmarks() {
 #[test]
 fn external_only_flags_inline_tests() {
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_external_only",
+        "fixture_itf_external_only",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
@@ -456,63 +393,11 @@ fn external_only_flags_inline_tests() {
                 "pub fn negate(value: i32) -> i32 {\n    -value\n}\n\n#[cfg(test)]\nmod tests {\n    #[test]\n    fn works() { assert_eq!(super::negate(1), -1); }\n}\n",
             ),
         ],
-        "[\"perfectionist::unit_test_file_layout\"]\ninline_style = \"external_only\"\n",
+        "[\"perfectionist::inline_test_footprint\"]\ninline_style = \"external_only\"\n",
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     assert!(
         stderr.contains("inline test code should live in an external module"),
         "expected the external_only message; stderr was:\n{stderr}",
-    );
-}
-
-#[test]
-fn sibling_layout_accepts_flattened_form() {
-    let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_sibling_layout",
-        cargo_manifest_dir(),
-        &shared_target_dir(),
-        &[
-            ("src/lib.rs", "pub mod sib;\n"),
-            (
-                "src/sib.rs",
-                "pub fn parse() -> i32 {\n    1\n}\n\n#[cfg(test)]\n#[path = \"sib_tests.rs\"]\nmod tests;\n",
-            ),
-            (
-                "src/sib_tests.rs",
-                "#[test]\nfn works() { assert_eq!(super::parse(), 1); }\n",
-            ),
-        ],
-        "[\"perfectionist::unit_test_file_layout\"]\nexternal_layout = \"sibling\"\n",
-    );
-    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
-    assert!(
-        !stderr.contains(LINT),
-        "sibling layout must accept the flattened form; stderr was:\n{stderr}",
-    );
-}
-
-#[test]
-fn any_layout_skips_the_location_check() {
-    let (_temp, stderr, success) = run_project_with_config(
-        "fixture_utfl_any_layout",
-        cargo_manifest_dir(),
-        &shared_target_dir(),
-        &[
-            ("src/lib.rs", "pub mod sib;\n"),
-            (
-                "src/sib.rs",
-                "pub fn parse() -> i32 {\n    1\n}\n\n#[cfg(test)]\n#[path = \"sib_tests.rs\"]\nmod tests;\n",
-            ),
-            (
-                "src/sib_tests.rs",
-                "#[test]\nfn works() { assert_eq!(super::parse(), 1); }\n",
-            ),
-        ],
-        "[\"perfectionist::unit_test_file_layout\"]\nexternal_layout = \"any\"\n",
-    );
-    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
-    assert!(
-        !stderr.contains(LINT),
-        "the `any` layout must skip the location check; stderr was:\n{stderr}",
     );
 }
