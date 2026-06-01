@@ -33,8 +33,8 @@ fn fake_context() -> RenderContext<'static> {
 /// on adjacent-sibling ordering, so tests that want to count
 /// or inspect sidebar entries should do so against this slice
 /// — not the whole page, where the index table and rule
-/// articles emit substrings (`href="#perfectionist-*"`,
-/// `<code>name</code>`, `id="perfectionist-*"`) that overlap
+/// articles emit substrings (`href="#/rule/*"`,
+/// `<code>name</code>`, `id="/rule/*"`) that overlap
 /// the sidebar's markup.
 fn sidebar_list(html: &str) -> &str {
     let open = r#"<ul class="nav-sidebar-list">"#;
@@ -45,6 +45,18 @@ fn sidebar_list(html: &str) -> &str {
             .find(close)
             .expect("sidebar <ul> unterminated");
     &html[start..end]
+}
+
+#[test]
+fn anchor_for_builds_a_kebab_cased_rule_route() {
+    // The `/rule/` prefix plus a kebab-cased name: a single
+    // word is unchanged, a multi-word name has every `_`
+    // turned into `-`. The namespace prefix is dropped.
+    assert_eq!(anchor_for("perfectionist::alpha"), "/rule/alpha");
+    assert_eq!(
+        anchor_for("perfectionist::beta_gamma_delta"),
+        "/rule/beta-gamma-delta",
+    );
 }
 
 #[test]
@@ -110,19 +122,17 @@ fn page_emits_one_sidebar_entry_per_rule_with_anchor_links() {
     // the index table's rows and the rule articles can't make
     // these assertions pass on their own.
     assert_eq!(sidebar.matches("<li>").count(), rules.len());
+    assert!(sidebar.contains(r##"<li><a href="#/rule/alpha"><code>alpha</code></a></li>"##));
+    // A multi-word rule name is rendered as-is (`beta_gamma`)
+    // but its anchor is kebab-cased (`beta-gamma`).
     assert!(
-        sidebar.contains(r##"<li><a href="#perfectionist-alpha"><code>alpha</code></a></li>"##),
-    );
-    assert!(
-        sidebar.contains(
-            r##"<li><a href="#perfectionist-beta_gamma"><code>beta_gamma</code></a></li>"##
-        ),
+        sidebar.contains(r##"<li><a href="#/rule/beta-gamma"><code>beta_gamma</code></a></li>"##),
     );
     // The rule articles those anchors resolve to must exist
     // outside the sidebar slice, otherwise the sidebar links
     // dangle.
-    assert!(html.contains(r#"id="perfectionist-alpha""#));
-    assert!(html.contains(r#"id="perfectionist-beta_gamma""#));
+    assert!(html.contains(r#"id="/rule/alpha""#));
+    assert!(html.contains(r#"id="/rule/beta-gamma""#));
 }
 
 #[test]
@@ -217,7 +227,7 @@ fn rule_heading_emits_left_side_permalink_anchor() {
     let html = render_page(&[fake_rule("alpha")], &fake_context());
     assert!(
         html.contains(
-            "<a class=\"rule-anchor\" href=\"#perfectionist-alpha\" \
+            "<a class=\"rule-anchor\" href=\"#/rule/alpha\" \
              aria-label=\"Permalink to this rule\"></a>"
         ),
         "rule heading must emit a left-side permalink anchor to its own id",

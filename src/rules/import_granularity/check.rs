@@ -74,14 +74,29 @@ fn is_module_shaped(stmt: &StmtInfo) -> bool {
 }
 
 /// `crate` style: every statement is maximally collapsed, descends from
-/// a single crate root, and no two statements share a root.
+/// a single crate root, and no two statements share a root — except a
+/// root imported as a bare crate item, which can't be folded with its
+/// own deeper imports without an unsafe synthesised `self` (see below).
 fn crate_compliant(stmts: &[&StmtInfo]) -> bool {
     if !stmts.iter().all(|stmt| stmt.collapsed) {
         return false;
     }
-    // Unlike `module` style, crate items participate here: `use foo;`
-    // and `use foo::Bar;` share the root `foo` and must collapse to
-    // `use foo::{self, Bar};`.
+    // A root imported as a bare crate item (`use foo;`) can't be folded
+    // together with a deeper import from the same root (`use foo::Bar;`):
+    // the only one-statement form is `use foo::{self, Bar};`, whose
+    // `self` re-imports the *module* `foo` alone, silently dropping any
+    // value or macro named `foo` and breaking the code that used it.
+    // `use foo;` binds `foo` in every namespace it exists in, so it is
+    // not interchangeable with the module-only `self`. There is no safe
+    // one-`use`-per-root shape, so such a root is left split across
+    // statements rather than flagged — the same reasoning that keeps
+    // `is_collapsed` from folding `{thing, thing::Opts}` inside a single
+    // brace. See <https://github.com/KSXGitHub/perfectionist/issues/186>.
+    let bare_item_roots: HashSet<&str> = stmts
+        .iter()
+        .filter(|stmt| stmt.is_crate_item())
+        .filter_map(|stmt| stmt.crate_root())
+        .collect();
     let mut seen: HashSet<&str> = HashSet::new();
     for stmt in stmts {
         // A top-level brace spanning several roots (`use {a::X, b::Y};`)
@@ -89,6 +104,9 @@ fn crate_compliant(stmts: &[&StmtInfo]) -> bool {
         let Some(root) = stmt.crate_root() else {
             return false;
         };
+        if bare_item_roots.contains(root) {
+            continue;
+        }
         if !seen.insert(root) {
             return false;
         }

@@ -236,8 +236,19 @@ fn state_badge(default_state: DefaultState) -> Markup {
     }
 }
 
+/// Build the in-page anchor for a rule. The fragment is
+/// `/rule/<kebab-name>` — a `/rule/` prefix plus the rule's
+/// unnamespaced name with `_` swapped for `-` — so a permalink
+/// reads `#/rule/qualified-paths` rather than the old
+/// `#perfectionist-qualified_paths`. The leading slash makes the
+/// fragment look like a route, and the value doubles as the
+/// target element's `id`. Slashes are legal in an HTML `id`
+/// (only ASCII whitespace is forbidden) and in a URL fragment,
+/// but they are *not* legal in a bare CSS id selector, so any JS
+/// that resolves the fragment must use `getElementById`, not
+/// `querySelector("#" + ...)`.
 fn anchor_for(namespaced: &str) -> String {
-    namespaced.replace("::", "-")
+    format!("/rule/{}", unnamespaced(namespaced).replace('_', "-"))
 }
 
 fn unnamespaced(namespaced: &str) -> &str {

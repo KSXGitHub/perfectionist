@@ -10,10 +10,24 @@ use super::model::{Leaf, LeafItem};
 
 pub(super) fn render(style: Style, leaves: &[Leaf]) -> Vec<String> {
     match style {
-        Style::Crate => render_crate(leaves),
+        Style::Crate => render_crate(leaves, false),
         Style::Module => render_module(leaves),
         Style::Item => render_item(leaves),
     }
+}
+
+/// The alternative `crate` shape that folds a bare item sharing a
+/// module's name into `self` (`{thing, thing::T}` → `thing::{self, T}`).
+///
+/// This is the form rustfmt's `imports_granularity = "Crate"` produces,
+/// but it is *not* interchangeable with the sibling form: `use a::b;`
+/// binds `b` in every namespace, while `a::b::{self}` re-imports only the
+/// module `b`. When the two shapes differ the caller offers both as
+/// `MaybeIncorrect` alternatives, because the rule can't tell from syntax
+/// whether a value or macro is re-exported under the module's name (see
+/// <https://github.com/KSXGitHub/perfectionist/issues/186>).
+pub(super) fn render_crate_self(leaves: &[Leaf]) -> Vec<String> {
+    render_crate(leaves, true)
 }
 
 fn join(segments: &[String]) -> String {
@@ -131,15 +145,22 @@ fn insert(node: &mut Node, module: &[String], leaf: &Leaf) {
     }
 }
 
-fn node_entries(node: &Node) -> Vec<String> {
+fn node_entries(node: &Node, synthesize_self: bool) -> Vec<String> {
     let mut entries: Vec<String> = Vec::new();
     for item in &node.items {
-        // A named item that also names a child module — `use a::b;`
-        // sitting next to `use a::b::C;` — is the module imported as
-        // itself. It folds into that child as `self` below rather than
-        // standing alone, which would leave the duplicate leading
-        // segment `b` the rule flags as not-collapsed.
-        if let LeafItem::Named(name) = &item.item
+        // A named item whose name matches a child module — `use a::b;`
+        // next to `use a::b::C;` — can be read as the module imported as
+        // itself. Only the `synthesize_self` shape folds it into that
+        // child's brace as `self` (below); the default sibling shape
+        // keeps it standing alone. The two are NOT interchangeable:
+        // `use a::b;` binds `b` in *every* namespace, so folding it to
+        // `a::b::{self}` drops any value or macro re-exported under the
+        // module's name. An explicit `self` written in the source
+        // (`LeafItem::SelfMod`) is a genuine module-only import and
+        // renders inside the child brace under both shapes. See
+        // <https://github.com/KSXGitHub/perfectionist/issues/186>.
+        if synthesize_self
+            && let LeafItem::Named(name) = &item.item
             && node.children.contains_key(name)
         {
             continue;
@@ -147,32 +168,35 @@ fn node_entries(node: &Node) -> Vec<String> {
         entries.push(item_entry(item));
     }
     for (segment, child) in &node.children {
-        let mut sub = node_entries(child);
-        for item in &node.items {
-            if let LeafItem::Named(name) = &item.item
-                && name == segment
-            {
-                sub.push(format!("self{}", rename_suffix(&item.rename)));
+        let mut sub = node_entries(child, synthesize_self);
+        if synthesize_self {
+            for item in &node.items {
+                if let LeafItem::Named(name) = &item.item
+                    && name == segment
+                {
+                    sub.push(format!("self{}", rename_suffix(&item.rename)));
+                }
             }
+            sort_entries(&mut sub);
         }
-        sort_entries(&mut sub);
         entries.push(wrap(segment, &sub));
     }
     sort_entries(&mut entries);
     entries
 }
 
-fn render_crate(leaves: &[Leaf]) -> Vec<String> {
+fn render_crate(leaves: &[Leaf], synthesize_self: bool) -> Vec<String> {
     // Everything goes into one trie keyed by path segment; a bare
     // `use foo;` lands as a named item at the root and renders as `foo`,
-    // while `use foo::Bar;` descends into the `foo` child — the two fold
-    // together via [`node_entries`]. Each top-level entry is one
-    // statement.
+    // while `use foo::Bar;` descends into the `foo` child. Under
+    // `synthesize_self` the two fold together as `foo::{self, Bar}`;
+    // otherwise they sit side by side as `{foo, foo::Bar}`. Each
+    // top-level entry is one statement.
     let mut root = Node::default();
     for leaf in leaves {
         insert(&mut root, &leaf.module, leaf);
     }
-    let mut out = node_entries(&root);
+    let mut out = node_entries(&root, synthesize_self);
     out.sort();
     out.dedup();
     out

@@ -1,5 +1,5 @@
 use clippy_utils::diagnostics::span_lint_and_then;
-use rustc_ast::{Attribute, MetaItemInner};
+use rustc_ast::{Attribute, MetaItemInner, MetaItemKind};
 use rustc_errors::Applicability;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -28,6 +28,10 @@ declare_tool_lint! {
     /// does not police how derives are partitioned across multiple
     /// `#[derive(...)]` lines — that's a layout decision left to the
     /// author.
+    ///
+    /// A `cfg`-gated derive written as
+    /// `#[cfg_attr(<cfg>, derive(...))]` is checked the same way as a
+    /// bare `#[derive(...)]`; the `cfg` predicate is left untouched.
     ///
     /// ### Why restrict this?
     ///
@@ -161,13 +165,40 @@ pub fn register_pass(lint_store: &mut LintStore) {
 
 impl EarlyLintPass for DeriveOrdering {
     fn check_attribute(&mut self, lint_context: &EarlyContext<'_>, attribute: &Attribute) {
-        if !attribute.has_name(sym::derive) {
-            return;
+        // Run before macro expansion (see `register_pass`), so the
+        // attribute arrives in its written form: a bare `#[derive(...)]`
+        // is named `derive`, and a `#[cfg_attr(<cfg>, derive(...))]` is
+        // still named `cfg_attr` with the `derive(...)` un-applied
+        // inside its argument list. A post-expansion pass would never
+        // see either, since the derive tokens are consumed during
+        // expansion — that is also why the `cfg_attr` form has to be
+        // unwrapped here rather than waiting for the synthesised
+        // `derive` attribute (which never materialises pre-expansion).
+        if attribute.has_name(sym::derive) {
+            if let Some(entries) = attribute.meta_item_list() {
+                self.check_derive_list(lint_context, &entries);
+            }
+        } else if attribute.has_name(sym::cfg_attr) {
+            let Some(cfg_attr_args) = attribute.meta_item_list() else {
+                return;
+            };
+            // `cfg_attr(<cfg>, attr_1, attr_2, ...)`: the first item is
+            // the `cfg` predicate; every item after it is an attribute
+            // the predicate gates. Any of them may be a `derive(...)`
+            // whose list we must order.
+            for wrapped_attribute in cfg_attr_args.iter().skip(1) {
+                let Some(wrapped_meta_item) = wrapped_attribute.meta_item() else {
+                    continue;
+                };
+                if !wrapped_meta_item.has_name(sym::derive) {
+                    continue;
+                }
+                let MetaItemKind::List(entries) = &wrapped_meta_item.kind else {
+                    continue;
+                };
+                self.check_derive_list(lint_context, entries);
+            }
         }
-        let Some(entries) = attribute.meta_item_list() else {
-            return;
-        };
-        self.check_derive_list(lint_context, &entries);
     }
 }
 
