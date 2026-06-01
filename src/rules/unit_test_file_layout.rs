@@ -3,6 +3,7 @@ use rustc_session::{declare_tool_lint, impl_lint_pass};
 
 use crate::common::{DefaultState, resolved_state};
 
+mod cfg_test;
 mod config;
 mod layout;
 mod scan;
@@ -38,7 +39,11 @@ declare_tool_lint! {
     ///    is itself a valid extraction target.
     ///
     /// The module identifier is irrelevant to the layout rule; only the
-    /// file's position relative to its parent matters.
+    /// file's position relative to its parent matters. A test module
+    /// gated by a compound predicate that still implies test —
+    /// `#[cfg(all(test, unix))]`, `#[cfg(all(test, feature = "..."))]` —
+    /// is recognised the same as a bare `#[cfg(test)]`, so its external
+    /// file is not re-flagged as inline test code in a production file.
     ///
     /// Only the library or binary crate is checked. Integration tests
     /// (`tests/`), benchmarks (`benches/`), and examples (`examples/`)

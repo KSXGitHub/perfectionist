@@ -102,6 +102,40 @@ fn does_not_flag_external_nested_layout() {
     );
 }
 
+/// A `mod tests;` gated by a *compound* cfg that still implies test
+/// (`#[cfg(all(test, unix))]`) is an external test-module declaration
+/// just like a bare `#[cfg(test)]`, so its target file must not be
+/// re-flagged as inline test code living in a production file. This is
+/// the false positive of
+/// <https://github.com/KSXGitHub/perfectionist/issues/187>: a `use`
+/// in the test file would otherwise count as production and the
+/// `#[test] fn` as misplaced inline test code.
+#[test]
+fn does_not_flag_external_module_gated_by_compound_cfg() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_utfl_external_compound_cfg",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub mod foo;\n"),
+            (
+                "src/foo.rs",
+                "pub fn parse() -> i32 {\n    1\n}\n\n#[cfg(all(test, unix))]\nmod tests;\n",
+            ),
+            (
+                "src/foo/tests.rs",
+                "use super::parse;\n\n#[test]\nfn works() { assert_eq!(parse(), 1); }\n",
+            ),
+        ],
+        "[\"perfectionist::unit_test_file_layout\"]\ninline_style = \"external_only\"\n",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(LINT),
+        "a compound-cfg-gated external test module must not be flagged; stderr was:\n{stderr}",
+    );
+}
+
 #[test]
 fn flags_external_module_in_sibling_location() {
     let (_temp, stderr, success) = run_project_with_config(
