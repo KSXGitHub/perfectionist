@@ -64,18 +64,34 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Cache rustup toolchain
+        uses: actions/cache@v5
+        timeout-minutes: 1
+        continue-on-error: true
+        with:
+          path: ~/.rustup
+          key: rustup-${{ runner.os }}-${{ hashFiles('rust-toolchain') }}
+
       - name: Cache
         uses: actions/cache@v5
         timeout-minutes: 1
         continue-on-error: true
         with:
-          # `target/integration-fixtures{,-warmup}/` hold the
-          # warmup's incremental-compilation state. rustc ICEs when
-          # any input to the lint-registration fingerprint (e.g. a
-          # rule's `default_level`) changes against a cache
-          # populated under the previous value, so the dirs are
-          # excluded; the expensive plugin build still lives in the
-          # main `target/` cache.
+          # `target/integration-fixtures{,-warmup}/` hold the warmup's
+          # incremental-compilation state. rustc ICEs when any input to
+          # the lint-registration fingerprint (e.g. a rule's
+          # `default_level`) changes against a cache populated under the
+          # previous value, so the dirs are excluded; the expensive
+          # plugin build still lives in the main `target/` cache.
+          #
+          # Cache the WHOLE `~/.cargo`, including `registry/src`. It is
+          # tempting to drop `registry/src` (re-extractable from the
+          # `.crate` tarballs) to shrink the archive, but don't: dropping
+          # it makes cargo re-extract those sources with fresh mtimes
+          # that are newer than the cached `target/` artifacts, so every
+          # build-script crate (proc-macro2, quote, ...) reruns and
+          # cascades a full-graph recompile despite a cache hit. Keeping
+          # `registry/src` preserves the mtimes that match the artifacts.
           path: |
             ~/.cargo
             ~/.dylint_drivers

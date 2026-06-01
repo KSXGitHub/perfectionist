@@ -61,7 +61,7 @@ warmup-integration-tests:
 
 # Install cargo-dylint and dylint-link into `.dev-tools/`
 install-dev-tools:
-  cargo --config 'target."cfg(all())".linker="cc"' run --locked --package _dev_tools -- "$(pwd)" install
+  cargo --config 'target."cfg(all())".linker="cc"' run --locked --target-dir target/dev-tools-cc --package _dev_tools -- "$(pwd)" install
 
 # Point this checkout's `core.hooksPath` at `.githooks/` so the
 # version-bump contract (see `tools/deploy-check/`) is enforced
@@ -78,11 +78,11 @@ uninstall-git-hooks:
 
 # Print the dylint_linting version pinned in Cargo.lock
 dylint-version:
-  @cargo --config 'target."cfg(all())".linker="cc"' run --locked --quiet --package _dev_tools -- "$(pwd)" dylint-version
+  @cargo --config 'target."cfg(all())".linker="cc"' run --locked --target-dir target/dev-tools-cc --quiet --package _dev_tools -- "$(pwd)" dylint-version
 
 # Append `version=<dylint version>` to $GITHUB_OUTPUT (for CI)
 gha-dylint-version:
-  cargo --config 'target."cfg(all())".linker="cc"' run --locked --package _dev_tools -- "$(pwd)" gha-dylint-version
+  cargo --config 'target."cfg(all())".linker="cc"' run --locked --target-dir target/dev-tools-cc --package _dev_tools -- "$(pwd)" gha-dylint-version
 
 # Render the rule catalogue to `gh-pages/index.html`.
 gen-docs out_dir="gh-pages" git_ref="":
