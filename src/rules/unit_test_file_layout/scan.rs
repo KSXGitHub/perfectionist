@@ -7,13 +7,14 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use clippy_utils::diagnostics::span_lint_and_help;
-use clippy_utils::{is_cfg_test, is_test_function};
+use clippy_utils::is_test_function;
 use rustc_hir::{Item, ItemKind, Mod};
 use rustc_lint::{LateContext, LintContext};
 use rustc_span::hygiene::ExpnKind;
 use rustc_span::source_map::SourceMap;
 use rustc_span::{BytePos, SourceFile, Span, Symbol};
 
+use super::cfg_test::cfg_predicate_mentions_test;
 use super::config::{InlineStyle, UnitTestFileLayout};
 use super::{UNIT_TEST_FILE_LAYOUT, layout};
 
@@ -88,7 +89,7 @@ fn classify(
         return;
     }
 
-    let cfg_test = is_cfg_test(cx.tcx, item.hir_id());
+    let cfg_test = cfg_predicate_mentions_test(cx.tcx, item.hir_id());
     let is_test = cfg_test
         || (matches!(item.kind, ItemKind::Fn { .. })
             && is_test_function(cx.tcx, item.owner_id.def_id));
