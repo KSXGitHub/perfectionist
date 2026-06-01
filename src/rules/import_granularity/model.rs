@@ -166,9 +166,10 @@ fn flatten_into(tree: &UseTree, prefix: &[String], out: &mut Vec<Leaf>) -> Optio
 }
 
 /// Whether `tree` is already maximally collapsed: no brace level holds
-/// two entries that share a leading segment, and no brace wraps a single
-/// non-`self` entry. This is the per-statement half of the `crate`-style
-/// check — a collapsed statement with a unique crate root needs no fix.
+/// two entries that share a leading segment *and* can be merged without
+/// synthesising a `self`, and no brace wraps a single non-`self` entry.
+/// This is the per-statement half of the `crate`-style check — a
+/// collapsed statement with a unique crate root needs no fix.
 fn is_collapsed(tree: &UseTree) -> bool {
     let UseTreeKind::Nested { items, .. } = &tree.kind else {
         return true;
@@ -183,27 +184,51 @@ fn is_collapsed(tree: &UseTree) -> bool {
         .iter()
         .map(|(sub, _)| sub.prefix.segments.first().map(|seg| seg.ident.name))
         .collect();
-    // Two entries that share a leading segment are mergeable — and thus
-    // not collapsed — only when at least one of them continues past that
-    // segment (`{path::Path, path::PathBuf}` → `path::{Path, PathBuf}`,
-    // or `{b, b::C}` → `b::{self, C}`). Two terminal leaves that merely
-    // share a name (`{B, B as C}`, distinct local bindings of the same
-    // path) cannot be folded further, so they stay collapsed. A bare
-    // glob (`*`) has no leading segment, shares with nothing, and is
-    // already canonical, so it is skipped.
+    // Two or more entries that share a leading segment are mergeable —
+    // and thus not collapsed — only when every one of them continues
+    // past that segment (`{path::Path, path::PathBuf}` →
+    // `path::{Path, PathBuf}`). When a *bare terminal* entry shares the
+    // segment (`{thing, thing::Opts}`), the only collapse is
+    // `thing::{self, Opts}`, and the synthesised `self` re-imports the
+    // *module* `thing` alone — silently dropping any value or macro
+    // re-exported under the same name, which stops the using code from
+    // compiling. We can't tell from syntax whether such a name exists,
+    // so the bare-terminal form is treated as already collapsed rather
+    // than risk a build-breaking rewrite. See
+    // <https://github.com/KSXGitHub/perfectionist/issues/186>. Two
+    // terminal leaves that merely share a name (`{B, B as C}`, distinct
+    // local bindings of the same path) likewise cannot be folded
+    // further, so they stay collapsed. A bare glob (`*`) has no leading
+    // segment, shares with nothing, and is already canonical, so it is
+    // skipped.
     for index in 0..items.len() {
         let Some(first) = firsts[index] else {
             continue;
         };
-        let mut shared = false;
-        let mut mergeable = continues(&items[index].0);
-        for (other_index, other) in items.iter().enumerate().skip(index + 1) {
+        // Evaluate each distinct leading segment once, over the whole
+        // brace level: skip any segment already handled at an earlier
+        // index. A bare terminal *anywhere* in the group forces `self`,
+        // so the group must be considered as a whole — a windowed scan
+        // would wrongly flag `{thing::A, thing::B}` inside
+        // `{thing, thing::A, thing::B}` while ignoring the bare `thing`.
+        if firsts[..index].contains(&Some(first)) {
+            continue;
+        }
+        let mut continuing = 0usize;
+        let mut bare_terminal = false;
+        for (other_index, other) in items.iter().enumerate() {
             if firsts[other_index] == Some(first) {
-                shared = true;
-                mergeable |= continues(&other.0);
+                if continues(&other.0) {
+                    continuing += 1;
+                } else {
+                    bare_terminal = true;
+                }
             }
         }
-        if shared && mergeable {
+        // `continuing >= 2 && !bare_terminal` means two or more entries
+        // share the segment and every one of them continues past it, so
+        // they fold into `seg::{...}` with no synthesised `self`.
+        if continuing >= 2 && !bare_terminal {
             return false;
         }
     }

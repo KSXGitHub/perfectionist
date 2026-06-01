@@ -144,9 +144,15 @@ enum Violation {
     /// The group is flagged but no mechanical fix is offered, because
     /// merging would change what is compiled or exported.
     ManualMerge,
-    /// The group can be rewritten into `replacement`.
+    /// The group can be rewritten. `suggestions` holds one candidate for
+    /// an unambiguous merge, or two for an ambiguous `crate`-style merge
+    /// where a bare item shares a module's name: the `self`-fold
+    /// (`thing::{self, T}`) and the sibling-split (`{thing, thing::T}`).
+    /// The two shapes are not interchangeable, so both are offered and
+    /// the human picks — hence the `MaybeIncorrect` applicability the
+    /// caller attaches in that case.
     Reorganize {
-        replacement: String,
+        suggestions: Vec<String>,
         applicability: Applicability,
     },
 }
@@ -192,16 +198,26 @@ impl<'tcx> LateLintPass<'tcx> for ImportGranularity {
                         );
                     }
                     Violation::Reorganize {
-                        replacement,
+                        suggestions,
                         applicability,
-                    } => {
-                        diagnostic.span_suggestion(
-                            span,
-                            "reorganize the imports",
-                            replacement.clone(),
-                            *applicability,
-                        );
-                    }
+                    } => match suggestions.as_slice() {
+                        [single] => {
+                            diagnostic.span_suggestion(
+                                span,
+                                "reorganize the imports",
+                                single.clone(),
+                                *applicability,
+                            );
+                        }
+                        _ => {
+                            diagnostic.span_suggestions(
+                                span,
+                                "reorganize the imports",
+                                suggestions.iter().cloned(),
+                                *applicability,
+                            );
+                        }
+                    },
                 },
             );
         }
@@ -397,6 +413,20 @@ impl ImportGranularity {
             return;
         }
 
+        // Under `crate` style a name that is both an item and a module
+        // has a second, equally-valid shape: the `self`-fold. When it
+        // differs from the default sibling shape the merge is ambiguous —
+        // the rule can't tell from syntax whether the bare name also
+        // binds a value or macro — so both shapes are offered as
+        // `MaybeIncorrect` alternatives. See
+        // <https://github.com/KSXGitHub/perfectionist/issues/186>.
+        let self_fold = if let Style::Crate = self.style {
+            let folded = render::render_crate_self(&leaves);
+            (folded != bodies).then_some(folded)
+        } else {
+            None
+        };
+
         let replace_span = first
             .item
             .span
@@ -429,33 +459,48 @@ impl ImportGranularity {
             prefix.push_str(&pad);
         }
         prefix.push_str(&first.vis);
-        let replacement = bodies
-            .iter()
-            .map(|body| format!("{prefix}use {body};"))
-            .collect::<Vec<_>>()
-            .join(&format!("\n{pad}"));
+        let render_full = |bodies: &[String]| {
+            bodies
+                .iter()
+                .map(|body| format!("{prefix}use {body};"))
+                .collect::<Vec<_>>()
+                .join(&format!("\n{pad}"))
+        };
 
-        // Down to `MaybeIncorrect` when applying the fix would drop
-        // something the rewrite can't carry: an inline comment inside the
-        // replaced span, or a doc comment that differs across the merged
-        // statements (kept only from the first).
-        let has_comment = lint_context
-            .sess()
-            .source_map()
-            .span_to_snippet(replace_span)
-            .is_ok_and(|snippet| snippet.contains("//") || snippet.contains("/*"));
-        let drops_doc = group.iter().any(|entry| entry.attrs != first.attrs);
-        let applicability = if has_comment || drops_doc {
-            Applicability::MaybeIncorrect
-        } else {
-            Applicability::MachineApplicable
+        let (suggestions, applicability) = match self_fold {
+            // Ambiguous `crate` merge: offer the `self`-fold and the
+            // sibling-split, both `MaybeIncorrect`, and let the human
+            // pick the one that matches what the bare name resolves to.
+            Some(folded) => (
+                vec![render_full(&folded), render_full(&bodies)],
+                Applicability::MaybeIncorrect,
+            ),
+            None => {
+                // Down to `MaybeIncorrect` when applying the fix would
+                // drop something the rewrite can't carry: an inline
+                // comment inside the replaced span, or a doc comment that
+                // differs across the merged statements (kept only from
+                // the first).
+                let has_comment = lint_context
+                    .sess()
+                    .source_map()
+                    .span_to_snippet(replace_span)
+                    .is_ok_and(|snippet| snippet.contains("//") || snippet.contains("/*"));
+                let drops_doc = group.iter().any(|entry| entry.attrs != first.attrs);
+                let applicability = if has_comment || drops_doc {
+                    Applicability::MaybeIncorrect
+                } else {
+                    Applicability::MachineApplicable
+                };
+                (vec![render_full(&bodies)], applicability)
+            }
         };
 
         violations.push(Pending {
             anchor: first.item.span,
             span: replace_span,
             violation: Violation::Reorganize {
-                replacement,
+                suggestions,
                 applicability,
             },
         });

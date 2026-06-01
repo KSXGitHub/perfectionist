@@ -24,6 +24,10 @@ does not police how derives are partitioned across multiple
 `#[derive(...)]` lines — that's a layout decision left to the
 author.
 
+A `cfg`-gated derive written as
+`#[cfg_attr(<cfg>, derive(...))]` is checked the same way as a
+bare `#[derive(...)]`; the `cfg` predicate is left untouched.
+
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. The
