@@ -133,29 +133,23 @@ fn insert(node: &mut Node, module: &[String], leaf: &Leaf) {
 
 fn node_entries(node: &Node) -> Vec<String> {
     let mut entries: Vec<String> = Vec::new();
+    // Every named item stands on its own — even when its name matches a
+    // child module. `use a::b;` binds `b` in *every* namespace it exists
+    // in (type, value, macro), so it must NOT be folded into the child
+    // module's brace as `self`: `use a::b::{self};` re-imports only the
+    // module, silently dropping any value or macro re-exported under the
+    // same name and breaking the code that used it. The bare item and
+    // the module's own items therefore sit side by side as
+    // `a::{b, b::C}`, which is the most-collapsed form that preserves
+    // every binding. An explicit `self` written in the source
+    // (`LeafItem::SelfMod`) *is* a genuine module-only import and still
+    // renders inside the child brace. See
+    // <https://github.com/KSXGitHub/perfectionist/issues/186>.
     for item in &node.items {
-        // A named item that also names a child module — `use a::b;`
-        // sitting next to `use a::b::C;` — is the module imported as
-        // itself. It folds into that child as `self` below rather than
-        // standing alone, which would leave the duplicate leading
-        // segment `b` the rule flags as not-collapsed.
-        if let LeafItem::Named(name) = &item.item
-            && node.children.contains_key(name)
-        {
-            continue;
-        }
         entries.push(item_entry(item));
     }
     for (segment, child) in &node.children {
-        let mut sub = node_entries(child);
-        for item in &node.items {
-            if let LeafItem::Named(name) = &item.item
-                && name == segment
-            {
-                sub.push(format!("self{}", rename_suffix(&item.rename)));
-            }
-        }
-        sort_entries(&mut sub);
+        let sub = node_entries(child);
         entries.push(wrap(segment, &sub));
     }
     sort_entries(&mut entries);
