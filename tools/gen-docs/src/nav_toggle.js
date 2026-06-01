@@ -332,12 +332,11 @@
     // them invalid CSS id selectors — `querySelector("#/rule/...")`
     // would throw. Resolve the raw id with getElementById instead,
     // which matches the literal `id` attribute and accepts slashes.
-    var id = hash.slice(1);
-    try {
-      id = decodeURIComponent(id);
-    } catch (_e) {
-      // Malformed percent-encoding: fall back to the raw fragment.
-    }
+    // decodeURIComponent throws on malformed percent-encoding; we let
+    // that propagate rather than swallow it — an uncaught throw inside
+    // this click handler only aborts the handler, and surfacing the
+    // error aids debugging.
+    var id = decodeURIComponent(hash.slice("#".length));
     var target = document.getElementById(id);
     if (!target) return;
     target.setAttribute("tabindex", "-1");
