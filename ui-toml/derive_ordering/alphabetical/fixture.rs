@@ -36,4 +36,10 @@ struct _MultiLine;
 #[derive(Debug /* keep me */, Clone, Copy)]
 struct _InlineComment;
 
+// Bad: a `cfg`-gated derive is still ordered. The rule runs before
+// expansion, so the wrapped `derive(...)` is reached regardless of
+// whether the `cfg` predicate holds in this build.
+#[cfg_attr(unix, derive(Debug, Clone, Copy))]
+struct _CfgAttr;
+
 fn main() {}
