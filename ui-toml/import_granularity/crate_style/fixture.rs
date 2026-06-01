@@ -46,14 +46,24 @@ mod thing {
     pub struct T;
 }
 
-// Bad: a bare import plus an item from a module of the same name merge
-// into one `use` per root — but as the sibling form `{thing, thing::T}`,
-// never the `self` form. `use crate::thing;` binds `thing` in every
-// namespace; collapsing it to `crate::thing::{self, T}` would re-import
-// only the module and drop any value or macro named `thing`.
+// Bad: a bare import plus an item from a module of the same name share a
+// crate root and must merge into one `use`. The merge is ambiguous — the
+// `self`-fold `crate::thing::{self, T}` and the sibling-split
+// `crate::{thing, thing::T}` are not interchangeable (the fold re-imports
+// only the module `thing`, dropping any value or macro named `thing`), so
+// the rule offers both as `MaybeIncorrect` suggestions and lets the
+// author pick.
 mod self_merge {
     use crate::thing;
     use crate::thing::T;
+}
+
+// Good: an explicit `self` import is already a valid, compiling collapsed
+// form (the two brace entries name different things — the module via
+// `self` and the item `T`), so it is left alone, never rewritten into the
+// sibling shape.
+mod explicit_self {
+    use crate::thing::{self, T};
 }
 
 // A name that is both a module and a value: `dual` is a module *and* a

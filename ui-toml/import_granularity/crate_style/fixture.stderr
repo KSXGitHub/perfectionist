@@ -23,11 +23,22 @@ LL | |     use std::io::*;
    | |___________________^ help: reorganize the imports: `use std::io::{Read, *};`
 
 warning: imports are not collapsed to one `use` per crate root
-  --> $DIR/fixture.rs:55:5
+  --> $DIR/fixture.rs:57:5
    |
 LL | /     use crate::thing;
 LL | |     use crate::thing::T;
-   | |________________________^ help: reorganize the imports: `use crate::{thing, thing::T};`
+   | |________________________^
+   |
+help: reorganize the imports
+   |
+LL -     use crate::thing;
+LL -     use crate::thing::T;
+LL +     use crate::thing::{self, T};
+   |
+LL -     use crate::thing;
+LL -     use crate::thing::T;
+LL +     use crate::{thing, thing::T};
+   |
 
 warning: 4 warnings emitted
 
