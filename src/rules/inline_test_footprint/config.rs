@@ -19,7 +19,7 @@ pub(super) enum InlineStyle {
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// How inline test modules are handled. Defaults to
+    /// How inline test code is handled. Defaults to
     /// `external_when_long`.
     inline_style: InlineStyle,
     /// Absolute cap, in lines, on the summed inline-test footprint of a

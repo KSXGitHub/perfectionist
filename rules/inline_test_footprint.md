@@ -75,7 +75,7 @@ Configure via `dylint.toml` under `["perfectionist::inline_test_footprint"]`. Ev
 
 ### `inline_style`: `InlineStyle` (optional)
 
-How inline test modules are handled. Defaults to
+How inline test code is handled. Defaults to
 `external_when_long`.
 
 ### `inline_max_lines`: `unsigned integer` (optional)
