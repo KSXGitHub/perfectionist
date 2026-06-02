@@ -277,8 +277,10 @@ enum Resolution {
     Unique,
     /// The name exists in more than one namespace (e.g. a type and a
     /// function). A bare `` [`Foo`] `` would be an ambiguous intra-doc
-    /// link, so the rule emits a help note rather than an autofix.
-    Ambiguous,
+    /// link, so the rule emits a help note rather than an autofix. The
+    /// flags are the namespaces present (`[type, value, macro]`), used
+    /// to pick a correct disambiguator prefix for the help.
+    Ambiguous([bool; 3]),
 }
 
 impl IntraDocLinks {
@@ -287,18 +289,26 @@ impl IntraDocLinks {
     /// the rule still checks (so the backticks are deliberate prose, not
     /// an unlinked reference).
     ///
-    /// Two filters drop a candidate before it counts:
+    /// Ambiguity and eligibility are judged on different sets, because
+    /// they answer different questions:
     ///
-    /// - The `reference_scope` policy (see [`ReferenceScope`]) drops a
-    ///   name whose target lives farther out than the project allows.
-    /// - A publicly-reachable item is never linked to a private (not
-    ///   publicly-reachable) target: turning `` `Priv` `` into
-    ///   `` [`Priv`] `` in the docs of a `pub` item would make rustdoc's
+    /// - **Ambiguity** (does a bare `` [`Foo`] `` resolve uniquely?) is
+    ///   judged the way rustdoc resolves the link: across *every*
+    ///   same-name item in scope, in every namespace, regardless of
+    ///   privacy or the project's `reference_scope` — those are the
+    ///   rule's filters, not rustdoc's. A unit/tuple-struct constructor
+    ///   shares its type's identity and so never counts.
+    /// - **Eligibility** (is the rule willing to point a link at this?)
+    ///   applies the rule's own filters: the `reference_scope` policy
+    ///   (see [`ReferenceScope`]) drops a target that lives farther out
+    ///   than the project allows, and the public-references-private
+    ///   exemption drops a private target a `pub` item shouldn't link to
+    ///   (turning `` `Priv` `` into `` [`Priv`] `` would make rustdoc's
     ///   `rustdoc::private_intra_doc_links` fire under a plain
-    ///   `cargo doc`, and a public item that leans on a private one is
-    ///   questionable to begin with. Flagging that (or "fixing" it) is
-    ///   the job of whatever rule governs public-references-private, not
-    ///   this one.
+    ///   `cargo doc`; that is a separate rule's concern).
+    ///
+    /// Returns `None` when no in-scope child is eligible (the backticks
+    /// are deliberate prose, not an unlinked reference).
     fn resolve_in_scope(
         &self,
         cx: &LateContext<'_>,
@@ -308,17 +318,31 @@ impl IntraDocLinks {
         let scope = scope_module(cx, hir_id);
         let effective_visibilities = cx.tcx.effective_visibilities(());
         let documented_public = effective_visibilities.is_reachable(documented_def_id(cx, hir_id));
-        // One slot per namespace (`TypeNS`, `ValueNS`, `MacroNS`); a name
-        // present in more than one is an ambiguous intra-doc link.
+        // One slot per namespace (`TypeNS`, `ValueNS`, `MacroNS`).
         let mut namespaces = [false; 3];
-        let mut found = false;
+        let mut has_eligible_target = false;
         for child in cx.tcx.module_children_local(scope) {
             if child.ident.name != name {
                 continue;
             }
             let target = child.res.opt_def_id();
-            // Imported-name policy: drop a candidate the project chose to
-            // ignore based on where its target lives relative to `scope`.
+
+            // Ambiguity accounting (rustdoc's view): record every
+            // same-name child's namespace, ignoring privacy and policy.
+            if !matches!(child.res, Res::Def(DefKind::Ctor(..), _)) {
+                match child.res.ns() {
+                    Some(Namespace::TypeNS) => namespaces[0] = true,
+                    Some(Namespace::ValueNS) => namespaces[1] = true,
+                    Some(Namespace::MacroNS) => namespaces[2] = true,
+                    None => {}
+                }
+            }
+
+            // Eligibility (the rule's filters): `reference_scope` drops a
+            // target living farther out than the project allows; the
+            // public-references-private exemption drops a private target
+            // (a local item that is not publicly reachable — an external
+            // target such as a re-exported `std` type is public).
             let reach = target.map_or(Reach::Outside, |def_id| import_reach(cx, scope, def_id));
             let ignored_by_policy = match self.reference_scope {
                 ReferenceScope::OwnModule => reach != Reach::LocalDefinition,
@@ -328,37 +352,20 @@ impl IntraDocLinks {
             if ignored_by_policy {
                 continue;
             }
-            // Public-references-private exemption (see the doc comment): a
-            // target is "private" when it is a local item that is not
-            // publicly reachable. An external target (e.g. a re-exported
-            // `std` type) is public, so it never triggers the exemption.
             let target_private = target
                 .and_then(|def_id| def_id.as_local())
                 .is_some_and(|local| !effective_visibilities.is_reachable(local));
             if documented_public && target_private {
                 continue;
             }
-            found = true;
-            // A unit/tuple struct (or enum variant) introduces a value-ns
-            // constructor that shares the type's identity; rustdoc resolves
-            // `` [`Foo`] `` to the type without complaint, so the
-            // constructor must not count toward namespace ambiguity.
-            if matches!(child.res, Res::Def(DefKind::Ctor(..), _)) {
-                continue;
-            }
-            match child.res.ns() {
-                Some(Namespace::TypeNS) => namespaces[0] = true,
-                Some(Namespace::ValueNS) => namespaces[1] = true,
-                Some(Namespace::MacroNS) => namespaces[2] = true,
-                None => {}
-            }
+            has_eligible_target = true;
         }
-        if !found {
+        if !has_eligible_target {
             return None;
         }
         let distinct = namespaces.iter().filter(|present| **present).count();
         Some(if distinct > 1 {
-            Resolution::Ambiguous
+            Resolution::Ambiguous(namespaces)
         } else {
             Resolution::Unique
         })
@@ -457,10 +464,20 @@ fn emit(
                     Applicability::MachineApplicable,
                 );
             }
-            Resolution::Ambiguous => {
+            Resolution::Ambiguous(namespaces) => {
+                // Suggest a disambiguator for a namespace the name
+                // actually resolves in (a `fn` + `macro_rules!` clash has
+                // no type, so `type@` would itself be a broken link).
+                let prefix = if namespaces[0] {
+                    "type@"
+                } else if namespaces[1] {
+                    "value@"
+                } else {
+                    "macro@"
+                };
                 diag.help(format!(
                     "`{ident}` resolves in more than one namespace; write a \
-                     disambiguated intra-doc link such as `[`{ident}`](type@{ident})`",
+                     disambiguated intra-doc link such as `[`{ident}`]({prefix}{ident})`",
                 ));
             }
         },

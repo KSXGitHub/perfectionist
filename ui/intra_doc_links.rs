@@ -57,4 +57,15 @@ pub fn public_refers_private() {}
 /// `PrivateHelper` — both sit below the public API — so this one fires.
 fn private_refers_private() {}
 
+/// A public module and a *private* function both answer to `mixed_vis`.
+/// rustdoc resolves `[`mixed_vis`]` across both namespaces (privacy is a
+/// separate concern), so this is ambiguous — a help note, never a
+/// machine-applicable fix — even though the private function alone would
+/// be exempt.
+pub fn refer_mixed_visibility() {}
+
+pub mod mixed_vis {}
+
+fn mixed_vis() {}
+
 fn main() {}
