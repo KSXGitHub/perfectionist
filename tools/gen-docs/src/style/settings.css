@@ -1,6 +1,6 @@
 /* Settings affordance: a gear button in the top-right corner and the
-   panel it toggles. Colours are `var(--color-*)` from light.css /
-   dark.css; see issue #185.
+   panel it toggles. Structural rules only; the colours for these
+   selectors live in light.css (defaults) and dark.css (dark tiers).
 
    The gear is the mirror image of the nav hamburger (nav.css): same
    size and inset, but pinned to the right instead of the left so the
@@ -21,17 +21,14 @@
   z-index: 98;
   width: 2.5rem;
   height: 2.5rem;
-  background: var(--color-canvas-default);
-  border: 1px solid var(--color-border-default);
+  border: 1px solid;
   border-radius: 6px;
   cursor: pointer;
   font-size: 1.4rem;
   line-height: 1;
-  color: var(--color-fg-default);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 3px var(--color-shadow);
   padding: 0;
   /* Half-transparent at rest, fully opaque on hover / focus / while
      the panel is open, with a short ease between the two states. */
@@ -49,12 +46,8 @@
   opacity: 1;
 }
 
-.settings-toggle:hover {
-  background: var(--color-canvas-subtle);
-}
-
 .settings-toggle:focus-visible {
-  outline: 2px solid var(--color-accent-fg);
+  outline: 2px solid;
   outline-offset: 2px;
 }
 
@@ -68,10 +61,8 @@
   z-index: 98;
   width: 16rem;
   max-width: calc(100vw - 1.2rem);
-  background: var(--color-canvas-default);
-  border: 1px solid var(--color-border-default);
+  border: 1px solid;
   border-radius: 8px;
-  box-shadow: 0 4px 16px var(--color-shadow);
   padding: 0.85rem 1rem 1rem;
   box-sizing: border-box;
 }
@@ -80,7 +71,6 @@
   margin: 0 0 0.6rem;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--color-fg-default);
 }
 
 /* The theme chooser is a <fieldset> of three radios. Strip the default
@@ -98,7 +88,6 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--color-fg-muted);
 }
 
 /* Three equal-width choices in a row. */
@@ -132,20 +121,14 @@
   align-items: center;
   gap: 0.3rem;
   padding: 0.5rem 0.25rem;
-  border: 1px solid var(--color-border-default);
+  border: 1px solid;
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.8rem;
-  color: var(--color-fg-muted);
-  background: var(--color-canvas-default);
   transition:
     color 0.15s ease,
     border-color 0.15s ease,
     background-color 0.15s ease;
-}
-
-.theme-option:hover {
-  background: var(--color-canvas-subtle);
 }
 
 /* The icon is recoloured by the label's own `color` via a CSS mask, so
@@ -176,18 +159,13 @@
   mask: url("theme-system.svg") no-repeat center / contain;
 }
 
-/* The checked radio highlights its label: accent border, accent text
-   (which the masked icon inherits), and a faint accent wash. The radio
-   is the label's previous sibling, so the adjacent-sibling selector
-   keyed off `:checked` needs no JS. */
-.theme-radio:checked + .theme-option {
-  color: var(--color-accent-fg);
-  border-color: var(--color-accent-fg);
-  background: var(--color-accent-subtle);
-}
+/* The checked radio highlights its label (accent border / text / wash)
+   via a pure-CSS adjacent-sibling selector — the colours live in
+   light.css / dark.css. The radio is the label's previous sibling, so
+   the highlight needs no JS. */
 
 /* Keyboard focus on the visually-hidden radio surfaces on its label. */
 .theme-radio:focus-visible + .theme-option {
-  outline: 2px solid var(--color-accent-fg);
+  outline: 2px solid;
   outline-offset: 2px;
 }

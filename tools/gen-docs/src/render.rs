@@ -24,16 +24,21 @@ use crate::render::markdown::{markdown_inline_to_html, markdown_to_html};
 /// room for future sheets without reflowing a monolith. The slice
 /// order is the cascade order the page links them in.
 pub(crate) const STYLESHEETS: &[(&str, &str)] = &[
-    // The palette comes first: light.css declares every `--color-*`
-    // variable (light values, the default) and dark.css the dark
-    // values across the system-preference / explicit-override tiers.
-    // The structural sheets that follow only ever read those variables.
-    ("light.css", include_str!("style/light.css")),
-    ("dark.css", include_str!("style/dark.css")),
+    // Structural sheets first (layout, sizing, non-colour rules), then
+    // the two colour layers. The colours were extracted out of the
+    // structural sheets into light.css (the default light values) and
+    // dark.css (the dark tiers); both use literal colours, not CSS
+    // custom properties, so the theming works on engines that predate
+    // `var()`. light.css/dark.css must come *after* the structural
+    // sheets so a colour longhand (e.g. `border-bottom-color`) wins over
+    // the `currentColor` left by a structural border shorthand of equal
+    // specificity; dark.css comes after light.css.
     ("base.css", include_str!("style/base.css")),
     ("nav.css", include_str!("style/nav.css")),
     ("rules.css", include_str!("style/rules.css")),
     ("settings.css", include_str!("style/settings.css")),
+    ("light.css", include_str!("style/light.css")),
+    ("dark.css", include_str!("style/dark.css")),
 ];
 
 /// File name the syntect-generated highlight CSS (see

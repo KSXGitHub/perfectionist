@@ -1,45 +1,212 @@
-/* Light theme — the default palette.
+/* Light theme — the default colour layer.
  *
- * This file owns the *light* half of the page's colour system: every
- * colour the hand-written sheets (base.css, nav.css, rules.css,
- * settings.css) consume is a `var(--color-*)` resolved here. The dark
- * half lives in dark.css. Splitting the palette into two files is the
- * "extract the colour rules into dark and light files" requirement from
- * issue #185; the structural sheets only reference the variables and
- * never hard-code a colour.
+ * This file (and its dark counterpart, dark.css) carries the colours
+ * extracted out of the structural stylesheets (base.css, nav.css,
+ * rules.css, settings.css). Each rule here mirrors a selector from
+ * those files but lists ONLY its colour declarations; the structural
+ * files keep the layout, sizing, and other non-colour properties.
  *
- * Override tiers (see issue #185):
+ * No CSS custom properties are used: every value is a literal colour,
+ * so the page themes correctly on engines that predate `var()`
+ * (maximising backward compatibility). The cost is that dark.css
+ * repeats each colour under the two dark tiers — see that file.
  *
- *   1. Default — these `:root` values. With neither a system-theme
- *      media query nor JavaScript, the page is Light.
- *   2. System preference — `@media (prefers-color-scheme: dark)` in
- *      dark.css overrides tier 1 when the OS asks for dark.
- *   3. Explicit override — a `color-scheme-override` attribute on
- *      <html> (or <body>), set only by theme_toggle.js. The
- *      `:root[...]`/`body[...]` selectors below carry specificity
- *      >= (0,2,0) / (0,1,1), which beats the dark `@media` block's
- *      `:root` (0,1,0) regardless of source order — so an explicit
- *      Light choice wins even when the OS prefers dark. The `:root`
- *      base selector and the two override selectors share one rule so
- *      the light values are written exactly once.
+ * Override tiers (issue 185):
+ *   1. Default Light — these rules. They are the lowest-priority colour
+ *      layer; with neither a system-preference media query nor the
+ *      override attribute, the page is Light.
+ *   2. System preference and 3. explicit override both live in dark.css
+ *      and win over these by being later in the cascade and/or more
+ *      specific.
+ *
+ * Loaded AFTER the structural sheets so a colour longhand here (e.g.
+ * `border-bottom-color`) overrides the `currentColor` left by a
+ * structural border shorthand of equal specificity.
  */
-:root,
-:root[color-scheme-override="light"],
-body[color-scheme-override="light"] {
+
+html {
   color-scheme: light;
-  --color-canvas-default: #ffffff;
-  --color-canvas-subtle: #f6f8fa;
-  --color-fg-default: #1f2328;
-  --color-fg-muted: #57606a;
-  --color-border-default: #d0d7de;
-  --color-border-muted: #eaeef2;
-  --color-neutral-muted: #eaeef2;
-  --color-accent-fg: #0969da;
-  --color-accent-subtle: #ddf4ff;
-  --color-attention-subtle: #fff8c5;
-  --color-attention-border: #d4a72c;
-  --color-success-subtle: #dafbe1;
-  --color-danger-fg: #cf222e;
-  --color-danger-subtle: #ffebe9;
-  --color-shadow: rgba(31, 35, 40, 0.08);
+  background-color: #ffffff;
+}
+body {
+  color: #1f2328;
+  background-color: #ffffff;
+}
+h1 {
+  border-bottom-color: #d0d7de;
+}
+.banner {
+  background: #fff8c5;
+  border-left-color: #d4a72c;
+}
+pre {
+  background: #f6f8fa;
+}
+code {
+  background: #f6f8fa;
+}
+pre code {
+  background: none;
+}
+footer {
+  border-top-color: #eaeef2;
+  color: #57606a;
+}
+a {
+  color: #0969da;
+}
+.nav-toggle {
+  background: #ffffff;
+  border-color: #d0d7de;
+  color: #1f2328;
+  box-shadow: 0 1px 3px rgba(31, 35, 40, 0.08);
+}
+.nav-toggle:hover {
+  background: #f6f8fa;
+}
+.nav-toggle:focus-visible {
+  outline-color: #0969da;
+}
+.nav-sidebar {
+  background: #ffffff;
+  border-right-color: #d0d7de;
+  box-shadow: 2px 0 10px rgba(31, 35, 40, 0.08);
+}
+.nav-sidebar-header {
+  background: #ffffff;
+  border-bottom-color: #eaeef2;
+}
+.nav-sidebar-close {
+  background: #ffffff;
+  border-color: #d0d7de;
+  color: #1f2328;
+}
+.nav-sidebar-close:hover {
+  background: #f6f8fa;
+}
+.nav-sidebar-close:focus-visible {
+  outline-color: #0969da;
+}
+.nav-sidebar-title {
+  color: #1f2328;
+}
+.nav-sidebar-title:hover {
+  color: #0969da;
+}
+.nav-sidebar-list a {
+  color: #0969da;
+}
+.nav-sidebar-list a:hover {
+  background: #f6f8fa;
+}
+table.index td, table.index th {
+  border-bottom-color: #eaeef2;
+}
+table.index th {
+  background: #f6f8fa;
+}
+table.index tr {
+  border-bottom-color: #eaeef2;
+}
+.state-active {
+  background: #dafbe1;
+}
+.state-inactive {
+  background: #eaeef2;
+}
+article.rule {
+  border-top-color: #eaeef2;
+}
+article.rule h2 .lint-prefix {
+  color: #57606a;
+}
+article.rule h2 .rule-jump-link {
+  color: #57606a;
+}
+article.rule h2 .rule-jump-link:hover {
+  color: #0969da;
+}
+article.rule .source {
+  color: #57606a;
+}
+details.config-details > summary.config-summary {
+  color: #1f2328;
+}
+details.config-details > summary::before {
+  color: #57606a;
+}
+p.config-none {
+  color: #57606a;
+}
+dl.config {
+  background: #f6f8fa;
+}
+.config-key {
+  background: #ddf4ff;
+}
+.config-default {
+  color: #57606a;
+}
+.badge-optional {
+  background: #eaeef2;
+  color: #57606a;
+}
+.badge-mandatory {
+  background: #ffebe9;
+  color: #cf222e;
+}
+article.rule h4.config-types {
+  color: #57606a;
+}
+div.custom-type {
+  background: #f6f8fa;
+  border-left-color: #d0d7de;
+}
+.custom-type-name {
+  background: #ddf4ff;
+}
+.custom-type-kind {
+  color: #57606a;
+}
+div.custom-type dl.config {
+  background: transparent;
+}
+.settings-toggle {
+  background: #ffffff;
+  border-color: #d0d7de;
+  color: #1f2328;
+  box-shadow: 0 1px 3px rgba(31, 35, 40, 0.08);
+}
+.settings-toggle:hover {
+  background: #f6f8fa;
+}
+.settings-toggle:focus-visible {
+  outline-color: #0969da;
+}
+.settings-panel {
+  background: #ffffff;
+  border-color: #d0d7de;
+  box-shadow: 0 4px 16px rgba(31, 35, 40, 0.08);
+}
+.settings-panel-title {
+  color: #1f2328;
+}
+.settings-section > legend {
+  color: #57606a;
+}
+.theme-option {
+  border-color: #d0d7de;
+  color: #57606a;
+  background: #ffffff;
+}
+.theme-option:hover {
+  background: #f6f8fa;
+}
+.theme-radio:checked + .theme-option {
+  color: #0969da;
+  border-color: #0969da;
+  background: #ddf4ff;
+}
+.theme-radio:focus-visible + .theme-option {
+  outline-color: #0969da;
 }

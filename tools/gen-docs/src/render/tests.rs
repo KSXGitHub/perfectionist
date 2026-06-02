@@ -352,8 +352,10 @@ fn settings_css_keeps_theme_radios_visually_hidden() {
         "settings.css must keep the .theme-radio visually-hidden recipe",
     );
     // The checked radio highlights its sibling label via a pure-CSS
-    // adjacent-sibling selector (no JS needed for the highlight).
-    assert!(settings.contains(".theme-radio:checked + .theme-option"));
+    // adjacent-sibling selector (no JS needed for the highlight). The
+    // highlight is a colour, so it lives in the colour layer (light.css),
+    // not the structural settings.css.
+    assert!(stylesheet("light.css").contains(".theme-radio:checked + .theme-option"));
 }
 
 #[test]
@@ -373,20 +375,83 @@ fn page_does_not_inline_theme_icon_svgs() {
 }
 
 #[test]
-fn theme_palette_files_define_and_override_color_variables() {
-    // light.css owns the default palette plus the explicit-Light
-    // override; dark.css owns the system-preference and explicit-Dark
-    // dark palette. Pin the load-bearing selectors so the override-tier
-    // cascade (issue 185) can't be refactored away silently.
-    let light = stylesheet("light.css");
-    assert!(light.contains("--color-canvas-default: #ffffff"));
-    assert!(light.contains(r#":root[color-scheme-override="light"]"#));
+fn theme_files_carry_literal_colours_not_variables() {
+    // The colour layers use literal colours, never CSS custom
+    // properties, so the page themes on engines that predate `var()`
+    // (issue 185). light.css holds the default light values; dark.css
+    // holds the dark values under the two override-tier prefixes.
+    // Strip comments first: the files' header comments mention `var()`
+    // while explaining why they avoid it.
+    let light = strip_css_comments(stylesheet("light.css"));
+    assert!(
+        !light.contains("var(") && !light.contains("--color"),
+        "light.css must not use CSS custom properties",
+    );
+    assert!(light.contains("background-color: #ffffff"));
 
-    let dark = stylesheet("dark.css");
+    let dark = strip_css_comments(stylesheet("dark.css"));
+    assert!(
+        !dark.contains("var(") && !dark.contains("--color"),
+        "dark.css must not use CSS custom properties",
+    );
+    // Tier 2 (system preference) and tier 3 (explicit Dark) prefixes,
+    // keyed off the <html> attribute theme_toggle.js sets.
     assert!(dark.contains("@media (prefers-color-scheme: dark)"));
-    assert!(dark.contains(r#":root:not([color-scheme-override="light"])"#));
-    assert!(dark.contains(r#":root[color-scheme-override="dark"]"#));
-    assert!(dark.contains("--color-canvas-default: #0d1117"));
+    assert!(dark.contains(r#"html:not([color-scheme-override="light"])"#));
+    assert!(dark.contains(r#"html[color-scheme-override="dark"]"#));
+    assert!(dark.contains("background-color: #0d1117"));
+}
+
+/// Strip `/* ... */` block comments (the only comment form CSS has) so
+/// colour scans don't trip over prose or issue references inside them.
+fn strip_css_comments(css: &str) -> String {
+    let mut out = String::new();
+    let mut rest = css;
+    while let Some(start) = rest.find("/*") {
+        out.push_str(&rest[..start]);
+        match rest[start..].find("*/") {
+            Some(end) => rest = &rest[start + end + "*/".len()..],
+            None => return out, // unterminated; ignore the tail
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+#[test]
+fn structural_sheets_carry_no_literal_colours() {
+    // The colours were extracted out of the structural sheets; they
+    // should hold layout/sizing only, so a colour change is a one-file
+    // edit in the colour layer. `currentColor` (a structural reference,
+    // not a theme value) and `#id` selectors like `#catalogue` are
+    // fine — only literal `#rrggbb` hexes and `rgb(`/`rgba(` are colours.
+    for name in ["base.css", "nav.css", "rules.css", "settings.css"] {
+        // Strip comments first: prose may mention colours or `var()`.
+        let code = strip_css_comments(stylesheet(name));
+        assert!(
+            !code.contains("var("),
+            "{name} must not reference CSS custom properties",
+        );
+        assert!(
+            !code.contains("rgb"),
+            "{name} should carry no literal rgb()/rgba() colour",
+        );
+        // A `#` followed by six hex digits is a colour literal; `#id`
+        // selectors fail the six-hex test (they contain non-hex letters).
+        let bytes = code.as_bytes();
+        for (index, &byte) in bytes.iter().enumerate() {
+            if byte != b'#' {
+                continue;
+            }
+            let is_six_hex = bytes
+                .get(index + 1..index + 7)
+                .is_some_and(|run| run.iter().all(|byte| byte.is_ascii_hexdigit()));
+            assert!(
+                !is_six_hex,
+                "{name} should carry no literal hex colour near byte {index}",
+            );
+        }
+    }
 }
 
 #[test]
@@ -398,11 +463,11 @@ fn dark_highlight_css_is_scoped_to_the_dark_scheme() {
     // would unconditionally clobber the light colours.
     assert!(HIGHLIGHT_CSS_DARK.contains("@media (prefers-color-scheme: dark)"));
     assert!(
-        HIGHLIGHT_CSS_DARK.contains(r#":root:not([color-scheme-override="light"]) .comment"#),
+        HIGHLIGHT_CSS_DARK.contains(r#"html:not([color-scheme-override="light"]) .comment"#),
         "system-preference dark highlight must scope the syntax classes",
     );
     assert!(
-        HIGHLIGHT_CSS_DARK.contains(r#":root[color-scheme-override="dark"] .comment"#),
+        HIGHLIGHT_CSS_DARK.contains(r#"html[color-scheme-override="dark"] .comment"#),
         "explicit-Dark highlight must scope the syntax classes",
     );
 }

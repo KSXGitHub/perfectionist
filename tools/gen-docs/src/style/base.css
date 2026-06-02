@@ -1,15 +1,8 @@
-/* Colours in this sheet are `var(--color-*)` declared in light.css
-   (light values) and dark.css (dark values); see those files for the
-   override-tier cascade. Nothing here hard-codes a colour. */
-
-/* The page is centred with `margin: auto`, so on wide viewports the
-   body's side gutters expose the root element's background. Paint it
-   the canvas colour too (the variable is defined on `:root`, i.e.
-   <html>) so the gutters match the body instead of falling back to the
-   UA's white. */
-html {
-  background-color: var(--color-canvas-default);
-}
+/* Structural rules only. Every colour this page uses lives in
+   light.css (defaults) and dark.css (the dark tiers), declared as
+   literal colours with no CSS custom properties so the theming works
+   on engines that predate `var()`. The colour sheets mirror the
+   selectors here and are linked after the structural sheets. */
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
@@ -17,8 +10,6 @@ body {
   margin: 2rem auto;
   padding: 0 1rem;
   line-height: 1.55;
-  color: var(--color-fg-default);
-  background-color: var(--color-canvas-default);
 }
 
 /* Desktop / large-desktop tiers: bump the body's max-width so
@@ -58,7 +49,7 @@ body {
 }
 
 h1 {
-  border-bottom: 1px solid var(--color-border-default);
+  border-bottom: 1px solid;
   padding-bottom: 0.3rem;
 }
 
@@ -75,8 +66,7 @@ h2 {
 }
 
 .banner {
-  background: var(--color-attention-subtle);
-  border-left: 4px solid var(--color-attention-border);
+  border-left: 4px solid;
   padding: 0.75rem 1rem;
   margin: 0 0 1.5rem;
   font-size: 0.9rem;
@@ -88,7 +78,6 @@ code {
 }
 
 pre {
-  background: var(--color-canvas-subtle);
   padding: 0.75rem 1rem;
   border-radius: 6px;
   overflow-x: auto;
@@ -96,7 +85,6 @@ pre {
 }
 
 code {
-  background: var(--color-canvas-subtle);
   padding: 0.1rem 0.35rem;
   border-radius: 3px;
   font-size: 0.9rem;
@@ -104,7 +92,6 @@ code {
 }
 
 pre code {
-  background: none;
   padding: 0;
   font-size: 1rem;
 }
@@ -112,13 +99,8 @@ pre code {
 footer {
   margin-top: 4rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--color-border-muted);
+  border-top: 1px solid;
   font-size: 0.85rem;
-  color: var(--color-fg-muted);
-}
-
-a {
-  color: var(--color-accent-fg);
 }
 
 a:hover {

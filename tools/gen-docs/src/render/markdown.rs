@@ -148,14 +148,14 @@ static DARK_THEME: LazyLock<Theme> = LazyLock::new(|| {
 /// generated sheet is therefore prefixed twice (see issue 185's
 /// override tiers): once inside `@media (prefers-color-scheme: dark)`,
 /// excluding an explicit Light override, for tier 2; and once under
-/// `:root[color-scheme-override="dark"]` for the tier-3 explicit Dark
+/// `html[color-scheme-override="dark"]` for the tier-3 explicit Dark
 /// choice. The prefixed selectors out-specify the default (unscoped)
 /// light sheet, so dark colours win whenever the page is dark.
 pub(crate) static HIGHLIGHT_CSS_DARK: LazyLock<String> = LazyLock::new(|| {
     let raw = css_for_theme_with_class_style(&DARK_THEME, ClassStyle::Spaced)
         .expect("generating CSS for a bundled theme should not fail");
-    let media = scope_highlight_css(&raw, r#":root:not([color-scheme-override="light"])"#);
-    let overridden = scope_highlight_css(&raw, r#":root[color-scheme-override="dark"]"#);
+    let media = scope_highlight_css(&raw, r#"html:not([color-scheme-override="light"])"#);
+    let overridden = scope_highlight_css(&raw, r#"html[color-scheme-override="dark"]"#);
     format!("@media (prefers-color-scheme: dark) {{\n{media}}}\n{overridden}")
 });
 
