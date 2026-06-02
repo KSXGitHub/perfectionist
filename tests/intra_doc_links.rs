@@ -104,3 +104,17 @@ fn case_knobs_off_keep_only_non_conformist() {
          check_snake_case = false\n",
     );
 }
+
+/// `min_words = 3` exempts one- and two-word conformist names, checks
+/// three-word ones, and still checks a non-conformist name regardless.
+#[test]
+fn min_words_threshold_exempts_short_conformist_names() {
+    run(
+        "ui-toml/intra_doc_links/min_words",
+        "[perfectionist]\n\
+         disable = [\"prefer_expect_over_allow\"]\n\
+         \n\
+         [\"perfectionist::intra_doc_links\"]\n\
+         min_words = 3\n",
+    );
+}

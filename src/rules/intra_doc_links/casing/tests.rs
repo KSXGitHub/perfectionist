@@ -1,4 +1,19 @@
-use super::{Case, classify};
+use super::{Case, classify, word_count};
+
+#[test]
+fn counts_words() {
+    assert_eq!(word_count("foo", Case::Snake), 1);
+    assert_eq!(word_count("foo_bar", Case::Snake), 2);
+    assert_eq!(word_count("foo_bar_baz", Case::Snake), 3);
+    assert_eq!(word_count("FOO", Case::Upper), 1);
+    assert_eq!(word_count("FOO_BAR_BAZ", Case::Upper), 3);
+    assert_eq!(word_count("Foo", Case::Pascal), 1);
+    assert_eq!(word_count("FooBar", Case::Pascal), 2);
+    assert_eq!(word_count("FooBarBaz", Case::Pascal), 3);
+    assert_eq!(word_count("HttpServer", Case::Pascal), 2);
+    // Acronym boundary: `HTTP` + `Server`.
+    assert_eq!(word_count("HTTPServer", Case::Pascal), 2);
+}
 
 #[test]
 fn snake_case() {

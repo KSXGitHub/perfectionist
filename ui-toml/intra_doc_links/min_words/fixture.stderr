@@ -1,0 +1,22 @@
+warning: `FooBarBaz` resolves in scope; write it as an intra-doc link
+  --> $DIR/fixture.rs:14:33
+   |
+LL | /// At or above it and checked: `FooBarBaz` (3), `foo_bar_baz` (3).
+   |                                 ^^^^^^^^^^^ help: wrap as an intra-doc link: `[`FooBarBaz`]`
+   |
+   = note: `#[warn(perfectionist::intra_doc_links)]` on by default
+
+warning: `foo_bar_baz` resolves in scope; write it as an intra-doc link
+  --> $DIR/fixture.rs:14:50
+   |
+LL | /// At or above it and checked: `FooBarBaz` (3), `foo_bar_baz` (3).
+   |                                                  ^^^^^^^^^^^^^ help: wrap as an intra-doc link: `[`foo_bar_baz`]`
+
+warning: `Mixed_Thing` resolves in scope; write it as an intra-doc link
+  --> $DIR/fixture.rs:15:44
+   |
+LL | /// Non-conformist and checked regardless: `Mixed_Thing`.
+   |                                            ^^^^^^^^^^^^^ help: wrap as an intra-doc link: `[`Mixed_Thing`]`
+
+warning: 3 warnings emitted
+

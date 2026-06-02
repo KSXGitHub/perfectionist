@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use std::num::NonZeroUsize;
 
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
@@ -96,6 +97,13 @@ struct Config {
     /// non-conformist names are checked regardless (see
     /// `check_pascal_case`).
     check_snake_case: bool,
+    /// Minimum number of words a name must have to be checked. Defaults
+    /// to `1` (check everything). At `3`, `foo`, `foo_bar`, `Foo`,
+    /// `FooBar`, `FOO`, and `FOO_BAR` are exempt, while `foo_bar_baz`,
+    /// `FooBarBaz`, and `FOO_BAR_BAZ` are checked. Mixed / non-conformist
+    /// names are checked regardless of this threshold (see
+    /// `check_pascal_case`).
+    min_words: NonZeroUsize,
 }
 
 impl Default for Config {
@@ -106,6 +114,7 @@ impl Default for Config {
             check_pascal_case: true,
             check_upper_case: true,
             check_snake_case: true,
+            min_words: NonZeroUsize::MIN,
         }
     }
 }
@@ -136,6 +145,7 @@ pub struct IntraDocLinks {
     check_pascal_case: bool,
     check_upper_case: bool,
     check_snake_case: bool,
+    min_words: usize,
 }
 
 impl IntraDocLinks {
@@ -148,19 +158,23 @@ impl IntraDocLinks {
             check_pascal_case: config.check_pascal_case,
             check_upper_case: config.check_upper_case,
             check_snake_case: config.check_snake_case,
+            min_words: config.min_words.get(),
         }
     }
 
-    /// Whether the candidate's case style is one the configuration asks
-    /// to check. A mixed / non-conformist name is always checked — these
-    /// three knobs only gate the three conformist shapes.
-    fn case_allows(&self, ident: &str) -> bool {
-        match casing::classify(ident) {
+    /// Whether the candidate's name passes the case and minimum-word-count
+    /// knobs. A mixed / non-conformist name is always checked — those
+    /// knobs only gate the three conformist shapes — so it short-circuits
+    /// to `true`.
+    fn name_allows(&self, ident: &str) -> bool {
+        let case = casing::classify(ident);
+        let case_enabled = match case {
             casing::Case::Snake => self.check_snake_case,
             casing::Case::Upper => self.check_upper_case,
             casing::Case::Pascal => self.check_pascal_case,
-            casing::Case::NonConformist => true,
-        }
+            casing::Case::NonConformist => return true,
+        };
+        case_enabled && casing::word_count(ident, case) >= self.min_words
     }
 }
 
@@ -216,7 +230,7 @@ impl IntraDocLinks {
             if self.skip_idents.contains(&name) {
                 continue;
             }
-            if !self.case_allows(&candidate.ident) {
+            if !self.name_allows(&candidate.ident) {
                 continue;
             }
             let len = (candidate.span.end - candidate.span.start) as u32;

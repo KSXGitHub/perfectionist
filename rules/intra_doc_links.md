@@ -90,6 +90,15 @@ Whether to check `snake_case` names. Defaults to `true`. Mixed /
 non-conformist names are checked regardless (see
 `check_pascal_case`).
 
+### `min_words`: `non-zero unsigned integer` (optional)
+
+Minimum number of words a name must have to be checked. Defaults
+to `1` (check everything). At `3`, `foo`, `foo_bar`, `Foo`,
+`FooBar`, `FOO`, and `FOO_BAR` are exempt, while `foo_bar_baz`,
+`FooBarBaz`, and `FOO_BAR_BAZ` are checked. Mixed / non-conformist
+names are checked regardless of this threshold (see
+`check_pascal_case`).
+
 ### Types
 
 #### `ImportedNames` (enum)
