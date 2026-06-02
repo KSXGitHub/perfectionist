@@ -136,8 +136,8 @@ pub(crate) static HIGHLIGHT_CSS: LazyLock<String> = LazyLock::new(|| {
 static DARK_THEME: LazyLock<Theme> = LazyLock::new(|| {
     ThemeSet::load_defaults()
         .themes
-        .remove("base16-ocean.dark")
-        .expect("base16-ocean.dark theme is bundled with syntect")
+        .remove("base16-eighties.dark")
+        .expect("base16-eighties.dark theme is bundled with syntect")
 });
 
 /// Dark-mode highlight CSS. The classed HTML spans (`.comment`,
