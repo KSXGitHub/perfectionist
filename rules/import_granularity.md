@@ -27,6 +27,14 @@ statements that sit next to each other in a module body, share a
 visibility, and carry matching attributes are merged; the three
 `respect_*` knobs tighten or loosen that grouping.
 
+Under `crate` style a name that is both an item and a module
+(`use crate::thing;` next to `use crate::thing::T;`) has two valid
+one-`use` shapes — the `self`-fold `crate::thing::{self, T}` and
+the sibling-split `crate::{thing, thing::T}` — that bind different
+namespaces. By default neither single-statement form is flagged
+and both are offered when a merge is forced; the optional
+`self_merge` knob (`fold` / `split`) picks one and enforces it.
+
 Globs (`use foo::*`) are governed by `perfectionist::no_star_imports`,
 not by this rule: a top-level glob is left alone under `item`.
 
@@ -90,6 +98,18 @@ Never merge a `use` that carries its own doc comment (`///` or
 keeps describing exactly the import it was written above.
 Defaults to `true`. Set `false` to allow such a `use` to merge.
 
+### `self_merge`: `SelfMerge` (optional)
+
+Under `style = "crate"`, force one shape when a path segment
+names both an item and a module (`use crate::thing;` next to
+`use crate::thing::T;`). Unset by default — the two shapes are
+not interchangeable, so the rule flags neither single-statement
+form and offers both as `MaybeIncorrect` when a merge is forced.
+Set `fold` to always enforce `use crate::thing::{self, T};`, or
+`split` to always enforce `use crate::{thing, thing::T};`;
+either value also flags the opposite single-statement form.
+Ignored under `module` and `item` style.
+
 ### Types
 
 #### `Style` (enum)
@@ -115,3 +135,22 @@ on their own `use` lines, e.g.
 
 One `use` per leaf item. Every imported name lives on its own
 line, e.g. `use std::collections::BTreeMap;`.
+
+#### `SelfMerge` (enum)
+
+How to resolve a path segment that names **both** an item and a
+module under `crate` style — `use crate::thing;` next to
+`use crate::thing::T;`. The two one-`use`-per-root shapes are not
+interchangeable, so unless this knob is set the rule offers both and
+the author picks. Only consulted under `style = "crate"`.
+
+##### `"fold"` (Rust: `Fold`)
+
+Always enforce the `self`-fold `use crate::thing::{self, T};` —
+the shape rustfmt's `imports_granularity = "Crate"` produces. The
+sibling-split form is flagged and rewritten to it.
+
+##### `"split"` (Rust: `Split`)
+
+Always enforce the sibling-split `use crate::{thing, thing::T};`.
+The `self`-fold form is flagged and rewritten to it.

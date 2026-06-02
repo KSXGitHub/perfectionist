@@ -1,6 +1,7 @@
-//! Configuration for `import_granularity`: the chosen [`Style`] plus
-//! the three `respect_*` knobs that decide which `use` statements may
-//! be merged with one another.
+//! Configuration for `import_granularity`: the chosen [`Style`], the
+//! three `respect_*` knobs that decide which `use` statements may be
+//! merged with one another, and the optional [`SelfMerge`] knob that
+//! resolves the item-and-module name ambiguity under `crate` style.
 
 /// Import-granularity style. The three values map one-to-one onto
 /// rustfmt's unstable `imports_granularity` option (`Crate`, `Module`,
@@ -21,6 +22,23 @@ pub(super) enum Style {
     /// One `use` per leaf item. Every imported name lives on its own
     /// line, e.g. `use std::collections::BTreeMap;`.
     Item,
+}
+
+/// How to resolve a path segment that names **both** an item and a
+/// module under `crate` style — `use crate::thing;` next to
+/// `use crate::thing::T;`. The two one-`use`-per-root shapes are not
+/// interchangeable, so unless this knob is set the rule offers both and
+/// the author picks. Only consulted under `style = "crate"`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(super) enum SelfMerge {
+    /// Always enforce the `self`-fold `use crate::thing::{self, T};` —
+    /// the shape rustfmt's `imports_granularity = "Crate"` produces. The
+    /// sibling-split form is flagged and rewritten to it.
+    Fold,
+    /// Always enforce the sibling-split `use crate::{thing, thing::T};`.
+    /// The `self`-fold form is flagged and rewritten to it.
+    Split,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -47,6 +65,16 @@ pub(super) struct Config {
     /// keeps describing exactly the import it was written above.
     /// Defaults to `true`. Set `false` to allow such a `use` to merge.
     pub(super) respect_doc_comments: bool,
+    /// Under `style = "crate"`, force one shape when a path segment
+    /// names both an item and a module (`use crate::thing;` next to
+    /// `use crate::thing::T;`). Unset by default — the two shapes are
+    /// not interchangeable, so the rule flags neither single-statement
+    /// form and offers both as `MaybeIncorrect` when a merge is forced.
+    /// Set `fold` to always enforce `use crate::thing::{self, T};`, or
+    /// `split` to always enforce `use crate::{thing, thing::T};`;
+    /// either value also flags the opposite single-statement form.
+    /// Ignored under `module` and `item` style.
+    pub(super) self_merge: Option<SelfMerge>,
 }
 
 impl Default for Config {
@@ -56,6 +84,7 @@ impl Default for Config {
             respect_cfg_blocks: true,
             respect_visibility: true,
             respect_doc_comments: true,
+            self_merge: None,
         }
     }
 }
