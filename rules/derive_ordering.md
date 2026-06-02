@@ -50,7 +50,7 @@ enable = ["derive_ordering"]
 
 ## Example
 
-Under `style = "alphabetical"`:
+### Style: Alphabetical (default)
 
 **Avoid:**
 
@@ -63,6 +63,23 @@ struct Point;
 
 ```rust,ignore
 #[derive(Clone, Copy, Debug)]
+struct Point;
+```
+
+### Style: Prefix then alphabetical
+
+**Avoid:**
+
+```rust,ignore
+#[derive(Clone, Debug, Serialize, Copy)]
+struct Point;
+```
+
+**Prefer:** (default `prefix`: `Debug`, `Default`, `Clone`, `Copy`, ...,
+then the remaining traits alphabetically)
+
+```rust,ignore
+#[derive(Debug, Clone, Copy, Serialize)]
 struct Point;
 ```
 

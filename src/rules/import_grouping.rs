@@ -51,7 +51,7 @@ declare_tool_lint! {
     ///
     /// ### Example
     ///
-    /// Under the default `style = "grouped"`:
+    /// #### Style: Grouped (default)
     ///
     /// **Avoid:**
     ///
@@ -69,6 +69,26 @@ declare_tool_lint! {
     /// use crate::args::Args;
     ///
     /// use clap::Parser;
+    /// ```
+    ///
+    /// #### Style: Single group
+    ///
+    /// **Avoid:**
+    ///
+    /// ```rust,ignore
+    /// use std::time::Duration;
+    ///
+    /// use crate::args::Args;
+    ///
+    /// use clap::Parser;
+    /// ```
+    ///
+    /// **Prefer:** (one contiguous block; inner order left to `cargo fmt`)
+    ///
+    /// ```rust,ignore
+    /// use clap::Parser;
+    /// use crate::args::Args;
+    /// use std::time::Duration;
     /// ```
     pub perfectionist::IMPORT_GROUPING,
     Warn,
