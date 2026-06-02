@@ -40,4 +40,13 @@ mod lone_self {
     use crate::thing::{self};
 }
 
+// Two module-only `self` imports of the same module (one renamed) must
+// merge to `crate::thing::{self, self as alt}`, NOT be split into bare
+// items: there is no deeper, non-`self` sibling to split against, so
+// splitting would bind `thing` in every namespace for no granularity gain.
+mod self_pair {
+    use crate::thing::{self};
+    use crate::thing::{self as alt};
+}
+
 fn main() {}

@@ -102,29 +102,38 @@ pub(super) fn has_bare_item_dual(leaves: &[Leaf]) -> bool {
     })
 }
 
-/// Whether `leaves` contains a `self` import that has a deeper sibling —
-/// the `thing::{self, T}` pattern. The `split` `self_merge` setting
-/// rewrites it to `{thing, thing::T}`; raising the module-only `self` to
-/// a bare item binds `thing` in *every* namespace, so it is the lossy
-/// half of the `split` rewrite. A lone `use thing::{self}` has no deeper
-/// sibling and is left alone. See
+/// Whether `leaves` contains a `self` import that has a splittable
+/// sibling — the `thing::{self, T}` pattern. The `split` `self_merge`
+/// setting rewrites it to `{thing, thing::T}`; raising the module-only
+/// `self` to a bare item binds `thing` in *every* namespace, so it is the
+/// lossy half of the `split` rewrite. A lone `use thing::{self}`, or one
+/// paired only with another `self` for the same module
+/// (`thing::{self, self as alt}`), has no sibling to split against and is
+/// left alone. See
 /// <https://github.com/KSXGitHub/perfectionist/issues/206>.
 pub(super) fn has_self_dual(leaves: &[Leaf]) -> bool {
     leaves.iter().enumerate().any(|(index, leaf)| {
-        matches!(leaf.item, LeafItem::SelfMod) && has_deeper_sibling(leaves, index)
+        matches!(leaf.item, LeafItem::SelfMod) && self_has_splittable_sibling(leaves, index)
     })
 }
 
-/// Whether some other leaf lives in the module named by `leaves[index]`
-/// (or deeper) — i.e. `leaves[index]` is a `self`/module import with a
-/// sibling under the same path. The leaf at `index` is excluded from the
+/// Whether the `self`/module import at `leaves[index]` has a sibling that
+/// lives *inside* the module it names — an item directly in the module
+/// (`thing::{self, T}`) or a deeper import (`thing::{self, sub::X}`) — and
+/// so can be split into a bare item plus that sibling. Another
+/// module-only `self` for the *same* module
+/// (`thing::{self, self as alt}`) is **not** such a sibling: it binds the
+/// same module with nothing deeper to split against, so lowering the
+/// `self` to a bare item would change which namespaces the name binds for
+/// no granularity gain. The leaf at `index` is excluded from the
 /// comparison so it never counts as its own sibling.
-pub(super) fn has_deeper_sibling(leaves: &[Leaf], index: usize) -> bool {
+pub(super) fn self_has_splittable_sibling(leaves: &[Leaf], index: usize) -> bool {
     let module = &leaves[index].module;
-    leaves
-        .iter()
-        .enumerate()
-        .any(|(other, sibling)| other != index && sibling.module.starts_with(module))
+    leaves.iter().enumerate().any(|(other, sibling)| {
+        other != index
+            && sibling.module.starts_with(module)
+            && !(sibling.module.len() == module.len() && matches!(sibling.item, LeafItem::SelfMod))
+    })
 }
 
 /// Build a [`StmtInfo`] for one top-level `use` tree, or `None` when the
