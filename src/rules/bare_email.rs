@@ -63,7 +63,7 @@ enum Style {
     Mailto,
     /// Combine both — `<mailto:user@example.com>`.
     Both,
-    /// Accept any of the wrapped forms above (`<email>`,
+    /// Accept any of the three wrapped forms (`<email>`,
     /// `mailto:email`, or `<mailto:email>`); the autofix emits two
     /// `MaybeIncorrect` suggestions for the author to pick from.
     Either,
