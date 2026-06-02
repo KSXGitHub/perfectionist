@@ -61,4 +61,13 @@ struct _CfgAttrCompound;
 #[cfg_attr(unix, cfg_attr(target_os = "linux", derive(Debug, Clone)))]
 struct _CfgAttrNested;
 
+// Bad: a derive gated by a predicate that is FALSE on the test host is
+// still ordered — `derive_ordering` is a pre-expansion pass and never
+// evaluates the `cfg` predicate, so the check is host-independent. Keep
+// the predicate as `windows` (false on the Unix CI host): "simplifying"
+// it back to `unix` would silently drop the platform-independence
+// coverage this case exists to pin.
+#[cfg_attr(windows, derive(Debug, Clone, Copy))]
+struct _CfgAttrInactivePredicate;
+
 fn main() {}
