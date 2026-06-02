@@ -225,12 +225,16 @@ pub(super) struct Config {
     /// fully-qualified macro path (no trailing `!`) or a bare macro
     /// name to match by final segment only.
     pub deny_extra: Vec<String>,
-    /// Macros added to the built-in allow set. Same matching rules
-    /// as `deny_extra`. Only meaningful in `AllowAndDeny` and
-    /// `Blanket` modes; in `DenyOnly` the allow set is unused.
+    /// Macros added to the built-in allow set. Each entry is a
+    /// fully-qualified macro path (no trailing `!`) or a bare macro
+    /// name to match by final segment only. Only meaningful in
+    /// `AllowAndDeny` and `Blanket` modes; in `DenyOnly` the allow
+    /// set is unused.
     pub allow_extra: Vec<String>,
     /// Macros to skip entirely, regardless of which set they would
-    /// otherwise match. Same matching rules as `deny_extra`.
+    /// otherwise match. Each entry is a fully-qualified macro path
+    /// (no trailing `!`) or a bare macro name to match by final
+    /// segment only.
     pub ignore: Vec<String>,
     /// Method names added to the built-in pure-method list. Each
     /// entry is a bare method identifier (no `()`, no receiver). A
