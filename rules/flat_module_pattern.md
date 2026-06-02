@@ -28,15 +28,19 @@ don't disambiguate by directory.
 **Avoid:**
 
 ```text
-src/foo/mod.rs
-src/foo/bar.rs
+src
+└── foo
+    ├── mod.rs
+    └── bar.rs
 ```
 
 **Prefer:**
 
 ```text
-src/foo.rs
-src/foo/bar.rs
+src
+├── foo.rs
+└── foo
+    └── bar.rs
 ```
 
 ## Configuration
