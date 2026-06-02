@@ -101,9 +101,9 @@ fn highlight_to_html(code: &str, lang: &str) -> String {
 /// `language-...` class is purely decorative here.
 fn lang_class_attr(lang: &str) -> String {
     let safe = !lang.is_empty()
-        && lang
-            .chars()
-            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '+' | '#' | '.'));
+        && lang.chars().all(|char| {
+            char.is_ascii_alphanumeric() || matches!(char, '_' | '-' | '+' | '#' | '.')
+        });
     if safe {
         format!(" class=\"language-{lang}\"")
     } else {

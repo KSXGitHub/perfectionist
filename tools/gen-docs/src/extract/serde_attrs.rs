@@ -115,8 +115,8 @@ pub(crate) fn apply_rename_all(style: &str, name: &str) -> String {
 pub(crate) fn pascal_to_snake(name: &str) -> String {
     let mut out = String::with_capacity(name.len() + 2);
     let chars: Vec<char> = name.chars().collect();
-    for (index, &ch) in chars.iter().enumerate() {
-        if ch.is_ascii_uppercase() {
+    for (index, &char) in chars.iter().enumerate() {
+        if char.is_ascii_uppercase() {
             let prev_lower = index > 0 && chars[index - 1].is_ascii_lowercase();
             let next_lower = chars
                 .get(index + 1)
@@ -124,9 +124,9 @@ pub(crate) fn pascal_to_snake(name: &str) -> String {
             if index > 0 && (prev_lower || next_lower) {
                 out.push('_');
             }
-            out.push(ch.to_ascii_lowercase());
+            out.push(char.to_ascii_lowercase());
         } else {
-            out.push(ch);
+            out.push(char);
         }
     }
     out
