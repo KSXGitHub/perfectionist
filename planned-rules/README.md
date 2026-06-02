@@ -229,9 +229,10 @@ external state, or judgement calls that a static lint cannot evaluate:
   (pacquet *Documentation comments*) — already covered by rustdoc's
   built-in `rustdoc::private_intra_doc_links` lint (default `warn`).
   Run `RUSTFLAGS='-D warnings' cargo doc --document-private-items` to
-  promote it to a hard error. The bare-backtick variant
-  (`` `Foo` `` rather than `` [`Foo`] ``) is funnelled into intra-doc
-  links by `perfectionist::intra_doc_links`
-  (`src/rules/intra_doc_links.rs`), after which rustdoc catches it.
-  Reimplementing this in Dylint would be a
-  less accurate duplicate of rustdoc's own resolver.
+  promote it to a hard error. `perfectionist::intra_doc_links`
+  (`src/rules/intra_doc_links.rs`) deliberately leaves a public item's
+  bare-backtick mention of a more-private item alone — turning it into
+  `` [`Foo`] `` would only manufacture a `private_intra_doc_links`
+  violation — so this case stays out of scope here too, covered only by
+  rustdoc's lint for the explicit-link form. Reimplementing it in Dylint
+  would be a less accurate duplicate of rustdoc's own resolver.
