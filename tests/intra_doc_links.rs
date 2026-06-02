@@ -85,6 +85,28 @@ fn reference_scope_module_tree_checks_the_modules_own_subtree() {
     );
 }
 
+/// `reference_scope = "anywhere"` (the default) flags every resolving
+/// name over the same source, including the `crate::`-reaching and
+/// another-crate imports the narrower policies drop.
+#[test]
+fn reference_scope_anywhere_checks_everything() {
+    run(
+        "ui-toml/intra_doc_links/imports_anywhere",
+        &reference_scope_toml("anywhere"),
+    );
+}
+
+/// A public macro colliding with a private function of the same name is
+/// ambiguous, and the disambiguator must name an eligible namespace
+/// (`macro@`), not the private `value@` or the absent `type@`.
+#[test]
+fn ambiguity_disambiguator_picks_an_eligible_namespace() {
+    run(
+        "ui-toml/intra_doc_links/macro_disambiguator",
+        &dylint_toml(RuleConfig::default()),
+    );
+}
+
 /// With all three case knobs off, the conformist names are left alone
 /// but a non-conformist name still fires. (`prefer_expect_over_allow` is
 /// disabled because the fixture's non-conformist type needs a naming
