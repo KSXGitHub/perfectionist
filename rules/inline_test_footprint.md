@@ -81,7 +81,7 @@ How inline test code is handled. Defaults to
 ### `inline_max_lines`: `unsigned integer` (optional)
 
 Absolute cap, in lines, on the summed inline-test footprint of a
-file under `external_when_long`. Always active.
+file under `external_when_long`; always active. Defaults to `50`.
 
 ### `inline_max_fraction_of_file`: `float` (optional)
 

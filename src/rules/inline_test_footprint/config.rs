@@ -23,7 +23,7 @@ struct Config {
     /// `external_when_long`.
     inline_style: InlineStyle,
     /// Absolute cap, in lines, on the summed inline-test footprint of a
-    /// file under `external_when_long`. Always active.
+    /// file under `external_when_long`; always active. Defaults to `50`.
     inline_max_lines: usize,
     /// Optional relative cap: the share `inline_test_lines / file_lines`
     /// a file's inline tests may occupy under `external_when_long`.
