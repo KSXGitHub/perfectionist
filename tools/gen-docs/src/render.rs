@@ -41,15 +41,16 @@ pub(crate) const STYLESHEETS: &[(&str, &str)] = &[
     ("dark.css", include_str!("style/dark.css")),
 ];
 
-/// File name the syntect-generated highlight CSS (see
+/// File name the light-mode syntect-generated highlight CSS (see
 /// [`markdown::HIGHLIGHT_CSS`]) is written under. It is linked *after*
 /// the static [`STYLESHEETS`] so its classes win where they overlap,
 /// matching the cascade order of the previous single inline `<style>`.
-pub(crate) const HIGHLIGHT_CSS_FILENAME: &str = "highlight.css";
+/// Named `highlight-light.css` for symmetry with its dark counterpart.
+pub(crate) const HIGHLIGHT_CSS_LIGHT_FILENAME: &str = "highlight-light.css";
 
 /// File name the dark-mode highlight CSS (see
 /// [`markdown::HIGHLIGHT_CSS_DARK`]) is written under. Linked after
-/// [`HIGHLIGHT_CSS_FILENAME`]; its rules are scoped under a
+/// [`HIGHLIGHT_CSS_LIGHT_FILENAME`]; its rules are scoped under a
 /// higher-specificity ancestor so they re-colour the same syntax
 /// classes only when the effective theme is dark.
 pub(crate) const HIGHLIGHT_CSS_DARK_FILENAME: &str = "highlight-dark.css";
@@ -109,7 +110,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 @for &(href, _) in STYLESHEETS {
                     link rel="stylesheet" href=(href);
                 }
-                link rel="stylesheet" href=(HIGHLIGHT_CSS_FILENAME);
+                link rel="stylesheet" href=(HIGHLIGHT_CSS_LIGHT_FILENAME);
                 link rel="stylesheet" href=(HIGHLIGHT_CSS_DARK_FILENAME);
             }
             body {

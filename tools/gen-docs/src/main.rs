@@ -45,7 +45,7 @@ use crate::extract::collect_rules;
 use crate::model::{RenderContext, Rule};
 use crate::render::markdown::{HIGHLIGHT_CSS, HIGHLIGHT_CSS_DARK};
 use crate::render::{
-    HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_FILENAME, NAV_TOGGLE_SCRIPT,
+    HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME, NAV_TOGGLE_SCRIPT,
     NAV_TOGGLE_SCRIPT_FILENAME, RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME, STYLESHEETS,
     THEME_ICONS, THEME_TOGGLE_SCRIPT, THEME_TOGGLE_SCRIPT_FILENAME, render_page,
 };
@@ -193,8 +193,8 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     // The syntax-highlighting CSS is generated at runtime by syntect,
     // so it's written from the live string rather than `include_str!`.
     // The dark variant is generated the same way and linked after it.
-    fs::write(out_dir.join(HIGHLIGHT_CSS_FILENAME), &*HIGHLIGHT_CSS)
-        .expect("failed to write highlight CSS");
+    fs::write(out_dir.join(HIGHLIGHT_CSS_LIGHT_FILENAME), &*HIGHLIGHT_CSS)
+        .expect("failed to write light highlight CSS");
     fs::write(
         out_dir.join(HIGHLIGHT_CSS_DARK_FILENAME),
         &*HIGHLIGHT_CSS_DARK,

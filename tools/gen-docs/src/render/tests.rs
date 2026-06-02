@@ -179,9 +179,9 @@ fn page_links_each_stylesheet_individually() {
     }
     assert!(
         html.contains(&format!(
-            "<link rel=\"stylesheet\" href=\"{HIGHLIGHT_CSS_FILENAME}\">"
+            "<link rel=\"stylesheet\" href=\"{HIGHLIGHT_CSS_LIGHT_FILENAME}\">"
         )),
-        "expected a dedicated <link> for the highlight CSS",
+        "expected a dedicated <link> for the light highlight CSS",
     );
     // Nothing is inlined any more: no `<style>` block survives.
     assert!(
