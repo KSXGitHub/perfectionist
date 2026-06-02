@@ -50,5 +50,11 @@ warning: derive list is not in ASCII-case-insensitive alphabetical order
 LL | #[cfg_attr(unix, cfg_attr(target_os = "linux", derive(Debug, Clone)))]
    |                                                       ^^^^^^^^^^^^ help: reorder the derive list: `Clone, Debug`
 
-warning: 8 warnings emitted
+warning: derive list is not in ASCII-case-insensitive alphabetical order
+  --> $DIR/fixture.rs:70:28
+   |
+LL | #[cfg_attr(windows, derive(Debug, Clone, Copy))]
+   |                            ^^^^^^^^^^^^^^^^^^ help: reorder the derive list: `Clone, Copy, Debug`
+
+warning: 9 warnings emitted
 
