@@ -34,6 +34,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   import grouping does not match the configured `import_grouping.style`
 
+- [`inline_test_footprint`](./inline_test_footprint.md) (default: `active`).
+
+  inline test code should be extracted to a separate file
+
 - [`lint_reason_from_comment`](./lint_reason_from_comment.md) (default: `active`).
 
   trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field
@@ -113,10 +117,6 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`unicode_ellipsis_in_panic_messages`](./unicode_ellipsis_in_panic_messages.md) (default: `active`).
 
   U+2026 HORIZONTAL ELLIPSIS in panic / assertion / expect messages; prefer `...`
-
-- [`unit_test_file_layout`](./unit_test_file_layout.md) (default: `active`).
-
-  unit-test code is in the wrong file or exceeds the inline-test budget
 
 - [`unknown_perfectionist_lints`](./unknown_perfectionist_lints.md) (default: `active`).
 

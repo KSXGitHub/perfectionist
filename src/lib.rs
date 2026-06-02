@@ -52,6 +52,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         flat_module_pattern
         import_granularity
         import_grouping
+        inline_test_footprint
         lint_reason_from_comment
         lint_silence_reason
         macro_argument_binding
@@ -72,7 +73,6 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         unicode_ellipsis_in_comments
         unicode_ellipsis_in_docs
         unicode_ellipsis_in_panic_messages
-        unit_test_file_layout
 
         // `unknown_perfectionist_lints::register_pass` snapshots the registered
         // `perfectionist::*` lint names out of the `LintStore`, so its pass must
