@@ -27,11 +27,15 @@ declare_tool_lint! {
     ///
     /// ### Example
     ///
-    /// ```text
-    /// // Bad
-    /// src/foo/mod.rs
+    /// **Avoid:**
     ///
-    /// // Good
+    /// ```text
+    /// src/foo/mod.rs
+    /// ```
+    ///
+    /// **Prefer:**
+    ///
+    /// ```text
     /// src/foo.rs
     /// src/foo/bar.rs
     /// ```
