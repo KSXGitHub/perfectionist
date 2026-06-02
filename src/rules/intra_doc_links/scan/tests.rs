@@ -45,6 +45,23 @@ fn accepts_padded_double_backtick_span() {
 }
 
 #[test]
+fn rejects_multi_line_span() {
+    // A code span wrapping a soft line break is not a clean inline link
+    // candidate and its source span would not map back contiguously.
+    assert_eq!(take_backticked_ident("`\nFoo\n`"), None);
+}
+
+#[test]
+fn rejects_over_padded_span() {
+    // CommonMark strips at most one space per side, so `  Foo  ` keeps a
+    // space and is not a bare identifier.
+    assert_eq!(take_backticked_ident("`  Foo  `"), None);
+    assert_eq!(take_backticked_ident("`\tFoo\t`"), None);
+    // The single-space padded form is still a candidate.
+    assert_eq!(take_backticked_ident("` Foo `").as_deref(), Some("Foo"));
+}
+
+#[test]
 fn plain_ident_predicate() {
     assert!(is_plain_ident("Foo"));
     assert!(is_plain_ident("snake_case_2"));

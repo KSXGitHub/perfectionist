@@ -22,6 +22,12 @@ pub(super) enum Case {
 /// Classify an identifier's case style. A leading, trailing, or doubled
 /// underscore, a mix of upper and lower outside of `PascalCase`, or any
 /// non-`[A-Za-z0-9_]` byte all make the name [`Case::NonConformist`].
+///
+/// Two deliberate tie-breaks: a name with no lowercase letter is
+/// [`Case::Upper`] (so `FOO`, `HTTP`, and a one-letter `X` are `Upper`,
+/// not `Pascal`), and classification is ASCII-only, so any identifier
+/// with a non-ASCII letter (`Größe`, `Δ`) is [`Case::NonConformist`] and
+/// thus checked regardless of the case knobs.
 pub(super) fn classify(name: &str) -> Case {
     if name.is_empty() {
         return Case::NonConformist;

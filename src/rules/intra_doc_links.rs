@@ -237,11 +237,13 @@ impl IntraDocLinks {
         out: &mut Vec<(Span, Violation)>,
     ) {
         for candidate in scan::collect_candidates(&chunk.rendered) {
-            let name = Symbol::intern(&candidate.ident);
-            if self.skip_idents.contains(&name) {
+            // Cheapest-first: the pure-`&str` case / word-count filter
+            // rejects most prose words before interning a `Symbol`.
+            if !self.name_allows(&candidate.ident) {
                 continue;
             }
-            if !self.name_allows(&candidate.ident) {
+            let name = Symbol::intern(&candidate.ident);
+            if self.skip_idents.contains(&name) {
                 continue;
             }
             let len = (candidate.span.end - candidate.span.start) as u32;
