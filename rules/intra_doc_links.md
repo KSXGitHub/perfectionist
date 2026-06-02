@@ -62,12 +62,13 @@ comment deliberately mentions without wanting a cross-reference
 — a historical type kept for context, or a word that happens to
 collide with an in-scope item but is meant as prose.
 
-### `imported_names`: `ImportedNames` (optional)
+### `reference_scope`: `ReferenceScope` (optional)
 
-Which names that enter the documented item's scope through a
-`use` import the rule still checks. A backticked word that
-matches an accidentally-added import is a common source of
-churn, so a project can narrow this. Defaults to `check`.
+How far from the documenting item a referenced name may resolve
+for the rule to check it, by where the referenced item lives in
+the module tree. A backticked word that matches an
+accidentally-added cross-module import is a common source of
+churn, so a project can narrow this. Defaults to `anywhere`.
 
 ### `check_pascal_case`: `boolean` (optional)
 
@@ -111,25 +112,25 @@ an accident.
 
 ### Types
 
-#### `ImportedNames` (enum)
+#### `ReferenceScope` (enum)
 
-Policy for names that enter the documented item's scope through a
-`use` import, configured by `imported_names`. The axis is *where the
-referenced item lives relative to the documenting item's module*,
-not the spelling of the `use` path.
+How far from the documenting item a referenced name may resolve for
+the rule to check it, configured by `reference_scope`. The axis is
+*where the referenced item lives relative to the documenting item's
+module*, not the spelling of the `use` path that brought it in.
 
-##### `"ignore"` (Rust: `Ignore`)
+##### `"own_module"` (Rust: `OwnModule`)
 
-Ignore every name reached through a `use`; flag only items
-defined directly in the documenting item's own module.
+Only items defined directly in the documenting item's own module.
+Every name reached through a `use` is left alone.
 
-##### `"internal"` (Rust: `Internal`)
+##### `"module_tree"` (Rust: `ModuleTree`)
 
-Also flag items imported from within that module's own subtree
-(e.g. `use self::child::Item`), but keep ignoring names that
-reach outside the module — `use super::...`, `use crate::...`,
-and imports from other crates.
+Also items from within that module's own subtree (e.g. reached
+through `use self::child::Item`), but still not names that reach
+outside the module — `use super::...`, `use crate::...`, and
+imports from other crates.
 
-##### `"check"` (Rust: `Check`)
+##### `"anywhere"` (Rust: `Anywhere`)
 
-Flag every name that resolves in scope, however it got there.
+Any name that resolves in scope, however it got there.

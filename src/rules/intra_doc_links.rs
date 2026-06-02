@@ -77,11 +77,12 @@ struct Config {
     /// — a historical type kept for context, or a word that happens to
     /// collide with an in-scope item but is meant as prose.
     skip_idents: Vec<String>,
-    /// Which names that enter the documented item's scope through a
-    /// `use` import the rule still checks. A backticked word that
-    /// matches an accidentally-added import is a common source of
-    /// churn, so a project can narrow this. Defaults to `check`.
-    imported_names: ImportedNames,
+    /// How far from the documenting item a referenced name may resolve
+    /// for the rule to check it, by where the referenced item lives in
+    /// the module tree. A backticked word that matches an
+    /// accidentally-added cross-module import is a common source of
+    /// churn, so a project can narrow this. Defaults to `anywhere`.
+    reference_scope: ReferenceScope,
     /// Whether to check `PascalCase` names. Defaults to `true`.
     ///
     /// A mixed or non-conformist name (`fooBar`, `foo_BAR`, `__foo`,
@@ -120,7 +121,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             skip_idents: Vec::new(),
-            imported_names: ImportedNames::default(),
+            reference_scope: ReferenceScope::default(),
             check_pascal_case: true,
             check_upper_case: true,
             check_snake_case: true,
@@ -129,29 +130,29 @@ impl Default for Config {
     }
 }
 
-/// Policy for names that enter the documented item's scope through a
-/// `use` import, configured by `imported_names`. The axis is *where the
-/// referenced item lives relative to the documenting item's module*,
-/// not the spelling of the `use` path.
+/// How far from the documenting item a referenced name may resolve for
+/// the rule to check it, configured by `reference_scope`. The axis is
+/// *where the referenced item lives relative to the documenting item's
+/// module*, not the spelling of the `use` path that brought it in.
 #[derive(Debug, Default, Clone, Copy, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
-enum ImportedNames {
-    /// Ignore every name reached through a `use`; flag only items
-    /// defined directly in the documenting item's own module.
-    Ignore,
-    /// Also flag items imported from within that module's own subtree
-    /// (e.g. `use self::child::Item`), but keep ignoring names that
-    /// reach outside the module — `use super::...`, `use crate::...`,
-    /// and imports from other crates.
-    Internal,
-    /// Flag every name that resolves in scope, however it got there.
+enum ReferenceScope {
+    /// Only items defined directly in the documenting item's own module.
+    /// Every name reached through a `use` is left alone.
+    OwnModule,
+    /// Also items from within that module's own subtree (e.g. reached
+    /// through `use self::child::Item`), but still not names that reach
+    /// outside the module — `use super::...`, `use crate::...`, and
+    /// imports from other crates.
+    ModuleTree,
+    /// Any name that resolves in scope, however it got there.
     #[default]
-    Check,
+    Anywhere,
 }
 
 pub struct IntraDocLinks {
     skip_idents: BTreeSet<Symbol>,
-    imported_names: ImportedNames,
+    reference_scope: ReferenceScope,
     check_pascal_case: bool,
     check_upper_case: bool,
     check_snake_case: bool,
@@ -164,7 +165,7 @@ impl IntraDocLinks {
         let skip_idents = resolve_symbol_set(&[], config.skip_idents, Vec::new());
         Self {
             skip_idents,
-            imported_names: config.imported_names,
+            reference_scope: config.reference_scope,
             check_pascal_case: config.check_pascal_case,
             check_upper_case: config.check_upper_case,
             check_snake_case: config.check_snake_case,
@@ -286,8 +287,8 @@ impl IntraDocLinks {
     ///
     /// Two filters drop a candidate before it counts:
     ///
-    /// - The `imported_names` policy (see [`ImportedNames`]) drops names
-    ///   reached through a `use` import the project chose to ignore.
+    /// - The `reference_scope` policy (see [`ReferenceScope`]) drops a
+    ///   name whose target lives farther out than the project allows.
     /// - A publicly-reachable item is never linked to a private (not
     ///   publicly-reachable) target: turning `` `Priv` `` into
     ///   `` [`Priv`] `` in the docs of a `pub` item would make rustdoc's
@@ -317,10 +318,10 @@ impl IntraDocLinks {
             // Imported-name policy: drop a candidate the project chose to
             // ignore based on where its target lives relative to `scope`.
             let reach = target.map_or(Reach::Outside, |def_id| import_reach(cx, scope, def_id));
-            let ignored_by_policy = match self.imported_names {
-                ImportedNames::Ignore => reach != Reach::LocalDefinition,
-                ImportedNames::Internal => reach == Reach::Outside,
-                ImportedNames::Check => false,
+            let ignored_by_policy = match self.reference_scope {
+                ReferenceScope::OwnModule => reach != Reach::LocalDefinition,
+                ReferenceScope::ModuleTree => reach == Reach::Outside,
+                ReferenceScope::Anywhere => false,
             };
             if ignored_by_policy {
                 continue;
@@ -363,7 +364,7 @@ impl IntraDocLinks {
 }
 
 /// Where a resolved candidate's target lives relative to the documented
-/// item's module — the axis [`ImportedNames`] filters on.
+/// item's module — the axis [`ReferenceScope`] filters on.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Reach {
     /// Defined directly in the documenting item's own module (not an
