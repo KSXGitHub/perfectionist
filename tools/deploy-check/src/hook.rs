@@ -88,7 +88,7 @@ pub(crate) fn pre_push(root: &Path) -> Result<(), RuntimeError> {
         if !is_version_literal(tag_name) {
             continue;
         }
-        if local_sha.chars().all(|ch| ch == '0') {
+        if local_sha.chars().all(|char| char == '0') {
             // Tag deletion — nothing to verify.
             continue;
         }

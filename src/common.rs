@@ -340,9 +340,9 @@ pub(crate) fn resolve_symbol_set_from_chars(
     extras: impl IntoIterator<Item: Into<char>>,
     ignore: impl IntoIterator<Item: Into<char>>,
 ) -> BTreeSet<Symbol> {
-    let intern = |ch: char| {
+    let intern = |char: char| {
         let mut buf = [0u8; 4];
-        Symbol::intern(ch.encode_utf8(&mut buf))
+        Symbol::intern(char.encode_utf8(&mut buf))
     };
     let ignore: BTreeSet<Symbol> = ignore.into_iter().map(Into::into).map(intern).collect();
     defaults
