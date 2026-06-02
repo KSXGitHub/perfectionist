@@ -97,7 +97,7 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. Read by `register_pass` below; gen-docs picks
+/// Active by default. Read by [`register_pass`] below; gen-docs picks
 /// the constant up via syn to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 

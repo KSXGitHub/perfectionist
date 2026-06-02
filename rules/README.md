@@ -38,6 +38,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   inline test code should be extracted to a separate file
 
+- [`intra_doc_links`](./intra_doc_links.md) (default: `active`).
+
+  backticked identifier in a doc comment that resolves in scope should be an intra-doc link
+
 - [`lint_reason_from_comment`](./lint_reason_from_comment.md) (default: `active`).
 
   trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field

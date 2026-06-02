@@ -1,6 +1,6 @@
 //! The crate's single top-level error type. Each variant covers
 //! one failure mode along the verify / commit-msg / pre-push paths,
-//! and carries enough structured context that the `Display` impl
+//! and carries enough structured context that the [`Display`] impl
 //! produces an actionable message at the CLI.
 
 use std::io;

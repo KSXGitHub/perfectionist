@@ -137,12 +137,12 @@ pub fn register_pass(lint_store: &mut LintStore) {
 
 /// Violation spans the pre-expansion pass has parked, waiting for the
 /// late pass to anchor each at the deepest enclosing HIR node and
-/// emit the diagnostic. `Span` is `Copy + Send + Sync` (a 32-bit id
+/// emit the diagnostic. [`Span`] is `Copy + Send + Sync` (a 32-bit id
 /// into a session-side table), so a process-wide static is safe; the
-/// `Mutex` just serialises the queue against parallel pre-expansion
+/// [`Mutex`] just serialises the queue against parallel pre-expansion
 /// passes within one compilation.
 ///
-/// The static is private — child modules (`late`) read it through
+/// The static is private — child modules ([`late`]) read it through
 /// Rust's standard descendant-reachability rule for non-`pub` items.
 static PENDING_VIOLATIONS: Mutex<Vec<Span>> = Mutex::new(Vec::new());
 

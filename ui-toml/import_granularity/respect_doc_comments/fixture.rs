@@ -13,7 +13,7 @@
 // statement's doc comment, so the fix is only `MaybeIncorrect`.
 
 mod m {
-    /// Keep `BTreeMap` and `HashMap` together.
+    /// Keep the two collection imports together.
     use std::collections::HashMap;
     use std::collections::BTreeMap;
 }

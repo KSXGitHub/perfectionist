@@ -177,7 +177,7 @@ fn rewrite_self_group(
 /// rewrite (see [`rewrite_self_group`]).
 ///
 /// A `self` leaf is only counted when its enclosing group has a non-empty
-/// prefix: `rewrite_self_group` bails on a prefix-less group (`{self, x}`,
+/// prefix: [`rewrite_self_group`] bails on a prefix-less group (`{self, x}`,
 /// the line-above guard), so such a leaf yields no suggestion and is not
 /// an overlap source. Counting it would defer the outer group expecting a
 /// rewrite that never happens, permanently suppressing the outer fix. The

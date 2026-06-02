@@ -20,7 +20,7 @@
 //! one, the deepest HIR node whose span contains it (or
 //! [`hir::CRATE_HIR_ID`] if nothing did). Pre-expansion-pass payloads
 //! that carry more than a span (e.g. `macro_trailing_comma`'s
-//! `Insert` / `Remove` discriminator) project to `Span` at the call
+//! `Insert` / `Remove` discriminator) project to [`Span`] at the call
 //! site before invoking [`find_enclosing_hir_ids`].
 
 use rustc_hir as hir;

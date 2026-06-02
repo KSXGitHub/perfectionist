@@ -71,6 +71,14 @@ declare_tool_lint! {
     /// ```rust,ignore
     /// use std::collections::{BTreeMap, HashMap};
     /// ```
+    #[cfg_attr(
+        dylint_lib = "perfectionist",
+        expect(
+            perfectionist::intra_doc_links,
+            reason = "the rustfmt granularity name `Item` resolves here, but this rustdoc \
+                      is rendered to the docs site where intra-doc links don't apply"
+        )
+    )]
     pub perfectionist::IMPORT_GRANULARITY,
     Warn,
     "import granularity does not match the configured `import_granularity.style`",
@@ -79,7 +87,7 @@ declare_tool_lint! {
 
 /// Active by default. `module` is the shipped baseline; a project that
 /// prefers `crate` or `item` sets `style` in `dylint.toml`. Read by
-/// `register_pass`; gen-docs picks the constant up to render the rule's
+/// [`register_pass`]; gen-docs picks the constant up to render the rule's
 /// default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 

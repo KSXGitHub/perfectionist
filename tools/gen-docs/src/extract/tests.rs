@@ -22,7 +22,7 @@ fn tempdir(label: &str) -> PathBuf {
 
 /// Directory-module rules keep `CONFIG_KEY` and `Config` in
 /// `<rule>/config.rs`. Merging the submodule items into the
-/// parent file is what lets `extract_config` find them; this
+/// parent file is what lets [`extract_config`] find them; this
 /// pins the behaviour so the bug that sent
 /// `unicode_ellipsis_in_panic_messages` to "Configuration: none."
 /// can't silently come back.

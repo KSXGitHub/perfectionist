@@ -1,6 +1,6 @@
 //! Extract the `Config` struct and its accompanying `CONFIG_KEY`
 //! constant out of a parsed rule source file. The result is the
-//! `ConfigDoc` the renderer ultimately turns into the per-rule
+//! [`ConfigDoc`] the renderer ultimately turns into the per-rule
 //! Configuration section.
 
 use std::collections::BTreeSet;
@@ -17,7 +17,7 @@ use crate::model::{ConfigDoc, ConfigField, Optionality};
 
 /// Locate the rule's `Config` struct and its `CONFIG_KEY` constant
 /// and bundle them — along with any project-local types the fields
-/// reference — into a `ConfigDoc`.
+/// reference — into a [`ConfigDoc`].
 ///
 /// Every rule must declare both halves; a rule with no configurable
 /// knobs uses an empty `Config {}`. Panics, naming the file, when a

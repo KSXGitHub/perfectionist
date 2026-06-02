@@ -1,0 +1,36 @@
+warning: `Helper` resolves in scope; write it as an intra-doc link
+  --> $DIR/intra_doc_links.rs:3:32
+   |
+LL | //! The crate-level mention of `Helper` resolves at the crate root, so
+   |                                ^^^^^^^^ help: wrap as an intra-doc link: `[`Helper`]`
+   |
+   = note: `#[warn(perfectionist::intra_doc_links)]` on by default
+
+warning: `Helper` resolves in scope; write it as an intra-doc link
+  --> $DIR/intra_doc_links.rs:11:20
+   |
+LL | /// Installs using `Helper` and `Store`.
+   |                    ^^^^^^^^ help: wrap as an intra-doc link: `[`Helper`]`
+
+warning: `Store` resolves in scope; write it as an intra-doc link
+  --> $DIR/intra_doc_links.rs:11:33
+   |
+LL | /// Installs using `Helper` and `Store`.
+   |                                 ^^^^^^^ help: wrap as an intra-doc link: `[`Store`]`
+
+warning: `Helper` resolves in scope; write it as an intra-doc link
+  --> $DIR/intra_doc_links.rs:34:17
+   |
+LL |     /// Reaches `Helper` through the `use` import in this module.
+   |                 ^^^^^^^^ help: wrap as an intra-doc link: `[`Helper`]`
+
+warning: `overlap` resolves in scope; write it as an intra-doc link
+  --> $DIR/intra_doc_links.rs:41:44
+   |
+LL | /// A module and a function both answer to `overlap`, which therefore
+   |                                            ^^^^^^^^^
+   |
+   = help: `overlap` resolves in more than one namespace; write a disambiguated intra-doc link such as `[`overlap`](type@overlap)`
+
+warning: 5 warnings emitted
+

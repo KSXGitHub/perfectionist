@@ -80,7 +80,7 @@ fn path_final_segment<'hir>(expr: &'hir hir::Expr<'hir>) -> Option<Symbol> {
 ///   `format!("{param}")`, ...).
 ///
 /// In every non-macro shape, `*` / `&` operators around the
-/// reference to the parameter are peeled by `is_param_ref`
+/// reference to the parameter are peeled by [`is_param_ref`]
 /// before matching, so `|s| (*s).foo()` and `|s| f(&*s)` both
 /// qualify.
 ///

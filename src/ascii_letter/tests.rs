@@ -1,6 +1,6 @@
 use super::AsciiLetter;
 
-/// Driver that pipes a TOML array through `AsciiLetter`'s serde
+/// Driver that pipes a TOML array through [`AsciiLetter`]'s serde
 /// impl via a synthetic struct, mirroring how the real rule
 /// `Config`s use it. Returns the deserialised letters on success
 /// or the serde error message on failure, so the tests can pin

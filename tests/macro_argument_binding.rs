@@ -5,7 +5,7 @@
 //! pass a per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
 //!
 //! Mirrors the structure of `tests/macro_trailing_comma.rs` — same
-//! shared-`Mutex` serialisation, same `dylint.toml` synthesis, same
+//! shared-[`Mutex`] serialisation, same `dylint.toml` synthesis, same
 //! one-fixture-per-knob layout.
 
 use std::collections::BTreeMap;

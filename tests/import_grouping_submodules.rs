@@ -13,7 +13,7 @@
 //! `just warmup-integration-tests`.
 //!
 //! The violation used throughout is a blank line splitting a single
-//! `std` group: it is a violation under every `order` (so it does not
+//! [`std`] group: it is a violation under every `order` (so it does not
 //! depend on the default group order) and the two imports come from
 //! different modules, so `import_granularity`'s module style does not
 //! also fire on them.

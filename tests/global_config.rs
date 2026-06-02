@@ -7,7 +7,7 @@
 //! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
 //! the duration of `run_tests`. The env var is process-global, so
 //! the `#[test]`s in this binary serialise themselves on a shared
-//! `Mutex` to avoid clobbering each other under the default
+//! [`Mutex`] to avoid clobbering each other under the default
 //! parallel test harness.
 
 use std::sync::Mutex;
@@ -86,7 +86,7 @@ fn enable_in_global_table_activates_a_default_off_rule() {
     );
 }
 
-/// Mirrors `disable_accepts_inline_table_with_reason`: the inline
+/// Mirrors [`disable_accepts_inline_table_with_reason`]: the inline
 /// `{ name, reason }` table shape works on the `enable` side too,
 /// since `RuleSelector` is shared.
 #[test]
@@ -102,7 +102,7 @@ fn enable_accepts_inline_table_with_reason() {
     );
 }
 
-/// Mirrors `disable_accepts_array_of_tables_form` for `enable`.
+/// Mirrors [`disable_accepts_array_of_tables_form`] for `enable`.
 #[test]
 fn enable_accepts_array_of_tables_form() {
     run(

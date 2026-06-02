@@ -111,9 +111,9 @@ struct Cli {
      container is its struct; an enum variant's container is its enum.
      The lint fires only when the container is in the cached set.
 - Share the "stitch `#[doc = ...]` attributes, walk, emit
-  per-construct sub-spans" pipeline with
-  [`intra-doc-links`](./intra-doc-links.md) and the implemented
-  `perfectionist::unicode_ellipsis_in_docs`
+  per-construct sub-spans" pipeline with the implemented
+  `perfectionist::intra_doc_links` (`src/rules/intra_doc_links.rs`)
+  and `perfectionist::unicode_ellipsis_in_docs`
   (`src/rules/unicode_ellipsis_in_docs.rs`), whose doc-comment block
   walking and span mapping already live in the crate-internal
   `src/comment_walk.rs`. Reuse that helper rather than re-deriving it.

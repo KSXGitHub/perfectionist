@@ -85,8 +85,8 @@ fixed-size byte sequence do not.
 
 Six rules in this catalogue scan a slice of markdown:
 
-- [`intra-doc-links`](./intra-doc-links.md) — distinguishes
-  `` `Foo` `` (candidate) from `` [`Foo`] ``, `[Foo]`,
+- `perfectionist::intra_doc_links` (`src/rules/intra_doc_links.rs`) —
+  distinguishes `` `Foo` `` (candidate) from `` [`Foo`] ``, `[Foo]`,
   `[Foo](path)`, `[Foo][id]` (already linked).
 - [`clap-help-no-markdown`](./clap-help-no-markdown.md) — classifies
   every banned construct (links, code spans, code blocks, HTML

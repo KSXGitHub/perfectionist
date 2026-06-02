@@ -1,6 +1,6 @@
-//! Configuration for `print_macro_split`: the user-facing `Config`
+//! Configuration for `print_macro_split`: the user-facing [`Config`]
 //! shape, the curated built-in `target_macros` list, and the in-memory
-//! `PrintMacroSplit` state the pre-expansion pass holds.
+//! [`PrintMacroSplit`] state the pre-expansion pass holds.
 //!
 //! Only the `line_continuation` rewrite ships today, so the `style`
 //! knob documented in `planned-rules/print-macro-split.md` is

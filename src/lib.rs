@@ -53,6 +53,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         import_granularity
         import_grouping
         inline_test_footprint
+        intra_doc_links
         lint_reason_from_comment
         lint_silence_reason
         macro_argument_binding

@@ -7,7 +7,7 @@ use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 
 /// The text edit produced for the args-list insertion, expressed
 /// as byte offsets inside the meta-item's source snippet. Mirrors
-/// the `Insertion` shape used by `lint_silence_reason`, but the
+/// the [`Insertion`] shape used by `lint_silence_reason`, but the
 /// `reason` literal carries the lifted comment's text rather than
 /// an empty placeholder.
 pub(super) struct Insertion {
