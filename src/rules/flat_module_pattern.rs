@@ -30,8 +30,8 @@ declare_tool_lint! {
     /// **Avoid:**
     ///
     /// ```text
-    /// src
-    /// └── foo
+    /// src/
+    /// └── foo/
     ///     ├── mod.rs
     ///     └── bar.rs
     /// ```
@@ -39,9 +39,9 @@ declare_tool_lint! {
     /// **Prefer:**
     ///
     /// ```text
-    /// src
+    /// src/
     /// ├── foo.rs
-    /// └── foo
+    /// └── foo/
     ///     └── bar.rs
     /// ```
     pub perfectionist::FLAT_MODULE_PATTERN,

@@ -28,8 +28,8 @@ don't disambiguate by directory.
 **Avoid:**
 
 ```text
-src
-└── foo
+src/
+└── foo/
     ├── mod.rs
     └── bar.rs
 ```
@@ -37,9 +37,9 @@ src
 **Prefer:**
 
 ```text
-src
+src/
 ├── foo.rs
-└── foo
+└── foo/
     └── bar.rs
 ```
 
