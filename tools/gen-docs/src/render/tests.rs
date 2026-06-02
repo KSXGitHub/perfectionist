@@ -377,9 +377,9 @@ fn page_does_not_inline_theme_icon_svgs() {
 #[test]
 fn theme_files_carry_literal_colours_not_variables() {
     // The colour layers use literal colours, never CSS custom
-    // properties, so the page themes on engines that predate `var()`
-    // (issue 185). light.css holds the default light values; dark.css
-    // holds the dark values under the two override-tier prefixes.
+    // properties, so the page themes on engines that predate `var()`.
+    // light.css holds the default light values; dark.css holds the dark
+    // values under the two override-tier prefixes.
     // Strip comments first: the files' header comments mention `var()`
     // while explaining why they avoid it.
     let light = strip_css_comments(stylesheet("light.css"));

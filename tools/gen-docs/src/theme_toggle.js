@@ -2,9 +2,9 @@
 // Theme (colour-scheme) settings.
 //
 // Drives the gear button and the Settings panel it toggles, and applies
-// the reader's saved colour-scheme choice. The page's colours are CSS
-// variables (style/light.css + style/dark.css) selected across three
-// override tiers (see issue #185 and the comments in those files):
+// the reader's saved colour-scheme choice. The page's colours live in
+// style/light.css and style/dark.css, selected across three override
+// tiers (see the comments in those files):
 //
 //   1. Default: Light.
 //   2. System preference: `@media (prefers-color-scheme: dark)` swaps in

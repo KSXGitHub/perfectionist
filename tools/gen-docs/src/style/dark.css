@@ -1,5 +1,5 @@
-/* Dark theme — the dark colour layer (override tiers 2 and 3 of
- * issue 185). Mirrors the same selectors as light.css with only colour
+/* Dark theme — the dark colour layer (override tiers 2 and 3).
+ * Mirrors the same selectors as light.css with only colour
  * declarations, and like light.css uses no CSS custom properties.
  *
  * Each colour is declared twice because the two dark tiers can't share

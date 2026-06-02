@@ -129,18 +129,6 @@ pub(crate) struct HighlightCss {
     /// Light-mode sheet, written to `highlight-light.css`.
     pub(crate) light: String,
     /// Dark-mode sheet, written to `highlight-dark.css`.
-    ///
-    /// The classed HTML spans (`.comment`, `.keyword`, ...) are emitted
-    /// once with [`ClassStyle::Spaced`] class names shared by both
-    /// themes, so the dark variant can't switch them out via a different
-    /// prefix — it must re-style the *same* classes under a
-    /// higher-specificity ancestor. Every selector from the generated
-    /// sheet is therefore prefixed twice (see issue 185's override
-    /// tiers): once inside `@media (prefers-color-scheme: dark)`,
-    /// excluding an explicit Light override, for tier 2; and once under
-    /// `html[color-scheme-override="dark"]` for the tier-3 explicit Dark
-    /// choice. The prefixed selectors out-specify the default (unscoped)
-    /// light sheet, so dark colours win whenever the page is dark.
     pub(crate) dark: String,
 }
 
@@ -150,21 +138,21 @@ pub(crate) struct HighlightCss {
 /// it is called exactly once here and both themes are taken from that
 /// single load — calling it per theme would parse the whole set twice.
 pub(crate) static HIGHLIGHT_CSS: LazyLock<HighlightCss> = LazyLock::new(|| {
-    let mut themes = ThemeSet::load_defaults().themes;
+    let themes = ThemeSet::load_defaults().themes;
     let light = themes
-        .remove("InspiredGitHub")
+        .get("InspiredGitHub")
         .expect("InspiredGitHub theme is bundled with syntect");
-    // `InspiredGitHub`'s colours are tuned for a white background and
-    // wash out on the dark canvas, so a dedicated dark theme supplies
-    // legible syntax colours when the effective colour scheme is dark.
     let dark = themes
-        .remove("base16-eighties.dark")
+        .get("base16-eighties.dark")
         .expect("base16-eighties.dark theme is bundled with syntect");
 
-    let light_css = css_for_theme_with_class_style(&light, ClassStyle::Spaced)
+    let light_css = css_for_theme_with_class_style(light, ClassStyle::Spaced)
         .expect("generating CSS for a bundled theme should not fail");
-    let dark_raw = css_for_theme_with_class_style(&dark, ClassStyle::Spaced)
+    let dark_raw = css_for_theme_with_class_style(dark, ClassStyle::Spaced)
         .expect("generating CSS for a bundled theme should not fail");
+    // Both themes share the same span classes, so scope the dark sheet
+    // under the system-preference tier (sans an explicit Light override)
+    // and the explicit-Dark tier.
     let media = scope_highlight_css(&dark_raw, r#"html:not([color-scheme-override="light"])"#);
     let overridden = scope_highlight_css(&dark_raw, r#"html[color-scheme-override="dark"]"#);
 

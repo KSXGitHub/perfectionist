@@ -24,15 +24,6 @@ use crate::render::markdown::{markdown_inline_to_html, markdown_to_html};
 /// room for future sheets without reflowing a monolith. The slice
 /// order is the cascade order the page links them in.
 pub(crate) const STYLESHEETS: &[(&str, &str)] = &[
-    // Structural sheets first (layout, sizing, non-colour rules), then
-    // the two colour layers. The colours were extracted out of the
-    // structural sheets into light.css (the default light values) and
-    // dark.css (the dark tiers); both use literal colours, not CSS
-    // custom properties, so the theming works on engines that predate
-    // `var()`. light.css/dark.css must come *after* the structural
-    // sheets so a colour longhand (e.g. `border-bottom-color`) wins over
-    // the `currentColor` left by a structural border shorthand of equal
-    // specificity; dark.css comes after light.css.
     ("base.css", include_str!("style/base.css")),
     ("nav.css", include_str!("style/nav.css")),
     ("rules.css", include_str!("style/rules.css")),
@@ -72,10 +63,8 @@ pub(crate) const THEME_TOGGLE_SCRIPT: &str = include_str!("theme_toggle.js");
 /// `<script src>` references the same name, so they must agree.
 pub(crate) const THEME_TOGGLE_SCRIPT_FILENAME: &str = "theme_toggle.js";
 
-/// The three colour-scheme icons (Octicons, MIT), shipped as standalone
-/// files beside `index.html` and referenced from settings.css as CSS
-/// masks rather than inlined — keeping the page free of inline `<svg>`,
-/// matching [`RULE_ANCHOR_ICON`]. Each tuple is `(filename, contents)`.
+/// The colour-scheme icons (Octicons, MIT), shipped beside `index.html`
+/// and referenced from settings.css. Each tuple is `(filename, contents)`.
 pub(crate) const THEME_ICONS: &[(&str, &str)] = &[
     ("theme-light.svg", include_str!("assets/theme-light.svg")),
     ("theme-dark.svg", include_str!("assets/theme-dark.svg")),

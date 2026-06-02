@@ -11,7 +11,7 @@
  * (maximising backward compatibility). The cost is that dark.css
  * repeats each colour under the two dark tiers — see that file.
  *
- * Override tiers (issue 185):
+ * Override tiers:
  *   1. Default Light — these rules. They are the lowest-priority colour
  *      layer; with neither a system-preference media query nor the
  *      override attribute, the page is Light.
