@@ -6,7 +6,7 @@
 use std::collections::BTreeMap;
 
 use super::config::Style;
-use super::model::{Leaf, LeafItem};
+use super::model::{Leaf, LeafItem, has_deeper_sibling};
 
 pub(super) fn render(style: Style, leaves: &[Leaf]) -> Vec<String> {
     match style {
@@ -28,6 +28,40 @@ pub(super) fn render(style: Style, leaves: &[Leaf]) -> Vec<String> {
 /// <https://github.com/KSXGitHub/perfectionist/issues/186>).
 pub(super) fn render_crate_self(leaves: &[Leaf]) -> Vec<String> {
     render_crate(leaves, true)
+}
+
+/// The alternative `crate` shape that splits a module-only `self` sharing
+/// its name with a deeper sibling back into a bare item
+/// (`thing::{self, T}` → `{thing, thing::T}`).
+///
+/// This is the inverse of [`render_crate_self`]: where the fold collapses
+/// `{thing, thing::T}` into `thing::{self, T}`, the split lowers each
+/// `self` that has a deeper sibling into the bare item one level up. A
+/// `self` with no deeper sibling (`use thing::{self}`) is a genuine
+/// module-only import with no sibling to split against, so it is left
+/// untouched. Selected by the `split` `self_merge` setting (see
+/// <https://github.com/KSXGitHub/perfectionist/issues/206>).
+pub(super) fn render_crate_split(leaves: &[Leaf]) -> Vec<String> {
+    let lowered: Vec<Leaf> = leaves
+        .iter()
+        .enumerate()
+        .map(|(index, leaf)| {
+            if matches!(leaf.item, LeafItem::SelfMod) && has_deeper_sibling(leaves, index) {
+                let mut module = leaf.module.clone();
+                let name = module
+                    .pop()
+                    .expect("a `self` leaf always has a module path");
+                Leaf {
+                    module,
+                    item: LeafItem::Named(name),
+                    rename: leaf.rename.clone(),
+                }
+            } else {
+                leaf.clone()
+            }
+        })
+        .collect();
+    render_crate(&lowered, false)
 }
 
 fn join(segments: &[String]) -> String {

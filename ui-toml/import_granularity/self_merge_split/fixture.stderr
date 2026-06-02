@@ -1,0 +1,17 @@
+warning: imports are not collapsed to one `use` per crate root
+  --> $DIR/fixture.rs:22:5
+   |
+LL |     use crate::thing::{self, T};
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: reorganize the imports: `use crate::{thing, thing::T};`
+   |
+   = note: `#[warn(perfectionist::import_granularity)]` on by default
+
+warning: imports are not collapsed to one `use` per crate root
+  --> $DIR/fixture.rs:28:5
+   |
+LL | /     use crate::thing;
+LL | |     use crate::thing::T;
+   | |________________________^ help: reorganize the imports: `use crate::{thing, thing::T};`
+
+warning: 2 warnings emitted
+
