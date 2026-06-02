@@ -129,6 +129,64 @@ pub(crate) static HIGHLIGHT_CSS: LazyLock<String> = LazyLock::new(|| {
         .expect("generating CSS for a bundled theme should not fail")
 });
 
+/// Dark counterpart to [`THEME`]. `InspiredGitHub`'s colours are tuned
+/// for a white background and wash out on the dark canvas, so a dark
+/// theme supplies legible syntax colours when the effective colour
+/// scheme is dark.
+static DARK_THEME: LazyLock<Theme> = LazyLock::new(|| {
+    ThemeSet::load_defaults()
+        .themes
+        .remove("base16-ocean.dark")
+        .expect("base16-ocean.dark theme is bundled with syntect")
+});
+
+/// Dark-mode highlight CSS. The classed HTML spans (`.comment`,
+/// `.keyword`, ...) are emitted once with [`ClassStyle::Spaced`] class
+/// names shared by both themes, so the dark variant can't switch them
+/// out via a different prefix — it must re-style the *same* classes
+/// under a higher-specificity ancestor. Every selector from the
+/// generated sheet is therefore prefixed twice (see issue 185's
+/// override tiers): once inside `@media (prefers-color-scheme: dark)`,
+/// excluding an explicit Light override, for tier 2; and once under
+/// `:root[color-scheme-override="dark"]` for the tier-3 explicit Dark
+/// choice. The prefixed selectors out-specify the default (unscoped)
+/// light sheet, so dark colours win whenever the page is dark.
+pub(crate) static HIGHLIGHT_CSS_DARK: LazyLock<String> = LazyLock::new(|| {
+    let raw = css_for_theme_with_class_style(&DARK_THEME, ClassStyle::Spaced)
+        .expect("generating CSS for a bundled theme should not fail");
+    let media = scope_highlight_css(&raw, r#":root:not([color-scheme-override="light"])"#);
+    let overridden = scope_highlight_css(&raw, r#":root[color-scheme-override="dark"]"#);
+    format!("@media (prefers-color-scheme: dark) {{\n{media}}}\n{overridden}")
+});
+
+/// Prefix every rule selector in a syntect-generated sheet with `scope`
+/// so the rules apply only inside that ancestor. syntect emits one
+/// selector line per rule — `<selectors> {`, where `<selectors>` may be
+/// comma-separated compound selectors — with the declarations on the
+/// following lines; the selector line is the only one that ends with
+/// `{`. Comment lines (`/* ... */`), declaration lines, and the closing
+/// `}` pass through untouched. Each comma-separated part is prefixed
+/// individually, since a leading `scope ` only binds to the first
+/// selector of a list otherwise.
+fn scope_highlight_css(css: &str, scope: &str) -> String {
+    let mut out = String::new();
+    for line in css.lines() {
+        if let Some(selectors) = line.trim_end().strip_suffix('{') {
+            let scoped = selectors
+                .split(',')
+                .map(|selector| format!("{scope} {}", selector.trim()))
+                .collect::<Vec<_>>()
+                .join(", ");
+            out.push_str(&scoped);
+            out.push_str(" {\n");
+        } else {
+            out.push_str(line);
+            out.push('\n');
+        }
+    }
+    out
+}
+
 /// Render a short, single-line snippet of markdown without the
 /// outer `<p>...</p>` wrapper that block-level rendering inserts. Used
 /// for table cells and inline headings where backticks should still
@@ -143,4 +201,23 @@ pub(crate) fn markdown_inline_to_html(markdown: &str) -> String {
     let mut buffer = String::new();
     cmark_html::push_html(&mut buffer, parser);
     buffer.trim_end().to_owned()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::scope_highlight_css;
+
+    #[test]
+    fn scopes_each_selector_in_a_comma_list() {
+        // syntect emits comma-separated compound selectors on the rule's
+        // opening line; every part must be prefixed individually, or a
+        // bare `scope ` would bind only to the first selector. Comment
+        // lines, declarations, and the closing brace pass through.
+        let input = "/* c */\n.a, .b .c {\n color: #fff;\n}\n";
+        let scoped = scope_highlight_css(input, ":root[x]");
+        assert_eq!(
+            scoped,
+            "/* c */\n:root[x] .a, :root[x] .b .c {\n color: #fff;\n}\n",
+        );
+    }
 }

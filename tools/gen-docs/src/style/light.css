@@ -1,0 +1,45 @@
+/* Light theme — the default palette.
+ *
+ * This file owns the *light* half of the page's colour system: every
+ * colour the hand-written sheets (base.css, nav.css, rules.css,
+ * settings.css) consume is a `var(--color-*)` resolved here. The dark
+ * half lives in dark.css. Splitting the palette into two files is the
+ * "extract the colour rules into dark and light files" requirement from
+ * issue #185; the structural sheets only reference the variables and
+ * never hard-code a colour.
+ *
+ * Override tiers (see issue #185):
+ *
+ *   1. Default — these `:root` values. With neither a system-theme
+ *      media query nor JavaScript, the page is Light.
+ *   2. System preference — `@media (prefers-color-scheme: dark)` in
+ *      dark.css overrides tier 1 when the OS asks for dark.
+ *   3. Explicit override — a `color-scheme-override` attribute on
+ *      <html> (or <body>), set only by theme_toggle.js. The
+ *      `:root[...]`/`body[...]` selectors below carry specificity
+ *      >= (0,2,0) / (0,1,1), which beats the dark `@media` block's
+ *      `:root` (0,1,0) regardless of source order — so an explicit
+ *      Light choice wins even when the OS prefers dark. The `:root`
+ *      base selector and the two override selectors share one rule so
+ *      the light values are written exactly once.
+ */
+:root,
+:root[color-scheme-override="light"],
+body[color-scheme-override="light"] {
+  color-scheme: light;
+  --color-canvas-default: #ffffff;
+  --color-canvas-subtle: #f6f8fa;
+  --color-fg-default: #1f2328;
+  --color-fg-muted: #57606a;
+  --color-border-default: #d0d7de;
+  --color-border-muted: #eaeef2;
+  --color-neutral-muted: #eaeef2;
+  --color-accent-fg: #0969da;
+  --color-accent-subtle: #ddf4ff;
+  --color-attention-subtle: #fff8c5;
+  --color-attention-border: #d4a72c;
+  --color-success-subtle: #dafbe1;
+  --color-danger-fg: #cf222e;
+  --color-danger-subtle: #ffebe9;
+  --color-shadow: rgba(31, 35, 40, 0.08);
+}

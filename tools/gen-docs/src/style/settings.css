@@ -1,0 +1,193 @@
+/* Settings affordance: a gear button in the top-right corner and the
+   panel it toggles. Colours are `var(--color-*)` from light.css /
+   dark.css; see issue #185.
+
+   The gear is the mirror image of the nav hamburger (nav.css): same
+   size and inset, but pinned to the right instead of the left so the
+   two corners read as a symmetrical pair. Both start with the HTML
+   `hidden` attribute and are revealed by their script only once its
+   handlers are wired up, so a page whose JS never runs shows neither a
+   dead hamburger nor a dead gear (the `[hidden]` reset in base.css
+   makes that unconditional). */
+
+.settings-toggle {
+  position: fixed;
+  top: 0.6rem;
+  right: 0.6rem;
+  /* Just below the nav drawer's z-index (toggle 100 / sidebar 99) so
+     the full-screen mobile nav overlay covers the gear while it's open
+     — nav_toggle.js also marks the gear `inert` then, but this keeps it
+     visually behind too. Still well above the page's static content. */
+  z-index: 98;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: var(--color-canvas-default);
+  border: 1px solid var(--color-border-default);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--color-fg-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px var(--color-shadow);
+  padding: 0;
+  /* Half-transparent at rest, fully opaque on hover / focus / while
+     the panel is open, with a short ease between the two states. */
+  opacity: 0.5;
+  transition: opacity 0.18s ease;
+}
+
+.settings-toggle::before {
+  content: "\2699"; /* ⚙ U+2699 GEAR */
+}
+
+.settings-toggle:hover,
+.settings-toggle:focus-visible,
+.settings-toggle[aria-expanded="true"] {
+  opacity: 1;
+}
+
+.settings-toggle:hover {
+  background: var(--color-canvas-subtle);
+}
+
+.settings-toggle:focus-visible {
+  outline: 2px solid var(--color-accent-fg);
+  outline-offset: 2px;
+}
+
+/* The panel drops down from just under the gear, pinned to the same
+   right edge. Fixed, so it tracks the gear rather than scrolling with
+   the page. Toggled by clearing/setting its `hidden` attribute in JS. */
+.settings-panel {
+  position: fixed;
+  top: 3.4rem;
+  right: 0.6rem;
+  z-index: 98;
+  width: 16rem;
+  max-width: calc(100vw - 1.2rem);
+  background: var(--color-canvas-default);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px var(--color-shadow);
+  padding: 0.85rem 1rem 1rem;
+  box-sizing: border-box;
+}
+
+.settings-panel-title {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-fg-default);
+}
+
+/* The theme chooser is a <fieldset> of three radios. Strip the default
+   fieldset chrome so it reads as a plain section. */
+.settings-section {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.settings-section > legend {
+  padding: 0;
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-fg-muted);
+}
+
+/* Three equal-width choices in a row. */
+.theme-options {
+  display: flex;
+  gap: 0.4rem;
+}
+
+/* The radio inputs keep their semantics (one exclusive choice, keyboard
+   arrow navigation, form labelling) but are visually removed — the
+   visible control is the adjacent <label>. `clip` + 1px box is the
+   standard visually-hidden recipe; `display: none` would drop the input
+   from the tab/arrow order, and `opacity: 0` alone would leave it
+   occupying layout. */
+.theme-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.theme-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.25rem;
+  border: 1px solid var(--color-border-default);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--color-fg-muted);
+  background: var(--color-canvas-default);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.theme-option:hover {
+  background: var(--color-canvas-subtle);
+}
+
+/* The icon is recoloured by the label's own `color` via a CSS mask, so
+   it follows the theme (and the highlighted state below) without
+   shipping a separate light/dark copy of each SVG. `background-color`
+   paints through the mask; the SVG only contributes its alpha. Browsers
+   without mask support (pre-2023 engines) simply show no glyph — the
+   text label beneath still names the choice, so the control degrades to
+   text-only rather than breaking. */
+.theme-icon {
+  width: 1.4rem;
+  height: 1.4rem;
+  background-color: currentColor;
+}
+
+.theme-option-light .theme-icon {
+  -webkit-mask: url("theme-light.svg") no-repeat center / contain;
+  mask: url("theme-light.svg") no-repeat center / contain;
+}
+
+.theme-option-dark .theme-icon {
+  -webkit-mask: url("theme-dark.svg") no-repeat center / contain;
+  mask: url("theme-dark.svg") no-repeat center / contain;
+}
+
+.theme-option-system .theme-icon {
+  -webkit-mask: url("theme-system.svg") no-repeat center / contain;
+  mask: url("theme-system.svg") no-repeat center / contain;
+}
+
+/* The checked radio highlights its label: accent border, accent text
+   (which the masked icon inherits), and a faint accent wash. The radio
+   is the label's previous sibling, so the adjacent-sibling selector
+   keyed off `:checked` needs no JS. */
+.theme-radio:checked + .theme-option {
+  color: var(--color-accent-fg);
+  border-color: var(--color-accent-fg);
+  background: var(--color-accent-subtle);
+}
+
+/* Keyboard focus on the visually-hidden radio surfaces on its label. */
+.theme-radio:focus-visible + .theme-option {
+  outline: 2px solid var(--color-accent-fg);
+  outline-offset: 2px;
+}

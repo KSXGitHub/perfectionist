@@ -280,6 +280,134 @@ fn style_references_rule_anchor_icon() {
 }
 
 #[test]
+fn page_emits_settings_toggle_and_panel_both_hidden() {
+    let html = render_page(&[fake_rule("alpha")], &fake_context());
+    // The gear button mirrors the nav hamburger: a plain <button>
+    // driven by `aria-expanded` and emitted with the HTML `hidden`
+    // attribute so it only appears once theme_toggle.js wires up its
+    // handlers and clears `hidden`. Anchor the assertion to the
+    // toggle's opening tag so a refactor that drops `hidden` is caught.
+    assert!(html.contains(r#"<button class="settings-toggle" type="button" hidden "#));
+    assert!(html.contains(r#"aria-controls="settings-panel""#));
+    assert!(html.contains(r#"aria-label="Settings""#));
+    // The panel is also `hidden` by default — the script reveals only
+    // the gear, and the gear's click handler toggles the panel.
+    assert!(html.contains(r#"<div class="settings-panel" id="settings-panel" hidden "#));
+}
+
+#[test]
+fn page_emits_three_theme_radios_with_system_default() {
+    let html = render_page(&[fake_rule("alpha")], &fake_context());
+    // Real radios (exclusive choice, keyboard arrows, form labelling)
+    // grouped under one name. Three of them: light, dark, system.
+    assert_eq!(
+        html.matches(r#"<input class="theme-radio" type="radio" name="color-scheme""#)
+            .count(),
+        3,
+    );
+    for value in ["light", "dark", "system"] {
+        assert!(
+            html.contains(&format!(r#"value="{value}""#)),
+            "expected a {value} theme radio",
+        );
+    }
+    // System is the default choice (override unset), so only it is
+    // rendered `checked`. The light/dark radios must not carry it.
+    assert!(html.contains(r#"id="color-scheme-system" value="system" checked"#));
+    assert!(!html.contains(r#"value="light" checked"#));
+    assert!(!html.contains(r#"value="dark" checked"#));
+    // Each radio is immediately followed by its <label> tile so the
+    // pure-CSS `.theme-radio:checked + .theme-option` highlight works.
+    assert!(
+        html.contains(r#"value="system" checked><label class="theme-option theme-option-system""#),
+    );
+}
+
+#[test]
+fn page_links_theme_toggle_script_externally() {
+    let html = render_page(&[fake_rule("only")], &fake_context());
+    // The theme script ships as a sibling file loaded via `<script
+    // src>`, not inlined — same contract as the nav script.
+    assert!(
+        html.contains(&format!(
+            "<script src=\"{THEME_TOGGLE_SCRIPT_FILENAME}\"></script>"
+        )),
+        "expected the theme script to be referenced via <script src>",
+    );
+    assert!(
+        !html.contains("<script>(function () {"),
+        "the theme script must not be inlined into the page",
+    );
+}
+
+#[test]
+fn settings_css_keeps_theme_radios_visually_hidden() {
+    // The radios stay in the DOM (for semantics) but must be visually
+    // removed; the visible control is the adjacent label. Pin the
+    // visually-hidden recipe so a refactor can't make raw radio circles
+    // reappear next to the styled tiles.
+    let settings = stylesheet("settings.css");
+    assert!(
+        settings.contains(".theme-radio") && settings.contains("clip: rect(0, 0, 0, 0)"),
+        "settings.css must keep the .theme-radio visually-hidden recipe",
+    );
+    // The checked radio highlights its sibling label via a pure-CSS
+    // adjacent-sibling selector (no JS needed for the highlight).
+    assert!(settings.contains(".theme-radio:checked + .theme-option"));
+}
+
+#[test]
+fn page_does_not_inline_theme_icon_svgs() {
+    // The three colour-scheme icons stay external (referenced as CSS
+    // masks in settings.css), never inlined — same rule as the anchor
+    // icon. The `page_does_not_inline_the_anchor_icon_svg` test already
+    // forbids any `<svg`, but assert the masks reference the files so a
+    // rename can't silently 404 them.
+    let settings = stylesheet("settings.css");
+    for (name, _) in THEME_ICONS {
+        assert!(
+            settings.contains(&format!("url(\"{name}\")")),
+            "settings.css must reference the theme icon {name} as a mask",
+        );
+    }
+}
+
+#[test]
+fn theme_palette_files_define_and_override_color_variables() {
+    // light.css owns the default palette plus the explicit-Light
+    // override; dark.css owns the system-preference and explicit-Dark
+    // dark palette. Pin the load-bearing selectors so the override-tier
+    // cascade (issue 185) can't be refactored away silently.
+    let light = stylesheet("light.css");
+    assert!(light.contains("--color-canvas-default: #ffffff"));
+    assert!(light.contains(r#":root[color-scheme-override="light"]"#));
+
+    let dark = stylesheet("dark.css");
+    assert!(dark.contains("@media (prefers-color-scheme: dark)"));
+    assert!(dark.contains(r#":root:not([color-scheme-override="light"])"#));
+    assert!(dark.contains(r#":root[color-scheme-override="dark"]"#));
+    assert!(dark.contains("--color-canvas-default: #0d1117"));
+}
+
+#[test]
+fn dark_highlight_css_is_scoped_to_the_dark_scheme() {
+    use crate::render::markdown::HIGHLIGHT_CSS_DARK;
+    // The dark syntax sheet re-styles the same classes the light sheet
+    // emits, so it must be scoped under a higher-specificity ancestor
+    // for both the system-preference and explicit-override tiers, or it
+    // would unconditionally clobber the light colours.
+    assert!(HIGHLIGHT_CSS_DARK.contains("@media (prefers-color-scheme: dark)"));
+    assert!(
+        HIGHLIGHT_CSS_DARK.contains(r#":root:not([color-scheme-override="light"]) .comment"#),
+        "system-preference dark highlight must scope the syntax classes",
+    );
+    assert!(
+        HIGHLIGHT_CSS_DARK.contains(r#":root[color-scheme-override="dark"] .comment"#),
+        "explicit-Dark highlight must scope the syntax classes",
+    );
+}
+
+#[test]
 fn nav_toggle_script_is_a_single_iife() {
     // Structural sanity check on `nav_toggle.js`. The whole
     // file is a single IIFE — every helper, every event
