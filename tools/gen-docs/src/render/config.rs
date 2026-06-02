@@ -174,13 +174,13 @@ mod tests {
             html.contains(
                 r#"<code class="config-key">style</code> : <code class="config-type">Style</code> <span class="badge badge-mandatory">mandatory</span>"#
             ),
-            "the required field `style` should render the mandatory badge: {html}"
+            "the required field `style` should render the mandatory badge: {html}",
         );
         assert!(
             html.contains(
                 r#"<code class="config-key">extras</code> : <code class="config-type">[string]</code> <span class="badge badge-optional">optional</span>"#
             ),
-            "the optional field `extras` should render the optional badge: {html}"
+            "the optional field `extras` should render the optional badge: {html}",
         );
     }
 }

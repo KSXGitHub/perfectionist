@@ -12,3 +12,10 @@ scan_code_spans = true
 # keep `self-lint` clean.
 ["perfectionist::import_grouping"]
 order = ["std", "thirdparty", "internal"]
+
+# `tools/gen-docs` parses `declare_tool_lint!` bodies with syn, whose
+# `Token![::]` macro takes a token literal in type position — there is no
+# runtime expression for the surrounding macro to drop or duplicate, so the
+# exactly-once concern the rule guards against does not apply.
+["perfectionist::macro_argument_binding"]
+ignore = ["Token"]

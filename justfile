@@ -53,7 +53,7 @@ test:
 
 # Run perfectionist's own lints on its source
 self-lint:
-  DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --all-targets {{locked}}
+  DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --workspace --all-targets {{locked}}
 
 # Pre-warm `target/integration-fixtures`
 warmup-integration-tests:

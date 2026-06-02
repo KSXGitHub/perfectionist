@@ -13,11 +13,10 @@
 //! checkout — where `dylint-link` (the workspace's linker per
 //! `.cargo/config.toml`) is not yet on PATH — can still compile it.
 
-use std::env;
 use std::fs::OpenOptions;
-use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
+use std::{env, io};
 
 use cargo_toml::Manifest;
 use clap::{Parser, Subcommand};

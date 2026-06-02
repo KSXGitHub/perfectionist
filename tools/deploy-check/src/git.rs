@@ -9,10 +9,10 @@ use pipe_trait::Pipe;
 
 use super::error::RuntimeError;
 
-pub(crate) fn git_capture<I, S>(root: &Path, args: I) -> Result<String, RuntimeError>
+pub(crate) fn git_capture<Args, Arg>(root: &Path, args: Args) -> Result<String, RuntimeError>
 where
-    I: IntoIterator<Item = S>,
-    S: AsRef<OsStr>,
+    Args: IntoIterator<Item = Arg>,
+    Arg: AsRef<OsStr>,
 {
     let output = "git"
         .pipe(Command::new)
