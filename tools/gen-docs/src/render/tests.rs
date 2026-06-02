@@ -177,11 +177,19 @@ fn page_links_each_stylesheet_individually() {
             "expected a dedicated <link> for {name}",
         );
     }
+    // Both runtime-generated highlight sheets are linked — the page now
+    // emits two, so a regression that drops the dark one must fail here.
     assert!(
         html.contains(&format!(
             "<link rel=\"stylesheet\" href=\"{HIGHLIGHT_CSS_LIGHT_FILENAME}\">"
         )),
         "expected a dedicated <link> for the light highlight CSS",
+    );
+    assert!(
+        html.contains(&format!(
+            "<link rel=\"stylesheet\" href=\"{HIGHLIGHT_CSS_DARK_FILENAME}\">"
+        )),
+        "expected a dedicated <link> for the dark highlight CSS",
     );
     // Nothing is inlined any more: no `<style>` block survives.
     assert!(

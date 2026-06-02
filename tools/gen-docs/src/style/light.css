@@ -70,7 +70,16 @@ a {
 .nav-sidebar {
   background: #ffffff;
   border-right-color: #d0d7de;
-  box-shadow: 2px 0 10px rgba(31, 35, 40, 0.08);
+}
+
+/* The sidebar shadow only applies in the overlay band (601-1099.98px);
+   it is flush at <=600px (full-screen) and >=1100px (permanent). Scoping
+   it here, rather than resetting it at those breakpoints, keeps the
+   `box-shadow: none` overrides out of the structural sheet. */
+@media (min-width: 601px) and (max-width: 1099.98px) {
+  .nav-sidebar {
+    box-shadow: 2px 0 10px rgba(31, 35, 40, 0.08);
+  }
 }
 .nav-sidebar-header {
   background: #ffffff;
@@ -98,6 +107,9 @@ a {
 }
 .nav-sidebar-list a:hover {
   background: #f6f8fa;
+}
+.nav-sidebar-list a code {
+  background: none;
 }
 table.index td, table.index th {
   border-bottom-color: #eaeef2;

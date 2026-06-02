@@ -66,7 +66,6 @@
   html:not([color-scheme-override="light"]) .nav-sidebar {
     background: #0d1117;
     border-right-color: #30363d;
-    box-shadow: 2px 0 10px rgba(1, 4, 9, 0.5);
   }
   html:not([color-scheme-override="light"]) .nav-sidebar-header {
     background: #0d1117;
@@ -94,6 +93,9 @@
   }
   html:not([color-scheme-override="light"]) .nav-sidebar-list a:hover {
     background: #161b22;
+  }
+  html:not([color-scheme-override="light"]) .nav-sidebar-list a code {
+    background: none;
   }
   html:not([color-scheme-override="light"]) table.index td, html:not([color-scheme-override="light"]) table.index th {
     border-bottom-color: #21262d;
@@ -254,7 +256,6 @@ html[color-scheme-override="dark"] .nav-toggle:focus-visible {
 html[color-scheme-override="dark"] .nav-sidebar {
   background: #0d1117;
   border-right-color: #30363d;
-  box-shadow: 2px 0 10px rgba(1, 4, 9, 0.5);
 }
 html[color-scheme-override="dark"] .nav-sidebar-header {
   background: #0d1117;
@@ -282,6 +283,9 @@ html[color-scheme-override="dark"] .nav-sidebar-list a {
 }
 html[color-scheme-override="dark"] .nav-sidebar-list a:hover {
   background: #161b22;
+}
+html[color-scheme-override="dark"] .nav-sidebar-list a code {
+  background: none;
 }
 html[color-scheme-override="dark"] table.index td, html[color-scheme-override="dark"] table.index th {
   border-bottom-color: #21262d;
@@ -393,4 +397,18 @@ html[color-scheme-override="dark"] .theme-radio:checked + .theme-option {
 }
 html[color-scheme-override="dark"] .theme-radio:focus-visible + .theme-option {
   outline-color: #4493f8;
+}
+
+/* The sidebar shadow only applies in the overlay band (601-1099.98px),
+   mirroring light.css. One block per dark tier (system preference, then
+   explicit Dark); the prefixes out-specify the band shadow in light.css. */
+@media (prefers-color-scheme: dark) and (min-width: 601px) and (max-width: 1099.98px) {
+  html:not([color-scheme-override="light"]) .nav-sidebar {
+    box-shadow: 2px 0 10px rgba(1, 4, 9, 0.5);
+  }
+}
+@media (min-width: 601px) and (max-width: 1099.98px) {
+  html[color-scheme-override="dark"] .nav-sidebar {
+    box-shadow: 2px 0 10px rgba(1, 4, 9, 0.5);
+  }
 }
