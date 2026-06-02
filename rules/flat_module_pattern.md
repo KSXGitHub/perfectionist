@@ -29,6 +29,7 @@ don't disambiguate by directory.
 
 ```text
 src/foo/mod.rs
+src/foo/bar.rs
 ```
 
 **Prefer:**
