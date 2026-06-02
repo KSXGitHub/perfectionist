@@ -206,7 +206,7 @@ fn commit_msg_strips_default_hash_comment_lines() {
     };
     assert_eq!(
         extract_release_subject(content, '#').unwrap(),
-        Some("0.0.0-rc.14")
+        Some("0.0.0-rc.14"),
     );
 }
 
@@ -222,7 +222,7 @@ fn commit_msg_honours_a_configured_semicolon_comment_char() {
     };
     assert_eq!(
         extract_release_subject(content, ';').unwrap(),
-        Some("0.0.0-rc.14")
+        Some("0.0.0-rc.14"),
     );
 }
 
@@ -230,7 +230,7 @@ fn commit_msg_honours_a_configured_semicolon_comment_char() {
 fn commit_msg_returns_none_when_subject_is_not_a_version() {
     assert_eq!(
         extract_release_subject("fix: something\n", '#').unwrap(),
-        None
+        None,
     );
 }
 
@@ -281,7 +281,7 @@ fn version_only_diff_rejects_trailing_newline_change_alongside_version_bump() {
     // commit that also strips it would pass the line-by-line check;
     // the byte-level synthesise check catches it.
     let before = "version = \"0.0.0-rc.6\"\n";
-    let after = "version = \"0.0.0-rc.7\"";
+    let after = r#"version = "0.0.0-rc.7""#;
     assert!(matches!(
         assert_version_only_diff("Cargo.toml", before, after, "0.0.0-rc.6", "0.0.0-rc.7"),
         Err(RuntimeError::NonVersionByteDiff(_))

@@ -42,4 +42,23 @@ struct _InlineComment;
 #[cfg_attr(unix, derive(Debug, Clone, Copy))]
 struct _CfgAttr;
 
+// Bad: a `cfg_attr` may gate more than one attribute; every
+// `derive(...)` after the predicate is ordered independently. Here only
+// the first list is out of order (`Eq, PartialEq` is already sorted).
+#[cfg_attr(unix, derive(Debug, Clone), derive(Eq, PartialEq))]
+struct _CfgAttrMulti;
+
+// Bad: a compound `cfg` predicate is left untouched while its gated
+// `derive(...)` is ordered — the predicate is just the first item and
+// is skipped regardless of its shape.
+#[cfg_attr(all(unix, target_pointer_width = "64"), derive(Debug, Clone))]
+struct _CfgAttrCompound;
+
+// Bad: a `derive(...)` nested under several `cfg_attr` layers
+// (`cfg_attr(a, cfg_attr(b, derive(...)))`, the same as
+// `cfg_attr(all(a, b), derive(...))`) is reached by recursing into each
+// gated `cfg_attr` argument list.
+#[cfg_attr(unix, cfg_attr(target_os = "linux", derive(Debug, Clone)))]
+struct _CfgAttrNested;
+
 fn main() {}

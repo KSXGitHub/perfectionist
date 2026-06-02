@@ -178,31 +178,43 @@ impl EarlyLintPass for DeriveOrdering {
             if let Some(entries) = attribute.meta_item_list() {
                 self.check_derive_list(lint_context, &entries);
             }
-        } else if attribute.has_name(sym::cfg_attr) {
-            let Some(cfg_attr_args) = attribute.meta_item_list() else {
-                return;
-            };
-            // `cfg_attr(<cfg>, attr_1, attr_2, ...)`: the first item is
-            // the `cfg` predicate; every item after it is an attribute
-            // the predicate gates. Any of them may be a `derive(...)`
-            // whose list we must order.
-            for wrapped_attribute in cfg_attr_args.iter().skip(1) {
-                let Some(wrapped_meta_item) = wrapped_attribute.meta_item() else {
-                    continue;
-                };
-                if !wrapped_meta_item.has_name(sym::derive) {
-                    continue;
-                }
-                let MetaItemKind::List(entries) = &wrapped_meta_item.kind else {
-                    continue;
-                };
-                self.check_derive_list(lint_context, entries);
-            }
+        } else if attribute.has_name(sym::cfg_attr)
+            && let Some(cfg_attr_args) = attribute.meta_item_list()
+        {
+            self.check_cfg_attr_args(lint_context, &cfg_attr_args);
         }
     }
 }
 
 impl DeriveOrdering {
+    /// Order every `derive(...)` gated by a `cfg_attr`, given its
+    /// argument list `cfg_attr(<cfg>, attr_1, attr_2, ...)`. The first
+    /// item is the `cfg` predicate (left untouched); every item after it
+    /// is an attribute the predicate gates. Any of them may be a
+    /// `derive(...)` whose list we must order — or a nested `cfg_attr`
+    /// (`cfg_attr(a, cfg_attr(b, derive(...)))`, equivalent to
+    /// `cfg_attr(all(a, b), derive(...))`), whose own argument list we
+    /// recurse into so a derive wrapped at any nesting depth is reached.
+    fn check_cfg_attr_args(
+        &self,
+        lint_context: &EarlyContext<'_>,
+        cfg_attr_args: &[MetaItemInner],
+    ) {
+        for wrapped_attribute in cfg_attr_args.iter().skip(1) {
+            let Some(wrapped_meta_item) = wrapped_attribute.meta_item() else {
+                continue;
+            };
+            let MetaItemKind::List(entries) = &wrapped_meta_item.kind else {
+                continue;
+            };
+            if wrapped_meta_item.has_name(sym::derive) {
+                self.check_derive_list(lint_context, entries);
+            } else if wrapped_meta_item.has_name(sym::cfg_attr) {
+                self.check_cfg_attr_args(lint_context, entries);
+            }
+        }
+    }
+
     fn check_derive_list(&self, lint_context: &EarlyContext<'_>, entries: &[MetaItemInner]) {
         // Fewer than two entries can never be in the wrong order: a
         // zero- or one-entry list is vacuously sorted. The same
