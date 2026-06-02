@@ -32,5 +32,11 @@ LL | /// A module and a function both answer to `overlap`, which therefore
    |
    = help: `overlap` resolves in more than one namespace; write a disambiguated intra-doc link such as `[`overlap`](type@overlap)`
 
-warning: 5 warnings emitted
+warning: `PrivateHelper` resolves in scope; write it as an intra-doc link
+  --> $DIR/intra_doc_links.rs:57:5
+   |
+LL | /// `PrivateHelper` — both sit below the public API — so this one fires.
+   |     ^^^^^^^^^^^^^^^ help: wrap as an intra-doc link: `[`PrivateHelper`]`
+
+warning: 6 warnings emitted
 

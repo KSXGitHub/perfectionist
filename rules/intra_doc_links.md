@@ -17,6 +17,12 @@ Only bare single identifiers whose name resolves to an item in
 the enclosing module's scope are flagged; a backticked word that
 names nothing in scope is left alone.
 
+A publicly-reachable item that mentions a *private* (not
+publicly-reachable) item is also left alone: turning that mention
+into a link would make rustdoc's `rustdoc::private_intra_doc_links`
+fire under a plain `cargo doc`, and a public item leaning on a
+private one is a separate concern from this rule's.
+
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. Both

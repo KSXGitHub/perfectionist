@@ -26,6 +26,12 @@ declare_tool_lint! {
     /// the enclosing module's scope are flagged; a backticked word that
     /// names nothing in scope is left alone.
     ///
+    /// A publicly-reachable item that mentions a *private* (not
+    /// publicly-reachable) item is also left alone: turning that mention
+    /// into a link would make rustdoc's `rustdoc::private_intra_doc_links`
+    /// fire under a plain `cargo doc`, and a public item leaning on a
+    /// private one is a separate concern from this rule's.
+    ///
     /// ### Why restrict this?
     ///
     /// This is a stylistic preference, not a correctness issue. Both
@@ -173,14 +179,37 @@ enum Resolution {
 /// Resolve `name` against the children of the documented item's scope
 /// module. Returns `None` when the name names nothing in scope (so the
 /// backticks are deliberate prose, not an unlinked reference).
+///
+/// A publicly-reachable item is never linked to a private (not
+/// publicly-reachable) target: turning `` `Priv` `` into `` [`Priv`] ``
+/// in the docs of a `pub` item would make rustdoc's
+/// `rustdoc::private_intra_doc_links` fire under a plain `cargo doc`, and
+/// a public item that leans on a private one is questionable to begin
+/// with. Such a mention is left as bare prose — flagging it (or
+/// "fixing" it) is the job of whatever rule governs public-references-
+/// private, not this one.
 fn resolve_in_scope(cx: &LateContext<'_>, hir_id: hir::HirId, name: Symbol) -> Option<Resolution> {
     let scope = scope_module(cx, hir_id);
+    let effective_visibilities = cx.tcx.effective_visibilities(());
+    let documented_public = effective_visibilities.is_reachable(documented_def_id(cx, hir_id));
     // One slot per namespace (`TypeNS`, `ValueNS`, `MacroNS`); a name
     // present in more than one is an ambiguous intra-doc link.
     let mut namespaces = [false; 3];
     let mut found = false;
     for child in cx.tcx.module_children_local(scope) {
         if child.ident.name != name {
+            continue;
+        }
+        // Public-references-private exemption (see the doc comment): a
+        // target is "private" when it is a local item that is not
+        // publicly reachable. An external target (e.g. a re-exported
+        // `std` type) is public, so it never triggers the exemption.
+        let target_private = child
+            .res
+            .opt_def_id()
+            .and_then(|def_id| def_id.as_local())
+            .is_some_and(|local| !effective_visibilities.is_reachable(local));
+        if documented_public && target_private {
             continue;
         }
         found = true;
@@ -207,6 +236,19 @@ fn resolve_in_scope(cx: &LateContext<'_>, hir_id: hir::HirId, name: Symbol) -> O
     } else {
         Resolution::Unique
     })
+}
+
+/// The [`LocalDefId`] of the item a doc comment documents, for the
+/// public-vs-private visibility check. Fields and enum variants carry
+/// their own `def_id`; every other anchor (items, trait / impl /
+/// foreign items, and the crate root) is an HIR owner, so its
+/// `hir_id.owner` is the right def id.
+fn documented_def_id(cx: &LateContext<'_>, hir_id: hir::HirId) -> LocalDefId {
+    match cx.tcx.hir_node(hir_id) {
+        hir::Node::Field(field) => field.def_id,
+        hir::Node::Variant(variant) => variant.def_id,
+        _ => hir_id.owner.def_id,
+    }
 }
 
 /// The module whose scope a rustdoc intra-doc link on the node at

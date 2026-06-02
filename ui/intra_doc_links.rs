@@ -42,8 +42,19 @@ mod inner {
 /// resolves in two namespaces and earns only a help note.
 pub fn refer_overlap() {}
 
-mod overlap {}
+pub mod overlap {}
 
-fn overlap() {}
+pub fn overlap() {}
+
+struct PrivateHelper;
+
+/// A `pub` function that mentions the private `PrivateHelper` is left
+/// alone: linking a public item to a private one would trip rustdoc's
+/// own `private_intra_doc_links`.
+pub fn public_refers_private() {}
+
+/// A private function, by contrast, may link the private
+/// `PrivateHelper` — both sit below the public API — so this one fires.
+fn private_refers_private() {}
 
 fn main() {}
