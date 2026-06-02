@@ -8,7 +8,7 @@
 use std::sync::LazyLock;
 
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Tag, TagEnd, html as cmark_html};
-use syntect::highlighting::{Theme, ThemeSet};
+use syntect::highlighting::ThemeSet;
 use syntect::html::{ClassStyle, ClassedHTMLGenerator, css_for_theme_with_class_style};
 use syntect::parsing::SyntaxSet;
 use syntect::util::LinesWithEndings;
@@ -118,16 +118,77 @@ fn lang_class_attr(lang: &str) -> String {
 // through to syntect's plain-text fallback while ```rust blocks
 // highlight normally.
 static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(two_face::syntax::extra_newlines);
-static THEME: LazyLock<Theme> = LazyLock::new(|| {
-    ThemeSet::load_defaults()
-        .themes
-        .remove("InspiredGitHub")
-        .expect("InspiredGitHub theme is bundled with syntect")
+
+/// The light and dark classed-highlight stylesheets.
+///
+/// Both are generated from one [`ThemeSet::load_defaults`] call (see
+/// [`HIGHLIGHT_CSS`]). The `Theme` values themselves aren't kept — once
+/// their CSS is generated, nothing else needs them — so this holds only
+/// the two finished sheets.
+pub(crate) struct HighlightCss {
+    /// Light-mode sheet, written to `highlight-light.css`.
+    pub(crate) light: String,
+    /// Dark-mode sheet, written to `highlight-dark.css`.
+    pub(crate) dark: String,
+}
+
+/// Light + dark highlight CSS, generated together.
+///
+/// [`ThemeSet::load_defaults`] parses the *entire* bundled theme set, so
+/// it is called exactly once here and both themes are taken from that
+/// single load — calling it per theme would parse the whole set twice.
+pub(crate) static HIGHLIGHT_CSS: LazyLock<HighlightCss> = LazyLock::new(|| {
+    let themes = ThemeSet::load_defaults().themes;
+    let light = themes
+        .get("InspiredGitHub")
+        .expect("InspiredGitHub theme is bundled with syntect");
+    let dark = themes
+        .get("base16-eighties.dark")
+        .expect("base16-eighties.dark theme is bundled with syntect");
+
+    let light_css = css_for_theme_with_class_style(light, ClassStyle::Spaced)
+        .expect("generating CSS for a bundled theme should not fail");
+    let dark_raw = css_for_theme_with_class_style(dark, ClassStyle::Spaced)
+        .expect("generating CSS for a bundled theme should not fail");
+    // Both themes share the same span classes, so scope the dark sheet
+    // under the system-preference tier (sans an explicit Light override)
+    // and the explicit-Dark tier.
+    let media = scope_highlight_css(&dark_raw, r#"html:not([color-scheme-override="light"])"#);
+    let overridden = scope_highlight_css(&dark_raw, r#"html[color-scheme-override="dark"]"#);
+
+    HighlightCss {
+        light: light_css,
+        dark: format!("@media (prefers-color-scheme: dark) {{\n{media}}}\n{overridden}"),
+    }
 });
-pub(crate) static HIGHLIGHT_CSS: LazyLock<String> = LazyLock::new(|| {
-    css_for_theme_with_class_style(&THEME, ClassStyle::Spaced)
-        .expect("generating CSS for a bundled theme should not fail")
-});
+
+/// Prefix every rule selector in a syntect-generated sheet with `scope`
+/// so the rules apply only inside that ancestor. syntect emits one
+/// selector line per rule — `<selectors> {`, where `<selectors>` may be
+/// comma-separated compound selectors — with the declarations on the
+/// following lines; the selector line is the only one that ends with
+/// `{`. Comment lines (`/* ... */`), declaration lines, and the closing
+/// `}` pass through untouched. Each comma-separated part is prefixed
+/// individually, since a leading `scope ` only binds to the first
+/// selector of a list otherwise.
+fn scope_highlight_css(css: &str, scope: &str) -> String {
+    let mut out = String::new();
+    for line in css.lines() {
+        if let Some(selectors) = line.trim_end().strip_suffix('{') {
+            let scoped = selectors
+                .split(',')
+                .map(|selector| format!("{scope} {}", selector.trim()))
+                .collect::<Vec<_>>()
+                .join(", ");
+            out.push_str(&scoped);
+            out.push_str(" {\n");
+        } else {
+            out.push_str(line);
+            out.push('\n');
+        }
+    }
+    out
+}
 
 /// Render a short, single-line snippet of markdown without the
 /// outer `<p>...</p>` wrapper that block-level rendering inserts. Used
@@ -143,4 +204,23 @@ pub(crate) fn markdown_inline_to_html(markdown: &str) -> String {
     let mut buffer = String::new();
     cmark_html::push_html(&mut buffer, parser);
     buffer.trim_end().to_owned()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::scope_highlight_css;
+
+    #[test]
+    fn scopes_each_selector_in_a_comma_list() {
+        // syntect emits comma-separated compound selectors on the rule's
+        // opening line; every part must be prefixed individually, or a
+        // bare `scope ` would bind only to the first selector. Comment
+        // lines, declarations, and the closing brace pass through.
+        let input = "/* c */\n.a, .b .c {\n color: #fff;\n}\n";
+        let scoped = scope_highlight_css(input, ":root[x]");
+        assert_eq!(
+            scoped,
+            "/* c */\n:root[x] .a, :root[x] .b .c {\n color: #fff;\n}\n",
+        );
+    }
 }

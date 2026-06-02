@@ -27,13 +27,25 @@ pub(crate) const STYLESHEETS: &[(&str, &str)] = &[
     ("base.css", include_str!("style/base.css")),
     ("nav.css", include_str!("style/nav.css")),
     ("rules.css", include_str!("style/rules.css")),
+    ("settings.css", include_str!("style/settings.css")),
+    ("light.css", include_str!("style/light.css")),
+    ("dark.css", include_str!("style/dark.css")),
 ];
 
-/// File name the syntect-generated highlight CSS (see
-/// [`markdown::HIGHLIGHT_CSS`]) is written under. It is linked *after*
-/// the static [`STYLESHEETS`] so its classes win where they overlap,
-/// matching the cascade order of the previous single inline `<style>`.
-pub(crate) const HIGHLIGHT_CSS_FILENAME: &str = "highlight.css";
+/// File name the light-mode syntect-generated highlight CSS (see
+/// [`markdown::HIGHLIGHT_CSS`]`.light`) is written under. It is linked
+/// *after* the static [`STYLESHEETS`] so its classes win where they
+/// overlap, matching the cascade order of the previous single inline
+/// `<style>`. Named `highlight-light.css` for symmetry with its dark
+/// counterpart.
+pub(crate) const HIGHLIGHT_CSS_LIGHT_FILENAME: &str = "highlight-light.css";
+
+/// File name the dark-mode highlight CSS (see
+/// [`markdown::HIGHLIGHT_CSS`]`.dark`) is written under. Linked after
+/// [`HIGHLIGHT_CSS_LIGHT_FILENAME`]; its rules are scoped under a
+/// higher-specificity ancestor so they re-colour the same syntax
+/// classes only when the effective theme is dark.
+pub(crate) const HIGHLIGHT_CSS_DARK_FILENAME: &str = "highlight-dark.css";
 
 /// The navigation script, written beside `index.html` and loaded via
 /// `<script src>` rather than inlined.
@@ -42,6 +54,22 @@ pub(crate) const NAV_TOGGLE_SCRIPT: &str = include_str!("nav_toggle.js");
 /// File name [`NAV_TOGGLE_SCRIPT`] is written under; the page's
 /// `<script src>` references the same name, so they must agree.
 pub(crate) const NAV_TOGGLE_SCRIPT_FILENAME: &str = "nav_toggle.js";
+
+/// The theme (colour-scheme) settings script, written beside
+/// `index.html` and loaded via `<script src>` rather than inlined.
+pub(crate) const THEME_TOGGLE_SCRIPT: &str = include_str!("theme_toggle.js");
+
+/// File name [`THEME_TOGGLE_SCRIPT`] is written under; the page's
+/// `<script src>` references the same name, so they must agree.
+pub(crate) const THEME_TOGGLE_SCRIPT_FILENAME: &str = "theme_toggle.js";
+
+/// The colour-scheme icons (Octicons, MIT), shipped beside `index.html`
+/// and referenced from settings.css. Each tuple is `(filename, contents)`.
+pub(crate) const THEME_ICONS: &[(&str, &str)] = &[
+    ("theme-light.svg", include_str!("assets/theme-light.svg")),
+    ("theme-dark.svg", include_str!("assets/theme-dark.svg")),
+    ("theme-system.svg", include_str!("assets/theme-system.svg")),
+];
 
 /// The chain-link glyph for the rule-name heading anchors, shipped as
 /// a standalone file beside `index.html` rather than inlined.
@@ -72,11 +100,13 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 @for &(href, _) in STYLESHEETS {
                     link rel="stylesheet" href=(href);
                 }
-                link rel="stylesheet" href=(HIGHLIGHT_CSS_FILENAME);
+                link rel="stylesheet" href=(HIGHLIGHT_CSS_LIGHT_FILENAME);
+                link rel="stylesheet" href=(HIGHLIGHT_CSS_DARK_FILENAME);
             }
             body {
                 h1 id="catalogue" { "perfectionist lints" }
                 (nav_drawer(rules))
+                (settings_panel())
                 div.banner {
                     @if git_ref == "master" {
                         "Showing development docs from " code { "master" } ". "
@@ -125,10 +155,67 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     " at " code { (commit_sha) } "."
                 }
                 script src=(NAV_TOGGLE_SCRIPT_FILENAME) {}
+                script src=(THEME_TOGGLE_SCRIPT_FILENAME) {}
             }
         }
     };
     markup.into_string()
+}
+
+/// The colour-scheme settings affordance: a gear button fixed at the
+/// top-right (mirroring the nav hamburger at the top-left) and the panel
+/// it toggles. Both are rendered with the HTML `hidden` attribute and
+/// revealed by `theme_toggle.js` only once its handlers are wired up, so
+/// a page whose script never runs shows neither a dead gear nor an
+/// orphan panel (the `[hidden]` reset in base.css makes that
+/// unconditional). The panel holds a single "Theme" section for now —
+/// three radios (Light / Dark / System) styled as icon tiles, with
+/// System the default — but is shaped to gain further sections later.
+fn settings_panel() -> Markup {
+    html! {
+        button.settings-toggle
+            type="button"
+            hidden
+            aria-controls="settings-panel"
+            aria-expanded="false"
+            aria-label="Settings"
+            title="Settings" {}
+        div.settings-panel id="settings-panel" hidden aria-label="Settings" {
+            p.settings-panel-title { "Settings" }
+            fieldset.settings-section {
+                legend { "Theme" }
+                div.theme-options {
+                    (theme_option("light", "color-scheme-light", "Light", false))
+                    (theme_option("dark", "color-scheme-dark", "Dark", false))
+                    (theme_option("system", "color-scheme-system", "System", true))
+                }
+            }
+        }
+    }
+}
+
+/// One theme radio plus its visible label. The radio keeps real
+/// `<input type="radio">` semantics (exclusive choice, keyboard arrows,
+/// form labelling) but is visually hidden by settings.css; the adjacent
+/// `<label>` is the styled tile, so the pure-CSS
+/// `.theme-radio:checked + .theme-option` selector can highlight the
+/// chosen one. The label must therefore stay the input's immediate next
+/// sibling. The icon is an empty span the stylesheet fills via a CSS
+/// mask referencing one of [`THEME_ICONS`].
+fn theme_option(value: &str, id: &str, label: &str, checked: bool) -> Markup {
+    let option_class = format!("theme-option theme-option-{value}");
+    html! {
+        input.theme-radio
+            type="radio"
+            name="color-scheme"
+            id=(id)
+            value=(value)
+            checked[checked];
+        label class=(option_class) for=(id) {
+            span.theme-icon aria-hidden="true" {}
+            span.theme-label { (label) }
+        }
+    }
 }
 
 /// Collapsible navigation drawer. The visible toggle is a plain

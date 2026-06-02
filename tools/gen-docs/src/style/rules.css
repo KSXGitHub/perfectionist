@@ -8,12 +8,8 @@ table.index td,
 table.index th {
   text-align: left;
   padding: 0.4rem 0.6rem;
-  border-bottom: 1px solid #eaeef2;
+  border-bottom: 1px solid;
   vertical-align: top;
-}
-
-table.index th {
-  background: #f6f8fa;
 }
 
 /* On phone-sized viewports the three-column index table no longer
@@ -46,7 +42,7 @@ table.index th {
   }
 
   table.index tr {
-    border-bottom: 1px solid #eaeef2;
+    border-bottom: 1px solid;
     padding: 0.5rem 0;
   }
 
@@ -68,18 +64,10 @@ table.index th {
   margin-right: 0.5rem;
 }
 
-.state-active {
-  background: #dafbe1;
-}
-
-.state-inactive {
-  background: #eaeef2;
-}
-
 article.rule {
   margin-bottom: 3rem;
   padding-top: 1rem;
-  border-top: 1px solid #eaeef2;
+  border-top: 1px solid;
 }
 
 article.rule h2 {
@@ -114,7 +102,6 @@ article.rule h2 .rule-anchor:focus {
 
 article.rule h2 .lint-prefix {
   font-size: 0.89em;
-  color: #57606a;
 }
 
 article.rule h2 .lint-name {
@@ -126,18 +113,15 @@ article.rule h2 .rule-jump-link {
   font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 0.8rem;
   font-weight: normal;
-  color: #57606a;
   text-decoration: none;
 }
 
 article.rule h2 .rule-jump-link:hover {
-  color: #0969da;
   text-decoration: underline;
 }
 
 article.rule .source {
   font-size: 0.85rem;
-  color: #57606a;
 }
 
 article.rule h3 {
@@ -151,7 +135,6 @@ details.config-details {
 
 p.config-none {
   margin-top: 1rem;
-  color: #57606a;
 }
 
 details.config-details > summary {
@@ -166,14 +149,12 @@ details.config-details > summary::-webkit-details-marker {
 details.config-details > summary.config-summary {
   font-size: 1.05rem;
   font-weight: 600;
-  color: #1f2328;
 }
 
 details.config-details > summary::before {
   content: "▸ ";
   display: inline-block;
   width: 1em;
-  color: #57606a;
 }
 
 details.config-details[open] > summary::before {
@@ -183,7 +164,6 @@ details.config-details[open] > summary::before {
 dl.config {
   margin: 0.5rem 0 1rem;
   padding: 0.5rem 0.75rem;
-  background: #f6f8fa;
   border-radius: 6px;
 }
 
@@ -205,13 +185,8 @@ dl.config dd p {
   margin: 0.25rem 0;
 }
 
-.config-key {
-  background: #ddf4ff;
-}
-
 .config-default {
   font-size: 0.85rem;
-  color: #57606a;
 }
 
 .badge {
@@ -220,16 +195,6 @@ dl.config dd p {
   border-radius: 999px;
   vertical-align: middle;
   font-family: ui-monospace, SFMono-Regular, monospace;
-}
-
-.badge-optional {
-  background: #eaeef2;
-  color: #57606a;
-}
-
-.badge-mandatory {
-  background: #ffebe9;
-  color: #cf222e;
 }
 
 /* Author-written `####` sub-headings in a rule's rustdoc (e.g.
@@ -248,7 +213,6 @@ article.rule h4 {
    longer captures author `####` headings (issue #178). */
 article.rule h4.config-types {
   font-size: 0.95rem;
-  color: #57606a;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -256,8 +220,7 @@ article.rule h4.config-types {
 div.custom-type {
   margin: 0.5rem 0 1rem;
   padding: 0.5rem 0.75rem;
-  background: #f6f8fa;
-  border-left: 3px solid #d0d7de;
+  border-left: 3px solid;
   border-radius: 0 6px 6px 0;
 }
 
@@ -265,19 +228,13 @@ div.custom-type > p:first-child {
   margin: 0 0 0.25rem;
 }
 
-.custom-type-name {
-  background: #ddf4ff;
-}
-
 .custom-type-kind {
   font-size: 0.78rem;
-  color: #57606a;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 div.custom-type dl.config {
-  background: transparent;
   padding: 0;
   margin: 0.25rem 0 0;
 }
