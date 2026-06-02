@@ -51,29 +51,19 @@ pub(super) fn run(state: &InlineTestFootprint, cx: &LateContext<'_>) {
         return;
     }
     let mut files: HashMap<BytePos, FileAcc> = HashMap::new();
-    walk(state, cx, cx.tcx.hir_root_module(), &mut files);
+    walk(cx, cx.tcx.hir_root_module(), &mut files);
     for acc in files.values() {
         emit_inline_style(state, cx, acc);
     }
 }
 
-fn walk(
-    state: &InlineTestFootprint,
-    cx: &LateContext<'_>,
-    module: &Mod<'_>,
-    files: &mut HashMap<BytePos, FileAcc>,
-) {
+fn walk(cx: &LateContext<'_>, module: &Mod<'_>, files: &mut HashMap<BytePos, FileAcc>) {
     for item_id in module.item_ids {
-        classify(state, cx, cx.tcx.hir_item(*item_id), files);
+        classify(cx, cx.tcx.hir_item(*item_id), files);
     }
 }
 
-fn classify(
-    state: &InlineTestFootprint,
-    cx: &LateContext<'_>,
-    item: &Item<'_>,
-    files: &mut HashMap<BytePos, FileAcc>,
-) {
+fn classify(cx: &LateContext<'_>, item: &Item<'_>, files: &mut HashMap<BytePos, FileAcc>) {
     // The rule runs in a `cfg(test)` build, so the AST it sees contains
     // items that are not the author's hand-written layout. Treat them by
     // origin rather than skipping every expansion wholesale:
@@ -124,7 +114,7 @@ fn classify(
             // gets its own accumulator entry keyed by its own span).
             (false, _) => {
                 record_production(cx, item.span, files);
-                walk(state, cx, module, files);
+                walk(cx, module, files);
             }
         }
         return;

@@ -1,5 +1,5 @@
 //! Separate-target detection and the extraction-target path arithmetic
-//! the inline-style help text shares.
+//! the inline-style help text uses.
 
 use std::path::{Path, PathBuf};
 
