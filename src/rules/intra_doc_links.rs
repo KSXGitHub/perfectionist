@@ -318,24 +318,36 @@ impl IntraDocLinks {
         let scope = scope_module(cx, hir_id);
         let effective_visibilities = cx.tcx.effective_visibilities(());
         let documented_public = effective_visibilities.is_reachable(documented_def_id(cx, hir_id));
-        // One slot per namespace (`TypeNS`, `ValueNS`, `MacroNS`).
+        // One slot per namespace (`TypeNS`, `ValueNS`, `MacroNS`). The
+        // first set is rustdoc's resolution view (for ambiguity); the
+        // second is the subset that survives the rule's filters (for
+        // choosing a disambiguator that points at an endorsed target).
         let mut namespaces = [false; 3];
+        let mut eligible_namespaces = [false; 3];
         let mut has_eligible_target = false;
         for child in cx.tcx.module_children_local(scope) {
             if child.ident.name != name {
                 continue;
             }
             let target = child.res.opt_def_id();
+            // A unit/tuple-struct constructor shares its type's identity,
+            // so it never counts toward ambiguity; map everything else to
+            // its namespace slot.
+            let ns_slot = if matches!(child.res, Res::Def(DefKind::Ctor(..), _)) {
+                None
+            } else {
+                match child.res.ns() {
+                    Some(Namespace::TypeNS) => Some(0),
+                    Some(Namespace::ValueNS) => Some(1),
+                    Some(Namespace::MacroNS) => Some(2),
+                    None => None,
+                }
+            };
 
             // Ambiguity accounting (rustdoc's view): record every
             // same-name child's namespace, ignoring privacy and policy.
-            if !matches!(child.res, Res::Def(DefKind::Ctor(..), _)) {
-                match child.res.ns() {
-                    Some(Namespace::TypeNS) => namespaces[0] = true,
-                    Some(Namespace::ValueNS) => namespaces[1] = true,
-                    Some(Namespace::MacroNS) => namespaces[2] = true,
-                    None => {}
-                }
+            if let Some(slot) = ns_slot {
+                namespaces[slot] = true;
             }
 
             // Eligibility (the rule's filters): `reference_scope` drops a
@@ -359,13 +371,25 @@ impl IntraDocLinks {
                 continue;
             }
             has_eligible_target = true;
+            if let Some(slot) = ns_slot {
+                eligible_namespaces[slot] = true;
+            }
         }
         if !has_eligible_target {
             return None;
         }
         let distinct = namespaces.iter().filter(|present| **present).count();
         Some(if distinct > 1 {
-            Resolution::Ambiguous(namespaces)
+            // Suggest a disambiguator for a namespace that has an eligible
+            // target, so the help never steers the reader at a private /
+            // out-of-policy item; fall back to the full set if the only
+            // eligible target carries no namespace (e.g. a lone ctor).
+            let prefix_set = if eligible_namespaces.iter().any(|present| *present) {
+                eligible_namespaces
+            } else {
+                namespaces
+            };
+            Resolution::Ambiguous(prefix_set)
         } else {
             Resolution::Unique
         })

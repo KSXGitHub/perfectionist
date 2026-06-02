@@ -68,4 +68,13 @@ pub mod mixed_vis {}
 
 fn mixed_vis() {}
 
+/// The inverse of `mixed_vis`: the type (`flipped_vis`) is private and
+/// the public function is the eligible target, so the disambiguator must
+/// be `value@`, not `type@`.
+pub fn refer_flipped_visibility() {}
+
+mod flipped_vis {}
+
+pub fn flipped_vis() {}
+
 fn main() {}

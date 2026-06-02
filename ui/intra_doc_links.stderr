@@ -46,5 +46,21 @@ LL | /// A public module and a *private* function both answer to `mixed_vis`.
    |
    = help: `mixed_vis` resolves in more than one namespace; write a disambiguated intra-doc link such as `[`mixed_vis`](type@mixed_vis)`
 
-warning: 7 warnings emitted
+warning: `mixed_vis` resolves in scope; write it as an intra-doc link
+  --> $DIR/intra_doc_links.rs:71:20
+   |
+LL | /// The inverse of `mixed_vis`: the type (`flipped_vis`) is private and
+   |                    ^^^^^^^^^^^
+   |
+   = help: `mixed_vis` resolves in more than one namespace; write a disambiguated intra-doc link such as `[`mixed_vis`](type@mixed_vis)`
+
+warning: `flipped_vis` resolves in scope; write it as an intra-doc link
+  --> $DIR/intra_doc_links.rs:71:43
+   |
+LL | /// The inverse of `mixed_vis`: the type (`flipped_vis`) is private and
+   |                                           ^^^^^^^^^^^^^
+   |
+   = help: `flipped_vis` resolves in more than one namespace; write a disambiguated intra-doc link such as `[`flipped_vis`](value@flipped_vis)`
+
+warning: 9 warnings emitted
 
