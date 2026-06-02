@@ -6,7 +6,7 @@ use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Namespace, Res};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::def_id::{CRATE_DEF_ID, LocalDefId};
+use rustc_span::def_id::{CRATE_DEF_ID, DefId, LocalDefId};
 use rustc_span::{Span, Symbol};
 
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
@@ -75,17 +75,46 @@ struct Config {
     /// — a historical type kept for context, or a word that happens to
     /// collide with an in-scope item but is meant as prose.
     skip_idents: Vec<String>,
+    /// Which names that enter the documented item's scope through a
+    /// `use` import the rule still checks. A backticked word that
+    /// matches an accidentally-added import is a common source of
+    /// churn, so a project can narrow this. Defaults to `check`.
+    imported_names: ImportedNames,
+}
+
+/// Policy for names that enter the documented item's scope through a
+/// `use` import, configured by `imported_names`. The axis is *where the
+/// referenced item lives relative to the documenting item's module*,
+/// not the spelling of the `use` path.
+#[derive(Debug, Default, Clone, Copy, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum ImportedNames {
+    /// Ignore every name reached through a `use`; flag only items
+    /// defined directly in the documenting item's own module.
+    Ignore,
+    /// Also flag items imported from within that module's own subtree
+    /// (e.g. `use self::child::Item`), but keep ignoring names that
+    /// reach outside the module — `use super::...`, `use crate::...`,
+    /// and imports from other crates.
+    Internal,
+    /// Flag every name that resolves in scope, however it got there.
+    #[default]
+    Check,
 }
 
 pub struct IntraDocLinks {
     skip_idents: BTreeSet<Symbol>,
+    imported_names: ImportedNames,
 }
 
 impl IntraDocLinks {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         let skip_idents = resolve_symbol_set(&[], config.skip_idents, Vec::new());
-        Self { skip_idents }
+        Self {
+            skip_idents,
+            imported_names: config.imported_names,
+        }
     }
 }
 
@@ -122,7 +151,7 @@ impl<'tcx> LateLintPass<'tcx> for IntraDocLinks {
             // Resolution is deferred to here: `emit_at_enclosing_hir`
             // has just told us which HIR node the doc comment documents,
             // which is the scope a rustdoc intra-doc link resolves in.
-            if let Some(resolution) = resolve_in_scope(lint_context, hir_id, violation.ident) {
+            if let Some(resolution) = self.resolve_in_scope(lint_context, hir_id, violation.ident) {
                 emit(lint_context, hir_id, span, &violation, resolution);
             }
         });
@@ -176,66 +205,130 @@ enum Resolution {
     Ambiguous,
 }
 
-/// Resolve `name` against the children of the documented item's scope
-/// module. Returns `None` when the name names nothing in scope (so the
-/// backticks are deliberate prose, not an unlinked reference).
-///
-/// A publicly-reachable item is never linked to a private (not
-/// publicly-reachable) target: turning `` `Priv` `` into `` [`Priv`] ``
-/// in the docs of a `pub` item would make rustdoc's
-/// `rustdoc::private_intra_doc_links` fire under a plain `cargo doc`, and
-/// a public item that leans on a private one is questionable to begin
-/// with. Such a mention is left as bare prose — flagging it (or
-/// "fixing" it) is the job of whatever rule governs public-references-
-/// private, not this one.
-fn resolve_in_scope(cx: &LateContext<'_>, hir_id: hir::HirId, name: Symbol) -> Option<Resolution> {
-    let scope = scope_module(cx, hir_id);
-    let effective_visibilities = cx.tcx.effective_visibilities(());
-    let documented_public = effective_visibilities.is_reachable(documented_def_id(cx, hir_id));
-    // One slot per namespace (`TypeNS`, `ValueNS`, `MacroNS`); a name
-    // present in more than one is an ambiguous intra-doc link.
-    let mut namespaces = [false; 3];
-    let mut found = false;
-    for child in cx.tcx.module_children_local(scope) {
-        if child.ident.name != name {
-            continue;
+impl IntraDocLinks {
+    /// Resolve `name` against the children of the documented item's
+    /// scope module. Returns `None` when the name names nothing in scope
+    /// the rule still checks (so the backticks are deliberate prose, not
+    /// an unlinked reference).
+    ///
+    /// Two filters drop a candidate before it counts:
+    ///
+    /// - The `imported_names` policy (see [`ImportedNames`]) drops names
+    ///   reached through a `use` import the project chose to ignore.
+    /// - A publicly-reachable item is never linked to a private (not
+    ///   publicly-reachable) target: turning `` `Priv` `` into
+    ///   `` [`Priv`] `` in the docs of a `pub` item would make rustdoc's
+    ///   `rustdoc::private_intra_doc_links` fire under a plain
+    ///   `cargo doc`, and a public item that leans on a private one is
+    ///   questionable to begin with. Flagging that (or "fixing" it) is
+    ///   the job of whatever rule governs public-references-private, not
+    ///   this one.
+    fn resolve_in_scope(
+        &self,
+        cx: &LateContext<'_>,
+        hir_id: hir::HirId,
+        name: Symbol,
+    ) -> Option<Resolution> {
+        let scope = scope_module(cx, hir_id);
+        let effective_visibilities = cx.tcx.effective_visibilities(());
+        let documented_public = effective_visibilities.is_reachable(documented_def_id(cx, hir_id));
+        // One slot per namespace (`TypeNS`, `ValueNS`, `MacroNS`); a name
+        // present in more than one is an ambiguous intra-doc link.
+        let mut namespaces = [false; 3];
+        let mut found = false;
+        for child in cx.tcx.module_children_local(scope) {
+            if child.ident.name != name {
+                continue;
+            }
+            let target = child.res.opt_def_id();
+            // Imported-name policy: drop a candidate the project chose to
+            // ignore based on where its target lives relative to `scope`.
+            let reach = target.map_or(Reach::Outside, |def_id| import_reach(cx, scope, def_id));
+            let ignored_by_policy = match self.imported_names {
+                ImportedNames::Ignore => reach != Reach::LocalDefinition,
+                ImportedNames::Internal => reach == Reach::Outside,
+                ImportedNames::Check => false,
+            };
+            if ignored_by_policy {
+                continue;
+            }
+            // Public-references-private exemption (see the doc comment): a
+            // target is "private" when it is a local item that is not
+            // publicly reachable. An external target (e.g. a re-exported
+            // `std` type) is public, so it never triggers the exemption.
+            let target_private = target
+                .and_then(|def_id| def_id.as_local())
+                .is_some_and(|local| !effective_visibilities.is_reachable(local));
+            if documented_public && target_private {
+                continue;
+            }
+            found = true;
+            // A unit/tuple struct (or enum variant) introduces a value-ns
+            // constructor that shares the type's identity; rustdoc resolves
+            // `` [`Foo`] `` to the type without complaint, so the
+            // constructor must not count toward namespace ambiguity.
+            if matches!(child.res, Res::Def(DefKind::Ctor(..), _)) {
+                continue;
+            }
+            match child.res.ns() {
+                Some(Namespace::TypeNS) => namespaces[0] = true,
+                Some(Namespace::ValueNS) => namespaces[1] = true,
+                Some(Namespace::MacroNS) => namespaces[2] = true,
+                None => {}
+            }
         }
-        // Public-references-private exemption (see the doc comment): a
-        // target is "private" when it is a local item that is not
-        // publicly reachable. An external target (e.g. a re-exported
-        // `std` type) is public, so it never triggers the exemption.
-        let target_private = child
-            .res
-            .opt_def_id()
-            .and_then(|def_id| def_id.as_local())
-            .is_some_and(|local| !effective_visibilities.is_reachable(local));
-        if documented_public && target_private {
-            continue;
+        if !found {
+            return None;
         }
-        found = true;
-        // A unit/tuple struct (or enum variant) introduces a value-ns
-        // constructor that shares the type's identity; rustdoc resolves
-        // `` [`Foo`] `` to the type without complaint, so the
-        // constructor must not count toward namespace ambiguity.
-        if matches!(child.res, Res::Def(DefKind::Ctor(..), _)) {
-            continue;
-        }
-        match child.res.ns() {
-            Some(Namespace::TypeNS) => namespaces[0] = true,
-            Some(Namespace::ValueNS) => namespaces[1] = true,
-            Some(Namespace::MacroNS) => namespaces[2] = true,
-            None => {}
-        }
+        let distinct = namespaces.iter().filter(|present| **present).count();
+        Some(if distinct > 1 {
+            Resolution::Ambiguous
+        } else {
+            Resolution::Unique
+        })
     }
-    if !found {
-        return None;
+}
+
+/// Where a resolved candidate's target lives relative to the documented
+/// item's module — the axis [`ImportedNames`] filters on.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Reach {
+    /// Defined directly in the documenting item's own module (not an
+    /// import at all).
+    LocalDefinition,
+    /// Defined within that module's own subtree, reached through a
+    /// `use self::...` of a descendant module's item.
+    InternalImport,
+    /// Reached from outside the module: a `use super::...` /
+    /// `use crate::...` of another module, or an import from another
+    /// crate.
+    Outside,
+}
+
+/// Classify where `target` lives relative to the `scope` module, by the
+/// defining module's position in the module tree (not the `use` path's
+/// spelling). An external (non-local) target is always [`Reach::Outside`].
+fn import_reach(cx: &LateContext<'_>, scope: LocalDefId, target: DefId) -> Reach {
+    if target.as_local().is_none() {
+        return Reach::Outside;
     }
-    let distinct = namespaces.iter().filter(|present| **present).count();
-    Some(if distinct > 1 {
-        Resolution::Ambiguous
-    } else {
-        Resolution::Unique
-    })
+    let scope_def = scope.to_def_id();
+    let Some(defining_module) = cx.tcx.opt_parent(target) else {
+        return Reach::Outside;
+    };
+    if defining_module == scope_def {
+        return Reach::LocalDefinition;
+    }
+    // Walk the defining module's ancestry; reaching the scope module
+    // means the target sits in the scope's own subtree.
+    let mut module = Some(defining_module);
+    while let Some(current) = module {
+        if current == scope_def {
+            return Reach::InternalImport;
+        }
+        module = cx.tcx.opt_parent(current);
+    }
+    Reach::Outside
 }
 
 /// The [`LocalDefId`] of the item a doc comment documents, for the

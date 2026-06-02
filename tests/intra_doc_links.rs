@@ -24,6 +24,8 @@ static SERIAL: Mutex<()> = Mutex::new(());
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     skip_idents: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    imported_names: Option<String>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -46,6 +48,41 @@ fn skip_idents_silences_listed_identifiers() {
         "ui-toml/intra_doc_links/skip_idents",
         &dylint_toml(RuleConfig {
             skip_idents: Some(vec!["Skipped".to_owned()]),
+            ..RuleConfig::default()
         }),
+    );
+}
+
+/// The import-policy fixtures deliberately import across module
+/// boundaries, which trips the sibling import-layout rules; disable
+/// those so the fixture stays focused on `intra_doc_links`.
+fn imports_toml(imported_names: &str) -> String {
+    format!(
+        "[perfectionist]\n\
+         disable = [\"import_grouping\", \"import_granularity\"]\n\
+         \n\
+         [\"perfectionist::intra_doc_links\"]\n\
+         imported_names = \"{imported_names}\"\n",
+    )
+}
+
+/// `imported_names = "ignore"` flags only names defined directly in the
+/// documenting item's module; every `use`-imported name is left alone.
+#[test]
+fn imported_names_ignore_checks_only_local_definitions() {
+    run(
+        "ui-toml/intra_doc_links/imports_ignore",
+        &imports_toml("ignore"),
+    );
+}
+
+/// `imported_names = "internal"` additionally flags imports from the
+/// module's own subtree, but still leaves names reaching outside it
+/// (`crate::`, `super::`, other crates) alone.
+#[test]
+fn imported_names_internal_checks_the_modules_own_subtree() {
+    run(
+        "ui-toml/intra_doc_links/imports_internal",
+        &imports_toml("internal"),
     );
 }

@@ -61,3 +61,35 @@ resolve in scope. Empty by default. Use this for a name a doc
 comment deliberately mentions without wanting a cross-reference
 — a historical type kept for context, or a word that happens to
 collide with an in-scope item but is meant as prose.
+
+### `imported_names`: `ImportedNames` (optional)
+
+Which names that enter the documented item's scope through a
+`use` import the rule still checks. A backticked word that
+matches an accidentally-added import is a common source of
+churn, so a project can narrow this. Defaults to `check`.
+
+### Types
+
+#### `ImportedNames` (enum)
+
+Policy for names that enter the documented item's scope through a
+`use` import, configured by `imported_names`. The axis is *where the
+referenced item lives relative to the documenting item's module*,
+not the spelling of the `use` path.
+
+##### `"ignore"` (Rust: `Ignore`)
+
+Ignore every name reached through a `use`; flag only items
+defined directly in the documenting item's own module.
+
+##### `"internal"` (Rust: `Internal`)
+
+Also flag items imported from within that module's own subtree
+(e.g. `use self::child::Item`), but keep ignoring names that
+reach outside the module — `use super::...`, `use crate::...`,
+and imports from other crates.
+
+##### `"check"` (Rust: `Check`)
+
+Flag every name that resolves in scope, however it got there.
