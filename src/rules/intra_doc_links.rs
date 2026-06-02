@@ -13,6 +13,7 @@ use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
 use crate::common::{DefaultState, resolve_symbol_set, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 
+mod casing;
 mod scan;
 
 declare_tool_lint! {
@@ -66,7 +67,7 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::intra_doc_links";
 
-#[derive(Debug, Default, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Identifiers the rule never suggests linking, even when they
@@ -80,6 +81,33 @@ struct Config {
     /// matches an accidentally-added import is a common source of
     /// churn, so a project can narrow this. Defaults to `check`.
     imported_names: ImportedNames,
+    /// Whether to check `PascalCase` names. Defaults to `true`.
+    ///
+    /// A mixed or non-conformist name (`fooBar`, `foo_BAR`, `__foo`,
+    /// `foo__bar`) is checked regardless of this field: such a spelling
+    /// is rare and, when it matches a local identifier, rarely an
+    /// accident.
+    check_pascal_case: bool,
+    /// Whether to check `UPPER_CASE` (`SCREAMING_SNAKE_CASE`) names.
+    /// Defaults to `true`. Mixed / non-conformist names are checked
+    /// regardless (see `check_pascal_case`).
+    check_upper_case: bool,
+    /// Whether to check `snake_case` names. Defaults to `true`. Mixed /
+    /// non-conformist names are checked regardless (see
+    /// `check_pascal_case`).
+    check_snake_case: bool,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            skip_idents: Vec::new(),
+            imported_names: ImportedNames::default(),
+            check_pascal_case: true,
+            check_upper_case: true,
+            check_snake_case: true,
+        }
+    }
 }
 
 /// Policy for names that enter the documented item's scope through a
@@ -105,6 +133,9 @@ enum ImportedNames {
 pub struct IntraDocLinks {
     skip_idents: BTreeSet<Symbol>,
     imported_names: ImportedNames,
+    check_pascal_case: bool,
+    check_upper_case: bool,
+    check_snake_case: bool,
 }
 
 impl IntraDocLinks {
@@ -114,6 +145,21 @@ impl IntraDocLinks {
         Self {
             skip_idents,
             imported_names: config.imported_names,
+            check_pascal_case: config.check_pascal_case,
+            check_upper_case: config.check_upper_case,
+            check_snake_case: config.check_snake_case,
+        }
+    }
+
+    /// Whether the candidate's case style is one the configuration asks
+    /// to check. A mixed / non-conformist name is always checked — these
+    /// three knobs only gate the three conformist shapes.
+    fn case_allows(&self, ident: &str) -> bool {
+        match casing::classify(ident) {
+            casing::Case::Snake => self.check_snake_case,
+            casing::Case::Upper => self.check_upper_case,
+            casing::Case::Pascal => self.check_pascal_case,
+            casing::Case::NonConformist => true,
         }
     }
 }
@@ -168,6 +214,9 @@ impl IntraDocLinks {
         for candidate in scan::collect_candidates(&chunk.rendered) {
             let name = Symbol::intern(&candidate.ident);
             if self.skip_idents.contains(&name) {
+                continue;
+            }
+            if !self.case_allows(&candidate.ident) {
                 continue;
             }
             let len = (candidate.span.end - candidate.span.start) as u32;

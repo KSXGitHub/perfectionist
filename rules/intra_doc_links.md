@@ -69,6 +69,27 @@ Which names that enter the documented item's scope through a
 matches an accidentally-added import is a common source of
 churn, so a project can narrow this. Defaults to `check`.
 
+### `check_pascal_case`: `boolean` (optional)
+
+Whether to check `PascalCase` names. Defaults to `true`.
+
+A mixed or non-conformist name (`fooBar`, `foo_BAR`, `__foo`,
+`foo__bar`) is checked regardless of this field: such a spelling
+is rare and, when it matches a local identifier, rarely an
+accident.
+
+### `check_upper_case`: `boolean` (optional)
+
+Whether to check `UPPER_CASE` (`SCREAMING_SNAKE_CASE`) names.
+Defaults to `true`. Mixed / non-conformist names are checked
+regardless (see `check_pascal_case`).
+
+### `check_snake_case`: `boolean` (optional)
+
+Whether to check `snake_case` names. Defaults to `true`. Mixed /
+non-conformist names are checked regardless (see
+`check_pascal_case`).
+
 ### Types
 
 #### `ImportedNames` (enum)

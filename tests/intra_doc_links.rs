@@ -86,3 +86,21 @@ fn imported_names_internal_checks_the_modules_own_subtree() {
         &imports_toml("internal"),
     );
 }
+
+/// With all three case knobs off, the conformist names are left alone
+/// but a non-conformist name still fires. (`prefer_expect_over_allow` is
+/// disabled because the fixture's non-conformist type needs a naming
+/// `#[allow]`.)
+#[test]
+fn case_knobs_off_keep_only_non_conformist() {
+    run(
+        "ui-toml/intra_doc_links/case_filters",
+        "[perfectionist]\n\
+         disable = [\"prefer_expect_over_allow\"]\n\
+         \n\
+         [\"perfectionist::intra_doc_links\"]\n\
+         check_pascal_case = false\n\
+         check_upper_case = false\n\
+         check_snake_case = false\n",
+    );
+}

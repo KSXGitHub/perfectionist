@@ -1,0 +1,10 @@
+warning: `Mixed_Thing` resolves in scope; write it as an intra-doc link
+  --> $DIR/fixture.rs:13:5
+   |
+LL | /// `Mixed_Thing`, which is flagged regardless.
+   |     ^^^^^^^^^^^^^ help: wrap as an intra-doc link: `[`Mixed_Thing`]`
+   |
+   = note: `#[warn(perfectionist::intra_doc_links)]` on by default
+
+warning: 1 warning emitted
+
