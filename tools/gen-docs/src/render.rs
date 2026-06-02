@@ -42,14 +42,15 @@ pub(crate) const STYLESHEETS: &[(&str, &str)] = &[
 ];
 
 /// File name the light-mode syntect-generated highlight CSS (see
-/// [`markdown::HIGHLIGHT_CSS`]) is written under. It is linked *after*
-/// the static [`STYLESHEETS`] so its classes win where they overlap,
-/// matching the cascade order of the previous single inline `<style>`.
-/// Named `highlight-light.css` for symmetry with its dark counterpart.
+/// [`markdown::HIGHLIGHT_CSS`]`.light`) is written under. It is linked
+/// *after* the static [`STYLESHEETS`] so its classes win where they
+/// overlap, matching the cascade order of the previous single inline
+/// `<style>`. Named `highlight-light.css` for symmetry with its dark
+/// counterpart.
 pub(crate) const HIGHLIGHT_CSS_LIGHT_FILENAME: &str = "highlight-light.css";
 
 /// File name the dark-mode highlight CSS (see
-/// [`markdown::HIGHLIGHT_CSS_DARK`]) is written under. Linked after
+/// [`markdown::HIGHLIGHT_CSS`]`.dark`) is written under. Linked after
 /// [`HIGHLIGHT_CSS_LIGHT_FILENAME`]; its rules are scoped under a
 /// higher-specificity ancestor so they re-colour the same syntax
 /// classes only when the effective theme is dark.

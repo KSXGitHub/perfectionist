@@ -8,7 +8,7 @@
 use std::sync::LazyLock;
 
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Tag, TagEnd, html as cmark_html};
-use syntect::highlighting::{Theme, ThemeSet};
+use syntect::highlighting::ThemeSet;
 use syntect::html::{ClassStyle, ClassedHTMLGenerator, css_for_theme_with_class_style};
 use syntect::parsing::SyntaxSet;
 use syntect::util::LinesWithEndings;
@@ -118,45 +118,60 @@ fn lang_class_attr(lang: &str) -> String {
 // through to syntect's plain-text fallback while ```rust blocks
 // highlight normally.
 static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(two_face::syntax::extra_newlines);
-static THEME: LazyLock<Theme> = LazyLock::new(|| {
-    ThemeSet::load_defaults()
-        .themes
+
+/// The light and dark classed-highlight stylesheets.
+///
+/// Both are generated from one [`ThemeSet::load_defaults`] call (see
+/// [`HIGHLIGHT_CSS`]). The `Theme` values themselves aren't kept — once
+/// their CSS is generated, nothing else needs them — so this holds only
+/// the two finished sheets.
+pub(crate) struct HighlightCss {
+    /// Light-mode sheet, written to `highlight-light.css`.
+    pub(crate) light: String,
+    /// Dark-mode sheet, written to `highlight-dark.css`.
+    ///
+    /// The classed HTML spans (`.comment`, `.keyword`, ...) are emitted
+    /// once with [`ClassStyle::Spaced`] class names shared by both
+    /// themes, so the dark variant can't switch them out via a different
+    /// prefix — it must re-style the *same* classes under a
+    /// higher-specificity ancestor. Every selector from the generated
+    /// sheet is therefore prefixed twice (see issue 185's override
+    /// tiers): once inside `@media (prefers-color-scheme: dark)`,
+    /// excluding an explicit Light override, for tier 2; and once under
+    /// `html[color-scheme-override="dark"]` for the tier-3 explicit Dark
+    /// choice. The prefixed selectors out-specify the default (unscoped)
+    /// light sheet, so dark colours win whenever the page is dark.
+    pub(crate) dark: String,
+}
+
+/// Light + dark highlight CSS, generated together.
+///
+/// [`ThemeSet::load_defaults`] parses the *entire* bundled theme set, so
+/// it is called exactly once here and both themes are taken from that
+/// single load — calling it per theme would parse the whole set twice.
+pub(crate) static HIGHLIGHT_CSS: LazyLock<HighlightCss> = LazyLock::new(|| {
+    let mut themes = ThemeSet::load_defaults().themes;
+    let light = themes
         .remove("InspiredGitHub")
-        .expect("InspiredGitHub theme is bundled with syntect")
-});
-pub(crate) static HIGHLIGHT_CSS: LazyLock<String> = LazyLock::new(|| {
-    css_for_theme_with_class_style(&THEME, ClassStyle::Spaced)
-        .expect("generating CSS for a bundled theme should not fail")
-});
-
-/// Dark counterpart to [`THEME`]. `InspiredGitHub`'s colours are tuned
-/// for a white background and wash out on the dark canvas, so a dark
-/// theme supplies legible syntax colours when the effective colour
-/// scheme is dark.
-static DARK_THEME: LazyLock<Theme> = LazyLock::new(|| {
-    ThemeSet::load_defaults()
-        .themes
+        .expect("InspiredGitHub theme is bundled with syntect");
+    // `InspiredGitHub`'s colours are tuned for a white background and
+    // wash out on the dark canvas, so a dedicated dark theme supplies
+    // legible syntax colours when the effective colour scheme is dark.
+    let dark = themes
         .remove("base16-eighties.dark")
-        .expect("base16-eighties.dark theme is bundled with syntect")
-});
+        .expect("base16-eighties.dark theme is bundled with syntect");
 
-/// Dark-mode highlight CSS. The classed HTML spans (`.comment`,
-/// `.keyword`, ...) are emitted once with [`ClassStyle::Spaced`] class
-/// names shared by both themes, so the dark variant can't switch them
-/// out via a different prefix — it must re-style the *same* classes
-/// under a higher-specificity ancestor. Every selector from the
-/// generated sheet is therefore prefixed twice (see issue 185's
-/// override tiers): once inside `@media (prefers-color-scheme: dark)`,
-/// excluding an explicit Light override, for tier 2; and once under
-/// `html[color-scheme-override="dark"]` for the tier-3 explicit Dark
-/// choice. The prefixed selectors out-specify the default (unscoped)
-/// light sheet, so dark colours win whenever the page is dark.
-pub(crate) static HIGHLIGHT_CSS_DARK: LazyLock<String> = LazyLock::new(|| {
-    let raw = css_for_theme_with_class_style(&DARK_THEME, ClassStyle::Spaced)
+    let light_css = css_for_theme_with_class_style(&light, ClassStyle::Spaced)
         .expect("generating CSS for a bundled theme should not fail");
-    let media = scope_highlight_css(&raw, r#"html:not([color-scheme-override="light"])"#);
-    let overridden = scope_highlight_css(&raw, r#"html[color-scheme-override="dark"]"#);
-    format!("@media (prefers-color-scheme: dark) {{\n{media}}}\n{overridden}")
+    let dark_raw = css_for_theme_with_class_style(&dark, ClassStyle::Spaced)
+        .expect("generating CSS for a bundled theme should not fail");
+    let media = scope_highlight_css(&dark_raw, r#"html:not([color-scheme-override="light"])"#);
+    let overridden = scope_highlight_css(&dark_raw, r#"html[color-scheme-override="dark"]"#);
+
+    HighlightCss {
+        light: light_css,
+        dark: format!("@media (prefers-color-scheme: dark) {{\n{media}}}\n{overridden}"),
+    }
 });
 
 /// Prefix every rule selector in a syntect-generated sheet with `scope`

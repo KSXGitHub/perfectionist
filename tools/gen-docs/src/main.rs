@@ -43,7 +43,7 @@ use pipe_trait::Pipe;
 use crate::check_md::{CheckOutcome, check_rules_dir, write_rules_dir};
 use crate::extract::collect_rules;
 use crate::model::{RenderContext, Rule};
-use crate::render::markdown::{HIGHLIGHT_CSS, HIGHLIGHT_CSS_DARK};
+use crate::render::markdown::HIGHLIGHT_CSS;
 use crate::render::{
     HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME, NAV_TOGGLE_SCRIPT,
     NAV_TOGGLE_SCRIPT_FILENAME, RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME, STYLESHEETS,
@@ -190,14 +190,18 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
         let path = out_dir.join(name);
         fs::write(&path, content).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
     }
-    // The syntax-highlighting CSS is generated at runtime by syntect,
-    // so it's written from the live string rather than `include_str!`.
-    // The dark variant is generated the same way and linked after it.
-    fs::write(out_dir.join(HIGHLIGHT_CSS_LIGHT_FILENAME), &*HIGHLIGHT_CSS)
-        .expect("failed to write light highlight CSS");
+    // The syntax-highlighting CSS is generated at runtime by syntect
+    // (both sheets from one theme-set load), so it's written from the
+    // live strings rather than `include_str!`. The dark variant is
+    // linked after the light one.
+    fs::write(
+        out_dir.join(HIGHLIGHT_CSS_LIGHT_FILENAME),
+        &HIGHLIGHT_CSS.light,
+    )
+    .expect("failed to write light highlight CSS");
     fs::write(
         out_dir.join(HIGHLIGHT_CSS_DARK_FILENAME),
-        &*HIGHLIGHT_CSS_DARK,
+        &HIGHLIGHT_CSS.dark,
     )
     .expect("failed to write dark highlight CSS");
     // The page scripts, loaded via `<script src>`.
