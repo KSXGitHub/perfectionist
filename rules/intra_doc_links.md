@@ -81,23 +81,33 @@ accident.
 ### `check_upper_case`: `boolean` (optional)
 
 Whether to check `UPPER_CASE` (`SCREAMING_SNAKE_CASE`) names.
-Defaults to `true`. Mixed / non-conformist names are checked
-regardless (see `check_pascal_case`).
+Defaults to `true`.
+
+A mixed or non-conformist name (`fooBar`, `foo_BAR`, `__foo`,
+`foo__bar`) is checked regardless of this field: such a spelling
+is rare and, when it matches a local identifier, rarely an
+accident.
 
 ### `check_snake_case`: `boolean` (optional)
 
-Whether to check `snake_case` names. Defaults to `true`. Mixed /
-non-conformist names are checked regardless (see
-`check_pascal_case`).
+Whether to check `snake_case` names. Defaults to `true`.
+
+A mixed or non-conformist name (`fooBar`, `foo_BAR`, `__foo`,
+`foo__bar`) is checked regardless of this field: such a spelling
+is rare and, when it matches a local identifier, rarely an
+accident.
 
 ### `min_words`: `non-zero unsigned integer` (optional)
 
 Minimum number of words a name must have to be checked. Defaults
 to `1` (check everything). At `3`, `foo`, `foo_bar`, `Foo`,
 `FooBar`, `FOO`, and `FOO_BAR` are exempt, while `foo_bar_baz`,
-`FooBarBaz`, and `FOO_BAR_BAZ` are checked. Mixed / non-conformist
-names are checked regardless of this threshold (see
-`check_pascal_case`).
+`FooBarBaz`, and `FOO_BAR_BAZ` are checked.
+
+A mixed or non-conformist name (`fooBar`, `foo_BAR`, `__foo`,
+`foo__bar`) is checked regardless of this threshold: such a
+spelling is rare and, when it matches a local identifier, rarely
+an accident.
 
 ### Types
 
