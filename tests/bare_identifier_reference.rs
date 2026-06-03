@@ -85,9 +85,9 @@ fn reference_scope_module_tree_checks_the_modules_own_subtree() {
     );
 }
 
-/// `reference_scope = "anywhere"` (the default) flags every resolving
-/// name over the same source, including the `crate::`-reaching and
-/// another-crate imports the narrower policies drop.
+/// `reference_scope = "anywhere"` flags every resolving name over the
+/// same source, including the `crate::`-reaching and another-crate
+/// imports the narrower policies drop.
 #[test]
 fn reference_scope_anywhere_checks_everything() {
     run(
@@ -96,9 +96,9 @@ fn reference_scope_anywhere_checks_everything() {
     );
 }
 
-/// `reference_scope = "crate"` flags every first-party target (including
-/// the `crate::`-reaching one), but drops the another-crate ([`std`])
-/// import.
+/// `reference_scope = "crate"` (the default) flags every first-party
+/// target (including the `crate::`-reaching one), but drops the
+/// another-crate ([`std`]) import.
 #[test]
 fn reference_scope_crate_checks_the_whole_current_crate() {
     run(
@@ -108,12 +108,37 @@ fn reference_scope_crate_checks_the_whole_current_crate() {
 }
 
 /// `reference_scope = "third_party"` drops only the standard library;
-/// over this fixture (no third-party dependency) that leaves the same
-/// first-party set as `crate`.
+/// over this fixture (whose only external reference is `std`) that
+/// leaves the same first-party set as `crate`. The `crate` vs
+/// `third_party` difference on a real dependency is pinned by
+/// [`reference_scope_crate_drops_a_dependency`] /
+/// [`reference_scope_third_party_flags_a_dependency`].
 #[test]
 fn reference_scope_third_party_excludes_only_the_standard_library() {
     run(
         "ui-toml/bare_identifier_reference/imports_third_party",
+        &reference_scope_toml("third_party"),
+    );
+}
+
+/// `reference_scope = "crate"` drops a reference to a genuine
+/// third-party dependency (loaded via `aux-build`), keeping only the
+/// first-party `LocalThing`.
+#[test]
+fn reference_scope_crate_drops_a_dependency() {
+    run(
+        "ui-toml/bare_identifier_reference/dependency_crate",
+        &reference_scope_toml("crate"),
+    );
+}
+
+/// `reference_scope = "third_party"` flags the same dependency
+/// reference (`Reach::ThirdPartyCrate`) alongside the first-party one —
+/// the only behavioural difference from `crate`.
+#[test]
+fn reference_scope_third_party_flags_a_dependency() {
+    run(
+        "ui-toml/bare_identifier_reference/dependency_third_party",
         &reference_scope_toml("third_party"),
     );
 }

@@ -1,0 +1,16 @@
+warning: `LocalThing` resolves in scope; write it as an intra-doc link
+  --> $DIR/fixture.rs:10:14
+   |
+LL | /// Mentions `LocalThing` (first-party) and `DepThing` (a third-party
+   |              ^^^^^^^^^^^^ help: wrap as an intra-doc link: `[`LocalThing`]`
+   |
+   = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
+
+warning: `DepThing` resolves in scope; write it as an intra-doc link
+  --> $DIR/fixture.rs:10:45
+   |
+LL | /// Mentions `LocalThing` (first-party) and `DepThing` (a third-party
+   |                                             ^^^^^^^^^^ help: wrap as an intra-doc link: `[`DepThing`]`
+
+warning: 2 warnings emitted
+
