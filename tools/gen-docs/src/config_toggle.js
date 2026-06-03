@@ -46,13 +46,18 @@
   var collapseButton = section.querySelector('button[data-config-open="false"]');
   if (!expandButton || !collapseButton) return;
 
+  // The Configuration panels. A generated catalogue is static after render
+  // (nothing adds or removes panels at runtime), so query once and reuse the
+  // NodeList everywhere rather than re-scanning the DOM per call — the same
+  // cache-the-query approach theme_toggle.js takes with its radios.
+  var panels = document.querySelectorAll("details.config-details");
+
   // Nothing to toggle means nothing to reveal: a catalogue with no
   // configurable rule renders no `details.config-details`, so leaving the
   // section hidden avoids two buttons that would silently do nothing.
-  if (document.querySelectorAll("details.config-details").length === 0) return;
+  if (panels.length === 0) return;
 
   function setAllOpen(open) {
-    var panels = document.querySelectorAll("details.config-details");
     for (var i = 0; i < panels.length; i++) {
       panels[i].open = open;
     }
@@ -63,7 +68,6 @@
   // they can't both be true once there's at least one panel, and both are
   // false in a mixed state, so neither button highlights then.
   function reflectState() {
-    var panels = document.querySelectorAll("details.config-details");
     var allOpen = true;
     var allClosed = true;
     for (var i = 0; i < panels.length; i++) {
@@ -72,6 +76,9 @@
       } else {
         allOpen = false;
       }
+      // Mixed state is terminal: neither flag can flip back to true, so the
+      // remaining panels can't change the outcome. Stop scanning them.
+      if (!allOpen && !allClosed) break;
     }
     expandButton.setAttribute("aria-pressed", String(allOpen));
     collapseButton.setAttribute("aria-pressed", String(allClosed));
@@ -101,6 +108,9 @@
   // One capturing listener for the non-bubbling `toggle` event, filtered to
   // the Configuration panels so unrelated <details> (if any are ever added)
   // don't drive the recompute.
+  // No trailing comma after the final argument: a trailing comma in a
+  // function CALL is ES2017 and a parse error in older engines this page
+  // still aims to support, which would take the whole script down.
   document.addEventListener(
     "toggle",
     function (event) {
@@ -109,15 +119,23 @@
         scheduleReflect();
       }
     },
-    true,
+    true
   );
-
-  // Everything is wired up; reveal the section so the buttons appear exactly
-  // when they work.
-  section.hidden = false;
 
   // Phase 1: a non-blocking initial pass so the buttons reflect whatever
   // state the page loads in (all collapsed by default, but the browser may
   // restore open panels via bfcache or open one for a fragment target).
+  //
+  // Run it BEFORE revealing the section. scheduleReflect() is the only line
+  // here that touches requestAnimationFrame, so if that API is missing the
+  // script throws at this point — leaving the section hidden rather than
+  // revealing controls whose state-reflection can never run. That mirrors
+  // the "reveal only once functional" contract the nav and theme toggles
+  // follow (reveal is the last thing that happens, never before a still-
+  // unproven dependency).
   scheduleReflect();
+
+  // Everything is wired up and the initial pass is queued; reveal the section
+  // so the buttons appear exactly when they work.
+  section.hidden = false;
 })();

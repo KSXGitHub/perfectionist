@@ -416,8 +416,11 @@ fn config_toggle_script_reflects_state_onto_buttons() {
     );
     // The highlight colours live in the colour layer (light.css / dark.css),
     // not the structural settings.css — same split as the theme tiles'
-    // checked highlight.
+    // checked highlight. Both layers must carry the rule, or the highlight
+    // silently vanishes in one theme; pin each so the dark variant can't be
+    // dropped while the light one keeps the test green.
     assert!(stylesheet("light.css").contains(r#".config-action[aria-pressed="true"]"#));
+    assert!(stylesheet("dark.css").contains(r#".config-action[aria-pressed="true"]"#));
 }
 
 #[test]
