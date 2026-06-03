@@ -69,8 +69,9 @@ The lint **does not fire** when the same item carries any of:
 
 ## Examples
 
+**Avoid:**
+
 ```rust
-// Bad
 #[derive(clap::Parser)]
 struct Cli {
     /// Path to the [`PackageManifest`].
@@ -78,8 +79,11 @@ struct Cli {
     /// See [the manifest format](https://example.com/manifest).
     manifest: PathBuf,
 }
+```
 
-// Good (override the help text with plain prose)
+**Prefer:** (override the help text with plain prose)
+
+```rust
 #[derive(clap::Parser)]
 struct Cli {
     /// Path to the [`PackageManifest`].
@@ -88,8 +92,11 @@ struct Cli {
     #[arg(help = "Path to the package manifest.")]
     manifest: PathBuf,
 }
+```
 
-// Also good (no markdown in the first place)
+**Prefer:** (no markdown in the first place)
+
+```rust
 #[derive(clap::Parser)]
 struct Cli {
     /// Path to the package manifest.

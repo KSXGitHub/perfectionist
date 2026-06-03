@@ -194,7 +194,7 @@ const BUILTIN_PURE_METHODS: &[&str] = &[
     "as_bytes", "as_deref", "as_mut", "as_ref", "as_slice", "as_str", "is_empty", "len",
 ];
 
-/// Eligibility mode. The default is `AllowAndDeny`.
+/// Eligibility mode.
 #[derive(Debug, Clone, Copy, Default, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum Mode {
@@ -219,7 +219,7 @@ pub(super) enum Mode {
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 pub(super) struct Config {
-    /// Eligibility mode.
+    /// Eligibility mode. Defaults to `allow_and_deny`.
     pub mode: Mode,
     /// Macros added to the built-in deny set. Each entry is a
     /// fully-qualified macro path (no trailing `!`) or a bare macro

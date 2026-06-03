@@ -30,14 +30,21 @@ to `where`).
 
 ## Examples
 
+**Not flagged:** one bound on one parameter
+
 ```rust
-// Acceptable: one bound on one parameter
 fn render<W: Write>(out: &mut W) { /* ... */ }
+```
 
-// Bad: two bounds on one parameter
+**Avoid:** two bounds on one parameter
+
+```rust
 fn render<W: Write + Send>(out: &mut W) { /* ... */ }
+```
 
-// Good
+**Prefer:**
+
+```rust
 fn render<W>(out: &mut W)
 where
     W: Write + Send,

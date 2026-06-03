@@ -11,15 +11,19 @@ rule fills that gap.
 In a `#[display("format string", arg, arg, ...)]` (or any other
 `derive_more` attribute that accepts `format!`-shaped arguments — see
 *Scope* below), prefer the *inlined* form when an argument is a
-simple identifier:
+simple identifier.
+
+**Avoid:**
 
 ```rust
-// Bad
 #[derive(Display)]
 #[display("({}, {})", x, y)]
 struct Point { x: i32, y: i32 }
+```
 
-// Good
+**Prefer:**
+
+```rust
 #[derive(Display)]
 #[display("({x}, {y})")]
 struct Point { x: i32, y: i32 }
@@ -74,25 +78,59 @@ suggestion preserves the spec: `{:>5}` paired with `name` becomes
 
 ## Examples
 
+### Simple-ident args
+
+**Avoid:**
+
 ```rust
-// Bad: simple-ident args
 #[display("({}, {})", x, y)]
-// Good
+```
+
+**Prefer:**
+
+```rust
 #[display("({x}, {y})")]
+```
 
-// Bad: positional placeholders with positional args
+### Positional placeholders with positional args
+
+**Avoid:**
+
+```rust
 #[display("({}, {})", _0, _1)]
-// Good
+```
+
+**Prefer:**
+
+```rust
 #[display("({_0}, {_1})")]
+```
 
-// Mixed: only the inlinable arg is rewritten
+### Mixed: only the inlinable arg is rewritten
+
+**Avoid:**
+
+```rust
 #[display("{} (line {})", file, self.line_number())]
-// Good
-#[display("{file} (line {})", self.line_number())]
+```
 
-// Format spec preserved
+**Prefer:**
+
+```rust
+#[display("{file} (line {})", self.line_number())]
+```
+
+### Format spec preserved
+
+**Avoid:**
+
+```rust
 #[display("[{:>5}]", code)]
-// Good
+```
+
+**Prefer:**
+
+```rust
 #[display("[{code:>5}]")]
 ```
 

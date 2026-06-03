@@ -47,19 +47,33 @@ Do *not* flag em dashes when they appear:
 
 ## Examples
 
+In doc comments:
+
+**Avoid:**
+
 ```rust
-// Bad
 /// Walks the tree — including hidden directories — and returns the
 /// total size.
+```
 
-// Good
+**Prefer:**
+
+```rust
 /// Walks the tree, including hidden directories. Returns the total
 /// size.
+```
 
-// Bad
+In user-facing macro strings:
+
+**Avoid:**
+
+```rust
 println!("Skipping path — {path:?}");
+```
 
-// Good
+**Prefer:**
+
+```rust
 println!("Skipping path: {path:?}");
 ```
 

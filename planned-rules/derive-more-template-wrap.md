@@ -11,7 +11,9 @@ attribute-form templates.
 
 A `derive_more` `#[display(...)]` or `#[debug(...)]` attribute
 whose source line exceeds the configured width is hard to read
-and produces a noisy diff:
+and produces a noisy diff.
+
+**Avoid:**
 
 ```rust
 #[display("error: The error was caused by {_0}\nhint: Run {_1} to solve the problem")]
@@ -22,7 +24,9 @@ The attribute is consumed by a derive macro, so splitting into
 multiple attributes is not viable — `derive_more` reads exactly
 one `#[display(...)]` per item. The only applicable rewrite is
 folding the template across multiple source lines with
-`\<newline>` continuations:
+`\<newline>` continuations.
+
+**Prefer:**
 
 ```rust
 #[display(
@@ -64,12 +68,18 @@ For every recognised attribute on a struct, enum, or variant:
 
 ## Examples
 
+### `#[display(...)]`
+
+**Avoid:** a long source line in a `#[display(...)]` attribute.
+
 ```rust
-// Bad: long source line in a #[display(...)] attribute
 #[display("error: The error was caused by {_0}\nhint: Run {_1} to solve the problem")]
 struct UserMessage(String, String);
+```
 
-// Good
+**Prefer:**
+
+```rust
 #[display(
     "error: The error was caused by {_0}\n\
     hint: Run {_1} to solve the problem"
@@ -77,12 +87,18 @@ struct UserMessage(String, String);
 struct UserMessage(String, String);
 ```
 
+### `#[debug(...)]`
+
+**Avoid:** a long `#[debug(...)]` template.
+
 ```rust
-// Bad: long #[debug(...)] template
 #[debug("Token {{ kind: {kind:?}, span: {span:?}, lexeme: {lexeme:?}, source_id: {source_id} }}")]
 struct Token { /* ... */ }
+```
 
-// Good
+**Prefer:**
+
+```rust
 #[debug(
     "Token {{ kind: {kind:?}, span: {span:?}, \
     lexeme: {lexeme:?}, source_id: {source_id} }}"
@@ -90,13 +106,15 @@ struct Token { /* ... */ }
 struct Token { /* ... */ }
 ```
 
+### Skipped cases
+
+**Not flagged:**
+
 ```rust
-// Skipped: short source line
-#[display("err: {code}")]
+#[display("err: {code}")]  // short source line
 struct ErrCode(u32);
 
-// Skipped: not a string literal template
-#[display(fmt = renderer::DEFAULT_TEMPLATE)]
+#[display(fmt = renderer::DEFAULT_TEMPLATE)]  // not a string literal template
 struct Custom;
 ```
 

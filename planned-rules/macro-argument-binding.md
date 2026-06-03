@@ -563,55 +563,61 @@ introduces a new name in the enclosing scope.
 
 ### The motivating bug
 
-```rust
-// Bad — release skips `insert` entirely
-debug_assert_eq!(my_map.insert(key, value), None, "duplicate key");
+**Avoid:** release skips `insert` entirely
 
-// Good
+```rust
+debug_assert_eq!(my_map.insert(key, value), None, "duplicate key");
+```
+
+**Prefer:**
+
+```rust
 let ejected = my_map.insert(key, value);
 debug_assert_eq!(ejected, None, "duplicate key");
 ```
 
 ### Pure arguments stay inline
 
+**Not flagged:** `count`, `MAX_RETRIES`, `&buffer` are all pure.
+
 ```rust
-// Accepted — `count`, `MAX_RETRIES`, `&buffer` are all pure.
 debug_assert_eq!(count, MAX_RETRIES, "expected {MAX_RETRIES} retries");
 ```
 
 ### Allowed macros pass through
 
+**Not flagged:** `format!` is in the curated allow set; arguments are evaluated exactly once.
+
 ```rust
-// Accepted — `format!` is in the curated allow set; arguments
-// are evaluated exactly once.
 let msg = format!("retrying {} ({} failures)", endpoint, count.fetch_add(1, Ordering::Relaxed));
 ```
 
 ### Compile-time `core` / `std` macros pass through
 
+**Not flagged:** `concat!`, `env!`, `include_str!`, and the rest of the compile-time family are in the allow set, and their expansion is itself a literal so they also count as pure atoms when used inside another macro. Both rules together make these idioms invisible to the lint.
+
 ```rust
-// Accepted — `concat!`, `env!`, `include_str!`, and the rest of
-// the compile-time family are in the allow set, and their
-// expansion is itself a literal so they also count as pure
-// atoms when used inside another macro. Both rules together
-// make these idioms invisible to the lint:
 let msg = concat!("home: ", env!("HOME"));
 debug_assert_eq!(env!("EXPECTED"), include_str!("expected.txt"));
 ```
 
 ### Array-like invocation is in scope
 
+**Not flagged:** under default config — `vec!` is in the allow set.
+
 ```rust
-// Accepted under default config — `vec!` is in the allow set.
 let xs = vec![compute(), compute(), compute()];
 ```
 
-```rust
-// Flagged under blanket mode — every impure argument is
-// a candidate, allow set or not.
-let xs = vec![compute(), compute(), compute()];
+**Avoid:** under blanket mode — every impure argument is a candidate, allow set or not.
 
-// Good (blanket-mode rewrite)
+```rust
+let xs = vec![compute(), compute(), compute()];
+```
+
+**Prefer:** (blanket-mode rewrite)
+
+```rust
 let a = compute();
 let b = compute();
 let c = compute();
@@ -620,16 +626,23 @@ let xs = vec![a, b, c];
 
 ### Multiple-evaluation trap
 
+Given a macro that expands its capture more than once:
+
 ```rust
 macro_rules! double_use {
     ($e:expr) => { $e + $e };
 }
+```
 
-// Bad — `iter.next()` runs twice. `total` ends up as
-// `current_item + next_item`, not `2 * current_item`.
+**Avoid:** `iter.next()` runs twice. `total` ends up as `current_item + next_item`, not `2 * current_item`.
+
+```rust
 let total = double_use!(iter.next().unwrap());
+```
 
-// Good
+**Prefer:**
+
+```rust
 let v = iter.next().unwrap();
 let total = double_use!(v);
 ```
@@ -639,14 +652,9 @@ the expansion, so the macro fails the exactly-once check.
 
 ### Procedural macros require explicit configuration
 
+**Not flagged:** whether this is safe depends on the proc macro's expansion, which the lint cannot inspect. `serde_json::json` already ships in the built-in allow set (the macro walks its input once and evaluates each captured expression once); a project that uses a *different* proc macro with the same contract adds its path to `allow_extra` once project-wide after confirming each argument is evaluated exactly once.
+
 ```rust
-// Whether this is safe depends on the proc macro's expansion,
-// which the lint cannot inspect. `serde_json::json` already
-// ships in the built-in allow set (the macro walks its input
-// once and evaluates each captured expression once); a project
-// that uses a *different* proc macro with the same contract
-// adds its path to `allow_extra` once project-wide after
-// confirming each argument is evaluated exactly once.
 let payload = serde_json::json!({ "id": next_id(), "ts": now() });
 ```
 

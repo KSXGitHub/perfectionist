@@ -41,18 +41,25 @@ gated behind `serde_source_types.advisory = true` in `dylint.toml`.
 
 ## Examples
 
+**Avoid:**
+
 ```rust
-// Bad
 #[derive(serde::Deserialize)]
 #[serde(try_from = "&'de str")]
 struct Port(u16);
+```
 
-// Good (retains nothing)
+**Prefer:** (retains nothing)
+
+```rust
 #[derive(serde::Deserialize)]
 #[serde(try_from = "Cow<'de, str>")]
 struct Port(u16);
+```
 
-// Good (retains the entire input)
+**Prefer:** (retains the entire input)
+
+```rust
 #[derive(serde::Deserialize)]
 #[serde(try_from = "String")]
 struct PackageName(String);

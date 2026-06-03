@@ -125,24 +125,38 @@ A compare URL emits up to two diagnostics, one per SHA.
 
 ## Examples
 
+### Default config (any length 6..=40)
+
+**Not flagged:** every SHA falls within the default window.
+
 ```rust
-// Default config (any length 6..=40): all of these pass.
 /// See <https://github.com/owner/repo/commit/8c1f6e2>.
 /// See <https://github.com/owner/repo/commit/8c1f6e2a6d33c1b1a2f9e0e1d3b8a4c7d6e5f4a3>.
 /// See <https://github.com/owner/repo/compare/abcdef0...feedface>.
+```
 
-// Bad under default 6..=40: SHA shorter than the minimum.
+**Avoid:** a SHA shorter than the minimum.
+
+```rust
 /// See <https://github.com/owner/repo/commit/abc>.
+```
 
-// Under `commit_length_min = 12, commit_length_max = 12`:
-//   the 7-char SHA is flagged; the 40-char SHA is also flagged
-//   because it's longer than 12.
+### Under `commit_length_min = 12, commit_length_max = 12`
+
+The 7-char SHA is flagged; the 40-char SHA is also flagged because
+it's longer than 12.
+
+```rust
 /// See <https://github.com/owner/repo/commit/8c1f6e2>.            // bad
 /// See <https://github.com/owner/repo/commit/8c1f6e2a6d33>.       // good
 /// See <https://github.com/owner/repo/commit/8c1f6e2a6d33c1...>.  // bad
+```
 
-// Under `commit_length_min = 40, commit_length_max = 40`:
-//   only full SHAs accepted.
+### Under `commit_length_min = 40, commit_length_max = 40`
+
+Only full SHAs accepted.
+
+```rust
 /// See <https://github.com/owner/repo/blob/8c1f6e2/file.rs>.      // bad
 ```
 

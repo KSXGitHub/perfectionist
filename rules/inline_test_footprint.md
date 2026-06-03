@@ -105,4 +105,4 @@ external `mod <name>;`. Matches pacquet's strict policy.
 
 Inline test code is allowed up to the configured budget; beyond
 that it must move to a file. Matches parallel-disk-usage's
-guidance. The default.
+guidance.

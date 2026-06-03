@@ -17,19 +17,23 @@ the caller already has an owned value, while preserving the same
 ergonomics for callers that have a borrowed value (they just call
 `.to_owned()` themselves).
 
-The pacquet example, slightly condensed:
+The pacquet example, slightly condensed.
+
+**Avoid:** the borrowed parameter forces a copy of `my_path_buf`
+even when the caller already owns a `PathBuf`.
 
 ```rust
-// Suboptimal: forces a copy of `my_path_buf` even when the caller
-// already owns a `PathBuf`.
 fn push_path(list: &mut Vec<PathBuf>, item: &Path) {
     list.push(item.to_path_buf());
 }
+```
 
-// Better: the caller's `PathBuf` is moved in directly. A caller
-// with a `&Path` writes `push_path(&mut list, p.to_path_buf())`,
-// performing the same copy that the borrowed signature was
-// performing inside the function.
+**Prefer:** the caller's `PathBuf` is moved in directly. A caller
+with a `&Path` writes `push_path(&mut list, p.to_path_buf())`,
+performing the same copy that the borrowed signature was
+performing inside the function.
+
+```rust
 fn push_path(list: &mut Vec<PathBuf>, item: PathBuf) {
     list.push(item);
 }
@@ -81,32 +85,41 @@ The lint stays silent when:
 
 ## Examples
 
+**Avoid:**
+
 ```rust
-// Bad
 fn push_path(list: &mut Vec<PathBuf>, item: &Path) {
     list.push(item.to_path_buf());
 }
+```
 
-// Good
+**Prefer:**
+
+```rust
 fn push_path(list: &mut Vec<PathBuf>, item: PathBuf) {
     list.push(item);
 }
 ```
 
+**Avoid:**
+
 ```rust
-// Bad
 fn store(name: &str, registry: &mut HashMap<String, u32>) {
     registry.insert(name.to_owned(), 0);
 }
+```
 
-// Good
+**Prefer:**
+
+```rust
 fn store(name: String, registry: &mut HashMap<String, u32>) {
     registry.insert(name, 0);
 }
 ```
 
+**Not flagged:** the conversion is conditional.
+
 ```rust
-// Not flagged: conversion is conditional.
 fn maybe_store(name: &str, registry: &mut HashMap<String, u32>) {
     if !registry.contains_key(name) {
         registry.insert(name.to_owned(), 0);
@@ -114,8 +127,9 @@ fn maybe_store(name: &str, registry: &mut HashMap<String, u32>) {
 }
 ```
 
+**Not flagged:** the parameter is used in borrowed form too.
+
 ```rust
-// Not flagged: parameter is used in borrowed form too.
 fn log_and_store(name: &str, registry: &mut HashMap<String, u32>) {
     eprintln!("inserting {name}");
     registry.insert(name.to_owned(), 0);

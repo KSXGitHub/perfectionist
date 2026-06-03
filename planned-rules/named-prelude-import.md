@@ -33,17 +33,24 @@ segment.
 
 ## Examples
 
+**Avoid:**
+
 ```rust
-// Bad
 use serde::prelude::Serialize;
 use serde::prelude::ser::Serialize;
 use diesel::prelude::{table, AsChangeset};
+```
 
-// Good
+**Prefer:**
+
+```rust
 use serde::Serialize;
 use diesel::{table, AsChangeset};
+```
 
-// Allowed (the canonical prelude shape)
+**Not flagged:** the canonical prelude shape.
+
+```rust
 use serde::prelude::*;
 ```
 

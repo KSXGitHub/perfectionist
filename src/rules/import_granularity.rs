@@ -65,7 +65,7 @@ declare_tool_lint! {
     ///
     /// ### Example
     ///
-    /// Under the default `style = "module"`:
+    /// #### Style: Module (default)
     ///
     /// **Avoid:**
     ///
@@ -78,6 +78,36 @@ declare_tool_lint! {
     ///
     /// ```rust,ignore
     /// use std::collections::{BTreeMap, HashMap};
+    /// ```
+    ///
+    /// #### Style: Crate
+    ///
+    /// **Avoid:**
+    ///
+    /// ```rust,ignore
+    /// use std::collections::{BTreeMap, HashMap};
+    /// use std::io::Read;
+    /// ```
+    ///
+    /// **Prefer:**
+    ///
+    /// ```rust,ignore
+    /// use std::{collections::{BTreeMap, HashMap}, io::Read};
+    /// ```
+    ///
+    /// #### Style: Item
+    ///
+    /// **Avoid:**
+    ///
+    /// ```rust,ignore
+    /// use std::collections::{BTreeMap, HashMap};
+    /// ```
+    ///
+    /// **Prefer:**
+    ///
+    /// ```rust,ignore
+    /// use std::collections::BTreeMap;
+    /// use std::collections::HashMap;
     /// ```
     pub perfectionist::IMPORT_GRANULARITY,
     Warn,
