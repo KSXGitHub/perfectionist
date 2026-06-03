@@ -96,24 +96,88 @@ pre code {
   font-size: 1rem;
 }
 
-/* ASCII file-tree diagrams (```ascii-file-tree fences) draw vertical
-   connectors (│ └ ├) that must touch top-to-bottom to read as a
-   continuous tree. The body's comfortable 1.55 line-height cascades
-   into the block and leaves leading between rows, breaking the
-   connectors into disjoint segments.
+/* ASCII file-tree diagrams (```ascii-file-tree fences) are rendered by
+   `gen-docs` as a structural `<pre class="file-tree">` rather than the
+   literal `│ ├ └` glyphs. The connectors are drawn here with CSS
+   borders so they join the tree top-to-bottom on every font: whether
+   the box-drawing glyphs themselves tile is font-dependent (a single
+   `line-height` that touches on one font gaps or overlaps on another),
+   but a border that spans each row's full height always meets the next
+   row's, with no glyph involved. Reusing `<pre>` inherits the themed
+   code-block box (background, padding, radius, font); the rules below
+   add only the tree layout. See `render/file_tree.rs`. */
+.file-tree {
+  /* Rows are flex `<div>`s, not preformatted text — keep the newlines
+     gen-docs emits between tags from rendering as blank lines. */
+  white-space: normal;
+  /* Comfortable, terminal-like row spacing. The connectors are borders
+     spanning the full row height, so loosening this can't break them. */
+  line-height: 1.7;
+  font-size: 1rem;
+}
 
-   `line-height: normal` (not a unitless ratio) is what makes them
-   join the way a terminal renders them: it defers to the font's own
-   line metrics, and box-drawing glyphs are designed by the font
-   author to tile seamlessly at exactly that spacing. A tighter value
-   like `1` is shorter than the font's natural cell, so the verticals
-   overrun into each other and the text looks cramped; `1.55` is
-   looser, so they fall short and leave gaps. The override targets the
-   `<pre>` (not the inner `<code>`) because the line box height is set
-   by the block-level element's strut — a line-height on the inline
-   `<code>` leaves the strut at 1.55 and the gaps remain. */
-pre.language-ascii-file-tree {
-  line-height: normal;
+.ft-row {
+  display: flex;
+  align-items: center;
+  /* Natural width so a deep tree scrolls inside the `<pre>` (overflow-x)
+     instead of wrapping a row. */
+  width: max-content;
+}
+
+/* One indentation level. Cells stretch to the row's full height so the
+   vertical borders of stacked rows meet edge-to-edge. */
+.ft-cell {
+  position: relative;
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 1.5em;
+}
+
+/* Vertical segments. A pipe ancestor (`│`) and a tee (`├`) run the full
+   row height; an ell (`└`) stops at the mid-row corner. All sit at the
+   cell's left edge, so a child's vertical lands under the first column
+   of its parent's name — the `tree` alignment. */
+.ft-pipe::before,
+.ft-tee::before,
+.ft-ell::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  background: currentColor;
+}
+
+.ft-pipe::before,
+.ft-tee::before {
+  bottom: 0;
+}
+
+.ft-ell::before {
+  height: 50%;
+}
+
+/* Horizontal arm of a connector, from the vertical across to the name. */
+.ft-tee::after,
+.ft-ell::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+}
+
+/* The node label. The left padding is the space a `── ` connector
+   leaves before the name; the root line (no connector) sits flush. */
+.ft-name {
+  white-space: pre;
+  padding-left: 0.4em;
+}
+
+.ft-name.ft-root {
+  padding-left: 0;
 }
 
 footer {
