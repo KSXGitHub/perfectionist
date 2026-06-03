@@ -66,36 +66,38 @@ pub(crate) fn render_file_tree(code: &str) -> String {
 }
 
 /// Emit one line: its box-drawing prefix as connector spans, then the
-/// node name as a plain run. The prefix is consumed in four-column
-/// groups keyed off the first character of each group — `│` / space are
-/// ancestor columns (a through-running pipe or a blank), `├` / `└` are
-/// the node's own connector and end the prefix. A line with no
-/// box-drawing prefix (a root) emits just its name.
+/// node name as a plain run. The prefix is consumed as exact four-column
+/// tokens — `│   ` / `    ` are ancestor columns (a through-running pipe
+/// or a blank), `├── ` / `└── ` are the node's own connector and end the
+/// prefix. The match is deliberately exact: anything that isn't one of
+/// those well-formed tokens (a root line, or a malformed/non-standard
+/// diagram) ends the prefix and is emitted verbatim as the visible name,
+/// rather than being swallowed four characters at a time into a
+/// transparent cell where it would render invisibly.
 fn emit_line(out: &mut String, content: &str) {
     let chars: Vec<char> = content.chars().collect();
     let mut index = 0;
-    while let Some(&first) = chars.get(index) {
-        let class = match first {
-            '│' => "ft-cell ft-pipe",
-            ' ' => "ft-cell",
-            '├' => "ft-cell ft-tee",
-            '└' => "ft-cell ft-ell",
-            // Anything else is the start of the node name.
+    while let Some(group) = chars.get(index..index + INDENT_WIDTH) {
+        let (class, is_connector) = match group {
+            ['│', ' ', ' ', ' '] => ("ft-cell ft-pipe", false),
+            [' ', ' ', ' ', ' '] => ("ft-cell", false),
+            ['├', '─', '─', ' '] => ("ft-cell ft-tee", true),
+            ['└', '─', '─', ' '] => ("ft-cell ft-ell", true),
+            // Not a well-formed prefix token: the node name starts here.
             _ => break,
         };
-        let end = (index + INDENT_WIDTH).min(chars.len());
         out.push_str(r#"<span class=""#);
         out.push_str(class);
         out.push_str(r#"">"#);
-        push_escaped(out, &chars[index..end]);
+        push_escaped(out, group);
         out.push_str("</span>");
-        index = end;
+        index += INDENT_WIDTH;
         // `├` / `└` introduce the node itself; the name follows.
-        if matches!(first, '├' | '└') {
+        if is_connector {
             break;
         }
     }
-    let name = &chars[index.min(chars.len())..];
+    let name = &chars[index..];
     if !name.is_empty() {
         out.push_str(r#"<span class="ft-name">"#);
         push_escaped(out, name);

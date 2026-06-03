@@ -75,3 +75,31 @@ fn escapes_html_metacharacters_in_names() {
     // ...and the escaping round-trips back to the original text.
     assert_eq!(copied_text(&html), "Vec<T> & Box<U>\n");
 }
+
+#[test]
+fn non_four_column_prefix_is_kept_visible_not_swallowed() {
+    // Prefix tokens are matched exactly. A line whose indentation isn't a
+    // well-formed `│   `/`    `/`├── `/`└── ` token must NOT have its first
+    // characters consumed into a transparent `.ft-cell` (where they'd
+    // render invisibly) — the whole run becomes the visible name instead.
+    // Two-space indent: the leading spaces aren't a four-space column.
+    let two_space = render_file_tree("  indented\n");
+    assert!(!two_space.contains("ft-cell"));
+    assert!(two_space.contains(r#"<span class="ft-name">  indented</span>"#));
+
+    // A connector without the conventional `── ` separator isn't a token,
+    // so it renders literally rather than hiding the following character.
+    let tight = render_file_tree("└──tight\n");
+    assert!(!tight.contains("ft-cell"));
+    assert!(tight.contains(r#"<span class="ft-name">└──tight</span>"#));
+
+    // A mis-sized ancestor column doesn't swallow the real connector.
+    let bad_pipe = render_file_tree("│  ├── x\n");
+    assert!(!bad_pipe.contains("ft-cell"));
+    assert!(bad_pipe.contains(r#"<span class="ft-name">│  ├── x</span>"#));
+
+    // In every case the text still copies back verbatim.
+    assert_eq!(copied_text(&two_space), "  indented\n");
+    assert_eq!(copied_text(&tight), "└──tight\n");
+    assert_eq!(copied_text(&bad_pipe), "│  ├── x\n");
+}
