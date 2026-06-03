@@ -96,6 +96,28 @@ fn reference_scope_anywhere_checks_everything() {
     );
 }
 
+/// `reference_scope = "crate"` flags every first-party target (including
+/// the `crate::`-reaching one), but drops the another-crate ([`std`])
+/// import.
+#[test]
+fn reference_scope_crate_checks_the_whole_current_crate() {
+    run(
+        "ui-toml/intra_doc_links/imports_crate",
+        &reference_scope_toml("crate"),
+    );
+}
+
+/// `reference_scope = "third_party"` drops only the standard library;
+/// over this fixture (no third-party dependency) that leaves the same
+/// first-party set as `crate`.
+#[test]
+fn reference_scope_third_party_excludes_only_the_standard_library() {
+    run(
+        "ui-toml/intra_doc_links/imports_third_party",
+        &reference_scope_toml("third_party"),
+    );
+}
+
 /// A public macro colliding with a private function of the same name is
 /// ambiguous, and the disambiguator must name an eligible namespace
 /// (`macro@`), not the private `value@` or the absent `type@`.

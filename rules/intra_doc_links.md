@@ -131,6 +131,22 @@ through `use self::child::Item`), but still not names that reach
 outside the module — `use super::...`, `use crate::...`, and
 imports from other crates.
 
+##### `"crate"` (Rust: `Crate`)
+
+Any item defined anywhere in the current crate (first-party), but
+nothing from another crate. Use this when only the project's own
+items are worth keeping linked — the standard library and
+third-party crates are stable enough that a stale mention is low
+risk.
+
+##### `"third_party"` (Rust: `ThirdParty`)
+
+The current crate and its third-party dependencies, but not the
+standard / built-in libraries (`std`, `core`, `alloc`,
+`proc_macro`, `test`). Use this when dependency references are
+worth checking but the frozen standard library is not.
+
 ##### `"anywhere"` (Rust: `Anywhere`)
 
-Any name that resolves in scope, however it got there.
+Any name that resolves in scope, however it got there — including
+the standard library.

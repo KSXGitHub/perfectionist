@@ -7,7 +7,7 @@ use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Namespace, Res};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::def_id::{CRATE_DEF_ID, DefId, LocalDefId};
+use rustc_span::def_id::{CRATE_DEF_ID, CrateNum, DefId, LocalDefId};
 use rustc_span::{Span, Symbol};
 
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
@@ -145,7 +145,19 @@ enum ReferenceScope {
     /// outside the module — `use super::...`, `use crate::...`, and
     /// imports from other crates.
     ModuleTree,
-    /// Any name that resolves in scope, however it got there.
+    /// Any item defined anywhere in the current crate (first-party), but
+    /// nothing from another crate. Use this when only the project's own
+    /// items are worth keeping linked — the standard library and
+    /// third-party crates are stable enough that a stale mention is low
+    /// risk.
+    Crate,
+    /// The current crate and its third-party dependencies, but not the
+    /// standard / built-in libraries (`std`, `core`, `alloc`,
+    /// `proc_macro`, `test`). Use this when dependency references are
+    /// worth checking but the frozen standard library is not.
+    ThirdParty,
+    /// Any name that resolves in scope, however it got there — including
+    /// the standard library.
     #[default]
     Anywhere,
 }
@@ -355,10 +367,16 @@ impl IntraDocLinks {
             // public-references-private exemption drops a private target
             // (a local item that is not publicly reachable — an external
             // target such as a re-exported `std` type is public).
-            let reach = target.map_or(Reach::Outside, |def_id| import_reach(cx, scope, def_id));
+            let reach = target.map_or(Reach::ThirdPartyCrate, |def_id| {
+                import_reach(cx, scope, def_id)
+            });
             let ignored_by_policy = match self.reference_scope {
                 ReferenceScope::OwnModule => reach != Reach::LocalDefinition,
-                ReferenceScope::ModuleTree => reach == Reach::Outside,
+                ReferenceScope::ModuleTree => {
+                    !matches!(reach, Reach::LocalDefinition | Reach::InternalImport)
+                }
+                ReferenceScope::Crate => !reach.is_in_current_crate(),
+                ReferenceScope::ThirdParty => reach == Reach::StandardLibrary,
                 ReferenceScope::Anywhere => false,
             };
             if ignored_by_policy {
@@ -397,7 +415,7 @@ impl IntraDocLinks {
 }
 
 /// Where a resolved candidate's target lives relative to the documented
-/// item's module — the axis [`ReferenceScope`] filters on.
+/// item's module and crate — the axis [`ReferenceScope`] filters on.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Reach {
     /// Defined directly in the documenting item's own module (not an
@@ -406,22 +424,41 @@ enum Reach {
     /// Defined within that module's own subtree, reached through a
     /// `use self::...` of a descendant module's item.
     InternalImport,
-    /// Reached from outside the module: a `use super::...` /
-    /// `use crate::...` of another module, or an import from another
-    /// crate.
-    Outside,
+    /// Defined elsewhere in the current crate — a `use super::...` /
+    /// `use crate::...` of another module.
+    CrateElsewhere,
+    /// Defined in a third-party dependency (an external crate that is not
+    /// one of the standard / built-in libraries).
+    ThirdPartyCrate,
+    /// Defined in a standard / built-in library: `std`, `core`, `alloc`,
+    /// `proc_macro`, or `test`.
+    StandardLibrary,
 }
 
-/// Classify where `target` lives relative to the `scope` module, by the
-/// defining module's position in the module tree (not the `use` path's
-/// spelling). An external (non-local) target is always [`Reach::Outside`].
+impl Reach {
+    /// Whether the target lives in the current crate (first-party).
+    fn is_in_current_crate(self) -> bool {
+        matches!(
+            self,
+            Reach::LocalDefinition | Reach::InternalImport | Reach::CrateElsewhere,
+        )
+    }
+}
+
+/// Classify where `target` lives relative to the `scope` module and the
+/// current crate, by the defining module's position in the module tree
+/// (not the `use` path's spelling).
 fn import_reach(cx: &LateContext<'_>, scope: LocalDefId, target: DefId) -> Reach {
-    if target.as_local().is_none() {
-        return Reach::Outside;
+    if !target.is_local() {
+        return if is_standard_library(cx, target.krate) {
+            Reach::StandardLibrary
+        } else {
+            Reach::ThirdPartyCrate
+        };
     }
     let scope_def = scope.to_def_id();
     let Some(defining_module) = cx.tcx.opt_parent(target) else {
-        return Reach::Outside;
+        return Reach::CrateElsewhere;
     };
     if defining_module == scope_def {
         return Reach::LocalDefinition;
@@ -435,7 +472,19 @@ fn import_reach(cx: &LateContext<'_>, scope: LocalDefId, target: DefId) -> Reach
         }
         module = cx.tcx.opt_parent(current);
     }
-    Reach::Outside
+    Reach::CrateElsewhere
+}
+
+/// Whether `krate` is a standard / built-in library that ships with the
+/// compiler — stable enough that doc references into it are low-risk, so
+/// the narrower [`ReferenceScope`] levels exclude it. Keyed on the
+/// *defining* crate's name, so a `std` re-export of a `core` item
+/// (`Option`) is recognised through its `core` origin.
+fn is_standard_library(cx: &LateContext<'_>, krate: CrateNum) -> bool {
+    matches!(
+        cx.tcx.crate_name(krate).as_str(),
+        "core" | "alloc" | "std" | "proc_macro" | "test",
+    )
 }
 
 /// The [`LocalDefId`] of the item a doc comment documents, for the
