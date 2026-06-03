@@ -130,6 +130,21 @@ pre code {
   color: transparent;
 }
 
+/* Keep the prefix glyphs invisible even while selected. Browsers force
+   selected text to paint with the selection's foreground colour, which
+   would otherwise override `color: transparent` and reveal the raw
+   box-drawing glyphs layered on top of the CSS connectors. Suppressing
+   only the painting leaves the text selected and copied as before. Two
+   separate rules, not a `::selection, ::-moz-selection` list: an engine
+   that knows only one keyword discards a list containing the other
+   whole, but applies a standalone rule it understands. */
+.ft-cell::selection {
+  color: transparent;
+}
+.ft-cell::-moz-selection {
+  color: transparent;
+}
+
 /* Vertical segments. A pipe ancestor (`│`) and a tee (`├`) run the full
    line height; an ell (`└`) stops at the mid-line corner. All sit at the
    cell's left edge, where the box-drawing glyph would be, so a child's
