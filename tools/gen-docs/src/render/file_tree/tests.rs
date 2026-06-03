@@ -14,9 +14,12 @@ fn text_content(html: &str) -> String {
             _ => {}
         }
     }
-    out.replace("&amp;", "&")
-        .replace("&lt;", "<")
+    // Decode `&amp;` last: otherwise an escaped literal ampersand-entity
+    // like `&amp;lt;` would first become `&lt;` and then wrongly decode
+    // again to `<`, instead of copying back as the literal text `&lt;`.
+    out.replace("&lt;", "<")
         .replace("&gt;", ">")
+        .replace("&amp;", "&")
 }
 
 /// The text a copy or screen reader would yield: the content of the
@@ -74,6 +77,17 @@ fn escapes_html_metacharacters_in_names() {
     assert!(!html.contains("<T>"));
     // ...and the escaping round-trips back to the original text.
     assert_eq!(copied_text(&html), "Vec<T> & Box<U>\n");
+}
+
+#[test]
+fn round_trips_a_literal_entity_in_a_name() {
+    // A name that is itself entity-like text (`&lt;`) must escape to
+    // `&amp;lt;` and copy back as the original four characters — never
+    // double-decode to `<`. Guards the entity-decode order in
+    // `text_content`/the renderer.
+    let html = render_file_tree("&lt;\n");
+    assert!(html.contains("&amp;lt;"));
+    assert_eq!(copied_text(&html), "&lt;\n");
 }
 
 #[test]
