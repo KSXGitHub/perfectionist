@@ -54,27 +54,21 @@ that explains a SHA is expected.
 
 ## Examples
 
+**Avoid:**
+
 ```rust
-// Bad: branch ref
-/// See <https://github.com/owner/repo/blob/main/src/lib.rs>.
+/// See <https://github.com/owner/repo/blob/main/src/lib.rs>.            // branch ref
+/// See <https://github.com/owner/repo/blob/v1.2.3/src/lib.rs>.         // tag ref (cannot be distinguished from a branch by name)
+/// See <https://codeberg.org/owner/repo/src/branch/main/src/lib.rs>.   // Gitea-style: explicit `/src/branch/`
+/// See <https://codeberg.org/owner/repo/src/tag/v1.2.3/src/lib.rs>.    // Gitea-style: explicit `/src/tag/`
+```
 
-// Bad: tag ref (cannot be distinguished from a branch by name)
-/// See <https://github.com/owner/repo/blob/v1.2.3/src/lib.rs>.
+**Prefer:**
 
-// Good: long SHA
-/// See <https://github.com/owner/repo/blob/8c1f6e2a6d33c1b1a2f9e0e1d3b8a4c7d6e5f4a3/src/lib.rs>.
-
-// Good: short SHA (any length the lint recognises as hex)
-/// See <https://github.com/owner/repo/blob/8c1f6e2/src/lib.rs>.
-
-// Bad on Gitea-style: explicit `/src/branch/`
-/// See <https://codeberg.org/owner/repo/src/branch/main/src/lib.rs>.
-
-// Bad on Gitea-style: explicit `/src/tag/`
-/// See <https://codeberg.org/owner/repo/src/tag/v1.2.3/src/lib.rs>.
-
-// Good on Gitea-style: explicit `/src/commit/`
-/// See <https://codeberg.org/owner/repo/src/commit/8c1f6e2.../src/lib.rs>.
+```rust
+/// See <https://github.com/owner/repo/blob/8c1f6e2a6d33c1b1a2f9e0e1d3b8a4c7d6e5f4a3/src/lib.rs>.  // long SHA
+/// See <https://github.com/owner/repo/blob/8c1f6e2/src/lib.rs>.                                   // short SHA (any length the lint recognises as hex)
+/// See <https://codeberg.org/owner/repo/src/commit/8c1f6e2.../src/lib.rs>.                        // Gitea-style: explicit `/src/commit/`
 ```
 
 ## Configuration

@@ -11,9 +11,11 @@ type, two attribute forms produce the same wire output:
 #[derive(Serialize, Deserialize)]
 #[serde(transparent)]
 struct A(Inner);
+```
 
-// vs.
+versus:
 
+```rust
 #[derive(Serialize, Deserialize)]
 #[serde(from = "Inner", into = "Inner")]
 struct B(Inner);
@@ -62,8 +64,9 @@ style = "transparent"
 
 ## Style: `transparent`
 
+**Avoid:**
+
 ```rust
-// Bad (under style = "transparent")
 #[derive(Serialize, Deserialize)]
 #[serde(from = "Inner", into = "Inner")]
 struct A(Inner);
@@ -74,8 +77,11 @@ impl From<Inner> for A {
 impl From<A> for Inner {
     fn from(wrapper: A) -> Self { wrapper.0 }
 }
+```
 
-// Good
+**Prefer:**
+
+```rust
 #[derive(Serialize, Deserialize)]
 #[serde(transparent)]
 struct A(Inner);
@@ -84,8 +90,9 @@ struct A(Inner);
 The lint *does not* fire when the `From` impls do anything beyond
 trivially construct/destruct:
 
+**Not flagged:** the `From` impl validates.
+
 ```rust
-// Not flagged: the From impl validates.
 #[serde(from = "Inner", into = "Inner")]
 struct ValidatedPort(u16);
 
@@ -99,13 +106,17 @@ impl From<Inner> for ValidatedPort {
 
 ## Style: `from_into`
 
+**Avoid:**
+
 ```rust
-// Bad (under style = "from_into")
 #[derive(Serialize, Deserialize)]
 #[serde(transparent)]
 struct A(Inner);
+```
 
-// Good
+**Prefer:**
+
+```rust
 #[derive(Serialize, Deserialize)]
 #[serde(from = "Inner", into = "Inner")]
 struct A(Inner);

@@ -41,32 +41,38 @@ Either condition being true makes the pipe acceptable: a method-
 call receiver "continues" an existing chain, and a trailing
 `.method()` makes the pipe "continued by" one.
 
+**Avoid:**
+
 ```rust
-// Bad: value is not a method call AND pipe is the tail
+// value is not a method call AND pipe is the tail
 let result = value.pipe(foo);
 let some = value.pipe(Some);
 
-// Bad: stdin() is a free-function call, not a method call,
+// stdin() is a free-function call, not a method call,
 // AND .pipe(...) is the tail
 let data = stdin().pipe(serde_json::from_reader::<_, JsonData>);
+```
 
-// Good (entry-point form, no chain involved)
+**Prefer:**
+
+```rust
+// entry-point form, no chain involved
 let result = foo(value);
 let some = Some(value);
 
-// Good: receiver is a method call, so .pipe(Some) continues it
+// receiver is a method call, so .pipe(Some) continues it
 let summary = report.summarize().pipe(Some);
 
-// Good: receiver continues to be a method call across pipes
+// receiver continues to be a method call across pipes
 let name = entry.file_name().pipe(OsStringDisplay::from).pipe(Some);
 
-// Good: receiver is a free function call BUT .pipe(...) is followed
+// receiver is a free function call BUT .pipe(...) is followed
 // by another method call, so it sits between two method calls
 let parsed = stdin()
     .pipe(serde_json::from_reader::<_, JsonData>)
     .map(post_process);
 
-// Good: receiver is a method call AND the callable inside .pipe(...)
+// receiver is a method call AND the callable inside .pipe(...)
 // carries a turbofish — the turbofish lives between the parens of
 // .pipe(...) and is preserved as-is.
 let parsed = request.body().pipe(serde_json::from_reader::<_, MyData>);
@@ -82,8 +88,9 @@ argument doesn't constitute a chain, and lifting it across pipe
 would just produce the entry-point pattern that `entry_point`
 forbids.
 
+**Avoid:** arg is a method call (chain)
+
 ```rust
-// Bad: arg is a method call (chain)
 let name = Some(OsStringDisplay::from(entry.file_name()));
 let wrapped = Ok(items.iter().map(|x| x.id).collect::<Vec<_>>());
 let err = Err(parser.tokens().peek().cloned());
@@ -92,8 +99,11 @@ let lock = Arc::clone(
         .or_insert_with(|| Arc::new(Mutex::new(())))
         .value(),
 );
+```
 
-// Good
+**Prefer:**
+
+```rust
 let name = entry.file_name().pipe(OsStringDisplay::from).pipe(Some);
 let wrapped = items.iter().map(|x| x.id).collect::<Vec<_>>().pipe(Ok);
 let err = parser.tokens().peek().cloned().pipe(Err);
@@ -102,11 +112,15 @@ let lock = locks
     .or_insert_with(|| Arc::new(Mutex::new(())))
     .value()
     .pipe(Arc::clone);
+```
 
-// Not flagged: arg is a free function call, not a method call
+**Not flagged:**
+
+```rust
+// arg is a free function call, not a method call
 let data = serde_json::from_reader::<_, JsonData>(stdin());
 
-// Not flagged: arg is a leaf
+// arg is a leaf
 let some = Some(value);
 let ok = Ok(42);
 ```

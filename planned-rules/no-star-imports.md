@@ -34,45 +34,61 @@ When both exceptions are disabled the lint flags every glob `use`.
 
 ## Examples
 
+**Avoid:**
+
 ```rust
-// Bad
 #[cfg(test)]
 mod tests {
     use super::*;
 }
+```
 
-// Good
+**Prefer:**
+
+```rust
 #[cfg(test)]
 mod tests {
     use super::{ParsedThing, parse_thing};
 }
 ```
 
-```rust
-// Allowed by default (prelude exception)
-use rayon::prelude::*;
+**Not flagged:** the prelude exception.
 
-// Allowed by default (root re-export)
+```rust
+use rayon::prelude::*;
+```
+
+**Not flagged:** the root re-export exception.
+
+```rust
 pub use comver::*;
 ```
 
 When `prelude` is disabled (`exceptions = ["root_reexport"]`):
 
-```rust
-// Bad (under that config)
-use rayon::prelude::*;
+**Avoid:**
 
-// Good
+```rust
+use rayon::prelude::*;
+```
+
+**Prefer:**
+
+```rust
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 ```
 
 When `root_reexport` is disabled (`exceptions = ["prelude"]`):
 
-```rust
-// Bad (under that config)
-pub use comver::*;
+**Avoid:**
 
-// Good
+```rust
+pub use comver::*;
+```
+
+**Prefer:**
+
+```rust
 pub use comver::{Version, VersionReq};
 ```
 
