@@ -130,19 +130,27 @@ pre code {
   color: transparent;
 }
 
-/* Keep the prefix glyphs invisible even while selected. Browsers force
-   selected text to paint with the selection's foreground colour, which
-   would otherwise override `color: transparent` and reveal the raw
-   box-drawing glyphs layered on top of the CSS connectors. Suppressing
-   only the painting leaves the text selected and copied as before. Two
-   separate rules, not a `::selection, ::-moz-selection` list: an engine
-   that knows only one keyword discards a list containing the other
-   whole, but applies a standalone rule it understands. */
+/* Keep the prefix glyphs invisible even while selected, but still show
+   the selection highlight over them. Browsers force selected text to
+   paint with the selection's foreground colour, which would otherwise
+   override `color: transparent` and reveal the raw box-drawing glyphs
+   layered on top of the CSS connectors — so pin the selected colour
+   transparent too. That alone suppresses the highlight background for
+   the now fully-transparent run, leaving a ragged selection (blue
+   behind the names, nothing behind the diagram), so restore it with the
+   `Highlight` system colour — the same blue the browser paints behind
+   the adjacent names by default, in both themes. The text stays
+   selected and copied verbatim throughout. Two separate rules, not a
+   `::selection, ::-moz-selection` list: an engine that knows only one
+   keyword discards a list containing the other whole, but applies a
+   standalone rule it understands. */
 .ft-cell::selection {
   color: transparent;
+  background: Highlight;
 }
 .ft-cell::-moz-selection {
   color: transparent;
+  background: Highlight;
 }
 
 /* Vertical segments. A pipe ancestor (`│`) and a tee (`├`) run the full
