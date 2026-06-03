@@ -14,7 +14,7 @@ mod model;
 mod render;
 
 use check::is_compliant;
-use config::{Config, Style};
+use config::{Config, SelfMerge, Style};
 use model::{Leaf, StmtInfo, stmt_info};
 
 use crate::common::{DefaultState, resolved_state};
@@ -41,6 +41,14 @@ declare_tool_lint! {
     /// statements that sit next to each other in a module body, share a
     /// visibility, and carry matching attributes are merged; the three
     /// `respect_*` knobs tighten or loosen that grouping.
+    ///
+    /// Under `crate` style a name that is both an item and a module
+    /// (`use crate::thing;` next to `use crate::thing::T;`) has two valid
+    /// one-`use` shapes — the `self`-fold `crate::thing::{self, T}` and
+    /// the sibling-split `crate::{thing, thing::T}` — that bind different
+    /// namespaces. By default neither single-statement form is flagged
+    /// and both are offered when a merge is forced; the optional
+    /// `self_merge` knob (`fold` / `split`) picks one and enforces it.
     ///
     /// Globs (`use foo::*`) are governed by `perfectionist::no_star_imports`,
     /// not by this rule: a top-level glob is left alone under `item`.
@@ -90,6 +98,7 @@ pub struct ImportGranularity {
     respect_cfg_blocks: bool,
     respect_visibility: bool,
     respect_doc_comments: bool,
+    self_merge: Option<SelfMerge>,
 }
 
 impl ImportGranularity {
@@ -100,6 +109,7 @@ impl ImportGranularity {
             respect_cfg_blocks: config.respect_cfg_blocks,
             respect_visibility: config.respect_visibility,
             respect_doc_comments: config.respect_doc_comments,
+            self_merge: config.self_merge,
         }
     }
 }
@@ -150,7 +160,9 @@ enum Violation {
     /// (`thing::{self, T}`) and the sibling-split (`{thing, thing::T}`).
     /// The two shapes are not interchangeable, so both are offered and
     /// the human picks — hence the `MaybeIncorrect` applicability the
-    /// caller attaches in that case.
+    /// caller attaches in that case. When `self_merge` is set the
+    /// ambiguity is resolved to the configured shape and only that one
+    /// candidate is offered.
     Reorganize {
         suggestions: Vec<String>,
         applicability: Applicability,
@@ -400,7 +412,7 @@ impl ImportGranularity {
             return;
         };
         let stmts: Vec<&StmtInfo> = group.iter().map(|entry| &entry.info).collect();
-        if is_compliant(self.style, &stmts) {
+        if is_compliant(self.style, self.self_merge, &stmts) {
             return;
         }
 
@@ -412,20 +424,6 @@ impl ImportGranularity {
         if bodies.is_empty() {
             return;
         }
-
-        // Under `crate` style a name that is both an item and a module
-        // has a second, equally-valid shape: the `self`-fold. When it
-        // differs from the default sibling shape the merge is ambiguous —
-        // the rule can't tell from syntax whether the bare name also
-        // binds a value or macro — so both shapes are offered as
-        // `MaybeIncorrect` alternatives. See
-        // <https://github.com/KSXGitHub/perfectionist/issues/186>.
-        let self_fold = if let Style::Crate = self.style {
-            let folded = render::render_crate_self(&leaves);
-            (folded != bodies).then_some(folded)
-        } else {
-            None
-        };
 
         let replace_span = first
             .item
@@ -467,33 +465,63 @@ impl ImportGranularity {
                 .join(&format!("\n{pad}"))
         };
 
-        let (suggestions, applicability) = match self_fold {
-            // Ambiguous `crate` merge: offer the `self`-fold and the
-            // sibling-split, both `MaybeIncorrect`, and let the human
-            // pick the one that matches what the bare name resolves to.
-            Some(folded) => (
-                vec![render_full(&folded), render_full(&bodies)],
-                Applicability::MaybeIncorrect,
-            ),
-            None => {
-                // Down to `MaybeIncorrect` when applying the fix would
-                // drop something the rewrite can't carry: an inline
-                // comment inside the replaced span, or a doc comment that
-                // differs across the merged statements (kept only from
-                // the first).
-                let has_comment = lint_context
-                    .sess()
-                    .source_map()
-                    .span_to_snippet(replace_span)
-                    .is_ok_and(|snippet| snippet.contains("//") || snippet.contains("/*"));
-                let drops_doc = group.iter().any(|entry| entry.attrs != first.attrs);
-                let applicability = if has_comment || drops_doc {
-                    Applicability::MaybeIncorrect
-                } else {
-                    Applicability::MachineApplicable
-                };
-                (vec![render_full(&bodies)], applicability)
+        // Down to `MaybeIncorrect` when applying the fix would drop
+        // something the rewrite can't carry: an inline comment inside the
+        // replaced span, or a doc comment that differs across the merged
+        // statements (kept only from the first). A `self_merge` rewrite
+        // that changes which namespaces a name binds (`lossy`, below) is
+        // likewise `MaybeIncorrect`.
+        let has_comment = lint_context
+            .sess()
+            .source_map()
+            .span_to_snippet(replace_span)
+            .is_ok_and(|snippet| snippet.contains("//") || snippet.contains("/*"));
+        let drops_doc = group.iter().any(|entry| entry.attrs != first.attrs);
+        let applic = |lossy: bool| {
+            if lossy || has_comment || drops_doc {
+                Applicability::MaybeIncorrect
+            } else {
+                Applicability::MachineApplicable
             }
+        };
+
+        let (suggestions, applicability) = match (self.style, self.self_merge) {
+            // `crate` style with the item-and-module ambiguity resolved by
+            // `self_merge`: enforce exactly the configured shape and offer
+            // only that one candidate. The rewrite changes which
+            // namespaces a name binds when it folds a bare item into
+            // `self` or raises a `self` to a bare item, so it is
+            // `MaybeIncorrect` in that case — the project asserts a
+            // preference, not a proof of equivalence. See
+            // <https://github.com/KSXGitHub/perfectionist/issues/206>.
+            (Style::Crate, Some(SelfMerge::Fold)) => {
+                let folded = render::render_crate_self(&leaves);
+                let lossy = model::has_bare_item_dual(&leaves);
+                (vec![render_full(&folded)], applic(lossy))
+            }
+            (Style::Crate, Some(SelfMerge::Split)) => {
+                let split = render::render_crate_split(&leaves);
+                let lossy = model::has_self_dual(&leaves);
+                (vec![render_full(&split)], applic(lossy))
+            }
+            // `crate` style, knob unset: when the `self`-fold differs from
+            // the sibling-split a name is both an item and a module, and
+            // the rule can't tell from syntax which shape is correct.
+            // Offer both as `MaybeIncorrect` and let the author pick. See
+            // <https://github.com/KSXGitHub/perfectionist/issues/186>.
+            (Style::Crate, None) => {
+                let folded = render::render_crate_self(&leaves);
+                if folded == bodies {
+                    (vec![render_full(&bodies)], applic(false))
+                } else {
+                    (
+                        vec![render_full(&folded), render_full(&bodies)],
+                        Applicability::MaybeIncorrect,
+                    )
+                }
+            }
+            // `module` / `item` style: `self_merge` does not apply.
+            _ => (vec![render_full(&bodies)], applic(false)),
         };
 
         violations.push(Pending {

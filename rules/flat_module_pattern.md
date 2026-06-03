@@ -25,13 +25,22 @@ don't disambiguate by directory.
 
 ## Example
 
-```text
-// Bad
-src/foo/mod.rs
+**Avoid:**
 
-// Good
-src/foo.rs
-src/foo/bar.rs
+```text
+src/
+└── foo/
+    ├── mod.rs
+    └── bar.rs
+```
+
+**Prefer:**
+
+```text
+src/
+├── foo.rs
+└── foo/
+    └── bar.rs
 ```
 
 ## Configuration

@@ -6,14 +6,18 @@
 
 use std::collections::HashSet;
 
-use super::config::Style;
-use super::model::{LeafItem, StmtInfo, TopKind};
+use super::config::{SelfMerge, Style};
+use super::model::{LeafItem, StmtInfo, TopKind, has_bare_item_dual, has_self_dual};
 
-pub(super) fn is_compliant(style: Style, stmts: &[&StmtInfo]) -> bool {
+pub(super) fn is_compliant(
+    style: Style,
+    self_merge: Option<SelfMerge>,
+    stmts: &[&StmtInfo],
+) -> bool {
     match style {
         Style::Item => stmts.iter().all(|stmt| is_item_shaped(stmt)),
         Style::Module => module_compliant(stmts),
-        Style::Crate => crate_compliant(stmts),
+        Style::Crate => crate_compliant(self_merge, stmts),
     }
 }
 
@@ -77,7 +81,22 @@ fn is_module_shaped(stmt: &StmtInfo) -> bool {
 /// a single crate root, and no two statements share a root — except a
 /// root imported as a bare crate item, which can't be folded with its
 /// own deeper imports without an unsafe synthesised `self` (see below).
-fn crate_compliant(stmts: &[&StmtInfo]) -> bool {
+fn crate_compliant(self_merge: Option<SelfMerge>, stmts: &[&StmtInfo]) -> bool {
+    // With `self_merge` set, the project has picked one shape for a name
+    // that is both an item and a module, so the opposite single-statement
+    // form is no longer compliant: `fold` flags the sibling-split
+    // (`{thing, thing::T}`) and `split` flags the `self`-fold
+    // (`thing::{self, T}`). Unset, both shapes stay compliant (the safe
+    // default). See
+    // <https://github.com/KSXGitHub/perfectionist/issues/206>.
+    let off_shape = match self_merge {
+        Some(SelfMerge::Fold) => stmts.iter().any(|stmt| has_bare_item_dual(&stmt.leaves)),
+        Some(SelfMerge::Split) => stmts.iter().any(|stmt| has_self_dual(&stmt.leaves)),
+        None => false,
+    };
+    if off_shape {
+        return false;
+    }
     if !stmts.iter().all(|stmt| stmt.collapsed) {
         return false;
     }

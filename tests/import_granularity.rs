@@ -32,6 +32,8 @@ struct RuleConfig {
     respect_visibility: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     respect_doc_comments: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    self_merge: Option<&'static str>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -68,6 +70,36 @@ fn item_style_splits_per_leaf() {
         "ui-toml/import_granularity/item_style",
         RuleConfig {
             style: Some("item"),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn self_merge_fold_enforces_self() {
+    // `crate` style with `self_merge = "fold"`: a name that is both an
+    // item and a module is always written `crate::thing::{self, T}`. The
+    // sibling-split single statement is flagged and rewritten to it.
+    run(
+        "ui-toml/import_granularity/self_merge_fold",
+        RuleConfig {
+            style: Some("crate"),
+            self_merge: Some("fold"),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn self_merge_split_enforces_siblings() {
+    // `crate` style with `self_merge = "split"`: the same name is always
+    // written `crate::{thing, thing::T}`. The `self`-fold single
+    // statement is flagged and rewritten to it.
+    run(
+        "ui-toml/import_granularity/self_merge_split",
+        RuleConfig {
+            style: Some("crate"),
+            self_merge: Some("split"),
             ..Default::default()
         },
     );

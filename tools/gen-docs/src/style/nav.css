@@ -35,17 +35,14 @@
   z-index: 100;
   width: 2.5rem;
   height: 2.5rem;
-  background: #ffffff;
-  border: 1px solid #d0d7de;
+  border: 1px solid;
   border-radius: 6px;
   cursor: pointer;
   font-size: 1.4rem;
   line-height: 1;
-  color: #1f2328;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 3px rgba(31, 35, 40, 0.08);
   padding: 0;
 }
 
@@ -53,12 +50,8 @@
   content: "\2630"; /* ☰ */
 }
 
-.nav-toggle:hover {
-  background: #f6f8fa;
-}
-
 .nav-toggle:focus-visible {
-  outline: 2px solid #0969da;
+  outline: 2px solid;
   outline-offset: 2px;
 }
 
@@ -81,12 +74,10 @@
   height: 100vh;
   height: 100dvh;
   overflow-y: auto;
-  background: #ffffff;
-  border-right: 1px solid #d0d7de;
+  border-right: 1px solid;
   padding: 0;
   z-index: 99;
   box-sizing: border-box;
-  box-shadow: 2px 0 10px rgba(31, 35, 40, 0.08);
   display: none;
 }
 
@@ -100,8 +91,7 @@
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.6rem 1rem;
-  border-bottom: 1px solid #eaeef2;
-  background: #ffffff;
+  border-bottom: 1px solid;
   position: sticky;
   top: 0;
   z-index: 1;
@@ -111,25 +101,19 @@
   width: 2.5rem;
   height: 2.5rem;
   flex: none;
-  background: #ffffff;
-  border: 1px solid #d0d7de;
+  border: 1px solid;
   border-radius: 6px;
   cursor: pointer;
   font-size: 1.2rem;
   line-height: 1;
-  color: #1f2328;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
 }
 
-.nav-sidebar-close:hover {
-  background: #f6f8fa;
-}
-
 .nav-sidebar-close:focus-visible {
-  outline: 2px solid #0969da;
+  outline: 2px solid;
   outline-offset: 2px;
 }
 
@@ -137,14 +121,9 @@
   flex: 1;
   font-weight: 600;
   text-decoration: none;
-  color: #1f2328;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.nav-sidebar-title:hover {
-  color: #0969da;
 }
 
 .nav-sidebar-list {
@@ -161,18 +140,15 @@
   display: block;
   padding: 0.25rem 0.5rem;
   text-decoration: none;
-  color: #0969da;
   border-radius: 4px;
   overflow-wrap: anywhere;
 }
 
 .nav-sidebar-list a:hover {
-  background: #f6f8fa;
   text-decoration: none;
 }
 
 .nav-sidebar-list a code {
-  background: none;
   padding: 0;
   font-size: 0.85rem;
 }
@@ -219,7 +195,6 @@
     width: 100vw;
     max-width: none;
     border-right: none;
-    box-shadow: none;
   }
 }
 
@@ -235,7 +210,6 @@
 
   .nav-sidebar {
     display: block;
-    box-shadow: none;
   }
 
   .nav-sidebar-header {

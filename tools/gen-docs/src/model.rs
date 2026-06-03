@@ -18,8 +18,6 @@ pub(crate) const NAMESPACE: &str = "perfectionist::";
 /// signatures from collecting more positional string args every
 /// time a new contextual field is added.
 pub(crate) struct RenderContext<'a> {
-    /// Latest released version of the crate, read from `Cargo.toml`.
-    pub(crate) crate_version: &'a str,
     /// Human-facing git ref (typically a branch like `master`, a
     /// tag, or whatever the user passed via `--git-ref`). Used in
     /// the page title and banner so a reader can tell *which*

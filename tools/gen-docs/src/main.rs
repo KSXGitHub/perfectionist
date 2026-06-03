@@ -35,7 +35,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
-use cargo_toml::{Inheritable, Manifest};
+use cargo_toml::Manifest;
 use clap::{Parser, Subcommand};
 use command_extra::CommandExtra;
 use pipe_trait::Pipe;
@@ -45,8 +45,9 @@ use crate::extract::collect_rules;
 use crate::model::{RenderContext, Rule};
 use crate::render::markdown::HIGHLIGHT_CSS;
 use crate::render::{
-    HIGHLIGHT_CSS_FILENAME, NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, RULE_ANCHOR_ICON,
-    RULE_ANCHOR_ICON_FILENAME, STYLESHEETS, render_page,
+    HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME, NAV_TOGGLE_SCRIPT,
+    NAV_TOGGLE_SCRIPT_FILENAME, RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME, STYLESHEETS,
+    THEME_ICONS, THEME_TOGGLE_SCRIPT, THEME_TOGGLE_SCRIPT_FILENAME, render_page,
 };
 
 #[derive(Parser)]
@@ -148,14 +149,6 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     let commit_sha = resolve_git_ref(root, git_ref);
 
     let manifest = Manifest::from_path(root.join("Cargo.toml")).expect("failed to read Cargo.toml");
-    let crate_version = manifest
-        .package
-        .as_ref()
-        .and_then(|package| match &package.version {
-            Inheritable::Set(value) => Some(value.clone()),
-            Inheritable::Inherited => None,
-        })
-        .unwrap_or_else(|| "unknown".to_owned());
     // Derive the human-facing repository URL from Cargo.toml so a
     // fork picks up its own URL without hand-editing the renderer.
     // Cargo's `repository` field typically ends in `.git` for clone
@@ -174,7 +167,6 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
 
     fs::create_dir_all(out_dir).expect("failed to create output directory");
     let context = RenderContext {
-        crate_version: &crate_version,
         git_ref,
         commit_sha: &commit_sha,
         repo_url: &repo_url,
@@ -189,18 +181,39 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
         let path = out_dir.join(name);
         fs::write(&path, content).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
     }
-    // The syntax-highlighting CSS is generated at runtime by syntect,
-    // so it's written from the live string rather than `include_str!`.
-    fs::write(out_dir.join(HIGHLIGHT_CSS_FILENAME), &*HIGHLIGHT_CSS)
-        .expect("failed to write highlight CSS");
-    // The navigation script, loaded by the page via `<script src>`.
+    // The syntax-highlighting CSS is generated at runtime by syntect
+    // (both sheets from one theme-set load), so it's written from the
+    // live strings rather than `include_str!`. The dark variant is
+    // linked after the light one.
+    fs::write(
+        out_dir.join(HIGHLIGHT_CSS_LIGHT_FILENAME),
+        &HIGHLIGHT_CSS.light,
+    )
+    .expect("failed to write light highlight CSS");
+    fs::write(
+        out_dir.join(HIGHLIGHT_CSS_DARK_FILENAME),
+        &HIGHLIGHT_CSS.dark,
+    )
+    .expect("failed to write dark highlight CSS");
+    // The page scripts, loaded via `<script src>`.
     fs::write(out_dir.join(NAV_TOGGLE_SCRIPT_FILENAME), NAV_TOGGLE_SCRIPT)
         .expect("failed to write nav script");
+    fs::write(
+        out_dir.join(THEME_TOGGLE_SCRIPT_FILENAME),
+        THEME_TOGGLE_SCRIPT,
+    )
+    .expect("failed to write theme script");
 
     // Lands beside index.html so the stylesheet's relative `url(...)`
     // resolves.
     let icon_path = out_dir.join(RULE_ANCHOR_ICON_FILENAME);
     fs::write(&icon_path, RULE_ANCHOR_ICON).expect("failed to write rule-anchor icon");
+
+    // The colour-scheme icons, referenced as CSS masks by settings.css.
+    for (name, content) in THEME_ICONS {
+        let path = out_dir.join(name);
+        fs::write(&path, content).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
+    }
 
     eprintln!("wrote {} rule(s) to {}", rules.len(), index_path.display());
     ExitCode::SUCCESS

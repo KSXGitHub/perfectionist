@@ -1,0 +1,224 @@
+/* Light theme — the default colour layer.
+ *
+ * This file (and its dark counterpart, dark.css) carries the colours
+ * extracted out of the structural stylesheets (base.css, nav.css,
+ * rules.css, settings.css). Each rule here mirrors a selector from
+ * those files but lists ONLY its colour declarations; the structural
+ * files keep the layout, sizing, and other non-colour properties.
+ *
+ * No CSS custom properties are used: every value is a literal colour,
+ * so the page themes correctly on engines that predate `var()`
+ * (maximising backward compatibility). The cost is that dark.css
+ * repeats each colour under the two dark tiers — see that file.
+ *
+ * Override tiers:
+ *   1. Default Light — these rules. They are the lowest-priority colour
+ *      layer; with neither a system-preference media query nor the
+ *      override attribute, the page is Light.
+ *   2. System preference and 3. explicit override both live in dark.css
+ *      and win over these by being later in the cascade and/or more
+ *      specific.
+ *
+ * Loaded AFTER the structural sheets so a colour longhand here (e.g.
+ * `border-bottom-color`) overrides the `currentColor` left by a
+ * structural border shorthand of equal specificity.
+ */
+
+html {
+  color-scheme: light;
+  background-color: #ffffff;
+}
+body {
+  color: #1f2328;
+  background-color: #ffffff;
+}
+h1 {
+  border-bottom-color: #d0d7de;
+}
+.banner {
+  background: #fff8c5;
+  border-left-color: #d4a72c;
+}
+pre {
+  background: #f6f8fa;
+}
+code {
+  background: #f6f8fa;
+}
+pre code {
+  background: none;
+}
+footer {
+  border-top-color: #eaeef2;
+  color: #57606a;
+}
+a {
+  color: #0969da;
+}
+.nav-toggle {
+  background: #ffffff;
+  border-color: #d0d7de;
+  color: #1f2328;
+  box-shadow: 0 1px 3px rgba(31, 35, 40, 0.08);
+}
+.nav-toggle:hover {
+  background: #f6f8fa;
+}
+.nav-toggle:focus-visible {
+  outline-color: #0969da;
+}
+.nav-sidebar {
+  background: #ffffff;
+  border-right-color: #d0d7de;
+}
+
+/* The sidebar shadow only applies in the overlay band (601-1099.98px);
+   it is flush at <=600px (full-screen) and >=1100px (permanent). Scoping
+   it here, rather than resetting it at those breakpoints, keeps the
+   `box-shadow: none` overrides out of the structural sheet. */
+@media (min-width: 601px) and (max-width: 1099.98px) {
+  .nav-sidebar {
+    box-shadow: 2px 0 10px rgba(31, 35, 40, 0.08);
+  }
+}
+.nav-sidebar-header {
+  background: #ffffff;
+  border-bottom-color: #eaeef2;
+}
+.nav-sidebar-close {
+  background: #ffffff;
+  border-color: #d0d7de;
+  color: #1f2328;
+}
+.nav-sidebar-close:hover {
+  background: #f6f8fa;
+}
+.nav-sidebar-close:focus-visible {
+  outline-color: #0969da;
+}
+.nav-sidebar-title {
+  color: #1f2328;
+}
+.nav-sidebar-title:hover {
+  color: #0969da;
+}
+.nav-sidebar-list a {
+  color: #0969da;
+}
+.nav-sidebar-list a:hover {
+  background: #f6f8fa;
+}
+.nav-sidebar-list a code {
+  background: none;
+}
+table.index td, table.index th {
+  border-bottom-color: #eaeef2;
+}
+table.index th {
+  background: #f6f8fa;
+}
+table.index tr {
+  border-bottom-color: #eaeef2;
+}
+.state-active {
+  background: #dafbe1;
+}
+.state-inactive {
+  background: #eaeef2;
+}
+article.rule {
+  border-top-color: #eaeef2;
+}
+article.rule h2 .lint-prefix {
+  color: #57606a;
+}
+article.rule h2 .rule-jump-link {
+  color: #57606a;
+}
+article.rule h2 .rule-jump-link:hover {
+  color: #0969da;
+}
+article.rule .source {
+  color: #57606a;
+}
+details.config-details > summary.config-summary {
+  color: #1f2328;
+}
+details.config-details > summary::before {
+  color: #57606a;
+}
+p.config-none {
+  color: #57606a;
+}
+dl.config {
+  background: #f6f8fa;
+}
+.config-key {
+  background: #ddf4ff;
+}
+.config-default {
+  color: #57606a;
+}
+.badge-optional {
+  background: #eaeef2;
+  color: #57606a;
+}
+.badge-mandatory {
+  background: #ffebe9;
+  color: #cf222e;
+}
+article.rule h4.config-types {
+  color: #57606a;
+}
+div.custom-type {
+  background: #f6f8fa;
+  border-left-color: #d0d7de;
+}
+.custom-type-name {
+  background: #ddf4ff;
+}
+.custom-type-kind {
+  color: #57606a;
+}
+div.custom-type dl.config {
+  background: transparent;
+}
+.settings-toggle {
+  background: #ffffff;
+  border-color: #d0d7de;
+  color: #1f2328;
+  box-shadow: 0 1px 3px rgba(31, 35, 40, 0.08);
+}
+.settings-toggle:hover {
+  background: #f6f8fa;
+}
+.settings-toggle:focus-visible {
+  outline-color: #0969da;
+}
+.settings-panel {
+  background: #ffffff;
+  border-color: #d0d7de;
+  box-shadow: 0 4px 16px rgba(31, 35, 40, 0.08);
+}
+.settings-panel-title {
+  color: #1f2328;
+}
+.settings-section > legend {
+  color: #57606a;
+}
+.theme-option {
+  border-color: #d0d7de;
+  color: #57606a;
+  background: #ffffff;
+}
+.theme-option:hover {
+  background: #f6f8fa;
+}
+.theme-radio:checked + .theme-option {
+  color: #0969da;
+  border-color: #0969da;
+  background: #ddf4ff;
+}
+.theme-radio:focus-visible + .theme-option {
+  outline-color: #0969da;
+}

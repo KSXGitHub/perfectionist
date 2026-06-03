@@ -1,0 +1,414 @@
+/* Dark theme — the dark colour layer (override tiers 2 and 3).
+ * Mirrors the same selectors as light.css with only colour
+ * declarations, and like light.css uses no CSS custom properties.
+ *
+ * Each colour is declared twice because the two dark tiers can't share
+ * one rule (one lives inside `@media`, the other outside it):
+ *
+ *   * Tier 2 (system preference): inside
+ *     `@media (prefers-color-scheme: dark)`, every selector is prefixed
+ *     with `html:not([color-scheme-override="light"])` so a reader who
+ *     forced Light keeps it even on a dark-preferring OS, and so the
+ *     prefixed selector out-specifies the light.css default.
+ *   * Tier 3 (explicit Dark): every selector is prefixed with
+ *     `html[color-scheme-override="dark"]`, set by theme_toggle.js. It
+ *     comes after the media block, so an explicit Dark choice wins even
+ *     on a light-preferring OS.
+ *
+ * theme_toggle.js sets the attribute on <html>, so the prefixes key off
+ * the root element. Keep the two value sets below in sync.
+ */
+
+@media (prefers-color-scheme: dark) {
+  html:not([color-scheme-override="light"]) {
+    color-scheme: dark;
+    background-color: #0d1117;
+  }
+  html:not([color-scheme-override="light"]) body {
+    color: #e6edf3;
+    background-color: #0d1117;
+  }
+  html:not([color-scheme-override="light"]) h1 {
+    border-bottom-color: #30363d;
+  }
+  html:not([color-scheme-override="light"]) .banner {
+    background: rgba(187, 128, 9, 0.15);
+    border-left-color: #9e6a03;
+  }
+  html:not([color-scheme-override="light"]) pre {
+    background: #161b22;
+  }
+  html:not([color-scheme-override="light"]) code {
+    background: #161b22;
+  }
+  html:not([color-scheme-override="light"]) pre code {
+    background: none;
+  }
+  html:not([color-scheme-override="light"]) footer {
+    border-top-color: #21262d;
+    color: #8b949e;
+  }
+  html:not([color-scheme-override="light"]) a {
+    color: #4493f8;
+  }
+  html:not([color-scheme-override="light"]) .nav-toggle {
+    background: #0d1117;
+    border-color: #30363d;
+    color: #e6edf3;
+    box-shadow: 0 1px 3px rgba(1, 4, 9, 0.5);
+  }
+  html:not([color-scheme-override="light"]) .nav-toggle:hover {
+    background: #161b22;
+  }
+  html:not([color-scheme-override="light"]) .nav-toggle:focus-visible {
+    outline-color: #4493f8;
+  }
+  html:not([color-scheme-override="light"]) .nav-sidebar {
+    background: #0d1117;
+    border-right-color: #30363d;
+  }
+  html:not([color-scheme-override="light"]) .nav-sidebar-header {
+    background: #0d1117;
+    border-bottom-color: #21262d;
+  }
+  html:not([color-scheme-override="light"]) .nav-sidebar-close {
+    background: #0d1117;
+    border-color: #30363d;
+    color: #e6edf3;
+  }
+  html:not([color-scheme-override="light"]) .nav-sidebar-close:hover {
+    background: #161b22;
+  }
+  html:not([color-scheme-override="light"]) .nav-sidebar-close:focus-visible {
+    outline-color: #4493f8;
+  }
+  html:not([color-scheme-override="light"]) .nav-sidebar-title {
+    color: #e6edf3;
+  }
+  html:not([color-scheme-override="light"]) .nav-sidebar-title:hover {
+    color: #4493f8;
+  }
+  html:not([color-scheme-override="light"]) .nav-sidebar-list a {
+    color: #4493f8;
+  }
+  html:not([color-scheme-override="light"]) .nav-sidebar-list a:hover {
+    background: #161b22;
+  }
+  html:not([color-scheme-override="light"]) .nav-sidebar-list a code {
+    background: none;
+  }
+  html:not([color-scheme-override="light"]) table.index td, html:not([color-scheme-override="light"]) table.index th {
+    border-bottom-color: #21262d;
+  }
+  html:not([color-scheme-override="light"]) table.index th {
+    background: #161b22;
+  }
+  html:not([color-scheme-override="light"]) table.index tr {
+    border-bottom-color: #21262d;
+  }
+  html:not([color-scheme-override="light"]) .state-active {
+    background: rgba(46, 160, 67, 0.18);
+  }
+  html:not([color-scheme-override="light"]) .state-inactive {
+    background: #30363d;
+  }
+  html:not([color-scheme-override="light"]) article.rule {
+    border-top-color: #21262d;
+  }
+  html:not([color-scheme-override="light"]) article.rule h2 .lint-prefix {
+    color: #8b949e;
+  }
+  html:not([color-scheme-override="light"]) article.rule h2 .rule-jump-link {
+    color: #8b949e;
+  }
+  html:not([color-scheme-override="light"]) article.rule h2 .rule-jump-link:hover {
+    color: #4493f8;
+  }
+  html:not([color-scheme-override="light"]) article.rule .source {
+    color: #8b949e;
+  }
+  html:not([color-scheme-override="light"]) details.config-details > summary.config-summary {
+    color: #e6edf3;
+  }
+  html:not([color-scheme-override="light"]) details.config-details > summary::before {
+    color: #8b949e;
+  }
+  html:not([color-scheme-override="light"]) p.config-none {
+    color: #8b949e;
+  }
+  html:not([color-scheme-override="light"]) dl.config {
+    background: #161b22;
+  }
+  html:not([color-scheme-override="light"]) .config-key {
+    background: rgba(56, 139, 253, 0.15);
+  }
+  html:not([color-scheme-override="light"]) .config-default {
+    color: #8b949e;
+  }
+  html:not([color-scheme-override="light"]) .badge-optional {
+    background: #30363d;
+    color: #8b949e;
+  }
+  html:not([color-scheme-override="light"]) .badge-mandatory {
+    background: rgba(248, 81, 73, 0.15);
+    color: #f85149;
+  }
+  html:not([color-scheme-override="light"]) article.rule h4.config-types {
+    color: #8b949e;
+  }
+  html:not([color-scheme-override="light"]) div.custom-type {
+    background: #161b22;
+    border-left-color: #30363d;
+  }
+  html:not([color-scheme-override="light"]) .custom-type-name {
+    background: rgba(56, 139, 253, 0.15);
+  }
+  html:not([color-scheme-override="light"]) .custom-type-kind {
+    color: #8b949e;
+  }
+  html:not([color-scheme-override="light"]) div.custom-type dl.config {
+    background: transparent;
+  }
+  html:not([color-scheme-override="light"]) .settings-toggle {
+    background: #0d1117;
+    border-color: #30363d;
+    color: #e6edf3;
+    box-shadow: 0 1px 3px rgba(1, 4, 9, 0.5);
+  }
+  html:not([color-scheme-override="light"]) .settings-toggle:hover {
+    background: #161b22;
+  }
+  html:not([color-scheme-override="light"]) .settings-toggle:focus-visible {
+    outline-color: #4493f8;
+  }
+  html:not([color-scheme-override="light"]) .settings-panel {
+    background: #0d1117;
+    border-color: #30363d;
+    box-shadow: 0 4px 16px rgba(1, 4, 9, 0.5);
+  }
+  html:not([color-scheme-override="light"]) .settings-panel-title {
+    color: #e6edf3;
+  }
+  html:not([color-scheme-override="light"]) .settings-section > legend {
+    color: #8b949e;
+  }
+  html:not([color-scheme-override="light"]) .theme-option {
+    border-color: #30363d;
+    color: #8b949e;
+    background: #0d1117;
+  }
+  html:not([color-scheme-override="light"]) .theme-option:hover {
+    background: #161b22;
+  }
+  html:not([color-scheme-override="light"]) .theme-radio:checked + .theme-option {
+    color: #4493f8;
+    border-color: #4493f8;
+    background: rgba(56, 139, 253, 0.15);
+  }
+  html:not([color-scheme-override="light"]) .theme-radio:focus-visible + .theme-option {
+    outline-color: #4493f8;
+  }
+}
+
+html[color-scheme-override="dark"] {
+  color-scheme: dark;
+  background-color: #0d1117;
+}
+html[color-scheme-override="dark"] body {
+  color: #e6edf3;
+  background-color: #0d1117;
+}
+html[color-scheme-override="dark"] h1 {
+  border-bottom-color: #30363d;
+}
+html[color-scheme-override="dark"] .banner {
+  background: rgba(187, 128, 9, 0.15);
+  border-left-color: #9e6a03;
+}
+html[color-scheme-override="dark"] pre {
+  background: #161b22;
+}
+html[color-scheme-override="dark"] code {
+  background: #161b22;
+}
+html[color-scheme-override="dark"] pre code {
+  background: none;
+}
+html[color-scheme-override="dark"] footer {
+  border-top-color: #21262d;
+  color: #8b949e;
+}
+html[color-scheme-override="dark"] a {
+  color: #4493f8;
+}
+html[color-scheme-override="dark"] .nav-toggle {
+  background: #0d1117;
+  border-color: #30363d;
+  color: #e6edf3;
+  box-shadow: 0 1px 3px rgba(1, 4, 9, 0.5);
+}
+html[color-scheme-override="dark"] .nav-toggle:hover {
+  background: #161b22;
+}
+html[color-scheme-override="dark"] .nav-toggle:focus-visible {
+  outline-color: #4493f8;
+}
+html[color-scheme-override="dark"] .nav-sidebar {
+  background: #0d1117;
+  border-right-color: #30363d;
+}
+html[color-scheme-override="dark"] .nav-sidebar-header {
+  background: #0d1117;
+  border-bottom-color: #21262d;
+}
+html[color-scheme-override="dark"] .nav-sidebar-close {
+  background: #0d1117;
+  border-color: #30363d;
+  color: #e6edf3;
+}
+html[color-scheme-override="dark"] .nav-sidebar-close:hover {
+  background: #161b22;
+}
+html[color-scheme-override="dark"] .nav-sidebar-close:focus-visible {
+  outline-color: #4493f8;
+}
+html[color-scheme-override="dark"] .nav-sidebar-title {
+  color: #e6edf3;
+}
+html[color-scheme-override="dark"] .nav-sidebar-title:hover {
+  color: #4493f8;
+}
+html[color-scheme-override="dark"] .nav-sidebar-list a {
+  color: #4493f8;
+}
+html[color-scheme-override="dark"] .nav-sidebar-list a:hover {
+  background: #161b22;
+}
+html[color-scheme-override="dark"] .nav-sidebar-list a code {
+  background: none;
+}
+html[color-scheme-override="dark"] table.index td, html[color-scheme-override="dark"] table.index th {
+  border-bottom-color: #21262d;
+}
+html[color-scheme-override="dark"] table.index th {
+  background: #161b22;
+}
+html[color-scheme-override="dark"] table.index tr {
+  border-bottom-color: #21262d;
+}
+html[color-scheme-override="dark"] .state-active {
+  background: rgba(46, 160, 67, 0.18);
+}
+html[color-scheme-override="dark"] .state-inactive {
+  background: #30363d;
+}
+html[color-scheme-override="dark"] article.rule {
+  border-top-color: #21262d;
+}
+html[color-scheme-override="dark"] article.rule h2 .lint-prefix {
+  color: #8b949e;
+}
+html[color-scheme-override="dark"] article.rule h2 .rule-jump-link {
+  color: #8b949e;
+}
+html[color-scheme-override="dark"] article.rule h2 .rule-jump-link:hover {
+  color: #4493f8;
+}
+html[color-scheme-override="dark"] article.rule .source {
+  color: #8b949e;
+}
+html[color-scheme-override="dark"] details.config-details > summary.config-summary {
+  color: #e6edf3;
+}
+html[color-scheme-override="dark"] details.config-details > summary::before {
+  color: #8b949e;
+}
+html[color-scheme-override="dark"] p.config-none {
+  color: #8b949e;
+}
+html[color-scheme-override="dark"] dl.config {
+  background: #161b22;
+}
+html[color-scheme-override="dark"] .config-key {
+  background: rgba(56, 139, 253, 0.15);
+}
+html[color-scheme-override="dark"] .config-default {
+  color: #8b949e;
+}
+html[color-scheme-override="dark"] .badge-optional {
+  background: #30363d;
+  color: #8b949e;
+}
+html[color-scheme-override="dark"] .badge-mandatory {
+  background: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+}
+html[color-scheme-override="dark"] article.rule h4.config-types {
+  color: #8b949e;
+}
+html[color-scheme-override="dark"] div.custom-type {
+  background: #161b22;
+  border-left-color: #30363d;
+}
+html[color-scheme-override="dark"] .custom-type-name {
+  background: rgba(56, 139, 253, 0.15);
+}
+html[color-scheme-override="dark"] .custom-type-kind {
+  color: #8b949e;
+}
+html[color-scheme-override="dark"] div.custom-type dl.config {
+  background: transparent;
+}
+html[color-scheme-override="dark"] .settings-toggle {
+  background: #0d1117;
+  border-color: #30363d;
+  color: #e6edf3;
+  box-shadow: 0 1px 3px rgba(1, 4, 9, 0.5);
+}
+html[color-scheme-override="dark"] .settings-toggle:hover {
+  background: #161b22;
+}
+html[color-scheme-override="dark"] .settings-toggle:focus-visible {
+  outline-color: #4493f8;
+}
+html[color-scheme-override="dark"] .settings-panel {
+  background: #0d1117;
+  border-color: #30363d;
+  box-shadow: 0 4px 16px rgba(1, 4, 9, 0.5);
+}
+html[color-scheme-override="dark"] .settings-panel-title {
+  color: #e6edf3;
+}
+html[color-scheme-override="dark"] .settings-section > legend {
+  color: #8b949e;
+}
+html[color-scheme-override="dark"] .theme-option {
+  border-color: #30363d;
+  color: #8b949e;
+  background: #0d1117;
+}
+html[color-scheme-override="dark"] .theme-option:hover {
+  background: #161b22;
+}
+html[color-scheme-override="dark"] .theme-radio:checked + .theme-option {
+  color: #4493f8;
+  border-color: #4493f8;
+  background: rgba(56, 139, 253, 0.15);
+}
+html[color-scheme-override="dark"] .theme-radio:focus-visible + .theme-option {
+  outline-color: #4493f8;
+}
+
+/* The sidebar shadow only applies in the overlay band (601-1099.98px),
+   mirroring light.css. One block per dark tier (system preference, then
+   explicit Dark); the prefixes out-specify the band shadow in light.css. */
+@media (prefers-color-scheme: dark) and (min-width: 601px) and (max-width: 1099.98px) {
+  html:not([color-scheme-override="light"]) .nav-sidebar {
+    box-shadow: 2px 0 10px rgba(1, 4, 9, 0.5);
+  }
+}
+@media (min-width: 601px) and (max-width: 1099.98px) {
+  html[color-scheme-override="dark"] .nav-sidebar {
+    box-shadow: 2px 0 10px rgba(1, 4, 9, 0.5);
+  }
+}
