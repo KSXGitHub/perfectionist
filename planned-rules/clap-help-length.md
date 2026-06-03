@@ -63,8 +63,9 @@ override keys as the markdown rule.
 
 ## Examples
 
+**Avoid:** about exceeds the line budget
+
 ```rust
-// Bad: about exceeds the line budget
 #[derive(clap::Parser)]
 struct Cli {
     /// Walks the source tree starting at the directory specified by
@@ -72,15 +73,21 @@ struct Cli {
     /// and prints a tabulated summary of each file's size on disk.
     root: PathBuf,
 }
+```
 
-// Good (trimmed)
+**Prefer:** (trimmed)
+
+```rust
 #[derive(clap::Parser)]
 struct Cli {
     /// Root directory to scan.
     root: PathBuf,
 }
+```
 
-// Good (rich docs preserved, help overridden)
+**Prefer:** (rich docs preserved, help overridden)
+
+```rust
 #[derive(clap::Parser)]
 struct Cli {
     /// Walks the source tree starting at the directory specified by

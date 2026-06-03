@@ -9,7 +9,9 @@ be turned into multiple calls without changing semantics.
 ## Statement
 
 A `format!`-style macro call whose source line exceeds the
-configured width is hard to read and produces a noisy diff:
+configured width is hard to read and produces a noisy diff.
+
+**Avoid:**
 
 ```rust
 format!("error: The error was caused by {err_src}\nhint: Run {magic_cmd} to solve the problem")
@@ -18,7 +20,9 @@ format!("error: The error was caused by {err_src}\nhint: Run {magic_cmd} to solv
 Unlike `println!`, splitting `format!` into multiple calls would
 change the result type (one `String` becomes two). The only
 applicable rewrite is folding the template across multiple source
-lines with `\<newline>` continuations:
+lines with `\<newline>` continuations.
+
+**Prefer:**
 
 ```rust
 format!(
@@ -70,33 +74,51 @@ For every invocation of a target macro:
 
 ## Examples
 
-```rust
-// Bad: long source line; format! can't be split into multiple calls
-format!("error: The error was caused by {err_src}\nhint: Run {magic_cmd} to solve the problem")
+### `format!`
 
-// Good
+**Avoid:** a long source line; `format!` can't be split into multiple calls.
+
+```rust
+format!("error: The error was caused by {err_src}\nhint: Run {magic_cmd} to solve the problem")
+```
+
+**Prefer:**
+
+```rust
 format!(
     "error: The error was caused by {err_src}\n\
     hint: Run {magic_cmd} to solve the problem",
 )
 ```
 
-```rust
-// Bad: panic! with a long message
-panic!("invariant violated: expected {expected} but got {actual} after {steps} iterations");
+### `panic!`
 
-// Good
+**Avoid:** a `panic!` with a long message.
+
+```rust
+panic!("invariant violated: expected {expected} but got {actual} after {steps} iterations");
+```
+
+**Prefer:**
+
+```rust
 panic!(
     "invariant violated: expected {expected} but got {actual} \
     after {steps} iterations",
 );
 ```
 
-```rust
-// Bad: assert_eq! message is too long
-assert_eq!(actual, expected, "decoder mismatch: stream {stream_id} chunk {chunk_id} produced wrong output");
+### `assert_eq!`
 
-// Good
+**Avoid:** an `assert_eq!` message that is too long.
+
+```rust
+assert_eq!(actual, expected, "decoder mismatch: stream {stream_id} chunk {chunk_id} produced wrong output");
+```
+
+**Prefer:**
+
+```rust
 assert_eq!(
     actual,
     expected,
@@ -105,15 +127,14 @@ assert_eq!(
 );
 ```
 
+### Skipped cases
+
+**Not flagged:**
+
 ```rust
-// Skipped: short source line, even with embedded newline
-format!("a\nb")
-
-// Skipped: not in target_macros (println! is splittable; covered by print-macro-split)
-println!("a\nb {x}")
-
-// Skipped: not in target_macros (write! is splittable)
-write!(f, "a\nb {x}")?;
+format!("a\nb")  // short source line, even with embedded newline
+println!("a\nb {x}")  // not in target_macros (println! is splittable; covered by print-macro-split)
+write!(f, "a\nb {x}")?;  // not in target_macros (write! is splittable)
 ```
 
 ## Configuration

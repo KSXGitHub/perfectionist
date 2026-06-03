@@ -295,15 +295,19 @@ revision could shift which arm matches.
 
 ### Name-based: `vec!`
 
+**Avoid:** multi-line, missing trailing comma
+
 ```rust
-// Bad: multi-line, missing trailing comma
 let xs = vec![
     1,
     2,
     3
 ];
+```
 
-// Good
+**Prefer:**
+
+```rust
 let xs = vec![
     1,
     2,
@@ -311,22 +315,29 @@ let xs = vec![
 ];
 ```
 
-```rust
-// Bad: single-line, gratuitous trailing comma
-let xs = vec![1, 2, 3,];
+**Avoid:** single-line, gratuitous trailing comma
 
-// Good
+```rust
+let xs = vec![1, 2, 3,];
+```
+
+**Prefer:**
+
+```rust
 let xs = vec![1, 2, 3];
 ```
 
+**Avoid:** single-argument multi-line invocation, no trailing comma. Matches rustfmt's behaviour for function calls.
+
 ```rust
-// Bad: single-argument multi-line invocation, no trailing
-// comma. Matches rustfmt's behaviour for function calls.
 dbg!(
     expensive_function_call(arg)
 );
+```
 
-// Good
+**Prefer:**
+
+```rust
 dbg!(
     expensive_function_call(arg),
 );
@@ -334,15 +345,19 @@ dbg!(
 
 ### Name-based: `assert_eq!`
 
+**Avoid:** multi-line panic message
+
 ```rust
-// Bad: multi-line panic message
 assert_eq!(
     actual,
     expected,
     "decoder mismatch: stream {stream_id} chunk {chunk_id}"
 );
+```
 
-// Good
+**Prefer:**
+
+```rust
 assert_eq!(
     actual,
     expected,
@@ -352,19 +367,27 @@ assert_eq!(
 
 ### Matcher-based: `macro_rules!` ending in `$(,)?`
 
+Given a macro whose matcher absorbs an optional trailing comma:
+
 ```rust
 macro_rules! comma_list {
     ($($item:expr),* $(,)?) => { /* ... */ };
 }
+```
 
-// Bad: multi-line, missing trailing comma
+**Avoid:** multi-line, missing trailing comma
+
+```rust
 comma_list!(
     a,
     b,
     c
 );
+```
 
-// Good
+**Prefer:**
+
+```rust
 comma_list!(
     a,
     b,
@@ -374,16 +397,15 @@ comma_list!(
 
 ### Skipped: not shaped like a comma-separated list
 
-```rust
-// Skipped: `vec![value; count]` uses `;`, not a list separator.
-// A top-level `;` indicates a different macro form.
-let zeros = vec![0; 10];
+**Not flagged:** `vec![value; count]` uses `;`, not a list separator. A top-level `;` indicates a different macro form.
 
-// Skipped: `quote!` is a token-tree passthrough, not a
-// comma-separated list. It isn't on the curated name-based
-// list, and matcher-based detection's $(,)? / $(,)* predicate
-// doesn't match its grammar — so step 3's eligibility check
-// fails and the lint never reaches the trailing-comma check.
+```rust
+let zeros = vec![0; 10];
+```
+
+**Not flagged:** `quote!` is a token-tree passthrough, not a comma-separated list. It isn't on the curated name-based list, and matcher-based detection's $(,)? / $(,)* predicate doesn't match its grammar — so step 3's eligibility check fails and the lint never reaches the trailing-comma check.
+
+```rust
 quote! {
     fn foo() -> i32 { 42 }
 };
@@ -391,14 +413,17 @@ quote! {
 
 ### Skipped: macro requires the trailing comma
 
+Given a macro whose matcher requires the trailing comma:
+
 ```rust
 macro_rules! always_comma {
     ($($item:expr,)*) => { /* ... */ };
 }
+```
 
-// Skipped: removing the trailing comma here would fail to
-// match. The matcher is `$($item:expr,)*` — every item must
-// be followed by a literal comma, including the last.
+**Not flagged:** removing the trailing comma here would fail to match. The matcher is `$($item:expr,)*` — every item must be followed by a literal comma, including the last.
+
+```rust
 always_comma!(
     a,
     b,
@@ -408,22 +433,17 @@ always_comma!(
 
 ### Skipped: macro with fully-optional commas
 
+Given a matcher with per-item optional commas: every comma in the list is independently optional, so both comma-separated and no-comma styles are valid. `build-fs-tree::dir!` is a real-world example.
+
 ```rust
-// Matcher with per-item optional commas: every comma in the
-// list is independently optional, so both comma-separated and
-// no-comma styles are valid. `build-fs-tree::dir!` is a
-// real-world example.
 macro_rules! dir {
     ($($key:literal => $value:expr $(,)?)*) => { /* ... */ };
 }
+```
 
-// Skipped: the matcher's top-level tail is `)*`, not a
-// top-level `$(,)?`. Matcher-based detection's predicate
-// (`$(,)?` at the tail of the top-level matcher) doesn't
-// match, so the lint correctly leaves the call alone. The
-// macro must also not be added to `extra_macros` — users
-// who write entries without any commas would otherwise get a
-// stray trailing comma against an otherwise comma-free style.
+**Not flagged:** the matcher's top-level tail is `)*`, not a top-level `$(,)?`. Matcher-based detection's predicate (`$(,)?` at the tail of the top-level matcher) doesn't match, so the lint correctly leaves the call alone. The macro must also not be added to `extra_macros` — users who write entries without any commas would otherwise get a stray trailing comma against an otherwise comma-free style.
+
+```rust
 dir! {
     "foo" => file!("a")
     "bar" => file!("b")
@@ -433,10 +453,9 @@ dir! {
 
 ### Skipped: unknown procedural macro
 
+**Not flagged:** `my_proc::custom!` is a procedural macro and is not in the user's `extra_macros` list. The lint cannot inspect a proc-macro grammar.
+
 ```rust
-// Skipped: `my_proc::custom!` is a procedural macro and is
-// not in the user's `extra_macros` list. The lint cannot
-// inspect a proc-macro grammar.
 my_proc::custom!(
     a,
     b,

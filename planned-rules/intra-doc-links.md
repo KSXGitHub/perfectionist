@@ -27,12 +27,16 @@ Resolution rules:
 
 ## Examples
 
+**Avoid:**
+
 ```rust
-// Bad
 /// Installs the package described by `PackageManifest` into `Store`.
 pub fn install(manifest: &PackageManifest, store: &Store) { /* ... */ }
+```
 
-// Good
+**Prefer:**
+
+```rust
 /// Installs the package described by [`PackageManifest`] into [`Store`].
 pub fn install(manifest: &PackageManifest, store: &Store) { /* ... */ }
 ```

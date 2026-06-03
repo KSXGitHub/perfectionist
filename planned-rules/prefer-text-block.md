@@ -110,21 +110,31 @@ then:
 
 ### Default style (`text_block_macros`)
 
-```rust
-// Bad: two or more newlines, not a template
-let banner = "foo\nbar\nbaz";
+**Avoid:** two or more newlines, not a template
 
-// Good (no trailing newline)
+```rust
+let banner = "foo\nbar\nbaz";
+```
+
+**Prefer:** (no trailing newline)
+
+```rust
 let banner = text_block! {
     "foo"
     "bar"
     "baz"
 };
+```
 
-// Bad: trailing newline
+**Avoid:** trailing newline
+
+```rust
 let banner = "foo\nbar\nbaz\n";
+```
 
-// Good
+**Prefer:**
+
+```rust
 let banner = text_block_fnl! {
     "foo"
     "bar"
@@ -134,11 +144,15 @@ let banner = text_block_fnl! {
 
 ### Style `line_continuation`
 
-```rust
-// Bad
-let banner = "foo\nbar\nbaz";
+**Avoid:**
 
-// Good
+```rust
+let banner = "foo\nbar\nbaz";
+```
+
+**Prefer:**
+
+```rust
 let banner = "foo\n\
               bar\n\
               baz";
@@ -146,11 +160,15 @@ let banner = "foo\n\
 
 ### Width trigger (single long line)
 
-```rust
-// Bad: one line that exceeds `max_line_width = 100`
-let url = "https://very-long-subdomain.example.com/api/v2/resources/very-long-identifier?param=value";
+**Avoid:** one line that exceeds `max_line_width = 100`
 
-// Good: line_continuation form keeps the runtime value identical
+```rust
+let url = "https://very-long-subdomain.example.com/api/v2/resources/very-long-identifier?param=value";
+```
+
+**Prefer:** line_continuation form keeps the runtime value identical
+
+```rust
 let url = "https://very-long-subdomain.example.com/api/v2/resources/\
            very-long-identifier?param=value";
 ```
@@ -162,12 +180,15 @@ changing the runtime value.
 
 ### Both triggers (multi-line and a long line)
 
-```rust
-// Bad: two newlines AND the middle line is too long
-let banner = "header\nthis is a very long line that exceeds the configured max_line_width\nfooter";
+**Avoid:** two newlines AND the middle line is too long
 
-// Good (style = text_block_macros): outer text_block, inner
-// line-continuation on the long quoted line
+```rust
+let banner = "header\nthis is a very long line that exceeds the configured max_line_width\nfooter";
+```
+
+**Prefer:** (style = text_block_macros) outer text_block, inner line-continuation on the long quoted line
+
+```rust
 let banner = text_block! {
     "header"
     "this is a very long line that exceeds the \
@@ -178,21 +199,21 @@ let banner = text_block! {
 
 ### Skipped contexts
 
-```rust
-// Skipped: format template
-println!("a\nb\nc\n{x}", x = 42);
+**Not flagged:**
 
-// Skipped: derive_more display template
+```rust
+println!("a\nb\nc\n{x}", x = 42);  // format template
+
+// derive_more display template
 #[derive(Display)]
 #[display("line1\nline2\nline3")]
 struct Banner;
 
-// Skipped: doc attribute
+// doc attribute
 #[doc = "first line\nsecond line\nthird line"]
 fn documented() {}
 
-// Skipped: already inside text_block!
-let _ = text_block! { "foo" "bar" "baz" };
+let _ = text_block! { "foo" "bar" "baz" };  // already inside text_block!
 ```
 
 ## Configuration
