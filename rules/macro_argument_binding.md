@@ -106,7 +106,7 @@ Configure via `dylint.toml` under `["perfectionist::macro_argument_binding"]`. E
 
 ### `mode`: `Mode` (optional)
 
-Eligibility mode.
+Eligibility mode. Defaults to `allow_and_deny`.
 
 ### `deny_extra`: `[string]` (optional)
 
@@ -175,7 +175,7 @@ Checked after the merge, so this knob always wins.
 
 #### `Mode` (enum)
 
-Eligibility mode. The default is `AllowAndDeny`.
+Eligibility mode.
 
 ##### `"deny_only"` (Rust: `DenyOnly`)
 
