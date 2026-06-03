@@ -143,7 +143,7 @@ fn page_links_nav_toggle_script_externally() {
     // out of sync with `NAV_TOGGLE_SCRIPT_FILENAME`) is caught.
     assert!(
         html.contains(&format!(
-            "<script src=\"{NAV_TOGGLE_SCRIPT_FILENAME}\"></script>"
+            r#"<script src="{NAV_TOGGLE_SCRIPT_FILENAME}"></script>"#
         )),
         "expected the nav script to be referenced via <script src>",
     );
@@ -180,13 +180,13 @@ fn page_links_each_stylesheet_individually() {
     // emits two, so a regression that drops the dark one must fail here.
     assert!(
         html.contains(&format!(
-            "<link rel=\"stylesheet\" href=\"{HIGHLIGHT_CSS_LIGHT_FILENAME}\">"
+            r#"<link rel="stylesheet" href="{HIGHLIGHT_CSS_LIGHT_FILENAME}">"#
         )),
         "expected a dedicated <link> for the light highlight CSS",
     );
     assert!(
         html.contains(&format!(
-            "<link rel=\"stylesheet\" href=\"{HIGHLIGHT_CSS_DARK_FILENAME}\">"
+            r#"<link rel="stylesheet" href="{HIGHLIGHT_CSS_DARK_FILENAME}">"#
         )),
         "expected a dedicated <link> for the dark highlight CSS",
     );
@@ -337,7 +337,7 @@ fn page_links_theme_toggle_script_externally() {
     // src>`, not inlined — same contract as the nav script.
     assert!(
         html.contains(&format!(
-            "<script src=\"{THEME_TOGGLE_SCRIPT_FILENAME}\"></script>"
+            r#"<script src="{THEME_TOGGLE_SCRIPT_FILENAME}"></script>"#
         )),
         "expected the theme script to be referenced via <script src>",
     );

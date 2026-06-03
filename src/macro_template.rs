@@ -1,19 +1,21 @@
-//! Locating the format template in a macro invocation's token stream.
+//! Locating string literals in a macro invocation's token stream.
 //!
-//! A `format!`-family macro takes its format string as the first
-//! argument that is, on its own, a single cooked string literal. The
-//! same "first lone cooked string literal" rule pins the template down
-//! across the whole family regardless of which positional slot it lands
-//! in: `format!`'s and `println!`'s template is the first argument,
-//! `write!`'s is the second (the writer comes first and isn't a bare
-//! literal), `log!`'s is the second (the level comes first), and
-//! `log::info!`'s is the first.
+//! Two shapes are needed by two rules:
 //!
-//! Two rules read this: `print_macro_split`, which folds a long
-//! template across lines, and `prefer_raw_string`, which rewrites a
-//! template whose only escapes are raw-expressible into the raw-string
-//! form even when format-args lowering would otherwise hide it from the
-//! late pass.
+//! - [`find_template_literal`] returns the single *format template* — the
+//!   first argument that is, on its own, a lone cooked string literal.
+//!   `print_macro_split` uses it because it may only ever touch a genuine
+//!   format template (its `\n`-fold is output-preserving only there).
+//! - [`find_all_cooked_str_literals`] returns *every* cooked string
+//!   literal anywhere in the token stream, descending into delimited
+//!   groups. `prefer_raw_string` uses it: its raw-string rewrite is
+//!   value-preserving for any literal, so it has no reason to single out
+//!   the template, and it must reach literals that format-args lowering
+//!   would otherwise hide from the late pass.
+//!
+//! Both skip raw strings (`r"..."`): `print_macro_split` would mis-fold
+//! one, and `prefer_raw_string` rewrites *into* the raw form, so an
+//! already-raw literal is never a candidate.
 
 use rustc_ast::token::{LitKind, TokenKind};
 use rustc_ast::tokenstream::{TokenStream, TokenTree};
@@ -69,4 +71,24 @@ fn cooked_str_literal_span(tree: &TokenTree) -> Option<Span> {
     // `print_macro_split` nor the escape-elimination scan in
     // `prefer_raw_string` may run over one.
     matches!(literal.kind, LitKind::Str).then_some(token.span)
+}
+
+/// Span of every cooked string literal anywhere in `tokens`, in source
+/// order, descending into delimited groups so a literal nested inside a
+/// call or sub-group (`assert!(cond, "msg {x}")`, `foo(bar("..."))`) is
+/// found too. Raw strings are skipped, as in [`cooked_str_literal_span`].
+pub(crate) fn find_all_cooked_str_literals(tokens: &TokenStream) -> Vec<Span> {
+    let mut spans = Vec::new();
+    collect_cooked_str_literals(tokens, &mut spans);
+    spans
+}
+
+fn collect_cooked_str_literals(tokens: &TokenStream, spans: &mut Vec<Span>) {
+    for tree in tokens.iter() {
+        if let Some(span) = cooked_str_literal_span(tree) {
+            spans.push(span);
+        } else if let TokenTree::Delimited(_, _, _, inner) = tree {
+            collect_cooked_str_literals(inner, spans);
+        }
+    }
 }

@@ -16,12 +16,23 @@ and `\'`. The autofix rewrites the literal to the raw form
 avoids a delimiter collision.
 
 This includes literals passed as arguments to macros such as
-`println!`, `format!`, `vec!`, and `assert!`. Suppress per
-call site with `#[allow(perfectionist::prefer_raw_string)]`
-when the regular form is deliberately preferred.
+`println!`, `format!`, `vec!`, and `assert!` — even a `format!`
+template carrying a `{...}` placeholder, which expansion would
+otherwise split apart before the lint sees it. The rewrite is
+value-preserving (a raw string still parses placeholders, and
+`{{` / `}}` survive verbatim), so the literal's role doesn't
+matter. Suppress per call site with
+`#[allow(perfectionist::prefer_raw_string)]` when the regular
+form is deliberately preferred — for instance when a macro
+reflects the literal's *source spelling* rather than its value
+(`stringify!`, `dbg!`), where the raw form, though equal in
+value, changes the printed text.
 
-Pattern-position literals (e.g. `match s { "C:\\path" => ... }`)
-are out of scope — the rule only visits expression literals.
+Pattern-position literals in ordinary code
+(e.g. `match s { "C:\\path" => ... }`) are out of scope — the
+late pass only visits expression literals. A literal written as a
+pattern *inside a macro* (e.g. `matches!(s, "C:\\path")`) is
+reached through the pre-expansion scan, however.
 
 Whitespace and control-character escapes (`\n`, `\t`, `\r`,
 `\0`) and Unicode escapes (`\x..`, `\u{..}`) are exempt — a

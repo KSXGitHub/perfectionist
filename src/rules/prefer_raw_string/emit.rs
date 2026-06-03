@@ -1,7 +1,7 @@
-//! Diagnostic emission for the `format!`-template violations the
-//! pre-expansion pass discovers. The late `ExprKind::Lit` path emits
-//! its own diagnostics inline via `span_lint_and_sugg`; this helper is
-//! the HIR-anchored counterpart for the queued ones, drained at
+//! Diagnostic emission for the consumed-literal violations the
+//! pre-expansion pass discovers. The late `ExprKind::Lit` path emits its
+//! own diagnostics inline via `span_lint_and_sugg`; this helper is the
+//! HIR-anchored counterpart for the queued ones, drained at
 //! `check_crate_post`. Message, label, and applicability match the
 //! inline path exactly so the two firing routes are indistinguishable
 //! to the user.

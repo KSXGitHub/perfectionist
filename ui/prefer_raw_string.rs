@@ -54,6 +54,32 @@ fn _println_with_positional_placeholder() {
     println!("path: \"{}\"", "x");
 }
 
+// Bad: `assert_eq!`'s message is the *third* argument, with no macro
+// allowlist or argument-position bookkeeping — the pre-expansion scan
+// reaches every literal. The message carries a placeholder, so it is
+// split away from the HIR; the comparison operands (`value`) are not
+// literals here, so nothing competes for the diagnostic.
+fn _assert_eq_message_placeholder() {
+    let value = 1;
+    assert_eq!(value, value, "v = \"{value}\"");
+}
+
+// Bad, exactly once: a string-literal *operand* of `assert_eq!`
+// survives lowering as an ordinary value, so the late pass flags it. The
+// pre-expansion scan also sees it, but the byte-range dedup drops the
+// duplicate — this fixture pins that there is no double diagnostic.
+fn _assert_eq_string_operand() {
+    assert_eq!("a\"b".len(), 3);
+}
+
+// Bad: `stringify!` reflects its argument's source spelling, so the
+// literal is consumed rather than surviving into the HIR. The rewrite is
+// still value-preserving; the project deliberately flags it (suppress
+// with `#[allow]` in the rare case the exact `stringify!` text matters).
+fn _stringify_argument() {
+    let _ = stringify!("a\"b");
+}
+
 // Not flagged: a placeholder template that also contains a non-raw
 // escape (`\n`). The literal is ineligible as a whole, and the static
 // pieces the compiler splits it into are not rewritten either.
@@ -111,6 +137,9 @@ fn main() {
     _inside_core_macro();
     _format_with_inline_placeholder();
     _println_with_positional_placeholder();
+    _assert_eq_message_placeholder();
+    _assert_eq_string_operand();
+    _stringify_argument();
     _placeholder_with_newline_escape();
     _has_newline_escape();
     _line_continuation();

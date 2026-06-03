@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::num::NonZeroUsize;
 use std::sync::Mutex;
 
@@ -32,12 +33,23 @@ declare_tool_lint! {
     /// avoids a delimiter collision.
     ///
     /// This includes literals passed as arguments to macros such as
-    /// `println!`, `format!`, `vec!`, and `assert!`. Suppress per
-    /// call site with `#[allow(perfectionist::prefer_raw_string)]`
-    /// when the regular form is deliberately preferred.
+    /// `println!`, `format!`, `vec!`, and `assert!` — even a `format!`
+    /// template carrying a `{...}` placeholder, which expansion would
+    /// otherwise split apart before the lint sees it. The rewrite is
+    /// value-preserving (a raw string still parses placeholders, and
+    /// `{{` / `}}` survive verbatim), so the literal's role doesn't
+    /// matter. Suppress per call site with
+    /// `#[allow(perfectionist::prefer_raw_string)]` when the regular
+    /// form is deliberately preferred — for instance when a macro
+    /// reflects the literal's *source spelling* rather than its value
+    /// (`stringify!`, `dbg!`), where the raw form, though equal in
+    /// value, changes the printed text.
     ///
-    /// Pattern-position literals (e.g. `match s { "C:\\path" => ... }`)
-    /// are out of scope — the rule only visits expression literals.
+    /// Pattern-position literals in ordinary code
+    /// (e.g. `match s { "C:\\path" => ... }`) are out of scope — the
+    /// late pass only visits expression literals. A literal written as a
+    /// pattern *inside a macro* (e.g. `matches!(s, "C:\\path")`) is
+    /// reached through the pre-expansion scan, however.
     ///
     /// Whitespace and control-character escapes (`\n`, `\t`, `\r`,
     /// `\0`) and Unicode escapes (`\x..`, `\u{..}`) are exempt — a
@@ -129,8 +141,8 @@ impl Default for Config {
 }
 
 /// The rule's settings after parsing and validation, shared by the late
-/// `ExprKind::Lit` pass and the pre-expansion `format!`-template pass so
-/// both apply the same threshold and eligible-escape set.
+/// `ExprKind::Lit` pass and the pre-expansion macro-literal pass so both
+/// apply the same threshold and eligible-escape set.
 pub(super) struct ResolvedConfig {
     pub(super) min_escapes_to_trigger: NonZeroUsize,
     pub(super) eligible_escapes: Vec<String>,
@@ -179,6 +191,20 @@ impl PreferRawString {
 /// pre-expansion and late halves; see [`mod@queue`].
 static PENDING_VIOLATIONS: Mutex<Vec<PendingViolation>> = Mutex::new(Vec::new());
 
+/// Source byte ranges (`lo`, `hi`) of the cooked string literals the
+/// late `check_expr` pass saw in the HIR. The drain at
+/// `check_crate_post` skips any queued pre-expansion candidate whose
+/// range is in here — those literals survived lowering and the late pass
+/// already owns them, so only the *consumed* literals (split format
+/// templates, `stringify!` contents, ...) are emitted from the queue.
+///
+/// Keyed by raw `BytePos` rather than `Span` so the comparison is immune
+/// to the macro-hygiene `SyntaxContext` differences between a
+/// pre-expansion token span and its post-expansion HIR span; a literal's
+/// source byte range uniquely identifies it within one crate's
+/// `SourceMap`.
+static VISITED_LITERALS: Mutex<BTreeSet<(u32, u32)>> = Mutex::new(BTreeSet::new());
+
 fn queue(violation: PendingViolation) {
     let mut guard = PENDING_VIOLATIONS
         .lock()
@@ -197,10 +223,10 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("prefer_raw_string", DefaultState::Active) {
         return;
     }
-    // The pre-expansion pass sees `format!`-family templates while their
-    // source tokens are intact — before placeholder-carrying ones are
-    // split away from the HIR — and parks each rewrite for the late pass
-    // to anchor and emit. See [`mod@early`].
+    // The pre-expansion pass sees every macro's string literals while
+    // the source tokens are intact — including the ones lowering would
+    // consume before the HIR exists — and parks each rewrite for the late
+    // pass to dedup, anchor, and emit. See [`mod@early`].
     lint_store.register_pre_expansion_pass(|| Box::new(PreferRawStringEarly::new()));
     lint_store.register_late_pass(|_| Box::new(PreferRawString::new()));
 }
@@ -213,6 +239,15 @@ impl<'tcx> LateLintPass<'tcx> for PreferRawString {
         if !matches!(literal.node, LitKind::Str(_, StrStyle::Cooked)) {
             return;
         }
+        // Record that this literal survived into the HIR so the
+        // pre-expansion drain leaves it to us — before any of the bails
+        // below, so even a literal we don't end up emitting on still
+        // suppresses a duplicate queued candidate at the same source
+        // range.
+        VISITED_LITERALS
+            .lock()
+            .unwrap_or_else(|err| err.into_inner())
+            .insert((literal.span.lo().0, literal.span.hi().0));
         let Ok(snippet) = lint_context
             .sess()
             .source_map()
@@ -253,9 +288,14 @@ impl<'tcx> LateLintPass<'tcx> for PreferRawString {
         );
     }
 
-    /// Drain the pre-expansion pass's queue of `format!`-template
-    /// rewrites and emit each at its deepest enclosing HIR node, by which
-    /// point `cfg_attr` has resolved and a per-site `#[allow]` applies.
+    /// Drain the pre-expansion pass's queue of rewrites for literals the
+    /// HIR walk never reached, and emit each at its deepest enclosing HIR
+    /// node — by which point `cfg_attr` has resolved and a per-site
+    /// `#[allow]` applies. A candidate is dropped if the late pass already
+    /// saw a literal at the same source range (it survived lowering, so
+    /// `check_expr` owns it) or if an earlier candidate already covered
+    /// that range (the same literal reached through nested macro
+    /// invocations).
     fn check_crate_post(&mut self, lint_context: &LateContext<'tcx>) {
         let pending: Vec<PendingViolation> = {
             let mut guard = PENDING_VIOLATIONS
@@ -263,12 +303,26 @@ impl<'tcx> LateLintPass<'tcx> for PreferRawString {
                 .unwrap_or_else(|err| err.into_inner());
             std::mem::take(&mut *guard)
         };
-        if pending.is_empty() {
+        let visited: BTreeSet<(u32, u32)> = {
+            let mut guard = VISITED_LITERALS
+                .lock()
+                .unwrap_or_else(|err| err.into_inner());
+            std::mem::take(&mut *guard)
+        };
+        let mut emitted: BTreeSet<(u32, u32)> = BTreeSet::new();
+        let surviving: Vec<PendingViolation> = pending
+            .into_iter()
+            .filter(|violation| {
+                let range = (violation.span.lo().0, violation.span.hi().0);
+                !visited.contains(&range) && emitted.insert(range)
+            })
+            .collect();
+        if surviving.is_empty() {
             return;
         }
-        let target_spans: Vec<_> = pending.iter().map(|violation| violation.span).collect();
+        let target_spans: Vec<_> = surviving.iter().map(|violation| violation.span).collect();
         let best = find_enclosing_hir_ids(lint_context.tcx, &target_spans);
-        for (violation, &hir_id) in pending.into_iter().zip(best.iter()) {
+        for (violation, &hir_id) in surviving.into_iter().zip(best.iter()) {
             emit::emit_raw_string(lint_context, hir_id, violation.span, violation.suggestion);
         }
     }
