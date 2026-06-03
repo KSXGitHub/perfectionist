@@ -159,25 +159,27 @@ a never-used type is rarely what the author wanted.
 
 ## Examples
 
+**Avoid:** `Error` derived but never used as one
+
 ```rust
-// Bad: Error derived but never used as one
 #[derive(Debug, Display, Error)]
 struct ConfigSummaryError(String);
 
 fn main() {
     println!("{}", ConfigSummaryError("hi".into()));
 }
+```
 
-// Good — drop the Error derive; rename to drop the now-misleading
-//        Error suffix (the type isn't an error, even if it once was).
+**Prefer:** drop the `Error` derive; rename to drop the now-misleading `Error` suffix (the type isn't an error, even if it once was).
+
+```rust
 #[derive(Debug, Display)]
 struct ConfigSummary(String);
 ```
 
+**Avoid:** shape and name both signal this is not an error — `copyable_error` fires on `Copy + Error`, and `unconventional_error_name` fires on the missing `Error` suffix.
+
 ```rust
-// Bad: shape and name both signal this is not an error
-//   — `copyable_error` fires on `Copy + Error`
-//   — `unconventional_error_name` fires on the missing `Error` suffix
 #[derive(Debug, Display, Clone, Copy, Error)]
 pub enum ParsedValue {
     #[display("{value}   ")]
@@ -185,8 +187,11 @@ pub enum ParsedValue {
     #[display("{coefficient:.1}{unit}")]
     Big { coefficient: f32, unit: char, scale: u64, exponent: usize },
 }
+```
 
-// Good
+**Prefer:**
+
+```rust
 #[derive(Debug, Display, Clone, Copy)]
 pub enum ParsedValue { /* ... */ }
 ```

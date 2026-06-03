@@ -222,3 +222,19 @@ div.custom-type dl.config {
 .theme-radio:focus-visible + .theme-option {
   outline-color: #0969da;
 }
+.config-action {
+  border-color: #d0d7de;
+  color: #1f2328;
+  background: #ffffff;
+}
+.config-action:hover {
+  background: #f6f8fa;
+}
+.config-action:focus-visible {
+  outline-color: #0969da;
+}
+.config-action[aria-pressed="true"] {
+  color: #0969da;
+  border-color: #0969da;
+  background: #ddf4ff;
+}

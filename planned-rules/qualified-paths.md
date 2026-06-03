@@ -96,14 +96,18 @@ forbidden_paths = []
 
 ## Style: `unqualified`
 
+**Avoid:**
+
 ```rust
-// Bad
 std::fs::create_dir_all(&dir).unwrap();
 #[derive(clap::Parser)]
 struct Cli;
 let parsed: serde_json::Value = serde_json::from_str(&s)?;
+```
 
-// Good
+**Prefer:**
+
+```rust
 use clap::Parser;
 use serde_json::Value;
 use std::fs::create_dir_all;
@@ -128,16 +132,20 @@ auto-rewrite.
 
 ## Style: `qualified`
 
+**Avoid:**
+
 ```rust
-// Bad
 use clap::Parser;
 use std::fs::create_dir_all;
 
 create_dir_all(&dir).unwrap();
 #[derive(Parser)]
 struct Cli;
+```
 
-// Good
+**Prefer:**
+
+```rust
 std::fs::create_dir_all(&dir).unwrap();
 #[derive(clap::Parser)]
 struct Cli;

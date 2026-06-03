@@ -117,20 +117,28 @@ For every invocation of a target macro:
 
 ### Default style (`multiple_calls`)
 
-```rust
-// Bad: long source line, embedded newline, splittable macro
-println!("error: The error was caused by {err_src}\nhint: Run {magic_cmd} to solve the problem");
+**Avoid:** a long source line with an embedded newline in a splittable macro.
 
-// Good
+```rust
+println!("error: The error was caused by {err_src}\nhint: Run {magic_cmd} to solve the problem");
+```
+
+**Prefer:**
+
+```rust
 println!("error: The error was caused by {err_src}");
 println!("hint: Run {magic_cmd} to solve the problem");
 ```
 
-```rust
-// Bad: writeln! with two segments
-writeln!(f, "header: {h}\nbody: {b}\nfooter: {ft}")?;
+**Avoid:** a `writeln!` with two segments.
 
-// Good
+```rust
+writeln!(f, "header: {h}\nbody: {b}\nfooter: {ft}")?;
+```
+
+**Prefer:**
+
+```rust
 writeln!(f, "header: {h}")?;
 writeln!(f, "body: {b}")?;
 writeln!(f, "footer: {ft}")?;
@@ -138,11 +146,15 @@ writeln!(f, "footer: {ft}")?;
 
 ### Style `line_continuation`
 
-```rust
-// Bad
-println!("error: The error was caused by {err_src}\nhint: Run {magic_cmd} to solve the problem");
+**Avoid:**
 
-// Good
+```rust
+println!("error: The error was caused by {err_src}\nhint: Run {magic_cmd} to solve the problem");
+```
+
+**Prefer:**
+
+```rust
 println!(
     "error: The error was caused by {err_src}\n\
     hint: Run {magic_cmd} to solve the problem",
@@ -151,18 +163,13 @@ println!(
 
 ### Skipped contexts
 
+**Not flagged:**
+
 ```rust
-// Skipped: format! returns a value
-let s = format!("a\nb\nc");
-
-// Skipped: panic! terminates
-panic!("a\nb");
-
-// Skipped: assert! message is one-shot
-assert!(cond, "a\nb");
-
-// Skipped: short source line
-println!("a\nb");
+let s = format!("a\nb\nc");  // format! returns a value
+panic!("a\nb");  // panic! terminates
+assert!(cond, "a\nb");  // assert! message is one-shot
+println!("a\nb");  // short source line
 ```
 
 ## Configuration

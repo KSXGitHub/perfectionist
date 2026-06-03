@@ -52,12 +52,16 @@ Optional knobs:
 Flag any path whose written first segment is `std` but whose resolved
 `DefId` belongs to the `core` or `alloc` crate.
 
+**Avoid:**
+
 ```rust
-// Bad (under style = "prefer_core")
 use std::fmt::Display;
 use std::collections::HashMap;   // re-exported from `alloc::collections`
+```
 
-// Good
+**Prefer:**
+
+```rust
 use core::fmt::Display;
 use alloc::collections::BTreeMap;
 ```
@@ -71,12 +75,16 @@ under any style — there is no narrower path to suggest.
 Flag any path whose written first segment is `core` or `alloc` and
 suggest the matching `std::` path.
 
+**Avoid:**
+
 ```rust
-// Bad (under style = "prefer_std")
 use core::fmt::Display;
 use alloc::sync::Arc;
+```
 
-// Good
+**Prefer:**
+
+```rust
 use std::fmt::Display;
 use std::sync::Arc;
 ```

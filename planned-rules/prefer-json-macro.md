@@ -193,10 +193,11 @@ where possible (see [Autofix](#autofix)).
 
 ### Literal mode
 
+**Avoid:** structural literal, easy to typo
+
 ```rust
 #[test]
 fn writes_manifest() {
-    // Bad: structural literal, easy to typo
     let manifest = r#"{
         "name": "test",
         "version": "0.0.0",
@@ -204,8 +205,11 @@ fn writes_manifest() {
     }"#;
     fs::write(&manifest_path, manifest).expect("write");
 }
+```
 
-// Good
+**Prefer:**
+
+```rust
 #[test]
 fn writes_manifest() {
     let manifest = serde_json::json!({
@@ -220,11 +224,11 @@ fn writes_manifest() {
 
 ### Format mode
 
+**Avoid:** doubled braces, runtime value could contain `"` and corrupt the output
+
 ```rust
 #[test]
 fn writes_manifest_with_marker() {
-    // Bad: doubled braces, runtime value could contain `"` and
-    // corrupt the output
     let manifest = format!(
         r#"{{
             "name": "test",
@@ -235,8 +239,11 @@ fn writes_manifest_with_marker() {
     );
     fs::write(&manifest_path, manifest).expect("write");
 }
+```
 
-// Good
+**Prefer:**
+
+```rust
 #[test]
 fn writes_manifest_with_marker() {
     let manifest = serde_json::json!({
@@ -256,20 +263,22 @@ fn writes_manifest_with_marker() {
 
 ### Skipped contexts
 
+**Not flagged:**
+
 ```rust
-// Skipped: not in a test context (no `#[cfg(test)]`, not under
+// not in a test context (no `#[cfg(test)]`, not under
 // `tests/`, no `#[test]` attribute on the enclosing fn).
 fn render_payload() -> String {
     r#"{"name":"hot path","fast":true}"#.to_string()
 }
 
-// Skipped: scalar document
+// scalar document
 #[test]
 fn scalar() {
     let _ = r#""hello""#;
 }
 
-// Skipped: structurally uninteresting — no non-empty object
+// structurally uninteresting — no non-empty object
 // anywhere in the tree.
 #[test]
 fn flat_primitive_array() {
@@ -278,7 +287,7 @@ fn flat_primitive_array() {
     let _ = "[[]]";
 }
 
-// Skipped: not valid JSON
+// not valid JSON
 #[test]
 fn not_json() {
     let _ = "name=test, version=0.0.0";

@@ -38,7 +38,7 @@ projects a hard CI check instead of a silent reformat.
 
 ## Example
 
-Under the default `style = "grouped"`:
+### Style: Grouped (default)
 
 **Avoid:**
 
@@ -56,6 +56,26 @@ use std::time::Duration;
 use crate::args::Args;
 
 use clap::Parser;
+```
+
+### Style: Single group
+
+**Avoid:**
+
+```rust,ignore
+use std::time::Duration;
+
+use crate::args::Args;
+
+use clap::Parser;
+```
+
+**Prefer:** (one contiguous block; inner order left to `cargo fmt`)
+
+```rust,ignore
+use clap::Parser;
+use crate::args::Args;
+use std::time::Duration;
 ```
 
 ## Configuration

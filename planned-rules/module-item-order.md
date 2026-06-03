@@ -22,8 +22,9 @@ nested deeper (e.g., inside an `impl`) are out of scope.
 
 ## Examples
 
+**Prefer:**
+
 ```rust
-// Good
 pub mod parser;
 pub mod printer;
 
@@ -35,14 +36,16 @@ use std::collections::HashMap;
 fn helper() { /* ... */ }
 ```
 
+**Avoid:** `pub use` precedes `pub mod`
+
 ```rust
-// Bad: pub use precedes pub mod
 pub use parser::Parser;
 pub mod parser;
 ```
 
+**Avoid:** private fn precedes `pub use`
+
 ```rust
-// Bad: private fn precedes pub use
 fn helper() {}
 pub use parser::Parser;
 ```
