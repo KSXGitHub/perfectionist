@@ -96,6 +96,16 @@ pre code {
   font-size: 1rem;
 }
 
+/* ASCII file-tree diagrams (```ascii-file-tree fences) draw vertical
+   connectors (│ └ ├) that must touch top-to-bottom to read as a
+   continuous tree. The body's comfortable 1.55 line-height cascades
+   into `pre code` and leaves leading between rows, breaking the
+   connectors into disjoint segments. Collapse the leading to ~1 for
+   these blocks only; prose code blocks keep the roomier spacing. */
+pre code.language-ascii-file-tree {
+  line-height: 1;
+}
+
 footer {
   margin-top: 4rem;
   padding-top: 1rem;
