@@ -148,12 +148,10 @@ enum ReferenceScope {
     /// imports from other crates.
     ModuleTree,
     /// Any item defined anywhere in the current crate (first-party), but
-    /// nothing from another crate. The default: a project's own items
-    /// are where documentation drifts (a rename leaves a stale mention),
-    /// so they are worth keeping linked, while the standard library and
-    /// third-party crates are stable enough — and outside the project's
-    /// control — that a bare mention is low risk and rarely worth the
-    /// churn.
+    /// nothing from another crate. A project's own items are where
+    /// documentation drifts — a rename leaves a stale mention — while the
+    /// standard library and third-party crates are stable and outside the
+    /// project's control, so a bare mention of them is low risk.
     #[default]
     Crate,
     /// The current crate and its third-party dependencies, but not the
