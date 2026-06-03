@@ -348,6 +348,91 @@ fn page_links_theme_toggle_script_externally() {
 }
 
 #[test]
+fn page_emits_config_controls_section_hidden_with_two_buttons() {
+    let html = render_page(&[fake_rule("alpha")], &fake_context());
+    // The Configuration section is a <fieldset> emitted with the HTML
+    // `hidden` attribute: config_toggle.js reveals it only once its
+    // click handlers are wired up, so a page whose script never runs
+    // shows neither dead buttons nor an orphan "Configuration" legend.
+    // Anchor to the opening tag so a refactor that drops `hidden`
+    // (or hides only the buttons, leaving the legend) is caught.
+    assert!(
+        html.contains(r#"<fieldset class="settings-section config-controls" hidden>"#),
+        "the Configuration section must be a `hidden` <fieldset>",
+    );
+    assert!(html.contains("<legend>Configuration</legend>"));
+    // Two stateless buttons. `data-config-open` carries the action so
+    // the script needs no per-button branching; pin both values.
+    assert!(
+        html.contains(
+            r#"<button class="config-action" type="button" data-config-open="true">Expand all</button>"#
+        ),
+        "expected an `Expand all` button carrying data-config-open=true",
+    );
+    assert!(
+        html.contains(
+            r#"<button class="config-action" type="button" data-config-open="false">Collapse all</button>"#
+        ),
+        "expected a `Collapse all` button carrying data-config-open=false",
+    );
+}
+
+#[test]
+fn page_links_config_toggle_script_externally() {
+    let html = render_page(&[fake_rule("only")], &fake_context());
+    // The config-toggle script ships as a sibling file loaded via
+    // `<script src>`, not inlined — same contract as the nav and theme
+    // scripts.
+    assert!(
+        html.contains(&format!(
+            "<script src=\"{CONFIG_TOGGLE_SCRIPT_FILENAME}\"></script>"
+        )),
+        "expected the config-toggle script to be referenced via <script src>",
+    );
+    assert!(
+        !html.contains("<script>(function () {"),
+        "the config-toggle script must not be inlined into the page",
+    );
+}
+
+#[test]
+fn config_toggle_script_reflects_state_onto_buttons() {
+    // The buttons highlight when every panel shares one state. That state
+    // is reflected onto `aria-pressed` (the CSS hook the colour layer keys
+    // off) and kept live by listening for the <details> `toggle` event in
+    // the capture phase (it doesn't bubble) and coalescing a burst of them
+    // into one recompute per animation frame.
+    assert!(
+        CONFIG_TOGGLE_SCRIPT.contains("aria-pressed"),
+        "the script must reflect state onto aria-pressed",
+    );
+    assert!(
+        CONFIG_TOGGLE_SCRIPT.contains(r#""toggle""#),
+        "the script must listen for the <details> toggle event",
+    );
+    assert!(
+        CONFIG_TOGGLE_SCRIPT.contains("requestAnimationFrame"),
+        "the script must coalesce toggle bursts via requestAnimationFrame",
+    );
+    // The highlight colours live in the colour layer (light.css / dark.css),
+    // not the structural settings.css — same split as the theme tiles'
+    // checked highlight. Both layers must carry the rule, or the highlight
+    // silently vanishes in one theme; pin each so the dark variant can't be
+    // dropped while the light one keeps the test green.
+    assert!(stylesheet("light.css").contains(r#".config-action[aria-pressed="true"]"#));
+    assert!(stylesheet("dark.css").contains(r#".config-action[aria-pressed="true"]"#));
+}
+
+#[test]
+fn config_toggle_script_is_a_single_iife() {
+    // Same structural sanity check as `nav_toggle_script_is_a_single_iife`:
+    // the whole file is one IIFE so a stray block after the closer can't
+    // reference a `var` that's already out of scope.
+    assert_eq!(CONFIG_TOGGLE_SCRIPT.matches("(function () {").count(), 1);
+    assert_eq!(CONFIG_TOGGLE_SCRIPT.matches("})();").count(), 1);
+}
+
+#[test]
 fn settings_css_keeps_theme_radios_visually_hidden() {
     // The radios stay in the DOM (for semantics) but must be visually
     // removed; the visible control is the adjacent label. Pin the
