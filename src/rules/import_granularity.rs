@@ -71,14 +71,6 @@ declare_tool_lint! {
     /// ```rust,ignore
     /// use std::collections::{BTreeMap, HashMap};
     /// ```
-    #[cfg_attr(
-        dylint_lib = "perfectionist",
-        expect(
-            perfectionist::intra_doc_links,
-            reason = "the rustfmt granularity name `Item` resolves here, but this rustdoc \
-                      is rendered to the docs site where intra-doc links don't apply"
-        )
-    )]
     pub perfectionist::IMPORT_GRANULARITY,
     Warn,
     "import granularity does not match the configured `import_granularity.style`",

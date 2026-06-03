@@ -68,7 +68,9 @@ How far from the documenting item a referenced name may resolve
 for the rule to check it, by where the referenced item lives in
 the module tree. A backticked word that matches an
 accidentally-added cross-module import is a common source of
-churn, so a project can narrow this. Defaults to `anywhere`.
+churn, so a project can narrow (or widen) this. Defaults to
+`crate`: a project's own items are kept linked, but mentions of
+the standard library and third-party crates are left alone.
 
 ### `check_pascal_case`: `boolean` (optional)
 
@@ -134,10 +136,12 @@ imports from other crates.
 ##### `"crate"` (Rust: `Crate`)
 
 Any item defined anywhere in the current crate (first-party), but
-nothing from another crate. Use this when only the project's own
-items are worth keeping linked — the standard library and
-third-party crates are stable enough that a stale mention is low
-risk.
+nothing from another crate. The default: a project's own items
+are where documentation drifts (a rename leaves a stale mention),
+so they are worth keeping linked, while the standard library and
+third-party crates are stable enough — and outside the project's
+control — that a bare mention is low risk and rarely worth the
+churn.
 
 ##### `"third_party"` (Rust: `ThirdParty`)
 
