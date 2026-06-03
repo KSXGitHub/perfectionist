@@ -73,12 +73,19 @@
   font-weight: 600;
 }
 
-/* The theme chooser is a <fieldset> of three radios. Strip the default
-   fieldset chrome so it reads as a plain section. */
+/* Each panel section is a <fieldset> with its chrome stripped so it reads
+   as a plain section. */
 .settings-section {
   border: 0;
   margin: 0;
   padding: 0;
+}
+
+/* Space the second section (Configuration) below the first (Theme). Keyed
+   off the adjacent-sibling combinator so the first section keeps a flush
+   top and any future section inherits the same gap. */
+.settings-section + .settings-section {
+  margin-top: 0.85rem;
 }
 
 .settings-section > legend {
@@ -166,6 +173,37 @@
 
 /* Keyboard focus on the visually-hidden radio surfaces on its label. */
 .theme-radio:focus-visible + .theme-option {
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
+/* The Configuration section's two bulk-toggle buttons ("Expand all" /
+   "Collapse all") sit in an equal-width row, mirroring the theme tiles.
+   The whole <fieldset class="config-controls"> starts with the HTML
+   `hidden` attribute and is revealed by config_toggle.js only once its
+   click handlers are wired up, so a page whose script never runs shows
+   neither dead buttons nor an orphan "Configuration" legend (the
+   `[hidden]` reset in base.css makes that unconditional). Structural
+   rules only; the colours live in light.css / dark.css. */
+.config-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.config-action {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.config-action:focus-visible {
   outline: 2px solid;
   outline-offset: 2px;
 }

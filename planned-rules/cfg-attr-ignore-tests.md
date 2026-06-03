@@ -35,15 +35,19 @@ For every `#[cfg_attr(<pred>, ignore)]` on a `#[test]` item, require the
 
 ## Examples
 
+**Avoid:** skip via cfg, but body uses only cross-platform types
+
 ```rust
-// Bad: skip via cfg, but body uses only cross-platform types
 #[cfg(unix)]
 #[test]
 fn unix_path_logic() {
     assert_eq!(Path::new("/a/b").display().to_string(), "/a/b");
 }
+```
 
-// Good
+**Prefer:**
+
+```rust
 #[test]
 #[cfg_attr(not(unix), ignore = "only one path separator style is tested")]
 fn unix_path_logic() {
@@ -51,8 +55,9 @@ fn unix_path_logic() {
 }
 ```
 
+**Not flagged:** body genuinely cannot compile on non-unix
+
 ```rust
-// Acceptable: body genuinely cannot compile on non-unix
 #[cfg(unix)]
 #[test]
 fn unix_permissions() {

@@ -64,6 +64,17 @@ pub(crate) const THEME_TOGGLE_SCRIPT: &str = include_str!("theme_toggle.js");
 /// `<script src>` references the same name, so they must agree.
 pub(crate) const THEME_TOGGLE_SCRIPT_FILENAME: &str = "theme_toggle.js";
 
+/// The Configuration "Expand all" / "Collapse all" script, written
+/// beside `index.html` and loaded via `<script src>` rather than
+/// inlined. Kept separate from [`THEME_TOGGLE_SCRIPT`] so the two
+/// Settings sections degrade independently: if one script fails to
+/// run, its controls stay hidden while the other's keep working.
+pub(crate) const CONFIG_TOGGLE_SCRIPT: &str = include_str!("config_toggle.js");
+
+/// File name [`CONFIG_TOGGLE_SCRIPT`] is written under; the page's
+/// `<script src>` references the same name, so they must agree.
+pub(crate) const CONFIG_TOGGLE_SCRIPT_FILENAME: &str = "config_toggle.js";
+
 /// The colour-scheme icons (Octicons, MIT), shipped beside `index.html`
 /// and referenced from settings.css. Each tuple is `(filename, contents)`.
 pub(crate) const THEME_ICONS: &[(&str, &str)] = &[
@@ -150,6 +161,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 }
                 script src=(NAV_TOGGLE_SCRIPT_FILENAME) {}
                 script src=(THEME_TOGGLE_SCRIPT_FILENAME) {}
+                script src=(CONFIG_TOGGLE_SCRIPT_FILENAME) {}
             }
         }
     };
@@ -162,9 +174,10 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
 /// revealed by `theme_toggle.js` only once its handlers are wired up, so
 /// a page whose script never runs shows neither a dead gear nor an
 /// orphan panel (the `[hidden]` reset in base.css makes that
-/// unconditional). The panel holds a single "Theme" section for now —
-/// three radios (Light / Dark / System) styled as icon tiles, with
-/// System the default — but is shaped to gain further sections later.
+/// unconditional). The panel holds two sections: "Theme" — three
+/// radios (Light / Dark / System) styled as icon tiles, with System
+/// the default — and "Configuration", the two bulk-toggle buttons
+/// (see [`config_controls`]). It is shaped to gain further sections.
 fn settings_panel() -> Markup {
     html! {
         button.settings-toggle
@@ -183,6 +196,37 @@ fn settings_panel() -> Markup {
                     (theme_option("dark", "color-scheme-dark", "Dark", false))
                     (theme_option("system", "color-scheme-system", "System", true))
                 }
+            }
+            (config_controls())
+        }
+    }
+}
+
+/// The "Configuration" Settings section: a pair of stateless buttons
+/// that open ("Expand all") or close ("Collapse all") every rule's
+/// Configuration `<details>` (`details.config-details`) at once.
+/// Toggling every `<details>` from one control has no pure-CSS
+/// expression, so the buttons are driven by `config_toggle.js`.
+///
+/// The whole `<fieldset>` is emitted with the HTML `hidden` attribute
+/// and revealed by that script only once its click handlers are wired
+/// up — the same "reveal only when functional" contract the gear and
+/// hamburger follow (the `[hidden]` reset in base.css makes it
+/// unconditional). Hiding the section, rather than just the two
+/// buttons, also keeps the "Configuration" legend from showing alone
+/// above an empty row when the script never runs. The `data-config-open`
+/// attribute selects each button; the script also reflects the page's
+/// open/closed mix back onto them via `aria-pressed` (highlighting
+/// "Expand all" when every panel is open, "Collapse all" when every
+/// panel is closed), so they carry no `aria-pressed` until the script
+/// turns them into toggle buttons.
+fn config_controls() -> Markup {
+    html! {
+        fieldset.settings-section.config-controls hidden {
+            legend { "Configuration" }
+            div.config-actions {
+                button.config-action type="button" data-config-open="true" { "Expand all" }
+                button.config-action type="button" data-config-open="false" { "Collapse all" }
             }
         }
     }

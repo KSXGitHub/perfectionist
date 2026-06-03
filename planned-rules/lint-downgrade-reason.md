@@ -104,14 +104,22 @@ including `#[warn]` over `#[deny]`.
 
 ## Examples
 
+Under a crate-level `#![deny(clippy::missing_errors_doc)]`:
+
+**Avoid:** downgrades from the crate-level `deny` without a reason
+
 ```rust
 #![deny(clippy::missing_errors_doc)]
 
-// Bad — downgrades from the crate-level `deny` without a reason
 #[warn(clippy::missing_errors_doc)]
 pub fn parse(input: &str) -> Result<Manifest, ParseError> { /* ... */ }
+```
 
-// Good
+**Prefer:**
+
+```rust
+#![deny(clippy::missing_errors_doc)]
+
 #[warn(
     clippy::missing_errors_doc,
     reason = "stub during the parser-rewrite migration; tighten back to deny in #1234",
@@ -119,26 +127,25 @@ pub fn parse(input: &str) -> Result<Manifest, ParseError> { /* ... */ }
 pub fn parse(input: &str) -> Result<Manifest, ParseError> { /* ... */ }
 ```
 
+**Avoid:** relaxed below the crate-level `deny`, but the `reason` is shorter than `min_reason_length`
+
 ```rust
 #![deny(clippy::missing_errors_doc)]
 
-// Bad — relaxed below the crate-level `deny`, but the `reason`
-// is shorter than `min_reason_length`
 #[warn(clippy::missing_errors_doc, reason = "x")]
 pub fn parse(input: &str) -> Result<Manifest, ParseError> { /* ... */ }
 ```
 
+**Not flagged:** `#[deny]` and `#[forbid]` are never flagged — they tighten, not loosen.
+
 ```rust
-// `#[deny]` and `#[forbid]` are never flagged — they tighten,
-// not loosen.
 #[deny(clippy::too_many_arguments)]
 mod hot_path {}
 ```
 
+**Not flagged:** `#[warn]` does not lower the lint below its inherited `warn`, so the attribute is a no-op relative to ambient policy.
+
 ```rust
-// Not flagged — `#[warn]` does not lower the lint below its
-// inherited `warn`, so the attribute is a no-op relative to
-// ambient policy.
 #[warn(clippy::too_many_arguments)]
 fn build(/* ... */) {}
 ```
