@@ -35,7 +35,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
-use cargo_toml::{Inheritable, Manifest};
+use cargo_toml::Manifest;
 use clap::{Parser, Subcommand};
 use command_extra::CommandExtra;
 use pipe_trait::Pipe;
@@ -149,14 +149,6 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     let commit_sha = resolve_git_ref(root, git_ref);
 
     let manifest = Manifest::from_path(root.join("Cargo.toml")).expect("failed to read Cargo.toml");
-    let crate_version = manifest
-        .package
-        .as_ref()
-        .and_then(|package| match &package.version {
-            Inheritable::Set(value) => Some(value.clone()),
-            Inheritable::Inherited => None,
-        })
-        .unwrap_or_else(|| "unknown".to_owned());
     // Derive the human-facing repository URL from Cargo.toml so a
     // fork picks up its own URL without hand-editing the renderer.
     // Cargo's `repository` field typically ends in `.git` for clone
@@ -175,7 +167,6 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
 
     fs::create_dir_all(out_dir).expect("failed to create output directory");
     let context = RenderContext {
-        crate_version: &crate_version,
         git_ref,
         commit_sha: &commit_sha,
         repo_url: &repo_url,

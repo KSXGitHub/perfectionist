@@ -81,7 +81,6 @@ pub(crate) const RULE_ANCHOR_ICON_FILENAME: &str = "rule-anchor.svg";
 
 pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String {
     let RenderContext {
-        crate_version,
         git_ref,
         commit_sha,
         repo_url,
@@ -94,8 +93,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 meta name="description" content="Catalogue of perfectionist's lints — a Dylint plugin adding stylistic and correctness lints for Rust projects.";
                 title {
-                    "perfectionist lints"
-                    @if git_ref != "master" { " — " (git_ref) }
+                    "perfectionist lints — " (git_ref)
                 }
                 @for &(href, _) in STYLESHEETS {
                     link rel="stylesheet" href=(href);
@@ -108,12 +106,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 (nav_drawer(rules))
                 (settings_panel())
                 div.banner {
-                    @if git_ref == "master" {
-                        "Showing development docs from " code { "master" } ". "
-                        "Latest released version: " code { (crate_version) } "."
-                    } @else {
-                        "Showing docs for " code { (git_ref) } "."
-                    }
+                    "Showing docs for " code { (git_ref) } "."
                 }
                 p {
                     "perfectionist is a Dylint plugin; see the "

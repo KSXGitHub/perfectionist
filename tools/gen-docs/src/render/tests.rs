@@ -20,7 +20,6 @@ fn fake_rule(name: &str) -> Rule {
 
 fn fake_context() -> RenderContext<'static> {
     RenderContext {
-        crate_version: "0.0.0-test",
         git_ref: "master",
         commit_sha: "0000000000000000000000000000000000000000",
         repo_url: "https://example.invalid/perfectionist",
