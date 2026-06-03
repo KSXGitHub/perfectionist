@@ -4,7 +4,7 @@ warning: `FooBarBaz` resolves in scope; write it as an intra-doc link
 LL | /// At or above it and checked: `FooBarBaz` (3), `foo_bar_baz` (3).
    |                                 ^^^^^^^^^^^ help: wrap as an intra-doc link: `[`FooBarBaz`]`
    |
-   = note: `#[warn(perfectionist::intra_doc_links)]` on by default
+   = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
 
 warning: `foo_bar_baz` resolves in scope; write it as an intra-doc link
   --> $DIR/fixture.rs:14:50

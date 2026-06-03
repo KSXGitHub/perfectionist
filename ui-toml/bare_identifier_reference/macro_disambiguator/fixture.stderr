@@ -5,7 +5,7 @@ LL | /// A public macro and a private function both answer to `dual`; the
    |                                                          ^^^^^^
    |
    = help: `dual` resolves in more than one namespace; write a disambiguated intra-doc link such as `[`dual`](macro@dual)`
-   = note: `#[warn(perfectionist::intra_doc_links)]` on by default
+   = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
 
 warning: 1 warning emitted
 

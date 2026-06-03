@@ -60,13 +60,13 @@ declare_tool_lint! {
     /// /// Installs the package described by [`PackageManifest`] into [`Store`].
     /// pub fn install(manifest: &PackageManifest, store: &Store) {}
     /// ```
-    pub perfectionist::INTRA_DOC_LINKS,
+    pub perfectionist::BARE_IDENTIFIER_REFERENCE,
     Warn,
     "backticked identifier in a doc comment that resolves in scope should be an intra-doc link",
     report_in_external_macro: false
 }
 
-const CONFIG_KEY: &str = "perfectionist::intra_doc_links";
+const CONFIG_KEY: &str = "perfectionist::bare_identifier_reference";
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
@@ -166,7 +166,7 @@ enum ReferenceScope {
     Anywhere,
 }
 
-pub struct IntraDocLinks {
+pub struct BareIdentifierReference {
     skip_idents: BTreeSet<Symbol>,
     reference_scope: ReferenceScope,
     check_pascal_case: bool,
@@ -175,7 +175,7 @@ pub struct IntraDocLinks {
     min_words: usize,
 }
 
-impl IntraDocLinks {
+impl BareIdentifierReference {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         let skip_idents = resolve_symbol_set(&[], config.skip_idents, Vec::new());
@@ -205,17 +205,19 @@ impl IntraDocLinks {
     }
 }
 
-impl_lint_pass!(IntraDocLinks => [INTRA_DOC_LINKS]);
+impl_lint_pass!(BareIdentifierReference => [BARE_IDENTIFIER_REFERENCE]);
 
 pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[INTRA_DOC_LINKS]);
+    lint_store.register_lints(&[BARE_IDENTIFIER_REFERENCE]);
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("intra_doc_links", DefaultState::Active) {
+    if let DefaultState::Inactive =
+        resolved_state("bare_identifier_reference", DefaultState::Active)
+    {
         return;
     }
-    lint_store.register_late_pass(|_| Box::new(IntraDocLinks::new()));
+    lint_store.register_late_pass(|_| Box::new(BareIdentifierReference::new()));
 }
 
 /// One parked finding: the identifier text plus the source snippet of
@@ -225,7 +227,7 @@ struct Violation {
     snippet: String,
 }
 
-impl<'tcx> LateLintPass<'tcx> for IntraDocLinks {
+impl<'tcx> LateLintPass<'tcx> for BareIdentifierReference {
     fn check_crate_post(&mut self, lint_context: &LateContext<'tcx>) {
         let mut violations: Vec<(Span, Violation)> = Vec::new();
         walk_local_comments(lint_context, |chunk| match chunk.surface {
@@ -245,7 +247,7 @@ impl<'tcx> LateLintPass<'tcx> for IntraDocLinks {
     }
 }
 
-impl IntraDocLinks {
+impl BareIdentifierReference {
     fn collect_doc_chunk(
         &self,
         lint_context: &LateContext<'_>,
@@ -299,7 +301,7 @@ enum Resolution {
     Ambiguous([bool; 3]),
 }
 
-impl IntraDocLinks {
+impl BareIdentifierReference {
     /// Resolve `name` against the children of the documented item's
     /// scope module. Returns `None` when the name names nothing in scope
     /// the rule still checks (so the backticks are deliberate prose, not
@@ -528,7 +530,7 @@ fn emit(
     let Violation { ident, snippet } = violation;
     span_lint_hir_and_then(
         cx,
-        INTRA_DOC_LINKS,
+        BARE_IDENTIFIER_REFERENCE,
         hir_id,
         span,
         format!("`{ident}` resolves in scope; write it as an intra-doc link"),

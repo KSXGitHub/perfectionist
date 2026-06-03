@@ -28,7 +28,7 @@
 //! Headings and HTML tags are not classified by this helper — neither
 //! is needed by the rules currently consuming it. The sibling
 //! catalogue file's combinator surface lists them as future
-//! extensions for `intra_doc_links` / `clap_help_no_markdown`.
+//! extensions for `bare_identifier_reference` / `clap_help_no_markdown`.
 
 use std::ops::Range;
 
@@ -209,7 +209,7 @@ pub(crate) fn scan_code_regions(input: &str, include_code_spans: bool) -> Vec<Sk
 /// inside `` [`Foo`] `` is skipped, having already been swallowed by
 /// [`take_link`]) but never recorded — only the surviving bare code
 /// spans are returned. Pulling a Rust identifier out of each range's
-/// body is left to the consuming rule (`intra_doc_links`), per the
+/// body is left to the consuming rule (`bare_identifier_reference`), per the
 /// "Markdown parsing" convention that Rust-aware extraction lives in
 /// the rule, not in this helper.
 ///

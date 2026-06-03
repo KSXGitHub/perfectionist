@@ -10,6 +10,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   bare email address in comment or doc comment; wrap in `<...>` or prefix with `mailto:`
 
+- [`bare_identifier_reference`](./bare_identifier_reference.md) (default: `active`).
+
+  backticked identifier in a doc comment that resolves in scope should be an intra-doc link
+
 - [`bare_issue_reference`](./bare_issue_reference.md) (default: `active`).
 
   ambiguous bare `#NNN` issue / PR reference in comment
@@ -37,10 +41,6 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`inline_test_footprint`](./inline_test_footprint.md) (default: `active`).
 
   inline test code should be extracted to a separate file
-
-- [`intra_doc_links`](./intra_doc_links.md) (default: `active`).
-
-  backticked identifier in a doc comment that resolves in scope should be an intra-doc link
 
 - [`lint_reason_from_comment`](./lint_reason_from_comment.md) (default: `active`).
 

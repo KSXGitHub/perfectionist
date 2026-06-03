@@ -1,4 +1,5 @@
 pub mod bare_email;
+pub mod bare_identifier_reference;
 pub mod bare_issue_reference;
 pub mod bare_url;
 pub mod derive_ordering;
@@ -6,7 +7,6 @@ pub mod flat_module_pattern;
 pub mod import_granularity;
 pub mod import_grouping;
 pub mod inline_test_footprint;
-pub mod intra_doc_links;
 pub mod lint_reason_from_comment;
 pub mod lint_silence_reason;
 pub mod macro_argument_binding;

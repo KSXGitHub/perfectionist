@@ -4,7 +4,7 @@ warning: `Flagged` resolves in scope; write it as an intra-doc link
 LL | /// Mentions `Flagged`, which still fires, and `Skipped`, which the
    |              ^^^^^^^^^ help: wrap as an intra-doc link: `[`Flagged`]`
    |
-   = note: `#[warn(perfectionist::intra_doc_links)]` on by default
+   = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
 
 warning: 1 warning emitted
 

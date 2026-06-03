@@ -4,7 +4,7 @@ warning: `Defined` resolves in scope; write it as an intra-doc link
 LL |     /// Mentions `Defined` (local), `InternalItem` (this module's
    |                  ^^^^^^^^^ help: wrap as an intra-doc link: `[`Defined`]`
    |
-   = note: `#[warn(perfectionist::intra_doc_links)]` on by default
+   = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
 
 warning: `InternalItem` resolves in scope; write it as an intra-doc link
   --> $DIR/fixture.rs:16:37
@@ -12,11 +12,5 @@ warning: `InternalItem` resolves in scope; write it as an intra-doc link
 LL |     /// Mentions `Defined` (local), `InternalItem` (this module's
    |                                     ^^^^^^^^^^^^^^ help: wrap as an intra-doc link: `[`InternalItem`]`
 
-warning: `RootItem` resolves in scope; write it as an intra-doc link
-  --> $DIR/fixture.rs:17:19
-   |
-LL |     /// subtree), `RootItem` (reached via `crate::`), and `HashMap`
-   |                   ^^^^^^^^^^ help: wrap as an intra-doc link: `[`RootItem`]`
-
-warning: 3 warnings emitted
+warning: 2 warnings emitted
 

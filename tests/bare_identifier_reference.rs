@@ -1,7 +1,7 @@
-//! Configuration UI test for `intra_doc_links`. The default-config
-//! sweep lives in `ui/intra_doc_links.rs` and is picked up by
+//! Configuration UI test for `bare_identifier_reference`. The default-config
+//! sweep lives in `ui/bare_identifier_reference.rs` and is picked up by
 //! `tests/ui.rs`; the test here points at a fixture directory under
-//! `ui-toml/intra_doc_links/` and passes a per-rule `dylint.toml`.
+//! `ui-toml/bare_identifier_reference/` and passes a per-rule `dylint.toml`.
 //!
 //! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
 //! the duration of `run_tests`. The env var is process-global, so the
@@ -12,13 +12,13 @@
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
-const LINT_NAME: &str = "perfectionist::intra_doc_links";
+const LINT_NAME: &str = "perfectionist::bare_identifier_reference";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
 /// The rule's user-facing configuration shape, mirrored here for
 /// serialisation. Kept as a separate type from the lint's own internal
-/// [`Config`](../src/rules/intra_doc_links.rs) so the test surface is
+/// [`Config`](../src/rules/bare_identifier_reference.rs) so the test surface is
 /// independent of the implementation's private struct.
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
@@ -43,7 +43,7 @@ fn run(src_base: &str, contents: &str) {
 #[test]
 fn skip_idents_silences_listed_identifiers() {
     run(
-        "ui-toml/intra_doc_links/skip_idents",
+        "ui-toml/bare_identifier_reference/skip_idents",
         &dylint_toml(RuleConfig {
             skip_idents: Some(vec!["Skipped".to_owned()]),
         }),
@@ -52,13 +52,13 @@ fn skip_idents_silences_listed_identifiers() {
 
 /// The import-policy fixtures deliberately import across module
 /// boundaries, which trips the sibling import-layout rules; disable
-/// those so the fixture stays focused on `intra_doc_links`.
+/// those so the fixture stays focused on `bare_identifier_reference`.
 fn reference_scope_toml(reference_scope: &str) -> String {
     format!(
         "[perfectionist]\n\
          disable = [\"import_grouping\", \"import_granularity\"]\n\
          \n\
-         [\"perfectionist::intra_doc_links\"]\n\
+         [\"perfectionist::bare_identifier_reference\"]\n\
          reference_scope = \"{reference_scope}\"\n",
     )
 }
@@ -69,7 +69,7 @@ fn reference_scope_toml(reference_scope: &str) -> String {
 #[test]
 fn reference_scope_own_module_checks_only_local_definitions() {
     run(
-        "ui-toml/intra_doc_links/imports_ignore",
+        "ui-toml/bare_identifier_reference/imports_ignore",
         &reference_scope_toml("own_module"),
     );
 }
@@ -80,7 +80,7 @@ fn reference_scope_own_module_checks_only_local_definitions() {
 #[test]
 fn reference_scope_module_tree_checks_the_modules_own_subtree() {
     run(
-        "ui-toml/intra_doc_links/imports_internal",
+        "ui-toml/bare_identifier_reference/imports_internal",
         &reference_scope_toml("module_tree"),
     );
 }
@@ -91,7 +91,7 @@ fn reference_scope_module_tree_checks_the_modules_own_subtree() {
 #[test]
 fn reference_scope_anywhere_checks_everything() {
     run(
-        "ui-toml/intra_doc_links/imports_anywhere",
+        "ui-toml/bare_identifier_reference/imports_anywhere",
         &reference_scope_toml("anywhere"),
     );
 }
@@ -102,7 +102,7 @@ fn reference_scope_anywhere_checks_everything() {
 #[test]
 fn reference_scope_crate_checks_the_whole_current_crate() {
     run(
-        "ui-toml/intra_doc_links/imports_crate",
+        "ui-toml/bare_identifier_reference/imports_crate",
         &reference_scope_toml("crate"),
     );
 }
@@ -113,7 +113,7 @@ fn reference_scope_crate_checks_the_whole_current_crate() {
 #[test]
 fn reference_scope_third_party_excludes_only_the_standard_library() {
     run(
-        "ui-toml/intra_doc_links/imports_third_party",
+        "ui-toml/bare_identifier_reference/imports_third_party",
         &reference_scope_toml("third_party"),
     );
 }
@@ -124,7 +124,7 @@ fn reference_scope_third_party_excludes_only_the_standard_library() {
 #[test]
 fn ambiguity_disambiguator_picks_an_eligible_namespace() {
     run(
-        "ui-toml/intra_doc_links/macro_disambiguator",
+        "ui-toml/bare_identifier_reference/macro_disambiguator",
         &dylint_toml(RuleConfig::default()),
     );
 }
@@ -136,11 +136,11 @@ fn ambiguity_disambiguator_picks_an_eligible_namespace() {
 #[test]
 fn case_knobs_off_keep_only_non_conformist() {
     run(
-        "ui-toml/intra_doc_links/case_filters",
+        "ui-toml/bare_identifier_reference/case_filters",
         "[perfectionist]\n\
          disable = [\"prefer_expect_over_allow\"]\n\
          \n\
-         [\"perfectionist::intra_doc_links\"]\n\
+         [\"perfectionist::bare_identifier_reference\"]\n\
          check_pascal_case = false\n\
          check_upper_case = false\n\
          check_snake_case = false\n",
@@ -152,11 +152,11 @@ fn case_knobs_off_keep_only_non_conformist() {
 #[test]
 fn min_words_threshold_exempts_short_conformist_names() {
     run(
-        "ui-toml/intra_doc_links/min_words",
+        "ui-toml/bare_identifier_reference/min_words",
         "[perfectionist]\n\
          disable = [\"prefer_expect_over_allow\"]\n\
          \n\
-         [\"perfectionist::intra_doc_links\"]\n\
+         [\"perfectionist::bare_identifier_reference\"]\n\
          min_words = 3\n",
     );
 }

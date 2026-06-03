@@ -114,7 +114,7 @@ declare_tool_lint! {
     #[cfg_attr(
         dylint_lib = "perfectionist",
         expect(
-            perfectionist::intra_doc_links,
+            perfectionist::bare_identifier_reference,
             reason = "the style names `forbid` / `combined` resolve to this rule's \
                       submodules, but this rustdoc is rendered to the docs site where \
                       intra-doc links don't apply"
@@ -157,7 +157,7 @@ struct Config {
     #[cfg_attr(
         dylint_lib = "perfectionist",
         expect(
-            perfectionist::intra_doc_links,
+            perfectionist::bare_identifier_reference,
             reason = "the style names `forbid` / `combined` resolve to this rule's \
                       submodules, but this field doc is rendered to the docs site where \
                       intra-doc links don't apply"

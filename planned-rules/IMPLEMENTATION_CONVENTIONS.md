@@ -85,7 +85,7 @@ fixed-size byte sequence do not.
 
 Six rules in this catalogue scan a slice of markdown:
 
-- `perfectionist::intra_doc_links` (`src/rules/intra_doc_links.rs`) —
+- `perfectionist::bare_identifier_reference` (`src/rules/bare_identifier_reference.rs`) —
   distinguishes `` `Foo` `` (candidate) from `` [`Foo`] ``, `[Foo]`,
   `[Foo](path)`, `[Foo][id]` (already linked).
 - [`clap-help-no-markdown`](./clap-help-no-markdown.md) — classifies
@@ -120,7 +120,7 @@ Two needs sit on top of the same primitives.
 - **Tier A — structural classification.** Distinguishes a code
   span from an inline link from a reference definition from an
   autolink from an HTML tag from a heading. Consumers:
-  `intra_doc_links`, `clap_help_no_markdown`, `bare_issue_reference`,
+  `bare_identifier_reference`, `clap_help_no_markdown`, `bare_issue_reference`,
   `bare_url`.
 - **Tier B — code-region mask.** Only needs the predicate "is this
   byte inside a code span or code block?". Consumers:
@@ -144,7 +144,7 @@ One `take_*` per CommonMark construct the catalogue recognises:
 
 Each combinator returns the matched substring and the remainder
 per the canonical shapes in "Parser style". Rust-specific
-extraction layered on top — `intra_doc_links` pulling an
+extraction layered on top — `bare_identifier_reference` pulling an
 identifier out of a `take_code_span` result, `bare_url` pulling a
 scheme out of `take_autolink` failure-fallback prose — lives in
 each rule's own module, not in `src/markdown.rs`.
@@ -191,7 +191,7 @@ published as a library.
 
 The practical consequence: the scanner's job is to say "this is a
 link, here is its destination text". Whether the destination
-resolves as a Rust path is `intra_doc_links`'s job, performed
+resolves as a Rust path is `bare_identifier_reference`'s job, performed
 against `TyCtxt` in a `LateLintPass`, not the scanner's.
 Consumers that need only "is this any kind of link?" (e.g.,
 `clap_help_no_markdown`, which rejects all link forms) stop at the

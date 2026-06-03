@@ -229,8 +229,8 @@ external state, or judgement calls that a static lint cannot evaluate:
   (pacquet *Documentation comments*) — already covered by rustdoc's
   built-in `rustdoc::private_intra_doc_links` lint (default `warn`).
   Run `RUSTFLAGS='-D warnings' cargo doc --document-private-items` to
-  promote it to a hard error. `perfectionist::intra_doc_links`
-  (`src/rules/intra_doc_links.rs`) deliberately leaves a public item's
+  promote it to a hard error. `perfectionist::bare_identifier_reference`
+  (`src/rules/bare_identifier_reference.rs`) deliberately leaves a public item's
   bare-backtick mention of a more-private item alone — turning it into
   `` [`Foo`] `` would only manufacture a `private_intra_doc_links`
   violation — so this case stays out of scope here too, covered only by

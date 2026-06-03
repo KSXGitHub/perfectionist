@@ -1,4 +1,4 @@
-//! UI sweep for `intra_doc_links` under the default configuration.
+//! UI sweep for `bare_identifier_reference` under the default configuration.
 //!
 //! The crate-level mention of `Helper` resolves at the crate root, so
 //! this very line is flagged too.
