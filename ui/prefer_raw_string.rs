@@ -39,6 +39,29 @@ fn _inside_core_macro() {
     println!("path: \"foo\"");
 }
 
+// Bad: `format!` template carrying a `{...}` placeholder. The
+// placeholder splits the template away from the HIR during format-args
+// lowering, so the late `ExprKind::Lit` pass never sees it; the
+// pre-expansion pass rescues it. (issue #219)
+fn _format_with_inline_placeholder() {
+    let name = "x";
+    let _ = format!("url(\"{name}\")");
+}
+
+// Bad: same split reached through `println!` with a positional
+// placeholder rather than an inline-captured one.
+fn _println_with_positional_placeholder() {
+    println!("path: \"{}\"", "x");
+}
+
+// Not flagged: a placeholder template that also contains a non-raw
+// escape (`\n`). The literal is ineligible as a whole, and the static
+// pieces the compiler splits it into are not rewritten either.
+fn _placeholder_with_newline_escape() {
+    let value = 1;
+    let _ = format!("a\"b{value}\nc");
+}
+
 // Not flagged: contains a required non-raw escape (`\n`).
 fn _has_newline_escape() {
     let _ = "name:\tvalue\n";
@@ -86,6 +109,9 @@ fn main() {
     _mixed_eligible_escapes();
     _hash_count_grows();
     _inside_core_macro();
+    _format_with_inline_placeholder();
+    _println_with_positional_placeholder();
+    _placeholder_with_newline_escape();
     _has_newline_escape();
     _line_continuation();
     _mixed_eligible_and_non_raw();

@@ -136,8 +136,8 @@ pub(crate) fn assert_version_only_diff(
     if before_lines.len() != after_lines.len() {
         return Err(RuntimeError::LineCountChanged(file.to_owned()));
     }
-    let expected_before = format!("version = \"{before_ver}\"");
-    let expected_after = format!("version = \"{after_ver}\"");
+    let expected_before = format!(r#"version = "{before_ver}""#);
+    let expected_after = format!(r#"version = "{after_ver}""#);
     let mut diffs = before_lines
         .iter()
         .zip(&after_lines)

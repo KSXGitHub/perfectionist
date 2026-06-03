@@ -1,4 +1,5 @@
 use std::num::NonZeroUsize;
+use std::sync::Mutex;
 
 use clippy_utils::diagnostics::span_lint_and_sugg;
 use rustc_ast::{LitKind, StrStyle};
@@ -7,13 +8,19 @@ use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
+mod early;
+mod emit;
 mod parser;
+mod queue;
 
+use early::PreferRawStringEarly;
 use parser::{
-    DEFAULT_ELIGIBLE_ESCAPES, is_supported_eligible_entry, minimal_hash_count, scan_body,
+    DEFAULT_ELIGIBLE_ESCAPES, build_raw_string_suggestion, is_supported_eligible_entry, scan_body,
 };
+use queue::PendingViolation;
 
 use crate::common::{DefaultState, resolved_state};
+use crate::enclosing_hir::find_enclosing_hir_ids;
 
 declare_tool_lint! {
     /// ### What it does
@@ -121,6 +128,36 @@ impl Default for Config {
     }
 }
 
+/// The rule's settings after parsing and validation, shared by the late
+/// `ExprKind::Lit` pass and the pre-expansion `format!`-template pass so
+/// both apply the same threshold and eligible-escape set.
+pub(super) struct ResolvedConfig {
+    pub(super) min_escapes_to_trigger: NonZeroUsize,
+    pub(super) eligible_escapes: Vec<String>,
+}
+
+/// Load and validate the rule's configuration once, from the shared
+/// `CONFIG_KEY` table.
+pub(super) fn resolved_config() -> ResolvedConfig {
+    let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+    // Drop entries that aren't one of the three self-decoding
+    // escapes (`\"`, `\\`, `\'`). Anything else — `\n`, `\t`,
+    // `\xNN`, `\u{...}`, ill-formed shapes — would break
+    // the parser's "second char is the decoded form" contract
+    // and let the `MachineApplicable` autofix silently corrupt
+    // user code. Filter rather than reject so a stray entry in
+    // the config table doesn't take the whole rule offline.
+    let eligible_escapes = config
+        .eligible_escapes
+        .into_iter()
+        .filter(|entry| is_supported_eligible_entry(entry))
+        .collect();
+    ResolvedConfig {
+        min_escapes_to_trigger: config.min_escapes_to_trigger,
+        eligible_escapes,
+    }
+}
+
 pub struct PreferRawString {
     min_escapes_to_trigger: NonZeroUsize,
     eligible_escapes: Vec<String>,
@@ -128,27 +165,29 @@ pub struct PreferRawString {
 
 impl PreferRawString {
     fn new() -> Self {
-        let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        // Drop entries that aren't one of the three self-decoding
-        // escapes (`\"`, `\\`, `\'`). Anything else — `\n`, `\t`,
-        // `\xNN`, `\u{...}`, ill-formed shapes — would break
-        // the parser's "second char is the decoded form" contract
-        // and let the `MachineApplicable` autofix silently corrupt
-        // user code. Filter rather than reject so a stray entry in
-        // the config table doesn't take the whole rule offline.
-        let eligible_escapes = config
-            .eligible_escapes
-            .into_iter()
-            .filter(|entry| is_supported_eligible_entry(entry))
-            .collect();
+        let resolved = resolved_config();
         Self {
-            min_escapes_to_trigger: config.min_escapes_to_trigger,
-            eligible_escapes,
+            min_escapes_to_trigger: resolved.min_escapes_to_trigger,
+            eligible_escapes: resolved.eligible_escapes,
         }
     }
 }
 
+/// Rewrites the pre-expansion pass has built, waiting for the late pass
+/// to anchor each at its enclosing HIR node and emit. A process-wide
+/// static is the same mechanism `print_macro_split` uses to bridge its
+/// pre-expansion and late halves; see [`mod@queue`].
+static PENDING_VIOLATIONS: Mutex<Vec<PendingViolation>> = Mutex::new(Vec::new());
+
+fn queue(violation: PendingViolation) {
+    let mut guard = PENDING_VIOLATIONS
+        .lock()
+        .unwrap_or_else(|err| err.into_inner());
+    guard.push(violation);
+}
+
 impl_lint_pass!(PreferRawString => [PREFER_RAW_STRING]);
+impl_lint_pass!(PreferRawStringEarly => [PREFER_RAW_STRING]);
 
 pub fn register_lint(lint_store: &mut LintStore) {
     lint_store.register_lints(&[PREFER_RAW_STRING]);
@@ -158,6 +197,11 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("prefer_raw_string", DefaultState::Active) {
         return;
     }
+    // The pre-expansion pass sees `format!`-family templates while their
+    // source tokens are intact — before placeholder-carrying ones are
+    // split away from the HIR — and parks each rewrite for the late pass
+    // to anchor and emit. See [`mod@early`].
+    lint_store.register_pre_expansion_pass(|| Box::new(PreferRawStringEarly::new()));
     lint_store.register_late_pass(|_| Box::new(PreferRawString::new()));
 }
 
@@ -198,17 +242,34 @@ impl<'tcx> LateLintPass<'tcx> for PreferRawString {
         if scan.eliminable_count < self.min_escapes_to_trigger.get() {
             return;
         }
-        let n_hashes = minimal_hash_count(&scan.decoded);
-        let hashes = "#".repeat(n_hashes);
-        let suggestion = format!("r{hashes}\"{}\"{hashes}", scan.decoded);
         span_lint_and_sugg(
             lint_context,
             PREFER_RAW_STRING,
             literal.span,
             "string literal uses escapes that a raw string would avoid",
             "use a raw string",
-            suggestion,
+            build_raw_string_suggestion(&scan.decoded),
             Applicability::MachineApplicable,
         );
+    }
+
+    /// Drain the pre-expansion pass's queue of `format!`-template
+    /// rewrites and emit each at its deepest enclosing HIR node, by which
+    /// point `cfg_attr` has resolved and a per-site `#[allow]` applies.
+    fn check_crate_post(&mut self, lint_context: &LateContext<'tcx>) {
+        let pending: Vec<PendingViolation> = {
+            let mut guard = PENDING_VIOLATIONS
+                .lock()
+                .unwrap_or_else(|err| err.into_inner());
+            std::mem::take(&mut *guard)
+        };
+        if pending.is_empty() {
+            return;
+        }
+        let target_spans: Vec<_> = pending.iter().map(|violation| violation.span).collect();
+        let best = find_enclosing_hir_ids(lint_context.tcx, &target_spans);
+        for (violation, &hir_id) in pending.into_iter().zip(best.iter()) {
+            emit::emit_raw_string(lint_context, hir_id, violation.span, violation.suggestion);
+        }
     }
 }

@@ -172,7 +172,7 @@ fn page_links_each_stylesheet_individually() {
     // its cascade position matches the old single `<style>`.
     for &(name, _) in STYLESHEETS {
         assert!(
-            html.contains(&format!("<link rel=\"stylesheet\" href=\"{name}\">")),
+            html.contains(&format!(r#"<link rel="stylesheet" href="{name}">"#)),
             "expected a dedicated <link> for {name}",
         );
     }
@@ -275,7 +275,7 @@ fn page_does_not_inline_the_anchor_icon_svg() {
 fn style_references_rule_anchor_icon() {
     // The CSS `url(...)` and the written filename must agree, or the
     // icon 404s.
-    let expected = format!("url(\"{RULE_ANCHOR_ICON_FILENAME}\")");
+    let expected = format!(r#"url("{RULE_ANCHOR_ICON_FILENAME}")"#);
     assert!(
         stylesheet("rules.css").contains(&expected),
         "rules.css must reference the anchor icon as {expected}",
@@ -375,7 +375,7 @@ fn page_does_not_inline_theme_icon_svgs() {
     let settings = stylesheet("settings.css");
     for (name, _) in THEME_ICONS {
         assert!(
-            settings.contains(&format!("url(\"{name}\")")),
+            settings.contains(&format!(r#"url("{name}")"#)),
             "settings.css must reference the theme icon {name} as a mask",
         );
     }

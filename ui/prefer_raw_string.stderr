@@ -42,5 +42,17 @@ warning: string literal uses escapes that a raw string would avoid
 LL |     println!("path: /"foo/"");
    |              ^^^^^^^^^^^^^^^ help: use a raw string: `r#"path: "foo""#`
 
-warning: 7 warnings emitted
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:54:14
+   |
+LL |     println!("path: /"{}/"", "x");
+   |              ^^^^^^^^^^^^^^ help: use a raw string: `r#"path: "{}""#`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:48:21
+   |
+LL |     let _ = format!("url(/"{name}/")");
+   |                     ^^^^^^^^^^^^^^^^^ help: use a raw string: `r#"url("{name}")"#`
+
+warning: 9 warnings emitted
 
