@@ -100,14 +100,20 @@ pre code {
    connectors (│ └ ├) that must touch top-to-bottom to read as a
    continuous tree. The body's comfortable 1.55 line-height cascades
    into the block and leaves leading between rows, breaking the
-   connectors into disjoint segments. Collapse the leading to 1 for
-   these blocks only; prose code blocks keep the roomier spacing. The
-   override targets the `<pre>` (not the inner `<code>`) because the
-   line box height is set by the block-level element's strut — a
-   line-height on the inline `<code>` leaves the strut at 1.55 and the
-   gaps remain. */
+   connectors into disjoint segments.
+
+   `line-height: normal` (not a unitless ratio) is what makes them
+   join the way a terminal renders them: it defers to the font's own
+   line metrics, and box-drawing glyphs are designed by the font
+   author to tile seamlessly at exactly that spacing. A tighter value
+   like `1` is shorter than the font's natural cell, so the verticals
+   overrun into each other and the text looks cramped; `1.55` is
+   looser, so they fall short and leave gaps. The override targets the
+   `<pre>` (not the inner `<code>`) because the line box height is set
+   by the block-level element's strut — a line-height on the inline
+   `<code>` leaves the strut at 1.55 and the gaps remain. */
 pre.language-ascii-file-tree {
-  line-height: 1;
+  line-height: normal;
 }
 
 footer {
