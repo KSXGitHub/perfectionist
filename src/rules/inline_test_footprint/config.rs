@@ -12,7 +12,7 @@ pub(super) enum InlineStyle {
     ExternalOnly,
     /// Inline test code is allowed up to the configured budget; beyond
     /// that it must move to a file. Matches parallel-disk-usage's
-    /// guidance. The default.
+    /// guidance.
     ExternalWhenLong,
 }
 

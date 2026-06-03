@@ -116,6 +116,42 @@ has two consequences for the implementer:
    docstring — a generic HIR walker, a per-character emit loop, a
    path-set parser — earns its own file.
 
+## Defaults live in field docs, not type or variant docs
+
+A config field's default value is documented on the **field**, never
+on the field's **type** or on an **enum variant**. The default is a
+property of the field, not of the type: the same type could back
+another field with a different default, so a default stated on the
+type (or one of its variants) is misattributed and goes stale the
+moment a second field reuses it. The field doc is also where readers
+look — `tools/gen-docs/` renders it under "Configuration", the
+section a reader scans for defaults.
+
+So a field doc states the default in the config-file value form, and
+the type / variant docs describe only what each value *means*:
+
+```rust
+/// How inline test code is handled. Defaults to `external_when_long`.
+inline_style: InlineStyle,           // field doc carries the default
+
+enum InlineStyle {
+    /// Every inline test item is flagged; all test code must move out.
+    ExternalOnly,
+    /// Inline test code is allowed up to the configured budget.
+    ExternalWhenLong,                // variant doc: meaning only, no "the default"
+}
+```
+
+The wrong placement — `ExternalWhenLong`'s doc reading "… the
+default." or `InlineStyle`'s own doc reading "Defaults to
+`external_when_long`." — is the recurring mistake this convention
+exists to stop. It already had to be corrected once for
+`ReferenceScope::Crate` in
+<https://github.com/KSXGitHub/perfectionist/pull/218>. The `#[default]`
+*attribute* on a variant is fine — it is code expressing the
+`Default` impl, not prose claiming a default. Only the prose is
+governed here.
+
 ## When the implementation is complete
 
 If a PR fully implements a rule — every sub-check, every
