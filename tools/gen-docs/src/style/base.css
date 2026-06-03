@@ -99,11 +99,14 @@ pre code {
 /* ASCII file-tree diagrams (```ascii-file-tree fences) are rendered by
    `gen-docs` as a `<pre class="file-tree">` that keeps the original
    diagram as real text — so it copies, selects, and reads back exactly
-   as authored — while the tree connectors are drawn here with CSS
-   borders. Whether the literal `│ ├ └` glyphs join top-to-bottom is
-   font-dependent (a single `line-height` that touches on one font gaps
-   or overlaps on another), but a border spanning each line's full box
-   height always meets the next line's, with no glyph involved.
+   as authored — while the tree connectors are drawn here as thin,
+   absolutely-positioned `::before`/`::after` pseudo-elements filled via
+   `background` (no glyphs, no `border` property; the fill colour lives
+   in light.css / dark.css). Whether the literal `│ ├ └` glyphs join
+   top-to-bottom is font-dependent (a single `line-height` that touches
+   on one font gaps or overlaps on another), but a 1px pseudo-element
+   spanning each line's full box height always meets the next line's,
+   with no glyph involved.
 
    Each box-drawing prefix group is wrapped in a `.ft-cell` span whose
    own glyph is painted transparent (the character stays in the text for
@@ -113,8 +116,8 @@ pre code {
    dark.css instead. Reusing `<pre>` inherits the themed code-block box
    (background, padding, radius, font). See `render/file_tree.rs`. */
 .file-tree {
-  /* Comfortable, terminal-like row spacing. The connectors are borders
-     spanning the full line height, so loosening this can't break them. */
+  /* Comfortable, terminal-like row spacing. The connector pseudo-elements
+     span the full line height, so loosening this can't break them. */
   line-height: 1.7;
 }
 

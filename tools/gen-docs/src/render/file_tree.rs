@@ -20,13 +20,14 @@
 //! `line-height` joins them everywhere — a value that touches on one
 //! font gaps or overlaps on another.
 //!
-//! So the connectors are drawn as CSS borders instead. The block stays
+//! So the connectors are drawn with CSS instead. The block stays
 //! a real `<pre>` of the original text — every box-drawing prefix
 //! (`│   `, `    `, `├── `, `└── `) is wrapped in an inline-block
 //! `<span>` whose glyphs are painted transparent (so copy, selection,
 //! and assistive tech still see the original characters) and over which
 //! the `.file-tree` rules in `style/base.css` draw the vertical and
-//! horizontal segments. Each segment spans its span's full line-box
+//! horizontal segments as thin `::before`/`::after` pseudo-elements.
+//! Each segment spans its span's full line-box
 //! height, so consecutive lines' verticals meet exactly regardless of
 //! font or line-height, and the rows keep comfortable spacing without
 //! ever breaking the tree.

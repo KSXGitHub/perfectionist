@@ -58,8 +58,8 @@ fn highlight_code_blocks<'a>(parser: impl Iterator<Item = Event<'a>>) -> Vec<Eve
             Event::End(TagEnd::CodeBlock) if current_lang.is_some() => {
                 let lang = current_lang.take().expect("guarded above");
                 // `ascii-file-tree` blocks aren't highlighted as text: the
-                // box-drawing connectors only join seamlessly when drawn as
-                // CSS borders rather than glyphs (whose tiling is
+                // box-drawing connectors only join seamlessly when drawn
+                // with CSS rather than as glyphs (whose tiling is
                 // font-dependent), so they get their own structural HTML.
                 let html = if lang == FILE_TREE_LANG {
                     file_tree::render_file_tree(&code_buffer)
