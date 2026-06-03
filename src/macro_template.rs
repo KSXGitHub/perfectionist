@@ -27,6 +27,12 @@ use rustc_span::Span;
 /// result, or a template that is the second argument behind a writer
 /// expression that itself isn't a lone string literal, etc.).
 ///
+/// "First lone cooked string literal" is what makes the same scan work
+/// across the whole `format!`-family: `println!`'s template is the first
+/// argument, `write!`'s is the second (the writer comes first and isn't
+/// a bare literal), `log!`'s is the second (the level comes first), and
+/// `log::info!`'s is the first.
+///
 /// Raw strings (`r"..."`) are deliberately not matched: both callers
 /// either fold escapes the raw form has none of, or rewrite *into* the
 /// raw form, so a literal that is already raw is never a candidate.
@@ -75,8 +81,13 @@ fn cooked_str_literal_span(tree: &TokenTree) -> Option<Span> {
 
 /// Span of every cooked string literal anywhere in `tokens`, in source
 /// order, descending into delimited groups so a literal nested inside a
-/// call or sub-group (`assert!(cond, "msg {x}")`, `foo(bar("..."))`) is
-/// found too. Raw strings are skipped, as in [`cooked_str_literal_span`].
+/// sub-group is found too — e.g. a `maud::html!` markup string buried in
+/// `code { "..." }`, which a top-level-only scan (as `print_macro_split`
+/// uses) would miss. The cost is that a literal inside a *nested macro
+/// call* is visited once here and again when that inner macro's own
+/// `check_mac` fires; `prefer_raw_string`'s byte-range dedup discards the
+/// duplicate, so the descent is correct, just not minimal. Raw strings
+/// are skipped, as in [`cooked_str_literal_span`].
 pub(crate) fn find_all_cooked_str_literals(tokens: &TokenStream) -> Vec<Span> {
     let mut spans = Vec::new();
     collect_cooked_str_literals(tokens, &mut spans);

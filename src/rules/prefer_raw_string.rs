@@ -99,6 +99,14 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::prefer_raw_string";
 
+/// Diagnostic message, shared by the late inline path and the queued
+/// pre-expansion path ([`emit::emit_raw_string`]) so the two firing
+/// routes read identically to the user.
+pub(super) const VIOLATION_MESSAGE: &str =
+    "string literal uses escapes that a raw string would avoid";
+/// Suggestion label, shared for the same reason as [`VIOLATION_MESSAGE`].
+pub(super) const SUGGESTION_LABEL: &str = "use a raw string";
+
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
@@ -241,15 +249,23 @@ impl<'tcx> LateLintPass<'tcx> for PreferRawString {
         if !matches!(literal.node, LitKind::Str(_, StrStyle::Cooked)) {
             return;
         }
-        // Record that this literal survived into the HIR so the
-        // pre-expansion drain leaves it to us — before any of the bails
-        // below, so even a literal we don't end up emitting on still
-        // suppresses a duplicate queued candidate at the same source
-        // range.
-        VISITED_LITERALS
+        // Record that this literal survived into the HIR (so the
+        // pre-expansion drain leaves its source range to us) and dedup on
+        // the way in: `insert` returns `false` when this exact source
+        // range was already visited. That happens when a `macro_rules!`
+        // fragment is expanded into several surviving positions — every
+        // copy reuses the one call-site span — so the first occurrence
+        // owns the diagnostic and the later copies (and the queued
+        // candidate at this range) are suppressed. The insert happens
+        // before the bails below so an ineligible literal still claims its
+        // range against a duplicate queued candidate.
+        if !VISITED_LITERALS
             .lock()
             .unwrap_or_else(|err| err.into_inner())
-            .insert((literal.span.lo().0, literal.span.hi().0));
+            .insert((literal.span.lo().0, literal.span.hi().0))
+        {
+            return;
+        }
         let Ok(snippet) = lint_context
             .sess()
             .source_map()
@@ -283,8 +299,8 @@ impl<'tcx> LateLintPass<'tcx> for PreferRawString {
             lint_context,
             PREFER_RAW_STRING,
             literal.span,
-            "string literal uses escapes that a raw string would avoid",
-            "use a raw string",
+            VIOLATION_MESSAGE,
+            SUGGESTION_LABEL,
             build_raw_string_suggestion(&scan.decoded),
             Applicability::MachineApplicable,
         );

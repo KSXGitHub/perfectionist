@@ -12,7 +12,7 @@ use rustc_hir as hir;
 use rustc_lint::LateContext;
 use rustc_span::Span;
 
-use super::PREFER_RAW_STRING;
+use super::{PREFER_RAW_STRING, SUGGESTION_LABEL, VIOLATION_MESSAGE};
 
 pub(super) fn emit_raw_string(
     lint_context: &LateContext<'_>,
@@ -25,11 +25,11 @@ pub(super) fn emit_raw_string(
         PREFER_RAW_STRING,
         hir_id,
         span,
-        "string literal uses escapes that a raw string would avoid",
+        VIOLATION_MESSAGE,
         |diag| {
             diag.span_suggestion(
                 span,
-                "use a raw string",
+                SUGGESTION_LABEL,
                 suggestion,
                 Applicability::MachineApplicable,
             );
