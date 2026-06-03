@@ -208,6 +208,17 @@
   html:not([color-scheme-override="light"]) .theme-radio:focus-visible + .theme-option {
     outline-color: #4493f8;
   }
+  html:not([color-scheme-override="light"]) .config-action {
+    border-color: #30363d;
+    color: #e6edf3;
+    background: #0d1117;
+  }
+  html:not([color-scheme-override="light"]) .config-action:hover {
+    background: #161b22;
+  }
+  html:not([color-scheme-override="light"]) .config-action:focus-visible {
+    outline-color: #4493f8;
+  }
 }
 
 html[color-scheme-override="dark"] {
@@ -396,6 +407,17 @@ html[color-scheme-override="dark"] .theme-radio:checked + .theme-option {
   background: rgba(56, 139, 253, 0.15);
 }
 html[color-scheme-override="dark"] .theme-radio:focus-visible + .theme-option {
+  outline-color: #4493f8;
+}
+html[color-scheme-override="dark"] .config-action {
+  border-color: #30363d;
+  color: #e6edf3;
+  background: #0d1117;
+}
+html[color-scheme-override="dark"] .config-action:hover {
+  background: #161b22;
+}
+html[color-scheme-override="dark"] .config-action:focus-visible {
   outline-color: #4493f8;
 }
 

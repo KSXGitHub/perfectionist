@@ -45,9 +45,10 @@ use crate::extract::collect_rules;
 use crate::model::{RenderContext, Rule};
 use crate::render::markdown::HIGHLIGHT_CSS;
 use crate::render::{
-    HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME, NAV_TOGGLE_SCRIPT,
-    NAV_TOGGLE_SCRIPT_FILENAME, RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME, STYLESHEETS,
-    THEME_ICONS, THEME_TOGGLE_SCRIPT, THEME_TOGGLE_SCRIPT_FILENAME, render_page,
+    CONFIG_TOGGLE_SCRIPT, CONFIG_TOGGLE_SCRIPT_FILENAME, HIGHLIGHT_CSS_DARK_FILENAME,
+    HIGHLIGHT_CSS_LIGHT_FILENAME, NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, RULE_ANCHOR_ICON,
+    RULE_ANCHOR_ICON_FILENAME, STYLESHEETS, THEME_ICONS, THEME_TOGGLE_SCRIPT,
+    THEME_TOGGLE_SCRIPT_FILENAME, render_page,
 };
 
 #[derive(Parser)]
@@ -203,6 +204,11 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
         THEME_TOGGLE_SCRIPT,
     )
     .expect("failed to write theme script");
+    fs::write(
+        out_dir.join(CONFIG_TOGGLE_SCRIPT_FILENAME),
+        CONFIG_TOGGLE_SCRIPT,
+    )
+    .expect("failed to write config-toggle script");
 
     // Lands beside index.html so the stylesheet's relative `url(...)`
     // resolves.
