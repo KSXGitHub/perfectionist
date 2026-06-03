@@ -89,7 +89,13 @@ fn highlight_to_html(code: &str, lang: &str) -> String {
     }
     let body = generator.finalize();
     let class_attr = lang_class_attr(lang);
-    format!("<pre><code{class_attr}>{body}</code></pre>\n")
+    // The class is emitted on the `<pre>` as well as the `<code>`: the
+    // line box that governs vertical spacing is the block-level `<pre>`'s
+    // strut, so a line-height override (e.g. tightening ASCII file-tree
+    // diagrams so their box-drawing connectors join) has to target the
+    // `<pre>`. A class on the inline `<code>` alone can't reach it
+    // without `:has()`, which the catalogue avoids.
+    format!("<pre{class_attr}><code{class_attr}>{body}</code></pre>\n")
 }
 
 /// Render the `language-...` class attribute for a code block, but
