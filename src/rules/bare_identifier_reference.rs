@@ -170,7 +170,7 @@ pub struct BareIdentifierReference {
     check_pascal_case: bool,
     check_upper_case: bool,
     check_snake_case: bool,
-    min_words: usize,
+    min_words: NonZeroUsize,
 }
 
 impl BareIdentifierReference {
@@ -183,7 +183,7 @@ impl BareIdentifierReference {
             check_pascal_case: config.check_pascal_case,
             check_upper_case: config.check_upper_case,
             check_snake_case: config.check_snake_case,
-            min_words: config.min_words.get(),
+            min_words: config.min_words,
         }
     }
 
@@ -199,7 +199,13 @@ impl BareIdentifierReference {
             casing::Case::Pascal => self.check_pascal_case,
             casing::Case::NonConformist => return true,
         };
-        case_enabled && casing::word_count(ident, case) >= self.min_words
+        if !case_enabled {
+            return false;
+        }
+        // The default `min_words == 1` admits every name, so skip the
+        // word count (`pascal_word_count` allocates) on the hot path.
+        self.min_words == NonZeroUsize::MIN
+            || casing::word_count(ident, case) >= self.min_words.get()
     }
 }
 
@@ -293,10 +299,43 @@ enum Resolution {
     Unique,
     /// The name exists in more than one namespace (e.g. a type and a
     /// function). A bare `` [`Foo`] `` would be an ambiguous intra-doc
-    /// link, so the rule emits a help note rather than an autofix. The
-    /// flags are the namespaces present (`[type, value, macro]`), used
-    /// to pick a correct disambiguator prefix for the help.
-    Ambiguous([bool; 3]),
+    /// link, so the rule emits a help note rather than an autofix,
+    /// carrying the disambiguator prefix to suggest.
+    Ambiguous(DisambiguatorPrefix),
+}
+
+/// The rustdoc disambiguator prefix the ambiguity help suggests. Chosen
+/// from a namespace that has an *eligible* target, so the suggested link
+/// never points the reader at a private / out-of-policy item.
+#[derive(Clone, Copy)]
+enum DisambiguatorPrefix {
+    Type,
+    Value,
+    Macro,
+}
+
+impl DisambiguatorPrefix {
+    fn as_str(self) -> &'static str {
+        match self {
+            DisambiguatorPrefix::Type => "type@",
+            DisambiguatorPrefix::Value => "value@",
+            DisambiguatorPrefix::Macro => "macro@",
+        }
+    }
+
+    /// Pick the prefix for the first present namespace, in rustdoc's
+    /// type → value → macro precedence. `mask` is `[type, value, macro]`.
+    fn from_mask(mask: [bool; 3]) -> Option<Self> {
+        if mask[0] {
+            Some(DisambiguatorPrefix::Type)
+        } else if mask[1] {
+            Some(DisambiguatorPrefix::Value)
+        } else if mask[2] {
+            Some(DisambiguatorPrefix::Macro)
+        } else {
+            None
+        }
+    }
 }
 
 impl BareIdentifierReference {
@@ -402,16 +441,19 @@ impl BareIdentifierReference {
         }
         let distinct = namespaces.iter().filter(|present| **present).count();
         Some(if distinct > 1 {
-            // Suggest a disambiguator for a namespace that has an eligible
-            // target, so the help never steers the reader at a private /
-            // out-of-policy item; fall back to the full set if the only
-            // eligible target carries no namespace (e.g. a lone ctor).
+            // Prefer a namespace that has an eligible target so the help
+            // never steers the reader at a private / out-of-policy item;
+            // fall back to the full set if the only eligible target
+            // carries no namespace (e.g. a lone ctor). `distinct > 1`
+            // guarantees the chosen mask has a present namespace.
             let prefix_set = if eligible_namespaces.iter().any(|present| *present) {
                 eligible_namespaces
             } else {
                 namespaces
             };
-            Resolution::Ambiguous(prefix_set)
+            let prefix = DisambiguatorPrefix::from_mask(prefix_set)
+                .expect("an ambiguous resolution always has a present namespace");
+            Resolution::Ambiguous(prefix)
         } else {
             Resolution::Unique
         })
@@ -541,17 +583,8 @@ fn emit(
                     Applicability::MachineApplicable,
                 );
             }
-            Resolution::Ambiguous(namespaces) => {
-                // Suggest a disambiguator for a namespace the name
-                // actually resolves in (a `fn` + `macro_rules!` clash has
-                // no type, so `type@` would itself be a broken link).
-                let prefix = if namespaces[0] {
-                    "type@"
-                } else if namespaces[1] {
-                    "value@"
-                } else {
-                    "macro@"
-                };
+            Resolution::Ambiguous(prefix) => {
+                let prefix = prefix.as_str();
                 diag.help(format!(
                     "`{ident}` resolves in more than one namespace; write a \
                      disambiguated intra-doc link such as `[`{ident}`]({prefix}{ident})`",
