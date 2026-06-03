@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use super::*;
-use crate::model::ConfigDoc;
+use crate::model::{ConfigDoc, ConfigField, Optionality};
 
 fn fake_rule(name: &str) -> Rule {
     Rule {
@@ -578,4 +578,30 @@ fn nav_toggle_script_is_a_single_iife() {
     // a future edit can't reintroduce the same bug silently.
     assert_eq!(NAV_TOGGLE_SCRIPT.matches("(function () {").count(), 1);
     assert_eq!(NAV_TOGGLE_SCRIPT.matches("})();").count(), 1);
+}
+
+#[test]
+fn config_section_keeps_both_quotes_around_the_dylint_toml_key() {
+    // Regression guard: the `["<key>"]` TOML table header is built from
+    // two quote-bearing string fragments in `config_section`. A
+    // value-dropping raw-string rewrite of either (e.g. `r#"[""#`
+    // mistyped as `r#"["#`, which parses as `[` and loses the quote)
+    // silently renders `[key"]`. Assert both quotes survive around the
+    // key. Only rules with at least one field render this header, so the
+    // `fake_rule` fixtures elsewhere never covered it.
+    let config = ConfigDoc {
+        key: "perfectionist::demo".to_owned(),
+        fields: vec![ConfigField {
+            name: "some_field".to_owned(),
+            type_label: "bool".to_owned(),
+            doc_markdown: String::new(),
+            optionality: Optionality::Optional,
+        }],
+        custom_types: Vec::new(),
+    };
+    let html = crate::render::config::config_section(&config).into_string();
+    assert!(
+        html.contains("[&quot;perfectionist::demo&quot;]"),
+        "config heading must wrap the key in both quotes, got: {html}",
+    );
 }
