@@ -385,7 +385,7 @@ fn page_links_config_toggle_script_externally() {
     // scripts.
     assert!(
         html.contains(&format!(
-            "<script src=\"{CONFIG_TOGGLE_SCRIPT_FILENAME}\"></script>"
+            r#"<script src="{CONFIG_TOGGLE_SCRIPT_FILENAME}"></script>"#
         )),
         "expected the config-toggle script to be referenced via <script src>",
     );
