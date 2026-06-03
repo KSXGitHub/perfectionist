@@ -55,7 +55,7 @@ declare_tool_lint! {
     ///
     /// ### Example
     ///
-    /// Under `style = "alphabetical"`:
+    /// #### Style: Alphabetical (default)
     ///
     /// **Avoid:**
     ///
@@ -68,6 +68,23 @@ declare_tool_lint! {
     ///
     /// ```rust,ignore
     /// #[derive(Clone, Copy, Debug)]
+    /// struct Point;
+    /// ```
+    ///
+    /// #### Style: Prefix then alphabetical
+    ///
+    /// **Avoid:**
+    ///
+    /// ```rust,ignore
+    /// #[derive(Clone, Debug, Serialize, Copy)]
+    /// struct Point;
+    /// ```
+    ///
+    /// **Prefer:** (default `prefix`: `Debug`, `Default`, `Clone`, `Copy`, ...,
+    /// then the remaining traits alphabetically)
+    ///
+    /// ```rust,ignore
+    /// #[derive(Debug, Clone, Copy, Serialize)]
     /// struct Point;
     /// ```
     pub perfectionist::DERIVE_ORDERING,
