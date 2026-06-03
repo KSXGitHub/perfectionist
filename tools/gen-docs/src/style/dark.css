@@ -219,6 +219,11 @@
   html:not([color-scheme-override="light"]) .config-action:focus-visible {
     outline-color: #4493f8;
   }
+  html:not([color-scheme-override="light"]) .config-action[aria-pressed="true"] {
+    color: #4493f8;
+    border-color: #4493f8;
+    background: rgba(56, 139, 253, 0.15);
+  }
 }
 
 html[color-scheme-override="dark"] {
@@ -419,6 +424,11 @@ html[color-scheme-override="dark"] .config-action:hover {
 }
 html[color-scheme-override="dark"] .config-action:focus-visible {
   outline-color: #4493f8;
+}
+html[color-scheme-override="dark"] .config-action[aria-pressed="true"] {
+  color: #4493f8;
+  border-color: #4493f8;
+  background: rgba(56, 139, 253, 0.15);
 }
 
 /* The sidebar shadow only applies in the overlay band (601-1099.98px),

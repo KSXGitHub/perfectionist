@@ -396,6 +396,31 @@ fn page_links_config_toggle_script_externally() {
 }
 
 #[test]
+fn config_toggle_script_reflects_state_onto_buttons() {
+    // The buttons highlight when every panel shares one state. That state
+    // is reflected onto `aria-pressed` (the CSS hook the colour layer keys
+    // off) and kept live by listening for the <details> `toggle` event in
+    // the capture phase (it doesn't bubble) and coalescing a burst of them
+    // into one recompute per animation frame.
+    assert!(
+        CONFIG_TOGGLE_SCRIPT.contains("aria-pressed"),
+        "the script must reflect state onto aria-pressed",
+    );
+    assert!(
+        CONFIG_TOGGLE_SCRIPT.contains(r#""toggle""#),
+        "the script must listen for the <details> toggle event",
+    );
+    assert!(
+        CONFIG_TOGGLE_SCRIPT.contains("requestAnimationFrame"),
+        "the script must coalesce toggle bursts via requestAnimationFrame",
+    );
+    // The highlight colours live in the colour layer (light.css / dark.css),
+    // not the structural settings.css — same split as the theme tiles'
+    // checked highlight.
+    assert!(stylesheet("light.css").contains(r#".config-action[aria-pressed="true"]"#));
+}
+
+#[test]
 fn config_toggle_script_is_a_single_iife() {
     // Same structural sanity check as `nav_toggle_script_is_a_single_iife`:
     // the whole file is one IIFE so a stray block after the closer can't

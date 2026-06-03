@@ -214,8 +214,11 @@ fn settings_panel() -> Markup {
 /// unconditional). Hiding the section, rather than just the two
 /// buttons, also keeps the "Configuration" legend from showing alone
 /// above an empty row when the script never runs. The `data-config-open`
-/// attribute carries which action each button performs, so the script
-/// needs no per-button branching.
+/// attribute selects each button; the script also reflects the page's
+/// open/closed mix back onto them via `aria-pressed` (highlighting
+/// "Expand all" when every panel is open, "Collapse all" when every
+/// panel is closed), so they carry no `aria-pressed` until the script
+/// turns them into toggle buttons.
 fn config_controls() -> Markup {
     html! {
         fieldset.settings-section.config-controls hidden {

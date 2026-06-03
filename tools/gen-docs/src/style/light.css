@@ -233,3 +233,8 @@ div.custom-type dl.config {
 .config-action:focus-visible {
   outline-color: #0969da;
 }
+.config-action[aria-pressed="true"] {
+  color: #0969da;
+  border-color: #0969da;
+  background: #ddf4ff;
+}

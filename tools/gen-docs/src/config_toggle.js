@@ -22,17 +22,29 @@
 // independently: a failure in one script leaves its controls hidden without
 // taking the other's down.
 //
-// The buttons are stateless — they set or clear `open` and don't track or
-// reflect the current open/closed mix. A stateless pair is the simplest cut
-// and matches what the catalogue needs.
+// The buttons also reflect state: "Expand all" is highlighted while every
+// panel is open, "Collapse all" while every panel is closed, neither in a
+// mixed state. The highlight rides on `aria-pressed` — both the
+// accessibility signal (the pair become toggle buttons) and the CSS hook the
+// colour layer keys off. State is kept live by listening for the <details>
+// `toggle` event, which the browser fires whenever a panel's open state
+// changes (user click, the bulk buttons here, or find-in-page auto-expand).
+//
+// `toggle` does not bubble, so a single CAPTURING listener on the document
+// covers every panel — the capture phase reaches non-bubbling events from
+// descendants. And because the browser fires one (asynchronous, per-element)
+// `toggle` event per panel, a bulk action over N panels fires N events;
+// rather than recompute N times, each event just requests a single recompute
+// on the next animation frame, coalescing the burst into one pass.
 // ============================================================================
 
 (function () {
   var section = document.querySelector(".config-controls");
   if (!section) return;
 
-  var buttons = section.querySelectorAll("button[data-config-open]");
-  if (buttons.length === 0) return;
+  var expandButton = section.querySelector('button[data-config-open="true"]');
+  var collapseButton = section.querySelector('button[data-config-open="false"]');
+  if (!expandButton || !collapseButton) return;
 
   // Nothing to toggle means nothing to reveal: a catalogue with no
   // configurable rule renders no `details.config-details`, so leaving the
@@ -46,13 +58,66 @@
     }
   }
 
-  for (var i = 0; i < buttons.length; i++) {
-    buttons[i].addEventListener("click", function (event) {
-      setAllOpen(event.currentTarget.getAttribute("data-config-open") === "true");
-    });
+  // Reflect the current open/closed mix onto the two buttons. A single pass
+  // tracks whether every panel is open and whether every panel is closed —
+  // they can't both be true once there's at least one panel, and both are
+  // false in a mixed state, so neither button highlights then.
+  function reflectState() {
+    var panels = document.querySelectorAll("details.config-details");
+    var allOpen = true;
+    var allClosed = true;
+    for (var i = 0; i < panels.length; i++) {
+      if (panels[i].open) {
+        allClosed = false;
+      } else {
+        allOpen = false;
+      }
+    }
+    expandButton.setAttribute("aria-pressed", String(allOpen));
+    collapseButton.setAttribute("aria-pressed", String(allClosed));
   }
+
+  // Coalesce a burst of `toggle` events into one recompute per frame: the
+  // first event in a frame queues the pass, the rest are no-ops until it
+  // runs. This keeps "Expand all" / "Collapse all" — which fire one event
+  // per panel — at a single pass instead of one per panel.
+  var frame = 0;
+  function runReflect() {
+    frame = 0;
+    reflectState();
+  }
+  function scheduleReflect() {
+    if (frame) return;
+    frame = window.requestAnimationFrame(runReflect);
+  }
+
+  expandButton.addEventListener("click", function () {
+    setAllOpen(true);
+  });
+  collapseButton.addEventListener("click", function () {
+    setAllOpen(false);
+  });
+
+  // One capturing listener for the non-bubbling `toggle` event, filtered to
+  // the Configuration panels so unrelated <details> (if any are ever added)
+  // don't drive the recompute.
+  document.addEventListener(
+    "toggle",
+    function (event) {
+      var target = event.target;
+      if (target instanceof Element && target.matches("details.config-details")) {
+        scheduleReflect();
+      }
+    },
+    true,
+  );
 
   // Everything is wired up; reveal the section so the buttons appear exactly
   // when they work.
   section.hidden = false;
+
+  // Phase 1: a non-blocking initial pass so the buttons reflect whatever
+  // state the page loads in (all collapsed by default, but the browser may
+  // restore open panels via bfcache or open one for a fragment target).
+  scheduleReflect();
 })();
