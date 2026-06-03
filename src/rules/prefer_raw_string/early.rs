@@ -26,7 +26,7 @@ use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
 
 use super::parser::{build_raw_string_suggestion, scan_body};
 use super::queue::PendingViolation;
-use super::{queue, resolved_config};
+use super::resolved_config;
 use crate::macro_template::find_all_cooked_str_literals;
 
 pub(super) struct PreferRawStringEarly {
@@ -66,7 +66,11 @@ impl EarlyLintPass for PreferRawStringEarly {
             if scan.eliminable_count < self.min_escapes_to_trigger.get() {
                 continue;
             }
-            queue(PendingViolation {
+            // Qualified rather than imported: the parent module also
+            // has a `queue` submodule (used above for `PendingViolation`),
+            // and naming the function through `super::` keeps the two
+            // `queue` spellings visibly distinct at a glance.
+            super::queue(PendingViolation {
                 span: literal_span,
                 suggestion: build_raw_string_suggestion(&scan.decoded),
             });

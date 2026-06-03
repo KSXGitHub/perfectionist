@@ -148,8 +148,10 @@ pub(super) struct ResolvedConfig {
     pub(super) eligible_escapes: Vec<String>,
 }
 
-/// Load and validate the rule's configuration once, from the shared
-/// `CONFIG_KEY` table.
+/// Load and validate the rule's configuration from the shared
+/// `CONFIG_KEY` table. Called once per pass — the early and late passes
+/// each build their own copy — so the validation lives here instead of
+/// being duplicated across them; the result is not cached.
 pub(super) fn resolved_config() -> ResolvedConfig {
     let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
     // Drop entries that aren't one of the three self-decoding
