@@ -1,0 +1,35 @@
+warning: glob import brings an unbounded set of names into scope
+  --> $DIR/wildcard_imports.rs:35:16
+   |
+LL | pub(crate) use crate::thing::*;
+   |                ^^^^^^^^^^^^^^^
+   |
+   = help: import the specific items by name instead
+   = note: `#[warn(perfectionist::wildcard_imports)]` on by default
+
+warning: glob import brings an unbounded set of names into scope
+  --> $DIR/wildcard_imports.rs:38:5
+   |
+LL | use crate::thing::*;
+   |     ^^^^^^^^^^^^^^^
+   |
+   = help: import the specific items by name instead
+
+warning: glob import brings an unbounded set of names into scope
+  --> $DIR/wildcard_imports.rs:49:23
+   |
+LL | use crate::thing::{A, *};
+   |                       ^
+   |
+   = help: import the specific items by name instead
+
+warning: glob import brings an unbounded set of names into scope
+  --> $DIR/wildcard_imports.rs:44:9
+   |
+LL |     use super::*;
+   |         ^^^^^^^^
+   |
+   = help: import the specific items by name instead
+
+warning: 4 warnings emitted
+

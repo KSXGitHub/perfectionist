@@ -59,6 +59,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         lint_silence_reason
         macro_argument_binding
         macro_trailing_comma
+        named_prelude_import
         non_exhaustive_error
         prefer_derive_more_over_thiserror
         prefer_expect_over_allow
@@ -75,6 +76,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         unicode_ellipsis_in_comments
         unicode_ellipsis_in_docs
         unicode_ellipsis_in_panic_messages
+        wildcard_imports
 
         // `unknown_perfectionist_lints::register_pass` snapshots the registered
         // `perfectionist::*` lint names out of the `LintStore`, so its pass must

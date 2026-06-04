@@ -5,8 +5,16 @@ libraries = [
 
 # `import_grouping` is inactive by default, so it must be enabled here
 # for the self-lint to keep enforcing this crate's import layout.
+#
+# `wildcard_imports` is active by default, but this workspace follows the
+# conventional `#[cfg(test)] mod tests { use super::*; }` idiom in its unit
+# tests (and a handful of in-module glob re-exports). That idiom is exactly
+# what the rule flags, so dogfooding it here would mean rewriting every test
+# module's imports against the grain of the convention; disable it for this
+# crate's own self-lint instead.
 [perfectionist]
 enable = ["import_grouping"]
+disable = ["wildcard_imports"]
 
 ["perfectionist::unicode_ellipsis_in_docs"]
 scan_code_spans = true

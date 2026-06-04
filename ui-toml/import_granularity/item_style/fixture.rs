@@ -25,7 +25,7 @@ mod already_item {
     use std::path::PathBuf;
 }
 
-// Good: a glob is governed by `no_star_imports`, not by this rule.
+// Good: a glob is governed by `wildcard_imports`, not by this rule.
 mod glob_left_alone {
     use std::io::*;
 }

@@ -35,5 +35,14 @@ LL ~     use std::io::Read;
 LL +     use std::io::{self};
    |
 
-warning: 3 warnings emitted
+warning: glob import brings an unbounded set of names into scope
+  --> $DIR/fixture.rs:30:9
+   |
+LL |     use std::io::*;
+   |         ^^^^^^^^^^
+   |
+   = help: import the specific items by name instead
+   = note: `#[warn(perfectionist::wildcard_imports)]` on by default
+
+warning: 4 warnings emitted
 

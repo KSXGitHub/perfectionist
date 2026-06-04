@@ -40,5 +40,14 @@ LL -     use crate::thing::T;
 LL +     use crate::{thing, thing::T};
    |
 
-warning: 4 warnings emitted
+warning: glob import brings an unbounded set of names into scope
+  --> $DIR/fixture.rs:42:9
+   |
+LL |     use std::io::*;
+   |         ^^^^^^^^^^
+   |
+   = help: import the specific items by name instead
+   = note: `#[warn(perfectionist::wildcard_imports)]` on by default
+
+warning: 5 warnings emitted
 

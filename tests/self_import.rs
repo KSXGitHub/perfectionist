@@ -8,10 +8,12 @@
 //! [`Mutex`] serialisation (the `DYLINT_TOML` env var is process-global)
 //! and one fixture directory per case.
 //!
-//! `import_granularity` is disabled in each config: it is active by
-//! default and would also fire on these fixtures (which deliberately
-//! use crate-style nested `use`s to exercise nested-`self` handling),
-//! so disabling it keeps the snapshots focused on `self_import`.
+//! `import_granularity` and `wildcard_imports` are disabled in each
+//! config: both are active by default and would also fire on these
+//! fixtures (which deliberately use crate-style nested `use`s to
+//! exercise nested-`self` handling, one of which mixes a glob into a
+//! `{self, *}` brace), so disabling them keeps the snapshots focused on
+//! `self_import`.
 
 use std::sync::Mutex;
 use text_block_macros::text_block_fnl;
@@ -32,7 +34,7 @@ fn forbid_rewrites_every_self_form() {
         text_block_fnl! {
             "[perfectionist]"
             r#"enable = ["self_import"]"#
-            r#"disable = ["import_granularity"]"#
+            r#"disable = ["import_granularity", "wildcard_imports"]"#
             ""
             r#"["perfectionist::self_import"]"#
             r#"style = "forbid""#
@@ -47,7 +49,7 @@ fn combined_folds_adjacent_module_and_item_imports() {
         text_block_fnl! {
             "[perfectionist]"
             r#"enable = ["self_import"]"#
-            r#"disable = ["import_granularity"]"#
+            r#"disable = ["import_granularity", "wildcard_imports"]"#
             ""
             r#"["perfectionist::self_import"]"#
             r#"style = "combined""#

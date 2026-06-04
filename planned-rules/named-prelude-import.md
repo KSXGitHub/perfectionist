@@ -1,9 +1,34 @@
 # `named_prelude_import`
 
 **Source:** project convention. Dual of
-[`no-star-imports`](./no-star-imports.md): that rule restricts globs in
-general but lets preludes glob freely; this rule restricts named
-imports *from* preludes and lets the glob form through.
+`perfectionist::wildcard_imports` (`src/rules/wildcard_imports.rs`): that
+rule restricts globs in general but lets preludes glob freely; this rule
+restricts named imports *from* preludes and lets the glob form through.
+
+## Status
+
+Implemented in `src/rules/named_prelude_import.rs`, active by default.
+What is done:
+
+- Detection of every cherry-picked named import from a prelude segment,
+  including each leaf of a brace list (`use foo::prelude::{A, B};`),
+  flagged once per leaf.
+- Both configuration knobs (`prelude_segment_names`, `allowed_paths`).
+- The canonical-module autofix for **standalone** imports
+  (`use foo::prelude::Item;` → `use <canonical>::Item;`), resolved from
+  the item's `DefId`, preserving any `as` rename and gauging
+  `MachineApplicable` vs. `MaybeIncorrect` by whether the canonical path
+  is publicly nameable.
+
+What is **not** done (this file stays until it is):
+
+- The mechanical fix for a **brace-list leaf**
+  (`use foo::prelude::{A, B};`). Each leaf is still flagged, but only
+  carries a `help`, not a `span_suggestion`. A correct fix can't rewrite
+  a single leaf's sub-span in place — the leaves may resolve to
+  different canonical modules, so the statement has to split into one
+  `use` per leaf, which is `import_granularity`-shaped work left for a
+  follow-up.
 
 ## Statement
 
@@ -56,36 +81,43 @@ use serde::prelude::*;
 
 ## Why both lints together
 
-`no-star-imports` (with the `prelude` exception) and
-`named-prelude-import` together codify a single intent: "if a crate
+`perfectionist::wildcard_imports` (with the `prelude` exception) and
+`named_prelude_import` together codify a single intent: "if a crate
 ships a prelude, you import it as a glob; if you don't want the glob,
 import the items from where they actually live." Enabling exactly one
 of the two lints is also coherent:
 
-- Only `no-star-imports`: globs are restricted, but you may still
+- Only `wildcard_imports`: globs are restricted, but you may still
   cherry-pick items from a prelude. (The default for projects that
   haven't opted into the convention.)
-- Only `named-prelude-import`: glob `use` is unrestricted in general,
+- Only `named_prelude_import`: glob `use` is unrestricted in general,
   but preludes must be glob-imported when used at all.
 
 ## Implementation notes
 
-- `EarlyLintPass::check_item` on `ItemKind::Use`. Walk the
-  `UseTree::prefix` segments and the leaves.
+As built (see `src/rules/named_prelude_import.rs`):
+
+- A plain HIR `LateLintPass::check_item` on
+  `ItemKind::Use(path, UseKind::Single(_))`. The fix needs the item's
+  `DefId`, which only exists post-resolution, and a HIR walk already
+  reaches every compiled module (including separate-file submodules), so
+  the re-parse machinery the source-layout import rules use is not
+  needed. HIR lowers `use serde::prelude::{A, B};` into one
+  `UseKind::Single` item per leaf, so each brace-list leaf is visited —
+  and flagged — individually with no flattening of our own (the original
+  plan of reusing `import_granularity`'s `model.rs` leaf flattening was
+  unnecessary).
 - The prelude detection is a simple ident match against
   `prelude_segment_names`, identical in shape to the corresponding
-  knob in `no-star-imports`.
-- For nested brace lists (`use serde::prelude::{A, B};`), expand each
-  leaf into its own diagnostic span via the segment-walk machinery
-  used by `perfectionist::import_granularity` (the leaf flattening in
-  `src/rules/import_granularity/model.rs`). Reuse the same helper.
-- Suggested fix: replace the `prelude::` segment with the canonical
-  module of each item. Resolving the canonical module requires the
-  item's `DefId` (`tcx.def_path` reports the *definition* path,
-  bypassing re-exports), so this is a `LateLintPass` rather than an
-  `EarlyLintPass`. Fix is `MachineApplicable` when the canonical path
-  is unambiguous; `MaybeIncorrect` when the item is itself a re-export
-  whose canonical path is in a private module.
+  knob in `perfectionist::wildcard_imports`.
+- Fix: replace the written path span with the item's canonical module
+  path, built from `tcx.def_path` (the *definition* path, bypassing
+  re-exports) prefixed with `crate` for the local crate or the crate
+  name otherwise. Applicability is `MachineApplicable` when every
+  component up to the crate root is `pub` (so the path is nameable from
+  any importer) and `MaybeIncorrect` otherwise. **Only standalone
+  imports are auto-fixed** — see the Status section for why brace-list
+  leaves carry a `help` instead.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
@@ -97,7 +129,7 @@ of the two lints is also coherent:
 ```toml
 # dylint.toml
 [named_prelude_import]
-# Names recognised as prelude segments. Match `no-star-imports`'s knob
+# Names recognised as prelude segments. Match `wildcard_imports`'s knob
 # of the same name so a project can flip both rules with one value.
 prelude_segment_names = ["prelude"]
 
