@@ -173,7 +173,7 @@ fn render_config_section(config: &ConfigDoc, out: &mut String) {
     };
     let _ = writeln!(
         out,
-        "Configure via `dylint.toml` under `[\"{}\"]`. {optionality_note}.",
+        r#"Configure via `dylint.toml` under `["{}"]`. {optionality_note}."#,
         config.key,
     );
     out.push('\n');
@@ -234,11 +234,11 @@ fn render_type(ty: &TypeDoc, out: &mut String) {
 
 fn render_variant(variant: &EnumVariant, out: &mut String) {
     if variant.rust_name == variant.serialized {
-        let _ = writeln!(out, "##### `\"{}\"`", variant.serialized);
+        let _ = writeln!(out, r#"##### `"{}"`"#, variant.serialized);
     } else {
         let _ = writeln!(
             out,
-            "##### `\"{}\"` (Rust: `{}`)",
+            r#"##### `"{}"` (Rust: `{}`)"#,
             variant.serialized, variant.rust_name,
         );
     }

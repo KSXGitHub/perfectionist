@@ -1,4 +1,6 @@
+use std::collections::BTreeSet;
 use std::num::NonZeroUsize;
+use std::sync::Mutex;
 
 use clippy_utils::diagnostics::span_lint_and_sugg;
 use rustc_ast::{LitKind, StrStyle};
@@ -7,13 +9,19 @@ use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
+mod early;
+mod emit;
 mod parser;
+mod queue;
 
+use early::PreferRawStringEarly;
 use parser::{
-    DEFAULT_ELIGIBLE_ESCAPES, is_supported_eligible_entry, minimal_hash_count, scan_body,
+    DEFAULT_ELIGIBLE_ESCAPES, build_raw_string_suggestion, is_supported_eligible_entry, scan_body,
 };
+use queue::PendingViolation;
 
 use crate::common::{DefaultState, resolved_state};
+use crate::enclosing_hir::find_enclosing_hir_ids;
 
 declare_tool_lint! {
     /// ### What it does
@@ -24,13 +32,28 @@ declare_tool_lint! {
     /// `r"..."` / `r#"..."#`, picking the smallest hash count that
     /// avoids a delimiter collision.
     ///
-    /// This includes literals passed as arguments to macros such as
-    /// `println!`, `format!`, `vec!`, and `assert!`. Suppress per
-    /// call site with `#[allow(perfectionist::prefer_raw_string)]`
-    /// when the regular form is deliberately preferred.
+    /// Literals inside macro invocations are covered too: every string
+    /// literal in a macro call, whatever its position — including a
+    /// `format!`-family template that contains a `{...}` placeholder. The
+    /// rewrite is value-preserving (a raw string still parses
+    /// placeholders, and `{{` / `}}` survive verbatim), so the literal's
+    /// role doesn't matter. Suppress a site where the regular form is
+    /// deliberately preferred.
     ///
-    /// Pattern-position literals (e.g. `match s { "C:\\path" => ... }`)
-    /// are out of scope — the rule only visits expression literals.
+    /// That includes literals a macro uses for their *source spelling*
+    /// rather than their value, such as `stringify!` and `dbg!`, where
+    /// the raw form has the same value but a different reflected text.
+    /// This is intentional: code whose behaviour depends on a literal's
+    /// exact spelling instead of its value is rare and a code smell;
+    /// suppress it per site with
+    /// `#[expect(perfectionist::prefer_raw_string)]`.
+    ///
+    /// Pattern-position literals in ordinary code
+    /// (e.g. `match s { "C:\\path" => ... }`) are out of scope; only
+    /// expression-position literals are rewritten. A literal written as a
+    /// pattern *inside a macro call* (e.g. `matches!(s, "C:\\path")`) is
+    /// rewritten anyway, since a literal's position isn't distinguished
+    /// inside a macro.
     ///
     /// Whitespace and control-character escapes (`\n`, `\t`, `\r`,
     /// `\0`) and Unicode escapes (`\x..`, `\u{..}`) are exempt — a
@@ -80,6 +103,14 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::prefer_raw_string";
 
+/// Diagnostic message, shared by the late inline path and the queued
+/// pre-expansion path ([`emit::emit_raw_string`]) so the two firing
+/// routes read identically to the user.
+pub(super) const VIOLATION_MESSAGE: &str =
+    "string literal uses escapes that a raw string would avoid";
+/// Suggestion label, shared for the same reason as [`VIOLATION_MESSAGE`].
+pub(super) const SUGGESTION_LABEL: &str = "use a raw string";
+
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
@@ -121,6 +152,38 @@ impl Default for Config {
     }
 }
 
+/// The rule's settings after parsing and validation, shared by the late
+/// `ExprKind::Lit` pass and the pre-expansion macro-literal pass so both
+/// apply the same threshold and eligible-escape set.
+pub(super) struct ResolvedConfig {
+    pub(super) min_escapes_to_trigger: NonZeroUsize,
+    pub(super) eligible_escapes: Vec<String>,
+}
+
+/// Load and validate the rule's configuration from the shared
+/// `CONFIG_KEY` table. Called once per pass — the early and late passes
+/// each build their own copy — so the validation lives here instead of
+/// being duplicated across them; the result is not cached.
+pub(super) fn resolved_config() -> ResolvedConfig {
+    let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+    // Drop entries that aren't one of the three self-decoding
+    // escapes (`\"`, `\\`, `\'`). Anything else — `\n`, `\t`,
+    // `\xNN`, `\u{...}`, ill-formed shapes — would break
+    // the parser's "second char is the decoded form" contract
+    // and let the `MachineApplicable` autofix silently corrupt
+    // user code. Filter rather than reject so a stray entry in
+    // the config table doesn't take the whole rule offline.
+    let eligible_escapes = config
+        .eligible_escapes
+        .into_iter()
+        .filter(|entry| is_supported_eligible_entry(entry))
+        .collect();
+    ResolvedConfig {
+        min_escapes_to_trigger: config.min_escapes_to_trigger,
+        eligible_escapes,
+    }
+}
+
 pub struct PreferRawString {
     min_escapes_to_trigger: NonZeroUsize,
     eligible_escapes: Vec<String>,
@@ -128,27 +191,43 @@ pub struct PreferRawString {
 
 impl PreferRawString {
     fn new() -> Self {
-        let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        // Drop entries that aren't one of the three self-decoding
-        // escapes (`\"`, `\\`, `\'`). Anything else — `\n`, `\t`,
-        // `\xNN`, `\u{...}`, ill-formed shapes — would break
-        // the parser's "second char is the decoded form" contract
-        // and let the `MachineApplicable` autofix silently corrupt
-        // user code. Filter rather than reject so a stray entry in
-        // the config table doesn't take the whole rule offline.
-        let eligible_escapes = config
-            .eligible_escapes
-            .into_iter()
-            .filter(|entry| is_supported_eligible_entry(entry))
-            .collect();
+        let resolved = resolved_config();
         Self {
-            min_escapes_to_trigger: config.min_escapes_to_trigger,
-            eligible_escapes,
+            min_escapes_to_trigger: resolved.min_escapes_to_trigger,
+            eligible_escapes: resolved.eligible_escapes,
         }
     }
 }
 
+/// Rewrites the pre-expansion pass has built, waiting for the late pass
+/// to anchor each at its enclosing HIR node and emit. A process-wide
+/// static is the same mechanism `print_macro_split` uses to bridge its
+/// pre-expansion and late halves; see [`mod@queue`].
+static PENDING_VIOLATIONS: Mutex<Vec<PendingViolation>> = Mutex::new(Vec::new());
+
+/// Source byte ranges (`lo`, `hi`) of the cooked string literals the
+/// late `check_expr` pass saw in the HIR. The drain at
+/// `check_crate_post` skips any queued pre-expansion candidate whose
+/// range is in here — those literals survived lowering and the late pass
+/// already owns them, so only the *consumed* literals (split format
+/// templates, `stringify!` contents, ...) are emitted from the queue.
+///
+/// Keyed by raw `BytePos` rather than `Span` so the comparison is immune
+/// to the macro-hygiene `SyntaxContext` differences between a
+/// pre-expansion token span and its post-expansion HIR span; a literal's
+/// source byte range uniquely identifies it within one crate's
+/// `SourceMap`.
+static VISITED_LITERALS: Mutex<BTreeSet<(u32, u32)>> = Mutex::new(BTreeSet::new());
+
+fn queue(violation: PendingViolation) {
+    let mut guard = PENDING_VIOLATIONS
+        .lock()
+        .unwrap_or_else(|err| err.into_inner());
+    guard.push(violation);
+}
+
 impl_lint_pass!(PreferRawString => [PREFER_RAW_STRING]);
+impl_lint_pass!(PreferRawStringEarly => [PREFER_RAW_STRING]);
 
 pub fn register_lint(lint_store: &mut LintStore) {
     lint_store.register_lints(&[PREFER_RAW_STRING]);
@@ -158,6 +237,11 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("prefer_raw_string", DefaultState::Active) {
         return;
     }
+    // The pre-expansion pass sees every macro's string literals while
+    // the source tokens are intact — including the ones lowering would
+    // consume before the HIR exists — and parks each rewrite for the late
+    // pass to dedup, anchor, and emit. See [`mod@early`].
+    lint_store.register_pre_expansion_pass(|| Box::new(PreferRawStringEarly::new()));
     lint_store.register_late_pass(|_| Box::new(PreferRawString::new()));
 }
 
@@ -167,6 +251,23 @@ impl<'tcx> LateLintPass<'tcx> for PreferRawString {
             return;
         };
         if !matches!(literal.node, LitKind::Str(_, StrStyle::Cooked)) {
+            return;
+        }
+        // Record that this literal survived into the HIR (so the
+        // pre-expansion drain leaves its source range to us) and dedup on
+        // the way in: `insert` returns `false` when this exact source
+        // range was already visited. That happens when a `macro_rules!`
+        // fragment is expanded into several surviving positions — every
+        // copy reuses the one call-site span — so the first occurrence
+        // owns the diagnostic and the later copies (and the queued
+        // candidate at this range) are suppressed. The insert happens
+        // before the bails below so an ineligible literal still claims its
+        // range against a duplicate queued candidate.
+        if !VISITED_LITERALS
+            .lock()
+            .unwrap_or_else(|err| err.into_inner())
+            .insert((literal.span.lo().0, literal.span.hi().0))
+        {
             return;
         }
         let Ok(snippet) = lint_context
@@ -198,17 +299,53 @@ impl<'tcx> LateLintPass<'tcx> for PreferRawString {
         if scan.eliminable_count < self.min_escapes_to_trigger.get() {
             return;
         }
-        let n_hashes = minimal_hash_count(&scan.decoded);
-        let hashes = "#".repeat(n_hashes);
-        let suggestion = format!("r{hashes}\"{}\"{hashes}", scan.decoded);
         span_lint_and_sugg(
             lint_context,
             PREFER_RAW_STRING,
             literal.span,
-            "string literal uses escapes that a raw string would avoid",
-            "use a raw string",
-            suggestion,
+            VIOLATION_MESSAGE,
+            SUGGESTION_LABEL,
+            build_raw_string_suggestion(&scan.decoded),
             Applicability::MachineApplicable,
         );
+    }
+
+    /// Drain the pre-expansion pass's queue of rewrites for literals the
+    /// HIR walk never reached, and emit each at its deepest enclosing HIR
+    /// node — by which point `cfg_attr` has resolved and a per-site
+    /// `#[allow]` applies. A candidate is dropped if the late pass already
+    /// saw a literal at the same source range (it survived lowering, so
+    /// `check_expr` owns it) or if an earlier candidate already covered
+    /// that range (the same literal reached through nested macro
+    /// invocations).
+    fn check_crate_post(&mut self, lint_context: &LateContext<'tcx>) {
+        let pending: Vec<PendingViolation> = {
+            let mut guard = PENDING_VIOLATIONS
+                .lock()
+                .unwrap_or_else(|err| err.into_inner());
+            std::mem::take(&mut *guard)
+        };
+        let visited: BTreeSet<(u32, u32)> = {
+            let mut guard = VISITED_LITERALS
+                .lock()
+                .unwrap_or_else(|err| err.into_inner());
+            std::mem::take(&mut *guard)
+        };
+        let mut emitted: BTreeSet<(u32, u32)> = BTreeSet::new();
+        let surviving: Vec<PendingViolation> = pending
+            .into_iter()
+            .filter(|violation| {
+                let range = (violation.span.lo().0, violation.span.hi().0);
+                !visited.contains(&range) && emitted.insert(range)
+            })
+            .collect();
+        if surviving.is_empty() {
+            return;
+        }
+        let target_spans: Vec<_> = surviving.iter().map(|violation| violation.span).collect();
+        let best = find_enclosing_hir_ids(lint_context.tcx, &target_spans);
+        for (violation, &hir_id) in surviving.into_iter().zip(best.iter()) {
+            emit::emit_raw_string(lint_context, hir_id, violation.span, violation.suggestion);
+        }
     }
 }

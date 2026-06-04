@@ -91,6 +91,16 @@ fn take_literal_char(input: &str) -> Option<(&str, &str)> {
     Some(input.split_at(first.len_utf8()))
 }
 
+/// Build the raw-string replacement for a decoded literal body: the
+/// `r`-prefixed form with the smallest hash count that avoids a
+/// delimiter collision. Shared by the late `ExprKind::Lit` pass and the
+/// pre-expansion `format!`-template pass so the two emit byte-identical
+/// suggestions.
+pub(super) fn build_raw_string_suggestion(decoded: &str) -> String {
+    let hashes = "#".repeat(minimal_hash_count(decoded));
+    format!(r#"r{hashes}"{decoded}"{hashes}"#)
+}
+
 /// Smallest number of `#` characters needed so that the closing
 /// `"<n #s>` sequence does not appear inside `decoded`.
 ///

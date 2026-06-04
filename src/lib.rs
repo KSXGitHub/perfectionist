@@ -23,6 +23,7 @@ mod common;
 mod enclosing_hir;
 mod literal_scan;
 mod macro_path;
+mod macro_template;
 mod markdown;
 mod module_reparse;
 mod rules;

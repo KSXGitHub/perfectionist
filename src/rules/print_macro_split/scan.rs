@@ -11,8 +11,8 @@
 //! source newline and indentation it introduced.
 
 use rustc_ast::MacCall;
-use rustc_ast::token::{LitKind, TokenKind};
-use rustc_ast::tokenstream::{TokenStream, TokenTree};
+use rustc_ast::token::TokenKind;
+use rustc_ast::tokenstream::TokenTree;
 use rustc_span::Span;
 use rustc_span::source_map::SourceMap;
 
@@ -23,59 +23,6 @@ use crate::literal_scan::take_string_escape;
 /// one level past the line the invocation starts on; four spaces
 /// matches rustfmt's default.
 const INDENT_STEP: &str = "    ";
-
-/// Span of the first top-level argument that is, on its own, a single
-/// cooked string literal — the format template. Returns `None` when no
-/// such argument exists (a runtime-expression template, a `concat!`
-/// result, or a template that is the second argument behind a writer
-/// expression that itself isn't a lone string literal, etc.).
-///
-/// "First lone cooked string literal" is what makes the same scan work
-/// across the whole target set: `println!`'s template is the first
-/// argument, `write!`'s is the second (the writer comes first and
-/// isn't a bare literal), `log!`'s is the second (the level comes
-/// first), and `log::info!`'s is the first.
-pub(super) fn find_template_literal(tokens: &TokenStream) -> Option<Span> {
-    let mut argument_len: usize = 0;
-    let mut argument_lead_literal: Option<Span> = None;
-    let mut found: Option<Span> = None;
-    let finish_argument = |len: usize, lead: Option<Span>, found: &mut Option<Span>| {
-        if found.is_none() && len == 1 {
-            *found = lead;
-        }
-    };
-    for tree in tokens.iter() {
-        if is_top_level_comma(tree) {
-            finish_argument(argument_len, argument_lead_literal, &mut found);
-            argument_len = 0;
-            argument_lead_literal = None;
-            continue;
-        }
-        if argument_len == 0 {
-            argument_lead_literal = cooked_str_literal_span(tree);
-        }
-        argument_len += 1;
-    }
-    finish_argument(argument_len, argument_lead_literal, &mut found);
-    found
-}
-
-fn is_top_level_comma(tree: &TokenTree) -> bool {
-    matches!(tree, TokenTree::Token(token, _) if token.kind == TokenKind::Comma)
-}
-
-fn cooked_str_literal_span(tree: &TokenTree) -> Option<Span> {
-    let TokenTree::Token(token, _) = tree else {
-        return None;
-    };
-    let TokenKind::Literal(literal) = token.kind else {
-        return None;
-    };
-    // Cooked (`"..."`) only. A raw string (`r"..."`) treats `\` as an
-    // ordinary character, so the escape-aware fold below must never run
-    // over one.
-    matches!(literal.kind, LitKind::Str).then_some(token.span)
-}
 
 /// Build the `(call_span, replacement)` for the wrapped,
 /// continuation-folded form, or `None` if the invocation should be
@@ -110,7 +57,7 @@ pub(super) fn build_fold_suggestion(
         .strip_prefix('"')
         .and_then(|rest| rest.strip_suffix('"'))?;
     let folded_body = fold_template_body(body, &inner_indent)?;
-    let folded_literal = format!("\"{folded_body}\"");
+    let folded_literal = format!(r#""{folded_body}""#);
 
     // Splice the folded literal back into the delimited argument list,
     // keeping every other argument verbatim.

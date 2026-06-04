@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use super::*;
-use crate::model::ConfigDoc;
+use crate::model::{ConfigDoc, ConfigField, Optionality};
 
 fn fake_rule(name: &str) -> Rule {
     Rule {
@@ -143,7 +143,7 @@ fn page_links_nav_toggle_script_externally() {
     // out of sync with `NAV_TOGGLE_SCRIPT_FILENAME`) is caught.
     assert!(
         html.contains(&format!(
-            "<script src=\"{NAV_TOGGLE_SCRIPT_FILENAME}\"></script>"
+            r#"<script src="{NAV_TOGGLE_SCRIPT_FILENAME}"></script>"#
         )),
         "expected the nav script to be referenced via <script src>",
     );
@@ -172,7 +172,7 @@ fn page_links_each_stylesheet_individually() {
     // its cascade position matches the old single `<style>`.
     for &(name, _) in STYLESHEETS {
         assert!(
-            html.contains(&format!("<link rel=\"stylesheet\" href=\"{name}\">")),
+            html.contains(&format!(r#"<link rel="stylesheet" href="{name}">"#)),
             "expected a dedicated <link> for {name}",
         );
     }
@@ -180,13 +180,13 @@ fn page_links_each_stylesheet_individually() {
     // emits two, so a regression that drops the dark one must fail here.
     assert!(
         html.contains(&format!(
-            "<link rel=\"stylesheet\" href=\"{HIGHLIGHT_CSS_LIGHT_FILENAME}\">"
+            r#"<link rel="stylesheet" href="{HIGHLIGHT_CSS_LIGHT_FILENAME}">"#
         )),
         "expected a dedicated <link> for the light highlight CSS",
     );
     assert!(
         html.contains(&format!(
-            "<link rel=\"stylesheet\" href=\"{HIGHLIGHT_CSS_DARK_FILENAME}\">"
+            r#"<link rel="stylesheet" href="{HIGHLIGHT_CSS_DARK_FILENAME}">"#
         )),
         "expected a dedicated <link> for the dark highlight CSS",
     );
@@ -275,7 +275,7 @@ fn page_does_not_inline_the_anchor_icon_svg() {
 fn style_references_rule_anchor_icon() {
     // The CSS `url(...)` and the written filename must agree, or the
     // icon 404s.
-    let expected = format!("url(\"{RULE_ANCHOR_ICON_FILENAME}\")");
+    let expected = format!(r#"url("{RULE_ANCHOR_ICON_FILENAME}")"#);
     assert!(
         stylesheet("rules.css").contains(&expected),
         "rules.css must reference the anchor icon as {expected}",
@@ -337,7 +337,7 @@ fn page_links_theme_toggle_script_externally() {
     // src>`, not inlined — same contract as the nav script.
     assert!(
         html.contains(&format!(
-            "<script src=\"{THEME_TOGGLE_SCRIPT_FILENAME}\"></script>"
+            r#"<script src="{THEME_TOGGLE_SCRIPT_FILENAME}"></script>"#
         )),
         "expected the theme script to be referenced via <script src>",
     );
@@ -385,7 +385,7 @@ fn page_links_config_toggle_script_externally() {
     // scripts.
     assert!(
         html.contains(&format!(
-            "<script src=\"{CONFIG_TOGGLE_SCRIPT_FILENAME}\"></script>"
+            r#"<script src="{CONFIG_TOGGLE_SCRIPT_FILENAME}"></script>"#
         )),
         "expected the config-toggle script to be referenced via <script src>",
     );
@@ -460,7 +460,7 @@ fn page_does_not_inline_theme_icon_svgs() {
     let settings = stylesheet("settings.css");
     for (name, _) in THEME_ICONS {
         assert!(
-            settings.contains(&format!("url(\"{name}\")")),
+            settings.contains(&format!(r#"url("{name}")"#)),
             "settings.css must reference the theme icon {name} as a mask",
         );
     }
@@ -578,4 +578,30 @@ fn nav_toggle_script_is_a_single_iife() {
     // a future edit can't reintroduce the same bug silently.
     assert_eq!(NAV_TOGGLE_SCRIPT.matches("(function () {").count(), 1);
     assert_eq!(NAV_TOGGLE_SCRIPT.matches("})();").count(), 1);
+}
+
+#[test]
+fn config_section_keeps_both_quotes_around_the_dylint_toml_key() {
+    // Regression guard: the `["<key>"]` TOML table header is built from
+    // two quote-bearing string fragments in `config_section`. A
+    // value-dropping raw-string rewrite of either (e.g. `r#"[""#`
+    // mistyped as `r#"["#`, which parses as `[` and loses the quote)
+    // silently renders `[key"]`. Assert both quotes survive around the
+    // key. Only rules with at least one field render this header, so the
+    // `fake_rule` fixtures elsewhere never covered it.
+    let config = ConfigDoc {
+        key: "perfectionist::demo".to_owned(),
+        fields: vec![ConfigField {
+            name: "some_field".to_owned(),
+            type_label: "bool".to_owned(),
+            doc_markdown: String::new(),
+            optionality: Optionality::Optional,
+        }],
+        custom_types: Vec::new(),
+    };
+    let html = crate::render::config::config_section(&config).into_string();
+    assert!(
+        html.contains("[&quot;perfectionist::demo&quot;]"),
+        "config heading must wrap the key in both quotes, got: {html}",
+    );
 }

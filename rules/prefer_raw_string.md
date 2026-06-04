@@ -15,13 +15,28 @@ and `\'`. The autofix rewrites the literal to the raw form
 `r"..."` / `r#"..."#`, picking the smallest hash count that
 avoids a delimiter collision.
 
-This includes literals passed as arguments to macros such as
-`println!`, `format!`, `vec!`, and `assert!`. Suppress per
-call site with `#[allow(perfectionist::prefer_raw_string)]`
-when the regular form is deliberately preferred.
+Literals inside macro invocations are covered too: every string
+literal in a macro call, whatever its position — including a
+`format!`-family template that contains a `{...}` placeholder. The
+rewrite is value-preserving (a raw string still parses
+placeholders, and `{{` / `}}` survive verbatim), so the literal's
+role doesn't matter. Suppress a site where the regular form is
+deliberately preferred.
 
-Pattern-position literals (e.g. `match s { "C:\\path" => ... }`)
-are out of scope — the rule only visits expression literals.
+That includes literals a macro uses for their *source spelling*
+rather than their value, such as `stringify!` and `dbg!`, where
+the raw form has the same value but a different reflected text.
+This is intentional: code whose behaviour depends on a literal's
+exact spelling instead of its value is rare and a code smell;
+suppress it per site with
+`#[expect(perfectionist::prefer_raw_string)]`.
+
+Pattern-position literals in ordinary code
+(e.g. `match s { "C:\\path" => ... }`) are out of scope; only
+expression-position literals are rewritten. A literal written as a
+pattern *inside a macro call* (e.g. `matches!(s, "C:\\path")`) is
+rewritten anyway, since a literal's position isn't distinguished
+inside a macro.
 
 Whitespace and control-character escapes (`\n`, `\t`, `\r`,
 `\0`) and Unicode escapes (`\x..`, `\u{..}`) are exempt — a

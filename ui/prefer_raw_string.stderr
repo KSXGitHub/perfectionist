@@ -42,5 +42,41 @@ warning: string literal uses escapes that a raw string would avoid
 LL |     println!("path: /"foo/"");
    |              ^^^^^^^^^^^^^^^ help: use a raw string: `r#"path: "foo""#`
 
-warning: 7 warnings emitted
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:54:14
+   |
+LL |     println!("path: /"{}/"", "x");
+   |              ^^^^^^^^^^^^^^ help: use a raw string: `r#"path: "{}""#`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:72:16
+   |
+LL |     assert_eq!("a/"b".len(), 3);
+   |                ^^^^^^ help: use a raw string: `r#"a"b"#`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:90:18
+   |
+LL |     let _ = dbg!("a/"b");
+   |                  ^^^^^^ help: use a raw string: `r#"a"b"#`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:48:21
+   |
+LL |     let _ = format!("url(/"{name}/")");
+   |                     ^^^^^^^^^^^^^^^^^ help: use a raw string: `r#"url("{name}")"#`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:64:30
+   |
+LL |     assert_eq!(value, value, "v = /"{value}/"");
+   |                              ^^^^^^^^^^^^^^^^^ help: use a raw string: `r#"v = "{value}""#`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:80:24
+   |
+LL |     let _ = stringify!("a/"b");
+   |                        ^^^^^^ help: use a raw string: `r#"a"b"#`
+
+warning: 13 warnings emitted
 

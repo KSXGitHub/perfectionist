@@ -105,7 +105,7 @@ fn lang_class_attr(lang: &str) -> String {
             char.is_ascii_alphanumeric() || matches!(char, '_' | '-' | '+' | '#' | '.')
         });
     if safe {
-        format!(" class=\"language-{lang}\"")
+        format!(r#" class="language-{lang}""#)
     } else {
         String::new()
     }
