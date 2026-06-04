@@ -13,7 +13,7 @@
 // lint fires but withholds an autofix.
 
 // `import_grouping` (active by default) is allowed here: under its
-// `grouped` style the cfg-gated import forms a trailing group, which
+// `multi_block` style the cfg-gated import forms a trailing group, which
 // this fixture places first to exercise granularity's cfg handling.
 #[allow(perfectionist::import_grouping, reason = "exercises import_granularity")]
 mod m {

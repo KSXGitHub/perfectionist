@@ -1,4 +1,4 @@
-warning: blank lines split the imports; this project keeps them in a single group
+warning: blank lines split the imports; this project keeps them in a single block
   --> $DIR/fixture.rs:22:1
    |
 LL | / use std::time::Duration;

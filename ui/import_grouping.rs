@@ -7,7 +7,7 @@
     reason = "ui fixture"
 )]
 
-// Default style is `grouped`: imports partitioned into std, internal,
+// Default style is `multi_block`: imports partitioned into std, internal,
 // then third-party groups, each separated by exactly one blank line.
 // A `#[cfg(...)]`-gated import forms an always-last (trailing) group.
 //

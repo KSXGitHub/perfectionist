@@ -21,9 +21,9 @@ pub(super) fn replacement(
 ) -> String {
     let ordered: Vec<&UseStmt<'_>> = match style {
         // Keep source order; the fix only collapses blank lines.
-        Style::SingleGroup => stmts.iter().collect(),
+        Style::SingleBlock => stmts.iter().collect(),
         // Stable-partition by group rank; order within a group stands.
-        Style::Grouped => {
+        Style::MultiBlock => {
             let mut ordered: Vec<&UseStmt<'_>> = stmts.iter().collect();
             ordered.sort_by_key(|stmt| stmt.rank);
             ordered
@@ -34,9 +34,9 @@ pub(super) fn replacement(
     for (index, stmt) in ordered.iter().enumerate() {
         if index > 0 {
             let blanks = match style {
-                Style::SingleGroup => 0,
-                Style::Grouped if ordered[index - 1].rank == stmt.rank => 0,
-                Style::Grouped => blank_line_count,
+                Style::SingleBlock => 0,
+                Style::MultiBlock if ordered[index - 1].rank == stmt.rank => 0,
+                Style::MultiBlock => blank_line_count,
             };
             // One newline ends the previous statement; `blanks` more
             // produce that many empty lines; then the shared indent.

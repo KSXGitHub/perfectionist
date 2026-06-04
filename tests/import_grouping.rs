@@ -1,5 +1,5 @@
 //! UI tests for `import_grouping`'s configuration knobs. The
-//! default-config (`style = "grouped"`) sweep lives in
+//! default-config (`style = "multi_block"`) sweep lives in
 //! `ui/import_grouping.rs` and is picked up by `tests/ui.rs`; these
 //! tests each point at their own one-fixture directory under
 //! `ui-toml/import_grouping/` and pass a per-rule `dylint.toml` to
@@ -56,14 +56,14 @@ fn run(src_base: &str, config: RuleConfig) {
 }
 
 #[test]
-fn single_group_collapses_blank_lines() {
-    // Under `style = "single_group"`, every blank line between imports
+fn single_block_collapses_blank_lines() {
+    // Under `style = "single_block"`, every blank line between imports
     // is flagged and the block is re-rendered as one contiguous run in
     // source order.
     run(
-        "ui-toml/import_grouping/single_group",
+        "ui-toml/import_grouping/single_block",
         RuleConfig {
-            style: Some("single_group"),
+            style: Some("single_block"),
             ..Default::default()
         },
     );

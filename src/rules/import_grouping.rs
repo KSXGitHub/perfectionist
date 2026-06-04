@@ -22,9 +22,9 @@ declare_tool_lint! {
     ///
     /// Enforces a single project-wide *grouping* style for the run of
     /// `use` statements at the top of a module body, chosen via `style`:
-    /// - `single_group` — every `use` sits in one contiguous block with
+    /// - `single_block` — every `use` sits in one contiguous block with
     ///   no blank lines between imports.
-    /// - `grouped` (default) — imports are partitioned into ordered
+    /// - `multi_block` (default) — imports are partitioned into ordered
     ///   groups separated by exactly `blank_line_count` blank lines. The
     ///   default group set, in order, is std (`std` / `core` / `alloc`),
     ///   internal (`super` / `self` / `crate`), then third-party (every
@@ -49,7 +49,7 @@ declare_tool_lint! {
     ///
     /// ### Example
     ///
-    /// #### Style: Grouped (default)
+    /// #### Style: Multi block (default)
     ///
     /// **Avoid:**
     ///
@@ -69,7 +69,7 @@ declare_tool_lint! {
     /// use clap::Parser;
     /// ```
     ///
-    /// #### Style: Single group
+    /// #### Style: Single block
     ///
     /// **Avoid:**
     ///
@@ -94,8 +94,8 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. `grouped` is the shipped baseline; a project that
-/// prefers one contiguous block sets `style = "single_group"` in
+/// Active by default. `multi_block` is the shipped baseline; a project
+/// that prefers one contiguous block sets `style = "single_block"` in
 /// `dylint.toml`. Read by [`register_pass`]; gen-docs picks the constant
 /// up to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
@@ -322,7 +322,7 @@ impl ImportGrouping {
         run: &[UseStmt<'_>],
         violations: &mut Vec<Pending>,
     ) {
-        // A run of one statement is a single group either way, so it
+        // A run of one statement is a single block either way, so it
         // can never violate.
         if run.len() < 2 {
             return;
@@ -351,12 +351,13 @@ impl ImportGrouping {
 
         // A comment sitting between two statements is dropped by the
         // re-render (only each statement's own text is reproduced) and,
-        // under `grouped`, may end up describing a statement that moved.
-        // A leading comment immediately above the first statement is left
-        // in place by the rewrite but is stranded above a *different*
-        // statement when `grouped` reorders the first one downward. Either
-        // way, drop to `MaybeIncorrect` so the fix isn't applied unreviewed.
-        let first_statement_moves = matches!(self.config.style, Style::Grouped)
+        // under `multi_block`, may end up describing a statement that
+        // moved. A leading comment immediately above the first statement
+        // is left in place by the rewrite but is stranded above a
+        // *different* statement when `multi_block` reorders the first one
+        // downward. Either way, drop to `MaybeIncorrect` so the fix isn't
+        // applied unreviewed.
+        let first_statement_moves = matches!(self.config.style, Style::MultiBlock)
             && run.iter().any(|stmt| stmt.rank < first.rank);
         let applicability = if self.run_has_interstatement_comment(lint_context, run)
             || (first_statement_moves && self.has_leading_comment(lint_context, first))
@@ -416,10 +417,10 @@ impl ImportGrouping {
 
     fn message(&self) -> &'static str {
         match self.config.style {
-            Style::SingleGroup => {
-                "blank lines split the imports; this project keeps them in a single group"
+            Style::SingleBlock => {
+                "blank lines split the imports; this project keeps them in a single block"
             }
-            Style::Grouped => "imports are not partitioned into ordered groups",
+            Style::MultiBlock => "imports are not partitioned into ordered groups",
         }
     }
 }

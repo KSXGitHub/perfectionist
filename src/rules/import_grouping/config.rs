@@ -10,13 +10,13 @@
 pub(super) enum Style {
     /// Every `use` statement sits in one contiguous block, with no
     /// blank lines between imports.
-    SingleGroup,
+    SingleBlock,
     /// Imports are partitioned into ordered groups separated by exactly
     /// `blank_line_count` blank lines. The default group set is
     /// std (`std` / `core` / `alloc`), internal (`super` / `self` /
     /// `crate`), and third-party (every other crate).
     #[default]
-    Grouped,
+    MultiBlock,
 }
 
 /// One of the three groups a `use` statement is classified into. The
@@ -48,7 +48,7 @@ pub(super) enum CfgBlockHandling {
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 pub(super) struct Config {
-    /// Partitioning style to enforce. Defaults to `grouped`.
+    /// Partitioning style to enforce. Defaults to `multi_block`.
     pub(super) style: Style,
     /// The order the groups appear in, top to bottom. Defaults to
     /// `["std", "internal", "thirdparty"]`.
@@ -65,7 +65,7 @@ pub(super) struct Config {
     /// `trailing`.
     pub(super) cfg_block_handling: CfgBlockHandling,
     /// Exact number of blank lines separating adjacent groups (strict
-    /// equality). Defaults to `1`. Ignored under `single_group`.
+    /// equality). Defaults to `1`. Ignored under `single_block`.
     pub(super) blank_line_count: usize,
 }
 
