@@ -1,0 +1,67 @@
+//! UI tests for `clap_help_no_markdown`'s configuration knobs. The
+//! default-config sweep lives in `ui/clap_help_no_markdown.rs` and is
+//! picked up by `tests/ui.rs`; the tests here point at fixture
+//! directories under `ui-toml/clap_help_no_markdown/` and pass a
+//! per-rule `dylint.toml` table.
+//!
+//! `Test::dylint_toml` sets the process-global `DYLINT_TOML` env var
+//! for the duration of `run_tests`, so the `#[test]`s serialise on a
+//! shared [`Mutex`] to avoid clobbering each other.
+
+use std::collections::BTreeMap;
+use std::sync::Mutex;
+
+const LINT_NAME: &str = "perfectionist::clap_help_no_markdown";
+
+static SERIAL: Mutex<()> = Mutex::new(());
+
+/// The rule's user-facing configuration shape, mirrored here for
+/// serialisation, kept separate from the lint's private `Config`.
+#[derive(Default, serde::Serialize)]
+struct RuleConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    forbid: Option<Vec<&'static str>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    extra_forbid: Option<Vec<&'static str>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    override_keys: Option<Vec<&'static str>>,
+}
+
+fn dylint_toml(config: RuleConfig) -> String {
+    let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
+    toml::to_string(&table).expect("serialise rule config as dylint.toml")
+}
+
+fn run(src_base: &str, config: RuleConfig) {
+    let _serial = SERIAL.lock().unwrap_or_else(|err| err.into_inner());
+    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), src_base)
+        .dylint_toml(dylint_toml(config))
+        .run();
+}
+
+#[test]
+fn extra_forbid_flags_bold_italic_and_lists() {
+    // The opt-in extras are off by default; enabling all three flags
+    // `**bold**`, `*italic*`, and list markers that the default set
+    // leaves alone.
+    run(
+        "ui-toml/clap_help_no_markdown/extra_forbid",
+        RuleConfig {
+            extra_forbid: Some(vec!["bold", "italic", "list"]),
+            ..RuleConfig::default()
+        },
+    );
+}
+
+#[test]
+fn forbid_subset_flags_only_listed_constructs() {
+    // Narrowing `forbid` to just `code_span` leaves an inline link
+    // unflagged while still catching the code span.
+    run(
+        "ui-toml/clap_help_no_markdown/forbid_subset",
+        RuleConfig {
+            forbid: Some(vec!["code_span"]),
+            ..RuleConfig::default()
+        },
+    );
+}

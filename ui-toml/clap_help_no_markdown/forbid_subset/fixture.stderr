@@ -1,0 +1,10 @@
+warning: a code span in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/fixture.rs:14:11
+   |
+LL |     /// A `code` span and [a link](https://example.com) together.
+   |           ^^^^^^ help: remove the code span: `code`
+   |
+   = note: `#[warn(perfectionist::clap_help_no_markdown)]` on by default
+
+warning: 1 warning emitted
+

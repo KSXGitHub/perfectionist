@@ -88,10 +88,10 @@ Six rules in this catalogue scan a slice of markdown:
 - `perfectionist::bare_identifier_reference` (`src/rules/bare_identifier_reference.rs`) —
   distinguishes `` `Foo` `` (candidate) from `` [`Foo`] ``, `[Foo]`,
   `[Foo](path)`, `[Foo][id]` (already linked).
-- [`clap-help-no-markdown`](./clap-help-no-markdown.md) — classifies
-  every banned construct (links, code spans, code blocks, HTML
-  tags, headings, reference definitions) and emits a per-construct
-  diagnostic.
+- `perfectionist::clap_help_no_markdown`
+  (`src/rules/clap_help_no_markdown.rs`) — classifies every banned
+  construct (links, code spans, code blocks, HTML tags, headings,
+  reference definitions) and emits a per-construct diagnostic.
 - `perfectionist::bare_issue_reference` (`src/rules/bare_issue_reference.rs`)
   — skips code regions, existing links, and reference-link
   definitions before flagging bare `#123` tokens.
@@ -139,23 +139,32 @@ One `take_*` per CommonMark construct the catalogue recognises:
 - `take_link` — `[text](dest)`, `[text][id]`, `[text]`, `` [`Type`] ``.
 - `take_autolink` — `<https://...>`, `<mailto:...>`.
 - `take_reference_definition` — `[id]: dest` at block start.
-- `take_html_tag` — `<tag ...>` and `</tag>`.
-- `take_heading` — ATX (`# h`) and Setext (`h\n===`).
+- `take_html_tag` — `<tag ...>`, `</tag>`, comments, declarations.
+- `take_atx_heading` / `detect_setext_headings` — ATX (`# h`) and
+  Setext (`h\n===`) headings.
+- `take_emphasis` / `take_list_marker` — `**bold**` / `*italic*` and
+  bullet / ordered list markers, behind
+  `perfectionist::clap_help_no_markdown`'s opt-in `extra_forbid` knob.
 
-Each combinator returns the matched substring and the remainder
-per the canonical shapes in "Parser style". Rust-specific
-extraction layered on top — `bare_identifier_reference` pulling an
-identifier out of a `take_code_span` result, `bare_url` pulling a
-scheme out of `take_autolink` failure-fallback prose — lives in
-each rule's own module, not in `src/markdown.rs`.
+The full Tier A classifier `classify_constructs` (used by
+`perfectionist::clap_help_no_markdown`) stitches these into one walk
+that returns each construct's byte range and kind. Each combinator
+returns the matched substring and the remainder per the canonical
+shapes in "Parser style". Rust-specific extraction layered on top —
+`bare_identifier_reference` pulling an identifier out of a
+`take_code_span` result, `bare_url` pulling a scheme out of
+`take_autolink` failure-fallback prose — lives in each rule's own
+module, not in `src/markdown.rs`.
 
 ### Why hand-rolled rather than a library
 
 A Dylint plugin loads into rustc's process; every transitive crate
-is paid for at lint time. The grammar these six rules need is
-seven constructs, no inline-emphasis precedence, no link-reference
-resolution across the whole comment. No library hits that target
-without overshooting:
+is paid for at lint time. The grammar these rules need is a fixed
+set of constructs (the only emphasis handling is
+`perfectionist::clap_help_no_markdown`'s pragmatic, opt-in
+`**bold**` / `*italic*` matcher, not full CommonMark flanking
+precedence) and no link-reference resolution across the whole
+comment. No library hits that target without overshooting:
 
 - **`pulldown_cmark`** — the de facto Rust choice. Event-based,
   carries source offsets via `OffsetIter`, MIT, fast, used by
@@ -204,14 +213,16 @@ still be custom code in this repo.
 
 ### Where to revisit this decision
 
-The decision is per-helper, not per-codebase. If, during
-implementation of `clap_help_no_markdown`, the HTML-tag and
-reference-definition combinators turn out to dominate the helper's
-complexity — they cover constructs none of the other five rules
-need — that single rule may switch to a vendored `pulldown_cmark`
-walk while the other five continue on the hand-rolled helper.
-Open a follow-up PR; do not silently expand `src/markdown.rs`'s
-dependency surface for the other consumers.
+The decision is per-helper, not per-codebase.
+`perfectionist::clap_help_no_markdown` — the most demanding consumer —
+has since been implemented on the hand-rolled scanner: its HTML-tag,
+heading, emphasis, and list combinators were added to `src/markdown.rs`
+(see `classify_constructs`) without dominating the helper's complexity
+or forcing a library, so no switch was needed. Should a future
+construct tip that balance for one rule, that rule may switch to a
+vendored `pulldown_cmark` walk while the others continue on the
+hand-rolled helper. Open a follow-up PR; do not silently expand
+`src/markdown.rs`'s dependency surface for the other consumers.
 
 ## Reaching every module (source-layout rules)
 

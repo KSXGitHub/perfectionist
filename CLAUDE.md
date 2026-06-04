@@ -353,9 +353,9 @@ broken or a stylistic preference:
   Examples in this repository:
   `perfectionist::unknown_perfectionist_lints` (a typo in
   `#[allow(perfectionist::...)]` silently fails to suppress
-  anything) and `planned-rules/clap-help-no-markdown.md`
-  (markdown leaks into the terminal `--help` output as literal
-  syntax).
+  anything) and `perfectionist::clap_help_no_markdown`
+  (`src/rules/clap_help_no_markdown.rs`) (markdown leaks into the
+  terminal `--help` output as literal syntax).
 - **"Why restrict this?"** — use for every other rule. Most lints
   in this catalogue enforce stylistic preferences (em-dash usage,
   ellipsis form, derive choice, module layout, doc-comment

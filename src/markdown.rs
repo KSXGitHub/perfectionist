@@ -6,7 +6,11 @@
 //! - **Tier A — structural classification.** [`scan_skip_regions`]
 //!   produces a vector of byte-range skip regions the consumer
 //!   (`bare_url`, `bare_email`, `bare_issue_reference`) applies as a
-//!   post-filter before emitting diagnostics.
+//!   post-filter before emitting diagnostics. [`classify_constructs`]
+//!   is the richer Tier A entry point: it returns every construct's
+//!   byte range *and* its [`ConstructKind`], which
+//!   `clap_help_no_markdown` maps onto its forbidden-construct
+//!   categories.
 //! - **Tier B — code-region mask.** [`scan_code_regions`] returns only
 //!   the byte ranges of code spans and code blocks, for rules
 //!   (`unicode_ellipsis_in_docs`) that just need to exclude code from
@@ -14,8 +18,8 @@
 //!
 //! The implementation is a hand-written parser-combinator walk per
 //! the convention documented in
-//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`. Only the constructs
-//! the consuming rules need to skip are recognised:
+//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`. The recognised
+//! constructs are:
 //!
 //! - `` `...` `` code spans.
 //! - ` ``` ... ``` ` and `~~~ ... ~~~` fenced code blocks.
@@ -24,11 +28,11 @@
 //! - `[text](dest)` inline links.
 //! - `[text][id]` reference-style links.
 //! - `[id]: dest` reference-link definitions.
-//!
-//! Headings and HTML tags are not classified by this helper — neither
-//! is needed by the rules currently consuming it. The sibling
-//! catalogue file's combinator surface lists them as future
-//! extensions for `bare_identifier_reference` / `clap_help_no_markdown`.
+//! - `<tag ...>` / `</tag>` / `<!-- ... -->` HTML.
+//! - ATX (`# h`) and Setext (`h\n===`) headings.
+//! - `**bold**` / `*italic*` emphasis and bullet / ordered list
+//!   markers (only when [`classify_constructs`] is asked for them; see
+//!   [`ClassifyOptions`]).
 
 use std::ops::Range;
 
@@ -595,11 +599,36 @@ fn looks_like_uri_or_email(body: &str) -> bool {
     false
 }
 
+/// Which of the three CommonMark `[...]` link shapes a [`classify_link`]
+/// match is. `clap_help_no_markdown` reports each under a distinct
+/// "forbidden construct" category, so the discriminant is preserved
+/// rather than collapsed to a length.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum LinkForm {
+    /// `[text](dest)` — an inline link with a parenthesised
+    /// destination.
+    Inline,
+    /// `[text][id]` — a full reference link naming a separate
+    /// definition.
+    Reference,
+    /// `[text]` / `` [`Type`] `` — the collapsed / shortcut form with
+    /// no trailing destination. This is also the shape a rustdoc
+    /// intra-doc link wears.
+    Shortcut,
+}
+
 /// Take an inline link `[text](dest)` or reference link
 /// `[text][id]` / `[text]`. Returns the byte length spanning from the
 /// opening `[` through the closing `)` / `]` (or just `]` for the
 /// collapsed form).
 fn take_link(input: &str) -> Option<usize> {
+    classify_link(input).map(|(_, len)| len)
+}
+
+/// Like [`take_link`] but also reports which [`LinkForm`] matched. The
+/// length is identical; the form lets a structural-classification
+/// consumer distinguish the three link shapes.
+fn classify_link(input: &str) -> Option<(LinkForm, usize)> {
     let bytes = input.as_bytes();
     if bytes.first() != Some(&b'[') {
         return None;
@@ -656,15 +685,15 @@ fn take_link(input: &str) -> Option<usize> {
                 }
                 b'(' => paren_depth += 1,
                 b')' => paren_depth -= 1,
-                b'\n' => return Some(index),
+                b'\n' => return Some((LinkForm::Shortcut, index)),
                 _ => {}
             }
             end += 1;
         }
         if paren_depth == 0 {
-            return Some(end);
+            return Some((LinkForm::Inline, end));
         }
-        return Some(index);
+        return Some((LinkForm::Shortcut, index));
     }
     if index < bytes.len() && bytes[index] == b'[' {
         let mut end = index + 1;
@@ -672,10 +701,10 @@ fn take_link(input: &str) -> Option<usize> {
             end += 1;
         }
         if end < bytes.len() && bytes[end] == b']' {
-            return Some(end + 1);
+            return Some((LinkForm::Reference, end + 1));
         }
     }
-    Some(index)
+    Some((LinkForm::Shortcut, index))
 }
 
 /// Whether byte position `pos` of the input falls inside any of the
@@ -685,6 +714,450 @@ pub(crate) fn position_in_skip(skips: &[SkipRange], pos: usize) -> bool {
     skips
         .iter()
         .any(|range| pos >= range.start && pos < range.end)
+}
+
+/// One markdown construct classified by [`classify_constructs`], with
+/// its byte range in the scanned input.
+pub(crate) struct Construct {
+    pub(crate) range: Range<usize>,
+    pub(crate) kind: ConstructKind,
+}
+
+/// The kind of a [`Construct`] — the full Tier A structural taxonomy
+/// (see the "Markdown parsing" section of
+/// `planned-rules/IMPLEMENTATION_CONVENTIONS.md`). `clap_help_no_markdown`
+/// maps each kind onto a user-facing "forbidden construct" category and
+/// decides per kind whether to flag it.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum ConstructKind {
+    /// `` `code` `` inline code span.
+    CodeSpan,
+    /// Fenced or four-space-indented code block.
+    CodeBlock,
+    /// `[text](dest)` inline link.
+    InlineLink,
+    /// `[text][id]` full reference link.
+    ReferenceLink,
+    /// `[id]: dest` reference-link definition.
+    ReferenceDefinition,
+    /// `[text]` / `` [`Type`] `` collapsed link — the rustdoc
+    /// intra-doc-link shape.
+    IntraDocLink,
+    /// `<https://...>` / `<user@host>` autolink. Recognised so it is
+    /// not mistaken for an HTML tag; consuming rules treat it as
+    /// allowed.
+    Autolink,
+    /// `<tag ...>` / `</tag>` / `<!-- ... -->` raw HTML.
+    HtmlTag,
+    /// ATX (`# h`) or Setext (`h\n===`) heading.
+    Heading,
+    /// `**bold**` / `__bold__` strong emphasis.
+    Bold,
+    /// `*italic*` / `_italic_` emphasis.
+    Italic,
+    /// A bullet (`-`/`+`/`*`) or ordered (`1.`/`1)`) list marker.
+    List,
+}
+
+/// Which optional construct families [`classify_constructs`] scans for
+/// on top of the always-classified structural set. Emphasis and list
+/// detection are off unless a consumer asks for them, because their
+/// CommonMark rules are flanking-sensitive and the catalogue only needs
+/// them behind `clap_help_no_markdown`'s opt-in `extra_forbid` knob.
+#[derive(Clone, Copy, Default)]
+pub(crate) struct ClassifyOptions {
+    pub(crate) detect_emphasis: bool,
+    pub(crate) detect_lists: bool,
+}
+
+/// Tier A structural classification: walk `input` as a markdown
+/// fragment and return every recognised [`Construct`] in source order.
+///
+/// The walk shares the combinator surface and line-start bookkeeping of
+/// [`scan_skip_regions`]; the difference is that it records *what* each
+/// construct is, not just that it is a skip region. Code blocks, code
+/// spans, links, autolinks, reference definitions, HTML tags, and
+/// headings are always classified; emphasis and list markers only when
+/// `options` requests them.
+///
+/// Returned ranges are sorted by start byte. They are non-overlapping
+/// except that a Setext heading's underline never coincides with an
+/// inline construct, so the two families do not collide.
+pub(crate) fn classify_constructs(input: &str, options: ClassifyOptions) -> Vec<Construct> {
+    let mut out: Vec<Construct> = Vec::new();
+    let bytes = input.as_bytes();
+    let mut idx = 0;
+    let mut at_line_start = true;
+    while idx < bytes.len() {
+        let rest = &input[idx..];
+
+        if at_line_start {
+            if let Some(len) = take_indented_code_block(input, idx) {
+                out.push(construct(idx, len, ConstructKind::CodeBlock));
+                idx += len;
+                at_line_start = true;
+                continue;
+            }
+            if let Some(len) = take_fenced_code_block(rest) {
+                out.push(construct(idx, len, ConstructKind::CodeBlock));
+                idx += len;
+                at_line_start = true;
+                continue;
+            }
+            if let Some(len) = take_reference_definition(rest) {
+                out.push(construct(idx, len, ConstructKind::ReferenceDefinition));
+                idx += len;
+                at_line_start = true;
+                continue;
+            }
+            if let Some(len) = take_atx_heading(rest) {
+                out.push(construct(idx, len, ConstructKind::Heading));
+                idx += len;
+                // `take_atx_heading` stops before the line's `\n`, so
+                // the next byte is still on this line; let the normal
+                // newline handling below flip `at_line_start`.
+                at_line_start = false;
+                continue;
+            }
+            if options.detect_lists
+                && let Some(len) = take_list_marker(rest)
+            {
+                out.push(construct(idx, len, ConstructKind::List));
+                idx += len;
+                at_line_start = false;
+                continue;
+            }
+        }
+
+        match bytes[idx] {
+            b'`' => {
+                if let Some(len) = take_code_span(rest) {
+                    out.push(construct(idx, len, ConstructKind::CodeSpan));
+                    idx += len;
+                    at_line_start = false;
+                    continue;
+                }
+            }
+            b'<' => {
+                if let Some(len) = take_autolink(rest) {
+                    out.push(construct(idx, len, ConstructKind::Autolink));
+                    idx += len;
+                    at_line_start = false;
+                    continue;
+                }
+                if let Some(len) = take_html_tag(rest) {
+                    out.push(construct(idx, len, ConstructKind::HtmlTag));
+                    idx += len;
+                    at_line_start = false;
+                    continue;
+                }
+            }
+            b'[' => {
+                if let Some((form, len)) = classify_link(rest) {
+                    let kind = match form {
+                        LinkForm::Inline => ConstructKind::InlineLink,
+                        LinkForm::Reference => ConstructKind::ReferenceLink,
+                        LinkForm::Shortcut => ConstructKind::IntraDocLink,
+                    };
+                    out.push(construct(idx, len, kind));
+                    idx += len;
+                    at_line_start = false;
+                    continue;
+                }
+            }
+            b'*' | b'_' if options.detect_emphasis => {
+                if let Some((kind, len)) = take_emphasis(input, idx) {
+                    out.push(construct(idx, len, kind));
+                    idx += len;
+                    at_line_start = false;
+                    continue;
+                }
+            }
+            b'\n' => {
+                idx += 1;
+                at_line_start = true;
+                continue;
+            }
+            _ => {}
+        }
+
+        idx += utf8_char_len(bytes, idx);
+        at_line_start = false;
+    }
+
+    detect_setext_headings(input, &mut out);
+    out.sort_by_key(|construct| construct.range.start);
+    out
+}
+
+fn construct(start: usize, len: usize, kind: ConstructKind) -> Construct {
+    Construct {
+        range: start..start + len,
+        kind,
+    }
+}
+
+/// Take an ATX heading — up to three leading spaces, a run of one to
+/// six `#`, then a space / tab / end-of-line. Returns the byte length
+/// up to (not including) the terminating `\n`, so the heading range
+/// stays on a single rendered line and maps to a precise span.
+fn take_atx_heading(input: &str) -> Option<usize> {
+    let bytes = input.as_bytes();
+    let mut index = 0;
+    while index < 3 && index < bytes.len() && bytes[index] == b' ' {
+        index += 1;
+    }
+    if bytes.get(index) != Some(&b'#') {
+        return None;
+    }
+    let mut hashes = 0;
+    while index + hashes < bytes.len() && bytes[index + hashes] == b'#' {
+        hashes += 1;
+    }
+    if hashes > 6 {
+        return None;
+    }
+    let after = index + hashes;
+    if after < bytes.len() && bytes[after] != b' ' && bytes[after] != b'\t' && bytes[after] != b'\n'
+    {
+        return None;
+    }
+    let mut end = after;
+    while end < bytes.len() && bytes[end] != b'\n' {
+        end += 1;
+    }
+    Some(end)
+}
+
+/// Detect Setext headings — a non-blank text line immediately followed
+/// by an underline line of only `=` (level 1) or `-` (level 2). Records
+/// the underline line's range as a [`ConstructKind::Heading`]. Run as a
+/// separate line scan because Setext needs one line of look-back, which
+/// the forward inline walk does not carry. The underline of a `-`-only
+/// line preceded by a paragraph is a Setext heading in CommonMark (it
+/// wins over a thematic break), so this matches the spec while leaving a
+/// `---` preceded by a blank line — a thematic break — alone.
+fn detect_setext_headings(input: &str, out: &mut Vec<Construct>) {
+    let bytes = input.as_bytes();
+    let mut line_start = 0;
+    // Byte range of the previous line when it is a paragraph-text line
+    // eligible to be a Setext heading's text; `None` after a blank line,
+    // an underline, or a line already inside a recorded block construct.
+    let mut prev_text: Option<()> = None;
+    loop {
+        let mut line_end = line_start;
+        while line_end < bytes.len() && bytes[line_end] != b'\n' {
+            line_end += 1;
+        }
+        let line = &input[line_start..line_end];
+        let trimmed = line.trim();
+        let leading = line.len() - line.trim_start().len();
+        let is_underline = !trimmed.is_empty()
+            && leading <= 3
+            && (trimmed.bytes().all(|byte| byte == b'=')
+                || trimmed.bytes().all(|byte| byte == b'-'));
+        if is_underline && prev_text.is_some() {
+            if !range_overlaps(out, line_start..line_end) {
+                out.push(Construct {
+                    range: line_start..line_end,
+                    kind: ConstructKind::Heading,
+                });
+            }
+            prev_text = None;
+        } else if trimmed.is_empty() {
+            prev_text = None;
+        } else if range_overlaps(out, line_start..line_end) {
+            // Inside a code block / other recorded construct; not Setext
+            // text.
+            prev_text = None;
+        } else {
+            prev_text = Some(());
+        }
+        if line_end >= bytes.len() {
+            break;
+        }
+        line_start = line_end + 1;
+    }
+}
+
+fn range_overlaps(constructs: &[Construct], range: Range<usize>) -> bool {
+    constructs
+        .iter()
+        .any(|other| other.range.start < range.end && range.start < other.range.end)
+}
+
+/// Take a leading bullet (`-` / `+` / `*` then a space / tab) or
+/// ordered (`<digits>` then `.` / `)` then a space / tab) list marker.
+/// Returns the marker's byte length (through the delimiter, not its
+/// trailing space) so the rest of the list item is still scanned for
+/// inline constructs.
+fn take_list_marker(input: &str) -> Option<usize> {
+    let bytes = input.as_bytes();
+    let mut index = 0;
+    while index < 3 && index < bytes.len() && bytes[index] == b' ' {
+        index += 1;
+    }
+    match bytes.get(index) {
+        Some(b'-' | b'+' | b'*') => {
+            let next = bytes.get(index + 1);
+            if next == Some(&b' ') || next == Some(&b'\t') {
+                return Some(index + 1);
+            }
+            None
+        }
+        Some(byte) if byte.is_ascii_digit() => {
+            let mut end = index;
+            while end < bytes.len() && bytes[end].is_ascii_digit() {
+                end += 1;
+            }
+            if end < bytes.len() && (bytes[end] == b'.' || bytes[end] == b')') {
+                let next = bytes.get(end + 1);
+                if next == Some(&b' ') || next == Some(&b'\t') {
+                    return Some(end + 1);
+                }
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
+/// Take a raw-HTML construct beginning at `<`: an open / close tag, a
+/// self-closing tag, an HTML comment, a declaration (`<!...>`), or a
+/// processing instruction (`<?...?>`). Returns the total byte length.
+///
+/// The opening `<` must be followed by `/`, an ASCII letter, `!`, or
+/// `?` — so prose like `a < b` or `<3` is left alone. Quoted attribute
+/// values are skipped so a `>` inside them does not close the tag
+/// early. The caller tries [`take_autolink`] first, so a `<https://...>`
+/// autolink never reaches here.
+fn take_html_tag(input: &str) -> Option<usize> {
+    let bytes = input.as_bytes();
+    if bytes.first() != Some(&b'<') {
+        return None;
+    }
+    if input[1..].starts_with("!--") {
+        return input.find("-->").map(|pos| pos + 3);
+    }
+    if bytes.get(1) == Some(&b'!') {
+        return input[1..].find('>').map(|pos| 1 + pos + 1);
+    }
+    if bytes.get(1) == Some(&b'?') {
+        return input.find("?>").map(|pos| pos + 2);
+    }
+    let mut index = 1;
+    if bytes.get(index) == Some(&b'/') {
+        index += 1;
+    }
+    if !bytes.get(index).is_some_and(u8::is_ascii_alphabetic) {
+        return None;
+    }
+    index += 1;
+    while bytes
+        .get(index)
+        .is_some_and(|byte| byte.is_ascii_alphanumeric() || *byte == b'-')
+    {
+        index += 1;
+    }
+    while index < bytes.len() {
+        match bytes[index] {
+            b'>' => return Some(index + 1),
+            quote @ (b'"' | b'\'') => {
+                index += 1;
+                while index < bytes.len() && bytes[index] != quote {
+                    index += 1;
+                }
+                if index >= bytes.len() {
+                    return None;
+                }
+                index += 1;
+            }
+            b'<' => return None,
+            b'\n' => {
+                if index + 1 < bytes.len() && bytes[index + 1] == b'\n' {
+                    return None;
+                }
+                index += 1;
+            }
+            _ => index += 1,
+        }
+    }
+    None
+}
+
+/// Take a `*` / `_` emphasis run at `idx`. Returns the matched
+/// [`ConstructKind::Bold`] (run length ≥ 2) or
+/// [`ConstructKind::Italic`] (run length 1) and the total byte length
+/// through the closing delimiter.
+///
+/// This is a pragmatic matcher, not a full CommonMark flanking
+/// resolver: it requires non-blank content that does not begin or end
+/// with whitespace and a closing run at least as long as the opening
+/// one, on the same paragraph. `_` additionally requires a word
+/// boundary on both sides so intraword underscores (`foo_bar`) do not
+/// register. The imprecision is acceptable because emphasis detection
+/// is only reachable through `clap_help_no_markdown`'s opt-in
+/// `extra_forbid` knob.
+fn take_emphasis(input: &str, idx: usize) -> Option<(ConstructKind, usize)> {
+    let bytes = input.as_bytes();
+    let marker = bytes[idx];
+    if marker == b'_' && idx > 0 && is_word_byte(bytes[idx - 1]) {
+        return None;
+    }
+    let mut run = 0;
+    while idx + run < bytes.len() && bytes[idx + run] == marker {
+        run += 1;
+    }
+    let open = run.min(2);
+    let content_start = idx + open;
+    match bytes.get(content_start) {
+        None => return None,
+        Some(b' ' | b'\t' | b'\n') => return None,
+        Some(_) => {}
+    }
+    let mut cursor = content_start;
+    while cursor < bytes.len() {
+        match bytes[cursor] {
+            b'\n' => {
+                if cursor + 1 < bytes.len() && bytes[cursor + 1] == b'\n' {
+                    return None;
+                }
+                cursor += 1;
+            }
+            byte if byte == marker => {
+                let mut close_run = 0;
+                while cursor + close_run < bytes.len() && bytes[cursor + close_run] == marker {
+                    close_run += 1;
+                }
+                if close_run >= open {
+                    if matches!(bytes[cursor - 1], b' ' | b'\t') {
+                        return None;
+                    }
+                    if marker == b'_'
+                        && bytes
+                            .get(cursor + close_run)
+                            .is_some_and(|byte| is_word_byte(*byte))
+                    {
+                        return None;
+                    }
+                    let total = (cursor - idx) + open;
+                    let kind = if open >= 2 {
+                        ConstructKind::Bold
+                    } else {
+                        ConstructKind::Italic
+                    };
+                    return Some((kind, total));
+                }
+                cursor += close_run;
+            }
+            _ => cursor += 1,
+        }
+    }
+    None
+}
+
+fn is_word_byte(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || byte == b'_'
 }
 
 #[cfg(test)]
