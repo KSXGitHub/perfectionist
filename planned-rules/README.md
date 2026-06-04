@@ -156,11 +156,6 @@ pattern that several rules call out by reference — live in
 ### Documentation
 - [`em-dash-prose.md`](./em-dash-prose.md) — flag em dashes in doc comments
   and string literals reachable from `format!` / `println!` style macros.
-- [`unpinned-repo-ref.md`](./unpinned-repo-ref.md) — require URLs that
-  reference files in a hosted git repository (GitHub, GitLab,
-  Bitbucket, Codeberg / Gitea, sourcehut, …) to be pinned to a
-  commit SHA, with optional acceptance of tag refs. Branch refs
-  like `/blob/main/...` are rejected.
 - [`commit-id-length.md`](./commit-id-length.md) — enforce a
   consistent SHA length for commit IDs that appear in forge URLs.
   Covers file references, single-commit views (`/commit/<sha>`),
