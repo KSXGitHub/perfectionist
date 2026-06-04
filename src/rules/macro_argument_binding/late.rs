@@ -5,13 +5,12 @@
 //! correctly. The walk itself is provided by
 //! [`crate::enclosing_hir::find_enclosing_hir_ids`].
 
+use super::{MACRO_ARGUMENT_BINDING, PENDING_VIOLATIONS};
+use crate::enclosing_hir::find_enclosing_hir_ids;
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass};
 use rustc_span::Span;
-
-use super::{MACRO_ARGUMENT_BINDING, PENDING_VIOLATIONS};
-use crate::enclosing_hir::find_enclosing_hir_ids;
 
 pub(super) struct MacroArgumentBindingLate;
 

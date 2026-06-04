@@ -4,10 +4,9 @@
 //! shape?". A `false` answer drives [`super::render`] to produce the
 //! canonical replacement.
 
-use std::collections::HashSet;
-
 use super::config::{SelfMerge, Style};
 use super::model::{LeafItem, StmtInfo, TopKind, has_bare_item_dual, has_self_dual};
+use std::collections::HashSet;
 
 pub(super) fn is_compliant(
     style: Style,

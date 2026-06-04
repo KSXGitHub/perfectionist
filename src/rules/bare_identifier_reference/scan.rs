@@ -11,9 +11,8 @@
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md` leaves to each
 //! consuming rule.
 
-use std::ops::Range;
-
 use crate::markdown::scan_code_span_candidates;
+use std::ops::Range;
 
 /// One intra-doc-link candidate found in a doc-comment chunk: a bare
 /// code span whose body is a single Rust identifier.

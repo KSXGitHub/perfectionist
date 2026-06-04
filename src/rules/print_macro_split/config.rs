@@ -7,11 +7,9 @@
 //! deliberately absent — a one-variant `style` enum would carry no
 //! information. It returns when the `multiple_calls` half lands.
 
-use std::collections::BTreeSet;
-
-use rustc_ast::Path;
-
 use crate::macro_path::{matches_any, parse_path_list};
+use rustc_ast::Path;
+use std::collections::BTreeSet;
 
 const CONFIG_KEY: &str = "perfectionist::print_macro_split";
 

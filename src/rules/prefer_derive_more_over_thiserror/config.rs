@@ -4,9 +4,8 @@
 //! pass state, and the path matcher shared by the
 //! [`scan`](super::scan) and [`detect`](super::detect) submodules.
 
-use std::collections::{BTreeMap, BTreeSet};
-
 use rustc_span::Symbol;
+use std::collections::{BTreeMap, BTreeSet};
 
 const CONFIG_KEY: &str = "perfectionist::prefer_derive_more_over_thiserror";
 

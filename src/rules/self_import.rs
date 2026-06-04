@@ -22,6 +22,9 @@
 //! gates intact (parsing does not strip cfg, unlike the post-expansion
 //! AST). The sibling `import_granularity` rule shares the same machinery.
 
+use crate::common::{DefaultState, resolved_state};
+use crate::enclosing_hir::find_enclosing_hir_ids;
+use crate::module_reparse::for_each_module_file;
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_ast::visit::{self, Visitor};
 use rustc_ast::{Block, Item, ItemKind, ModKind, Stmt, StmtKind};
@@ -30,10 +33,6 @@ use rustc_hir::HirId;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Span;
-
-use crate::common::{DefaultState, resolved_state};
-use crate::enclosing_hir::find_enclosing_hir_ids;
-use crate::module_reparse::for_each_module_file;
 
 mod combined;
 mod forbid;

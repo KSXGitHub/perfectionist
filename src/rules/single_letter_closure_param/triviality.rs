@@ -16,12 +16,11 @@
 //! The driver in [`super`] composes these helpers; this module
 //! holds the predicates themselves.
 
+use crate::common::binding_hir_id;
 use rustc_hir as hir;
 use rustc_hir::def::Res;
 use rustc_lint::LateContext;
 use rustc_span::Symbol;
-
-use crate::common::binding_hir_id;
 
 /// If `body.value` is a single expression — either directly or
 /// wrapped in a block with no statements — return that

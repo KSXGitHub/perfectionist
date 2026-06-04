@@ -4,12 +4,10 @@
 //! [`Display`](std::fmt::Display) impl produces an actionable message
 //! at the CLI.
 
+use super::PACKAGE_NAME;
+use derive_more::Display;
 use std::io;
 use std::path::PathBuf;
-
-use derive_more::Display;
-
-use super::PACKAGE_NAME;
 
 #[derive(Display, Debug)]
 pub(crate) enum RuntimeError {

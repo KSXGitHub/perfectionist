@@ -5,15 +5,13 @@
 //! from the bundled theme and written beside `index.html` as its own
 //! linked stylesheet.
 
-use std::sync::LazyLock;
-
+use crate::render::file_tree::{self, FILE_TREE_LANG};
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Tag, TagEnd, html as cmark_html};
+use std::sync::LazyLock;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{ClassStyle, ClassedHTMLGenerator, css_for_theme_with_class_style};
 use syntect::parsing::SyntaxSet;
 use syntect::util::LinesWithEndings;
-
-use crate::render::file_tree::{self, FILE_TREE_LANG};
 
 pub(crate) fn markdown_to_html(markdown: &str) -> String {
     let mut options = Options::empty();

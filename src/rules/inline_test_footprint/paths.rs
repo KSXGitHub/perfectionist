@@ -1,10 +1,9 @@
 //! Separate-target detection and the extraction-target path arithmetic
 //! the inline-style help text uses.
 
-use std::path::{Path, PathBuf};
-
 use rustc_lint::{LateContext, LintContext};
 use rustc_span::{FileName, SourceFile};
+use std::path::{Path, PathBuf};
 
 /// Whether the crate currently being compiled is a *separate*
 /// non-library target — an integration test (`tests/`), benchmark
@@ -97,9 +96,8 @@ fn is_mod_root(parent: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
     use super::is_separate_target_path;
+    use std::path::Path;
 
     #[test]
     fn separate_targets_are_recognised() {

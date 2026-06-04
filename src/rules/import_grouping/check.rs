@@ -2,10 +2,9 @@
 //! statements. A `false` answer drives [`super::render`] to produce the
 //! canonical replacement.
 
-use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
-
 use super::UseStmt;
 use super::config::Style;
+use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 
 /// Number of whitespace-only lines strictly between two source-adjacent
 /// statements, given the source text of the gap between them (from the

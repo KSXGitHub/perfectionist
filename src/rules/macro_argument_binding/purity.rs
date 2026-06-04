@@ -19,11 +19,10 @@
 //! "Implementation notes" section. The walker is `take_*`-style per
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
 
-use std::collections::BTreeSet;
-
 use rustc_ast::token::{Delimiter, IdentIsRaw, Token, TokenKind};
 use rustc_ast::tokenstream::{TokenStream, TokenTree};
 use rustc_span::kw;
+use std::collections::BTreeSet;
 
 /// Bundle of the two name-set tables the purity walker consults:
 /// the pure-getter method names accepted as `.method()` postfixes,

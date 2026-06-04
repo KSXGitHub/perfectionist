@@ -6,13 +6,12 @@
 //! inline path exactly so the two firing routes are indistinguishable
 //! to the user.
 
+use super::{PREFER_RAW_STRING, SUGGESTION_LABEL, VIOLATION_MESSAGE};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir as hir;
 use rustc_lint::LateContext;
 use rustc_span::Span;
-
-use super::{PREFER_RAW_STRING, SUGGESTION_LABEL, VIOLATION_MESSAGE};
 
 pub(super) fn emit_raw_string(
     lint_context: &LateContext<'_>,

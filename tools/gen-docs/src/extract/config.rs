@@ -3,17 +3,15 @@
 //! [`ConfigDoc`] the renderer ultimately turns into the per-rule
 //! Configuration section.
 
-use std::collections::BTreeSet;
-use std::path::Path;
-
-use syn::{Expr, ExprLit, Item, Lit};
-
 use crate::extract::serde_attrs::{
     apply_rename_all, doc_attrs_to_markdown, serde_has_default, serde_str_attr,
 };
 use crate::extract::shared::SharedTypes;
 use crate::extract::ty::{collect_referenced_idents, find_type_doc, is_option, toml_type_label};
 use crate::model::{ConfigDoc, ConfigField, Optionality};
+use std::collections::BTreeSet;
+use std::path::Path;
+use syn::{Expr, ExprLit, Item, Lit};
 
 /// Locate the rule's `Config` struct and its `CONFIG_KEY` constant
 /// and bundle them — along with any project-local types the fields

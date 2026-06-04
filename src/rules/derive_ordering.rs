@@ -7,9 +7,8 @@ use rustc_span::sym;
 
 mod ordering;
 
-use ordering::{DeriveEntry, Style, desired_order, is_identity};
-
 use crate::common::{DefaultState, resolved_state};
+use ordering::{DeriveEntry, Style, desired_order, is_identity};
 
 declare_tool_lint! {
     /// ### What it does

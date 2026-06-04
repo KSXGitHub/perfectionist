@@ -1,12 +1,10 @@
-use std::path::Path;
-
+use crate::common::{DefaultState, resolved_state};
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::def_id::LOCAL_CRATE;
 use rustc_span::{FileName, RealFileName, Span, SyntaxContext};
-
-use crate::common::{DefaultState, resolved_state};
+use std::path::Path;
 
 declare_tool_lint! {
     /// ### What it does

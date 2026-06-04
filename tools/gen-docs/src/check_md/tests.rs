@@ -1,7 +1,6 @@
-use std::path::PathBuf;
-
 use super::*;
 use crate::model::{ConfigDoc, DefaultState};
+use std::path::PathBuf;
 
 fn fake_rule(name: &str) -> Rule {
     Rule {

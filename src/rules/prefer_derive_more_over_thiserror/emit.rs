@@ -3,12 +3,11 @@
 //! help-only `prefer_derive_more_over_thiserror` diagnostic (no
 //! `Suggestion`, no `Applicability` — the migration is manual).
 
+use super::PREFER_DERIVE_MORE_OVER_THISERROR;
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_ast::{Attribute, EnumDef, MetaItemInner, MetaItemKind, VariantData};
 use rustc_lint::EarlyContext;
 use rustc_span::{Span, Symbol, sym};
-
-use super::PREFER_DERIVE_MORE_OVER_THISERROR;
 
 /// Flag every `#[error(...)]` attribute on a thiserror-derived item,
 /// unwrapping `#[cfg_attr(pred, error(...))]` wrappers symmetrically
