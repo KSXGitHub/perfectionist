@@ -63,14 +63,25 @@ pub(super) struct RefLocation<'a> {
 /// captured segment can outlive the [`Vec`] that held it.
 type Segment<'a> = (usize, &'a str);
 
-/// Extract the host of `url` (no scheme, no port, no path), or `None`
-/// if `url` has no `://`. Used by the pass to look the host up in the
-/// configured forge table before dispatching here.
+/// Extract the host of `url` (no scheme, no userinfo, no port, no
+/// path), or `None` if `url` has no `://`. Used by the pass to look
+/// the host up in the configured forge table before dispatching here.
+///
+/// Follows the RFC 3986 authority shape `[userinfo "@"] host [":"
+/// port]`: the authority runs to the first `/`, `?`, or `#`; userinfo
+/// (everything through the last `@`) and a trailing `:port` are
+/// stripped. Without the userinfo strip, a `user:pass@host` URL would
+/// yield `user` and silently fail the host lookup.
 pub(crate) fn url_host(url: &str) -> Option<&str> {
     let scheme_end = url.find("://")? + 3;
     let rest = &url[scheme_end..];
-    let end = rest.find(['/', '?', '#', ':']).unwrap_or(rest.len());
-    Some(&rest[..end])
+    let authority = &rest[..rest.find(['/', '?', '#']).unwrap_or(rest.len())];
+    let after_userinfo = match authority.rfind('@') {
+        Some(at_index) => &authority[at_index + 1..],
+        None => authority,
+    };
+    let host_end = after_userinfo.find(':').unwrap_or(after_userinfo.len());
+    Some(&after_userinfo[..host_end])
 }
 
 /// Locate the ref of `url`, interpreted under `kind`'s URL shape.

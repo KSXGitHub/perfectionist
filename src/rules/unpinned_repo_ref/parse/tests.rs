@@ -39,6 +39,17 @@ fn url_host_strips_scheme_port_and_path() {
         url_host("https://git.example.com:8443/owner/repo/blob/main/x"),
         Some("git.example.com"),
     );
+    // Userinfo (with or without a password) is stripped before the
+    // host, and a port after the host is dropped too.
+    assert_eq!(
+        url_host("https://user@github.com/owner/repo"),
+        Some("github.com"),
+    );
+    assert_eq!(
+        url_host("https://user:password@git.example.com:8443/g/r/-/blob/main/x"),
+        Some("git.example.com"),
+    );
+    assert_eq!(url_host("https://github.com"), Some("github.com"));
     assert_eq!(url_host("not a url"), None);
 }
 
