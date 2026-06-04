@@ -23,11 +23,12 @@ declare_tool_lint! {
     /// ### What it does
     ///
     /// Enforces a single project-wide *grouping* style for the run of
-    /// `use` statements at the top of a module body, chosen via `style`:
+    /// `use` statements at the top of a module body. The rule is
+    /// inactive by default; a project opts in and sets `style` to one of:
     /// - `single_group` — every `use` sits in one contiguous block with
     ///   no blank lines between imports.
-    /// - `grouped` (default) — imports are partitioned into ordered
-    ///   groups separated by exactly `blank_line_count` blank lines. The
+    /// - `grouped` — imports are partitioned into ordered groups
+    ///   separated by exactly `blank_line_count` blank lines. The
     ///   default group set, in order, is std (`std` / `core` / `alloc`),
     ///   internal (`super` / `self` / `crate`), then third-party (every
     ///   other crate). The `order`, `std_crates`, `internal_prefixes`,
@@ -47,11 +48,21 @@ declare_tool_lint! {
     /// blocks scanning uniformly and makes import diffs predictable.
     /// rustfmt's `group_imports` option can enforce the same shape, but
     /// only on the nightly channel; this lint gives stable-toolchain
-    /// projects a hard CI check instead of a silent reformat.
+    /// projects a hard CI check instead of a silent reformat. The rule
+    /// is inactive by default; enable it and pick a style in
+    /// `dylint.toml`:
+    ///
+    /// ```toml
+    /// [perfectionist]
+    /// enable = ["import_grouping"]
+    ///
+    /// ["perfectionist::import_grouping"]
+    /// style = "grouped"
+    /// ```
     ///
     /// ### Example
     ///
-    /// #### Style: Grouped (default)
+    /// #### Style: Grouped
     ///
     /// **Avoid:**
     ///
@@ -96,24 +107,17 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. `grouped` is the shipped baseline; a project that
-/// prefers one contiguous block sets `style = "single_group"` in
-/// `dylint.toml`. Read by `register_pass`; gen-docs picks the constant
-/// up to render the rule's default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
+/// Inactive by default. The rule is direction-less: a project that
+/// adopts it picks `grouped` (ordered, blank-line-separated blocks) or
+/// `single_group` (one contiguous block), so `style` is mandatory
+/// whenever the rule is enabled. Read by `register_pass`; gen-docs picks
+/// the constant up to render the rule's default state.
+pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 
 const CONFIG_KEY: &str = "perfectionist::import_grouping";
 
 pub struct ImportGrouping {
     config: Config,
-}
-
-impl ImportGrouping {
-    fn new() -> Self {
-        Self {
-            config: dylint_linting::config_or_default(CONFIG_KEY),
-        }
-    }
 }
 
 impl_lint_pass!(ImportGrouping => [IMPORT_GROUPING]);
@@ -129,13 +133,37 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("import_grouping", DEFAULT_STATE) {
         return;
     }
+    // The rule is enabled, so `style` is mandatory and has no default.
+    // Read it with `config` rather than `config_or_default`: the latter
+    // needs `Config: Default`, which would force a default style.
+    // `config` instead returns `Ok(None)` when the table is absent and
+    // `Err` when it is present but `style` is missing or invalid — both
+    // are configuration errors we fail loudly on.
+    let config = dylint_linting::config::<Config>(CONFIG_KEY)
+        .unwrap_or_else(|error| {
+            panic!(
+                "perfectionist::import_grouping: invalid \
+                 `[perfectionist::import_grouping]` configuration: {error}",
+            )
+        })
+        .unwrap_or_else(|| {
+            panic!(
+                "perfectionist::import_grouping is enabled but `style` is not set; \
+                 add `style = \"grouped\"` or `style = \"single_group\"` under \
+                 `[perfectionist::import_grouping]` in dylint.toml",
+            )
+        });
     // Late pass: out-of-line `mod foo;` modules are `ModKind::Unloaded`
     // until macro expansion, so a pre-expansion pass never sees them.
     // `check_crate` re-parses each module file instead (see
     // [`crate::module_reparse`]), reaching every submodule while keeping
     // `#[cfg(...)]` gates intact — parsing does not strip cfg, the reason
     // a pre-expansion pass would otherwise be needed.
-    lint_store.register_late_pass(|_| Box::new(ImportGrouping::new()));
+    lint_store.register_late_pass(move |_| {
+        Box::new(ImportGrouping {
+            config: config.clone(),
+        })
+    });
 }
 
 /// One `use` statement admitted into a run. The submodules
