@@ -13,9 +13,9 @@ Flags a function or method parameter taken by shared reference
 (`&str`, `&Path`, `&OsStr`, `&CStr`, `&[T]`) whose *only* use in
 the body is to produce its owned counterpart (`String`,
 `PathBuf`, `OsString`, `CString`, `Vec<T>`) — via `to_owned`,
-`to_string`, `to_path_buf`, `to_vec`, `to_os_string`, `into`, or
-`String::from(..)` and friends. Such a parameter should take the
-owned form directly.
+`to_string`, `to_path_buf`, `to_vec`, `to_os_string`, `clone`,
+`into`, or `String::from(..)` and friends. Such a parameter
+should take the owned form directly.
 
 Only the conservative single-use case is implemented: the
 parameter must be referenced exactly once, that use must be the

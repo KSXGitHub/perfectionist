@@ -3,7 +3,7 @@ use crate::common::{
     resolved_state,
 };
 use clippy_utils::diagnostics::span_lint_and_then;
-use clippy_utils::source::snippet;
+use clippy_utils::source::{snippet, snippet_opt};
 use rustc_errors::Applicability;
 use rustc_hir as hir;
 use rustc_hir::def::Res;
@@ -24,9 +24,9 @@ declare_tool_lint! {
     /// (`&str`, `&Path`, `&OsStr`, `&CStr`, `&[T]`) whose *only* use in
     /// the body is to produce its owned counterpart (`String`,
     /// `PathBuf`, `OsString`, `CString`, `Vec<T>`) — via `to_owned`,
-    /// `to_string`, `to_path_buf`, `to_vec`, `to_os_string`, `into`, or
-    /// `String::from(..)` and friends. Such a parameter should take the
-    /// owned form directly.
+    /// `to_string`, `to_path_buf`, `to_vec`, `to_os_string`, `clone`,
+    /// `into`, or `String::from(..)` and friends. Such a parameter
+    /// should take the owned form directly.
     ///
     /// Only the conservative single-use case is implemented: the
     /// parameter must be referenced exactly once, that use must be the
@@ -391,10 +391,11 @@ fn owned_counterpart<'tcx>(
             let hir::TyKind::Slice(element) = pointee_hir.kind else {
                 return None;
             };
-            Some(OwnedForm::Vec(format!(
-                "Vec<{}>",
-                snippet(cx, element.span, "_"),
-            )))
+            // Skip rather than render a `Vec<_>` we can't fill in: the
+            // element's source text is what the suggestion substitutes
+            // for `[T]`, and a `_` placeholder would not compile.
+            let element_src = snippet_opt(cx, element.span)?;
+            Some(OwnedForm::Vec(format!("Vec<{element_src}>")))
         }
         ty::Adt(def, _) => {
             let did = def.did();
