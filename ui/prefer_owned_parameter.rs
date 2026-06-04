@@ -95,4 +95,20 @@ fn explicit<'a>(value: &'a str) -> String {
     value.to_owned()
 }
 
+struct Sanitized;
+
+impl Sanitized {
+    // An inherent `from` that does real work and returns `String`.
+    fn from(value: &str) -> String {
+        value.trim().to_owned()
+    }
+}
+
+// OK: `Sanitized::from` is not `String`'s own `from`, so dropping the
+// call in a suggestion would lose the trimming. The rule must not flag
+// this even though the result type is `String`.
+fn sanitize(value: &str) -> String {
+    Sanitized::from(value)
+}
+
 fn main() {}

@@ -230,7 +230,7 @@ impl PreferOwnedParameter {
         let Node::Expr(conversion) = cx.tcx.parent_hir_node(use_expr.hir_id) else {
             return;
         };
-        if !self.is_conversion(conversion, use_expr) {
+        if !self.is_conversion(cx, typeck, conversion, use_expr) {
             return;
         }
         if !owned.matches_result(cx, typeck.expr_ty(conversion)) {
@@ -248,17 +248,27 @@ impl PreferOwnedParameter {
 
     /// Whether `conversion` is `use_expr` being converted to its owned
     /// form — either `use_expr.<method>()` for a recognised method, or
-    /// `Owned::from(use_expr)`. The result-type check in the caller is
-    /// what guarantees the call actually produces the owned form; this
-    /// only gates on the call *shape*.
-    fn is_conversion(&self, conversion: &Expr<'_>, use_expr: &Expr<'_>) -> bool {
+    /// `From::from(use_expr)`. Both branches lean on the caller's
+    /// result-type check to confirm the call actually produces the
+    /// owned form; the `from` branch additionally requires the callee
+    /// to be the `From` trait's `from` (see [`is_from_call`]) so an
+    /// unrelated inherent `from` constructor is not matched.
+    fn is_conversion<'tcx>(
+        &self,
+        cx: &LateContext<'tcx>,
+        typeck: &ty::TypeckResults<'tcx>,
+        conversion: &Expr<'_>,
+        use_expr: &Expr<'_>,
+    ) -> bool {
         match conversion.kind {
             ExprKind::MethodCall(segment, receiver, _, _) => {
                 receiver.hir_id == use_expr.hir_id
                     && self.conversion_methods.contains(&segment.ident.name)
             }
             ExprKind::Call(callee, args) => {
-                args.len() == 1 && args[0].hir_id == use_expr.hir_id && callee_is_from(callee)
+                args.len() == 1
+                    && args[0].hir_id == use_expr.hir_id
+                    && is_from_call(cx, typeck, callee)
             }
             _ => false,
         }
@@ -297,7 +307,8 @@ impl<'tcx> Visitor<'tcx> for UseCollector<'tcx> {
 /// short-circuiting logical operator sits between it and the function
 /// item. Walking up to the owning item is enough: every conditional
 /// construct is an `Expr` node, so any of them on the path proves the
-/// expression is conditional.
+/// expression is conditional. The `?` operator is covered too: it
+/// lowers to an `ExprKind::Match`, so the `Match` arm catches it.
 fn is_unconditional(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
     for (_, node) in cx.tcx.hir_parent_iter(expr.hir_id) {
         match node {
@@ -409,9 +420,19 @@ fn is_diagnostic_ty(cx: &LateContext<'_>, ty: Ty<'_>, name: &str) -> bool {
     matches!(ty.kind(), ty::Adt(def, _) if is_diagnostic_def(cx, name, def.did()))
 }
 
-/// Whether `callee` names a `from` associated function (e.g.
-/// `String::from`, `PathBuf::from`).
-fn callee_is_from(callee: &Expr<'_>) -> bool {
+/// Whether `callee` is the `From` trait's `from` (`String::from`,
+/// `PathBuf::from`, `Vec::from`, a `<Owned as From<_>>::from`, ...). The
+/// caller already confirms the call's result type is the owned
+/// counterpart, so together this matches exactly `Owned::from(param)`.
+/// Requiring the `From` trait keeps the lint from matching an unrelated
+/// inherent `Type::from(param)` constructor that merely returns the
+/// owned type — dropping such a call in the suggestion would change
+/// behaviour.
+fn is_from_call<'tcx>(
+    cx: &LateContext<'tcx>,
+    typeck: &ty::TypeckResults<'tcx>,
+    callee: &Expr<'_>,
+) -> bool {
     let ExprKind::Path(qpath) = callee.kind else {
         return false;
     };
@@ -419,7 +440,28 @@ fn callee_is_from(callee: &Expr<'_>) -> bool {
         QPath::Resolved(_, path) => path.segments.last().map(|segment| segment.ident.name),
         QPath::TypeRelative(_, segment) => Some(segment.ident.name),
     };
-    name == Some(sym::from)
+    if name != Some(sym::from) {
+        return false;
+    }
+    let Some(def_id) = typeck.qpath_res(&qpath, callee.hir_id).opt_def_id() else {
+        return false;
+    };
+    is_from_trait_method(cx, def_id)
+}
+
+/// Whether `def_id` is `From::from` — either the trait method itself
+/// (the usual resolution for `Owned::from(..)`) or a concrete `From`
+/// impl's method. Identified by the `from_fn` diagnostic item that the
+/// standard library attaches to `From::from`.
+fn is_from_trait_method(cx: &LateContext<'_>, def_id: DefId) -> bool {
+    let from_fn = Symbol::intern("from_fn");
+    if cx.tcx.is_diagnostic_item(from_fn, def_id) {
+        return true;
+    }
+    cx.tcx
+        .opt_associated_item(def_id)
+        .and_then(|assoc| assoc.trait_item_def_id())
+        .is_some_and(|trait_item| cx.tcx.is_diagnostic_item(from_fn, trait_item))
 }
 
 fn emit(
