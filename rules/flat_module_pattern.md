@@ -27,7 +27,7 @@ don't disambiguate by directory.
 
 **Avoid:**
 
-```text
+```ascii-file-tree
 src/
 └── foo/
     ├── mod.rs
@@ -36,7 +36,7 @@ src/
 
 **Prefer:**
 
-```text
+```ascii-file-tree
 src/
 ├── foo.rs
 └── foo/

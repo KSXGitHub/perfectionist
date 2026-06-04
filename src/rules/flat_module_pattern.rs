@@ -29,7 +29,7 @@ declare_tool_lint! {
     ///
     /// **Avoid:**
     ///
-    /// ```text
+    /// ```ascii-file-tree
     /// src/
     /// └── foo/
     ///     ├── mod.rs
@@ -38,7 +38,7 @@ declare_tool_lint! {
     ///
     /// **Prefer:**
     ///
-    /// ```text
+    /// ```ascii-file-tree
     /// src/
     /// ├── foo.rs
     /// └── foo/

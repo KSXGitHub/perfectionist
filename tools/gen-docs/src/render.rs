@@ -9,6 +9,7 @@
 //! directory verbatim.
 
 pub(crate) mod config;
+pub(crate) mod file_tree;
 pub(crate) mod markdown;
 
 use maud::{DOCTYPE, Markup, PreEscaped, html};
