@@ -42,13 +42,13 @@ declare_tool_lint! {
     /// deliberately preferred.
     ///
     /// The scan does not respect macro-argument boundaries: it reaches
-    /// every string literal a macro receives, including ones a macro
-    /// echoes by *source spelling* rather than by value — `stringify!`
-    /// and `dbg!`. There the raw form carries the same value but a
-    /// different reflected text. That is intentional rather than carved
-    /// out of the lint: code whose behaviour depends on a literal's
-    /// exact spelling instead of its value is rare and a code smell;
-    /// suppress it per site with
+    /// every string literal a macro receives, including ones used for
+    /// their *source spelling* rather than their value, such as
+    /// `stringify!` and `dbg!`. There the raw form carries the same
+    /// value but a different reflected text. That is intentional rather
+    /// than carved out of the lint: code whose behaviour depends on a
+    /// literal's exact spelling instead of its value is rare and a code
+    /// smell; suppress it per site with
     /// `#[expect(perfectionist::prefer_raw_string)]`.
     ///
     /// Pattern-position literals in ordinary code
