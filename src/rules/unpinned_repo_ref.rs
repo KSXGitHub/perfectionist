@@ -3,7 +3,7 @@ use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::literal_scan::string_literal_quote_lengths;
 use crate::markdown::{SkipRange, scan_code_regions};
-use config::{Config, DEFAULT_HOSTS, ForgeKind, Target, glob_match};
+use config::{Config, ForgeKind, Target, glob_match};
 use emit::{Violation, emit_diagnostic};
 use rustc_ast::LitKind;
 use rustc_hir::{Expr, ExprKind};
@@ -80,22 +80,15 @@ pub struct UnpinnedRepoRef {
 impl UnpinnedRepoRef {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let hosts = if config.hosts.is_empty() {
-            // An explicitly empty `hosts = []` would disable the rule
-            // entirely; treat it the same as omission and fall back to
-            // the built-in list, matching how `bare_url`'s defaults
-            // work.
-            DEFAULT_HOSTS
-                .iter()
-                .map(|(hostname, kind)| ((*hostname).to_owned(), *kind))
-                .collect()
-        } else {
-            config
-                .hosts
-                .into_iter()
-                .map(|entry| (entry.hostname, entry.kind))
-                .collect()
-        };
+        // An omitted `hosts` is filled from `Config::default` (the
+        // built-in table) by the container `#[serde(default)]`; an
+        // explicit `hosts = []` is respected as "scan no hosts", the
+        // way a project disables host scanning through config.
+        let hosts = config
+            .hosts
+            .into_iter()
+            .map(|entry| (entry.hostname, entry.kind))
+            .collect();
         Self {
             scan_doc: config.targets.contains(&Target::Doc),
             scan_comment: config.targets.contains(&Target::Comment),
