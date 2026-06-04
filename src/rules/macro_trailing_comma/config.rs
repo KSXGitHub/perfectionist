@@ -2,9 +2,8 @@
 //! [`Config`] shape, the curated built-in name list, and the in-memory
 //! [`MacroTrailingComma`] state the early pass holds.
 
-use std::collections::BTreeSet;
-
 use crate::macro_path::{matches_any, merge_with_builtins, parse_path, parse_path_list};
+use std::collections::BTreeSet;
 
 const CONFIG_KEY: &str = "perfectionist::macro_trailing_comma";
 

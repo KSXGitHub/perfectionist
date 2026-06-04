@@ -1,12 +1,11 @@
-use rustc_lint::{LateContext, LateLintPass, LintStore};
-use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::Span;
-
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::literal_scan::emit_flagged_char_hir;
 use crate::markdown::{position_in_skip, scan_code_regions};
+use rustc_lint::{LateContext, LateLintPass, LintStore};
+use rustc_session::{declare_tool_lint, impl_lint_pass};
+use rustc_span::Span;
 
 declare_tool_lint! {
     /// ### What it does

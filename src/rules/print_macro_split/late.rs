@@ -4,12 +4,11 @@
 //! `#[allow]` attributes resolve correctly. The walk is provided by
 //! [`crate::enclosing_hir::find_enclosing_hir_ids`].
 
-use rustc_lint::{LateContext, LateLintPass};
-
 use super::PENDING_VIOLATIONS;
 use super::emit::emit_fold;
 use super::queue::PendingViolation;
 use crate::enclosing_hir::find_enclosing_hir_ids;
+use rustc_lint::{LateContext, LateLintPass};
 
 pub(super) struct PrintMacroSplitLate;
 

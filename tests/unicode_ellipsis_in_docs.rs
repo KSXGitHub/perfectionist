@@ -13,7 +13,6 @@
 
 use std::collections::BTreeMap;
 use std::sync::Mutex;
-
 use text_block_macros::text_block_fnl;
 
 const LINT_NAME: &str = "perfectionist::unicode_ellipsis_in_docs";

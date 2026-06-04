@@ -1,13 +1,11 @@
 //! The version-bump contract and its enforcement.
 
-use std::path::Path;
-
-use pipe_trait::Pipe;
-
 use super::error::RuntimeError;
 use super::git::git_capture;
 use super::manifest::{parse_cargo_lock_version, parse_cargo_toml_version};
 use super::version_literal::is_version_literal;
+use pipe_trait::Pipe;
+use std::path::Path;
 
 /// Whether we are checking a real commit (`Commit(rev)`) or the staged
 /// index ahead of an in-progress commit (`Cached`).

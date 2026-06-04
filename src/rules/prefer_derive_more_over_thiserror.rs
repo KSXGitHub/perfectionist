@@ -7,9 +7,8 @@ mod detect;
 mod emit;
 mod scan;
 
-use config::PreferDeriveMoreOverThiserror;
-
 use crate::common::{DefaultState, resolved_state};
+use config::PreferDeriveMoreOverThiserror;
 
 declare_tool_lint! {
     /// ### What it does

@@ -1,9 +1,8 @@
+use crate::common::{DefaultState, resolved_state};
 use rustc_ast::Attribute;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Span, Symbol, sym};
-
-use crate::common::{DefaultState, resolved_state};
 
 mod emit;
 mod insertion;

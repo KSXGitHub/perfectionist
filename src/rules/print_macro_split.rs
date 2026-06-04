@@ -1,11 +1,9 @@
-use std::sync::Mutex;
-
+use crate::common::{DefaultState, resolved_state};
+use crate::macro_template::find_template_literal;
 use rustc_ast::MacCall;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-
-use crate::common::{DefaultState, resolved_state};
-use crate::macro_template::find_template_literal;
+use std::sync::Mutex;
 
 mod config;
 mod emit;

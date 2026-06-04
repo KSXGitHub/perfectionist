@@ -1,9 +1,8 @@
 //! Construction of the args-list edit and the Rust-string-literal
 //! escape that produce the `reason = "<text>"` insertion.
 
-use std::fmt::Write as _;
-
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
+use std::fmt::Write as _;
 
 /// The text edit produced for the args-list insertion, expressed
 /// as byte offsets inside the meta-item's source snippet. Mirrors

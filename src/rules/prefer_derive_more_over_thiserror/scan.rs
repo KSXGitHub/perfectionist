@@ -7,11 +7,10 @@
 //! `#[derive(Error)]` and crate-renamed `#[derive(te::Error)]`
 //! shorthands.
 
+use super::config::{PreferDeriveMoreOverThiserror, path_matches_thiserror};
 use rustc_ast::visit::{self, Visitor};
 use rustc_ast::{Crate, Item, ItemKind, UseTree, UseTreeKind};
 use rustc_span::{Symbol, kw};
-
-use super::config::{PreferDeriveMoreOverThiserror, path_matches_thiserror};
 
 /// Populate `rule`'s alias maps from every `use` / `extern crate`
 /// statement in `krate`.

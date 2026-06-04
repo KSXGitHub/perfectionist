@@ -1,17 +1,15 @@
-use std::collections::BTreeSet;
-
+use crate::ascii_letter::AsciiLetter;
+use crate::common::{
+    DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter,
+    resolve_symbol_set_from_chars, resolved_state,
+};
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_hir as hir;
 use rustc_hir::intravisit::FnKind;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Span, Symbol};
-
-use crate::ascii_letter::AsciiLetter;
-use crate::common::{
-    DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter,
-    resolve_symbol_set_from_chars, resolved_state,
-};
+use std::collections::BTreeSet;
 
 declare_tool_lint! {
     /// ### What it does

@@ -2,12 +2,10 @@
 //! `Cargo.toml`, `dylint.toml`, and the supplied source files into
 //! a target directory.
 
+use crate::manifest::{fixture_cargo_toml, fixture_dylint_toml};
+use build_fs_tree::{Build, FileSystemTree, MergeableFileSystemTree};
 use std::collections::BTreeMap;
 use std::path::Path;
-
-use build_fs_tree::{Build, FileSystemTree, MergeableFileSystemTree};
-
-use crate::manifest::{fixture_cargo_toml, fixture_dylint_toml};
 
 /// Materialise a Cargo project at `project_dir` consisting of a
 /// `Cargo.toml` for a library package named `package_name`, a

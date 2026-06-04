@@ -10,11 +10,10 @@
 //! [`Mutex`] to avoid clobbering each other under the default
 //! parallel test harness.
 
+use pipe_trait::Pipe;
 use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
 use std::sync::Mutex;
-
-use pipe_trait::Pipe;
 use text_block_macros::text_block_fnl;
 
 const LINT_NAME: &str = "perfectionist::lint_silence_reason";

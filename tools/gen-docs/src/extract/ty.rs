@@ -3,14 +3,12 @@
 //! table, and discovering which project-local types (enums and
 //! structs) those fields reach so the renderer can show their shape.
 
-use std::collections::BTreeSet;
-
-use quote::ToTokens;
-use syn::{Item, Type};
-
 use crate::extract::serde_attrs::{apply_rename_all, doc_attrs_to_markdown, serde_str_attr};
 use crate::extract::shared::SharedTypes;
 use crate::model::{EnumVariant, StructField, TypeDoc, TypeKind};
+use quote::ToTokens;
+use std::collections::BTreeSet;
+use syn::{Item, Type};
 
 /// Walk a `syn::Type` and collect every type identifier that isn't a
 /// well-known built-in *or* a shared newtype carrying its own

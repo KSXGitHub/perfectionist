@@ -2,10 +2,9 @@
 //! listing each TOML key, plus the per-type sub-blocks describing
 //! the shape of any project-local enums or structs the fields reach.
 
-use maud::{Markup, PreEscaped, html};
-
 use crate::model::{ConfigDoc, TypeDoc, TypeKind};
 use crate::render::markdown::markdown_to_html;
+use maud::{Markup, PreEscaped, html};
 
 /// Render the per-rule configuration block. Two shapes:
 ///

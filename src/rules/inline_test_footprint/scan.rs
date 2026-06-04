@@ -2,9 +2,9 @@
 //! test, accumulates each source file's inline-test footprint, and
 //! emits the inline-style diagnostics once per file.
 
-use std::collections::HashMap;
-use std::sync::Arc;
-
+use super::cfg_test::cfg_predicate_mentions_test;
+use super::config::{InlineStyle, InlineTestFootprint};
+use super::{INLINE_TEST_FOOTPRINT, paths};
 use clippy_utils::diagnostics::span_lint_and_help;
 use clippy_utils::is_test_function;
 use rustc_hir::{Item, ItemKind, Mod};
@@ -12,10 +12,8 @@ use rustc_lint::{LateContext, LintContext};
 use rustc_span::hygiene::ExpnKind;
 use rustc_span::source_map::SourceMap;
 use rustc_span::{BytePos, SourceFile, Span, Symbol};
-
-use super::cfg_test::cfg_predicate_mentions_test;
-use super::config::{InlineStyle, InlineTestFootprint};
-use super::{INLINE_TEST_FOOTPRINT, paths};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 /// One inline test item charged to a file's footprint.
 struct TestItem {

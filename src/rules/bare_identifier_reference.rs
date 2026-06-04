@@ -1,6 +1,6 @@
-use std::collections::BTreeSet;
-use std::num::NonZeroUsize;
-
+use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
+use crate::common::{DefaultState, resolve_symbol_set, resolved_state};
+use crate::enclosing_hir::emit_at_enclosing_hir;
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir as hir;
@@ -9,10 +9,8 @@ use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::def_id::{CRATE_DEF_ID, CrateNum, DefId, LocalDefId};
 use rustc_span::{Span, Symbol};
-
-use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
-use crate::common::{DefaultState, resolve_symbol_set, resolved_state};
-use crate::enclosing_hir::emit_at_enclosing_hir;
+use std::collections::BTreeSet;
+use std::num::NonZeroUsize;
 
 mod casing;
 mod scan;

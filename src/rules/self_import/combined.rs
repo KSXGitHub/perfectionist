@@ -1,16 +1,15 @@
 //! `combined` style: adjacent imports of a module and an item from
 //! that module fold into a single `use module::{self, item};`.
 
-use rustc_ast::{Item, ItemKind, UseTree, UseTreeKind};
-use rustc_errors::Applicability;
-use rustc_lint::{LateContext, LintContext};
-use rustc_span::{Symbol, kw};
-
 use super::render::{
     attr_snippets, has_path_root, is_self_leaf, real_segments, render_prefix, render_segments,
     render_use_tree, render_visibility, segment_names, with_rename,
 };
 use super::{Fix, Pending};
+use rustc_ast::{Item, ItemKind, UseTree, UseTreeKind};
+use rustc_errors::Applicability;
+use rustc_lint::{LateContext, LintContext};
+use rustc_span::{Symbol, kw};
 
 /// Scan an ordered sequence of items for adjacent module + item
 /// imports to fold. Each entry is `Some(item)` for an item in source

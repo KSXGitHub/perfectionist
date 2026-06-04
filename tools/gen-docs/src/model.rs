@@ -3,7 +3,6 @@
 //! other to name a [`Rule`] or a [`ConfigDoc`].
 
 use std::path::PathBuf;
-
 use strum::{AsRefStr, Display, EnumString};
 
 /// The tool namespace every `perfectionist` lint registers under,
