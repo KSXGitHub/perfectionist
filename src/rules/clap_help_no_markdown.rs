@@ -182,6 +182,17 @@ impl ClapHelpNoMarkdown {
             // Prefer the precise single-line span (needed for the
             // code-span autofix); fall back to a one-byte anchor at the
             // construct's start for a multi-line construct.
+            //
+            // No `hir_in_external_macro` guard is needed despite the
+            // narrow diagnostic span (see the "Suppressing
+            // proc-macro-synthesised violations" convention): the
+            // violation text is always real user source. `module_reparse`
+            // restricts the walk to on-disk module files, the comment
+            // text comes from those files via `walk_local_comments`, and
+            // a `///` doc comment cannot be derive-synthesised onto a
+            // user-uneditable span — so this rule is not in the vulnerable
+            // class. The span is built with `SyntaxContext::root()`, so
+            // `report_in_external_macro` never spuriously fires either.
             let precise = chunk.span_for_range(found.range.clone());
             let Some(span) = precise.or_else(|| chunk.span_for(found.range.start, 1)) else {
                 continue;
