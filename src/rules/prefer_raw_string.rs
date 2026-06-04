@@ -161,7 +161,7 @@ pub(super) struct ResolvedConfig {
 }
 
 /// Load and validate the rule's configuration from the shared
-/// `CONFIG_KEY` table. Called once per pass — the early and late passes
+/// [`CONFIG_KEY`] table. Called once per pass — the early and late passes
 /// each build their own copy — so the validation lives here instead of
 /// being duplicated across them; the result is not cached.
 pub(super) fn resolved_config() -> ResolvedConfig {
