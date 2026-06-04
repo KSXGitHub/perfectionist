@@ -38,8 +38,19 @@ fn git_comment_char(root: &Path) -> char {
     }
 }
 
-/// Parse the commit-message file's effective content (after stripping
-/// `comment`-prefixed lines and leading blanks). Returns:
+/// The body of Git's default "scissors" line — everything after the
+/// comment char and its following space. `git commit --verbose`
+/// appends the staged diff below a line of the form
+/// `"<commentChar> {SCISSORS_BODY}"`, and Git strips that line and
+/// everything after it before creating the commit. The hook must do
+/// the same: the diff's lines aren't comment-prefixed, so without
+/// this cut a release-shaped subject followed by a `-v` diff looks
+/// like a forbidden commit body and trips `MessageHasExtraContent`.
+const SCISSORS_BODY: &str = "------------------------ >8 ------------------------";
+
+/// Parse the commit-message file's effective content (after cutting at
+/// the verbose-diff scissors line and stripping `comment`-prefixed
+/// lines and leading blanks). Returns:
 ///
 /// * `Ok(Some(subject))` when the message is a release-shaped one
 ///   (`X.Y.Z(-<suffix>)?` only, no body).
@@ -51,8 +62,10 @@ pub(crate) fn extract_release_subject(
     content: &str,
     comment: char,
 ) -> Result<Option<&str>, RuntimeError> {
+    let scissors = format!("{comment} {SCISSORS_BODY}");
     let effective: Vec<&str> = content
         .lines()
+        .take_while(|line| line.trim_end() != scissors)
         .filter(|line| !line.starts_with(comment))
         .map(str::trim_end)
         .skip_while(|line| line.is_empty())
