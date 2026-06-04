@@ -11,9 +11,9 @@
 
 Enforces a single project-wide *grouping* style for the run of
 `use` statements at the top of a module body, chosen via `style`:
-- `single_group` — every `use` sits in one contiguous block with
+- `single_block` — every `use` sits in one contiguous block with
   no blank lines between imports.
-- `grouped` (default) — imports are partitioned into ordered
+- `multi_block` (default) — imports are partitioned into ordered
   groups separated by exactly `blank_line_count` blank lines. The
   default group set, in order, is std (`std` / `core` / `alloc`),
   internal (`super` / `self` / `crate`), then third-party (every
@@ -38,7 +38,7 @@ projects a hard CI check instead of a silent reformat.
 
 ## Example
 
-### Style: Grouped (default)
+### Style: Multi block (default)
 
 **Avoid:**
 
@@ -58,7 +58,7 @@ use crate::args::Args;
 use clap::Parser;
 ```
 
-### Style: Single group
+### Style: Single block
 
 **Avoid:**
 
@@ -84,7 +84,7 @@ Configure via `dylint.toml` under `["perfectionist::import_grouping"]`. Every fi
 
 ### `style`: `Style` (optional)
 
-Partitioning style to enforce. Defaults to `grouped`.
+Partitioning style to enforce. Defaults to `multi_block`.
 
 ### `order`: `[Group]` (optional)
 
@@ -111,7 +111,7 @@ How `#[cfg(...)]`-gated imports are grouped. Defaults to
 ### `blank_line_count`: `unsigned integer` (optional)
 
 Exact number of blank lines separating adjacent groups (strict
-equality). Defaults to `1`. Ignored under `single_group`.
+equality). Defaults to `1`. Ignored under `single_block`.
 
 ### Types
 
@@ -119,12 +119,12 @@ equality). Defaults to `1`. Ignored under `single_group`.
 
 How `use` statements are partitioned into blocks.
 
-##### `"single_group"` (Rust: `SingleGroup`)
+##### `"single_block"` (Rust: `SingleBlock`)
 
 Every `use` statement sits in one contiguous block, with no
 blank lines between imports.
 
-##### `"grouped"` (Rust: `Grouped`)
+##### `"multi_block"` (Rust: `MultiBlock`)
 
 Imports are partitioned into ordered groups separated by exactly
 `blank_line_count` blank lines. The default group set is

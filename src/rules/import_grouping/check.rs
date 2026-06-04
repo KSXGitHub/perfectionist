@@ -72,21 +72,21 @@ pub(super) fn is_compliant(
     blanks: &[usize],
 ) -> bool {
     match style {
-        Style::SingleGroup => single_group_compliant(blanks),
-        Style::Grouped => grouped_compliant(blank_line_count, stmts, blanks),
+        Style::SingleBlock => single_block_compliant(blanks),
+        Style::MultiBlock => multi_block_compliant(blank_line_count, stmts, blanks),
     }
 }
 
-/// `single_group`: no blank line may sit between any two statements in
+/// `single_block`: no blank line may sit between any two statements in
 /// the run.
-fn single_group_compliant(blanks: &[usize]) -> bool {
+fn single_block_compliant(blanks: &[usize]) -> bool {
     blanks.iter().all(|&blanks| blanks == 0)
 }
 
-/// `grouped`: ranks are non-decreasing in the configured order;
+/// `multi_block`: ranks are non-decreasing in the configured order;
 /// statements sharing a rank carry no blank line between them; a step
 /// up to a later group carries exactly `blank_line_count` blank lines.
-fn grouped_compliant(blank_line_count: usize, stmts: &[UseStmt<'_>], blanks: &[usize]) -> bool {
+fn multi_block_compliant(blank_line_count: usize, stmts: &[UseStmt<'_>], blanks: &[usize]) -> bool {
     stmts
         .windows(2)
         .zip(blanks)
