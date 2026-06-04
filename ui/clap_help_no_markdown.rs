@@ -55,6 +55,14 @@ struct Cli {
     /// Uses a `code` span.
     #[arg(verbatim_doc_comment)]
     verbatim: PathBuf,
+
+    /** Block doc with a `code` span. */
+    block_doc: PathBuf,
+
+    /// First run with a `first` span.
+    #[arg(long)]
+    /// Second run with a `second` span, after an interleaved attribute.
+    split_doc: PathBuf,
 }
 
 /// Top-level `command` summary.

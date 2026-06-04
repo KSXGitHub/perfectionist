@@ -111,19 +111,34 @@ fn record_fields(
     }
 }
 
-/// Record one documented node keyed by the start offset of its first
-/// `///` line. A node with no doc comment, or one whose help text is
-/// overridden by an explicit attribute, contributes nothing — the
+/// Record one documented node, keyed by the start offset of every `///`
+/// line it carries. A node with no doc comment, or one whose help text
+/// is overridden by an explicit attribute, contributes nothing — the
 /// former has no comment block to flag, the latter is deliberately
 /// silent.
+///
+/// Every doc-line offset is recorded, not just the first, because a
+/// node's `///` lines split into more than one [`crate::comment_walk`]
+/// block when a non-doc attribute is interleaved
+/// (`/// a` `#[arg(long)]` `/// b`): the walker yields one block per
+/// consecutive run, each keyed by its own first line's offset. Recording
+/// only the minimum offset would leave the later run's markdown
+/// unscanned even though clap concatenates both runs into `--help`. The
+/// surplus mid-run offsets are harmless: the walker only ever looks up a
+/// run's first line.
 fn record_node(
     attrs: &[Attribute],
     override_keys: &std::collections::BTreeSet<Symbol>,
     map: &mut HashMap<u32, NodeState>,
 ) {
-    let Some(doc_lo) = doc_comment_start(attrs) else {
+    let mut doc_los = attrs
+        .iter()
+        .filter(|attr| matches!(attr.kind, AttrKind::DocComment(..)))
+        .map(|attr| attr.span.lo().0)
+        .peekable();
+    if doc_los.peek().is_none() {
         return;
-    };
+    }
     if has_override(attrs, override_keys) {
         return;
     }
@@ -132,18 +147,9 @@ fn record_node(
     } else {
         NodeState::Normal
     };
-    map.insert(doc_lo, state);
-}
-
-/// The source byte offset of the node's first `///` / `//!` / `/** */`
-/// doc-comment attribute, which is exactly the start offset
-/// [`crate::comment_walk`] reports for the corresponding comment block.
-fn doc_comment_start(attrs: &[Attribute]) -> Option<u32> {
-    attrs
-        .iter()
-        .filter(|attr| matches!(attr.kind, AttrKind::DocComment(..)))
-        .map(|attr| attr.span.lo().0)
-        .min()
+    for doc_lo in doc_los {
+        map.insert(doc_lo, state);
+    }
 }
 
 fn has_override(attrs: &[Attribute], override_keys: &std::collections::BTreeSet<Symbol>) -> bool {
