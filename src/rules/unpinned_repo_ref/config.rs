@@ -55,7 +55,9 @@ pub(super) struct HostEntry {
     /// matches any run of characters, so `gitlab.*.example.com`
     /// covers every subdomain in one entry.
     pub(super) hostname: String,
-    /// Forge kind whose URL shape applies to this hostname.
+    /// Forge kind whose URL shape applies to this hostname: one of
+    /// `github` (also covers gitee), `gitlab`, `bitbucket`, `gitea`
+    /// (also covers Codeberg / Forgejo), or `sourcehut`.
     pub(super) kind: ForgeKind,
 }
 

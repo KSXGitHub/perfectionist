@@ -30,7 +30,7 @@ linked to.
 This rule only concerns whether the ref is mutable; the
 *length* of an accepted SHA is `perfectionist::commit_id_length`'s
 concern, and `perfectionist::bare_url` ensures the URL is
-wrapped. The three layer rather than overlap.
+wrapped. The three lints layer rather than overlap.
 
 ## Example
 
@@ -115,4 +115,6 @@ covers every subdomain in one entry.
 
 ##### `kind`: `ForgeKind`
 
-Forge kind whose URL shape applies to this hostname.
+Forge kind whose URL shape applies to this hostname: one of
+`github` (also covers gitee), `gitlab`, `bitbucket`, `gitea`
+(also covers Codeberg / Forgejo), or `sourcehut`.
