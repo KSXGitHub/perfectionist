@@ -13,8 +13,8 @@
 //! `just warmup-integration-tests`.
 //!
 //! The rule is inactive by default and `style` is mandatory once
-//! enabled, so each test enables the rule and selects `grouped` through
-//! the appended `dylint.toml` config. `--all` (not `--all-targets`) is
+//! enabled, so each test enables the rule and selects `multi_block`
+//! through the appended `dylint.toml` config. `--all` (not `--all-targets`) is
 //! kept so `#[cfg(test)]` code stays excluded — the
 //! [`does_not_flag_cfg_excluded_inline_module`] case depends on it.
 //!
@@ -35,7 +35,7 @@ const CONFIG: &str = "\
 enable = [\"import_grouping\"]
 
 [\"perfectionist::import_grouping\"]
-style = \"grouped\"
+style = \"multi_block\"
 ";
 
 /// A blank-line split inside a separate-file module (`mod foo;` →

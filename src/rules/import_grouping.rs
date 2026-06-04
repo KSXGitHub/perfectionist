@@ -23,9 +23,9 @@ declare_tool_lint! {
     /// Enforces a single project-wide *grouping* style for the run of
     /// `use` statements at the top of a module body. The rule is
     /// inactive by default; a project opts in and sets `style` to one of:
-    /// - `single_group` — every `use` sits in one contiguous block with
+    /// - `single_block` — every `use` sits in one contiguous block with
     ///   no blank lines between imports.
-    /// - `grouped` — imports are partitioned into ordered groups
+    /// - `multi_block` — imports are partitioned into ordered groups
     ///   separated by exactly `blank_line_count` blank lines. The
     ///   default group set, in order, is std (`std` / `core` / `alloc`),
     ///   internal (`super` / `self` / `crate`), then third-party (every
@@ -55,12 +55,12 @@ declare_tool_lint! {
     /// enable = ["import_grouping"]
     ///
     /// ["perfectionist::import_grouping"]
-    /// style = "grouped"
+    /// style = "multi_block"
     /// ```
     ///
     /// ### Example
     ///
-    /// #### Style: Grouped
+    /// #### Style: Multi block
     ///
     /// **Avoid:**
     ///
@@ -80,7 +80,7 @@ declare_tool_lint! {
     /// use clap::Parser;
     /// ```
     ///
-    /// #### Style: Single group
+    /// #### Style: Single block
     ///
     /// **Avoid:**
     ///
@@ -106,8 +106,8 @@ declare_tool_lint! {
 }
 
 /// Inactive by default. The rule is direction-less: a project that
-/// adopts it picks `grouped` (ordered, blank-line-separated blocks) or
-/// `single_group` (one contiguous block), so `style` is mandatory
+/// adopts it picks `multi_block` (ordered, blank-line-separated blocks) or
+/// `single_block` (one contiguous block), so `style` is mandatory
 /// whenever the rule is enabled. Read by [`register_pass`]; gen-docs picks
 /// the constant up to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
@@ -147,7 +147,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
         .unwrap_or_else(|| {
             panic!(
                 "perfectionist::import_grouping is enabled but `style` is not set; \
-                 add `style = \"grouped\"` or `style = \"single_group\"` under \
+                 add `style = \"multi_block\"` or `style = \"single_block\"` under \
                  `[perfectionist::import_grouping]` in dylint.toml",
             )
         });
@@ -350,7 +350,7 @@ impl ImportGrouping {
         run: &[UseStmt<'_>],
         violations: &mut Vec<Pending>,
     ) {
-        // A run of one statement is a single group either way, so it
+        // A run of one statement is a single block either way, so it
         // can never violate.
         if run.len() < 2 {
             return;
@@ -379,12 +379,13 @@ impl ImportGrouping {
 
         // A comment sitting between two statements is dropped by the
         // re-render (only each statement's own text is reproduced) and,
-        // under `grouped`, may end up describing a statement that moved.
-        // A leading comment immediately above the first statement is left
-        // in place by the rewrite but is stranded above a *different*
-        // statement when `grouped` reorders the first one downward. Either
-        // way, drop to `MaybeIncorrect` so the fix isn't applied unreviewed.
-        let first_statement_moves = matches!(self.config.style, Style::Grouped)
+        // under `multi_block`, may end up describing a statement that
+        // moved. A leading comment immediately above the first statement
+        // is left in place by the rewrite but is stranded above a
+        // *different* statement when `multi_block` reorders the first one
+        // downward. Either way, drop to `MaybeIncorrect` so the fix isn't
+        // applied unreviewed.
+        let first_statement_moves = matches!(self.config.style, Style::MultiBlock)
             && run.iter().any(|stmt| stmt.rank < first.rank);
         let applicability = if self.run_has_interstatement_comment(lint_context, run)
             || (first_statement_moves && self.has_leading_comment(lint_context, first))
@@ -444,10 +445,10 @@ impl ImportGrouping {
 
     fn message(&self) -> &'static str {
         match self.config.style {
-            Style::SingleGroup => {
-                "blank lines split the imports; this project keeps them in a single group"
+            Style::SingleBlock => {
+                "blank lines split the imports; this project keeps them in a single block"
             }
-            Style::Grouped => "imports are not partitioned into ordered groups",
+            Style::MultiBlock => "imports are not partitioned into ordered groups",
         }
     }
 }

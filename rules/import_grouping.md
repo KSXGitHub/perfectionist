@@ -12,9 +12,9 @@
 Enforces a single project-wide *grouping* style for the run of
 `use` statements at the top of a module body. The rule is
 inactive by default; a project opts in and sets `style` to one of:
-- `single_group` — every `use` sits in one contiguous block with
+- `single_block` — every `use` sits in one contiguous block with
   no blank lines between imports.
-- `grouped` — imports are partitioned into ordered groups
+- `multi_block` — imports are partitioned into ordered groups
   separated by exactly `blank_line_count` blank lines. The
   default group set, in order, is std (`std` / `core` / `alloc`),
   internal (`super` / `self` / `crate`), then third-party (every
@@ -44,12 +44,12 @@ is inactive by default; enable it and pick a style in
 enable = ["import_grouping"]
 
 ["perfectionist::import_grouping"]
-style = "grouped"
+style = "multi_block"
 ```
 
 ## Example
 
-### Style: Grouped
+### Style: Multi block
 
 **Avoid:**
 
@@ -69,7 +69,7 @@ use crate::args::Args;
 use clap::Parser;
 ```
 
-### Style: Single group
+### Style: Single block
 
 **Avoid:**
 
@@ -95,7 +95,7 @@ Configure via `dylint.toml` under `["perfectionist::import_grouping"]`. A field 
 
 ### `style`: `Style` (mandatory)
 
-The grouping style to enforce: `single_group` or `grouped`. It
+The grouping style to enforce: `single_block` or `multi_block`. It
 has no default — a project enabling the rule states which layout
 it wants — so it must be set when the rule is enabled.
 
@@ -124,7 +124,7 @@ How `#[cfg(...)]`-gated imports are grouped. Defaults to
 ### `blank_line_count`: `unsigned integer` (optional)
 
 Exact number of blank lines separating adjacent groups (strict
-equality). Defaults to `1`. Ignored under `single_group`.
+equality). Defaults to `1`. Ignored under `single_block`.
 
 ### Types
 
@@ -132,12 +132,12 @@ equality). Defaults to `1`. Ignored under `single_group`.
 
 How `use` statements are partitioned into blocks.
 
-##### `"single_group"` (Rust: `SingleGroup`)
+##### `"single_block"` (Rust: `SingleBlock`)
 
 Every `use` statement sits in one contiguous block, with no
 blank lines between imports.
 
-##### `"grouped"` (Rust: `Grouped`)
+##### `"multi_block"` (Rust: `MultiBlock`)
 
 Imports are partitioned into ordered groups separated by exactly
 `blank_line_count` blank lines. The default group set is

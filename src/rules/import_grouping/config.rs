@@ -10,12 +10,12 @@
 pub(super) enum Style {
     /// Every `use` statement sits in one contiguous block, with no
     /// blank lines between imports.
-    SingleGroup,
+    SingleBlock,
     /// Imports are partitioned into ordered groups separated by exactly
     /// `blank_line_count` blank lines. The default group set is
     /// std (`std` / `core` / `alloc`), internal (`super` / `self` /
     /// `crate`), and third-party (every other crate).
-    Grouped,
+    MultiBlock,
 }
 
 /// One of the three groups a `use` statement is classified into. The
@@ -55,7 +55,7 @@ pub(super) struct Config {
     // so only `style` is mandatory; the config is read only when the
     // rule is enabled (see `register_pass`), so a disabled rule never
     // needs it.
-    /// The grouping style to enforce: `single_group` or `grouped`. It
+    /// The grouping style to enforce: `single_block` or `multi_block`. It
     /// has no default — a project enabling the rule states which layout
     /// it wants — so it must be set when the rule is enabled.
     pub(super) style: Style,
@@ -78,7 +78,7 @@ pub(super) struct Config {
     #[serde(default)]
     pub(super) cfg_block_handling: CfgBlockHandling,
     /// Exact number of blank lines separating adjacent groups (strict
-    /// equality). Defaults to `1`. Ignored under `single_group`.
+    /// equality). Defaults to `1`. Ignored under `single_block`.
     #[serde(default = "default_blank_line_count")]
     pub(super) blank_line_count: usize,
 }
@@ -133,16 +133,16 @@ mod tests {
     #[test]
     fn style_values_deserialize() {
         assert_eq!(
-            toml::from_str::<Config>(r#"style = "grouped""#)
+            toml::from_str::<Config>(r#"style = "multi_block""#)
                 .unwrap()
                 .style,
-            Style::Grouped,
+            Style::MultiBlock,
         );
         assert_eq!(
-            toml::from_str::<Config>(r#"style = "single_group""#)
+            toml::from_str::<Config>(r#"style = "single_block""#)
                 .unwrap()
                 .style,
-            Style::SingleGroup,
+            Style::SingleBlock,
         );
     }
 
@@ -159,7 +159,7 @@ mod tests {
     fn other_fields_default_when_style_is_set() {
         // Only `style` is mandatory; the remaining knobs fall back to
         // their per-field defaults when absent.
-        let config = toml::from_str::<Config>(r#"style = "grouped""#).unwrap();
+        let config = toml::from_str::<Config>(r#"style = "multi_block""#).unwrap();
         assert_eq!(config.order, default_order());
         assert_eq!(config.std_crates, default_std_crates());
         assert_eq!(config.internal_prefixes, default_internal_prefixes());

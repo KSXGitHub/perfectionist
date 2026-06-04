@@ -2,8 +2,8 @@
 //! inactive by default and `style` is mandatory once enabled, so each
 //! test points at its own one-fixture directory under
 //! `ui-toml/import_grouping/` and passes a `dylint.toml` that both
-//! enables the rule and selects a style. The bare-`grouped` sweep lives
-//! in `ui-toml/import_grouping/grouped/` and has its own test below.
+//! enables the rule and selects a style. The bare-`multi_block` sweep
+//! lives in `ui-toml/import_grouping/multi_block/` and has its own test below.
 //!
 //! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
 //! the duration of `run_tests`. The env var is process-global, so the
@@ -41,9 +41,9 @@ struct RuleConfig {
 fn dylint_toml(mut config: RuleConfig) -> String {
     // The rule is inactive by default, so the config must enable it.
     // `style` is mandatory once enabled; the knob-focused tests below
-    // leave it unset, meaning the default `grouped` layout, so fill it
-    // in here rather than at every call site.
-    config.style.get_or_insert("grouped");
+    // leave it unset, meaning the default `multi_block` layout, so fill
+    // it in here rather than at every call site.
+    config.style.get_or_insert("multi_block");
     let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
     let rule_table = toml::to_string(&table).expect("serialise rule config as dylint.toml");
     format!("[perfectionist]\nenable = [\"import_grouping\"]\n\n{rule_table}")
@@ -59,14 +59,14 @@ fn run(src_base: &str, config: RuleConfig) {
 }
 
 #[test]
-fn single_group_collapses_blank_lines() {
-    // Under `style = "single_group"`, every blank line between imports
+fn single_block_collapses_blank_lines() {
+    // Under `style = "single_block"`, every blank line between imports
     // is flagged and the block is re-rendered as one contiguous run in
     // source order.
     run(
-        "ui-toml/import_grouping/single_group",
+        "ui-toml/import_grouping/single_block",
         RuleConfig {
-            style: Some("single_group"),
+            style: Some("single_block"),
             ..Default::default()
         },
     );
@@ -141,10 +141,10 @@ fn internal_prefixes_extends_workspace_root() {
 }
 
 #[test]
-fn grouped_partitions_into_ordered_blocks() {
-    // The bare-default `grouped` style with no knobs overridden: imports
-    // must be partitioned into std / internal / third-party blocks
-    // separated by one blank line. This is the broad sweep that ran via
-    // `tests/ui.rs` while the rule was still active by default.
-    run("ui-toml/import_grouping/grouped", RuleConfig::default());
+fn multi_block_partitions_into_ordered_blocks() {
+    // The bare-default `multi_block` style with no knobs overridden:
+    // imports must be partitioned into std / internal / third-party
+    // blocks separated by one blank line. This is the broad sweep that
+    // ran via `tests/ui.rs` while the rule was still active by default.
+    run("ui-toml/import_grouping/multi_block", RuleConfig::default());
 }

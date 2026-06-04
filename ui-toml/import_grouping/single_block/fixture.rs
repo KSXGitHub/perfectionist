@@ -7,7 +7,7 @@
     reason = "ui fixture"
 )]
 
-// Under `style = "single_group"`: every `use` sits in one contiguous
+// Under `style = "single_block"`: every `use` sits in one contiguous
 // block. A blank line between imports is the violation; the fix
 // re-renders the run in source order with no blank lines.
 
