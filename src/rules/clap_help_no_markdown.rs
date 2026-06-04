@@ -186,12 +186,11 @@ impl ClapHelpNoMarkdown {
             let Some(span) = precise.or_else(|| chunk.span_for(found.range.start, 1)) else {
                 continue;
             };
-            let replacement =
-                if !soft && construct == ForbidConstruct::CodeSpan && precise.is_some() {
-                    Some(code_span_inner(&chunk.rendered[found.range.clone()]))
-                } else {
-                    None
-                };
+            let replacement = if !soft && construct == ForbidConstruct::CodeSpan {
+                precise.and_then(|_| code_span_autofix(&chunk.rendered[found.range.clone()]))
+            } else {
+                None
+            };
             out.push((
                 span,
                 Violation {
@@ -204,17 +203,28 @@ impl ClapHelpNoMarkdown {
     }
 }
 
-/// Strip the surrounding backtick run (and, per CommonMark, one space
-/// on each side when the span both opens and closes with a space) from
-/// a code span's source text, yielding the bare content for the
-/// `` `Foo` `` → `Foo` autofix.
-fn code_span_inner(span_text: &str) -> String {
-    let trimmed = span_text.trim_matches('`');
-    trimmed
+/// The replacement text for the trivial `` `Foo` `` → `Foo` code-span
+/// autofix, or `None` when the span is not safe to rewrite
+/// machine-applicably.
+///
+/// Only a single-backtick fence whose content holds no backtick is
+/// rewritten. A multi-backtick fence (`` `` `code` `` ``) — used
+/// precisely to embed a backtick in the content — would, after stripping
+/// only the outer fence, leave a stray backtick behind that re-triggers
+/// the lint; those keep the help-only suggestion instead. Per CommonMark,
+/// one space on each side is dropped when the span both opens and closes
+/// with a space (and is not all spaces).
+fn code_span_autofix(span_text: &str) -> Option<String> {
+    let inner = span_text.strip_prefix('`')?.strip_suffix('`')?;
+    if inner.contains('`') {
+        return None;
+    }
+    let unspaced = inner
         .strip_prefix(' ')
-        .and_then(|inner| inner.strip_suffix(' '))
-        .unwrap_or(trimmed)
-        .to_owned()
+        .and_then(|stripped| stripped.strip_suffix(' '))
+        .filter(|stripped| !stripped.is_empty())
+        .unwrap_or(inner);
+    Some(unspaced.to_owned())
 }
 
 fn emit(cx: &LateContext<'_>, hir_id: hir::HirId, span: Span, violation: &Violation) {

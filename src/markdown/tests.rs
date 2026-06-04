@@ -226,6 +226,18 @@ fn intraword_underscore_is_not_emphasis() {
 }
 
 #[test]
+fn emphasis_span_covers_the_whole_closing_run() {
+    // Regression: `***bold***` has a 3-marker closing run; the span must
+    // cover all of it, not just the 2 `open` markers committed to.
+    let opts = ClassifyOptions {
+        detect_emphasis: true,
+        detect_lists: false,
+    };
+    let got = classified("***bold***", opts);
+    assert_eq!(got, vec![("***bold***", ConstructKind::Bold)]);
+}
+
+#[test]
 fn list_markers_only_classified_when_requested() {
     let text = "- one\n- two";
     assert!(classify_constructs(text, ClassifyOptions::default()).is_empty());

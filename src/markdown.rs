@@ -1140,7 +1140,11 @@ fn take_emphasis(input: &str, idx: usize) -> Option<(ConstructKind, usize)> {
                     {
                         return None;
                     }
-                    let total = (cursor - idx) + open;
+                    // Span through the whole closing run, which may be
+                    // longer than the `open` markers we committed to
+                    // (`***bold***`): the closing run is `close_run`
+                    // bytes, not `open`.
+                    let total = (cursor - idx) + close_run;
                     let kind = if open >= 2 {
                         ConstructKind::Bold
                     } else {
