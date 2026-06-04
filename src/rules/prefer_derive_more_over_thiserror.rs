@@ -86,9 +86,13 @@ declare_tool_lint! {
     /// use derive_more::{Display, Error};
     ///
     /// #[derive(Debug, Display, Error)]
+    /// #[display("missing field")]
+    /// pub struct MissingFieldError;
+    ///
+    /// #[derive(Debug, Display, Error)]
     /// pub enum MyError {
     ///     #[display("missing field {_0}")]
-    ///     MissingField(String),
+    ///     MissingField(MissingFieldError),
     /// }
     /// ```
     pub perfectionist::PREFER_DERIVE_MORE_OVER_THISERROR,
