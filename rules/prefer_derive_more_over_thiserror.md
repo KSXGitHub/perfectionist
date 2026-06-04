@@ -80,9 +80,10 @@ pub enum MyError {
 ```rust,ignore
 use derive_more::{Display, Error};
 
+// Assume this type already exists in your crate.
 #[derive(Debug, Display, Error)]
-#[display("missing field")]
-pub struct MissingFieldError;
+#[display("{_0}")]
+pub struct MissingFieldError(String);
 
 #[derive(Debug, Display, Error)]
 pub enum MyError {
