@@ -73,7 +73,7 @@ declare_tool_lint! {
 
 /// Active by default. The rewrite is conservative — it only fires when
 /// every named lint is known to fire deterministically — so a baseline
-/// policy is not presumptuous. Read by `register_pass`; gen-docs picks
+/// policy is not presumptuous. Read by [`register_pass`]; gen-docs picks
 /// the constant up to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
@@ -97,9 +97,9 @@ const DEFAULT_EXEMPT_LINTS: &[&str] = &[
 
 /// Clippy lint *group* names. A group fires only if some member lint
 /// fires, so `#[expect(clippy::<group>)]` is unfulfilled wherever no
-/// member triggers — the same non-determinism `DEFAULT_EXEMPT_LINTS`
+/// member triggers — the same non-determinism [`DEFAULT_EXEMPT_LINTS`]
 /// guards against. Unlike rustc's bare groups (`unused`, etc.), these are
-/// not in the `LintStore` snapshot (clippy is not loaded during a
+/// not in the [`LintStore`] snapshot (clippy is not loaded during a
 /// `cargo dylint` run), so they are listed explicitly.
 const CLIPPY_LINT_GROUPS: &[&str] = &[
     "all",
@@ -160,7 +160,7 @@ pub struct PreferExpectOverAllow {
     apply_to_outer_scopes: bool,
     apply_to_tool_namespaces: bool,
     /// Snapshot of every built-in rustc lint name (no tool prefix) that
-    /// was registered in the `LintStore` when the pass was installed.
+    /// was registered in the [`LintStore`] when the pass was installed.
     /// A bare lint name in an `#[allow]` is "built-in, deterministic"
     /// only if it is in this set; anything else is an unknown name that
     /// might belong to a procedural plugin that fires conditionally, so

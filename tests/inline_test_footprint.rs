@@ -194,7 +194,7 @@ fn exempts_file_of_only_test_items() {
 
 /// The crate root itself, when it contains only inline test code, must
 /// stay exempt. The rule runs in the `cfg(test)` build, where the test
-/// harness injects synthetic crate-root items (the generated `main`,
+/// harness injects synthetic crate-root items (the generated [`main`],
 /// `extern crate test`, the descriptor const); those must not be
 /// counted as production and rob the file of its exemption.
 #[test]
@@ -344,7 +344,7 @@ fn does_not_flag_integration_test_subdir_main() {
     );
 }
 
-/// A flat integration test may be named `main` (`tests/main.rs`),
+/// A flat integration test may be named [`main`] (`tests/main.rs`),
 /// which is *not* the `tests/<name>/main.rs` subdirectory form: its
 /// discriminating `tests` directory is the immediate parent, not two
 /// levels up. It must still be recognised as a separate target.

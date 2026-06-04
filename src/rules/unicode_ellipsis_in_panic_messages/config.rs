@@ -1,6 +1,6 @@
 //! Configuration for `unicode_ellipsis_in_panic_messages`. Owns the
-//! user-facing `Config` shape, the curated default macro / method
-//! lists, and the in-memory `UnicodeEllipsisInPanicMessages` state the
+//! user-facing [`Config`] shape, the curated default macro / method
+//! lists, and the in-memory [`UnicodeEllipsisInPanicMessages`] state the
 //! late pass holds.
 
 use std::collections::BTreeSet;

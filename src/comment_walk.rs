@@ -41,7 +41,7 @@ pub(crate) enum CommentSurface {
 }
 
 /// One chunk of comment text plus the metadata the callback needs to
-/// turn an in-chunk byte offset back into a `Span` on the source
+/// turn an in-chunk byte offset back into a [`Span`] on the source
 /// file.
 pub(crate) struct CommentChunk<'a> {
     pub(crate) surface: CommentSurface,

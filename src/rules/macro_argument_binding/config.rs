@@ -1,6 +1,6 @@
-//! Configuration for `macro_argument_binding`. Owns the `Mode` enum,
-//! the user-facing `Config` shape, the curated built-in deny / allow
-//! sets, and the in-memory `MacroArgumentBinding` state the early
+//! Configuration for `macro_argument_binding`. Owns the [`Mode`] enum,
+//! the user-facing [`Config`] shape, the curated built-in deny / allow
+//! sets, and the in-memory [`MacroArgumentBinding`] state the early
 //! pass holds.
 //!
 //! Path-set construction goes through the helpers at the bottom of

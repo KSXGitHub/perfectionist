@@ -1,6 +1,6 @@
 //! Configuration for `macro_trailing_comma`. Owns the user-facing
-//! `Config` shape, the curated built-in name list, and the in-memory
-//! `MacroTrailingComma` state the early pass holds.
+//! [`Config`] shape, the curated built-in name list, and the in-memory
+//! [`MacroTrailingComma`] state the early pass holds.
 
 use std::collections::BTreeSet;
 

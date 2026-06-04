@@ -154,8 +154,6 @@ pattern that several rules call out by reference — live in
   default; opt in and choose `transparent` or `from_into`.
 
 ### Documentation
-- [`intra-doc-links.md`](./intra-doc-links.md) — backticked identifiers in
-  rustdoc comments that resolve in scope must be written as intra-doc links.
 - [`em-dash-prose.md`](./em-dash-prose.md) — flag em dashes in doc comments
   and string literals reachable from `format!` / `println!` style macros.
 - [`unpinned-repo-ref.md`](./unpinned-repo-ref.md) — require URLs that
@@ -231,8 +229,10 @@ external state, or judgement calls that a static lint cannot evaluate:
   (pacquet *Documentation comments*) — already covered by rustdoc's
   built-in `rustdoc::private_intra_doc_links` lint (default `warn`).
   Run `RUSTFLAGS='-D warnings' cargo doc --document-private-items` to
-  promote it to a hard error. The bare-backtick variant
-  (`` `Foo` `` rather than `` [`Foo`] ``) is funnelled into intra-doc
-  links by the [`intra-doc-links`](./intra-doc-links.md) rule, after
-  which rustdoc catches it. Reimplementing this in Dylint would be a
-  less accurate duplicate of rustdoc's own resolver.
+  promote it to a hard error. `perfectionist::bare_identifier_reference`
+  (`src/rules/bare_identifier_reference.rs`) deliberately leaves a public item's
+  bare-backtick mention of a more-private item alone — turning it into
+  `` [`Foo`] `` would only manufacture a `private_intra_doc_links`
+  violation — so this case stays out of scope here too, covered only by
+  rustdoc's lint for the explicit-link form. Reimplementing it in Dylint
+  would be a less accurate duplicate of rustdoc's own resolver.

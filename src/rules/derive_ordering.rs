@@ -96,7 +96,7 @@ declare_tool_lint! {
 /// Off by default — enable it in `dylint.toml` via the crate-wide
 /// `[perfectionist] enable = ["derive_ordering"]` (or the
 /// `[[perfectionist.enable]]` array-of-tables form). Read by
-/// `register_pass` below; gen-docs picks the constant up via syn
+/// [`register_pass`] below; gen-docs picks the constant up via syn
 /// to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 

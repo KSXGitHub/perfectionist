@@ -47,6 +47,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
 
     register! {
         bare_email
+        bare_identifier_reference
         bare_issue_reference
         bare_url
         derive_ordering

@@ -39,8 +39,8 @@ pub(super) fn segment_names(path: &Path) -> Vec<Symbol> {
         .collect()
 }
 
-/// Render path segments as `a::b::c`, through each segment's `Ident`
-/// rather than its `Symbol`. `Ident`'s `Display` re-adds the `r#`
+/// Render path segments as `a::b::c`, through each segment's [`Ident`]
+/// rather than its [`Symbol`]. [`Ident`]'s `Display` re-adds the `r#`
 /// raw-identifier prefix where the source had it (and the edition
 /// makes it a keyword), so a module named `r#match` renders as
 /// `r#match`, not the bare keyword `match` — which would produce an
@@ -73,7 +73,7 @@ pub(super) fn render_prefix(path: &Path) -> String {
 }
 
 /// Append an optional `as rename` to an already-rendered path. The
-/// rename is rendered through its `Ident` so a raw alias keeps `r#`.
+/// rename is rendered through its [`Ident`] so a raw alias keeps `r#`.
 pub(super) fn with_rename(path: String, rename: Option<Ident>) -> String {
     match rename {
         Some(rename) => format!("{path} as {rename}"),

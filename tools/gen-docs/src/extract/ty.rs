@@ -137,7 +137,7 @@ pub(crate) const BUILTIN_TYPES: &[&str] = &[
 ];
 
 /// Find the `enum` or `struct` definition for `ident` inside `file`
-/// and produce a `TypeDoc` describing its variants or fields.
+/// and produce a [`TypeDoc`] describing its variants or fields.
 /// Returns `None` for idents we can't locate (e.g., types imported
 /// from another crate); those are silently dropped rather than
 /// faked, since the docs are only useful when we can show the real
@@ -254,7 +254,7 @@ pub(crate) fn is_option(ty: &Type) -> bool {
 ///
 /// **Keep in sync with [`is_builtin_type`].** Both functions must
 /// recognise the same set of identifiers; see the note on
-/// `is_builtin_type` for why.
+/// [`is_builtin_type`] for why.
 pub(crate) fn toml_type_label(ty: &Type, shared: &SharedTypes) -> String {
     match ty {
         Type::Path(type_path) => {

@@ -200,7 +200,7 @@ fn record_module_file(
 /// `None` (silently discarding buffered diagnostics — `parse_psess` is
 /// wired to a [`SilentEmitter`]) when the file does not parse as a
 /// standalone module. The shared source map already holds this file and
-/// deduplicates by name, so the parser reuses the loaded `SourceFile`
+/// deduplicates by name, so the parser reuses the loaded [`SourceFile`]
 /// (preserving the real spans) and the passed source text is ignored —
 /// hence the empty string, which avoids both a disk re-read and a clone
 /// of the whole file.

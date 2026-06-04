@@ -98,7 +98,7 @@ declare_tool_lint! {
 
 /// Active by default. `grouped` is the shipped baseline; a project that
 /// prefers one contiguous block sets `style = "single_group"` in
-/// `dylint.toml`. Read by `register_pass`; gen-docs picks the constant
+/// `dylint.toml`. Read by [`register_pass`]; gen-docs picks the constant
 /// up to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 

@@ -117,7 +117,7 @@ declare_tool_lint! {
 
 /// Active by default. `module` is the shipped baseline; a project that
 /// prefers `crate` or `item` sets `style` in `dylint.toml`. Read by
-/// `register_pass`; gen-docs picks the constant up to render the rule's
+/// [`register_pass`]; gen-docs picks the constant up to render the rule's
 /// default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
