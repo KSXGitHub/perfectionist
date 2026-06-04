@@ -38,12 +38,19 @@ declare_tool_lint! {
     /// otherwise split apart before the lint sees it. The rewrite is
     /// value-preserving (a raw string still parses placeholders, and
     /// `{{` / `}}` survive verbatim), so the literal's role doesn't
-    /// matter. Suppress per call site with
-    /// `#[allow(perfectionist::prefer_raw_string)]` when the regular
-    /// form is deliberately preferred — for instance when a macro
-    /// reflects the literal's *source spelling* rather than its value
-    /// (`stringify!`, `dbg!`), where the raw form, though equal in
-    /// value, changes the printed text.
+    /// matter. Silence a site the usual way where the regular form is
+    /// deliberately preferred.
+    ///
+    /// The scan does not respect macro-argument boundaries: it reaches
+    /// every string literal a macro receives, including ones a macro
+    /// echoes by *source spelling* rather than by value — `stringify!`
+    /// and `dbg!`. There the raw form carries the same value but a
+    /// different reflected text (`dbg!("a\"b")` would print `r#"a"b"#`
+    /// as the expression). That is intentional rather than carved out
+    /// of the lint: code whose behaviour depends on a literal's exact
+    /// spelling instead of its value is rare and a code smell, so the
+    /// rare deliberate case is left to a per-site
+    /// `#[expect(perfectionist::prefer_raw_string)]`.
     ///
     /// Pattern-position literals in ordinary code
     /// (e.g. `match s { "C:\\path" => ... }`) are out of scope — the
