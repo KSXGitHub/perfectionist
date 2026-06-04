@@ -74,6 +74,25 @@ pub(crate) const CONFIG_TOGGLE_SCRIPT: &str = include_str!("config_toggle.js");
 /// `<script src>` references the same name, so they must agree.
 pub(crate) const CONFIG_TOGGLE_SCRIPT_FILENAME: &str = "config_toggle.js";
 
+/// The page scripts, in the order `<body>` loads them, driving the
+/// single `<script src>` loop at the foot of the document and the
+/// matching `<link rel="preload" as="script">` block in `<head>`.
+/// The two are generated from this one slice so they can't drift: a
+/// script added here is both preloaded and loaded. The scripts sit at
+/// the very end of `<body>`, so without the preload hints the browser
+/// wouldn't start fetching them until it had parsed the whole page;
+/// the hints let it pull them down in parallel with the stylesheets
+/// instead. (The CSS-referenced assets — the hover-revealed
+/// `rule-anchor.svg` and the settings-panel theme icons — are
+/// deliberately *not* preloaded: both are decorative and hidden until
+/// the reader interacts, so preloading them would contend with the
+/// critical resources for bytes most visitors never render.)
+pub(crate) const PAGE_SCRIPTS: &[&str] = &[
+    NAV_TOGGLE_SCRIPT_FILENAME,
+    THEME_TOGGLE_SCRIPT_FILENAME,
+    CONFIG_TOGGLE_SCRIPT_FILENAME,
+];
+
 /// The colour-scheme icons (Octicons, MIT), shipped beside `index.html`
 /// and referenced from settings.css. Each tuple is `(filename, contents)`.
 pub(crate) const THEME_ICONS: &[(&str, &str)] = &[
@@ -111,6 +130,12 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 }
                 link rel="stylesheet" href=(HIGHLIGHT_CSS_LIGHT_FILENAME);
                 link rel="stylesheet" href=(HIGHLIGHT_CSS_DARK_FILENAME);
+                // The scripts load at the foot of <body>; preload them
+                // here so the browser fetches them in parallel with the
+                // stylesheets rather than waiting until it parses there.
+                @for &src in PAGE_SCRIPTS {
+                    link rel="preload" as="script" href=(src);
+                }
             }
             body {
                 h1 id="catalogue" { "perfectionist lints" }
@@ -158,9 +183,9 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     "Generated from " code { "src/rules/" }
                     " at " code { (commit_sha) } "."
                 }
-                script src=(NAV_TOGGLE_SCRIPT_FILENAME) {}
-                script src=(THEME_TOGGLE_SCRIPT_FILENAME) {}
-                script src=(CONFIG_TOGGLE_SCRIPT_FILENAME) {}
+                @for &src in PAGE_SCRIPTS {
+                    script src=(src) {}
+                }
             }
         }
     };

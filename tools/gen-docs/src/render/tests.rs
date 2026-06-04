@@ -164,6 +164,39 @@ fn page_links_nav_toggle_script_externally() {
 }
 
 #[test]
+fn page_preloads_each_script_in_head() {
+    let html = render_page(&[fake_rule("alpha")], &fake_context());
+    // Every page script gets a `<link rel="preload" as="script">` so the
+    // browser fetches it in parallel with the stylesheets instead of
+    // waiting until it parses to the `<script src>` tags at the foot of
+    // <body>. Pin the exact tag for each script in `PAGE_SCRIPTS`.
+    for &src in PAGE_SCRIPTS {
+        assert!(
+            html.contains(&format!(r#"<link rel="preload" as="script" href="{src}">"#)),
+            "expected a <link rel=preload as=script> for {src}",
+        );
+    }
+    // The preload hints must live in <head>, ahead of <body>, or they
+    // can't front-run the foot-of-body `<script src>` discovery.
+    let head_end = html.find("</head>").expect("no </head>");
+    let first_preload = html
+        .find(r#"<link rel="preload""#)
+        .expect("no preload link emitted");
+    assert!(
+        first_preload < head_end,
+        "preload hints must be emitted inside <head>",
+    );
+    // Both forms reference the same files, so the count of preload links
+    // matches the count of loaded scripts — a script added to one loop
+    // but not the other (were they ever to diverge) would skew this.
+    assert_eq!(
+        html.matches(r#"<link rel="preload" as="script""#).count(),
+        PAGE_SCRIPTS.len(),
+    );
+    assert_eq!(html.matches("<script src=").count(), PAGE_SCRIPTS.len());
+}
+
+#[test]
 fn page_links_each_stylesheet_individually() {
     let html = render_page(&[fake_rule("alpha")], &fake_context());
     // Every static sheet gets its own `<link>`, in slice order,
