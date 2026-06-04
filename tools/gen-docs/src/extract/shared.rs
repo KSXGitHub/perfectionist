@@ -25,7 +25,6 @@
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-
 use syn::{Expr, ExprLit, Item, Lit};
 
 /// Map of Rust struct identifier → TOML-flavoured type label,

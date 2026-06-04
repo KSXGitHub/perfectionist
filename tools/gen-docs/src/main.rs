@@ -31,15 +31,6 @@ mod model;
 mod render;
 mod render_md;
 
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::process::{Command, ExitCode};
-
-use cargo_toml::Manifest;
-use clap::{Parser, Subcommand};
-use command_extra::CommandExtra;
-use pipe_trait::Pipe;
-
 use crate::check_md::{CheckOutcome, check_rules_dir, write_rules_dir};
 use crate::extract::collect_rules;
 use crate::model::{RenderContext, Rule};
@@ -50,6 +41,13 @@ use crate::render::{
     RULE_ANCHOR_ICON_FILENAME, STYLESHEETS, THEME_ICONS, THEME_TOGGLE_SCRIPT,
     THEME_TOGGLE_SCRIPT_FILENAME, render_page,
 };
+use cargo_toml::Manifest;
+use clap::{Parser, Subcommand};
+use command_extra::CommandExtra;
+use pipe_trait::Pipe;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::{Command, ExitCode};
 
 #[derive(Parser)]
 #[clap(about = "Render perfectionist's lint catalogue")]

@@ -21,10 +21,9 @@
 //! When any of those fires on a release-shaped operation, this tool
 //! exits non-zero so the operation aborts.
 
+use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use std::process::ExitCode;
-
-use clap::{Parser, Subcommand};
 
 mod contract;
 mod error;

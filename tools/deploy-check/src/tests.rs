@@ -1,10 +1,9 @@
-use text_block_macros::text_block_fnl;
-
 use super::contract::assert_version_only_diff;
 use super::error::RuntimeError;
 use super::hook::extract_release_subject;
 use super::manifest::{parse_cargo_lock_version, parse_cargo_toml_version};
 use super::version_literal::is_version_literal;
+use text_block_macros::text_block_fnl;
 
 #[test]
 fn version_literal_grammar() {

@@ -10,14 +10,13 @@
 //! trailing `\<newline><indent>` continuation strips exactly the
 //! source newline and indentation it introduced.
 
+use crate::common::display_width;
+use crate::literal_scan::take_string_escape;
 use rustc_ast::MacCall;
 use rustc_ast::token::TokenKind;
 use rustc_ast::tokenstream::TokenTree;
 use rustc_span::Span;
 use rustc_span::source_map::SourceMap;
-
-use crate::common::display_width;
-use crate::literal_scan::take_string_escape;
 
 /// One indentation step. The wrapped form indents the argument list
 /// one level past the line the invocation starts on; four spaces

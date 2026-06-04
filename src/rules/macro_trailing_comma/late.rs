@@ -5,12 +5,11 @@
 //! correctly. The walk itself is provided by
 //! [`crate::enclosing_hir::find_enclosing_hir_ids`].
 
-use rustc_lint::{LateContext, LateLintPass};
-
 use super::PENDING_VIOLATIONS;
 use super::emit::{emit_insert, emit_remove};
 use super::queue::PendingViolation;
 use crate::enclosing_hir::find_enclosing_hir_ids;
+use rustc_lint::{LateContext, LateLintPass};
 
 pub(super) struct MacroTrailingCommaLate;
 

@@ -1,27 +1,25 @@
-use std::collections::BTreeSet;
-use std::num::NonZeroUsize;
-use std::sync::Mutex;
-
 use clippy_utils::diagnostics::span_lint_and_sugg;
 use rustc_ast::{LitKind, StrStyle};
 use rustc_errors::Applicability;
 use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
+use std::collections::BTreeSet;
+use std::num::NonZeroUsize;
+use std::sync::Mutex;
 
 mod early;
 mod emit;
 mod parser;
 mod queue;
 
+use crate::common::{DefaultState, resolved_state};
+use crate::enclosing_hir::find_enclosing_hir_ids;
 use early::PreferRawStringEarly;
 use parser::{
     DEFAULT_ELIGIBLE_ESCAPES, build_raw_string_suggestion, is_supported_eligible_entry, scan_body,
 };
 use queue::PendingViolation;
-
-use crate::common::{DefaultState, resolved_state};
-use crate::enclosing_hir::find_enclosing_hir_ids;
 
 declare_tool_lint! {
     /// ### What it does

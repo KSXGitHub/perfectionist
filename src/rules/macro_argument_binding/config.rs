@@ -7,12 +7,10 @@
 //! this file so each set (`deny`, `allow`, `allow_extra`, `ignore`)
 //! is built consistently.
 
-use std::collections::BTreeSet;
-
-use rustc_ast::Path;
-
 use crate::common::resolve_string_set;
 use crate::macro_path::{matches_any, merge_with_builtins, parse_path_list};
+use rustc_ast::Path;
+use std::collections::BTreeSet;
 
 const CONFIG_KEY: &str = "perfectionist::macro_argument_binding";
 

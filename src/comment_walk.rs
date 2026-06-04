@@ -17,12 +17,11 @@
 //! offset-mapping the callback needs to anchor diagnostic spans back
 //! into the source map.
 
+use crate::module_reparse::crate_module_files;
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 use rustc_lint::{LateContext, LintContext};
 use rustc_span::def_id::LOCAL_CRATE;
 use rustc_span::{BytePos, Pos, RelativeBytePos, SourceFile, Span, SyntaxContext};
-
-use crate::module_reparse::crate_module_files;
 
 /// Surface kind for one chunk of comment text handed to the walker
 /// callback.

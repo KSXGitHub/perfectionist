@@ -1,6 +1,5 @@
-use std::path::PathBuf;
-
 use super::*;
+use std::path::PathBuf;
 
 /// Allocate a fresh temp directory unique across both processes
 /// (cargo's test harness forks per binary) and across tests in

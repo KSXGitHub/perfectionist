@@ -1,12 +1,11 @@
 //! Diagnostic emission for the two violation shapes.
 
+use super::MACRO_TRAILING_COMMA;
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir as hir;
 use rustc_lint::LateContext;
 use rustc_span::Span;
-
-use super::MACRO_TRAILING_COMMA;
 
 pub(super) fn emit_insert(lint_context: &LateContext<'_>, hir_id: hir::HirId, insert_at: Span) {
     span_lint_hir_and_then(

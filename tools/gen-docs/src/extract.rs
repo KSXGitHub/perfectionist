@@ -11,18 +11,16 @@ pub(crate) mod serde_attrs;
 pub(crate) mod shared;
 pub(crate) mod ty;
 
-use std::fs;
-use std::path::{Path, PathBuf};
-
-use pipe_trait::Pipe;
-use proc_macro2::TokenStream;
-use syn::parse::{Parse, ParseStream};
-use syn::{Attribute, Ident, Item, LitStr, Token};
-
 use crate::extract::config::extract_config;
 use crate::extract::serde_attrs::doc_attrs_to_markdown;
 use crate::extract::shared::SharedTypes;
 use crate::model::{DefaultState, Level, NAMESPACE, Rule};
+use pipe_trait::Pipe;
+use proc_macro2::TokenStream;
+use std::fs;
+use std::path::{Path, PathBuf};
+use syn::parse::{Parse, ParseStream};
+use syn::{Attribute, Ident, Item, LitStr, Token};
 
 pub(crate) fn collect_rules(rules_dir: &Path) -> Vec<Rule> {
     // Shared newtypes live in `src/`, one level up from `src/rules`.

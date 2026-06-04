@@ -1,13 +1,12 @@
+use crate::common::{DefaultState, resolved_state};
+use crate::enclosing_hir::emit_at_enclosing_hir;
+use crate::literal_scan::emit_flagged_char_hir;
+use crate::module_reparse::crate_module_files;
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::def_id::LOCAL_CRATE;
 use rustc_span::{BytePos, Pos, RelativeBytePos, SourceFile, Span, SyntaxContext};
-
-use crate::common::{DefaultState, resolved_state};
-use crate::enclosing_hir::emit_at_enclosing_hir;
-use crate::literal_scan::emit_flagged_char_hir;
-use crate::module_reparse::crate_module_files;
 
 declare_tool_lint! {
     /// ### What it does

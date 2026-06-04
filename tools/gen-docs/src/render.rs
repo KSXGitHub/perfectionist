@@ -12,11 +12,10 @@ pub(crate) mod config;
 pub(crate) mod file_tree;
 pub(crate) mod markdown;
 
-use maud::{DOCTYPE, Markup, PreEscaped, html};
-
 use crate::model::{DefaultState, NAMESPACE, RenderContext, Rule};
 use crate::render::config::config_section;
 use crate::render::markdown::{markdown_inline_to_html, markdown_to_html};
+use maud::{DOCTYPE, Markup, PreEscaped, html};
 
 /// The static stylesheets, each emitted as its own file beside
 /// `index.html` and linked with a dedicated `<link rel="stylesheet">`.

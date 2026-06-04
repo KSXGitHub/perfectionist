@@ -6,7 +6,6 @@
 //! caller's `CARGO_TARGET_DIR` or `CARGO_MANIFEST_DIR`.
 
 use std::path::Path;
-
 pub use tempfile::TempDir;
 
 pub mod dylint;

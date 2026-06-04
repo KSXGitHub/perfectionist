@@ -3,11 +3,9 @@
 //! lists, and the in-memory [`UnicodeEllipsisInPanicMessages`] state the
 //! late pass holds.
 
-use std::collections::BTreeSet;
-
-use rustc_span::Symbol;
-
 use crate::common::resolve_symbol_set;
+use rustc_span::Symbol;
+use std::collections::BTreeSet;
 
 const CONFIG_KEY: &str = "perfectionist::unicode_ellipsis_in_panic_messages";
 

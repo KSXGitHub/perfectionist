@@ -3,10 +3,9 @@
 //! `use ` and the trailing `;` for one statement; the caller prepends
 //! the shared visibility / attributes and joins the statements.
 
-use std::collections::BTreeMap;
-
 use super::config::Style;
 use super::model::{Leaf, LeafItem, self_has_splittable_sibling};
+use std::collections::BTreeMap;
 
 pub(super) fn render(style: Style, leaves: &[Leaf]) -> Vec<String> {
     match style {

@@ -1,9 +1,8 @@
+use crate::common::{DefaultState, hir_in_external_macro, is_single_ascii_letter, resolved_state};
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-
-use crate::common::{DefaultState, hir_in_external_macro, is_single_ascii_letter, resolved_state};
 
 declare_tool_lint! {
     /// ### What it does

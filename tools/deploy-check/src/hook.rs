@@ -2,14 +2,13 @@
 //! their input to one or more (version-literal, snapshot) pairs
 //! and feed them through `contract::verify`.
 
-use std::fs;
-use std::io::{self, BufRead};
-use std::path::Path;
-
 use super::contract::{Source, verify};
 use super::error::RuntimeError;
 use super::git::git_capture;
 use super::version_literal::is_version_literal;
+use std::fs;
+use std::io::{self, BufRead};
+use std::path::Path;
 
 pub(crate) fn commit_msg(root: &Path, msg_file: &Path) -> Result<(), RuntimeError> {
     let content = fs::read_to_string(msg_file)

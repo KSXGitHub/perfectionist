@@ -1,3 +1,4 @@
+use crate::common::{DefaultState, resolved_state};
 use clippy_utils::macros::root_macro_call_first_node;
 use clippy_utils::res::MaybeDef;
 use rustc_ast::LitKind;
@@ -5,8 +6,6 @@ use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::sym;
-
-use crate::common::{DefaultState, resolved_state};
 
 mod config;
 mod scan;

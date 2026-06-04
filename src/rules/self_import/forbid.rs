@@ -2,16 +2,15 @@
 //! `use` statement is a violation, and the autofix rewrites it to the
 //! bare module import.
 
-use clippy_utils::source::snippet_indent;
-use rustc_ast::{Item, UseTree, UseTreeKind};
-use rustc_lint::LateContext;
-use rustc_span::Span;
-
 use super::render::{
     attr_snippets, is_self_leaf, real_segments, render_prefix, render_rooted, render_use_tree,
     render_visibility, segment_names, simple_self_module, with_rename,
 };
 use super::{Fix, Pending};
+use clippy_utils::source::snippet_indent;
+use rustc_ast::{Item, UseTree, UseTreeKind};
+use rustc_lint::LateContext;
+use rustc_span::Span;
 
 const MESSAGE: &str = "this `use` imports a module through `self`";
 // Suggestion labels, chosen per rewrite shape so the help text matches

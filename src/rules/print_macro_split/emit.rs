@@ -1,13 +1,12 @@
 //! Diagnostic emission for the single violation shape this rule has:
 //! a long-line print macro whose template embeds a newline.
 
+use super::PRINT_MACRO_SPLIT;
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir as hir;
 use rustc_lint::LateContext;
 use rustc_span::Span;
-
-use super::PRINT_MACRO_SPLIT;
 
 pub(super) fn emit_fold(
     lint_context: &LateContext<'_>,

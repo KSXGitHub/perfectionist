@@ -1,5 +1,4 @@
-use std::collections::{BTreeSet, HashSet};
-
+use crate::common::{DefaultState, render_meta_path, resolve_string_set, resolved_state};
 use clippy_utils::diagnostics::{span_lint_and_help, span_lint_and_sugg};
 use clippy_utils::is_from_proc_macro;
 use clippy_utils::source::{indent_of, snippet_opt};
@@ -8,8 +7,7 @@ use rustc_errors::Applicability;
 use rustc_lint::{EarlyContext, EarlyLintPass, Lint, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Span, Symbol, sym};
-
-use crate::common::{DefaultState, render_meta_path, resolve_string_set, resolved_state};
+use std::collections::{BTreeSet, HashSet};
 
 #[cfg(test)]
 mod tests;

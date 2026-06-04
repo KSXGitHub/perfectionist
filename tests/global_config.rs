@@ -11,7 +11,6 @@
 //! parallel test harness.
 
 use std::sync::Mutex;
-
 use text_block_macros::text_block_fnl;
 
 static SERIAL: Mutex<()> = Mutex::new(());

@@ -3,14 +3,13 @@
 //! Each helper lives here only because more than one rule needs it.
 //! Anything used by a single rule belongs in that rule's own file.
 
-use std::collections::{BTreeSet, HashMap};
-use std::sync::OnceLock;
-
 use rustc_ast::{MetaItem, MetaItemInner, MetaItemKind, MetaItemLit};
 use rustc_hir as hir;
 use rustc_hir::HirId;
 use rustc_lint::{LateContext, LintContext};
 use rustc_span::{Span, Symbol, sym};
+use std::collections::{BTreeSet, HashMap};
+use std::sync::OnceLock;
 use unicode_width::UnicodeWidthStr;
 
 /// Whether the HIR node at `hir_id` (whose own span is `span`)

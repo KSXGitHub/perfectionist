@@ -6,10 +6,9 @@
 //! that same path (under [`CfgBlockHandling::Merge`]) or hoisted into a
 //! single trailing group (under [`CfgBlockHandling::Trailing`]).
 
+use super::config::{CfgBlockHandling, Config, Group};
 use rustc_ast::UseTree;
 use rustc_span::kw;
-
-use super::config::{CfgBlockHandling, Config, Group};
 
 /// The first path segment of a `use` tree's written prefix, skipping a
 /// leading path-root (`::`). `None` for a top-level brace
