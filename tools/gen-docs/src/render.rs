@@ -101,6 +101,12 @@ pub(crate) const THEME_ICONS: &[(&str, &str)] = &[
     ("theme-system.svg", include_str!("assets/theme-system.svg")),
 ];
 
+/// `id` of the inert `<template>` (see [`theme_icon_prefetch_template`])
+/// that carries the colour-scheme icons' `<link rel="prefetch">` hints.
+/// `theme_toggle.js` looks the template up by this same id and clones its
+/// contents into `<head>` to fire the prefetch, so the two must agree.
+pub(crate) const THEME_ICON_PREFETCH_TEMPLATE_ID: &str = "theme-icon-prefetch";
+
 /// The chain-link glyph for the rule-name heading anchors, shipped as
 /// a standalone file beside `index.html` rather than inlined.
 pub(crate) const RULE_ANCHOR_ICON: &str = include_str!("assets/rule-anchor.svg");
@@ -141,6 +147,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 h1 id="catalogue" { "perfectionist lints" }
                 (nav_drawer(rules))
                 (settings_panel())
+                (theme_icon_prefetch_template())
                 div.banner {
                     "Showing docs for " code { (git_ref) } "."
                 }
@@ -251,6 +258,28 @@ fn config_controls() -> Markup {
             div.config-actions {
                 button.config-action type="button" data-config-open="true" { "Expand all" }
                 button.config-action type="button" data-config-open="false" { "Collapse all" }
+            }
+        }
+    }
+}
+
+/// The inert `<template>` carrying one `<link rel="prefetch" as="image">`
+/// per colour-scheme icon. The colour-scheme icons are reachable only
+/// through settings.css mask `url(...)`s — invisible to the browser's
+/// preload scanner — so without a hint the first panel-open fetches them
+/// cold. The hints can't be static `<link>`s, though: a reader who never
+/// opens Settings (and every reader with JS disabled, for whom the panel
+/// is permanently inert) would fetch them for nothing. A `<template>`'s
+/// contents are parsed but never loaded, so the links lie dormant until
+/// `theme_toggle.js` clones them into `<head>` at idle time (it finds the
+/// template via [`THEME_ICON_PREFETCH_TEMPLATE_ID`]). Built from
+/// [`THEME_ICONS`] so the warmed URLs are the same files settings.css
+/// masks and can't drift from them.
+fn theme_icon_prefetch_template() -> Markup {
+    html! {
+        template id=(THEME_ICON_PREFETCH_TEMPLATE_ID) {
+            @for &(name, _) in THEME_ICONS {
+                link rel="prefetch" as="image" href=(name);
             }
         }
     }

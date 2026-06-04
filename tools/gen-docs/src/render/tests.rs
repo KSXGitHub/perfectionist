@@ -380,6 +380,62 @@ fn page_links_theme_toggle_script_externally() {
 }
 
 #[test]
+fn page_ships_theme_icon_prefetch_hints_in_an_inert_template() {
+    let html = render_page(&[fake_rule("alpha")], &fake_context());
+    // The colour-scheme icons are reachable only through settings.css masks,
+    // invisible to the preload scanner. Instead of hardcoding their names in
+    // JS, the page renders the prefetch hints from THEME_ICONS into an inert
+    // <template>, so the warmed URLs are the same files settings.css masks —
+    // testable here against the real output, not a string-match on the script.
+    let open = format!(r#"<template id="{THEME_ICON_PREFETCH_TEMPLATE_ID}">"#);
+    let template_start = html.find(&open).expect("prefetch <template> not rendered");
+    let template_end = template_start
+        + html[template_start..]
+            .find("</template>")
+            .expect("<template> unterminated")
+        + "</template>".len();
+    let template = &html[template_start..template_end];
+    for (name, _) in THEME_ICONS {
+        assert!(
+            template.contains(&format!(
+                r#"<link rel="prefetch" as="image" href="{name}">"#
+            )),
+            "the prefetch template must carry an inert link for {name}",
+        );
+    }
+    // Inertness is the whole point: the links must live *inside* the
+    // <template> (parsed but not loaded) and nowhere else, or a reader who
+    // never opens the panel — or who has JS disabled — would fetch them for
+    // nothing. So every rel=prefetch on the page must fall within the
+    // template, and there must be exactly one per icon.
+    assert_eq!(
+        html.matches(r#"rel="prefetch""#).count(),
+        template.matches(r#"rel="prefetch""#).count(),
+        "prefetch links must appear only inside the inert <template>",
+    );
+    assert_eq!(
+        template.matches(r#"rel="prefetch""#).count(),
+        THEME_ICONS.len(),
+    );
+}
+
+#[test]
+fn theme_toggle_script_activates_the_prefetch_template_at_idle() {
+    // The script reaches the inert template by the shared id and clones its
+    // links into <head> to fire the prefetch. Pin the id agreement — a rename
+    // on either side would silently no-op the warm-up — and that activation is
+    // deferred to idle time so it never contends with first-paint work.
+    assert!(
+        THEME_TOGGLE_SCRIPT.contains(THEME_ICON_PREFETCH_TEMPLATE_ID),
+        "theme script must look up the prefetch template by its shared id",
+    );
+    assert!(
+        THEME_TOGGLE_SCRIPT.contains("requestIdleCallback"),
+        "the prefetch activation must be scheduled off the critical path",
+    );
+}
+
+#[test]
 fn page_emits_config_controls_section_hidden_with_two_buttons() {
     let html = render_page(&[fake_rule("alpha")], &fake_context());
     // The Configuration section is a <fieldset> emitted with the HTML
