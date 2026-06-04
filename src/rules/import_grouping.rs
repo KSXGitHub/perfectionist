@@ -322,7 +322,7 @@ impl ImportGrouping {
         run: &[UseStmt<'_>],
         violations: &mut Vec<Pending>,
     ) {
-        // A run of one statement is a single group either way, so it
+        // A run of one statement is a single block either way, so it
         // can never violate.
         if run.len() < 2 {
             return;
