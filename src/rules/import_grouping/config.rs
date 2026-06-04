@@ -5,7 +5,7 @@
 //! count that separates adjacent groups.
 
 /// How `use` statements are partitioned into blocks.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum Style {
     /// Every `use` statement sits in one contiguous block, with no
@@ -15,7 +15,6 @@ pub(super) enum Style {
     /// `blank_line_count` blank lines. The default group set is
     /// std (`std` / `core` / `alloc`), internal (`super` / `self` /
     /// `crate`), and third-party (every other crate).
-    #[default]
     MultiBlock,
 }
 
@@ -45,47 +44,65 @@ pub(super) enum CfgBlockHandling {
     Merge,
 }
 
-#[derive(Debug, serde::Deserialize)]
-#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub(super) struct Config {
-    /// Partitioning style to enforce. Defaults to `multi_block`.
+    // A bare `Style` (not `Option<Style>`) with no `serde(default)`, so
+    // `style` is a required field: an enabled rule with no `style` fails
+    // to deserialize rather than silently defaulting to a layout. This
+    // is also the syntactic signal gen-docs reads to badge the field
+    // `mandatory`. Every other field keeps a per-field `serde(default)`
+    // so only `style` is mandatory; the config is read only when the
+    // rule is enabled (see `register_pass`), so a disabled rule never
+    // needs it.
+    /// The grouping style to enforce: `single_block` or `multi_block`. It
+    /// has no default — a project enabling the rule states which layout
+    /// it wants — so it must be set when the rule is enabled.
     pub(super) style: Style,
     /// The order the groups appear in, top to bottom. Defaults to
     /// `["std", "internal", "thirdparty"]`.
+    #[serde(default = "default_order")]
     pub(super) order: Vec<Group>,
     /// Crate roots classified into the `std` group. Defaults to
     /// `["std", "core", "alloc"]`; extend with `proc_macro` or `test`
     /// if a project routinely imports them.
+    #[serde(default = "default_std_crates")]
     pub(super) std_crates: Vec<String>,
     /// Path prefixes classified into the `internal` group. Defaults to
     /// `["crate", "super", "self"]`; extend with project-specific
     /// re-export roots treated as part of the workspace.
+    #[serde(default = "default_internal_prefixes")]
     pub(super) internal_prefixes: Vec<String>,
     /// How `#[cfg(...)]`-gated imports are grouped. Defaults to
     /// `trailing`.
+    #[serde(default)]
     pub(super) cfg_block_handling: CfgBlockHandling,
     /// Exact number of blank lines separating adjacent groups (strict
     /// equality). Defaults to `1`. Ignored under `single_block`.
+    #[serde(default = "default_blank_line_count")]
     pub(super) blank_line_count: usize,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            style: Style::default(),
-            order: vec![Group::Std, Group::Internal, Group::Thirdparty],
-            std_crates: ["std", "core", "alloc"]
-                .into_iter()
-                .map(ToOwned::to_owned)
-                .collect(),
-            internal_prefixes: ["crate", "super", "self"]
-                .into_iter()
-                .map(ToOwned::to_owned)
-                .collect(),
-            cfg_block_handling: CfgBlockHandling::default(),
-            blank_line_count: 1,
-        }
-    }
+fn default_order() -> Vec<Group> {
+    vec![Group::Std, Group::Internal, Group::Thirdparty]
+}
+
+fn default_std_crates() -> Vec<String> {
+    ["std", "core", "alloc"]
+        .into_iter()
+        .map(ToOwned::to_owned)
+        .collect()
+}
+
+fn default_internal_prefixes() -> Vec<String> {
+    ["crate", "super", "self"]
+        .into_iter()
+        .map(ToOwned::to_owned)
+        .collect()
+}
+
+fn default_blank_line_count() -> usize {
+    1
 }
 
 impl Config {
@@ -106,5 +123,54 @@ impl Config {
     /// group, including one absent from `order`.
     pub(super) fn cfg_rank(&self) -> usize {
         self.order.len() + 1
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn style_values_deserialize() {
+        assert_eq!(
+            toml::from_str::<Config>(r#"style = "multi_block""#)
+                .unwrap()
+                .style,
+            Style::MultiBlock,
+        );
+        assert_eq!(
+            toml::from_str::<Config>(r#"style = "single_block""#)
+                .unwrap()
+                .style,
+            Style::SingleBlock,
+        );
+    }
+
+    #[test]
+    fn missing_style_is_an_error() {
+        // `style` is required (bare `Style`, no `serde(default)`), so a
+        // table that omits it fails to deserialize rather than defaulting
+        // to a layout — even when another knob is present.
+        assert!(toml::from_str::<Config>("").is_err());
+        assert!(toml::from_str::<Config>("blank_line_count = 2").is_err());
+    }
+
+    #[test]
+    fn other_fields_default_when_style_is_set() {
+        // Only `style` is mandatory; the remaining knobs fall back to
+        // their per-field defaults when absent.
+        let config = toml::from_str::<Config>(r#"style = "multi_block""#).unwrap();
+        assert_eq!(config.order, default_order());
+        assert_eq!(config.std_crates, default_std_crates());
+        assert_eq!(config.internal_prefixes, default_internal_prefixes());
+        assert_eq!(config.cfg_block_handling, CfgBlockHandling::Trailing);
+        assert_eq!(config.blank_line_count, 1);
+    }
+
+    #[test]
+    fn unknown_style_is_rejected() {
+        // There is no neutral `preserve` value; an unrecognised style is
+        // a hard deserialisation error rather than a silent no-op.
+        assert!(toml::from_str::<Config>(r#"style = "preserve""#).is_err());
     }
 }

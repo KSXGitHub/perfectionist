@@ -35,6 +35,31 @@ pub fn run_project_with_sources(
     (temp, stderr, success)
 }
 
+/// Like [`run_project_with_sources`], but appends `dylint_config` to
+/// the fixture's `dylint.toml` while staying on plain `--all` (no
+/// `--all-targets`, so `#[cfg(test)]` code is excluded). Use it for a
+/// rule that is off by default — and so must be enabled through the
+/// appended config — but whose fixtures still rely on the non-test
+/// build. Pass an empty `dylint_config` for the default configuration.
+pub fn run_project_with_sources_and_config(
+    package_name: &str,
+    perfectionist_dir: &Path,
+    shared_target_dir: &Path,
+    sources: &[(&str, &str)],
+    dylint_config: &str,
+) -> (TempDir, String, bool) {
+    let temp = TempDir::new().expect("failed to create temp dir");
+    build_project_with_config(
+        temp.path(),
+        package_name,
+        perfectionist_dir,
+        sources,
+        dylint_config,
+    );
+    let (stderr, success) = run_dylint(temp.path(), shared_target_dir);
+    (temp, stderr, success)
+}
+
 /// Like [`run_project_with_sources`], but runs `cargo dylint`
 /// with `--all-targets` (so the unit-test target — and thus
 /// `cfg(test)` code — is checked) and lets the caller append a

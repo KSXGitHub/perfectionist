@@ -3,6 +3,11 @@ libraries = [
   { path = "." },
 ]
 
+# `import_grouping` is inactive by default, so it must be enabled here
+# for the self-lint to keep enforcing this crate's import layout.
+[perfectionist]
+enable = ["import_grouping"]
+
 ["perfectionist::unicode_ellipsis_in_docs"]
 scan_code_spans = true
 

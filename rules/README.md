@@ -34,7 +34,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   import granularity does not match the configured `import_granularity.style`
 
-- [`import_grouping`](./import_grouping.md) (default: `active`).
+- [`import_grouping`](./import_grouping.md) (default: `inactive`).
 
   import grouping does not match the configured `import_grouping.style`
 

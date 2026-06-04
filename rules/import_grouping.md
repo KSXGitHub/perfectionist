@@ -2,7 +2,7 @@
 
 # `perfectionist::import_grouping`
 
-**Default state:** `active`  
+**Default state:** `inactive`  
 **Source:** [`src/rules/import_grouping.rs`](../src/rules/import_grouping.rs)
 
 > import grouping does not match the configured `import_grouping.style`
@@ -10,11 +10,12 @@
 ## What it does
 
 Enforces a single project-wide *grouping* style for the run of
-`use` statements at the top of a module body, chosen via `style`:
+`use` statements at the top of a module body. The rule is
+inactive by default; a project opts in and sets `style` to one of:
 - `single_block` — every `use` sits in one contiguous block with
   no blank lines between imports.
-- `multi_block` (default) — imports are partitioned into ordered
-  groups separated by exactly `blank_line_count` blank lines. The
+- `multi_block` — imports are partitioned into ordered groups
+  separated by exactly `blank_line_count` blank lines. The
   default group set, in order, is std (`std` / `core` / `alloc`),
   internal (`super` / `self` / `crate`), then third-party (every
   other crate). The `order`, `std_crates`, `internal_prefixes`,
@@ -34,11 +35,21 @@ with the project's configured `style`. Enforcing one keeps import
 blocks scanning uniformly and makes import diffs predictable.
 rustfmt's `group_imports` option can enforce the same shape, but
 only on the nightly channel; this lint gives stable-toolchain
-projects a hard CI check instead of a silent reformat.
+projects a hard CI check instead of a silent reformat. The rule
+is inactive by default; enable it and pick a style in
+`dylint.toml`:
+
+```toml
+[perfectionist]
+enable = ["import_grouping"]
+
+["perfectionist::import_grouping"]
+style = "multi_block"
+```
 
 ## Example
 
-### Style: Multi block (default)
+### Style: Multi block
 
 **Avoid:**
 
@@ -80,11 +91,13 @@ use std::time::Duration;
 
 ## Configuration
 
-Configure via `dylint.toml` under `["perfectionist::import_grouping"]`. Every field is optional; the per-field prose below states the default.
+Configure via `dylint.toml` under `["perfectionist::import_grouping"]`. A field marked mandatory must be set; an optional field can be omitted and the per-field prose below states its default.
 
-### `style`: `Style` (optional)
+### `style`: `Style` (mandatory)
 
-Partitioning style to enforce. Defaults to `multi_block`.
+The grouping style to enforce: `single_block` or `multi_block`. It
+has no default — a project enabling the rule states which layout
+it wants — so it must be set when the rule is enabled.
 
 ### `order`: `[Group]` (optional)
 
