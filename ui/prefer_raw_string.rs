@@ -80,6 +80,16 @@ fn _stringify_argument() {
     let _ = stringify!("a\"b");
 }
 
+// Bad: `dbg!`'s argument *survives* lowering as the `match` scrutinee,
+// so the late pass flags it (the pre-expansion scan also sees it, but the
+// byte-range dedup drops the duplicate). The rewritten value is
+// identical; only the `stringify!`-reflected debug label printed at
+// runtime changes — the same deliberately-accepted trade-off as
+// `stringify!`.
+fn _dbg_argument() {
+    let _ = dbg!("a\"b");
+}
+
 // Not flagged: a placeholder template that also contains a non-raw
 // escape (`\n`). The literal is ineligible as a whole, and the static
 // pieces the compiler splits it into are not rewritten either.
@@ -140,6 +150,7 @@ fn main() {
     _assert_eq_message_placeholder();
     _assert_eq_string_operand();
     _stringify_argument();
+    _dbg_argument();
     _placeholder_with_newline_escape();
     _has_newline_escape();
     _line_continuation();

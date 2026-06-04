@@ -55,6 +55,12 @@ LL |     assert_eq!("a/"b".len(), 3);
    |                ^^^^^^ help: use a raw string: `r#"a"b"#`
 
 warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/prefer_raw_string.rs:90:18
+   |
+LL |     let _ = dbg!("a/"b");
+   |                  ^^^^^^ help: use a raw string: `r#"a"b"#`
+
+warning: string literal uses escapes that a raw string would avoid
   --> $DIR/prefer_raw_string.rs:48:21
    |
 LL |     let _ = format!("url(/"{name}/")");
@@ -72,5 +78,5 @@ warning: string literal uses escapes that a raw string would avoid
 LL |     let _ = stringify!("a/"b");
    |                        ^^^^^^ help: use a raw string: `r#"a"b"#`
 
-warning: 12 warnings emitted
+warning: 13 warnings emitted
 
