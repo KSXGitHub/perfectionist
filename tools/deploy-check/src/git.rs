@@ -1,13 +1,11 @@
 //! Run `git` as a child process and capture its stdout.
 
+use super::error::RuntimeError;
+use command_extra::CommandExtra;
+use pipe_trait::Pipe;
 use std::ffi::OsStr;
 use std::path::Path;
 use std::process::Command;
-
-use command_extra::CommandExtra;
-use pipe_trait::Pipe;
-
-use super::error::RuntimeError;
 
 pub(crate) fn git_capture<Args, Arg>(root: &Path, args: Args) -> Result<String, RuntimeError>
 where

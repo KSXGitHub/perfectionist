@@ -5,7 +5,7 @@
 //! style.
 //!
 //! Mirrors the structure of `tests/macro_argument_binding.rs` — shared
-//! `Mutex` serialisation (the `DYLINT_TOML` env var is process-global)
+//! [`Mutex`] serialisation (the `DYLINT_TOML` env var is process-global)
 //! and one fixture directory per case.
 //!
 //! `import_granularity` is disabled in each config: it is active by
@@ -14,7 +14,6 @@
 //! so disabling it keeps the snapshots focused on `self_import`.
 
 use std::sync::Mutex;
-
 use text_block_macros::text_block_fnl;
 
 static SERIAL: Mutex<()> = Mutex::new(());

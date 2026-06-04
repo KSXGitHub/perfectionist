@@ -2,10 +2,9 @@
 //! listing each TOML key, plus the per-type sub-blocks describing
 //! the shape of any project-local enums or structs the fields reach.
 
-use maud::{Markup, PreEscaped, html};
-
 use crate::model::{ConfigDoc, TypeDoc, TypeKind};
 use crate::render::markdown::markdown_to_html;
+use maud::{Markup, PreEscaped, html};
 
 /// Render the per-rule configuration block. Two shapes:
 ///
@@ -38,7 +37,7 @@ pub(crate) fn config_section(config: &ConfigDoc) -> Markup {
             summary.config-summary { "Configuration" }
             p {
                 "Configure via " code { "dylint.toml" } " under "
-                code { "[\"" (config.key) "\"]" } "."
+                code { r#"[""# (config.key) r#""]"# } "."
             }
             dl.config {
                 @for field in &config.fields {
@@ -95,7 +94,7 @@ fn custom_type_block(ty: &TypeDoc) -> Markup {
                         dl.config {
                             @for variant in variants {
                                 dt {
-                                    code.config-key { "\"" (variant.serialized) "\"" }
+                                    code.config-key { r#"""# (variant.serialized) r#"""# }
                                     @if variant.rust_name != variant.serialized {
                                         " "
                                         span.config-default {

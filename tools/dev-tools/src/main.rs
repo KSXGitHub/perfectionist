@@ -13,16 +13,15 @@
 //! checkout — where `dylint-link` (the workspace's linker per
 //! `.cargo/config.toml`) is not yet on PATH — can still compile it.
 
-use std::fs::OpenOptions;
-use std::path::{Path, PathBuf};
-use std::process::{Command, ExitCode};
-use std::{env, io};
-
 use cargo_toml::Manifest;
 use clap::{Parser, Subcommand};
 use command_extra::CommandExtra;
 use derive_more::Display;
 use pipe_trait::Pipe;
+use std::fs::OpenOptions;
+use std::path::{Path, PathBuf};
+use std::process::{Command, ExitCode};
+use std::{env, io};
 
 const DYLINT_LIBRARY_CRATE: &str = "dylint_linting";
 const INSTALL_DIR: &str = ".dev-tools";

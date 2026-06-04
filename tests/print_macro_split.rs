@@ -6,7 +6,7 @@
 //!
 //! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
 //! the duration of `run_tests`. The env var is process-global, so the
-//! `#[test]`s in this binary serialise themselves on a shared `Mutex`
+//! `#[test]`s in this binary serialise themselves on a shared [`Mutex`]
 //! to avoid clobbering each other under the default parallel test
 //! harness.
 

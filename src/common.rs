@@ -3,14 +3,13 @@
 //! Each helper lives here only because more than one rule needs it.
 //! Anything used by a single rule belongs in that rule's own file.
 
-use std::collections::{BTreeSet, HashMap};
-use std::sync::OnceLock;
-
 use rustc_ast::{MetaItem, MetaItemInner, MetaItemKind, MetaItemLit};
 use rustc_hir as hir;
 use rustc_hir::HirId;
 use rustc_lint::{LateContext, LintContext};
 use rustc_span::{Span, Symbol, sym};
+use std::collections::{BTreeSet, HashMap};
+use std::sync::OnceLock;
 use unicode_width::UnicodeWidthStr;
 
 /// Whether the HIR node at `hir_id` (whose own span is `span`)
@@ -114,7 +113,7 @@ impl RuleSelector {
 /// user-supplied override (the `enable` / `disable` arrays in
 /// `dylint.toml`) speak this same alphabet, so a single type is
 /// used end-to-end and no `bool` ever bridges the two. Mirrors
-/// `gen-docs`'s own `DefaultState` (separate crate, same shape) —
+/// `gen-docs`'s own copy of this enum (separate crate, same shape) —
 /// the doc generator reads each rule's `DEFAULT_STATE` constant
 /// directly to render the rule's catalogue entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -205,7 +204,7 @@ pub(crate) fn render_meta_path(meta: &MetaItem) -> String {
 }
 
 /// Look up the `reason = "<literal>"` field in a lint-level attribute's
-/// argument list. Returns the `MetaItemLit` (so callers can inspect the
+/// argument list. Returns the [`MetaItemLit`] (so callers can inspect the
 /// literal's text and span) or `None` if no `reason` field is present.
 ///
 /// Shared between the lint-level rules that all consume the same
@@ -262,7 +261,7 @@ pub(crate) fn binding_ident<'hir>(pat: &'hir hir::Pat<'hir>) -> Option<rustc_spa
     }
 }
 
-/// Sibling of [`binding_ident`] that returns the binding's `HirId`
+/// Sibling of [`binding_ident`] that returns the binding's [`HirId`]
 /// instead of its `Ident`. Used by the closure-parameter rule to test
 /// whether a particular expression refers to one of the closure's
 /// parameters.
@@ -279,7 +278,7 @@ pub(crate) fn binding_hir_id<'hir>(pat: &'hir hir::Pat<'hir>) -> Option<hir::Hir
 /// (currently just `non_exhaustive_error`, whose suffix lookup is
 /// `str::ends_with`-shaped); the four rules whose late-pass
 /// lookup key is a [`Symbol`] use the sibling
-/// [`resolve_symbol_set`] instead. The `BTreeSet` return is
+/// [`resolve_symbol_set`] instead. The [`BTreeSet`] return is
 /// convenient for set membership lookups and has the side
 /// benefit of dropping duplicates when defaults and extras
 /// overlap; callers that need a `Vec`-shaped result can
@@ -301,7 +300,7 @@ pub(crate) fn resolve_string_set(
 /// Sibling of [`resolve_string_set`] that interns each name as
 /// a [`Symbol`] in one pass — skipping the intermediate
 /// `BTreeSet<String>` of the string-shaped variant. Used by rules
-/// whose late-pass lookup key is already a `Symbol`
+/// whose late-pass lookup key is already a [`Symbol`]
 /// (`unicode_ellipsis_in_panic_messages`, `single_letter_closure_param`'s
 /// trivial-callback list), so that membership checks reduce to
 /// integer compares instead of `Symbol::as_str` → `String`

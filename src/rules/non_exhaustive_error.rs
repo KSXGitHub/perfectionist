@@ -1,5 +1,4 @@
-use std::collections::BTreeSet;
-
+use crate::common::{DefaultState, resolve_string_set, resolved_state};
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::source::indent_of;
 use clippy_utils::sym;
@@ -12,8 +11,7 @@ use rustc_middle::middle::privacy::Level;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::def_id::{CRATE_DEF_ID, LocalDefId};
-
-use crate::common::{DefaultState, resolve_string_set, resolved_state};
+use std::collections::BTreeSet;
 
 declare_tool_lint! {
     /// ### What it does
@@ -78,7 +76,7 @@ declare_tool_lint! {
 /// Off by default — enable it in `dylint.toml` via the crate-wide
 /// `[perfectionist] enable = ["non_exhaustive_error"]` (or the
 /// `[[perfectionist.enable]]` array-of-tables form). Read by
-/// `register_pass` below; gen-docs picks the constant up via syn
+/// [`register_pass`] below; gen-docs picks the constant up via syn
 /// to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 

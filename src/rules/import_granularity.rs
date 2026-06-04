@@ -13,13 +13,12 @@ mod config;
 mod model;
 mod render;
 
-use check::is_compliant;
-use config::{Config, SelfMerge, Style};
-use model::{Leaf, StmtInfo, stmt_info};
-
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use crate::module_reparse::for_each_module_file;
+use check::is_compliant;
+use config::{Config, SelfMerge, Style};
+use model::{Leaf, StmtInfo, stmt_info};
 
 declare_tool_lint! {
     /// ### What it does
@@ -117,7 +116,7 @@ declare_tool_lint! {
 
 /// Active by default. `module` is the shipped baseline; a project that
 /// prefers `crate` or `item` sets `style` in `dylint.toml`. Read by
-/// `register_pass`; gen-docs picks the constant up to render the rule's
+/// [`register_pass`]; gen-docs picks the constant up to render the rule's
 /// default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 

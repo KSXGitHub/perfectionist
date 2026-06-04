@@ -1,0 +1,66 @@
+warning: `Helper` resolves in scope; write it as an intra-doc link
+  --> $DIR/bare_identifier_reference.rs:3:32
+   |
+LL | //! The crate-level mention of `Helper` resolves at the crate root, so
+   |                                ^^^^^^^^ help: wrap as an intra-doc link: `[`Helper`]`
+   |
+   = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
+
+warning: `Helper` resolves in scope; write it as an intra-doc link
+  --> $DIR/bare_identifier_reference.rs:11:20
+   |
+LL | /// Installs using `Helper` and `Store`.
+   |                    ^^^^^^^^ help: wrap as an intra-doc link: `[`Helper`]`
+
+warning: `Store` resolves in scope; write it as an intra-doc link
+  --> $DIR/bare_identifier_reference.rs:11:33
+   |
+LL | /// Installs using `Helper` and `Store`.
+   |                                 ^^^^^^^ help: wrap as an intra-doc link: `[`Store`]`
+
+warning: `Helper` resolves in scope; write it as an intra-doc link
+  --> $DIR/bare_identifier_reference.rs:34:17
+   |
+LL |     /// Reaches `Helper` through the `use` import in this module.
+   |                 ^^^^^^^^ help: wrap as an intra-doc link: `[`Helper`]`
+
+warning: `overlap` resolves in scope; write it as an intra-doc link
+  --> $DIR/bare_identifier_reference.rs:41:44
+   |
+LL | /// A module and a function both answer to `overlap`, which therefore
+   |                                            ^^^^^^^^^
+   |
+   = help: `overlap` resolves in more than one namespace; write a disambiguated intra-doc link such as `[`overlap`](type@overlap)`
+
+warning: `PrivateHelper` resolves in scope; write it as an intra-doc link
+  --> $DIR/bare_identifier_reference.rs:57:5
+   |
+LL | /// `PrivateHelper` — both sit below the public API — so this one fires.
+   |     ^^^^^^^^^^^^^^^ help: wrap as an intra-doc link: `[`PrivateHelper`]`
+
+warning: `mixed_vis` resolves in scope; write it as an intra-doc link
+  --> $DIR/bare_identifier_reference.rs:60:61
+   |
+LL | /// A public module and a *private* function both answer to `mixed_vis`.
+   |                                                             ^^^^^^^^^^^
+   |
+   = help: `mixed_vis` resolves in more than one namespace; write a disambiguated intra-doc link such as `[`mixed_vis`](type@mixed_vis)`
+
+warning: `mixed_vis` resolves in scope; write it as an intra-doc link
+  --> $DIR/bare_identifier_reference.rs:71:20
+   |
+LL | /// The inverse of `mixed_vis`: the type (`flipped_vis`) is private and
+   |                    ^^^^^^^^^^^
+   |
+   = help: `mixed_vis` resolves in more than one namespace; write a disambiguated intra-doc link such as `[`mixed_vis`](type@mixed_vis)`
+
+warning: `flipped_vis` resolves in scope; write it as an intra-doc link
+  --> $DIR/bare_identifier_reference.rs:71:43
+   |
+LL | /// The inverse of `mixed_vis`: the type (`flipped_vis`) is private and
+   |                                           ^^^^^^^^^^^^^
+   |
+   = help: `flipped_vis` resolves in more than one namespace; write a disambiguated intra-doc link such as `[`flipped_vis`](value@flipped_vis)`
+
+warning: 9 warnings emitted
+

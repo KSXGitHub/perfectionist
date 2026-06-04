@@ -1,4 +1,5 @@
 pub mod bare_email;
+pub mod bare_identifier_reference;
 pub mod bare_issue_reference;
 pub mod bare_url;
 pub mod derive_ordering;

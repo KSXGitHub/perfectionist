@@ -44,6 +44,9 @@
   html:not([color-scheme-override="light"]) pre code {
     background: none;
   }
+  html:not([color-scheme-override="light"]) .ft-pipe::before, html:not([color-scheme-override="light"]) .ft-tee::before, html:not([color-scheme-override="light"]) .ft-ell::before, html:not([color-scheme-override="light"]) .ft-tee::after, html:not([color-scheme-override="light"]) .ft-ell::after {
+    background: #e6edf3;
+  }
   html:not([color-scheme-override="light"]) footer {
     border-top-color: #21262d;
     color: #8b949e;
@@ -249,6 +252,9 @@ html[color-scheme-override="dark"] code {
 }
 html[color-scheme-override="dark"] pre code {
   background: none;
+}
+html[color-scheme-override="dark"] .ft-pipe::before, html[color-scheme-override="dark"] .ft-tee::before, html[color-scheme-override="dark"] .ft-ell::before, html[color-scheme-override="dark"] .ft-tee::after, html[color-scheme-override="dark"] .ft-ell::after {
+  background: #e6edf3;
 }
 html[color-scheme-override="dark"] footer {
   border-top-color: #21262d;

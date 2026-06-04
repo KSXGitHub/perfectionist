@@ -1,10 +1,9 @@
 //! Shell out to `cargo dylint --all` and capture its output.
 
-use std::path::Path;
-use std::process::Command;
-
 use command_extra::CommandExtra;
 use pipe_trait::Pipe;
+use std::path::Path;
+use std::process::Command;
 
 /// Run `cargo dylint --all` inside `project_dir`, with
 /// `CARGO_TARGET_DIR` pointed at `shared_target_dir` so the build

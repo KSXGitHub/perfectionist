@@ -2,16 +2,16 @@
 //! how `self` appears in `use` statements.
 //!
 //! The rule is inactive by default and direction-less: a project that
-//! adopts it picks `forbid` (always prefer the bare `use foo::bar;`) or
-//! `combined` (fold adjacent module + item imports into
+//! adopts it picks [`forbid`] (always prefer the bare `use foo::bar;`) or
+//! [`combined`] (fold adjacent module + item imports into
 //! `use foo::bar::{self, X};`). `style` is therefore mandatory whenever
 //! the rule is enabled.
 //!
 //! Module layout:
 //!
 //! - [`render`] — `use`-tree rendering helpers shared by both styles.
-//! - [`forbid`] — the `forbid` style's per-tree rewrite.
-//! - [`combined`] — the `combined` style's adjacency fold.
+//! - [`forbid`] — the [`forbid`] style's per-tree rewrite.
+//! - [`combined`] — the [`combined`] style's adjacency fold.
 //!
 //! The rule runs as a [`LateLintPass`] that **re-parses each of the
 //! crate's module source files** via [`crate::module_reparse`]. A
@@ -22,6 +22,9 @@
 //! gates intact (parsing does not strip cfg, unlike the post-expansion
 //! AST). The sibling `import_granularity` rule shares the same machinery.
 
+use crate::common::{DefaultState, resolved_state};
+use crate::enclosing_hir::find_enclosing_hir_ids;
+use crate::module_reparse::for_each_module_file;
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_ast::visit::{self, Visitor};
 use rustc_ast::{Block, Item, ItemKind, ModKind, Stmt, StmtKind};
@@ -30,10 +33,6 @@ use rustc_hir::HirId;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Span;
-
-use crate::common::{DefaultState, resolved_state};
-use crate::enclosing_hir::find_enclosing_hir_ids;
-use crate::module_reparse::for_each_module_file;
 
 mod combined;
 mod forbid;
@@ -111,6 +110,15 @@ declare_tool_lint! {
     /// ```rust,ignore
     /// use foo::bar::{self, Baz};
     /// ```
+    #[cfg_attr(
+        dylint_lib = "perfectionist",
+        expect(
+            perfectionist::bare_identifier_reference,
+            reason = "the style names `forbid` / `combined` resolve to this rule's \
+                      submodules, but this rustdoc is rendered to the docs site where \
+                      intra-doc links don't apply"
+        )
+    )]
     pub perfectionist::SELF_IMPORT,
     Warn,
     "module imported through `self` against the project's configured `self`-import style",
@@ -145,6 +153,15 @@ struct Config {
     /// The `self`-import direction to enforce: `forbid` or `combined`.
     /// It has no default — the two directions are opposites with no
     /// neutral baseline — so it must be set when the rule is enabled.
+    #[cfg_attr(
+        dylint_lib = "perfectionist",
+        expect(
+            perfectionist::bare_identifier_reference,
+            reason = "the style names `forbid` / `combined` resolve to this rule's \
+                      submodules, but this field doc is rendered to the docs site where \
+                      intra-doc links don't apply"
+        )
+    )]
     style: Style,
 }
 
@@ -212,7 +229,7 @@ pub(super) struct Pending {
 
 /// What to render for a [`Pending`] once its anchor is known.
 pub(super) enum Fix {
-    /// A single-span replacement (the `forbid` rewrites). Always
+    /// A single-span replacement (the [`forbid`] rewrites). Always
     /// `MaybeIncorrect`: the bare form imports every namespace named by
     /// the final segment, while the `self` form imports only the module.
     Replace {
@@ -220,7 +237,7 @@ pub(super) enum Fix {
         replacement: String,
         note: Option<&'static str>,
     },
-    /// A multi-part edit (`combined`'s fold: rewrite the kept statement,
+    /// A multi-part edit ([`combined`]'s fold: rewrite the kept statement,
     /// delete the folded one).
     Multipart {
         label: &'static str,
@@ -308,10 +325,10 @@ struct SelfImportWalker<'a, 'b, 'tcx> {
 
 impl SelfImportWalker<'_, '_, '_> {
     /// Process one source-ordered sequence of entries: fold adjacent
-    /// imports under `combined`, and rewrite each `self`-importing `use`
-    /// under `forbid`. Each entry is `Some(item)` for an item in
+    /// imports under [`combined`], and rewrite each `self`-importing `use`
+    /// under [`forbid`]. Each entry is `Some(item)` for an item in
     /// position, or `None` for an intervening statement (a `let`, an
-    /// expression) that breaks the `combined` adjacency window.
+    /// expression) that breaks the [`combined`] adjacency window.
     fn scan_items<'ast>(&mut self, entries: impl Iterator<Item = Option<&'ast Item>> + Clone) {
         if let Style::Combined = self.style {
             combined::scan(self.cx, entries.clone(), self.violations);

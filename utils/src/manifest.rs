@@ -1,13 +1,12 @@
 //! Build a fixture's `Cargo.toml` and `dylint.toml` as Rust values
 //! and serialise them. The Cargo manifest is a `cargo_toml::Manifest`
 //! with the perfectionist-specific workspace metadata grafted onto
-//! its `Metadata` generic; the dylint config is the same `Manifest`
+//! its `Metadata` generic; the dylint config is the same [`Manifest`]
 //! type carrying just a `workspace.metadata.dylint` payload.
-
-use std::path::Path;
 
 use cargo_toml::{Edition, Inheritable, Manifest, Package, Product, Workspace};
 use serde::Serialize;
+use std::path::Path;
 
 #[derive(Default, Serialize)]
 pub struct DylintWorkspaceMetadata {

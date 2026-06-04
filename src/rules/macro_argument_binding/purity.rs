@@ -19,11 +19,10 @@
 //! "Implementation notes" section. The walker is `take_*`-style per
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
 
-use std::collections::BTreeSet;
-
 use rustc_ast::token::{Delimiter, IdentIsRaw, Token, TokenKind};
 use rustc_ast::tokenstream::{TokenStream, TokenTree};
 use rustc_span::kw;
+use std::collections::BTreeSet;
 
 /// Bundle of the two name-set tables the purity walker consults:
 /// the pure-getter method names accepted as `.method()` postfixes,
@@ -47,7 +46,7 @@ pub(super) struct PurityContext<'a> {
 /// `=>` is ordinary content here — match-arm syntax inside `matches!`
 /// shows up as a top-level fat arrow but is meaningful to the macro,
 /// not a separator. The walker passes it through unchanged so each
-/// argument's `looks_like_expression` check can skip it as a
+/// argument's [`looks_like_expression`] check can skip it as a
 /// non-expression position the macro author chose.
 pub(super) fn split_top_level_arguments(stream: &TokenStream) -> Option<Vec<Vec<TokenTree>>> {
     let mut arguments: Vec<Vec<TokenTree>> = Vec::new();
@@ -556,8 +555,8 @@ fn take_atom_path_after_sep<'a>(
     Some(take_path_and_optional_macro_call(name, rest, pure_macros))
 }
 
-/// Type-position path tail: `take_atom_path_after_sep`'s sibling
-/// for `take_pure_type`. Types don't carry trailing `!` macro
+/// Type-position path tail: [`take_atom_path_after_sep`]'s sibling
+/// for [`take_pure_type`]. Types don't carry trailing `!` macro
 /// calls so this variant only walks the `::ident` chain.
 fn take_path_after_sep(tokens: &[TokenTree]) -> Option<&[TokenTree]> {
     let (ident, rest) = tokens.split_first()?;

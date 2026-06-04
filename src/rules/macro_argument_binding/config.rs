@@ -1,18 +1,16 @@
-//! Configuration for `macro_argument_binding`. Owns the `Mode` enum,
-//! the user-facing `Config` shape, the curated built-in deny / allow
-//! sets, and the in-memory `MacroArgumentBinding` state the early
+//! Configuration for `macro_argument_binding`. Owns the [`Mode`] enum,
+//! the user-facing [`Config`] shape, the curated built-in deny / allow
+//! sets, and the in-memory [`MacroArgumentBinding`] state the early
 //! pass holds.
 //!
 //! Path-set construction goes through the helpers at the bottom of
 //! this file so each set (`deny`, `allow`, `allow_extra`, `ignore`)
 //! is built consistently.
 
-use std::collections::BTreeSet;
-
-use rustc_ast::Path;
-
 use crate::common::resolve_string_set;
 use crate::macro_path::{matches_any, merge_with_builtins, parse_path_list};
+use rustc_ast::Path;
+use std::collections::BTreeSet;
 
 const CONFIG_KEY: &str = "perfectionist::macro_argument_binding";
 

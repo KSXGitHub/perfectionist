@@ -1,10 +1,9 @@
-use std::sync::Mutex;
-
+use crate::common::{DefaultState, resolved_state};
+use crate::macro_template::find_template_literal;
 use rustc_ast::MacCall;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-
-use crate::common::{DefaultState, resolved_state};
+use std::sync::Mutex;
 
 mod config;
 mod emit;
@@ -15,7 +14,7 @@ mod scan;
 use config::PrintMacroSplit;
 use late::PrintMacroSplitLate;
 use queue::PendingViolation;
-use scan::{build_fold_suggestion, find_template_literal};
+use scan::build_fold_suggestion;
 
 declare_tool_lint! {
     /// ### What it does

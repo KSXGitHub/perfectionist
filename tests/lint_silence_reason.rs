@@ -7,14 +7,13 @@
 //! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
 //! the duration of `run_tests`. The env var is process-global, so the
 //! `#[test]`s in this binary serialise themselves on a shared
-//! `Mutex` to avoid clobbering each other under the default
+//! [`Mutex`] to avoid clobbering each other under the default
 //! parallel test harness.
 
+use pipe_trait::Pipe;
 use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
 use std::sync::Mutex;
-
-use pipe_trait::Pipe;
 use text_block_macros::text_block_fnl;
 
 const LINT_NAME: &str = "perfectionist::lint_silence_reason";

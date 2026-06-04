@@ -1,13 +1,11 @@
 //! The version-bump contract and its enforcement.
 
-use std::path::Path;
-
-use pipe_trait::Pipe;
-
 use super::error::RuntimeError;
 use super::git::git_capture;
 use super::manifest::{parse_cargo_lock_version, parse_cargo_toml_version};
 use super::version_literal::is_version_literal;
+use pipe_trait::Pipe;
+use std::path::Path;
 
 /// Whether we are checking a real commit (`Commit(rev)`) or the staged
 /// index ahead of an in-progress commit (`Cached`).
@@ -136,8 +134,8 @@ pub(crate) fn assert_version_only_diff(
     if before_lines.len() != after_lines.len() {
         return Err(RuntimeError::LineCountChanged(file.to_owned()));
     }
-    let expected_before = format!("version = \"{before_ver}\"");
-    let expected_after = format!("version = \"{after_ver}\"");
+    let expected_before = format!(r#"version = "{before_ver}""#);
+    let expected_after = format!(r#"version = "{after_ver}""#);
     let mut diffs = before_lines
         .iter()
         .zip(&after_lines)

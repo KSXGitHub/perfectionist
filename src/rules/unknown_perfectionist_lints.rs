@@ -1,10 +1,9 @@
+use crate::common::{DefaultState, render_meta_path, resolved_state};
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Attribute, MetaItem, MetaItemInner, MetaItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Symbol, sym};
-
-use crate::common::{DefaultState, render_meta_path, resolved_state};
 
 declare_tool_lint! {
     /// ### What it does

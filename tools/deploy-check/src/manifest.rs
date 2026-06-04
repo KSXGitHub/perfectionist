@@ -2,11 +2,10 @@
 //! the `perfectionist` package's `version` field from a Cargo
 //! lockfile.
 
-use pipe_trait::Pipe;
-use serde::Deserialize;
-
 use super::PACKAGE_NAME;
 use super::error::RuntimeError;
+use pipe_trait::Pipe;
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 struct CargoTomlFile {

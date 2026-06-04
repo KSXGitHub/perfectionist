@@ -16,10 +16,10 @@
 //! enabled, so each test enables the rule and selects `grouped` through
 //! the appended `dylint.toml` config. `--all` (not `--all-targets`) is
 //! kept so `#[cfg(test)]` code stays excluded — the
-//! `does_not_flag_cfg_excluded_inline_module` case depends on it.
+//! [`does_not_flag_cfg_excluded_inline_module`] case depends on it.
 //!
 //! The violation used throughout is a blank line splitting a single
-//! `std` group: it is a violation under every `order` (so it does not
+//! [`std`] group: it is a violation under every `order` (so it does not
 //! depend on the default group order) and the two imports come from
 //! different modules, so `import_granularity`'s module style does not
 //! also fire on them.

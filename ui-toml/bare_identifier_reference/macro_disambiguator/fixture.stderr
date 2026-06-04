@@ -1,0 +1,11 @@
+warning: `dual` resolves in scope; write it as an intra-doc link
+  --> $DIR/fixture.rs:10:58
+   |
+LL | /// A public macro and a private function both answer to `dual`; the
+   |                                                          ^^^^^^
+   |
+   = help: `dual` resolves in more than one namespace; write a disambiguated intra-doc link such as `[`dual`](macro@dual)`
+   = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
+
+warning: 1 warning emitted
+

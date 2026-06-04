@@ -14,7 +14,7 @@ fn normalise_strips_markers_and_decoration() {
 }
 
 /// A bare `//` or whitespace-only `//   ` line normalises to an
-/// empty string, which `find_trailing_comment` uses to skip the
+/// empty string, which [`find_trailing_comment`] uses to skip the
 /// match rather than lift a vacuous reason.
 #[test]
 fn normalise_collapses_empty_and_whitespace_only_comments() {

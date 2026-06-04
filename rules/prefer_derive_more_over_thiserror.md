@@ -71,7 +71,7 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum MyError {
     #[error("missing field {0}")]
-    MissingField(String),
+    MissingField(MissingFieldError),
 }
 ```
 
@@ -83,7 +83,7 @@ use derive_more::{Display, Error};
 #[derive(Debug, Display, Error)]
 pub enum MyError {
     #[display("missing field {_0}")]
-    MissingField(String),
+    MissingField(MissingFieldError),
 }
 ```
 

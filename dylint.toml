@@ -3,15 +3,19 @@ libraries = [
   { path = "." },
 ]
 
+# `import_grouping` is inactive by default, so it must be enabled here
+# for the self-lint to keep enforcing this crate's import layout.
+[perfectionist]
+enable = ["import_grouping"]
+
 ["perfectionist::unicode_ellipsis_in_docs"]
 scan_code_spans = true
 
-# This crate groups imports std → external → internal (`crate::`),
-# matching rustfmt's `StdExternalCrate`. The rule's own default places
-# internal second, so configure the order to match the house style and
-# keep `self-lint` clean.
+# This crate keeps every module's `use` statements in one contiguous
+# block with no blank lines between them. Under `single_group` the
+# `order`, `blank_line_count`, and group-classification knobs are ignored.
 ["perfectionist::import_grouping"]
-order = ["std", "thirdparty", "internal"]
+style = "single_group"
 
 # `tools/gen-docs` parses `declare_tool_lint!` bodies with syn, whose
 # `Token![::]` macro takes a token literal in type position — there is no

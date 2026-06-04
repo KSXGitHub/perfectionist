@@ -7,9 +7,8 @@ mod detect;
 mod emit;
 mod scan;
 
-use config::PreferDeriveMoreOverThiserror;
-
 use crate::common::{DefaultState, resolved_state};
+use config::PreferDeriveMoreOverThiserror;
 
 declare_tool_lint! {
     /// ### What it does
@@ -76,7 +75,7 @@ declare_tool_lint! {
     /// #[derive(Debug, Error)]
     /// pub enum MyError {
     ///     #[error("missing field {0}")]
-    ///     MissingField(String),
+    ///     MissingField(MissingFieldError),
     /// }
     /// ```
     ///
@@ -88,7 +87,7 @@ declare_tool_lint! {
     /// #[derive(Debug, Display, Error)]
     /// pub enum MyError {
     ///     #[display("missing field {_0}")]
-    ///     MissingField(String),
+    ///     MissingField(MissingFieldError),
     /// }
     /// ```
     pub perfectionist::PREFER_DERIVE_MORE_OVER_THISERROR,
@@ -97,7 +96,7 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. Read by `register_pass` below; gen-docs picks
+/// Active by default. Read by [`register_pass`] below; gen-docs picks
 /// the constant up via syn to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 

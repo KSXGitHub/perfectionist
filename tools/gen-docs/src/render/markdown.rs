@@ -5,9 +5,9 @@
 //! from the bundled theme and written beside `index.html` as its own
 //! linked stylesheet.
 
-use std::sync::LazyLock;
-
+use crate::render::file_tree::{self, FILE_TREE_LANG};
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Tag, TagEnd, html as cmark_html};
+use std::sync::LazyLock;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{ClassStyle, ClassedHTMLGenerator, css_for_theme_with_class_style};
 use syntect::parsing::SyntaxSet;
@@ -55,7 +55,15 @@ fn highlight_code_blocks<'a>(parser: impl Iterator<Item = Event<'a>>) -> Vec<Eve
             }
             Event::End(TagEnd::CodeBlock) if current_lang.is_some() => {
                 let lang = current_lang.take().expect("guarded above");
-                let html = highlight_to_html(&code_buffer, &lang);
+                // `ascii-file-tree` blocks aren't highlighted as text: the
+                // box-drawing connectors only join seamlessly when drawn
+                // with CSS rather than as glyphs (whose tiling is
+                // font-dependent), so they get their own structural HTML.
+                let html = if lang == FILE_TREE_LANG {
+                    file_tree::render_file_tree(&code_buffer)
+                } else {
+                    highlight_to_html(&code_buffer, &lang)
+                };
                 out.push(Event::Html(CowStr::Boxed(html.into_boxed_str())));
             }
             Event::Text(text) if current_lang.is_some() => {
@@ -105,7 +113,7 @@ fn lang_class_attr(lang: &str) -> String {
             char.is_ascii_alphanumeric() || matches!(char, '_' | '-' | '+' | '#' | '.')
         });
     if safe {
-        format!(" class=\"language-{lang}\"")
+        format!(r#" class="language-{lang}""#)
     } else {
         String::new()
     }

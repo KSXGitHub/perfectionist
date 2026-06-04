@@ -1,4 +1,4 @@
-//! `AsciiLetter` — single-ASCII-letter newtype shared between the
+//! [`AsciiLetter`] — single-ASCII-letter newtype shared between the
 //! `single_letter_*` rules' allow-list configuration knobs. Encoding
 //! the "ASCII alphabetic" invariant in the type system retires the
 //! convention-only `#[serde(deserialize_with = "deserialize_ascii_letters")]`
@@ -11,7 +11,7 @@
 ///
 /// `char` keeps the broader `single-character string` label for the
 /// codepoint-shaped fields that genuinely accept any Unicode
-/// character (`unicode_ellipsis_*::extra_flagged_chars`); `AsciiLetter`'s
+/// character (`unicode_ellipsis_*::extra_flagged_chars`); [`AsciiLetter`]'s
 /// label is strictly narrower because every value satisfies
 /// `char::is_ascii_alphabetic`.
 #[expect(

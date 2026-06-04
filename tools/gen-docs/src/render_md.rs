@@ -15,12 +15,11 @@
 //! convention space — and is wrapped in blank lines on either side
 //! so it never glues itself to the headings around it.
 
-use std::fmt::Write as _;
-
 use crate::model::{
     ConfigDoc, ConfigField, EnumVariant, NAMESPACE, Optionality, Rule, StructField, TypeDoc,
     TypeKind,
 };
+use std::fmt::Write as _;
 
 /// Per-rule markdown filename. Mirrors the source layout
 /// (`src/rules/<name>.rs`) so a reader can find one from the other
@@ -173,7 +172,7 @@ fn render_config_section(config: &ConfigDoc, out: &mut String) {
     };
     let _ = writeln!(
         out,
-        "Configure via `dylint.toml` under `[\"{}\"]`. {optionality_note}.",
+        r#"Configure via `dylint.toml` under `["{}"]`. {optionality_note}."#,
         config.key,
     );
     out.push('\n');
@@ -234,11 +233,11 @@ fn render_type(ty: &TypeDoc, out: &mut String) {
 
 fn render_variant(variant: &EnumVariant, out: &mut String) {
     if variant.rust_name == variant.serialized {
-        let _ = writeln!(out, "##### `\"{}\"`", variant.serialized);
+        let _ = writeln!(out, r#"##### `"{}"`"#, variant.serialized);
     } else {
         let _ = writeln!(
             out,
-            "##### `\"{}\"` (Rust: `{}`)",
+            r#"##### `"{}"` (Rust: `{}`)"#,
             variant.serialized, variant.rust_name,
         );
     }

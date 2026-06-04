@@ -1,17 +1,15 @@
-//! Configuration for `print_macro_split`: the user-facing `Config`
+//! Configuration for `print_macro_split`: the user-facing [`Config`]
 //! shape, the curated built-in `target_macros` list, and the in-memory
-//! `PrintMacroSplit` state the pre-expansion pass holds.
+//! [`PrintMacroSplit`] state the pre-expansion pass holds.
 //!
 //! Only the `line_continuation` rewrite ships today, so the `style`
 //! knob documented in `planned-rules/print-macro-split.md` is
 //! deliberately absent — a one-variant `style` enum would carry no
 //! information. It returns when the `multiple_calls` half lands.
 
-use std::collections::BTreeSet;
-
-use rustc_ast::Path;
-
 use crate::macro_path::{matches_any, parse_path_list};
+use rustc_ast::Path;
+use std::collections::BTreeSet;
 
 const CONFIG_KEY: &str = "perfectionist::print_macro_split";
 

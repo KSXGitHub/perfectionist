@@ -23,6 +23,7 @@ mod common;
 mod enclosing_hir;
 mod literal_scan;
 mod macro_path;
+mod macro_template;
 mod markdown;
 mod module_reparse;
 mod rules;
@@ -46,6 +47,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
 
     register! {
         bare_email
+        bare_identifier_reference
         bare_issue_reference
         bare_url
         derive_ordering

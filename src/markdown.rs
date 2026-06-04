@@ -28,7 +28,7 @@
 //! Headings and HTML tags are not classified by this helper — neither
 //! is needed by the rules currently consuming it. The sibling
 //! catalogue file's combinator surface lists them as future
-//! extensions for `intra_doc_links` / `clap_help_no_markdown`.
+//! extensions for `bare_identifier_reference` / `clap_help_no_markdown`.
 
 use std::ops::Range;
 
@@ -178,6 +178,93 @@ pub(crate) fn scan_code_regions(input: &str, include_code_spans: bool) -> Vec<Sk
                     if include_code_spans {
                         out.push(idx..idx + len);
                     }
+                    idx += len;
+                    at_line_start = false;
+                    continue;
+                }
+            }
+            b'\n' => {
+                idx += 1;
+                at_line_start = true;
+                continue;
+            }
+            _ => {}
+        }
+
+        idx += utf8_char_len(bytes, idx);
+        at_line_start = false;
+    }
+    out
+}
+
+/// Tier A: byte ranges of the inline code spans that are *candidates*
+/// for intra-doc-link rewriting — `` `...` `` code spans reached as
+/// standalone inline constructs, i.e. *not* consumed as the text of a
+/// `[...]` link (`` [`Foo`] ``, `` [`Foo`](dest) ``, `` [`Foo`][id] ``)
+/// and *not* sitting inside a code block.
+///
+/// The walk shares the same combinator surface and ordering as
+/// [`scan_skip_regions`]; the only difference is what it records. Block
+/// constructs, autolinks, and links are *consumed* (so a `` `Foo` ``
+/// inside `` [`Foo`] `` is skipped, having already been swallowed by
+/// [`take_link`]) but never recorded — only the surviving bare code
+/// spans are returned. Pulling a Rust identifier out of each range's
+/// body is left to the consuming rule (`bare_identifier_reference`), per the
+/// "Markdown parsing" convention that Rust-aware extraction lives in
+/// the rule, not in this helper.
+///
+/// Like [`scan_skip_regions`], the returned ranges are sorted by start
+/// byte and never overlap.
+pub(crate) fn scan_code_span_candidates(input: &str) -> Vec<SkipRange> {
+    let mut out: Vec<SkipRange> = Vec::new();
+    let bytes = input.as_bytes();
+    let mut idx = 0;
+    let mut at_line_start = true;
+    while idx < bytes.len() {
+        let rest = &input[idx..];
+
+        // Block-level constructs anchored at line start are consumed
+        // but not candidates (see [`scan_skip_regions`] for why each
+        // ends on a line boundary, so `at_line_start` stays true).
+        if at_line_start {
+            if let Some(len) = take_indented_code_block(input, idx) {
+                idx += len;
+                at_line_start = true;
+                continue;
+            }
+            if let Some(len) = take_fenced_code_block(rest) {
+                idx += len;
+                at_line_start = true;
+                continue;
+            }
+            if let Some(len) = take_reference_definition(rest) {
+                idx += len;
+                at_line_start = true;
+                continue;
+            }
+        }
+
+        match bytes[idx] {
+            b'`' => {
+                if let Some(len) = take_code_span(rest) {
+                    out.push(idx..idx + len);
+                    idx += len;
+                    at_line_start = false;
+                    continue;
+                }
+            }
+            b'<' => {
+                if let Some(len) = take_autolink(rest) {
+                    idx += len;
+                    at_line_start = false;
+                    continue;
+                }
+            }
+            b'[' => {
+                // A link consumes its `[...]` text wholesale, so the
+                // code span inside `` [`Foo`] `` is swallowed here and
+                // never recorded as a candidate.
+                if let Some(len) = take_link(rest) {
                     idx += len;
                     at_line_start = false;
                     continue;

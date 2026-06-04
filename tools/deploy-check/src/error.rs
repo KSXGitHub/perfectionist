@@ -1,14 +1,13 @@
 //! The crate's single top-level error type. Each variant covers
 //! one failure mode along the verify / commit-msg / pre-push paths,
-//! and carries enough structured context that the `Display` impl
-//! produces an actionable message at the CLI.
-
-use std::io;
-use std::path::PathBuf;
-
-use derive_more::Display;
+//! and carries enough structured context that the
+//! [`Display`](std::fmt::Display) impl produces an actionable message
+//! at the CLI.
 
 use super::PACKAGE_NAME;
+use derive_more::Display;
+use std::io;
+use std::path::PathBuf;
 
 #[derive(Display, Debug)]
 pub(crate) enum RuntimeError {

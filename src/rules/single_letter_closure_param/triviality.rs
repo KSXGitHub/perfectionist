@@ -16,12 +16,11 @@
 //! The driver in [`super`] composes these helpers; this module
 //! holds the predicates themselves.
 
+use crate::common::binding_hir_id;
 use rustc_hir as hir;
 use rustc_hir::def::Res;
 use rustc_lint::LateContext;
 use rustc_span::Symbol;
-
-use crate::common::binding_hir_id;
 
 /// If `body.value` is a single expression — either directly or
 /// wrapped in a block with no statements — return that
@@ -80,7 +79,7 @@ fn path_final_segment<'hir>(expr: &'hir hir::Expr<'hir>) -> Option<Symbol> {
 ///   `format!("{param}")`, ...).
 ///
 /// In every non-macro shape, `*` / `&` operators around the
-/// reference to the parameter are peeled by `is_param_ref`
+/// reference to the parameter are peeled by [`is_param_ref`]
 /// before matching, so `|s| (*s).foo()` and `|s| f(&*s)` both
 /// qualify.
 ///

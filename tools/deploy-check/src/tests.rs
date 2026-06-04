@@ -1,10 +1,9 @@
-use text_block_macros::text_block_fnl;
-
 use super::contract::assert_version_only_diff;
 use super::error::RuntimeError;
 use super::hook::extract_release_subject;
 use super::manifest::{parse_cargo_lock_version, parse_cargo_toml_version};
 use super::version_literal::is_version_literal;
+use text_block_macros::text_block_fnl;
 
 #[test]
 fn version_literal_grammar() {
@@ -223,6 +222,35 @@ fn commit_msg_honours_a_configured_semicolon_comment_char() {
     assert_eq!(
         extract_release_subject(content, ';').unwrap(),
         Some("0.0.0-rc.14"),
+    );
+}
+
+#[test]
+fn commit_msg_ignores_the_verbose_diff_below_the_scissors_line() {
+    // `git commit -v` appends the staged diff below the scissors
+    // line. Its lines aren't comment-prefixed, so the pre-fix code
+    // mistook them for a commit body and rejected the release commit
+    // with `MessageHasExtraContent`. The hook must cut at the
+    // scissors line just as Git does before committing.
+    let content = text_block_fnl! {
+        "0.0.0-rc.19"
+        "# Please enter the commit message for your changes. Lines starting"
+        "# with '#' will be ignored, and an empty message aborts the commit."
+        "#"
+        "# ------------------------ >8 ------------------------"
+        "# Do not modify or remove the line above."
+        "# Everything below it will be ignored."
+        "diff --git a/Cargo.toml b/Cargo.toml"
+        "index afbb122..b4b6303 100644"
+        "--- a/Cargo.toml"
+        "+++ b/Cargo.toml"
+        r#"@@ -4,7 +4,7 @@ members = ["tools/*", "utils"]"#
+        r#"-version = "0.0.0-rc.18""#
+        r#"+version = "0.0.0-rc.19""#
+    };
+    assert_eq!(
+        extract_release_subject(content, '#').unwrap(),
+        Some("0.0.0-rc.19"),
     );
 }
 

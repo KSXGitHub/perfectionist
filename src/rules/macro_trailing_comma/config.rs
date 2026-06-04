@@ -1,10 +1,9 @@
 //! Configuration for `macro_trailing_comma`. Owns the user-facing
-//! `Config` shape, the curated built-in name list, and the in-memory
-//! `MacroTrailingComma` state the early pass holds.
-
-use std::collections::BTreeSet;
+//! [`Config`] shape, the curated built-in name list, and the in-memory
+//! [`MacroTrailingComma`] state the early pass holds.
 
 use crate::macro_path::{matches_any, merge_with_builtins, parse_path, parse_path_list};
+use std::collections::BTreeSet;
 
 const CONFIG_KEY: &str = "perfectionist::macro_trailing_comma";
 

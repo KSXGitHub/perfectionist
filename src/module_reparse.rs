@@ -21,9 +21,6 @@
 //! modules), and [`for_each_module_file`] is a thin callback wrapper for
 //! callers that handle one file at a time and do their own descent.
 
-use std::collections::HashSet;
-use std::sync::Arc;
-
 use rustc_ast::Crate;
 use rustc_errors::DiagCtxt;
 use rustc_errors::emitter::SilentEmitter;
@@ -34,6 +31,8 @@ use rustc_session::parse::ParseSess;
 use rustc_span::def_id::LOCAL_CRATE;
 use rustc_span::source_map::SourceMap;
 use rustc_span::{BytePos, FileName, SourceFile};
+use std::collections::HashSet;
+use std::sync::Arc;
 
 /// The byte range `(lo, hi)` of a module body, used as a stable key
 /// across the re-parse / HIR boundary. Full [`rustc_span::Span`]
@@ -200,7 +199,7 @@ fn record_module_file(
 /// `None` (silently discarding buffered diagnostics — `parse_psess` is
 /// wired to a [`SilentEmitter`]) when the file does not parse as a
 /// standalone module. The shared source map already holds this file and
-/// deduplicates by name, so the parser reuses the loaded `SourceFile`
+/// deduplicates by name, so the parser reuses the loaded [`SourceFile`]
 /// (preserving the real spans) and the passed source text is ignored —
 /// hence the empty string, which avoids both a disk re-read and a clone
 /// of the whole file.

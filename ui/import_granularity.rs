@@ -67,9 +67,9 @@ mod visibility_respected {
 
 // Good: under default `respect_cfg_blocks`, a platform-gated import
 // stays on its own line rather than merging with an unconditional one.
-// `import_grouping` is allowed here: under its default `grouped` style
-// the cfg-gated import forms a trailing group, which this fixture
-// deliberately places first to exercise granularity, not grouping.
+// `import_grouping` is inactive by default; the `#[allow]` still guards
+// this fixture if it is enabled — under `grouped` the cfg-gated import
+// forms a trailing group, placed first to exercise granularity, not grouping.
 #[allow(perfectionist::import_grouping, reason = "exercises import_granularity")]
 mod cfg_respected {
     #[cfg(unix)]

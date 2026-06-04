@@ -2,16 +2,15 @@
 //! `use` statement is a violation, and the autofix rewrites it to the
 //! bare module import.
 
-use clippy_utils::source::snippet_indent;
-use rustc_ast::{Item, UseTree, UseTreeKind};
-use rustc_lint::LateContext;
-use rustc_span::Span;
-
 use super::render::{
     attr_snippets, is_self_leaf, real_segments, render_prefix, render_rooted, render_use_tree,
     render_visibility, segment_names, simple_self_module, with_rename,
 };
 use super::{Fix, Pending};
+use clippy_utils::source::snippet_indent;
+use rustc_ast::{Item, UseTree, UseTreeKind};
+use rustc_lint::LateContext;
+use rustc_span::Span;
 
 const MESSAGE: &str = "this `use` imports a module through `self`";
 // Suggestion labels, chosen per rewrite shape so the help text matches
@@ -177,7 +176,7 @@ fn rewrite_self_group(
 /// rewrite (see [`rewrite_self_group`]).
 ///
 /// A `self` leaf is only counted when its enclosing group has a non-empty
-/// prefix: `rewrite_self_group` bails on a prefix-less group (`{self, x}`,
+/// prefix: [`rewrite_self_group`] bails on a prefix-less group (`{self, x}`,
 /// the line-above guard), so such a leaf yields no suggestion and is not
 /// an overlap source. Counting it would defer the outer group expecting a
 /// rewrite that never happens, permanently suppressing the outer fix. The

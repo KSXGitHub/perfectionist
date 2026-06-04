@@ -6,16 +6,15 @@
 //! `check_use`) are `pub(super)` and called from the rule's
 //! `EarlyLintPass` driver.
 
+use super::config::{PreferDeriveMoreOverThiserror, path_matches_thiserror};
+use super::emit::{
+    emit_derive, emit_use, flag_enum_error_attrs, flag_error_attrs, flag_variant_data_error_attrs,
+};
 use rustc_ast::{
     AttrVec, EnumDef, Item, MetaItemInner, MetaItemKind, UseTree, UseTreeKind, VariantData,
 };
 use rustc_lint::EarlyContext;
 use rustc_span::{Symbol, kw, sym};
-
-use super::config::{PreferDeriveMoreOverThiserror, path_matches_thiserror};
-use super::emit::{
-    emit_derive, emit_use, flag_enum_error_attrs, flag_error_attrs, flag_variant_data_error_attrs,
-};
 
 impl PreferDeriveMoreOverThiserror {
     pub(super) fn check_struct(&self, cx: &EarlyContext<'_>, attrs: &AttrVec, data: &VariantData) {

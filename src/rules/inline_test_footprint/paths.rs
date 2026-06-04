@@ -1,10 +1,9 @@
 //! Separate-target detection and the extraction-target path arithmetic
 //! the inline-style help text uses.
 
-use std::path::{Path, PathBuf};
-
 use rustc_lint::{LateContext, LintContext};
 use rustc_span::{FileName, SourceFile};
+use std::path::{Path, PathBuf};
 
 /// Whether the crate currently being compiled is a *separate*
 /// non-library target — an integration test (`tests/`), benchmark
@@ -25,7 +24,7 @@ use rustc_span::{FileName, SourceFile};
 ///
 /// Detection keys off the crate root's directory: Cargo roots these
 /// targets at `<dir>/<name>.rs` or `<dir>/<name>/main.rs`, where `<dir>`
-/// is `tests`, `benches`, or `examples`, while a library/binary roots
+/// is `tests/`, `benches/`, or `examples/`, while a library/binary roots
 /// under `src/` (`lib.rs`, `main.rs`, `bin/<name>.rs`). Matching the
 /// target directory itself — not some farther ancestor — keeps a
 /// library that merely lives below such a directory (a workspace member
@@ -58,7 +57,7 @@ fn is_separate_target_path(path: &Path) -> bool {
 }
 
 /// Whether `dir`'s final component is one of Cargo's separate-target
-/// directories (`tests`, `benches`, `examples`).
+/// directories (`tests/`, `benches/`, `examples/`).
 fn is_target_directory(dir: Option<&Path>) -> bool {
     matches!(
         dir.and_then(Path::file_name).and_then(|name| name.to_str()),
@@ -97,9 +96,8 @@ fn is_mod_root(parent: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
     use super::is_separate_target_path;
+    use std::path::Path;
 
     #[test]
     fn separate_targets_are_recognised() {

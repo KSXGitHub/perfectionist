@@ -1,0 +1,10 @@
+warning: `Defined` resolves in scope; write it as an intra-doc link
+  --> $DIR/fixture.rs:16:18
+   |
+LL |     /// Mentions `Defined` (local), `InternalItem` (this module's
+   |                  ^^^^^^^^^ help: wrap as an intra-doc link: `[`Defined`]`
+   |
+   = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
+
+warning: 1 warning emitted
+

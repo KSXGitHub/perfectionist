@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::source::indent_of;
 use rustc_ast::{Item, ItemKind, ModKind};
@@ -7,17 +5,17 @@ use rustc_errors::Applicability;
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{BytePos, Span, sym};
+use std::collections::HashSet;
 
 mod check;
 mod classify;
 mod config;
 mod render;
 
-use config::{Config, Style};
-
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use crate::module_reparse::{SpanRange, parse_crate_module_files};
+use config::{Config, Style};
 
 declare_tool_lint! {
     /// ### What it does
@@ -110,7 +108,7 @@ declare_tool_lint! {
 /// Inactive by default. The rule is direction-less: a project that
 /// adopts it picks `grouped` (ordered, blank-line-separated blocks) or
 /// `single_group` (one contiguous block), so `style` is mandatory
-/// whenever the rule is enabled. Read by `register_pass`; gen-docs picks
+/// whenever the rule is enabled. Read by [`register_pass`]; gen-docs picks
 /// the constant up to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 

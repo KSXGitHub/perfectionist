@@ -1,9 +1,8 @@
 //! Data types threaded between the `extract` and `render` halves
 //! of the pipeline. Kept here so neither half has to depend on the
-//! other to name a `Rule` or a `ConfigDoc`.
+//! other to name a [`Rule`] or a [`ConfigDoc`].
 
 use std::path::PathBuf;
-
 use strum::{AsRefStr, Display, EnumString};
 
 /// The tool namespace every `perfectionist` lint registers under,
@@ -45,7 +44,7 @@ pub(crate) struct Rule {
     /// from a `pub(crate) const DEFAULT_STATE: DefaultState = ...;`
     /// item in the rule's source file when present; absent
     /// constants imply [`DefaultState::Active`] (the catalogue
-    /// default). The runtime side uses its own `DefaultState` enum
+    /// default). The runtime side uses its own [`DefaultState`] enum
     /// of the same shape (`src/common.rs`), so the constant's
     /// initializer is read directly here as an enum-variant path
     /// — no `bool` intermediate. The renderer surfaces this as the
@@ -65,7 +64,7 @@ pub(crate) struct Rule {
     /// `CONFIG_KEY` constant and a `Config` struct; a rule with no
     /// knobs uses an empty `Config {}` (e.g. `flat_module_pattern`).
     /// "No configuration" therefore has a single representation —
-    /// an empty `ConfigDoc` — that both output modes render as
+    /// an empty [`ConfigDoc`] — that both output modes render as
     /// "Configuration: none." The extractor enforces this, panicking
     /// on any rule file that omits either half, so the field is never
     /// absent here.
@@ -75,7 +74,7 @@ pub(crate) struct Rule {
 /// Whether a rule's pass is installed by default. Mirrors the
 /// `pub(crate) const DEFAULT_STATE: DefaultState = ...;` constant
 /// the extractor reads from the rule's source. The runtime side
-/// defines its own `DefaultState` of the same shape; gen-docs has
+/// defines its own [`DefaultState`] of the same shape; gen-docs has
 /// its own copy because the two crates don't link. Defaults to
 /// [`DefaultState::Active`] when a rule omits the constant — the
 /// common case across the catalogue.

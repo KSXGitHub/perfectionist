@@ -3,16 +3,15 @@
 //! once an attribute looks like a candidate (lint-level name or
 //! `cfg_attr` trace inheritance already resolved).
 
+use super::insertion::{build_reason_insertion, escape_for_rust_string};
+use super::scan::{Comment, find_trailing_comment};
+use super::{LINT_REASON_FROM_COMMENT, LintReasonFromComment};
+use crate::common::attr_has_reason;
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::MetaItemInner;
 use rustc_errors::Applicability;
 use rustc_lint::{EarlyContext, LintContext};
 use rustc_span::{BytePos, Pos, RelativeBytePos, SourceFile, Span};
-
-use super::insertion::{build_reason_insertion, escape_for_rust_string};
-use super::scan::{Comment, find_trailing_comment};
-use super::{LINT_REASON_FROM_COMMENT, LintReasonFromComment};
-use crate::common::attr_has_reason;
 
 impl LintReasonFromComment {
     /// Apply the trigger and emission for one lint-level invocation.

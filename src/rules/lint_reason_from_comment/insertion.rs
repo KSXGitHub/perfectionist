@@ -1,13 +1,12 @@
 //! Construction of the args-list edit and the Rust-string-literal
 //! escape that produce the `reason = "<text>"` insertion.
 
-use std::fmt::Write as _;
-
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
+use std::fmt::Write as _;
 
 /// The text edit produced for the args-list insertion, expressed
 /// as byte offsets inside the meta-item's source snippet. Mirrors
-/// the `Insertion` shape used by `lint_silence_reason`, but the
+/// the [`Insertion`] shape used by `lint_silence_reason`, but the
 /// `reason` literal carries the lifted comment's text rather than
 /// an empty placeholder.
 pub(super) struct Insertion {
@@ -153,7 +152,7 @@ pub(super) fn escape_for_rust_string(input: &str) -> String {
                 // Any other C0 byte / DEL: use the `\u{...}` form
                 // — the only escape that works for every control
                 // codepoint without a dedicated short form.
-                let _ = write!(out, "\\u{{{:x}}}", character as u32);
+                let _ = write!(out, r"\u{{{:x}}}", character as u32);
             }
             character => out.push(character),
         }

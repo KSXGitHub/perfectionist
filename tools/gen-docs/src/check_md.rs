@@ -4,12 +4,11 @@
 //! share the same expected-output computation; only what they do
 //! with a mismatch differs.
 
+use crate::model::Rule;
+use crate::render_md::{INDEX_FILE_NAME, render_index_md, render_rule_md, rule_file_name};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
-
-use crate::model::Rule;
-use crate::render_md::{INDEX_FILE_NAME, render_index_md, render_rule_md, rule_file_name};
 
 /// The intended on-disk state of a rules directory. Built once from
 /// the extracted rules and then either compared (`check-md`) or
@@ -17,7 +16,7 @@ use crate::render_md::{INDEX_FILE_NAME, render_index_md, render_rule_md, rule_fi
 struct ExpectedTree {
     /// Maps `<file_name>` (no directory component) to the
     /// fully-rendered markdown body. Includes both the per-rule
-    /// files and the `README.md` index. Keyed by `BTreeMap` so the
+    /// files and the `README.md` index. Keyed by [`BTreeMap`] so the
     /// iteration order matches the on-disk directory listing order,
     /// which keeps the check-md "missing files" report stable.
     files: BTreeMap<String, String>,
