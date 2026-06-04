@@ -15,28 +15,28 @@ and `\'`. The autofix rewrites the literal to the raw form
 `r"..."` / `r#"..."#`, picking the smallest hash count that
 avoids a delimiter collision.
 
-The scan does not respect macro-argument boundaries: it reaches
-every string literal a macro receives, even ones expansion would
-otherwise consume before the late pass sees them — most visibly a
-`format!`-family template carrying a `{...}` placeholder, which is
-split into static pieces. The rewrite is value-preserving (a raw
-string still parses placeholders, and `{{` / `}}` survive
-verbatim), so the literal's role doesn't matter. Silence a site
-the usual way where the regular form is deliberately preferred.
+Literals inside macro invocations are covered too: every string
+literal in a macro call, whatever its position — including a
+`format!`-family template that contains a `{...}` placeholder. The
+rewrite is value-preserving (a raw string still parses
+placeholders, and `{{` / `}}` survive verbatim), so the literal's
+role doesn't matter. Suppress a site where the regular form is
+deliberately preferred.
 
-That reach also covers literals used for their *source spelling*
+That includes literals a macro uses for their *source spelling*
 rather than their value, such as `stringify!` and `dbg!`, where
 the raw form has the same value but a different reflected text.
-That is intentional rather than carved out of the lint: code
-whose behaviour depends on a literal's exact spelling instead of
-its value is rare and a code smell; suppress it per site with
+This is intentional: code whose behaviour depends on a literal's
+exact spelling instead of its value is rare and a code smell;
+suppress it per site with
 `#[expect(perfectionist::prefer_raw_string)]`.
 
 Pattern-position literals in ordinary code
-(e.g. `match s { "C:\\path" => ... }`) are out of scope — the
-late pass only visits expression literals. A literal written as a
-pattern *inside a macro* (e.g. `matches!(s, "C:\\path")`) is
-reached through the pre-expansion scan, however.
+(e.g. `match s { "C:\\path" => ... }`) are out of scope; only
+expression-position literals are rewritten. A literal written as a
+pattern *inside a macro call* (e.g. `matches!(s, "C:\\path")`) is
+rewritten anyway, since a literal's position isn't distinguished
+inside a macro.
 
 Whitespace and control-character escapes (`\n`, `\t`, `\r`,
 `\0`) and Unicode escapes (`\x..`, `\u{..}`) are exempt — a
