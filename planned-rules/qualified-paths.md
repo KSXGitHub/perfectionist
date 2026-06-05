@@ -263,6 +263,19 @@ For each path:
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
+## Interaction with clippy
+
+`clippy::absolute_paths` (`restriction`, off by default) touches the
+same surface but on a different axis: it flags a path with more than
+`absolute-paths-max-segments` leading segments, pushing toward a `use`
+plus a shorter path — i.e. it only ever argues *against* long inline
+paths, with a length threshold rather than a project-wide direction.
+This rule instead enforces one chosen direction everywhere
+(`unqualified` *or* `qualified`), independent of length. They overlap
+only in the `unqualified` direction, and even there this rule has no
+segment threshold; a project wanting the simple "shorten long absolute
+paths" heuristic can use `clippy::absolute_paths` instead.
+
 ## Default state
 
 Inactive by default. `unqualified` vs. `qualified` is a per-project

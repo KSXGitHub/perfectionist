@@ -30,6 +30,20 @@ refactor". The `reason` field records intent at the moment of
 suppression, and rustc renders it back in `unfulfilled_lint_expectations`
 notes when a stale `#[expect]` is encountered.
 
+## Interaction with Clippy
+
+`clippy::allow_attributes_without_reason` (`restriction`, off
+by default) enforces the same `reason = "..."`. This rule
+differs in two ways: it is scoped to the two levels that
+*fully silence* a lint (`#[allow]` and `#[expect]`), and it is
+self-contained — the Clippy lint silently stopped firing for a
+release after the `lint_reasons` feature stabilised
+(rust-lang/rust-clippy#13348), whereas this pass does not ride on that
+feature gate. It also pairs with
+`perfectionist::lint_reason_from_comment`, which rewrites a
+trailing `// ...` explanation into the `reason` field — an
+autofix Clippy has no equivalent for.
+
 ## Example
 
 **Avoid:**

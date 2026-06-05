@@ -31,6 +31,10 @@ declare_tool_lint! {
     /// redundant — choose per-kind control here, or
     /// `min_ident_chars` for the one-knob sweep.
     ///
+    /// Single-character *lifetime* names (`'a`) are out of scope for
+    /// the `single_letter_*` family; `clippy::single_char_lifetime_names`
+    /// (`restriction`) covers those.
+    ///
     /// ### Example
     ///
     /// **Avoid:**
