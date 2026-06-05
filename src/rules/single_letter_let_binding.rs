@@ -25,6 +25,17 @@ declare_tool_lint! {
     /// set of exempt identifiers for the well-worn cases
     /// (unsigned counts).
     ///
+    /// ### Interaction with Clippy
+    ///
+    /// `clippy::min_ident_chars` (`restriction`, off by default)
+    /// covers the same identifiers, but as a single crate-wide
+    /// threshold and one shared allow-list spanning every kind at
+    /// once — bindings, parameters, generics, and item names
+    /// alike. This rule splits that blanket per kind: its exempt
+    /// set applies to `let` bindings only. Enabling both is
+    /// redundant — choose per-kind control here, or
+    /// `min_ident_chars` for the one-knob sweep.
+    ///
     /// ### Example
     ///
     /// **Avoid:**

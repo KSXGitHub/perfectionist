@@ -35,6 +35,15 @@ crate-type = ["cdylib"]
 # `cfg(dylint_lib = "perfectionist")` gates in `src/lib.rs`.
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(dylint_lib, values("perfectionist"))'] }
 
+[lints.clippy]
+# Enforce the flat module layout (`foo.rs`, never `foo/mod.rs`). This
+# replaces the former in-crate `perfectionist::flat_module_pattern`
+# lint, which was an exact duplicate of this stock Clippy `restriction`
+# lint (see <https://github.com/KSXGitHub/perfectionist/issues/256>).
+# `mod_module_files` warns on `mod.rs` files; its opposite,
+# `self_named_module_files`, would require them.
+mod_module_files = "warn"
+
 [dependencies]
 clippy_utils = "=0.1.98"
 dylint_linting = "6.0.1"

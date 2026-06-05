@@ -22,13 +22,13 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   bare URL in comment or doc comment; wrap in `<...>` or use a labelled markdown link
 
+- [`combined_self_import`](./combined_self_import.md) (default: `inactive`).
+
+  a module import and an adjacent item import from it can be combined through `self`
+
 - [`derive_ordering`](./derive_ordering.md) (default: `inactive`).
 
   trait names in a `#[derive(...)]` list are not in the configured order
-
-- [`flat_module_pattern`](./flat_module_pattern.md) (default: `active`).
-
-  submodule defined as `module/mod.rs`; prefer the flat `module.rs` layout
 
 - [`import_granularity`](./import_granularity.md) (default: `active`).
 
@@ -77,10 +77,6 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`print_macro_split`](./print_macro_split.md) (default: `active`).
 
   splittable print macro with an embedded-newline template exceeds the configured line width
-
-- [`self_import`](./self_import.md) (default: `inactive`).
-
-  module imported through `self` against the project's configured `self`-import style
 
 - [`single_letter_closure_param`](./single_letter_closure_param.md) (default: `active`).
 

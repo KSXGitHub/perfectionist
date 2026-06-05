@@ -231,9 +231,9 @@ For each path:
   user is expected to use. `Vec` is defined in `alloc::vec::Vec`
   but most projects refer to it as `std::vec::Vec` or just `Vec`.
   The lint's path resolution should respect the
-  [`core-or-std`](./core-or-std.md) preference if both lints are
-  active, so the suggested path matches the project's `core`-vs-
-  `std` style.
+  [`prefer-std-path`](./prefer-std-path.md) preference if it is
+  active, so a suggested path uses `std::` rather than the
+  `core` / `alloc` definition path.
 - **Parser style.** The configuration parser
   (`allowed_paths`, `forbidden_paths`) takes path strings; parse
   them with parser-combinator-style `take_*` functions per
@@ -255,7 +255,8 @@ For each path:
   but slows the lint slightly. Both are acceptable trade-offs.
 - The `qualified` direction's autofix has the
   canonical-vs-preferred-path problem described above. Handle by
-  consulting `core-or-std` config when present.
+  consulting [`prefer-std-path`](./prefer-std-path.md) config when
+  present.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
@@ -279,7 +280,5 @@ direction's "good" form is the other's "bad" form). One rule with
 a `style` knob keeps the policy expressible in one place — the
 same shape as
 `perfectionist::import_granularity`,
-[`core-or-std`](./core-or-std.md),
-`perfectionist::self_import`,
 `perfectionist::derive_ordering`, and
 [`serde-wrapper-style`](./serde-wrapper-style.md).

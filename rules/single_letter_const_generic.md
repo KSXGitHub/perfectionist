@@ -20,6 +20,17 @@ use site; a descriptive identifier (`LEN`, `COLS`, `LANES`)
 documents the parameter's role both at the declaration and
 at every substitution.
 
+## Interaction with Clippy
+
+`clippy::min_ident_chars` (`restriction`, off by default)
+covers the same identifiers, but as a single crate-wide
+threshold and one shared allow-list spanning every kind at
+once — bindings, parameters, generics, and item names
+alike. This rule splits that blanket per kind: its
+`allowed_idents` exempts names for const generic parameters
+only. Enabling both is redundant — choose per-kind control
+here, or `min_ident_chars` for the one-knob sweep.
+
 ## Example
 
 **Avoid:**

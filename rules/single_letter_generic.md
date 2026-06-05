@@ -21,6 +21,18 @@ back to the declaration to recover the role of each
 parameter. Descriptive names (`Element`, `Key`, `Reader`)
 keep complex signatures self-documenting.
 
+## Interaction with Clippy
+
+`clippy::min_ident_chars` (`restriction`, off by default)
+covers the same identifiers, but as a single crate-wide
+threshold and one shared allow-list spanning every kind at
+once — bindings, parameters, generics, and item names
+alike. This rule splits that blanket per kind: it targets
+generic type parameters only, leaving every other
+identifier kind to its own rule. Enabling both is
+redundant — choose per-kind control here, or
+`min_ident_chars` for the one-knob sweep.
+
 ## Example
 
 **Avoid:**

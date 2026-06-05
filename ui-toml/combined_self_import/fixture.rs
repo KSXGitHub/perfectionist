@@ -42,9 +42,9 @@ mod raw_ident {
 
 // Matching attributes on both statements fold into one (attrs kept).
 mod attr_matching {
-    #[allow(unused_imports, reason = "self_import matching-attrs fixture")]
+    #[allow(unused_imports, reason = "combined_self_import matching-attrs fixture")]
     use crate::defs::inner;
-    #[allow(unused_imports, reason = "self_import matching-attrs fixture")]
+    #[allow(unused_imports, reason = "combined_self_import matching-attrs fixture")]
     use crate::defs::inner::Baz;
 }
 
@@ -57,7 +57,7 @@ mod pub_matching {
 // Mismatched attributes break the fold — no diagnostic.
 mod attr_mismatch {
     use crate::defs::inner;
-    #[allow(unused_imports, reason = "self_import mismatched-attrs fixture")]
+    #[allow(unused_imports, reason = "combined_self_import mismatched-attrs fixture")]
     use crate::defs::inner::Baz;
 }
 

@@ -76,9 +76,9 @@ has two consequences for the implementer:
    file.
 
 3. **When a rule grows past one screenful, split it into a
-   directory module beside the flat `.rs` entry.** The crate's own
-   `perfectionist::flat_module_pattern` lint forbids the `mod.rs`
-   form, so the layout is `src/rules/<rule>.rs` next to
+   directory module beside the flat `.rs` entry.** This crate
+   forbids the `mod.rs` form (via `clippy::mod_module_files`,
+   enabled in `Cargo.toml`), so the layout is `src/rules/<rule>.rs` next to
    `src/rules/<rule>/<concern>.rs`. The flat `.rs` entry keeps the
    `declare_tool_lint!` block, the `register_lint` / `register_pass`
    functions, the `EarlyLintPass` / `LateLintPass` driver, and any
@@ -384,7 +384,7 @@ scanner, the unicode-width helper, the format-template parser,
 the URL-discovery scanner, and the module-re-parsing helper
 (`src/module_reparse.rs`, which re-parses the crate's module
 source files from a shared `SourceMap` so the import-rewriting
-rules `import_granularity` and `self_import` reach separate-file
+rules `import_granularity` and `combined_self_import` reach separate-file
 submodules while keeping `#[cfg(...)]` gates intact). The
 module-re-parsing helper exists because this exact bug — a
 source-layout rule shipped as a pre-expansion `EarlyLintPass`
