@@ -74,6 +74,16 @@ pub(crate) const CONFIG_TOGGLE_SCRIPT: &str = include_str!("config_toggle.js");
 /// `<script src>` references the same name, so they must agree.
 pub(crate) const CONFIG_TOGGLE_SCRIPT_FILENAME: &str = "config_toggle.js";
 
+/// The page scripts, in the order `<body>` loads them. Both the
+/// foot-of-`<body>` `<script src>` tags and the `<head>`
+/// `<link rel="preload" as="script">` hints are generated from this slice,
+/// so they can't drift.
+pub(crate) const PAGE_SCRIPTS: &[&str] = &[
+    NAV_TOGGLE_SCRIPT_FILENAME,
+    THEME_TOGGLE_SCRIPT_FILENAME,
+    CONFIG_TOGGLE_SCRIPT_FILENAME,
+];
+
 /// The colour-scheme icons (Octicons, MIT), shipped beside `index.html`
 /// and referenced from settings.css. Each tuple is `(filename, contents)`.
 pub(crate) const THEME_ICONS: &[(&str, &str)] = &[
@@ -81,6 +91,11 @@ pub(crate) const THEME_ICONS: &[(&str, &str)] = &[
     ("theme-dark.svg", include_str!("assets/theme-dark.svg")),
     ("theme-system.svg", include_str!("assets/theme-system.svg")),
 ];
+
+/// `id` shared by the inert prefetch `<template>`
+/// ([`theme_icon_prefetch_template`]) and the `theme_toggle.js` lookup that
+/// activates it; the two must agree.
+pub(crate) const THEME_ICON_PREFETCH_TEMPLATE_ID: &str = "theme-icon-prefetch";
 
 /// The chain-link glyph for the rule-name heading anchors, shipped as
 /// a standalone file beside `index.html` rather than inlined.
@@ -111,11 +126,15 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 }
                 link rel="stylesheet" href=(HIGHLIGHT_CSS_LIGHT_FILENAME);
                 link rel="stylesheet" href=(HIGHLIGHT_CSS_DARK_FILENAME);
+                @for &src in PAGE_SCRIPTS {
+                    link rel="preload" as="script" href=(src);
+                }
             }
             body {
                 h1 id="catalogue" { "perfectionist lints" }
                 (nav_drawer(rules))
                 (settings_panel())
+                (theme_icon_prefetch_template())
                 div.banner {
                     "Showing docs for " code { (git_ref) } "."
                 }
@@ -158,9 +177,9 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     "Generated from " code { "src/rules/" }
                     " at " code { (commit_sha) } "."
                 }
-                script src=(NAV_TOGGLE_SCRIPT_FILENAME) {}
-                script src=(THEME_TOGGLE_SCRIPT_FILENAME) {}
-                script src=(CONFIG_TOGGLE_SCRIPT_FILENAME) {}
+                @for &src in PAGE_SCRIPTS {
+                    script src=(src) {}
+                }
             }
         }
     };
@@ -226,6 +245,21 @@ fn config_controls() -> Markup {
             div.config-actions {
                 button.config-action type="button" data-config-open="true" { "Expand all" }
                 button.config-action type="button" data-config-open="false" { "Collapse all" }
+            }
+        }
+    }
+}
+
+/// The inert `<template>` of `<link rel="prefetch" as="image">` hints, one
+/// per [`THEME_ICONS`] entry, warming the cache for the colour-scheme icons
+/// (reachable only through settings.css masks). The `<template>` keeps the
+/// links dormant until `theme_toggle.js` clones them into `<head>`, so they
+/// load only once the Settings panel is used.
+fn theme_icon_prefetch_template() -> Markup {
+    html! {
+        template id=(THEME_ICON_PREFETCH_TEMPLATE_ID) {
+            @for &(name, _) in THEME_ICONS {
+                link rel="prefetch" as="image" href=(name);
             }
         }
     }

@@ -5,9 +5,11 @@ on:
   # preview is only worth building when the PR changes something the
   # rendered site is derived from (rule sources under `src/`, the
   # gen-docs renderer + assets, `Cargo.toml`) or a build input (lockfile,
-  # toolchain, linker config in `.cargo/`). PRs that only touch
-  # `planned-rules/`, the generated `rules/` markdown mirror, or
-  # `README.md` don't change the page, so they skip the Cloudflare deploy.
+  # toolchain, linker config in `.cargo/`, the `justfile` minify recipe,
+  # the pinned minifier dependencies in `package.json` / `pnpm-lock.yaml`).
+  # PRs that only touch `planned-rules/`, the generated
+  # `rules/` markdown mirror, or `README.md` don't change the page, so
+  # they skip the Cloudflare deploy.
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
@@ -17,6 +19,10 @@ on:
       - 'Cargo.lock'
       - 'rust-toolchain'
       - '.cargo/**'
+      - 'justfile'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - '.github/workflows/pages-preview.yaml'
 
 permissions:
@@ -93,6 +99,29 @@ jobs:
         with:
           tool: dylint-link
 
+      - name: Install just
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Locate pnpm store
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v5
+        timeout-minutes: 1
+        continue-on-error: true
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-minify-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-minify-${{ runner.os }}-
+
       # Pass the PR head SHA as `--git-ref` so the rendered
       # "Source:" links permalink the exact commit being previewed
       # rather than `master` (which `gen-docs` defaults to but
@@ -100,6 +129,10 @@ jobs:
       - name: Render site
         shell: bash
         run: cargo run --package _gen_docs --bin gen-docs -- --root "$(pwd)" html gh-pages --git-ref="${{ github.event.pull_request.head.sha }}"
+
+      - name: Minify site
+        shell: bash
+        run: just minify-docs gh-pages
 
       # Wrangler's `--branch` flag drives the alias subdomain
       # Cloudflare assigns to the deployment

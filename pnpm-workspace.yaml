@@ -1,0 +1,5 @@
+allowBuilds:
+  lightningcss-cli: true
+  esbuild: true
+  sharp: true
+  workerd: true
