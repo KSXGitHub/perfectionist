@@ -1,6 +1,4 @@
-# pnpm 11 hard-errors on dependency build scripts unless allow-listed.
-# These install native binaries (lightningcss-cli's minifier; wrangler's
-# esbuild/sharp/workerd).
+# Native-binary deps whose build scripts pnpm 11 blocks unless allow-listed.
 allowBuilds:
   lightningcss-cli: true
   esbuild: true

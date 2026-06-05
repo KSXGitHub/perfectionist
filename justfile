@@ -111,20 +111,19 @@ minify-docs site_dir="gh-pages":
   set -euo pipefail
   root_dir="{{justfile_directory()}}"
   pnpm --dir "$root_dir" install --frozen-lockfile
-  export PATH="$root_dir/node_modules/.bin:$PATH"
   cd "{{site_dir}}"
   shopt -s nullglob
   # CSS: lightningcss minifies every file in place.
   css=(*.css)
   if [ "${#css[@]}" -gt 0 ]; then
-    lightningcss --minify --targets 'ie 11' --sourcemap --output-dir . "${css[@]}"
+    pnpm exec lightningcss --minify --targets 'ie 11' --sourcemap --output-dir . "${css[@]}"
   fi
   # JS: terser minifies every file in place.
   for js in *.js; do
-    terser "$js" --compress --mangle --source-map "url='$js.map',includeSources=true" --output "$js"
+    pnpm exec terser "$js" --compress --mangle --source-map "url='$js.map',includeSources=true" --output "$js"
   done
   # SVG: svgo minifies every file in place.
   svg=(*.svg)
   if [ "${#svg[@]}" -gt 0 ]; then
-    svgo --quiet --folder .
+    pnpm exec svgo --quiet --folder .
   fi
