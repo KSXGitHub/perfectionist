@@ -74,19 +74,10 @@ pub(crate) const CONFIG_TOGGLE_SCRIPT: &str = include_str!("config_toggle.js");
 /// `<script src>` references the same name, so they must agree.
 pub(crate) const CONFIG_TOGGLE_SCRIPT_FILENAME: &str = "config_toggle.js";
 
-/// The page scripts, in the order `<body>` loads them, driving the
-/// single `<script src>` loop at the foot of the document and the
-/// matching `<link rel="preload" as="script">` block in `<head>`.
-/// The two are generated from this one slice so they can't drift: a
-/// script added here is both preloaded and loaded. The scripts sit at
-/// the very end of `<body>`, so without the preload hints the browser
-/// wouldn't start fetching them until it had parsed the whole page;
-/// the hints let it pull them down in parallel with the stylesheets
-/// instead. (The CSS-referenced assets — the hover-revealed
-/// `rule-anchor.svg` and the settings-panel theme icons — are
-/// deliberately *not* preloaded: both are decorative and hidden until
-/// the reader interacts, so preloading them would contend with the
-/// critical resources for bytes most visitors never render.)
+/// The page scripts, in the order `<body>` loads them. Both the
+/// foot-of-`<body>` `<script src>` tags and the `<head>`
+/// `<link rel="preload" as="script">` hints are generated from this slice,
+/// so they can't drift.
 pub(crate) const PAGE_SCRIPTS: &[&str] = &[
     NAV_TOGGLE_SCRIPT_FILENAME,
     THEME_TOGGLE_SCRIPT_FILENAME,
@@ -101,10 +92,9 @@ pub(crate) const THEME_ICONS: &[(&str, &str)] = &[
     ("theme-system.svg", include_str!("assets/theme-system.svg")),
 ];
 
-/// `id` of the inert `<template>` (see [`theme_icon_prefetch_template`])
-/// that carries the colour-scheme icons' `<link rel="prefetch">` hints.
-/// `theme_toggle.js` looks the template up by this same id and clones its
-/// contents into `<head>` to fire the prefetch, so the two must agree.
+/// `id` shared by the inert prefetch `<template>`
+/// ([`theme_icon_prefetch_template`]) and the `theme_toggle.js` lookup that
+/// activates it; the two must agree.
 pub(crate) const THEME_ICON_PREFETCH_TEMPLATE_ID: &str = "theme-icon-prefetch";
 
 /// The chain-link glyph for the rule-name heading anchors, shipped as
@@ -136,9 +126,6 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 }
                 link rel="stylesheet" href=(HIGHLIGHT_CSS_LIGHT_FILENAME);
                 link rel="stylesheet" href=(HIGHLIGHT_CSS_DARK_FILENAME);
-                // The scripts load at the foot of <body>; preload them
-                // here so the browser fetches them in parallel with the
-                // stylesheets rather than waiting until it parses there.
                 @for &src in PAGE_SCRIPTS {
                     link rel="preload" as="script" href=(src);
                 }
@@ -263,18 +250,11 @@ fn config_controls() -> Markup {
     }
 }
 
-/// The inert `<template>` carrying one `<link rel="prefetch" as="image">`
-/// per colour-scheme icon. The colour-scheme icons are reachable only
-/// through settings.css mask `url(...)`s — invisible to the browser's
-/// preload scanner — so without a hint the first panel-open fetches them
-/// cold. The hints can't be static `<link>`s, though: a reader who never
-/// opens Settings (and every reader with JS disabled, for whom the panel
-/// is permanently inert) would fetch them for nothing. A `<template>`'s
-/// contents are parsed but never loaded, so the links lie dormant until
-/// `theme_toggle.js` clones them into `<head>` at idle time (it finds the
-/// template via [`THEME_ICON_PREFETCH_TEMPLATE_ID`]). Built from
-/// [`THEME_ICONS`] so the warmed URLs are the same files settings.css
-/// masks and can't drift from them.
+/// The inert `<template>` of `<link rel="prefetch" as="image">` hints, one
+/// per [`THEME_ICONS`] entry, warming the cache for the colour-scheme icons
+/// (reachable only through settings.css masks). The `<template>` keeps the
+/// links dormant until `theme_toggle.js` clones them into `<head>`, so they
+/// load only once the Settings panel is used.
 fn theme_icon_prefetch_template() -> Markup {
     html! {
         template id=(THEME_ICON_PREFETCH_TEMPLATE_ID) {
