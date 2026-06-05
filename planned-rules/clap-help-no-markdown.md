@@ -135,9 +135,10 @@ struct Cli {
   escape hatch (vendor `pulldown_cmark` for this rule alone)
   applies here.
 - Override detection: walk attribute lists for `clap`, `arg`,
-  `command` paths. Recognise `MetaNameValue` shape with the override
-  key. `clippy_utils::attrs::find_by_name` is a starting point but
-  needs path matching, not just symbol matching.
+  `command` paths. Recognise `MetaNameValue` shape with one of the
+  fixed override keys (`about`, `long_about`, `help`, `long_help`).
+  `clippy_utils::attrs::find_by_name` is a starting point but needs
+  path matching, not just symbol matching.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
@@ -158,10 +159,12 @@ extra_constructs = ["bold", "italic", "list"]   # empty by default
 # built-in defaults. Empty by default; checked after the merge with the
 # built-ins, so this knob always wins.
 ignore_constructs = ["code_span"]   # empty by default
-
-# Recognise these attribute keys as overrides that disable the lint.
-override_keys = ["about", "long_about", "help", "long_help"]
 ```
+
+The attribute keys that count as an override (`about`, `long_about`,
+`help`, `long_help`) are not configurable: they are clap's own complete
+set of help-text overrides, so there is nothing for a project to add or
+remove.
 
 ## Default state
 
