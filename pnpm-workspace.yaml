@@ -1,4 +1,3 @@
-# Native-binary deps whose build scripts pnpm 11 blocks unless allow-listed.
 allowBuilds:
   lightningcss-cli: true
   esbuild: true
