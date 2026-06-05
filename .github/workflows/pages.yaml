@@ -6,8 +6,9 @@ on:
   # under `src/`, its own renderer + assets under `tools/gen-docs/`, and
   # `Cargo.toml` (crate version + repo URL); the build additionally
   # depends on the pinned toolchain, the lockfile, and the linker config
-  # in `.cargo/`, and the post-render minify pass on the pinned tool
-  # versions in `justfile`. Pure docs that never reach the page —
+  # in `.cargo/`, and the post-render minify pass on the `justfile`
+  # recipe plus the pinned minifier dependencies (`package.json` /
+  # `pnpm-lock.yaml`). Pure docs that never reach the page —
   # `planned-rules/`, the generated `rules/` markdown mirror, `README.md`
   # — are excluded. An allow-list fits a deploy workflow: a path missed
   # here just leaves the live site untouched (the previous deploy
@@ -24,6 +25,9 @@ on:
       - 'rust-toolchain'
       - '.cargo/**'
       - 'justfile'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - '.github/workflows/pages.yaml'
   workflow_dispatch:
 
@@ -83,8 +87,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 11.5.2
 
       - name: Locate pnpm store
         id: pnpm-store
@@ -97,7 +99,7 @@ jobs:
         continue-on-error: true
         with:
           path: ${{ steps.pnpm-store.outputs.path }}
-          key: pnpm-minify-${{ runner.os }}-${{ hashFiles('justfile') }}
+          key: pnpm-minify-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-minify-${{ runner.os }}-
 
