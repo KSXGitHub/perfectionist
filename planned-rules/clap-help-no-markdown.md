@@ -127,7 +127,7 @@ struct Cli {
 - Use the shared markdown scanner (Tier A — structural
   classification) per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md#markdown-parsing).
-  Each banned construct in `forbid` maps to one `take_*` result;
+  Each banned construct maps to one `take_*` result;
   the dispatcher branches on the match and emits the right
   per-construct diagnostic. This rule is the most demanding
   consumer of the scanner — if its HTML-tag and
@@ -148,12 +148,16 @@ struct Cli {
 
 ```toml
 [clap_help_no_markdown]
-# Constructs to flag; default is the conservative set above.
-forbid = ["html", "inline_link", "reference_link", "intra_doc_link",
-          "code_block", "code_span", "heading"]
+# Additional markdown constructs to forbid, on top of the built-in
+# default set (`["html", "inline_link", "reference_link",
+# "intra_doc_link", "code_block", "code_span", "heading"]`). Empty by
+# default. Bold, italics, and lists are the usual additions.
+extra_constructs = ["bold", "italic", "list"]   # empty by default
 
-# Additional constructs a project may want to ban.
-extra_forbid = ["bold", "italic", "list"]   # empty by default
+# Constructs to drop from the forbidden set, even if they appear in the
+# built-in defaults. Empty by default; checked after the merge with the
+# built-ins, so this knob always wins.
+ignore_constructs = ["code_span"]   # empty by default
 
 # Recognise these attribute keys as overrides that disable the lint.
 override_keys = ["about", "long_about", "help", "long_help"]
