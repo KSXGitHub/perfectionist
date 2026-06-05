@@ -105,8 +105,6 @@ jobs:
           tool: just
 
       - name: Install pnpm
-        # No `version` input: action-setup reads it from the
-        # `packageManager` field in the root `package.json`.
         uses: pnpm/action-setup@v4
 
       - name: Locate pnpm store
@@ -147,10 +145,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # wrangler-action infers pnpm from the root lockfile and runs
-          # `pnpm add wrangler` in this project; wrangler's native build
-          # deps (esbuild/sharp/workerd) are allow-listed in
-          # pnpm-workspace.yaml so pnpm 11 doesn't hard-error on them.
           command: pages deploy gh-pages --project-name=perfectionist-preview --branch=${{ github.head_ref }} --commit-hash=${{ github.event.pull_request.head.sha }}
 
       - name: Clean workspace artifacts before cache

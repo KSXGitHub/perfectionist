@@ -86,8 +86,6 @@ jobs:
           tool: just
 
       - name: Install pnpm
-        # No `version` input: action-setup reads it from the
-        # `packageManager` field in the root `package.json`.
         uses: pnpm/action-setup@v4
 
       - name: Locate pnpm store

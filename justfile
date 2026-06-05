@@ -106,10 +106,6 @@ check-rules-md rules_dir="rules":
   cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
 
 # Minify a gen-docs output directory's CSS, JS, and SVG assets in place.
-# The minifier versions and their full transitive dependency trees are
-# pinned in the root `package.json` / `pnpm-lock.yaml`; a frozen-lockfile
-# install makes this step reproducible and integrity-checked rather than
-# resolving fresh on every run the way `pnpm dlx` did.
 minify-docs site_dir="gh-pages":
   #!/usr/bin/env bash
   set -euo pipefail
