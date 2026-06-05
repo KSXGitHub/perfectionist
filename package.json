@@ -2,11 +2,12 @@
   "name": "@perfectionist/minify-docs",
   "version": "0.0.0",
   "private": true,
-  "description": "Pinned docs-site tooling: CSS/JS/SVG minifiers (justfile `minify-docs`) and the Cloudflare Pages deploy CLI (wrangler).",
+  "description": "Pinned docs-site tooling: CSS/JS/SVG minifiers (justfile `minify-docs`), the TypeScript compiler that type-checks the docs-site JS via JSDoc (justfile `check-js-types`), and the Cloudflare Pages deploy CLI (wrangler).",
   "devDependencies": {
     "lightningcss-cli": "1.32.0",
     "svgo": "4.0.1",
     "terser": "5.48.0",
+    "typescript": "6.0.3",
     "wrangler": "4.98.0"
   },
   "packageManager": "pnpm@11.5.2"

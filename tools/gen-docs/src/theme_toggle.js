@@ -47,16 +47,27 @@
   var STORAGE_KEY = "perfectionist-color-scheme-override";
   var ATTRIBUTE = "color-scheme-override";
 
-  var toggle = document.querySelector(".settings-toggle");
-  var panel = document.querySelector(".settings-panel");
+  // Non-null casts (not `HTMLElement | null`): the guard below still rejects a
+  // missing element at runtime, but TypeScript won't carry that narrowing into
+  // the event-handler closures below for a `var`, so they would otherwise read
+  // `toggle`/`panel` as nullable. See the matching note in nav_toggle.js.
+  var toggle = /** @type {HTMLElement} */ (
+    document.querySelector(".settings-toggle")
+  );
+  var panel = /** @type {HTMLElement} */ (
+    document.querySelector(".settings-panel")
+  );
   if (!toggle || !panel) return;
 
-  var radios = panel.querySelectorAll('input[name="color-scheme"]');
+  var radios = /** @type {NodeListOf<HTMLInputElement>} */ (
+    panel.querySelectorAll('input[name="color-scheme"]')
+  );
   if (radios.length === 0) return;
 
   // Apply a choice to the live page. "dark"/"light" set the override
   // attribute (tier 3); anything else ("system") removes it so the
   // page falls back to tiers 1–2.
+  /** @param {string | null} value */
   function applyScheme(value) {
     if (value === "dark" || value === "light") {
       html.setAttribute(ATTRIBUTE, value);
@@ -67,6 +78,7 @@
 
   // Persist a choice. "system" clears the key (its absence IS the
   // default), keeping the stored set to exactly {dark, light, unset}.
+  /** @param {string} value */
   function persistScheme(value) {
     if (value === "dark" || value === "light") {
       window.localStorage.setItem(STORAGE_KEY, value);
@@ -75,6 +87,7 @@
     }
   }
 
+  /** @param {string} value */
   function selectRadio(value) {
     for (var i = 0; i < radios.length; i++) {
       radios[i].checked = radios[i].value === value;
@@ -103,8 +116,9 @@
 
   for (var i = 0; i < radios.length; i++) {
     radios[i].addEventListener("change", function (event) {
-      applyScheme(event.target.value);
-      persistScheme(event.target.value);
+      var radio = /** @type {HTMLInputElement} */ (event.target);
+      applyScheme(radio.value);
+      persistScheme(radio.value);
     });
   }
 
@@ -114,7 +128,8 @@
   // behaviour for this kind of menu.
   document.addEventListener("click", function (event) {
     if (toggle.getAttribute("aria-expanded") !== "true") return;
-    if (toggle.contains(event.target) || panel.contains(event.target)) return;
+    var clickTarget = /** @type {Node | null} */ (event.target);
+    if (toggle.contains(clickTarget) || panel.contains(clickTarget)) return;
     closePanel();
   });
 
@@ -176,7 +191,9 @@
   // them; Chrome and Firefox then serve the later CSS mask load from that
   // same HTTP cache. Done at idle time (requestIdleCallback, setTimeout
   // fallback) so it never blocks setup. The id must match the template's.
-  var prefetchTemplate = document.getElementById("theme-icon-prefetch");
+  var prefetchTemplate = /** @type {HTMLTemplateElement | null} */ (
+    document.getElementById("theme-icon-prefetch")
+  );
   function warmThemeIcons() {
     if (prefetchTemplate && "content" in prefetchTemplate) {
       document.head.appendChild(prefetchTemplate.content.cloneNode(true));
