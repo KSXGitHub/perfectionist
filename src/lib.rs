@@ -50,7 +50,6 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         bare_identifier_reference
         bare_issue_reference
         bare_url
-        combined_self_import
         derive_ordering
         import_granularity
         import_grouping
@@ -71,6 +70,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         single_letter_generic
         single_letter_let_binding
         single_letter_static_item
+        uncombined_self_import
         unicode_ellipsis_in_comments
         unicode_ellipsis_in_docs
         unicode_ellipsis_in_panic_messages

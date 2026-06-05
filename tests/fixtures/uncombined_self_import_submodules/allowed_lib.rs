@@ -9,5 +9,5 @@
 use std::fmt;
 use std::fmt::Display;
 
-#[allow(perfectionist::combined_self_import, reason = "regression fixture")]
+#[allow(perfectionist::uncombined_self_import, reason = "regression fixture")]
 mod separate;

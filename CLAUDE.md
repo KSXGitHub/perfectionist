@@ -384,7 +384,7 @@ scanner, the unicode-width helper, the format-template parser,
 the URL-discovery scanner, and the module-re-parsing helper
 (`src/module_reparse.rs`, which re-parses the crate's module
 source files from a shared `SourceMap` so the import-rewriting
-rules `import_granularity` and `combined_self_import` reach separate-file
+rules `import_granularity` and `uncombined_self_import` reach separate-file
 submodules while keeping `#[cfg(...)]` gates intact). The
 module-re-parsing helper exists because this exact bug — a
 source-layout rule shipped as a pre-expansion `EarlyLintPass`

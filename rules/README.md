@@ -22,10 +22,6 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   bare URL in comment or doc comment; wrap in `<...>` or use a labelled markdown link
 
-- [`combined_self_import`](./combined_self_import.md) (default: `inactive`).
-
-  a module import and an adjacent item import from it can be combined through `self`
-
 - [`derive_ordering`](./derive_ordering.md) (default: `inactive`).
 
   trait names in a `#[derive(...)]` list are not in the configured order
@@ -105,6 +101,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`single_letter_static_item`](./single_letter_static_item.md) (default: `active`).
 
   static item has a single-letter name
+
+- [`uncombined_self_import`](./uncombined_self_import.md) (default: `inactive`).
+
+  a module import and an adjacent item import from it can be combined through `self`
 
 - [`unicode_ellipsis_in_comments`](./unicode_ellipsis_in_comments.md) (default: `active`).
 

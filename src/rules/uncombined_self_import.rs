@@ -1,4 +1,4 @@
-//! `perfectionist::combined_self_import` — fold a module import and an
+//! `perfectionist::uncombined_self_import` — fold a module import and an
 //! adjacent item import from that module into a single
 //! `use module::{self, item};`.
 //!
@@ -51,7 +51,7 @@ declare_tool_lint! {
     ///
     /// ```toml
     /// [perfectionist]
-    /// enable = ["combined_self_import"]
+    /// enable = ["uncombined_self_import"]
     /// ```
     ///
     /// The autofix is `MaybeIncorrect` whenever it narrows the
@@ -86,34 +86,34 @@ declare_tool_lint! {
     /// ```rust,ignore
     /// use foo::bar::{self, Baz};
     /// ```
-    pub perfectionist::COMBINED_SELF_IMPORT,
+    pub perfectionist::UNCOMBINED_SELF_IMPORT,
     Warn,
     "a module import and an adjacent item import from it can be combined through `self`",
     report_in_external_macro: false
 }
 
-const CONFIG_KEY: &str = "perfectionist::combined_self_import";
+const CONFIG_KEY: &str = "perfectionist::uncombined_self_import";
 
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 
 /// Configuration is reserved for future knobs; the lint currently has
 /// no options. The empty struct still exists so that a stray
-/// `[perfectionist::combined_self_import]` table in `dylint.toml`
+/// `[perfectionist::uncombined_self_import]` table in `dylint.toml`
 /// deserialises rather than producing a confusing parse error.
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}
 
-pub struct CombinedSelfImport;
+pub struct UncombinedSelfImport;
 
-impl_lint_pass!(CombinedSelfImport => [COMBINED_SELF_IMPORT]);
+impl_lint_pass!(UncombinedSelfImport => [UNCOMBINED_SELF_IMPORT]);
 
 pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[COMBINED_SELF_IMPORT]);
+    lint_store.register_lints(&[UNCOMBINED_SELF_IMPORT]);
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("combined_self_import", DEFAULT_STATE) {
+    if let DefaultState::Inactive = resolved_state("uncombined_self_import", DEFAULT_STATE) {
         return;
     }
     let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
@@ -122,12 +122,12 @@ pub fn register_pass(lint_store: &mut LintStore) {
     // `check_crate` re-parses each source file instead (see the module
     // docs), reaching every module-scoped submodule while keeping
     // `#[cfg(...)]` gates intact.
-    lint_store.register_late_pass(|_| Box::new(CombinedSelfImport));
+    lint_store.register_late_pass(|_| Box::new(UncombinedSelfImport));
 }
 
 /// A detected violation parked until its enclosing HIR node is known.
 /// The rule discovers violations by re-parsing source files (see
-/// [`CombinedSelfImport::check_crate`]), outside the HIR walk, so
+/// [`UncombinedSelfImport::check_crate`]), outside the HIR walk, so
 /// emission is deferred and routed through [`span_lint_hir_and_then`] at
 /// the enclosing node — that is what lets a per-module / per-item
 /// `#[allow]` / `#[expect]` resolve, instead of only a crate-root one.
@@ -149,14 +149,14 @@ pub(super) struct Fix {
     pub(super) applicability: Applicability,
 }
 
-impl<'tcx> LateLintPass<'tcx> for CombinedSelfImport {
+impl<'tcx> LateLintPass<'tcx> for UncombinedSelfImport {
     fn check_crate(&mut self, cx: &LateContext<'tcx>) {
         // Re-parse every module source file (reaching out-of-line
         // submodules while keeping `#[cfg(...)]` gates intact) and walk
         // each file's scopes in turn. See [`crate::module_reparse`].
         let mut violations: Vec<Pending> = Vec::new();
         for_each_module_file(cx, |krate| {
-            let mut walker = CombinedSelfImportWalker {
+            let mut walker = UncombinedSelfImportWalker {
                 cx,
                 violations: &mut violations,
             };
@@ -186,7 +186,7 @@ fn emit_pending(cx: &LateContext<'_>, hir_id: HirId, pending: Pending) {
     } = pending;
     span_lint_hir_and_then(
         cx,
-        COMBINED_SELF_IMPORT,
+        UNCOMBINED_SELF_IMPORT,
         hir_id,
         span,
         message,
@@ -200,14 +200,14 @@ fn emit_pending(cx: &LateContext<'_>, hir_id: HirId, pending: Pending) {
 /// source-ordered run of items — the file root, every inline `mod { ... }`
 /// body, and every block. Out-of-line `mod foo;` modules are
 /// `ModKind::Unloaded` in a fresh parse, but their files are re-parsed in
-/// their own right by [`CombinedSelfImport::check_crate`], so this walk
+/// their own right by [`UncombinedSelfImport::check_crate`], so this walk
 /// stays within a single file.
-struct CombinedSelfImportWalker<'a, 'b, 'tcx> {
+struct UncombinedSelfImportWalker<'a, 'b, 'tcx> {
     cx: &'a LateContext<'tcx>,
     violations: &'b mut Vec<Pending>,
 }
 
-impl CombinedSelfImportWalker<'_, '_, '_> {
+impl UncombinedSelfImportWalker<'_, '_, '_> {
     /// Process one source-ordered sequence of entries, folding each
     /// adjacent module + item import pair. Each entry is `Some(item)`
     /// for an item in position, or `None` for an intervening statement
@@ -217,7 +217,7 @@ impl CombinedSelfImportWalker<'_, '_, '_> {
     }
 }
 
-impl<'ast> Visitor<'ast> for CombinedSelfImportWalker<'_, '_, '_> {
+impl<'ast> Visitor<'ast> for UncombinedSelfImportWalker<'_, '_, '_> {
     fn visit_item(&mut self, item: &'ast Item) {
         if let ItemKind::Mod(_, _, ModKind::Loaded(items, ..)) = &item.kind {
             self.scan_items(items.iter().map(|item| Some(&**item)));

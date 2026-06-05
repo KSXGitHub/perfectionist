@@ -220,8 +220,8 @@ granularity of `use` trees (`perfectionist::import_granularity`,
 `src/rules/import_granularity.rs`), their blank-line grouping
 (`perfectionist::import_grouping`, `src/rules/import_grouping.rs`),
 the module-`self` import folding
-(`perfectionist::combined_self_import`,
-`src/rules/combined_self_import.rs`), or
+(`perfectionist::uncombined_self_import`,
+`src/rules/uncombined_self_import.rs`), or
 anything else that reads the *written* shape of a module body rather
 than a semantic property — must reach **every module in the crate**,
 including separate-file `mod foo;` submodules nested to any depth.
@@ -279,7 +279,7 @@ write a fresh module-discovery or re-parse path; route through:
    crate root and cannot be silenced by a local `#[allow]`.
    `import_grouping` is the reference implementation: it consults
    `live_module_spans` and descends only into live modules. (At the
-   time of writing, `import_granularity` and `combined_self_import` route
+   time of writing, `import_granularity` and `uncombined_self_import` route
    through `for_each_module_file`, which drops `live_module_spans`,
    so they descend unconditionally — an apparent divergence found by
    code reading but **not** yet pinned by a cfg-disabled-inline-module
