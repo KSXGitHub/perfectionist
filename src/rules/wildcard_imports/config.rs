@@ -83,9 +83,9 @@ mod tests {
 
     #[test]
     fn one_exception_can_be_disabled_independently() {
-        // Disabling one toggle leaves the other at its default. With the
-        // old `exceptions = [...]` array this required restating the kept
-        // exception; two bools let each be flipped on its own.
+        // Setting one toggle to `false` leaves the other at its default
+        // `true`: the two exceptions are independent and each flips on its
+        // own.
         let config: Config = toml::from_str("root_reexport_exception = false").unwrap();
         let resolved = Resolved::from_config(config);
         assert!(resolved.prelude_exception);
