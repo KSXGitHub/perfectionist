@@ -16,7 +16,7 @@ LL | use crate::thing::*;
    = help: import the specific items by name instead
 
 warning: glob import brings an unbounded set of names into scope
-  --> $DIR/wildcard_imports.rs:49:23
+  --> $DIR/wildcard_imports.rs:59:23
    |
 LL | use crate::thing::{A, *};
    |                       ^
@@ -31,5 +31,13 @@ LL |     use super::*;
    |
    = help: import the specific items by name instead
 
-warning: 4 warnings emitted
+warning: glob import brings an unbounded set of names into scope
+  --> $DIR/wildcard_imports.rs:53:13
+   |
+LL |         use crate::thing::*;
+   |             ^^^^^^^^^^^^^^^
+   |
+   = help: import the specific items by name instead
+
+warning: 5 warnings emitted
 

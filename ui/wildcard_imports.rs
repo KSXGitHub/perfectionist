@@ -44,6 +44,16 @@ mod nested {
     use super::*;
 }
 
+mod outer {
+    mod inner {
+        // Bad: a glob two inline-module levels deep is still reached —
+        // `live_module_spans` is built from the crate-wide
+        // `hir_free_items()`, which recurses through nested modules, so
+        // the descent guard does not stop at the first level.
+        use crate::thing::*;
+    }
+}
+
 // Bad: a glob nested inside a brace list is flagged; the sibling named
 // leaf is left alone.
 use crate::thing::{A, *};
