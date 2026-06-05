@@ -100,9 +100,6 @@ jobs:
         with:
           tool: just
 
-      # Provision the pinned pnpm that `just minify-docs` shells out to.
-      # The recipe deliberately doesn't install pnpm, so the workflow
-      # owns the version.
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -113,10 +110,6 @@ jobs:
         shell: bash
         run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
 
-      # Cache the content-addressable store so the pinned minifiers
-      # (lightningcss-cli, terser, svgo) aren't re-downloaded each run.
-      # Keyed on the justfile because the tool versions live there, so a
-      # bump invalidates the cache automatically.
       - name: Cache pnpm store
         uses: actions/cache@v5
         timeout-minutes: 1
@@ -135,8 +128,6 @@ jobs:
         shell: bash
         run: cargo run --package _gen_docs --bin gen-docs -- --root "$(pwd)" html gh-pages --git-ref="${{ github.event.pull_request.head.sha }}"
 
-      # Minify the rendered CSS/JS/SVG in place so the preview matches
-      # what production publishes (see pages.yaml).
       - name: Minify site
         shell: bash
         run: just minify-docs gh-pages
