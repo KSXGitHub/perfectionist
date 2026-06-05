@@ -104,3 +104,41 @@ gen-rules-md rules_dir="rules":
 # Verify the in-tree markdown catalogue is in sync with `src/rules/`.
 check-rules-md rules_dir="rules":
   cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
+
+# Minifier versions, pinned. `minify-docs` fetches each on demand with
+# `pnpm dlx <tool>@<version>`, so there is no `package.json` or
+# `node_modules` in the tree and bumping a tool is a one-line edit here.
+# The Pages CI caches the pnpm store keyed on this file, so a bump
+# re-warms the cache.
+lightningcss_cli_version := "1.32.0"
+terser_version := "5.48.0"
+svgo_version := "4.0.1"
+
+# Minify a gen-docs output directory's CSS, JS, and SVG assets in place.
+# Run after `gen-docs`; the two Pages CI workflows do exactly this so the
+# published site ships compressed assets without pulling a JS minifier
+# into the Rust build. Needs `pnpm` on PATH — provisioning it is the
+# caller's job (CI installs a pinned pnpm), so this recipe never installs
+# pnpm itself. Each tool is version-pinned above and fetched on demand by
+# `pnpm dlx`.
+minify-docs out_dir="gh-pages":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  shopt -s nullglob
+  # CSS: a single lightningcss run rewrites every sheet in place, because
+  # `--output-dir` points back at the directory the inputs came from.
+  css=("{{out_dir}}"/*.css)
+  if [ "${#css[@]}" -gt 0 ]; then
+    pnpm dlx lightningcss-cli@{{lightningcss_cli_version}} --minify --output-dir "{{out_dir}}" "${css[@]}"
+  fi
+  # JS: terser reads each file fully before emitting, so writing back to
+  # the same path is safe; `--compress --mangle` drops comments and
+  # shortens identifiers.
+  for js in "{{out_dir}}"/*.js; do
+    pnpm dlx terser@{{terser_version}} "$js" --compress --mangle --output "$js"
+  done
+  # SVG: svgo rewrites every `.svg` in the folder in place.
+  svg=("{{out_dir}}"/*.svg)
+  if [ "${#svg[@]}" -gt 0 ]; then
+    pnpm dlx svgo@{{svgo_version}} --quiet --folder "{{out_dir}}"
+  fi
