@@ -1,0 +1,12 @@
+{
+  "name": "@perfectionist/minify-docs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pinned CSS/JS/SVG minifiers for the gen-docs output site. Invoked by the justfile's `minify-docs` recipe.",
+  "devDependencies": {
+    "lightningcss-cli": "1.32.0",
+    "svgo": "4.0.1",
+    "terser": "5.48.0"
+  },
+  "packageManager": "pnpm@11.5.2"
+}

@@ -1,0 +1,24 @@
+# pnpm reads install-time settings from here even for a single,
+# non-workspace package.
+#
+# pnpm blocks dependency build scripts by default (and pnpm 11 turns an
+# ignored build into a hard error), so anything that needs a build step
+# must be allow-listed here.
+#
+# `lightningcss-cli` (a docs minifier) ships its native binary in a
+# per-platform optional dependency and links it into place from a
+# `postinstall` script. `svgo` and `terser` are pure JavaScript and need
+# no build step, so they are not listed and stay blocked.
+#
+# `esbuild`, `sharp`, and `workerd` are not our dependencies: they are
+# wrangler's. Because this manifest lives at the repo root, the preview
+# deploy's `cloudflare/wrangler-action` infers pnpm from the root lockfile
+# and runs `pnpm add wrangler` in this same project, so wrangler's native
+# build deps must be allow-listed too or that install hard-errors. The
+# list is keyed by package name (not version), so it survives wrangler
+# version bumps unless wrangler introduces a brand-new native dependency.
+allowBuilds:
+  lightningcss-cli: true
+  esbuild: true
+  sharp: true
+  workerd: true

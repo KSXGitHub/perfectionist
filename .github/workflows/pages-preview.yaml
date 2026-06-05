@@ -5,8 +5,9 @@ on:
   # preview is only worth building when the PR changes something the
   # rendered site is derived from (rule sources under `src/`, the
   # gen-docs renderer + assets, `Cargo.toml`) or a build input (lockfile,
-  # toolchain, linker config in `.cargo/`, the pinned minifier versions
-  # in `justfile`). PRs that only touch `planned-rules/`, the generated
+  # toolchain, linker config in `.cargo/`, the `justfile` minify recipe,
+  # the pinned minifier dependencies in `package.json` / `pnpm-lock.yaml`).
+  # PRs that only touch `planned-rules/`, the generated
   # `rules/` markdown mirror, or `README.md` don't change the page, so
   # they skip the Cloudflare deploy.
   pull_request:
@@ -19,6 +20,9 @@ on:
       - 'rust-toolchain'
       - '.cargo/**'
       - 'justfile'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - '.github/workflows/pages-preview.yaml'
 
 permissions:
@@ -101,9 +105,9 @@ jobs:
           tool: just
 
       - name: Install pnpm
+        # No `version` input: action-setup reads it from the
+        # `packageManager` field in the root `package.json`.
         uses: pnpm/action-setup@v4
-        with:
-          version: 11.5.2
 
       - name: Locate pnpm store
         id: pnpm-store
@@ -116,7 +120,7 @@ jobs:
         continue-on-error: true
         with:
           path: ${{ steps.pnpm-store.outputs.path }}
-          key: pnpm-minify-${{ runner.os }}-${{ hashFiles('justfile') }}
+          key: pnpm-minify-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-minify-${{ runner.os }}-
 
@@ -143,6 +147,10 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # wrangler-action infers pnpm from the root lockfile and runs
+          # `pnpm add wrangler` in this project; wrangler's native build
+          # deps (esbuild/sharp/workerd) are allow-listed in
+          # pnpm-workspace.yaml so pnpm 11 doesn't hard-error on them.
           command: pages deploy gh-pages --project-name=perfectionist-preview --branch=${{ github.head_ref }} --commit-hash=${{ github.event.pull_request.head.sha }}
 
       - name: Clean workspace artifacts before cache
