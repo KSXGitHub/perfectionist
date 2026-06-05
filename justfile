@@ -115,21 +115,16 @@ minify-docs site_dir="gh-pages":
   set -euo pipefail
   cd "{{site_dir}}"
   shopt -s nullglob
-  # CSS: lightningcss minifies every file in place, beside a sourcemap with
-  # the original embedded. `--targets` keeps the output legacy — without it
-  # lightningcss rewrites media queries to MQ4 range syntax and `rgba()` to
-  # `#rrggbbaa`, neither of which Trident/IE parses, silently dropping the
-  # desktop sidebar and every alpha colour.
+  # CSS: lightningcss minifies every file in place.
   css=(*.css)
   if [ "${#css[@]}" -gt 0 ]; then
     pnpm dlx lightningcss-cli@{{lightningcss_cli_version}} --minify --targets 'ie 11' --sourcemap --output-dir . "${css[@]}"
   fi
-  # JS: terser minifies every file in place, beside a sourcemap with the
-  # original embedded.
+  # JS: terser minifies every file in place.
   for js in *.js; do
     pnpm dlx terser@{{terser_version}} "$js" --compress --mangle --source-map "url='$js.map',includeSources=true" --output "$js"
   done
-  # SVG: svgo minifies every file in place (SVG has no sourcemap format).
+  # SVG: svgo minifies every file in place.
   svg=(*.svg)
   if [ "${#svg[@]}" -gt 0 ]; then
     pnpm dlx svgo@{{svgo_version}} --quiet --folder .
