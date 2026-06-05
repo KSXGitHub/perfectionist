@@ -114,10 +114,13 @@ minify-docs site_dir="gh-pages":
   #!/usr/bin/env bash
   set -euo pipefail
   shopt -s nullglob
-  # CSS: lightningcss minifies every file in place.
+  # CSS: lightningcss minifies every file in place. `--targets` keeps the
+  # output legacy — without it lightningcss rewrites media queries to MQ4
+  # range syntax and `rgba()` to `#rrggbbaa`, neither of which Trident/IE
+  # parses, silently dropping the desktop sidebar and every alpha colour.
   css=("{{site_dir}}"/*.css)
   if [ "${#css[@]}" -gt 0 ]; then
-    pnpm dlx lightningcss-cli@{{lightningcss_cli_version}} --minify --output-dir "{{site_dir}}" "${css[@]}"
+    pnpm dlx lightningcss-cli@{{lightningcss_cli_version}} --minify --targets 'ie 11' --output-dir "{{site_dir}}" "${css[@]}"
   fi
   # JS: terser minifies every file in place.
   for js in "{{site_dir}}"/*.js; do
