@@ -21,9 +21,13 @@
 //      `hidden` attribute; clearing it is how the button appears).
 //   3. Read `perfectionist-color-scheme-override` from localStorage and
 //      apply it.
+//   4. Activate the colour-scheme icons' prefetch hints: clone the inert
+//      <template> the Rust side ships into <head> at idle time, warming
+//      the HTTP cache so the first panel-open paints them from cache
+//      rather than fetching them cold.
 //
 // If step 1 throws — the likely cause being a browser too old for the
-// APIs used — execution stops before steps 2 and 3, so the gear stays
+// APIs used — execution stops before steps 2–4, so the gear stays
 // hidden rather than appearing as a dead control. This is the same
 // "reveal only once wired up" contract the nav hamburger uses, and the
 // absence of a try/catch is deliberate: a half-supported browser should
@@ -154,5 +158,33 @@
   } else {
     applyScheme(null);
     selectRadio("system");
+  }
+
+  // ---- (4) warm the theme-icon cache ------------------------------------
+  //
+  // The three colour-scheme icons are referenced only from settings.css,
+  // as CSS masks on `.theme-icon`. The preload scanner never sees inside
+  // CSS, so without help the browser wouldn't fetch any of them until the
+  // reader opens the panel and the masked tiles first render — a cold
+  // request right when the UI appears. They matter only when this script
+  // runs (the panel is `hidden` and inert otherwise), so the Rust side
+  // ships the `<link rel="prefetch">` hints inside an inert `<template>`
+  // (built from its THEME_ICONS list — the same files settings.css masks)
+  // rather than as live <link>s the no-JS page would also fetch: a
+  // template's contents are parsed but never loaded until cloned into a
+  // live document. Cloning them into <head> here makes the browser process
+  // them; Chrome and Firefox then serve the later CSS mask load from that
+  // same HTTP cache. Done at idle time (requestIdleCallback, setTimeout
+  // fallback) so it never blocks setup. The id must match the template's.
+  var prefetchTemplate = document.getElementById("theme-icon-prefetch");
+  function warmThemeIcons() {
+    if (prefetchTemplate && "content" in prefetchTemplate) {
+      document.head.appendChild(prefetchTemplate.content.cloneNode(true));
+    }
+  }
+  if (window.requestIdleCallback) {
+    window.requestIdleCallback(warmThemeIcons);
+  } else {
+    window.setTimeout(warmThemeIcons, 0);
   }
 })();

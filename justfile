@@ -104,3 +104,28 @@ gen-rules-md rules_dir="rules":
 # Verify the in-tree markdown catalogue is in sync with `src/rules/`.
 check-rules-md rules_dir="rules":
   cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
+
+lightningcss_cli_version := "1.32.0"
+terser_version := "5.48.0"
+svgo_version := "4.0.1"
+
+# Minify a gen-docs output directory's CSS, JS, and SVG assets in place.
+minify-docs site_dir="gh-pages":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  cd "{{site_dir}}"
+  shopt -s nullglob
+  # CSS: lightningcss minifies every file in place.
+  css=(*.css)
+  if [ "${#css[@]}" -gt 0 ]; then
+    pnpm dlx lightningcss-cli@{{lightningcss_cli_version}} --minify --targets 'ie 11' --sourcemap --output-dir . "${css[@]}"
+  fi
+  # JS: terser minifies every file in place.
+  for js in *.js; do
+    pnpm dlx terser@{{terser_version}} "$js" --compress --mangle --source-map "url='$js.map',includeSources=true" --output "$js"
+  done
+  # SVG: svgo minifies every file in place.
+  svg=(*.svg)
+  if [ "${#svg[@]}" -gt 0 ]; then
+    pnpm dlx svgo@{{svgo_version}} --quiet --folder .
+  fi
