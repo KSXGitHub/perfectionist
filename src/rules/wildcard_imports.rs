@@ -270,7 +270,11 @@ impl WildcardImports {
         if self.config.root_reexport_exception && is_reexport {
             return true;
         }
-        self.config.allowed_paths.contains(&module.join("::"))
+        // Only build the joined path when there is an allow list to check
+        // it against — `allowed_paths` is empty in the default config, so
+        // this skips the per-glob `String` allocation in the common case.
+        !self.config.allowed_paths.is_empty()
+            && self.config.allowed_paths.contains(&module.join("::"))
     }
 }
 
