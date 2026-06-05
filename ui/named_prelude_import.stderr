@@ -36,5 +36,11 @@ LL |     use crate::multi::prelude::Dual;
    |
    = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
 
-warning: 5 warnings emitted
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_import.rs:81:9
+   |
+LL |     use crate::kw_prelude::prelude::Thing;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: import the item from its canonical module: `crate::r#type::Thing`
+
+warning: 6 warnings emitted
 

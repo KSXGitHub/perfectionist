@@ -65,4 +65,20 @@ mod multi_ns {
     use crate::multi::prelude::Dual;
 }
 
+// A keyword-named module (`r#type`) re-exported through a prelude: the
+// canonical-module fix must round-trip the keyword as a raw identifier
+// (`crate::r#type::Thing`), not the bare `crate::type::Thing` that would
+// fail to parse.
+pub mod r#type {
+    pub struct Thing;
+}
+pub mod kw_prelude {
+    pub mod prelude {
+        pub use crate::r#type::Thing;
+    }
+}
+mod kw_cherry {
+    use crate::kw_prelude::prelude::Thing;
+}
+
 fn main() {}

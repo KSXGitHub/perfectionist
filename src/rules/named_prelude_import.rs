@@ -278,7 +278,13 @@ fn canonical_use_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
         segments.push(tcx.crate_name(def_path.krate).to_string());
     }
     for component in &def_path.data {
-        segments.push(component.data.get_opt_name()?.to_string());
+        // Render each name through an `Ident` so a keyword module name
+        // round-trips as a raw identifier (`r#type`, not the bare keyword
+        // `type`); a plain `Symbol::to_string()` drops the `r#` and the
+        // suggested path would fail to parse. Mirrors
+        // `self_import::render_segments`.
+        let name = component.data.get_opt_name()?;
+        segments.push(rustc_span::Ident::with_dummy_span(name).to_string());
     }
     Some(segments.join("::"))
 }
