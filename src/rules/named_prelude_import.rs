@@ -25,6 +25,7 @@ use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::def_id::{DefId, LOCAL_CRATE};
+use rustc_span::kw;
 
 mod config;
 
@@ -184,9 +185,15 @@ impl<'tcx> LateLintPass<'tcx> for NamedPreludeImport {
 
 /// The dotted-path string of a run of path segments
 /// (`["serde", "prelude", "Serialize"]` → `"serde::prelude::Serialize"`).
+/// A leading `::` shows up in the HIR path as a synthetic `PathRoot`
+/// segment; skip it (as `wildcard_imports::collect_globs` and
+/// `self_import::real_segments` do) so a `use ::serde::prelude::Item;`
+/// normalises to `serde::prelude::Item` for `allowed_paths` matching
+/// rather than `{{root}}::serde::prelude::Item`.
 fn join_segments(segments: &[rustc_hir::PathSegment<'_>]) -> String {
     segments
         .iter()
+        .filter(|segment| segment.ident.name != kw::PathRoot)
         .map(|segment| segment.ident.name.to_string())
         .collect::<Vec<_>>()
         .join("::")
