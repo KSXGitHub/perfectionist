@@ -431,11 +431,17 @@ for commits that do nothing other than bump the version.
 
 ## Issue and PR references in commit messages
 
-Never write a **bare** `#NNN` reference (a `#` immediately
-followed by digits) anywhere in a commit message — not in the
-subject, not in the body. The [`commit-msg` hook](.githooks/commit-msg)
-installed by `just install-git-hooks` rejects any commit message
-that contains one. This rule is blanket: it applies to every
+Never write a **bare** `#NNN` reference anywhere in a commit
+message — not in the subject, not in the body. A reference is
+*bare* when a `#` followed by digits is **not** immediately
+preceded by an ASCII word character (`[0-9A-Za-z_]`) — exactly
+the form GitHub autolinks against *this* repository. So `#123`,
+`(#123)`, `path/#123`, and `foo.#123` are all bare, whereas
+`owner/repo#123` is not (the `#` follows the word character `o`);
+likewise a non-reference such as `C#123` or `foo#123` is left
+alone. The [`commit-msg` hook](.githooks/commit-msg) installed by
+`just install-git-hooks` rejects any commit message that contains
+a bare reference. This rule is blanket: it applies to every
 commit, and it is always safe to satisfy because the accepted
 forms work for this repository's own issues too.
 
