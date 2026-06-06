@@ -25,15 +25,15 @@ documentation; a single letter does not.
 ## Interaction with Clippy
 
 `clippy::min_ident_chars` (`restriction`, off by default)
-covers the same identifiers, but as a single crate-wide
-threshold and one shared allow-list spanning every kind at
-once — bindings, parameters, generics, and item names
-alike. This rule splits that blanket per kind: it ships
-parameter-tuned default allowances (`n`, `f`, `i`, `j`,
-`k`) and an independent `extra_allowed_idents` /
-`extra_denied_idents` pair. Enabling both is redundant —
-choose per-kind control here, or `min_ident_chars` for the
-one-knob sweep.
+also flags single-character function parameters, under a
+single crate-wide `min-ident-chars-threshold` and one shared
+allow-list spanning several kinds at once (bindings,
+parameters, item names). This rule governs parameters alone
+and ships parameter-tuned default allowances (`n`, `f`, `i`,
+`j`, `k`) plus an independent `extra_allowed_idents` /
+`extra_denied_idents` pair. Enabling both is redundant for
+parameters — choose per-kind control here, or
+`min_ident_chars` for the one-knob sweep.
 
 ## Example
 

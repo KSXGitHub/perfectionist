@@ -24,18 +24,17 @@ keep complex signatures self-documenting.
 ## Interaction with Clippy
 
 `clippy::min_ident_chars` (`restriction`, off by default)
-covers the same identifiers, but as a single crate-wide
-threshold and one shared allow-list spanning every kind at
-once — bindings, parameters, generics, and item names
-alike. This rule splits that blanket per kind: it targets
-generic type parameters only, leaving every other
-identifier kind to its own rule. Enabling both is
-redundant — choose per-kind control here, or
-`min_ident_chars` for the one-knob sweep.
+flags short identifiers in many positions, but **explicitly
+skips generic type parameters** — its visitor returns early
+on `GenericParamKind::Type`, so it never flags `<T>`. This
+rule covers exactly that gap, so the two are complementary
+rather than redundant: enable both to also catch short
+bindings, parameters, and item names.
 
-Single-character *lifetime* names (`'a`) are out of scope for
-the `single_letter_*` family; `clippy::single_char_lifetime_names`
-(`restriction`) covers those.
+Single-character *lifetime* names (`'a`) are likewise out of
+scope for the `single_letter_*` family;
+`clippy::single_char_lifetime_names` (`restriction`) covers
+those.
 
 ## Example
 

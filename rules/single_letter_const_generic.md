@@ -23,13 +23,12 @@ at every substitution.
 ## Interaction with Clippy
 
 `clippy::min_ident_chars` (`restriction`, off by default)
-covers the same identifiers, but as a single crate-wide
-threshold and one shared allow-list spanning every kind at
-once — bindings, parameters, generics, and item names
-alike. This rule splits that blanket per kind: its
-`allowed_idents` exempts names for const generic parameters
-only. Enabling both is redundant — choose per-kind control
-here, or `min_ident_chars` for the one-knob sweep.
+flags short identifiers in many positions, but **explicitly
+skips const generic parameters** — its visitor returns early
+on `GenericParamKind::Const`, so it never flags
+`<const N: usize>`. This rule covers exactly that gap, so the
+two are complementary rather than redundant: enable both to
+also catch short bindings, parameters, and item names.
 
 ## Example
 

@@ -27,13 +27,15 @@ declare_tool_lint! {
     /// ### Interaction with Clippy
     ///
     /// `clippy::min_ident_chars` (`restriction`, off by default)
-    /// covers the same identifiers, but as a single crate-wide
-    /// threshold and one shared allow-list spanning every kind at
-    /// once — bindings, parameters, generics, and item names
-    /// alike. This rule splits that blanket per kind: its
-    /// `allowed_idents` exempts names for `static` items only.
-    /// Enabling both is redundant — choose per-kind control here,
-    /// or `min_ident_chars` for the one-knob sweep.
+    /// also flags single-character `static` item names, under a
+    /// single crate-wide `min-ident-chars-threshold` and one shared
+    /// allow-list that spans several kinds at once — bindings,
+    /// parameters, and item names. (It skips generic and
+    /// const-generic parameters, which the `single_letter_*` family
+    /// handles separately.) This rule governs `static` items alone,
+    /// with its own `allowed_idents`. Enabling both is redundant for
+    /// `static` items — choose per-kind control here, or
+    /// `min_ident_chars` for the one-knob sweep.
     ///
     /// ### Example
     ///

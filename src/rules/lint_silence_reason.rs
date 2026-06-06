@@ -37,16 +37,15 @@ declare_tool_lint! {
     /// ### Interaction with Clippy
     ///
     /// `clippy::allow_attributes_without_reason` (`restriction`, off
-    /// by default) enforces the same `reason = "..."`. This rule
-    /// differs in two ways: it is scoped to the two levels that
-    /// *fully silence* a lint (`#[allow]` and `#[expect]`), and it is
-    /// self-contained — the Clippy lint silently stopped firing for a
-    /// release after the `lint_reasons` feature stabilised
-    /// (rust-lang/rust-clippy#13348), whereas this pass does not ride on that
-    /// feature gate. It also pairs with
-    /// `perfectionist::lint_reason_from_comment`, which rewrites a
-    /// trailing `// ...` explanation into the `reason` field — an
-    /// autofix Clippy has no equivalent for.
+    /// by default) enforces a similar `reason = "..."` requirement on
+    /// lint-level attributes. This rule deliberately targets only the
+    /// two levels that *fully silence* a lint — `#[allow]` and
+    /// `#[expect]` — and, more usefully, is one half of a pair:
+    /// `perfectionist::lint_reason_from_comment` autofixes a missing
+    /// `reason` by lifting an existing trailing `// ...` explanation
+    /// into the attribute, which the Clippy lint has no equivalent
+    /// for. Enable `allow_attributes_without_reason` instead if you
+    /// only want the bare requirement.
     ///
     /// ### Example
     ///
