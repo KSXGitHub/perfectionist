@@ -429,6 +429,44 @@ The single exception is version-bump commits, whose subject is
 just the version itself (e.g. `0.0.0-rc.6`). Use this form only
 for commits that do nothing other than bump the version.
 
+## Issue and PR references in commit messages
+
+Never write a **bare** `#NNN` reference (a `#` immediately
+followed by digits) anywhere in a commit message — not in the
+subject, not in the body. The [`commit-msg` hook](.githooks/commit-msg)
+installed by `just install-git-hooks` rejects any commit message
+that contains one. This rule is blanket: it applies to every
+commit, and it is always safe to satisfy because the accepted
+forms work for this repository's own issues too.
+
+The bare form is banned because it is the single most common way
+references go wrong:
+
+- **Enumerating list items.** Writing "`#1`", "`#2`", "`#3`" to
+  number the items of a list reads, on GitHub, as a link to
+  issue/PR 1, 2, and 3. Number the items some other way —
+  "item 1", "1.", or "(1)".
+- **Wrong-repository links.** GitHub resolves a bare `#123`
+  against *this* repository. A number that actually belongs to a
+  different project (a dependency, an upstream tool, a tracking
+  issue elsewhere) silently links to whatever issue happens to
+  carry that number here.
+
+Use an unambiguous form instead. All three are accepted by the
+hook:
+
+- **Same repository (qualified):** `KSXGitHub/perfectionist#123`
+- **Another repository (qualified):** `owner/repo#123`
+- **Absolute URL:** `https://github.com/owner/repo/issues/123`
+
+Qualifying a same-repo reference is never wrong, so prefer the
+qualified or URL form unconditionally rather than reaching for the
+bare `#123` and relying on the reader inferring the repository.
+(The hook only inspects the human-authored message: it skips
+comment lines and the `git commit -v` diff, and it does not flag
+`#123abc` or URL fragments such as `#L123` / `#issuecomment-1`,
+since those are not bare issue references.)
+
 ## Markdown links
 
 `README.md` uses absolute links throughout, because it is
