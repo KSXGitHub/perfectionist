@@ -37,16 +37,22 @@ esac
 #
 # Scan only the human-authored text: drop comment-char lines and stop
 # at the `git commit -v` scissors marker (a comment line carrying `>8`)
-# so a diff hunk in the verbose template never trips the check. A "#"
-# counts as bare unless the character before it could be the tail of a
-# qualifying "owner/repo" (`[0-9A-Za-z._/-]`); the trailing-boundary
-# group keeps "#123abc" and URL fragments like "#L123" / "#issuecomment-1"
-# from matching.
+# so a diff hunk in the verbose template never trips the check.
+#
+# The "#" is bracketed by word boundaries, matching GitHub's own
+# autolink rule: it autolinks "#NNN" exactly when the "#" is not
+# preceded by a word character `[0-9A-Za-z_]`. So only a word char
+# before the "#" exempts it — that is the tail of the "repo" in a
+# qualifying "owner/repo#123" (where the char before "#" is
+# alphanumeric). Anything else before the "#" — whitespace, "(", ".",
+# "/", "-", … — leaves it bare, so "path/#123" and "foo.#123" are
+# caught too. The trailing word boundary keeps "#123abc" and URL
+# fragments like "#L123" / "#issuecomment-1" from matching.
 bare_refs=$(
   awk -v cc="$comment_char" '
     index($0, cc) == 1 { if (index($0, ">8") > 0) exit; next }
     { print }
-  ' "$msg_file" | grep -E '(^|[^0-9A-Za-z._/-])#[0-9]+([^0-9A-Za-z]|$)' || true
+  ' "$msg_file" | grep -E '(^|[^0-9A-Za-z_])#[0-9]+([^0-9A-Za-z_]|$)' || true
 )
 if [ -n "$bare_refs" ]; then
   cat >&2 <<EOF
