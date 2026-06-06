@@ -439,6 +439,16 @@ that contains one. This rule is blanket: it applies to every
 commit, and it is always safe to satisfy because the accepted
 forms work for this repository's own issues too.
 
+**Install the hook before you commit.** On every fresh checkout,
+run `just install-git-hooks` as a setup step (it points this
+checkout's `core.hooksPath` at `.githooks/`). The hook is what
+catches the bare-reference mistake — and the malformed-release
+mistake — locally, before a bad message is ever recorded. Do not
+skip it on the assumption that you will get the message right by
+hand; the whole point of the hook is that this mistake is easy to
+make and easy to miss. If you cannot run `just`, set it up
+directly with `git config core.hooksPath .githooks`.
+
 The bare form is banned because it is the single most common way
 references go wrong:
 
