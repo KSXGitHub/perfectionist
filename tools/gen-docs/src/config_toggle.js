@@ -39,24 +39,37 @@
 // ============================================================================
 
 (function () {
-  var section = document.querySelector(".config-controls");
+  var section = /** @type {HTMLElement | null} */ (
+    document.querySelector(".config-controls")
+  );
   if (!section) return;
 
-  var expandButton = section.querySelector('button[data-config-open="true"]');
-  var collapseButton = section.querySelector('button[data-config-open="false"]');
+  // Non-null casts (not `HTMLButtonElement | null`): the guard below still
+  // rejects a missing button at runtime, but TypeScript won't carry that
+  // narrowing into the reflectState closure below for a `var`, so it would
+  // otherwise read the buttons as nullable.
+  var expandButton = /** @type {HTMLButtonElement} */ (
+    section.querySelector('button[data-config-open="true"]')
+  );
+  var collapseButton = /** @type {HTMLButtonElement} */ (
+    section.querySelector('button[data-config-open="false"]')
+  );
   if (!expandButton || !collapseButton) return;
 
   // The Configuration panels. A generated catalogue is static after render
   // (nothing adds or removes panels at runtime), so query once and reuse the
   // NodeList everywhere rather than re-scanning the DOM per call — the same
   // cache-the-query approach theme_toggle.js takes with its radios.
-  var panels = document.querySelectorAll("details.config-details");
+  var panels = /** @type {NodeListOf<HTMLDetailsElement>} */ (
+    document.querySelectorAll("details.config-details")
+  );
 
   // Nothing to toggle means nothing to reveal: a catalogue with no
   // configurable rule renders no `details.config-details`, so leaving the
   // section hidden avoids two buttons that would silently do nothing.
   if (panels.length === 0) return;
 
+  /** @param {boolean} open */
   function setAllOpen(open) {
     for (var i = 0; i < panels.length; i++) {
       panels[i].open = open;
