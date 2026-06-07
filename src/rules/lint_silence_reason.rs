@@ -39,17 +39,14 @@ declare_tool_lint! {
     /// `clippy::allow_attributes_without_reason` (`restriction`, off
     /// by default) flags a missing `reason = "..."` on the same two
     /// levels this rule does — `#[allow]` and `#[expect]` — and only
-    /// those, so the trigger overlaps. This rule adds three things on
-    /// top of the bare presence check: it enforces a minimum reason
-    /// *length* (`min_reason_length`, default 3), so a content-free
-    /// `reason = "ok"` is still flagged where Clippy accepts any
-    /// non-empty string; it takes a per-lint `exempt_lints` list; and
-    /// it pairs with `perfectionist::lint_reason_from_comment`, which
-    /// autofixes the missing reason by lifting a trailing `// ...`
-    /// explanation into the attribute (Clippy only flags). It also
-    /// fires regardless of the crate's MSRV, where Clippy's is gated
-    /// on the `lint_reasons` stabilisation. For the bare presence
-    /// check alone, the Clippy lint is equivalent.
+    /// those, so the trigger overlaps. This rule adds a quality floor
+    /// Clippy lacks: `min_reason_length` (default 3) flags a
+    /// content-free `reason = "ok"` that Clippy accepts, and a blank
+    /// `reason = ""` is treated as missing. It also takes a per-lint
+    /// `exempt_lints` list and fires regardless of the crate's MSRV,
+    /// where Clippy's is gated on the `lint_reasons` stabilisation.
+    /// For the bare presence check alone, the Clippy lint is
+    /// equivalent.
     ///
     /// ### Example
     ///
