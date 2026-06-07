@@ -170,8 +170,8 @@ pattern that several rules call out by reference — live in
 
 ### Lint-level attributes
 - [`lint-downgrade-reason.md`](./lint-downgrade-reason.md) —
-  same presence-and-length requirement as
-  `perfectionist::lint_silence_reason`, extended to any
+  the same presence-and-length `reason` requirement as
+  `clippy::allow_attributes_without_reason`, extended to any
   `#[warn]` / `#[allow]` / `#[expect]` that lowers the lint's
   inherited level (`deny → warn`, `warn → allow`, etc.).
   Ancestry-aware counterpart.
@@ -238,6 +238,19 @@ external state, or judgement calls that a static lint cannot evaluate:
   layout — never enable both.) `perfectionist::flat_module_pattern` was
   a verbatim reimplementation of the stock lint and earned no keep, so
   it was removed (mirroring the `arc_rc_clone` case above).
+- **A `reason` on every `#[allow]` / `#[expect]`** — already covered by
+  `clippy::allow_attributes_without_reason`, a `restriction` lint
+  (allow-by-default) that flags a missing `reason = "..."` on exactly
+  `#[allow]` and `#[expect]` (the same two levels). This was briefly
+  implemented as `perfectionist::lint_silence_reason`, which added a
+  `min_reason_length` quality floor and an `exempt_lints` list on top,
+  but the core check duplicated the Clippy lint, so it was removed
+  (mirroring the `flat_module_pattern` case above). The ancestry-aware
+  *downgrade* case (`#[warn]` over `#[deny]`, etc.) that Clippy cannot
+  see is still planned as
+  [`lint-downgrade-reason`](./lint-downgrade-reason.md), and the
+  comment-lifting autofix lives in
+  `perfectionist::lint_reason_from_comment`.
 - **Doc comments referencing items more private than the documented item**
   (pacquet *Documentation comments*) — already covered by rustdoc's
   built-in `rustdoc::private_intra_doc_links` lint (default `warn`).

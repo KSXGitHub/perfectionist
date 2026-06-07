@@ -7,7 +7,6 @@ pub mod import_granularity;
 pub mod import_grouping;
 pub mod inline_test_footprint;
 pub mod lint_reason_from_comment;
-pub mod lint_silence_reason;
 pub mod macro_argument_binding;
 pub mod macro_trailing_comma;
 pub mod non_exhaustive_error;

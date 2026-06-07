@@ -42,10 +42,6 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field
 
-- [`lint_silence_reason`](./lint_silence_reason.md) (default: `active`).
-
-  `#[allow]` / `#[expect]` attribute lacks an explanatory `reason = "..."` field
-
 - [`macro_argument_binding`](./macro_argument_binding.md) (default: `active`).
 
   macro invocation passes an impure expression that should be bound to a `let` first

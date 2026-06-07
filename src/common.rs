@@ -192,8 +192,8 @@ pub(crate) fn resolved_state(name: &str, default: DefaultState) -> DefaultState 
 /// name (`clippy::too_many_arguments`, `dead_code`), joining the path
 /// segments with `::`. Shared by the lint-level rules that classify or
 /// report lint names by the printed form they wear in diagnostics and
-/// `#[allow(...)]` attributes — `lint_silence_reason`,
-/// `unknown_perfectionist_lints`, and `prefer_expect_over_allow`.
+/// `#[allow(...)]` attributes — `unknown_perfectionist_lints` and
+/// `prefer_expect_over_allow`.
 pub(crate) fn render_meta_path(meta: &MetaItem) -> String {
     meta.path
         .segments
@@ -209,8 +209,8 @@ pub(crate) fn render_meta_path(meta: &MetaItem) -> String {
 ///
 /// Shared between the lint-level rules that all consume the same
 /// notion of "this attribute carries an explanatory reason":
-/// `lint_silence_reason`, `lint_downgrade_reason`, and
-/// `lint_reason_from_comment`. The arg list is the post-`meta_item_list`
+/// `lint_reason_from_comment` and the planned `lint_downgrade_reason`.
+/// The arg list is the post-`meta_item_list`
 /// vector of nested meta items — the same shape every caller already
 /// constructs from `Attribute::meta_item_list()`.
 pub(crate) fn attr_has_reason(args: &[MetaItemInner]) -> Option<&MetaItemLit> {
