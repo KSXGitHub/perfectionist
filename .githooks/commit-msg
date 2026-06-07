@@ -27,27 +27,15 @@ case "$comment_char" in
 esac
 
 # --- Reject bare "#NNN" issue / PR references -------------------------
-# A bare "#123" is resolved by GitHub against *this* repository, so it
-# is a frequent source of mis-references: a number copied from another
-# project silently links to the wrong issue here, and "#1"/"#2" used to
-# enumerate list items reads as issue/PR 1 and 2. Qualified
-# ("owner/repo#123") and absolute-URL forms are unambiguous, so we
-# reject only the bare form. See CLAUDE.md, "Issue and PR references in
-# commit messages", for the full rationale.
+# Rationale and the accepted forms are in the rejection message below.
 #
 # Scan only the human-authored text: drop comment-char lines and stop
-# at the `git commit -v` scissors marker (a comment line carrying `>8`)
-# so a diff hunk in the verbose template never trips the check.
+# at the `git commit -v` scissors marker (a comment line carrying `>8`).
 #
-# The "#" is bracketed by word boundaries, matching GitHub's own
-# autolink rule: it autolinks "#NNN" exactly when the "#" is not
-# preceded by a word character `[0-9A-Za-z_]`. So only a word char
-# before the "#" exempts it — that is the tail of the "repo" in a
-# qualifying "owner/repo#123" (where the char before "#" is
-# alphanumeric). Anything else before the "#" — whitespace, "(", ".",
-# "/", "-", … — leaves it bare, so "path/#123" and "foo.#123" are
-# caught too. The trailing word boundary keeps "#123abc" and URL
-# fragments like "#L123" / "#issuecomment-1" from matching.
+# The regex matches GitHub's autolink boundary: "#NNN" is bare unless
+# the "#" is preceded by a word char `[0-9A-Za-z_]` (the tail of the
+# "repo" in "owner/repo#123"). The trailing boundary keeps "#123abc"
+# and fragments like "#L123" / "#issuecomment-1" from matching.
 bare_refs=$(
   awk -v cc="$comment_char" '
     index($0, cc) == 1 { if (index($0, ">8") > 0) exit; next }

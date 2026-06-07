@@ -431,57 +431,26 @@ for commits that do nothing other than bump the version.
 
 ## Issue and PR references in commit messages
 
-Never write a **bare** `#NNN` reference anywhere in a commit
-message — not in the subject, not in the body. A reference is
-*bare* when a `#` followed by digits is **not** immediately
-preceded by an ASCII word character (`[0-9A-Za-z_]`) — exactly
-the form GitHub autolinks against *this* repository. So `#123`,
-`(#123)`, `path/#123`, and `foo.#123` are all bare, whereas
-`owner/repo#123` is not (the `#` follows the word character `o`);
-likewise a non-reference such as `C#123` or `foo#123` is left
-alone. The [`commit-msg` hook](.githooks/commit-msg) installed by
-`just install-git-hooks` rejects any commit message that contains
-a bare reference. This rule is blanket: it applies to every
-commit, and it is always safe to satisfy because the accepted
-forms work for this repository's own issues too.
+Never write a **bare** `#NNN` reference in a commit message. A
+reference is *bare* when a `#` followed by digits is not
+immediately preceded by an ASCII word char (`[0-9A-Za-z_]`) — the
+form GitHub autolinks against *this* repo, so a number meant for
+another project links to the wrong issue. Thus `#123`, `(#123)`,
+`path/#123` are bare; `owner/repo#123`, `C#123`, `foo#123` are
+not. The [`commit-msg` hook](.githooks/commit-msg) rejects any
+commit containing one; install it on a fresh checkout with
+`just install-git-hooks` (or `git config core.hooksPath .githooks`).
 
-**Install the hook before you commit.** On every fresh checkout,
-run `just install-git-hooks` as a setup step (it points this
-checkout's `core.hooksPath` at `.githooks/`). The hook is what
-catches the bare-reference mistake — and the malformed-release
-mistake — locally, before a bad message is ever recorded. Do not
-skip it on the assumption that you will get the message right by
-hand; the whole point of the hook is that this mistake is easy to
-make and easy to miss. If you cannot run `just`, set it up
-directly with `git config core.hooksPath .githooks`.
+Use an unambiguous form instead:
 
-The bare form is banned because it is the single most common way
-references go wrong:
-
-- **Enumerating list items.** Writing "`#1`", "`#2`", "`#3`" to
-  number the items of a list reads, on GitHub, as a link to
-  issue/PR 1, 2, and 3. Number the items some other way —
-  "item 1", "1.", or "(1)".
-- **Wrong-repository links.** GitHub resolves a bare `#123`
-  against *this* repository. A number that actually belongs to a
-  different project (a dependency, an upstream tool, a tracking
-  issue elsewhere) silently links to whatever issue happens to
-  carry that number here.
-
-Use an unambiguous form instead. All three are accepted by the
-hook:
-
-- **Same repository (qualified):** `KSXGitHub/perfectionist#123`
-- **Another repository (qualified):** `owner/repo#123`
+- **Same repo:** `KSXGitHub/perfectionist#123`
+- **Another repo:** `owner/repo#123`
 - **Absolute URL:** `https://github.com/owner/repo/issues/123`
 
-Qualifying a same-repo reference is never wrong, so prefer the
-qualified or URL form unconditionally rather than reaching for the
-bare `#123` and relying on the reader inferring the repository.
-(The hook only inspects the human-authored message: it skips
-comment lines and the `git commit -v` diff, and it does not flag
-`#123abc` or URL fragments such as `#L123` / `#issuecomment-1`,
-since those are not bare issue references.)
+To enumerate list items, number them without `#` ("item 1", "1.",
+"(1)") — "`#1`"/"`#2`" otherwise autolink as issue 1/2. The hook
+skips comment lines and the `git commit -v` diff, and ignores
+non-bare forms like `#123abc` / `#L123` / `#issuecomment-1`.
 
 ## Markdown links
 
