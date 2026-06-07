@@ -216,41 +216,41 @@ external state, or judgement calls that a static lint cannot evaluate:
   log via `eprintln!`, complex structures via `dbg!`) — the rule branches
   on the runtime *shape* of values, which a static lint cannot inspect.
 - **Cloning `Arc` / `Rc` via `.clone()`** (pacquet *Cloning `Arc` and
-  `Rc`*) — already covered by `clippy::clone_on_ref_ptr`, which flags
+  `Rc`*) — covered by `clippy::clone_on_ref_ptr`, which flags
   `x.clone()` on a ref-counted pointer and suggests the qualified
   `Arc::clone(&x)` / `Rc::clone(&x)` form. It is a `restriction` lint
-  (allow-by-default); a project that wants it enables the single line
-  `clone_on_ref_ptr = "warn"` under `[lints.clippy]`. This was briefly
-  implemented as `perfectionist::arc_rc_clone`, but a verbatim
-  reimplementation of a stock Clippy lint earned no keep and forced an
-  interop downgrade to avoid double-firing when both were on, so it was
-  removed (KSXGitHub/parallel-disk-usage#422, pnpm/pnpm#11839).
-- **Flat module layout** (`foo.rs`, never `foo/mod.rs`) — already
-  covered by `clippy::mod_module_files`, a `restriction` lint
-  (allow-by-default) that warns on every `mod.rs` file (requiring the
-  self-named `foo.rs` form instead) and is the exact equivalent of the
-  former `perfectionist::flat_module_pattern`. A project enables the
-  single line `mod_module_files = "warn"` under `[lints.clippy]`; this
-  crate does so in its own `Cargo.toml`. (The lint names are
-  counter-intuitive — each is named for what it *warns about*, not what
-  it enforces. The *opposite* lint, `clippy::self_named_module_files`,
-  warns on self-named files and so requires the contradictory `mod.rs`
-  layout — never enable both.) `perfectionist::flat_module_pattern` was
-  a verbatim reimplementation of the stock lint and earned no keep, so
-  it was removed (mirroring the `arc_rc_clone` case above).
-- **A `reason` on every `#[allow]` / `#[expect]`** — already covered by
+  (allow-by-default); enable `clone_on_ref_ptr = "warn"` under
+  `[lints.clippy]`. A dedicated lint would only duplicate it and would
+  have to coordinate to avoid double-firing.
+- **Flat module layout** (`foo.rs`, never `foo/mod.rs`) — covered by
+  `clippy::mod_module_files`, a `restriction` lint (allow-by-default)
+  that warns on every `mod.rs` file (requiring the self-named `foo.rs`
+  form instead). Enable `mod_module_files = "warn"` under
+  `[lints.clippy]`; this crate does so in its own `Cargo.toml`. (The
+  lint names are counter-intuitive — each is named for what it *warns
+  about*, not what it enforces. The *opposite* lint,
+  `clippy::self_named_module_files`, warns on self-named files and so
+  requires the contradictory `mod.rs` layout — never enable both.)
+- **A `reason` on every `#[allow]` / `#[expect]`** — covered by
   `clippy::allow_attributes_without_reason`, a `restriction` lint
   (allow-by-default) that flags a missing `reason = "..."` on exactly
-  `#[allow]` and `#[expect]` (the same two levels). This was briefly
-  implemented as `perfectionist::lint_silence_reason`, which added a
-  `min_reason_length` quality floor and an `exempt_lints` list on top,
-  but the core check duplicated the Clippy lint, so it was removed
-  (mirroring the `flat_module_pattern` case above). The ancestry-aware
-  *downgrade* case (`#[warn]` over `#[deny]`, etc.) that Clippy cannot
-  see is still planned as
+  `#[allow]` and `#[expect]`. Enable it under `[lints.clippy]`. A
+  dedicated lint could add a `min_reason_length` quality floor or an
+  `exempt_lints` list, but the core requirement is the Clippy lint's.
+  The ancestry-aware *downgrade* case (`#[warn]` over `#[deny]`, etc.)
+  that Clippy cannot see is still planned as
   [`lint-downgrade-reason`](./lint-downgrade-reason.md), and the
   comment-lifting autofix lives in
   `perfectionist::lint_reason_from_comment`.
+- **Preferring `#[expect]` over `#[allow]`** — so a suppression
+  self-expires once the lint stops firing, via
+  `unfulfilled_lint_expectations` — covered by `clippy::allow_attributes`,
+  a `restriction` lint (allow-by-default) that rewrites `#[allow]` to
+  `#[expect]`. Enable `allow_attributes = "warn"` under `[lints.clippy]`.
+  It converts every `#[allow]` indiscriminately; a dedicated lint could
+  skip lint groups and cfg-conditional lints to avoid a fresh unfulfilled
+  expectation, but that refinement doesn't warrant duplicating the Clippy
+  lint.
 - **Doc comments referencing items more private than the documented item**
   (pacquet *Documentation comments*) — already covered by rustdoc's
   built-in `rustdoc::private_intra_doc_links` lint (default `warn`).
