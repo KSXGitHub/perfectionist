@@ -328,13 +328,12 @@ drive a headless Chromium from a throwaway Playwright script:
 
 - Treat the script as scratch, and keep it out of the repository
   entirely: for the majority of cases, write temporary files and
-  directories under `/tmp` (or some other directory outside the
-  working tree), where nothing needs ignoring at all. Don't commit
-  it, and don't add it to `.gitignore`. Genuinely-local exclusions
-  are rare, but if one is unavoidable, the file's *name* gets added
-  to `.git/info/exclude` — that file is a list of names Git should
-  ignore, **not** a place to drop the script itself. Never write a
-  temporary script into `.git/info/` (or anywhere under `.git/`).
+  directories outside the working tree (such as in `/tmp`), where
+  nothing needs ignoring at all. Don't commit it, and don't add it
+  to `.gitignore`. Genuinely-local exclusions are rare, but if one
+  is unavoidable, the file's *name* gets added to `.git/info/exclude` —
+  that file is a list of names Git should ignore, **not** a place to
+  drop the script itself. Never write a temporary script into `.git/`.
   The catalogue doesn't need a permanent test harness; ad-hoc
   checks for a specific change are easier to write fresh than to
   maintain.
