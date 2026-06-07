@@ -33,15 +33,19 @@ notes when a stale `#[expect]` is encountered.
 ## Interaction with Clippy
 
 `clippy::allow_attributes_without_reason` (`restriction`, off
-by default) enforces a similar `reason = "..."` requirement on
-lint-level attributes. This rule deliberately targets only the
-two levels that *fully silence* a lint — `#[allow]` and
-`#[expect]` — and, more usefully, is one half of a pair:
-`perfectionist::lint_reason_from_comment` autofixes a missing
-`reason` by lifting an existing trailing `// ...` explanation
-into the attribute, which the Clippy lint has no equivalent
-for. Enable `allow_attributes_without_reason` instead if you
-only want the bare requirement.
+by default) flags a missing `reason = "..."` on the same two
+levels this rule does — `#[allow]` and `#[expect]` — and only
+those, so the trigger overlaps. This rule adds three things on
+top of the bare presence check: it enforces a minimum reason
+*length* (`min_reason_length`, default 3), so a content-free
+`reason = "ok"` is still flagged where Clippy accepts any
+non-empty string; it takes a per-lint `exempt_lints` list; and
+it pairs with `perfectionist::lint_reason_from_comment`, which
+autofixes the missing reason by lifting a trailing `// ...`
+explanation into the attribute (Clippy only flags). It also
+fires regardless of the crate's MSRV, where Clippy's is gated
+on the `lint_reasons` stabilisation. For the bare presence
+check alone, the Clippy lint is equivalent.
 
 ## Example
 
