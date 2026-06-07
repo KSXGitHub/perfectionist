@@ -1,27 +1,77 @@
 #!/usr/bin/env bash
-# commit-msg hook: reject release-shaped commit messages (X.Y.Z or
-# X.Y.Z-<suffix>) whose staged diff fails the version-bump contract
-# enforced by tools/deploy-check.
+# commit-msg hook. Two independent checks:
+#
+#   1. Reject any commit message that contains a bare "#NNN" issue/PR
+#      reference (see "Reject bare #NNN" below). This guards against the
+#      most common AI mis-reference: a number that resolves against the
+#      wrong repository, or "#1"/"#2" used to enumerate list items. Pure
+#      text, runs for every commit.
+#   2. Reject release-shaped commit messages (X.Y.Z or X.Y.Z-<suffix>)
+#      whose staged diff fails the version-bump contract enforced by
+#      tools/deploy-check.
 set -euo pipefail
 
 msg_file="$1"
 
-# Cheap pre-filter so non-release commits don't pay the cost of
-# spawning cargo. Find the first non-blank, non-comment line and
-# check whether it matches the version-literal grammar.
-#
-# Honour `core.commentChar` (default `#`) so a user with a
-# non-default comment char doesn't have template comment lines
-# leak through and get picked as the subject — that would
-# otherwise let a malformed release commit slip past the hook.
-# Fall back to `#` on unset, `auto`, or any non-single-char
-# value, matching the Rust side's fallback.
+# Honour `core.commentChar` (default `#`) so a user with a non-default
+# comment char doesn't have template comment lines leak through — that
+# would otherwise let a malformed release commit slip past check 2, and
+# make check 1 skip lines it should scan. Fall back to `#` on unset,
+# `auto`, or any non-single-char value, matching the Rust side's
+# fallback. Both checks below share this value.
 comment_char=$(git config --get core.commentChar 2>/dev/null || true)
 case "$comment_char" in
   '') comment_char='#' ;;
   ?) ;;
   *) comment_char='#' ;;
 esac
+
+# --- Reject bare "#NNN" issue / PR references -------------------------
+# Scan only the human-authored text: drop comment-char lines and stop
+# at the `git commit -v` scissors marker (a comment line carrying `>8`).
+#
+# The regex matches GitHub's autolink boundary: "#NNN" is bare unless
+# the "#" is preceded by a word char `[0-9A-Za-z_]` (the tail of the
+# "repo" in "owner/repo#123"). The trailing boundary keeps "#123abc"
+# and fragments like "#L123" / "#issuecomment-1" from matching.
+bare_refs=$(
+  awk -v cc="$comment_char" '
+    index($0, cc) == 1 { if (index($0, ">8") > 0) exit; next }
+    { print }
+  ' "$msg_file" | grep -E '(^|[^0-9A-Za-z_])#[0-9]+([^0-9A-Za-z_]|$)' || true
+)
+if [ -n "$bare_refs" ]; then
+  cat >&2 <<EOF
+✖ Commit message rejected: it contains a bare "#NNN" reference.
+
+$(printf '%s\n' "$bare_refs" | sed 's/^/    /')
+
+A bare "#123" is ambiguous and a common way to mis-reference an issue:
+
+  • Used to enumerate list items ("#1", "#2", "#3"), it instead reads
+    as issue/PR 1, 2, 3. Number the items another way, e.g. "item 1",
+    "1.", or "(1)".
+
+  • Used for a real issue or PR, GitHub resolves a bare "#123" against
+    THIS repository, so a number meant for another repo silently links
+    to the wrong issue here.
+
+Use an unambiguous form instead:
+
+  • Same repo:    KSXGitHub/perfectionist#123
+  • Another repo: owner/repo#123
+  • Absolute URL: https://github.com/owner/repo/issues/123
+
+Qualified ("owner/repo#123") and URL forms are always accepted, so it
+is safe to qualify even same-repo references.
+EOF
+  exit 1
+fi
+
+# --- Reject malformed release commits --------------------------------
+# Cheap pre-filter so non-release commits don't pay the cost of
+# spawning cargo. Find the first non-blank, non-comment line and
+# check whether it matches the version-literal grammar.
 subject=$(awk -v cc="$comment_char" 'index($0, cc) != 1 && NF { print; exit }' "$msg_file")
 if ! [[ "$subject" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[^[:space:]]+)?$ ]]; then
   exit 0
