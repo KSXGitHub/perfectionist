@@ -190,10 +190,9 @@ pub(crate) fn resolved_state(name: &str, default: DefaultState) -> DefaultState 
 
 /// Render a lint-control meta item's path as its fully-namespaced
 /// name (`clippy::too_many_arguments`, `dead_code`), joining the path
-/// segments with `::`. Shared by the lint-level rules that classify or
-/// report lint names by the printed form they wear in diagnostics and
-/// `#[allow(...)]` attributes — `unknown_perfectionist_lints` and
-/// `prefer_expect_over_allow`.
+/// segments with `::`. Used by `unknown_perfectionist_lints` to report
+/// lint names by the printed form they wear in diagnostics and
+/// `#[allow(...)]` attributes.
 pub(crate) fn render_meta_path(meta: &MetaItem) -> String {
     meta.path
         .segments

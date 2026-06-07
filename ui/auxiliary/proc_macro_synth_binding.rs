@@ -363,11 +363,11 @@ pub fn synth_silence_reason(input: TokenStream) -> TokenStream {
 
 /// `#[derive(SynthAllowRewriteable)]` + `#[synth_allow_rewriteable]` →
 /// `#[allow(non_snake_case)] const _: () = ();` whose generated `#[allow]`
-/// inherits the user-span of `synth_allow_rewriteable`. Unlike
-/// `SynthSilenceReason` (which emits the exempt `dead_code`), this names a
-/// rewriteable built-in lint, so it exercises `prefer_expect_over_allow`'s
-/// proc-macro guard (issue #430): without the guard the rule would rewrite
-/// a suppression the user never wrote.
+/// inherits the user-span of `synth_allow_rewriteable`. It names a
+/// rewriteable built-in lint (not an exempt one like `dead_code`), so it
+/// exercises an early-pass `is_from_proc_macro` guard: without the guard,
+/// a rule that rewrites `#[allow]` would act on a suppression the user
+/// never wrote.
 #[proc_macro_derive(SynthAllowRewriteable, attributes(synth_allow_rewriteable))]
 pub fn synth_allow_rewriteable(input: TokenStream) -> TokenStream {
     let attr_span = find_attr_span(input, "synth_allow_rewriteable")

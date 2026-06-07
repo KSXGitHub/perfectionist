@@ -59,7 +59,6 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         macro_trailing_comma
         non_exhaustive_error
         prefer_derive_more_over_thiserror
-        prefer_expect_over_allow
         prefer_raw_string
         print_macro_split
         single_letter_closure_param
