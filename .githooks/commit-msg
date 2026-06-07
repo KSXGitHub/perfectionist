@@ -27,8 +27,6 @@ case "$comment_char" in
 esac
 
 # --- Reject bare "#NNN" issue / PR references -------------------------
-# Rationale and the accepted forms are in the rejection message below.
-#
 # Scan only the human-authored text: drop comment-char lines and stop
 # at the `git commit -v` scissors marker (a comment line carrying `>8`).
 #
