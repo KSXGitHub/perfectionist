@@ -36,9 +36,6 @@ crate-type = ["cdylib"]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(dylint_lib, values("perfectionist"))'] }
 
 [lints.clippy]
-# Stock Clippy `restriction` lints that cover principles this crate
-# deliberately does not ship a bespoke rule for (see the "Out of scope"
-# list in `planned-rules/README.md`).
 allow_attributes = "warn"
 allow_attributes_without_reason = "warn"
 clone_on_ref_ptr = "warn"
