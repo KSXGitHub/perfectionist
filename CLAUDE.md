@@ -429,6 +429,29 @@ The single exception is version-bump commits, whose subject is
 just the version itself (e.g. `0.0.0-rc.6`). Use this form only
 for commits that do nothing other than bump the version.
 
+## Issue and PR references in commit messages
+
+Never write a **bare** `#NNN` reference in a commit message. A
+reference is *bare* when a `#` followed by digits is not
+immediately preceded by an ASCII word char (`[0-9A-Za-z_]`) — the
+form GitHub autolinks against *this* repo, so a number meant for
+another project links to the wrong issue. Thus `#123`, `(#123)`,
+`path/#123` are bare; `owner/repo#123`, `C#123`, `foo#123` are
+not. The [`commit-msg` hook](.githooks/commit-msg) rejects any
+commit containing one; install it on a fresh checkout with
+`just install-git-hooks` (or `git config core.hooksPath .githooks`).
+
+Use an unambiguous form instead:
+
+- **Same repo:** `KSXGitHub/perfectionist#123`
+- **Another repo:** `owner/repo#123`
+- **Absolute URL:** `https://github.com/owner/repo/issues/123`
+
+To enumerate list items, number them without `#` ("item 1", "1.",
+"(1)") — "`#1`"/"`#2`" otherwise autolink as issue 1/2. The hook
+skips comment lines and the `git commit -v` diff, and ignores
+non-bare forms like `#123abc` / `#L123` / `#issuecomment-1`.
+
 ## Markdown links
 
 `README.md` uses absolute links throughout, because it is
