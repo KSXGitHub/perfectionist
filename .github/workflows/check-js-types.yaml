@@ -1,0 +1,76 @@
+name: Check JS Types
+
+# Type-checks the docs-site browser scripts (tools/gen-docs/src/*.js) from
+# their JSDoc annotations with the TypeScript compiler (`tsc --noEmit`, driven
+# by tsconfig.json).
+#
+# This workflow is intentionally independent of every other CI:
+#
+#   * It is a standalone workflow with its own job, not a `needs:` dependency
+#     of the Test or Pages workflows and not invoked via `workflow_call`, so it
+#     can never gate them — a red run here leaves Test and the Pages deploy
+#     free to pass and publish.
+#   * It only installs Node tooling (pnpm + the pinned TypeScript), never the
+#     Rust toolchain, so it shares no cache or step with the Rust suite.
+#
+# An allow-list of trigger paths keeps it from running on unrelated changes.
+# Because it gates nothing, a path missed here only means a JS/JSDoc change
+# went unchecked by CI — never a blocked merge or a broken deploy.
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'tools/gen-docs/src/*.js'
+      - 'tsconfig.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/check-js-types.yaml'
+  pull_request:
+    paths:
+      - 'tools/gen-docs/src/*.js'
+      - 'tsconfig.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/check-js-types.yaml'
+  workflow_dispatch:
+
+# Type-checking only reads the repository.
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check JS types
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Locate pnpm store
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v5
+        timeout-minutes: 1
+        continue-on-error: true
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-tscheck-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-tscheck-${{ runner.os }}-
+
+      - name: Install packages
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check JavaScript
+        shell: bash
+        run: pnpm exec tsc --noEmit --project tsconfig.json

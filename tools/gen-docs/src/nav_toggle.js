@@ -128,8 +128,16 @@
 // ============================================================================
 
 (function () {
-  var toggle = document.querySelector(".nav-toggle");
-  var sidebar = document.querySelector(".nav-sidebar");
+  // Cast to the non-null element type rather than `HTMLElement | null`: the
+  // `if (!toggle || !sidebar) return;` guard below still catches a missing
+  // element at runtime, but TypeScript does not carry guard-based narrowing of
+  // a `var` into the closures further down (this file deliberately avoids
+  // `const`, see the trailing-comma note in config_toggle.js), so every event
+  // handler that reads `toggle`/`sidebar` would otherwise see them as nullable.
+  var toggle = /** @type {HTMLElement} */ (document.querySelector(".nav-toggle"));
+  var sidebar = /** @type {HTMLElement} */ (
+    document.querySelector(".nav-sidebar")
+  );
   if (!toggle || !sidebar) return;
 
   // ---- Hamburger fade ---------------------------------------------------
@@ -224,11 +232,12 @@
   // the toggle and the sidebar while the drawer is open; restore on
   // close. `inert` removes focusability and AT exposure of the
   // subtree without needing a manual focus trap or aria-hidden dance.
+  /** @type {HTMLElement[]} */
   var inertedChildren = [];
   function setBackgroundInert() {
     inertedChildren = [];
     for (var i = 0; i < document.body.children.length; i++) {
-      var el = document.body.children[i];
+      var el = /** @type {HTMLElement} */ (document.body.children[i]);
       if (el === toggle || el === sidebar) continue;
       if (el.inert) continue;
       el.inert = true;
@@ -269,7 +278,9 @@
     }
   });
 
-  var closeBtn = sidebar.querySelector(".nav-sidebar-close");
+  var closeBtn = /** @type {HTMLElement | null} */ (
+    sidebar.querySelector(".nav-sidebar-close")
+  );
   if (closeBtn) closeBtn.addEventListener("click", closeSidebar);
 
   // ---- Focus trap fallback ----------------------------------------------
@@ -289,8 +300,8 @@
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Tab") return;
     if (toggle.getAttribute("aria-expanded") !== "true") return;
-    var focusable = sidebar.querySelectorAll(
-      "a[href], button:not([disabled])"
+    var focusable = /** @type {NodeListOf<HTMLElement>} */ (
+      sidebar.querySelectorAll("a[href], button:not([disabled])")
     );
     if (focusable.length === 0) return;
     var first = focusable[0];
@@ -321,7 +332,7 @@
   // the catalogue heading aren't focusable by default, so set
   // tabindex="-1" before .focus().
   sidebar.addEventListener("click", function (event) {
-    var link = event.target.closest("a");
+    var link = /** @type {Element} */ (event.target).closest("a");
     if (!link) return;
     if (event.button !== 0) return;
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
