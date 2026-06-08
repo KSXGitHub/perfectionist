@@ -620,8 +620,9 @@ else is `Active by default`.
 
 A handful of `Inactive by default` rules express a *direction*
 with no neutral baseline — `qualified_paths` (`unqualified` vs.
-`qualified`) and `serde_wrapper_style` (`transparent` vs.
-`from_into`). These rules deliberately do **not**
+`qualified`), `serde_wrapper_style` (`transparent` vs.
+`from_into`), and `import_grouping` (`single_block` vs.
+`multi_block`). These rules deliberately do **not**
 offer a `preserve`/no-op `style` value. "I don't want this rule" is
 already expressed by leaving it out of `[perfectionist].enable`, so
 a do-nothing `style` would only duplicate that — and a no-op enum
