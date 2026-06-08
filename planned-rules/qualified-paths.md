@@ -186,52 +186,14 @@ owner to qualify the other.
 ## Interaction with `clippy::absolute_paths`
 
 `clippy::absolute_paths` (a `restriction` lint, allow-by-default) is
-the closest stock lint, but it overlaps only a corner of the
-`unqualified` style and cannot stand in for this rule.
-
-`clippy::absolute_paths` fires only on *absolute* paths — those
-anchored at a crate root (`std::…`, `core::…`, an extern-crate name,
-or a leading `::`) — and only once a path exceeds
-`absolute-paths-max-segments` (default 2). It emits a bare warning,
-no autofix.
-
-The gap that matters: the path this rule most wants to catch is a
-*module-qualified relative* path — e.g. `fs::create_dir_all(&dir)`
-where `use std::fs;` is already in scope. That path is not absolute
-(its head segment `fs` resolves to an in-scope module, not a crate
-root), so `clippy::absolute_paths` stays silent on it. The
-`unqualified` style flags it and rewrites to
-`use std::fs::create_dir_all;` + `create_dir_all(&dir)`. This is the
-single most common shape the rule exists to correct — tooling that
-emits `use std::fs;` and then calls through `fs::…` — and it is
-exactly what Clippy does not see. The fully-qualified
-`std::fs::create_dir_all(&dir)` is the *only* variant the two lints
-agree on.
-
-The two are therefore not interchangeable:
-
-- **Direction.** `clippy::absolute_paths` only ever discourages
-  absolute paths (loosely, one half of the `unqualified` style). It
-  has no equivalent of the `qualified` style — it cannot *require*
-  full paths or strip a `use`.
-- **Trigger.** It catches crate-root-anchored paths only; this rule
-  flags any path with a segment before the leaf, module-qualified
-  paths included.
-- **Threshold.** It is gated on segment count (default >2); this
-  rule is not.
-- **Autofix.** It has none; this rule rewrites the call site and
-  manages the `use` (coordinating with
-  `perfectionist::import_granularity`).
-- **Scope control.** It offers an allowed-crates list and the
-  segment threshold; this rule adds per-context targeting (`call` /
-  `type` / `derive` / `macro` / `trait_bound`) and `allowed_paths` /
-  `forbidden_paths`.
-
-A project that only wants "don't write long absolute `std::…` paths"
-can enable `clippy::absolute_paths` and skip this rule. A project
-that wants the leaf imported and called bare — or that wants the
-opposite `qualified` direction — needs this rule; Clippy's lint
-expresses neither.
+the closest stock lint, but the two are not interchangeable. It fires
+only on *absolute* paths anchored at a crate root
+(`std::fs::create_dir_all`) above a segment threshold and emits a bare
+warning with no autofix, so it is silent on the module-qualified
+relative path this rule most wants to catch — `fs::create_dir_all(&dir)`
+with `use std::fs;` in scope — and has no equivalent of the `qualified`
+direction at all. The two agree only on the fully-qualified variant;
+for everything else, `qualified_paths` does what Clippy cannot.
 
 ## What to lint
 
