@@ -3,7 +3,7 @@
 //! leaving the glob form (`use serde::prelude::*;`) alone.
 //!
 //! Unlike the source-layout import rules (`import_granularity`,
-//! `import_grouping`, `self_import`, `wildcard_imports`), this rule is a
+//! `import_grouping`, `uncombined_self_import`, `wildcard_imports`), this rule is a
 //! plain HIR [`LateLintPass`] rather than a re-parsing one. Two reasons:
 //!
 //! - Its autofix rewrites the import to the item's *canonical* module,
@@ -187,7 +187,7 @@ impl<'tcx> LateLintPass<'tcx> for NamedPreludeImport {
 /// (`["serde", "prelude", "Serialize"]` → `"serde::prelude::Serialize"`).
 /// A leading `::` shows up in the HIR path as a synthetic `PathRoot`
 /// segment; skip it (as `wildcard_imports::collect_globs` and
-/// `self_import::real_segments` do) so a `use ::serde::prelude::Item;`
+/// `uncombined_self_import::real_segments` do) so a `use ::serde::prelude::Item;`
 /// normalises to `serde::prelude::Item` for `allowed_paths` matching
 /// rather than `{{root}}::serde::prelude::Item`.
 fn join_segments(segments: &[rustc_hir::PathSegment<'_>]) -> String {
@@ -282,7 +282,7 @@ fn canonical_use_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
         // round-trips as a raw identifier (`r#type`, not the bare keyword
         // `type`); a plain `Symbol::to_string()` drops the `r#` and the
         // suggested path would fail to parse. Mirrors
-        // `self_import::render_segments`.
+        // `uncombined_self_import::render_segments`.
         let name = component.data.get_opt_name()?;
         segments.push(rustc_span::Ident::with_dummy_span(name).to_string());
     }

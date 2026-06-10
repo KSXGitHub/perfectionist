@@ -61,20 +61,25 @@ declare_tool_lint! {
     /// ### Why not `clippy::wildcard_imports`?
     ///
     /// Clippy's `wildcard_imports` (an allow-by-default `pedantic` lint)
-    /// covers the same ground, but its two built-in exemptions — prelude
-    /// globs, and `super`-only globs inside test modules — are coupled
-    /// behind a single `warn-on-all-wildcard-imports` boolean: the
-    /// default exempts both, and turning it on flags both. There is no
-    /// setting that keeps the prelude exemption while flagging
-    /// `use super::*;` in a `#[cfg(test)] mod tests` block, which is
-    /// exactly this rule's headline case and the opposite of Clippy's
-    /// default (Clippy exempts test-module `super::*`). Clippy also
-    /// hard-codes the segment name `prelude` rather than taking a
-    /// configurable list, and offers neither a `pub use ...::*`
-    /// root-re-export exemption nor a per-path allowlist. This rule
-    /// decouples all of that: each exemption toggles independently,
-    /// `prelude_segment_names` and `allowed_paths` are configurable, and
-    /// the test-module `super::*` glob is flagged by default. Paired with
+    /// flags the same glob `use`s and, by default, exempts prelude
+    /// imports, `pub use` re-exports, and `use super::*;` inside any
+    /// module whose name contains `test` — overlapping this rule's
+    /// exceptions. But all of those exemptions, together with the
+    /// `allowed-wildcard-imports` path list, are coupled behind a single
+    /// `warn-on-all-wildcard-imports` boolean: left at its default
+    /// (`false`) the test-module `super::*;` carve-out is on, so
+    /// `use super::*;` inside `mod tests` is *not* flagged; set to `true`,
+    /// every exemption drops at once, including the prelude one. There is
+    /// no setting that keeps `prelude::*` exempt while flagging
+    /// `use super::*;` in a `#[cfg(test)] mod tests` block — which is
+    /// exactly this rule's headline case. This rule decouples them: the
+    /// `prelude` and `root_reexport` exceptions toggle independently
+    /// (with a configurable `prelude_segment_names` and the `allowed_paths`
+    /// escape hatch), and there is no test-module carve-out, so the test
+    /// `super::*;` glob is flagged by default. Reach for
+    /// `clippy::wildcard_imports` if its coarser, all-or-nothing exemption
+    /// model is enough; reach for this rule when the test-module
+    /// distinction matters. Paired with
     /// `perfectionist::named_prelude_import` it expresses the project's
     /// full posture: preludes must be glob-imported, and globs are
     /// allowed only for preludes.

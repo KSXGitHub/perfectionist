@@ -29,6 +29,18 @@ declare_tool_lint! {
     /// reporters, and on terminals whose locale or encoding may not
     /// be UTF-8. ASCII `...` renders identically everywhere.
     ///
+    /// ### Interaction with Clippy
+    ///
+    /// `clippy::non_ascii_literal` (`restriction`, off by default)
+    /// also catches U+2026 in a panic-family message, but only as a
+    /// side effect of forbidding *all* non-ASCII in string and char
+    /// literals: it cannot be narrowed to the ellipsis, offers no
+    /// `...` autofix, and does not reach the sibling
+    /// `perfectionist::unicode_ellipsis_in_comments` /
+    /// `unicode_ellipsis_in_docs` cases (comments and doc comments are
+    /// not literals). Use this rule for the targeted fix, or
+    /// `non_ascii_literal` for a blanket ASCII-only-literals policy.
+    ///
     /// ### Example
     ///
     /// **Avoid:**

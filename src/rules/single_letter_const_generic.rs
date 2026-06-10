@@ -24,6 +24,16 @@ declare_tool_lint! {
     /// documents the parameter's role both at the declaration and
     /// at every substitution.
     ///
+    /// ### Interaction with Clippy
+    ///
+    /// `clippy::min_ident_chars` (`restriction`, off by default)
+    /// flags short identifiers in many positions, but **explicitly
+    /// skips const generic parameters** — its visitor returns early
+    /// on `GenericParamKind::Const`, so it never flags
+    /// `<const N: usize>`. This rule covers exactly that gap, so the
+    /// two are complementary rather than redundant: enable both to
+    /// also catch short bindings, parameters, and item names.
+    ///
     /// ### Example
     ///
     /// **Avoid:**

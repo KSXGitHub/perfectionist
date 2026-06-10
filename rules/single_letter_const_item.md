@@ -21,6 +21,19 @@ and the item's scope (module-wide or crate-wide for
 identifier (`DIMENSION`, `BUFFER_LEN`, `MAX_RETRIES`)
 carries its own documentation.
 
+## Interaction with Clippy
+
+`clippy::min_ident_chars` (`restriction`, off by default)
+also flags single-character `const` item names, under a
+single crate-wide `min-ident-chars-threshold` and one shared
+allow-list that spans several kinds at once — bindings,
+parameters, and item names. (It skips generic and
+const-generic parameters, which the `single_letter_*` family
+handles separately.) This rule governs `const` items alone,
+with its own `allowed_idents`. Enabling both is redundant for
+`const` items — choose per-kind control here, or
+`min_ident_chars` for the one-knob sweep.
+
 ## Example
 
 **Avoid:**
