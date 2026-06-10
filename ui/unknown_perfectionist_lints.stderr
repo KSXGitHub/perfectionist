@@ -1,5 +1,5 @@
 warning: unknown lint: `perfectionist::unicode_ellipsis_in_comment`
-  --> $DIR/unknown_perfectionist_lints.rs:10:9
+  --> $DIR/unknown_perfectionist_lints.rs:12:9
    |
 LL | #[allow(perfectionist::unicode_ellipsis_in_comment)]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL | #[allow(perfectionist::unicode_ellipsis_in_comment)]
    = note: `#[warn(perfectionist::unknown_perfectionist_lints)]` on by default
 
 warning: unknown lint: `perfectionist::unknown_perfectionist_lint`
-  --> $DIR/unknown_perfectionist_lints.rs:15:8
+  --> $DIR/unknown_perfectionist_lints.rs:17:8
    |
 LL | #[deny(perfectionist::unknown_perfectionist_lint)]
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ LL | #[deny(perfectionist::unknown_perfectionist_lint)]
    = help: did you mean `perfectionist::unknown_perfectionist_lints`?
 
 warning: unknown lint: `perfectionist::unknown::perfectionist_lints`
-  --> $DIR/unknown_perfectionist_lints.rs:21:9
+  --> $DIR/unknown_perfectionist_lints.rs:23:9
    |
 LL | #[allow(perfectionist::unknown::perfectionist_lints)]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -24,13 +24,13 @@ LL | #[allow(perfectionist::unknown::perfectionist_lints)]
    = help: did you mean `perfectionist::unknown_perfectionist_lints`?
 
 warning: unknown lint: `perfectionist` is a tool prefix, not a lint name
-  --> $DIR/unknown_perfectionist_lints.rs:25:9
+  --> $DIR/unknown_perfectionist_lints.rs:27:9
    |
 LL | #[allow(perfectionist)]
    |         ^^^^^^^^^^^^^
 
 warning: unknown lint: `perfectionist::nothing_like_this_anywhere`
-  --> $DIR/unknown_perfectionist_lints.rs:29:8
+  --> $DIR/unknown_perfectionist_lints.rs:31:8
    |
 LL | #[warn(perfectionist::nothing_like_this_anywhere)]
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

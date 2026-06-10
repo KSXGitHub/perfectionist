@@ -42,6 +42,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field
 
+- [`lint_silence_reason`](./lint_silence_reason.md) (default: `active`).
+
+  `#[allow]` / `#[expect]` attribute lacks an explanatory `reason = "..."` field
+
 - [`macro_argument_binding`](./macro_argument_binding.md) (default: `active`).
 
   macro invocation passes an impure expression that should be bound to a `let` first
@@ -57,6 +61,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`prefer_derive_more_over_thiserror`](./prefer_derive_more_over_thiserror.md) (default: `active`).
 
   `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`
+
+- [`prefer_expect_over_allow`](./prefer_expect_over_allow.md) (default: `active`).
+
+  `#[allow]` for a deterministically-firing lint should be `#[expect]`
 
 - [`prefer_raw_string`](./prefer_raw_string.md) (default: `active`).
 

@@ -1,6 +1,12 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(unknown_lints, reason = "ui fixture")]
+// Silence the sibling lint so this fixture only exercises
+// `lint_reason_from_comment`.
+#![allow(
+    perfectionist::lint_silence_reason,
+    reason = "fixture targets the comment-lift rule",
+)]
 
 // Bad: trailing comment on `#[allow]`.
 #[allow(dead_code)] // matches upstream signature

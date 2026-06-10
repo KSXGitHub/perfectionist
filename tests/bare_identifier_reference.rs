@@ -155,12 +155,15 @@ fn ambiguity_disambiguator_picks_an_eligible_namespace() {
 }
 
 /// With all three case knobs off, the conformist names are left alone
-/// but a non-conformist name still fires.
+/// but a non-conformist name still fires. (`prefer_expect_over_allow` is
+/// disabled because the fixture's non-conformist type needs a naming
+/// `#[allow]`.)
 #[test]
 fn case_knobs_off_keep_only_non_conformist() {
     run(
         "ui-toml/bare_identifier_reference/case_filters",
         "[perfectionist]\n\
+         disable = [\"prefer_expect_over_allow\"]\n\
          \n\
          [\"perfectionist::bare_identifier_reference\"]\n\
          check_pascal_case = false\n\
@@ -176,6 +179,7 @@ fn min_words_threshold_exempts_short_conformist_names() {
     run(
         "ui-toml/bare_identifier_reference/min_words",
         "[perfectionist]\n\
+         disable = [\"prefer_expect_over_allow\"]\n\
          \n\
          [\"perfectionist::bare_identifier_reference\"]\n\
          min_words = 3\n",

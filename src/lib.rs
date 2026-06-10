@@ -55,10 +55,12 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         import_grouping
         inline_test_footprint
         lint_reason_from_comment
+        lint_silence_reason
         macro_argument_binding
         macro_trailing_comma
         non_exhaustive_error
         prefer_derive_more_over_thiserror
+        prefer_expect_over_allow
         prefer_raw_string
         print_macro_split
         single_letter_closure_param

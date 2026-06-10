@@ -505,6 +505,8 @@ routes:
   text under the node's span and compares it against the text the node
   *claims* to be; a generated `#[allow(...)]` whose underlying source
   reads `#[clap(...)]` fails the comparison and is skipped.
+  `lint_silence_reason` and `prefer_expect_over_allow` apply it this
+  way.
 
 Reach for the variant your pass supports. Do not try to reproduce
 `hir_in_external_macro`'s `def_span` walk in an early pass — there is no
@@ -529,6 +531,10 @@ fixture is only meaningful if its synthesised trigger is one the rule
 exempts or treats as trivial passes whether or not the guard exists: it
 exercises nothing and bestows false confidence. Concretely:
 
+- `prefer_expect_over_allow` exempts `#[allow(dead_code)]`, so a fixture
+  using the `dead_code`-emitting `SynthSilenceReason` derive is vacuous.
+  It needs `SynthAllowRewriteable`, which emits a *rewriteable*
+  `#[allow(non_snake_case)]`.
 - `single_letter_closure_param` exempts trivial closures, so its
   `SynthClosure` derive emits a deliberately non-trivial body.
 
@@ -571,6 +577,15 @@ code, and a guard present but never actually tested:
 - `single_letter_let_binding` false-positived on `default_value_t`
   bindings; patched inline first, then generalised into
   `hir_in_external_macro` and applied across the sibling late rules.
+- `lint_silence_reason` false-positived on `clap_derive`'s generated
+  `#[allow(...)]`; fixed with the early-pass `is_from_proc_macro`
+  variant, since the late-pass helper did not apply.
+- `prefer_expect_over_allow` shipped *with* the early-pass guard in
+  place — it learned from `lint_silence_reason` — but its first
+  regression fixture reused the `dead_code` derive the rule exempts
+  anyway. The test was vacuous: it would have passed even with the
+  guard deleted. A follow-up commit added a rewriteable-`#[allow]`
+  derive (`SynthAllowRewriteable`) that genuinely exercises the guard.
 
 Two lessons, then. The first two say: apply the "vulnerable exactly
 when" test when you pick a diagnostic span, and add the pass-keyed
