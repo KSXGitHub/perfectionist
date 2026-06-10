@@ -47,12 +47,16 @@ declare_tool_lint! {
     /// number of copies is identical for the worst caller and one
     /// cheaper for the best caller.
     ///
-    /// `clippy::needless_pass_by_value` covers the opposite direction
-    /// (a by-value parameter that is never consumed should be
-    /// borrowed); `clippy::ptr_arg` is orthogonal (it rewrites
-    /// `&String`/`&Vec<T>`/`&PathBuf` to the more permissive
-    /// `&str`/`&[T]`/`&Path`). Enable all three for full coverage of
-    /// the owned-vs-borrowed trade-off.
+    /// ### Interaction with Clippy
+    ///
+    /// `clippy::needless_pass_by_value` (`pedantic`, off by default)
+    /// covers the *opposite* direction: a by-value parameter that is
+    /// never consumed should be taken by reference. `clippy::ptr_arg`
+    /// (`style`, on by default) is orthogonal — it rewrites a
+    /// `&String` / `&Vec<T>` / `&PathBuf` parameter to the more
+    /// permissive `&str` / `&[T]` / `&Path`. Neither moves a borrowed
+    /// parameter to its owned form, so enabling all three gives full
+    /// coverage of the owned-vs-borrowed trade-off.
     ///
     /// ### Example
     ///
