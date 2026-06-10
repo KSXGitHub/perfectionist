@@ -1,8 +1,9 @@
 # `commit_id_length`
 
 **Source:** project convention. Sibling lint to
-[`unpinned-repo-ref`](./unpinned-repo-ref.md), which decides whether
-a forge URL's ref is pinned at all. This rule decides whether the
+`perfectionist::unpinned_repo_ref`
+(`src/rules/unpinned_repo_ref.rs`), which decides whether a forge
+URL's ref is pinned at all. This rule decides whether the
 SHA *is the right length*.
 
 ## Statement
@@ -26,10 +27,11 @@ segment, including:
   `/compare/<sha>..<sha>` (two-dot range), `/-/compare/<sha>...<sha>`.
 - Codeberg-style `/src/commit/<sha>/...` and `/raw/commit/<sha>/...`.
 
-This is broader than `unpinned-repo-ref`'s scope: a `/commit/<sha>`
-URL has no "is it pinned?" question to answer (a commit URL is
-trivially pinned), but it *does* have a "is the SHA the right
-length?" question that should be answered consistently across the
+This is broader than `perfectionist::unpinned_repo_ref`'s scope: a
+`/commit/<sha>` URL has no "is it pinned?" question to answer (a
+commit URL is trivially pinned), but it *does* have a "is the SHA
+the right length?" question that should be answered consistently
+across the
 codebase.
 
 ## Configuration
@@ -78,8 +80,9 @@ skip_hosts = []
 # Skip refs that are not pure hex even if they appear in a slot
 # the per-kind URL shape marks as a SHA. By default the lint
 # treats a non-hex ref as "not a SHA, this rule has nothing to
-# say"; another rule (typically `unpinned-repo-ref`) handles the
-# branch case. Set to false to flag non-hex refs in SHA slots as
+# say"; another rule (typically `perfectionist::unpinned_repo_ref`)
+# handles the branch case. Set to false to flag non-hex refs in SHA
+# slots as
 # wrong-shape.
 ignore_non_hex_refs = true
 ```
@@ -114,8 +117,8 @@ dispatch to the per-kind matcher. For each SHA slot (and each side
 of a compare range) it captures:
 
 1. If the captured value is not pure hex and `ignore_non_hex_refs`
-   is true, skip — `unpinned-repo-ref` will handle the branch case
-   if applicable.
+   is true, skip — `perfectionist::unpinned_repo_ref` will handle the
+   branch case if applicable.
 2. If the captured value is pure hex but its length falls outside
    `[commit_length_min, commit_length_max]`, emit a diagnostic at
    the SHA's substring, naming the configured window and the actual
@@ -164,8 +167,9 @@ Only full SHAs accepted.
 
 - `LateLintPass`. Share the URL scanner with
   `perfectionist::bare_url` (`src/url_scan.rs`) and
-  [`unpinned-repo-ref`](./unpinned-repo-ref.md). Discovery happens
-  once per source comment; classification is per-lint.
+  `perfectionist::unpinned_repo_ref`
+  (`src/rules/unpinned_repo_ref.rs`). Discovery happens once per
+  source comment; classification is per-lint.
 - Each `kind` has a small, fixed set of SHA-bearing path patterns,
   baked into the lint at compile time. The lint does not parse user-
   supplied templates; configuration declares hostnames only.
@@ -177,7 +181,8 @@ Only full SHAs accepted.
   combinator-style `take_*` functions per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
   reuse the URL skeleton from
-  [`unpinned-repo-ref`](./unpinned-repo-ref.md), then add
+  `perfectionist::unpinned_repo_ref`
+  (`src/rules/unpinned_repo_ref.rs`), then add
   `take_sha` (a run of `[0-9a-fA-F]`) and `take_range_separator`
   (`...` or `..`) for the compare-URL case. The per-kind matchers
   are small functions registered in a table keyed by kind.
@@ -212,11 +217,11 @@ everything from 6-char prefixes up to the full 40-char hash; a
 project tightens the window further by raising the minimum or
 pinning a fixed length.
 
-## Interaction with `unpinned-repo-ref`
+## Interaction with `perfectionist::unpinned_repo_ref`
 
 The two lints are orthogonal and run independently. A URL may emit:
 
-- A `unpinned-repo-ref` diagnostic if its ref is a branch.
+- A `perfectionist::unpinned_repo_ref` diagnostic if its ref is a branch.
 - A `commit-id-length` diagnostic if its ref is a SHA outside the
   window.
 - Both, in the unusual case where the URL contains both a branch ref

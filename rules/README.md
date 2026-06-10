@@ -121,3 +121,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`unknown_perfectionist_lints`](./unknown_perfectionist_lints.md) (default: `active`).
 
   lint-control attribute references a `perfectionist::*` lint that this plugin does not register
+
+- [`unpinned_repo_ref`](./unpinned_repo_ref.md) (default: `active`).
+
+  repository URL references a branch or tag instead of a commit SHA

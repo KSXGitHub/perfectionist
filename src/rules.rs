@@ -27,3 +27,4 @@ pub mod unicode_ellipsis_in_comments;
 pub mod unicode_ellipsis_in_docs;
 pub mod unicode_ellipsis_in_panic_messages;
 pub mod unknown_perfectionist_lints;
+pub mod unpinned_repo_ref;
