@@ -22,11 +22,11 @@ pattern that several rules call out by reference — live in
   `pub mod` first, then `pub use`, then private items.
 
 ### Imports
-- [`core-or-std.md`](./core-or-std.md) — decide whether items that
-  exist in both `core`/`alloc` and `std` should be named through the
-  narrower or wider path. Configurable as `prefer_core` (matches
-  `clippy::std_instead_of_core` + `std_instead_of_alloc`) or
-  `prefer_std`. Inactive by default; opt in and pick a direction.
+- [`prefer-std-path.md`](./prefer-std-path.md) — for projects that
+  target `std` exclusively, flag `core::` / `alloc::` paths whose item is
+  also reachable through `std::`, and suggest the `std::` form. Inactive
+  by default. The opposite direction (`prefer_core`) is out of scope —
+  it is covered by `clippy::std_instead_of_core` + `std_instead_of_alloc`.
 - [`no-star-imports.md`](./no-star-imports.md) — forbid `use foo::*` inside
   module bodies. Two exceptions are enabled by default and individually
   configurable: the prelude form (`use foo::prelude::*`) and root-of-
@@ -214,15 +214,21 @@ external state, or judgement calls that a static lint cannot evaluate:
   log via `eprintln!`, complex structures via `dbg!`) — the rule branches
   on the runtime *shape* of values, which a static lint cannot inspect.
 - **Cloning `Arc` / `Rc` via `.clone()`** (pacquet *Cloning `Arc` and
-  `Rc`*) — already covered by `clippy::clone_on_ref_ptr`, which flags
+  `Rc`*) — covered by `clippy::clone_on_ref_ptr`, which flags
   `x.clone()` on a ref-counted pointer and suggests the qualified
   `Arc::clone(&x)` / `Rc::clone(&x)` form. It is a `restriction` lint
-  (allow-by-default); a project that wants it enables the single line
-  `clone_on_ref_ptr = "warn"` under `[lints.clippy]`. This was briefly
-  implemented as `perfectionist::arc_rc_clone`, but a verbatim
-  reimplementation of a stock Clippy lint earned no keep and forced an
-  interop downgrade to avoid double-firing when both were on, so it was
-  removed (KSXGitHub/parallel-disk-usage#422, pnpm/pnpm#11839).
+  (allow-by-default); enable `clone_on_ref_ptr = "warn"` under
+  `[lints.clippy]`. A dedicated lint would only duplicate it and would
+  have to coordinate to avoid double-firing.
+- **Flat module layout** (`foo.rs`, never `foo/mod.rs`) — covered by
+  `clippy::mod_module_files`, a `restriction` lint (allow-by-default)
+  that warns on every `mod.rs` file (requiring the self-named `foo.rs`
+  form instead). Enable `mod_module_files = "warn"` under
+  `[lints.clippy]`; this crate does so in its own `Cargo.toml`. (The
+  lint names are counter-intuitive — each is named for what it *warns
+  about*, not what it enforces. The *opposite* lint,
+  `clippy::self_named_module_files`, warns on self-named files and so
+  requires the contradictory `mod.rs` layout — never enable both.)
 - **Doc comments referencing items more private than the documented item**
   (pacquet *Documentation comments*) — already covered by rustdoc's
   built-in `rustdoc::private_intra_doc_links` lint (default `warn`).

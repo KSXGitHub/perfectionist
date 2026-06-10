@@ -76,9 +76,9 @@ has two consequences for the implementer:
    file.
 
 3. **When a rule grows past one screenful, split it into a
-   directory module beside the flat `.rs` entry.** The crate's own
-   `perfectionist::flat_module_pattern` lint forbids the `mod.rs`
-   form, so the layout is `src/rules/<rule>.rs` next to
+   directory module beside the flat `.rs` entry.** This crate
+   forbids the `mod.rs` form (via `clippy::mod_module_files`,
+   enabled in `Cargo.toml`), so the layout is `src/rules/<rule>.rs` next to
    `src/rules/<rule>/<concern>.rs`. The flat `.rs` entry keeps the
    `declare_tool_lint!` block, the `register_lint` / `register_pass`
    functions, the `EarlyLintPass` / `LateLintPass` driver, and any
@@ -326,11 +326,12 @@ drive a headless Chromium from a throwaway Playwright script:
   the viewport sizes the change cares about, and dumps screenshots
   and/or `getBoundingClientRect` / `getComputedStyle` values.
 
-- Treat the script as scratch. Don't commit it (and don't add it
-  to `.gitignore` either — local exclusions belong in
-  `.git/info/exclude`). The catalogue doesn't need a permanent
-  test harness; ad-hoc checks for a specific change are easier to
-  write fresh than to maintain.
+- Treat the script as scratch, and keep it out of the repository
+  entirely. There are three ways to write temporary files: The first
+  is to write them to directories outside the project directory
+  (such as `/tmp`). The second is to create a directory named `tmp/`
+  and put all temporary files in it. The third is to name the file
+  in the `tmp.*` pattern.
 
 - Chromium only. For cross-engine concerns (Firefox / Safari
   support of a CSS feature), pair the screenshots with a caniuse
@@ -384,7 +385,7 @@ scanner, the unicode-width helper, the format-template parser,
 the URL-discovery scanner, and the module-re-parsing helper
 (`src/module_reparse.rs`, which re-parses the crate's module
 source files from a shared `SourceMap` so the import-rewriting
-rules `import_granularity` and `self_import` reach separate-file
+rules `import_granularity` and `uncombined_self_import` reach separate-file
 submodules while keeping `#[cfg(...)]` gates intact). The
 module-re-parsing helper exists because this exact bug — a
 source-layout rule shipped as a pre-expansion `EarlyLintPass`

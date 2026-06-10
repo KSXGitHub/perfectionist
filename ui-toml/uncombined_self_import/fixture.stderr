@@ -4,7 +4,7 @@ warning: adjacent module and item imports can be combined through `self`
 LL |     use crate::defs::inner;
    |     ^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: `#[warn(perfectionist::self_import)]` on by default
+   = note: `#[warn(perfectionist::uncombined_self_import)]` on by default
 help: combine into a single `use` with `self`
    |
 LL -     use crate::defs::inner;
@@ -73,7 +73,7 @@ LL |     use crate::defs::inner;
 help: combine into a single `use` with `self`
    |
 LL -     use crate::defs::inner;
-LL -     #[allow(unused_imports, reason = "self_import matching-attrs fixture")]
+LL -     #[allow(unused_imports, reason = "uncombined_self_import matching-attrs fixture")]
 LL -     use crate::defs::inner::Baz;
 LL +     use crate::defs::inner::{self, Baz};
    |

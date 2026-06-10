@@ -48,6 +48,19 @@ declare_tool_lint! {
     /// at the site, so a future refactor that inadvertently fixes the
     /// issue is observed rather than hidden.
     ///
+    /// ### Interaction with Clippy
+    ///
+    /// `clippy::allow_attributes` (`restriction`, off by default)
+    /// also pushes `#[allow]` towards `#[expect]`, but rewrites
+    /// *every* `#[allow]` indiscriminately. This rule converts only
+    /// the lints that fire **deterministically**, leaving lint groups
+    /// and conditionally-firing lints under `#[allow]` (splitting a
+    /// mixed attribute in two), so the `#[expect]` it produces is
+    /// always fulfilled rather than a fresh
+    /// `unfulfilled_lint_expectations` warning. Reach for this rule
+    /// for that precision, or `clippy::allow_attributes` for a blunt
+    /// crate-wide sweep.
+    ///
     /// ### Example
     ///
     /// **Avoid:**
