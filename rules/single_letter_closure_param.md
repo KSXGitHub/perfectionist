@@ -58,6 +58,18 @@ trivial-callback exception covers `sort_by(|a, b| ...)` and
 `.map(|x| x.field)` shapes that are short enough that the
 parameter's role is unambiguous from the call site.
 
+## Interaction with Clippy
+
+`clippy::min_ident_chars` (`restriction`, off by default)
+also flags single-character closure parameters, under a
+single crate-wide threshold and one shared allow-list. It
+cannot express this rule's trivial-callback exemption
+(`.map(|x| x.field)`, `sort_by(|a, b| ...)`) or its
+conventional-name set, so it flags the short callbacks this
+rule deliberately allows. Enabling both is redundant — choose
+the context-aware behaviour here, or `min_ident_chars` for
+the one-knob sweep.
+
 ## Example
 
 **Avoid:**

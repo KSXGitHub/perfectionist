@@ -74,6 +74,18 @@ pub use parser::Parser;
   block) are explicitly permitted by both source documents and must not
   trigger the lint when they sit *after* the main import block.
 
+## Interaction with clippy
+
+`clippy::arbitrary_source_item_ordering` (`restriction`, off by
+default) enforces a configurable ordering of items within a module and
+so covers adjacent ground. It is highly general — it orders many item
+kinds against a user-supplied ordering and can sort within groups
+alphabetically. This rule encodes one specific, opinionated layout (the
+import block first, etc.) drawn from the source documents rather than a
+configurable ordering table. A project that wants a fully configurable
+ordering should prefer the Clippy lint; this rule exists for the single
+baked-in convention. Do not enable both, or their orderings can fight.
+
 ## Default state
 
 Active by default.

@@ -26,10 +26,6 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   trait names in a `#[derive(...)]` list are not in the configured order
 
-- [`flat_module_pattern`](./flat_module_pattern.md) (default: `active`).
-
-  submodule defined as `module/mod.rs`; prefer the flat `module.rs` layout
-
 - [`import_granularity`](./import_granularity.md) (default: `active`).
 
   import granularity does not match the configured `import_granularity.style`
@@ -78,10 +74,6 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   splittable print macro with an embedded-newline template exceeds the configured line width
 
-- [`self_import`](./self_import.md) (default: `inactive`).
-
-  module imported through `self` against the project's configured `self`-import style
-
 - [`single_letter_closure_param`](./single_letter_closure_param.md) (default: `active`).
 
   closure parameter has a single-letter name
@@ -109,6 +101,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`single_letter_static_item`](./single_letter_static_item.md) (default: `active`).
 
   static item has a single-letter name
+
+- [`uncombined_self_import`](./uncombined_self_import.md) (default: `inactive`).
+
+  a module import and an adjacent item import from it can be combined through `self`
 
 - [`unicode_ellipsis_in_comments`](./unicode_ellipsis_in_comments.md) (default: `active`).
 

@@ -47,6 +47,18 @@ declare_tool_lint! {
     /// enable = ["non_exhaustive_error"]
     /// ```
     ///
+    /// ### Interaction with Clippy
+    ///
+    /// `clippy::exhaustive_enums` and `clippy::exhaustive_structs`
+    /// (`restriction`, off by default) require `#[non_exhaustive]` on
+    /// *every* exported enum / struct. This rule scopes that same
+    /// requirement to **error types** — those whose name ends in
+    /// `Error` or that implement `std::error::Error` — because adding
+    /// a variant to an error type downstream code matches on is the
+    /// breaking change `#[non_exhaustive]` exists to absorb, while
+    /// demanding it on all exported types is usually too broad. Enable
+    /// the Clippy lints instead if you do want that blanket policy.
+    ///
     /// ### Example
     ///
     /// **Avoid:**

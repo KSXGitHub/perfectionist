@@ -21,6 +21,17 @@ allows `let n = ...` and other names in a configurable
 set of exempt identifiers for the well-worn cases
 (unsigned counts).
 
+## Interaction with Clippy
+
+`clippy::min_ident_chars` (`restriction`, off by default)
+also flags single-character `let` bindings, under a single
+crate-wide `min-ident-chars-threshold` and one shared
+allow-list spanning several kinds at once (bindings,
+parameters, item names). This rule governs `let` bindings
+alone, with its own exempt set. Enabling both is redundant
+for `let` bindings — choose per-kind control here, or
+`min_ident_chars` for the one-knob sweep.
+
 ## Example
 
 **Avoid:**

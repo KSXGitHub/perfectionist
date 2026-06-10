@@ -94,8 +94,9 @@ fn module_import(tree: &UseTree) -> Option<(Vec<Symbol>, bool)> {
     match &tree.kind {
         UseTreeKind::Simple(None) => {
             let names = segment_names(&tree.prefix);
-            // A trailing `self` (`use foo::self;`) is the `forbid`
-            // rule's concern; don't treat it as a module import here.
+            // A trailing `self` (`use foo::self;`) names the module
+            // relative to its brace group rather than being a plain
+            // module import; don't treat it as one here.
             if names.is_empty() || names.last() == Some(&kw::SelfLower) {
                 return None;
             }
@@ -220,7 +221,7 @@ fn emit_fold(
         anchor: first.span,
         span: first.span,
         message: "adjacent module and item imports can be combined through `self`",
-        fix: Fix::Multipart {
+        fix: Fix {
             label: "combine into a single `use` with `self`",
             parts: vec![(first_tree.span(), folded), (delete, String::new())],
             applicability,

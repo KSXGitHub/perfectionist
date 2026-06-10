@@ -219,8 +219,9 @@ A rule that inspects the **source-level layout of items** — the
 granularity of `use` trees (`perfectionist::import_granularity`,
 `src/rules/import_granularity.rs`), their blank-line grouping
 (`perfectionist::import_grouping`, `src/rules/import_grouping.rs`),
-the `self`-in-`use` handling
-(`perfectionist::self_import`, `src/rules/self_import.rs`), or
+the module-`self` import folding
+(`perfectionist::uncombined_self_import`,
+`src/rules/uncombined_self_import.rs`), or
 anything else that reads the *written* shape of a module body rather
 than a semantic property — must reach **every module in the crate**,
 including separate-file `mod foo;` submodules nested to any depth.
@@ -278,7 +279,7 @@ write a fresh module-discovery or re-parse path; route through:
    crate root and cannot be silenced by a local `#[allow]`.
    `import_grouping` is the reference implementation: it consults
    `live_module_spans` and descends only into live modules. (At the
-   time of writing, `import_granularity` and `self_import` route
+   time of writing, `import_granularity` and `uncombined_self_import` route
    through `for_each_module_file`, which drops `live_module_spans`,
    so they descend unconditionally — an apparent divergence found by
    code reading but **not** yet pinned by a cfg-disabled-inline-module
@@ -633,10 +634,10 @@ else is `Active by default`.
 ### Mandatory configuration on opt-in rules
 
 A handful of `Inactive by default` rules express a *direction*
-with no neutral baseline — `core_or_std` (`prefer_core` vs.
-`prefer_std`), `qualified_paths` (`unqualified` vs. `qualified`),
-`self_import` (`forbid` vs. `combined`), and `serde_wrapper_style`
-(`transparent` vs. `from_into`). These rules deliberately do **not**
+with no neutral baseline — `qualified_paths` (`unqualified` vs.
+`qualified`), `serde_wrapper_style` (`transparent` vs.
+`from_into`), and `import_grouping` (`single_block` vs.
+`multi_block`). These rules deliberately do **not**
 offer a `preserve`/no-op `style` value. "I don't want this rule" is
 already expressed by leaving it out of `[perfectionist].enable`, so
 a do-nothing `style` would only duplicate that — and a no-op enum

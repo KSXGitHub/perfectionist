@@ -120,23 +120,6 @@ pub(super) fn is_self_leaf(tree: &UseTree) -> bool {
         && matches!(segment_names(&tree.prefix).as_slice(), [name] if *name == kw::SelfLower)
 }
 
-/// For a `Simple` node whose prefix's last segment is `self`, the
-/// module it imports: the prefix minus that trailing `self`. `None`
-/// when the node is not a `self`-terminated simple import. The bare
-/// `{self}` leaf (prefix exactly `[self]`) returns `Some(empty)` —
-/// callers treat the empty result as "the parent module" and leave
-/// the rewrite to the enclosing brace group.
-pub(super) fn simple_self_module(tree: &UseTree) -> Option<Vec<Symbol>> {
-    if !matches!(tree.kind, UseTreeKind::Simple(_)) {
-        return None;
-    }
-    let names = segment_names(&tree.prefix);
-    match names.split_last() {
-        Some((last, rest)) if *last == kw::SelfLower => Some(rest.to_vec()),
-        _ => None,
-    }
-}
-
 /// The item's visibility rendered with a trailing space (`"pub "`,
 /// `"pub(crate) "`), or the empty string for inherited visibility. Used
 /// when a rewrite has to synthesise a fresh `use` statement that keeps
@@ -155,8 +138,7 @@ pub(super) fn render_visibility(cx: &LateContext<'_>, item: &Item) -> String {
 /// `#[cfg(...)]` attributes are *not* stripped here — they appear in
 /// this list like any other attribute. That is what lets the fold's
 /// attribute-equality check refuse to merge two imports differing only
-/// in their `#[cfg(...)]`, and lets a `forbid` split replay the gate
-/// onto both halves.
+/// in their `#[cfg(...)]`.
 pub(super) fn attr_snippets(cx: &LateContext<'_>, item: &Item) -> Vec<String> {
     item.attrs
         .iter()
