@@ -183,18 +183,6 @@ Same-name conflicts can also be project-wide: two crates exporting
 should fire only on one of them at a time, leaving the project
 owner to qualify the other.
 
-## Interaction with `clippy::absolute_paths`
-
-`clippy::absolute_paths` (a `restriction` lint, allow-by-default) is
-the closest stock lint, but the two are not interchangeable. It fires
-only on *absolute* paths anchored at a crate root
-(`std::fs::create_dir_all`) above a segment threshold and emits a bare
-warning with no autofix, so it is silent on the module-qualified
-relative path this rule most wants to catch — `fs::create_dir_all(&dir)`
-with `use std::fs;` in scope — and has no equivalent of the `qualified`
-direction at all. The two agree only on the fully-qualified variant;
-for everything else, `qualified_paths` does what Clippy cannot.
-
 ## What to lint
 
 Walk every path in the configured `contexts` set:
@@ -275,18 +263,22 @@ For each path:
   catalogue, in particular the lint-name namespacing (`perfectionist::*`)
   that every registered lint follows.
 
-## Interaction with clippy
+## Interaction with `clippy::absolute_paths`
 
-`clippy::absolute_paths` (`restriction`, off by default) touches the
-same surface but on a different axis: it flags a path with more than
-`absolute-paths-max-segments` leading segments, pushing toward a `use`
-plus a shorter path — i.e. it only ever argues *against* long inline
-paths, with a length threshold rather than a project-wide direction.
-This rule instead enforces one chosen direction everywhere
-(`unqualified` *or* `qualified`), independent of length. They overlap
-only in the `unqualified` direction, and even there this rule has no
-segment threshold; a project wanting the simple "shorten long absolute
-paths" heuristic can use `clippy::absolute_paths` instead.
+`clippy::absolute_paths` (a `restriction` lint, off by default) is the
+closest stock lint, but the two are not interchangeable. It flags a
+path with more than `absolute-paths-max-segments` leading segments and
+emits a bare warning with no autofix — i.e. it only ever argues
+*against* long *absolute* paths (anchored at a crate root), with a
+length threshold rather than a project-wide direction. So it is silent
+on the module-qualified relative path this rule most wants to catch —
+`fs::create_dir_all(&dir)` with `use std::fs;` in scope — and has no
+equivalent of the `qualified` direction at all. This rule instead
+enforces one chosen direction everywhere (`unqualified` *or*
+`qualified`), independent of length. The two overlap only in the
+`unqualified` direction and agree only on the fully-qualified variant;
+a project that just wants the "shorten long absolute paths" heuristic
+can use `clippy::absolute_paths` instead.
 
 ## Default state
 
