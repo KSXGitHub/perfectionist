@@ -19,6 +19,21 @@ declare_tool_lint! {
     /// parameter. Descriptive names (`Element`, `Key`, `Reader`)
     /// keep complex signatures self-documenting.
     ///
+    /// ### Interaction with Clippy
+    ///
+    /// `clippy::min_ident_chars` (`restriction`, off by default)
+    /// flags short identifiers in many positions, but **explicitly
+    /// skips generic type parameters** — its visitor returns early
+    /// on `GenericParamKind::Type`, so it never flags `<T>`. This
+    /// rule covers exactly that gap, so the two are complementary
+    /// rather than redundant: enable both to also catch short
+    /// bindings, parameters, and item names.
+    ///
+    /// Single-character *lifetime* names (`'a`) are likewise out of
+    /// scope for the `single_letter_*` family;
+    /// `clippy::single_char_lifetime_names` (`restriction`) covers
+    /// those.
+    ///
     /// ### Example
     ///
     /// **Avoid:**
