@@ -75,6 +75,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         unicode_ellipsis_in_comments
         unicode_ellipsis_in_docs
         unicode_ellipsis_in_panic_messages
+        unpinned_repo_ref
         wildcard_imports
 
         // `unknown_perfectionist_lints::register_pass` snapshots the registered

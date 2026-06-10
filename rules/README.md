@@ -126,6 +126,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   lint-control attribute references a `perfectionist::*` lint that this plugin does not register
 
+- [`unpinned_repo_ref`](./unpinned_repo_ref.md) (default: `active`).
+
+  repository URL references a branch or tag instead of a commit SHA
+
 - [`wildcard_imports`](./wildcard_imports.md) (default: `active`).
 
   glob (`*`) import in a module body, outside the prelude and root-re-export exceptions
