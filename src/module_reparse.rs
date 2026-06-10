@@ -2,8 +2,8 @@
 //!
 //! A rule that inspects the *source-level* layout of `use` statements —
 //! the blank-line grouping of `perfectionist::import_grouping`, the
-//! granularity of `perfectionist::import_granularity`, the `self`
-//! handling of `perfectionist::self_import` — hits a wall in a
+//! granularity of `perfectionist::import_granularity`, the module-`self`
+//! folding of `perfectionist::uncombined_self_import` — hits a wall in a
 //! pre-expansion `EarlyLintPass`: an out-of-line `mod foo;` module is
 //! still `ModKind::Unloaded` there (its file is not parsed until macro
 //! expansion), so the walk never sees it and silently skips every

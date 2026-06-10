@@ -22,6 +22,19 @@ caller reads (in rustdoc, in IDE hover tips, in error
 messages). A descriptive parameter name carries that
 documentation; a single letter does not.
 
+## Interaction with Clippy
+
+`clippy::min_ident_chars` (`restriction`, off by default)
+also flags single-character function parameters, under a
+single crate-wide `min-ident-chars-threshold` and one shared
+allow-list spanning several kinds at once (bindings,
+parameters, item names). This rule governs parameters alone
+and ships parameter-tuned default allowances (`n`, `f`, `i`,
+`j`, `k`) plus an independent `extra_allowed_idents` /
+`extra_denied_idents` pair. Enabling both is redundant for
+parameters — choose per-kind control here, or
+`min_ident_chars` for the one-knob sweep.
+
 ## Example
 
 **Avoid:**

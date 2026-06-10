@@ -142,6 +142,31 @@ Together they say: "preludes must be glob-imported, and globs are only
 allowed for preludes". Enabling both is the recommended posture for
 projects that follow the prelude convention strictly.
 
+## Interaction with `clippy::wildcard_imports`
+
+`clippy::wildcard_imports` (a `pedantic` lint, off by default) flags the
+same glob `use`s and, by default, exempts both prelude imports and
+`pub use` re-exports — overlapping this rule's two default exceptions.
+It does **not** replace this rule, because it cannot express the posture
+the source guide cares about most: forbidding `use super::*;` in a
+`#[cfg(test)]` module *while still* exempting `use foo::prelude::*;`.
+Clippy's exemptions (prelude, `pub use` re-export, and `use super::*;`
+in any module whose name contains `test`) are all gated behind one
+boolean, `warn-on-all-wildcard-imports`:
+
+- left `false` (the default), the test-module `super::*;` exemption is
+  on — so `use super::*;` inside `mod tests` is **not** flagged;
+- set `true`, *every* exemption is dropped, including the prelude one,
+  and `allowed-wildcard-imports` (which lives behind the same gate) can
+  no longer re-admit it.
+
+There is no setting that keeps `prelude::*` exempt while flagging
+`super::*` in tests. This rule decouples the two: the `prelude`
+exception applies everywhere, and there is no test-module carve-out for
+`super::*`, so the guide's exact posture is expressible. Use
+`clippy::wildcard_imports` instead if its coarser exemption model is
+enough; reach for this rule when the test-module distinction matters.
+
 ## Default state
 
 Active by default.

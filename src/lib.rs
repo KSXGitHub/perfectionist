@@ -51,7 +51,6 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         bare_issue_reference
         bare_url
         derive_ordering
-        flat_module_pattern
         import_granularity
         import_grouping
         inline_test_footprint
@@ -64,7 +63,6 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         prefer_expect_over_allow
         prefer_raw_string
         print_macro_split
-        self_import
         single_letter_closure_param
         single_letter_const_generic
         single_letter_const_item
@@ -72,6 +70,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         single_letter_generic
         single_letter_let_binding
         single_letter_static_item
+        uncombined_self_import
         unicode_ellipsis_in_comments
         unicode_ellipsis_in_docs
         unicode_ellipsis_in_panic_messages

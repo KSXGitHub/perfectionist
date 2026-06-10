@@ -35,6 +35,10 @@ crate-type = ["cdylib"]
 # `cfg(dylint_lib = "perfectionist")` gates in `src/lib.rs`.
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(dylint_lib, values("perfectionist"))'] }
 
+[lints.clippy]
+clone_on_ref_ptr = "warn"
+mod_module_files = "warn"
+
 [dependencies]
 clippy_utils = "=0.1.98"
 dylint_linting = "6.0.1"
