@@ -1,10 +1,10 @@
-//! Configuration for `named_prelude_import`: the segment names
+//! Configuration for `named_prelude_imports`: the segment names
 //! recognised as preludes and the prelude paths that are never flagged.
 
 use std::collections::BTreeSet;
 
 /// The user-facing configuration shape, deserialised from the
-/// `[perfectionist::named_prelude_import]` table of `dylint.toml`.
+/// `[perfectionist::named_prelude_imports]` table of `dylint.toml`.
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 pub(super) struct Config {

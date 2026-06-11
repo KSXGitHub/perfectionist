@@ -27,7 +27,7 @@ pattern that several rules call out by reference — live in
   also reachable through `std::`, and suggest the `std::` form. Inactive
   by default. The opposite direction (`prefer_core`) is out of scope —
   it is covered by `clippy::std_instead_of_core` + `std_instead_of_alloc`.
-- [`named-prelude-import.md`](./named-prelude-import.md) — dual of
+- [`named-prelude-imports.md`](./named-prelude-imports.md) — dual of
   `perfectionist::wildcard_imports`. Forbid named imports from a
   `prelude` module (`use foo::prelude::Item;`); allow the glob form
   (`use foo::prelude::*;`). Implemented and active by default; the file

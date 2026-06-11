@@ -1,4 +1,4 @@
-# `named_prelude_import`
+# `named_prelude_imports`
 
 **Source:** project convention. Dual of
 `perfectionist::wildcard_imports` (`src/rules/wildcard_imports.rs`): that
@@ -7,7 +7,7 @@ restricts named imports *from* preludes and lets the glob form through.
 
 ## Status
 
-Implemented in `src/rules/named_prelude_import.rs`, active by default.
+Implemented in `src/rules/named_prelude_imports.rs`, active by default.
 What is done:
 
 - Detection of every cherry-picked named import from a prelude segment,
@@ -82,7 +82,7 @@ use serde::prelude::*;
 ## Why both lints together
 
 `perfectionist::wildcard_imports` (with the `prelude` exception) and
-`named_prelude_import` together codify a single intent: "if a crate
+`named_prelude_imports` together codify a single intent: "if a crate
 ships a prelude, you import it as a glob; if you don't want the glob,
 import the items from where they actually live." Enabling exactly one
 of the two lints is also coherent:
@@ -90,12 +90,12 @@ of the two lints is also coherent:
 - Only `wildcard_imports`: globs are restricted, but you may still
   cherry-pick items from a prelude. (The default for projects that
   haven't opted into the convention.)
-- Only `named_prelude_import`: glob `use` is unrestricted in general,
+- Only `named_prelude_imports`: glob `use` is unrestricted in general,
   but preludes must be glob-imported when used at all.
 
 ## Implementation notes
 
-As built (see `src/rules/named_prelude_import.rs`):
+As built (see `src/rules/named_prelude_imports.rs`):
 
 - A plain HIR `LateLintPass::check_item` on
   `ItemKind::Use(path, UseKind::Single(_))`. The fix needs the item's
@@ -128,7 +128,7 @@ As built (see `src/rules/named_prelude_import.rs`):
 
 ```toml
 # dylint.toml
-[named_prelude_import]
+[named_prelude_imports]
 # Names recognised as prelude segments. Match `wildcard_imports`'s knob
 # of the same name so a project can flip both rules with one value.
 prelude_segment_names = ["prelude"]

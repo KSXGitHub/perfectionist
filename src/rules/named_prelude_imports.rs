@@ -1,4 +1,4 @@
-//! `perfectionist::named_prelude_import` — flag cherry-picked named
+//! `perfectionist::named_prelude_imports` — flag cherry-picked named
 //! imports from a `prelude` module (`use serde::prelude::Serialize;`),
 //! leaving the glob form (`use serde::prelude::*;`) alone.
 //!
@@ -83,7 +83,7 @@ declare_tool_lint! {
     /// ```rust,ignore
     /// use diesel::prelude::*;
     /// ```
-    pub perfectionist::NAMED_PRELUDE_IMPORT,
+    pub perfectionist::NAMED_PRELUDE_IMPORTS,
     Warn,
     "named item cherry-picked from a prelude module instead of glob-imported",
     report_in_external_macro: false
@@ -95,23 +95,23 @@ declare_tool_lint! {
 /// default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
-const CONFIG_KEY: &str = "perfectionist::named_prelude_import";
+const CONFIG_KEY: &str = "perfectionist::named_prelude_imports";
 
-pub struct NamedPreludeImport {
+pub struct NamedPreludeImports {
     config: Resolved,
 }
 
-impl_lint_pass!(NamedPreludeImport => [NAMED_PRELUDE_IMPORT]);
+impl_lint_pass!(NamedPreludeImports => [NAMED_PRELUDE_IMPORTS]);
 
 /// Register this rule's lint declaration. Paired with [`register_pass`];
 /// see the module-level convention documented in `register_lints`.
 pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[NAMED_PRELUDE_IMPORT]);
+    lint_store.register_lints(&[NAMED_PRELUDE_IMPORTS]);
 }
 
 /// Install this rule's pass.
 pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("named_prelude_import", DEFAULT_STATE) {
+    if let DefaultState::Inactive = resolved_state("named_prelude_imports", DEFAULT_STATE) {
         return;
     }
     let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
@@ -120,16 +120,16 @@ pub fn register_pass(lint_store: &mut LintStore) {
     // misconfigured one loudly rather than letting it silently match
     // nothing.
     config::validate(&config).unwrap_or_else(|message| {
-        panic!("perfectionist::named_prelude_import: {message}");
+        panic!("perfectionist::named_prelude_imports: {message}");
     });
     lint_store.register_late_pass(move |_| {
-        Box::new(NamedPreludeImport {
+        Box::new(NamedPreludeImports {
             config: Resolved::from_config(config.clone()),
         })
     });
 }
 
-impl<'tcx> LateLintPass<'tcx> for NamedPreludeImport {
+impl<'tcx> LateLintPass<'tcx> for NamedPreludeImports {
     fn check_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx Item<'tcx>) {
         // Only single (named) imports are flagged; the glob and the
         // synthetic `ListStem` forms are left alone.
@@ -171,7 +171,7 @@ impl<'tcx> LateLintPass<'tcx> for NamedPreludeImport {
         let fix = canonical_fix(cx, path.res, path.span, &written_path);
         span_lint_hir_and_then(
             cx,
-            NAMED_PRELUDE_IMPORT,
+            NAMED_PRELUDE_IMPORTS,
             item.hir_id(),
             path.span,
             "named item cherry-picked from a prelude module",

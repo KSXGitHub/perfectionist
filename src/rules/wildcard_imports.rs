@@ -80,7 +80,7 @@ declare_tool_lint! {
     /// `clippy::wildcard_imports` if its coarser, all-or-nothing exemption
     /// model is enough; reach for this rule when the test-module
     /// distinction matters. Paired with
-    /// `perfectionist::named_prelude_import` it expresses the project's
+    /// `perfectionist::named_prelude_imports` it expresses the project's
     /// full posture: preludes must be glob-imported, and globs are
     /// allowed only for preludes.
     ///

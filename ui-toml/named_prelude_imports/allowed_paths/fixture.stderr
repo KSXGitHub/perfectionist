@@ -4,7 +4,7 @@ warning: named item cherry-picked from a prelude module
 LL |     use crate::other::prelude::B;
    |         ^^^^^^^^^^^^^^^^^^^^^^^^ help: import the item from its canonical module: `crate::thing::B`
    |
-   = note: `#[warn(perfectionist::named_prelude_import)]` on by default
+   = note: `#[warn(perfectionist::named_prelude_imports)]` on by default
 
 warning: 1 warning emitted
 

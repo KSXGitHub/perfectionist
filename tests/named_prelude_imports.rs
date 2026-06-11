@@ -1,7 +1,7 @@
-//! UI tests for `named_prelude_import`'s configuration knobs. The
-//! default-config sweep lives in `ui/named_prelude_import.rs` and is
+//! UI tests for `named_prelude_imports`'s configuration knobs. The
+//! default-config sweep lives in `ui/named_prelude_imports.rs` and is
 //! picked up by `tests/ui.rs`; these tests each point at their own
-//! one-fixture directory under `ui-toml/named_prelude_import/` and pass a
+//! one-fixture directory under `ui-toml/named_prelude_imports/` and pass a
 //! per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
 //!
 //! `Test::dylint_toml` sets the process-global `DYLINT_TOML` env var for
@@ -11,7 +11,7 @@
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
-const LINT_NAME: &str = "perfectionist::named_prelude_import";
+const LINT_NAME: &str = "perfectionist::named_prelude_imports";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
@@ -42,7 +42,7 @@ fn allowed_paths_exempts_listed_prelude() {
     // `crate::prelude` is intentionally cherry-picked, so it is exempt;
     // a named import from a different prelude is still flagged.
     run(
-        "ui-toml/named_prelude_import/allowed_paths",
+        "ui-toml/named_prelude_imports/allowed_paths",
         RuleConfig {
             allowed_paths: Some(vec!["::crate::prelude"]),
             ..Default::default()
@@ -55,7 +55,7 @@ fn custom_prelude_segment_name() {
     // `prelude_segment_names = ["api"]`: a named import from an `api`
     // module is flagged, while one from a `prelude` module is not.
     run(
-        "ui-toml/named_prelude_import/custom_prelude_segment",
+        "ui-toml/named_prelude_imports/custom_prelude_segment",
         RuleConfig {
             prelude_segment_names: Some(vec!["api"]),
             ..Default::default()

@@ -11,7 +11,7 @@ pub mod lint_reason_from_comment;
 pub mod lint_silence_reason;
 pub mod macro_argument_binding;
 pub mod macro_trailing_comma;
-pub mod named_prelude_import;
+pub mod named_prelude_imports;
 pub mod non_exhaustive_error;
 pub mod prefer_derive_more_over_thiserror;
 pub mod prefer_expect_over_allow;

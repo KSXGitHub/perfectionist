@@ -58,7 +58,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   macro invocation does not follow rustfmt's vertical trailing-comma policy
 
-- [`named_prelude_import`](./named_prelude_import.md) (default: `active`).
+- [`named_prelude_imports`](./named_prelude_imports.md) (default: `active`).
 
   named item cherry-picked from a prelude module instead of glob-imported
 
