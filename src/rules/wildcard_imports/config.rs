@@ -29,16 +29,9 @@ pub(super) struct Config {
     /// `"::rayon::iter"` exempts both `use rayon::iter::*;` and
     /// `use ::rayon::iter::*;`. An entry without the leading `::` is
     /// reserved for future relative (suffix) matching and currently
-    /// matches nothing.
-    ///
-    /// Matching is **syntactic and exact**: an entry is compared to the
-    /// module path exactly as written in the glob `use`, segment for
-    /// segment. It does not resolve re-exports or local `use` aliases, and
-    /// it is neither a prefix nor a suffix match. So `"::a::b"` exempts
-    /// only a glob literally written `use a::b::*;` (or `use ::a::b::*;`),
-    /// not one spelled `use b::*;` that merely resolves to `a::b` through
-    /// an earlier `use a::b;`. List the path each glob actually writes.
-    /// Defaults to `[]`.
+    /// matches nothing. Matching is exact and syntactic: the entry must
+    /// equal the path as written in the glob `use`, with no re-export or
+    /// alias resolution. Defaults to `[]`.
     pub(super) allowed_paths: Vec<String>,
 }
 

@@ -21,16 +21,10 @@ pub(super) struct Config {
     /// Because an entry matches the path up to *and including* the prelude
     /// segment, its final segment must be one of `prelude_segment_names` —
     /// an entry that ends in anything else can never match a cherry-pick
-    /// and is rejected as a configuration error.
-    ///
-    /// Matching is **syntactic and exact**: an entry is compared to the
-    /// prelude path exactly as written in the cherry-picking `use`, up to
-    /// and including the prelude segment. It does not resolve re-exports
-    /// or local aliases, and is neither a prefix nor a suffix match. So
-    /// `"::a::b::prelude"` exempts only an import written
-    /// `use a::b::prelude::Item;` (the module path up to the prelude is
-    /// `a::b::prelude`), not one whose prelude is reached through a
-    /// re-export. Useful for a project's own prelude that is intentionally
+    /// and is rejected as a configuration error. Matching is exact and
+    /// syntactic: the entry must equal the path as written in the `use`
+    /// (up to the prelude segment), with no re-export or alias resolution.
+    /// Useful for a project's own prelude that is intentionally
     /// cherry-picked. Defaults to `[]`.
     pub(super) allowed_paths: Vec<String>,
 }
