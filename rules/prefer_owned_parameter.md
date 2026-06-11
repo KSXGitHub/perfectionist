@@ -19,9 +19,12 @@ should take the owned form directly.
 
 Only the conservative single-use case is implemented: the
 parameter must be referenced exactly once, that use must be the
-conversion, and the conversion must execute unconditionally (it
-is not nested inside an `if`/`match`/loop arm, a closure, or the
-short-circuiting side of `&&` / `||`). The broader
+conversion, and the conversion must execute unconditionally — no
+`if` / `match` / loop, closure, or short-circuiting `&&` / `||`
+may sit between it and the enclosing function. This is
+deliberately conservative: even the always-executed `if`
+condition and `match` scrutinee positions count as
+disqualifying, not just the branch arms. The broader
 dominance-analysis cases described in
 `planned-rules/prefer-owned-parameter.md` are still pending.
 
