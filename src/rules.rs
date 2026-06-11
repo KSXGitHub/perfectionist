@@ -2,6 +2,7 @@ pub mod bare_email;
 pub mod bare_identifier_reference;
 pub mod bare_issue_reference;
 pub mod bare_url;
+pub mod clap_help_no_markdown;
 pub mod derive_ordering;
 pub mod import_granularity;
 pub mod import_grouping;

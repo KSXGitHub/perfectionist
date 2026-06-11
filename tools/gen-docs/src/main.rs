@@ -90,7 +90,7 @@ enum CliCommand {
     },
 
     /// Write the markdown copy of the catalogue, one file per rule
-    /// plus a `README.md` index. Files that no longer correspond to
+    /// plus a README.md index. Files that no longer correspond to
     /// any rule are removed.
     WriteMd {
         #[clap(help = "Directory to write the markdown catalogue into; created if missing")]

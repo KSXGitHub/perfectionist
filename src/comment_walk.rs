@@ -95,6 +95,34 @@ impl CommentChunk<'_> {
         }
         None
     }
+
+    /// Map a contiguous rendered byte `range` to its source [`Span`],
+    /// but only when the whole range lies within a single rendered line.
+    /// Returns `None` for a range that crosses the synthesised `\n`
+    /// between two joined `///` lines — splicing the `///` prefix bytes
+    /// of the next line into the span would make any autofix built from
+    /// it corrupt the source. `clap_help_no_markdown` uses the precise
+    /// single-line span both as the diagnostic anchor and as the
+    /// replacement span for its code-span autofix, and declines the
+    /// autofix when this returns `None`.
+    pub(crate) fn span_for_range(&self, range: std::ops::Range<usize>) -> Option<Span> {
+        if range.start >= range.end {
+            return None;
+        }
+        for line in &self.lines {
+            let line_end = line.rendered_start + line.rendered_len;
+            if range.start >= line.rendered_start && range.end <= line_end {
+                let delta = (range.start - line.rendered_start) as u32;
+                let start = self
+                    .source_file
+                    .absolute_position(RelativeBytePos::from_u32(line.source_offset + delta));
+                let len = (range.end - range.start) as u32;
+                let end = BytePos::from_u32(start.0 + len);
+                return Some(Span::new(start, end, SyntaxContext::root(), None));
+            }
+        }
+        None
+    }
 }
 
 /// Walk every comment in the local crate's source files, handing each

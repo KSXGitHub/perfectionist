@@ -1,0 +1,131 @@
+warning: an intra-doc link in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:14:17
+   |
+LL | /// Path to the [`PackageManifest`].
+   |                 ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: override the help text with a plain string (e.g. `#[arg(help = "...")]`) or remove the markdown from the doc comment
+   = note: `#[warn(perfectionist::clap_help_no_markdown)]` on by default
+
+warning: a code span in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:17:21
+   |
+LL |     /// Path to the `manifest` file.
+   |                     ^^^^^^^^^^ help: remove the code span: `manifest`
+
+warning: an intra-doc link in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:20:21
+   |
+LL |     /// Path to the [`PackageManifest`].
+   |                     ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: override the help text with a plain string (e.g. `#[arg(help = "...")]`) or remove the markdown from the doc comment
+
+warning: an inline link in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:23:13
+   |
+LL |     /// See [the format](https://example.com/spec).
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: override the help text with a plain string (e.g. `#[arg(help = "...")]`) or remove the markdown from the doc comment
+
+warning: a reference link in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:26:13
+   |
+LL |     /// See [the format][fmt].
+   |             ^^^^^^^^^^^^^^^^^
+   |
+   = help: override the help text with a plain string (e.g. `#[arg(help = "...")]`) or remove the markdown from the doc comment
+
+warning: a reference link in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:28:9
+   |
+LL |     /// [fmt]: https://example.com/spec
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: override the help text with a plain string (e.g. `#[arg(help = "...")]`) or remove the markdown from the doc comment
+
+warning: an HTML tag in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:31:13
+   |
+LL |     /// Use <br> to break the line.
+   |             ^^^^
+   |
+   = help: override the help text with a plain string (e.g. `#[arg(help = "...")]`) or remove the markdown from the doc comment
+
+warning: a heading in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:36:9
+   |
+LL |     /// # Details
+   |         ^^^^^^^^^
+   |
+   = help: override the help text with a plain string (e.g. `#[arg(help = "...")]`) or remove the markdown from the doc comment
+
+warning: a code block in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:43:9
+   |
+LL |     /// ```
+   |         ^
+   |
+   = help: override the help text with a plain string (e.g. `#[arg(help = "...")]`) or remove the markdown from the doc comment
+
+warning: a code span in a `verbatim_doc_comment` clap doc comment
+  --> $DIR/clap_help_no_markdown.rs:55:16
+   |
+LL |     /// Uses a `code` span.
+   |                ^^^^^^
+   |
+   = note: clap renders this doc comment verbatim, so the markdown syntax appears literally in the terminal `--help` output
+
+warning: a code span in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:59:26
+   |
+LL |     /** Block doc with a `code` span. */
+   |                          ^^^^^^ help: remove the code span: `code`
+
+warning: a code span in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:62:26
+   |
+LL |     /// First run with a `first` span.
+   |                          ^^^^^^^ help: remove the code span: `first`
+
+warning: a code span in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:64:27
+   |
+LL |     /// Second run with a `second` span, after an interleaved attribute.
+   |                           ^^^^^^^^ help: remove the code span: `second`
+
+warning: a code span in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:68:15
+   |
+LL | /// Top-level `command` summary.
+   |               ^^^^^^^^^ help: remove the code span: `command`
+
+warning: an intra-doc link in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:71:20
+   |
+LL |     /// Create the [`Lockfile`].
+   |                    ^^^^^^^^^^^^
+   |
+   = help: override the help text with a plain string (e.g. `#[arg(help = "...")]`) or remove the markdown from the doc comment
+
+warning: a code span in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:74:20
+   |
+LL |     /// Run with a `--flag`.
+   |                    ^^^^^^^^ help: remove the code span: `--flag`
+
+warning: a code span in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:78:7
+   |
+LL | /// A `value` set.
+   |       ^^^^^^^ help: remove the code span: `value`
+
+warning: a code span in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_no_markdown.rs:82:13
+   |
+LL |     /// The `fast` mode.
+   |             ^^^^^^ help: remove the code span: `fast`
+
+warning: 18 warnings emitted
+

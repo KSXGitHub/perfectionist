@@ -50,6 +50,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         bare_identifier_reference
         bare_issue_reference
         bare_url
+        clap_help_no_markdown
         derive_ordering
         import_granularity
         import_grouping

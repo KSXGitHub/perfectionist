@@ -1,9 +1,10 @@
 # `clap_help_length`
 
-**Source:** project convention. Sibling lint to
-[`clap-help-no-markdown`](./clap-help-no-markdown.md); both share the
-same "is this a clap-derived item, and is the help text overridden?"
-detection.
+**Source:** project convention. Sibling lint to the implemented
+`perfectionist::clap_help_no_markdown`
+([`src/rules/clap_help_no_markdown.rs`](../src/rules/clap_help_no_markdown.rs));
+both share the same "is this a clap-derived item, and is the help text
+overridden?" detection.
 
 ## Statement
 
@@ -46,8 +47,8 @@ on the struct), keeping the doc comment available for `cargo doc`.
 ## What to lint
 
 For every `///` doc comment attached to a clap-derived container or to
-a field/variant of one (the same container set as in
-[`clap-help-no-markdown`](./clap-help-no-markdown.md)):
+a field/variant of one (the same container set as
+`perfectionist::clap_help_no_markdown`):
 
 1. Strip leading `///` / `//!` markers and surrounding whitespace from
    each line.
@@ -100,9 +101,13 @@ struct Cli {
 
 ## Implementation notes
 
-- `LateLintPass`, sharing the clap-container detection helper with
-  `clap_help_no_markdown`. Both lints should live in one module so the
-  cached `HashSet<DefId>` is computed once.
+- `LateLintPass`, sharing the clap-container detection approach with
+  the implemented `perfectionist::clap_help_no_markdown`
+  (`src/rules/clap_help_no_markdown/collect.rs`), which re-parses the
+  crate's module files to recover the `#[derive(...)]` and override
+  attributes that macro expansion has consumed by the late pass, and
+  reaches every separate-file submodule. Factor that walk into a shared
+  helper when implementing this rule.
 - Doc-comment normalisation: stitch all `#[doc = "..."]` attribute
   values in source order, strip the leading marker the lexer already
   removed, retain blank-line separators, and trim trailing whitespace
@@ -128,7 +133,7 @@ about_max_chars = 120
 long_about_max_lines = 8
 long_about_max_chars = 600
 
-# Recognised overrides; same default as `clap-help-no-markdown`.
+# Recognised overrides; same default as `perfectionist::clap_help_no_markdown`.
 override_keys = ["about", "long_about", "help", "long_help"]
 
 # Set true to count graphemes instead of `char`s. Brings in the
@@ -149,12 +154,12 @@ Not mechanical — trimming requires editorial judgement — so the
 lint emits a help-only suggestion pointing at
 `#[arg(long_help = "...")]` as the canonical escape hatch.
 
-## Interaction with `clap-help-no-markdown`
+## Interaction with `perfectionist::clap_help_no_markdown`
 
 The two lints are independent:
 
-- `clap-help-no-markdown` catches doc-comment markdown that leaks
-  into `--help` output.
+- `perfectionist::clap_help_no_markdown` catches doc-comment markdown
+  that leaks into `--help` output.
 - `clap-help-length` catches sheer volume.
 
 Both share the clap-container detection and the override-key set;
