@@ -70,6 +70,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   `#[allow]` for a deterministically-firing lint should be `#[expect]`
 
+- [`prefer_owned_parameter`](./prefer_owned_parameter.md) (default: `active`).
+
+  borrowed parameter is only used to produce its owned form
+
 - [`prefer_raw_string`](./prefer_raw_string.md) (default: `active`).
 
   string literal contains only raw-expressible escapes; prefer the raw-string form
@@ -125,3 +129,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`unknown_perfectionist_lints`](./unknown_perfectionist_lints.md) (default: `active`).
 
   lint-control attribute references a `perfectionist::*` lint that this plugin does not register
+
+- [`unpinned_repo_ref`](./unpinned_repo_ref.md) (default: `active`).
+
+  repository URL references a branch or tag instead of a commit SHA

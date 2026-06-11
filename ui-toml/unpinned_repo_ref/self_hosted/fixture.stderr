@@ -1,0 +1,11 @@
+warning: repository URL ref `main` is not a pinned commit SHA
+  --> $DIR/fixture.rs:9:48
+   |
+LL | /// <https://git.example.com/group/repo/-/blob/main/src/lib.rs>.
+   |                                                ^^^^
+   |
+   = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
+   = note: `#[warn(perfectionist::unpinned_repo_ref)]` on by default
+
+warning: 1 warning emitted
+
