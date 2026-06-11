@@ -212,13 +212,8 @@ fn flatten_into(tree: &UseTree, prefix: Vec<String>, out: &mut Vec<Leaf>) -> Opt
             });
         }
         UseTreeKind::Nested { items, .. } => {
-            // Clone the prefix for every subtree but the last, which
-            // takes `combined` by move — `combined` is unused afterward.
-            if let Some(((last, _), rest)) = items.split_last() {
-                for (subtree, _) in rest {
-                    flatten_into(subtree, combined.clone(), out)?;
-                }
-                flatten_into(last, combined, out)?;
+            for (subtree, _) in items {
+                flatten_into(subtree, combined.clone(), out)?;
             }
         }
     }
