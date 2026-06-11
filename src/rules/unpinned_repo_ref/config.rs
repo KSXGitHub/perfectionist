@@ -1,7 +1,7 @@
 //! Configuration surface for `unpinned_repo_ref`: which surfaces to
-//! scan, how short a hex run still counts as a SHA, and the
-//! hostname-to-forge-kind table that decides how each URL's path is
-//! shaped.
+//! scan, how short a hex run still counts as a SHA, whether
+//! release-shaped tags are accepted, and the hostname-to-forge-kind
+//! table that decides how each URL's path is shaped.
 //!
 //! The hostname matching is glob-aware ([`glob_match`]) so a single
 //! entry can cover a family of self-hosted subdomains
@@ -95,6 +95,12 @@ pub(super) struct Config {
     /// branch names that merely look hex-ish. Set to `1` to treat any
     /// pure-hex ref as a SHA.
     pub(super) sha_recognition_length: usize,
+    /// Whether refs shaped like release tags (`1.2.3`, `v1.2.3`, or
+    /// either form with a non-empty `-suffix`) are accepted without a
+    /// commit SHA. Defaults to `false`; tags can move, and a
+    /// release-shaped branch name is valid Git, so projects must opt in
+    /// to this convenience explicitly.
+    pub(super) allow_release_tags: bool,
     /// Hostnames to scan, each mapped to the forge kind that fixes its
     /// URL shape. Defaults to the common public forges:
     /// `github.com` / `gitee.com` (github-shape), `gitlab.com`,
@@ -115,6 +121,7 @@ impl Default for Config {
         Self {
             targets: DEFAULT_TARGETS.to_vec(),
             sha_recognition_length: DEFAULT_SHA_RECOGNITION_LENGTH,
+            allow_release_tags: false,
             hosts: DEFAULT_HOSTS
                 .iter()
                 .map(|(hostname, kind)| HostEntry {

@@ -106,23 +106,27 @@ pub(super) fn locate_ref(url: &str, kind: ForgeKind) -> Option<RefLocation<'_>> 
 }
 
 /// Classify a located ref. `None` means the ref is acceptable (a
-/// commit SHA); `Some(problem)` is a violation.
+/// commit SHA, or a release-shaped tag when configured);
+/// `Some(problem)` is a violation.
 pub(crate) fn ref_problem(
     text: &str,
     outcome: RefOutcome,
     sha_recognition_length: usize,
+    allow_release_tags: bool,
 ) -> Option<RefProblem> {
     match outcome {
         RefOutcome::KnownMutable(MutableKind::Branch) => Some(RefProblem::Branch),
         RefOutcome::KnownMutable(MutableKind::Tag) => {
-            if is_release_tag_ref(text) {
+            if allow_release_tags && is_release_tag_ref(text) {
                 None
             } else {
                 Some(RefProblem::Tag)
             }
         }
         RefOutcome::MustBeSha => {
-            if is_commit_sha(text, sha_recognition_length) || is_release_tag_ref(text) {
+            if is_commit_sha(text, sha_recognition_length)
+                || (allow_release_tags && is_release_tag_ref(text))
+            {
                 None
             } else {
                 Some(RefProblem::NotSha)

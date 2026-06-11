@@ -21,9 +21,11 @@ declare_tool_lint! {
     ///
     /// Flags URLs that reference a file or directory inside a hosted
     /// git repository (GitHub, GitLab, Bitbucket, Codeberg / Gitea,
-    /// sourcehut, etc.) when the ref in the URL is a branch or a
-    /// non-release-like tag rather than a commit SHA. Scans doc
-    /// comments, regular comments, and string literals.
+    /// sourcehut, etc.) when the ref in the URL is a branch or tag
+    /// rather than a commit SHA. Projects that deliberately link to
+    /// release tags can opt into accepting semver-shaped tag names via
+    /// `allow_release_tags`. Scans doc comments, regular comments, and
+    /// string literals.
     ///
     /// ### Why restrict this?
     ///
@@ -32,11 +34,13 @@ declare_tool_lint! {
     /// branch currently points at, so the linked content can change —
     /// or disappear — without warning after the link is written. A tag
     /// ref is steadier but still not pinned: a tag can be moved, and
-    /// the lint usually can't tell a tag from a branch by name alone.
-    /// To avoid flagging common release links, refs shaped like
-    /// `1.2.3`, `1.2.3-suffix`, `v1.2.3`, or `v1.2.3-suffix` are
-    /// accepted as release-like tags. A commit SHA is still the only
-    /// ref that always denotes the exact content the author linked to.
+    /// the lint usually can't tell a tag from a branch by name alone (a
+    /// branch named `v1.2.3` is valid Git), so tags are rejected by
+    /// default. If that is too strict for a project's release links,
+    /// `allow_release_tags = true` accepts refs shaped like `1.2.3`,
+    /// `1.2.3-suffix`, `v1.2.3`, or `v1.2.3-suffix`. A commit SHA is
+    /// still the only ref that always denotes the exact content the
+    /// author linked to.
     ///
     /// This rule only concerns whether the ref is mutable; the
     /// *length* of an accepted SHA is `perfectionist::commit_id_length`'s
@@ -58,7 +62,7 @@ declare_tool_lint! {
     /// ```
     pub perfectionist::UNPINNED_REPO_REF,
     Warn,
-    "repository URL references a branch or non-release tag instead of a commit SHA",
+    "repository URL references a branch or tag instead of a commit SHA",
     report_in_external_macro: false
 }
 
@@ -71,6 +75,7 @@ pub struct UnpinnedRepoRef {
     scan_comment: bool,
     scan_string_literal: bool,
     pub(super) sha_recognition_length: usize,
+    pub(super) allow_release_tags: bool,
     /// Hostname globs paired with the forge kind they map to, in
     /// configuration order (first match wins).
     hosts: Vec<(String, ForgeKind)>,
@@ -95,6 +100,7 @@ impl UnpinnedRepoRef {
             scan_comment: config.targets.contains(&Target::Comment),
             scan_string_literal: config.targets.contains(&Target::StringLiteral),
             sha_recognition_length: config.sha_recognition_length,
+            allow_release_tags: config.allow_release_tags,
             hosts,
             skip_hosts: config.skip_hosts,
         }

@@ -128,4 +128,4 @@ Lint-control attributes use the `perfectionist::` namespace.
 
 - [`unpinned_repo_ref`](./unpinned_repo_ref.md) (default: `active`).
 
-  repository URL references a branch or non-release tag instead of a commit SHA
+  repository URL references a branch or tag instead of a commit SHA

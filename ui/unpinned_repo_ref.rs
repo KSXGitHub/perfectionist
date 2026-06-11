@@ -2,7 +2,8 @@
 // comment, plain comment, string literal) and every built-in forge
 // kind. Run by `tests/ui.rs` with an empty `dylint.toml`, so the
 // defaults apply (all three targets, the built-in host table,
-// `sha_recognition_length = 4`, no skipped hosts).
+// `sha_recognition_length = 4`, `allow_release_tags = false`, no
+// skipped hosts).
 //
 // URLs are wrapped in `<...>` throughout: that is the realistic case
 // (`perfectionist::bare_url` already requires wrapping, and this rule
@@ -17,8 +18,8 @@
 /// <https://github.com/owner/repo/blob/main/src/lib.rs>.
 fn _doc_github_branch() {}
 
-/// Good: a release-like tag ref is accepted:
-/// <https://github.com/owner/repo/blob/v1.2.3-rc.1/src/lib.rs>.
+/// Bad: tag ref (indistinguishable from a branch):
+/// <https://github.com/owner/repo/blob/v1.2.3/src/lib.rs>.
 fn _doc_github_tag() {}
 
 /// Good: a commit SHA is pinned:
@@ -61,7 +62,7 @@ fn _comment_bitbucket_branch() {}
 // <https://codeberg.org/owner/repo/src/branch/main/src/lib.rs>
 fn _comment_gitea_branch() {}
 
-// Good: codeberg (gitea) explicit release-like tag:
+// Bad: codeberg (gitea) explicit tag:
 // <https://codeberg.org/owner/repo/src/tag/v1.2.3/src/lib.rs>
 fn _comment_gitea_tag() {}
 

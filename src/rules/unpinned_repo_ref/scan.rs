@@ -70,6 +70,11 @@ fn classify_url<'a>(
     let host = url_host(url)?;
     let kind = rule.forge_kind_for_host(host)?;
     let location = locate_ref(url, kind)?;
-    let problem = ref_problem(location.text, location.outcome, rule.sha_recognition_length)?;
+    let problem = ref_problem(
+        location.text,
+        location.outcome,
+        rule.sha_recognition_length,
+        rule.allow_release_tags,
+    )?;
     Some((location.offset, location.text.len(), problem, location.text))
 }
