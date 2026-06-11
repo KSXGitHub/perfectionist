@@ -410,6 +410,54 @@ pub fn synth_allow_rewriteable(input: TokenStream) -> TokenStream {
     out
 }
 
+/// `#[derive(SynthOwnedParam)]` + `#[synth_owned_param]` →
+/// `const _: () = { fn _synth(item: &str) -> String { item.to_owned() } };`
+/// where the `&str` parameter *type* inherits the user-span of
+/// `synth_owned_param`. `prefer_owned_parameter` reports at the
+/// parameter-type span, so a span-only filter sees a user-written
+/// `&str` and would rewrite a signature the user never wrote; this
+/// exercises the rule's `hir_in_external_macro` guard.
+#[proc_macro_derive(SynthOwnedParam, attributes(synth_owned_param))]
+pub fn synth_owned_param(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_owned_param")
+        .expect("`#[derive(SynthOwnedParam)]` requires a `#[synth_owned_param]`");
+    let call_site = Span::call_site();
+    let at_type = |mut tree: TokenTree| {
+        tree.set_span(attr_span);
+        tree
+    };
+
+    // `item: &str` — only the `&str` type tokens carry the user span.
+    let mut params = TokenStream::new();
+    params.extend([
+        TokenTree::Ident(Ident::new("item", call_site)),
+        TokenTree::Punct(Punct::new(':', Spacing::Alone)),
+        at_type(TokenTree::Punct(Punct::new('&', Spacing::Alone))),
+        at_type(TokenTree::Ident(Ident::new("str", attr_span))),
+    ]);
+
+    // `item.to_owned()`
+    let mut fn_body = TokenStream::new();
+    fn_body.extend([
+        TokenTree::Ident(Ident::new("item", call_site)),
+        TokenTree::Punct(Punct::new('.', Spacing::Alone)),
+        TokenTree::Ident(Ident::new("to_owned", call_site)),
+        TokenTree::Group(Group::new(Delimiter::Parenthesis, TokenStream::new())),
+    ]);
+
+    let mut body = TokenStream::new();
+    body.extend([
+        TokenTree::Ident(Ident::new("fn", call_site)),
+        TokenTree::Ident(Ident::new("_synth", call_site)),
+        TokenTree::Group(Group::new(Delimiter::Parenthesis, params)),
+        TokenTree::Punct(Punct::new('-', Spacing::Joint)),
+        TokenTree::Punct(Punct::new('>', Spacing::Alone)),
+        TokenTree::Ident(Ident::new("String", call_site)),
+        TokenTree::Group(Group::new(Delimiter::Brace, fn_body)),
+    ]);
+    wrap_const_block(body)
+}
+
 fn wrap_const_block(body: TokenStream) -> TokenStream {
     let call_site = Span::call_site();
     let mut out = TokenStream::new();

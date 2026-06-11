@@ -127,7 +127,7 @@ struct Cli {
 - Use the shared markdown scanner (Tier A — structural
   classification) per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md#markdown-parsing).
-  Each banned construct in `forbid` maps to one `take_*` result;
+  Each banned construct maps to one `take_*` result;
   the dispatcher branches on the match and emits the right
   per-construct diagnostic. This rule is the most demanding
   consumer of the scanner — if its HTML-tag and
@@ -135,9 +135,10 @@ struct Cli {
   escape hatch (vendor `pulldown_cmark` for this rule alone)
   applies here.
 - Override detection: walk attribute lists for `clap`, `arg`,
-  `command` paths. Recognise `MetaNameValue` shape with the override
-  key. `clippy_utils::attrs::find_by_name` is a starting point but
-  needs path matching, not just symbol matching.
+  `command` paths. Recognise `MetaNameValue` shape with one of the
+  fixed override keys (`about`, `long_about`, `help`, `long_help`).
+  `clippy_utils::attrs::find_by_name` is a starting point but needs
+  path matching, not just symbol matching.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
@@ -148,16 +149,22 @@ struct Cli {
 
 ```toml
 [clap_help_no_markdown]
-# Constructs to flag; default is the conservative set above.
-forbid = ["html", "inline_link", "reference_link", "intra_doc_link",
-          "code_block", "code_span", "heading"]
+# Additional markdown constructs to forbid, on top of the built-in
+# default set (`["html", "inline_link", "reference_link",
+# "intra_doc_link", "code_block", "code_span", "heading"]`). Empty by
+# default. Bold, italics, and lists are the usual additions.
+extra_constructs = ["bold", "italic", "list"]   # empty by default
 
-# Additional constructs a project may want to ban.
-extra_forbid = ["bold", "italic", "list"]   # empty by default
-
-# Recognise these attribute keys as overrides that disable the lint.
-override_keys = ["about", "long_about", "help", "long_help"]
+# Constructs to drop from the forbidden set, even if they appear in the
+# built-in defaults. Empty by default; checked after the merge with the
+# built-ins, so this knob always wins.
+ignore_constructs = ["code_span"]   # empty by default
 ```
+
+The attribute keys that count as an override (`about`, `long_about`,
+`help`, `long_help`) are not configurable: they are clap's own complete
+set of help-text overrides, so there is nothing for a project to add or
+remove.
 
 ## Default state
 

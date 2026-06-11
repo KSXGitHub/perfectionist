@@ -66,6 +66,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   `#[allow]` for a deterministically-firing lint should be `#[expect]`
 
+- [`prefer_owned_parameter`](./prefer_owned_parameter.md) (default: `active`).
+
+  borrowed parameter is only used to produce its owned form
+
 - [`prefer_raw_string`](./prefer_raw_string.md) (default: `active`).
 
   string literal contains only raw-expressible escapes; prefer the raw-string form
