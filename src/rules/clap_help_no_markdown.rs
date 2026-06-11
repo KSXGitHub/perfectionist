@@ -14,7 +14,7 @@ mod collect;
 mod config;
 
 use collect::{NodeState, collect_doc_nodes};
-use config::{Config, ForbidConstruct, ResolvedConfig};
+use config::{Config, ConstructCategory, ResolvedConfig};
 
 declare_tool_lint! {
     /// ### What it does
@@ -119,12 +119,12 @@ pub fn register_pass(lint_store: &mut LintStore) {
     lint_store.register_late_pass(|_| Box::new(ClapHelpNoMarkdown::new()));
 }
 
-/// One parked finding: which construct, whether the node opted into
-/// verbatim rendering (softer note, no autofix), and the code-span
+/// One parked finding: which construct category, whether the node opted
+/// into verbatim rendering (softer note, no autofix), and the code-span
 /// replacement text when the trivial `` `Foo` `` → `Foo` autofix
 /// applies.
 struct Violation {
-    construct: ForbidConstruct,
+    category: ConstructCategory,
     soft: bool,
     replacement: Option<String>,
 }
@@ -173,10 +173,10 @@ impl ClapHelpNoMarkdown {
         };
         let soft = matches!(state, NodeState::Verbatim);
         for found in classify_constructs(&chunk.rendered, options) {
-            let Some(construct) = ForbidConstruct::from_kind(found.kind) else {
+            let Some(category) = ConstructCategory::from_kind(found.kind) else {
                 continue;
             };
-            if !self.config.forbid.contains(&construct) {
+            if !self.config.forbid.contains(&category) {
                 continue;
             }
             // Prefer the precise single-line span (needed for the
@@ -197,7 +197,7 @@ impl ClapHelpNoMarkdown {
             let Some(span) = precise.or_else(|| chunk.span_for(found.range.start, 1)) else {
                 continue;
             };
-            let replacement = if !soft && construct == ForbidConstruct::CodeSpan {
+            let replacement = if !soft && category == ConstructCategory::CodeSpan {
                 precise.and_then(|_| code_span_autofix(&chunk.rendered[found.range.clone()]))
             } else {
                 None
@@ -205,7 +205,7 @@ impl ClapHelpNoMarkdown {
             out.push((
                 span,
                 Violation {
-                    construct,
+                    category,
                     soft,
                     replacement,
                 },
@@ -239,7 +239,7 @@ fn code_span_autofix(span_text: &str) -> Option<String> {
 }
 
 fn emit(cx: &LateContext<'_>, hir_id: hir::HirId, span: Span, violation: &Violation) {
-    let label = violation.construct.label();
+    let label = violation.category.label();
     if violation.soft {
         span_lint_hir_and_then(
             cx,

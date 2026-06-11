@@ -6,13 +6,16 @@ use crate::markdown::ConstructKind;
 use rustc_span::Symbol;
 use std::collections::BTreeSet;
 
-/// A user-facing "forbidden construct" category, as it appears in the
-/// `forbid` / `extra_forbid` arrays of `dylint.toml`. Several
-/// [`ConstructKind`]s map onto one category — `reference_link` covers
-/// both a `[text][id]` link and its `[id]: dest` definition.
+/// A markdown construct category the rule can be configured to forbid,
+/// as it appears in the `forbid` / `extra_forbid` arrays of
+/// `dylint.toml`. The coarse policy counterpart to the scanner's
+/// fine-grained [`ConstructKind`]: several kinds map onto one category
+/// via [`ConstructCategory::from_kind`] — `reference_link` covers both a
+/// `[text][id]` link and its `[id]: dest` definition, and an autolink
+/// maps to nothing (it is never forbidden).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub(super) enum ForbidConstruct {
+pub(super) enum ConstructCategory {
     /// Raw HTML tags (`<br>`, `<code>`, `<a href="...">`, ...).
     Html,
     /// Inline links: `[text](https://example.com)`.
@@ -36,23 +39,23 @@ pub(super) enum ForbidConstruct {
     List,
 }
 
-impl ForbidConstruct {
+impl ConstructCategory {
     /// The category a scanned [`ConstructKind`] belongs to, or `None`
     /// for a kind that is never forbidden (an autolink).
     pub(super) fn from_kind(kind: ConstructKind) -> Option<Self> {
         Some(match kind {
-            ConstructKind::CodeSpan => ForbidConstruct::CodeSpan,
-            ConstructKind::CodeBlock => ForbidConstruct::CodeBlock,
-            ConstructKind::InlineLink => ForbidConstruct::InlineLink,
+            ConstructKind::CodeSpan => ConstructCategory::CodeSpan,
+            ConstructKind::CodeBlock => ConstructCategory::CodeBlock,
+            ConstructKind::InlineLink => ConstructCategory::InlineLink,
             ConstructKind::ReferenceLink | ConstructKind::ReferenceDefinition => {
-                ForbidConstruct::ReferenceLink
+                ConstructCategory::ReferenceLink
             }
-            ConstructKind::IntraDocLink => ForbidConstruct::IntraDocLink,
-            ConstructKind::HtmlTag => ForbidConstruct::Html,
-            ConstructKind::Heading => ForbidConstruct::Heading,
-            ConstructKind::Bold => ForbidConstruct::Bold,
-            ConstructKind::Italic => ForbidConstruct::Italic,
-            ConstructKind::List => ForbidConstruct::List,
+            ConstructKind::IntraDocLink => ConstructCategory::IntraDocLink,
+            ConstructKind::HtmlTag => ConstructCategory::Html,
+            ConstructKind::Heading => ConstructCategory::Heading,
+            ConstructKind::Bold => ConstructCategory::Bold,
+            ConstructKind::Italic => ConstructCategory::Italic,
+            ConstructKind::List => ConstructCategory::List,
             ConstructKind::Autolink => return None,
         })
     }
@@ -60,16 +63,16 @@ impl ForbidConstruct {
     /// A short noun phrase naming the construct in a diagnostic.
     pub(super) fn label(self) -> &'static str {
         match self {
-            ForbidConstruct::Html => "an HTML tag",
-            ForbidConstruct::InlineLink => "an inline link",
-            ForbidConstruct::ReferenceLink => "a reference link",
-            ForbidConstruct::IntraDocLink => "an intra-doc link",
-            ForbidConstruct::CodeBlock => "a code block",
-            ForbidConstruct::CodeSpan => "a code span",
-            ForbidConstruct::Heading => "a heading",
-            ForbidConstruct::Bold => "bold text",
-            ForbidConstruct::Italic => "italic text",
-            ForbidConstruct::List => "a list marker",
+            ConstructCategory::Html => "an HTML tag",
+            ConstructCategory::InlineLink => "an inline link",
+            ConstructCategory::ReferenceLink => "a reference link",
+            ConstructCategory::IntraDocLink => "an intra-doc link",
+            ConstructCategory::CodeBlock => "a code block",
+            ConstructCategory::CodeSpan => "a code span",
+            ConstructCategory::Heading => "a heading",
+            ConstructCategory::Bold => "bold text",
+            ConstructCategory::Italic => "italic text",
+            ConstructCategory::List => "a list marker",
         }
     }
 }
@@ -78,14 +81,14 @@ impl ForbidConstruct {
 /// badly in a terminal `--help`. Emphasis and lists are deliberately
 /// excluded; clap renders them as their literal characters, which
 /// usually reads cleanly.
-pub(super) const DEFAULT_FORBID: &[ForbidConstruct] = &[
-    ForbidConstruct::Html,
-    ForbidConstruct::InlineLink,
-    ForbidConstruct::ReferenceLink,
-    ForbidConstruct::IntraDocLink,
-    ForbidConstruct::CodeBlock,
-    ForbidConstruct::CodeSpan,
-    ForbidConstruct::Heading,
+pub(super) const DEFAULT_FORBID: &[ConstructCategory] = &[
+    ConstructCategory::Html,
+    ConstructCategory::InlineLink,
+    ConstructCategory::ReferenceLink,
+    ConstructCategory::IntraDocLink,
+    ConstructCategory::CodeBlock,
+    ConstructCategory::CodeSpan,
+    ConstructCategory::Heading,
 ];
 
 /// Default attribute keys that, when present inside a `clap` / `arg` /
@@ -99,12 +102,12 @@ pub(super) struct Config {
     /// Constructs to flag. Defaults to the conservative set: `html`,
     /// `inline_link`, `reference_link`, `intra_doc_link`, `code_block`,
     /// `code_span`, and `heading`.
-    pub(super) forbid: Vec<ForbidConstruct>,
+    pub(super) forbid: Vec<ConstructCategory>,
     /// Additional constructs to flag on top of `forbid`. Empty by
     /// default; the available extras are `bold`, `italic`, and `list`,
     /// which clap renders as their literal characters and so are not
     /// flagged unless a project opts in.
-    pub(super) extra_forbid: Vec<ForbidConstruct>,
+    pub(super) extra_forbid: Vec<ConstructCategory>,
     /// Attribute keys (inside `#[clap(...)]`, `#[arg(...)]`, or
     /// `#[command(...)]`) that disable the lint for the documented item
     /// because they override the help text with a plain string.
@@ -129,13 +132,13 @@ impl Default for Config {
 /// fast-lookup [`BTreeSet`] and the override keys interned as
 /// [`Symbol`]s.
 pub(super) struct ResolvedConfig {
-    pub(super) forbid: BTreeSet<ForbidConstruct>,
+    pub(super) forbid: BTreeSet<ConstructCategory>,
     pub(super) override_keys: BTreeSet<Symbol>,
 }
 
 impl ResolvedConfig {
     pub(super) fn from_config(config: Config) -> Self {
-        let forbid: BTreeSet<ForbidConstruct> = config
+        let forbid: BTreeSet<ConstructCategory> = config
             .forbid
             .into_iter()
             .chain(config.extra_forbid)
@@ -154,12 +157,12 @@ impl ResolvedConfig {
     /// Whether the classifier needs to look for `*` / `_` emphasis runs
     /// — only when `bold` or `italic` is forbidden.
     pub(super) fn detect_emphasis(&self) -> bool {
-        self.forbid.contains(&ForbidConstruct::Bold)
-            || self.forbid.contains(&ForbidConstruct::Italic)
+        self.forbid.contains(&ConstructCategory::Bold)
+            || self.forbid.contains(&ConstructCategory::Italic)
     }
 
     /// Whether the classifier needs to look for list markers.
     pub(super) fn detect_lists(&self) -> bool {
-        self.forbid.contains(&ForbidConstruct::List)
+        self.forbid.contains(&ConstructCategory::List)
     }
 }
