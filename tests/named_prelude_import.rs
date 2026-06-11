@@ -44,7 +44,7 @@ fn allowed_paths_exempts_listed_prelude() {
     run(
         "ui-toml/named_prelude_import/allowed_paths",
         RuleConfig {
-            allowed_paths: Some(vec!["crate::prelude"]),
+            allowed_paths: Some(vec!["::crate::prelude"]),
             ..Default::default()
         },
     );

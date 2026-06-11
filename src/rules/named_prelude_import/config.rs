@@ -12,10 +12,14 @@ pub(super) struct Config {
     /// the same name on `perfectionist::wildcard_imports`, so a project
     /// can flip both rules with one value. Defaults to `["prelude"]`.
     pub(super) prelude_segment_names: Vec<String>,
-    /// Fully-qualified prelude module paths whose named imports are never
-    /// flagged — the module path leading up to and including the prelude
-    /// segment (e.g. `crate::prelude`). Useful for a project's own
-    /// prelude that is intentionally cherry-picked. Defaults to `[]`.
+    /// Prelude module paths whose named imports are never flagged — the
+    /// module path leading up to and including the prelude segment. Each
+    /// entry is **absolute** and written with a leading `::` (e.g.
+    /// `"::crate::prelude"`); the leading `::` matches whether or not the
+    /// `use` writes it. An entry without the leading `::` is reserved for
+    /// future relative (suffix) matching and currently matches nothing.
+    /// Useful for a project's own prelude that is intentionally
+    /// cherry-picked. Defaults to `[]`.
     pub(super) allowed_paths: Vec<String>,
 }
 
@@ -57,10 +61,10 @@ mod tests {
 
     #[test]
     fn omitted_fields_fall_back_to_defaults() {
-        let config: Config = toml::from_str(r#"allowed_paths = ["crate::prelude"]"#).unwrap();
+        let config: Config = toml::from_str(r#"allowed_paths = ["::crate::prelude"]"#).unwrap();
         let resolved = Resolved::from_config(config);
         assert!(resolved.prelude_segment_names.contains("prelude"));
-        assert!(resolved.allowed_paths.contains("crate::prelude"));
+        assert!(resolved.allowed_paths.contains("::crate::prelude"));
     }
 
     #[test]

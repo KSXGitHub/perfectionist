@@ -114,6 +114,12 @@ exception. Defaults to `["prelude"]`.
 
 ### `allowed_paths`: `[string]` (optional)
 
-Fully-qualified module paths whose glob import is never flagged,
-regardless of the exceptions above — the path before the `::*` of
-a `use <path>::*`. Defaults to `[]`.
+Module paths whose glob import is never flagged, regardless of the
+exceptions above — the path before the `::*` of a `use <path>::*`.
+Each entry is **absolute** and written with a leading `::` (e.g.
+`"::rayon::iter"`, `"::crate::internals"`); the leading `::`
+matches whether or not the `use` itself writes it, so
+`"::rayon::iter"` exempts both `use rayon::iter::*;` and
+`use ::rayon::iter::*;`. An entry without the leading `::` is
+reserved for future relative (suffix) matching and currently
+matches nothing. Defaults to `[]`.

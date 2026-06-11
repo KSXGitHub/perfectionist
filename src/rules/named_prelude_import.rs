@@ -149,9 +149,13 @@ impl<'tcx> LateLintPass<'tcx> for NamedPreludeImport {
             return;
         };
 
-        // `allowed_paths` exempts the prelude module path up to and
-        // including the prelude segment (e.g. `crate::prelude`).
-        let prelude_path = join_segments(&segments[..=prelude_index]);
+        // `allowed_paths` entries are absolute, written with a leading
+        // `::` (e.g. `::crate::prelude`). `join_segments` drops any
+        // `PathRoot`, so both `use crate::prelude::Item` and a `::`-rooted
+        // form arrive identically; prepend a single `::` to form the
+        // absolute key matched against the allow list. The key is the
+        // module path up to and including the prelude segment.
+        let prelude_path = format!("::{}", join_segments(&segments[..=prelude_index]));
         if self.config.allowed_paths.contains(&prelude_path) {
             return;
         }

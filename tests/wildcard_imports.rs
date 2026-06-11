@@ -65,13 +65,15 @@ fn exceptions_disabled_flags_every_glob() {
 #[test]
 fn allowed_paths_exempts_listed_module() {
     // With both exceptions off, a glob is normally flagged — except one
-    // whose module path is named in `allowed_paths`.
+    // whose absolute module path is named in `allowed_paths`. The entries
+    // carry a leading `::`, and `::std::collections` exempts both the
+    // plain and the `::`-rooted spelling of that glob.
     run(
         "ui-toml/wildcard_imports/allowed_paths",
         RuleConfig {
             prelude_exception: Some(false),
             root_reexport_exception: Some(false),
-            allowed_paths: Some(vec!["crate::secret::internals"]),
+            allowed_paths: Some(vec!["::crate::secret::internals", "::std::collections"]),
             ..Default::default()
         },
     );

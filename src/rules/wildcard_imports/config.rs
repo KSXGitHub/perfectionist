@@ -21,9 +21,15 @@ pub(super) struct Config {
     /// Path segment names recognised as preludes for the `prelude`
     /// exception. Defaults to `["prelude"]`.
     pub(super) prelude_segment_names: Vec<String>,
-    /// Fully-qualified module paths whose glob import is never flagged,
-    /// regardless of the exceptions above — the path before the `::*` of
-    /// a `use <path>::*`. Defaults to `[]`.
+    /// Module paths whose glob import is never flagged, regardless of the
+    /// exceptions above — the path before the `::*` of a `use <path>::*`.
+    /// Each entry is **absolute** and written with a leading `::` (e.g.
+    /// `"::rayon::iter"`, `"::crate::internals"`); the leading `::`
+    /// matches whether or not the `use` itself writes it, so
+    /// `"::rayon::iter"` exempts both `use rayon::iter::*;` and
+    /// `use ::rayon::iter::*;`. An entry without the leading `::` is
+    /// reserved for future relative (suffix) matching and currently
+    /// matches nothing. Defaults to `[]`.
     pub(super) allowed_paths: Vec<String>,
 }
 
@@ -96,11 +102,11 @@ mod tests {
     fn omitted_fields_fall_back_to_defaults() {
         // A table that sets only `allowed_paths` keeps both exceptions
         // enabled and the default prelude names.
-        let config: Config = toml::from_str(r#"allowed_paths = ["foo::bar"]"#).unwrap();
+        let config: Config = toml::from_str(r#"allowed_paths = ["::foo::bar"]"#).unwrap();
         let resolved = Resolved::from_config(config);
         assert!(resolved.prelude_exception);
         assert!(resolved.root_reexport_exception);
-        assert!(resolved.allowed_paths.contains("foo::bar"));
+        assert!(resolved.allowed_paths.contains("::foo::bar"));
     }
 
     #[test]
