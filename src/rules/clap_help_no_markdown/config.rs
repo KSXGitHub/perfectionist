@@ -99,15 +99,18 @@ pub(super) const DEFAULT_OVERRIDE_KEYS: &[&str] = &["about", "long_about", "help
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 pub(super) struct Config {
-    /// Constructs to flag. Defaults to the conservative set: `html`,
+    /// Constructs to flag in addition to the default set (`html`,
     /// `inline_link`, `reference_link`, `intra_doc_link`, `code_block`,
-    /// `code_span`, and `heading`.
-    pub(super) forbid: Vec<ConstructCategory>,
-    /// Additional constructs to flag on top of `forbid`. Empty by
-    /// default; the available extras are `bold`, `italic`, and `list`,
-    /// which clap renders as their literal characters and so are not
-    /// flagged unless a project opts in.
+    /// `code_span`, `heading`). Empty by default. The additions clap
+    /// renders acceptably and so leaves off by default are `bold`,
+    /// `italic`, and `list`.
     pub(super) extra_forbid: Vec<ConstructCategory>,
+    /// Constructs to leave unflagged even though they are in the default
+    /// set. Empty by default. Use it to permit a default construct in
+    /// help text, e.g. `allow = ["code_span"]` to allow inline code
+    /// spans. Applied after `extra_forbid`, so listing the same
+    /// construct in both leaves it allowed.
+    pub(super) allow: Vec<ConstructCategory>,
     /// Attribute keys (inside `#[clap(...)]`, `#[arg(...)]`, or
     /// `#[command(...)]`) that disable the lint for the documented item
     /// because they override the help text with a plain string.
@@ -118,8 +121,8 @@ pub(super) struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            forbid: DEFAULT_FORBID.to_vec(),
             extra_forbid: Vec::new(),
+            allow: Vec::new(),
             override_keys: DEFAULT_OVERRIDE_KEYS
                 .iter()
                 .map(|key| (*key).to_owned())
@@ -138,11 +141,17 @@ pub(super) struct ResolvedConfig {
 
 impl ResolvedConfig {
     pub(super) fn from_config(config: Config) -> Self {
-        let forbid: BTreeSet<ConstructCategory> = config
-            .forbid
-            .into_iter()
+        // Effective set = (default ∪ extra_forbid) \ allow — the same
+        // add/subtract-over-a-curated-default shape as the catalogue's
+        // `resolve_string_set` / `resolve_symbol_set` helpers.
+        let mut forbid: BTreeSet<ConstructCategory> = DEFAULT_FORBID
+            .iter()
+            .copied()
             .chain(config.extra_forbid)
             .collect();
+        for category in config.allow {
+            forbid.remove(&category);
+        }
         let override_keys = config
             .override_keys
             .iter()

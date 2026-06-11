@@ -76,18 +76,21 @@ struct Cli {
 
 Configure via `dylint.toml` under `["perfectionist::clap_help_no_markdown"]`. Every field is optional; the per-field prose below states the default.
 
-### `forbid`: `[ConstructCategory]` (optional)
-
-Constructs to flag. Defaults to the conservative set: `html`,
-`inline_link`, `reference_link`, `intra_doc_link`, `code_block`,
-`code_span`, and `heading`.
-
 ### `extra_forbid`: `[ConstructCategory]` (optional)
 
-Additional constructs to flag on top of `forbid`. Empty by
-default; the available extras are `bold`, `italic`, and `list`,
-which clap renders as their literal characters and so are not
-flagged unless a project opts in.
+Constructs to flag in addition to the default set (`html`,
+`inline_link`, `reference_link`, `intra_doc_link`, `code_block`,
+`code_span`, `heading`). Empty by default. The additions clap
+renders acceptably and so leaves off by default are `bold`,
+`italic`, and `list`.
+
+### `allow`: `[ConstructCategory]` (optional)
+
+Constructs to leave unflagged even though they are in the default
+set. Empty by default. Use it to permit a default construct in
+help text, e.g. `allow = ["code_span"]` to allow inline code
+spans. Applied after `extra_forbid`, so listing the same
+construct in both leaves it allowed.
 
 ### `override_keys`: `[string]` (optional)
 

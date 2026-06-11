@@ -1,7 +1,7 @@
 // aux-build:clap.rs
 //
-//! `forbid = ["code_span"]` narrows the rule: a code span is flagged
-//! while an inline link, dropped from the set, is not.
+//! `allow = ["inline_link"]` drops inline links from the default set:
+//! the code span still fires while the inline link is permitted.
 
 #![allow(dead_code, reason = "ui fixture")]
 

@@ -20,9 +20,9 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    forbid: Option<Vec<&'static str>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     extra_forbid: Option<Vec<&'static str>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    allow: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     override_keys: Option<Vec<&'static str>>,
 }
@@ -54,13 +54,13 @@ fn extra_forbid_flags_bold_italic_and_lists() {
 }
 
 #[test]
-fn forbid_subset_flags_only_listed_constructs() {
-    // Narrowing `forbid` to just `code_span` leaves an inline link
-    // unflagged while still catching the code span.
+fn allow_drops_a_construct_from_the_default_set() {
+    // `allow = ["inline_link"]` permits inline links in help text while
+    // the rest of the default set — here, the code span — still fires.
     run(
-        "ui-toml/clap_help_no_markdown/forbid_subset",
+        "ui-toml/clap_help_no_markdown/allow",
         RuleConfig {
-            forbid: Some(vec!["code_span"]),
+            allow: Some(vec!["inline_link"]),
             ..RuleConfig::default()
         },
     );
