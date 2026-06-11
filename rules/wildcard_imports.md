@@ -120,8 +120,6 @@ Each entry is **absolute** and written with a leading `::` (e.g.
 `"::rayon::iter"`, `"::crate::internals"`); the leading `::`
 matches whether or not the `use` itself writes it, so
 `"::rayon::iter"` exempts both `use rayon::iter::*;` and
-`use ::rayon::iter::*;`. An entry without the leading `::` is
-reserved for future relative (suffix) matching and currently
-matches nothing. Matching is exact and syntactic: the entry must
-equal the path as written in the glob `use`, with no re-export or
-alias resolution. Defaults to `[]`.
+`use ::rayon::iter::*;`. Matching is exact and syntactic: the entry
+must equal the path as written in the glob `use`, with no re-export
+or alias resolution. Defaults to `[]`.

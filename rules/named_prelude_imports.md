@@ -74,13 +74,9 @@ Prelude module paths whose named imports are never flagged — the
 module path leading up to and including the prelude segment. Each
 entry is **absolute** and written with a leading `::` (e.g.
 `"::crate::prelude"`); the leading `::` matches whether or not the
-`use` writes it. An entry without the leading `::` is reserved for
-future relative (suffix) matching and currently matches nothing.
-Because an entry matches the path up to *and including* the prelude
-segment, its final segment must be one of `prelude_segment_names` —
-an entry that ends in anything else can never match a cherry-pick
-and is rejected as a configuration error. Matching is exact and
-syntactic: the entry must equal the path as written in the `use`
-(up to the prelude segment), with no re-export or alias resolution.
-Useful for a project's own prelude that is intentionally
-cherry-picked. Defaults to `[]`.
+`use` writes it. Because an entry matches the path up to *and
+including* the prelude segment, it must end with a
+`prelude_segment_names` segment. Matching is exact and syntactic:
+the entry must equal the path as written in the `use` (up to the
+prelude segment), with no re-export or alias resolution. Defaults
+to `[]`.
