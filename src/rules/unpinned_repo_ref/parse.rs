@@ -114,9 +114,15 @@ pub(crate) fn ref_problem(
 ) -> Option<RefProblem> {
     match outcome {
         RefOutcome::KnownMutable(MutableKind::Branch) => Some(RefProblem::Branch),
-        RefOutcome::KnownMutable(MutableKind::Tag) => Some(RefProblem::Tag),
+        RefOutcome::KnownMutable(MutableKind::Tag) => {
+            if is_release_tag_ref(text) {
+                None
+            } else {
+                Some(RefProblem::Tag)
+            }
+        }
         RefOutcome::MustBeSha => {
-            if is_commit_sha(text, sha_recognition_length) {
+            if is_commit_sha(text, sha_recognition_length) || is_release_tag_ref(text) {
                 None
             } else {
                 Some(RefProblem::NotSha)
@@ -131,6 +137,29 @@ fn is_commit_sha(text: &str, sha_recognition_length: usize) -> bool {
     text.len() >= sha_recognition_length
         && !text.is_empty()
         && text.bytes().all(|byte| byte.is_ascii_hexdigit())
+}
+
+/// Whether `text` looks like a release tag (`1.2.3`, `v1.2.3`, or
+/// either form with a non-empty `-suffix`). This intentionally avoids a
+/// regex dependency because the lint is compiled from source by users.
+fn is_release_tag_ref(text: &str) -> bool {
+    let text = text.strip_prefix('v').unwrap_or(text);
+    let (version, suffix) = text
+        .split_once('-')
+        .map_or((text, None), |(version, suffix)| (version, Some(suffix)));
+    if suffix.is_some_and(str::is_empty) {
+        return false;
+    }
+
+    let mut parts = version.split('.');
+    let [Some(major), Some(minor), Some(patch), None] =
+        [parts.next(), parts.next(), parts.next(), parts.next()]
+    else {
+        return false;
+    };
+    [major, minor, patch]
+        .into_iter()
+        .all(|part| !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_digit()))
 }
 
 /// Split `url` into the byte offset of its path and the path text

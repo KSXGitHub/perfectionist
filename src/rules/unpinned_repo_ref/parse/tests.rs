@@ -173,7 +173,31 @@ fn ref_problem_accepts_sha_and_rejects_short_or_non_hex() {
 }
 
 #[test]
-fn ref_problem_reports_gitea_branch_and_tag_regardless_of_text() {
+fn ref_problem_accepts_release_tag_patterns() {
+    for reference in ["1.2.3", "1.2.3-rc.1", "v1.2.3", "v1.2.3-suffix"] {
+        assert_eq!(
+            ref_problem(reference, RefOutcome::MustBeSha, 4),
+            None,
+            "release-like ref {reference:?}",
+        );
+        assert_eq!(
+            ref_problem(reference, RefOutcome::KnownMutable(MutableKind::Tag), 4),
+            None,
+            "gitea tag ref {reference:?}",
+        );
+    }
+
+    for reference in ["v1.2", "1.2.3-", "release-1.2.3"] {
+        assert_eq!(
+            ref_problem(reference, RefOutcome::MustBeSha, 4),
+            Some(RefProblem::NotSha),
+            "non-release ref {reference:?}",
+        );
+    }
+}
+
+#[test]
+fn ref_problem_reports_gitea_branch_and_non_release_tag() {
     // A gitea `/branch/` URL whose ref happens to be hex is still a
     // branch — the path, not the text, decides.
     assert_eq!(

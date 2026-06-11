@@ -17,8 +17,8 @@
 /// <https://github.com/owner/repo/blob/main/src/lib.rs>.
 fn _doc_github_branch() {}
 
-/// Bad: tag ref (indistinguishable from a branch):
-/// <https://github.com/owner/repo/blob/v1.2.3/src/lib.rs>.
+/// Good: a release-like tag ref is accepted:
+/// <https://github.com/owner/repo/blob/v1.2.3-rc.1/src/lib.rs>.
 fn _doc_github_tag() {}
 
 /// Good: a commit SHA is pinned:
@@ -61,7 +61,7 @@ fn _comment_bitbucket_branch() {}
 // <https://codeberg.org/owner/repo/src/branch/main/src/lib.rs>
 fn _comment_gitea_branch() {}
 
-// Bad: codeberg (gitea) explicit tag:
+// Good: codeberg (gitea) explicit release-like tag:
 // <https://codeberg.org/owner/repo/src/tag/v1.2.3/src/lib.rs>
 fn _comment_gitea_tag() {}
 

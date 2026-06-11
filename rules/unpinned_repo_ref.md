@@ -5,15 +5,15 @@
 **Default state:** `active`  
 **Source:** [`src/rules/unpinned_repo_ref.rs`](../src/rules/unpinned_repo_ref.rs)
 
-> repository URL references a branch or tag instead of a commit SHA
+> repository URL references a branch or non-release tag instead of a commit SHA
 
 ## What it does
 
 Flags URLs that reference a file or directory inside a hosted
 git repository (GitHub, GitLab, Bitbucket, Codeberg / Gitea,
-sourcehut, etc.) when the ref in the URL is a branch or tag rather
-than a commit SHA. Scans doc comments, regular comments, and
-string literals.
+sourcehut, etc.) when the ref in the URL is a branch or a
+non-release-like tag rather than a commit SHA. Scans doc
+comments, regular comments, and string literals.
 
 ## Why restrict this?
 
@@ -22,10 +22,11 @@ branch ref such as `/blob/main/...` resolves to whatever that
 branch currently points at, so the linked content can change —
 or disappear — without warning after the link is written. A tag
 ref is steadier but still not pinned: a tag can be moved, and
-the lint can't tell a tag from a branch by name alone (a branch
-named `v1.2.3` is valid Git), so it rejects both. A commit SHA
-is the only ref that always denotes the exact content the author
-linked to.
+the lint usually can't tell a tag from a branch by name alone.
+To avoid flagging common release links, refs shaped like
+`1.2.3`, `1.2.3-suffix`, `v1.2.3`, or `v1.2.3-suffix` are
+accepted as release-like tags. A commit SHA is still the only
+ref that always denotes the exact content the author linked to.
 
 This rule only concerns whether the ref is mutable; the
 *length* of an accepted SHA is `perfectionist::commit_id_length`'s
