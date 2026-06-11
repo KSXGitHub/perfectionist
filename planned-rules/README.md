@@ -169,14 +169,12 @@ pattern that several rules call out by reference — live in
   Ancestry-aware counterpart.
 
 ### Clap derive help
-- [`clap-help-no-markdown.md`](./clap-help-no-markdown.md) — forbid
-  markdown constructs (HTML, links, intra-doc links, code blocks, code
-  spans, headings) in doc comments that clap derive macros consume as
-  help text. Disabled when the item carries an explicit help override
-  (`#[arg(help = ...)]`, `#[clap(about = ...)]`, etc.).
 - [`clap-help-length.md`](./clap-help-length.md) — flag clap-bound doc
   comments that exceed configurable line / character budgets (catches
-  AI-generated bloat). Same override set of doc-comment containers.
+  AI-generated bloat). Shares the clap-derived-container detection and
+  the override set with the implemented
+  `perfectionist::clap_help_no_markdown`
+  ([`src/rules/clap_help_no_markdown/collect.rs`](../src/rules/clap_help_no_markdown/collect.rs)).
 
 ## Out of scope (cannot be linted by Dylint)
 

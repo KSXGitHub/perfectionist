@@ -6,6 +6,46 @@ the trade-off; this lint covers the *prefer owned* direction. The
 opposite direction ("prefer borrowed when ownership isn't consumed")
 is already covered by `clippy::needless_pass_by_value`.
 
+## Status
+
+Partially implemented in `src/rules/prefer_owned_parameter.rs`. The
+conservative single-use starting point described under
+["Difficulty"](#difficulty) is what ships today.
+
+**Implemented:**
+
+- Shared-reference parameters (`&str`, `&Path`, `&OsStr`, `&CStr`,
+  `&[T]`) whose owned counterpart is `String`, `PathBuf`, `OsString`,
+  `CString`, `Vec<T>`.
+- The parameter is referenced *exactly once*, that use is the
+  conversion, and the conversion's result type really is the owned
+  counterpart (so a same-named method that returns something else does
+  not trigger it).
+- Conversion shapes: `to_owned`, `to_string`, `to_path_buf`, `to_vec`,
+  `to_os_string`, `clone`, `into` (configurable), plus the
+  `Owned::from(param)` free-function form.
+- The conversion must run unconditionally — it is not nested inside an
+  `if` / `match` / loop arm, a closure, or the short-circuiting side of
+  `&&` / `||`.
+- Exemptions: trait-declaration and trait-`impl` methods, parameters
+  with an explicit named lifetime, and proc-macro-synthesised nodes
+  (`hir_in_external_macro` guard, regression fixture
+  `ui/prefer_owned_parameter_proc_macro.rs`).
+- Configuration: `extra_conversion_methods` / `ignore_conversion_methods`
+  (the repository's extras-plus-ignore convention) rather than the
+  single replacement list sketched under "Configuration" below.
+
+**Still pending:**
+
+- The multi-use / branching cases that need the control-flow dominance
+  analysis (the parameter used several times, all dominated by a
+  conversion).
+- `&mut T` parameters.
+- The `type_pairs` knob for project-specific borrowed/owned newtypes;
+  only the standard-library pairs are recognised today.
+- The `&String` / `&Vec<T>` / `&PathBuf` + `.clone()` direction, which
+  overlaps `clippy::ptr_arg` and is not flagged.
+
 ## Statement
 
 When a function parameter is borrowed (`&T`, `&str`, `&Path`,

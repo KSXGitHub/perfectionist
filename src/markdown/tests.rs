@@ -123,3 +123,131 @@ fn position_in_skip_is_inclusive_on_start_exclusive_on_end() {
     assert!(position_in_skip(&skips, 9));
     assert!(!position_in_skip(&skips, 10));
 }
+
+/// Classify `input` and return the `(matched-text, kind)` pairs, for
+/// concise assertions in the classifier tests below.
+fn classified(input: &str, options: ClassifyOptions) -> Vec<(&str, ConstructKind)> {
+    classify_constructs(input, options)
+        .into_iter()
+        .map(|found| (&input[found.range.clone()], found.kind))
+        .collect()
+}
+
+#[test]
+fn classify_distinguishes_the_three_link_forms() {
+    let text = "[a](http://x) [b][id] [`Ty`]";
+    let got = classified(text, ClassifyOptions::default());
+    assert_eq!(
+        got,
+        vec![
+            ("[a](http://x)", ConstructKind::InlineLink),
+            ("[b][id]", ConstructKind::ReferenceLink),
+            ("[`Ty`]", ConstructKind::IntraDocLink),
+        ],
+    );
+}
+
+#[test]
+fn classify_separates_code_span_from_autolink_from_html() {
+    let text = "`code` <https://x.example> <br>";
+    let got = classified(text, ClassifyOptions::default());
+    assert_eq!(
+        got,
+        vec![
+            ("`code`", ConstructKind::CodeSpan),
+            ("<https://x.example>", ConstructKind::Autolink),
+            ("<br>", ConstructKind::HtmlTag),
+        ],
+    );
+}
+
+#[test]
+fn classify_atx_heading_excludes_the_newline() {
+    let text = "# Title\nbody";
+    let got = classified(text, ClassifyOptions::default());
+    assert_eq!(got, vec![("# Title", ConstructKind::Heading)]);
+}
+
+#[test]
+fn classify_setext_underline_after_text_is_a_heading() {
+    let text = "Title\n===\n";
+    let got = classified(text, ClassifyOptions::default());
+    assert_eq!(got, vec![("===", ConstructKind::Heading)]);
+}
+
+#[test]
+fn classify_thematic_break_after_blank_line_is_not_a_heading() {
+    // A `---` not preceded by a paragraph line is a thematic break, not
+    // a Setext underline; it is left unclassified.
+    let text = "\n---\n";
+    assert!(classify_constructs(text, ClassifyOptions::default()).is_empty());
+}
+
+#[test]
+fn classify_reference_definition_and_link_both_reported() {
+    let text = "see [x][id]\n\n[id]: http://example.com";
+    let got = classified(text, ClassifyOptions::default());
+    assert_eq!(
+        got,
+        vec![
+            ("[x][id]", ConstructKind::ReferenceLink),
+            (
+                "[id]: http://example.com",
+                ConstructKind::ReferenceDefinition
+            ),
+        ],
+    );
+}
+
+#[test]
+fn emphasis_only_classified_when_requested() {
+    let text = "**bold** and *italic*";
+    assert!(classify_constructs(text, ClassifyOptions::default()).is_empty());
+    let opts = ClassifyOptions {
+        detect_emphasis: true,
+        detect_lists: false,
+    };
+    assert_eq!(
+        classified(text, opts),
+        vec![
+            ("**bold**", ConstructKind::Bold),
+            ("*italic*", ConstructKind::Italic),
+        ],
+    );
+}
+
+#[test]
+fn intraword_underscore_is_not_emphasis() {
+    let opts = ClassifyOptions {
+        detect_emphasis: true,
+        detect_lists: false,
+    };
+    assert!(classify_constructs("foo_bar_baz", opts).is_empty());
+}
+
+#[test]
+fn emphasis_span_covers_the_whole_closing_run() {
+    // Regression: `***bold***` has a 3-marker closing run; the span must
+    // cover all of it, not just the 2 `open` markers committed to.
+    let opts = ClassifyOptions {
+        detect_emphasis: true,
+        detect_lists: false,
+    };
+    let got = classified("***bold***", opts);
+    assert_eq!(got, vec![("***bold***", ConstructKind::Bold)]);
+}
+
+#[test]
+fn list_markers_only_classified_when_requested() {
+    let text = "- one\n- two";
+    assert!(classify_constructs(text, ClassifyOptions::default()).is_empty());
+    let opts = ClassifyOptions {
+        detect_emphasis: false,
+        detect_lists: true,
+    };
+    let got = classified(text, opts);
+    assert_eq!(
+        got,
+        vec![("-", ConstructKind::List), ("-", ConstructKind::List)],
+    );
+}

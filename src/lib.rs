@@ -50,6 +50,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         bare_identifier_reference
         bare_issue_reference
         bare_url
+        clap_help_no_markdown
         derive_ordering
         import_granularity
         import_grouping
@@ -62,6 +63,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         non_exhaustive_error
         prefer_derive_more_over_thiserror
         prefer_expect_over_allow
+        prefer_owned_parameter
         prefer_raw_string
         print_macro_split
         single_letter_closure_param

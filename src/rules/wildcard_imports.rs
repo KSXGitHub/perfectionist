@@ -226,7 +226,7 @@ impl WildcardImports {
                 // nothing, so exempting it would be plainly wrong.
                 let is_reexport = matches!(item.vis.kind, VisibilityKind::Public);
                 let mut globs: Vec<(Vec<String>, Span)> = Vec::new();
-                collect_globs(tree, &[], &mut globs);
+                collect_globs(tree, Vec::new(), &mut globs);
                 for (module, glob_span) in globs {
                     if self.is_exempt(&module, is_reexport) {
                         continue;
@@ -296,8 +296,8 @@ impl WildcardImports {
 /// `["rayon", "prelude"]`) and the span of that `path::*` subtree. A
 /// `::`-rooted path segment (`use ::foo::*`) contributes no name, so the
 /// global root never matches a prelude or allowed path.
-fn collect_globs(tree: &UseTree, prefix: &[String], out: &mut Vec<(Vec<String>, Span)>) {
-    let mut path = prefix.to_vec();
+fn collect_globs(tree: &UseTree, prefix: Vec<String>, out: &mut Vec<(Vec<String>, Span)>) {
+    let mut path = prefix;
     for segment in &tree.prefix.segments {
         if segment.ident.name == kw::PathRoot {
             continue;
@@ -307,8 +307,9 @@ fn collect_globs(tree: &UseTree, prefix: &[String], out: &mut Vec<(Vec<String>, 
     match &tree.kind {
         UseTreeKind::Glob(_) => out.push((path, tree.span())),
         UseTreeKind::Nested { items, .. } => {
+            // Each subtree extends its own copy of the accumulated prefix.
             for (subtree, _) in items {
-                collect_globs(subtree, &path, out);
+                collect_globs(subtree, path.clone(), out);
             }
         }
         UseTreeKind::Simple(_) => {}

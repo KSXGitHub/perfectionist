@@ -22,6 +22,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   bare URL in comment or doc comment; wrap in `<...>` or use a labelled markdown link
 
+- [`clap_help_no_markdown`](./clap_help_no_markdown.md) (default: `active`).
+
+  markdown construct in a clap-derived doc comment leaks into `--help` output
+
 - [`derive_ordering`](./derive_ordering.md) (default: `inactive`).
 
   trait names in a `#[derive(...)]` list are not in the configured order
@@ -69,6 +73,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`prefer_expect_over_allow`](./prefer_expect_over_allow.md) (default: `active`).
 
   `#[allow]` for a deterministically-firing lint should be `#[expect]`
+
+- [`prefer_owned_parameter`](./prefer_owned_parameter.md) (default: `active`).
+
+  borrowed parameter is only used to produce its owned form
 
 - [`prefer_raw_string`](./prefer_raw_string.md) (default: `active`).
 

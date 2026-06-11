@@ -163,12 +163,12 @@ pub(super) fn stmt_info(tree: &UseTree) -> Option<StmtInfo> {
 
 fn flatten(tree: &UseTree) -> Option<Vec<Leaf>> {
     let mut out = Vec::new();
-    flatten_into(tree, &[], &mut out)?;
+    flatten_into(tree, Vec::new(), &mut out)?;
     Some(out)
 }
 
-fn flatten_into(tree: &UseTree, prefix: &[String], out: &mut Vec<Leaf>) -> Option<()> {
-    let mut combined = prefix.to_vec();
+fn flatten_into(tree: &UseTree, prefix: Vec<String>, out: &mut Vec<Leaf>) -> Option<()> {
+    let mut combined = prefix;
     for segment in &tree.prefix.segments {
         if segment.ident.name == kw::PathRoot {
             return None;
@@ -213,7 +213,7 @@ fn flatten_into(tree: &UseTree, prefix: &[String], out: &mut Vec<Leaf>) -> Optio
         }
         UseTreeKind::Nested { items, .. } => {
             for (subtree, _) in items {
-                flatten_into(subtree, &combined, out)?;
+                flatten_into(subtree, combined.clone(), out)?;
             }
         }
     }
