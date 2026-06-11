@@ -1,7 +1,8 @@
 // aux-build:clap.rs
 //
-//! `allow = ["inline_link"]` drops inline links from the default set:
-//! the code span still fires while the inline link is permitted.
+//! `ignore_constructs = ["inline_link"]` drops inline links from the
+//! default set: the code span still fires while the inline link is
+//! permitted.
 
 #![allow(dead_code, reason = "ui fixture")]
 

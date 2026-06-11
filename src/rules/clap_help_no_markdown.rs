@@ -29,7 +29,7 @@ declare_tool_lint! {
     ///
     /// Bold, italics, and lists are not flagged by default — clap
     /// renders them as their literal characters, which usually reads
-    /// cleanly — but are available through the `extra_forbid` knob.
+    /// cleanly — but are available through the `extra_constructs` knob.
     ///
     /// The lint stays silent on a node that overrides its help text
     /// with a plain string (`#[arg(help = "...")]`,
@@ -136,7 +136,7 @@ impl<'tcx> LateLintPass<'tcx> for ClapHelpNoMarkdown {
         // expansion has consumed `#[derive]` by the late pass) and every
         // separate-file submodule is reached.
         let (crates, live_module_spans) = parse_crate_module_files(cx);
-        let doc_nodes = collect_doc_nodes(&crates, &live_module_spans, &self.config.override_keys);
+        let doc_nodes = collect_doc_nodes(&crates, &live_module_spans);
         if doc_nodes.is_empty() {
             return;
         }

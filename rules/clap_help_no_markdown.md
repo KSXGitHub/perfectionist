@@ -19,7 +19,7 @@ variants.
 
 Bold, italics, and lists are not flagged by default — clap
 renders them as their literal characters, which usually reads
-cleanly — but are available through the `extra_forbid` knob.
+cleanly — but are available through the `extra_constructs` knob.
 
 The lint stays silent on a node that overrides its help text
 with a plain string (`#[arg(help = "...")]`,
@@ -76,36 +76,29 @@ struct Cli {
 
 Configure via `dylint.toml` under `["perfectionist::clap_help_no_markdown"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_forbid`: `[ConstructCategory]` (optional)
+### `extra_constructs`: `[ConstructCategory]` (optional)
 
-Constructs to flag in addition to the default set (`html`,
-`inline_link`, `reference_link`, `intra_doc_link`, `code_block`,
-`code_span`, `heading`). Empty by default. The additions clap
-renders acceptably and so leaves off by default are `bold`,
-`italic`, and `list`.
+Markdown constructs to forbid in addition to the built-in default
+set (`html`, `inline_link`, `reference_link`, `intra_doc_link`,
+`code_block`, `code_span`, `heading`). Empty by default; `bold`,
+`italic`, and `list` are the usual additions — clap renders them
+acceptably, so they are off by default.
 
-### `allow`: `[ConstructCategory]` (optional)
+### `ignore_constructs`: `[ConstructCategory]` (optional)
 
-Constructs to leave unflagged even though they are in the default
-set. Empty by default. Use it to permit a default construct in
-help text, e.g. `allow = ["code_span"]` to allow inline code
-spans. Applied after `extra_forbid`, so listing the same
-construct in both leaves it allowed.
-
-### `override_keys`: `[string]` (optional)
-
-Attribute keys (inside `#[clap(...)]`, `#[arg(...)]`, or
-`#[command(...)]`) that disable the lint for the documented item
-because they override the help text with a plain string.
-Defaults to `about`, `long_about`, `help`, and `long_help`.
+Constructs to drop from the forbidden set, even if they appear in
+the built-in defaults. Empty by default; applied after the merge
+with `extra_constructs`, so this knob always wins. Use it to
+permit a construct in help text, e.g.
+`ignore_constructs = ["code_span"]`.
 
 ### Types
 
 #### `ConstructCategory` (enum)
 
 A markdown construct category the rule can be configured to forbid,
-as it appears in the `forbid` / `extra_forbid` arrays of
-`dylint.toml`. The coarse policy counterpart to the scanner's
+as it appears in the `extra_constructs` / `ignore_constructs` arrays
+of `dylint.toml`. The coarse policy counterpart to the scanner's
 fine-grained [`ConstructKind`]: several kinds map onto one category
 via [`ConstructCategory::from_kind`] — `reference_link` covers both a
 `[text][id]` link and its `[id]: dest` definition, and an autolink

@@ -1,7 +1,7 @@
 // aux-build:clap.rs
 //
-//! `extra_forbid = ["bold", "italic", "list"]` flags emphasis and list
-//! markers that the default configuration leaves alone.
+//! `extra_constructs = ["bold", "italic", "list"]` flags emphasis and
+//! list markers that the default configuration leaves alone.
 
 #![allow(dead_code, reason = "ui fixture")]
 

@@ -20,7 +20,7 @@ use rustc_ast::{
     AttrKind, Attribute, Crate, Item, ItemKind, MetaItemInner, MetaItemKind, ModKind, VariantData,
 };
 use rustc_span::{Symbol, sym};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 /// What the lint should do with a clap-bound, doc-commented node.
 #[derive(Debug, Clone, Copy)]
@@ -55,14 +55,21 @@ const CLAP_DERIVES: &[&str] = &[
 const CLAP_ATTR_NAMESPACES: &[&str] = &["clap", "arg", "command", "value"];
 
 /// Build the doc-node map for every clap-derived container in `crates`.
+///
+/// The override-key set is clap's own fixed set ([`super::config::OVERRIDE_KEYS`]),
+/// interned once here rather than threaded from configuration — a project
+/// cannot add to or remove from clap's help-text override vocabulary.
 pub(super) fn collect_doc_nodes(
     crates: &[Crate],
     live_module_spans: &HashSet<SpanRange>,
-    override_keys: &std::collections::BTreeSet<Symbol>,
 ) -> HashMap<u32, NodeState> {
+    let override_keys: BTreeSet<Symbol> = super::config::OVERRIDE_KEYS
+        .iter()
+        .map(|key| Symbol::intern(key))
+        .collect();
     let mut map = HashMap::new();
     for krate in crates {
-        walk_items(&krate.items, live_module_spans, override_keys, &mut map);
+        walk_items(&krate.items, live_module_spans, &override_keys, &mut map);
     }
     map
 }
@@ -70,7 +77,7 @@ pub(super) fn collect_doc_nodes(
 fn walk_items(
     items: &[Box<Item>],
     live_module_spans: &HashSet<SpanRange>,
-    override_keys: &std::collections::BTreeSet<Symbol>,
+    override_keys: &BTreeSet<Symbol>,
     map: &mut HashMap<u32, NodeState>,
 ) {
     for item in items {
@@ -103,7 +110,7 @@ fn walk_items(
 
 fn record_fields(
     data: &VariantData,
-    override_keys: &std::collections::BTreeSet<Symbol>,
+    override_keys: &BTreeSet<Symbol>,
     map: &mut HashMap<u32, NodeState>,
 ) {
     for field in data.fields() {
@@ -128,7 +135,7 @@ fn record_fields(
 /// run's first line.
 fn record_node(
     attrs: &[Attribute],
-    override_keys: &std::collections::BTreeSet<Symbol>,
+    override_keys: &BTreeSet<Symbol>,
     map: &mut HashMap<u32, NodeState>,
 ) {
     let mut doc_los = attrs
@@ -152,7 +159,7 @@ fn record_node(
     }
 }
 
-fn has_override(attrs: &[Attribute], override_keys: &std::collections::BTreeSet<Symbol>) -> bool {
+fn has_override(attrs: &[Attribute], override_keys: &BTreeSet<Symbol>) -> bool {
     clap_namespace_items(attrs).any(|inner| {
         let Some(meta) = inner.meta_item() else {
             return false;

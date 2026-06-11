@@ -20,11 +20,9 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    extra_forbid: Option<Vec<&'static str>>,
+    extra_constructs: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    allow: Option<Vec<&'static str>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    override_keys: Option<Vec<&'static str>>,
+    ignore_constructs: Option<Vec<&'static str>>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -40,27 +38,28 @@ fn run(src_base: &str, config: RuleConfig) {
 }
 
 #[test]
-fn extra_forbid_flags_bold_italic_and_lists() {
+fn extra_constructs_flags_bold_italic_and_lists() {
     // The opt-in extras are off by default; enabling all three flags
     // `**bold**`, `*italic*`, and list markers that the default set
     // leaves alone.
     run(
-        "ui-toml/clap_help_no_markdown/extra_forbid",
+        "ui-toml/clap_help_no_markdown/extra_constructs",
         RuleConfig {
-            extra_forbid: Some(vec!["bold", "italic", "list"]),
+            extra_constructs: Some(vec!["bold", "italic", "list"]),
             ..RuleConfig::default()
         },
     );
 }
 
 #[test]
-fn allow_drops_a_construct_from_the_default_set() {
-    // `allow = ["inline_link"]` permits inline links in help text while
-    // the rest of the default set — here, the code span — still fires.
+fn ignore_constructs_drops_a_construct_from_the_default_set() {
+    // `ignore_constructs = ["inline_link"]` permits inline links in help
+    // text while the rest of the default set — here, the code span —
+    // still fires.
     run(
-        "ui-toml/clap_help_no_markdown/allow",
+        "ui-toml/clap_help_no_markdown/ignore_constructs",
         RuleConfig {
-            allow: Some(vec!["inline_link"]),
+            ignore_constructs: Some(vec!["inline_link"]),
             ..RuleConfig::default()
         },
     );
