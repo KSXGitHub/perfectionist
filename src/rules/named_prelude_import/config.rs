@@ -18,8 +18,11 @@ pub(super) struct Config {
     /// `"::crate::prelude"`); the leading `::` matches whether or not the
     /// `use` writes it. An entry without the leading `::` is reserved for
     /// future relative (suffix) matching and currently matches nothing.
-    /// Useful for a project's own prelude that is intentionally
-    /// cherry-picked. Defaults to `[]`.
+    /// Because an entry matches the path up to *and including* the prelude
+    /// segment, its final segment must be one of `prelude_segment_names` —
+    /// an entry that ends in anything else can never match a cherry-pick
+    /// and is rejected as a configuration error. Useful for a project's
+    /// own prelude that is intentionally cherry-picked. Defaults to `[]`.
     pub(super) allowed_paths: Vec<String>,
 }
 
@@ -48,27 +51,36 @@ impl Resolved {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn default_recognises_prelude() {
-        let resolved = Resolved::from_config(Config::default());
-        assert!(resolved.prelude_segment_names.contains("prelude"));
-        assert!(resolved.allowed_paths.is_empty());
+/// Validate that every `allowed_paths` entry ends with a recognised
+/// prelude segment. An entry matches the module path up to and including
+/// the prelude segment, so its final segment must be one of
+/// `prelude_segment_names`; an entry that ends in anything else can never
+/// match a cherry-pick and is almost certainly a mistake. Returns an
+/// error message — for the dylint run to fail on — naming the first
+/// offending entry.
+pub(super) fn validate(config: &Config) -> Result<(), String> {
+    let names: BTreeSet<&str> = config
+        .prelude_segment_names
+        .iter()
+        .map(String::as_str)
+        .collect();
+    for entry in &config.allowed_paths {
+        let last = entry
+            .split("::")
+            .map(str::trim)
+            .filter(|segment| !segment.is_empty())
+            .last();
+        if !last.is_some_and(|segment| names.contains(segment)) {
+            return Err(format!(
+                "`allowed_paths` entry {entry:?} must end with a prelude segment name \
+                 (one of {names:?}); an entry matches the module path up to and \
+                 including the prelude segment, so its final segment has to be in \
+                 `prelude_segment_names`",
+            ));
+        }
     }
-
-    #[test]
-    fn omitted_fields_fall_back_to_defaults() {
-        let config: Config = toml::from_str(r#"allowed_paths = ["::crate::prelude"]"#).unwrap();
-        let resolved = Resolved::from_config(config);
-        assert!(resolved.prelude_segment_names.contains("prelude"));
-        assert!(resolved.allowed_paths.contains("::crate::prelude"));
-    }
-
-    #[test]
-    fn unknown_field_is_rejected() {
-        assert!(toml::from_str::<Config>("nonsense = true").is_err());
-    }
+    Ok(())
 }
+
+#[cfg(test)]
+mod tests;

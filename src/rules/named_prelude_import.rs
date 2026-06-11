@@ -115,6 +115,13 @@ pub fn register_pass(lint_store: &mut LintStore) {
         return;
     }
     let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+    // Every `allowed_paths` entry has to end with a prelude segment (it
+    // matches the path up to and including the prelude), so reject a
+    // misconfigured one loudly rather than letting it silently match
+    // nothing.
+    config::validate(&config).unwrap_or_else(|message| {
+        panic!("perfectionist::named_prelude_import: {message}");
+    });
     lint_store.register_late_pass(move |_| {
         Box::new(NamedPreludeImport {
             config: Resolved::from_config(config.clone()),
