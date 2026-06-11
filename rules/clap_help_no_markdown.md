@@ -76,13 +76,13 @@ struct Cli {
 
 Configure via `dylint.toml` under `["perfectionist::clap_help_no_markdown"]`. Every field is optional; the per-field prose below states the default.
 
-### `forbid`: `[ForbidConstruct]` (optional)
+### `forbid`: `[ConstructCategory]` (optional)
 
 Constructs to flag. Defaults to the conservative set: `html`,
 `inline_link`, `reference_link`, `intra_doc_link`, `code_block`,
 `code_span`, and `heading`.
 
-### `extra_forbid`: `[ForbidConstruct]` (optional)
+### `extra_forbid`: `[ConstructCategory]` (optional)
 
 Additional constructs to flag on top of `forbid`. Empty by
 default; the available extras are `bold`, `italic`, and `list`,
@@ -98,12 +98,15 @@ Defaults to `about`, `long_about`, `help`, and `long_help`.
 
 ### Types
 
-#### `ForbidConstruct` (enum)
+#### `ConstructCategory` (enum)
 
-A user-facing "forbidden construct" category, as it appears in the
-`forbid` / `extra_forbid` arrays of `dylint.toml`. Several
-[`ConstructKind`]s map onto one category — `reference_link` covers
-both a `[text][id]` link and its `[id]: dest` definition.
+A markdown construct category the rule can be configured to forbid,
+as it appears in the `forbid` / `extra_forbid` arrays of
+`dylint.toml`. The coarse policy counterpart to the scanner's
+fine-grained [`ConstructKind`]: several kinds map onto one category
+via [`ConstructCategory::from_kind`] — `reference_link` covers both a
+`[text][id]` link and its `[id]: dest` definition, and an autolink
+maps to nothing (it is never forbidden).
 
 ##### `"html"` (Rust: `Html`)
 
