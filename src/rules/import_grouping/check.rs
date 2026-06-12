@@ -90,8 +90,8 @@ fn multi_block_compliant(blank_line_count: usize, stmts: &[UseStmt<'_>], blanks:
         .windows(2)
         .zip(blanks)
         .all(|(pair, &blanks)| match pair[0].rank.cmp(&pair[1].rank) {
-            std::cmp::Ordering::Equal => blanks == 0,
-            std::cmp::Ordering::Less => blanks == blank_line_count,
-            std::cmp::Ordering::Greater => false,
+            core::cmp::Ordering::Equal => blanks == 0,
+            core::cmp::Ordering::Less => blanks == blank_line_count,
+            core::cmp::Ordering::Greater => false,
         })
 }

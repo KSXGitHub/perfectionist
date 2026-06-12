@@ -4,8 +4,8 @@
 //! describing the target source order under a chosen [`Style`]. The
 //! identity permutation means the entries are already in order.
 
+use core::cmp::Ordering;
 use rustc_span::Span;
-use std::cmp::Ordering;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
