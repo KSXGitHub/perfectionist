@@ -127,7 +127,7 @@ pub(crate) fn entry_matches(entry: &[String], invocation: &rustc_ast::Path) -> b
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{reject_absolute, reject_absolute_list};
 
     #[test]
     fn accepts_relative_entries() {
