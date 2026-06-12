@@ -1,4 +1,4 @@
-# `clap_help_length`
+# `clap_help_too_long`
 
 **Source:** project convention. Sibling lint to the implemented
 `perfectionist::clap_help_markdown`
@@ -127,7 +127,7 @@ struct Cli {
 ## Configuration
 
 ```toml
-[clap_help_length]
+[clap_help_too_long]
 about_max_lines = 1
 about_max_chars = 120
 long_about_max_lines = 8
@@ -160,7 +160,7 @@ The two lints are independent:
 
 - `perfectionist::clap_help_markdown` catches doc-comment markdown
   that leaks into `--help` output.
-- `clap-help-length` catches sheer volume.
+- `clap_help_too_long` catches sheer volume.
 
 Both share the clap-container detection and the override-key set;
 disabling one does not affect the other.

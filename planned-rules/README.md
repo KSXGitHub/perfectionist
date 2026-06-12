@@ -169,7 +169,7 @@ pattern that several rules call out by reference — live in
   Ancestry-aware counterpart.
 
 ### Clap derive help
-- [`clap-help-length.md`](./clap-help-length.md) — flag clap-bound doc
+- [`clap-help-too-long.md`](./clap-help-too-long.md) — flag clap-bound doc
   comments that exceed configurable line / character budgets (catches
   AI-generated bloat). Shares the clap-derived-container detection and
   the override set with the implemented
