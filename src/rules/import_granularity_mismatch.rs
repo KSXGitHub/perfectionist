@@ -335,7 +335,7 @@ impl ImportGranularityMismatch {
                     self.process_group(lint_context, &group, violations);
                     group.clear();
                     group_key = None;
-                    self.process_group(lint_context, std::slice::from_ref(&entry), violations);
+                    self.process_group(lint_context, core::slice::from_ref(&entry), violations);
                 }
                 Some(entry) => {
                     if group_key.as_ref() != Some(&entry.group_key) {
@@ -415,7 +415,7 @@ impl ImportGranularityMismatch {
             .attrs
             .iter()
             .map(|attr| attr.span.lo())
-            .chain(std::iter::once(item.span.lo()))
+            .chain(core::iter::once(item.span.lo()))
             .min()
             .unwrap_or(item.span.lo());
 

@@ -12,7 +12,7 @@
 //! consuming rule.
 
 use crate::markdown::scan_code_span_candidates;
-use std::ops::Range;
+use core::ops::Range;
 
 /// One intra-doc-link candidate found in a doc-comment chunk: a bare
 /// code span whose body is a single Rust identifier.

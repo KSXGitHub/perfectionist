@@ -56,7 +56,7 @@ pub(super) fn split_top_level_arguments(stream: &TokenStream) -> Option<Vec<Vec<
             match token.kind {
                 TokenKind::Semi => return None,
                 TokenKind::Comma => {
-                    arguments.push(std::mem::take(&mut current));
+                    arguments.push(core::mem::take(&mut current));
                     continue;
                 }
                 _ => {}

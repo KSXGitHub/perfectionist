@@ -1,4 +1,5 @@
-use super::*;
+use super::source_link_prefix_for;
+use std::path::Path;
 
 #[test]
 fn source_link_prefix_for_typical_one_level() {

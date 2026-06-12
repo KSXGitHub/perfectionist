@@ -1,4 +1,7 @@
-use super::*;
+use super::extract_config;
+use crate::extract::shared::SharedTypes;
+use crate::model::Optionality;
+use std::path::Path;
 
 #[test]
 fn required_field_is_detected_syntactically() {

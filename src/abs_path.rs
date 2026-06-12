@@ -65,7 +65,7 @@ fn is_path_keyword(segment: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{canonical_key, validate_absolute};
 
     #[test]
     fn keys_prefix_extern_but_not_crate_root() {

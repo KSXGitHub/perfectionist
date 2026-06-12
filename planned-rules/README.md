@@ -33,6 +33,13 @@ pattern that several rules call out by reference — live in
   (`use foo::prelude::*;`). Implemented and active by default; the file
   stays only because the brace-list-leaf autofix is still pending (see
   its Status section).
+- [`private-reexport-imports.md`](./private-reexport-imports.md) — flag
+  a named `use` that reaches its item through a *private* re-export (a
+  non-`pub` `use` in another module reached via ancestor privilege,
+  e.g. `use super::Thing;` where the parent only privately `use`d
+  `Thing`); suggest importing from the definition or a `pub use`
+  re-export instead. Closes the gap `unused_imports` cannot see. Active
+  by default.
 
 ### Naming
 - [`qualified-paths.md`](./qualified-paths.md) — decide whether items from
