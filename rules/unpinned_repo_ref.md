@@ -17,25 +17,21 @@ version-shaped refs can opt into accepting those patterns via
 `allow_version_patterns`. Scans doc comments, regular comments, and
 string literals.
 
+This rule only concerns whether the ref is mutable; the
+*length* of an accepted SHA is `perfectionist::commit_id_length`'s
+concern, and `perfectionist::bare_url` ensures the URL is
+wrapped. The three lints layer rather than overlap.
+
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. A
 branch ref such as `/blob/main/...` resolves to whatever that
 branch currently points at, so the linked content can change —
 or disappear — without warning after the link is written. A tag
-ref is steadier but still not pinned: a tag can be moved, and
-the lint can't tell a tag from a branch by name alone (a branch
-named `v1.2.3` is valid Git), so version-shaped refs are rejected
-by default. If that is too strict for a project's version links,
-`allow_version_patterns = true` accepts refs shaped like `1.2.3`,
-`1.2.3-suffix`, `v1.2.3`, or `v1.2.3-suffix`. A commit SHA is
-still the only ref that always denotes the exact content the
-author linked to.
-
-This rule only concerns whether the ref is mutable; the
-*length* of an accepted SHA is `perfectionist::commit_id_length`'s
-concern, and `perfectionist::bare_url` ensures the URL is
-wrapped. The three lints layer rather than overlap.
+ref is steadier but still not pinned: a tag can be removed, and
+a version-shaped name is not even guaranteed to be a tag (a
+branch named `v1.2.3` is valid Git). A commit SHA is the only
+ref that always denotes the exact content the author linked to.
 
 ## Example
 
