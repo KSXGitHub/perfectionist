@@ -1,4 +1,4 @@
-# `serde_wrapper_style`
+# `serde_wrapper_form_mismatch`
 
 **Source:** project convention.
 
@@ -45,7 +45,7 @@ two forms would produce identical behaviour.
 ## Configuration
 
 ```toml
-[serde_wrapper_style]
+[serde_wrapper_form_mismatch]
 # Inactive by default. Enable in `[perfectionist].enable`, then set
 # `style` — it is mandatory and has no default. The value below is an
 # example, not a default.
@@ -291,7 +291,7 @@ other direction's "bad" form. Combining them into one rule with a
 `#[serde(from = "T", into = "T")]` (forbidding `&'de str`,
 suggesting `Cow<'de, str>` vs. `String`).
 
-`serde-wrapper-style` decides whether the `from`/`into` form is the
+`serde-wrapper-form-mismatch` decides whether the `from`/`into` form is the
 right shape at all, or whether `transparent` would do.
 
 The two rules layer cleanly and may both fire on the same attribute

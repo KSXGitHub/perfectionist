@@ -298,4 +298,4 @@ a `style` knob keeps the policy expressible in one place — the
 same shape as
 `perfectionist::import_granularity_mismatch`,
 `perfectionist::unordered_derives`, and
-[`serde-wrapper-style`](./serde-wrapper-style.md).
+[`serde-wrapper-form-mismatch`](./serde-wrapper-form-mismatch.md).

@@ -737,7 +737,7 @@ else is `Active by default`.
 
 A handful of `Inactive by default` rules express a *direction*
 with no neutral baseline — `qualified_paths` (`unqualified` vs.
-`qualified`), `serde_wrapper_style` (`transparent` vs.
+`qualified`), `serde_wrapper_form_mismatch` (`transparent` vs.
 `from_into`), and `import_grouping_mismatch` (`single_block` vs.
 `multi_block`). These rules deliberately do **not**
 offer a `preserve`/no-op `style` value. "I don't want this rule" is
