@@ -1,6 +1,6 @@
-//! Configuration for `unsplit_print_macro`: the user-facing [`Config`]
+//! Configuration for `overlong_print_macro`: the user-facing [`Config`]
 //! shape, the curated built-in `target_macros` list, and the in-memory
-//! [`UnsplitPrintMacro`] state the pre-expansion pass holds.
+//! [`OverlongPrintMacro`] state the pre-expansion pass holds.
 //!
 //! Only the `line_continuation` rewrite ships today, so the `style`
 //! knob documented in `planned-rules/print-macro-split.md` is
@@ -11,7 +11,7 @@ use crate::macro_path::{matches_any, parse_path_list};
 use rustc_ast::Path;
 use std::collections::BTreeSet;
 
-const CONFIG_KEY: &str = "perfectionist::unsplit_print_macro";
+const CONFIG_KEY: &str = "perfectionist::overlong_print_macro";
 
 /// Source-line width, in display columns, at or below which a macro
 /// invocation is left alone. Matches rustfmt's column default.
@@ -67,12 +67,12 @@ impl Default for Config {
     }
 }
 
-pub(super) struct UnsplitPrintMacro {
+pub(super) struct OverlongPrintMacro {
     max_line_width: usize,
     target_macros: BTreeSet<Vec<String>>,
 }
 
-impl UnsplitPrintMacro {
+impl OverlongPrintMacro {
     pub(super) fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         // An entry that parses to no segments (empty / whitespace-only)

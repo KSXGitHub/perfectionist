@@ -64,6 +64,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         macro_trailing_comma
         named_prelude_imports
         needless_borrowed_parameter
+        overlong_print_macro
         single_letter_closure_param
         single_letter_const_generic
         single_letter_const_item
@@ -78,7 +79,6 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         unicode_ellipsis_in_panic_messages
         unordered_derives
         unpinned_repo_ref
-        unsplit_print_macro
         wildcard_imports
 
         // `unknown_perfectionist_lints::register_pass` snapshots the registered

@@ -199,7 +199,7 @@ impl AvoidableStringEscapes {
 
 /// Rewrites the pre-expansion pass has built, waiting for the late pass
 /// to anchor each at its enclosing HIR node and emit. A process-wide
-/// static is the same mechanism `unsplit_print_macro` uses to bridge its
+/// static is the same mechanism `overlong_print_macro` uses to bridge its
 /// pre-expansion and late halves; see [`mod@queue`].
 static PENDING_VIOLATIONS: Mutex<Vec<PendingViolation>> = Mutex::new(Vec::new());
 

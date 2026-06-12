@@ -74,6 +74,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   borrowed parameter is only used to produce its owned form
 
+- [`overlong_print_macro`](./overlong_print_macro.md) (default: `active`).
+
+  splittable print macro with an embedded-newline template exceeds the configured line width
+
 - [`single_letter_closure_param`](./single_letter_closure_param.md) (default: `active`).
 
   closure parameter has a single-letter name
@@ -133,10 +137,6 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`unpinned_repo_ref`](./unpinned_repo_ref.md) (default: `active`).
 
   repository URL references a branch or tag instead of a commit SHA
-
-- [`unsplit_print_macro`](./unsplit_print_macro.md) (default: `active`).
-
-  splittable print macro with an embedded-newline template exceeds the configured line width
 
 - [`wildcard_imports`](./wildcard_imports.md) (default: `active`).
 
