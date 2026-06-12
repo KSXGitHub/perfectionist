@@ -1,5 +1,7 @@
-use super::*;
-use crate::model::{ConfigField, DefaultState, EnumVariant, Optionality, TypeDoc, TypeKind};
+use super::{promote_headings, render_index_md, render_rule_md, rule_file_name};
+use crate::model::{
+    ConfigDoc, ConfigField, DefaultState, EnumVariant, Optionality, Rule, TypeDoc, TypeKind,
+};
 use std::path::PathBuf;
 
 fn fake_rule() -> Rule {

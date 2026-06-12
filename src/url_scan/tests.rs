@@ -1,4 +1,6 @@
-use super::*;
+use super::{
+    DEFAULT_FORWARD_SCHEMES, TrailingClass, back_scan_url_fragment, classify_trailing, take_url,
+};
 
 #[test]
 fn take_url_basic() {
