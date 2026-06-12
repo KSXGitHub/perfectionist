@@ -1,4 +1,4 @@
-# `prefer_derive_more`
+# `manual_derive_more_impl`
 
 **Source:** project convention. AI assistants frequently expand
 `#[derive(From)]` / `#[derive(Display)]` patterns into hand-rolled
@@ -133,7 +133,7 @@ exercised on real codebases.
 ## Configuration
 
 ```toml
-[prefer_derive_more]
+[manual_derive_more_impl]
 # Easy sub-lints — on by default.
 from       = true
 into       = true

@@ -342,7 +342,7 @@ inverts under these attributes and reads as nonsense:
 - `derive_ordering` — `#[deny(... derive_ordering)]` reads "forbid
   ordering the derives", the opposite of intent. Named for the
   anti-pattern: `unordered_derives`.
-- `prefer_derive_more_over_thiserror` — does not "forbid preferring
+- `manual_derive_more_impl_over_thiserror` — does not "forbid preferring
   `derive_more`"; it forbids `thiserror`. Named for the anti-pattern:
   `thiserror_usage`.
 - `non_exhaustive_error` — flags error enums that *lack*

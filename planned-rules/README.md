@@ -63,7 +63,7 @@ pattern that several rules call out by reference — live in
 - [`error-type-derives.md`](./error-type-derives.md) — derive
   `derive_more::Display` / `Error` only when needed; flag superfluous
   `Error` and types that violate the project's error-naming convention.
-- [`prefer-derive-more.md`](./prefer-derive-more.md) — flag hand-written
+- [`manual-derive-more-impl.md`](./manual-derive-more-impl.md) — flag hand-written
   `impl` blocks that could be replaced by a `derive_more` derive
   (`From`, `Into`, `AsRef`, `Deref`, etc., with `Display` and
   `Error` available behind opt-in flags due to detection difficulty).

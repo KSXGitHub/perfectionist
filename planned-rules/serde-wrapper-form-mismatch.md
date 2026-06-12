@@ -204,7 +204,7 @@ non-trivial. Bail.
 ### Difficulty and risk
 
 **Difficulty: hard.** Comparable to
-[`prefer-derive-more`](./prefer-derive-more.md)'s `display`
+[`manual-derive-more-impl`](./manual-derive-more-impl.md)'s `display`
 sub-lint:
 
 - *Body-shape detection* — small, well-defined patterns. The
