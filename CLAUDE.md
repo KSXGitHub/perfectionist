@@ -100,7 +100,7 @@ has two consequences for the implementer:
    - `scan` / `parser` — source-text walkers and parser combinators.
    - `ordering` / `triviality` — rule-specific algorithms.
 
-   The `impure_macro_argument/`, `macro_trailing_comma/`,
+   The `impure_macro_arguments/`, `macro_trailing_comma/`,
    `avoidable_string_escapes/`, `unordered_derives/`,
    `unicode_ellipsis_in_panic_messages/`, and
    `single_letter_closure_param/` directories illustrate the

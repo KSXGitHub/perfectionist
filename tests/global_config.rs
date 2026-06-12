@@ -24,16 +24,16 @@ fn run(src_base: &str, dylint_toml_contents: &str) {
 
 /// `disable = ["<rule>"]` skips the rule's `register_pass` call, so
 /// the fixture's violation produces no diagnostic. Reuses the
-/// `impure_macro_argument/disabled` fixture — it has no `.stderr`
+/// `impure_macro_arguments/disabled` fixture — it has no `.stderr`
 /// (no diagnostics expected) and otherwise triggers
-/// `impure_macro_argument` at its default level.
+/// `impure_macro_arguments` at its default level.
 #[test]
 fn disable_in_global_table_suppresses_a_default_on_rule() {
     run(
-        "ui-toml/impure_macro_argument/disabled",
+        "ui-toml/impure_macro_arguments/disabled",
         text_block_fnl! {
             "[perfectionist]"
-            r#"disable = ["impure_macro_argument"]"#
+            r#"disable = ["impure_macro_arguments"]"#
         },
     );
 }
@@ -44,11 +44,11 @@ fn disable_in_global_table_suppresses_a_default_on_rule() {
 #[test]
 fn disable_accepts_inline_table_with_reason() {
     run(
-        "ui-toml/impure_macro_argument/disabled",
+        "ui-toml/impure_macro_arguments/disabled",
         text_block_fnl! {
             "[perfectionist]"
             "disable = ["
-            r#"    { name = "impure_macro_argument", reason = "test-only" },"#
+            r#"    { name = "impure_macro_arguments", reason = "test-only" },"#
             "]"
         },
     );
@@ -59,10 +59,10 @@ fn disable_accepts_inline_table_with_reason() {
 #[test]
 fn disable_accepts_array_of_tables_form() {
     run(
-        "ui-toml/impure_macro_argument/disabled",
+        "ui-toml/impure_macro_arguments/disabled",
         text_block_fnl! {
             "[[perfectionist.disable]]"
-            r#"name = "impure_macro_argument""#
+            r#"name = "impure_macro_arguments""#
             r#"reason = "test-only""#
         },
     );

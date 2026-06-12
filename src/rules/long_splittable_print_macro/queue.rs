@@ -3,7 +3,7 @@
 //! enclosing HIR node.
 //!
 //! Unlike the span-only payloads of `macro_trailing_comma` and
-//! `impure_macro_argument`, the rewrite is computed up front (it needs
+//! `impure_macro_arguments`, the rewrite is computed up front (it needs
 //! the source map, available in the pre-expansion pass) and carried as
 //! a ready `String`. [`Span`] is `Copy + Send + Sync` and `String` is
 //! `Send`, so the queue is safe to hold in a process-wide static.

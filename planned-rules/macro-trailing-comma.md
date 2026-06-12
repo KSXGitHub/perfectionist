@@ -7,7 +7,7 @@ with the curated `core` / `std` and well-known third-party list,
 plus the `extra_macros` and `ignore` configuration knobs. The
 matcher-based half is not yet implemented and its configuration is
 therefore not exposed — see
-[`impure-macro-argument.md`](./impure-macro-argument.md) for the
+[`impure-macro-arguments.md`](./impure-macro-arguments.md) for the
 sibling rule's handling of the same convention.
 
 The "Vertical only applies to block-indent layouts" caveat from
@@ -43,7 +43,7 @@ Still pending:
   `outer::my_crate::vec_like!(...)` indiscriminately, but
   never the bare `vec_like!(...)` call that follows a
   `use my_crate::vec_like;` (the AST path is just
-  `[vec_like]`, one segment short of the entry). `impure-macro-argument`'s
+  `[vec_like]`, one segment short of the entry). `impure-macro-arguments`'s
   Status section describes the resolution-based fix in
   detail; the same plumbing change benefits this rule, and
   the two rules' built-in lists should migrate together.

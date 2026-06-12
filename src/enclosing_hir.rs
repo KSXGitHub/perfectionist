@@ -6,7 +6,7 @@
 //! Two families of rules use it:
 //!
 //! - The pre-expansion → late-pass split of `macro_trailing_comma` and
-//!   `impure_macro_argument`. They park macro-call spans during a
+//!   `impure_macro_arguments`. They park macro-call spans during a
 //!   pre-expansion pass and, in a late pass, anchor each at the deepest
 //!   enclosing HIR node via [`find_enclosing_hir_ids`].
 //! - The comment-walking rules (`bare_url`, `bare_email`,

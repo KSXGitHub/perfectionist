@@ -57,14 +57,14 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         clap_help_markdown
         excessive_inline_tests
         exhaustive_error_enums
-        impure_macro_argument
+        impure_macro_arguments
         import_granularity_mismatch
         import_grouping_mismatch
         lint_attribute_trailing_comment
         long_splittable_print_macro
         macro_trailing_comma
         named_prelude_imports
-        needless_borrowed_parameter
+        needless_borrowed_parameters
         single_letter_closure_param
         single_letter_const_generic
         single_letter_const_item

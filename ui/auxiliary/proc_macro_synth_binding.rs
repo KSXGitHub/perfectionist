@@ -413,7 +413,7 @@ pub fn synth_allow_rewriteable(input: TokenStream) -> TokenStream {
 /// `#[derive(SynthOwnedParam)]` + `#[synth_owned_param]` →
 /// `const _: () = { fn _synth(item: &str) -> String { item.to_owned() } };`
 /// where the `&str` parameter *type* inherits the user-span of
-/// `synth_owned_param`. `needless_borrowed_parameter` reports at the
+/// `synth_owned_param`. `needless_borrowed_parameters` reports at the
 /// parameter-type span, so a span-only filter sees a user-written
 /// `&str` and would rewrite a signature the user never wrote; this
 /// exercises the rule's `hir_in_external_macro` guard.

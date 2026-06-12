@@ -92,7 +92,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
         return;
     }
     // Same pre-expansion → late split as `macro_trailing_comma` and
-    // `impure_macro_argument`: the pre-expansion pass sees the
+    // `impure_macro_arguments`: the pre-expansion pass sees the
     // `MacCall` tokens and builds the rewrite from source, then parks
     // it; the late pass walks the HIR and emits each at its deepest
     // enclosing node, by which point `cfg_attr` has resolved and

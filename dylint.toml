@@ -21,5 +21,5 @@ style = "single_block"
 # `Token![::]` macro takes a token literal in type position — there is no
 # runtime expression for the surrounding macro to drop or duplicate, so the
 # exactly-once concern the rule guards against does not apply.
-["perfectionist::impure_macro_argument"]
+["perfectionist::impure_macro_arguments"]
 ignore = ["Token"]

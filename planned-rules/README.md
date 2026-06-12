@@ -52,7 +52,7 @@ pattern that several rules call out by reference — live in
 ### Trait bounds and signatures
 - [`where-clause-bounds.md`](./where-clause-bounds.md) — prefer `where` clauses
   over inline bounds when there are multiple constraints.
-- [`needless-borrowed-parameter.md`](./needless-borrowed-parameter.md) — when a
+- [`needless-borrowed-parameters.md`](./needless-borrowed-parameters.md) — when a
   function takes `&T` but the body unconditionally calls
   `.to_owned()` / `.to_path_buf()` / equivalent, take `T` directly.
   Pairs with `clippy::ptr_arg` and `clippy::needless_pass_by_value`
@@ -132,7 +132,7 @@ pattern that several rules call out by reference — live in
   of `macro_rules!` matchers to detect the `$(,)?` / `$(,)*`
   optional-trailing-comma idioms (harder, not yet implemented
   and therefore not configurable).
-- [`impure-macro-argument.md`](./impure-macro-argument.md) —
+- [`impure-macro-arguments.md`](./impure-macro-arguments.md) —
   require impure expressions passed to function-like and
   array-like macro invocations to be bound to a `let` first.
   Targets the `debug_assert_eq!(map.insert(k, v), None)` footgun
@@ -201,7 +201,7 @@ external state, or judgement calls that a static lint cannot evaluate:
   suggests `&Path` / `&str` / `&[_]`). The other two cases
   (prefer-owned-when-converting and
   prefer-borrowed-when-not-consumed) are handled respectively by
-  [`needless-borrowed-parameter`](./needless-borrowed-parameter.md) and
+  [`needless-borrowed-parameters`](./needless-borrowed-parameters.md) and
   `clippy::needless_pass_by_value`.
 - **Reporter wire-contract requirements** in pacquet (channel naming,
   upstream permalink comments, ordering relative to side effects, recording

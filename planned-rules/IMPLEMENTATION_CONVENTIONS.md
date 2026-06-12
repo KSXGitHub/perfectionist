@@ -397,7 +397,7 @@ when the rule:
 
 - flags the **opposite** direction (e.g. a rule that wants a parameter
   taken *by value* must not borrow the name of a Clippy lint that wants
-  it taken *by reference* — `needless_borrowed_parameter` deliberately
+  it taken *by reference* — `needless_borrowed_parameters` deliberately
   does not reuse `clippy::needless_pass_by_value`, which covers the
   reverse), or
 - addresses an **orthogonal** concern that merely touches the same

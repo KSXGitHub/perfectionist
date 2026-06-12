@@ -54,7 +54,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   import grouping does not match the configured `import_grouping_mismatch.style`
 
-- [`impure_macro_argument`](./impure_macro_argument.md) (default: `active`).
+- [`impure_macro_arguments`](./impure_macro_arguments.md) (default: `active`).
 
   macro invocation passes an impure expression that should be bound to a `let` first
 
@@ -74,7 +74,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   named item cherry-picked from a prelude module instead of glob-imported
 
-- [`needless_borrowed_parameter`](./needless_borrowed_parameter.md) (default: `active`).
+- [`needless_borrowed_parameters`](./needless_borrowed_parameters.md) (default: `active`).
 
   borrowed parameter is only used to produce its owned form
 
