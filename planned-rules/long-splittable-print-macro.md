@@ -1,10 +1,10 @@
-# `overlong_print_macro`
+# `long_splittable_print_macro`
 
 **Source:** project convention.
 
 ## Status
 
-**Partially implemented** in `src/rules/overlong_print_macro.rs`. The
+**Partially implemented** in `src/rules/long_splittable_print_macro.rs`. The
 `line_continuation` rewrite ships today as an always-on
 `MachineApplicable` autofix: it wraps an over-wide,
 `\n`-containing call and folds the template across lines with
@@ -175,7 +175,7 @@ println!("a\nb");  // short source line
 ## Configuration
 
 ```toml
-[overlong_print_macro]
+[long_splittable_print_macro]
 # NOT YET IMPLEMENTED — the `style` knob is absent from the current
 # config (only `line_continuation` ships). Setting it today is rejected
 # by `deny_unknown_fields` and aborts the lint driver; leave it out
@@ -286,7 +286,7 @@ Active by default.
 - [`derive-more-inlined-args`](./derive-more-inlined-args.md)
   inlines positional arguments in `#[display(...)]` /
   `#[debug(...)]` attributes. Running it before
-  `overlong_print_macro` increases the share of templates the
+  `long_splittable_print_macro` increases the share of templates the
   `multiple_calls` autofix can apply cleanly (every additional
   inlined arg removes a positional re-indexing case).
 

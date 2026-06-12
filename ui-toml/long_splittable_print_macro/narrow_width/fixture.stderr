@@ -4,7 +4,7 @@ warning: print macro with an embedded newline exceeds the configured line width
 LL |     println!("processing item number {item}/nfinished processing it now");
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: `#[warn(perfectionist::overlong_print_macro)]` on by default
+   = note: `#[warn(perfectionist::long_splittable_print_macro)]` on by default
 help: fold the template across lines with a backslash-newline continuation
    |
 LL ~     println!(

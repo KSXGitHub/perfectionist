@@ -11,8 +11,8 @@ mod late;
 mod queue;
 mod scan;
 
-use config::OverlongPrintMacro;
-use late::OverlongPrintMacroLate;
+use config::LongSplittablePrintMacro;
+use late::LongSplittablePrintMacroLate;
 use queue::PendingViolation;
 use scan::build_fold_suggestion;
 
@@ -72,21 +72,23 @@ declare_tool_lint! {
     ///     hint: Run {magic_cmd} to solve the problem",
     /// );
     /// ```
-    pub perfectionist::OVERLONG_PRINT_MACRO,
+    pub perfectionist::LONG_SPLITTABLE_PRINT_MACRO,
     Warn,
     "splittable print macro with an embedded-newline template exceeds the configured line width",
     report_in_external_macro: false
 }
 
-impl_lint_pass!(OverlongPrintMacro => [OVERLONG_PRINT_MACRO]);
-impl_lint_pass!(OverlongPrintMacroLate => [OVERLONG_PRINT_MACRO]);
+impl_lint_pass!(LongSplittablePrintMacro => [LONG_SPLITTABLE_PRINT_MACRO]);
+impl_lint_pass!(LongSplittablePrintMacroLate => [LONG_SPLITTABLE_PRINT_MACRO]);
 
 pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[OVERLONG_PRINT_MACRO]);
+    lint_store.register_lints(&[LONG_SPLITTABLE_PRINT_MACRO]);
 }
 
 pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("overlong_print_macro", DefaultState::Active) {
+    if let DefaultState::Inactive =
+        resolved_state("long_splittable_print_macro", DefaultState::Active)
+    {
         return;
     }
     // Same pre-expansion → late split as `macro_trailing_comma` and
@@ -95,8 +97,8 @@ pub fn register_pass(lint_store: &mut LintStore) {
     // it; the late pass walks the HIR and emits each at its deepest
     // enclosing node, by which point `cfg_attr` has resolved and
     // lint-level attributes apply.
-    lint_store.register_pre_expansion_pass(|| Box::new(OverlongPrintMacro::new()));
-    lint_store.register_late_pass(|_| Box::new(OverlongPrintMacroLate));
+    lint_store.register_pre_expansion_pass(|| Box::new(LongSplittablePrintMacro::new()));
+    lint_store.register_late_pass(|_| Box::new(LongSplittablePrintMacroLate));
 }
 
 /// Rewrites the pre-expansion pass has built, waiting for the late pass
@@ -104,7 +106,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
 /// [`mod@queue`] for why a process-wide static is safe.
 static PENDING_VIOLATIONS: Mutex<Vec<PendingViolation>> = Mutex::new(Vec::new());
 
-impl EarlyLintPass for OverlongPrintMacro {
+impl EarlyLintPass for LongSplittablePrintMacro {
     fn check_mac(&mut self, lint_context: &EarlyContext<'_>, mac_call: &MacCall) {
         if !self.should_check_path(&mac_call.path) {
             return;

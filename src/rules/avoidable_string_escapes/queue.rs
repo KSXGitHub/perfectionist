@@ -2,7 +2,7 @@
 //! literal it rewrites, for the late pass to dedup and emit after
 //! `cfg_attr` has resolved, at the deepest enclosing HIR node.
 //!
-//! As with `overlong_print_macro`, the rewrite is computed up front (it
+//! As with `long_splittable_print_macro`, the rewrite is computed up front (it
 //! needs the source map, available pre-expansion) and carried as a
 //! ready `String`. `Span` is `Copy + Send + Sync` and `String` is
 //! `Send`, so the queue is safe to hold in a process-wide static.

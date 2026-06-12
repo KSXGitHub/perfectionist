@@ -2,7 +2,7 @@
 
 **Source:** project convention. Sibling to
 [`format-macro-wrap`](./format-macro-wrap.md) and
-[`overlong-print-macro`](./overlong-print-macro.md). The same
+[`long-splittable-print-macro`](./long-splittable-print-macro.md). The same
 "too-wide source line carrying a format template" problem appears
 in three places; this rule covers the third — `derive_more`'s
 attribute-form templates.
@@ -54,7 +54,7 @@ For every recognised attribute on a struct, enum, or variant:
    enough to leave alone. Width is unicode display width, the
    same metric as
    [`prefer-text-block`](./prefer-text-block.md),
-   [`overlong-print-macro`](./overlong-print-macro.md), and
+   [`long-splittable-print-macro`](./long-splittable-print-macro.md), and
    [`format-macro-wrap`](./format-macro-wrap.md).
 5. Emit a diagnostic suggesting the line-continuation rewrite:
    - Replace each interior `\n` in the template with
@@ -151,7 +151,7 @@ both qualify.
     source span (`#[...]` brackets included), not just the
     literal. Use the same `unicode-width` helper as
     [`prefer-text-block`](./prefer-text-block.md),
-    [`overlong-print-macro`](./overlong-print-macro.md), and
+    [`long-splittable-print-macro`](./long-splittable-print-macro.md), and
     [`format-macro-wrap`](./format-macro-wrap.md).
   - Compare with `max_line_width`; emit if exceeded.
 - **Parser style.** Implement the template scanner as parser-
@@ -160,7 +160,7 @@ both qualify.
   Reuse the placeholder/literal helpers from
   [`derive-more-inlined-args`](./derive-more-inlined-args.md),
   the escape scanner in `src/rules/avoidable_string_escapes.rs`,
-  [`overlong-print-macro`](./overlong-print-macro.md), and
+  [`long-splittable-print-macro`](./long-splittable-print-macro.md), and
   [`format-macro-wrap`](./format-macro-wrap.md). The split logic
   is the same as `format-macro-wrap`'s: scan for the last
   whitespace within the budget, hard-split at the boundary as
@@ -199,7 +199,7 @@ too-wide format template appears in source:
 
 - [`prefer-text-block`](./prefer-text-block.md) — bare string
   literals not interpreted as templates.
-- [`overlong-print-macro`](./overlong-print-macro.md) — splittable
+- [`long-splittable-print-macro`](./long-splittable-print-macro.md) — splittable
   side-effect macros (`println!`, `writeln!`, `log::*!`).
 - [`format-macro-wrap`](./format-macro-wrap.md) — value-producing
   or terminating macros (`format!`, `panic!`, `assert!`).

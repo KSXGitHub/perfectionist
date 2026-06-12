@@ -4,7 +4,7 @@
 //!
 //! - [`find_template_literal`] returns the single *format template* — the
 //!   first argument that is, on its own, a lone cooked string literal.
-//!   `overlong_print_macro` uses it because it may only ever touch a genuine
+//!   `long_splittable_print_macro` uses it because it may only ever touch a genuine
 //!   format template (its `\n`-fold is output-preserving only there).
 //! - [`find_all_cooked_str_literals`] returns *every* cooked string
 //!   literal anywhere in the token stream, descending into delimited
@@ -13,7 +13,7 @@
 //!   the template, and it must reach literals that format-args lowering
 //!   would otherwise hide from the late pass.
 //!
-//! Both skip raw strings (`r"..."`): `overlong_print_macro` would mis-fold
+//! Both skip raw strings (`r"..."`): `long_splittable_print_macro` would mis-fold
 //! one, and `avoidable_string_escapes` rewrites *into* the raw form, so an
 //! already-raw literal is never a candidate.
 
@@ -74,7 +74,7 @@ fn cooked_str_literal_span(tree: &TokenTree) -> Option<Span> {
     };
     // Cooked (`"..."`) only. A raw string (`r"..."`) treats `\` as an
     // ordinary character, so neither the escape-aware fold in
-    // `overlong_print_macro` nor the escape-elimination scan in
+    // `long_splittable_print_macro` nor the escape-elimination scan in
     // `avoidable_string_escapes` may run over one.
     matches!(literal.kind, LitKind::Str).then_some(token.span)
 }
@@ -82,7 +82,7 @@ fn cooked_str_literal_span(tree: &TokenTree) -> Option<Span> {
 /// Span of every cooked string literal anywhere in `tokens`, in source
 /// order, descending into delimited groups so a literal nested inside a
 /// sub-group is found too — e.g. a `maud::html!` markup string buried in
-/// `code { "..." }`, which a top-level-only scan (as `overlong_print_macro`
+/// `code { "..." }`, which a top-level-only scan (as `long_splittable_print_macro`
 /// uses) would miss. The cost is that a literal inside a *nested macro
 /// call* is visited once here and again when that inner macro's own
 /// `check_mac` fires; `avoidable_string_escapes`'s byte-range dedup discards the

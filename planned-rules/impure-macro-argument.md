@@ -796,6 +796,6 @@ Active by default.
   `ast::MacCall` and both restrict themselves to function-like
   and array-like delimiters.
 - [`format-macro-wrap`](./format-macro-wrap.md) and
-  [`overlong-print-macro`](./overlong-print-macro.md) operate on the
+  [`long-splittable-print-macro`](./long-splittable-print-macro.md) operate on the
   *template literal* inside their target macros. Those rules'
   target macros are all in this rule's default allow set.

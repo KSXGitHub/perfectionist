@@ -62,6 +62,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field
 
+- [`long_splittable_print_macro`](./long_splittable_print_macro.md) (default: `active`).
+
+  splittable print macro with an embedded-newline template exceeds the configured line width
+
 - [`macro_trailing_comma`](./macro_trailing_comma.md) (default: `active`).
 
   macro invocation does not follow rustfmt's vertical trailing-comma policy
@@ -73,10 +77,6 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`needless_borrowed_parameter`](./needless_borrowed_parameter.md) (default: `active`).
 
   borrowed parameter is only used to produce its owned form
-
-- [`overlong_print_macro`](./overlong_print_macro.md) (default: `active`).
-
-  splittable print macro with an embedded-newline template exceeds the configured line width
 
 - [`single_letter_closure_param`](./single_letter_closure_param.md) (default: `active`).
 

@@ -4,7 +4,7 @@ warning: print macro with an embedded newline exceeds the configured line width
 LL |     my_log!("a long diagnostic line padded out to comfortably exceed the configured width limit here/nsecond line of the diagnostic");
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: `#[warn(perfectionist::overlong_print_macro)]` on by default
+   = note: `#[warn(perfectionist::long_splittable_print_macro)]` on by default
 help: fold the template across lines with a backslash-newline continuation
    |
 LL ~     my_log!(

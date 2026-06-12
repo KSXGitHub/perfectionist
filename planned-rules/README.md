@@ -97,7 +97,7 @@ pattern that several rules call out by reference — live in
   `text_block_fnl! { ... }` (default) or the
   `"line\n\<newline>line"` continuation form. Skips templates and
   attribute literals.
-- [`overlong-print-macro.md`](./overlong-print-macro.md) — when a
+- [`long-splittable-print-macro.md`](./long-splittable-print-macro.md) — when a
   splittable print macro (`println!`, `eprintln!`, `writeln!`,
   log family, …) has an embedded-`\n` template *and* spans more
   than `max_line_width` columns, suggest either splitting into
