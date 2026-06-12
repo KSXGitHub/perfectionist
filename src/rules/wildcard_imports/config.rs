@@ -24,10 +24,9 @@ pub(super) struct Config {
     /// Module paths whose glob import is never flagged, regardless of the
     /// exceptions above — the path before the `::*` of a `use <path>::*`.
     /// Each entry is **absolute** and written with a leading `::` (e.g.
-    /// `"::rayon::iter"`, `"::crate::internals"`); the leading `::`
-    /// matches whether or not the `use` itself writes it, so
-    /// `"::rayon::iter"` exempts both `use rayon::iter::*;` and
-    /// `use ::rayon::iter::*;`. Matching is exact and syntactic: the entry
+    /// `"::rayon::iter"`); the leading `::` matches whether or not the
+    /// `use` itself writes it, so `"::rayon::iter"` exempts both
+    /// `use rayon::iter::*;` and `use ::rayon::iter::*;`. Matching is exact and syntactic: the entry
     /// must equal the path as written in the glob `use`, with no re-export
     /// or alias resolution. Defaults to `[]`.
     pub(super) allowed_paths: Vec<String>,
