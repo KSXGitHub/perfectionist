@@ -71,5 +71,14 @@ LL | use {thiserror::Error as _BracedTopLevel, std::io};
    |
    = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
 
-warning: 9 warnings emitted
+warning: glob import brings an unbounded set of names into scope
+  --> $DIR/prefer_derive_more_over_thiserror.rs:38:5
+   |
+LL | use thiserror::*;
+   |     ^^^^^^^^^^^^
+   |
+   = help: import the specific items by name instead
+   = note: `#[warn(perfectionist::wildcard_imports)]` on by default
+
+warning: 10 warnings emitted
 

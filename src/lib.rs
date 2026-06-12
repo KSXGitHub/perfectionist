@@ -17,6 +17,7 @@ use rustc_session::Session;
 
 dylint_linting::dylint_library!();
 
+mod abs_path;
 mod ascii_letter;
 mod comment_walk;
 mod common;
@@ -59,6 +60,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         lint_silence_reason
         macro_argument_binding
         macro_trailing_comma
+        named_prelude_imports
         non_exhaustive_error
         prefer_derive_more_over_thiserror
         prefer_expect_over_allow
@@ -77,6 +79,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         unicode_ellipsis_in_docs
         unicode_ellipsis_in_panic_messages
         unpinned_repo_ref
+        wildcard_imports
 
         // `unknown_perfectionist_lints::register_pass` snapshots the registered
         // `perfectionist::*` lint names out of the `LintStore`, so its pass must

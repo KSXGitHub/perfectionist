@@ -27,15 +27,12 @@ pattern that several rules call out by reference — live in
   also reachable through `std::`, and suggest the `std::` form. Inactive
   by default. The opposite direction (`prefer_core`) is out of scope —
   it is covered by `clippy::std_instead_of_core` + `std_instead_of_alloc`.
-- [`no-star-imports.md`](./no-star-imports.md) — forbid `use foo::*` inside
-  module bodies. Two exceptions are enabled by default and individually
-  configurable: the prelude form (`use foo::prelude::*`) and root-of-
-  module re-exports (`pub use submodule::*`). A project can disable
-  either or both.
-- [`named-prelude-import.md`](./named-prelude-import.md) — dual of the
-  previous rule. Forbid named imports from a `prelude` module
-  (`use foo::prelude::Item;`); allow the glob form
-  (`use foo::prelude::*;`).
+- [`named-prelude-imports.md`](./named-prelude-imports.md) — dual of
+  `perfectionist::wildcard_imports`. Forbid named imports from a
+  `prelude` module (`use foo::prelude::Item;`); allow the glob form
+  (`use foo::prelude::*;`). Implemented and active by default; the file
+  stays only because the brace-list-leaf autofix is still pending (see
+  its Status section).
 
 ### Naming
 - [`qualified-paths.md`](./qualified-paths.md) — decide whether items from

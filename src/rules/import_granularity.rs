@@ -49,7 +49,7 @@ declare_tool_lint! {
     /// and both are offered when a merge is forced; the optional
     /// `self_merge` knob (`fold` / `split`) picks one and enforces it.
     ///
-    /// Globs (`use foo::*`) are governed by `perfectionist::no_star_imports`,
+    /// Globs (`use foo::*`) are governed by `perfectionist::wildcard_imports`,
     /// not by this rule: a top-level glob is left alone under `item`.
     ///
     /// ### Why restrict this?

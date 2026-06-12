@@ -1,0 +1,27 @@
+warning: glob import brings an unbounded set of names into scope
+  --> $DIR/fixture.rs:22:5
+   |
+LL | use crate::prelude::*;
+   |     ^^^^^^^^^^^^^^^^^
+   |
+   = help: import the specific items by name instead
+   = note: `#[warn(perfectionist::wildcard_imports)]` on by default
+
+warning: glob import brings an unbounded set of names into scope
+  --> $DIR/fixture.rs:25:9
+   |
+LL | pub use crate::thing::*;
+   |         ^^^^^^^^^^^^^^^
+   |
+   = help: import the specific items by name instead
+
+warning: glob import brings an unbounded set of names into scope
+  --> $DIR/fixture.rs:28:5
+   |
+LL | use crate::thing::*;
+   |     ^^^^^^^^^^^^^^^
+   |
+   = help: import the specific items by name instead
+
+warning: 3 warnings emitted
+

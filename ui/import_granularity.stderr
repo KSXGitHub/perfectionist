@@ -43,5 +43,14 @@ LL ~     use a;
 LL +     use b;
    |
 
-warning: 4 warnings emitted
+warning: glob import brings an unbounded set of names into scope
+  --> $DIR/import_granularity.rs:58:37
+   |
+LL |     use {std::collections::HashMap, *};
+   |                                     ^
+   |
+   = help: import the specific items by name instead
+   = note: `#[warn(perfectionist::wildcard_imports)]` on by default
+
+warning: 5 warnings emitted
 

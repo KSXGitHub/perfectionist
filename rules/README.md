@@ -58,6 +58,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   macro invocation does not follow rustfmt's vertical trailing-comma policy
 
+- [`named_prelude_imports`](./named_prelude_imports.md) (default: `active`).
+
+  named item cherry-picked from a prelude module instead of glob-imported
+
 - [`non_exhaustive_error`](./non_exhaustive_error.md) (default: `inactive`).
 
   error-shaped type is missing `#[non_exhaustive]`
@@ -133,3 +137,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`unpinned_repo_ref`](./unpinned_repo_ref.md) (default: `active`).
 
   repository URL references a branch or tag instead of a commit SHA
+
+- [`wildcard_imports`](./wildcard_imports.md) (default: `active`).
+
+  glob (`*`) import in a module body, outside the prelude and root-re-export exceptions

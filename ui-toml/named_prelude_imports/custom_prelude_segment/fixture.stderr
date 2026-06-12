@@ -1,0 +1,10 @@
+warning: named item cherry-picked from a prelude module
+  --> $DIR/fixture.rs:20:9
+   |
+LL |     use crate::api::A;
+   |         ^^^^^^^^^^^^^ help: import the item from its canonical module: `crate::thing::A`
+   |
+   = note: `#[warn(perfectionist::named_prelude_imports)]` on by default
+
+warning: 1 warning emitted
+
