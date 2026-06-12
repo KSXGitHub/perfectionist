@@ -223,8 +223,8 @@ as verified API.
   duplicating it. Preserve any `as` rename, and grade applicability the
   way that rule does (machine-applicable only when the rewritten path is
   publicly nameable from the importer). When the import rules are all
-  active, `perfectionist::import_granularity` and
-  `perfectionist::import_grouping` reflow the rewritten line on a later
+  active, `perfectionist::import_granularity_mismatch` and
+  `perfectionist::import_grouping_mismatch` reflow the rewritten line on a later
   `--fix` pass, so the suggestion need only emit one `use` per leaf.
 
 - **Proc-macro suppression.** If a proc-macro can synthesize a flagged
@@ -262,10 +262,10 @@ import.
   of *whether* to import at all (path vs. `use`); this rule governs
   *which source* an import names. They can both be active without
   conflict.
-- `perfectionist::import_granularity`
-  ([`src/rules/import_granularity.rs`](../src/rules/import_granularity.rs))
-  and `perfectionist::import_grouping`
-  ([`src/rules/import_grouping.rs`](../src/rules/import_grouping.rs))
+- `perfectionist::import_granularity_mismatch`
+  ([`src/rules/import_granularity_mismatch.rs`](../src/rules/import_granularity_mismatch.rs))
+  and `perfectionist::import_grouping_mismatch`
+  ([`src/rules/import_grouping_mismatch.rs`](../src/rules/import_grouping_mismatch.rs))
   reflow the rewritten `use` line after this rule re-points it.
 
 ## Interaction with stock lints
