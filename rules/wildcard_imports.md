@@ -119,7 +119,6 @@ exceptions above — the path before the `::*` of a `use <path>::*`.
 Each entry is **absolute**: an extern-crate path with a leading
 `::` (`"::rayon::iter"`, which exempts both `use rayon::iter::*;`
 and `use ::rayon::iter::*;`), or a crate-root path written
-`"crate::..."` with no leading `::` (`::crate` is not valid Rust).
-Matching is exact and syntactic: the entry must equal the path as
-written in the glob `use`, with no re-export or alias resolution.
-Defaults to `[]`.
+`"crate::..."`. Matching is exact and syntactic: the entry must
+equal the path as written in the glob `use`, with no re-export or
+alias resolution. Defaults to `[]`.
