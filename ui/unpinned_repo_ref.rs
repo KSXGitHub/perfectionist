@@ -2,7 +2,8 @@
 // comment, plain comment, string literal) and every built-in forge
 // kind. Run by `tests/ui.rs` with an empty `dylint.toml`, so the
 // defaults apply (all three targets, the built-in host table,
-// `sha_recognition_length = 4`, no skipped hosts).
+// `sha_recognition_length = 4`, `allow_version_patterns = false`, no
+// skipped hosts).
 //
 // URLs are wrapped in `<...>` throughout: that is the realistic case
 // (`perfectionist::bare_url` already requires wrapping, and this rule

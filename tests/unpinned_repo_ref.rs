@@ -22,6 +22,8 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
+    allow_version_patterns: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     hosts: Option<Vec<HostEntry>>,
 }
 
@@ -61,6 +63,7 @@ fn empty_hosts_disables_all_scanning() {
     run(
         "ui-toml/unpinned_repo_ref/empty_hosts",
         RuleConfig {
+            allow_version_patterns: None,
             hosts: Some(vec![]),
         },
     );
@@ -74,10 +77,24 @@ fn self_hosted_host_is_scanned() {
     run(
         "ui-toml/unpinned_repo_ref/self_hosted",
         RuleConfig {
+            allow_version_patterns: None,
             hosts: Some(vec![HostEntry {
                 hostname: "git.example.com",
                 kind: "gitlab",
             }]),
+        },
+    );
+}
+
+/// `allow_version_patterns = true` accepts version-shaped refs while
+/// still flagging ordinary branch refs in the same fixture.
+#[test]
+fn allow_version_patterns_accepts_only_version_shaped_refs() {
+    run(
+        "ui-toml/unpinned_repo_ref/allow_version_patterns",
+        RuleConfig {
+            allow_version_patterns: Some(true),
+            hosts: None,
         },
     );
 }
