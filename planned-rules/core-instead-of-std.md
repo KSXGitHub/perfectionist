@@ -18,7 +18,7 @@ path — is intentionally out of scope here: it is already covered exactly
 by `clippy::std_instead_of_core` and `clippy::std_instead_of_alloc`, both
 in clippy's `restriction` group (off by default). A library that wants to
 keep the door open to `no_std` enables those two clippy lints; this rule
-is the `prefer_std` counterpart they have no equivalent for.
+is the `std`-preferring counterpart they have no equivalent for.
 
 ## Configuration
 
