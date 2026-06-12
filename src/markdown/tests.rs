@@ -1,7 +1,8 @@
 use super::{
-    ClassifyOptions, ConstructKind, Range, classify_constructs, position_in_skip,
-    scan_code_regions, scan_skip_regions,
+    ClassifyOptions, ConstructKind, classify_constructs, position_in_skip, scan_code_regions,
+    scan_skip_regions,
 };
+use std::ops::Range;
 
 #[test]
 fn empty_input_has_no_skip_ranges() {

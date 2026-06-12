@@ -1,6 +1,7 @@
-use super::{
-    BTreeSet, BUILTIN_TYPES, SharedTypes, Type, collect_referenced_idents, toml_type_label,
-};
+use super::{BUILTIN_TYPES, collect_referenced_idents, toml_type_label};
+use crate::extract::shared::SharedTypes;
+use std::collections::BTreeSet;
+use syn::Type;
 
 fn parse_type(source: &str) -> Type {
     syn::parse_str(source).expect("test input should parse as a syn::Type")

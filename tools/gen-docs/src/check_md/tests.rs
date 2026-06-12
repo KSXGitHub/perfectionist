@@ -1,5 +1,6 @@
-use super::{CheckOutcome, Rule, check_rules_dir, fs, write_rules_dir};
-use crate::model::{ConfigDoc, DefaultState};
+use super::{CheckOutcome, check_rules_dir, write_rules_dir};
+use crate::model::{ConfigDoc, DefaultState, Rule};
+use std::fs;
 use std::path::PathBuf;
 
 fn fake_rule(name: &str) -> Rule {

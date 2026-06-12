@@ -140,8 +140,8 @@ fn custom_type_block(ty: &TypeDoc) -> Markup {
 
 #[cfg(test)]
 mod tests {
-    use super::{ConfigDoc, config_section};
-    use crate::model::{ConfigField, Optionality};
+    use super::config_section;
+    use crate::model::{ConfigDoc, ConfigField, Optionality};
 
     #[test]
     fn config_section_badges_mandatory_and_optional_fields() {
