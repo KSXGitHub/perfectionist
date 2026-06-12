@@ -18,7 +18,7 @@ pattern that several rules call out by reference — live in
 ## Index
 
 ### Module and file layout
-- [`module-item-order.md`](./module-item-order.md) — within a module file,
+- [`arbitrary-source-item-ordering.md`](./arbitrary-source-item-ordering.md) — within a module file,
   `pub mod` first, then `pub use`, then private items.
 
 ### Imports

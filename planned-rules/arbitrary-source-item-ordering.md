@@ -1,4 +1,4 @@
-# `module_item_order`
+# `arbitrary_source_item_ordering`
 
 **Sources:** parallel-disk-usage *Module Organization*; pacquet *Module
 Organization*.
