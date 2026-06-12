@@ -181,7 +181,7 @@ impl BareUrl {
     fn scan(
         &self,
         chunk: &CommentChunk<'_>,
-        skips: &[std::ops::Range<usize>],
+        skips: &[core::ops::Range<usize>],
         out: &mut Vec<(Span, UrlViolation)>,
     ) {
         let text = &chunk.rendered;

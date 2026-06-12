@@ -34,7 +34,7 @@
 //!   markers (only when [`classify_constructs`] is asked for them; see
 //!   [`ClassifyOptions`]).
 
-use std::ops::Range;
+use core::ops::Range;
 
 /// One byte range to skip when scanning the markdown text.
 ///

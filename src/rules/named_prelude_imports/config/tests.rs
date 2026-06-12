@@ -1,4 +1,4 @@
-use super::*;
+use super::{Config, Resolved, validate};
 
 #[test]
 fn default_recognises_prelude() {

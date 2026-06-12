@@ -422,7 +422,7 @@ impl BareIssueReference {
     fn scan(
         &self,
         chunk: &CommentChunk<'_>,
-        skips: &[std::ops::Range<usize>],
+        skips: &[core::ops::Range<usize>],
         is_doc: bool,
         out: &mut Vec<(Span, IssueRefViolation)>,
     ) {

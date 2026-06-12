@@ -23,9 +23,9 @@ use super::parser::{build_raw_string_suggestion, scan_body};
 use super::queue::PendingViolation;
 use super::resolved_config;
 use crate::macro_template::find_all_cooked_str_literals;
+use core::num::NonZeroUsize;
 use rustc_ast::MacCall;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
-use std::num::NonZeroUsize;
 
 pub(super) struct PreferRawStringEarly {
     min_escapes_to_trigger: NonZeroUsize,

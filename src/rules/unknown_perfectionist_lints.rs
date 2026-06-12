@@ -263,7 +263,7 @@ fn levenshtein(left: &str, right: &str) -> usize {
                 .min(current_row[j - 1] + 1)
                 .min(previous_row[j - 1] + substitution_cost);
         }
-        std::mem::swap(&mut previous_row, &mut current_row);
+        core::mem::swap(&mut previous_row, &mut current_row);
     }
     previous_row[right_len]
 }

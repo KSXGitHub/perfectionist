@@ -136,7 +136,7 @@ fn render_item(leaves: &[Leaf]) -> Vec<String> {
                 crate_item_body(leaf)
             } else {
                 let entry = item_entry(leaf);
-                wrap(&join(&leaf.module), std::slice::from_ref(&entry))
+                wrap(&join(&leaf.module), core::slice::from_ref(&entry))
             }
         })
         .collect();

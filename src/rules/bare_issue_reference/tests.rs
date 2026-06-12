@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    BareIssueReference, Config, DocForm, Forge, PlainForm, block_defines_reference, join_url,
+    render_doc_suggestion, render_plain_suggestion, resolve_repository,
+};
 
 #[test]
 fn join_url_appends_path_to_base() {

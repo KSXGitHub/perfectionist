@@ -1,5 +1,6 @@
-use super::*;
-use std::path::PathBuf;
+use super::SharedTypes;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 /// Allocate a fresh temp directory unique across both processes
 /// and across tests in the same binary, matching the helper in
