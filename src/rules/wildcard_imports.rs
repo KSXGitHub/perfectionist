@@ -142,6 +142,14 @@ pub fn register_pass(lint_store: &mut LintStore) {
         return;
     }
     let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+    // Reject a misconfigured `allowed_paths` entry loudly: each must be an
+    // absolute path (`crate::...` or `::<extern crate>::...`), otherwise it
+    // could never match the absolute key the rule builds from a glob `use`.
+    for entry in &config.allowed_paths {
+        crate::abs_path::validate_absolute(entry).unwrap_or_else(|message| {
+            panic!("perfectionist::wildcard_imports: {message}");
+        });
+    }
     // Late pass: the cfg-gated `#[cfg(test)] mod tests { use super::*; }`
     // case (and any out-of-line `mod foo;` submodule) is only reachable
     // by re-parsing each module file in a late pass — see the module
@@ -275,19 +283,20 @@ impl WildcardImports {
         if self.config.root_reexport_exception && is_reexport {
             return true;
         }
-        // `allowed_paths` entries are absolute, written with a leading
-        // `::`. `collect_globs` already dropped any `PathRoot`, so a plain
-        // `use foo::bar::*` and a `::`-rooted `use ::foo::bar::*` both
-        // arrive here as `["foo", "bar"]`; prepend a single `::` to form
-        // the absolute key (`::foo::bar`) that matches either written form.
-        // Only build the key when there is an allow list to check it
-        // against — `allowed_paths` is empty in the default config, so this
-        // skips the per-glob `String` allocation in the common case.
+        // `allowed_paths` entries are absolute. `collect_globs` already
+        // dropped any `PathRoot`, so a plain `use foo::bar::*` and a
+        // `::`-rooted `use ::foo::bar::*` both arrive here as
+        // `["foo", "bar"]`; `canonical_key` forms the absolute key that
+        // matches either written form (`::foo::bar` for an extern crate,
+        // `crate::internals` for a crate-root path). Only build the key when
+        // there is an allow list to check it against — `allowed_paths` is
+        // empty in the default config, so this skips the per-glob `String`
+        // allocation in the common case.
         !self.config.allowed_paths.is_empty()
             && self
                 .config
                 .allowed_paths
-                .contains(&format!("::{}", module.join("::")))
+                .contains(&crate::abs_path::canonical_key(&module.join("::")))
     }
 }
 

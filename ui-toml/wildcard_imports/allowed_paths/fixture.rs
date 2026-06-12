@@ -18,8 +18,9 @@ mod other {
     pub struct Y;
 }
 
-// Not flagged: `::crate::secret::internals` is listed in `allowed_paths`,
-// even though both exceptions are disabled.
+// Not flagged: `crate::secret::internals` is listed in `allowed_paths`,
+// even though both exceptions are disabled. A crate-root path is written
+// `crate::...` (no leading `::` — `::crate` is not valid Rust).
 use crate::secret::internals::*;
 
 // Both globs from `::std::collections` are exempt under the single

@@ -17,6 +17,7 @@ use rustc_session::Session;
 
 dylint_linting::dylint_library!();
 
+mod abs_path;
 mod ascii_letter;
 mod comment_walk;
 mod common;

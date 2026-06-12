@@ -72,11 +72,11 @@ can flip both rules with one value. Defaults to `["prelude"]`.
 
 Prelude module paths whose named imports are never flagged — the
 module path leading up to and including the prelude segment. Each
-entry is **absolute** and written with a leading `::` (e.g.
-`"::crate::prelude"`); the leading `::` matches whether or not the
-`use` writes it. Because an entry matches the path up to *and
-including* the prelude segment, it must end with a
-`prelude_segment_names` segment. Matching is exact and syntactic:
-the entry must equal the path as written in the `use` (up to the
-prelude segment), with no re-export or alias resolution. Defaults
-to `[]`.
+entry is **absolute**: an extern-crate path with a leading `::`
+(`"::diesel::prelude"`), or a crate-root path written
+`"crate::prelude"` with no leading `::` (`::crate` is not valid
+Rust). Because an entry matches the path up to *and including* the
+prelude segment, it must end with a `prelude_segment_names`
+segment. Matching is exact and syntactic: the entry must equal the
+path as written in the `use` (up to the prelude segment), with no
+re-export or alias resolution. Defaults to `[]`.
