@@ -48,16 +48,6 @@ code {
 pre code {
   background: none;
 }
-/* File-tree connectors. The drawing spans paint their glyphs transparent
-   (so the text still copies), so `currentColor` would be invisible — set
-   the segment colour to match body text instead. */
-.ft-pipe::before,
-.ft-tee::before,
-.ft-ell::before,
-.ft-tee::after,
-.ft-ell::after {
-  background: #1f2328;
-}
 footer {
   border-top-color: #eaeef2;
   color: #57606a;
