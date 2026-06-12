@@ -113,7 +113,7 @@ pattern that several rules call out by reference — live in
   exceeds `max_line_width`, suggest folding the template with
   `\n\<newline>` continuations. Only one rewrite — multi-call is
   not viable for these macros.
-- [`derive-more-template-wrap.md`](./derive-more-template-wrap.md)
+- [`overlong-derive-more-template.md`](./overlong-derive-more-template.md)
   — same width-driven wrapping for derive_more attribute-form
   templates: `#[display(...)]`, `#[debug(...)]`. The attribute
   is consumed by a derive macro so multi-attribute splitting
