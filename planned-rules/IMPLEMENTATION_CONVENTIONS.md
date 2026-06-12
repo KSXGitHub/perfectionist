@@ -459,6 +459,93 @@ A crate-root suppression of the cross-toolchain warning is:
 #![allow(unknown_lints)]
 ```
 
+## Path-shaped config values: the leading-`::` convention
+
+Several rules take configuration values that are Rust paths —
+`foo::bar`-shaped strings matched against a `use` path, a
+macro-invocation path, and the like. The **form** of such a value
+signals whether it is meant to be an *absolute* path or a
+*relative* (suffix / tail) one:
+
+- An **absolute** path entry carries a leading `::` —
+  `"::foo::bar"`.
+- A **relative** entry (matched by suffix / tail) has no leading
+  `::` — `"foo::bar"`.
+- A field that accepts **both** reads the presence or absence of
+  the leading `::` on each entry to decide whether that entry is
+  absolute or relative.
+
+The leading `::` mirrors Rust's own absolute-path syntax, so the
+config reads the way the equivalent path would be written in
+source.
+
+### Caveat: keyword-rooted paths (`crate` / `self` / `super` / `Self`)
+
+The "leading `::` ⇒ absolute" rule applies to **extern-crate**
+paths only, because that is the one absolute form Rust spells with
+a leading `::`. A path rooted at a path keyword is the exception:
+
+- A **crate-root absolute** path is written `crate::foo`, with
+  **no** leading `::`. `::crate` is not valid Rust syntax, so an
+  absolute entry into the local crate must be spelled
+  `"crate::..."`, never `"::crate::..."`.
+- `self::` / `super::` are relative roots; they too are written
+  without a leading `::`, and `::self` / `::super` are not valid
+  syntax either.
+
+So a field that wants absolute paths accepts two well-formed
+shapes — `"::<extern crate>::..."` and `"crate::..."` — and must
+**reject** the impossible `::`-led keyword forms (`"::crate"`,
+`"::self"`, `"::super"`) rather than silently accepting them.
+Treating `"::crate::internals"` as valid is a real bug, not a
+harmless typo: it cannot occur in source, yet a naive "prepend
+`::` to the import path" matcher will happily match it against
+`use crate::internals::*;`. The typo'd entry then matches while the
+correctly-spelled one (`"crate::internals"`) never does.
+
+### Where it's implemented
+
+- **`allowed_paths`** on `perfectionist::wildcard_imports`
+  (`src/rules/wildcard_imports.rs`) and
+  `perfectionist::named_prelude_imports`
+  (`src/rules/named_prelude_imports.rs`) matches the whole
+  (absolute) module path of an import by exact string equality, so
+  every entry is absolute. The shared `src/abs_path.rs` helper
+  carries both halves of the convention: `canonical_key` keys a
+  crate-root path by its own spelling and an extern path with a
+  leading `::` (so `"::rayon::iter"` matches both
+  `use rayon::iter::*;` and `use ::rayon::iter::*;`), and
+  `validate_absolute` rejects the impossible / relative entries
+  (`::crate`, `::self`, `::super`, bare `self::` / `super::`, and a
+  bare extern path missing its `::`) with a startup error.
+- **The macro-path consumers** — `perfectionist::macro_argument_binding`,
+  `perfectionist::macro_trailing_comma`, and
+  `perfectionist::print_macro_split` — match a macro-invocation path
+  against configured name lists (`extra_macros`, `allow_extra`,
+  `deny_extra`, `ignore`, `target_macros`, …) through
+  `src/macro_path.rs`. That matcher is deliberately
+  **relative / tail-based**: a single-segment entry matches the
+  invocation's final segment, and a multi-segment entry tail-matches
+  the segment sequence. The no-`::` form is therefore the correct one
+  for these entries. Absolute (anchored) macro-path matching is not
+  implemented, so a `::`-led entry — which `parse_path` would
+  otherwise silently coerce into a relative match by dropping the
+  empty leading segment — is **rejected** at config-load time by
+  `macro_path::reject_absolute`. Silently coercing absolute to
+  relative is exactly the surprise this convention exists to
+  prevent.
+
+### Not subject to the convention
+
+- `perfectionist::import_grouping`'s `std_crates`
+  (`["std", "core", "alloc"]`) and `internal_prefixes`
+  (`["super", "self", "crate"]`) are single-segment crate-name /
+  path-root tokens matched against an import's first segment, not
+  multi-segment paths, so the absolute-vs-relative distinction does
+  not apply.
+- `perfectionist::unpinned_repo_ref`'s `hosts` / `skip_hosts` /
+  `hostname` are forge hostnames, not Rust module paths.
+
 ## Suppressing proc-macro-synthesised violations
 
 `declare_tool_lint! { ... report_in_external_macro: false }` is the

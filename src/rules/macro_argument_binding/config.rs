@@ -8,7 +8,7 @@
 //! is built consistently.
 
 use crate::common::resolve_string_set;
-use crate::macro_path::{matches_any, merge_with_builtins, parse_path_list};
+use crate::macro_path::{matches_any, merge_with_builtins, parse_path_list, reject_absolute_list};
 use rustc_ast::Path;
 use std::collections::BTreeSet;
 
@@ -302,6 +302,11 @@ pub(super) struct MacroArgumentBinding {
 impl MacroArgumentBinding {
     pub(super) fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        for entries in [&config.deny_extra, &config.allow_extra, &config.ignore] {
+            reject_absolute_list(entries).unwrap_or_else(|message| {
+                panic!("perfectionist::macro_argument_binding: {message}");
+            });
+        }
         let extra_deny = parse_path_list(&config.deny_extra);
         let extra_allow = parse_path_list(&config.allow_extra);
         let deny = merge_with_builtins(BUILTIN_DENY, &extra_deny);

@@ -2,7 +2,9 @@
 //! [`Config`] shape, the curated built-in name list, and the in-memory
 //! [`MacroTrailingComma`] state the early pass holds.
 
-use crate::macro_path::{matches_any, merge_with_builtins, parse_path, parse_path_list};
+use crate::macro_path::{
+    matches_any, merge_with_builtins, parse_path, parse_path_list, reject_absolute_list,
+};
 use std::collections::BTreeSet;
 
 const CONFIG_KEY: &str = "perfectionist::macro_trailing_comma";
@@ -101,6 +103,11 @@ pub(super) struct MacroTrailingComma {
 impl MacroTrailingComma {
     pub(super) fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        for entries in [&config.extra_macros, &config.ignore] {
+            reject_absolute_list(entries).unwrap_or_else(|message| {
+                panic!("perfectionist::macro_trailing_comma: {message}");
+            });
+        }
         let extra_macros: BTreeSet<Vec<String>> = config
             .extra_macros
             .iter()

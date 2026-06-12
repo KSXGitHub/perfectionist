@@ -47,11 +47,16 @@ Still pending:
   to cover *every* form that resolves to
   `their_crate::their_macro!` — qualified, absolute, aliased
   through `use ... as ...`, and bare after a
-  `use their_crate::their_macro;`. A leading `::`
-  (`"::their_crate::their_macro"`) should optionally pin the
-  entry as absolute, matching only the global form, but the
-  default contract for a multi-segment entry is "resolves to
-  this macro, however the call site named it."
+  `use their_crate::their_macro;`. A leading `::` on a config
+  entry (`"::their_crate::their_macro"`) is reserved for an
+  *absolute* (anchored) match that would pin the entry to the
+  global form only. Absolute macro-path matching is not
+  implemented, so such an entry is currently **rejected** at
+  config-load time rather than silently treated as relative —
+  see the leading-`::` convention in
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
+  The default contract for a multi-segment entry remains
+  "resolves to this macro, however the call site named it."
 
   **Bare single-segment entries stay name-based at the call
   site.** A configured entry of `"vec"`, `"format"`, or
