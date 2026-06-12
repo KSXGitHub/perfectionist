@@ -1,6 +1,7 @@
 use crate::common::{DefaultState, attr_has_reason, render_meta_path, resolved_state};
 use clippy_utils::diagnostics::{span_lint_and_sugg, span_lint_and_then};
 use clippy_utils::is_from_proc_macro;
+use core::num::NonZeroUsize;
 use rustc_ast::{Attribute, LitKind, MetaItem, MetaItemInner, MetaItemKind};
 use rustc_errors::Applicability;
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
@@ -8,7 +9,6 @@ use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{BytePos, Span, Symbol, sym};
 use std::collections::BTreeSet;
-use std::num::NonZeroUsize;
 
 declare_tool_lint! {
     /// ### What it does

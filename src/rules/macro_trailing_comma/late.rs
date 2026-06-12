@@ -19,7 +19,7 @@ impl<'tcx> LateLintPass<'tcx> for MacroTrailingCommaLate {
             let mut guard = PENDING_VIOLATIONS
                 .lock()
                 .unwrap_or_else(|err| err.into_inner());
-            std::mem::take(&mut *guard)
+            core::mem::take(&mut *guard)
         };
         if pending.is_empty() {
             return;

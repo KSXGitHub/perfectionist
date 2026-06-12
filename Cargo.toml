@@ -36,8 +36,11 @@ crate-type = ["cdylib"]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(dylint_lib, values("perfectionist"))'] }
 
 [lints.clippy]
+alloc_instead_of_core = "warn"
 clone_on_ref_ptr = "warn"
+cloned_instead_of_copied = "warn"
 mod_module_files = "warn"
+std_instead_of_core = "warn"
 
 [dependencies]
 clippy_utils = "=0.1.98"

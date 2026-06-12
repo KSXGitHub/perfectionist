@@ -1,11 +1,11 @@
 use clippy_utils::diagnostics::span_lint_and_sugg;
+use core::num::NonZeroUsize;
 use rustc_ast::{LitKind, StrStyle};
 use rustc_errors::Applicability;
 use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use std::collections::BTreeSet;
-use std::num::NonZeroUsize;
 use std::sync::Mutex;
 
 mod early;
@@ -321,13 +321,13 @@ impl<'tcx> LateLintPass<'tcx> for PreferRawString {
             let mut guard = PENDING_VIOLATIONS
                 .lock()
                 .unwrap_or_else(|err| err.into_inner());
-            std::mem::take(&mut *guard)
+            core::mem::take(&mut *guard)
         };
         let visited: BTreeSet<(u32, u32)> = {
             let mut guard = VISITED_LITERALS
                 .lock()
                 .unwrap_or_else(|err| err.into_inner());
-            std::mem::take(&mut *guard)
+            core::mem::take(&mut *guard)
         };
         let mut emitted: BTreeSet<(u32, u32)> = BTreeSet::new();
         let surviving: Vec<PendingViolation> = pending

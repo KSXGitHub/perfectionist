@@ -181,7 +181,7 @@ impl BareEmail {
     fn scan(
         &self,
         chunk: &CommentChunk<'_>,
-        skips: &[std::ops::Range<usize>],
+        skips: &[core::ops::Range<usize>],
         out: &mut Vec<(Span, String)>,
     ) {
         let text = &chunk.rendered;

@@ -10,9 +10,9 @@
 //! [`Mutex`] to avoid clobbering each other under the default
 //! parallel test harness.
 
+use core::num::NonZeroUsize;
 use pipe_trait::Pipe;
 use std::collections::BTreeMap;
-use std::num::NonZeroUsize;
 use std::sync::Mutex;
 
 const LINT_NAME: &str = "perfectionist::prefer_raw_string";

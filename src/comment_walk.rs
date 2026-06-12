@@ -105,7 +105,7 @@ impl CommentChunk<'_> {
     /// single-line span both as the diagnostic anchor and as the
     /// replacement span for its code-span autofix, and declines the
     /// autofix when this returns `None`.
-    pub(crate) fn span_for_range(&self, range: std::ops::Range<usize>) -> Option<Span> {
+    pub(crate) fn span_for_range(&self, range: core::ops::Range<usize>) -> Option<Span> {
         if range.start >= range.end {
             return None;
         }
