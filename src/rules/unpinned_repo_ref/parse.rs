@@ -144,14 +144,17 @@ fn is_commit_sha(text: &str, sha_recognition_length: usize) -> bool {
 }
 
 /// Whether `text` looks like a version pattern (`1.2.3`, `v1.2.3`, or
-/// either form with a non-empty `-suffix`). This intentionally avoids a
-/// regex dependency because the lint is compiled from source by users.
+/// either form with a non-empty `-suffix` of version-suffix characters,
+/// per [`is_version_suffix_byte`]). This intentionally avoids a regex
+/// dependency because the lint is compiled from source by users.
 fn is_version_pattern_ref(text: &str) -> bool {
     let text = text.strip_prefix('v').unwrap_or(text);
     let (version, suffix) = text
         .split_once('-')
         .map_or((text, None), |(version, suffix)| (version, Some(suffix)));
-    if suffix.is_some_and(str::is_empty) {
+    if let Some(suffix) = suffix
+        && (suffix.is_empty() || !suffix.bytes().all(is_version_suffix_byte))
+    {
         return false;
     }
 
@@ -164,6 +167,14 @@ fn is_version_pattern_ref(text: &str) -> bool {
     [major, minor, patch]
         .into_iter()
         .all(|part| !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_digit()))
+}
+
+/// Whether `byte` may appear in a version-pattern suffix: ASCII
+/// letters, ASCII digits, `.`, `-`, and `_`. Anything else (`$`, `,`,
+/// `;`, `&`, ...) is not a versioning suffix, so a ref containing it
+/// is not exempted by `allow_version_patterns`.
+fn is_version_suffix_byte(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'-' | b'_')
 }
 
 /// Split `url` into the byte offset of its path and the path text

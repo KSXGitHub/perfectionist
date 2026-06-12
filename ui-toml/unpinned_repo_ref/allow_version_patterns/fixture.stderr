@@ -7,5 +7,13 @@ LL | /// <https://github.com/owner/repo/blob/main/src/lib.rs>.
    = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
    = note: `#[warn(perfectionist::unpinned_repo_ref)]` on by default
 
-warning: 1 warning emitted
+warning: repository URL ref `v1.2.3-abc$def` is not a pinned commit SHA
+  --> $DIR/fixture.rs:21:41
+   |
+LL | /// <https://github.com/owner/repo/blob/v1.2.3-abc$def/src/lib.rs>.
+   |                                         ^^^^^^^^^^^^^^
+   |
+   = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
+
+warning: 2 warnings emitted
 

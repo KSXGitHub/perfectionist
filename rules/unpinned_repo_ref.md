@@ -74,7 +74,8 @@ pure-hex ref as a SHA.
 ### `allow_version_patterns`: `boolean` (optional)
 
 Whether refs shaped like version patterns (`1.2.3`, `v1.2.3`, or
-either form with a non-empty `-suffix`) are accepted without a
+either form with a non-empty `-suffix` of ASCII letters, ASCII
+digits, `.`, `-`, and `_`) are accepted without a
 commit SHA. Defaults to `false`; tags can move, and a
 version-shaped branch name is valid Git, so projects must opt in
 to this convenience explicitly.
