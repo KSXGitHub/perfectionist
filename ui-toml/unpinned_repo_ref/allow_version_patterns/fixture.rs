@@ -16,4 +16,9 @@ fn _comment_gitea_version_pattern() {}
 /// <https://github.com/owner/repo/blob/main/src/lib.rs>.
 fn _doc_github_branch() {}
 
+/// Bad: a suffix with characters outside ASCII letters, ASCII digits,
+/// `.`, `-`, and `_` is not a version pattern:
+/// <https://github.com/owner/repo/blob/v1.2.3-abc$def/src/lib.rs>.
+fn _doc_github_invalid_suffix() {}
+
 fn main() {}

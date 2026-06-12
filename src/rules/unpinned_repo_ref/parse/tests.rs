@@ -177,7 +177,14 @@ fn ref_problem_accepts_sha_and_rejects_short_or_non_hex() {
 
 #[test]
 fn ref_problem_accepts_version_patterns_when_configured() {
-    for reference in ["1.2.3", "1.2.3-rc.1", "v1.2.3", "v1.2.3-suffix"] {
+    for reference in [
+        "1.2.3",
+        "1.2.3-rc.1",
+        "v1.2.3",
+        "v1.2.3-suffix",
+        "1.2.3-rc_1",
+        "v1.2.3-alpha-2",
+    ] {
         assert_eq!(
             ref_problem(reference, RefOutcome::MustBeSha, 4, true),
             None,
@@ -195,7 +202,17 @@ fn ref_problem_accepts_version_patterns_when_configured() {
         );
     }
 
-    for reference in ["v1.2", "1.2.3-", "release-1.2.3"] {
+    for reference in [
+        "v1.2",
+        "1.2.3-",
+        "release-1.2.3",
+        // A suffix may only contain ASCII letters, ASCII digits, `.`,
+        // `-`, and `_`; anything else is not a versioning suffix.
+        "1.2.3-abc$def&ghi",
+        "1.2.3-abc,def",
+        "1.2.3-abc;def",
+        "v1.2.3-abc/def",
+    ] {
         assert_eq!(
             ref_problem(reference, RefOutcome::MustBeSha, 4, true),
             Some(RefProblem::NotSha),
