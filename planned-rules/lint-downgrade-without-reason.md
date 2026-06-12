@@ -1,4 +1,4 @@
-# `lint_downgrade_reason`
+# `lint_downgrade_without_reason`
 
 **Source:** project convention.
 
@@ -85,7 +85,7 @@ The two rules overlap when the inherited level is `warn` or
 
 - `perfectionist::allow_attributes_without_reason` fires on every
   `#[allow]` / `#[expect]` regardless of inherited level.
-- `lint_downgrade_reason` fires on every level lower than
+- `lint_downgrade_without_reason` fires on every level lower than
   ambient, which includes `#[allow]` / `#[expect]` whose
   inherited level is `warn` or `deny` — and additionally
   catches `#[warn]` over `#[deny]`, which the sibling rule
@@ -97,7 +97,7 @@ attribute-already-flagged guard). A project that enables only
 `allow_attributes_without_reason` skips the ancestry walk entirely and still
 catches the high-value cases — most silencing in practice is of
 clippy lints whose default level is `warn`. A project that
-enables only `lint_downgrade_reason` accepts `#[allow]` on
+enables only `lint_downgrade_without_reason` accepts `#[allow]` on
 default-`allow` lints (a large share of the pedantic / nursery /
 restriction clippy groups) but catches every relative downgrade
 including `#[warn]` over `#[deny]`.
@@ -168,7 +168,7 @@ The too-short case has no autofix; the diagnostic points at the
 ## Configuration
 
 ```toml
-[lint_downgrade_reason]
+[lint_downgrade_without_reason]
 # Lints excluded from the requirement.
 exempt_lints = [
     # "clippy::module_name_repetitions",

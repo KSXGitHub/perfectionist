@@ -168,7 +168,7 @@ pattern that several rules call out by reference — live in
   pin a fixed length such as 12 or 40.
 
 ### Lint-level attributes
-- [`lint-downgrade-reason.md`](./lint-downgrade-reason.md) —
+- [`lint-downgrade-without-reason.md`](./lint-downgrade-without-reason.md) —
   same presence-and-length requirement as
   `perfectionist::allow_attributes_without_reason`, extended to any
   `#[warn]` / `#[allow]` / `#[expect]` that lowers the lint's

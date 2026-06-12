@@ -209,7 +209,7 @@ pub(crate) fn render_meta_path(meta: &MetaItem) -> String {
 ///
 /// Shared between the lint-level rules that all consume the same
 /// notion of "this attribute carries an explanatory reason":
-/// `allow_attributes_without_reason`, `lint_downgrade_reason`, and
+/// `allow_attributes_without_reason`, `lint_downgrade_without_reason`, and
 /// `lint_attribute_trailing_comment`. The arg list is the post-`meta_item_list`
 /// vector of nested meta items — the same shape every caller already
 /// constructs from `Attribute::meta_item_list()`.
