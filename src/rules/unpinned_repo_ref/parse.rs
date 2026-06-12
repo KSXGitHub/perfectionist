@@ -87,7 +87,7 @@ pub(crate) fn url_host(url: &str) -> Option<&str> {
 /// Locate the ref of `url`, interpreted under `kind`'s URL shape.
 /// `None` when the URL doesn't match the kind's file-reference shape
 /// (e.g. a `/commit/<sha>` or `/compare/...` URL, which this rule
-/// leaves to `commit-id-length`).
+/// leaves to `commit-id-length-mismatch`).
 pub(super) fn locate_ref(url: &str, kind: ForgeKind) -> Option<RefLocation<'_>> {
     let (path_offset, path) = split_path(url)?;
     let segments = segments(path);

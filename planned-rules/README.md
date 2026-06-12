@@ -160,7 +160,7 @@ pattern that several rules call out by reference — live in
 ### Documentation
 - [`em-dash-prose.md`](./em-dash-prose.md) — flag em dashes in doc comments
   and string literals reachable from `format!` / `println!` style macros.
-- [`commit-id-length.md`](./commit-id-length.md) — enforce a
+- [`commit-id-length-mismatch.md`](./commit-id-length-mismatch.md) — enforce a
   consistent SHA length for commit IDs that appear in forge URLs.
   Covers file references, single-commit views (`/commit/<sha>`),
   and range comparisons (`/compare/<sha>...<sha>`). Defaults are

@@ -38,7 +38,7 @@ declare_tool_lint! {
     /// linked to.
     ///
     /// This rule only concerns whether the ref is mutable; the
-    /// *length* of an accepted SHA is `perfectionist::commit_id_length`'s
+    /// *length* of an accepted SHA is `perfectionist::commit_id_length_mismatch`'s
     /// concern, and `perfectionist::bare_url` ensures the URL is
     /// wrapped. The three lints layer rather than overlap.
     ///

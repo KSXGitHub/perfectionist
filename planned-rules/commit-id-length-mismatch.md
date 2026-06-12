@@ -1,4 +1,4 @@
-# `commit_id_length`
+# `commit_id_length_mismatch`
 
 **Source:** project convention. Sibling lint to
 `perfectionist::unpinned_repo_ref`
@@ -37,7 +37,7 @@ codebase.
 ## Configuration
 
 ```toml
-[commit_id_length]
+[commit_id_length_mismatch]
 # Where the lint scans. Subset of these.
 targets = ["doc", "comment", "string_literal"]
 
@@ -222,7 +222,7 @@ pinning a fixed length.
 The two lints are orthogonal and run independently. A URL may emit:
 
 - A `perfectionist::unpinned_repo_ref` diagnostic if its ref is a branch.
-- A `commit-id-length` diagnostic if its ref is a SHA outside the
+- A `commit-id-length-mismatch` diagnostic if its ref is a SHA outside the
   window.
 - Both, in the unusual case where the URL contains both a branch ref
   and a SHA in different slots (e.g., a compare URL with one branch
