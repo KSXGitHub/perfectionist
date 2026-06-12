@@ -1,4 +1,4 @@
-use super::*;
+use super::{Attribute, apply_rename_all, pascal_to_snake, serde_has_default, serde_str_attr};
 
 fn parse_attrs(source: &str) -> Vec<Attribute> {
     let parsed: syn::ItemStruct =

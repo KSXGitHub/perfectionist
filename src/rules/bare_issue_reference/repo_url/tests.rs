@@ -1,4 +1,4 @@
-use super::*;
+use super::normalize;
 
 #[test]
 fn https_url_passes_through() {

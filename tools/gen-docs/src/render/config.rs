@@ -140,7 +140,7 @@ fn custom_type_block(ty: &TypeDoc) -> Markup {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{ConfigDoc, config_section};
     use crate::model::{ConfigField, Optionality};
 
     #[test]

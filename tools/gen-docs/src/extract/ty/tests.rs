@@ -1,4 +1,6 @@
-use super::*;
+use super::{
+    BTreeSet, BUILTIN_TYPES, SharedTypes, Type, collect_referenced_idents, toml_type_label,
+};
 
 fn parse_type(source: &str) -> Type {
     syn::parse_str(source).expect("test input should parse as a syn::Type")

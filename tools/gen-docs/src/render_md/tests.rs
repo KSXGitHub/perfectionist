@@ -1,4 +1,4 @@
-use super::*;
+use super::{ConfigDoc, Rule, promote_headings, render_index_md, render_rule_md, rule_file_name};
 use crate::model::{ConfigField, DefaultState, EnumVariant, Optionality, TypeDoc, TypeKind};
 use std::path::PathBuf;
 

@@ -429,7 +429,7 @@ fn take_domain(input: &str) -> Option<usize> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::take_email;
 
     #[test]
     fn takes_basic_email() {

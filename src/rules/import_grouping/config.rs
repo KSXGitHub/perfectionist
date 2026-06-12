@@ -128,7 +128,10 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{
+        CfgBlockHandling, Config, Style, default_internal_prefixes, default_order,
+        default_std_crates,
+    };
 
     #[test]
     fn style_values_deserialize() {

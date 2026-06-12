@@ -1,4 +1,4 @@
-use super::*;
+use super::{Path, source_link_prefix_for};
 
 #[test]
 fn source_link_prefix_for_typical_one_level() {

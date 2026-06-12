@@ -1,4 +1,4 @@
-use super::*;
+use super::{CheckOutcome, Rule, check_rules_dir, fs, write_rules_dir};
 use crate::model::{ConfigDoc, DefaultState};
 use std::path::PathBuf;
 

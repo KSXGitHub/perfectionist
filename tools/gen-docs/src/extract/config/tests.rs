@@ -1,4 +1,4 @@
-use super::*;
+use super::{Optionality, Path, SharedTypes, extract_config};
 
 #[test]
 fn required_field_is_detected_syntactically() {

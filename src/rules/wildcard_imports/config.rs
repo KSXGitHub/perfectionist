@@ -66,7 +66,7 @@ impl Resolved {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{Config, Resolved};
 
     #[test]
     fn defaults_enable_both_exceptions() {

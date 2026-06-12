@@ -1,4 +1,4 @@
-use super::*;
+use super::{collect_rules, fs};
 use std::path::PathBuf;
 
 /// Allocate a fresh temp directory unique across both processes
