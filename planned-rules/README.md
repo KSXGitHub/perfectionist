@@ -22,7 +22,7 @@ pattern that several rules call out by reference — live in
   `pub mod` first, then `pub use`, then private items.
 
 ### Imports
-- [`prefer-std-path.md`](./prefer-std-path.md) — for projects that
+- [`core-instead-of-std.md`](./core-instead-of-std.md) — for projects that
   target `std` exclusively, flag `core::` / `alloc::` paths whose item is
   also reachable through `std::`, and suggest the `std::` form. Inactive
   by default. The opposite direction (`prefer_core`) is out of scope —

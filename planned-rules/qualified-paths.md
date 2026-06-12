@@ -231,7 +231,7 @@ For each path:
   user is expected to use. `Vec` is defined in `alloc::vec::Vec`
   but most projects refer to it as `std::vec::Vec` or just `Vec`.
   The lint's path resolution should respect the
-  [`prefer-std-path`](./prefer-std-path.md) preference if it is
+  [`core-instead-of-std`](./core-instead-of-std.md) preference if it is
   active, so a suggested path uses `std::` rather than the
   `core` / `alloc` definition path.
 - **Parser style.** The configuration parser
@@ -255,7 +255,7 @@ For each path:
   but slows the lint slightly. Both are acceptable trade-offs.
 - The `qualified` direction's autofix has the
   canonical-vs-preferred-path problem described above. Handle by
-  consulting [`prefer-std-path`](./prefer-std-path.md) config when
+  consulting [`core-instead-of-std`](./core-instead-of-std.md) config when
   present.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)

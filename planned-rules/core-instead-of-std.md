@@ -1,4 +1,4 @@
-# `prefer_std_path`
+# `core_instead_of_std`
 
 **Source:** project convention.
 
@@ -27,7 +27,7 @@ is the `prefer_std` counterpart they have no equivalent for.
 #
 # Inactive by default. Enable in `[perfectionist].enable`. The rule has
 # a single direction (prefer `std::`), so there is no `style` knob.
-[prefer_std_path]
+[core_instead_of_std]
 # Defaults to `true`. When `false`, the lint ignores `alloc`-vs-`std`
 # differences and only governs `core`-vs-`std`. Useful for projects that
 # depend on `std` permanently but want to track `core` cleanliness for
