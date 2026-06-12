@@ -103,9 +103,12 @@ pub(super) struct MacroTrailingComma {
 impl MacroTrailingComma {
     pub(super) fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        for entries in [&config.extra_macros, &config.ignore] {
+        for (field, entries) in [
+            ("extra_macros", &config.extra_macros),
+            ("ignore", &config.ignore),
+        ] {
             reject_absolute_list(entries).unwrap_or_else(|message| {
-                panic!("perfectionist::macro_trailing_comma: {message}");
+                panic!("perfectionist::macro_trailing_comma: `{field}`: {message}");
             });
         }
         let extra_macros: BTreeSet<Vec<String>> = config

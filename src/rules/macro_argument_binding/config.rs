@@ -302,9 +302,13 @@ pub(super) struct MacroArgumentBinding {
 impl MacroArgumentBinding {
     pub(super) fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        for entries in [&config.deny_extra, &config.allow_extra, &config.ignore] {
+        for (field, entries) in [
+            ("deny_extra", &config.deny_extra),
+            ("allow_extra", &config.allow_extra),
+            ("ignore", &config.ignore),
+        ] {
             reject_absolute_list(entries).unwrap_or_else(|message| {
-                panic!("perfectionist::macro_argument_binding: {message}");
+                panic!("perfectionist::macro_argument_binding: `{field}`: {message}");
             });
         }
         let extra_deny = parse_path_list(&config.deny_extra);

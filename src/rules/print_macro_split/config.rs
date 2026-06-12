@@ -76,7 +76,7 @@ impl PrintMacroSplit {
     pub(super) fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         reject_absolute_list(&config.target_macros).unwrap_or_else(|message| {
-            panic!("perfectionist::print_macro_split: {message}");
+            panic!("perfectionist::print_macro_split: `target_macros`: {message}");
         });
         // An entry that parses to no segments (empty / whitespace-only)
         // is dropped by `parse_path_list`. A `target_macros = []`
