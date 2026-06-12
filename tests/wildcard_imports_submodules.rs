@@ -26,6 +26,36 @@ const LIB_WITH_CFG_TEST: &str =
 
 const SEPARATE_GLOB: &str = "use std::collections::*;\n";
 
+/// The rule's reason for existing: AI-generated code routinely opens a
+/// unit-test module with `use super::*;`, and this rule is meant to flag
+/// exactly that. This is the canonical motivating fixture — a single
+/// `#[cfg(test)] mod tests { use super::*; }` with the default
+/// configuration — kept on its own so the headline case has an explicit,
+/// minimal spec that can't be weakened by an unrelated change to the
+/// bundled test below.
+#[test]
+fn flags_the_motivating_use_super_glob_in_unit_tests() {
+    const LIB: &str = include_str!("fixtures/wildcard_imports_submodules/motivation_lib.rs");
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_wi_motivation",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[("src/lib.rs", LIB)],
+        // Default configuration: the test-module `use super::*;` is flagged
+        // out of the box, with no exception or allow-list entry covering it.
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        stderr.contains(LINT),
+        "expected `{LINT}` to flag the test-module glob; stderr was:\n{stderr}",
+    );
+    assert!(
+        stderr.contains("use super::*"),
+        "expected the motivating `use super::*;` to be flagged; stderr was:\n{stderr}",
+    );
+}
+
 /// Under `--all-targets` the unit-test target is compiled, so the
 /// `#[cfg(test)] mod tests { use super::*; }` is live and flagged — and
 /// the glob in the separate-file submodule is flagged too.
