@@ -50,7 +50,7 @@ pattern that several rules call out by reference — live in
   default; opt in and pick `unqualified` or `qualified`.
 
 ### Trait bounds and signatures
-- [`where-clause-bounds.md`](./where-clause-bounds.md) — prefer `where` clauses
+- [`excessive-inline-bounds.md`](./excessive-inline-bounds.md) — prefer `where` clauses
   over inline bounds when there are multiple constraints.
 - [`needless-borrowed-parameters.md`](./needless-borrowed-parameters.md) — when a
   function takes `&T` but the body unconditionally calls

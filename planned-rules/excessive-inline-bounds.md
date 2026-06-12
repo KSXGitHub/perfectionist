@@ -1,4 +1,4 @@
-# `where_clause_bounds`
+# `excessive_inline_bounds`
 
 **Sources:** parallel-disk-usage *Trait Bounds*; pacquet *Trait Bounds*.
 
@@ -18,9 +18,9 @@ inline bound, suggest moving every inline bound into a `where` clause.
 
 Two heuristics, both configurable:
 
-- `where_clause_bounds.max_inline_bounds_per_param` (default `1`): an
+- `excessive_inline_bounds.max_inline_bounds_per_param` (default `1`): an
   individual generic parameter may carry up to this many inline bounds.
-- `where_clause_bounds.max_total_inline_bounds` (default `2`): across all
+- `excessive_inline_bounds.max_total_inline_bounds` (default `2`): across all
   generic parameters of one item, the sum of inline bounds may not exceed
   this number before a `where` clause is required.
 
