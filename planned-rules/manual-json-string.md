@@ -517,13 +517,13 @@ entirely.
 
 ## Interaction with sibling rules
 
-- [`prefer-text-block`](./prefer-text-block.md) — both rules
+- [`escaped-multiline-string`](./escaped-multiline-string.md) — both rules
   look at multi-line string literals, but operate on disjoint
-  classes. `prefer_text_block` rewrites the literal's *shape*
+  classes. `escaped_multiline_string` rewrites the literal's *shape*
   (newlines split across source lines); this rule rewrites the
   literal's *construction* (string → `json!` macro). To avoid
   emitting two diagnostics on the same literal,
-  `prefer_text_block`'s implementation should suppress its own
+  `escaped_multiline_string`'s implementation should suppress its own
   diagnostic when the literal parses as a structurally
   interesting JSON document — the `json!` rewrite produces
   structured data rather than a multi-line string, so the

@@ -1,4 +1,4 @@
-# `prefer_text_block`
+# `escaped_multiline_string`
 
 **Source:** project convention.
 
@@ -219,7 +219,7 @@ let _ = text_block! { "foo" "bar" "baz" };  // already inside text_block!
 ## Configuration
 
 ```toml
-[prefer_text_block]
+[escaped_multiline_string]
 style = "text_block_macros"  # or "line_continuation"
 
 # Minimum number of `\n` characters in the decoded value before
@@ -353,12 +353,12 @@ properties:
 
 - `perfectionist::avoidable_string_escapes` (when applied) rewrites a literal's *quote
   delimiters* to avoid escapes for printable characters.
-- `prefer-text-block` (when applied) rewrites a literal's
+- `escaped-multiline-string` (when applied) rewrites a literal's
   *shape* to spread newlines across multiple source lines.
 
 A multi-line string with both `\"` escapes and `\n` separators
 hits both lints. The natural application order is
-`prefer-text-block` first (lift the lines into a `text_block!`
+`escaped-multiline-string` first (lift the lines into a `text_block!`
 or continued literal), then `perfectionist::avoidable_string_escapes` on each
 resulting per-line literal. The two lints converge on a final
 form like:

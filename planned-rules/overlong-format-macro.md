@@ -56,7 +56,7 @@ For every invocation of a target macro:
    If its width is `≤ max_line_width`, skip — the call is short
    enough to leave alone. Width is unicode display width, the
    same metric as
-   [`prefer-text-block`](./prefer-text-block.md) and
+   [`escaped-multiline-string`](./escaped-multiline-string.md) and
    [`long-splittable-print-macro`](./long-splittable-print-macro.md).
 5. Emit a diagnostic suggesting the line-continuation rewrite:
    - Replace each interior `\n` in the template with
@@ -171,7 +171,7 @@ target_macros = [
 - Source-line width: take the macro invocation's full `Span`,
   resolve to the source map, compute the unicode display width
   via the `unicode-width` crate. Same dependency and helper as
-  [`prefer-text-block`](./prefer-text-block.md) and
+  [`escaped-multiline-string`](./escaped-multiline-string.md) and
   [`long-splittable-print-macro`](./long-splittable-print-macro.md).
 - **Parser style.** Implement the template scanner as parser-
   combinator-style `take_*` functions per
@@ -180,7 +180,7 @@ target_macros = [
   [`derive-more-inlined-args`](./derive-more-inlined-args.md),
   the escape scanner in `src/rules/avoidable_string_escapes.rs`, and
   [`long-splittable-print-macro`](./long-splittable-print-macro.md). The split logic
-  is the same as `prefer-text-block`'s width-trigger split:
+  is the same as `escaped-multiline-string`'s width-trigger split:
   scan for the last whitespace within the budget, hard-split at
   the boundary as fallback.
 
@@ -211,7 +211,7 @@ Active by default.
 Together, three rules cover every place a multi-line or
 otherwise-too-long template appears in source:
 
-- [`prefer-text-block`](./prefer-text-block.md) — bare string
+- [`escaped-multiline-string`](./escaped-multiline-string.md) — bare string
   literals (`let s = "a\nb"`, return values).
 - [`long-splittable-print-macro`](./long-splittable-print-macro.md) — splittable
   side-effect macros (`println!`, `writeln!`, `log::*!`).

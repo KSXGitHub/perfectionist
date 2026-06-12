@@ -218,7 +218,7 @@ target_macros = [
 - Source-line width: take the macro invocation's full `Span`,
   resolve to the source map, compute the unicode display width
   via the `unicode-width` crate. Same dependency and approach as
-  [`prefer-text-block`](./prefer-text-block.md); share the helper.
+  [`escaped-multiline-string`](./escaped-multiline-string.md); share the helper.
 - **Parser style.** Implement the format-template scanner as
   parser-combinator-style `take_*` functions per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
@@ -279,7 +279,7 @@ Active by default.
 
 ## Interaction with sibling rules
 
-- [`prefer-text-block`](./prefer-text-block.md) handles multi-line
+- [`escaped-multiline-string`](./escaped-multiline-string.md) handles multi-line
   string literals in *non-template* positions (a `let s = "a\nb"`
   binding, a return value). It explicitly skips format templates,
   which is where this rule picks up.
@@ -291,6 +291,6 @@ Active by default.
   inlined arg removes a positional re-indexing case).
 
 The three rules together cover the three places multi-line text
-appears in code: bare literals (`prefer-text-block`),
+appears in code: bare literals (`escaped-multiline-string`),
 display/debug attributes (`derive-more-inlined-args`), and print
 macros (this rule).

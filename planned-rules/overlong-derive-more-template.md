@@ -53,7 +53,7 @@ For every recognised attribute on a struct, enum, or variant:
    width is `≤ max_line_width`, skip — the attribute is short
    enough to leave alone. Width is unicode display width, the
    same metric as
-   [`prefer-text-block`](./prefer-text-block.md),
+   [`escaped-multiline-string`](./escaped-multiline-string.md),
    [`long-splittable-print-macro`](./long-splittable-print-macro.md), and
    [`overlong-format-macro`](./overlong-format-macro.md).
 5. Emit a diagnostic suggesting the line-continuation rewrite:
@@ -150,7 +150,7 @@ both qualify.
   - Compute the unicode display width of the *entire* attribute's
     source span (`#[...]` brackets included), not just the
     literal. Use the same `unicode-width` helper as
-    [`prefer-text-block`](./prefer-text-block.md),
+    [`escaped-multiline-string`](./escaped-multiline-string.md),
     [`long-splittable-print-macro`](./long-splittable-print-macro.md), and
     [`overlong-format-macro`](./overlong-format-macro.md).
   - Compare with `max_line_width`; emit if exceeded.
@@ -197,7 +197,7 @@ Active by default.
 The four width-driven template rules together cover every place a
 too-wide format template appears in source:
 
-- [`prefer-text-block`](./prefer-text-block.md) — bare string
+- [`escaped-multiline-string`](./escaped-multiline-string.md) — bare string
   literals not interpreted as templates.
 - [`long-splittable-print-macro`](./long-splittable-print-macro.md) — splittable
   side-effect macros (`println!`, `writeln!`, `log::*!`).

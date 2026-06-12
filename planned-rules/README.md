@@ -91,7 +91,7 @@ pattern that several rules call out by reference — live in
   (`require_serde_json_dependency = false` opts in).
 
 ### String literals
-- [`prefer-text-block.md`](./prefer-text-block.md) — when a string
+- [`escaped-multiline-string.md`](./escaped-multiline-string.md) — when a string
   literal contains 2+ embedded `\n` newlines (and isn't a format
   template or display-attribute), prefer `text_block! { ... }` /
   `text_block_fnl! { ... }` (default) or the
