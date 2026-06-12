@@ -45,7 +45,7 @@ pattern that several rules call out by reference — live in
 ### Trait bounds and signatures
 - [`where-clause-bounds.md`](./where-clause-bounds.md) — prefer `where` clauses
   over inline bounds when there are multiple constraints.
-- [`prefer-owned-parameter.md`](./prefer-owned-parameter.md) — when a
+- [`needless-borrowed-parameter.md`](./needless-borrowed-parameter.md) — when a
   function takes `&T` but the body unconditionally calls
   `.to_owned()` / `.to_path_buf()` / equivalent, take `T` directly.
   Pairs with `clippy::ptr_arg` and `clippy::needless_pass_by_value`
@@ -90,7 +90,7 @@ pattern that several rules call out by reference — live in
   `text_block_fnl! { ... }` (default) or the
   `"line\n\<newline>line"` continuation form. Skips templates and
   attribute literals.
-- [`print-macro-split.md`](./print-macro-split.md) — when a
+- [`unsplit-print-macro.md`](./unsplit-print-macro.md) — when a
   splittable print macro (`println!`, `eprintln!`, `writeln!`,
   log family, …) has an embedded-`\n` template *and* spans more
   than `max_line_width` columns, suggest either splitting into
@@ -125,7 +125,7 @@ pattern that several rules call out by reference — live in
   of `macro_rules!` matchers to detect the `$(,)?` / `$(,)*`
   optional-trailing-comma idioms (harder, not yet implemented
   and therefore not configurable).
-- [`macro-argument-binding.md`](./macro-argument-binding.md) —
+- [`impure-macro-argument.md`](./impure-macro-argument.md) —
   require impure expressions passed to function-like and
   array-like macro invocations to be bound to a `let` first.
   Targets the `debug_assert_eq!(map.insert(k, v), None)` footgun
@@ -163,7 +163,7 @@ pattern that several rules call out by reference — live in
 ### Lint-level attributes
 - [`lint-downgrade-reason.md`](./lint-downgrade-reason.md) —
   same presence-and-length requirement as
-  `perfectionist::lint_silence_reason`, extended to any
+  `perfectionist::allow_attributes_without_reason`, extended to any
   `#[warn]` / `#[allow]` / `#[expect]` that lowers the lint's
   inherited level (`deny → warn`, `warn → allow`, etc.).
   Ancestry-aware counterpart.
@@ -173,8 +173,8 @@ pattern that several rules call out by reference — live in
   comments that exceed configurable line / character budgets (catches
   AI-generated bloat). Shares the clap-derived-container detection and
   the override set with the implemented
-  `perfectionist::clap_help_no_markdown`
-  ([`src/rules/clap_help_no_markdown/collect.rs`](../src/rules/clap_help_no_markdown/collect.rs)).
+  `perfectionist::clap_help_markdown`
+  ([`src/rules/clap_help_markdown/collect.rs`](../src/rules/clap_help_markdown/collect.rs)).
 
 ## Out of scope (cannot be linted by Dylint)
 
@@ -194,7 +194,7 @@ external state, or judgement calls that a static lint cannot evaluate:
   suggests `&Path` / `&str` / `&[_]`). The other two cases
   (prefer-owned-when-converting and
   prefer-borrowed-when-not-consumed) are handled respectively by
-  [`prefer-owned-parameter`](./prefer-owned-parameter.md) and
+  [`needless-borrowed-parameter`](./needless-borrowed-parameter.md) and
   `clippy::needless_pass_by_value`.
 - **Reporter wire-contract requirements** in pacquet (channel naming,
   upstream permalink comments, ordering relative to side effects, recording

@@ -24,16 +24,16 @@ fn run(src_base: &str, dylint_toml_contents: &str) {
 
 /// `disable = ["<rule>"]` skips the rule's `register_pass` call, so
 /// the fixture's violation produces no diagnostic. Reuses the
-/// `macro_argument_binding/disabled` fixture — it has no `.stderr`
+/// `impure_macro_argument/disabled` fixture — it has no `.stderr`
 /// (no diagnostics expected) and otherwise triggers
-/// `macro_argument_binding` at its default level.
+/// `impure_macro_argument` at its default level.
 #[test]
 fn disable_in_global_table_suppresses_a_default_on_rule() {
     run(
-        "ui-toml/macro_argument_binding/disabled",
+        "ui-toml/impure_macro_argument/disabled",
         text_block_fnl! {
             "[perfectionist]"
-            r#"disable = ["macro_argument_binding"]"#
+            r#"disable = ["impure_macro_argument"]"#
         },
     );
 }
@@ -44,11 +44,11 @@ fn disable_in_global_table_suppresses_a_default_on_rule() {
 #[test]
 fn disable_accepts_inline_table_with_reason() {
     run(
-        "ui-toml/macro_argument_binding/disabled",
+        "ui-toml/impure_macro_argument/disabled",
         text_block_fnl! {
             "[perfectionist]"
             "disable = ["
-            r#"    { name = "macro_argument_binding", reason = "test-only" },"#
+            r#"    { name = "impure_macro_argument", reason = "test-only" },"#
             "]"
         },
     );
@@ -59,10 +59,10 @@ fn disable_accepts_inline_table_with_reason() {
 #[test]
 fn disable_accepts_array_of_tables_form() {
     run(
-        "ui-toml/macro_argument_binding/disabled",
+        "ui-toml/impure_macro_argument/disabled",
         text_block_fnl! {
             "[[perfectionist.disable]]"
-            r#"name = "macro_argument_binding""#
+            r#"name = "impure_macro_argument""#
             r#"reason = "test-only""#
         },
     );
@@ -70,17 +70,17 @@ fn disable_accepts_array_of_tables_form() {
 
 /// `enable = ["<rule>"]` flips a default-off rule to on, so the
 /// fixture's `pub enum FooError {}` produces the snapshot's
-/// diagnostic. Reuses the `non_exhaustive_error/baseline` fixture
-/// (the same one `tests/non_exhaustive_error.rs` exercises with the
+/// diagnostic. Reuses the `exhaustive_error_enums/baseline` fixture
+/// (the same one `tests/exhaustive_error_enums.rs` exercises with the
 /// `WholeToml` helper); this test exists to lock in the bare-string
 /// form on the parser side without the per-rule scaffolding.
 #[test]
 fn enable_in_global_table_activates_a_default_off_rule() {
     run(
-        "ui-toml/non_exhaustive_error/baseline",
+        "ui-toml/exhaustive_error_enums/baseline",
         text_block_fnl! {
             "[perfectionist]"
-            r#"enable = ["non_exhaustive_error"]"#
+            r#"enable = ["exhaustive_error_enums"]"#
         },
     );
 }
@@ -91,11 +91,11 @@ fn enable_in_global_table_activates_a_default_off_rule() {
 #[test]
 fn enable_accepts_inline_table_with_reason() {
     run(
-        "ui-toml/non_exhaustive_error/baseline",
+        "ui-toml/exhaustive_error_enums/baseline",
         text_block_fnl! {
             "[perfectionist]"
             "enable = ["
-            r#"    { name = "non_exhaustive_error", reason = "test-only" },"#
+            r#"    { name = "exhaustive_error_enums", reason = "test-only" },"#
             "]"
         },
     );
@@ -105,10 +105,10 @@ fn enable_accepts_inline_table_with_reason() {
 #[test]
 fn enable_accepts_array_of_tables_form() {
     run(
-        "ui-toml/non_exhaustive_error/baseline",
+        "ui-toml/exhaustive_error_enums/baseline",
         text_block_fnl! {
             "[[perfectionist.enable]]"
-            r#"name = "non_exhaustive_error""#
+            r#"name = "exhaustive_error_enums""#
             r#"reason = "test-only""#
         },
     );

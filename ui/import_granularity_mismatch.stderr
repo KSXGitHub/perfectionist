@@ -1,0 +1,56 @@
+warning: imports are not grouped into one `use` per module
+  --> $DIR/import_granularity_mismatch.rs:16:5
+   |
+LL | /     use std::collections::BTreeMap;
+LL | |     use std::collections::HashMap;
+   | |__________________________________^ help: reorganize the imports: `use std::collections::{BTreeMap, HashMap};`
+   |
+   = note: `#[warn(perfectionist::import_granularity_mismatch)]` on by default
+
+warning: imports are not grouped into one `use` per module
+  --> $DIR/import_granularity_mismatch.rs:23:5
+   |
+LL |     use std::{collections::HashMap, io::Read};
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: reorganize the imports
+   |
+LL ~     use std::collections::HashMap;
+LL +     use std::io::Read;
+   |
+
+warning: imports are not grouped into one `use` per module
+  --> $DIR/import_granularity_mismatch.rs:28:5
+   |
+LL |     use std::collections::{BTreeMap, btree_map::Entry};
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: reorganize the imports
+   |
+LL ~     use std::collections::BTreeMap;
+LL +     use std::collections::btree_map::Entry;
+   |
+
+warning: imports are not grouped into one `use` per module
+  --> $DIR/import_granularity_mismatch.rs:86:5
+   |
+LL |     use {a, b};
+   |     ^^^^^^^^^^^
+   |
+help: reorganize the imports
+   |
+LL ~     use a;
+LL +     use b;
+   |
+
+warning: glob import brings an unbounded set of names into scope
+  --> $DIR/import_granularity_mismatch.rs:58:37
+   |
+LL |     use {std::collections::HashMap, *};
+   |                                     ^
+   |
+   = help: import the specific items by name instead
+   = note: `#[warn(perfectionist::wildcard_imports)]` on by default
+
+warning: 5 warnings emitted
+

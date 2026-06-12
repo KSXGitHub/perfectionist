@@ -16,7 +16,7 @@ use maud::{Markup, PreEscaped, html};
 ///    `<details>` when find-in-page hits something inside it, so
 ///    search still works.
 /// 2. When the rule has no fields (an empty `Config` struct,
-///    e.g. `lint_reason_from_comment`), render a single inline line
+///    e.g. `lint_attribute_trailing_comment`), render a single inline line
 ///    "Configuration: none." instead. The fact that the rule is
 ///    not configurable is itself information; omitting the section
 ///    entirely would leave readers wondering whether they missed a

@@ -101,7 +101,7 @@ impl CommentChunk<'_> {
     /// Returns `None` for a range that crosses the synthesised `\n`
     /// between two joined `///` lines — splicing the `///` prefix bytes
     /// of the next line into the span would make any autofix built from
-    /// it corrupt the source. `clap_help_no_markdown` uses the precise
+    /// it corrupt the source. `clap_help_markdown` uses the precise
     /// single-line span both as the diagnostic anchor and as the
     /// replacement span for its code-span autofix, and declines the
     /// autofix when this returns `None`.

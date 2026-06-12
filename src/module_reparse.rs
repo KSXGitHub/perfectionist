@@ -1,8 +1,8 @@
 //! Re-parsing a crate's module files from a `LateLintPass`.
 //!
 //! A rule that inspects the *source-level* layout of `use` statements —
-//! the blank-line grouping of `perfectionist::import_grouping`, the
-//! granularity of `perfectionist::import_granularity`, the module-`self`
+//! the blank-line grouping of `perfectionist::import_grouping_mismatch`, the
+//! granularity of `perfectionist::import_granularity_mismatch`, the module-`self`
 //! folding of `perfectionist::uncombined_self_import` — hits a wall in a
 //! pre-expansion `EarlyLintPass`: an out-of-line `mod foo;` module is
 //! still `ModKind::Unloaded` there (its file is not parsed until macro

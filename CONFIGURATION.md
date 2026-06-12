@@ -20,7 +20,7 @@ See [CONTROLLING_RULES.md](./CONTROLLING_RULES.md) for the broader picture of ho
 Each rule has its own configuration table under its full namespaced name, e.g.:
 
 ```toml
-[perfectionist::non_exhaustive_error]
+[perfectionist::exhaustive_error_enums]
 require_for = "pub_crate"
 ```
 

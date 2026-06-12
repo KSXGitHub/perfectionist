@@ -9,7 +9,7 @@
 //!   post-filter before emitting diagnostics. [`classify_constructs`]
 //!   is the richer Tier A entry point: it returns every construct's
 //!   byte range *and* its [`ConstructKind`], which
-//!   `clap_help_no_markdown` maps onto its forbidden-construct
+//!   `clap_help_markdown` maps onto its forbidden-construct
 //!   categories.
 //! - **Tier B — code-region mask.** [`scan_code_regions`] returns only
 //!   the byte ranges of code spans and code blocks, for rules
@@ -600,7 +600,7 @@ fn looks_like_uri_or_email(body: &str) -> bool {
 }
 
 /// Which of the three CommonMark `[...]` link shapes a [`classify_link`]
-/// match is. `clap_help_no_markdown` reports each under a distinct
+/// match is. `clap_help_markdown` reports each under a distinct
 /// "forbidden construct" category, so the discriminant is preserved
 /// rather than collapsed to a length.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -725,7 +725,7 @@ pub(crate) struct Construct {
 
 /// The kind of a [`Construct`] — the full Tier A structural taxonomy
 /// (see the "Markdown parsing" section of
-/// `planned-rules/IMPLEMENTATION_CONVENTIONS.md`). `clap_help_no_markdown`
+/// `planned-rules/IMPLEMENTATION_CONVENTIONS.md`). `clap_help_markdown`
 /// maps each kind onto a user-facing "forbidden construct" category and
 /// decides per kind whether to flag it.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -763,7 +763,7 @@ pub(crate) enum ConstructKind {
 /// on top of the always-classified structural set. Emphasis and list
 /// detection are off unless a consumer asks for them, because their
 /// CommonMark rules are flanking-sensitive and the catalogue only needs
-/// them behind `clap_help_no_markdown`'s opt-in `extra_forbid` knob.
+/// them behind `clap_help_markdown`'s opt-in `extra_forbid` knob.
 #[derive(Clone, Copy, Default)]
 pub(crate) struct ClassifyOptions {
     pub(crate) detect_emphasis: bool,
@@ -1096,7 +1096,7 @@ fn take_html_tag(input: &str) -> Option<usize> {
 /// one, on the same paragraph. `_` additionally requires a word
 /// boundary on both sides so intraword underscores (`foo_bar`) do not
 /// register. The imprecision is acceptable because emphasis detection
-/// is only reachable through `clap_help_no_markdown`'s opt-in
+/// is only reachable through `clap_help_markdown`'s opt-in
 /// `extra_forbid` knob.
 fn take_emphasis(input: &str, idx: usize) -> Option<(ConstructKind, usize)> {
     let bytes = input.as_bytes();

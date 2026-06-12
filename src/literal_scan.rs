@@ -26,8 +26,8 @@
 //! shared by every rule that walks a *cooked* string literal's body
 //! and must tell a real backslash escape (`\n`, `\\`, `\xNN`,
 //! `\u{...}`, a line continuation, ...) apart from the bytes around
-//! it. `prefer_raw_string` uses it to bail on the first non-eligible
-//! escape; `print_macro_split` uses it to locate the `\n` escapes it
+//! it. `avoidable_string_escapes` uses it to bail on the first non-eligible
+//! escape; `unsplit_print_macro` uses it to locate the `\n` escapes it
 //! folds without being fooled by `\\n` (an escaped backslash followed
 //! by the letter `n`, which is *not* a newline).
 

@@ -47,26 +47,23 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
     }
 
     register! {
+        allow_attributes
+        allow_attributes_without_reason
+        avoidable_string_escapes
         bare_email
         bare_identifier_reference
         bare_issue_reference
         bare_url
-        clap_help_no_markdown
-        derive_ordering
-        import_granularity
-        import_grouping
-        inline_test_footprint
-        lint_reason_from_comment
-        lint_silence_reason
-        macro_argument_binding
+        clap_help_markdown
+        excessive_inline_tests
+        exhaustive_error_enums
+        impure_macro_argument
+        import_granularity_mismatch
+        import_grouping_mismatch
+        lint_attribute_trailing_comment
         macro_trailing_comma
         named_prelude_imports
-        non_exhaustive_error
-        prefer_derive_more_over_thiserror
-        prefer_expect_over_allow
-        prefer_owned_parameter
-        prefer_raw_string
-        print_macro_split
+        needless_borrowed_parameter
         single_letter_closure_param
         single_letter_const_generic
         single_letter_const_item
@@ -74,11 +71,14 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         single_letter_generic
         single_letter_let_binding
         single_letter_static_item
+        thiserror_usage
         uncombined_self_import
         unicode_ellipsis_in_comments
         unicode_ellipsis_in_docs
         unicode_ellipsis_in_panic_messages
+        unordered_derives
         unpinned_repo_ref
+        unsplit_print_macro
         wildcard_imports
 
         // `unknown_perfectionist_lints::register_pass` snapshots the registered

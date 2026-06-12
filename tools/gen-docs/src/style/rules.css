@@ -198,7 +198,7 @@ dl.config dd p {
 }
 
 /* Author-written `####` sub-headings in a rule's rustdoc (e.g.
-   `import_granularity`'s `#### Style` examples) render as a bare `<h4>` and
+   `import_granularity_mismatch`'s `#### Style` examples) render as a bare `<h4>` and
    read as ordinary example sub-headings: a notch below the `<h3>`
    section headings, normal case. */
 article.rule h4 {

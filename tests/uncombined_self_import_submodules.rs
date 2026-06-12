@@ -11,7 +11,7 @@
 //! run `cargo dylint --all` against it, sharing the warmed
 //! `target/integration-fixtures`. `uncombined_self_import` is inactive by
 //! default, so each test enables it through the appended `dylint.toml`
-//! config (`import_granularity` is disabled so its own findings stay out
+//! config (`import_granularity_mismatch` is disabled so its own findings stay out
 //! of the snapshot).
 
 pub mod _utils;
@@ -23,7 +23,7 @@ const LINT: &str = "perfectionist::uncombined_self_import";
 const CONFIG: &str = "\
 [perfectionist]
 enable = [\"uncombined_self_import\"]
-disable = [\"import_granularity\"]
+disable = [\"import_granularity_mismatch\"]
 ";
 
 /// The rule folds an adjacent module + item import pair that lives in a

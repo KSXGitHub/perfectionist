@@ -1,0 +1,16 @@
+warning: derive list does not match the configured `prefix_then_alphabetical` order
+  --> $DIR/fixture.rs:7:10
+   |
+LL | #[derive(Clone, Debug)]
+   |          ^^^^^^^^^^^^ help: reorder the derive list: `Debug, Clone`
+   |
+   = note: `#[warn(perfectionist::unordered_derives)]` on by default
+
+warning: derive list does not match the configured `prefix_then_alphabetical` order
+  --> $DIR/fixture.rs:15:10
+   |
+LL | #[derive(Hash, PartialEq, Eq, PartialOrd, Ord)]
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: reorder the derive list: `PartialEq, Eq, PartialOrd, Ord, Hash`
+
+warning: 2 warnings emitted
+

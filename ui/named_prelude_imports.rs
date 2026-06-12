@@ -5,7 +5,7 @@
 // A prelude module re-exporting items from their canonical home, so the
 // fix has a real `DefId` to resolve a canonical path against. Each case
 // sits in its own module so the per-rule warnings stay isolated (and so
-// the sibling `import_granularity` rule has nothing to merge).
+// the sibling `import_granularity_mismatch` rule has nothing to merge).
 pub mod thing {
     pub struct A;
     pub struct B;

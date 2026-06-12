@@ -32,21 +32,21 @@ The `DYLINT_RUSTFLAGS=-D perfectionist::<rule>` form mentioned above bypasses so
 
 ## 2. Rule registration (project-wide)
 
-Each rule is either *enabled* (its pass runs) or *disabled* (its pass is never installed, so it produces no diagnostics at all). Most rules are enabled by default; a few — currently `derive_ordering` and `non_exhaustive_error` — ship disabled and require an explicit opt-in. Flip the registration state via the crate-wide `[perfectionist]` table in `dylint.toml`:
+Each rule is either *enabled* (its pass runs) or *disabled* (its pass is never installed, so it produces no diagnostics at all). Most rules are enabled by default; a few — currently `unordered_derives` and `exhaustive_error_enums` — ship disabled and require an explicit opt-in. Flip the registration state via the crate-wide `[perfectionist]` table in `dylint.toml`:
 
 ```toml
 [perfectionist]
-enable = ["non_exhaustive_error"]
-disable = ["prefer_raw_string"]
+enable = ["exhaustive_error_enums"]
+disable = ["avoidable_string_escapes"]
 ```
 
 Each entry can also be an inline table carrying a `reason` for the human reading the config later:
 
 ```toml
 [perfectionist]
-enable = [{ name = "non_exhaustive_error", reason = "we publish libraries and care about SemVer surface" }]
+enable = [{ name = "exhaustive_error_enums", reason = "we publish libraries and care about SemVer surface" }]
 disable = [
-    "prefer_raw_string",
+    "avoidable_string_escapes",
     { name = "single_letter_closure_param", reason = "we use single-letter binders in math-heavy code" },
 ]
 ```
@@ -55,11 +55,11 @@ Bare strings and inline `{ name, reason }` tables can be intermixed inside a sin
 
 ```toml
 [[perfectionist.enable]]
-name = "non_exhaustive_error"
+name = "exhaustive_error_enums"
 reason = "we publish libraries and care about SemVer surface"
 
 [[perfectionist.disable]]
-name = "prefer_raw_string"
+name = "avoidable_string_escapes"
 ```
 
 (TOML rejects mixing `enable = [...]` and `[[perfectionist.enable]]` in the same file as a duplicate-key error, so a config uses one or the other for each key.)

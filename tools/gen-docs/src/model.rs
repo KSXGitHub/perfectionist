@@ -36,7 +36,7 @@ pub(crate) struct RenderContext<'a> {
 
 /// One lint, in the shape the page needs to render.
 pub(crate) struct Rule {
-    /// `perfectionist::lint_reason_from_comment` — used as the anchor.
+    /// `perfectionist::lint_attribute_trailing_comment` — used as the anchor.
     pub(crate) namespaced: String,
     /// Whether the rule's pass is registered out of the box, or only
     /// after the user opts in via
@@ -62,7 +62,7 @@ pub(crate) struct Rule {
     pub(crate) relative_source: PathBuf,
     /// The rule's configuration surface. Every rule declares both a
     /// `CONFIG_KEY` constant and a `Config` struct; a rule with no
-    /// knobs uses an empty `Config {}` (e.g. `lint_reason_from_comment`).
+    /// knobs uses an empty `Config {}` (e.g. `lint_attribute_trailing_comment`).
     /// "No configuration" therefore has a single representation —
     /// an empty [`ConfigDoc`] — that both output modes render as
     /// "Configuration: none." The extractor enforces this, panicking
@@ -110,7 +110,7 @@ impl DefaultState {
 /// rule's `Config` struct paired with its `CONFIG_KEY` constant.
 #[derive(Clone)]
 pub(crate) struct ConfigDoc {
-    /// The TOML table key, e.g. `perfectionist::lint_reason_from_comment`.
+    /// The TOML table key, e.g. `perfectionist::lint_attribute_trailing_comment`.
     /// Read from the file's `CONFIG_KEY` constant verbatim.
     pub(crate) key: String,
     /// One entry per named field of the `Config` struct.
@@ -127,7 +127,7 @@ pub(crate) struct ConfigDoc {
 /// reproducing the Rust default expression — the prose doc comment
 /// states the default in human-readable form. The exception is the
 /// "Mandatory configuration on opt-in rules" direction fields (e.g.
-/// `import_grouping`'s `style`), which are a bare type with no default;
+/// `import_grouping_mismatch`'s `style`), which are a bare type with no default;
 /// those carry [`ConfigField::optionality`] set to
 /// [`Optionality::Mandatory`] and render a `mandatory` badge instead.
 #[derive(Clone)]

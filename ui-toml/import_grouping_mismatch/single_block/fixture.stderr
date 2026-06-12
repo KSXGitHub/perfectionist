@@ -1,0 +1,19 @@
+warning: blank lines split the imports; this project keeps them in a single block
+  --> $DIR/fixture.rs:22:1
+   |
+LL | / use std::time::Duration;
+LL | |
+LL | | use clap::Parser;
+LL | | use crate::config::Args;
+   | |________________________^
+   |
+   = note: `#[warn(perfectionist::import_grouping_mismatch)]` on by default
+help: regroup the imports
+   |
+LL + use std::time::Duration;
+LL + use clap::Parser;
+LL + use crate::config::Args;
+   |
+
+warning: 1 warning emitted
+

@@ -12,8 +12,8 @@ tighten, or that match the inherited level, are not flagged.
 
 The local case — every `#[allow]` / `#[expect]` regardless of
 inherited level — is covered by the sibling
-`perfectionist::lint_silence_reason`
-([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs)).
+`perfectionist::allow_attributes_without_reason`
+([`src/rules/allow_attributes_without_reason.rs`](../src/rules/allow_attributes_without_reason.rs)).
 This rule covers the ancestry-aware case: any explicit step
 down relative to the surrounding scope.
 
@@ -58,7 +58,7 @@ If the attribute's level is strictly lower than the resolved
 enclosing level (`deny → warn`, `deny → allow`,
 `deny → expect`, `warn → allow`, `warn → expect`), apply the
 same presence / length check as
-`perfectionist::lint_silence_reason`:
+`perfectionist::allow_attributes_without_reason`:
 
 - **`reason` absent.** Emit a "missing reason" diagnostic at
   the attribute's span.
@@ -78,12 +78,12 @@ The lint-level ordering used for "strictly lower" is
 `Forbid > Deny > Warn > Expect ≈ Allow`. `Expect` and `Allow`
 are treated equally — both fully silence output.
 
-## Relationship to `lint_silence_reason`
+## Relationship to `allow_attributes_without_reason`
 
 The two rules overlap when the inherited level is `warn` or
 `deny`:
 
-- `perfectionist::lint_silence_reason` fires on every
+- `perfectionist::allow_attributes_without_reason` fires on every
   `#[allow]` / `#[expect]` regardless of inherited level.
 - `lint_downgrade_reason` fires on every level lower than
   ambient, which includes `#[allow]` / `#[expect]` whose
@@ -94,7 +94,7 @@ The two rules overlap when the inherited level is `warn` or
 A project that enables both rules gets one diagnostic per
 attribute either way (the rules deduplicate via a shared
 attribute-already-flagged guard). A project that enables only
-`lint_silence_reason` skips the ancestry walk entirely and still
+`allow_attributes_without_reason` skips the ancestry walk entirely and still
 catches the high-value cases — most silencing in practice is of
 clippy lints whose default level is `warn`. A project that
 enables only `lint_downgrade_reason` accepts `#[allow]` on
@@ -157,8 +157,8 @@ before the closing `)` of the attribute's argument list.
 `Applicability::HasPlaceholders` — the empty string is a
 placeholder the author fills in. Layout and the `cfg_attr` /
 inner-attribute scope handling are the same as for
-`perfectionist::lint_silence_reason`
-([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs)):
+`perfectionist::allow_attributes_without_reason`
+([`src/rules/allow_attributes_without_reason.rs`](../src/rules/allow_attributes_without_reason.rs)):
 the insertion point is the inner `warn(...)` / `allow(...)` /
 `expect(...)` argument list, not any wrapping `cfg_attr`.
 
@@ -199,14 +199,14 @@ min_reason_length = 3
   using the `Forbid > Deny > Warn > Expect ≈ Allow` ordering.
   If not strictly lower, accept. If strictly lower, run the
   same presence / length check as
-  `perfectionist::lint_silence_reason`
-  ([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs))
+  `perfectionist::allow_attributes_without_reason`
+  ([`src/rules/allow_attributes_without_reason.rs`](../src/rules/allow_attributes_without_reason.rs))
   and emit the corresponding "missing reason" or "reason too
   short" diagnostic.
 - The `reason`-presence check is shared with
-  `perfectionist::lint_reason_from_comment`
-  ([`src/rules/lint_reason_from_comment.rs`](../src/rules/lint_reason_from_comment.rs))
-  and `perfectionist::lint_silence_reason`. All three consume
+  `perfectionist::lint_attribute_trailing_comment`
+  ([`src/rules/lint_attribute_trailing_comment.rs`](../src/rules/lint_attribute_trailing_comment.rs))
+  and `perfectionist::allow_attributes_without_reason`. All three consume
   `src/common.rs::attr_has_reason`.
 
 ### Difficulty
@@ -235,8 +235,8 @@ min_reason_length = 3
   walk the ancestry manually, skipping the attribute under
   inspection.
 
-`perfectionist::lint_silence_reason`
-([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs))
+`perfectionist::allow_attributes_without_reason`
+([`src/rules/allow_attributes_without_reason.rs`](../src/rules/allow_attributes_without_reason.rs))
 ships the easy half (`EarlyLintPass`, no ancestry); this rule
 is the follow-up once the lint-level query interface is pinned
 for the target nightly.
@@ -252,18 +252,18 @@ Active by default.
 
 ## Interaction with sibling rules
 
-- `perfectionist::lint_silence_reason`
-  ([`src/rules/lint_silence_reason.rs`](../src/rules/lint_silence_reason.rs))
+- `perfectionist::allow_attributes_without_reason`
+  ([`src/rules/allow_attributes_without_reason.rs`](../src/rules/allow_attributes_without_reason.rs))
   covers the local case (every `#[allow]` / `#[expect]`
   regardless of inherited level). See "Relationship to
-  `lint_silence_reason`" above.
-- `perfectionist::lint_reason_from_comment`
-  ([`src/rules/lint_reason_from_comment.rs`](../src/rules/lint_reason_from_comment.rs))
+  `allow_attributes_without_reason`" above.
+- `perfectionist::lint_attribute_trailing_comment`
+  ([`src/rules/lint_attribute_trailing_comment.rs`](../src/rules/lint_attribute_trailing_comment.rs))
   lifts an adjacent comment into the attribute's `reason` field
   and so satisfies this rule preemptively when the rationale is
   already present in source.
-- `perfectionist::prefer_expect_over_allow`
-  ([`src/rules/prefer_expect_over_allow.rs`](../src/rules/prefer_expect_over_allow.rs))
+- `perfectionist::allow_attributes`
+  ([`src/rules/allow_attributes.rs`](../src/rules/allow_attributes.rs))
   rewrites `#[allow]` to `#[expect]`. The level under analysis
   here is the relaxation level, so the rewrite does not affect
   whether this rule fires — `allow` and `expect` rank equally

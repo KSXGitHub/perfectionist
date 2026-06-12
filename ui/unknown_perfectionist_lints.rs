@@ -2,9 +2,9 @@
 #![register_tool(perfectionist)]
 #![allow(
     unknown_lints,
-    perfectionist::lint_silence_reason,
-    perfectionist::lint_reason_from_comment,
-    perfectionist::prefer_expect_over_allow,
+    perfectionist::allow_attributes_without_reason,
+    perfectionist::lint_attribute_trailing_comment,
+    perfectionist::allow_attributes,
     reason = "ui fixture",
 )]
 

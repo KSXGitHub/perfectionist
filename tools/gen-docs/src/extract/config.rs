@@ -64,7 +64,7 @@ pub(crate) fn extract_config(
     // default, so all the struct's fields are optional. Without it, a
     // field that is neither `Option<...>` nor individually defaulted is
     // required — the syntactic signal for a "Mandatory configuration on
-    // opt-in rules" direction field such as `import_grouping`'s `style`.
+    // opt-in rules" direction field such as `import_grouping_mismatch`'s `style`.
     let container_default = serde_has_default(&config_struct.attrs);
 
     let named_fields = match &config_struct.fields {

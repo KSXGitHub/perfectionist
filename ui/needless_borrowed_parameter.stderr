@@ -1,0 +1,111 @@
+warning: parameter `item` is borrowed but its only use produces an owned `PathBuf`
+  --> $DIR/needless_borrowed_parameter.rs:10:45
+   |
+LL | fn push_path(list: &mut Vec<PathBuf>, item: &Path) {
+   |                                             ^^^^^
+   |
+   = note: `#[warn(perfectionist::needless_borrowed_parameter)]` on by default
+help: take the owned type by value and let callers convert at the call site
+   |
+LL ~ fn push_path(list: &mut Vec<PathBuf>, item: PathBuf) {
+LL ~     list.push(item);
+   |
+
+warning: parameter `name` is borrowed but its only use produces an owned `String`
+  --> $DIR/needless_borrowed_parameter.rs:15:16
+   |
+LL | fn store(name: &str, registry: &mut HashMap<String, u32>) {
+   |                ^^^^
+   |
+help: take the owned type by value and let callers convert at the call site
+   |
+LL ~ fn store(name: String, registry: &mut HashMap<String, u32>) {
+LL ~     registry.insert(name, 0);
+   |
+
+warning: parameter `text` is borrowed but its only use produces an owned `String`
+  --> $DIR/needless_borrowed_parameter.rs:20:16
+   |
+LL | fn shout(text: &str) -> String {
+   |                ^^^^
+   |
+help: take the owned type by value and let callers convert at the call site
+   |
+LL ~ fn shout(text: String) -> String {
+LL ~     text
+   |
+
+warning: parameter `bytes` is borrowed but its only use produces an owned `Vec<u8>`
+  --> $DIR/needless_borrowed_parameter.rs:25:16
+   |
+LL | fn keep(bytes: &[u8]) -> Vec<u8> {
+   |                ^^^^^
+   |
+help: take the owned type by value and let callers convert at the call site
+   |
+LL ~ fn keep(bytes: Vec<u8>) -> Vec<u8> {
+LL ~     bytes
+   |
+
+warning: parameter `name` is borrowed but its only use produces an owned `String`
+  --> $DIR/needless_borrowed_parameter.rs:30:19
+   |
+LL | fn from_str(name: &str) -> String {
+   |                   ^^^^
+   |
+help: take the owned type by value and let callers convert at the call site
+   |
+LL ~ fn from_str(name: String) -> String {
+LL ~     name
+   |
+
+warning: parameter `name` is borrowed but its only use produces an owned `String`
+  --> $DIR/needless_borrowed_parameter.rs:35:22
+   |
+LL | fn into_string(name: &str) -> String {
+   |                      ^^^^
+   |
+help: take the owned type by value and let callers convert at the call site
+   |
+LL ~ fn into_string(name: String) -> String {
+LL ~     name
+   |
+
+warning: parameter `value` is borrowed but its only use produces an owned `OsString`
+  --> $DIR/needless_borrowed_parameter.rs:40:19
+   |
+LL | fn keep_os(value: &OsStr) -> OsString {
+   |                   ^^^^^^
+   |
+help: take the owned type by value and let callers convert at the call site
+   |
+LL ~ fn keep_os(value: OsString) -> OsString {
+LL ~     value
+   |
+
+warning: parameter `value` is borrowed but its only use produces an owned `CString`
+  --> $DIR/needless_borrowed_parameter.rs:45:18
+   |
+LL | fn keep_c(value: &CStr) -> CString {
+   |                  ^^^^^
+   |
+help: take the owned type by value and let callers convert at the call site
+   |
+LL ~ fn keep_c(value: CString) -> CString {
+LL ~     value
+   |
+
+warning: parameter `value` is borrowed but its only use produces an owned `String`
+  --> $DIR/needless_borrowed_parameter.rs:53:28
+   |
+LL |     fn named(&self, value: &str) -> String {
+   |                            ^^^^
+   |
+help: take the owned type by value and let callers convert at the call site
+   |
+LL ~     fn named(&self, value: String) -> String {
+LL ~         value
+   |
+
+warning: 9 warnings emitted
+

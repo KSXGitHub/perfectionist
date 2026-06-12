@@ -1,8 +1,8 @@
 # `clap_help_length`
 
 **Source:** project convention. Sibling lint to the implemented
-`perfectionist::clap_help_no_markdown`
-([`src/rules/clap_help_no_markdown.rs`](../src/rules/clap_help_no_markdown.rs));
+`perfectionist::clap_help_markdown`
+([`src/rules/clap_help_markdown.rs`](../src/rules/clap_help_markdown.rs));
 both share the same "is this a clap-derived item, and is the help text
 overridden?" detection.
 
@@ -48,7 +48,7 @@ on the struct), keeping the doc comment available for `cargo doc`.
 
 For every `///` doc comment attached to a clap-derived container or to
 a field/variant of one (the same container set as
-`perfectionist::clap_help_no_markdown`):
+`perfectionist::clap_help_markdown`):
 
 1. Strip leading `///` / `//!` markers and surrounding whitespace from
    each line.
@@ -102,8 +102,8 @@ struct Cli {
 ## Implementation notes
 
 - `LateLintPass`, sharing the clap-container detection approach with
-  the implemented `perfectionist::clap_help_no_markdown`
-  (`src/rules/clap_help_no_markdown/collect.rs`), which re-parses the
+  the implemented `perfectionist::clap_help_markdown`
+  (`src/rules/clap_help_markdown/collect.rs`), which re-parses the
   crate's module files to recover the `#[derive(...)]` and override
   attributes that macro expansion has consumed by the late pass, and
   reaches every separate-file submodule. Factor that walk into a shared
@@ -133,7 +133,7 @@ about_max_chars = 120
 long_about_max_lines = 8
 long_about_max_chars = 600
 
-# Recognised overrides; same default as `perfectionist::clap_help_no_markdown`.
+# Recognised overrides; same default as `perfectionist::clap_help_markdown`.
 override_keys = ["about", "long_about", "help", "long_help"]
 
 # Set true to count graphemes instead of `char`s. Brings in the
@@ -154,11 +154,11 @@ Not mechanical — trimming requires editorial judgement — so the
 lint emits a help-only suggestion pointing at
 `#[arg(long_help = "...")]` as the canonical escape hatch.
 
-## Interaction with `perfectionist::clap_help_no_markdown`
+## Interaction with `perfectionist::clap_help_markdown`
 
 The two lints are independent:
 
-- `perfectionist::clap_help_no_markdown` catches doc-comment markdown
+- `perfectionist::clap_help_markdown` catches doc-comment markdown
   that leaks into `--help` output.
 - `clap-help-length` catches sheer volume.
 

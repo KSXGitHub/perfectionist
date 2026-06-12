@@ -1,0 +1,84 @@
+warning: `thiserror` import; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/thiserror_usage.rs:34:1
+   |
+LL | use thiserror::Error;
+   | ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+   = note: `#[warn(perfectionist::thiserror_usage)]` on by default
+
+warning: `thiserror` import; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/thiserror_usage.rs:38:1
+   |
+LL | use thiserror::*;
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: `thiserror` import; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/thiserror_usage.rs:42:1
+   |
+LL | use thiserror::Error as RenamedErrorMacro;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: `thiserror` import; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/thiserror_usage.rs:45:1
+   |
+LL | pub use thiserror::Error as ReexportedError;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: `thiserror` import; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/thiserror_usage.rs:48:1
+   |
+LL | use thiserror::{Error as _GroupedAlias};
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: `thiserror` import; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/thiserror_usage.rs:54:1
+   |
+LL | use thiserror as te;
+   | ^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: `thiserror` import; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/thiserror_usage.rs:61:1
+   |
+LL | use thiserror::{self as _nested_te};
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: `thiserror` import; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/thiserror_usage.rs:69:1
+   |
+LL | use te::Error as _ChainedAlias;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: `thiserror` import; this catalogue prefers `derive_more::{Display, Error}`
+  --> $DIR/thiserror_usage.rs:75:1
+   |
+LL | use {thiserror::Error as _BracedTopLevel, std::io};
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
+
+warning: glob import brings an unbounded set of names into scope
+  --> $DIR/thiserror_usage.rs:38:5
+   |
+LL | use thiserror::*;
+   |     ^^^^^^^^^^^^
+   |
+   = help: import the specific items by name instead
+   = note: `#[warn(perfectionist::wildcard_imports)]` on by default
+
+warning: 10 warnings emitted
+
