@@ -12,7 +12,11 @@
     )
 )]
 
-use super::{MutableKind, RefOutcome, RefProblem, locate_ref, ref_problem, url_host};
+use super::{
+    MutableKind, RefOutcome, RefProblem, locate_ref, ref_problem, take_bare_version,
+    take_prefixed_version, take_suffixed_version, take_unprefixed_version, take_version_pattern,
+    url_host,
+};
 use crate::rules::unpinned_repo_ref::config::ForgeKind;
 
 /// Locate the ref of `url` under `kind` and assert it sits at the
@@ -173,6 +177,37 @@ fn ref_problem_accepts_sha_and_rejects_short_or_non_hex() {
         ref_problem("dead", RefOutcome::MustBeSha, 7, false),
         Some(RefProblem::NotSha),
     );
+}
+
+#[test]
+fn version_take_functions_consume_a_prefix_and_return_the_rest() {
+    // (1) bare version: exactly three dot-separated digit runs.
+    assert_eq!(take_bare_version("1.2.3/rest"), Some("/rest"));
+    assert_eq!(take_bare_version("10.20.30"), Some(""));
+    assert_eq!(take_bare_version("1.2"), None);
+    assert_eq!(take_bare_version("v1.2.3"), None);
+
+    // (2) suffixed version: bare version, `-`, non-empty suffix run.
+    assert_eq!(take_suffixed_version("1.2.3-rc.1"), Some(""));
+    assert_eq!(take_suffixed_version("1.2.3-abc$def"), Some("$def"));
+    assert_eq!(take_suffixed_version("1.2.3-"), None);
+    assert_eq!(take_suffixed_version("1.2.3"), None);
+
+    // (3) union of (1) and (2).
+    assert_eq!(take_unprefixed_version("1.2.3"), Some(""));
+    assert_eq!(take_unprefixed_version("1.2.3-rc.1"), Some(""));
+    assert_eq!(take_unprefixed_version("v1.2.3"), None);
+
+    // (4) `v` prefix joined with (3).
+    assert_eq!(take_prefixed_version("v1.2.3"), Some(""));
+    assert_eq!(take_prefixed_version("v1.2.3-rc.1"), Some(""));
+    assert_eq!(take_prefixed_version("1.2.3"), None);
+
+    // (5) union of (3) and (4).
+    assert_eq!(take_version_pattern("1.2.3"), Some(""));
+    assert_eq!(take_version_pattern("v1.2.3-rc.1"), Some(""));
+    assert_eq!(take_version_pattern("1.2.3.4"), Some(".4"));
+    assert_eq!(take_version_pattern("main"), None);
 }
 
 #[test]
