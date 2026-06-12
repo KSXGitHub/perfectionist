@@ -86,10 +86,9 @@ resolve the leaf to its target item and resolve the prefix `P` to the
 module `M` the leaf is named *out of*. Flag the import when **`M`
 reaches `Leaf` only through a private re-export**, i.e. all of:
 
-1. `M` does **not** define the target item (`tcx.parent(target)` is not
-   `M`); and
-2. the binding for `Leaf` in `M` is an **import** (a re-export, with a
-   non-empty re-export chain), not a definition; and
+1. `M` does **not** define the target item; and
+2. the binding for `Leaf` in `M` is an **import** (a re-export), not a
+   definition; and
 3. that re-export's visibility does **not** make `Leaf` nameable from
    the importing module on its own merits — the importer reaches it
    solely because it is a descendant of `M` (ancestor privilege). A
@@ -165,97 +164,87 @@ mod inner {
 
 ## Configuration
 
-```toml
-# dylint.toml
-[private_reexport_imports]
-# Fully-qualified import paths the lint should never flag. Use this for
-# a module's *intentional* shared private import — a deliberate "local
-# prelude" that descendants are meant to reach through `super::`.
-allowed_paths = []
-```
+None. The rule has one correct direction, so there is no knob to tune.
+
+The one legitimate exception — a module that *intentionally* keeps a
+shared private import for its descendants to reach through `super::` —
+is suppressed at the offending import with
+`#[allow(perfectionist::private_reexport_imports)]` (or `#[expect(…)]`).
+A per-site attribute is the right tool *because the violation is
+positional*: the realistic trigger is a relative `use super::Thing;`,
+whose written path is meaningful only inside its own module. There is
+no stable, project-wide path string a config list could match it by —
+`"super::Thing"` would exempt every `super::Thing` in the crate
+regardless of which item it resolves to, and the item's canonical path
+(`crate::origin::Thing`) is the path the rule wants you to *use*, not a
+sensible exemption key. The attribute names the exact import; a path
+list cannot. This is the deliberate reason the rule ships no
+`allowed_paths`-style knob.
 
 ## Implementation notes
 
-- A HIR `LateLintPass::check_item` on
-  `ItemKind::Use(path, UseKind::Single(_))`, the same entry point as
-  `perfectionist::named_prelude_imports`
-  ([`src/rules/named_prelude_imports.rs`](../src/rules/named_prelude_imports.rs)).
-  Resolution data (the leaf's target `DefId`, the prefix module's
-  `DefId`, the re-export chain and visibility of the intermediate
-  binding) only exists post-resolution, so a late pass is required.
+These notes fix the *shape* of the rule. They deliberately stop short
+of naming specific `rustc` / `clippy_utils` APIs: the exact queries for
+"how does module `M` bind this name?" and "is this binding visible
+here?" should be settled against the compiler during implementation,
+not trusted from this file. Treat the points below as the design, not
+as verified API.
 
-- **This is not a source-layout rule** in the sense of
-  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md#reaching-every-module-source-layout-rules).
-  It keys off each individual `use` *item* and DefId resolution, not
-  the *written order/shape* of a module body, so the HIR walk already
-  reaches every compiled module — including separate-file `mod foo;`
-  submodules — without the `src/module_reparse.rs` machinery. Do not
-  reach for a pre-expansion `EarlyLintPass` module walk here; the same
-  reasoning that keeps `named_prelude_imports` on a plain HIR
-  `check_item` applies. (cfg-disabled `use`s are not the rule's
-  concern — an import that is not compiled cannot be reaching a private
-  re-export.)
+- **A late pass over single named imports.** The rule triggers on each
+  `use P::Leaf;` / `use P::Leaf as R;`. What it must know — what `Leaf`
+  ultimately resolves to, and *how* the module `P` binds `Leaf` (its own
+  definition, a public re-export, or a private import) — exists only
+  after name resolution, so this is a `LateLintPass`, not a
+  pre-expansion `EarlyLintPass`. `named_prelude_imports`
+  ([`src/rules/named_prelude_imports.rs`](../src/rules/named_prelude_imports.rs))
+  is the existing rule with the nearest shape; follow its structure.
 
-- **Detecting the private re-export.** Resolve the prefix `P` to the
-  module `M`. Find the child of `M` named `Leaf`
-  (`tcx.module_children_local(M)` for a local module's
-  `ModChild`s). Classify it:
-  - direct definition with `tcx.parent == M` → not flagged;
-  - import (`ModChild` with a non-empty `reexport_chain`) whose `vis`
-    makes `Leaf` nameable from the importing module without ancestor
-    privilege → not flagged (public re-export);
-  - import whose `vis` does *not* reach the importer on its own → flag.
+- **Not a source-layout rule.** The rule keys off individual `use`
+  items, not the written order/shape of a module body, so a plain HIR
+  pass already reaches every compiled module — including separate-file
+  `mod foo;` submodules — the way `named_prelude_imports` does. It does
+  *not* need `src/module_reparse.rs`. See
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md#reaching-every-module-source-layout-rules)
+  for why that helper exists and why it is unnecessary here.
 
-  The visibility judgment is the wedge, exactly analogous to the
-  same-name-collision check in
-  [`qualified-paths`](./qualified-paths.md): compare the binding's
-  `ty::Visibility` against the importing module's `DefId` with
-  `Visibility::is_accessible_from`, but subtract the ancestor-privilege
-  that a descendant always has. Concretely, the import is flagged when
-  the binding is *not* accessible from `M`'s parent scope (a sibling of
-  the chain) yet *is* reachable from the importer purely positionally.
-  Conservative resolution keeps the false-positive rate at zero, which
-  matters because the autofix rewrites import paths.
+- **The classification to implement.** For the prefix module `P` and
+  the leaf name, decide which of three cases holds: `P` *defines* the
+  item (fine); `P` *re-exports* it with a visibility that lets the
+  importer name it on its own merits (fine); or `P` only reaches it
+  through a *private* import the importer can see purely because it is a
+  descendant of `P` (flag). The third case is the rule. The
+  visibility comparison is the part most likely to be subtle — resolve
+  it conservatively (when unsure, do not flag), since the autofix
+  rewrites import paths and a false positive misdirects an import.
 
-- **Autofix.** Reuse the canonical-module resolution already built for
-  `named_prelude_imports`: replace the written path span with the
-  item's canonical path — the **definition** path from `tcx.def_path`
-  (prefixed `crate` for the local crate, the crate name otherwise),
-  preferring a nearer **`pub` re-export** module when one is publicly
-  nameable. Preserve any `as` rename. Applicability is
-  `MachineApplicable` when every component of the chosen path up to the
-  crate root is `pub` (so it is nameable from the importer) and
-  `MaybeIncorrect` otherwise — identical grading to
-  `named_prelude_imports`. When all three import rules are active, the
-  raw rewritten `use` line is reflowed by
-  `perfectionist::import_granularity` and
-  `perfectionist::import_grouping` on a subsequent `--fix` pass, so the
-  suggestion need only emit one `use` per leaf.
+- **Autofix.** Re-point the import at where the item is actually owned —
+  its definition or a public re-export — reusing the canonical-path
+  resolution already built for `named_prelude_imports` rather than
+  duplicating it. Preserve any `as` rename, and grade applicability the
+  way that rule does (machine-applicable only when the rewritten path is
+  publicly nameable from the importer). When the import rules are all
+  active, `perfectionist::import_granularity` and
+  `perfectionist::import_grouping` reflow the rewritten line on a later
+  `--fix` pass, so the suggestion need only emit one `use` per leaf.
 
-- **Proc-macro suppression.** A `use` synthesized by a proc-macro can
-  carry a user-source span and slip past `report_in_external_macro:
-  false`; gate the diagnostic with `crate::common::hir_in_external_macro`
-  and ship a `ui/private_reexport_imports_proc_macro.rs` regression
-  fixture per the "Suppressing proc-macro-synthesised violations"
-  section of
+- **Proc-macro suppression.** If a proc-macro can synthesize a flagged
+  `use` carrying a user-source span, gate the diagnostic with the
+  standard guard and add a regression fixture, per the "Suppressing
+  proc-macro-synthesised violations" section of
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations).
-  The fixture is only real if it fails with the guard removed.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
-  for cross-cutting conventions that apply to every rule in this
-  catalogue, in particular the lint-name namespacing (`perfectionist::*`)
-  that every registered lint follows.
+  for cross-cutting conventions, in particular the `perfectionist::*`
+  lint-name namespacing every registered lint follows.
 
 ### Difficulty
 
-**Medium.** The trigger — single named import, prefix-module
-resolution, and the `ModChild` re-export-chain classification — is
-mechanical and reuses `named_prelude_imports`' canonical-path autofix
-wholesale. The wedge is the visibility judgment in step (3): "reachable
-only by ancestor privilege" must be computed without false positives,
-since the fix re-points an import. Resolve it conservatively (when in
-doubt, do not flag), the same discipline `qualified_paths` applies to
-its collision check.
+**Medium.** Triggering on single named imports and reusing
+`named_prelude_imports`' canonical-path autofix is mechanical. The wedge
+is the visibility classification — telling a private import reached by
+ancestor privilege apart from a genuine public re-export — which must be
+conservative to keep false positives at zero, since the fix re-points an
+import.
 
 ## Interaction with sibling rules
 
@@ -298,4 +287,6 @@ definition or a public re-export), matching
 [`named-prelude-imports`](./named-prelude-imports.md). The one
 legitimate counter-pattern — a module that *intentionally* holds a
 shared private import for its descendants to reach through `super::` —
-is exempted per import via `allowed_paths`.
+is suppressed per import with
+`#[allow(perfectionist::private_reexport_imports)]`, not a config knob
+(see *Configuration*).
