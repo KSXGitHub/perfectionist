@@ -21,20 +21,8 @@ use _utils::{
 
 const LINT: &str = "perfectionist::wildcard_imports";
 
-const LIB_WITH_CFG_TEST: &str = "\
-#![feature(register_tool)]
-#![register_tool(perfectionist)]
-#![allow(unknown_lints, unused_imports, dead_code, reason = \"fixture\")]
-
-pub struct Thing;
-
-mod separate;
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-}
-";
+const LIB_WITH_CFG_TEST: &str =
+    include_str!("fixtures/wildcard_imports_submodules/lib_with_cfg_test.rs");
 
 const SEPARATE_GLOB: &str = "use std::collections::*;\n";
 
@@ -110,14 +98,7 @@ fn cfg_test_glob_skipped_in_library_build() {
 /// resolve.
 #[test]
 fn respects_allow_on_separate_file_submodule() {
-    let lib = "\
-#![feature(register_tool)]
-#![register_tool(perfectionist)]
-#![allow(unknown_lints, unused_imports, dead_code, reason = \"fixture\")]
-
-#[allow(perfectionist::wildcard_imports, reason = \"regression fixture\")]
-mod separate;
-";
+    let lib = include_str!("fixtures/wildcard_imports_submodules/allowed_lib.rs");
     let (_temp, stderr, success) = run_project_with_sources(
         "fixture_wi_allowed",
         cargo_manifest_dir(),
