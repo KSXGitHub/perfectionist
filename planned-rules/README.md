@@ -81,7 +81,7 @@ pattern that several rules call out by reference — live in
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
   `#[cfg_attr(..., ignore = "...")]` over `#[cfg(...)]` on `#[test]`s, and
   require an `ignore` reason string.
-- [`prefer-json-macro.md`](./prefer-json-macro.md) — in test
+- [`manual-json-string.md`](./manual-json-string.md) — in test
   code, when a string literal or `format!` invocation produces a
   non-trivial JSON document, prefer
   `serde_json::json!({ ... }).to_string()`. By default silent in

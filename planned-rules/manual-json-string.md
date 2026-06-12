@@ -1,4 +1,4 @@
-# `prefer_json_macro`
+# `manual_json_string`
 
 **Source:** project convention.
 
@@ -297,7 +297,7 @@ fn not_json() {
 ## Configuration
 
 ```toml
-[prefer_json_macro]
+[manual_json_string]
 # Whether to gate the rule on detecting `serde_json` as a
 # dependency anywhere in the workspace (see "Workspace gate"). When
 # `true` (default), the rule is silent in workspaces that don't
