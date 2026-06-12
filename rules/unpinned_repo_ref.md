@@ -13,8 +13,8 @@ Flags URLs that reference a file or directory inside a hosted
 git repository (GitHub, GitLab, Bitbucket, Codeberg / Gitea,
 sourcehut, etc.) when the ref in the URL is a branch or tag
 rather than a commit SHA. Projects that deliberately link to
-release tags can opt into accepting semver-shaped tag names via
-`allow_release_tags`. Scans doc comments, regular comments, and
+version-shaped refs can opt into accepting those patterns via
+`allow_version_patterns`. Scans doc comments, regular comments, and
 string literals.
 
 ## Why restrict this?
@@ -24,10 +24,10 @@ branch ref such as `/blob/main/...` resolves to whatever that
 branch currently points at, so the linked content can change —
 or disappear — without warning after the link is written. A tag
 ref is steadier but still not pinned: a tag can be moved, and
-the lint usually can't tell a tag from a branch by name alone (a
-branch named `v1.2.3` is valid Git), so tags are rejected by
-default. If that is too strict for a project's release links,
-`allow_release_tags = true` accepts refs shaped like `1.2.3`,
+the lint can't tell a tag from a branch by name alone (a branch
+named `v1.2.3` is valid Git), so version-shaped refs are rejected
+by default. If that is too strict for a project's version links,
+`allow_version_patterns = true` accepts refs shaped like `1.2.3`,
 `1.2.3-suffix`, `v1.2.3`, or `v1.2.3-suffix`. A commit SHA is
 still the only ref that always denotes the exact content the
 author linked to.
@@ -71,12 +71,12 @@ which trades a small false-negative window (branch names like
 branch names that merely look hex-ish. Set to `1` to treat any
 pure-hex ref as a SHA.
 
-### `allow_release_tags`: `boolean` (optional)
+### `allow_version_patterns`: `boolean` (optional)
 
-Whether refs shaped like release tags (`1.2.3`, `v1.2.3`, or
+Whether refs shaped like version patterns (`1.2.3`, `v1.2.3`, or
 either form with a non-empty `-suffix`) are accepted without a
 commit SHA. Defaults to `false`; tags can move, and a
-release-shaped branch name is valid Git, so projects must opt in
+version-shaped branch name is valid Git, so projects must opt in
 to this convenience explicitly.
 
 ### `hosts`: `[HostEntry]` (optional)

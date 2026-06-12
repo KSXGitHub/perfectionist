@@ -106,18 +106,18 @@ pub(super) fn locate_ref(url: &str, kind: ForgeKind) -> Option<RefLocation<'_>> 
 }
 
 /// Classify a located ref. `None` means the ref is acceptable (a
-/// commit SHA, or a release-shaped tag when configured);
+/// commit SHA, or a version-shaped ref when configured);
 /// `Some(problem)` is a violation.
 pub(crate) fn ref_problem(
     text: &str,
     outcome: RefOutcome,
     sha_recognition_length: usize,
-    allow_release_tags: bool,
+    allow_version_patterns: bool,
 ) -> Option<RefProblem> {
     match outcome {
         RefOutcome::KnownMutable(MutableKind::Branch) => Some(RefProblem::Branch),
         RefOutcome::KnownMutable(MutableKind::Tag) => {
-            if allow_release_tags && is_release_tag_ref(text) {
+            if allow_version_patterns && is_version_pattern_ref(text) {
                 None
             } else {
                 Some(RefProblem::Tag)
@@ -125,7 +125,7 @@ pub(crate) fn ref_problem(
         }
         RefOutcome::MustBeSha => {
             if is_commit_sha(text, sha_recognition_length)
-                || (allow_release_tags && is_release_tag_ref(text))
+                || (allow_version_patterns && is_version_pattern_ref(text))
             {
                 None
             } else {
@@ -143,10 +143,10 @@ fn is_commit_sha(text: &str, sha_recognition_length: usize) -> bool {
         && text.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
-/// Whether `text` looks like a release tag (`1.2.3`, `v1.2.3`, or
+/// Whether `text` looks like a version pattern (`1.2.3`, `v1.2.3`, or
 /// either form with a non-empty `-suffix`). This intentionally avoids a
 /// regex dependency because the lint is compiled from source by users.
-fn is_release_tag_ref(text: &str) -> bool {
+fn is_version_pattern_ref(text: &str) -> bool {
     let text = text.strip_prefix('v').unwrap_or(text);
     let (version, suffix) = text
         .split_once('-')

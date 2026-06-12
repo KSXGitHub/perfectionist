@@ -74,7 +74,7 @@ fn classify_url<'a>(
         location.text,
         location.outcome,
         rule.sha_recognition_length,
-        rule.allow_release_tags,
+        rule.allow_version_patterns,
     )?;
     Some((location.offset, location.text.len(), problem, location.text))
 }

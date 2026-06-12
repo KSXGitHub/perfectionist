@@ -176,12 +176,12 @@ fn ref_problem_accepts_sha_and_rejects_short_or_non_hex() {
 }
 
 #[test]
-fn ref_problem_accepts_release_tag_patterns_when_configured() {
+fn ref_problem_accepts_version_patterns_when_configured() {
     for reference in ["1.2.3", "1.2.3-rc.1", "v1.2.3", "v1.2.3-suffix"] {
         assert_eq!(
             ref_problem(reference, RefOutcome::MustBeSha, 4, true),
             None,
-            "release-like ref {reference:?}",
+            "version-pattern ref {reference:?}",
         );
         assert_eq!(
             ref_problem(
@@ -199,18 +199,18 @@ fn ref_problem_accepts_release_tag_patterns_when_configured() {
         assert_eq!(
             ref_problem(reference, RefOutcome::MustBeSha, 4, true),
             Some(RefProblem::NotSha),
-            "non-release ref {reference:?}",
+            "non-version-pattern ref {reference:?}",
         );
     }
 }
 
 #[test]
-fn ref_problem_rejects_release_tag_patterns_by_default() {
+fn ref_problem_rejects_version_patterns_by_default() {
     for reference in ["1.2.3", "1.2.3-rc.1", "v1.2.3", "v1.2.3-suffix"] {
         assert_eq!(
             ref_problem(reference, RefOutcome::MustBeSha, 4, false),
             Some(RefProblem::NotSha),
-            "release-like ref {reference:?}",
+            "version-pattern ref {reference:?}",
         );
         assert_eq!(
             ref_problem(
@@ -226,7 +226,7 @@ fn ref_problem_rejects_release_tag_patterns_by_default() {
 }
 
 #[test]
-fn ref_problem_reports_gitea_branch_and_non_release_tag() {
+fn ref_problem_reports_gitea_branch_and_non_version_pattern_tag() {
     // A gitea `/branch/` URL whose ref happens to be hex is still a
     // branch — the path, not the text, decides.
     assert_eq!(
