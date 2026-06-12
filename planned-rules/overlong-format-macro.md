@@ -1,4 +1,4 @@
-# `format_macro_wrap`
+# `overlong_format_macro`
 
 **Source:** project convention. Sibling to
 [`long-splittable-print-macro`](./long-splittable-print-macro.md), which covers the
@@ -140,7 +140,7 @@ write!(f, "a\nb {x}")?;  // not in target_macros (write! is splittable)
 ## Configuration
 
 ```toml
-[format_macro_wrap]
+[overlong_format_macro]
 # Source-line width that triggers the rule. Default 100 matches
 # rustfmt's column default. Width is unicode display width of the
 # line containing the macro invocation, not its byte length.
@@ -217,7 +217,7 @@ otherwise-too-long template appears in source:
   side-effect macros (`println!`, `writeln!`, `log::*!`).
   Two-style choice between multi-call splitting and line
   continuation.
-- `format_macro_wrap` (this rule) — value-producing or
+- `overlong_format_macro` (this rule) — value-producing or
   terminating macros (`format!`, `panic!`, `assert!`). Only
   line continuation is viable.
 

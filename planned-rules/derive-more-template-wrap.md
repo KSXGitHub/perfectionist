@@ -1,7 +1,7 @@
 # `derive_more_template_wrap`
 
 **Source:** project convention. Sibling to
-[`format-macro-wrap`](./format-macro-wrap.md) and
+[`overlong-format-macro`](./overlong-format-macro.md) and
 [`long-splittable-print-macro`](./long-splittable-print-macro.md). The same
 "too-wide source line carrying a format template" problem appears
 in three places; this rule covers the third — `derive_more`'s
@@ -55,7 +55,7 @@ For every recognised attribute on a struct, enum, or variant:
    same metric as
    [`prefer-text-block`](./prefer-text-block.md),
    [`long-splittable-print-macro`](./long-splittable-print-macro.md), and
-   [`format-macro-wrap`](./format-macro-wrap.md).
+   [`overlong-format-macro`](./overlong-format-macro.md).
 5. Emit a diagnostic suggesting the line-continuation rewrite:
    - Replace each interior `\n` in the template with
      `\n\<newline><indent>`.
@@ -152,7 +152,7 @@ both qualify.
     literal. Use the same `unicode-width` helper as
     [`prefer-text-block`](./prefer-text-block.md),
     [`long-splittable-print-macro`](./long-splittable-print-macro.md), and
-    [`format-macro-wrap`](./format-macro-wrap.md).
+    [`overlong-format-macro`](./overlong-format-macro.md).
   - Compare with `max_line_width`; emit if exceeded.
 - **Parser style.** Implement the template scanner as parser-
   combinator-style `take_*` functions per
@@ -161,15 +161,15 @@ both qualify.
   [`derive-more-inlined-args`](./derive-more-inlined-args.md),
   the escape scanner in `src/rules/avoidable_string_escapes.rs`,
   [`long-splittable-print-macro`](./long-splittable-print-macro.md), and
-  [`format-macro-wrap`](./format-macro-wrap.md). The split logic
-  is the same as `format-macro-wrap`'s: scan for the last
+  [`overlong-format-macro`](./overlong-format-macro.md). The split logic
+  is the same as `overlong-format-macro`'s: scan for the last
   whitespace within the budget, hard-split at the boundary as
   fallback.
 
 ### Difficulty
 
 **Medium.** Same shape as
-[`format-macro-wrap`](./format-macro-wrap.md): pure syntactic
+[`overlong-format-macro`](./overlong-format-macro.md): pure syntactic
 reformat of the template literal, no argument re-slicing.
 The only complication is splitting the attribute across multiple
 source lines, which is sometimes more involved than splitting
@@ -201,7 +201,7 @@ too-wide format template appears in source:
   literals not interpreted as templates.
 - [`long-splittable-print-macro`](./long-splittable-print-macro.md) — splittable
   side-effect macros (`println!`, `writeln!`, `log::*!`).
-- [`format-macro-wrap`](./format-macro-wrap.md) — value-producing
+- [`overlong-format-macro`](./overlong-format-macro.md) — value-producing
   or terminating macros (`format!`, `panic!`, `assert!`).
 - `derive_more_template_wrap` (this rule) — derive_more
   attribute-form templates (`#[display(...)]`, `#[debug(...)]`).
