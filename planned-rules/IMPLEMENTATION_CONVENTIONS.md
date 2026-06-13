@@ -413,7 +413,7 @@ anti-pattern name rather than an inherited one.
 The name may assert no more than the trigger actually checks. A rule
 that flags a *trailing comment on a lint-level attribute* cannot tell
 whether that comment is a suppression rationale, so it is
-`lint_attribute_trailing_comment`, not `lint_reason_in_comment` — the
+`lint_attribute_trailing_comment`, not `lint_reason_from_comment` — the
 latter claims a "reason" the rule never verifies, and would also hide
 that the rule covers `warn` / `deny` / `forbid`, not just the
 `allow` / `expect` pair that the `allow_attributes*` family is about.
