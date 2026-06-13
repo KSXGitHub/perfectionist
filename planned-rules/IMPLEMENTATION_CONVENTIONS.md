@@ -609,9 +609,9 @@ correctly-spelled one (`"crate::internals"`) never does.
   `validate_absolute` rejects the impossible / relative entries
   (`::crate`, `::self`, `::super`, bare `self::` / `super::`, and a
   bare extern path missing its `::`) with a startup error.
-- **The macro-path consumers** — `perfectionist::macro_argument_binding`,
+- **The macro-path consumers** — `perfectionist::impure_macro_arguments`,
   `perfectionist::macro_trailing_comma`, and
-  `perfectionist::print_macro_split` — match a macro-invocation path
+  `perfectionist::overly_long_print_macro` — match a macro-invocation path
   against configured name lists (`extra_macros`, `allow_extra`,
   `deny_extra`, `ignore`, `target_macros`, …) through
   `src/macro_path.rs`. That matcher is deliberately
@@ -628,7 +628,7 @@ correctly-spelled one (`"crate::internals"`) never does.
 
 ### Not subject to the convention
 
-- `perfectionist::import_grouping`'s `std_crates`
+- `perfectionist::import_grouping_mismatch`'s `std_crates`
   (`["std", "core", "alloc"]`) and `internal_prefixes`
   (`["super", "self", "crate"]`) are single-segment crate-name /
   path-root tokens matched against an import's first segment, not

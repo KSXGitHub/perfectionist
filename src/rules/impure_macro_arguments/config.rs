@@ -308,7 +308,7 @@ impl ImpureMacroArguments {
             ("ignore", &config.ignore),
         ] {
             reject_absolute_list(entries).unwrap_or_else(|message| {
-                panic!("perfectionist::macro_argument_binding: `{field}`: {message}");
+                panic!("perfectionist::impure_macro_arguments: `{field}`: {message}");
             });
         }
         let extra_deny = parse_path_list(&config.deny_extra);
