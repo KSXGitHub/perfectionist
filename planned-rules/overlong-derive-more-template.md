@@ -158,7 +158,7 @@ both qualify.
   combinator-style `take_*` functions per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
   Reuse the placeholder/literal helpers from
-  [`derive-more-inlined-args`](./derive-more-inlined-args.md),
+  [`uninlined-derive-more-args`](./uninlined-derive-more-args.md),
   the escape scanner in `src/rules/avoidable_string_escapes.rs`,
   [`long-splittable-print-macro`](./long-splittable-print-macro.md), and
   [`overlong-format-macro`](./overlong-format-macro.md). The split logic
@@ -209,6 +209,6 @@ too-wide format template appears in source:
 Each rule's target set is disjoint from the others by design;
 a given expression or attribute is the responsibility of exactly
 one of the four. The shared
-[`derive-more-inlined-args`](./derive-more-inlined-args.md) rule
+[`uninlined-derive-more-args`](./uninlined-derive-more-args.md) rule
 operates at a different layer (placeholder syntax inside the
 template), and runs orthogonally to all four.

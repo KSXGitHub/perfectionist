@@ -1,4 +1,4 @@
-# `derive_more_inlined_args`
+# `uninlined_derive_more_args`
 
 **Source:** project convention. Clippy's `clippy::uninlined_format_args`
 catches the `format!("... {} ...", name)` → `format!("... {name} ...")`
@@ -137,7 +137,7 @@ suggestion preserves the spec: `{:>5}` paired with `name` becomes
 ## Configuration
 
 ```toml
-[derive_more_inlined_args]
+[uninlined_derive_more_args]
 # Attribute paths to scan. Defaults cover derive_more 1.x.
 attribute_paths = ["display", "debug"]
 
@@ -202,7 +202,7 @@ The two lints together cover the full surface:
 
 - `clippy::uninlined_format_args` — `format!`, `println!`, `write!`,
   `panic!`, etc.
-- `derive_more_inlined_args` (this rule) — `#[display(...)]`,
+- `uninlined_derive_more_args` (this rule) — `#[display(...)]`,
   `#[debug(...)]`, and any other format-shaped derive_more
   attributes.
 

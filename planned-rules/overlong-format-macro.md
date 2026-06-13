@@ -177,7 +177,7 @@ target_macros = [
   combinator-style `take_*` functions per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
   Reuse the placeholder/literal helpers from
-  [`derive-more-inlined-args`](./derive-more-inlined-args.md),
+  [`uninlined-derive-more-args`](./uninlined-derive-more-args.md),
   the escape scanner in `src/rules/avoidable_string_escapes.rs`, and
   [`long-splittable-print-macro`](./long-splittable-print-macro.md). The split logic
   is the same as `escaped-multiline-string`'s width-trigger split:

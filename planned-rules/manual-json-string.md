@@ -415,7 +415,7 @@ json_macro_path = "serde_json::json"
   than baking it into the planning doc. Walk the
   template with the catalogue's shared format-template
   combinators (see
-  [`derive-more-inlined-args`](./derive-more-inlined-args.md)
+  [`uninlined-derive-more-args`](./uninlined-derive-more-args.md)
   and [`overlong-format-macro`](./overlong-format-macro.md)) and emit a
   synthetic string where each `{...}` placeholder is replaced
   by `null` and each `{{` / `}}` is unescaped to `{` / `}`. Run

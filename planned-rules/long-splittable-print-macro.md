@@ -223,7 +223,7 @@ target_macros = [
   parser-combinator-style `take_*` functions per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
   reuse the placeholder/literal helpers from
-  [`derive-more-inlined-args`](./derive-more-inlined-args.md) and
+  [`uninlined-derive-more-args`](./uninlined-derive-more-args.md) and
   the escape scanner in `src/rules/avoidable_string_escapes.rs`. The
   split is at decoded-`\n` boundaries; placeholders that straddle a `\n` are
   impossible because `\n` cannot appear *inside* a `{...}`
@@ -283,7 +283,7 @@ Active by default.
   string literals in *non-template* positions (a `let s = "a\nb"`
   binding, a return value). It explicitly skips format templates,
   which is where this rule picks up.
-- [`derive-more-inlined-args`](./derive-more-inlined-args.md)
+- [`uninlined-derive-more-args`](./uninlined-derive-more-args.md)
   inlines positional arguments in `#[display(...)]` /
   `#[debug(...)]` attributes. Running it before
   `long_splittable_print_macro` increases the share of templates the
@@ -292,5 +292,5 @@ Active by default.
 
 The three rules together cover the three places multi-line text
 appears in code: bare literals (`escaped-multiline-string`),
-display/debug attributes (`derive-more-inlined-args`), and print
+display/debug attributes (`uninlined-derive-more-args`), and print
 macros (this rule).
