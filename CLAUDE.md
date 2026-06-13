@@ -26,16 +26,23 @@ Read three things first, in this order:
    one-sentence summary; check that the rule you're implementing
    still says what you think it says.
 3. **`planned-rules/IMPLEMENTATION_CONVENTIONS.md`** — applies
-   to every rule. Currently covers two cross-cutting conventions:
+   to every rule. Among the cross-cutting conventions it covers:
    - **Parser style.** Non-trivial string scanners (URLs,
      emails, format templates, markdown spans, serde-attribute
      type literals) are written as parser-combinator-style
      `take_*` functions, not regex.
+   - **Naming a lint after the anti-pattern.** A lint is named for
+     the violation it fires on — never the fix, the remedy, or the
+     preference — so it reads correctly under `#[deny(...)]` and
+     `#[allow(...)]`. Follow Clippy's idiom, and mirror a Clippy
+     lint's name only when the rule is a genuine *refinement* of it
+     (not a contradiction or a complement). The name must claim no
+     more than the trigger checks.
    - **Lint name namespacing.** Every lint registers under the
      `perfectionist` tool namespace via
      `rustc_session::declare_tool_lint!`. The planning files use
-     the unqualified form (`qualified_paths`) for readability;
-     the registered name is `perfectionist::qualified_paths`.
+     the unqualified form (`path_qualification_mismatch`) for readability;
+     the registered name is `perfectionist::path_qualification_mismatch`.
 
 If the rule is one of several that share a helper (markdown
 exclusion, format-string parsing, URL discovery, unicode-width
@@ -93,8 +100,8 @@ has two consequences for the implementer:
    - `scan` / `parser` — source-text walkers and parser combinators.
    - `ordering` / `triviality` — rule-specific algorithms.
 
-   The `macro_argument_binding/`, `macro_trailing_comma/`,
-   `prefer_raw_string/`, `derive_ordering/`,
+   The `impure_macro_arguments/`, `macro_trailing_comma/`,
+   `avoidable_string_escapes/`, `unordered_derives/`,
    `unicode_ellipsis_in_panic_messages/`, and
    `single_letter_closure_param/` directories illustrate the
    pattern.
@@ -172,10 +179,10 @@ becomes documentation drift. Remove it:
      some entries describe one rule by reference to another.
 
    Fix each reference by either pointing at the implementation
-   source code (e.g., `src/qualified_paths.rs`) or rewording the
+   source code (e.g., `src/path_qualification_mismatch.rs`) or rewording the
    prose to drop the link entirely. A reference that just names
    the rule for context can be reworded to use the lint's
-   namespaced name (`perfectionist::qualified_paths`) without a
+   namespaced name (`perfectionist::path_qualification_mismatch`) without a
    markdown link.
 
 After the cleanup, the repository should be self-consistent: the
@@ -354,8 +361,8 @@ broken or a stylistic preference:
   Examples in this repository:
   `perfectionist::unknown_perfectionist_lints` (a typo in
   `#[allow(perfectionist::...)]` silently fails to suppress
-  anything) and `perfectionist::clap_help_no_markdown`
-  (`src/rules/clap_help_no_markdown.rs`) (markdown leaks into the
+  anything) and `perfectionist::clap_help_markdown`
+  (`src/rules/clap_help_markdown.rs`) (markdown leaks into the
   terminal `--help` output as literal syntax).
 - **"Why restrict this?"** — use for every other rule. Most lints
   in this catalogue enforce stylistic preferences (em-dash usage,
@@ -385,7 +392,7 @@ scanner, the unicode-width helper, the format-template parser,
 the URL-discovery scanner, and the module-re-parsing helper
 (`src/module_reparse.rs`, which re-parses the crate's module
 source files from a shared `SourceMap` so the import-rewriting
-rules `import_granularity` and `uncombined_self_import` reach separate-file
+rules `import_granularity_mismatch` and `uncombined_self_import` reach separate-file
 submodules while keeping `#[cfg(...)]` gates intact). The
 module-re-parsing helper exists because this exact bug — a
 source-layout rule shipped as a pre-expansion `EarlyLintPass`

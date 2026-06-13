@@ -15,7 +15,7 @@ Provide a reason string in the `ignore` attribute.
 
 Two related sub-lints.
 
-### `cfg_attr_ignore_tests::should_be_cfg_attr`
+### `cfg_attr_ignore_tests::cfg_gated_portable_test`
 
 For every `#[test]` item whose attribute list contains `#[cfg(predicate)]`,
 attempt to detect whether the body uses items that are *themselves* gated
@@ -28,7 +28,7 @@ by a matching `#[cfg]`:
   excluded configuration; flag it and suggest replacing with
   `#[cfg_attr(predicate, ignore = "...")]`.
 
-### `cfg_attr_ignore_tests::missing_reason`
+### `cfg_attr_ignore_tests::test_ignore_without_reason`
 
 For every `#[cfg_attr(<pred>, ignore)]` on a `#[test]` item, require the
 `ignore` form `ignore = "<reason>"`. Flag bare `ignore` with no reason.

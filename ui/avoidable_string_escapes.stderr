@@ -1,0 +1,82 @@
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/avoidable_string_escapes.rs:3:13
+   |
+LL |     let _ = "{/"name/":/"foo/"}";
+   |             ^^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r#"{"name":"foo"}"#`
+   |
+   = note: `#[warn(perfectionist::avoidable_string_escapes)]` on by default
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/avoidable_string_escapes.rs:8:13
+   |
+LL |     let _ = "C:/Users/foo/bar";
+   |             ^^^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r"C:/Users/foo/bar"`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/avoidable_string_escapes.rs:13:13
+   |
+LL |     let _ = "it/'s here";
+   |             ^^^^^^^^^^^^ help: use a raw string: `r"it's here"`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/avoidable_string_escapes.rs:20:13
+   |
+LL |     let _ = "日本語: C:/Users";
+   |             ^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r"日本語: C:/Users"`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/avoidable_string_escapes.rs:25:13
+   |
+LL |     let _ = "say /"///" twice";
+   |             ^^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r#"say "/" twice"#`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/avoidable_string_escapes.rs:31:13
+   |
+LL |     let _ = "snippet: /"#suffix/" end";
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r##"snippet: "#suffix" end"##`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/avoidable_string_escapes.rs:39:14
+   |
+LL |     println!("path: /"foo/"");
+   |              ^^^^^^^^^^^^^^^ help: use a raw string: `r#"path: "foo""#`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/avoidable_string_escapes.rs:54:14
+   |
+LL |     println!("path: /"{}/"", "x");
+   |              ^^^^^^^^^^^^^^ help: use a raw string: `r#"path: "{}""#`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/avoidable_string_escapes.rs:72:16
+   |
+LL |     assert_eq!("a/"b".len(), 3);
+   |                ^^^^^^ help: use a raw string: `r#"a"b"#`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/avoidable_string_escapes.rs:90:18
+   |
+LL |     let _ = dbg!("a/"b");
+   |                  ^^^^^^ help: use a raw string: `r#"a"b"#`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/avoidable_string_escapes.rs:48:21
+   |
+LL |     let _ = format!("url(/"{name}/")");
+   |                     ^^^^^^^^^^^^^^^^^ help: use a raw string: `r#"url("{name}")"#`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/avoidable_string_escapes.rs:64:30
+   |
+LL |     assert_eq!(value, value, "v = /"{value}/"");
+   |                              ^^^^^^^^^^^^^^^^^ help: use a raw string: `r#"v = "{value}""#`
+
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/avoidable_string_escapes.rs:80:24
+   |
+LL |     let _ = stringify!("a/"b");
+   |                        ^^^^^^ help: use a raw string: `r#"a"b"#`
+
+warning: 13 warnings emitted
+

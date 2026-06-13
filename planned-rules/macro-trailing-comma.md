@@ -7,7 +7,7 @@ with the curated `core` / `std` and well-known third-party list,
 plus the `extra_macros` and `ignore` configuration knobs. The
 matcher-based half is not yet implemented and its configuration is
 therefore not exposed — see
-[`macro-argument-binding.md`](./macro-argument-binding.md) for the
+[`impure-macro-arguments.md`](./impure-macro-arguments.md) for the
 sibling rule's handling of the same convention.
 
 The "Vertical only applies to block-indent layouts" caveat from
@@ -43,7 +43,7 @@ Still pending:
   `outer::my_crate::vec_like!(...)` indiscriminately, but
   never the bare `vec_like!(...)` call that follows a
   `use my_crate::vec_like;` (the AST path is just
-  `[vec_like]`, one segment short of the entry). `macro-argument-binding`'s
+  `[vec_like]`, one segment short of the entry). `impure-macro-arguments`'s
   Status section describes the resolution-based fix in
   detail; the same plumbing change benefits this rule, and
   the two rules' built-in lists should migrate together.
@@ -590,8 +590,8 @@ Active by default.
 
 ## Interaction with sibling rules
 
-- [`format-macro-wrap`](./format-macro-wrap.md) and
-  [`print-macro-split`](./print-macro-split.md) reformat the
+- [`overly-long-format-macro`](./overly-long-format-macro.md) and
+  [`overly-long-print-macro`](./overly-long-print-macro.md) reformat the
   *template literal* inside `format!` / `println!` / etc.
   When their `line_continuation` rewrite fires it produces a
   multi-line invocation; this rule then ensures that

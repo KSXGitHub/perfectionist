@@ -9,7 +9,7 @@
 #![cfg_attr(
     dylint_lib = "perfectionist",
     allow(
-        perfectionist::prefer_expect_over_allow,
+        perfectionist::allow_attributes,
         reason = "fixture targets `unicode_ellipsis_in_docs`; the per-item `allow` is the subject, not a rewrite candidate"
     )
 )]

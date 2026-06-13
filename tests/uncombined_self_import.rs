@@ -3,7 +3,7 @@
 //! `ui-toml/uncombined_self_import/` and passes a `dylint.toml` that
 //! enables it.
 //!
-//! `import_granularity` is disabled in the config: it is active by
+//! `import_granularity_mismatch` is disabled in the config: it is active by
 //! default and would also fire on these fixtures (which deliberately use
 //! crate-style nested `use`s), so disabling it keeps the snapshot
 //! focused on `uncombined_self_import`.
@@ -16,7 +16,7 @@ fn folds_adjacent_module_and_item_imports() {
         .dylint_toml(text_block_fnl! {
             "[perfectionist]"
             r#"enable = ["uncombined_self_import"]"#
-            r#"disable = ["import_granularity"]"#
+            r#"disable = ["import_granularity_mismatch"]"#
         })
         .run();
 }

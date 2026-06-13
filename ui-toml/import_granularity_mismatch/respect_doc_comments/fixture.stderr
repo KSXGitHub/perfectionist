@@ -1,0 +1,17 @@
+warning: imports are not grouped into one `use` per module
+  --> $DIR/fixture.rs:16:5
+   |
+LL | /     /// Keep the two collection imports together.
+LL | |     use std::collections::HashMap;
+LL | |     use std::collections::BTreeMap;
+   | |___________________________________^
+   |
+   = note: `#[warn(perfectionist::import_granularity_mismatch)]` on by default
+help: reorganize the imports
+   |
+LL ~     /// Keep the two collection imports together.
+LL +     use std::collections::{BTreeMap, HashMap};
+   |
+
+warning: 1 warning emitted
+

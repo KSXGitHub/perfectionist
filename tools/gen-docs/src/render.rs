@@ -9,7 +9,6 @@
 //! directory verbatim.
 
 pub(crate) mod config;
-pub(crate) mod file_tree;
 pub(crate) mod markdown;
 
 use crate::model::{DefaultState, NAMESPACE, RenderContext, Rule};
@@ -397,8 +396,8 @@ fn state_badge(default_state: DefaultState) -> Markup {
 /// Build the in-page anchor for a rule. The fragment is
 /// `/rule/<kebab-name>` — a `/rule/` prefix plus the rule's
 /// unnamespaced name with `_` swapped for `-` — so a permalink
-/// reads `#/rule/qualified-paths` rather than the old
-/// `#perfectionist-qualified_paths`. The leading slash makes the
+/// reads `#/rule/path-qualification-mismatch` rather than the old
+/// `#perfectionist-path_qualification_mismatch`. The leading slash makes the
 /// fragment look like a route, and the value doubles as the
 /// target element's `id`. Slashes are legal in an HTML `id`
 /// (only ASCII whitespace is forbidden) and in a URL fragment,

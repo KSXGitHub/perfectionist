@@ -11,9 +11,16 @@
 
 Flags URLs that reference a file or directory inside a hosted
 git repository (GitHub, GitLab, Bitbucket, Codeberg / Gitea,
-sourcehut, etc.) when the ref in the URL is a branch or tag rather
-than a commit SHA. Scans doc comments, regular comments, and
+sourcehut, etc.) when the ref in the URL is a branch or tag
+rather than a commit SHA. Projects that deliberately link to
+version-shaped refs can opt into accepting those patterns via
+`allow_version_patterns`. Scans doc comments, regular comments, and
 string literals.
+
+This rule only concerns whether the ref is mutable; the
+*length* of an accepted SHA is `perfectionist::commit_id_length_mismatch`'s
+concern, and `perfectionist::bare_url` ensures the URL is
+wrapped. The three lints layer rather than overlap.
 
 ## Why restrict this?
 
@@ -21,16 +28,10 @@ This is a stylistic preference, not a correctness issue. A
 branch ref such as `/blob/main/...` resolves to whatever that
 branch currently points at, so the linked content can change —
 or disappear — without warning after the link is written. A tag
-ref is steadier but still not pinned: a tag can be moved, and
-the lint can't tell a tag from a branch by name alone (a branch
-named `v1.2.3` is valid Git), so it rejects both. A commit SHA
-is the only ref that always denotes the exact content the author
-linked to.
-
-This rule only concerns whether the ref is mutable; the
-*length* of an accepted SHA is `perfectionist::commit_id_length`'s
-concern, and `perfectionist::bare_url` ensures the URL is
-wrapped. The three lints layer rather than overlap.
+ref is steadier but still not pinned: a tag can be removed, and
+a version-shaped name is not even guaranteed to be a tag (a
+branch named `v1.2.3` is valid Git). A commit SHA is the only
+ref that always denotes the exact content the author linked to.
 
 ## Example
 
@@ -65,6 +66,15 @@ which trades a small false-negative window (branch names like
 `dead`, `face`, `beef`) for fewer false positives on
 branch names that merely look hex-ish. Set to `1` to treat any
 pure-hex ref as a SHA.
+
+### `allow_version_patterns`: `boolean` (optional)
+
+Whether refs shaped like version patterns (`1.2.3`, `v1.2.3`, or
+either form with a non-empty `-suffix` of ASCII letters, ASCII
+digits, `.`, `-`, and `_`) are accepted without a
+commit SHA. Defaults to `false`; tags can move, and a
+version-shaped branch name is valid Git, so projects must opt in
+to this convenience explicitly.
 
 ### `hosts`: `[HostEntry]` (optional)
 

@@ -27,7 +27,7 @@ What is **not** done (this file stays until it is):
   carries a `help`, not a `span_suggestion`. A correct fix can't rewrite
   a single leaf's sub-span in place — the leaves may resolve to
   different canonical modules, so the statement has to split into one
-  `use` per leaf, which is `import_granularity`-shaped work left for a
+  `use` per leaf, which is `import_granularity_mismatch`-shaped work left for a
   follow-up.
 
 ## Statement
@@ -105,7 +105,7 @@ As built (see `src/rules/named_prelude_imports.rs`):
   needed. HIR lowers `use serde::prelude::{A, B};` into one
   `UseKind::Single` item per leaf, so each brace-list leaf is visited —
   and flagged — individually with no flattening of our own (the original
-  plan of reusing `import_granularity`'s `model.rs` leaf flattening was
+  plan of reusing `import_granularity_mismatch`'s `model.rs` leaf flattening was
   unnecessary).
 - The prelude detection is a simple ident match against
   `prelude_segment_names`, identical in shape to the corresponding

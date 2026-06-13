@@ -1,0 +1,24 @@
+warning: imports are not collapsed to one `use` per crate root
+  --> $DIR/fixture.rs:22:5
+   |
+LL |     use crate::{thing, thing::T};
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: reorganize the imports: `use crate::thing::{self, T};`
+   |
+   = note: `#[warn(perfectionist::import_granularity_mismatch)]` on by default
+
+warning: imports are not collapsed to one `use` per crate root
+  --> $DIR/fixture.rs:27:5
+   |
+LL | /     use crate::thing;
+LL | |     use crate::thing::T;
+   | |________________________^ help: reorganize the imports: `use crate::thing::{self, T};`
+
+warning: imports are not collapsed to one `use` per crate root
+  --> $DIR/fixture.rs:39:5
+   |
+LL | /     use std::collections::HashMap;
+LL | |     use std::io::Read;
+   | |______________________^ help: reorganize the imports: `use std::{collections::HashMap, io::Read};`
+
+warning: 3 warnings emitted
+

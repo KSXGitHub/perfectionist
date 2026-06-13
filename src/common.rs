@@ -192,8 +192,8 @@ pub(crate) fn resolved_state(name: &str, default: DefaultState) -> DefaultState 
 /// name (`clippy::too_many_arguments`, `dead_code`), joining the path
 /// segments with `::`. Shared by the lint-level rules that classify or
 /// report lint names by the printed form they wear in diagnostics and
-/// `#[allow(...)]` attributes — `lint_silence_reason`,
-/// `unknown_perfectionist_lints`, and `prefer_expect_over_allow`.
+/// `#[allow(...)]` attributes — `allow_attributes_without_reason`,
+/// `unknown_perfectionist_lints`, and `allow_attributes`.
 pub(crate) fn render_meta_path(meta: &MetaItem) -> String {
     meta.path
         .segments
@@ -209,8 +209,8 @@ pub(crate) fn render_meta_path(meta: &MetaItem) -> String {
 ///
 /// Shared between the lint-level rules that all consume the same
 /// notion of "this attribute carries an explanatory reason":
-/// `lint_silence_reason`, `lint_downgrade_reason`, and
-/// `lint_reason_from_comment`. The arg list is the post-`meta_item_list`
+/// `allow_attributes_without_reason`, `lint_downgrade_without_reason`, and
+/// `lint_attribute_trailing_comment`. The arg list is the post-`meta_item_list`
 /// vector of nested meta items — the same shape every caller already
 /// constructs from `Attribute::meta_item_list()`.
 pub(crate) fn attr_has_reason(args: &[MetaItemInner]) -> Option<&MetaItemLit> {
@@ -233,8 +233,8 @@ pub(crate) fn attr_has_reason(args: &[MetaItemInner]) -> Option<&MetaItemLit> {
 /// columns — the measure an editor's column ruler reports, not the
 /// byte length. A CJK ideograph counts as two columns, a combining
 /// mark as zero, an ASCII character as one. Used by the rules that
-/// gate on a source line being "too wide" (`print_macro_split`, and
-/// the planned `prefer_text_block`), so the threshold means the same
+/// gate on a source line being "too wide" (`overly_long_print_macro`, and
+/// the planned `escaped_multiline_string`), so the threshold means the same
 /// thing across scripts.
 pub(crate) fn display_width(text: &str) -> usize {
     UnicodeWidthStr::width(text)
@@ -275,7 +275,7 @@ pub(crate) fn binding_hir_id<'hir>(pat: &'hir hir::Pat<'hir>) -> Option<hir::Hir
 /// Resolve a `&str` set from a curated built-in default, a
 /// user-supplied `extras` list, and a user-supplied `ignore`
 /// list. Used by rules whose runtime set key remains a `String`
-/// (currently just `non_exhaustive_error`, whose suffix lookup is
+/// (currently just `exhaustive_error_enums`, whose suffix lookup is
 /// `str::ends_with`-shaped); the four rules whose late-pass
 /// lookup key is a [`Symbol`] use the sibling
 /// [`resolve_symbol_set`] instead. The [`BTreeSet`] return is

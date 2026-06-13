@@ -12,7 +12,11 @@
     )
 )]
 
-use super::{MutableKind, RefOutcome, RefProblem, locate_ref, ref_problem, url_host};
+use super::{
+    MutableKind, RefOutcome, RefProblem, locate_ref, ref_problem, take_bare_version,
+    take_prefixed_version, take_suffixed_version, take_unprefixed_version, take_version_pattern,
+    url_host,
+};
 use crate::rules::unpinned_repo_ref::config::ForgeKind;
 
 /// Locate the ref of `url` under `kind` and assert it sits at the
@@ -73,7 +77,7 @@ fn github_accepts_every_verb() {
 
 #[test]
 fn github_commit_and_compare_urls_are_not_file_references() {
-    // `/commit/<sha>` and `/compare/...` are `commit-id-length`'s
+    // `/commit/<sha>` and `/compare/...` are `commit-id-length-mismatch`'s
     // concern, not this rule's; they don't match the file-reference
     // shape.
     assert!(locate_ref("https://github.com/o/r/commit/abc123", ForgeKind::Github).is_none());
@@ -152,36 +156,147 @@ fn sourcehut_tree_ref() {
 #[test]
 fn ref_problem_accepts_sha_and_rejects_short_or_non_hex() {
     // A long, pure-hex ref is accepted (no problem).
-    assert_eq!(ref_problem("8c1f6e2a6d33", RefOutcome::MustBeSha, 4), None);
+    assert_eq!(
+        ref_problem("8c1f6e2a6d33", RefOutcome::MustBeSha, 4, false),
+        None,
+    );
     // Shorter than the recognition length: treated as a branch.
     assert_eq!(
-        ref_problem("abc", RefOutcome::MustBeSha, 4),
+        ref_problem("abc", RefOutcome::MustBeSha, 4, false),
         Some(RefProblem::NotSha),
     );
     // Non-hex: a branch.
     assert_eq!(
-        ref_problem("main", RefOutcome::MustBeSha, 4),
+        ref_problem("main", RefOutcome::MustBeSha, 4, false),
         Some(RefProblem::NotSha),
     );
     // The recognition length is honoured: 4 hex chars pass at 4.
-    assert_eq!(ref_problem("dead", RefOutcome::MustBeSha, 4), None);
+    assert_eq!(ref_problem("dead", RefOutcome::MustBeSha, 4, false), None);
     // ...but the same ref fails when the window is widened.
     assert_eq!(
-        ref_problem("dead", RefOutcome::MustBeSha, 7),
+        ref_problem("dead", RefOutcome::MustBeSha, 7, false),
         Some(RefProblem::NotSha),
     );
 }
 
 #[test]
-fn ref_problem_reports_gitea_branch_and_tag_regardless_of_text() {
+fn version_take_functions_consume_a_prefix_and_return_the_rest() {
+    // (1) bare version: exactly three dot-separated digit runs.
+    assert_eq!(take_bare_version("1.2.3/rest"), Some("/rest"));
+    assert_eq!(take_bare_version("10.20.30"), Some(""));
+    assert_eq!(take_bare_version("1.2"), None);
+    assert_eq!(take_bare_version("v1.2.3"), None);
+
+    // (2) suffixed version: bare version, `-`, non-empty suffix run.
+    assert_eq!(take_suffixed_version("1.2.3-rc.1"), Some(""));
+    assert_eq!(take_suffixed_version("1.2.3-abc$def"), Some("$def"));
+    assert_eq!(take_suffixed_version("1.2.3-"), None);
+    assert_eq!(take_suffixed_version("1.2.3"), None);
+
+    // (3) union of (1) and (2).
+    assert_eq!(take_unprefixed_version("1.2.3"), Some(""));
+    assert_eq!(take_unprefixed_version("1.2.3-rc.1"), Some(""));
+    assert_eq!(take_unprefixed_version("v1.2.3"), None);
+
+    // (4) `v` prefix joined with (3).
+    assert_eq!(take_prefixed_version("v1.2.3"), Some(""));
+    assert_eq!(take_prefixed_version("v1.2.3-rc.1"), Some(""));
+    assert_eq!(take_prefixed_version("1.2.3"), None);
+
+    // (5) union of (3) and (4).
+    assert_eq!(take_version_pattern("1.2.3"), Some(""));
+    assert_eq!(take_version_pattern("v1.2.3-rc.1"), Some(""));
+    assert_eq!(take_version_pattern("1.2.3.4"), Some(".4"));
+    assert_eq!(take_version_pattern("main"), None);
+}
+
+#[test]
+fn ref_problem_accepts_version_patterns_when_configured() {
+    for reference in [
+        "1.2.3",
+        "1.2.3-rc.1",
+        "v1.2.3",
+        "v1.2.3-suffix",
+        "1.2.3-rc_1",
+        "v1.2.3-alpha-2",
+    ] {
+        assert_eq!(
+            ref_problem(reference, RefOutcome::MustBeSha, 4, true),
+            None,
+            "version-pattern ref {reference:?}",
+        );
+        assert_eq!(
+            ref_problem(
+                reference,
+                RefOutcome::KnownMutable(MutableKind::Tag),
+                4,
+                true
+            ),
+            None,
+            "gitea tag ref {reference:?}",
+        );
+    }
+
+    for reference in [
+        "v1.2",
+        "1.2.3-",
+        "release-1.2.3",
+        // A suffix may only contain ASCII letters, ASCII digits, `.`,
+        // `-`, and `_`; anything else is not a versioning suffix.
+        "1.2.3-abc$def&ghi",
+        "1.2.3-abc,def",
+        "1.2.3-abc;def",
+        "v1.2.3-abc/def",
+    ] {
+        assert_eq!(
+            ref_problem(reference, RefOutcome::MustBeSha, 4, true),
+            Some(RefProblem::NotSha),
+            "non-version-pattern ref {reference:?}",
+        );
+    }
+}
+
+#[test]
+fn ref_problem_rejects_version_patterns_by_default() {
+    for reference in ["1.2.3", "1.2.3-rc.1", "v1.2.3", "v1.2.3-suffix"] {
+        assert_eq!(
+            ref_problem(reference, RefOutcome::MustBeSha, 4, false),
+            Some(RefProblem::NotSha),
+            "version-pattern ref {reference:?}",
+        );
+        assert_eq!(
+            ref_problem(
+                reference,
+                RefOutcome::KnownMutable(MutableKind::Tag),
+                4,
+                false
+            ),
+            Some(RefProblem::Tag),
+            "gitea tag ref {reference:?}",
+        );
+    }
+}
+
+#[test]
+fn ref_problem_reports_gitea_branch_and_non_version_pattern_tag() {
     // A gitea `/branch/` URL whose ref happens to be hex is still a
     // branch — the path, not the text, decides.
     assert_eq!(
-        ref_problem("dead", RefOutcome::KnownMutable(MutableKind::Branch), 4),
+        ref_problem(
+            "dead",
+            RefOutcome::KnownMutable(MutableKind::Branch),
+            4,
+            false
+        ),
         Some(RefProblem::Branch),
     );
     assert_eq!(
-        ref_problem("8c1f6e2", RefOutcome::KnownMutable(MutableKind::Tag), 4),
+        ref_problem(
+            "8c1f6e2",
+            RefOutcome::KnownMutable(MutableKind::Tag),
+            4,
+            false
+        ),
         Some(RefProblem::Tag),
     );
 }

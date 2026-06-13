@@ -17,7 +17,7 @@
 //! so it would silently skip every separate-file submodule. Re-parsing
 //! reaches every module-scoped submodule while keeping `#[cfg(...)]`
 //! gates intact (parsing does not strip cfg, unlike the post-expansion
-//! AST). The sibling `import_granularity` rule shares the same machinery.
+//! AST). The sibling `import_granularity_mismatch` rule shares the same machinery.
 
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::find_enclosing_hir_ids;

@@ -2,9 +2,9 @@
 #![register_tool(perfectionist)]
 #![allow(
     unknown_lints,
-    perfectionist::lint_silence_reason,
-    perfectionist::lint_reason_from_comment,
-    perfectionist::prefer_expect_over_allow,
+    perfectionist::allow_attributes_without_reason,
+    perfectionist::lint_attribute_trailing_comment,
+    perfectionist::allow_attributes,
     reason = "ui fixture",
 )]
 
@@ -45,7 +45,7 @@ fn known_two() {}
 fn other_tool() {}
 
 // Good: bare lint name; out of scope (rustc's `unknown_lints` owns it).
-#[allow(qualified_paths)]
+#[allow(path_qualification_mismatch)]
 fn bare() {}
 
 fn main() {}

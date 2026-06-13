@@ -21,9 +21,16 @@ declare_tool_lint! {
     ///
     /// Flags URLs that reference a file or directory inside a hosted
     /// git repository (GitHub, GitLab, Bitbucket, Codeberg / Gitea,
-    /// sourcehut, etc.) when the ref in the URL is a branch or tag rather
-    /// than a commit SHA. Scans doc comments, regular comments, and
+    /// sourcehut, etc.) when the ref in the URL is a branch or tag
+    /// rather than a commit SHA. Projects that deliberately link to
+    /// version-shaped refs can opt into accepting those patterns via
+    /// `allow_version_patterns`. Scans doc comments, regular comments, and
     /// string literals.
+    ///
+    /// This rule only concerns whether the ref is mutable; the
+    /// *length* of an accepted SHA is `perfectionist::commit_id_length_mismatch`'s
+    /// concern, and `perfectionist::bare_url` ensures the URL is
+    /// wrapped. The three lints layer rather than overlap.
     ///
     /// ### Why restrict this?
     ///
@@ -31,16 +38,10 @@ declare_tool_lint! {
     /// branch ref such as `/blob/main/...` resolves to whatever that
     /// branch currently points at, so the linked content can change —
     /// or disappear — without warning after the link is written. A tag
-    /// ref is steadier but still not pinned: a tag can be moved, and
-    /// the lint can't tell a tag from a branch by name alone (a branch
-    /// named `v1.2.3` is valid Git), so it rejects both. A commit SHA
-    /// is the only ref that always denotes the exact content the author
-    /// linked to.
-    ///
-    /// This rule only concerns whether the ref is mutable; the
-    /// *length* of an accepted SHA is `perfectionist::commit_id_length`'s
-    /// concern, and `perfectionist::bare_url` ensures the URL is
-    /// wrapped. The three lints layer rather than overlap.
+    /// ref is steadier but still not pinned: a tag can be removed, and
+    /// a version-shaped name is not even guaranteed to be a tag (a
+    /// branch named `v1.2.3` is valid Git). A commit SHA is the only
+    /// ref that always denotes the exact content the author linked to.
     ///
     /// ### Example
     ///
@@ -70,6 +71,7 @@ pub struct UnpinnedRepoRef {
     scan_comment: bool,
     scan_string_literal: bool,
     pub(super) sha_recognition_length: usize,
+    pub(super) allow_version_patterns: bool,
     /// Hostname globs paired with the forge kind they map to, in
     /// configuration order (first match wins).
     hosts: Vec<(String, ForgeKind)>,
@@ -94,6 +96,7 @@ impl UnpinnedRepoRef {
             scan_comment: config.targets.contains(&Target::Comment),
             scan_string_literal: config.targets.contains(&Target::StringLiteral),
             sha_recognition_length: config.sha_recognition_length,
+            allow_version_patterns: config.allow_version_patterns,
             hosts,
             skip_hosts: config.skip_hosts,
         }
