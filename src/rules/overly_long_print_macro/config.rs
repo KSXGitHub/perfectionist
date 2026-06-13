@@ -7,7 +7,7 @@
 //! deliberately absent — a one-variant `style` enum would carry no
 //! information. It returns when the `multiple_calls` half lands.
 
-use crate::macro_path::{matches_any, parse_path_list};
+use crate::macro_path::{matches_any, parse_path_list, reject_absolute_list};
 use rustc_ast::Path;
 use std::collections::BTreeSet;
 
@@ -75,6 +75,9 @@ pub(super) struct OverlyLongPrintMacro {
 impl OverlyLongPrintMacro {
     pub(super) fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        reject_absolute_list(&config.target_macros).unwrap_or_else(|message| {
+            panic!("perfectionist::overly_long_print_macro: `target_macros`: {message}");
+        });
         // An entry that parses to no segments (empty / whitespace-only)
         // is dropped by `parse_path_list`. A `target_macros = []`
         // therefore silently disables the rule, which is a reasonable
