@@ -590,7 +590,7 @@ Active by default.
 
 ## Interaction with sibling rules
 
-- [`overlong-format-macro`](./overlong-format-macro.md) and
+- [`long-unsplittable-format-macro`](./long-unsplittable-format-macro.md) and
   [`long-splittable-print-macro`](./long-splittable-print-macro.md) reformat the
   *template literal* inside `format!` / `println!` / etc.
   When their `line_continuation` rewrite fires it produces a

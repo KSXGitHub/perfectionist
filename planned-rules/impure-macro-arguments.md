@@ -795,7 +795,7 @@ Active by default.
   declarative-macro matcher walker. Both register for
   `ast::MacCall` and both restrict themselves to function-like
   and array-like delimiters.
-- [`overlong-format-macro`](./overlong-format-macro.md) and
+- [`long-unsplittable-format-macro`](./long-unsplittable-format-macro.md) and
   [`long-splittable-print-macro`](./long-splittable-print-macro.md) operate on the
   *template literal* inside their target macros. Those rules'
   target macros are all in this rule's default allow set.
