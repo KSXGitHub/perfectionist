@@ -30,11 +30,11 @@ use std::process::Command;
 pub(crate) const DOWNLOADS: &[(&str, &str)] = &[
     (
         "cantarell.otf",
-        "https://raw.githubusercontent.com/KSXGitHub/perfectionist-binary-assets/master/Cantarell/0.303/Cantarell-VF.otf",
+        "https://raw.githubusercontent.com/KSXGitHub/perfectionist-binary-assets/0b60937fbb/Cantarell/0.303/Cantarell-VF.otf",
     ),
     (
         "Cantarell-OFL.txt",
-        "https://raw.githubusercontent.com/KSXGitHub/perfectionist-binary-assets/master/Cantarell/0.303/COPYING",
+        "https://raw.githubusercontent.com/KSXGitHub/perfectionist-binary-assets/0b60937fbb/Cantarell/0.303/COPYING",
     ),
 ];
 
