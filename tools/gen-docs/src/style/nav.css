@@ -48,6 +48,7 @@
 
 .nav-toggle::before {
   content: "\2630"; /* ☰ */
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
 
 .nav-toggle:focus-visible {
@@ -98,6 +99,7 @@
 }
 
 .nav-sidebar-close {
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   width: 2.5rem;
   height: 2.5rem;
   flex: none;

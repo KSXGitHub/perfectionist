@@ -27,6 +27,7 @@
 
 mod check_md;
 mod extract;
+mod fonts;
 mod model;
 mod render;
 mod render_md;
@@ -218,6 +219,12 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
         let path = out_dir.join(name);
         fs::write(&path, content).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
     }
+
+    let font_cache = fonts::cache_dir(root);
+    fonts::ensure_cached(&font_cache, fonts::DOWNLOADS)
+        .unwrap_or_else(|error| panic!("failed to provision fonts: {error}"));
+    fonts::install_into(out_dir, &font_cache, fonts::DOWNLOADS)
+        .unwrap_or_else(|error| panic!("failed to install fonts: {error}"));
 
     eprintln!("wrote {} rule(s) to {}", rules.len(), index_path.display());
     ExitCode::SUCCESS

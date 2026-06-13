@@ -38,6 +38,7 @@
 
 .settings-toggle::before {
   content: "\2699"; /* ⚙ U+2699 GEAR */
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
 
 .settings-toggle:hover,

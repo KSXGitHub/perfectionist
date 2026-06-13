@@ -4,6 +4,7 @@ use super::{
     RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME, STYLESHEETS, THEME_ICON_PREFETCH_TEMPLATE_ID,
     THEME_ICONS, THEME_TOGGLE_SCRIPT, THEME_TOGGLE_SCRIPT_FILENAME, anchor_for, render_page,
 };
+use crate::fonts::DOWNLOADS;
 use crate::model::{ConfigDoc, ConfigField, DefaultState, Optionality, RenderContext, Rule};
 use std::path::PathBuf;
 
@@ -320,6 +321,54 @@ fn style_references_rule_anchor_icon() {
     assert!(
         RULE_ANCHOR_ICON.contains("Octicons") && RULE_ANCHOR_ICON.contains("MIT"),
         "the bundled rule-anchor.svg must retain its Octicons MIT attribution",
+    );
+}
+
+#[test]
+fn base_css_font_face_references_the_downloaded_font() {
+    // The font the build downloads and links beside index.html must be
+    // reachable through a `@font-face` `url(...)` whose name matches it,
+    // or the font 404s and the page silently drops back to the system
+    // sans. `local(...)` must come first so an installed Cantarell wins
+    // over a download.
+    let base = stylesheet("base.css");
+    assert!(
+        base.contains(r#"local("Cantarell")"#),
+        "base.css must prefer a locally-installed Cantarell before downloading",
+    );
+    let font = DOWNLOADS
+        .iter()
+        .map(|&(name, _)| name)
+        .find(|name| name.ends_with(".otf"))
+        .expect("DOWNLOADS must include the .otf font");
+    assert!(
+        base.contains(&format!(r#"url("{font}")"#)),
+        r#"base.css must reference the downloaded font as url("{font}")"#,
+    );
+    assert!(
+        base.contains(r#"format("opentype")"#),
+        "base.css must declare the OpenType format for the @font-face src",
+    );
+    assert!(
+        base.contains(r#"font-family: "Cantarell""#),
+        "base.css `body` must set Cantarell as the first font family",
+    );
+}
+
+#[test]
+fn pseudo_icons_opt_out_of_the_body_font() {
+    // The gear, hamburger, and close ✕ must not inherit the body's
+    // Cantarell. They keep the system font stack the page used before
+    // Cantarell was introduced, so they render exactly as they always
+    // did rather than in (or falling back from) Cantarell.
+    let icon_stack = "font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;";
+    assert!(
+        stylesheet("nav.css").matches(icon_stack).count() >= 2,
+        "nav.css must keep the hamburger and close ✕ on the system font stack, off Cantarell",
+    );
+    assert!(
+        stylesheet("settings.css").contains(icon_stack),
+        "settings.css must keep the gear on the system font stack, off Cantarell",
     );
 }
 

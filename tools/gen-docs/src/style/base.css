@@ -4,8 +4,22 @@
    on engines that predate `var()`. The colour sheets mirror the
    selectors here and are linked after the structural sheets. */
 
+/* The page's prose is set in Cantarell; `local(...)` is first so an
+   installed copy wins over the download (see src/fonts.rs). It's one
+   variable font, so the `wght` range covers both body and headings. The
+   pseudo-icons opt out of this family in nav.css / settings.css. */
+@font-face {
+  font-family: "Cantarell";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src:
+    local("Cantarell"),
+    url("cantarell.otf") format("opentype");
+}
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: "Cantarell", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   max-width: 820px;
   margin: 2rem auto;
   padding: 0 1rem;
