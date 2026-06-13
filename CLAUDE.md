@@ -460,6 +460,20 @@ To enumerate list items, number them without `#` ("item 1", "1.",
 skips comment lines and the `git commit -v` diff, and ignores
 non-bare forms like `#123abc` / `#L123` / `#issuecomment-1`.
 
+## `@handle` mentions in commit messages
+
+Never write a **bare** `@handle` in a commit message — always wrap it
+in backticks (`` `@foo` ``). Outside backticks GitHub autolinks `@foo`
+as a user/team mention, which is wrong both ways: if you meant it as
+code (a `@scope/pkg`, a CLI flag), GitHub still reads it as a mention;
+if you meant a real account, every commit, comment, and rebase that
+carries the message pings that person again. The same
+[`commit-msg` hook](.githooks/commit-msg) rejects any commit
+containing one. It strips backtick-wrapped spans before scanning (so
+`` `@foo` `` passes) and uses GitHub's boundary, so an email like
+`user@example.com` is not flagged. A genuinely intended mention
+belongs in the PR or issue body, not the commit message.
+
 ## Markdown links
 
 `README.md` uses absolute links throughout, because it is
