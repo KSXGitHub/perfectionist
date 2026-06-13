@@ -106,7 +106,7 @@ pattern that several rules call out by reference — live in
   (`line_continuation`). Excludes `format!`/`format_args!` and
   the panic/assert family because their behaviour changes under
   splitting.
-- [`long-unsplittable-format-macro.md`](./long-unsplittable-format-macro.md) — counterpart
+- [`overlong-format-macro.md`](./overlong-format-macro.md) — counterpart
   for the *unsplittable* macros: `format!`, `format_args!`,
   `panic!`, `assert!` (with message), the `debug_assert*` family,
   `unimplemented!`/`todo!`/`unreachable!`. When the source line
