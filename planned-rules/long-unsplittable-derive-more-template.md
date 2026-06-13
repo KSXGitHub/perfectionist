@@ -1,4 +1,4 @@
-# `overlong_derive_more_template`
+# `long_unsplittable_derive_more_template`
 
 **Source:** project convention. Sibling to
 [`long-unsplittable-format-macro`](./long-unsplittable-format-macro.md) and
@@ -121,7 +121,7 @@ struct Custom;
 ## Configuration
 
 ```toml
-[overlong_derive_more_template]
+[long_unsplittable_derive_more_template]
 # Source-line width that triggers the rule. Default 100 matches
 # rustfmt's column default. Width is unicode display width of the
 # line containing the attribute, not its byte length.
@@ -203,7 +203,7 @@ too-wide format template appears in source:
   side-effect macros (`println!`, `writeln!`, `log::*!`).
 - [`long-unsplittable-format-macro`](./long-unsplittable-format-macro.md) — value-producing
   or terminating macros (`format!`, `panic!`, `assert!`).
-- `overlong_derive_more_template` (this rule) — derive_more
+- `long_unsplittable_derive_more_template` (this rule) — derive_more
   attribute-form templates (`#[display(...)]`, `#[debug(...)]`).
 
 Each rule's target set is disjoint from the others by design;
