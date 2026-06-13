@@ -134,23 +134,24 @@ exercised on real codebases.
 
 ```toml
 [manual_derive_more_impl]
-# Easy sub-lints — on by default.
-from       = true
-into       = true
-as_ref     = true
-as_mut     = true
-deref      = true
-deref_mut  = true
+# Easy sub-lints — on by default. Each registers as its own flat tool
+# lint `perfectionist::manual_<trait>_impl`.
+manual_from_impl       = true
+manual_into_impl       = true
+manual_as_ref_impl     = true
+manual_as_mut_impl     = true
+manual_deref_impl      = true
+manual_deref_mut_impl  = true
 
 # Medium — on by default; conservatively only fires on supported
 # shapes.
-try_from   = true
-try_into   = true
+manual_try_from_impl   = true
+manual_try_into_impl   = true
 
 # Hard — off by default. Enable per project once the lint has been
 # vetted against a real codebase.
-display    = false
-error      = false
+manual_display_impl    = false
+manual_error_impl      = false
 
 # Path to the derive_more crate as imported by the project. Most
 # projects use the unqualified name; some re-export under a
