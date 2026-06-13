@@ -38,6 +38,13 @@
 
 .settings-toggle::before {
   content: "\2699"; /* ⚙ U+2699 GEAR */
+  /* Render the gear from the platform's symbol font, never the body's
+     Cantarell — those faces draw ⚙ centred in the em box, while
+     Cantarell's text side-bearings leave it off-centre in the square
+     button. `sans-serif` is the system default sans, not the
+     `@font-face` "Cantarell". Mirrors the nav hamburger / close ✕ in
+     nav.css. */
+  font-family: "Noto Sans Symbols 2", "Apple Symbols", "Segoe UI Symbol", sans-serif;
 }
 
 .settings-toggle:hover,

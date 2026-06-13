@@ -110,7 +110,11 @@ article.rule h2 .lint-name {
 
 article.rule h2 .rule-jump-link {
   float: right;
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  /* Cantarell-first, like the body — the "↑ top" link is prose, not a
+     pseudo-icon, so it follows the page's body face rather than the
+     heading <code>'s monospace. (↑ U+2191 is in Cantarell's latin
+     subset, so the bundled WOFF2 carries it.) */
+  font-family: "Cantarell", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 0.8rem;
   font-weight: normal;
   text-decoration: none;

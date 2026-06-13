@@ -36,7 +36,8 @@ use crate::extract::collect_rules;
 use crate::model::{RenderContext, Rule};
 use crate::render::markdown::HIGHLIGHT_CSS;
 use crate::render::{
-    CONFIG_TOGGLE_SCRIPT, CONFIG_TOGGLE_SCRIPT_FILENAME, HIGHLIGHT_CSS_DARK_FILENAME,
+    CANTARELL_LICENSE, CANTARELL_LICENSE_FILENAME, CONFIG_TOGGLE_SCRIPT,
+    CONFIG_TOGGLE_SCRIPT_FILENAME, FONT_ASSETS, HIGHLIGHT_CSS_DARK_FILENAME,
     HIGHLIGHT_CSS_LIGHT_FILENAME, NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, RULE_ANCHOR_ICON,
     RULE_ANCHOR_ICON_FILENAME, STYLESHEETS, THEME_ICONS, THEME_TOGGLE_SCRIPT,
     THEME_TOGGLE_SCRIPT_FILENAME, render_page,
@@ -218,6 +219,15 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
         let path = out_dir.join(name);
         fs::write(&path, content).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
     }
+
+    // The Cantarell body-text webfont, referenced by the `@font-face`
+    // `url(...)` fallback in base.css, plus its SIL OFL 1.1 license.
+    for (name, bytes) in FONT_ASSETS {
+        let path = out_dir.join(name);
+        fs::write(&path, bytes).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
+    }
+    fs::write(out_dir.join(CANTARELL_LICENSE_FILENAME), CANTARELL_LICENSE)
+        .expect("failed to write Cantarell font license");
 
     eprintln!("wrote {} rule(s) to {}", rules.len(), index_path.display());
     ExitCode::SUCCESS

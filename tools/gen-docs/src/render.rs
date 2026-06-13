@@ -104,6 +104,34 @@ pub(crate) const RULE_ANCHOR_ICON: &str = include_str!("assets/rule-anchor.svg")
 /// references the same name in a relative `url(...)`, so they must agree.
 pub(crate) const RULE_ANCHOR_ICON_FILENAME: &str = "rule-anchor.svg";
 
+/// The body-text webfont (Cantarell, latin subset), shipped beside
+/// `index.html` so the `@font-face` `url(...)` fallback in base.css
+/// resolves without reaching an external CDN. Each tuple is
+/// `(filename, bytes)`; the WOFF2 payloads are embedded with
+/// `include_bytes!`. The matching `@font-face` rules list
+/// `local("Cantarell")` first, so a reader whose system already has
+/// Cantarell never downloads these — they only load as a fallback.
+/// Cantarell is licensed under the SIL Open Font License 1.1; the
+/// license text rides along as [`CANTARELL_LICENSE`].
+pub(crate) const FONT_ASSETS: &[(&str, &[u8])] = &[
+    (
+        "cantarell-regular.woff2",
+        include_bytes!("assets/cantarell-regular.woff2"),
+    ),
+    (
+        "cantarell-bold.woff2",
+        include_bytes!("assets/cantarell-bold.woff2"),
+    ),
+];
+
+/// The SIL Open Font License 1.1 text for the bundled Cantarell
+/// [`FONT_ASSETS`], shipped beside `index.html` to satisfy the
+/// license's requirement that it accompany the redistributed font.
+pub(crate) const CANTARELL_LICENSE: &str = include_str!("assets/Cantarell-OFL.txt");
+
+/// File name [`CANTARELL_LICENSE`] is written under.
+pub(crate) const CANTARELL_LICENSE_FILENAME: &str = "Cantarell-OFL.txt";
+
 pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String {
     let RenderContext {
         git_ref,

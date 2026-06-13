@@ -48,6 +48,14 @@
 
 .nav-toggle::before {
   content: "\2630"; /* ☰ */
+  /* Render the glyph from the platform's dedicated symbol font, never
+     from the body's Cantarell: those symbol faces draw ☰ centred in
+     the em box, whereas Cantarell (where present) gives it text
+     side-bearings that read as off-centre in the square button. The
+     trailing `sans-serif` is the system default sans — it is never the
+     `@font-face` "Cantarell", which is only reachable by that name. The
+     same stack covers the close ✕ below and the gear in settings.css. */
+  font-family: "Noto Sans Symbols 2", "Apple Symbols", "Segoe UI Symbol", sans-serif;
 }
 
 .nav-toggle:focus-visible {
@@ -98,6 +106,9 @@
 }
 
 .nav-sidebar-close {
+  /* The ✕ glyph follows the same symbol-font stack as the hamburger
+     and gear, not the body's Cantarell. See `.nav-toggle::before`. */
+  font-family: "Noto Sans Symbols 2", "Apple Symbols", "Segoe UI Symbol", sans-serif;
   width: 2.5rem;
   height: 2.5rem;
   flex: none;
