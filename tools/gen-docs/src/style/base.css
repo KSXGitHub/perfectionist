@@ -5,34 +5,23 @@
    selectors here and are linked after the structural sheets. */
 
 /* The page's prose is set in Cantarell. `local(...)` comes first so a
-   reader whose system already ships Cantarell (GNOME / Fedora, etc.)
-   renders from the installed copy and downloads nothing; only when no
-   local Cantarell exists does the browser fetch the bundled WOFF2
-   (latin subset, shipped beside index.html — see FONT_ASSETS in
-   render.rs). Cantarell is SIL OFL 1.1; the license rides along as
-   Cantarell-OFL.txt. The pseudo-icons (gear, hamburger, close ✕) opt
-   back out of this family in nav.css / settings.css — Cantarell sets
-   those symbol codepoints with text side-bearings, which leaves them
-   looking off-centre inside their square buttons. */
+   reader whose system already ships Cantarell renders from the installed
+   copy and downloads nothing; only when no local Cantarell exists does
+   the browser fetch the WOFF2, which gen-docs downloads into a local
+   cache and links in beside index.html (see src/fonts.rs and fonts.lock).
+   It's a single variable font (the `wght` axis spans the declared range),
+   so one file serves both the body's 400 and the headings' 700. Cantarell
+   is SIL OFL 1.1; the license rides along as Cantarell-OFL.txt. The
+   pseudo-icons (gear, hamburger, close ✕) opt back out of this family in
+   nav.css / settings.css so they keep their pre-existing system font. */
 @font-face {
   font-family: "Cantarell";
   font-style: normal;
-  font-weight: 400;
+  font-weight: 100 800;
   font-display: swap;
   src:
     local("Cantarell"),
-    local("Cantarell Regular"),
-    url("cantarell-regular.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "Cantarell";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src:
-    local("Cantarell Bold"),
-    url("cantarell-bold.woff2") format("woff2");
+    url("cantarell.otf") format("opentype");
 }
 
 body {

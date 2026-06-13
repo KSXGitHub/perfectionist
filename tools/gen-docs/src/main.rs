@@ -27,6 +27,7 @@
 
 mod check_md;
 mod extract;
+mod fonts;
 mod model;
 mod render;
 mod render_md;
@@ -37,10 +38,9 @@ use crate::model::{RenderContext, Rule};
 use crate::render::markdown::HIGHLIGHT_CSS;
 use crate::render::{
     CANTARELL_LICENSE, CANTARELL_LICENSE_FILENAME, CONFIG_TOGGLE_SCRIPT,
-    CONFIG_TOGGLE_SCRIPT_FILENAME, FONT_ASSETS, HIGHLIGHT_CSS_DARK_FILENAME,
-    HIGHLIGHT_CSS_LIGHT_FILENAME, NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, RULE_ANCHOR_ICON,
-    RULE_ANCHOR_ICON_FILENAME, STYLESHEETS, THEME_ICONS, THEME_TOGGLE_SCRIPT,
-    THEME_TOGGLE_SCRIPT_FILENAME, render_page,
+    CONFIG_TOGGLE_SCRIPT_FILENAME, HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME,
+    NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME,
+    STYLESHEETS, THEME_ICONS, THEME_TOGGLE_SCRIPT, THEME_TOGGLE_SCRIPT_FILENAME, render_page,
 };
 use cargo_toml::Manifest;
 use clap::{Parser, Subcommand};
@@ -221,11 +221,17 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     }
 
     // The Cantarell body-text webfont, referenced by the `@font-face`
-    // `url(...)` fallback in base.css, plus its SIL OFL 1.1 license.
-    for (name, bytes) in FONT_ASSETS {
-        let path = out_dir.join(name);
-        fs::write(&path, bytes).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
-    }
+    // `url(...)` fallback in base.css. The binaries aren't committed:
+    // download them into a local cache (verified against fonts.lock,
+    // reused offline once warm), then link them in beside index.html —
+    // hard-link first, copy across filesystems. The SIL OFL 1.1 license
+    // is committed text and written directly.
+    let font_entries = fonts::font_entries();
+    let font_cache = fonts::cache_dir(root);
+    fonts::ensure_cached(&font_cache, &font_entries)
+        .unwrap_or_else(|error| panic!("failed to provision fonts: {error}"));
+    fonts::install_into(out_dir, &font_cache, &font_entries)
+        .unwrap_or_else(|error| panic!("failed to install fonts: {error}"));
     fs::write(out_dir.join(CANTARELL_LICENSE_FILENAME), CANTARELL_LICENSE)
         .expect("failed to write Cantarell font license");
 

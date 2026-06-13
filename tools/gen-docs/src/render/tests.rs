@@ -1,10 +1,11 @@
 use super::{
     CANTARELL_LICENSE, CANTARELL_LICENSE_FILENAME, CONFIG_TOGGLE_SCRIPT,
-    CONFIG_TOGGLE_SCRIPT_FILENAME, FONT_ASSETS, HIGHLIGHT_CSS_DARK_FILENAME,
-    HIGHLIGHT_CSS_LIGHT_FILENAME, NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, PAGE_SCRIPTS,
-    RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME, STYLESHEETS, THEME_ICON_PREFETCH_TEMPLATE_ID,
-    THEME_ICONS, THEME_TOGGLE_SCRIPT, THEME_TOGGLE_SCRIPT_FILENAME, anchor_for, render_page,
+    CONFIG_TOGGLE_SCRIPT_FILENAME, HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME,
+    NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, PAGE_SCRIPTS, RULE_ANCHOR_ICON,
+    RULE_ANCHOR_ICON_FILENAME, STYLESHEETS, THEME_ICON_PREFETCH_TEMPLATE_ID, THEME_ICONS,
+    THEME_TOGGLE_SCRIPT, THEME_TOGGLE_SCRIPT_FILENAME, anchor_for, render_page,
 };
+use crate::fonts::font_entries;
 use crate::model::{ConfigDoc, ConfigField, DefaultState, Optionality, RenderContext, Rule};
 use std::path::PathBuf;
 
@@ -325,25 +326,30 @@ fn style_references_rule_anchor_icon() {
 }
 
 #[test]
-fn base_css_font_face_references_each_bundled_font() {
-    // Every bundled WOFF2 must be reachable through a `@font-face`
-    // `url(...)` whose name matches the file written beside index.html,
-    // or the font 404s and the page silently drops back to the system
-    // sans. `local(...)` must come first so an installed Cantarell wins
-    // over a download. A WOFF2 shipped but never referenced (or vice
-    // versa) is the regression this guards.
+fn base_css_font_face_references_each_locked_font() {
+    // Every font pinned in fonts.lock must be reachable through a
+    // `@font-face` `url(...)` whose name matches the file the build links
+    // beside index.html, or the font 404s and the page silently drops
+    // back to the system sans. `local(...)` must come first so an
+    // installed Cantarell wins over a download. A locked font never
+    // referenced (or a referenced font never locked) is the regression
+    // this guards.
     let base = stylesheet("base.css");
     assert!(
         base.contains(r#"local("Cantarell")"#),
         "base.css must prefer a locally-installed Cantarell before downloading",
     );
-    for (name, _) in FONT_ASSETS {
-        let expected = format!(r#"url("{name}") format("woff2")"#);
+    for entry in font_entries() {
+        let expected = format!(r#"url("{}")"#, entry.filename);
         assert!(
             base.contains(&expected),
-            "base.css must reference the bundled font as {expected}",
+            "base.css must reference the locked font as {expected}",
         );
     }
+    assert!(
+        base.contains(r#"format("opentype")"#),
+        "base.css must declare the OpenType format for the @font-face src",
+    );
     assert!(
         base.contains(r#"font-family: "Cantarell""#),
         "base.css `body` must set Cantarell as the first font family",
@@ -351,26 +357,24 @@ fn base_css_font_face_references_each_bundled_font() {
     // The license must accompany the redistributed OFL font.
     assert!(
         CANTARELL_LICENSE.contains("SIL Open Font License"),
-        "the bundled Cantarell license ({CANTARELL_LICENSE_FILENAME}) must be the SIL OFL text",
+        "the committed Cantarell license ({CANTARELL_LICENSE_FILENAME}) must be the SIL OFL text",
     );
 }
 
 #[test]
 fn pseudo_icons_opt_out_of_the_body_font() {
     // The gear, hamburger, and close ✕ must not inherit the body's
-    // Cantarell, which positions those symbol codepoints off-centre in
-    // their square buttons. Each is pinned to a dedicated symbol-font
-    // stack that ends in the `sans-serif` generic, never the
-    // `@font-face` "Cantarell" family.
-    let icon_stack =
-        r#"font-family: "Noto Sans Symbols 2", "Apple Symbols", "Segoe UI Symbol", sans-serif;"#;
+    // Cantarell. They keep the system font stack the page used before
+    // Cantarell was introduced, so they render exactly as they always
+    // did rather than in (or falling back from) Cantarell.
+    let icon_stack = "font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;";
     assert!(
         stylesheet("nav.css").matches(icon_stack).count() >= 2,
-        "nav.css must keep the hamburger and close ✕ on the symbol-font stack, off Cantarell",
+        "nav.css must keep the hamburger and close ✕ on the system font stack, off Cantarell",
     );
     assert!(
         stylesheet("settings.css").contains(icon_stack),
-        "settings.css must keep the gear on the symbol-font stack, off Cantarell",
+        "settings.css must keep the gear on the system font stack, off Cantarell",
     );
 }
 
