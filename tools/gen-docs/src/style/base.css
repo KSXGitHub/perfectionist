@@ -4,16 +4,10 @@
    on engines that predate `var()`. The colour sheets mirror the
    selectors here and are linked after the structural sheets. */
 
-/* The page's prose is set in Cantarell. `local(...)` comes first so a
-   reader whose system already ships Cantarell renders from the installed
-   copy and downloads nothing; only when no local Cantarell exists does
-   the browser fetch the WOFF2, which gen-docs downloads into a local
-   cache and links in beside index.html (see src/fonts.rs and fonts.lock).
-   It's a single variable font (the `wght` axis spans the declared range),
-   so one file serves both the body's 400 and the headings' 700. Cantarell
-   is SIL OFL 1.1; the license rides along as Cantarell-OFL.txt. The
-   pseudo-icons (gear, hamburger, close ✕) opt back out of this family in
-   nav.css / settings.css so they keep their pre-existing system font. */
+/* The page's prose is set in Cantarell; `local(...)` is first so an
+   installed copy wins over the download (see src/fonts.rs). It's one
+   variable font, so the `wght` range covers both body and headings. The
+   pseudo-icons opt out of this family in nav.css / settings.css. */
 @font-face {
   font-family: "Cantarell";
   font-style: normal;

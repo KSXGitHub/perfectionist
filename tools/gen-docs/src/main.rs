@@ -220,11 +220,6 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
         fs::write(&path, content).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
     }
 
-    // The Cantarell body-text webfont (referenced by the `@font-face`
-    // `url(...)` fallback in base.css) and the OFL license it ships under.
-    // Neither is committed: download them into a local cache if not
-    // already present (reused offline once warm), then link them in beside
-    // index.html — hard-link first, copy across filesystems.
     let font_cache = fonts::cache_dir(root);
     fonts::ensure_cached(&font_cache, fonts::DOWNLOADS)
         .unwrap_or_else(|error| panic!("failed to provision fonts: {error}"));

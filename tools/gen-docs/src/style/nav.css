@@ -48,10 +48,6 @@
 
 .nav-toggle::before {
   content: "\2630"; /* ☰ */
-  /* Keep this glyph on the system font stack the page used before
-     Cantarell was introduced — it must not inherit the body's Cantarell.
-     The hamburger, the gear (settings.css), and the close ✕ below all
-     share this stack. */
   font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
 
@@ -103,9 +99,6 @@
 }
 
 .nav-sidebar-close {
-  /* The ✕ keeps the pre-Cantarell system font stack, like the hamburger
-     and gear, rather than inheriting the body's Cantarell. See
-     `.nav-toggle::before`. */
   font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   width: 2.5rem;
   height: 2.5rem;

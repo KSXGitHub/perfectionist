@@ -38,9 +38,6 @@
 
 .settings-toggle::before {
   content: "\2699"; /* ⚙ U+2699 GEAR */
-  /* Keep the gear on the pre-Cantarell system font stack rather than
-     inheriting the body's Cantarell. Mirrors the nav hamburger / close ✕
-     in nav.css. */
   font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
 
