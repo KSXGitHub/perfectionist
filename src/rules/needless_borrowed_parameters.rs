@@ -37,7 +37,7 @@ declare_tool_lint! {
     /// condition and `match` scrutinee positions count as
     /// disqualifying, not just the branch arms. The broader
     /// dominance-analysis cases described in
-    /// `planned-rules/prefer-owned-parameter.md` are still pending.
+    /// `planned-rules/needless-borrowed-parameters.md` are still pending.
     ///
     /// ### Why restrict this?
     ///

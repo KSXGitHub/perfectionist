@@ -15,7 +15,7 @@
 //! methods).
 //!
 //! The predicate is a hand-rolled token-stream walker — see the
-//! rationale in `planned-rules/macro-argument-binding.md`'s
+//! rationale in `planned-rules/impure-macro-arguments.md`'s
 //! "Implementation notes" section. The walker is `take_*`-style per
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
 

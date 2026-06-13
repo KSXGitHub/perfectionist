@@ -281,7 +281,7 @@ pub(super) struct ImpureMacroArguments {
     allow: BTreeSet<Vec<String>>,
     /// Only the user-supplied `allow_extra` entries. Used in
     /// `Blanket` mode, which has no built-in allow set per the rule
-    /// docs (`planned-rules/macro-argument-binding.md`).
+    /// docs (`planned-rules/impure-macro-arguments.md`).
     allow_extra: BTreeSet<Vec<String>>,
     /// Macros to skip entirely. Checked before deny / allow lookup, so
     /// an entry here wins over any other classification.

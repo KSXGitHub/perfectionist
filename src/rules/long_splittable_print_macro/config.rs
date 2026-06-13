@@ -3,7 +3,7 @@
 //! [`LongSplittablePrintMacro`] state the pre-expansion pass holds.
 //!
 //! Only the `line_continuation` rewrite ships today, so the `style`
-//! knob documented in `planned-rules/print-macro-split.md` is
+//! knob documented in `planned-rules/long-splittable-print-macro.md` is
 //! deliberately absent — a one-variant `style` enum would carry no
 //! information. It returns when the `multiple_calls` half lands.
 
@@ -23,7 +23,7 @@ const DEFAULT_MAX_LINE_WIDTH: usize = 100;
 /// (`format!`, `format_args!`) or *terminate* (`panic!`, `assert!`,
 /// the `debug_assert*` family, ...) are deliberately absent: see the
 /// "Why not `format!`-family" section of
-/// `planned-rules/print-macro-split.md`.
+/// `planned-rules/long-splittable-print-macro.md`.
 ///
 /// The list covers three groups: the stdout / stderr writers
 /// (`println!`, `eprintln!`, `print!`, `eprint!`), the `Write` writers
