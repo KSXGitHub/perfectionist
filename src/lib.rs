@@ -57,9 +57,9 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         clap_help_markdown
         excessive_inline_tests
         exhaustive_error_enums
-        impure_macro_arguments
         import_granularity_mismatch
         import_grouping_mismatch
+        impure_macro_arguments
         lint_attribute_trailing_comment
         long_splittable_print_macro
         macro_trailing_comma
