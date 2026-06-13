@@ -106,17 +106,27 @@ pub(super) fn locate_ref(url: &str, kind: ForgeKind) -> Option<RefLocation<'_>> 
 }
 
 /// Classify a located ref. `None` means the ref is acceptable (a
-/// commit SHA); `Some(problem)` is a violation.
+/// commit SHA, or a version-shaped ref when configured);
+/// `Some(problem)` is a violation.
 pub(crate) fn ref_problem(
     text: &str,
     outcome: RefOutcome,
     sha_recognition_length: usize,
+    allow_version_patterns: bool,
 ) -> Option<RefProblem> {
     match outcome {
         RefOutcome::KnownMutable(MutableKind::Branch) => Some(RefProblem::Branch),
-        RefOutcome::KnownMutable(MutableKind::Tag) => Some(RefProblem::Tag),
+        RefOutcome::KnownMutable(MutableKind::Tag) => {
+            if allow_version_patterns && is_version_pattern_ref(text) {
+                None
+            } else {
+                Some(RefProblem::Tag)
+            }
+        }
         RefOutcome::MustBeSha => {
-            if is_commit_sha(text, sha_recognition_length) {
+            if is_commit_sha(text, sha_recognition_length)
+                || (allow_version_patterns && is_version_pattern_ref(text))
+            {
                 None
             } else {
                 Some(RefProblem::NotSha)
@@ -131,6 +141,78 @@ fn is_commit_sha(text: &str, sha_recognition_length: usize) -> bool {
     text.len() >= sha_recognition_length
         && !text.is_empty()
         && text.bytes().all(|byte| byte.is_ascii_hexdigit())
+}
+
+/// Whether `text` looks like a version pattern (`1.2.3`, `v1.2.3`, or
+/// either form with a non-empty `-suffix` of version-suffix characters,
+/// per [`is_version_suffix_byte`]). The grammar is built from the
+/// `take_*` version combinators below ([`take_version_pattern`] is the
+/// entry point); the ref is only a version pattern when the combinator
+/// consumes it entirely. This intentionally avoids a regex dependency
+/// because the lint is compiled from source by users.
+fn is_version_pattern_ref(text: &str) -> bool {
+    take_version_pattern(text).is_some_and(str::is_empty)
+}
+
+/// Take a version pattern — `0.1.2`, `0.1.2-suffix`, `v0.1.2`, or
+/// `v0.1.2-suffix` — the union of [`take_prefixed_version`] and
+/// [`take_unprefixed_version`].
+fn take_version_pattern(input: &str) -> Option<&str> {
+    take_prefixed_version(input).or_else(|| take_unprefixed_version(input))
+}
+
+/// Take a `v`-prefixed version (`v0.1.2` or `v0.1.2-suffix`): a `v`
+/// joined with [`take_unprefixed_version`].
+fn take_prefixed_version(input: &str) -> Option<&str> {
+    let rest = input.strip_prefix('v')?;
+    take_unprefixed_version(rest)
+}
+
+/// Take an unprefixed version (`0.1.2` or `0.1.2-suffix`): the union
+/// of [`take_suffixed_version`] and [`take_bare_version`]. The
+/// suffixed alternative is tried first so that the longer match wins
+/// when both apply.
+fn take_unprefixed_version(input: &str) -> Option<&str> {
+    take_suffixed_version(input).or_else(|| take_bare_version(input))
+}
+
+/// Take a suffixed version (`0.1.2-suffix`): [`take_bare_version`],
+/// then a `-`, then a non-empty run of version-suffix characters.
+fn take_suffixed_version(input: &str) -> Option<&str> {
+    let rest = take_bare_version(input)?;
+    let rest = rest.strip_prefix('-')?;
+    let end = rest
+        .bytes()
+        .position(|byte| !is_version_suffix_byte(byte))
+        .unwrap_or(rest.len());
+    (end > 0).then_some(&rest[end..])
+}
+
+/// Take a bare version (`0.1.2`): three dot-separated runs of ASCII
+/// digits.
+fn take_bare_version(input: &str) -> Option<&str> {
+    let rest = take_number(input)?;
+    let rest = rest.strip_prefix('.')?;
+    let rest = take_number(rest)?;
+    let rest = rest.strip_prefix('.')?;
+    take_number(rest)
+}
+
+/// Take a non-empty run of ASCII digits.
+fn take_number(input: &str) -> Option<&str> {
+    let end = input
+        .bytes()
+        .position(|byte| !byte.is_ascii_digit())
+        .unwrap_or(input.len());
+    (end > 0).then_some(&input[end..])
+}
+
+/// Whether `byte` may appear in a version-pattern suffix: ASCII
+/// letters, ASCII digits, `.`, `-`, and `_`. Anything else (`$`, `,`,
+/// `;`, `&`, ...) is not a versioning suffix, so a ref containing it
+/// is not exempted by `allow_version_patterns`.
+fn is_version_suffix_byte(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'-' | b'_')
 }
 
 /// Split `url` into the byte offset of its path and the path text

@@ -9,7 +9,6 @@
 //! directory verbatim.
 
 pub(crate) mod config;
-pub(crate) mod file_tree;
 pub(crate) mod markdown;
 
 use crate::model::{DefaultState, NAMESPACE, RenderContext, Rule};
