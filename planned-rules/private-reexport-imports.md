@@ -258,7 +258,7 @@ import.
   private import. Implement this rule's autofix by factoring the
   canonical-path resolution out of `named_prelude_imports` into a
   shared crate-internal helper rather than duplicating it.
-- [`qualified-paths`](./qualified-paths.md) governs the orthogonal axis
+- [`path-qualification-mismatch`](./path-qualification-mismatch.md) governs the orthogonal axis
   of *whether* to import at all (path vs. `use`); this rule governs
   *which source* an import names. They can both be active without
   conflict.

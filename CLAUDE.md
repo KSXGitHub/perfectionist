@@ -41,8 +41,8 @@ Read three things first, in this order:
    - **Lint name namespacing.** Every lint registers under the
      `perfectionist` tool namespace via
      `rustc_session::declare_tool_lint!`. The planning files use
-     the unqualified form (`qualified_paths`) for readability;
-     the registered name is `perfectionist::qualified_paths`.
+     the unqualified form (`path_qualification_mismatch`) for readability;
+     the registered name is `perfectionist::path_qualification_mismatch`.
 
 If the rule is one of several that share a helper (markdown
 exclusion, format-string parsing, URL discovery, unicode-width
@@ -179,10 +179,10 @@ becomes documentation drift. Remove it:
      some entries describe one rule by reference to another.
 
    Fix each reference by either pointing at the implementation
-   source code (e.g., `src/qualified_paths.rs`) or rewording the
+   source code (e.g., `src/path_qualification_mismatch.rs`) or rewording the
    prose to drop the link entirely. A reference that just names
    the rule for context can be reworded to use the lint's
-   namespaced name (`perfectionist::qualified_paths`) without a
+   namespaced name (`perfectionist::path_qualification_mismatch`) without a
    markdown link.
 
 After the cleanup, the repository should be self-consistent: the

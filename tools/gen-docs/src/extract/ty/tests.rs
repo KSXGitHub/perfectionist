@@ -80,7 +80,7 @@ fn toml_type_label_transparent_wrappers() {
 }
 
 #[test]
-fn toml_type_label_qualified_paths_use_last_segment() {
+fn toml_type_label_path_qualification_mismatch_use_last_segment() {
     let shared = no_shared();
     assert_eq!(
         toml_type_label(&parse_type("std::vec::Vec<String>"), &shared),

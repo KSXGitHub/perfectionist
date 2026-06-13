@@ -422,8 +422,8 @@ that the rule covers `warn` / `deny` / `forbid`, not just the
 
 Every lint registered by this plugin lives in the `perfectionist`
 *tool namespace*. The planning files in this directory use the
-unqualified form for readability — `qualified_paths` reads better
-than `perfectionist::qualified_paths` in a sentence — but the lint
+unqualified form for readability — `path_qualification_mismatch` reads better
+than `perfectionist::path_qualification_mismatch` in a sentence — but the lint
 as it appears in `declare_tool_lint!`, in the `dylint.toml`
 configuration table, in `#[allow(...)]` / `#[deny(...)]`
 attributes, and in compiler diagnostic output is always
@@ -433,15 +433,15 @@ namespaced.
 
 Dylint loads each plugin as a separate dynamic library, but
 rustc's `LintStore` is a single global table per compilation. Two
-plugins that both register a lint named `qualified_paths`
+plugins that both register a lint named `path_qualification_mismatch`
 cause rustc to reject the second registration as a duplicate. The
-names this catalogue chose — `from`, `bare_url`, `qualified_paths`,
+names this catalogue chose — `from`, `bare_url`, `path_qualification_mismatch`,
 `serde_source_types`, and similar — are exactly the names an
 independent plugin author would reach for, so collisions are not
 hypothetical. Namespacing removes them.
 
 The namespace also makes diagnostic attribution unambiguous. A
-warning's note reads `#[warn(perfectionist::qualified_paths)] on
+warning's note reads `#[warn(perfectionist::path_qualification_mismatch)] on
 by default`, naming the source plugin so there is no question
 which library to consult or configure.
 
@@ -449,10 +449,10 @@ which library to consult or configure.
 
 Two reasonable approaches exist:
 
-- **Tool namespace** (`perfectionist::qualified_paths`): the
+- **Tool namespace** (`perfectionist::path_qualification_mismatch`): the
   approach used by `clippy::*` and `rustdoc::*`. Idiomatic, scoped,
   reads cleanly in `#[allow(...)]`.
-- **Bare prefix** (`perfectionist_qualified_paths`): a single long
+- **Bare prefix** (`perfectionist_path_qualification_mismatch`): a single long
   identifier. Mechanically simpler, no tool registration required.
 
 Both work for *this* plugin's compilation because the plugin is
@@ -500,7 +500,7 @@ README so consumers know to apply it once if needed.
 When a rule's planning file reads:
 
 ```text
-# `qualified_paths`
+# `path_qualification_mismatch`
 ```
 
 the `declare_tool_lint!` invocation reads:
@@ -516,7 +516,7 @@ rustc_session::declare_tool_lint! {
 ```
 
 The macro produces a lint whose canonical printed name is
-`perfectionist::qualified_paths`. The translation from planning
+`perfectionist::path_qualification_mismatch`. The translation from planning
 name to declaration is one-to-one: take the snake_case identifier
 from the planning H1, uppercase it for the macro identifier, slot
 it under `perfectionist::`. The diagnostic text inside the lint is
@@ -526,21 +526,21 @@ Configuration tables follow the same shape. The planning file
 shows:
 
 ```toml
-[qualified_paths]
+[path_qualification_mismatch]
 style = "unqualified"
 ```
 
 The actual `dylint.toml` reads:
 
 ```toml
-[perfectionist::qualified_paths]
+[perfectionist::path_qualification_mismatch]
 style = "unqualified"
 ```
 
 A user-side suppression reads:
 
 ```rust
-#[allow(perfectionist::qualified_paths)]
+#[allow(perfectionist::path_qualification_mismatch)]
 fn legacy_function() { /* ... */ }
 ```
 
@@ -736,7 +736,7 @@ else is `Active by default`.
 ### Mandatory configuration on opt-in rules
 
 A handful of `Inactive by default` rules express a *direction*
-with no neutral baseline — `qualified_paths` (`unqualified` vs.
+with no neutral baseline — `path_qualification_mismatch` (`unqualified` vs.
 `qualified`), `serde_wrapper_form_mismatch` (`transparent` vs.
 `from_into`), and `import_grouping_mismatch` (`single_block` vs.
 `multi_block`). These rules deliberately do **not**

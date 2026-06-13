@@ -45,7 +45,7 @@ fn known_two() {}
 fn other_tool() {}
 
 // Good: bare lint name; out of scope (rustc's `unknown_lints` owns it).
-#[allow(qualified_paths)]
+#[allow(path_qualification_mismatch)]
 fn bare() {}
 
 fn main() {}

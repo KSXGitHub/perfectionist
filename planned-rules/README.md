@@ -42,7 +42,7 @@ pattern that several rules call out by reference — live in
   by default.
 
 ### Naming
-- [`qualified-paths.md`](./qualified-paths.md) — decide whether items from
+- [`path-qualification-mismatch.md`](./path-qualification-mismatch.md) — decide whether items from
   outside the current scope are named by their full path
   (`std::fs::create_dir_all`, `#[derive(clap::Parser)]`) or imported
   via `use` and called by the simple identifier. AI tends to produce

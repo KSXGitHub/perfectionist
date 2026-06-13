@@ -1,4 +1,4 @@
-# `qualified_paths`
+# `path_qualification_mismatch`
 
 **Source:** project convention; parallel-disk-usage's codebase
 implicitly enforces the unqualified form by always importing items
@@ -56,7 +56,7 @@ external module.
 ## Configuration
 
 ```toml
-[qualified_paths]
+[path_qualification_mismatch]
 # Inactive by default. Enable in `[perfectionist].enable`, then set
 # `style` — it is mandatory and has no default. The value below is an
 # example, not a default.
@@ -290,7 +290,7 @@ enabled — see
 
 ## Why one rule instead of two
 
-`forbid-qualified-paths` and `require-qualified-paths` describe the
+`forbid-path-qualification-mismatch` and `require-path-qualification-mismatch` describe the
 same axis from opposite ends. Two separate rules would have to
 coordinate so they never both fire on the same path (each
 direction's "good" form is the other's "bad" form). One rule with
