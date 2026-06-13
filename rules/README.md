@@ -6,6 +6,18 @@ Auto-generated catalogue of implemented lints. Each entry links to a per-rule ma
 
 Lint-control attributes use the `perfectionist::` namespace.
 
+- [`allow_attributes`](./allow_attributes.md) (default: `active`).
+
+  `#[allow]` for a deterministically-firing lint should be `#[expect]`
+
+- [`allow_attributes_without_reason`](./allow_attributes_without_reason.md) (default: `active`).
+
+  `#[allow]` / `#[expect]` attribute lacks an explanatory `reason = "..."` field
+
+- [`avoidable_string_escapes`](./avoidable_string_escapes.md) (default: `active`).
+
+  string literal contains only raw-expressible escapes; prefer the raw-string form
+
 - [`bare_email`](./bare_email.md) (default: `active`).
 
   bare email address in comment or doc comment; wrap in `<...>` or prefix with `mailto:`
@@ -22,37 +34,33 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   bare URL in comment or doc comment; wrap in `<...>` or use a labelled markdown link
 
-- [`clap_help_no_markdown`](./clap_help_no_markdown.md) (default: `active`).
+- [`clap_help_markdown`](./clap_help_markdown.md) (default: `active`).
 
   markdown construct in a clap-derived doc comment leaks into `--help` output
 
-- [`derive_ordering`](./derive_ordering.md) (default: `inactive`).
-
-  trait names in a `#[derive(...)]` list are not in the configured order
-
-- [`import_granularity`](./import_granularity.md) (default: `active`).
-
-  import granularity does not match the configured `import_granularity.style`
-
-- [`import_grouping`](./import_grouping.md) (default: `inactive`).
-
-  import grouping does not match the configured `import_grouping.style`
-
-- [`inline_test_footprint`](./inline_test_footprint.md) (default: `active`).
+- [`excessive_inline_tests`](./excessive_inline_tests.md) (default: `active`).
 
   inline test code should be extracted to a separate file
 
-- [`lint_reason_from_comment`](./lint_reason_from_comment.md) (default: `active`).
+- [`exhaustive_error_enums`](./exhaustive_error_enums.md) (default: `inactive`).
 
-  trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field
+  error-shaped type is missing `#[non_exhaustive]`
 
-- [`lint_silence_reason`](./lint_silence_reason.md) (default: `active`).
+- [`import_granularity_mismatch`](./import_granularity_mismatch.md) (default: `active`).
 
-  `#[allow]` / `#[expect]` attribute lacks an explanatory `reason = "..."` field
+  import granularity does not match the configured `import_granularity_mismatch.style`
 
-- [`macro_argument_binding`](./macro_argument_binding.md) (default: `active`).
+- [`import_grouping_mismatch`](./import_grouping_mismatch.md) (default: `inactive`).
+
+  import grouping does not match the configured `import_grouping_mismatch.style`
+
+- [`impure_macro_arguments`](./impure_macro_arguments.md) (default: `active`).
 
   macro invocation passes an impure expression that should be bound to a `let` first
+
+- [`lint_attribute_trailing_comment`](./lint_attribute_trailing_comment.md) (default: `active`).
+
+  trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field
 
 - [`macro_trailing_comma`](./macro_trailing_comma.md) (default: `active`).
 
@@ -62,27 +70,11 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   named item cherry-picked from a prelude module instead of glob-imported
 
-- [`non_exhaustive_error`](./non_exhaustive_error.md) (default: `inactive`).
-
-  error-shaped type is missing `#[non_exhaustive]`
-
-- [`prefer_derive_more_over_thiserror`](./prefer_derive_more_over_thiserror.md) (default: `active`).
-
-  `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`
-
-- [`prefer_expect_over_allow`](./prefer_expect_over_allow.md) (default: `active`).
-
-  `#[allow]` for a deterministically-firing lint should be `#[expect]`
-
-- [`prefer_owned_parameter`](./prefer_owned_parameter.md) (default: `active`).
+- [`needless_borrowed_parameters`](./needless_borrowed_parameters.md) (default: `active`).
 
   borrowed parameter is only used to produce its owned form
 
-- [`prefer_raw_string`](./prefer_raw_string.md) (default: `active`).
-
-  string literal contains only raw-expressible escapes; prefer the raw-string form
-
-- [`print_macro_split`](./print_macro_split.md) (default: `active`).
+- [`overly_long_print_macro`](./overly_long_print_macro.md) (default: `active`).
 
   splittable print macro with an embedded-newline template exceeds the configured line width
 
@@ -114,6 +106,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   static item has a single-letter name
 
+- [`thiserror_usage`](./thiserror_usage.md) (default: `active`).
+
+  `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`
+
 - [`uncombined_self_import`](./uncombined_self_import.md) (default: `inactive`).
 
   a module import and an adjacent item import from it can be combined through `self`
@@ -133,6 +129,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`unknown_perfectionist_lints`](./unknown_perfectionist_lints.md) (default: `active`).
 
   lint-control attribute references a `perfectionist::*` lint that this plugin does not register
+
+- [`unordered_derives`](./unordered_derives.md) (default: `inactive`).
+
+  trait names in a `#[derive(...)]` list are not in the configured order
 
 - [`unpinned_repo_ref`](./unpinned_repo_ref.md) (default: `active`).
 

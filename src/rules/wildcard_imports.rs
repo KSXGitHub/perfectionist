@@ -9,7 +9,7 @@
 //! from the post-expansion AST (which strips them) or a pre-expansion
 //! pass (which leaves out-of-line `mod foo;` modules `ModKind::Unloaded`
 //! and so skips every separate-file submodule). The sibling
-//! `import_grouping` rule shares the same machinery, including the
+//! `import_grouping_mismatch` rule shares the same machinery, including the
 //! `live_module_spans` guard that keeps the walk from descending into a
 //! cfg-disabled inline module that is not part of the compiled crate.
 

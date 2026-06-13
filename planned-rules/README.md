@@ -18,14 +18,14 @@ pattern that several rules call out by reference — live in
 ## Index
 
 ### Module and file layout
-- [`module-item-order.md`](./module-item-order.md) — within a module file,
+- [`arbitrary-source-item-ordering.md`](./arbitrary-source-item-ordering.md) — within a module file,
   `pub mod` first, then `pub use`, then private items.
 
 ### Imports
-- [`prefer-std-path.md`](./prefer-std-path.md) — for projects that
+- [`core-instead-of-std.md`](./core-instead-of-std.md) — for projects that
   target `std` exclusively, flag `core::` / `alloc::` paths whose item is
   also reachable through `std::`, and suggest the `std::` form. Inactive
-  by default. The opposite direction (`prefer_core`) is out of scope —
+  by default. The opposite direction (preferring `core`) is out of scope —
   it is covered by `clippy::std_instead_of_core` + `std_instead_of_alloc`.
 - [`named-prelude-imports.md`](./named-prelude-imports.md) — dual of
   `perfectionist::wildcard_imports`. Forbid named imports from a
@@ -42,7 +42,7 @@ pattern that several rules call out by reference — live in
   by default.
 
 ### Naming
-- [`qualified-paths.md`](./qualified-paths.md) — decide whether items from
+- [`path-qualification-mismatch.md`](./path-qualification-mismatch.md) — decide whether items from
   outside the current scope are named by their full path
   (`std::fs::create_dir_all`, `#[derive(clap::Parser)]`) or imported
   via `use` and called by the simple identifier. AI tends to produce
@@ -50,9 +50,9 @@ pattern that several rules call out by reference — live in
   default; opt in and pick `unqualified` or `qualified`.
 
 ### Trait bounds and signatures
-- [`where-clause-bounds.md`](./where-clause-bounds.md) — prefer `where` clauses
+- [`excessive-inline-bounds.md`](./excessive-inline-bounds.md) — prefer `where` clauses
   over inline bounds when there are multiple constraints.
-- [`prefer-owned-parameter.md`](./prefer-owned-parameter.md) — when a
+- [`needless-borrowed-parameters.md`](./needless-borrowed-parameters.md) — when a
   function takes `&T` but the body unconditionally calls
   `.to_owned()` / `.to_path_buf()` / equivalent, take `T` directly.
   Pairs with `clippy::ptr_arg` and `clippy::needless_pass_by_value`
@@ -63,11 +63,11 @@ pattern that several rules call out by reference — live in
 - [`error-type-derives.md`](./error-type-derives.md) — derive
   `derive_more::Display` / `Error` only when needed; flag superfluous
   `Error` and types that violate the project's error-naming convention.
-- [`prefer-derive-more.md`](./prefer-derive-more.md) — flag hand-written
+- [`manual-derive-more-impl.md`](./manual-derive-more-impl.md) — flag hand-written
   `impl` blocks that could be replaced by a `derive_more` derive
   (`From`, `Into`, `AsRef`, `Deref`, etc., with `Display` and
   `Error` available behind opt-in flags due to detection difficulty).
-- [`derive-more-inlined-args.md`](./derive-more-inlined-args.md) —
+- [`uninlined-derive-more-args.md`](./uninlined-derive-more-args.md) —
   `clippy::uninlined_format_args` for `#[display(...)]` and
   `#[debug(...)]` attributes from `derive_more`.
 
@@ -81,7 +81,7 @@ pattern that several rules call out by reference — live in
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
   `#[cfg_attr(..., ignore = "...")]` over `#[cfg(...)]` on `#[test]`s, and
   require an `ignore` reason string.
-- [`prefer-json-macro.md`](./prefer-json-macro.md) — in test
+- [`manual-json-string.md`](./manual-json-string.md) — in test
   code, when a string literal or `format!` invocation produces a
   non-trivial JSON document, prefer
   `serde_json::json!({ ... }).to_string()`. By default silent in
@@ -91,13 +91,13 @@ pattern that several rules call out by reference — live in
   (`require_serde_json_dependency = false` opts in).
 
 ### String literals
-- [`prefer-text-block.md`](./prefer-text-block.md) — when a string
+- [`escaped-multiline-string.md`](./escaped-multiline-string.md) — when a string
   literal contains 2+ embedded `\n` newlines (and isn't a format
   template or display-attribute), prefer `text_block! { ... }` /
   `text_block_fnl! { ... }` (default) or the
   `"line\n\<newline>line"` continuation form. Skips templates and
   attribute literals.
-- [`print-macro-split.md`](./print-macro-split.md) — when a
+- [`overly-long-print-macro.md`](./overly-long-print-macro.md) — when a
   splittable print macro (`println!`, `eprintln!`, `writeln!`,
   log family, …) has an embedded-`\n` template *and* spans more
   than `max_line_width` columns, suggest either splitting into
@@ -106,14 +106,14 @@ pattern that several rules call out by reference — live in
   (`line_continuation`). Excludes `format!`/`format_args!` and
   the panic/assert family because their behaviour changes under
   splitting.
-- [`format-macro-wrap.md`](./format-macro-wrap.md) — counterpart
+- [`overly-long-format-macro.md`](./overly-long-format-macro.md) — counterpart
   for the *unsplittable* macros: `format!`, `format_args!`,
   `panic!`, `assert!` (with message), the `debug_assert*` family,
   `unimplemented!`/`todo!`/`unreachable!`. When the source line
   exceeds `max_line_width`, suggest folding the template with
   `\n\<newline>` continuations. Only one rewrite — multi-call is
   not viable for these macros.
-- [`derive-more-template-wrap.md`](./derive-more-template-wrap.md)
+- [`overly-long-derive-more-template.md`](./overly-long-derive-more-template.md)
   — same width-driven wrapping for derive_more attribute-form
   templates: `#[display(...)]`, `#[debug(...)]`. The attribute
   is consumed by a derive macro so multi-attribute splitting
@@ -132,7 +132,7 @@ pattern that several rules call out by reference — live in
   of `macro_rules!` matchers to detect the `$(,)?` / `$(,)*`
   optional-trailing-comma idioms (harder, not yet implemented
   and therefore not configurable).
-- [`macro-argument-binding.md`](./macro-argument-binding.md) —
+- [`impure-macro-arguments.md`](./impure-macro-arguments.md) —
   require impure expressions passed to function-like and
   array-like macro invocations to be bound to a `let` first.
   Targets the `debug_assert_eq!(map.insert(k, v), None)` footgun
@@ -149,7 +149,7 @@ pattern that several rules call out by reference — live in
 - [`serde-source-types.md`](./serde-source-types.md) — forbid
   `#[serde(from = "&'de str")]` / `try_from = "&'de str"`; advise
   `Cow<'de, str>` or `String`.
-- [`serde-wrapper-style.md`](./serde-wrapper-style.md) — when a
+- [`serde-wrapper-form-mismatch.md`](./serde-wrapper-form-mismatch.md) — when a
   single-field wrapper has trivial `From` / `Into` impls,
   `#[serde(transparent)]` and `#[serde(from = "T", into = "T")]`
   produce the same wire format. The lint enforces a project-wide
@@ -160,7 +160,7 @@ pattern that several rules call out by reference — live in
 ### Documentation
 - [`em-dash-prose.md`](./em-dash-prose.md) — flag em dashes in doc comments
   and string literals reachable from `format!` / `println!` style macros.
-- [`commit-id-length.md`](./commit-id-length.md) — enforce a
+- [`commit-id-length-mismatch.md`](./commit-id-length-mismatch.md) — enforce a
   consistent SHA length for commit IDs that appear in forge URLs.
   Covers file references, single-commit views (`/commit/<sha>`),
   and range comparisons (`/compare/<sha>...<sha>`). Defaults are
@@ -168,20 +168,20 @@ pattern that several rules call out by reference — live in
   pin a fixed length such as 12 or 40.
 
 ### Lint-level attributes
-- [`lint-downgrade-reason.md`](./lint-downgrade-reason.md) —
+- [`lint-downgrade-without-reason.md`](./lint-downgrade-without-reason.md) —
   same presence-and-length requirement as
-  `perfectionist::lint_silence_reason`, extended to any
+  `perfectionist::allow_attributes_without_reason`, extended to any
   `#[warn]` / `#[allow]` / `#[expect]` that lowers the lint's
   inherited level (`deny → warn`, `warn → allow`, etc.).
   Ancestry-aware counterpart.
 
 ### Clap derive help
-- [`clap-help-length.md`](./clap-help-length.md) — flag clap-bound doc
+- [`clap-help-too-long.md`](./clap-help-too-long.md) — flag clap-bound doc
   comments that exceed configurable line / character budgets (catches
   AI-generated bloat). Shares the clap-derived-container detection and
   the override set with the implemented
-  `perfectionist::clap_help_no_markdown`
-  ([`src/rules/clap_help_no_markdown/collect.rs`](../src/rules/clap_help_no_markdown/collect.rs)).
+  `perfectionist::clap_help_markdown`
+  ([`src/rules/clap_help_markdown/collect.rs`](../src/rules/clap_help_markdown/collect.rs)).
 
 ## Out of scope (cannot be linted by Dylint)
 
@@ -201,7 +201,7 @@ external state, or judgement calls that a static lint cannot evaluate:
   suggests `&Path` / `&str` / `&[_]`). The other two cases
   (prefer-owned-when-converting and
   prefer-borrowed-when-not-consumed) are handled respectively by
-  [`prefer-owned-parameter`](./prefer-owned-parameter.md) and
+  [`needless-borrowed-parameters`](./needless-borrowed-parameters.md) and
   `clippy::needless_pass_by_value`.
 - **Reporter wire-contract requirements** in pacquet (channel naming,
   upstream permalink comments, ordering relative to side effects, recording

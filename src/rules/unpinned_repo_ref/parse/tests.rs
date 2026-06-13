@@ -77,7 +77,7 @@ fn github_accepts_every_verb() {
 
 #[test]
 fn github_commit_and_compare_urls_are_not_file_references() {
-    // `/commit/<sha>` and `/compare/...` are `commit-id-length`'s
+    // `/commit/<sha>` and `/compare/...` are `commit-id-length-mismatch`'s
     // concern, not this rule's; they don't match the file-reference
     // shape.
     assert!(locate_ref("https://github.com/o/r/commit/abc123", ForgeKind::Github).is_none());

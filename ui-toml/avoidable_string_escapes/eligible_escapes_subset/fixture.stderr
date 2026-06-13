@@ -1,0 +1,10 @@
+warning: string literal uses escapes that a raw string would avoid
+  --> $DIR/fixture.rs:14:13
+   |
+LL |     let _ = "say /"hello/"";
+   |             ^^^^^^^^^^^^^^^ help: use a raw string: `r#"say "hello""#`
+   |
+   = note: `#[warn(perfectionist::avoidable_string_escapes)]` on by default
+
+warning: 1 warning emitted
+

@@ -365,7 +365,7 @@ pub fn synth_silence_reason(input: TokenStream) -> TokenStream {
 /// `#[allow(non_snake_case)] const _: () = ();` whose generated `#[allow]`
 /// inherits the user-span of `synth_allow_rewriteable`. Unlike
 /// `SynthSilenceReason` (which emits the exempt `dead_code`), this names a
-/// rewriteable built-in lint, so it exercises `prefer_expect_over_allow`'s
+/// rewriteable built-in lint, so it exercises `allow_attributes`'s
 /// proc-macro guard (issue #430): without the guard the rule would rewrite
 /// a suppression the user never wrote.
 #[proc_macro_derive(SynthAllowRewriteable, attributes(synth_allow_rewriteable))]
@@ -413,7 +413,7 @@ pub fn synth_allow_rewriteable(input: TokenStream) -> TokenStream {
 /// `#[derive(SynthOwnedParam)]` + `#[synth_owned_param]` →
 /// `const _: () = { fn _synth(item: &str) -> String { item.to_owned() } };`
 /// where the `&str` parameter *type* inherits the user-span of
-/// `synth_owned_param`. `prefer_owned_parameter` reports at the
+/// `synth_owned_param`. `needless_borrowed_parameters` reports at the
 /// parameter-type span, so a span-only filter sees a user-written
 /// `&str` and would rewrite a signature the user never wrote; this
 /// exercises the rule's `hir_in_external_macro` guard.

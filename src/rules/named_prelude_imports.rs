@@ -2,8 +2,8 @@
 //! imports from a `prelude` module (`use serde::prelude::Serialize;`),
 //! leaving the glob form (`use serde::prelude::*;`) alone.
 //!
-//! Unlike the source-layout import rules (`import_granularity`,
-//! `import_grouping`, `uncombined_self_import`, `wildcard_imports`), this rule is a
+//! Unlike the source-layout import rules (`import_granularity_mismatch`,
+//! `import_grouping_mismatch`, `uncombined_self_import`, `wildcard_imports`), this rule is a
 //! plain HIR [`LateLintPass`] rather than a re-parsing one. Two reasons:
 //!
 //! - Its autofix rewrites the import to the item's *canonical* module,

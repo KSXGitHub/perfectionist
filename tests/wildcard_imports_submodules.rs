@@ -5,7 +5,7 @@
 //!   is cfg-gated. It is only part of the compiled crate under the
 //!   unit-test target, so it is reachable only by re-parsing each module
 //!   file in a late pass while consulting `live_module_spans` — the same
-//!   trap the sibling `import_grouping` rule documents.
+//!   trap the sibling `import_grouping_mismatch` rule documents.
 //! - A glob in a separate-file `mod foo;` submodule, which a
 //!   pre-expansion `EarlyLintPass` would skip entirely (the file is
 //!   `ModKind::Unloaded` until macro expansion).

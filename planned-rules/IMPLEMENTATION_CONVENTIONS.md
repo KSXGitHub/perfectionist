@@ -88,8 +88,8 @@ Six rules in this catalogue scan a slice of markdown:
 - `perfectionist::bare_identifier_reference` (`src/rules/bare_identifier_reference.rs`) —
   distinguishes `` `Foo` `` (candidate) from `` [`Foo`] ``, `[Foo]`,
   `[Foo](path)`, `[Foo][id]` (already linked).
-- `perfectionist::clap_help_no_markdown`
-  (`src/rules/clap_help_no_markdown.rs`) — classifies every banned
+- `perfectionist::clap_help_markdown`
+  (`src/rules/clap_help_markdown.rs`) — classifies every banned
   construct (links, code spans, code blocks, HTML tags, headings,
   reference definitions) and emits a per-construct diagnostic.
 - `perfectionist::bare_issue_reference` (`src/rules/bare_issue_reference.rs`)
@@ -120,7 +120,7 @@ Two needs sit on top of the same primitives.
 - **Tier A — structural classification.** Distinguishes a code
   span from an inline link from a reference definition from an
   autolink from an HTML tag from a heading. Consumers:
-  `bare_identifier_reference`, `clap_help_no_markdown`, `bare_issue_reference`,
+  `bare_identifier_reference`, `clap_help_markdown`, `bare_issue_reference`,
   `bare_url`.
 - **Tier B — code-region mask.** Only needs the predicate "is this
   byte inside a code span or code block?". Consumers:
@@ -144,10 +144,10 @@ One `take_*` per CommonMark construct the catalogue recognises:
   Setext (`h\n===`) headings.
 - `take_emphasis` / `take_list_marker` — `**bold**` / `*italic*` and
   bullet / ordered list markers, behind
-  `perfectionist::clap_help_no_markdown`'s opt-in `extra_forbid` knob.
+  `perfectionist::clap_help_markdown`'s opt-in `extra_forbid` knob.
 
 The full Tier A classifier `classify_constructs` (used by
-`perfectionist::clap_help_no_markdown`) stitches these into one walk
+`perfectionist::clap_help_markdown`) stitches these into one walk
 that returns each construct's byte range and kind. Each combinator
 returns the matched substring and the remainder per the canonical
 shapes in "Parser style". Rust-specific extraction layered on top —
@@ -161,7 +161,7 @@ module, not in `src/markdown.rs`.
 A Dylint plugin loads into rustc's process; every transitive crate
 is paid for at lint time. The grammar these rules need is a fixed
 set of constructs (the only emphasis handling is
-`perfectionist::clap_help_no_markdown`'s pragmatic, opt-in
+`perfectionist::clap_help_markdown`'s pragmatic, opt-in
 `**bold**` / `*italic*` matcher, not full CommonMark flanking
 precedence) and no link-reference resolution across the whole
 comment. No library hits that target without overshooting:
@@ -203,7 +203,7 @@ link, here is its destination text". Whether the destination
 resolves as a Rust path is `bare_identifier_reference`'s job, performed
 against `TyCtxt` in a `LateLintPass`, not the scanner's.
 Consumers that need only "is this any kind of link?" (e.g.,
-`clap_help_no_markdown`, which rejects all link forms) stop at the
+`clap_help_markdown`, which rejects all link forms) stop at the
 scanner's answer.
 
 This also means library choice is downstream of the intra-doc-link
@@ -214,7 +214,7 @@ still be custom code in this repo.
 ### Where to revisit this decision
 
 The decision is per-helper, not per-codebase.
-`perfectionist::clap_help_no_markdown` — the most demanding consumer —
+`perfectionist::clap_help_markdown` — the most demanding consumer —
 has since been implemented on the hand-rolled scanner: its HTML-tag,
 heading, emphasis, and list combinators were added to `src/markdown.rs`
 (see `classify_constructs`) without dominating the helper's complexity
@@ -227,9 +227,9 @@ hand-rolled helper. Open a follow-up PR; do not silently expand
 ## Reaching every module (source-layout rules)
 
 A rule that inspects the **source-level layout of items** — the
-granularity of `use` trees (`perfectionist::import_granularity`,
-`src/rules/import_granularity.rs`), their blank-line grouping
-(`perfectionist::import_grouping`, `src/rules/import_grouping.rs`),
+granularity of `use` trees (`perfectionist::import_granularity_mismatch`,
+`src/rules/import_granularity_mismatch.rs`), their blank-line grouping
+(`perfectionist::import_grouping_mismatch`, `src/rules/import_grouping_mismatch.rs`),
 the module-`self` import folding
 (`perfectionist::uncombined_self_import`,
 `src/rules/uncombined_self_import.rs`), or
@@ -244,11 +244,11 @@ silently linted only the crate-root file and inline `mod { ... }`
 blocks, skipping every separate-file submodule; both times that was
 caught only later and fixed by moving to a `LateLintPass`:
 
-- `import_granularity` shipped buggy in
+- `import_granularity_mismatch` shipped buggy in
   [#153](https://github.com/KSXGitHub/perfectionist/pull/153), fixed
   in [#173](https://github.com/KSXGitHub/perfectionist/pull/173)
   (`parallel-disk-usage#431`).
-- `import_grouping` shipped buggy in the first commits of
+- `import_grouping_mismatch` shipped buggy in the first commits of
   [#174](https://github.com/KSXGitHub/perfectionist/pull/174) and was
   fixed within the same PR (commit `61c7f81`) — *even though that
   PR's own description named the trap*. Knowing about the bug was not
@@ -288,9 +288,9 @@ write a fresh module-discovery or re-parse path; route through:
    body unconditionally lints code that is **not in the compiled
    crate** — and, having no HIR node, those findings anchor at the
    crate root and cannot be silenced by a local `#[allow]`.
-   `import_grouping` is the reference implementation: it consults
+   `import_grouping_mismatch` is the reference implementation: it consults
    `live_module_spans` and descends only into live modules. (At the
-   time of writing, `import_granularity` and `uncombined_self_import` route
+   time of writing, `import_granularity_mismatch` and `uncombined_self_import` route
    through `for_each_module_file`, which drops `live_module_spans`,
    so they descend unconditionally — an apparent divergence found by
    code reading but **not** yet pinned by a cfg-disabled-inline-module
@@ -327,12 +327,103 @@ only re-parsing in a late pass gives. So if you reach for a
 pre-expansion pass and match `ModKind` to walk module bodies, stop —
 that is the trap.
 
+## Naming a lint after the anti-pattern
+
+A lint's name is read in `#[allow(...)]`, `#[expect(...)]`,
+`#[warn(...)]`, `#[deny(...)]`, and `#[forbid(...)]`, so it must read
+correctly in all five. The governing rule: **name the anti-pattern the
+lint fires on, never the fix, the remedy, or the stylistic preference.**
+`#[deny(perfectionist::<name>)]` should read as "forbid the bad thing";
+`#[allow(perfectionist::<name>)]` as "permit the bad thing here".
+
+A name that describes the desired *state* or the *recommended remedy*
+inverts under these attributes and reads as nonsense:
+
+- `derive_ordering` — `#[deny(... derive_ordering)]` reads "forbid
+  ordering the derives", the opposite of intent. Named for the
+  anti-pattern: `unordered_derives`.
+- `prefer_derive_more_over_thiserror` — does not "forbid preferring
+  `derive_more`"; it forbids `thiserror`. Named for the anti-pattern:
+  `thiserror_usage`.
+- `non_exhaustive_error` — flags error enums that *lack*
+  `#[non_exhaustive]`, so the name states the opposite of the trigger.
+  Named for the anti-pattern: `exhaustive_error_enums`.
+- `clap_help_no_markdown`, `prefer_expect_over_allow`,
+  `prefer_raw_string`, `prefer_owned_parameter`, `print_macro_split`,
+  `inline_test_footprint`, `macro_argument_binding` — all named for the
+  remedy, the preference, or a neutral topic rather than the violation.
+
+This catalogue's first pass over its own names is recorded in
+[#268](https://github.com/KSXGitHub/perfectionist/issues/268).
+
+### Follow Clippy's naming idiom
+
+Clippy lint names are short noun phrases or adjective-quantifier forms
+naming the offending construct — `needless_*`, `redundant_*`,
+`unused_*`, `excessive_*`, `too_many_*`, `large_*`, `exhaustive_*` —
+not gerunds (`splitting_*`), not exhortations (`prefer_*`, `use_*`), and
+not negations of a virtue (`*_no_*`, `non_*`). Reach for the same shape:
+
+- A length / count cap uses an adjective quantifier, not a verb:
+  `excessive_inline_tests`, not `inline_test_exceeds_footprint`. Clippy
+  has `too_many_lines`, `excessive_nesting`, `large_enum_variant`; it
+  has no `*_exceeds_*` / `*_exceeding_*` lint.
+- A configurable-style rule names the *mismatch*, because the offending
+  shape depends on the configured target style — there is no single
+  fixed bad shape to name. `import_granularity_mismatch`,
+  `import_grouping_mismatch`.
+
+### Mirror the Clippy name only for a genuine refinement
+
+When a perfectionist rule is a **refinement of an existing Clippy
+lint** — the same anti-pattern, with a narrower trigger, a stricter
+threshold, or extra configuration — give it the **same name** as its
+Clippy counterpart (under the `perfectionist::` namespace). A reader who
+knows the Clippy lint then transfers that knowledge directly.
+
+- `allow_attributes_without_reason` mirrors
+  `clippy::allow_attributes_without_reason` (adds a `min_reason_length`
+  quality floor and an `exempt_lints` list).
+- `allow_attributes` mirrors `clippy::allow_attributes` (rewrites
+  `#[allow]` to `#[expect]`, restricted to deterministically-firing
+  lints).
+- `exhaustive_error_enums` echoes `clippy::exhaustive_enums` /
+  `clippy::exhaustive_structs`, scoped to error-shaped types.
+
+**The danger is mistaking a contradiction or a complement for a
+refinement.** Mirror the name *only* when the perfectionist rule fires
+on the same anti-pattern as the Clippy lint. Do **not** borrow the name
+when the rule:
+
+- flags the **opposite** direction (e.g. a rule that wants a parameter
+  taken *by value* must not borrow the name of a Clippy lint that wants
+  it taken *by reference* — `needless_borrowed_parameters` deliberately
+  does not reuse `clippy::needless_pass_by_value`, which covers the
+  reverse), or
+- addresses an **orthogonal** concern that merely touches the same
+  syntax (sharing a construct is not sharing an anti-pattern).
+
+Borrowing a Clippy name for a rule that contradicts or complements it
+would tell the reader the exact wrong thing about what the rule does.
+When in doubt, the rule is *not* a refinement: give it its own
+anti-pattern name rather than an inherited one.
+
+### Do not over-claim in the name
+
+The name may assert no more than the trigger actually checks. A rule
+that flags a *trailing comment on a lint-level attribute* cannot tell
+whether that comment is a suppression rationale, so it is
+`lint_attribute_trailing_comment`, not `lint_reason_from_comment` — the
+latter claims a "reason" the rule never verifies, and would also hide
+that the rule covers `warn` / `deny` / `forbid`, not just the
+`allow` / `expect` pair that the `allow_attributes*` family is about.
+
 ## Lint name namespacing
 
 Every lint registered by this plugin lives in the `perfectionist`
 *tool namespace*. The planning files in this directory use the
-unqualified form for readability — `qualified_paths` reads better
-than `perfectionist::qualified_paths` in a sentence — but the lint
+unqualified form for readability — `path_qualification_mismatch` reads better
+than `perfectionist::path_qualification_mismatch` in a sentence — but the lint
 as it appears in `declare_tool_lint!`, in the `dylint.toml`
 configuration table, in `#[allow(...)]` / `#[deny(...)]`
 attributes, and in compiler diagnostic output is always
@@ -342,15 +433,15 @@ namespaced.
 
 Dylint loads each plugin as a separate dynamic library, but
 rustc's `LintStore` is a single global table per compilation. Two
-plugins that both register a lint named `qualified_paths`
+plugins that both register a lint named `path_qualification_mismatch`
 cause rustc to reject the second registration as a duplicate. The
-names this catalogue chose — `from`, `bare_url`, `qualified_paths`,
+names this catalogue chose — `from`, `bare_url`, `path_qualification_mismatch`,
 `serde_source_types`, and similar — are exactly the names an
 independent plugin author would reach for, so collisions are not
 hypothetical. Namespacing removes them.
 
 The namespace also makes diagnostic attribution unambiguous. A
-warning's note reads `#[warn(perfectionist::qualified_paths)] on
+warning's note reads `#[warn(perfectionist::path_qualification_mismatch)] on
 by default`, naming the source plugin so there is no question
 which library to consult or configure.
 
@@ -358,10 +449,10 @@ which library to consult or configure.
 
 Two reasonable approaches exist:
 
-- **Tool namespace** (`perfectionist::qualified_paths`): the
+- **Tool namespace** (`perfectionist::path_qualification_mismatch`): the
   approach used by `clippy::*` and `rustdoc::*`. Idiomatic, scoped,
   reads cleanly in `#[allow(...)]`.
-- **Bare prefix** (`perfectionist_qualified_paths`): a single long
+- **Bare prefix** (`perfectionist_path_qualification_mismatch`): a single long
   identifier. Mechanically simpler, no tool registration required.
 
 Both work for *this* plugin's compilation because the plugin is
@@ -409,7 +500,7 @@ README so consumers know to apply it once if needed.
 When a rule's planning file reads:
 
 ```text
-# `qualified_paths`
+# `path_qualification_mismatch`
 ```
 
 the `declare_tool_lint!` invocation reads:
@@ -425,7 +516,7 @@ rustc_session::declare_tool_lint! {
 ```
 
 The macro produces a lint whose canonical printed name is
-`perfectionist::qualified_paths`. The translation from planning
+`perfectionist::path_qualification_mismatch`. The translation from planning
 name to declaration is one-to-one: take the snake_case identifier
 from the planning H1, uppercase it for the macro identifier, slot
 it under `perfectionist::`. The diagnostic text inside the lint is
@@ -435,21 +526,21 @@ Configuration tables follow the same shape. The planning file
 shows:
 
 ```toml
-[qualified_paths]
+[path_qualification_mismatch]
 style = "unqualified"
 ```
 
 The actual `dylint.toml` reads:
 
 ```toml
-[perfectionist::qualified_paths]
+[perfectionist::path_qualification_mismatch]
 style = "unqualified"
 ```
 
 A user-side suppression reads:
 
 ```rust
-#[allow(perfectionist::qualified_paths)]
+#[allow(perfectionist::path_qualification_mismatch)]
 fn legacy_function() { /* ... */ }
 ```
 
@@ -516,7 +607,7 @@ routes:
   text under the node's span and compares it against the text the node
   *claims* to be; a generated `#[allow(...)]` whose underlying source
   reads `#[clap(...)]` fails the comparison and is skipped.
-  `lint_silence_reason` and `prefer_expect_over_allow` apply it this
+  `allow_attributes_without_reason` and `allow_attributes` apply it this
   way.
 
 Reach for the variant your pass supports. Do not try to reproduce
@@ -542,7 +633,7 @@ fixture is only meaningful if its synthesised trigger is one the rule
 exempts or treats as trivial passes whether or not the guard exists: it
 exercises nothing and bestows false confidence. Concretely:
 
-- `prefer_expect_over_allow` exempts `#[allow(dead_code)]`, so a fixture
+- `allow_attributes` exempts `#[allow(dead_code)]`, so a fixture
   using the `dead_code`-emitting `SynthSilenceReason` derive is vacuous.
   It needs `SynthAllowRewriteable`, which emits a *rewriteable*
   `#[allow(non_snake_case)]`.
@@ -567,12 +658,12 @@ regressing the suppression.
 
 Two kinds of rule skip all of the above on purpose:
 
-- Rules declared `report_in_external_macro: true` (`prefer_raw_string`,
+- Rules declared `report_in_external_macro: true` (`avoidable_string_escapes`,
   `unicode_ellipsis_in_panic_messages`) *want* to fire inside macro
   output; the guard would defeat their purpose. The `true` flag is
   itself the visible record of that intent.
 - A rule whose trigger cannot realistically be derive-generated may
-  forgo the guard. `non_exhaustive_error` was excluded on this basis —
+  forgo the guard. `exhaustive_error_enums` was excluded on this basis —
   it is off by default and its `pub` error-shaped trigger is an
   unlikely derive output — though that reasoning currently lives only
   in the PR that made the call, not in the rule's source. Prefer to
@@ -588,11 +679,11 @@ code, and a guard present but never actually tested:
 - `single_letter_let_binding` false-positived on `default_value_t`
   bindings; patched inline first, then generalised into
   `hir_in_external_macro` and applied across the sibling late rules.
-- `lint_silence_reason` false-positived on `clap_derive`'s generated
+- `allow_attributes_without_reason` false-positived on `clap_derive`'s generated
   `#[allow(...)]`; fixed with the early-pass `is_from_proc_macro`
   variant, since the late-pass helper did not apply.
-- `prefer_expect_over_allow` shipped *with* the early-pass guard in
-  place — it learned from `lint_silence_reason` — but its first
+- `allow_attributes` shipped *with* the early-pass guard in
+  place — it learned from `allow_attributes_without_reason` — but its first
   regression fixture reused the `dead_code` derive the rule exempts
   anyway. The test was vacuous: it would have passed even with the
   guard deleted. A follow-up commit added a rewriteable-`#[allow]`
@@ -645,9 +736,9 @@ else is `Active by default`.
 ### Mandatory configuration on opt-in rules
 
 A handful of `Inactive by default` rules express a *direction*
-with no neutral baseline — `qualified_paths` (`unqualified` vs.
-`qualified`), `serde_wrapper_style` (`transparent` vs.
-`from_into`), and `import_grouping` (`single_block` vs.
+with no neutral baseline — `path_qualification_mismatch` (`unqualified` vs.
+`qualified`), `serde_wrapper_form_mismatch` (`transparent` vs.
+`from_into`), and `import_grouping_mismatch` (`single_block` vs.
 `multi_block`). These rules deliberately do **not**
 offer a `preserve`/no-op `style` value. "I don't want this rule" is
 already expressed by leaving it out of `[perfectionist].enable`, so

@@ -26,7 +26,7 @@ non-method code.
 
 ## Sub-checks
 
-### `pipe_style::entry_point` (forbid pipe at chain start)
+### `pipe_style::pipe_at_chain_boundary` (forbid pipe at chain start)
 
 Forbid `value.pipe(f)` when **both** of these hold:
 
@@ -78,14 +78,14 @@ let parsed = stdin()
 let parsed = request.body().pipe(serde_json::from_reader::<_, MyData>);
 ```
 
-### `pipe_style::wrap_chain` (require pipe over wrap-call)
+### `pipe_style::chain_wrapped_in_call` (require pipe over wrap-call)
 
 Forbid `f(arg)` when `f` is unary AND `arg` is itself an
 `ExprKind::MethodCall`. Suggest `arg.pipe(f)`.
 
 The check fires *only* on method-call arguments. A function-call
 argument doesn't constitute a chain, and lifting it across pipe
-would just produce the entry-point pattern that `entry_point`
+would just produce the entry-point pattern that `pipe_at_chain_boundary`
 forbids.
 
 **Avoid:** arg is a method call (chain)
@@ -127,7 +127,7 @@ let ok = Ok(42);
 
 ### How the two checks compose
 
-| Shape                                       | `entry_point` | `wrap_chain` | Verdict |
+| Shape                                       | `pipe_at_chain_boundary` | `chain_wrapped_in_call` | Verdict |
 |---------------------------------------------|---------------|--------------|---------|
 | `value.pipe(f)` (value is leaf, tail)       | flag          | —            | bad     |
 | `g().pipe(f)` (value is fn call, tail)      | flag          | —            | bad     |
@@ -150,8 +150,8 @@ non-chain expression.
 [pipe_style]
 # Each sub-check can be turned off independently. Defaults are both
 # enforce.
-entry_point = "forbid"   # or "allow" to permit pipe at chain start
-wrap_chain  = "forbid"   # or "allow" to permit f(chain) call sites
+pipe_at_chain_boundary = "forbid"   # or "allow" to permit pipe at chain start
+chain_wrapped_in_call  = "forbid"   # or "allow" to permit f(chain) call sites
 ```
 
 The recognised pipe trait paths are hardcoded
@@ -163,7 +163,7 @@ the canonical crate.
 
 ## What to lint
 
-### `entry_point` direction
+### `pipe_at_chain_boundary` direction
 
 `LateLintPass::check_expr` on `ExprKind::MethodCall`. For each
 call whose method name matches one of the seven pipe variants:
@@ -181,7 +181,7 @@ call whose method name matches one of the seven pipe variants:
 4. If both predicates are false, flag and suggest the rewrite
    `f(receiver)`.
 
-### `wrap_chain` direction
+### `chain_wrapped_in_call` direction
 
 `LateLintPass::check_expr` on `ExprKind::Call`. For each call:
 
@@ -204,24 +204,24 @@ point convergence in two passes.
 - `LateLintPass::check_expr` for both directions. The two checks
   share a small helper that resolves a method-call's `DefId` and
   checks it against the hardcoded set of pipe paths.
-- The `entry_point` check resolves the method's `DefId` and
+- The `pipe_at_chain_boundary` check resolves the method's `DefId` and
   confirms it is a method of `pipe_trait::Pipe`. `clippy_utils::is_diag_trait_item`
   won't help (Pipe is external); store the path as a hardcoded
   static. The "is continued by a method chain" check requires
   `tcx.hir().parent_iter()` to inspect the immediate parent
   expression.
-- The `wrap_chain` check is purely syntactic (count args,
+- The `chain_wrapped_in_call` check is purely syntactic (count args,
   classify the argument's `ExprKind`). It does *not* need to know
   about the pipe trait at all — its rewrite *introduces* a pipe
   call, but the trigger condition is just "unary call wrapping a
   method-call argument".
-- Special case: `pipe_as_ref(f)` rewrites in the `entry_point`
+- Special case: `pipe_as_ref(f)` rewrites in the `pipe_at_chain_boundary`
   direction need synthesising `.as_ref()` on the receiver. Offer
   the autofix only when the receiver type's `as_ref` is
   unambiguous; otherwise emit a help-only suggestion. The same
   caveat applies to `pipe_as_mut`, `pipe_ref`, `pipe_mut`,
   `pipe_borrow`, `pipe_borrow_mut`.
-- The `wrap_chain` autofix is `MachineApplicable` for unary call
+- The `chain_wrapped_in_call` autofix is `MachineApplicable` for unary call
   sites whose function path is unambiguous; `MaybeIncorrect`
   when trait-method ambiguity could change which `pipe` impl is
   resolved.
@@ -233,5 +233,5 @@ point convergence in two passes.
 
 ## Default state
 
-Active by default. Both sub-checks (`leading_pipe` and
-`wrapped_chain`) run when the rule is active.
+Active by default. Both sub-checks (`pipe_at_chain_boundary` and
+`chain_wrapped_in_call`) run when the rule is active.
