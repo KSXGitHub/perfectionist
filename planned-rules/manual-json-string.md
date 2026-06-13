@@ -410,13 +410,13 @@ json_macro_path = "serde_json::json"
   resolves to `format!`, locate the template literal (first
   positional argument) via whichever clippy_utils format-args
   helper is current for the pinned Rust toolchain — sibling rule
-  [`overlong-format-macro`](./overlong-format-macro.md) leans on the same
+  [`overly-long-format-macro`](./overly-long-format-macro.md) leans on the same
   helper; pick the live API name at implementation time rather
   than baking it into the planning doc. Walk the
   template with the catalogue's shared format-template
   combinators (see
   [`uninlined-derive-more-args`](./uninlined-derive-more-args.md)
-  and [`overlong-format-macro`](./overlong-format-macro.md)) and emit a
+  and [`overly-long-format-macro`](./overly-long-format-macro.md)) and emit a
   synthetic string where each `{...}` placeholder is replaced
   by `null` and each `{{` / `}}` is unescaped to `{` / `}`. Run
   `serde_json::from_str` on the synthetic result; if it parses
@@ -528,9 +528,9 @@ entirely.
   interesting JSON document — the `json!` rewrite produces
   structured data rather than a multi-line string, so the
   text-block reshape becomes moot once the user applies it.
-- [`overlong-format-macro`](./overlong-format-macro.md) — same
+- [`overly-long-format-macro`](./overly-long-format-macro.md) — same
   suppression direction: when a `format!` invocation parses as
-  a structurally interesting JSON document, `overlong_format_macro`
+  a structurally interesting JSON document, `overly_long_format_macro`
   should defer to this rule, since the `json!` rewrite
   eliminates the `format!` invocation entirely and the wrap
   question becomes moot.

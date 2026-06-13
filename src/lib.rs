@@ -61,10 +61,10 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         import_grouping_mismatch
         impure_macro_arguments
         lint_attribute_trailing_comment
-        long_splittable_print_macro
         macro_trailing_comma
         named_prelude_imports
         needless_borrowed_parameters
+        overly_long_print_macro
         single_letter_closure_param
         single_letter_const_generic
         single_letter_const_item

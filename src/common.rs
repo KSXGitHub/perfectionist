@@ -233,7 +233,7 @@ pub(crate) fn attr_has_reason(args: &[MetaItemInner]) -> Option<&MetaItemLit> {
 /// columns — the measure an editor's column ruler reports, not the
 /// byte length. A CJK ideograph counts as two columns, a combining
 /// mark as zero, an ASCII character as one. Used by the rules that
-/// gate on a source line being "too wide" (`long_splittable_print_macro`, and
+/// gate on a source line being "too wide" (`overly_long_print_macro`, and
 /// the planned `escaped_multiline_string`), so the threshold means the same
 /// thing across scripts.
 pub(crate) fn display_width(text: &str) -> usize {

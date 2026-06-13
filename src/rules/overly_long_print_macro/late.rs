@@ -10,9 +10,9 @@ use super::queue::PendingViolation;
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use rustc_lint::{LateContext, LateLintPass};
 
-pub(super) struct LongSplittablePrintMacroLate;
+pub(super) struct OverlyLongPrintMacroLate;
 
-impl<'tcx> LateLintPass<'tcx> for LongSplittablePrintMacroLate {
+impl<'tcx> LateLintPass<'tcx> for OverlyLongPrintMacroLate {
     fn check_crate_post(&mut self, lint_context: &LateContext<'tcx>) {
         let pending: Vec<PendingViolation> = {
             let mut guard = PENDING_VIOLATIONS

@@ -1,7 +1,7 @@
-//! UI tests for `long_splittable_print_macro`'s configuration knobs. The
-//! default-config sweep lives in `ui/long_splittable_print_macro.rs` and is
+//! UI tests for `overly_long_print_macro`'s configuration knobs. The
+//! default-config sweep lives in `ui/overly_long_print_macro.rs` and is
 //! picked up by `tests/ui.rs`; these tests each point at their own
-//! one-fixture directory under `ui-toml/long_splittable_print_macro/` and pass a
+//! one-fixture directory under `ui-toml/overly_long_print_macro/` and pass a
 //! per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
 //!
 //! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
@@ -13,7 +13,7 @@
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
-const LINT_NAME: &str = "perfectionist::long_splittable_print_macro";
+const LINT_NAME: &str = "perfectionist::overly_long_print_macro";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
@@ -47,7 +47,7 @@ fn narrow_width_flags_a_line_within_the_default_limit() {
     // fires only once `max_line_width` is narrowed; a genuinely short
     // line stays untouched even then.
     run(
-        "ui-toml/long_splittable_print_macro/narrow_width",
+        "ui-toml/overly_long_print_macro/narrow_width",
         RuleConfig {
             max_line_width: Some(40),
             ..Default::default()
@@ -61,7 +61,7 @@ fn target_macros_replaces_the_built_in_list_wholesale() {
     // macro eligible and drops `println!` from the built-in set, so the
     // `println!` call is no longer flagged.
     run(
-        "ui-toml/long_splittable_print_macro/custom_target_macros",
+        "ui-toml/overly_long_print_macro/custom_target_macros",
         RuleConfig {
             target_macros: Some(vec!["my_log"]),
             ..Default::default()

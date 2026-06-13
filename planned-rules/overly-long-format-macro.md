@@ -1,7 +1,7 @@
-# `overlong_format_macro`
+# `overly_long_format_macro`
 
 **Source:** project convention. Sibling to
-[`long-splittable-print-macro`](./long-splittable-print-macro.md), which covers the
+[`overly-long-print-macro`](./overly-long-print-macro.md), which covers the
 splittable side-effect macros. This rule handles the *un*splittable
 ones — `format!`, `panic!`, the assert family, etc. — which can't
 be turned into multiple calls without changing semantics.
@@ -32,7 +32,7 @@ format!(
 ```
 
 The rule has only one suggested form (in contrast to
-[`long-splittable-print-macro`](./long-splittable-print-macro.md), which offers two)
+[`overly-long-print-macro`](./overly-long-print-macro.md), which offers two)
 because `multiple_calls` is not viable for these macros.
 
 ## What to lint
@@ -57,7 +57,7 @@ For every invocation of a target macro:
    enough to leave alone. Width is unicode display width, the
    same metric as
    [`escaped-multiline-string`](./escaped-multiline-string.md) and
-   [`long-splittable-print-macro`](./long-splittable-print-macro.md).
+   [`overly-long-print-macro`](./overly-long-print-macro.md).
 5. Emit a diagnostic suggesting the line-continuation rewrite:
    - Replace each interior `\n` in the template with
      `\n\<newline><indent>`.
@@ -133,14 +133,14 @@ assert_eq!(
 
 ```rust
 format!("a\nb")  // short source line, even with embedded newline
-println!("a\nb {x}")  // not in target_macros (println! is splittable; covered by long-splittable-print-macro)
+println!("a\nb {x}")  // not in target_macros (println! is splittable; covered by overly-long-print-macro)
 write!(f, "a\nb {x}")?;  // not in target_macros (write! is splittable)
 ```
 
 ## Configuration
 
 ```toml
-[overlong_format_macro]
+[overly_long_format_macro]
 # Source-line width that triggers the rule. Default 100 matches
 # rustfmt's column default. Width is unicode display width of the
 # line containing the macro invocation, not its byte length.
@@ -148,7 +148,7 @@ max_line_width = 100
 
 # Macros eligible for line-continuation wrapping. The defaults
 # cover every macro that produces a value or terminates the
-# program — the ones `long-splittable-print-macro` does *not* cover.
+# program — the ones `overly-long-print-macro` does *not* cover.
 target_macros = [
   # value-producing
   "format", "format_args",
@@ -172,14 +172,14 @@ target_macros = [
   resolve to the source map, compute the unicode display width
   via the `unicode-width` crate. Same dependency and helper as
   [`escaped-multiline-string`](./escaped-multiline-string.md) and
-  [`long-splittable-print-macro`](./long-splittable-print-macro.md).
+  [`overly-long-print-macro`](./overly-long-print-macro.md).
 - **Parser style.** Implement the template scanner as parser-
   combinator-style `take_*` functions per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
   Reuse the placeholder/literal helpers from
   [`uninlined-derive-more-args`](./uninlined-derive-more-args.md),
   the escape scanner in `src/rules/avoidable_string_escapes.rs`, and
-  [`long-splittable-print-macro`](./long-splittable-print-macro.md). The split logic
+  [`overly-long-print-macro`](./overly-long-print-macro.md). The split logic
   is the same as `escaped-multiline-string`'s width-trigger split:
   scan for the last whitespace within the budget, hard-split at
   the boundary as fallback.
@@ -213,11 +213,11 @@ otherwise-too-long template appears in source:
 
 - [`escaped-multiline-string`](./escaped-multiline-string.md) — bare string
   literals (`let s = "a\nb"`, return values).
-- [`long-splittable-print-macro`](./long-splittable-print-macro.md) — splittable
+- [`overly-long-print-macro`](./overly-long-print-macro.md) — splittable
   side-effect macros (`println!`, `writeln!`, `log::*!`).
   Two-style choice between multi-call splitting and line
   continuation.
-- `overlong_format_macro` (this rule) — value-producing or
+- `overly_long_format_macro` (this rule) — value-producing or
   terminating macros (`format!`, `panic!`, `assert!`). Only
   line continuation is viable.
 

@@ -1,7 +1,7 @@
 //! Diagnostic emission for the single violation shape this rule has:
 //! a long-line print macro whose template embeds a newline.
 
-use super::LONG_SPLITTABLE_PRINT_MACRO;
+use super::OVERLY_LONG_PRINT_MACRO;
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir as hir;
@@ -16,7 +16,7 @@ pub(super) fn emit_fold(
 ) {
     span_lint_hir_and_then(
         lint_context,
-        LONG_SPLITTABLE_PRINT_MACRO,
+        OVERLY_LONG_PRINT_MACRO,
         hir_id,
         call_span,
         "print macro with an embedded newline exceeds the configured line width",

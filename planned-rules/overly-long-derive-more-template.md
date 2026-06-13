@@ -1,8 +1,8 @@
-# `overlong_derive_more_template`
+# `overly_long_derive_more_template`
 
 **Source:** project convention. Sibling to
-[`overlong-format-macro`](./overlong-format-macro.md) and
-[`long-splittable-print-macro`](./long-splittable-print-macro.md). The same
+[`overly-long-format-macro`](./overly-long-format-macro.md) and
+[`overly-long-print-macro`](./overly-long-print-macro.md). The same
 "too-wide source line carrying a format template" problem appears
 in three places; this rule covers the third — `derive_more`'s
 attribute-form templates.
@@ -54,8 +54,8 @@ For every recognised attribute on a struct, enum, or variant:
    enough to leave alone. Width is unicode display width, the
    same metric as
    [`escaped-multiline-string`](./escaped-multiline-string.md),
-   [`long-splittable-print-macro`](./long-splittable-print-macro.md), and
-   [`overlong-format-macro`](./overlong-format-macro.md).
+   [`overly-long-print-macro`](./overly-long-print-macro.md), and
+   [`overly-long-format-macro`](./overly-long-format-macro.md).
 5. Emit a diagnostic suggesting the line-continuation rewrite:
    - Replace each interior `\n` in the template with
      `\n\<newline><indent>`.
@@ -121,7 +121,7 @@ struct Custom;
 ## Configuration
 
 ```toml
-[overlong_derive_more_template]
+[overly_long_derive_more_template]
 # Source-line width that triggers the rule. Default 100 matches
 # rustfmt's column default. Width is unicode display width of the
 # line containing the attribute, not its byte length.
@@ -151,8 +151,8 @@ both qualify.
     source span (`#[...]` brackets included), not just the
     literal. Use the same `unicode-width` helper as
     [`escaped-multiline-string`](./escaped-multiline-string.md),
-    [`long-splittable-print-macro`](./long-splittable-print-macro.md), and
-    [`overlong-format-macro`](./overlong-format-macro.md).
+    [`overly-long-print-macro`](./overly-long-print-macro.md), and
+    [`overly-long-format-macro`](./overly-long-format-macro.md).
   - Compare with `max_line_width`; emit if exceeded.
 - **Parser style.** Implement the template scanner as parser-
   combinator-style `take_*` functions per
@@ -160,16 +160,16 @@ both qualify.
   Reuse the placeholder/literal helpers from
   [`uninlined-derive-more-args`](./uninlined-derive-more-args.md),
   the escape scanner in `src/rules/avoidable_string_escapes.rs`,
-  [`long-splittable-print-macro`](./long-splittable-print-macro.md), and
-  [`overlong-format-macro`](./overlong-format-macro.md). The split logic
-  is the same as `overlong-format-macro`'s: scan for the last
+  [`overly-long-print-macro`](./overly-long-print-macro.md), and
+  [`overly-long-format-macro`](./overly-long-format-macro.md). The split logic
+  is the same as `overly-long-format-macro`'s: scan for the last
   whitespace within the budget, hard-split at the boundary as
   fallback.
 
 ### Difficulty
 
 **Medium.** Same shape as
-[`overlong-format-macro`](./overlong-format-macro.md): pure syntactic
+[`overly-long-format-macro`](./overly-long-format-macro.md): pure syntactic
 reformat of the template literal, no argument re-slicing.
 The only complication is splitting the attribute across multiple
 source lines, which is sometimes more involved than splitting
@@ -199,11 +199,11 @@ too-wide format template appears in source:
 
 - [`escaped-multiline-string`](./escaped-multiline-string.md) — bare string
   literals not interpreted as templates.
-- [`long-splittable-print-macro`](./long-splittable-print-macro.md) — splittable
+- [`overly-long-print-macro`](./overly-long-print-macro.md) — splittable
   side-effect macros (`println!`, `writeln!`, `log::*!`).
-- [`overlong-format-macro`](./overlong-format-macro.md) — value-producing
+- [`overly-long-format-macro`](./overly-long-format-macro.md) — value-producing
   or terminating macros (`format!`, `panic!`, `assert!`).
-- `overlong_derive_more_template` (this rule) — derive_more
+- `overly_long_derive_more_template` (this rule) — derive_more
   attribute-form templates (`#[display(...)]`, `#[debug(...)]`).
 
 Each rule's target set is disjoint from the others by design;

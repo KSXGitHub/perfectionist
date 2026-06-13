@@ -27,7 +27,7 @@
 //! and must tell a real backslash escape (`\n`, `\\`, `\xNN`,
 //! `\u{...}`, a line continuation, ...) apart from the bytes around
 //! it. `avoidable_string_escapes` uses it to bail on the first non-eligible
-//! escape; `long_splittable_print_macro` uses it to locate the `\n` escapes it
+//! escape; `overly_long_print_macro` uses it to locate the `\n` escapes it
 //! folds without being fooled by `\\n` (an escaped backslash followed
 //! by the letter `n`, which is *not* a newline).
 

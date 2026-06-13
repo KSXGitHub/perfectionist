@@ -1,10 +1,10 @@
 warning: print macro with an embedded newline exceeds the configured line width
-  --> $DIR/long_splittable_print_macro.rs:15:5
+  --> $DIR/overly_long_print_macro.rs:15:5
    |
 LL |     println!("error: the operation failed because of {err_src} deep inside the subsystem/nhint: run {magic_cmd} to repair it");
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: `#[warn(perfectionist::long_splittable_print_macro)]` on by default
+   = note: `#[warn(perfectionist::overly_long_print_macro)]` on by default
 help: fold the template across lines with a backslash-newline continuation
    |
 LL ~     println!(
@@ -14,7 +14,7 @@ LL ~     );
    |
 
 warning: print macro with an embedded newline exceeds the configured line width
-  --> $DIR/long_splittable_print_macro.rs:24:5
+  --> $DIR/overly_long_print_macro.rs:24:5
    |
 LL |     writeln!(out, "header field that is intentionally verbose: {header} and keeps going/nbody field follows here: {body}")?;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -28,7 +28,7 @@ LL ~     )?;
    |
 
 warning: print macro with an embedded newline exceeds the configured line width
-  --> $DIR/long_splittable_print_macro.rs:33:5
+  --> $DIR/overly_long_print_macro.rs:33:5
    |
 LL |     println!("the first value is {} and there is plenty of padding here to clear the width limit/nthe second value is {}", first, second);
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -42,7 +42,7 @@ LL ~     );
    |
 
 warning: print macro with an embedded newline exceeds the configured line width
-  --> $DIR/long_splittable_print_macro.rs:38:5
+  --> $DIR/overly_long_print_macro.rs:38:5
    |
 LL |     eprintln!("warning: the request took an unusually long time to finish and may have stalled/ncheck the upstream service");
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -56,7 +56,7 @@ LL ~     );
    |
 
 warning: print macro with an embedded newline exceeds the configured line width
-  --> $DIR/long_splittable_print_macro.rs:45:5
+  --> $DIR/overly_long_print_macro.rs:45:5
    |
 LL |     info!("user {user} performed an action that we want to record in a fairly verbose log line/nfollow-up details are here");
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -70,7 +70,7 @@ LL ~     );
    |
 
 warning: print macro with an embedded newline exceeds the configured line width
-  --> $DIR/long_splittable_print_macro.rs:89:5
+  --> $DIR/overly_long_print_macro.rs:89:5
    |
 LL | /     println!("a long message padded out so that this source line comfortably exceeds the width limit/nsecond {}", value // keep th...
 LL | |     );

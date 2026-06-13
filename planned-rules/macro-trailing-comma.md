@@ -590,8 +590,8 @@ Active by default.
 
 ## Interaction with sibling rules
 
-- [`overlong-format-macro`](./overlong-format-macro.md) and
-  [`long-splittable-print-macro`](./long-splittable-print-macro.md) reformat the
+- [`overly-long-format-macro`](./overly-long-format-macro.md) and
+  [`overly-long-print-macro`](./overly-long-print-macro.md) reformat the
   *template literal* inside `format!` / `println!` / etc.
   When their `line_continuation` rewrite fires it produces a
   multi-line invocation; this rule then ensures that

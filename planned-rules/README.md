@@ -97,7 +97,7 @@ pattern that several rules call out by reference — live in
   `text_block_fnl! { ... }` (default) or the
   `"line\n\<newline>line"` continuation form. Skips templates and
   attribute literals.
-- [`long-splittable-print-macro.md`](./long-splittable-print-macro.md) — when a
+- [`overly-long-print-macro.md`](./overly-long-print-macro.md) — when a
   splittable print macro (`println!`, `eprintln!`, `writeln!`,
   log family, …) has an embedded-`\n` template *and* spans more
   than `max_line_width` columns, suggest either splitting into
@@ -106,14 +106,14 @@ pattern that several rules call out by reference — live in
   (`line_continuation`). Excludes `format!`/`format_args!` and
   the panic/assert family because their behaviour changes under
   splitting.
-- [`overlong-format-macro.md`](./overlong-format-macro.md) — counterpart
+- [`overly-long-format-macro.md`](./overly-long-format-macro.md) — counterpart
   for the *unsplittable* macros: `format!`, `format_args!`,
   `panic!`, `assert!` (with message), the `debug_assert*` family,
   `unimplemented!`/`todo!`/`unreachable!`. When the source line
   exceeds `max_line_width`, suggest folding the template with
   `\n\<newline>` continuations. Only one rewrite — multi-call is
   not viable for these macros.
-- [`overlong-derive-more-template.md`](./overlong-derive-more-template.md)
+- [`overly-long-derive-more-template.md`](./overly-long-derive-more-template.md)
   — same width-driven wrapping for derive_more attribute-form
   templates: `#[display(...)]`, `#[debug(...)]`. The attribute
   is consumed by a derive macro so multi-attribute splitting

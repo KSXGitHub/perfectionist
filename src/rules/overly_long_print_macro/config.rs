@@ -1,9 +1,9 @@
-//! Configuration for `long_splittable_print_macro`: the user-facing [`Config`]
+//! Configuration for `overly_long_print_macro`: the user-facing [`Config`]
 //! shape, the curated built-in `target_macros` list, and the in-memory
-//! [`LongSplittablePrintMacro`] state the pre-expansion pass holds.
+//! [`OverlyLongPrintMacro`] state the pre-expansion pass holds.
 //!
 //! Only the `line_continuation` rewrite ships today, so the `style`
-//! knob documented in `planned-rules/long-splittable-print-macro.md` is
+//! knob documented in `planned-rules/overly-long-print-macro.md` is
 //! deliberately absent — a one-variant `style` enum would carry no
 //! information. It returns when the `multiple_calls` half lands.
 
@@ -11,7 +11,7 @@ use crate::macro_path::{matches_any, parse_path_list};
 use rustc_ast::Path;
 use std::collections::BTreeSet;
 
-const CONFIG_KEY: &str = "perfectionist::long_splittable_print_macro";
+const CONFIG_KEY: &str = "perfectionist::overly_long_print_macro";
 
 /// Source-line width, in display columns, at or below which a macro
 /// invocation is left alone. Matches rustfmt's column default.
@@ -23,7 +23,7 @@ const DEFAULT_MAX_LINE_WIDTH: usize = 100;
 /// (`format!`, `format_args!`) or *terminate* (`panic!`, `assert!`,
 /// the `debug_assert*` family, ...) are deliberately absent: see the
 /// "Why not `format!`-family" section of
-/// `planned-rules/long-splittable-print-macro.md`.
+/// `planned-rules/overly-long-print-macro.md`.
 ///
 /// The list covers three groups: the stdout / stderr writers
 /// (`println!`, `eprintln!`, `print!`, `eprint!`), the `Write` writers
@@ -67,12 +67,12 @@ impl Default for Config {
     }
 }
 
-pub(super) struct LongSplittablePrintMacro {
+pub(super) struct OverlyLongPrintMacro {
     max_line_width: usize,
     target_macros: BTreeSet<Vec<String>>,
 }
 
-impl LongSplittablePrintMacro {
+impl OverlyLongPrintMacro {
     pub(super) fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         // An entry that parses to no segments (empty / whitespace-only)
