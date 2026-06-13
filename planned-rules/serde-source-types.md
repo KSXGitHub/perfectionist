@@ -27,7 +27,7 @@ the alternative).
 This sub-lint can fire on attributes alone — no whole-program analysis is
 needed.
 
-### `serde_source_types::cow_or_string` (advisory)
+### `serde_source_types::needless_cow_serde_source` (advisory)
 
 Optional, off by default. For a type using
 `#[serde(from = "Cow<'de, str>")]`, inspect the `From<Cow<'a, str>>`
@@ -96,9 +96,9 @@ The `serde_source_types::` prefix in the sub-check names below
 is a documentation label; per the
 [lint-name namespacing convention](./IMPLEMENTATION_CONVENTIONS.md#lint-name-namespacing),
 each sub-check is registered as its own flat tool lint
-(`perfectionist::borrowed_str`, `perfectionist::cow_or_string`).
+(`perfectionist::borrowed_str`, `perfectionist::needless_cow_serde_source`).
 
 - `borrowed_str` — active by default.
-- `cow_or_string` — inactive by default. The advisory check is
+- `needless_cow_serde_source` — inactive by default. The advisory check is
   heuristic and easy to false-positive on; a project opts in by
   setting `serde_source_types.advisory = true` in `dylint.toml`.
