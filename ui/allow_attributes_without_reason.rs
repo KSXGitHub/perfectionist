@@ -8,37 +8,37 @@
 
 // Bad: `#[allow]` with no `reason`.
 #[allow(dead_code)]
-fn test_ignore_without_reason() {}
+fn missing_reason() {}
 
 // Bad: `#[expect]` with no `reason`. The function is not called so
 // the underlying `dead_code` actually fires, fulfilling the
 // expectation and leaving only this rule's diagnostic.
 #[expect(dead_code)]
-fn test_ignore_without_reason_expect() {}
+fn missing_reason_expect() {}
 
 // Bad: multiple lints, none exempt, no `reason`.
 #[allow(dead_code, unused_variables)]
-fn test_ignore_without_reason_multi() {}
+fn missing_reason_multi() {}
 
 // Bad: trailing comma, no `reason`.
 #[allow(dead_code,)]
-fn test_ignore_without_reason_trailing_comma() {}
+fn missing_reason_trailing_comma() {}
 
 // Bad: multi-line, no `reason`.
 #[allow(
     dead_code,
 )]
-fn test_ignore_without_reason_multiline() {}
+fn missing_reason_multiline() {}
 
 // Bad: `cfg_attr`-wrapped `#[expect]` with no `reason`. The
 // expectation is fulfilled by `dead_code`.
 #[cfg_attr(all(), expect(dead_code))]
-fn test_ignore_without_reason_cfg_attr() {}
+fn missing_reason_cfg_attr() {}
 
 // Bad: nested `cfg_attr` — the rule walks through both layers and
 // flags the inner `allow`.
 #[cfg_attr(all(), cfg_attr(all(), allow(dead_code)))]
-fn test_ignore_without_reason_nested_cfg_attr() {}
+fn missing_reason_nested_cfg_attr() {}
 
 // Bad: `reason` is shorter than the default minimum of 3.
 #[allow(dead_code, reason = "x")]
@@ -77,7 +77,7 @@ fn allow_no_lints() {}
     all(),
     allow(dead_code),
 )]
-fn test_ignore_without_reason_multiline_cfg_attr() {}
+fn missing_reason_multiline_cfg_attr() {}
 
 // Bad: inner-attribute form (`#![...]`). The autofix's snippet
 // starts with `#![` rather than `#[`; the scanner ignores the
