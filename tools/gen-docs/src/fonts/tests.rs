@@ -1,7 +1,4 @@
-use super::{
-    CACHE_DIR_ENV, FontEntry, cache_dir, ensure_cached, font_entries, hash_matches, hex_sha256,
-    install_into,
-};
+use super::{CACHE_DIR_ENV, DOWNLOADS, cache_dir, ensure_cached, install_into};
 use std::path::{Path, PathBuf};
 
 /// A scratch directory under the system temp dir, removed on drop, so the
@@ -32,48 +29,12 @@ impl Drop for TempDir {
 }
 
 #[test]
-fn committed_lockfile_parses_to_expected_fonts() {
-    let entries = font_entries();
-    // The single variable Cantarell file, by the exact name base.css
-    // references in `url(...)`.
-    let names: Vec<&str> = entries
-        .iter()
-        .map(|entry| entry.filename.as_str())
-        .collect();
-    assert_eq!(names, ["cantarell.otf"]);
-    for entry in &entries {
-        assert_eq!(
-            entry.sha256.len(),
-            64,
-            "each pinned SHA-256 must be 64 hex chars: {entry:?}",
-        );
-        assert!(
-            entry.sha256.bytes().all(|b| b.is_ascii_hexdigit()),
-            "the pinned hash must be hex: {}",
-            entry.sha256,
-        );
-        assert!(
-            entry.url.starts_with("https://"),
-            "each font URL must be https: {}",
-            entry.url,
-        );
+fn downloads_list_ships_the_font_and_its_license() {
+    let names: Vec<&str> = DOWNLOADS.iter().map(|&(name, _)| name).collect();
+    assert_eq!(names, ["cantarell.otf", "Cantarell-OFL.txt"]);
+    for &(_, url) in DOWNLOADS {
+        assert!(url.starts_with("https://"), "each URL must be https: {url}");
     }
-}
-
-#[test]
-fn hex_sha256_is_lowercase_and_correct() {
-    // SHA-256 of the empty input — a stable, well-known vector.
-    assert_eq!(
-        hex_sha256(b""),
-        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    );
-}
-
-#[test]
-fn hash_matches_ignores_case() {
-    let upper = "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855";
-    assert!(hash_matches(b"", upper));
-    assert!(!hash_matches(b"not empty", upper));
 }
 
 #[test]
@@ -95,25 +56,19 @@ fn cache_dir_defaults_under_root_but_honours_env() {
 }
 
 #[test]
-fn ensure_cached_reuses_a_valid_file_without_downloading() {
-    // A cache already holding a byte-for-byte-correct file must be left
-    // untouched and trigger no download — the offline path. We prove "no
-    // download" by pointing the entry's URL at an unroutable address: if
-    // ensure_cached tried to fetch, it would fail instead of returning Ok.
+fn ensure_cached_reuses_an_existing_file_without_downloading() {
+    // A cache that already holds the file must be left alone and trigger
+    // no download — the offline path. We prove "no download" by pointing
+    // the URL at an unroutable address: if ensure_cached tried to fetch,
+    // it would fail instead of returning Ok.
     let cache = TempDir::new("reuse");
-    let payload = b"pretend this is a font";
-    let entry = FontEntry {
-        sha256: hex_sha256(payload),
-        filename: "demo.woff2".to_owned(),
-        url: "https://127.0.0.1:1/never-fetched.woff2".to_owned(),
-    };
-    std::fs::write(cache.path().join(&entry.filename), payload).unwrap();
-    ensure_cached(cache.path(), std::slice::from_ref(&entry))
-        .expect("a hash-valid cached file should be reused offline");
-    // Untouched: same bytes still there.
+    let downloads = [("demo.woff2", "https://127.0.0.1:1/never-fetched.woff2")];
+    std::fs::write(cache.path().join("demo.woff2"), b"already here").unwrap();
+    ensure_cached(cache.path(), &downloads)
+        .expect("an existing cached file should be reused offline");
     assert_eq!(
-        std::fs::read(cache.path().join(&entry.filename)).unwrap(),
-        payload,
+        std::fs::read(cache.path().join("demo.woff2")).unwrap(),
+        b"already here",
     );
 }
 
@@ -127,23 +82,17 @@ fn install_into_hard_links_when_possible() {
     let out = root.path().join("out");
     std::fs::create_dir_all(&cache).unwrap();
     std::fs::create_dir_all(&out).unwrap();
-    let entry = FontEntry {
-        sha256: hex_sha256(b"x"),
-        filename: "demo.woff2".to_owned(),
-        url: String::new(),
-    };
-    std::fs::write(cache.join(&entry.filename), b"linked bytes").unwrap();
+    let downloads = [("demo.woff2", "")];
+    std::fs::write(cache.join("demo.woff2"), b"linked bytes").unwrap();
 
-    install_into(&out, &cache, std::slice::from_ref(&entry)).expect("install should succeed");
+    install_into(&out, &cache, &downloads).expect("install should succeed");
 
-    let dest = out.join(&entry.filename);
+    let dest = out.join("demo.woff2");
     assert_eq!(std::fs::read(&dest).unwrap(), b"linked bytes");
     #[cfg(unix)]
     {
         use std::os::unix::fs::MetadataExt;
-        let cache_ino = std::fs::metadata(cache.join(&entry.filename))
-            .unwrap()
-            .ino();
+        let cache_ino = std::fs::metadata(cache.join("demo.woff2")).unwrap().ino();
         let dest_ino = std::fs::metadata(&dest).unwrap().ino();
         assert_eq!(
             cache_ino, dest_ino,
@@ -162,15 +111,11 @@ fn install_into_replaces_a_stale_destination() {
     let out = root.path().join("out");
     std::fs::create_dir_all(&cache).unwrap();
     std::fs::create_dir_all(&out).unwrap();
-    let entry = FontEntry {
-        sha256: hex_sha256(b"fresh"),
-        filename: "demo.woff2".to_owned(),
-        url: String::new(),
-    };
-    std::fs::write(cache.join(&entry.filename), b"fresh").unwrap();
-    std::fs::write(out.join(&entry.filename), b"stale").unwrap();
+    let downloads = [("demo.woff2", "")];
+    std::fs::write(cache.join("demo.woff2"), b"fresh").unwrap();
+    std::fs::write(out.join("demo.woff2"), b"stale").unwrap();
 
-    install_into(&out, &cache, std::slice::from_ref(&entry)).expect("install should succeed");
+    install_into(&out, &cache, &downloads).expect("install should succeed");
 
-    assert_eq!(std::fs::read(out.join(&entry.filename)).unwrap(), b"fresh");
+    assert_eq!(std::fs::read(out.join("demo.woff2")).unwrap(), b"fresh");
 }

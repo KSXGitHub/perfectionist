@@ -1,11 +1,10 @@
 use super::{
-    CANTARELL_LICENSE, CANTARELL_LICENSE_FILENAME, CONFIG_TOGGLE_SCRIPT,
-    CONFIG_TOGGLE_SCRIPT_FILENAME, HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME,
-    NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, PAGE_SCRIPTS, RULE_ANCHOR_ICON,
-    RULE_ANCHOR_ICON_FILENAME, STYLESHEETS, THEME_ICON_PREFETCH_TEMPLATE_ID, THEME_ICONS,
-    THEME_TOGGLE_SCRIPT, THEME_TOGGLE_SCRIPT_FILENAME, anchor_for, render_page,
+    CONFIG_TOGGLE_SCRIPT, CONFIG_TOGGLE_SCRIPT_FILENAME, HIGHLIGHT_CSS_DARK_FILENAME,
+    HIGHLIGHT_CSS_LIGHT_FILENAME, NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, PAGE_SCRIPTS,
+    RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME, STYLESHEETS, THEME_ICON_PREFETCH_TEMPLATE_ID,
+    THEME_ICONS, THEME_TOGGLE_SCRIPT, THEME_TOGGLE_SCRIPT_FILENAME, anchor_for, render_page,
 };
-use crate::fonts::font_entries;
+use crate::fonts::DOWNLOADS;
 use crate::model::{ConfigDoc, ConfigField, DefaultState, Optionality, RenderContext, Rule};
 use std::path::PathBuf;
 
@@ -326,26 +325,26 @@ fn style_references_rule_anchor_icon() {
 }
 
 #[test]
-fn base_css_font_face_references_each_locked_font() {
-    // Every font pinned in fonts.lock must be reachable through a
-    // `@font-face` `url(...)` whose name matches the file the build links
-    // beside index.html, or the font 404s and the page silently drops
-    // back to the system sans. `local(...)` must come first so an
-    // installed Cantarell wins over a download. A locked font never
-    // referenced (or a referenced font never locked) is the regression
-    // this guards.
+fn base_css_font_face_references_the_downloaded_font() {
+    // The font the build downloads and links beside index.html must be
+    // reachable through a `@font-face` `url(...)` whose name matches it,
+    // or the font 404s and the page silently drops back to the system
+    // sans. `local(...)` must come first so an installed Cantarell wins
+    // over a download.
     let base = stylesheet("base.css");
     assert!(
         base.contains(r#"local("Cantarell")"#),
         "base.css must prefer a locally-installed Cantarell before downloading",
     );
-    for entry in font_entries() {
-        let expected = format!(r#"url("{}")"#, entry.filename);
-        assert!(
-            base.contains(&expected),
-            "base.css must reference the locked font as {expected}",
-        );
-    }
+    let font = DOWNLOADS
+        .iter()
+        .map(|&(name, _)| name)
+        .find(|name| name.ends_with(".otf"))
+        .expect("DOWNLOADS must include the .otf font");
+    assert!(
+        base.contains(&format!(r#"url("{font}")"#)),
+        r#"base.css must reference the downloaded font as url("{font}")"#,
+    );
     assert!(
         base.contains(r#"format("opentype")"#),
         "base.css must declare the OpenType format for the @font-face src",
@@ -353,11 +352,6 @@ fn base_css_font_face_references_each_locked_font() {
     assert!(
         base.contains(r#"font-family: "Cantarell""#),
         "base.css `body` must set Cantarell as the first font family",
-    );
-    // The license must accompany the redistributed OFL font.
-    assert!(
-        CANTARELL_LICENSE.contains("SIL Open Font License"),
-        "the committed Cantarell license ({CANTARELL_LICENSE_FILENAME}) must be the SIL OFL text",
     );
 }
 

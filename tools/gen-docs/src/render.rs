@@ -104,16 +104,6 @@ pub(crate) const RULE_ANCHOR_ICON: &str = include_str!("assets/rule-anchor.svg")
 /// references the same name in a relative `url(...)`, so they must agree.
 pub(crate) const RULE_ANCHOR_ICON_FILENAME: &str = "rule-anchor.svg";
 
-/// The SIL Open Font License 1.1 text for the Cantarell webfont the page
-/// links, shipped beside `index.html` to satisfy the license's
-/// requirement that it accompany the redistributed font. The font files
-/// themselves are not committed; they are downloaded into a local cache
-/// and linked into the output dir at build time — see [`crate::fonts`].
-pub(crate) const CANTARELL_LICENSE: &str = include_str!("assets/Cantarell-OFL.txt");
-
-/// File name [`CANTARELL_LICENSE`] is written under.
-pub(crate) const CANTARELL_LICENSE_FILENAME: &str = "Cantarell-OFL.txt";
-
 pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String {
     let RenderContext {
         git_ref,
