@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
-# commit-msg hook. Two independent checks:
+# commit-msg hook. Three independent checks:
 #
 #   1. Reject any commit message that contains a bare "#NNN" issue/PR
 #      reference (see "Reject bare #NNN" below). This guards against the
 #      most common AI mis-reference: a number that resolves against the
 #      wrong repository, or "#1"/"#2" used to enumerate list items. Pure
 #      text, runs for every commit.
-#   2. Reject release-shaped commit messages (X.Y.Z or X.Y.Z-<suffix>)
+#   2. Reject any commit message that contains a bare "@handle" mention
+#      (see "Reject bare @mention" below). GitHub autolinks "@foo" as a
+#      user/team mention unless it is wrapped in backticks, so an
+#      unescaped handle both reads as a mention GitHub may not intend
+#      and needlessly pings a real person. Pure text, runs for every
+#      commit.
+#   3. Reject release-shaped commit messages (X.Y.Z or X.Y.Z-<suffix>)
 #      whose staged diff fails the version-bump contract enforced by
 #      tools/deploy-check.
 set -euo pipefail
@@ -64,6 +70,45 @@ Use an unambiguous form instead:
 
 Qualified ("owner/repo#123") and URL forms are always accepted, so it
 is safe to qualify even same-repo references.
+EOF
+  exit 1
+fi
+
+# --- Reject bare "@handle" mentions ----------------------------------
+# Same comment-stripping as above. Then strip inline-code spans
+# (backtick-wrapped text) so a deliberately escaped `@foo` passes, and
+# scan the remainder for a bare "@handle". The boundary matches
+# GitHub's: "@foo" is a mention unless the "@" is preceded by a word
+# char `[0-9A-Za-z_]` (so an email like "user@example.com" is not a
+# mention). A handle is `[0-9A-Za-z]` then any of `[-0-9A-Za-z]`,
+# which also covers "@org/team" team mentions and "@scope/pkg".
+bare_mentions=$(
+  awk -v cc="$comment_char" '
+    index($0, cc) == 1 { if (index($0, ">8") > 0) exit; next }
+    { gsub(/`[^`]*`/, ""); print }
+  ' "$msg_file" | grep -Eo '(^|[^0-9A-Za-z_])@[0-9A-Za-z][-0-9A-Za-z]*(/[0-9A-Za-z][-0-9A-Za-z]*)?' | sed 's/^[^@]*//' || true
+)
+if [ -n "$bare_mentions" ]; then
+  cat >&2 <<EOF
+✖ Commit message rejected: it contains a bare "@handle" mention.
+
+$(printf '%s\n' "$bare_mentions" | sort -u | sed 's/^/    /')
+
+Outside backticks, GitHub autolinks "@foo" as a user or team mention:
+
+  • If you meant it as code (a CLI flag, a path like @scope/pkg, a
+    version like pkg@1.2.3), GitHub still reads it as a mention.
+
+  • If you meant a real account, every commit, comment, and rebase
+    that carries the message pings that person again — needless noise.
+
+Wrap the handle in backticks so it renders as code and never pings:
+
+  • \`@foo\`  instead of  @foo
+
+A genuine, intentional mention is the only case backticks are wrong —
+and a commit message is the wrong place for one. Use the PR or issue
+body instead.
 EOF
   exit 1
 fi
