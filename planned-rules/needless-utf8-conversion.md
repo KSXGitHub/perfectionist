@@ -277,8 +277,10 @@ and takes precedence, so an `ignore_sinks` entry naming a
 A third category is **opt-in** behind `include_byte_sinks` (see
 [Configuration](#configuration)):
 
-- **`AsRef<[u8]>`** — `fs::write`, `io::Write::write_all`. Two source
-  families reach these:
+- **Byte sinks** — `fs::write` (a true `AsRef<[u8]>` bound) and the
+  concrete `&[u8]` writers like `io::Write::{write_all, write}`
+  (reached via the concrete-parameter arm of the detection in (c), not
+  an `AsRef<[u8]>` bound). Two source families reach these:
   - **Byte buffers** (`&[u8]` / `Vec<u8>` / `Box<[u8]>`): the lossy
     `fs::write(p, String::from_utf8_lossy(&bytes).into_owned())`
     round-trip is pure waste; the fix is `fs::write(p, &bytes)`, with
@@ -422,7 +424,7 @@ ignore_sinks = ["::my_crate::log::record_display_path"]
 extra_conversion_methods = []
 ignore_conversion_methods = []
 
-# Opt into `AsRef<[u8]>` sinks (fs::write & friends). Off by
+# Opt into byte sinks (`fs::write`, `Write::write_all`, …). Off by
 # default because the on-disk byte encoding of an OsStr is
 # platform-specific; see "What to lint > (c)".
 include_byte_sinks = false
