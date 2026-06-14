@@ -118,8 +118,10 @@ on the HIR (no string parsing required):
   non-literal piece of a `format!` / `write!` template
   (`format!("{}", recv.display())`).
 - `recv.to_str()` followed by `.unwrap()` / `.expect(...)`.
-- `OsString::into_string()` / `PathBuf::into_os_string` chains
-  ending in `.unwrap()` / `.expect(...)` that yield a `String`.
+- `OsString::into_string()` followed by `.unwrap()` / `.expect(...)`
+  (a `PathBuf` reaches this via `.into_os_string().into_string()`).
+  Its infallible cousin `PathBuf::into_os_string()` is *not* a
+  trigger — it yields an `OsString`, losing nothing.
 
 A faithful, fully-handled conversion is **not** flagged: a
 `match recv.to_str() { Some(s) => …, None => … }` that copes with
