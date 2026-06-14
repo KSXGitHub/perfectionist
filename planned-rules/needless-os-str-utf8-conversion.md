@@ -112,8 +112,7 @@ directly.
 Recognised lossy / panicking conversions, all detected structurally
 on the HIR (no string parsing required):
 
-- `recv.to_string_lossy()`, plus a trailing `.into_owned()` /
-  `.to_string()`.
+- `recv.to_string_lossy()` (returns `Cow<str>`).
 - `recv.display()` consumed by `.to_string()` or as the sole
   non-literal piece of a `format!` / `write!` template
   (`format!("{}", recv.display())`).
@@ -122,6 +121,13 @@ on the HIR (no string parsing required):
   (a `PathBuf` reaches this via `.into_os_string().into_string()`).
   Its infallible cousin `PathBuf::into_os_string()` is *not* a
   trigger — it yields an `OsString`, losing nothing.
+
+The core conversion is often followed by a trailing coercion that
+adapts its result to the sink — `.into_owned()`, `.to_string()`,
+`.as_str()`, `.as_ref()`, `.as_bytes()`. These are exactly what make
+a lossy `Cow<str>` fit an `AsRef<OsStr>` / `AsRef<[u8]>` parameter
+(the `join` and `fs::write` examples below rely on them), so the
+implementation peels any such adapter to reach the core conversion.
 
 A faithful, fully-handled conversion is **not** flagged: a
 `match recv.to_str() { Some(s) => …, None => … }` that copes with
@@ -158,8 +164,10 @@ A third category is **opt-in** behind `include_byte_sinks` (see
 
 - **`AsRef<[u8]>`** — `fs::write`, `io::Write::write_all`, when the
   byte argument is a converted OS string (writing a path *as file
-  content*). The lossless replacement is
-  `os_str.as_os_str().as_encoded_bytes()`. This is gated because the
+  content*). The lossless replacement writes the receiver's
+  `as_encoded_bytes()` — reached through `.as_os_str()` for a
+  `Path` / `PathBuf` receiver (as in the `fs::write` example below),
+  or called directly on an `&OsStr`. This is gated because the
   byte encoding of an `OsStr` is platform-specific (raw bytes on
   Unix, WTF-8 on Windows), so whether `as_encoded_bytes()` is the
   *intended* on-disk form is a judgement the rule cannot make for
@@ -250,8 +258,9 @@ command.arg(text);
   `OsString` + `push` rewrite, emitted as help text rather than an
   auto-applied edit: it restructures one expression into several
   statements, which `MachineApplicable` cannot express cleanly.
-- **Byte sink (opt-in).** Suggest
-  `recv.as_os_str().as_encoded_bytes()`, `MaybeIncorrect` (the
+- **Byte sink (opt-in).** Suggest writing the receiver's
+  `as_encoded_bytes()` (reached via `.as_os_str()` for a `Path` /
+  `PathBuf`, as in the `fs::write` example), `MaybeIncorrect` (the
   platform-encoding caveat above).
 
 ## Configuration
@@ -295,9 +304,10 @@ sending the implementer down an unverified path.
   confirming the sink argument accepts the OS-string form (c). An
   early pass has no types and cannot decide either.
 - **Triggers are HIR expression shapes, not source text.** Every
-  conversion in (a) is a method call (possibly wrapped in a trailing
-  `.unwrap()` / `.expect(...)` / `.into_owned()` / `.to_string()`),
-  and each sink is a call argument. Nothing here scans source text,
+  conversion in (a) is a method call (possibly wrapped in `.unwrap()`
+  / `.expect(...)` and a trailing coercion such as `.into_owned()` /
+  `.to_string()` / `.as_ref()` / `.as_bytes()`), and each sink is a
+  call argument. Nothing here scans source text,
   so — unlike the markdown / serde-literal rules — the
   parser-combinator convention in
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
