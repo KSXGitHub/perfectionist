@@ -281,42 +281,48 @@ the cases the bound check misses (a sink that takes an already-built
 
 ## Implementation notes
 
-- **`LateLintPass`.** Type information is mandatory: the rule reads
-  the receiver type (b) and the formal parameter's trait bound (c)
-  from `cx.typeck_results()` / `cx.tcx.fn_sig`. An `EarlyLintPass`
-  cannot see either.
-- **Walk `ExprKind::MethodCall` / `ExprKind::Call`.** For each call,
-  inspect each argument expression: peel a trailing `.unwrap()` /
-  `.expect(...)` / `.into_owned()` / `.to_string()` / `.as_ref()` /
-  `.as_bytes()`, then test whether the core is a recognised
-  conversion (a) on an OS-string receiver (b).
-- **Sink check (c).** Resolve the callee `DefId`, take its
-  `fn_sig`, find the formal parameter index for this argument, and
-  test the parameter type: either a generic param whose
-  `predicates_of` include `AsRef<OsStr>` / `AsRef<Path>` (and, when
-  `include_byte_sinks`, `AsRef<[u8]>`), or a concrete
-  `&OsStr` / `OsString` / `Cow<OsStr>` / `&Path` / `PathBuf`.
-  Supplement with the `extra_sinks` / `ignore_sinks` path lists via
-  `src/macro_path.rs`-style matching against the callee path.
-- **No string parser needed.** Unlike the markdown / serde-literal
-  rules, every trigger is an HIR shape. The `format!` case inspects
-  the desugared `FormatArgs` (a literal template whose only dynamic
-  argument is a flagged conversion), not the source text, so the
+These notes record what is certain about the rule's *shape*. The
+exact `rustc` / `clippy_utils` API calls are deliberately left to
+the implementer to choose and verify — they have not been written or
+compiled against here, so pinning specific function names would risk
+sending the implementer down an unverified path.
+
+- **`LateLintPass`, not `EarlyLintPass`.** Both halves of the
+  trigger need type information that only exists after type-checking:
+  confirming the conversion's receiver is an OS-string type (b), and
+  confirming the sink argument accepts the OS-string form (c). An
+  early pass has no types and cannot decide either.
+- **Triggers are HIR expression shapes, not source text.** Every
+  conversion in (a) is a method call (possibly wrapped in a trailing
+  `.unwrap()` / `.expect(...)` / `.into_owned()` / `.to_string()`),
+  and each sink is a call argument. Nothing here scans source text,
+  so — unlike the markdown / serde-literal rules — the
   parser-combinator convention in
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
-  does not apply here.
-- **Proc-macro suppression.** The diagnostic span is the conversion
-  sub-expression, which is narrower than the enclosing call, so the
-  built-in `report_in_external_macro: false` filter is *not*
-  sufficient on its own — add the late-pass
-  `crate::common::hir_in_external_macro(cx, hir_id, span)` guard per
-  the "Suppressing proc-macro-synthesised violations" section of
-  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
-  A derive that shells out via a synthesised `Command::arg` with a
-  lossy path is unlikely but cheap to guard; record the call at the
-  span-selection site and add a `ui/needless_os_str_utf8_conversion_proc_macro.rs`
-  fixture only if a non-vacuous, mutation-checked trigger can be
-  constructed (delete the guard, confirm the fixture turns red).
+  does not apply.
+- **Detect the sink by what its parameter accepts, not by a fixed
+  name list.** Recognising any argument position whose parameter
+  takes the OS string losslessly (an `AsRef<OsStr>` / `AsRef<Path>`
+  bound, or a concrete `&OsStr` / `OsString` / `&Path` / `PathBuf` /
+  `Cow<OsStr>` parameter) is what lets std, `command-extra`, and
+  in-house wrappers all be covered without an enumerated allowlist.
+  `extra_sinks` / `ignore_sinks` then exist only for what this
+  bound-based detection misses or over-matches. (Whether the bound
+  is read off the callee signature, or approximated some other way,
+  is an implementation choice to validate against real code.)
+- **Proc-macro suppression.** The natural diagnostic span — the
+  conversion sub-expression — is narrower than the enclosing call,
+  which is exactly the case the "Suppressing proc-macro-synthesised
+  violations" section of
+  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  flags as *not* covered by the built-in
+  `report_in_external_macro: false` filter. Apply the late-pass
+  `crate::common::hir_in_external_macro` guard it prescribes. A
+  trigger that is realistically derive-generated is hard to
+  construct, so add a `ui/needless_os_str_utf8_conversion_proc_macro.rs`
+  fixture only if a non-vacuous, mutation-checked one can be built
+  (delete the guard, confirm the fixture turns red); otherwise record
+  at the span-selection site why it is omitted.
 
 ### Difficulty
 
@@ -328,9 +334,9 @@ expression, no dataflow.
 
 **Hard** follow-ups, deferrable:
 
-- The `format!` / `write!` template case (code block 2): inspect the
-  desugared `FormatArgs` to confirm the template is literal apart
-  from one flagged conversion.
+- The `format!` / `write!` template case (code block 2): confirm the
+  template is literal apart from one flagged conversion, by
+  inspecting the macro's expanded arguments.
 - The build-a-`String`-then-pass case (code block 1): the conversion
   feeds a local `String` via `push_str` / `+`, and that local is
   later handed to the sink. Needs local dataflow from the
