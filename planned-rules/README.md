@@ -68,8 +68,10 @@ pattern that several rules call out by reference — live in
   `AsRef<Path>`: `Command::arg`, `command-extra`'s `CommandExtra`
   builder, `Path::join`, `File::open`, …). The lossy form silently
   corrupts non-UTF-8 paths; the `unwrap` form panics on them. Byte
-  sinks (`fs::write`) are opt-in behind `include_byte_sinks`. Active
-  by default.
+  sinks (`fs::write`) are opt-in behind `include_byte_sinks`;
+  conversions whose non-UTF-8 case is *handled* (`?` / `ok_or` /
+  let-else) but still feed an OsStr sink are exempt by default and
+  opt-in behind `include_handled_conversions`. Active by default.
 
 ### Derives and error types
 - [`error-type-derives.md`](./error-type-derives.md) — derive

@@ -149,10 +149,23 @@ a lossy `Cow<str>` fit an `AsRef<OsStr>` / `AsRef<[u8]>` parameter
 (the `join` and `fs::write` examples below rely on them), so the
 implementation peels any such adapter to reach the core conversion.
 
-A faithful, fully-handled conversion is **not** flagged: a
-`match recv.to_str() { Some(s) => …, None => … }` that copes with
-the `None` arm keeps the fidelity decision explicit and is out of
-scope. Only the lossy and the unwrap-on-`None` forms qualify.
+By **default**, a faithful, fully-handled conversion is *not*
+flagged — a `match recv.to_str() { Some(s) => …, None => … }`, a
+`recv.to_str().ok_or(e)?`, or a
+`let Some(s) = recv.to_str() else { … }` that copes with the
+non-UTF-8 case. Only the lossy and the unwrap-on-`None` forms qualify
+out of the box.
+
+The `include_handled_conversions` knob (off by default — see
+[Configuration](#configuration)) extends the rule to flag the handled
+forms too, because "handling" the error is frequently *not* a
+decision to reject non-UTF-8: it is a reflex — a developer, or an
+assistant told to "replace `.unwrap()` with proper error handling",
+mechanically turning `path.to_str().unwrap()` into
+`path.to_str().ok_or(e)?` — that still missed the real fix, which is
+not to convert at all and pass the `OsStr` through. The knob's
+default and the tension behind it are explained under
+[Configuration](#configuration).
 
 ### (b) The source type
 
@@ -233,10 +246,12 @@ A third category is **opt-in** behind `include_byte_sinks` (see
 
 ### Exemptions
 
-- Faithful, fully-handled conversions (the `match` / `?` / `ok_or`
-  forms) — see (a).
 - A receiver whose type is not an OS-string type — the lossless
   path does not exist, so there is nothing to suggest.
+- Faithful, fully-handled conversions (`match` / `?` / `ok_or` /
+  let-else) — exempt **only by default**; flagged when
+  `include_handled_conversions` is enabled (see (a) and
+  [Configuration](#configuration)).
 - Proc-macro-synthesised nodes (see
   [Implementation notes](#implementation-notes)).
 
@@ -293,8 +308,11 @@ fs::write(out, target.to_string_lossy().as_bytes())?;
 fs::write(out, target.as_os_str().as_encoded_bytes())?;
 ```
 
-**Not flagged** — the `None` arm is handled, so the conversion is a
-deliberate fidelity decision:
+**Not flagged by default** — the `None` arm is handled. With
+`include_handled_conversions = true` this *is* flagged, because the
+handling could have been avoided entirely by passing the `OsStr`
+(`command.arg(file)`); the rule then suggests dropping both the
+conversion and its error path:
 
 ```rust
 let Some(text) = file.to_str() else {
@@ -338,6 +356,12 @@ ignore_conversion_methods = []
 # default because the on-disk byte encoding of an OsStr is
 # platform-specific; see "What to lint > (c)".
 include_byte_sinks = false
+
+# Also flag conversions whose non-UTF-8 case is *handled* (`?`,
+# `ok_or`, `match`, let-else) but still feeds an OsStr/Path sink —
+# the handling was avoidable by passing the OsStr. Off by default;
+# see the rationale below.
+include_handled_conversions = false
 ```
 
 Bound-based detection (`AsRef<OsStr>` / `AsRef<Path>`) is the
@@ -346,6 +370,45 @@ the cases the bound check misses (a sink that takes an already-built
 `OsString` by value) or over-matches (a logging helper that
 *wants* the lossy text). The extras-plus-ignore shape mirrors
 `perfectionist::needless_borrowed_parameters`.
+
+### Why `include_handled_conversions` is off by default
+
+The knob sits on a genuine tension. A conversion whose non-UTF-8
+case is *handled* — `path.to_str().ok_or(e)?`, a `match`, a let-else
+that returns an error — and whose `&str` then feeds an OsStr/Path
+sink achieved nothing the `OsStr` would not have achieved for free:
+the error path is dead weight, the fix is `command.arg(path)`. That
+is the case for flagging it. But the opposite reading is also
+legitimate: a developer who deliberately propagated the error may
+have *meant* to reject non-UTF-8 input at that boundary, in which
+case the handling is intentional and the lint would be noise.
+
+Because the two readings are indistinguishable from the syntax
+alone, this is a configuration choice rather than a fixed default —
+and the default follows **detection difficulty**:
+
+- Robust, low-false-positive detection of the handled case is
+  **hard**. Unlike the core trigger (where the conversion *is* the
+  sink argument, a local expression match), the handled form binds
+  a `&str` and feeds it to the sink later — so the rule must trace
+  the binding to the sink (the same local-dataflow problem as the
+  deferred "build-a-`String`-then-pass" case below) *and* prove the
+  `&str` is consumed **only** by OsStr/Path sinks. If the `&str` is
+  also used as text (printed, parsed, compared, stored), the
+  conversion is genuinely needed and flagging it is a false
+  positive. Establishing "only fed to a sink" needs whole-binding
+  use-analysis.
+- Per the project's policy for difficult, false-positive-prone
+  triggers, a check this hard to get right ships **off by default**.
+  (Had the handled case been a cheap local match with no
+  false-positive risk, the opposite policy would apply and it would
+  be on by default.)
+
+An implementation may first cover the easy subset where the handling
+is **inline in the argument** (`command.arg(path.to_str().ok_or(e)?)`),
+which needs no dataflow and carries no other-use risk, while leaving
+the out-of-line binding case for later — but the knob stays off by
+default until the general case is handled soundly.
 
 ## Implementation notes
 
@@ -410,6 +473,13 @@ expression, no dataflow.
   feeds a local `String` via `push_str` / `+`, and that local is
   later handed to the sink. Needs local dataflow from the
   `let mut s = String::…` binding to the sink call.
+- The `include_handled_conversions` case (off by default): same
+  binding-to-sink dataflow as above, *plus* proving the bound `&str`
+  is consumed only by OsStr/Path sinks (else the conversion is
+  genuinely needed). The inline-handling subset
+  (`command.arg(path.to_str().ok_or(e)?)`) is the easy slice of this
+  and can land first. See
+  ["Why `include_handled_conversions` is off by default"](#why-include_handled_conversions-is-off-by-default).
 
 ## Default state
 
