@@ -65,10 +65,11 @@ pattern that several rules call out by reference — live in
   (`OsStr` / `OsString` / `Path` / `PathBuf`) — `to_string_lossy()`,
   `to_str().unwrap()`, `display().to_string()` — whose result feeds a
   sink that already accepts the OS-string form (`AsRef<OsStr>` /
-  `AsRef<Path>`: `Command::arg`, `Path::join`, `File::open`, …). The
-  lossy form silently corrupts non-UTF-8 paths; the `unwrap` form
-  panics on them. Byte sinks (`fs::write`) are opt-in behind
-  `include_byte_sinks`. Active by default.
+  `AsRef<Path>`: `Command::arg`, `command-extra`'s `CommandExtra`
+  builder, `Path::join`, `File::open`, …). The lossy form silently
+  corrupts non-UTF-8 paths; the `unwrap` form panics on them. Byte
+  sinks (`fs::write`) are opt-in behind `include_byte_sinks`. Active
+  by default.
 
 ### Derives and error types
 - [`error-type-derives.md`](./error-type-derives.md) — derive

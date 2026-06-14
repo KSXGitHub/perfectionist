@@ -77,6 +77,26 @@ fn build(mut command: Command, file: &Path) -> Command {
 }
 ```
 
+**Prefer** — the same fix through `command-extra`'s builder, which
+perfectionist recognizes as a sink in its own right (see
+[(c) The sink](#c-the-sink)):
+
+```rust
+use command_extra::CommandExtra;
+use std::ffi::{OsStr, OsString};
+use std::path::Path;
+use std::process::Command;
+
+fn build(command: Command, file: &Path) -> Command {
+    let flag = OsStr::new("--some-flag=");
+    let file = file.as_os_str();
+    let mut arg = OsString::with_capacity(flag.len() + file.len());
+    arg.push(flag);
+    arg.push(file);
+    command.with_arg(arg)
+}
+```
+
 ## Why is this bad?
 
 This is a correctness issue, not a stylistic preference.
@@ -151,13 +171,50 @@ site rather than a hard-coded function allowlist, so third-party and
 in-house wrappers are covered for free:
 
 - **`AsRef<OsStr>`** — `Command::{arg, args, env, envs}`,
-  `command_extra::CommandExtra::{with_arg, with_args, with_env, …}`,
-  `OsString::push`, and any user function with the same bound.
+  `OsString::push`, and any function with the same bound (including
+  `command-extra`'s builder, called out below).
 - **`AsRef<Path>`** — `Path::join`, `PathBuf::push`, `File::open`,
   `fs::{read, read_to_string, metadata, canonicalize, …}`.
 
 `&Path`, `&OsStr`, `OsString`, `PathBuf`, and `Cow<OsStr>` all
 satisfy both bounds, so the conversion is provably droppable.
+
+#### `command-extra` is a recognized sink by default
+
+`command_extra::CommandExtra` is the subprocess-builder crate by
+perfectionist's own author, and the rule recognizes it as a
+first-class sink — *not* merely as an incidental match of the
+bound-based detection. Its builder methods, which mirror std's
+`Command` setters, are recognized by default:
+
+- `with_arg`, `with_args`, `with_env`, `with_envs` — the
+  `AsRef<OsStr>` family.
+- `with_current_dir` — the `AsRef<Path>` family.
+
+Two things make the explicit recognition worth stating rather than
+leaving implicit:
+
+- **Precedent.** Building in knowledge of a specific well-known
+  third-party crate is established in this catalogue —
+  `perfectionist::manual_json_string` (`serde_json`),
+  the `derive_more` rule family, `perfectionist::thiserror_usage`,
+  the `clap`-help rules, `perfectionist::escaped_multiline_string`
+  (`text_block`), and `perfectionist::macro_trailing_comma`'s curated
+  core/std-plus-third-party list all do it. `command-extra` is the
+  natural OS-string-sink analogue.
+- **Shape.** `with_*` are *consuming builder methods* — they take
+  the `Command` by value and return it — so a converted argument
+  sits inside a `Command`-returning method chain
+  (`command.with_arg(file.to_string_lossy().into_owned())`). The
+  detection treats that argument position no differently from
+  `Command::arg`; the recognition just guarantees the call is on the
+  default sink set so coverage does not hinge on the bound-based
+  path reaching a trait method's bound.
+
+The recognition is unconditional and costs nothing when a consumer
+does not depend on `command-extra` — the `with_*` calls simply never
+appear. A project may still drop specific methods through
+`ignore_sinks`.
 
 A third category is **opt-in** behind `include_byte_sinks` (see
 [Configuration](#configuration)):
