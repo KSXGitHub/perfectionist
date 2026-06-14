@@ -287,8 +287,10 @@ A third category is **opt-in** behind `include_byte_sinks` (see
 
 ### Exemptions
 
-- A receiver whose type is not an OS-string type — the lossless
-  path does not exist, so there is nothing to suggest.
+- A converted value whose type is neither an OS string nor (for byte
+  sinks) a byte buffer — it has no non-UTF-8 native form to pass
+  through, so there is nothing to suggest. (This is the (b) source-type
+  guard; it also keeps the lint off genuine `str` / `String` values.)
 - Faithful, fully-handled conversions (`match` / `?` / `ok_or` /
   let-else) — exempt **only by default**; flagged when
   `include_handled_conversions` is enabled (see (a) and
