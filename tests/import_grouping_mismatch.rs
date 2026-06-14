@@ -35,6 +35,8 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     cfg_block_handling: Option<&'static str>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    cfg_trailing_block: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     blank_line_count: Option<usize>,
 }
 
@@ -67,6 +69,22 @@ fn single_block_collapses_blank_lines() {
         "ui-toml/import_grouping_mismatch/single_block",
         RuleConfig {
             style: Some("single_block"),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn single_block_cfg_trailing_block_separates_cfg() {
+    // Under `style = "single_block"` with `cfg_trailing_block = true`,
+    // the non-cfg imports stay in one contiguous block and every
+    // `#[cfg(...)]`-gated import is hoisted into a single trailing block
+    // one blank line below.
+    run(
+        "ui-toml/import_grouping_mismatch/single_block_cfg_trailing",
+        RuleConfig {
+            style: Some("single_block"),
+            cfg_trailing_block: Some(true),
             ..Default::default()
         },
     );

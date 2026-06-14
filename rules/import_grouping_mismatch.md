@@ -13,7 +13,10 @@ Enforces a single project-wide *grouping* style for the run of
 `use` statements at the top of a module body. The rule is
 inactive by default; a project opts in and sets `style` to one of:
 - `single_block` — every `use` sits in one contiguous block with
-  no blank lines between imports.
+  no blank lines between imports. Setting `cfg_trailing_block`
+  carves the `#[cfg(...)]`-gated imports out into their own
+  trailing block, one (or `blank_line_count`) blank line below the
+  rest.
 - `multi_block` — imports are partitioned into ordered groups
   separated by exactly `blank_line_count` blank lines. The
   default group set, in order, is std (`std` / `core` / `alloc`),
@@ -89,6 +92,27 @@ use crate::args::Args;
 use std::time::Duration;
 ```
 
+### Style: Single block, `cfg_trailing_block = true`
+
+**Avoid:** (cfg-gated imports mixed into the one block)
+
+```rust,ignore
+use std::fs::Metadata;
+#[cfg(unix)]
+use std::os::unix::fs::MetadataExt;
+use super::size::Bytes;
+```
+
+**Prefer:** (cfg-gated imports kept in a trailing block)
+
+```rust,ignore
+use std::fs::Metadata;
+use super::size::Bytes;
+
+#[cfg(unix)]
+use std::os::unix::fs::MetadataExt;
+```
+
 ## Configuration
 
 Configure via `dylint.toml` under `["perfectionist::import_grouping_mismatch"]`. A field marked mandatory must be set; an optional field can be omitted and the per-field prose below states its default.
@@ -118,13 +142,26 @@ re-export roots treated as part of the workspace.
 
 ### `cfg_block_handling`: `CfgBlockHandling` (optional)
 
-How `#[cfg(...)]`-gated imports are grouped. Defaults to
-`trailing`.
+How `#[cfg(...)]`-gated imports are grouped under `multi_block`.
+Defaults to `trailing`. Ignored under `single_block`, which keeps
+every import in one block unless `cfg_trailing_block` carves out a
+trailing cfg block.
+
+### `cfg_trailing_block`: `boolean` (optional)
+
+Under `single_block`, whether `#[cfg(...)]`-gated imports are
+separated into their own trailing block (`blank_line_count` blank
+lines below the main block). Defaults to `false`, keeping every
+import — cfg-gated or not — in one contiguous block. Ignored under
+`multi_block`, which routes cfg grouping through
+`cfg_block_handling`.
 
 ### `blank_line_count`: `unsigned integer` (optional)
 
 Exact number of blank lines separating adjacent groups (strict
-equality). Defaults to `1`. Ignored under `single_block`.
+equality). Defaults to `1`. Under `single_block` it is used only
+when `cfg_trailing_block` separates the trailing cfg block;
+otherwise `single_block` admits no blank lines at all.
 
 ### Types
 

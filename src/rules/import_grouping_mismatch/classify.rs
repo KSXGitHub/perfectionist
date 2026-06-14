@@ -6,7 +6,7 @@
 //! that same path (under [`CfgBlockHandling::Merge`]) or hoisted into a
 //! single trailing group (under [`CfgBlockHandling::Trailing`]).
 
-use super::config::{CfgBlockHandling, Config, Group};
+use super::config::{CfgBlockHandling, Config, Group, Style};
 use rustc_ast::UseTree;
 use rustc_span::kw;
 
@@ -40,13 +40,24 @@ fn path_group(tree: &UseTree, config: &Config) -> Group {
     }
 }
 
-/// The rank a statement sorts by: its path group's position in the
-/// configured order, except a cfg-gated import under
-/// [`CfgBlockHandling::Trailing`], which takes the always-last cfg
-/// rank regardless of its path.
+/// The rank a statement sorts by. The style decides the partition:
+///
+/// - `single_block` keeps every import in one block (rank `0`), so the
+///   run admits no blank lines — except that, with `cfg_trailing_block`
+///   set, a cfg-gated import takes a higher rank `1` and forms a single
+///   trailing block. Path origin is irrelevant here.
+/// - `multi_block` ranks by the path group's position in the configured
+///   order, except a cfg-gated import under [`CfgBlockHandling::Trailing`],
+///   which takes the always-last cfg rank regardless of its path.
 pub(super) fn rank(tree: &UseTree, is_cfg_gated: bool, config: &Config) -> usize {
-    if is_cfg_gated && matches!(config.cfg_block_handling, CfgBlockHandling::Trailing) {
-        return config.cfg_rank();
+    match config.style {
+        Style::SingleBlock => usize::from(is_cfg_gated && config.cfg_trailing_block),
+        Style::MultiBlock => {
+            if is_cfg_gated && matches!(config.cfg_block_handling, CfgBlockHandling::Trailing) {
+                config.cfg_rank()
+            } else {
+                config.group_rank(path_group(tree, config))
+            }
+        }
     }
-    config.group_rank(path_group(tree, config))
 }

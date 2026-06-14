@@ -1,0 +1,35 @@
+warning: imports must form one block, with `#[cfg]`-gated imports in a trailing block
+  --> $DIR/fixture.rs:19:1
+   |
+LL | / use std::time::Duration;
+LL | | #[cfg(unix)]
+LL | | use std::os::unix::fs::MetadataExt;
+LL | | use std::cmp::Ordering;
+   | |_______________________^
+   |
+   = note: `#[warn(perfectionist::import_grouping_mismatch)]` on by default
+help: regroup the imports
+   |
+LL + use std::time::Duration;
+LL + use std::cmp::Ordering;
+LL + 
+LL + #[cfg(unix)]
+LL + use std::os::unix::fs::MetadataExt;
+   |
+
+warning: imports must form one block, with `#[cfg]`-gated imports in a trailing block
+  --> $DIR/fixture.rs:28:1
+   |
+LL | / use std::io::stdin;
+LL | |
+LL | | use std::process::exit;
+   | |_______________________^
+   |
+help: regroup the imports
+   |
+LL + use std::io::stdin;
+LL + use std::process::exit;
+   |
+
+warning: 2 warnings emitted
+
