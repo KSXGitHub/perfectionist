@@ -323,7 +323,9 @@ command.arg(file.to_string_lossy().into_owned());
 command.arg(file);
 ```
 
-**Avoid** — `format!` + `unwrap` building a flag:
+**Avoid** — `format!` + `unwrap` building a flag (the macro-template
+**Hard** tier — the conversion is inside the `format!`, not the sink
+argument; see [Difficulty](#difficulty)):
 
 ```rust
 command.arg(format!("--input={}", file.to_str().unwrap()));
