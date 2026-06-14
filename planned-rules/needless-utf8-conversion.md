@@ -1,16 +1,21 @@
-# `needless_os_str_utf8_conversion`
+# `needless_utf8_conversion`
 
 **Source:** project-maintainer report. Not drawn from the
 `parallel-disk-usage` / `pacquet` style guides the rest of this
 catalogue extends; it captures a recurring footgun in code that
-shells out to subprocesses or stores paths.
+shells out to subprocesses, stores paths, or writes byte buffers.
 
 ## Statement
 
-An OS string (`OsStr`, `OsString`, `Path`, `PathBuf`) routed into a
-sink that already accepts the OS-string form should be passed
-through **without** a UTF-8 conversion. The two conversions this
-rule fires on both throw away fidelity for nothing:
+A value whose native representation is *not* UTF-8 — an OS string
+(`OsStr`, `OsString`, `Path`, `PathBuf`) or a byte buffer (`[u8]`,
+`Vec<u8>`, `Box<[u8]>`) — routed into a sink that already accepts
+that native form should be passed through **without** a UTF-8
+conversion. The OS-string case is the rule's default and the running
+example below; the byte-buffer case (same anti-pattern, against byte
+sinks) is covered under [(b)](#b-the-source-type) and
+[(c)](#c-the-sink). The conversions this rule fires on all throw away
+fidelity for nothing:
 
 - **`to_string_lossy()`** (and `Path::display().to_string()`,
   `format!("{}", path.display())`) silently replaces every
@@ -123,8 +128,8 @@ encodings, deliberately adversarial names, binary-derived paths).
 ## What to lint
 
 Fire on an expression that is **(a)** a fidelity-destroying
-UTF-8 conversion of **(b)** a value of OS-string type, sitting in
-**(c)** an argument position that accepts the OS-string form
+UTF-8 conversion of **(b)** a value whose native form is not UTF-8,
+sitting in **(c)** an argument position that accepts that native form
 directly.
 
 ### (a) The conversion
@@ -141,6 +146,14 @@ on the HIR (no string parsing required):
   (a `PathBuf` reaches this via `.into_os_string().into_string()`).
   Its infallible cousin `PathBuf::into_os_string()` is *not* a
   trigger — it yields an `OsString`, losing nothing.
+
+For **byte-buffer** sources the conversions are the same idea in
+associated-function form — the value is the *argument*, not the
+receiver:
+
+- `String::from_utf8_lossy(bytes)` (lossy; returns `Cow<str>`).
+- `String::from_utf8(vec)` / `str::from_utf8(bytes)` followed by
+  `.unwrap()` / `.expect(...)`.
 
 The core conversion is often followed by a trailing coercion that
 adapts its result to the sink — `.into_owned()`, `.to_string()`,
@@ -169,12 +182,33 @@ default and the tension behind it are explained under
 
 ### (b) The source type
 
-The conversion's receiver must resolve (via `typeck_results`) to
-`OsStr`, `OsString`, `Path`, or `PathBuf` (or a reference to one).
-This guard is what makes the lossless pass-through *possible* — the
-value already is an OS string, so the sink can take it as-is. It
-also keeps the lint off `str`/`String` receivers that happen to
-share a method name.
+The converted value must resolve (via `typeck_results`) to a type
+whose native form is not UTF-8, so the lossless pass-through is
+actually *possible*:
+
+- **OS strings** — `OsStr`, `OsString`, `Path`, `PathBuf` (or a
+  reference). The default sources; they reach the `AsRef<OsStr>` /
+  `AsRef<Path>` sinks in (c) directly.
+- **Byte buffers** — `[u8]`, `&[u8]`, `Vec<u8>`, `Box<[u8]>`. A byte
+  buffer satisfies `AsRef<[u8]>` but **not** `AsRef<OsStr>` /
+  `AsRef<Path>`, so it is flaggable only for the **byte sinks** gated
+  behind `include_byte_sinks` (see (c)). There the
+  `String::from_utf8_lossy(&bytes)` round-trip is pure waste and the
+  fix (`fs::write(p, &bytes)`) has no platform nuance at all — the
+  cleanest case the rule has.
+
+The type guard also keeps the lint off genuine `str` / `String`
+values that merely share a method name.
+
+**Out of scope: `CStr` / `CString`.** They carry the same lossy /
+panicking conversions (`to_string_lossy`, `to_str().unwrap()`,
+`into_string().unwrap()`), but they satisfy *none* of the rule's sink
+bounds — `CString: AsRef<[u8]>` does not hold, nor `AsRef<OsStr>` /
+`AsRef<Path>` — and their natural consumer is FFI: a `*const c_char`
+reached through `as_ptr()`, which the AsRef-bounded sink model does
+not cover. A C string fed to a byte sink would have to go through its
+lossless `to_bytes()` view, and "with or without the trailing NUL?"
+is a real ambiguity, so the case is left out rather than guessed at.
 
 ### (c) The sink
 
@@ -232,17 +266,24 @@ appear. A project may still drop specific methods through
 A third category is **opt-in** behind `include_byte_sinks` (see
 [Configuration](#configuration)):
 
-- **`AsRef<[u8]>`** — `fs::write`, `io::Write::write_all`, when the
-  byte argument is a converted OS string (writing a path *as file
-  content*). The lossless replacement writes the receiver's
-  `as_encoded_bytes()` — reached through `.as_os_str()` for a
-  `Path` / `PathBuf` receiver (as in the `fs::write` example below),
-  or called directly on an `&OsStr`. This is gated because the
-  byte encoding of an `OsStr` is platform-specific (raw bytes on
-  Unix, WTF-8 on Windows), so whether `as_encoded_bytes()` is the
-  *intended* on-disk form is a judgement the rule cannot make for
-  the consumer; opting in asserts "these files hold OS-string path
-  data, not UTF-8 text."
+- **`AsRef<[u8]>`** — `fs::write`, `io::Write::write_all`. Two source
+  families reach these:
+  - **Byte buffers** (`&[u8]` / `Vec<u8>` / `Box<[u8]>`): the lossy
+    `fs::write(p, String::from_utf8_lossy(&bytes).into_owned())`
+    round-trip is pure waste; the fix is `fs::write(p, &bytes)`, with
+    **no** platform nuance.
+  - **OS strings** written *as file content*: the lossless
+    replacement writes the receiver's `as_encoded_bytes()` — reached
+    through `.as_os_str()` for a `Path` / `PathBuf` receiver (as in
+    the `fs::write` example below), or directly on an `&OsStr`.
+
+  The category is gated because of the OS-string source: the byte
+  encoding of an `OsStr` is platform-specific (raw bytes on Unix,
+  WTF-8 on Windows), so whether `as_encoded_bytes()` is the *intended*
+  on-disk form is a judgement the rule cannot make; opting in asserts
+  "these files hold path / raw bytes, not UTF-8 text." The
+  byte-buffer source carries no such ambiguity but rides the same
+  toggle, since it too only concerns byte sinks.
 
 ### Exemptions
 
@@ -308,6 +349,19 @@ fs::write(out, target.to_string_lossy().as_bytes())?;
 fs::write(out, target.as_os_str().as_encoded_bytes())?;
 ```
 
+**Avoid** — lossy round-trip writing a byte buffer (only with
+`include_byte_sinks = true`):
+
+```rust
+fs::write(out, String::from_utf8_lossy(&bytes).into_owned())?;
+```
+
+**Prefer** — the bytes are already what `fs::write` wants:
+
+```rust
+fs::write(out, &bytes)?;
+```
+
 **Not flagged by default** — the `None` arm is handled. With
 `include_handled_conversions = true` this *is* flagged, because the
 handling could have been avoided entirely by passing the `OsStr`
@@ -341,7 +395,7 @@ command.arg(text);
 ## Configuration
 
 ```toml
-[perfectionist::needless_os_str_utf8_conversion]
+[perfectionist::needless_utf8_conversion]
 # Extend or restrict the sink set beyond bound-based detection.
 # Function paths are absolute, so each carries a leading `::`
 # per the leading-`::` convention in IMPLEMENTATION_CONVENTIONS.md.
@@ -451,7 +505,7 @@ sending the implementer down an unverified path.
   `report_in_external_macro: false` filter. Apply the late-pass
   `crate::common::hir_in_external_macro` guard it prescribes. A
   trigger that is realistically derive-generated is hard to
-  construct, so add a `ui/needless_os_str_utf8_conversion_proc_macro.rs`
+  construct, so add a `ui/needless_utf8_conversion_proc_macro.rs`
   fixture only if a non-vacuous, mutation-checked one can be built
   (delete the guard, confirm the fixture turns red); otherwise record
   at the span-selection site why it is omitted.
@@ -492,10 +546,10 @@ default policy stays purely on the objective-defect cases.
 
 ## Interaction with clippy and sibling rules
 
-- **No clippy counterpart.** Clippy has no lint for an OS-string →
-  UTF-8 conversion feeding an `AsRef<OsStr>` / `AsRef<Path>` sink,
-  so this rule takes its own anti-pattern name rather than mirroring
-  one.
+- **No clippy counterpart.** Clippy has no lint for a non-UTF-8
+  value (OS string or byte buffer) being lossily converted to UTF-8
+  on its way into a sink that accepts the native form, so this rule
+  takes its own anti-pattern name rather than mirroring one.
 - **`perfectionist::needless_borrowed_parameters`** shares the
   "needless conversion" theme but is orthogonal: it removes a
   `&T → T` owning conversion in a *function signature*, whereas this

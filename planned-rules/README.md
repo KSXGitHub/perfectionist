@@ -59,19 +59,23 @@ pattern that several rules call out by reference — live in
   to cover the full owned-vs-borrowed trade-off from the pacquet
   guide.
 
-### OS strings and paths
-- [`needless-os-str-utf8-conversion.md`](./needless-os-str-utf8-conversion.md)
-  — flag a fidelity-destroying UTF-8 conversion of an OS string
-  (`OsStr` / `OsString` / `Path` / `PathBuf`) — `to_string_lossy()`,
-  `to_str().unwrap()`, `display().to_string()` — whose result feeds a
-  sink that already accepts the OS-string form (`AsRef<OsStr>` /
+### OS strings, paths, and bytes
+- [`needless-utf8-conversion.md`](./needless-utf8-conversion.md)
+  — flag a fidelity-destroying UTF-8 conversion of a value whose
+  native form is not UTF-8 — an OS string (`OsStr` / `OsString` /
+  `Path` / `PathBuf`: `to_string_lossy()`, `to_str().unwrap()`,
+  `display().to_string()`) or a byte buffer (`[u8]` / `Vec<u8>`:
+  `String::from_utf8_lossy()`, `from_utf8().unwrap()`) — whose result
+  feeds a sink that already accepts the native form (`AsRef<OsStr>` /
   `AsRef<Path>`: `Command::arg`, `command-extra`'s `CommandExtra`
   builder, `Path::join`, `File::open`, …). The lossy form silently
-  corrupts non-UTF-8 paths; the `unwrap` form panics on them. Byte
-  sinks (`fs::write`) are opt-in behind `include_byte_sinks`;
-  conversions whose non-UTF-8 case is *handled* (`?` / `ok_or` /
-  let-else) but still feed an OsStr sink are exempt by default and
-  opt-in behind `include_handled_conversions`. Active by default.
+  corrupts non-UTF-8 input; the `unwrap` form panics on it. Byte
+  sinks (`fs::write`, plus byte-buffer sources) are opt-in behind
+  `include_byte_sinks`; conversions whose non-UTF-8 case is *handled*
+  (`?` / `ok_or` / let-else) but still feed a sink are exempt by
+  default and opt-in behind `include_handled_conversions`.
+  `CStr`/`CString` are out of scope (FFI-shaped; satisfy no sink
+  bound). Active by default.
 
 ### Derives and error types
 - [`error-type-derives.md`](./error-type-derives.md) — derive
