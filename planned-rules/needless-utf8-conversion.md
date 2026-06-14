@@ -102,6 +102,14 @@ fn build(command: Command, file: &Path) -> Command {
 }
 ```
 
+Both motivating shapes above — building a `String` with `push_str`,
+and interpolating the path through `format!` — are the rule's
+*fuller* targets: each needs dataflow or macro-template inspection
+and is a **Hard** tier in [Difficulty](#difficulty). The core,
+first-shippable trigger is the simpler shape where the conversion
+*is* the sink argument (e.g. `command.arg(file.to_string_lossy().into_owned())`),
+shown under [Examples](#examples). All three share the same fix.
+
 ## Why is this bad?
 
 This is a correctness issue, not a stylistic preference.
@@ -261,7 +269,10 @@ leaving implicit:
 The recognition is unconditional and costs nothing when a consumer
 does not depend on `command-extra` — the `with_*` calls simply never
 appear. A project may still drop specific methods through
-`ignore_sinks`.
+`ignore_sinks`: that list is matched against *every* sink — built-in
+(std and `command-extra`), bound-detected, and `extra_sinks` alike —
+and takes precedence, so an `ignore_sinks` entry naming a
+`CommandExtra` method suppresses even its built-in recognition.
 
 A third category is **opt-in** behind `include_byte_sinks` (see
 [Configuration](#configuration)):
@@ -404,7 +415,8 @@ command.arg(text);
 extra_sinks = ["::my_crate::exec::spawn_with_path"]
 ignore_sinks = ["::my_crate::log::record_display_path"]
 
-# Extend / restrict the recognised conversion methods.
+# Extend / restrict the recognised *core* conversions (see prose
+# below for how an entry maps onto the multi-step trigger shapes).
 extra_conversion_methods = []
 ignore_conversion_methods = []
 
@@ -426,6 +438,23 @@ the cases the bound check misses (a sink that takes an already-built
 `OsString` by value) or over-matches (a logging helper that
 *wants* the lossy text). The extras-plus-ignore shape mirrors
 `perfectionist::needless_borrowed_parameters`.
+
+An `extra_conversion_methods` / `ignore_conversion_methods` entry
+names the **core** conversion only — the fidelity-losing step listed
+in (a), e.g. the receiver method `to_string_lossy` / `to_str`, or an
+associated function by path (`::std::string::String::from_utf8`) for
+the byte forms. It does **not** name the surrounding `.unwrap()` /
+`.expect()` or the trailing coercions: those are matched (and peeled)
+by the rule's fixed machinery around whatever core conversion is
+recognised, so adding `"my_lossy"` makes `x.my_lossy().unwrap()` and
+`x.my_lossy().as_ref()` triggers without further configuration, and
+`ignore_conversion_methods = ["to_str"]` drops every `to_str`-rooted
+shape while leaving `to_string_lossy` active. Method-name entries are
+matched on the final segment (relative, no leading `::`); a
+multi-segment associated-function path follows the leading-`::`
+convention like the `*_sinks` lists. This keeps the conversion knobs
+symmetric with the sink knobs rather than leaving "conversion method"
+as an undefined flat string.
 
 ### Why `include_handled_conversions` is off by default
 
