@@ -180,7 +180,7 @@ A third category is **opt-in** behind `include_byte_sinks` (see
 **Avoid** — bare lossy conversion as the argument:
 
 ```rust
-command.arg(file.to_string_lossy());
+command.arg(file.to_string_lossy().into_owned());
 ```
 
 **Prefer** — `&Path` is already `AsRef<OsStr>`:
@@ -329,7 +329,7 @@ sending the implementer down an unverified path.
 ### Difficulty
 
 **Medium** for the core: the direct-argument case
-(`command.arg(file.to_string_lossy())`, `base.join(p.to_str().unwrap())`)
+(`command.arg(file.to_string_lossy().into_owned())`, `base.join(p.to_str().unwrap())`)
 is a local HIR-shape match plus two type queries. A conservative
 first pass can ship just this — the conversion *is* the argument
 expression, no dataflow.
