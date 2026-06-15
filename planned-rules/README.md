@@ -40,6 +40,21 @@ pattern that several rules call out by reference — live in
   `Thing`); suggest importing from the definition or a `pub use`
   re-export instead. Closes the gap `unused_imports` cannot see. Active
   by default.
+- [`overscoped-conditional-import.md`](./overscoped-conditional-import.md)
+  — flag a module-level `#[cfg(...)] use ...;` whose item is used inside
+  a single function only, and sink it into that function so the
+  conditional-compilation surface stays minimal and co-located. Exempts
+  `pub use` re-exports and items used outside any `fn` (types, traits,
+  signatures). Dual of `underscoped-unconditional-import`; no stock lint
+  covers it. Inactive by default.
+- [`underscoped-unconditional-import.md`](./underscoped-unconditional-import.md)
+  — flag a function-local plain `use ...;` (no `#[cfg]`) that could sit
+  at module scope without colliding, and hoist it there. Exempts genuine
+  collisions and a configurable default list of well-known
+  collision-prone paths (`core::fmt::Write` vs. `std::io::Write`, …) via
+  the `extra` / `ignore` paradigm. Dual of
+  `overscoped-conditional-import`; no stock lint covers it. Inactive by
+  default.
 
 ### Naming
 - [`path-qualification-mismatch.md`](./path-qualification-mismatch.md) — decide whether items from
