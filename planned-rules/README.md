@@ -214,12 +214,12 @@ discrepancies whose predicates are simple enough to decide soundly.
   counterparts of rustc's `dead_code`, `unused_imports`, and
   `unused_variables`: an item/import/binding compiled in some
   configuration where none of its uses are. Mirrors the rustc lint names
-  under the `perfectionist::` namespace. Skips complex cfg. Inactive by
-  default (heuristic cross-config name matching, destructive fix).
+  under the `perfectionist::` namespace. Skips complex cfg. Active by
+  default (conservative: treats any uncertain match as a use).
 - [`cross-cfg-unresolved-path.md`](./cross-cfg-unresolved-path.md) —
   `unresolved_path` / `unresolved_import`: a reference to a name that is
   undefined in some configuration the reference compiles in (a latent
-  `E0425`/`E0432` rustc never checks). Skips complex cfg. Inactive by
+  `E0425`/`E0432` rustc never checks). Skips complex cfg. Active by
   default.
 
 ### Clap derive help

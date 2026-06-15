@@ -216,9 +216,13 @@ validates only `cfg` atom names/values, never the identifiers inside
 
 ## Default state
 
-**Inactive by default**, for both sub-lints. Cross-config candidate
-resolution is heuristic, and a false "this won't compile" is a costly
-diagnostic, so the rules are opt-in until proven low-false-positive on
-real crates; enable under `[perfectionist].enable`. The lint
-declarations register regardless, so `#[allow(perfectionist::unresolved_path)]`
-resolves either way.
+**Active by default**, for both sub-lints. Active-by-default is safe
+because the analysis is deliberately one-sided: it gathers candidate
+definitions *generously* (every item, import, glob target, and prelude
+name that could provide the name in any config) and flags only when even
+that generous set leaves a satisfiable config uncovered, skipping
+entirely whenever resolution is uncertain (see *Implementation notes*).
+That keeps a false "this won't compile" — the costliest possible
+diagnostic — near zero. A residual false positive is suppressed at the
+site with `#[allow(perfectionist::unresolved_path)]` (or
+`unresolved_import`) and a reason.

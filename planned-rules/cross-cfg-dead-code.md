@@ -105,8 +105,7 @@ behind a `cfg` that can be disabled independently of the binding (e.g. a
 binding compiled unconditionally but read only inside a
 `#[cfg(feature = "x")]` block). Narrower in practice — most local
 deadness is intra-config and already rustc's job — so this sub-lint is
-the most conservative of the three and the readiest candidate to ship
-last or stay opt-in.
+the most conservative of the three and the readiest to ship last.
 
 ## Examples
 
@@ -249,11 +248,12 @@ strictly complementary.
 
 ## Default state
 
-**Inactive by default**, for all three sub-lints. The cross-config
-name matching is heuristic and the suggested fix is destructive, so the
-rules are opt-in until proven low-false-positive on real crates; a
-project turns them on under `[perfectionist].enable`. (Contrast
-[`overly_complex_cfg`](./overly-complex-cfg.md), which is deterministic
-and active by default.) The lint *declarations* still register, so
-`#[allow(perfectionist::dead_code)]` resolves whether or not the rule is
-enabled.
+**Active by default**, for all three sub-lints. Active-by-default is
+safe here precisely because the analysis is built to be conservative:
+the cross-config name matching treats any uncertain match (glob imports,
+macro-generated names, type-resolved methods) as a *use*, so the rules
+stay silent unless the deadness witness is unambiguous (see
+*Implementation notes*). The suggested removal is a non-machine-
+applicable hint, never an auto-applied edit. A residual false positive is
+suppressed at the site with `#[allow(perfectionist::dead_code)]` (or the
+per-sub-lint name) and a reason.
