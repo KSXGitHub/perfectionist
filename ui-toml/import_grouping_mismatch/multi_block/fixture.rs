@@ -1,3 +1,5 @@
+// aux-build:clap.rs
+// aux-build:serde.rs
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(
@@ -11,20 +13,15 @@
 // then third-party groups, each separated by exactly one blank line.
 // A `#[cfg(...)]`-gated import forms an always-last (trailing) group.
 //
-// Fake third-party crates (`clap`, `serde`) and an internal module
-// (`config`) so every import resolves; classification keys on the
-// path's first segment, so a local `mod clap` stands in for the real
-// crate. Each run of `use` statements is separated by a marker item so
-// the runs stay isolated, and every import binds a distinct name so the
-// whole crate-root file still compiles.
+// `clap` and `serde` are real auxiliary crates (genuinely third-party);
+// `config` is a first-party module reached through `crate::`. Each run of
+// `use` statements is separated by a marker item so the runs stay
+// isolated, and every import binds a distinct name so the whole
+// crate-root file still compiles.
 
-mod clap {
-    pub struct Parser;
-    pub struct Subcommand;
-}
-mod serde {
-    pub struct Deserialize;
-}
+extern crate clap;
+extern crate serde;
+
 mod config {
     pub struct Args;
     pub struct Bytes;

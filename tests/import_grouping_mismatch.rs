@@ -141,6 +141,18 @@ fn internal_prefixes_extends_workspace_root() {
 }
 
 #[test]
+fn bare_path_local_submodule_is_internal() {
+    // Regression: a bare-path import of a first-party submodule (`use
+    // error::Foo;` where `error` is a sibling `mod`) is grouped with the
+    // internal block, ahead of third-party, instead of being treated as
+    // a third-party crate keyed on the bare first segment.
+    run(
+        "ui-toml/import_grouping_mismatch/local_submodule",
+        RuleConfig::default(),
+    );
+}
+
+#[test]
 fn multi_block_partitions_into_ordered_blocks() {
     // The bare-default `multi_block` style with no knobs overridden:
     // imports must be partitioned into std / internal / third-party

@@ -18,10 +18,14 @@ inactive by default; a project opts in and sets `style` to one of:
   separated by exactly `blank_line_count` blank lines. The
   default group set, in order, is std (`std` / `core` / `alloc`),
   internal (`super` / `self` / `crate`), then third-party (every
-  other crate). The `order`, `std_crates`, `internal_prefixes`,
-  `cfg_block_handling`, and `blank_line_count` knobs tune the
-  partition; the inner ordering within each group is left to
-  `cargo fmt`.
+  other crate). A bare-path import of a first-party submodule
+  (`mod error; use error::Foo;`) is classified as internal, not
+  third-party: the rule reads source without name resolution, so it
+  recognises a bare first segment that names a `mod` declared in
+  the same module scope. The `order`, `std_crates`,
+  `internal_prefixes`, `cfg_block_handling`, and `blank_line_count`
+  knobs tune the partition; the inner ordering within each group is
+  left to `cargo fmt`.
 
 This rule only governs the *partitioning* of imports into blocks.
 Whether items within each `use` are merged or split is the job of

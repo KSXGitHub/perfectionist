@@ -1,3 +1,4 @@
+// aux-build:clap.rs
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(
@@ -8,12 +9,10 @@
 )]
 
 // Under `blank_line_count = 2`: adjacent groups are separated by
-// exactly two blank lines. One blank line is a violation.
+// exactly two blank lines. One blank line is a violation. `clap` is a
+// real auxiliary crate (genuinely third-party).
 
-mod clap {
-    pub struct Parser;
-    pub struct Subcommand;
-}
+extern crate clap;
 
 // Bad: std and third-party groups separated by a single blank line.
 use std::time::Duration;

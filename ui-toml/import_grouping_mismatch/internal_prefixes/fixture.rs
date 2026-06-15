@@ -1,3 +1,5 @@
+// aux-build:clap.rs
+// aux-build:my_macros.rs
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(
@@ -9,16 +11,13 @@
 
 // Under `internal_prefixes = ["crate", "super", "self", "my_macros"]`:
 // imports rooted at `my_macros` are treated as internal, grouping with
-// `crate` / `super` / `self` ahead of third-party crates.
+// `crate` / `super` / `self` ahead of third-party crates. `clap` and
+// `my_macros` are real auxiliary crates (genuinely third-party), so only
+// the `internal_prefixes` knob — not sibling-module detection — promotes
+// `my_macros` to the internal group.
 
-mod clap {
-    pub struct Parser;
-    pub struct Subcommand;
-}
-mod my_macros {
-    pub struct Helper;
-    pub struct Util;
-}
+extern crate clap;
+extern crate my_macros;
 
 // Bad: `my_macros` (internal) appears after `clap` (third-party);
 // internal must come before third-party.
