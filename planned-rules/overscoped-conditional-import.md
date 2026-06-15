@@ -129,16 +129,20 @@ on `#[cfg(...)]`-gated imports, its dual only on un-gated ones.
 
 ## What to lint
 
-For every `use` item declared at **module scope** (the crate root or
-any `mod` body, inline or separate-file), flag it when **all** of:
+For every named leaf imported by a `use` item declared at **module
+scope** (the crate root or any `mod` body, inline or separate-file),
+flag the leaf when **all** of:
 
-1. it carries a `#[cfg(...)]` (or `#[cfg_attr(..., ...)]` that
-   expands to a `cfg`) attribute; and
-2. it is **not** `pub` (nor `pub(...)`) — see *What's not in scope*;
-   and
-3. it is a single named leaf (`use a::b::Leaf;` / `use a::b::Leaf as
-   R;`), not a glob or a brace list — see *What's not in scope*; and
-4. every use of the imported binding in the module is inside a
+1. its `use` item carries a `#[cfg(...)]` (or `#[cfg_attr(..., ...)]`
+   that expands to a `cfg`) attribute; and
+2. its `use` item is **not** `pub` (nor `pub(...)`) — see *What's not
+   in scope*; and
+3. it is a **named leaf** (`Leaf` / `Leaf as R`), not a glob (`*`) —
+   see *What's not in scope*. A brace-list import
+   (`#[cfg(...)] use a::b::{A, B};`) is **not** exempt: each leaf is
+   evaluated independently, exactly as if the brace were expanded into
+   one `#[cfg(...)] use` per leaf; and
+4. every use of the leaf's binding in the module is inside a
    **function body** (a free `fn`, an inherent/trait-impl method, or a
    closure within one such body) — no use sits in an item-level
    position outside any function body. (Because the import is
@@ -146,9 +150,11 @@ any `mod` body, inline or separate-file), flag it when **all** of:
    matching `#[cfg(...)]` region; an un-gated use would fail to
    compile when the gate is off.)
 
-When it fires, the autofix sinks the `use` into the **narrowest
+When it fires, the autofix sinks the leaf into the **narrowest
 `#[cfg(...)]`-gated scope that encloses each use**, placing a copy in
-every such scope, and removes the module-level declaration:
+every such scope, and removes the leaf from the module-level
+declaration (deleting the whole `use` once its last leaf is gone, or
+splitting the brace list when only some leaves sink):
 
 - a use inside a `#[cfg(...)]`-gated **function** → a `use` at the top
   of that function body;
@@ -179,12 +185,41 @@ untouched (see *Implementation notes*).
   This is the "used by things outside an `fn`, such as types and
   traits" exemption, and it is exactly condition (4) failing.
 
-- **Glob and brace-list imports** (`#[cfg(...)] use foo::*;`,
-  `#[cfg(...)] use foo::{A, B};`). A glob has no single leaf to
-  re-point and changes name resolution wholesale; a brace list mixes
-  several leaves whose uses may scatter across different functions.
-  Out of scope, matching the single-leaf restriction the sibling
-  import rules use.
+- **Glob imports** (`#[cfg(...)] use foo::*;`). A glob has no single
+  leaf to re-point and changes name resolution wholesale when sunk, so
+  it is out of scope.
+
+  **Brace-list imports** (`#[cfg(...)] use foo::{A, B};`) are **not**
+  exempt: a brace list is shorthand for several single imports sharing
+  a prefix *and* one `#[cfg]`, and each leaf may be used in a different
+  gated scope. The rule evaluates each leaf on its own and sinks the
+  qualifying ones into the scopes that use them, splitting the list:
+
+  ```rust
+  // Avoid — one leaf is used in each gated function; the brace
+  // bundling does not justify keeping either at module scope.
+  #[cfg(unix)]
+  use std::os::unix::fs::{MetadataExt, PermissionsExt};
+
+  #[cfg(unix)]
+  fn inode(p: &Path) -> u64 { fs::metadata(p).unwrap().ino() }   // MetadataExt
+  #[cfg(unix)]
+  fn make_exec(p: &Path) { /* uses PermissionsExt */ }
+  ```
+  ```rust
+  // Prefer — each leaf sinks into the function that uses it, shedding
+  // the now-redundant #[cfg(unix)].
+  #[cfg(unix)]
+  fn inode(p: &Path) -> u64 {
+      use std::os::unix::fs::MetadataExt;
+      fs::metadata(p).unwrap().ino()
+  }
+  #[cfg(unix)]
+  fn make_exec(p: &Path) {
+      use std::os::unix::fs::PermissionsExt;
+      /* … */
+  }
+  ```
 
 - **`#[cfg]`-gated imports already inside a function.** Those are the
   desired end state, not a violation.
@@ -195,8 +230,8 @@ untouched (see *Implementation notes*).
 # dylint.toml
 #
 # Inactive by default. Enable in `[perfectionist].enable`. The rule has
-# a single direction (sink a single-use conditional import into its
-# function), so there is no `style` knob.
+# a single direction (sink a conditional import into the gated scope
+# that uses it), so there is no `style` knob.
 [perfectionist::overscoped_conditional_import]
 # (no configuration)
 ```
@@ -237,11 +272,13 @@ against the compiler during implementation.
   sound here.** Narrowing an import's scope can never *introduce* a
   name collision — it only removes a module-scope binding — so the
   rule does not need full name resolution to be safe; the worst a
-  miss can do is fail to fire. Over the re-parsed module AST, locate
-  every occurrence of the imported leaf identifier (and the `as`
-  alias, if any) and require that they all fall within function bodies,
-  with none in an item-level position outside any function body. For
-  each use, find the narrowest enclosing `#[cfg(...)]`-gated scope —
+  miss can do is fail to fire. Decompose each `#[cfg]`-gated brace
+  list into its leaves and analyse each leaf independently; skip
+  globs. Over the re-parsed module AST, locate every occurrence of the
+  leaf identifier (and the `as` alias, if any) and require that they
+  all fall within function bodies, with none in an item-level position
+  outside any function body. For each use, find the narrowest
+  enclosing `#[cfg(...)]`-gated scope —
   the gated function, or the gated branch within an un-gated function —
   which is the destination the import sinks into; the re-parse
   preserves the `#[cfg]` attributes the scan reads. Treat anything

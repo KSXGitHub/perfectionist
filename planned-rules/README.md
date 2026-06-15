@@ -45,10 +45,12 @@ pattern that several rules call out by reference — live in
   inside function bodies, and sink a copy into the narrowest `#[cfg]`-
   gated scope enclosing each use (a gated function, or a gated branch of
   an un-gated function), where it sheds its own `#[cfg]`. Keeps the
-  conditional-compilation surface minimal and co-located. Exempts
-  `pub use` re-exports and items used outside any `fn` (types, traits,
-  signatures). Dual of `underscoped-unconditional-import`; no stock lint
-  covers it. Inactive by default.
+  conditional-compilation surface minimal and co-located. Brace lists
+  are handled per leaf (each leaf sunk to where it is used, splitting
+  the list); globs are exempt. Also exempts `pub use` re-exports and
+  items used outside any `fn` (types, traits, signatures). Dual of
+  `underscoped-unconditional-import`; no stock lint covers it. Inactive
+  by default.
 - [`underscoped-unconditional-import.md`](./underscoped-unconditional-import.md)
   — flag a function-local plain `use ...;` (no `#[cfg]`) that could sit
   at module scope without colliding, and hoist it there. Exempts genuine
