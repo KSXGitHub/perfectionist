@@ -259,6 +259,17 @@ impl ImportGroupingMismatch {
         // the internal group instead of third-party. Module items are
         // order-independent, so the whole scope is collected up front —
         // `mod foo;` may follow the `use foo::Bar;` that depends on it.
+        //
+        // Every `mod` is keyed syntactically, including a cfg-disabled
+        // `#[cfg(FALSE)] mod foo` that the re-parse keeps but the build
+        // drops — unlike the inline-recursion guard below, which consults
+        // `live_module_spans` to avoid *linting* a dead module. That guard
+        // can't be mirrored here for an out-of-line `mod foo;` (it is
+        // `Unloaded`, with no body span to match), and is not worth it: a
+        // dead `mod foo` only misclassifies when a real dependency crate
+        // is also named `foo` and an active `use foo::Bar` resolves to
+        // that crate — a collision this syntactic approximation, which
+        // does no name resolution, does not attempt to detect.
         let local_modules: HashSet<String> = items
             .iter()
             .filter_map(|item| match &item.kind {
