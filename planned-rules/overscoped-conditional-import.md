@@ -14,43 +14,46 @@ need module-wide.
 ## Statement
 
 A `#[cfg(...)] use ...;` declared at **module scope** whose imported
-item is used **only inside a single function body** is scoped more
-broadly than it needs to be: the conditional import — and the
+item is used **only inside `#[cfg(...)]`-gated functions** is scoped
+more broadly than it needs to be: the conditional import — and the
 conditional-compilation surface it adds to the module header — could
-move into the one function that uses it.
+move into each function that uses it, riding along with that
+function's own `#[cfg]` instead of adding a separate gate at module
+scope.
 
 ```rust
-// Avoid — module-level conditional import used by one function only.
+// Avoid — module-level conditional import; the only user is itself
+// a #[cfg(unix)]-gated function.
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
+#[cfg(unix)]
 fn set_executable(p: &Path) -> io::Result<()> {
-    #[cfg(unix)]
-    {
-        let mut perms = fs::metadata(p)?.permissions();
-        perms.set_mode(0o755);   // the only use of PermissionsExt
-        fs::set_permissions(p, perms)?;
-    }
+    let mut perms = fs::metadata(p)?.permissions();
+    perms.set_mode(0o755);   // the only use of PermissionsExt
+    fs::set_permissions(p, perms)?;
     Ok(())
 }
 ```
 
 ```rust
-// Prefer — the conditional import travels with its single use.
+// Prefer — the conditional import travels inside the gated function,
+// which already carries the #[cfg(unix)] gate.
+#[cfg(unix)]
 fn set_executable(p: &Path) -> io::Result<()> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut perms = fs::metadata(p)?.permissions();
-        perms.set_mode(0o755);
-        fs::set_permissions(p, perms)?;
-    }
+    use std::os::unix::fs::PermissionsExt;
+    let mut perms = fs::metadata(p)?.permissions();
+    perms.set_mode(0o755);
+    fs::set_permissions(p, perms)?;
     Ok(())
 }
 ```
 
-Both compile identically under every feature combination. The choice
-is where the conditional import lives.
+When more than one `#[cfg]`-gated function uses the item, the
+preferred form puts a `use` inside **each** of them — a copy per
+gated function is preferred over one shared module-level conditional
+import. Both forms compile identically under every feature
+combination; the choice is where the conditional import lives.
 
 ## Why restrict this?
 
@@ -62,19 +65,19 @@ co-located:
 - **A module-level `#[cfg(...)] use` is conditional-compilation
   surface in the module header.** Every reader scanning the import
   block must now reason about which feature combinations the line is
-  live under, even though the conditionality is relevant to exactly
-  one function. Sinking the import into that function confines the
-  `#[cfg]` to the one place it matters.
+  live under, even though the conditionality is relevant only inside
+  the gated functions that use it. Sinking the import into each of
+  those functions confines the `#[cfg]` to the places it matters.
 
-- **Conditional code reads best when it is contiguous.** When the
-  sole use sits inside a `#[cfg(...)]` block (or a `#[cfg]`-gated
-  function), an import gated by the *same* predicate up at module
-  scope splits one conditional unit across two locations. The reader
-  has to match the module-header `#[cfg(unix)]` to the body
-  `#[cfg(unix)]` by eye to confirm they agree. Co-locating them makes
-  the pairing syntactic.
+- **It removes a duplicated gate.** When every use sits inside a
+  `#[cfg(...)]`-gated function, an import gated by the *same* predicate
+  up at module scope duplicates a gate the function already carries.
+  Sinking the import into the function lets it inherit that function's
+  `#[cfg]` and drops the separate module-level one, so the reader no
+  longer has to match a module-header `#[cfg(unix)]` to a function's
+  `#[cfg(unix)]` by eye to confirm they agree.
 
-- **A narrower conditional import is harder to strand.** When the one
+- **A narrower conditional import is harder to strand.** When a
   function that used the item is deleted or its body rewritten, a
   function-local conditional import disappears with it; a
   module-level one lingers until someone notices `unused_imports`
@@ -100,16 +103,19 @@ any `mod` body, inline or separate-file), flag it when **all** of:
    and
 3. it is a single named leaf (`use a::b::Leaf;` / `use a::b::Leaf as
    R;`), not a glob or a brace list — see *What's not in scope*; and
-4. every use of the imported binding in the module is confined to the
-   body of **one** function (a free `fn`, an inherent/trait-impl
-   method, or a closure inside one such body), and there is no use of
-   it anywhere outside a function body.
+4. every use of the imported binding in the module is inside the body
+   of a **`#[cfg(...)]`-gated function** (a free `fn`, an
+   inherent/trait-impl method, or a closure within one such body) —
+   no use sits in a function that lacks a `#[cfg]` gate of its own,
+   and no use sits anywhere outside a function body.
 
-When it fires, the autofix moves the `use` (with its `#[cfg]`
-attribute) to the top of that single function's body. The fix is
-`MachineApplicable` only when the single-function determination is
-certain; otherwise the lint emits help text and leaves the source
-untouched (see *Implementation notes*).
+When it fires, the autofix copies the `use` (with its `#[cfg]`
+attribute) to the top of **each** `#[cfg]`-gated function that uses
+the item and removes the module-level declaration. The fix is
+`MachineApplicable` only when the set of using functions — and that
+they are all gated — is determined with certainty; otherwise the lint
+emits help text and leaves the source untouched (see *Implementation
+notes*).
 
 ### What's *not* in scope
 
@@ -129,14 +135,32 @@ untouched (see *Implementation notes*).
   This is the "used by things outside an `fn`, such as types and
   traits" exemption, and it is exactly condition (4) failing.
 
-- **Items used in more than one function.** "Could be at `fn`-level"
-  means *one* `fn`. An item used across several functions would have
-  to be duplicated into each — strictly worse — so the rule does not
-  fire. (If those several functions all sit under one `#[cfg]`-gated
-  inline `mod`, the import already has a natural narrower home: that
-  submodule. Sinking into a submodule rather than a single function
-  is a possible future extension, noted but **not** in the initial
-  scope.)
+- **Items also used by a function without a `#[cfg]` gate.** If any
+  function that uses the item carries no `#[cfg(...)]` of its own, the
+  import supports unconditionally-compiled code and stays at module
+  scope. Such a function necessarily guards its own use with an inner
+  `#[cfg]`, but the function itself is unconditional, so there is no
+  gated function for the import to ride into. This is condition (4)
+  failing.
+
+  ```rust
+  #[cfg(unix)]
+  use std::os::unix::fs::PermissionsExt;
+
+  // Not flagged: `describe` is an un-gated function, so the import has
+  // no gated home to move into and stays at module scope.
+  fn describe(p: &Path) -> String {
+      #[cfg(unix)]
+      { return format!("{:o}", fs::metadata(p).unwrap().permissions().mode()); }
+      #[cfg(not(unix))]
+      { String::from("n/a") }
+  }
+  ```
+
+  Note this is *not* a "used in more than one function" exemption:
+  several `#[cfg]`-gated functions using the item still fire, with a
+  `use` copied into each (see *What to lint*). Only a use reached from
+  an un-gated function is exempt.
 
 - **Glob and brace-list imports** (`#[cfg(...)] use foo::*;`,
   `#[cfg(...)] use foo::{A, B};`). A glob has no single leaf to
@@ -198,13 +222,18 @@ against the compiler during implementation.
   rule does not need full name resolution to be safe; the worst a
   miss can do is fail to fire. Over the re-parsed module AST, locate
   every occurrence of the imported leaf identifier (and the `as`
-  alias, if any) and require that they all fall within one function
-  body. Treat anything that defeats a textual scan — the name
+  alias, if any) and require that they all fall within the bodies of
+  `#[cfg(...)]`-gated functions, with none in an un-gated function or
+  outside any function body. The re-parse preserves the `#[cfg]`
+  attributes on both the import and each candidate function, so the
+  gated-vs-un-gated classification is a direct AST check. Treat
+  anything that defeats a textual scan — the name
   appearing inside a macro invocation, behind another `use` of the
   same leaf, or shadowed by a local binding of the same identifier —
   as a reason **not** to fire (when unsure, don't flag), and
   downgrade the autofix from `MachineApplicable` to advisory in any
-  case where the single-function conclusion is not certain. A wrong
+  case where the set of using functions — or that they are all gated —
+  is not certain. A wrong
   *move* (as opposed to a wrong *warning*) can break compilation, so
   bias hard toward silence.
 
