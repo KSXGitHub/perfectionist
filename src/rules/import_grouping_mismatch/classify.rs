@@ -40,24 +40,23 @@ fn path_group(tree: &UseTree, config: &Config) -> Group {
     }
 }
 
-/// The rank a statement sorts by. The style decides the partition:
+/// The rank a statement sorts by. The style decides the partition;
+/// under both, a cfg-gated import is hoisted into a trailing block only
+/// when `cfg_block_handling` is [`CfgBlockHandling::Trailing`]:
 ///
 /// - `single_block` keeps every import in one block (rank `0`), so the
-///   run admits no blank lines — except that, with `cfg_trailing_block`
-///   set, a cfg-gated import takes a higher rank `1` and forms a single
-///   trailing block. Path origin is irrelevant here.
+///   run admits no blank lines — except a trailing cfg import, which
+///   takes a higher rank `1` and forms a single trailing block. Path
+///   origin is irrelevant here.
 /// - `multi_block` ranks by the path group's position in the configured
-///   order, except a cfg-gated import under [`CfgBlockHandling::Trailing`],
-///   which takes the always-last cfg rank regardless of its path.
+///   order, except a trailing cfg import, which takes the always-last
+///   cfg rank regardless of its path.
 pub(super) fn rank(tree: &UseTree, is_cfg_gated: bool, config: &Config) -> usize {
+    let cfg_trailing =
+        is_cfg_gated && matches!(config.cfg_block_handling, CfgBlockHandling::Trailing);
     match config.style {
-        Style::SingleBlock => usize::from(is_cfg_gated && config.cfg_trailing_block),
-        Style::MultiBlock => {
-            if is_cfg_gated && matches!(config.cfg_block_handling, CfgBlockHandling::Trailing) {
-                config.cfg_rank()
-            } else {
-                config.group_rank(path_group(tree, config))
-            }
-        }
+        Style::SingleBlock => usize::from(cfg_trailing),
+        Style::MultiBlock if cfg_trailing => config.cfg_rank(),
+        Style::MultiBlock => config.group_rank(path_group(tree, config)),
     }
 }

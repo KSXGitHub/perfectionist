@@ -17,7 +17,7 @@ LL + #[cfg(unix)]
 LL + use std::os::unix::fs::MetadataExt;
    |
 
-warning: imports must form one block, with `#[cfg]`-gated imports in a trailing block
+warning: blank lines split the imports; this project keeps them in a single block
   --> $DIR/fixture.rs:28:1
    |
 LL | / use std::io::stdin;

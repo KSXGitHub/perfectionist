@@ -24,10 +24,10 @@ declare_tool_lint! {
     /// `use` statements at the top of a module body. The rule is
     /// inactive by default; a project opts in and sets `style` to one of:
     /// - `single_block` — every `use` sits in one contiguous block with
-    ///   no blank lines between imports. Setting `cfg_trailing_block`
-    ///   carves the `#[cfg(...)]`-gated imports out into their own
-    ///   trailing block, one (or `blank_line_count`) blank line below the
-    ///   rest.
+    ///   no blank lines between imports, except that `#[cfg(...)]`-gated
+    ///   imports are carved into their own trailing block (one, or
+    ///   `blank_line_count`, blank line below the rest). Set
+    ///   `cfg_block_handling = "merge"` to keep them in the one block.
     /// - `multi_block` — imports are partitioned into ordered groups
     ///   separated by exactly `blank_line_count` blank lines. The
     ///   default group set, in order, is std (`std` / `core` / `alloc`),
@@ -103,7 +103,7 @@ declare_tool_lint! {
     /// use std::time::Duration;
     /// ```
     ///
-    /// #### Style: Single block, `cfg_trailing_block = true`
+    /// #### Style: Single block, `#[cfg]`-gated imports
     ///
     /// **Avoid:** (cfg-gated imports mixed into the one block)
     ///
@@ -214,6 +214,8 @@ struct Pending {
     anchor: Span,
     /// Span the diagnostic points at and rewrites — the whole run.
     span: Span,
+    /// Warning header, chosen per run by [`ImportGroupingMismatch::message`].
+    message: &'static str,
     replacement: String,
     applicability: Applicability,
 }
@@ -242,6 +244,7 @@ impl<'tcx> LateLintPass<'tcx> for ImportGroupingMismatch {
         for (pending, hir_id) in violations.into_iter().zip(hir_ids) {
             let Pending {
                 span,
+                message,
                 replacement,
                 applicability,
                 ..
@@ -251,7 +254,7 @@ impl<'tcx> LateLintPass<'tcx> for ImportGroupingMismatch {
                 IMPORT_GROUPING_MISMATCH,
                 hir_id,
                 span,
-                self.message(),
+                message,
                 |diagnostic| {
                     diagnostic.span_suggestion(
                         span,
@@ -418,6 +421,7 @@ impl ImportGroupingMismatch {
         violations.push(Pending {
             anchor: first.item.span,
             span: replace_span,
+            message: self.message(run),
             replacement,
             applicability,
         });
@@ -463,15 +467,20 @@ impl ImportGroupingMismatch {
         })
     }
 
-    fn message(&self) -> &'static str {
+    /// The warning header for a violating `run`. Under `single_block` the
+    /// wording depends on the actual violation: a run that carries a
+    /// hoisted cfg-gated import (rank above the single block's `0`) is
+    /// about the trailing cfg block, while a run with none is just blank
+    /// lines splitting one block — the same violation `merge` reports.
+    fn message(&self, run: &[UseStmt<'_>]) -> &'static str {
         match self.config.style {
-            Style::SingleBlock if self.config.cfg_trailing_block => {
+            Style::MultiBlock => "imports are not partitioned into ordered groups",
+            Style::SingleBlock if run.iter().any(|stmt| stmt.rank > 0) => {
                 "imports must form one block, with `#[cfg]`-gated imports in a trailing block"
             }
             Style::SingleBlock => {
                 "blank lines split the imports; this project keeps them in a single block"
             }
-            Style::MultiBlock => "imports are not partitioned into ordered groups",
         }
     }
 }

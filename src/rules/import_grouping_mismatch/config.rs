@@ -35,12 +35,15 @@ pub(super) enum Group {
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum CfgBlockHandling {
-    /// Treat every `#[cfg(...)]`-gated import as a fourth,
-    /// always-last group, regardless of the imported path.
+    /// Give every `#[cfg(...)]`-gated import its own trailing block,
+    /// regardless of the imported path: an always-last group under
+    /// `multi_block`, a trailing block below the single block under
+    /// `single_block`.
     #[default]
     Trailing,
-    /// Slot a cfg-gated import back into its natural group based on the
-    /// imported path's first segment.
+    /// Keep a cfg-gated import with the rest: slotted into its natural
+    /// path group under `multi_block`, or left in the single block under
+    /// `single_block`.
     Merge,
 }
 
@@ -73,24 +76,18 @@ pub(super) struct Config {
     /// re-export roots treated as part of the workspace.
     #[serde(default = "default_internal_prefixes")]
     pub(super) internal_prefixes: Vec<String>,
-    /// How `#[cfg(...)]`-gated imports are grouped under `multi_block`.
-    /// Defaults to `trailing`. Ignored under `single_block`, which keeps
-    /// every import in one block unless `cfg_trailing_block` carves out a
-    /// trailing cfg block.
+    /// How `#[cfg(...)]`-gated imports are grouped. Defaults to
+    /// `trailing`: a cfg-gated import forms its own trailing block under
+    /// both styles. Set `merge` to keep cfg-gated imports with the rest —
+    /// in their natural path group under `multi_block`, or in the single
+    /// block under `single_block`.
     #[serde(default)]
     pub(super) cfg_block_handling: CfgBlockHandling,
-    /// Under `single_block`, whether `#[cfg(...)]`-gated imports are
-    /// separated into their own trailing block (`blank_line_count` blank
-    /// lines below the main block). Defaults to `false`, keeping every
-    /// import — cfg-gated or not — in one contiguous block. Ignored under
-    /// `multi_block`, which routes cfg grouping through
-    /// `cfg_block_handling`.
-    #[serde(default)]
-    pub(super) cfg_trailing_block: bool,
     /// Exact number of blank lines separating adjacent groups (strict
     /// equality). Defaults to `1`. Under `single_block` it is used only
-    /// when `cfg_trailing_block` separates the trailing cfg block;
-    /// otherwise `single_block` admits no blank lines at all.
+    /// to separate the trailing cfg block (`cfg_block_handling =
+    /// "trailing"`); a `merge`d `single_block` admits no blank lines at
+    /// all.
     #[serde(default = "default_blank_line_count")]
     pub(super) blank_line_count: usize,
 }
@@ -163,8 +160,9 @@ mod tests {
 
     #[test]
     fn missing_style_is_an_error() {
-        // `style` is required (bare `Style`, no `serde(default)`): a table
-        // omitting it errors rather than defaulting, even with another knob set.
+        // `style` is required (bare `Style`, no `serde(default)`), so a
+        // table that omits it fails to deserialize rather than defaulting
+        // to a layout — even when another knob is present.
         assert!(toml::from_str::<Config>("").is_err());
         assert!(toml::from_str::<Config>("blank_line_count = 2").is_err());
     }
@@ -178,7 +176,6 @@ mod tests {
         assert_eq!(config.std_crates, default_std_crates());
         assert_eq!(config.internal_prefixes, default_internal_prefixes());
         assert_eq!(config.cfg_block_handling, CfgBlockHandling::Trailing);
-        assert!(!config.cfg_trailing_block);
         assert_eq!(config.blank_line_count, 1);
     }
 
