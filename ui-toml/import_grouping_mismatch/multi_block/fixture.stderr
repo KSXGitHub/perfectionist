@@ -1,12 +1,76 @@
-error[E0464]: multiple candidates for `rmeta` dependency `serde` found
-  --> $DIR/fixture.rs:23:1
+warning: imports are not partitioned into ordered groups
+  --> $DIR/fixture.rs:32:1
    |
-LL | extern crate serde;
-   | ^^^^^^^^^^^^^^^^^^^
+LL | / use clap::Parser;
+LL | | use std::time::Duration;
+LL | | use crate::config::Args;
+   | |________________________^
    |
-   = note: candidate #1: /root/.rustup/toolchains/nightly-2026-05-28-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libserde-2a8aa6d5e3c7a342.rmeta
-   = note: candidate #2: $TEST_BUILD_DIR/fixture.stage-id.aux/libserde.rmeta
+   = note: `#[warn(perfectionist::import_grouping_mismatch)]` on by default
+help: regroup the imports
+   |
+LL + use std::time::Duration;
+LL + 
+LL + use crate::config::Args;
+LL + 
+LL + use clap::Parser;
+   |
 
-error: aborting due to 1 previous error
+warning: imports are not partitioned into ordered groups
+  --> $DIR/fixture.rs:40:1
+   |
+LL | / use clap::ValueEnum;
+LL | |
+LL | | use std::io::stdin;
+   | |___________________^
+   |
+help: regroup the imports
+   |
+LL + use std::io::stdin;
+LL + 
+LL + use clap::ValueEnum;
+   |
 
-For more information about this error, try `rustc --explain E0464`.
+warning: imports are not partitioned into ordered groups
+  --> $DIR/fixture.rs:47:1
+   |
+LL | / use std::io::Read;
+LL | |
+LL | | use std::time::Instant;
+   | |_______________________^
+   |
+help: regroup the imports
+   |
+LL + use std::io::Read;
+LL + use std::time::Instant;
+   |
+
+warning: imports are not partitioned into ordered groups
+  --> $DIR/fixture.rs:54:1
+   |
+LL | / use std::fmt::Write;
+LL | | use crate::config::Bytes;
+   | |_________________________^
+   |
+help: regroup the imports
+   |
+   | +
+
+warning: imports are not partitioned into ordered groups
+  --> $DIR/fixture.rs:61:1
+   |
+LL | / #[cfg(unix)]
+LL | | use std::collections::BTreeMap;
+LL | | use std::mem::swap;
+   | |___________________^
+   |
+help: regroup the imports
+   |
+LL + use std::mem::swap;
+LL + 
+LL + #[cfg(unix)]
+LL + use std::collections::BTreeMap;
+   |
+
+warning: 5 warnings emitted
+
