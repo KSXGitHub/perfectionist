@@ -78,29 +78,34 @@ the "this import is here for a reason" signal was indeed spurious.
 
 ## What to lint
 
-For every `use` item declared **inside a function body** (a free
-`fn`, an inherent/trait-impl method, or a nested block within one),
-flag it when **all** of:
+For every named leaf imported by a `use` item declared **inside a
+function body** (a free `fn`, an inherent/trait-impl method, or a
+nested block within one), flag the leaf when **all** of:
 
-1. it carries **no** `#[cfg(...)]` gate (a conditional function-local
-   import is the *desired* state under
+1. its `use` item carries **no** `#[cfg(...)]` gate (a conditional
+   function-local import is the *desired* state under
    [`overscoped-conditional-import`](./overscoped-conditional-import.md),
    never a violation here); and
-2. it is a single named leaf (`use a::b::Leaf;` / `use a::b::Leaf as
-   R;`), not a glob or a brace list — see *What's not in scope*; and
+2. it is a **named leaf** (`Leaf` / `Leaf as R`), not a glob (`*`) —
+   see *What's not in scope*. A brace-list import (`use a::b::{A, B};`)
+   is **not** exempt: each of its leaves is evaluated independently
+   against the conditions here, exactly as if it were written as a
+   separate single import; and
 3. hoisting it to the **enclosing module's** scope would **not**
    collide: the module scope (and the scopes of sibling functions
    whose identical imports would merge into the same hoisted line)
    does not already bind that name to a different item, and there is
    no other function-local `use` of the same leaf name resolving to a
    *different* item anywhere in the module; and
-4. the import's resolved path is **not** on the collision-prone
+4. the leaf's resolved path is **not** on the collision-prone
    keep-local list (see *Configuration*).
 
-When it fires, the autofix removes the function-local `use` and adds
-the equivalent import at module scope (merging identical hoists from
-sibling functions into one line, and coordinating with the import
-granularity / grouping rules for reflow). The fix is
+When it fires, the autofix removes the hoistable leaf from the
+function-local `use` and adds the equivalent import at module scope
+(merging identical hoists from sibling functions into one line, and
+coordinating with the import granularity / grouping rules for reflow).
+For a brace list, only the qualifying leaves are lifted out; any leaf
+that fails a condition stays behind, splitting the list. The fix is
 `MachineApplicable` only when the no-collision determination is
 certain.
 
@@ -139,10 +144,34 @@ certain.
   `fmt::Result` vs. `io::Result` pair. The list is tunable via the
   `extra` / `ignore` knobs (see *Configuration*).
 
-- **Glob and brace-list imports** (`use foo::*;`,
-  `use foo::{A, B};`). A glob changes name resolution wholesale when
-  hoisted; a brace list bundles several leaves. Out of scope, matching
-  the single-leaf restriction the sibling import rules use.
+- **Glob imports** (`use foo::*;`). A glob has no single leaf to
+  re-point and changes name resolution wholesale when hoisted, so it
+  is out of scope.
+
+  **Brace-list imports** (`use foo::{A, B};`) are **not** exempt: a
+  brace list is just shorthand for several single imports sharing a
+  prefix, and each leaf is independently hoistable. The rule evaluates
+  each leaf on its own and lifts out the hoistable ones, splitting the
+  list when only some qualify:
+
+  ```rust
+  // Avoid — both leaves are hoistable; the brace bundling does not
+  // make them function-local for any reason.
+  fn parse(s: &str) -> Result<Config> {
+      use serde_json::{from_str, Value};
+      let v: Value = from_str(s)?;
+      Config::from_value(v)
+  }
+  ```
+  ```rust
+  // Prefer
+  use serde_json::{from_str, Value};
+
+  fn parse(s: &str) -> Result<Config> {
+      let v: Value = from_str(s)?;
+      Config::from_value(v)
+  }
+  ```
 
 - **Imports already at module scope.** Those are the desired end
   state.
@@ -209,8 +238,9 @@ against the compiler during implementation.
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md#reaching-every-module-source-layout-rules):
   run as a **`LateLintPass`** and re-parse the crate's module files
   via `src/module_reparse.rs` (guarding inline-module descent with
-  `live_module_spans`) to enumerate candidate function-local imports
-  and their `cfg`/glob/brace status. Whether hoisting *collides*
+  `live_module_spans`) to enumerate candidate function-local imports,
+  decomposing each brace list into its leaves and skipping globs.
+  Whether hoisting *collides*
   (condition 3), on the other hand, is a *name-resolution* fact
   available only with `TyCtxt`. So park each candidate as a
   `PendingViolation` (the `queue` submodule pattern from
