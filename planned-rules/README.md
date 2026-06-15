@@ -42,12 +42,13 @@ pattern that several rules call out by reference — live in
   by default.
 - [`overscoped-conditional-import.md`](./overscoped-conditional-import.md)
   — flag a module-level `#[cfg(...)] use ...;` whose item is used only
-  inside `#[cfg]`-gated functions, and sink a copy into each of them so
-  the conditional-compilation surface stays minimal and co-located.
-  Exempts `pub use` re-exports, items used outside any `fn` (types,
-  traits, signatures), and items also used by a non-`#[cfg]` function.
-  Dual of `underscoped-unconditional-import`; no stock lint covers it.
-  Inactive by default.
+  inside function bodies, and sink a copy into the narrowest `#[cfg]`-
+  gated scope enclosing each use (a gated function, or a gated branch of
+  an un-gated function), where it sheds its own `#[cfg]`. Keeps the
+  conditional-compilation surface minimal and co-located. Exempts
+  `pub use` re-exports and items used outside any `fn` (types, traits,
+  signatures). Dual of `underscoped-unconditional-import`; no stock lint
+  covers it. Inactive by default.
 - [`underscoped-unconditional-import.md`](./underscoped-unconditional-import.md)
   — flag a function-local plain `use ...;` (no `#[cfg]`) that could sit
   at module scope without colliding, and hoist it there. Exempts genuine

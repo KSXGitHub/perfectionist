@@ -65,9 +65,9 @@ is for a single, predictable home for unconditional imports:
   does not exist.
 
 The conditional case points the other way — a `#[cfg(...)]` import
-used only by `#[cfg]`-gated functions is *better* function-local (one
-copy per gated function), so that the conditional-compilation surface
-stays minimal and co-located. That
+used only inside function bodies is *better* sunk into the gated scope
+that uses it (a copy per gated function or branch), so that the
+conditional-compilation surface stays minimal and co-located. That
 direction is
 [`overscoped-conditional-import`](./overscoped-conditional-import.md).
 The two rules never disagree on a single `use`: this one fires only
