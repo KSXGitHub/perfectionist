@@ -181,9 +181,9 @@ certain.
 ```toml
 # dylint.toml
 #
-# Inactive by default. Enable in `[perfectionist].enable`. The rule has
-# a single direction (hoist a collision-free unconditional import to
-# module scope), so there is no `style` knob.
+# Active by default. Disable globally via `[perfectionist].disable`.
+# The rule has a single direction (hoist a collision-free unconditional
+# import to module scope), so there is no `style` knob.
 [perfectionist::underscoped_unconditional_import]
 
 # Paths kept function-local even when no actual collision exists in
@@ -216,8 +216,8 @@ ignore_keep_local = []
 
 The collision-prone list is the only knob: actual collisions are
 detected structurally (condition (3)) and need no configuration. A
-project that wants the rule off globally leaves it out of
-`[perfectionist].enable`; a one-off intentional function-local import
+project that wants the rule off globally lists it under
+`[perfectionist].disable`; a one-off intentional function-local import
 is suppressed with
 `#[allow(perfectionist::underscoped_unconditional_import)]`.
 
@@ -331,11 +331,15 @@ names in scope. This rule fills that gap.
 
 ## Default state
 
-Inactive by default. "Unconditional imports belong at module scope,
-hoist the collision-free ones" is an opinionated stance — a
-function-local `use` is frequently a deliberate choice, and flagging
-all hoistable ones project-wide is presumptuous — so the rule ships
-no baseline and is opted into via `[perfectionist].enable`, alongside
-its dual [`overscoped-conditional-import`](./overscoped-conditional-import.md).
-It expresses a single fixed direction rather than a choice, so it has
-no mandatory `style` value.
+Active by default, alongside its dual
+[`overscoped-conditional-import`](./overscoped-conditional-import.md).
+"Unconditional imports belong at module scope" has one correct
+direction, and the rule only fires on imports it can prove are
+collision-free to hoist (genuine collisions and the keep-local list
+are exempt), so it ships a baseline policy and installs unconditionally
+during a `cargo dylint` run. A project that prefers function-local
+imports disables it globally via `[perfectionist].disable`; a one-off
+deliberate function-local `use` is suppressed per site with
+`#[allow(perfectionist::underscoped_unconditional_import)]`. The rule
+expresses a single fixed direction rather than a choice, so it has no
+`style` value.

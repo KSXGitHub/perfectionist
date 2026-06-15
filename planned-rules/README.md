@@ -49,15 +49,15 @@ pattern that several rules call out by reference — live in
   are handled per leaf (each leaf sunk to where it is used, splitting
   the list); globs are exempt. Also exempts `pub use` re-exports and
   items used outside any `fn` (types, traits, signatures). Dual of
-  `underscoped-unconditional-import`; no stock lint covers it. Inactive
-  by default.
+  `underscoped-unconditional-import`; no stock lint covers it. Active by
+  default.
 - [`underscoped-unconditional-import.md`](./underscoped-unconditional-import.md)
   — flag a function-local plain `use ...;` (no `#[cfg]`) that could sit
   at module scope without colliding, and hoist it there. Exempts genuine
   collisions and a configurable default list of well-known
   collision-prone paths (`core::fmt::Write` vs. `std::io::Write`, …) via
   the `extra` / `ignore` paradigm. Dual of
-  `overscoped-conditional-import`; no stock lint covers it. Inactive by
+  `overscoped-conditional-import`; no stock lint covers it. Active by
   default.
 
 ### Naming

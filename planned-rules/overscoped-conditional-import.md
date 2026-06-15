@@ -229,9 +229,9 @@ untouched (see *Implementation notes*).
 ```toml
 # dylint.toml
 #
-# Inactive by default. Enable in `[perfectionist].enable`. The rule has
-# a single direction (sink a conditional import into the gated scope
-# that uses it), so there is no `style` knob.
+# Active by default. Disable globally via `[perfectionist].disable`.
+# The rule has a single direction (sink a conditional import into the
+# gated scope that uses it), so there is no `style` knob.
 [perfectionist::overscoped_conditional_import]
 # (no configuration)
 ```
@@ -239,8 +239,8 @@ untouched (see *Implementation notes*).
 The rule has one correct direction and no tunable threshold, so it
 ships no knobs. The one legitimate counter-pattern — a project that
 deliberately keeps all conditional imports at the module header for a
-uniform import block — turns the rule off globally by leaving it out
-of `[perfectionist].enable`, or suppresses an individual import with
+uniform import block — turns the rule off globally by listing it under
+`[perfectionist].disable`, or suppresses an individual import with
 `#[allow(perfectionist::overscoped_conditional_import)]`.
 
 ## Implementation notes
@@ -354,12 +354,13 @@ item is used or to its `#[cfg]` gate. This rule fills that gap.
 
 ## Default state
 
-Inactive by default. "Conditional imports belong at the narrowest
-scope" is a deliberate, non-mainstream project stance — many projects
-prefer a single uniform import block at every module header — so the
-rule ships no baseline and is opted into via `[perfectionist].enable`,
-matching the project-direction rules
-[`path-qualification-mismatch`](./path-qualification-mismatch.md) and
-[`core-instead-of-std`](./core-instead-of-std.md). Unlike those it
+Active by default. The rule has one correct direction — a conditional
+import whose every use is confined to gated scopes belongs in those
+scopes — so it ships a baseline policy and installs unconditionally
+during a `cargo dylint` run. A project that prefers a uniform
+module-header import block disables it globally via
+`[perfectionist].disable`; an individual deliberate module-level
+conditional import is suppressed per site with
+`#[allow(perfectionist::overscoped_conditional_import)]`. The rule
 expresses a single fixed direction rather than a choice, so it has no
-mandatory `style` value.
+`style` value.
