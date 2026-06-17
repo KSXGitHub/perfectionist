@@ -164,14 +164,16 @@ pattern that several rules call out by reference — live in
   expansion. Curly-brace invocations are out of scope.
 
 ### Lazy initialization
-- [`manual-lazy-lock.md`](./manual-lazy-lock.md) — flag a `static`
-  `OnceLock<T>` whose entire usage is a fixed, non-capturing
-  `get_or_init` (i.e. a hand-rolled `LazyLock`) and suggest
-  `std::sync::LazyLock`. Stays silent on the cases `LazyLock` cannot
-  express: values `set` from outside, initializers that capture runtime
-  data, fallible `get_or_try_init`, and code that inspects the
-  not-yet-initialised state. Active by default (requires the consumer's
-  MSRV to permit `LazyLock`, i.e. Rust 1.80+).
+- [`manual-lazy-init.md`](./manual-lazy-init.md) — flag a `Once*` cell
+  whose entire usage is a fixed, non-capturing `get_or_init` (i.e. a
+  hand-rolled `Lazy*`) and suggest the matching std type. Covers both
+  pairs: `std::sync::OnceLock` → `LazyLock` (in a `static`) and
+  `std::cell::OnceCell` → `LazyCell` (in a `thread_local!`). Stays
+  silent on the cases `Lazy*` cannot express: values `set` from
+  outside, initializers that capture runtime data, fallible
+  `get_or_try_init`, and code that inspects the not-yet-initialised
+  state. Active by default (requires the consumer's MSRV to permit
+  `Lazy*`, i.e. Rust 1.80+).
 
 ### Serde
 - [`serde-source-types.md`](./serde-source-types.md) — forbid
