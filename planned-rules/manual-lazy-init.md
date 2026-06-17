@@ -370,20 +370,22 @@ linear structural check into a whole-program analysis; neither is
 admitted.
 
 **Where this boundary must live in the implementation.** The cost
-analysis and the two restrictions above are not merely planning
-rationale — they are a standing answer to a recurring review request, so
-they belong **in the lint's own rustdoc** (the doc comment on the
-`declare_tool_lint!` block, and the rule module's docs), not only here.
-This planning file is deleted once the rule ships (per
-[`CLAUDE.md`](../CLAUDE.md), "When the implementation is complete"), so
-leaving the boundary only in `planned-rules/` would discard it exactly
-when it starts mattering. Carry it across verbatim in intent: a future
-contributor or AI review proposing "couldn't the equality check also
-handle semantically-equivalent closures / partial agreement / helper
-inlining?" should find the O(N) bound and its two load-bearing
-restrictions next to the code they are about to edit. The implementer's
-task is to write that section into the rustdoc; this file's task is only
-to require it.
+analysis and the two restrictions above are internal design rationale
+for the next maintainer, not user-facing lint documentation — so they
+belong as ordinary code comments (`//`) at the equality-check site,
+**not** in the lint's rustdoc. The `declare_tool_lint!` doc comment and
+the rule module's docs are rendered into the public catalogue by
+`tools/gen-docs/` and describe what the lint does for a *consumer*; an
+O(N) bound and the reasons the check refuses semantic-equivalence,
+partitioning, and inlining would be noise there. It must still survive
+in the code somewhere, though: this planning file is deleted once the
+rule ships (per [`CLAUDE.md`](../CLAUDE.md), "When the implementation is
+complete"), so a future contributor or AI review proposing "couldn't the
+equality check also handle semantically-equivalent closures / partial
+agreement / helper inlining?" should find the bound and its two
+load-bearing restrictions in a comment next to the code they are about
+to edit. The implementer's task is to leave that comment; this file's
+task is only to require it.
 
 ## Default state
 
