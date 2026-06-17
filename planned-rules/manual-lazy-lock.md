@@ -298,6 +298,22 @@ already disqualified outright, since a capturing closure cannot be a
 `static LazyLock` initializer at all). Each turns a linear structural
 check into a whole-program analysis; neither is admitted.
 
+**Where this boundary must live in the implementation.** The cost
+analysis and the two restrictions above are not merely planning
+rationale — they are a standing answer to a recurring review request, so
+they belong **in the lint's own rustdoc** (the doc comment on the
+`declare_tool_lint!` block, and the rule module's docs), not only here.
+This planning file is deleted once the rule ships (per
+[`CLAUDE.md`](../CLAUDE.md), "When the implementation is complete"), so
+leaving the boundary only in `planned-rules/` would discard it exactly
+when it starts mattering. Carry it across verbatim in intent: a future
+contributor or AI review proposing "couldn't the equality check also
+handle semantically-equivalent closures / partial agreement / helper
+inlining?" should find the O(N) bound and its two load-bearing
+restrictions next to the code they are about to edit. The implementer's
+task is to write that section into the rustdoc; this file's task is only
+to require it.
+
 ## Default state
 
 Active by default. The eligible shape is unambiguous and the
