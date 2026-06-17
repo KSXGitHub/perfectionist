@@ -163,6 +163,16 @@ pattern that several rules call out by reference — live in
   counts each `$name:expr` capture's `$name` references in the
   expansion. Curly-brace invocations are out of scope.
 
+### Lazy initialization
+- [`manual-lazy-lock.md`](./manual-lazy-lock.md) — flag a `static`
+  `OnceLock<T>` whose entire usage is a fixed, non-capturing
+  `get_or_init` (i.e. a hand-rolled `LazyLock`) and suggest
+  `std::sync::LazyLock`. Stays silent on the cases `LazyLock` cannot
+  express: values `set` from outside, initializers that capture runtime
+  data, fallible `get_or_try_init`, and code that inspects the
+  not-yet-initialised state. Active by default (requires the consumer's
+  MSRV to permit `LazyLock`, i.e. Rust 1.80+).
+
 ### Serde
 - [`serde-source-types.md`](./serde-source-types.md) — forbid
   `#[serde(from = "&'de str")]` / `try_from = "&'de str"`; advise
