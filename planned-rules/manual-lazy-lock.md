@@ -181,9 +181,11 @@ scan.
    - every recorded initializer is **non-capturing**
      (`cx.typeck_results()` / closure upvar list is empty — referencing
      other items is fine, capturing a local or `self` is not); and
-   - all initializers are syntactically equal (so one closure can be
-     hoisted). The common case is a single `get_or_init`, for which this
-     is trivially satisfied.
+   - all initializers are **structurally equal** — identical resolved
+     HIR modulo spans, so one closure can be hoisted (see
+     "[Equality of initializers](#equality-of-initializers-cost-and-the-scope-boundary)"
+     for what "equal" means and why it stops there). The common case is
+     a single `get_or_init`, for which this is trivially satisfied.
 4. **Emit** on the `static`'s declaration span, with the rewrite below.
 
 Guard against proc-macro-synthesised nodes per
@@ -236,6 +238,65 @@ A conservative starting implementation:
   one the PR converted most often, and it sidesteps the
   initializers-agree check entirely.
 - Defer multi-call-site cells and `const`-promotion to later passes.
+
+### Equality of initializers: cost and the scope boundary
+
+Multiple `get_or_init` sites are eligible when their initializers all
+agree (see "What makes a `OnceLock` replaceable", point 4). Supporting
+that does **not** raise the rule's complexity class, *and the reason it
+doesn't is itself a design constraint that must be held*. Let `N` be the
+crate's HIR size and `E` its expression count (`E ≤ N`).
+
+- **Collecting uses is O(E), and is already paid.** Even the
+  single-`get_or_init` MVP must visit every reference to the `static`
+  to prove no *other* use (`set`, `get`, …) disqualifies it. Additional
+  call sites add no new order of work here.
+- **Comparing initializers is O(N) total.** Equality is transitive, so
+  the `k` closures of one cell are compared **first-against-rest**
+  (`c₂…c_k` vs `c₁`), never all-pairs. Each comparison is a lock-step
+  structural walk that short-circuits on the first difference, bounded
+  by the smaller tree. Every initializer node belongs to exactly one
+  cell's use-set, so the sum over all cells is O(N). (Equivalently:
+  structural-hash each closure in one O(size) fold and compare the `k`
+  hashes in O(k).) **Net: O(N) time, O(E) memory — the same order as
+  the base rule.**
+
+That linear bound holds **only** because of two restrictions. They are
+the scope boundary: the rule does not cross them, and a request to cross
+either one is a request to change the complexity class, not a tweak.
+Recorded here so the answer is standing the next time a human or an AI
+review proposes "couldn't it also…":
+
+1. **Structural equality, never semantic equivalence.** Two closures are
+   "the same" iff their *resolved* HIR is identical modulo spans. HIR
+   already carries no whitespace, indentation, or non-doc comments, so
+   the "identical except formatting" cases this is meant to catch fall
+   out for free. Comparison is over resolved references (`Res` /
+   `DefId`), not written path segments, so `|| Registry::load()`
+   resolving to two *different* `Registry` types at two sites is
+   correctly treated as **unequal**. The rule does **not** ask whether
+   two differently-written closures *compute the same value*: general
+   program equivalence is undecidable (it reduces to the halting
+   problem), and every bounded approximation worth having drags a solver
+   or an interprocedural pass into a lint that must stay linear.
+   `|| foo()` and `|| { let x = foo(); x }` are deliberately **not**
+   merged.
+2. **All sites must agree; no partitioning.** Eligibility is
+   all-or-nothing — if the `k` initializers are not unanimous, the cell
+   is skipped. The rule does **not** find the largest agreeing subset,
+   cluster closures into equivalence classes, or suggest splitting one
+   `OnceLock` into several `LazyLock`s. Doing so reintroduces the O(k²)
+   all-pairs comparison that first-against-rest exists to avoid, for a
+   payoff — a cell deliberately driven by genuinely different
+   initializers — that almost never reflects real code.
+
+Two adjacent extensions are out of scope for the same cost reason, noted
+so they need not be re-litigated: **interprocedural reasoning** (closures
+calling different-but-equivalent helpers — requires inlining) and
+**capturing-closure unification** (closures capturing different locals —
+already disqualified outright, since a capturing closure cannot be a
+`static LazyLock` initializer at all). Each turns a linear structural
+check into a whole-program analysis; neither is admitted.
 
 ## Default state
 
