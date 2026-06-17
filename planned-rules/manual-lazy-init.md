@@ -371,21 +371,23 @@ admitted.
 
 **Where this boundary must live in the implementation.** The cost
 analysis and the two restrictions above are internal design rationale
-for the next maintainer, not user-facing lint documentation — so they
-belong as ordinary code comments (`//`) at the equality-check site,
-**not** in the lint's rustdoc. The `declare_tool_lint!` doc comment and
-the rule module's docs are rendered into the public catalogue by
-`tools/gen-docs/` and describe what the lint does for a *consumer*; an
-O(N) bound and the reasons the check refuses semantic-equivalence,
-partitioning, and inlining would be noise there. It must still survive
-in the code somewhere, though: this planning file is deleted once the
-rule ships (per [`CLAUDE.md`](../CLAUDE.md), "When the implementation is
-complete"), so a future contributor or AI review proposing "couldn't the
-equality check also handle semantically-equivalent closures / partial
-agreement / helper inlining?" should find the bound and its two
-load-bearing restrictions in a comment next to the code they are about
-to edit. The implementer's task is to leave that comment; this file's
-task is only to require it.
+for the next maintainer, so they must live with the implementation in
+any *internal* form — an ordinary `//` comment at the equality-check
+site, or rustdoc on a private helper (the comparison function, the
+use-collection struct, the rule module). The only placement to avoid is
+the **user-facing lint description**: the `declare_tool_lint!` doc
+comment is rendered into the public catalogue by `tools/gen-docs/` and
+describes what the lint does for a *consumer*, where an O(N) bound and
+the reasons the check refuses semantic-equivalence, partitioning, and
+inlining would be noise. It must still survive in the code somewhere,
+though: this planning file is deleted once the rule ships (per
+[`CLAUDE.md`](../CLAUDE.md), "When the implementation is complete"), so a
+future contributor or AI review proposing "couldn't the equality check
+also handle semantically-equivalent closures / partial agreement /
+helper inlining?" should find the bound and its two load-bearing
+restrictions next to the code they are about to edit. The implementer
+chooses the form; this file's task is only to require that it stays
+internal and stays present.
 
 ## Default state
 
