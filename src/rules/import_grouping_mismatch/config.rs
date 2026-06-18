@@ -35,12 +35,15 @@ pub(super) enum Group {
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum CfgBlockHandling {
-    /// Treat every `#[cfg(...)]`-gated import as a fourth,
-    /// always-last group, regardless of the imported path.
+    /// Give every `#[cfg(...)]`-gated import its own trailing block,
+    /// regardless of the imported path: an always-last group under
+    /// `multi_block`, a trailing block below the single block under
+    /// `single_block`.
     #[default]
     Trailing,
-    /// Slot a cfg-gated import back into its natural group based on the
-    /// imported path's first segment.
+    /// Keep a cfg-gated import with the rest: slotted into its natural
+    /// path group under `multi_block`, or left in the single block under
+    /// `single_block`.
     Merge,
 }
 
@@ -74,11 +77,17 @@ pub(super) struct Config {
     #[serde(default = "default_internal_prefixes")]
     pub(super) internal_prefixes: Vec<String>,
     /// How `#[cfg(...)]`-gated imports are grouped. Defaults to
-    /// `trailing`.
+    /// `trailing`: a cfg-gated import forms its own trailing block under
+    /// both styles. Set `merge` to keep cfg-gated imports with the rest —
+    /// in their natural path group under `multi_block`, or in the single
+    /// block under `single_block`.
     #[serde(default)]
     pub(super) cfg_block_handling: CfgBlockHandling,
     /// Exact number of blank lines separating adjacent groups (strict
-    /// equality). Defaults to `1`. Ignored under `single_block`.
+    /// equality). Defaults to `1`. Under `single_block` it is used only
+    /// to separate the trailing cfg block (`cfg_block_handling =
+    /// "trailing"`); a `merge`d `single_block` admits no blank lines at
+    /// all.
     #[serde(default = "default_blank_line_count")]
     pub(super) blank_line_count: usize,
 }
