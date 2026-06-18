@@ -24,7 +24,10 @@ declare_tool_lint! {
     /// `use` statements at the top of a module body. The rule is
     /// inactive by default; a project opts in and sets `style` to one of:
     /// - `single_block` — every `use` sits in one contiguous block with
-    ///   no blank lines between imports.
+    ///   no blank lines between imports, except that `#[cfg(...)]`-gated
+    ///   imports are carved into their own trailing block (one, or
+    ///   `blank_line_count`, blank line below the rest). Set
+    ///   `cfg_block_handling = "merge"` to keep them in the one block.
     /// - `multi_block` — imports are partitioned into ordered groups
     ///   separated by exactly `blank_line_count` blank lines. The
     ///   default group set, in order, is std (`std` / `core` / `alloc`),
@@ -102,6 +105,27 @@ declare_tool_lint! {
     /// use clap::Parser;
     /// use crate::args::Args;
     /// use std::time::Duration;
+    /// ```
+    ///
+    /// #### Style: Single block, `#[cfg]`-gated imports
+    ///
+    /// **Avoid:** (cfg-gated imports mixed into the one block)
+    ///
+    /// ```rust,ignore
+    /// use std::fs::Metadata;
+    /// #[cfg(unix)]
+    /// use std::os::unix::fs::MetadataExt;
+    /// use super::size::Bytes;
+    /// ```
+    ///
+    /// **Prefer:** (cfg-gated imports kept in a trailing block)
+    ///
+    /// ```rust,ignore
+    /// use std::fs::Metadata;
+    /// use super::size::Bytes;
+    ///
+    /// #[cfg(unix)]
+    /// use std::os::unix::fs::MetadataExt;
     /// ```
     pub perfectionist::IMPORT_GROUPING_MISMATCH,
     Warn,
@@ -194,6 +218,8 @@ struct Pending {
     anchor: Span,
     /// Span the diagnostic points at and rewrites — the whole run.
     span: Span,
+    /// Warning header, chosen per run by [`ImportGroupingMismatch::message`].
+    message: &'static str,
     replacement: String,
     applicability: Applicability,
 }
@@ -222,6 +248,7 @@ impl<'tcx> LateLintPass<'tcx> for ImportGroupingMismatch {
         for (pending, hir_id) in violations.into_iter().zip(hir_ids) {
             let Pending {
                 span,
+                message,
                 replacement,
                 applicability,
                 ..
@@ -231,7 +258,7 @@ impl<'tcx> LateLintPass<'tcx> for ImportGroupingMismatch {
                 IMPORT_GROUPING_MISMATCH,
                 hir_id,
                 span,
-                self.message(),
+                message,
                 |diagnostic| {
                     diagnostic.span_suggestion(
                         span,
@@ -386,12 +413,7 @@ impl ImportGroupingMismatch {
             return;
         }
         let blanks = self.blank_counts(lint_context, run);
-        if check::is_compliant(
-            self.config.style,
-            self.config.blank_line_count,
-            run,
-            &blanks,
-        ) {
+        if check::is_compliant(self.config.blank_line_count, run, &blanks) {
             return;
         }
 
@@ -404,19 +426,20 @@ impl ImportGroupingMismatch {
             .with_hi(last.item.span.hi());
         let indent = indent_of(lint_context, first.item.span).unwrap_or(0);
         let pad = " ".repeat(indent);
-        let replacement =
-            render::replacement(self.config.style, self.config.blank_line_count, &pad, run);
+        let replacement = render::replacement(self.config.blank_line_count, &pad, run);
 
         // A comment sitting between two statements is dropped by the
         // re-render (only each statement's own text is reproduced) and,
-        // under `multi_block`, may end up describing a statement that
-        // moved. A leading comment immediately above the first statement
-        // is left in place by the rewrite but is stranded above a
-        // *different* statement when `multi_block` reorders the first one
-        // downward. Either way, drop to `MaybeIncorrect` so the fix isn't
-        // applied unreviewed.
-        let first_statement_moves = matches!(self.config.style, Style::MultiBlock)
-            && run.iter().any(|stmt| stmt.rank < first.rank);
+        // when the rewrite reorders statements, may end up describing a
+        // statement that moved. A leading comment immediately above the
+        // first statement is left in place by the rewrite but is stranded
+        // above a *different* statement when the first one is reordered
+        // downward — under `multi_block`, or under `single_block` when a
+        // leading cfg-gated import is hoisted into the trailing block.
+        // Either way, drop to `MaybeIncorrect` so the fix isn't applied
+        // unreviewed. The check is style-agnostic: any statement ranking
+        // ahead of the first means the first sorts down.
+        let first_statement_moves = run.iter().any(|stmt| stmt.rank < first.rank);
         let applicability = if self.run_has_interstatement_comment(lint_context, run)
             || (first_statement_moves && self.has_leading_comment(lint_context, first))
         {
@@ -428,6 +451,7 @@ impl ImportGroupingMismatch {
         violations.push(Pending {
             anchor: first.item.span,
             span: replace_span,
+            message: self.message(run),
             replacement,
             applicability,
         });
@@ -473,12 +497,20 @@ impl ImportGroupingMismatch {
         })
     }
 
-    fn message(&self) -> &'static str {
+    /// The warning header for a violating `run`. Under `single_block` the
+    /// wording depends on the actual violation: a run that carries a
+    /// hoisted cfg-gated import (rank above the single block's `0`) is
+    /// about the trailing cfg block, while a run with none is just blank
+    /// lines splitting one block — the same violation `merge` reports.
+    fn message(&self, run: &[UseStmt<'_>]) -> &'static str {
         match self.config.style {
+            Style::MultiBlock => "imports are not partitioned into ordered groups",
+            Style::SingleBlock if run.iter().any(|stmt| stmt.rank > 0) => {
+                "imports must form one block, with `#[cfg]`-gated imports in a trailing block"
+            }
             Style::SingleBlock => {
                 "blank lines split the imports; this project keeps them in a single block"
             }
-            Style::MultiBlock => "imports are not partitioned into ordered groups",
         }
     }
 }

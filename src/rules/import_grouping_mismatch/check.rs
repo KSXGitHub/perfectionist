@@ -3,7 +3,6 @@
 //! canonical replacement.
 
 use super::UseStmt;
-use super::config::Style;
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 
 /// Number of whitespace-only lines strictly between two source-adjacent
@@ -61,31 +60,24 @@ fn block_comment_ranges(text: &str) -> Vec<(usize, usize)> {
     ranges
 }
 
-/// Whether `stmts` (in source order) already matches `style`. `blanks`
-/// holds the blank-line count between each adjacent pair (so its length
-/// is `stmts.len() - 1`), as counted by [`count_blank_lines`].
+/// Whether `stmts` (in source order) already matches the configured
+/// style. `blanks` holds the blank-line count between each adjacent pair
+/// (so its length is `stmts.len() - 1`), as counted by
+/// [`count_blank_lines`].
+///
+/// Both styles reduce to one rule once each statement carries its group
+/// rank (assigned in [`super::classify::rank`]): ranks are non-decreasing
+/// down the run; statements sharing a rank carry no blank line between
+/// them; a step up to a later group carries exactly `blank_line_count`
+/// blank lines. The style lives entirely in the ranks — `single_block`
+/// gives every import rank `0` (so the rule degenerates to "no blank
+/// lines anywhere"), bar an opt-in trailing cfg block at a higher rank;
+/// `multi_block` assigns the std / internal / third-party / cfg ranks.
 pub(super) fn is_compliant(
-    style: Style,
     blank_line_count: usize,
     stmts: &[UseStmt<'_>],
     blanks: &[usize],
 ) -> bool {
-    match style {
-        Style::SingleBlock => single_block_compliant(blanks),
-        Style::MultiBlock => multi_block_compliant(blank_line_count, stmts, blanks),
-    }
-}
-
-/// `single_block`: no blank line may sit between any two statements in
-/// the run.
-fn single_block_compliant(blanks: &[usize]) -> bool {
-    blanks.iter().all(|&blanks| blanks == 0)
-}
-
-/// `multi_block`: ranks are non-decreasing in the configured order;
-/// statements sharing a rank carry no blank line between them; a step
-/// up to a later group carries exactly `blank_line_count` blank lines.
-fn multi_block_compliant(blank_line_count: usize, stmts: &[UseStmt<'_>], blanks: &[usize]) -> bool {
     stmts
         .windows(2)
         .zip(blanks)
