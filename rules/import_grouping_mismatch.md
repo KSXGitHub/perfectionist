@@ -13,7 +13,10 @@ Enforces a single project-wide *grouping* style for the run of
 `use` statements at the top of a module body. The rule is
 inactive by default; a project opts in and sets `style` to one of:
 - `single_block` — every `use` sits in one contiguous block with
-  no blank lines between imports.
+  no blank lines between imports, except that `#[cfg(...)]`-gated
+  imports are carved into their own trailing block (one blank
+  line below the rest). Set `cfg_block_handling = "merge"` to keep
+  them in the one block.
 - `multi_block` — imports are partitioned into ordered groups
   separated by exactly one blank line. The
   default group set, in order, is std (`std` / `core` / `alloc`),
@@ -89,6 +92,27 @@ use crate::args::Args;
 use std::time::Duration;
 ```
 
+### Style: Single block, `#[cfg]`-gated imports
+
+**Avoid:** (cfg-gated imports mixed into the one block)
+
+```rust,ignore
+use std::fs::Metadata;
+#[cfg(unix)]
+use std::os::unix::fs::MetadataExt;
+use super::size::Bytes;
+```
+
+**Prefer:** (cfg-gated imports kept in a trailing block)
+
+```rust,ignore
+use std::fs::Metadata;
+use super::size::Bytes;
+
+#[cfg(unix)]
+use std::os::unix::fs::MetadataExt;
+```
+
 ## Configuration
 
 Configure via `dylint.toml` under `["perfectionist::import_grouping_mismatch"]`. A field marked mandatory must be set; an optional field can be omitted and the per-field prose below states its default.
@@ -119,7 +143,10 @@ re-export roots treated as part of the workspace.
 ### `cfg_block_handling`: `CfgBlockHandling` (optional)
 
 How `#[cfg(...)]`-gated imports are grouped. Defaults to
-`trailing`.
+`trailing`: a cfg-gated import forms its own trailing block under
+both styles. Set `merge` to keep cfg-gated imports with the rest —
+in their natural path group under `multi_block`, or in the single
+block under `single_block`.
 
 ### Types
 
@@ -162,10 +189,13 @@ How a `#[cfg(...)]`-gated import is grouped.
 
 ##### `"trailing"` (Rust: `Trailing`)
 
-Treat every `#[cfg(...)]`-gated import as a fourth,
-always-last group, regardless of the imported path.
+Give every `#[cfg(...)]`-gated import its own trailing block,
+regardless of the imported path: an always-last group under
+`multi_block`, a trailing block below the single block under
+`single_block`.
 
 ##### `"merge"` (Rust: `Merge`)
 
-Slot a cfg-gated import back into its natural group based on the
-imported path's first segment.
+Keep a cfg-gated import with the rest: slotted into its natural
+path group under `multi_block`, or left in the single block under
+`single_block`.

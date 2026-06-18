@@ -71,6 +71,37 @@ fn single_block_collapses_blank_lines() {
 }
 
 #[test]
+fn single_block_separates_cfg_into_trailing_block_by_default() {
+    // Under `style = "single_block"`, `cfg_block_handling` defaults to
+    // `trailing`: the non-cfg imports stay in one contiguous block and
+    // every `#[cfg(...)]`-gated import is hoisted into a single trailing
+    // block one blank line below. No cfg knob is set, so this also
+    // asserts the default.
+    run(
+        "ui-toml/import_grouping_mismatch/single_block_cfg_trailing",
+        RuleConfig {
+            style: Some("single_block"),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn single_block_cfg_merge_keeps_cfg_in_one_block() {
+    // Under `style = "single_block"` with `cfg_block_handling = "merge"`,
+    // cfg-gated imports are not separated: a blank line above one is a
+    // violation, and the fix collapses everything into one block.
+    run(
+        "ui-toml/import_grouping_mismatch/single_block_cfg_merge",
+        RuleConfig {
+            style: Some("single_block"),
+            cfg_block_handling: Some("merge"),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
 fn custom_order_thirdparty_before_internal() {
     // `order = ["std", "thirdparty", "internal"]` (rustfmt's
     // `StdExternalCrate` shape) puts third-party crates before internal
