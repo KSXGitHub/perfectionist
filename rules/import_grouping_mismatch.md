@@ -18,13 +18,12 @@ inactive by default; a project opts in and sets `style` to one of:
   line below the rest). Set `cfg_block_handling = "merge"` to keep
   them in the one block.
 - `multi_block` — imports are partitioned into ordered groups
-  separated by exactly one blank line. The
-  default group set, in order, is std (`std` / `core` / `alloc`),
-  internal (`super` / `self` / `crate`), then third-party (every
-  other crate). The `order`, `std_crates`, `internal_prefixes`,
-  and `cfg_block_handling` knobs tune the
-  partition; the inner ordering within each group is left to
-  `cargo fmt`.
+  separated by exactly one blank line. The default group set, in
+  order, is std (`std` / `core` / `alloc`), internal (`super` /
+  `self` / `crate`), then third-party (every other crate). The
+  `order`, `std_crates`, `internal_prefixes`, and
+  `cfg_block_handling` knobs tune the partition; the inner
+  ordering within each group is left to `cargo fmt`.
 
 This rule only governs the *partitioning* of imports into blocks.
 Whether items within each `use` are merged or split is the job of
