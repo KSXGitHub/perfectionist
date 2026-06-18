@@ -1,8 +1,7 @@
 //! Configuration for `import_grouping_mismatch`: the chosen [`Style`], the
 //! group [`order`](Config::order), the per-group classification lists
-//! (`std_crates` / `internal_prefixes`), how `#[cfg(...)]`-gated
-//! imports are slotted ([`CfgBlockHandling`]), and the exact blank-line
-//! count that separates adjacent groups.
+//! (`std_crates` / `internal_prefixes`), and how `#[cfg(...)]`-gated
+//! imports are slotted ([`CfgBlockHandling`]).
 
 /// How `use` statements are partitioned into blocks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
@@ -12,7 +11,7 @@ pub(super) enum Style {
     /// blank lines between imports.
     SingleBlock,
     /// Imports are partitioned into ordered groups separated by exactly
-    /// `blank_line_count` blank lines. The default group set is
+    /// one blank line. The default group set is
     /// std (`std` / `core` / `alloc`), internal (`super` / `self` /
     /// `crate`), and third-party (every other crate).
     MultiBlock,
@@ -77,10 +76,6 @@ pub(super) struct Config {
     /// `trailing`.
     #[serde(default)]
     pub(super) cfg_block_handling: CfgBlockHandling,
-    /// Exact number of blank lines separating adjacent groups (strict
-    /// equality). Defaults to `1`. Ignored under `single_block`.
-    #[serde(default = "default_blank_line_count")]
-    pub(super) blank_line_count: usize,
 }
 
 fn default_order() -> Vec<Group> {
@@ -99,10 +94,6 @@ fn default_internal_prefixes() -> Vec<String> {
         .into_iter()
         .map(ToOwned::to_owned)
         .collect()
-}
-
-fn default_blank_line_count() -> usize {
-    1
 }
 
 impl Config {
@@ -155,7 +146,7 @@ mod tests {
         // table that omits it fails to deserialize rather than defaulting
         // to a layout — even when another knob is present.
         assert!(toml::from_str::<Config>("").is_err());
-        assert!(toml::from_str::<Config>("blank_line_count = 2").is_err());
+        assert!(toml::from_str::<Config>(r#"order = ["std"]"#).is_err());
     }
 
     #[test]
@@ -167,7 +158,6 @@ mod tests {
         assert_eq!(config.std_crates, default_std_crates());
         assert_eq!(config.internal_prefixes, default_internal_prefixes());
         assert_eq!(config.cfg_block_handling, CfgBlockHandling::Trailing);
-        assert_eq!(config.blank_line_count, 1);
     }
 
     #[test]

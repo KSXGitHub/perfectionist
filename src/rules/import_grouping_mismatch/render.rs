@@ -13,12 +13,7 @@ use super::config::Style;
 /// Build the replacement text for the whole run. `pad` is the run's
 /// indentation, prepended to every line after the first (the first
 /// line's indent is left in the source, outside the replaced span).
-pub(super) fn replacement(
-    style: Style,
-    blank_line_count: usize,
-    pad: &str,
-    stmts: &[UseStmt<'_>],
-) -> String {
+pub(super) fn replacement(style: Style, pad: &str, stmts: &[UseStmt<'_>]) -> String {
     let ordered: Vec<&UseStmt<'_>> = match style {
         // Keep source order; the fix only collapses blank lines.
         Style::SingleBlock => stmts.iter().collect(),
@@ -36,7 +31,7 @@ pub(super) fn replacement(
             let blanks = match style {
                 Style::SingleBlock => 0,
                 Style::MultiBlock if ordered[index - 1].rank == stmt.rank => 0,
-                Style::MultiBlock => blank_line_count,
+                Style::MultiBlock => 1,
             };
             // One newline ends the previous statement; `blanks` more
             // produce that many empty lines; then the shared indent.

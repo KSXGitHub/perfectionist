@@ -26,11 +26,11 @@ declare_tool_lint! {
     /// - `single_block` — every `use` sits in one contiguous block with
     ///   no blank lines between imports.
     /// - `multi_block` — imports are partitioned into ordered groups
-    ///   separated by exactly `blank_line_count` blank lines. The
+    ///   separated by exactly one blank line. The
     ///   default group set, in order, is std (`std` / `core` / `alloc`),
     ///   internal (`super` / `self` / `crate`), then third-party (every
     ///   other crate). The `order`, `std_crates`, `internal_prefixes`,
-    ///   `cfg_block_handling`, and `blank_line_count` knobs tune the
+    ///   and `cfg_block_handling` knobs tune the
     ///   partition; the inner ordering within each group is left to
     ///   `cargo fmt`.
     ///
@@ -356,12 +356,7 @@ impl ImportGroupingMismatch {
             return;
         }
         let blanks = self.blank_counts(lint_context, run);
-        if check::is_compliant(
-            self.config.style,
-            self.config.blank_line_count,
-            run,
-            &blanks,
-        ) {
+        if check::is_compliant(self.config.style, run, &blanks) {
             return;
         }
 
@@ -374,8 +369,7 @@ impl ImportGroupingMismatch {
             .with_hi(last.item.span.hi());
         let indent = indent_of(lint_context, first.item.span).unwrap_or(0);
         let pad = " ".repeat(indent);
-        let replacement =
-            render::replacement(self.config.style, self.config.blank_line_count, &pad, run);
+        let replacement = render::replacement(self.config.style, &pad, run);
 
         // A comment sitting between two statements is dropped by the
         // re-render (only each statement's own text is reproduced) and,

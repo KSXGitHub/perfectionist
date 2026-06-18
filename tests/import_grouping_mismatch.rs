@@ -34,8 +34,6 @@ struct RuleConfig {
     internal_prefixes: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     cfg_block_handling: Option<&'static str>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    blank_line_count: Option<usize>,
 }
 
 fn dylint_toml(mut config: RuleConfig) -> String {
@@ -95,19 +93,6 @@ fn cfg_merge_slots_by_path() {
         "ui-toml/import_grouping_mismatch/cfg_merge",
         RuleConfig {
             cfg_block_handling: Some("merge"),
-            ..Default::default()
-        },
-    );
-}
-
-#[test]
-fn blank_line_count_two_separates_groups() {
-    // `blank_line_count = 2` requires exactly two blank lines between
-    // groups; a single blank line is a violation.
-    run(
-        "ui-toml/import_grouping_mismatch/blank_line_count",
-        RuleConfig {
-            blank_line_count: Some(2),
             ..Default::default()
         },
     );

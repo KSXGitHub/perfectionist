@@ -64,15 +64,10 @@ fn block_comment_ranges(text: &str) -> Vec<(usize, usize)> {
 /// Whether `stmts` (in source order) already matches `style`. `blanks`
 /// holds the blank-line count between each adjacent pair (so its length
 /// is `stmts.len() - 1`), as counted by [`count_blank_lines`].
-pub(super) fn is_compliant(
-    style: Style,
-    blank_line_count: usize,
-    stmts: &[UseStmt<'_>],
-    blanks: &[usize],
-) -> bool {
+pub(super) fn is_compliant(style: Style, stmts: &[UseStmt<'_>], blanks: &[usize]) -> bool {
     match style {
         Style::SingleBlock => single_block_compliant(blanks),
-        Style::MultiBlock => multi_block_compliant(blank_line_count, stmts, blanks),
+        Style::MultiBlock => multi_block_compliant(stmts, blanks),
     }
 }
 
@@ -84,14 +79,14 @@ fn single_block_compliant(blanks: &[usize]) -> bool {
 
 /// `multi_block`: ranks are non-decreasing in the configured order;
 /// statements sharing a rank carry no blank line between them; a step
-/// up to a later group carries exactly `blank_line_count` blank lines.
-fn multi_block_compliant(blank_line_count: usize, stmts: &[UseStmt<'_>], blanks: &[usize]) -> bool {
+/// up to a later group carries exactly one blank line.
+fn multi_block_compliant(stmts: &[UseStmt<'_>], blanks: &[usize]) -> bool {
     stmts
         .windows(2)
         .zip(blanks)
         .all(|(pair, &blanks)| match pair[0].rank.cmp(&pair[1].rank) {
             core::cmp::Ordering::Equal => blanks == 0,
-            core::cmp::Ordering::Less => blanks == blank_line_count,
+            core::cmp::Ordering::Less => blanks == 1,
             core::cmp::Ordering::Greater => false,
         })
 }

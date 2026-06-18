@@ -15,11 +15,11 @@ inactive by default; a project opts in and sets `style` to one of:
 - `single_block` — every `use` sits in one contiguous block with
   no blank lines between imports.
 - `multi_block` — imports are partitioned into ordered groups
-  separated by exactly `blank_line_count` blank lines. The
+  separated by exactly one blank line. The
   default group set, in order, is std (`std` / `core` / `alloc`),
   internal (`super` / `self` / `crate`), then third-party (every
   other crate). The `order`, `std_crates`, `internal_prefixes`,
-  `cfg_block_handling`, and `blank_line_count` knobs tune the
+  and `cfg_block_handling` knobs tune the
   partition; the inner ordering within each group is left to
   `cargo fmt`.
 
@@ -121,11 +121,6 @@ re-export roots treated as part of the workspace.
 How `#[cfg(...)]`-gated imports are grouped. Defaults to
 `trailing`.
 
-### `blank_line_count`: `unsigned integer` (optional)
-
-Exact number of blank lines separating adjacent groups (strict
-equality). Defaults to `1`. Ignored under `single_block`.
-
 ### Types
 
 #### `Style` (enum)
@@ -140,7 +135,7 @@ blank lines between imports.
 ##### `"multi_block"` (Rust: `MultiBlock`)
 
 Imports are partitioned into ordered groups separated by exactly
-`blank_line_count` blank lines. The default group set is
+one blank line. The default group set is
 std (`std` / `core` / `alloc`), internal (`super` / `self` /
 `crate`), and third-party (every other crate).
 
