@@ -18,12 +18,12 @@ inactive by default; a project opts in and sets `style` to one of:
   line below the rest). Set `cfg_block_handling = "merge"` to keep
   them in the one block.
 - `multi_block` — imports are partitioned into ordered groups
-  separated by exactly one blank line. The default group set, in
-  order, is std (`std` / `core` / `alloc`), internal (`super` /
-  `self` / `crate`), then third-party (every other crate). The
-  `order`, `std_crates`, `internal_prefixes`, and
-  `cfg_block_handling` knobs tune the partition; the inner
-  ordering within each group is left to `cargo fmt`.
+  separated by exactly one blank line. The group set, in order,
+  is std (`std` / `core` / `alloc` / `proc_macro` / `test`),
+  internal (`crate` / `super` / `self`), then third-party (every
+  other crate). The `order` and `cfg_block_handling` knobs tune
+  the partition; the inner ordering within each group is left to
+  `cargo fmt`.
 
 This rule only governs the *partitioning* of imports into blocks.
 Whether items within each `use` are merged or split is the job of
@@ -127,18 +127,6 @@ it wants — so it must be set when the rule is enabled.
 The order the groups appear in, top to bottom. Defaults to
 `["std", "internal", "thirdparty"]`.
 
-### `std_crates`: `[string]` (optional)
-
-Crate roots classified into the `std` group. Defaults to
-`["std", "core", "alloc"]`; extend with `proc_macro` or `test`
-if a project routinely imports them.
-
-### `internal_prefixes`: `[string]` (optional)
-
-Path prefixes classified into the `internal` group. Defaults to
-`["crate", "super", "self"]`; extend with project-specific
-re-export roots treated as part of the workspace.
-
 ### `cfg_block_handling`: `CfgBlockHandling` (optional)
 
 How `#[cfg(...)]`-gated imports are grouped. Defaults to
@@ -161,9 +149,9 @@ blank lines between imports.
 ##### `"multi_block"` (Rust: `MultiBlock`)
 
 Imports are partitioned into ordered groups separated by exactly
-one blank line. The default group set is
-std (`std` / `core` / `alloc`), internal (`super` / `self` /
-`crate`), and third-party (every other crate).
+one blank line. The group set is
+std (`std` / `core` / `alloc` / `proc_macro` / `test`), internal
+(`crate` / `super` / `self`), and third-party (every other crate).
 
 #### `Group` (enum)
 
@@ -172,11 +160,11 @@ One of the three groups a `use` statement is classified into. The
 
 ##### `"std"` (Rust: `Std`)
 
-`std`, `core`, `alloc` (configurable via `std_crates`).
+`std`, `core`, `alloc`, `proc_macro`, `test`.
 
 ##### `"internal"` (Rust: `Internal`)
 
-`super`, `self`, `crate` (configurable via `internal_prefixes`).
+`crate`, `super`, `self`.
 
 ##### `"thirdparty"` (Rust: `Thirdparty`)
 

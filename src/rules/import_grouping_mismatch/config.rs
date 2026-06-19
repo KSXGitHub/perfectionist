@@ -1,7 +1,6 @@
 //! Configuration for `import_grouping_mismatch`: the chosen [`Style`], the
-//! group [`order`](Config::order), the per-group classification lists
-//! (`std_crates` / `internal_prefixes`), and how `#[cfg(...)]`-gated
-//! imports are slotted ([`CfgBlockHandling`]).
+//! group [`order`](Config::order), and how `#[cfg(...)]`-gated imports
+//! are slotted ([`CfgBlockHandling`]).
 
 /// How `use` statements are partitioned into blocks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
@@ -11,9 +10,9 @@ pub(super) enum Style {
     /// blank lines between imports.
     SingleBlock,
     /// Imports are partitioned into ordered groups separated by exactly
-    /// one blank line. The default group set is
-    /// std (`std` / `core` / `alloc`), internal (`super` / `self` /
-    /// `crate`), and third-party (every other crate).
+    /// one blank line. The group set is
+    /// std (`std` / `core` / `alloc` / `proc_macro` / `test`), internal
+    /// (`crate` / `super` / `self`), and third-party (every other crate).
     MultiBlock,
 }
 
@@ -22,9 +21,9 @@ pub(super) enum Style {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum Group {
-    /// `std`, `core`, `alloc` (configurable via `std_crates`).
+    /// `std`, `core`, `alloc`, `proc_macro`, `test`.
     Std,
-    /// `super`, `self`, `crate` (configurable via `internal_prefixes`).
+    /// `crate`, `super`, `self`.
     Internal,
     /// Every other crate.
     Thirdparty,
@@ -65,16 +64,6 @@ pub(super) struct Config {
     /// `["std", "internal", "thirdparty"]`.
     #[serde(default = "default_order")]
     pub(super) order: Vec<Group>,
-    /// Crate roots classified into the `std` group. Defaults to
-    /// `["std", "core", "alloc"]`; extend with `proc_macro` or `test`
-    /// if a project routinely imports them.
-    #[serde(default = "default_std_crates")]
-    pub(super) std_crates: Vec<String>,
-    /// Path prefixes classified into the `internal` group. Defaults to
-    /// `["crate", "super", "self"]`; extend with project-specific
-    /// re-export roots treated as part of the workspace.
-    #[serde(default = "default_internal_prefixes")]
-    pub(super) internal_prefixes: Vec<String>,
     /// How `#[cfg(...)]`-gated imports are grouped. Defaults to
     /// `trailing`: a cfg-gated import forms its own trailing block under
     /// both styles. Set `merge` to keep cfg-gated imports with the rest —
@@ -86,20 +75,6 @@ pub(super) struct Config {
 
 fn default_order() -> Vec<Group> {
     vec![Group::Std, Group::Internal, Group::Thirdparty]
-}
-
-fn default_std_crates() -> Vec<String> {
-    ["std", "core", "alloc"]
-        .into_iter()
-        .map(ToOwned::to_owned)
-        .collect()
-}
-
-fn default_internal_prefixes() -> Vec<String> {
-    ["crate", "super", "self"]
-        .into_iter()
-        .map(ToOwned::to_owned)
-        .collect()
 }
 
 impl Config {
@@ -125,10 +100,7 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        CfgBlockHandling, Config, Style, default_internal_prefixes, default_order,
-        default_std_crates,
-    };
+    use super::{CfgBlockHandling, Config, Style, default_order};
 
     #[test]
     fn style_values_deserialize() {
@@ -161,8 +133,6 @@ mod tests {
         // their per-field defaults when absent.
         let config = toml::from_str::<Config>(r#"style = "multi_block""#).unwrap();
         assert_eq!(config.order, default_order());
-        assert_eq!(config.std_crates, default_std_crates());
-        assert_eq!(config.internal_prefixes, default_internal_prefixes());
         assert_eq!(config.cfg_block_handling, CfgBlockHandling::Trailing);
     }
 
