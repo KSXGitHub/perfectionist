@@ -259,11 +259,11 @@ let nvmrc = "24.0.0\n";
 
 ### Real occurrences in this repository
 
-The TIP that prompted this rule was right: the pattern has already
-slipped into `perfectionist`'s own test suite. Both files embed
-configuration and Rust-source fixtures as flush-left literals — the
-`CONFIG` blocks even carry `\"` escapes that a raw `text_block!`
-line or an `include_str!`-ed `.toml` would shed:
+The pattern has already slipped into `perfectionist`'s own test
+suite. Both files embed configuration and Rust-source fixtures as
+flush-left literals — the `CONFIG` blocks even carry `\"` escapes
+that a raw `text_block!` line or an `include_str!`-ed `.toml` would
+shed:
 
 - `tests/import_grouping_mismatch_submodules.rs` — nine de-indented
   blocks: a `const CONFIG: &str = "\` TOML block plus the `lib` /
