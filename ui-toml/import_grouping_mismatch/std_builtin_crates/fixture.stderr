@@ -1,21 +1,18 @@
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:24:1
+  --> $DIR/fixture.rs:31:1
    |
 LL | / use std::time::Duration;
 LL | |
-LL | | use clap::Parser;
-LL | |
-LL | | use my_macros::Helper;
-   | |______________________^
+LL | | use proc_macro::TokenStream;
+LL | | use test::Bencher;
+   | |__________________^
    |
    = note: `#[warn(perfectionist::import_grouping_mismatch)]` on by default
 help: regroup the imports
    |
 LL + use std::time::Duration;
-LL + 
-LL + use my_macros::Helper;
-LL + 
-LL + use clap::Parser;
+LL + use proc_macro::TokenStream;
+LL + use test::Bencher;
    |
 
 warning: 1 warning emitted

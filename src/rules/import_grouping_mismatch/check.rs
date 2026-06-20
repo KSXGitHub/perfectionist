@@ -68,22 +68,18 @@ fn block_comment_ranges(text: &str) -> Vec<(usize, usize)> {
 /// Both styles reduce to one rule once each statement carries its group
 /// rank (assigned in [`super::classify::rank`]): ranks are non-decreasing
 /// down the run; statements sharing a rank carry no blank line between
-/// them; a step up to a later group carries exactly `blank_line_count`
-/// blank lines. The style lives entirely in the ranks — `single_block`
-/// gives every import rank `0` (so the rule degenerates to "no blank
-/// lines anywhere"), bar an opt-in trailing cfg block at a higher rank;
-/// `multi_block` assigns the std / internal / third-party / cfg ranks.
-pub(super) fn is_compliant(
-    blank_line_count: usize,
-    stmts: &[UseStmt<'_>],
-    blanks: &[usize],
-) -> bool {
+/// them; a step up to a later group carries exactly one blank line. The
+/// style lives entirely in the ranks — `single_block` gives every import
+/// rank `0` (so the rule degenerates to "no blank lines anywhere"), bar an
+/// opt-in trailing cfg block at a higher rank; `multi_block` assigns the
+/// std / internal / third-party / cfg ranks.
+pub(super) fn is_compliant(stmts: &[UseStmt<'_>], blanks: &[usize]) -> bool {
     stmts
         .windows(2)
         .zip(blanks)
         .all(|(pair, &blanks)| match pair[0].rank.cmp(&pair[1].rank) {
             core::cmp::Ordering::Equal => blanks == 0,
-            core::cmp::Ordering::Less => blanks == blank_line_count,
+            core::cmp::Ordering::Less => blanks == 1,
             core::cmp::Ordering::Greater => false,
         })
 }

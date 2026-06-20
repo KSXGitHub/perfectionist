@@ -628,12 +628,6 @@ correctly-spelled one (`"crate::internals"`) never does.
 
 ### Not subject to the convention
 
-- `perfectionist::import_grouping_mismatch`'s `std_crates`
-  (`["std", "core", "alloc"]`) and `internal_prefixes`
-  (`["super", "self", "crate"]`) are single-segment crate-name /
-  path-root tokens matched against an import's first segment, not
-  multi-segment paths, so the absolute-vs-relative distinction does
-  not apply.
 - `perfectionist::unpinned_repo_ref`'s `hosts` / `skip_hosts` /
   `hostname` are forge hostnames, not Rust module paths.
 

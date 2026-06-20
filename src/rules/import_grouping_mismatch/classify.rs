@@ -24,10 +24,10 @@ fn first_segment(tree: &UseTree) -> Option<String> {
     None
 }
 
-/// Classify a statement's path into one of the three groups. A path
-/// with no leading segment — a top-level brace spanning several crate
-/// roots, or a global `::*` — has no single crate root to key on and
-/// falls into `thirdparty`, the catch-all.
+/// Classify a statement's path into one of the three groups by its
+/// first segment. A path with no leading segment — a top-level brace
+/// spanning several crate roots, or a global `::*` — has no single crate
+/// root to key on and falls into `thirdparty`, the catch-all.
 ///
 /// `local_modules` holds the names of `mod` items declared in the same
 /// module scope as this `use`. A bare first segment naming one of them
@@ -37,19 +37,18 @@ fn first_segment(tree: &UseTree) -> Option<String> {
 /// it is classified `internal` rather than falling through to the
 /// `thirdparty` catch-all. The rule reads source syntactically, without
 /// name resolution, so this sibling-`mod` match is the syntactic
-/// approximation of that resolution. The configured `std_crates` and
-/// `internal_prefixes` lists are explicit user intent and so are
-/// honoured first.
-fn path_group(tree: &UseTree, config: &Config, local_modules: &HashSet<String>) -> Group {
+/// approximation of that resolution. The built-in std and internal
+/// segment names are matched first, so a sibling `mod` sharing one of
+/// those names keeps its built-in group.
+fn path_group(tree: &UseTree, local_modules: &HashSet<String>) -> Group {
     let Some(first) = first_segment(tree) else {
         return Group::Thirdparty;
     };
-    if config.std_crates.contains(&first) {
-        Group::Std
-    } else if config.internal_prefixes.contains(&first) || local_modules.contains(&first) {
-        Group::Internal
-    } else {
-        Group::Thirdparty
+    match first.as_str() {
+        "std" | "core" | "alloc" | "proc_macro" | "test" => Group::Std,
+        "crate" | "super" | "self" => Group::Internal,
+        _ if local_modules.contains(&first) => Group::Internal,
+        _ => Group::Thirdparty,
     }
 }
 
@@ -80,6 +79,6 @@ pub(super) fn rank(
     match config.style {
         Style::SingleBlock => usize::from(cfg_trailing),
         Style::MultiBlock if cfg_trailing => config.cfg_rank(),
-        Style::MultiBlock => config.group_rank(path_group(tree, config, local_modules)),
+        Style::MultiBlock => config.group_rank(path_group(tree, local_modules)),
     }
 }
