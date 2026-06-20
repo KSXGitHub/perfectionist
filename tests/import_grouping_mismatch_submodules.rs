@@ -119,29 +119,9 @@ use std::time::Duration;
 /// unseparated and `src/outer.rs` was flagged.
 #[test]
 fn bare_path_submodule_groups_as_internal_in_separate_file() {
-    let lib = "\
-#![allow(dead_code, unused_imports)]
-
-pub mod shared {
-    pub struct S;
-}
-
-mod outer;
-
-use std::time::Duration;
-use crate::shared::S;
-";
-    let outer = "\
-mod inner;
-
-use std::time::Duration;
-
-use crate::shared::S;
-use inner::Thing;
-";
-    let inner = "\
-pub struct Thing;
-";
+    let lib = include_str!("fixtures/import_grouping_mismatch_submodules/bare_internal_lib.rs");
+    let outer = include_str!("fixtures/import_grouping_mismatch_submodules/bare_internal_outer.rs");
+    let inner = "pub struct Thing;\n";
     let (_temp, stderr, success) = run_project_with_sources_and_config(
         "fixture_igrp_bare_submodule_internal",
         cargo_manifest_dir(),
