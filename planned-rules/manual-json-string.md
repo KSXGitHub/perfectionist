@@ -534,10 +534,10 @@ entirely.
   should defer to this rule, since the `json!` rewrite
   eliminates the `format!` invocation entirely and the wrap
   question becomes moot.
-- [`deindented-multiline-string`](./deindented-multiline-string.md) —
-  *not* a deferral, unlike the two above: a de-indented multi-line
+- [`dedented-multiline-string`](./dedented-multiline-string.md) —
+  *not* a deferral, unlike the two above: a dedented multi-line
   literal whose content is JSON triggers **both** rules, and that is
   intended. They do different things — this rule rewrites the JSON
   *construction* (string → `json!`), that one flags the *source
-  layout* (the de-indented body) and does no content parsing — so
+  layout* (the dedented body) and does no content parsing — so
   both diagnostics are appropriate and neither avoids the other.

@@ -372,13 +372,13 @@ text_block! {
 
 Both rules are independent and neither suppresses the other.
 
-## Interaction with `perfectionist::deindented_multiline_string`
+## Interaction with `perfectionist::dedented_multiline_string`
 
 The two rules do different things on different source spellings and
 stay fully independent — neither defers to or suppresses the other.
 This rule targets newlines compressed onto one (or few) source lines
 as `\n` escapes;
-[`deindented-multiline-string`](./deindented-multiline-string.md)
+[`dedented-multiline-string`](./dedented-multiline-string.md)
 targets newlines spelled as *raw* source breaks that drop the
 literal's body out of the surrounding indentation. Because this
 rule's motivating shape is the `\n`-escaped form and the sibling's

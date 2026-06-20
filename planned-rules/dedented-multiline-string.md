@@ -1,4 +1,4 @@
-# `deindented_multiline_string`
+# `dedented_multiline_string`
 
 **Source:** project convention.
 
@@ -79,7 +79,7 @@ what the literal *is*:
   let nvmrc = "24.0.0\n";
   ```
 
-This rule fires on the de-indented shape and points at the
+This rule fires on the dedented shape and points at the
 appropriate replacement. It is the source-layout complement of
 `perfectionist::escaped_multiline_string`, which targets the
 opposite spelling — newlines crammed onto one source line as `\n`
@@ -88,14 +88,14 @@ escapes (see [Interaction with sibling rules](#interaction-with-sibling-rules)).
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. The
-de-indented literal compiles and produces exactly the intended
+dedented literal compiles and produces exactly the intended
 bytes. The objection is to the *source*:
 
 - A reader scanning the indentation to follow control flow loses
   the thread the moment the body drops to column zero; the literal
   reads as if the function ended. Nesting (a `match` arm, a closure
   inside a method chain) makes the discontinuity worse.
-- The de-indented body cannot be moved, re-indented by an editor's
+- The dedented body cannot be moved, re-indented by an editor's
   reformat, or wrapped in another block without either corrupting
   the value or being left behind by the surrounding `cargo fmt` —
   rustfmt does not touch the interior of a string literal.
@@ -107,7 +107,7 @@ There is also a quiet footgun worth naming, though it is the
 secondary motivation: raw line breaks bake every leading space on
 each body line **into the value**. When the value's leading
 whitespace is significant (a Makefile/justfile recipe body, YAML),
-re-indenting the source to "fix" the de-indentation silently
+re-indenting the source to "fix" the dedented body silently
 changes the string. The cleaner forms make the value's whitespace
 explicit and independent of source layout.
 
@@ -147,28 +147,28 @@ enclosing statement's indentation column:
      (`text_block_macros` by default), and — when
      `suggest_include_str` is on — additionally surface
      "extract to a sibling file and `include_str!` it" as a help
-     note, since a de-indented block is usually a foreign-format
+     note, since a dedented block is usually a foreign-format
      fixture.
 
-The rule does **not** inspect what the content *is*. A de-indented
+The rule does **not** inspect what the content *is*. A dedented
 block whose content happens to be JSON still fires here on its
 layout, and `perfectionist::manual_json_string` independently fires
 on the same literal to suggest the `json!` construction — the two do
 different things and neither suppresses the other (see
 [Interaction](#interaction-with-sibling-rules)).
 
-The trigger is the **raw line break plus de-indentation**, not the
+The trigger is the **raw line break plus a dedented body**, not the
 decoded newline count. A literal whose newlines are all `\n`
 escapes on one source line does not span source lines and so does
 not match this rule's trigger (it is the domain of
 `perfectionist::escaped_multiline_string`). A raw/`\<newline>`
 literal whose body is indented to *match or exceed* the enclosing
-code (so nothing is de-indented) does not fire — see the gen-docs
+code (so nothing is dedented) does not fire — see the gen-docs
 boundary case below.
 
 ## Examples
 
-### De-indented block, foreign format
+### Dedented block, foreign format
 
 **Avoid:**
 
@@ -210,7 +210,7 @@ pub fn create_justfile() {
 }
 ```
 
-### De-indented raw string holding JSON
+### Dedented raw string holding JSON
 
 **Avoid:**
 
@@ -223,7 +223,7 @@ let tsconfig = r#"
 "#;
 ```
 
-This rule fires on the de-indented layout and suggests its own
+This rule fires on the dedented layout and suggests its own
 remedies — `include_str!("fixtures/create/tsconfig.json")` or a
 `text_block_fnl!` block. Separately,
 `perfectionist::manual_json_string` fires on the same literal and
@@ -265,7 +265,7 @@ flush-left literals — the `CONFIG` blocks even carry `\"` escapes
 that a raw `text_block!` line or an `include_str!`-ed `.toml` would
 shed:
 
-- `tests/import_grouping_mismatch_submodules.rs` — nine de-indented
+- `tests/import_grouping_mismatch_submodules.rs` — nine dedented
   blocks: a `const CONFIG: &str = "\` TOML block plus the `lib` /
   `separate` / `deep` Rust-source fixtures threaded into
   `run_project_with_sources_and_config`. For example:
@@ -313,7 +313,7 @@ write(
 )
 ```
 
-Nothing here is de-indented, so the rule stays silent. (The body
+Nothing here is dedented, so the rule stays silent. (The body
 indentation is baked into the value, but the consumer re-parses it
 as Rust where leading whitespace is irrelevant — a deliberate,
 acceptable trade-off, not the anti-pattern this rule targets.)
@@ -346,7 +346,7 @@ let s = include_str!("fixtures/create/justfile");
 ## Configuration
 
 ```toml
-[perfectionist::deindented_multiline_string]
+[perfectionist::dedented_multiline_string]
 # Which inline rewrite the autofix offers as its primary
 # suggestion. Defaults to `text_block_macros`.
 #   "text_block_macros"  -> text_block_fnl! / text_block! (one
@@ -359,7 +359,7 @@ style = "text_block_macros"
 
 # Whether to additionally surface "extract to a sibling file and
 # pull it in with `include_str!`" as a help note. Defaults to
-# `true`: a de-indented block is most often a foreign-format
+# `true`: a dedented block is most often a foreign-format
 # fixture that reads best as its own file. Set to `false` to keep
 # the suggestion purely inline.
 suggest_include_str = true
@@ -407,7 +407,7 @@ text_block_fnl_import_path = "text_block_macros::text_block_fnl"
   over the snippet per the parser-combinator convention in
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md);
   do not reach for a regex.
-- **De-indentation measurement.** Use the source map's
+- **Indentation measurement.** Use the source map's
   `lookup_char_pos` on the literal's span to get the enclosing
   statement's indentation column (the column of the first
   non-whitespace byte on the literal's opening line). For each body
@@ -443,7 +443,7 @@ text_block_fnl_import_path = "text_block_macros::text_block_fnl"
 
 ### Difficulty
 
-**Medium.** The raw-line-break-plus-de-indentation detection is a
+**Medium.** Detecting a raw line break whose body is dedented is a
 straightforward snippet scan against the decoded value and a
 column comparison through the source map. The context-skip logic is
 shared with `perfectionist::escaped_multiline_string`. The work
@@ -472,12 +472,12 @@ concentrates in the autofix:
 
 ## Default state
 
-Active by default. The de-indented shape is a broad, project-
+Active by default. The dedented shape is a broad, project-
 agnostic readability regression; the default `style =
 "text_block_macros"` matches the catalogue's preferred form, and
 projects that don't want the external-crate dependency switch to
 `line_continuation`. Suppress per-site with
-`#[allow(perfectionist::deindented_multiline_string)]` or globally
+`#[allow(perfectionist::dedented_multiline_string)]` or globally
 via `[perfectionist].disable`.
 
 ## Interaction with sibling rules
@@ -493,16 +493,16 @@ point at different defects, so both are appropriate.
   string, so in practice they rarely fire on the same literal:
   - `escaped_multiline_string` targets newlines crammed onto one
     (or few) source lines as `\n` escapes — *too compressed*.
-  - `deindented_multiline_string` targets newlines spelled as raw
+  - `dedented_multiline_string` targets newlines spelled as raw
     source breaks that drop the body out of the code's
     indentation — *too sprawling*.
 
-  This rule's trigger is the raw-line-break-with-de-indentation
+  This rule's trigger is the raw-line-break-with-dedented-body
   shape; a purely `\n`-escaped literal does not match it at all.
-- [`manual-json-string`](./manual-json-string.md) — a de-indented
+- [`manual-json-string`](./manual-json-string.md) — a dedented
   literal whose content is JSON triggers **both** rules, and that is
   intended. They address different defects: `manual_json_string`
   rewrites the *construction* (hand-rolled string → `serde_json::json!`),
-  while this rule flags the *source layout* (the de-indented body).
+  while this rule flags the *source layout* (the dedented body).
   This rule does no content parsing, so it neither knows nor cares
   that the body is JSON.
