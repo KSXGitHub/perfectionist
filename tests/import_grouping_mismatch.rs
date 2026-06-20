@@ -29,13 +29,7 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     order: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    std_crates: Option<Vec<&'static str>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    internal_prefixes: Option<Vec<&'static str>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     cfg_block_handling: Option<&'static str>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    blank_line_count: Option<usize>,
 }
 
 fn dylint_toml(mut config: RuleConfig) -> String {
@@ -104,6 +98,20 @@ fn single_block_cfg_merge_keeps_cfg_in_one_block() {
 }
 
 #[test]
+fn std_group_includes_proc_macro_and_test() {
+    // The std group is the fixed set `std` / `core` / `alloc` /
+    // `proc_macro` / `test`. A blank line between a `std` import and a
+    // `proc_macro` / `test` import wrongly splits one group, so it is a
+    // violation the fix collapses into one contiguous block.
+    run(
+        "ui-toml/import_grouping_mismatch/std_builtin_crates",
+        RuleConfig {
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
 fn custom_order_thirdparty_before_internal() {
     // `order = ["std", "thirdparty", "internal"]` (rustfmt's
     // `StdExternalCrate` shape) puts third-party crates before internal
@@ -126,46 +134,6 @@ fn cfg_merge_slots_by_path() {
         "ui-toml/import_grouping_mismatch/cfg_merge",
         RuleConfig {
             cfg_block_handling: Some("merge"),
-            ..Default::default()
-        },
-    );
-}
-
-#[test]
-fn blank_line_count_two_separates_groups() {
-    // `blank_line_count = 2` requires exactly two blank lines between
-    // groups; a single blank line is a violation.
-    run(
-        "ui-toml/import_grouping_mismatch/blank_line_count",
-        RuleConfig {
-            blank_line_count: Some(2),
-            ..Default::default()
-        },
-    );
-}
-
-#[test]
-fn std_crates_extends_std_group() {
-    // Adding a crate to `std_crates` groups its imports with `std` /
-    // `core` / `alloc`, so a blank line splitting it from a real std
-    // import is a violation it would not be without the extension.
-    run(
-        "ui-toml/import_grouping_mismatch/std_crates",
-        RuleConfig {
-            std_crates: Some(vec!["std", "core", "alloc", "my_std"]),
-            ..Default::default()
-        },
-    );
-}
-
-#[test]
-fn internal_prefixes_extends_workspace_root() {
-    // Adding a workspace crate to `internal_prefixes` groups its
-    // imports with `crate` / `super` / `self`, ahead of third-party.
-    run(
-        "ui-toml/import_grouping_mismatch/internal_prefixes",
-        RuleConfig {
-            internal_prefixes: Some(vec!["crate", "super", "self", "my_macros"]),
             ..Default::default()
         },
     );

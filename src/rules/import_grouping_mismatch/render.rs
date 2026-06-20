@@ -17,21 +17,18 @@ use super::UseStmt;
 /// [`super::classify::rank`]); order within a rank stands, so a
 /// `single_block` run with one rank keeps source order while a
 /// `multi_block` run keeps `cargo fmt`'s inner order. Adjacent
-/// statements are then separated by `blank_line_count` blank lines
-/// across a rank step and none within a rank — which, for a one-rank
-/// `single_block` run, collapses to one contiguous block.
-pub(super) fn replacement(blank_line_count: usize, pad: &str, stmts: &[UseStmt<'_>]) -> String {
+/// statements are then separated by one blank line across a rank step
+/// and none within a rank — which, for a one-rank `single_block` run,
+/// collapses to one contiguous block.
+pub(super) fn replacement(pad: &str, stmts: &[UseStmt<'_>]) -> String {
     let mut ordered: Vec<&UseStmt<'_>> = stmts.iter().collect();
     ordered.sort_by_key(|stmt| stmt.rank);
 
     let mut out = String::new();
     for (index, stmt) in ordered.iter().enumerate() {
         if index > 0 {
-            let blanks = if ordered[index - 1].rank == stmt.rank {
-                0
-            } else {
-                blank_line_count
-            };
+            // None within a rank; exactly one blank line across a step.
+            let blanks = usize::from(ordered[index - 1].rank != stmt.rank);
             // One newline ends the previous statement; `blanks` more
             // produce that many empty lines; then the shared indent.
             for _ in 0..=blanks {

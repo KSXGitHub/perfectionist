@@ -14,16 +14,15 @@ Enforces a single project-wide *grouping* style for the run of
 inactive by default; a project opts in and sets `style` to one of:
 - `single_block` — every `use` sits in one contiguous block with
   no blank lines between imports, except that `#[cfg(...)]`-gated
-  imports are carved into their own trailing block (one, or
-  `blank_line_count`, blank line below the rest). Set
-  `cfg_block_handling = "merge"` to keep them in the one block.
+  imports are carved into their own trailing block (one blank
+  line below the rest). Set `cfg_block_handling = "merge"` to keep
+  them in the one block.
 - `multi_block` — imports are partitioned into ordered groups
-  separated by exactly `blank_line_count` blank lines. The
-  default group set, in order, is std (`std` / `core` / `alloc`),
-  internal (`super` / `self` / `crate`), then third-party (every
-  other crate). The `order`, `std_crates`, `internal_prefixes`,
-  `cfg_block_handling`, and `blank_line_count` knobs tune the
-  partition; the inner ordering within each group is left to
+  separated by exactly one blank line. The group set, in order,
+  is std (`std` / `core` / `alloc` / `proc_macro` / `test`),
+  internal (`crate` / `super` / `self`), then third-party (every
+  other crate). The `order` and `cfg_block_handling` knobs tune
+  the partition; the inner ordering within each group is left to
   `cargo fmt`.
 
 This rule only governs the *partitioning* of imports into blocks.
@@ -128,18 +127,6 @@ it wants — so it must be set when the rule is enabled.
 The order the groups appear in, top to bottom. Defaults to
 `["std", "internal", "thirdparty"]`.
 
-### `std_crates`: `[string]` (optional)
-
-Crate roots classified into the `std` group. Defaults to
-`["std", "core", "alloc"]`; extend with `proc_macro` or `test`
-if a project routinely imports them.
-
-### `internal_prefixes`: `[string]` (optional)
-
-Path prefixes classified into the `internal` group. Defaults to
-`["crate", "super", "self"]`; extend with project-specific
-re-export roots treated as part of the workspace.
-
 ### `cfg_block_handling`: `CfgBlockHandling` (optional)
 
 How `#[cfg(...)]`-gated imports are grouped. Defaults to
@@ -147,14 +134,6 @@ How `#[cfg(...)]`-gated imports are grouped. Defaults to
 both styles. Set `merge` to keep cfg-gated imports with the rest —
 in their natural path group under `multi_block`, or in the single
 block under `single_block`.
-
-### `blank_line_count`: `unsigned integer` (optional)
-
-Exact number of blank lines separating adjacent groups (strict
-equality). Defaults to `1`. Under `single_block` it is used only
-to separate the trailing cfg block (`cfg_block_handling =
-"trailing"`); a `merge`d `single_block` admits no blank lines at
-all.
 
 ### Types
 
@@ -170,9 +149,9 @@ blank lines between imports.
 ##### `"multi_block"` (Rust: `MultiBlock`)
 
 Imports are partitioned into ordered groups separated by exactly
-`blank_line_count` blank lines. The default group set is
-std (`std` / `core` / `alloc`), internal (`super` / `self` /
-`crate`), and third-party (every other crate).
+one blank line. The group set is
+std (`std` / `core` / `alloc` / `proc_macro` / `test`), internal
+(`crate` / `super` / `self`), and third-party (every other crate).
 
 #### `Group` (enum)
 
@@ -181,11 +160,11 @@ One of the three groups a `use` statement is classified into. The
 
 ##### `"std"` (Rust: `Std`)
 
-`std`, `core`, `alloc` (configurable via `std_crates`).
+`std`, `core`, `alloc`, `proc_macro`, `test`.
 
 ##### `"internal"` (Rust: `Internal`)
 
-`super`, `self`, `crate` (configurable via `internal_prefixes`).
+`crate`, `super`, `self`.
 
 ##### `"thirdparty"` (Rust: `Thirdparty`)
 

@@ -23,20 +23,18 @@ fn first_segment(tree: &UseTree) -> Option<String> {
     None
 }
 
-/// Classify a statement's path into one of the three groups. A path
-/// with no leading segment — a top-level brace spanning several crate
-/// roots, or a global `::*` — has no single crate root to key on and
-/// falls into `thirdparty`, the catch-all.
-fn path_group(tree: &UseTree, config: &Config) -> Group {
+/// Classify a statement's path into one of the three groups by its
+/// first segment. A path with no leading segment — a top-level brace
+/// spanning several crate roots, or a global `::*` — has no single crate
+/// root to key on and falls into `thirdparty`, the catch-all.
+fn path_group(tree: &UseTree) -> Group {
     let Some(first) = first_segment(tree) else {
         return Group::Thirdparty;
     };
-    if config.std_crates.contains(&first) {
-        Group::Std
-    } else if config.internal_prefixes.contains(&first) {
-        Group::Internal
-    } else {
-        Group::Thirdparty
+    match first.as_str() {
+        "std" | "core" | "alloc" | "proc_macro" | "test" => Group::Std,
+        "crate" | "super" | "self" => Group::Internal,
+        _ => Group::Thirdparty,
     }
 }
 
@@ -57,6 +55,6 @@ pub(super) fn rank(tree: &UseTree, is_cfg_gated: bool, config: &Config) -> usize
     match config.style {
         Style::SingleBlock => usize::from(cfg_trailing),
         Style::MultiBlock if cfg_trailing => config.cfg_rank(),
-        Style::MultiBlock => config.group_rank(path_group(tree, config)),
+        Style::MultiBlock => config.group_rank(path_group(tree)),
     }
 }
