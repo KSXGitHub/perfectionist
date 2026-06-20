@@ -534,3 +534,9 @@ entirely.
   should defer to this rule, since the `json!` rewrite
   eliminates the `format!` invocation entirely and the wrap
   question becomes moot.
+- [`deindented-multiline-string`](./deindented-multiline-string.md) —
+  same direction: when a de-indented multi-line literal's content
+  parses as a structurally interesting JSON document,
+  `deindented_multiline_string` emits nothing and lets this rule
+  suggest the `json!` form, which removes the literal — and its
+  de-indentation — entirely.

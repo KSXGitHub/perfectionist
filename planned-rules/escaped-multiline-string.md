@@ -371,3 +371,17 @@ text_block! {
 ```
 
 Both rules are independent and neither suppresses the other.
+
+## Interaction with `perfectionist::deindented_multiline_string`
+
+The two rules partition the multi-line-string-literal space by
+*source spelling*. This rule targets newlines compressed onto one
+(or few) source lines as `\n` escapes; its sibling
+[`deindented-multiline-string`](./deindented-multiline-string.md)
+targets newlines spelled as *raw* source breaks that drop the
+literal's body out of the surrounding indentation. A literal can
+satisfy both decoded-value triggers, so to avoid double-firing
+`escaped_multiline_string` defers on any literal whose source
+contains a de-indenting raw line break — `deindented_multiline_string`
+owns that case and offers the richer remedy menu (`include_str!`
+extraction, single-line collapse, `json!` deferral).
