@@ -535,8 +535,9 @@ entirely.
   eliminates the `format!` invocation entirely and the wrap
   question becomes moot.
 - [`deindented-multiline-string`](./deindented-multiline-string.md) —
-  same direction: when a de-indented multi-line literal's content
-  parses as a structurally interesting JSON document,
-  `deindented_multiline_string` emits nothing and lets this rule
-  suggest the `json!` form, which removes the literal — and its
-  de-indentation — entirely.
+  *not* a deferral, unlike the two above: a de-indented multi-line
+  literal whose content is JSON triggers **both** rules, and that is
+  intended. They do different things — this rule rewrites the JSON
+  *construction* (string → `json!`), that one flags the *source
+  layout* (the de-indented body) and does no content parsing — so
+  both diagnostics are appropriate and neither avoids the other.

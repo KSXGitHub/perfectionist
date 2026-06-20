@@ -137,13 +137,8 @@ enclosing statement's indentation column:
    - Inside any attribute meta-item (`#[doc = "…"]`,
      `#[display("…")]`, `#[error("…")]`, …) — the literal is
      consumed by the attribute and reshaping it is not equivalent.
-2. Classify the content to choose the suggested remedy:
-   - **Structurally interesting JSON** (parses via
-     `serde_json::from_str` to an object/array carrying a non-empty
-     object, the same predicate as
-     `perfectionist::manual_json_string`) → defer to that rule (see
-     [Interaction](#interaction-with-sibling-rules)); emit nothing
-     here.
+2. Pick the suggested remedy from the literal's **shape** — no
+   content parsing, which keeps the trigger simple:
    - **Single logical line** (the decoded value has no interior
      newline — at most a single trailing `\n`) → suggest collapsing
      to one source line (`"24.0.0\n"`). This is the case the rule
@@ -155,10 +150,18 @@ enclosing statement's indentation column:
      note, since a de-indented block is usually a foreign-format
      fixture.
 
+The rule does **not** inspect what the content *is*. A de-indented
+block whose content happens to be JSON still fires here on its
+layout, and `perfectionist::manual_json_string` independently fires
+on the same literal to suggest the `json!` construction — the two do
+different things and neither suppresses the other (see
+[Interaction](#interaction-with-sibling-rules)).
+
 The trigger is the **raw line break plus de-indentation**, not the
 decoded newline count. A literal whose newlines are all `\n`
-escapes on one source line does not span source lines and is left
-to `perfectionist::escaped_multiline_string`. A raw/`\<newline>`
+escapes on one source line does not span source lines and so does
+not match this rule's trigger (it is the domain of
+`perfectionist::escaped_multiline_string`). A raw/`\<newline>`
 literal whose body is indented to *match or exceed* the enclosing
 code (so nothing is de-indented) does not fire — see the gen-docs
 boundary case below.
@@ -220,9 +223,12 @@ let tsconfig = r#"
 "#;
 ```
 
-**Prefer:** `include_str!("fixtures/create/tsconfig.json")`, or —
-because the content is JSON — `serde_json::json!` via
-`perfectionist::manual_json_string`:
+This rule fires on the de-indented layout and suggests its own
+remedies — `include_str!("fixtures/create/tsconfig.json")` or a
+`text_block_fnl!` block. Separately,
+`perfectionist::manual_json_string` fires on the same literal and
+suggests the `serde_json::json!` construction, which is the better
+end state for JSON specifically:
 
 ```rust
 let tsconfig = serde_json::json!({
@@ -231,6 +237,9 @@ let tsconfig = serde_json::json!({
 })
 .to_string();
 ```
+
+Both diagnostics are expected; they address different defects (one
+the source layout, one the hand-rolled JSON construction).
 
 ### Accidentally multi-line single line
 
@@ -408,13 +417,12 @@ text_block_fnl_import_path = "text_block_macros::text_block_fnl"
   zero) nothing is shallower, so a top-level `const` with a
   flush-left body does not fire — the least-offensive case, left
   out deliberately.
-- **Content classification.** Run `serde_json::from_str` on the
-  decoded value; if it parses to a structurally interesting
-  document (object/array with a non-empty object somewhere — reuse
-  the `perfectionist::manual_json_string` predicate), defer to that
-  rule and emit nothing. Otherwise count interior newlines in the
-  decoded value to pick the single-line-collapse vs. block-reshape
-  branch.
+- **Shape classification.** Count interior newlines in the decoded
+  value to pick the single-line-collapse vs. block-reshape branch.
+  No content parsing — the rule never inspects whether the body is
+  JSON, TOML, or anything else, which keeps it independent of
+  `perfectionist::manual_json_string` and avoids pulling
+  `serde_json` into this pass.
 - **Skip contexts.** Reuse the sibling rule's machinery: a
   `Span::from_expansion()` check against `format_macros` /
   `text_block_macros_paths` for the macro cases, and a
@@ -439,7 +447,7 @@ text_block_fnl_import_path = "text_block_macros::text_block_fnl"
 straightforward snippet scan against the decoded value and a
 column comparison through the source map. The context-skip logic is
 shared with `perfectionist::escaped_multiline_string`. The work
-concentrates in the autofix and the content classification:
+concentrates in the autofix:
 
 - `text_block_macros` autofix: split the decoded value on `\n`,
   emit one quoted line each (raw-quoting lines that contain `"`),
@@ -474,28 +482,27 @@ via `[perfectionist].disable`.
 
 ## Interaction with sibling rules
 
+These rules each do their own thing on their own trigger; none
+suppresses, defers to, or coordinates with another. Cross-rule
+avoidance would only complicate every implementation, so a literal
+that happens to trip two of them simply gets two diagnostics — they
+point at different defects, so both are appropriate.
+
 - [`escaped-multiline-string`](./escaped-multiline-string.md) — the
-  two rules split the multi-line-string-literal space by **source
-  spelling**, not by decoded value:
+  two rules target different **source spellings** of a multi-line
+  string, so in practice they rarely fire on the same literal:
   - `escaped_multiline_string` targets newlines crammed onto one
     (or few) source lines as `\n` escapes — *too compressed*.
   - `deindented_multiline_string` targets newlines spelled as raw
     source breaks that drop the body out of the code's
     indentation — *too sprawling*.
 
-  A literal can in principle satisfy both decoded-value triggers,
-  so they must not double-fire. `deindented_multiline_string` owns
-  the raw-line-break-with-de-indentation case and takes precedence
-  there (its remedy menu — `include_str!` extraction, single-line
-  collapse, `json!` deferral — is richer than a pure shape
-  rewrite); `escaped_multiline_string` defers on any literal whose
-  source contains a de-indenting raw line break. See the reciprocal
-  note in that rule's file.
-- [`manual-json-string`](./manual-json-string.md) — when the
-  de-indented literal's content parses as a structurally
-  interesting JSON document, this rule emits nothing and lets
-  `manual_json_string` suggest the `serde_json::json!` form, which
-  eliminates the string literal entirely and makes the
-  de-indentation moot.
-</content>
-</invoke>
+  This rule's trigger is the raw-line-break-with-de-indentation
+  shape; a purely `\n`-escaped literal does not match it at all.
+- [`manual-json-string`](./manual-json-string.md) — a de-indented
+  literal whose content is JSON triggers **both** rules, and that is
+  intended. They address different defects: `manual_json_string`
+  rewrites the *construction* (hand-rolled string → `serde_json::json!`),
+  while this rule flags the *source layout* (the de-indented body).
+  This rule does no content parsing, so it neither knows nor cares
+  that the body is JSON.

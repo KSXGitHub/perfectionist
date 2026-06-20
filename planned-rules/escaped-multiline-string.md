@@ -374,14 +374,14 @@ Both rules are independent and neither suppresses the other.
 
 ## Interaction with `perfectionist::deindented_multiline_string`
 
-The two rules partition the multi-line-string-literal space by
-*source spelling*. This rule targets newlines compressed onto one
-(or few) source lines as `\n` escapes; its sibling
+The two rules do different things on different source spellings and
+stay fully independent — neither defers to or suppresses the other.
+This rule targets newlines compressed onto one (or few) source lines
+as `\n` escapes;
 [`deindented-multiline-string`](./deindented-multiline-string.md)
 targets newlines spelled as *raw* source breaks that drop the
-literal's body out of the surrounding indentation. A literal can
-satisfy both decoded-value triggers, so to avoid double-firing
-`escaped_multiline_string` defers on any literal whose source
-contains a de-indenting raw line break — `deindented_multiline_string`
-owns that case and offers the richer remedy menu (`include_str!`
-extraction, single-line collapse, `json!` deferral).
+literal's body out of the surrounding indentation. Because this
+rule's motivating shape is the `\n`-escaped form and the sibling's
+is the raw-break form, they rarely fire on the same literal in
+practice; keeping each trigger self-contained (no cross-rule
+avoidance) keeps both implementations simple.
