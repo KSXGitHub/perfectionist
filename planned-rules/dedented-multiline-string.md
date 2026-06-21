@@ -67,6 +67,19 @@ what the literal *is*:
   };
   ```
 
+- **A std-only inline form** is `concat!`, one quoted line per
+  source line, each ending in `\n` as needed:
+
+  ```rust
+  let justfile = concat!(
+      "clean:\n",
+      "    rm -rf ./dist\n",
+      "\n",
+      "build:\n",
+      "    tsc\n",
+  );
+  ```
+
 - **A JSON document** is better built with `serde_json::json!`
   (the domain of `perfectionist::manual_json_string`).
 
@@ -130,16 +143,17 @@ least one body line after such a break begins at a column
    - Inside any attribute meta-item (`#[doc = "…"]`,
      `#[display("…")]`, `#[error("…")]`, …) — the literal is
      consumed by the attribute and reshaping it is not equivalent.
-2. Pick the suggested remedy from the literal's **shape** — no
-   content parsing, which keeps the trigger simple:
-   - **Single logical line** (the decoded value has no interior
-     newline — at most a single trailing `\n`) → suggest collapsing
-     to one source line (`"24.0.0\n"`). This is the case the rule
-     exists to catch even though it "obviously" should be one line.
-   - **Otherwise** → suggest the inline `text_block_fnl!` /
-     `text_block!` form and, when `suggest_include_str` is on, also
-     surface "extract to a sibling file and `include_str!` it" as a
-     help note (a dedented block is usually a foreign-format fixture).
+2. Emit the diagnostic with **every** applicable alternative
+   suggestion attached — a single diagnostic carries several, each
+   shown as its own `help:` fix — chosen by the literal's **shape**,
+   with no content parsing:
+   - **One non-empty line** (every line but one is empty — e.g.
+     `"24.0.0\n"` spread across source lines) → suggest collapsing to
+     one source line, preserving the trailing `\n`(s).
+   - **Multiple non-empty lines** → suggest all three of:
+     `include_str!` of a sibling fixture file; the `text_block_fnl!` /
+     `text_block!` form; and `concat!` (one quoted line per line, each
+     ending in `\n` as needed).
 
 The rule inspects only layout, never content: a dedented JSON block
 fires here on its layout and, independently, on
@@ -319,13 +333,6 @@ let s = include_str!("fixtures/create/justfile");
 
 ```toml
 [perfectionist::dedented_multiline_string]
-# Whether to additionally surface "extract to a sibling file and
-# pull it in with `include_str!`" as a help note. Defaults to
-# `true`: a dedented block is most often a foreign-format
-# fixture that reads best as its own file. Set to `false` to keep
-# the suggestion purely inline.
-suggest_include_str = true
-
 # Format-family macros whose first positional argument is a
 # template and must not be reshaped. Mirrors
 # `perfectionist::escaped_multiline_string`.
@@ -375,9 +382,10 @@ text_block_fnl_import_path = "text_block_macros::text_block_fnl"
   least one body line is shallower. At column-zero indentation
   nothing is shallower, so a top-level flush-left `const` does not
   fire — the least-offensive case, left out deliberately.
-- **Shape classification.** Count interior newlines in the decoded
-  value to choose the single-line-collapse vs. block-reshape branch.
-  No content parsing (so no `serde_json` in this pass).
+- **Shape classification.** Split the decoded value on `\n`; if
+  exactly one line is non-empty, take the single-line-collapse
+  branch, otherwise the multi-suggestion branch. No content parsing
+  (so no `serde_json` in this pass).
 - **Skip contexts.** Reuse the sibling rule's machinery: a
   `Span::from_expansion()` check against `format_macros` /
   `text_block_macros_paths` for the macro cases, and a
@@ -402,20 +410,24 @@ text_block_fnl_import_path = "text_block_macros::text_block_fnl"
 straightforward snippet scan against the decoded value and a
 column comparison through the source map. The context-skip logic is
 shared with `perfectionist::escaped_multiline_string`. The work
-concentrates in the autofix:
+concentrates in the suggestions, all attached to one diagnostic:
 
-- `text_block_macros` autofix: split the decoded value on `\n`,
-  emit one quoted line each (raw-quoting lines that contain `"`),
-  choose `text_block_fnl!` when the value ends in `\n` and
-  `text_block!` otherwise — the same construction as
-  `escaped_multiline_string`. `Applicability::MaybeIncorrect`
-  (assumes the `text-block-macros` dependency and may need an added
-  `use`).
-- single-line collapse: replace the literal's source with a
-  one-line `"…\n"`. `Applicability::MachineApplicable`.
-- `include_str!` extraction is offered as a **help note only**, not
-  a structured suggestion — it requires creating a new file, which
-  a rustc suggestion cannot do.
+- `text_block_macros`: split the decoded value on `\n`, emit one
+  quoted line each (raw-quoting lines that contain `"`), choosing
+  `text_block_fnl!` when the value ends in `\n` and `text_block!`
+  otherwise. `Applicability::MaybeIncorrect` (assumes the
+  `text-block-macros` dependency, may need an added `use`).
+- `concat!`: emit one quoted line literal per line, each ending in
+  `\n` where the value has one. Std-only and value-preserving;
+  `Applicability::MachineApplicable`.
+- single-line collapse: replace the source with a one-line `"…\n"`,
+  preserving the trailing `\n`(s). `Applicability::MachineApplicable`.
+- `include_str!` extraction is a **help note only** — it needs a new
+  file, which a rustc suggestion cannot create.
+
+With several suggestions on one diagnostic, `cargo fix` does not
+auto-apply (the choice is the author's); each appears under its own
+`help:`.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
