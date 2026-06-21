@@ -633,54 +633,32 @@ correctly-spelled one (`"crate::internals"`) never does.
 
 ## Config shape: boolean fields, not an array of toggles
 
-A fixed, small set of *independent* on/off switches is modelled as
-one boolean field per switch — never as a multi-select array of
-keywords backed by a `Vec<enum>`. The tell-tale signs that an array
-is the wrong shape: the parsed list is flattened into N booleans
-before the rule uses it; an empty array is overloaded to mean
-"none"; duplicate entries are meaningless; and the variant set is
-fixed and tiny. Separate `bool` fields say exactly that — N
-orthogonal toggles, each defaulting on its own — and they drop the
-empty-vs-absent ambiguity and the dead dedup logic the array form
-drags along. This was settled in
-<https://github.com/KSXGitHub/perfectionist/pull/255> (which
-replaced `wildcard_imports`' `exceptions = ["prelude",
-"root_reexport"]` array with the booleans `prelude_exception` /
-`root_reexport_exception`) and applies catalogue-wide.
+A fixed, small set of *independent* on/off switches is one boolean
+field per switch — never a multi-select array backed by a
+`Vec<enum>`. The tell-tale signs the array is wrong: it gets
+flattened into N booleans before use, an empty array is overloaded
+to mean "none", and duplicates are meaningless. Separate `bool`s say
+exactly that and drop the empty-vs-absent ambiguity. Settled in
+<https://github.com/KSXGitHub/perfectionist/pull/255> (which replaced
+`wildcard_imports`' `exceptions = ["prelude", "root_reexport"]` with
+the booleans `prelude_exception` / `root_reexport_exception`).
 
-This is distinct from three shapes that *are* correctly arrays or
-enums, and must not be "fixed" into booleans:
-
-- A genuine **single mutually-exclusive choice** — a `style` /
-  direction enum such as `import_granularity` (`crate` / `module` /
-  `item`) or `serde_wrapper_form_mismatch` (`transparent` /
-  `from_into`). One field, one value; the variants exclude each
-  other.
-- An **open-ended list of user-supplied strings** —
-  `allowed_paths`, `prelude_segment_names`, `extra_*`, `ignore`,
-  and the clap-help `forbid` / `override_keys` sets. The set is
-  not fixed, so a `Vec<String>` is right.
-- A **meaningful permutation**, where order carries information —
-  `import_grouping`'s `order`. It is not a set of toggles; the
-  sequence is the data.
-
-The dividing line is membership-fixedness and independence, not
-length. A five-member fixed set of independent toggles is still the
-anti-pattern in principle, but five members read acceptably as a
-list, so a borderline case may keep the array as a *deliberate*,
-documented call rather than an accident —
-`path_qualification_mismatch`'s `contexts` array
-(`["call", "type", "derive", "macro", "trait_bound"]`) is the
-catalogue's one such exception.
+Three shapes are *not* this anti-pattern and stay as arrays/enums: a
+single mutually-exclusive **choice** (a `style` / direction enum like
+`import_granularity`); an **open-ended list** of user strings
+(`allowed_paths`, `extra_*`, `ignore`); and a **permutation** where
+order is the data (`import_grouping`'s `order`). The dividing line is
+fixed-membership-and-independence, not length — so a borderline case
+may keep the array as a *deliberate*, documented call:
+`path_qualification_mismatch`'s `contexts` array is the catalogue's
+one such exception.
 
 ### Scan-surface toggles
 
-Text-scanning rules — those that look for a pattern in comments and
-string literals — share one concrete instance of the convention:
-the *where do I scan?* surfaces are three independent booleans, not
-a `targets` array. Reach for the same three field names and
-`true` defaults every time, so the config reads identically across
-rules:
+The recurring concrete instance: a text-scanning rule's *where do I
+scan?* surfaces are three independent booleans, not a `targets`
+array. Reuse the same field names and `true` defaults so the config
+reads identically across rules:
 
 ```rust
 /// Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
@@ -692,11 +670,9 @@ scan_regular_comments: bool,
 scan_string_literals: bool,
 ```
 
-`perfectionist::bare_email` (`src/rules/bare_email.rs`, doc +
-regular comments) and `perfectionist::unpinned_repo_ref`
-(`src/rules/unpinned_repo_ref/config.rs`, all three) already follow
-this; a rule that scans only a subset omits the surfaces it can't
-reach rather than renaming the ones it keeps.
+`perfectionist::bare_email` and `perfectionist::unpinned_repo_ref`
+already follow this; a rule scanning only a subset omits the surfaces
+it can't reach rather than renaming the ones it keeps.
 
 ## Suppressing proc-macro-synthesised violations
 
