@@ -32,9 +32,13 @@ declare_tool_lint! {
     ///   separated by exactly one blank line. The group set, in order,
     ///   is std (`std` / `core` / `alloc` / `proc_macro` / `test`),
     ///   internal (`crate` / `super` / `self`), then third-party (every
-    ///   other crate). The `order` and `cfg_block_handling` knobs tune
-    ///   the partition; the inner ordering within each group is left to
-    ///   `cargo fmt`.
+    ///   other crate). A bare-path import of a first-party submodule
+    ///   (`mod error; use error::Foo;`) is classified as internal, not
+    ///   third-party: the rule reads source without name resolution, so it
+    ///   recognises a bare first segment that names a `mod` declared in
+    ///   the same module scope. The `order` and `cfg_block_handling`
+    ///   knobs tune the partition; the inner ordering within each group
+    ///   is left to `cargo fmt`.
     ///
     /// This rule only governs the *partitioning* of imports into blocks.
     /// Whether items within each `use` are merged or split is the job of
@@ -275,9 +279,34 @@ impl ImportGroupingMismatch {
         live_module_spans: &HashSet<SpanRange>,
         violations: &mut Vec<Pending>,
     ) {
+        // Names of `mod` items declared in this scope. A bare `use`
+        // whose first segment names one of them imports a first-party
+        // submodule, not a same-named crate, so `classify` slots it into
+        // the internal group instead of third-party. Module items are
+        // order-independent, so the whole scope is collected up front —
+        // `mod foo;` may follow the `use foo::Bar;` that depends on it.
+        //
+        // Every `mod` is keyed syntactically, including a cfg-disabled
+        // `#[cfg(FALSE)] mod foo` that the re-parse keeps but the build
+        // drops — unlike the inline-recursion guard below, which consults
+        // `live_module_spans` to avoid *linting* a dead module. That guard
+        // can't be mirrored here for an out-of-line `mod foo;` (it is
+        // `Unloaded`, with no body span to match), and is not worth it: a
+        // dead `mod foo` only misclassifies when a real dependency crate
+        // is also named `foo` and an active `use foo::Bar` resolves to
+        // that crate — a collision this syntactic approximation, which
+        // does no name resolution, does not attempt to detect.
+        let local_modules: HashSet<String> = items
+            .iter()
+            .filter_map(|item| match &item.kind {
+                ItemKind::Mod(_, ident, _) => Some(ident.name.to_string()),
+                _ => None,
+            })
+            .collect();
+
         let mut run: Vec<UseStmt<'_>> = Vec::new();
         for item in items {
-            match self.use_stmt(lint_context, item) {
+            match self.use_stmt(lint_context, item, &local_modules) {
                 Some(stmt) => run.push(stmt),
                 // A non-`use` item (including `extern crate`, kept above
                 // the `use` block), a macro-expanded `use`, or one whose
@@ -314,6 +343,7 @@ impl ImportGroupingMismatch {
         &self,
         lint_context: &LateContext<'_>,
         item: &'ast Item,
+        local_modules: &HashSet<String>,
     ) -> Option<UseStmt<'ast>> {
         let ItemKind::Use(tree) = &item.kind else {
             return None;
@@ -326,7 +356,7 @@ impl ImportGroupingMismatch {
         // applies some other attribute — the import itself is always
         // present — so it does not make a statement cfg-gated for grouping.
         let is_cfg_gated = item.attrs.iter().any(|attr| attr.has_name(sym::cfg));
-        let rank = classify::rank(tree, is_cfg_gated, &self.config);
+        let rank = classify::rank(tree, is_cfg_gated, &self.config, local_modules);
 
         // The replacement starts at the first attribute, or at the `use`
         // keyword when there are none. Attributes precede the item span, so

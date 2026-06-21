@@ -21,9 +21,13 @@ inactive by default; a project opts in and sets `style` to one of:
   separated by exactly one blank line. The group set, in order,
   is std (`std` / `core` / `alloc` / `proc_macro` / `test`),
   internal (`crate` / `super` / `self`), then third-party (every
-  other crate). The `order` and `cfg_block_handling` knobs tune
-  the partition; the inner ordering within each group is left to
-  `cargo fmt`.
+  other crate). A bare-path import of a first-party submodule
+  (`mod error; use error::Foo;`) is classified as internal, not
+  third-party: the rule reads source without name resolution, so it
+  recognises a bare first segment that names a `mod` declared in
+  the same module scope. The `order` and `cfg_block_handling`
+  knobs tune the partition; the inner ordering within each group
+  is left to `cargo fmt`.
 
 This rule only governs the *partitioning* of imports into blocks.
 Whether items within each `use` are merged or split is the job of

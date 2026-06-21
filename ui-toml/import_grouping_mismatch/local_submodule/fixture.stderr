@@ -1,21 +1,21 @@
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:25:1
+  --> $DIR/fixture.rs:26:1
    |
 LL | / use std::time::Duration;
 LL | |
-LL | | use crate::config::Args;
-LL | |
 LL | | use clap::Parser;
-   | |_________________^
+LL | |
+LL | | use error::Foo;
+   | |_______________^
    |
    = note: `#[warn(perfectionist::import_grouping_mismatch)]` on by default
 help: regroup the imports
    |
 LL + use std::time::Duration;
 LL + 
-LL + use clap::Parser;
+LL + use error::Foo;
 LL + 
-LL + use crate::config::Args;
+LL + use clap::Parser;
    |
 
 warning: 1 warning emitted
