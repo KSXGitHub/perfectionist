@@ -38,8 +38,13 @@ codebase.
 
 ```toml
 [commit_id_length_mismatch]
-# Where the lint scans. Subset of these.
-targets = ["doc", "comment", "string_literal"]
+# Where the lint scans. Three independent on/off switches, mirroring
+# `perfectionist::bare_email` and `perfectionist::unpinned_repo_ref`
+# (see the "Scan-surface toggles" convention in
+# IMPLEMENTATION_CONVENTIONS.md). Each defaults to `true`.
+scan_doc_comments = true       # `///`, `//!`, `/** */`, `/*! */`
+scan_regular_comments = true   # `//`, `/* */`
+scan_string_literals = true    # `"..."`, `r"..."`
 
 # Range for the SHA length, inclusive.
 #

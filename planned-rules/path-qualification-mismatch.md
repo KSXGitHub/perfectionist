@@ -68,6 +68,15 @@ style = "unqualified"
 #                  the full path and removal of the `use`.
 
 # Where the lint applies. Each context can be toggled independently.
+#
+# This is a fixed set of independent on/off toggles, the shape the
+# "Config shape: boolean fields, not an array of toggles" convention
+# in IMPLEMENTATION_CONVENTIONS.md otherwise turns into separate
+# `bool` fields. Keeping it an array here is a deliberate exception,
+# not an oversight: at five members the list still reads cleanly,
+# and "the set of contexts" is a natural unit to name. It is the
+# catalogue's one sanctioned array-of-toggles; do not copy the shape
+# into a new rule without the same explicit justification.
 contexts = ["call", "type", "derive", "macro", "trait_bound"]
 
 # Prefixes that the `unqualified` style leaves alone. Defaults to
