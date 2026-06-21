@@ -404,6 +404,10 @@ format_macros = [
   `ui/<rule>_proc_macro.rs` fixture is required. Record this
   reasoning at the span-selection site so the omission reads as
   deliberate.
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for cross-cutting conventions that apply to every rule in this
+  catalogue, in particular the lint-name namespacing
+  (`perfectionist::*`) that every registered lint follows.
 
 ### Difficulty
 
@@ -425,17 +429,6 @@ concentrates in the suggestions, all attached to one diagnostic:
   preserving the trailing `\n`(s). Value-preserving.
 - `include_str!` extraction is a **help note only** — it needs a new
   file, which a rustc suggestion cannot create.
-
-`MachineApplicable` requires *both* that exactly one suggestion is
-enabled in config *and* that the fix is intrinsically exact — only
-`concat!` and the single-line collapse qualify (and only when sole).
-Otherwise every suggestion is `MaybeIncorrect`, so `cargo dylint
---fix` never silently rewrites to one of several alternatives.
-
-- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
-  for cross-cutting conventions that apply to every rule in this
-  catalogue, in particular the lint-name namespacing
-  (`perfectionist::*`) that every registered lint follows.
 
 ## Default state
 
