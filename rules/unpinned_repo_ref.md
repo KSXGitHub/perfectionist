@@ -51,11 +51,18 @@ ref that always denotes the exact content the author linked to.
 
 Configure via `dylint.toml` under `["perfectionist::unpinned_repo_ref"]`. Every field is optional; the per-field prose below states the default.
 
-### `targets`: `[Target]` (optional)
+### `scan_doc_comments`: `boolean` (optional)
 
-Surfaces to scan, any subset of `doc`, `comment`, and
-`string_literal`. Defaults to
-`["doc", "comment", "string_literal"]`.
+Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
+Defaults to `true`.
+
+### `scan_regular_comments`: `boolean` (optional)
+
+Scan regular comments (`//`, `/* */`). Defaults to `true`.
+
+### `scan_string_literals`: `boolean` (optional)
+
+Scan string literals (`"..."`, `r"..."`). Defaults to `true`.
 
 ### `sha_recognition_length`: `unsigned integer` (optional)
 
@@ -94,23 +101,6 @@ pattern here is ignored even when it also appears in `hosts`.
 Defaults to `[]`.
 
 ### Types
-
-#### `Target` (enum)
-
-Which text surfaces the rule scans. Each value names one of the
-three places a forge URL is written.
-
-##### `"doc"` (Rust: `Doc`)
-
-Doc comments (`///`, `//!`, `/** */`, `/*! */`).
-
-##### `"comment"` (Rust: `Comment`)
-
-Regular comments (`//`, `/* */`).
-
-##### `"string_literal"` (Rust: `StringLiteral`)
-
-String literals (`"..."`, `r"..."`).
 
 #### `HostEntry` (struct)
 
