@@ -137,9 +137,8 @@ least one body line after such a break begins at a column
      is a template the macro interprets. Configurable via
      `format_macros`.
    - Already inside a `text_block!` / `text_block_fnl!` invocation
-     (configurable via `text_block_macros_paths`) or an
-     `include_str!` / `include_bytes!` argument — avoids firing on
-     already-fixed code and on path arguments.
+     or an `include_str!` / `include_bytes!` argument — avoids firing
+     on already-fixed code and on path arguments.
    - Inside any attribute meta-item (`#[doc = "…"]`,
      `#[display("…")]`, `#[error("…")]`, …) — the literal is
      consumed by the attribute and reshaping it is not equivalent.
@@ -344,19 +343,6 @@ format_macros = [
   "debug_assert", "debug_assert_eq", "debug_assert_ne",
   "error", "warn", "info", "debug", "trace", "log",
 ]
-
-# text-block-macros invocations whose arguments are already the
-# rewritten form; skipped to avoid firing on the rule's own output.
-text_block_macros_paths = [
-  "text_block_macros::text_block",
-  "text_block_macros::text_block_fnl",
-]
-
-# Import paths the `text_block_macros` autofix suggests, if no such
-# import is already in scope. Override when the project re-exports
-# the macros from an internal prelude.
-text_block_import_path = "text_block_macros::text_block"
-text_block_fnl_import_path = "text_block_macros::text_block_fnl"
 ```
 
 ## Implementation notes
@@ -387,11 +373,9 @@ text_block_fnl_import_path = "text_block_macros::text_block_fnl"
   branch, otherwise the multi-suggestion branch. No content parsing
   (so no `serde_json` in this pass).
 - **Skip contexts.** Reuse the sibling rule's machinery: a
-  `Span::from_expansion()` check against `format_macros` /
-  `text_block_macros_paths` for the macro cases, and a
-  `tcx.hir_parents(...)` walk for the attribute case. `include_str!`
-  / `include_bytes!` arguments are caught by the same
-  expansion-path check.
+  `Span::from_expansion()` check against `format_macros` (plus a
+  built-in `text_block!` / `include_str!` path set) for the macro
+  cases, and a `tcx.hir_parents(...)` walk for the attribute case.
 - **Proc-macro suppression.** The diagnostic's primary span is the
   **whole literal**, which is wider than the synthesised-identifier
   spans the "Suppressing proc-macro-synthesised violations" section
