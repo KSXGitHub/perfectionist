@@ -142,17 +142,23 @@ least one body line after such a break begins at a column
    - Inside any attribute meta-item (`#[doc = "…"]`,
      `#[display("…")]`, `#[error("…")]`, …) — the literal is
      consumed by the attribute and reshaping it is not equivalent.
-2. Emit the diagnostic with **every** applicable alternative
-   suggestion attached — a single diagnostic carries several, each
-   shown as its own `help:` fix — chosen by the literal's **shape**,
+2. Emit the diagnostic with each **enabled** suggestion attached
+   (toggled in config — see below), chosen by the literal's **shape**
    with no content parsing:
    - **One non-empty line** (every line but one is empty — e.g.
-     `"24.0.0\n"` spread across source lines) → suggest collapsing to
-     one source line, preserving the trailing `\n`(s).
-   - **Multiple non-empty lines** → suggest all three of:
-     `include_str!` of a sibling fixture file; the `text_block_fnl!` /
-     `text_block!` form; and `concat!` (one quoted line per line, each
-     ending in `\n` as needed).
+     `"24.0.0\n"` spread across source lines) → the single-line
+     collapse, preserving the trailing `\n`(s).
+   - **Multiple non-empty lines** → `include_str!` of a sibling
+     fixture file, the `text_block_fnl!` / `text_block!` form, and
+     `concat!` (one quoted line per line, each ending in `\n` as
+     needed).
+
+   Applicability is keyed to the toggles, **not** the individual fix:
+   a structured suggestion is `MachineApplicable` only when exactly
+   one suggestion is enabled (so `cargo dylint --fix` applies that one
+   form deterministically). With two or more enabled, every
+   suggestion is `MaybeIncorrect`, so `--fix` leaves the choice to the
+   author instead of silently rewriting to one of them.
 
 The rule inspects only layout, never content: a dedented JSON block
 fires here on its layout and, independently, on
@@ -332,6 +338,17 @@ let s = include_str!("fixtures/create/justfile");
 
 ```toml
 [perfectionist::dedented_multiline_string]
+# Which fixes the diagnostic offers. All on by default, so the
+# diagnostic shows them as alternatives and `cargo dylint --fix`
+# applies none (each is `MaybeIncorrect`). Set exactly one to `true`
+# (the rest `false`) to make that form the single `MachineApplicable`
+# fix `--fix` applies. (`include_str` is a help note — it needs a new
+# file — so it is never auto-applied even when it is the only one on.)
+suggest_include_str = true   # multi-line: extract to a sibling file
+suggest_text_block  = true   # multi-line: text_block_fnl! / text_block!
+suggest_concat      = true   # multi-line: concat!("line\n", …)
+suggest_single_line = true   # one non-empty line: collapse to "…\n"
+
 # Format-family macros whose first positional argument is a
 # template and must not be reshaped. Mirrors
 # `perfectionist::escaped_multiline_string`.
@@ -399,19 +416,21 @@ concentrates in the suggestions, all attached to one diagnostic:
 - `text_block_macros`: split the decoded value on `\n`, emit one
   quoted line each (raw-quoting lines that contain `"`), choosing
   `text_block_fnl!` when the value ends in `\n` and `text_block!`
-  otherwise. `Applicability::MaybeIncorrect` (assumes the
-  `text-block-macros` dependency, may need an added `use`).
+  otherwise. Always `MaybeIncorrect` — it assumes the
+  `text-block-macros` dependency and may need an added `use`, so it
+  stays MaybeIncorrect even when it is the only enabled suggestion.
 - `concat!`: emit one quoted line literal per line, each ending in
-  `\n` where the value has one. Std-only and value-preserving;
-  `Applicability::MachineApplicable`.
+  `\n` where the value has one. Std-only and value-preserving.
 - single-line collapse: replace the source with a one-line `"…\n"`,
-  preserving the trailing `\n`(s). `Applicability::MachineApplicable`.
+  preserving the trailing `\n`(s). Value-preserving.
 - `include_str!` extraction is a **help note only** — it needs a new
   file, which a rustc suggestion cannot create.
 
-With several suggestions on one diagnostic, `cargo fix` does not
-auto-apply (the choice is the author's); each appears under its own
-`help:`.
+`MachineApplicable` requires *both* that exactly one suggestion is
+enabled in config *and* that the fix is intrinsically exact — only
+`concat!` and the single-line collapse qualify (and only when sole).
+Otherwise every suggestion is `MaybeIncorrect`, so `cargo dylint
+--fix` never silently rewrites to one of several alternatives.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
