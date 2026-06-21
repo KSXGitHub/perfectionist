@@ -115,6 +115,14 @@ pattern that several rules call out by reference — live in
   `text_block_fnl! { ... }` (default) or the
   `"line\n\<newline>line"` continuation form. Skips templates and
   attribute literals.
+- [`dedented-multiline-string.md`](./dedented-multiline-string.md) — the
+  source-layout complement: when a string literal is broken across
+  source lines by *raw* line breaks that drop its body out of the
+  surrounding indentation (flush to the left margin), prefer
+  `include_str!` of a sibling fixture file, a `text_block_fnl! { ... }`
+  re-indented block, or — for a single logical line — a one-line
+  `"…\n"`. Independent of `manual_json_string`: a dedented JSON
+  literal trips both.
 - [`overly-long-print-macro.md`](./overly-long-print-macro.md) — when a
   splittable print macro (`println!`, `eprintln!`, `writeln!`,
   log family, …) has an embedded-`\n` template *and* spans more
