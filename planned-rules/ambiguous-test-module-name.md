@@ -26,12 +26,16 @@ and affixed forms.
 Flag a `mod` item — inline `mod foo { ... }` or out-of-line
 `mod foo;` — when **both** hold:
 
-1. The module is compiled **only** under test. Its own attribute list
-   carries a `cfg` whose predicate makes `test` mandatory: bare
-   `#[cfg(test)]`, or `#[cfg(all(test, ...))]` where `test` is a
-   conjunct. A predicate that leaves the module compiled outside test
-   too — `#[cfg(any(test, feature = "x"))]`, `#[cfg(not(test))]` — is
-   **not** a test-only module and is out of scope.
+1. The module is compiled **only** under test — that is, switching
+   `test` *off* would switch the module off. Equivalently, `test` is a
+   mandatory conjunct of the module's `cfg` predicate: bare
+   `#[cfg(test)]`, or an `all(...)` with `test` anywhere among its
+   operands (`#[cfg(all(unix, test))]` counts exactly as
+   `#[cfg(all(test, unix))]` does — conjunct order is irrelevant). A
+   predicate that leaves the module compiled outside test too is **not**
+   a test-only module and is out of scope: `#[cfg(any(unix, test))]`
+   still compiles on `unix` without `test`, and `#[cfg(not(test))]` /
+   `#[cfg(feature = "x")]` are not test-gated at all.
 2. The module's name matches **none** of the configured patterns: it is
    not equal to any `whole_names` entry, does not start with any
    `prefixes` entry, and does not end with any `suffixes` entry.
@@ -114,11 +118,22 @@ mod tests {
 }
 ```
 
+**Avoid:** test-only via `all(...)` (conjunct order irrelevant)
+
+```rust
+#[cfg(all(unix, test))]
+mod buttons;          // off when `test` is off ⇒ test-only ⇒ flagged
+```
+
 **Not flagged:** a module that is *not* test-only
 
 ```rust
+#[cfg(any(unix, test))]
+mod buttons;          // still compiled on `unix` without `test`;
+                      // a production module, so out of scope
+
 #[cfg(any(test, feature = "mock"))]
-mod buttons;          // also compiled with `mock`; a production module
+mod widgets;          // likewise also compiled with `mock`
 ```
 
 ## Autofix
