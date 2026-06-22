@@ -96,12 +96,13 @@ pattern that several rules call out by reference — live in
   (suggests `chain.pipe(f)`). Both checks default to enforce.
 
 ### Tests
-- [`unmarked-test-module.md`](./unmarked-test-module.md) — flag a
-  submodule compiled only under `#[cfg(test)]` whose name carries no
-  test marker (`test_foo` prefix or `foo_tests` suffix), so a
-  `#[cfg(test)] mod buttons;` reads as a test module from the `mod`
-  line and the file tree alone. The conventional `tests` / `test`
-  names are exempt; `style` selects which marker the rename suggests.
+- [`ambiguous-test-module-name.md`](./ambiguous-test-module-name.md) —
+  flag a submodule compiled only under `#[cfg(test)]` whose name
+  matches none of the configured test-name patterns (`whole_names`,
+  `prefixes`, `suffixes`; defaults cover `test` / `testing` / `spec`
+  forms), so a `#[cfg(test)] mod buttons;` is distinguishable from a
+  production submodule in the `mod` line and the file tree. The
+  conventional `tests` / `test` names match out of the box.
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
   `#[cfg_attr(..., ignore = "...")]` over `#[cfg(...)]` on `#[test]`s, and
   require an `ignore` reason string.
