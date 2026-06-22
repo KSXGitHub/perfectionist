@@ -183,6 +183,28 @@ pattern that several rules call out by reference — live in
   state. Active by default (requires the consumer's MSRV to permit
   `Lazy*`, i.e. Rust 1.80+).
 
+### Sorting and deduplication
+- [`in-place-sort-after-collect.md`](./in-place-sort-after-collect.md) —
+  when an iterator is collected into a `Vec` whose binding is `mut`
+  *only* so an immediately-following `Vec::sort*` can run in place,
+  prefer the owning `into_sorted*` method from
+  [`into-sorted`](https://crates.io/crates/into-sorted), which keeps the
+  value in the method chain and drops the `mut`. The `mut`-elision
+  sorting half of `KSXGitHub/perfectionist#308`. Active by default.
+- [`in-place-dedup-after-collect.md`](./in-place-dedup-after-collect.md)
+  — the deduping counterpart: a `mut` `Vec` whose `mut` exists only for
+  an in-place `Vec::dedup*` prefers the owning `into_deduped*` method
+  from [`into-deduped`](https://crates.io/crates/into-deduped). Excludes
+  non-consecutive deduplication (`itertools::unique`), which has no
+  `into-deduped` equivalent. Active by default.
+- [`itertools-sort-dedup-collect.md`](./itertools-sort-dedup-collect.md)
+  — when an `itertools` `sorted*` / `dedup*` adaptor chain is terminated
+  by a `Vec` `collect()`, prefer collecting first and applying the
+  owning `into_sorted*` / `into_deduped*` methods — the itertools form
+  compiles to worse code at `opt-level = 3` on complex chains. One rule
+  (the adaptors share a single chain and a unified rewrite); excludes
+  `itertools::unique*`. Active by default.
+
 ### Serde
 - [`serde-source-types.md`](./serde-source-types.md) — forbid
   `#[serde(from = "&'de str")]` / `try_from = "&'de str"`; advise
