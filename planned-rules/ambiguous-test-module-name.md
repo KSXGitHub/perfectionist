@@ -136,6 +136,48 @@ mod buttons;          // still compiled on `unix` without `test`;
 mod widgets;          // likewise also compiled with `mock`
 ```
 
+**Not flagged:** a test submodule nested below a *complying* boundary
+
+```text
+selectors.rs           #[cfg(test)] mod tests;   // complies, checked
+selectors/tests.rs     mod buttons;              // not checked (see Scope)
+selectors/tests/buttons.rs
+```
+
+`buttons` already sits under a test-named path (`selectors/tests/...`),
+so it is not ambiguous and is left alone.
+
+## Scope: only the outermost test-only module
+
+The rule checks the **outermost** test-only `mod` in any chain — the
+declaration at the boundary between production and test code — and not
+test submodules nested *below* it. This is by design, and the file tree
+shows why:
+
+```text
+selectors.rs                 #[cfg(test)] mod tests;   ← checked (complies)
+selectors/tests.rs           mod buttons;              ← not checked
+selectors/tests/buttons.rs
+```
+
+Because `buttons` is declared inside `tests.rs`, a file backing a
+`#[cfg(test)]` module, its whole subtree already lives under a
+test-named path. The `tests/` component *is* the test signal, so
+`buttons.rs` under it carries no ambiguity and there is nothing to
+flag. The same holds when the boundary module *violates*: flagging
+`selectors::helpers` and leaving `helpers::buttons` alone is the right
+granularity, since renaming `helpers` → `test_helpers` disambiguates
+the entire subtree in one move.
+
+Mechanically this falls out of the source-layout machinery for free.
+The re-parse reaches only files that back a *live* HIR module, and in a
+normal (non-test) `cargo dylint` build a `#[cfg(test)]` module's file
+is not live — so its contents are never walked. The outermost test-only
+`mod`, by contrast, always sits in a live parent file (the production
+module that declares it) and is always reached. So the one place
+ambiguity can arise — the production↔test boundary — is exactly the
+place the rule inspects.
+
 ## Autofix
 
 The diagnostic suggests renaming the module identifier so its name
@@ -190,13 +232,10 @@ Re-parsing preserves the `#[cfg(test)]` attribute the rule keys on.
   parser-combinator scan. (See *"Where to draw the line"* in the
   conventions file.)
 
-- **Limitation (over-approximation by omission).** A
-  `#[cfg(test)] mod foo;` declared *inside* another test-only module
-  whose file is itself cfg-gated out of a non-test build is not
-  reached, because that file does not back a live HIR module and so is
-  absent from the re-parsed file set. The issue's motivating case — one
-  level of test submodules declared in a production parent file — is
-  fully covered.
+- Walking only live module files means test submodules nested below a
+  test-only boundary are not reached — which is the intended scope, not
+  a gap. See *"Scope: only the outermost test-only module"* above for
+  why the boundary is the only place ambiguity arises.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
