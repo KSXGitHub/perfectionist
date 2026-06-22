@@ -58,6 +58,15 @@ pattern that several rules call out by reference — live in
   Pairs with `clippy::ptr_arg` and `clippy::needless_pass_by_value`
   to cover the full owned-vs-borrowed trade-off from the pacquet
   guide.
+- [`unwrapped-result-parameter.md`](./unwrapped-result-parameter.md) — when a
+  function takes a `Result<T, E>` argument but every use of it is an
+  `unwrap` / `expect` / `?` (the `Err` case is never handled), take
+  `T` and move the unwrap / propagation to the call site. Active by
+  default. Parameter-side mirror of `clippy::unnecessary_wraps`.
+- [`unwrapped-option-parameter.md`](./unwrapped-option-parameter.md) — the
+  `Option<T>` counterpart of `unwrapped-result-parameter`: a parameter
+  taken only to `unwrap` / `expect` / `?` it. Inactive by default,
+  because `Option` unwrapping is often idiomatic.
 
 ### OS strings, paths, and bytes
 - [`needless-utf8-conversion.md`](./needless-utf8-conversion.md)
