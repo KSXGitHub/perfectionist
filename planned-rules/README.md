@@ -95,6 +95,18 @@ pattern that several rules call out by reference — live in
   `f(value)`) and flags `f(chain)` wrapping a method chain
   (suggests `chain.pipe(f)`). Both checks default to enforce.
 
+### Iterators and collections
+- [`collect-then-join.md`](./collect-then-join.md) — flag a
+  `.collect::<Vec<_>>().join(sep)` chain that allocates an intermediate
+  `Vec` only to string-join it, and suggest `itertools`'
+  `Itertools::join` (`iter.join(sep)`), which streams the items into the
+  result without the temporary `Vec`. Restricted to the string-join
+  specialization (separator `&str`, result `String`); the
+  slice-concatenating `Vec<Vec<_>>::join` has no `itertools` equivalent
+  and is left alone. Gated on the workspace already depending on
+  `itertools` (`require_itertools_dependency = false` fires regardless).
+  Active by default.
+
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
   `#[cfg_attr(..., ignore = "...")]` over `#[cfg(...)]` on `#[test]`s, and
