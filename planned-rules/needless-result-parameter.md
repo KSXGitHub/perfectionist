@@ -1,10 +1,11 @@
-# `unwrapped_result_parameter`
+# `needless_result_parameter`
 
 **Source:** [KSXGitHub/perfectionist#309](https://github.com/KSXGitHub/perfectionist/issues/309).
 Spotted in AI-generated code: a function takes a `Result` argument
 only to `unwrap` / `expect` / `?`-propagate it in the very first
 thing it does, so the parameter's `Result`-ness is stripped before
-the function does any real work.
+the function does any real work — the wrapper on the parameter is
+needless, and the function only ever wanted the inner `Ok` value.
 
 ## Statement
 
@@ -15,7 +16,14 @@ propagating (`?`) — the function never actually *handles* the `Err`
 case. It only demands success. The `Result` in the signature is then
 a lie: the function does not accept a fallible value, it requires an
 `Ok` one and merely defers the panic / propagation to a fixed point
-inside its own body.
+inside its own body. The `Result` wrapper on the parameter is
+needless; the function should take `T`.
+
+The lint is named for that structural defect — the *needless wrapper*
+— rather than for any one way of stripping it, because the trigger
+fires on both the panicking forms and the `?` form. (A name like
+`unwrapped_result_parameter` would describe only `unwrap`/`expect` and
+mis-scope the `?` case.)
 
 The motivating example from the issue, condensed:
 
@@ -55,7 +63,7 @@ fn from_selection(
 A caller that holds a `Result` writes
 `from_selection(selection.expect("interactive selection failed"), value)`
 for the `unwrap`/`expect` form, or `from_selection(selection?, value)`
-for the propagation form — the same operation the borrowed signature
+for the propagation form — the same operation the wrapped signature
 was hiding, now visible at the point that owns the error policy.
 
 ## Why restrict this?
@@ -82,7 +90,10 @@ not to whether the program works.
 This is the parameter-side mirror of `clippy::unnecessary_wraps`, which
 flags a function that *returns* `Result` / `Option` but never produces
 `Err` / `None` (the wrapper adds nothing): there the needless `Result`
-is on the way out, here it is on the way in.
+is on the way out, here it is on the way in. The `needless_` name is
+chosen to make that parallel — and the parallel with the catalogue's
+own [`needless_borrowed_parameters`](./needless-borrowed-parameters.md)
+— legible.
 
 ## What to lint
 
@@ -188,7 +199,7 @@ fn line_count(contents: Result<String, io::Error>) -> usize {
 ## Configuration
 
 ```toml
-[unwrapped_result_parameter]
+[needless_result_parameter]
 # Method calls that count as "demand the Ok value or panic". The
 # defaults cover the std inherent methods; extend for project-specific
 # wrappers that panic on Err (e.g. a logging `expect`-alike).
@@ -246,7 +257,7 @@ does not express more honestly.
 
 ## Interaction with sibling lints
 
-- [`unwrapped_option_parameter`](./unwrapped-option-parameter.md) is
+- [`needless_option_parameter`](./needless-option-parameter.md) is
   the `Option<T>` counterpart: a parameter taken only to be `unwrap` /
   `expect` / `?`-ed. It is a separate rule because `Option` unwrapping
   is far more often idiomatic (builder defaults, `take()` plumbing), so
@@ -256,6 +267,10 @@ does not express more honestly.
   two rules share the "parameter whose only uses are success-demanding"
   walk; factor that into a crate-internal helper when implementing
   whichever lands first.
+- [`needless_borrowed_parameters`](./needless-borrowed-parameters.md)
+  is the catalogue's other "the wrapper on the parameter is needless"
+  rule (there, a `&T` whose body only `.to_owned()`s it). Same naming
+  family, same conservative exactly-once starting cut.
 - `clippy::unnecessary_wraps` is the return-side analogue (a function
   that wraps its result in `Result`/`Option` but never yields
   `Err`/`None`). Enabling both covers needless fallibility on both ends

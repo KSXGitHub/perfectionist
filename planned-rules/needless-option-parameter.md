@@ -1,8 +1,8 @@
-# `unwrapped_option_parameter`
+# `needless_option_parameter`
 
 **Source:** [KSXGitHub/perfectionist#309](https://github.com/KSXGitHub/perfectionist/issues/309),
 generalised from `Result` to `Option`. The
-[`unwrapped_result_parameter`](./unwrapped-result-parameter.md) rule is
+[`needless_result_parameter`](./needless-result-parameter.md) rule is
 the issue's direct subject; this rule applies the same reasoning to a
 parameter typed `Option<T>`.
 
@@ -14,7 +14,14 @@ panicking (`unwrap`, `expect`, `unwrap_unchecked`) or by propagating
 (`?`) — the function never handles the `None` case. It only demands
 presence. The `Option` in the signature claims to accept an
 absent-or-present `T` while the body requires a present one and merely
-defers the panic / propagation to a fixed point inside itself.
+defers the panic / propagation to a fixed point inside itself. The
+`Option` wrapper on the parameter is needless; the function should
+take `T`.
+
+As with [`needless_result_parameter`](./needless-result-parameter.md),
+the lint is named for the *needless wrapper*, not for any single way of
+stripping it, because the trigger fires on the panicking forms and the
+`?` form alike.
 
 **Avoid:** the parameter is an `Option`, but the function's only
 relationship with the empty case is to panic on it.
@@ -39,7 +46,7 @@ fn render(template: Template, ctx: &Context) -> String {
 This is a stylistic preference, not a correctness issue — the
 `unwrap`/`expect`/`?` code behaves identically to the preferred form.
 The argument is the same as for
-[`unwrapped_result_parameter`](./unwrapped-result-parameter.md): the
+[`needless_result_parameter`](./needless-result-parameter.md): the
 signature misrepresents the contract (`Option<T>` promises to cope with
 absence; a body opening with `.unwrap()` copes with nothing), it strips
 the caller's choice about what `None` means, and it misplaces the panic
@@ -52,7 +59,7 @@ part of the `Result` one — see "Default state".
 ## What to lint
 
 Identical predicate to
-[`unwrapped_result_parameter`](./unwrapped-result-parameter.md), with
+[`needless_result_parameter`](./needless-result-parameter.md), with
 `Option<T>` in place of `Result<T, E>` and `None` in place of `Err`.
 For each function parameter `p` typed `Option<T>` (the standard
 `core::option::Option`), fire when **every** use of `p` is a
@@ -112,7 +119,7 @@ fn render(template: Option<Template>, ctx: &Context) -> String {
 ## Configuration
 
 ```toml
-[unwrapped_option_parameter]
+[needless_option_parameter]
 # Method calls that count as "demand the Some value or panic".
 panic_methods = ["unwrap", "expect", "unwrap_unchecked"]
 
@@ -122,7 +129,7 @@ include_question_mark = true
 
 ## Implementation notes
 
-See [`unwrapped_result_parameter`](./unwrapped-result-parameter.md)'s
+See [`needless_result_parameter`](./needless-result-parameter.md)'s
 implementation notes; the only differences are the parameter-type test
 (`Option<_>` rather than `Result<_, _>`) and the `?`-desugaring shape
 (`Option`'s `?` lowers through a different `Try` branch). `LateLintPass`,
@@ -149,12 +156,16 @@ that wants the stricter `Option` discipline opts in via
 
 ## Interaction with sibling lints
 
-- [`unwrapped_result_parameter`](./unwrapped-result-parameter.md) is the
+- [`needless_result_parameter`](./needless-result-parameter.md) is the
   `Result<T, E>` counterpart and the issue's primary subject. It ships
   active by default; this `Option` rule is its opt-in generalisation.
   The two are separate rules — rather than one rule over both wrapper
   types — because their default states differ and because a single name
   cannot honestly describe both triggers.
+- [`needless_borrowed_parameters`](./needless-borrowed-parameters.md)
+  shares the `needless_*_parameter(s)` naming family: a parameter whose
+  wrapper (a borrow, an `Option`, a `Result`) is needless because the
+  body only strips it.
 - `clippy::unnecessary_wraps` is the return-side analogue for both
   wrappers (a function that returns `Option`/`Result` but never yields
   `None`/`Err`).
