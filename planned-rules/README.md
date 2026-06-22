@@ -20,6 +20,13 @@ pattern that several rules call out by reference — live in
 ### Module and file layout
 - [`arbitrary-source-item-ordering.md`](./arbitrary-source-item-ordering.md) — within a module file,
   `pub mod` first, then `pub use`, then private items.
+- [`unit-test-file-layout-mismatch.md`](./unit-test-file-layout-mismatch.md) — once a
+  subject's extracted unit tests are split across more than one file, enforce
+  one filesystem arrangement: `siblings` (each group declared directly as
+  `#[cfg(test)] mod <group>;` in the subject file) or `aggregated` (a single
+  `#[cfg(test)] mod tests;` backed by an aggregator file). Picks up where
+  `perfectionist::excessive_inline_tests` leaves off. Inactive by default;
+  opt in and pick a `style`.
 
 ### Imports
 - [`core-instead-of-std.md`](./core-instead-of-std.md) — for projects that
