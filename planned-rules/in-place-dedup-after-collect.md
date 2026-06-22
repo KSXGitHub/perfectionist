@@ -5,34 +5,31 @@ which proposes preferring the
 [`into-sorted`](https://crates.io/crates/into-sorted) and
 [`into-deduped`](https://crates.io/crates/into-deduped) crates — both by
 this project's author — over the in-place `Vec::sort*` / `Vec::dedup*`
-mutation that forces a binding to be `mut`. This rule covers the deduping
-half; its sibling [`in-place-sort-after-collect`](./in-place-sort-after-collect.md)
-covers the sorting half. The two are deliberately parallel.
+mutation after a collect. This rule covers the deduping half; its sibling
+[`in-place-sort-after-collect`](./in-place-sort-after-collect.md) covers
+the sorting half. The two are deliberately parallel and **cascade** (see
+[Interaction](#interaction-with-sibling-rules)).
 
 ## Statement
 
-An iterator is collected into a `Vec`, the binding is marked `mut`, and
-the *only* reason for the `mut` is an immediately-following in-place
-dedup (`Vec::dedup`, `Vec::dedup_by`, or `Vec::dedup_by_key`). The `mut`
-would not have been necessary otherwise. The owning dedup methods from
+An iterator is collected into a `Vec` and the **very next statement**
+deduplicates it in place — `Vec::dedup`, `Vec::dedup_by`, or
+`Vec::dedup_by_key`. Because the in-place dedup takes `&mut self`, the
+binding has to be `mut`. The owning dedup methods from
 [`into-deduped`](https://crates.io/crates/into-deduped) take the `Vec` by
-value and return it deduplicated, so the whole thing stays one expression
-and the `mut` binding disappears:
+value and return it deduplicated, so the dedup folds back into the
+collect chain:
 
 ```rust
-// Avoid: `mut` exists only so `dedup` can run in place.
+// Avoid: a separate `mut` binding, deduped in place on the next line.
 let mut ids: Vec<Id> = sorted_rows.iter().map(Row::id).collect();
 ids.dedup();
 ids
 
-// Prefer: the owning dedup keeps the value in the method chain.
+// Prefer: the dedup folds into the chain.
 use into_deduped::IntoDeduped;
 
-let ids = sorted_rows
-    .iter()
-    .map(Row::id)
-    .collect::<Vec<_>>()
-    .into_deduped();
+let ids = sorted_rows.iter().map(Row::id).collect::<Vec<_>>().into_deduped();
 ```
 
 The in-place `Vec` method and the owning `into-deduped` method line up
@@ -44,66 +41,105 @@ one-for-one, so the rewrite is purely mechanical:
 | `dedup_by(same)`               | `into_deduped_by(same)`                                          |
 | `dedup_by_key(key)`            | `into_deduped_by_key(key)`                                       |
 
-Each method consumes the `Vec` and returns it deduplicated, so the value
-never leaves the chain. Like `Vec::dedup*`, the `into_deduped*` methods
-remove only **consecutive** duplicates — the `Vec` must already be sorted
-to drop *all* duplicates (see [Out of scope](#out-of-scope) on
-`itertools::unique`).
+Each method consumes the `Vec` and returns it deduplicated. Like
+`Vec::dedup*`, the `into_deduped*` methods remove only **consecutive**
+duplicates — the `Vec` must already be sorted to drop *all* duplicates
+(see [Out of scope](#out-of-scope) on `itertools::unique`).
+
+### The `mut` is not the trigger — `unused_mut` finishes the job
+
+The rule does **not** try to prove the `mut` is unnecessary. That proof
+is both costly (a borrow walk over every later use of the binding) and
+beside the point, because two facts make it redundant:
+
+- A statement-position `vec.dedup()` only type-checks when `vec` is
+  already a mutable place, so a `mut` binding is *implied* by the
+  trigger — the rule never has to look for it.
+- Folding the dedup into the initializer is **value-identical**: the
+  binding holds the same deduplicated `Vec` from that point on, so the
+  rewrite is correct no matter how `vec` is used afterward.
+
+After the fold, whether the `mut` is still needed is exactly the question
+rustc's built-in `unused_mut` already answers. If nothing else mutates
+the binding, `unused_mut` fires and offers to drop the `mut`; if
+something does (a later `push`), the `mut` stays and is correct. So this
+rule keeps the `mut` as-written in its own suggestion and lets
+`unused_mut` take it from there. A binding that is deduped and *then*
+`push`ed is therefore still flagged — the dedup folds in, while the `mut`
+and the `push` remain (and `unused_mut` correctly stays quiet).
 
 ## Why restrict this?
 
-This is a stylistic preference, not a correctness issue. The `mut`
-binding followed by an in-place `dedup` compiles and produces exactly the
-right value. The project prefers the owning form because:
+This is a stylistic preference, not a correctness issue. The collect
+followed by an in-place `dedup` compiles and produces exactly the right
+value. The project prefers the owning form because:
 
-- **The `mut` disappears.** A `mut` binding signals "this value changes
-  after creation"; here it does not, beyond the one dedup the rule
-  already accounts for. Dropping the `mut` removes a false signal.
-- **The value stays in the expression.** `collect().into_deduped()` reads
-  as a single pipeline; the three-statement `let mut`/`dedup`/use form
-  interrupts it with a name that exists only to host the mutation.
+- **The dedup stays in the expression.** `collect().into_deduped()` reads
+  as one pipeline; the `let mut` / `dedup` / use form splits it across a
+  name whose only job is to host the mutation.
+- **The `mut` usually disappears.** Once the in-place dedup is folded
+  out, `unused_mut` clears the now-redundant `mut`, so the
+  collect-then-dedup idiom stops minting `mut` bindings that are never
+  mutated again.
 - **No window holding a not-yet-deduped value.** Between the `collect`
   and the `dedup` the binding holds a `Vec` that still has duplicates; a
-  later edit reading it there silently gets the wrong contents. The
-  owning chain has no such window.
+  later edit that reads it there is silently wrong. The chain has no such
+  window — and the adjacency requirement below guarantees no such read
+  exists today, while the chain form keeps it that way under future
+  edits.
 
 ## What to lint
 
 `LateLintPass`. Type resolution is required to confirm the receiver is a
-`Vec<T>` and the method is the in-place `dedup*` (not a same-named method
-on another type), so this is a late pass, not a token scan.
+`Vec<T>` and the method is the inherent in-place `dedup*` (not a
+same-named method on another type), so this is a late pass.
 
-Fire when **all** of the following hold for a local `let mut` binding:
+Fire when **both** hold:
 
-1. **The initializer is a `collect()` into `Vec`.** The binding's value
-   comes from an `Iterator::collect` whose resolved target type is
-   `Vec<T>`. The broader "any owned `Vec` expression" case is a
-   deliberate out-of-scope extension — see [Out of scope](#out-of-scope).
-2. **The binding is `mut`.** A non-`mut` binding cannot host the in-place
-   `dedup`, so there is nothing to simplify.
-3. **The next use is an in-place `dedup*`.** The first statement that
-   mentions the binding is `binding.dedup*(…)` — one of the three methods
-   in the table — as a statement-position method call whose return value
-   (`()`) is discarded.
-4. **The `mut` is needed for nothing else.** After the `dedup`, the
-   binding is never mutated again: no further `&mut` borrow, no
-   reassignment, no other mutating method, no `&mut`-taking call. (Reads,
-   shared borrows, and a final move/return are all fine.) This is the
-   load-bearing check — it is what proves the `mut` is *only* there for
-   the dedup.
+1. **A `let` binding initialized by a collect-rooted `Vec` chain.** The
+   initializer resolves to `Vec<T>` and its method-chain root is an
+   `Iterator::collect`. Any intervening calls between that `collect` and
+   the binding must themselves be owning `into_sorted*` / `into_deduped*`
+   calls — so a chain produced by this rule or its sort sibling is itself
+   an acceptable initializer. This is what lets the two
+   [cascade](#the-combined-sort--dedup-sequence).
+2. **The immediately following statement dedups it in place.** The *next*
+   statement after the `let` is `binding.dedup*(args);` in statement
+   position with its `()` result discarded, and there is nothing between
+   the two statements. This strict adjacency is the simplification that
+   replaces dataflow analysis: with no statement in between, nothing can
+   observe the intermediate (not-yet-deduped) value, so folding the dedup
+   into the initializer cannot change behaviour.
 
-Emit on the `dedup*` call (with the binding's `mut` highlighted as a
-secondary span) and offer the autofix below.
+Emit on the `dedup*` call; the autofix folds it into the chain.
 
-### Coordinating with the sort rule
+### The combined `sort` + `dedup` sequence
 
-`collect` → `sort` → `dedup` is the canonical sequence. Neither this rule
-nor [`in-place-sort-after-collect`](./in-place-sort-after-collect.md)
-fires in isolation while the *other's* mutation remains (each rule's
-check 4 is failed by the other operation). The two coordinate so a run of
-*only* `sort*` / `dedup*` mutations collapses to one
-`collect().into_sorted().into_deduped()` chain; see
-[Interaction with sibling rules](#interaction-with-sibling-rules).
+`collect` → `sort` → `dedup` is the canonical "sort, then drop the
+now-adjacent duplicates" sequence — and the case a per-call,
+`mut`-necessity-based design gets wrong (each rule skips it because the
+binding is still mutated by the *other* operation). Here it falls out of
+the cascade. On the original three statements **only the sort sibling
+fires** (the statement after the `let` is the sort, not the dedup, so
+*this* rule does not match yet). Once the sort has folded:
+
+```rust
+let mut v = iter.collect::<Vec<_>>().into_sorted();
+v.dedup();
+```
+
+the initializer is a collect-rooted chain and the next statement is the
+dedup, so this rule now matches and folds in turn:
+
+```rust
+let v = iter.collect::<Vec<_>>().into_sorted().into_deduped();
+```
+
+(then `unused_mut` drops the `mut`). Under `cargo dylint --fix` this
+resolves over successive iterations; under a plain run the author sees
+the sort warning, applies it, then sees the dedup warning. Source order
+is preserved because each rule appends its method only when its operation
+is the statement immediately following the binding.
 
 ## Examples
 
@@ -127,30 +163,32 @@ fn unique_in_order(sorted: &[Id]) -> Vec<Id> {
 }
 ```
 
-### Keyed dedup
+### Deduped, then pushed — still flagged
 
 **Avoid:**
 
 ```rust
-let mut events: Vec<Event> = stream.collect();
-events.dedup_by_key(|e| e.id);
-emit(events);
-```
-
-**Prefer:**
-
-```rust
-let events = stream.collect::<Vec<_>>().into_deduped_by_key(|e| e.id);
-emit(events);
-```
-
-### Not flagged — the `mut` is needed for more
-
-```rust
-// A later in-place mutation genuinely needs `mut`; no owning rewrite applies.
 let mut ids: Vec<Id> = rows.iter().map(Row::id).collect();
 ids.dedup();
-ids.retain(Id::is_live);
+ids.push(Id::sentinel());
+```
+
+**Prefer:** the dedup folds in; the `mut` and the `push` stay, so
+`unused_mut` does *not* fire here —
+
+```rust
+let mut ids = rows.iter().map(Row::id).collect::<Vec<_>>().into_deduped();
+ids.push(Id::sentinel());
+```
+
+### Not flagged — a statement intervenes
+
+```rust
+// Something runs between the collect and the dedup, so adjacency fails
+// and the rule stays silent (conservative — see "What to lint").
+let mut ids: Vec<Id> = rows.iter().map(Row::id).collect();
+log::debug!("collected {} ids", ids.len());
+ids.dedup();
 ```
 
 ## Configuration
@@ -167,50 +205,55 @@ The rule ships no configuration. Whether the consumer's crate depends on
 `into-deduped` is handled by the activation mechanism, not a knob: a
 crate that does not take the dependency disables the rule via
 `[perfectionist].disable`. The autofix assumes the dependency is present
-(or addable) — see Implementation notes.
+or addable — see Implementation notes.
 
 ## Out of scope
 
-- **Owned `Vec`s from a source other than `collect`.** `vec![…].dedup()`
+- **Owned `Vec`s from a source other than a collect.** `vec![…].dedup()`
   or a `Vec` returned by a helper share the shape and the owning rewrite,
   but the issue scopes this rule to the collect-into-`Vec` case, and the
-  name claims no more.
+  name claims no more. The chain root must be an `Iterator::collect`.
 - **Non-consecutive deduplication.** `Vec::dedup*` and `into_deduped*`
   drop only *consecutive* duplicates; the "remove every duplicate
   regardless of position" operation is `itertools::Itertools::unique` /
-  `unique_by`, which is backed by a hash set and has **no** `into-deduped`
+  `unique_by`, backed by a hash set, with **no** `into-deduped`
   equivalent. This rule must not suggest `into_deduped` for a `unique`
   call — the semantics differ — and
   [`itertools-sort-dedup-collect`](./itertools-sort-dedup-collect.md)
-  likewise excludes `unique*` for the same reason.
-- **In-place dedups whose result feeds a `&mut` consumer.** Covered by
-  check 4, which excludes any binding still needing `&mut` afterward.
+  likewise excludes `unique*`.
+- **A non-adjacent dedup.** If a statement sits between the collect and
+  the dedup, the rule stays silent rather than reason about whether that
+  statement observes the binding. Relaxing this is a possible later
+  extension, but it reintroduces a small use-check the strict-adjacency
+  form avoids.
 
 ## Implementation notes
 
-- **Trigger discovery.** Walk `StmtKind::Let` bindings with
-  `BindingMode::MUT` whose initializer resolves through
-  `cx.typeck_results()` to a `Vec<T>` from `Iterator::collect`; scan the
-  enclosing block's following statements for the first mention of the
-  binding and match an in-place `dedup*` method-call whose `DefId` is the
-  `Vec` inherent method.
-- **The "only mutated by the dedup" check.** Identical in shape to the
-  sibling rule's check 4: capture the binding's `HirId`, classify every
-  subsequent reference, and require each post-dedup use to be a shared
-  read or the terminal move. Be conservative — any use the walk cannot
-  prove is a shared read disqualifies the binding.
-- **Autofix.** Rewrite the
-  `let mut x: Vec<T> = <iter>.collect(); x.dedup*(args);` pair into
-  `let x = <iter>.collect::<Vec<_>>().into_deduped*(args);` (dropping the
-  `mut`, splicing the same `args`), adding `use into_deduped::IntoDeduped;`
-  if absent. `MachineApplicable` only when the binding's sole post-dedup
-  uses are reads/move *and* the crate already depends on `into-deduped`;
-  downgrade to `MaybeIncorrect` when the dependency cannot be confirmed.
-  A late pass cannot edit `Cargo.toml`, so the added dependency is a help
-  note, never an applied edit.
-- **Proc-macro suppression.** The primary span is the `dedup*` method
-  call — wider than a bare identifier — so by the "vulnerable exactly
-  when the diagnostic span is narrower than the offending node" test in
+- **Trigger discovery.** Walk `StmtKind::Let` whose initializer resolves
+  through `cx.typeck_results()` to `Vec<T>` and whose method-chain root
+  is `Iterator::collect` (any intervening calls matched, by trait
+  `DefId`, against the `into-sorted` / `into-deduped` owning methods).
+  Then confirm the binding's next sibling statement in the block is an
+  inherent-`Vec` `dedup*` method call on that binding, in statement
+  position with its result discarded.
+- **No use-analysis.** The rule reads only the two adjacent statements;
+  it never enumerates the binding's later uses. Correctness comes from
+  adjacency (nothing observes the intermediate value) plus value-identity
+  of the fold, not from proving the `mut` is dead — that is `unused_mut`'s
+  job, deliberately left to it.
+- **Autofix.** Rewrite the `let … = <chain>; binding.dedup*(args);` pair
+  into `let … = <chain>.into_deduped*(args);`, deleting the dedup
+  statement and adding `use into_deduped::IntoDeduped;` if absent. Keep
+  the binding's `mut` exactly as written — `unused_mut` removes it when it
+  becomes redundant. Ensure the collect carries an explicit `::<Vec<_>>()`
+  turbofish when its type was previously fixed only by the `let`
+  annotation or by the now-removed `dedup` call, so the owning method
+  resolves. `MachineApplicable` when the crate already depends on
+  `into-deduped`; otherwise `MaybeIncorrect`, since a late pass cannot add
+  the dependency to `Cargo.toml`.
+- **Proc-macro suppression.** The primary span is the `dedup*` call —
+  wider than a bare identifier — so by the "vulnerable exactly when the
+  diagnostic span is narrower than the offending node" test in
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   ("Suppressing proc-macro-synthesised violations"), the built-in
   `report_in_external_macro: false` filter suffices; no
@@ -223,11 +266,12 @@ crate that does not take the dependency disables the rule via
 
 ### Difficulty
 
-**Medium.** The same shape as the sort sibling: a local block walk plus a
-type check to find the trigger, with the correctness risk concentrated in
-check 4 (proving the `mut` is used for nothing but the dedup). The
-method-mapping table is shorter (three methods, not seven), so this is
-marginally the simpler of the pair; the use-analysis core is shared.
+**Easy–Medium.** The same shape as the sort sibling, with a shorter
+method table (three methods, not seven), so marginally the simpler of the
+pair. Dropping the `mut`-necessity proof removes the hard part; what
+remains is a two-adjacent-statement match, one type check, and a
+call-folding autofix. The cascade needs no special handling — it is just
+the rule re-firing on the chain its sort sibling produced.
 
 ## Default state
 
@@ -239,16 +283,18 @@ config knob.
 ## Interaction with sibling rules
 
 - [`in-place-sort-after-collect`](./in-place-sort-after-collect.md) — the
-  sorting half of the same proposal. On a `collect` → `sort` → `dedup`
-  run, neither rule fires in isolation; the two coordinate to collapse a
-  run of only `sort*` / `dedup*` mutations into a single
-  `collect().into_sorted().into_deduped()` chain, preserving the source
-  order of the two operations.
+  sorting half. The two **cascade**: each accepts a collect-rooted owning
+  chain as its initializer and folds the in-place operation that
+  immediately follows it, so `collect` → `sort` → `dedup` collapses to a
+  single `collect().into_sorted().into_deduped()` over successive fixes,
+  source order preserved. Neither needs to know about the other's
+  operation; each just re-fires on the chain the other produced.
 - [`itertools-sort-dedup-collect`](./itertools-sort-dedup-collect.md) —
-  addresses the itertools spelling (`sorted().dedup().collect()`) of the
-  same end state and rewrites *toward* the `collect().into_deduped()`
-  form this rule targets, so the two never disagree about the
-  destination. That rule's exclusion of `itertools::unique*` mirrors this
-  rule's: non-consecutive deduplication has no `into-deduped` equivalent.
-- **Clippy.** There is no `clippy::manual_into_deduped` or equivalent;
-  this is a fresh anti-pattern name, not a borrowed one.
+  the itertools spelling, rewriting *toward* the `collect().into_deduped()`
+  form this rule produces. Its exclusion of `itertools::unique*` mirrors
+  this rule's: non-consecutive deduplication has no `into-deduped`
+  equivalent.
+- **Clippy.** There is no `clippy::manual_into_deduped` equivalent;
+  `unused_mut` is this rule's load-bearing partner, removing the `mut` the
+  fold leaves behind, which is why this rule does not attempt that
+  removal itself.

@@ -185,18 +185,19 @@ pattern that several rules call out by reference — live in
 
 ### Sorting and deduplication
 - [`in-place-sort-after-collect.md`](./in-place-sort-after-collect.md) —
-  when an iterator is collected into a `Vec` whose binding is `mut`
-  *only* so an immediately-following `Vec::sort*` can run in place,
-  prefer the owning `into_sorted*` method from
-  [`into-sorted`](https://crates.io/crates/into-sorted), which keeps the
-  value in the method chain and drops the `mut`. The `mut`-elision
-  sorting half of `KSXGitHub/perfectionist#308`. Active by default.
+  when an iterator is collected into a `Vec` and the very next statement
+  sorts it in place with `Vec::sort*`, fold that sort into the chain via
+  the owning `into_sorted*` method from
+  [`into-sorted`](https://crates.io/crates/into-sorted); rustc's
+  `unused_mut` then clears the now-redundant `mut`. The sorting half of
+  `KSXGitHub/perfectionist#308`. Active by default.
 - [`in-place-dedup-after-collect.md`](./in-place-dedup-after-collect.md)
-  — the deduping counterpart: a `mut` `Vec` whose `mut` exists only for
-  an in-place `Vec::dedup*` prefers the owning `into_deduped*` method
-  from [`into-deduped`](https://crates.io/crates/into-deduped). Excludes
-  non-consecutive deduplication (`itertools::unique`), which has no
-  `into-deduped` equivalent. Active by default.
+  — the deduping counterpart: a collect immediately followed by an
+  in-place `Vec::dedup*` folds into the owning `into_deduped*` method
+  from [`into-deduped`](https://crates.io/crates/into-deduped). Cascades
+  with the sort rule so `collect; sort; dedup` collapses to one chain.
+  Excludes non-consecutive deduplication (`itertools::unique`), which has
+  no `into-deduped` equivalent. Active by default.
 - [`itertools-sort-dedup-collect.md`](./itertools-sort-dedup-collect.md)
   — when an `itertools` `sorted*` / `dedup*` adaptor chain is terminated
   by a `Vec` `collect()`, prefer collecting first and applying the

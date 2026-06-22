@@ -266,12 +266,13 @@ handled by `[perfectionist].disable`, not a config knob.
 
 - [`in-place-sort-after-collect`](./in-place-sort-after-collect.md) /
   [`in-place-dedup-after-collect`](./in-place-dedup-after-collect.md) —
-  the imperative-spelling half of the same proposal. Those rules rewrite
-  a `let mut` + in-place `sort`/`dedup` *toward* the
-  `collect().into_sorted().into_deduped()` form this rule produces, so
-  all three converge on one destination. They never overlap on a single
-  expression: this rule fires on the itertools-adaptor chain, those fire
-  on a `mut` binding mutated by `Vec::sort*` / `Vec::dedup*`.
+  the imperative-spelling half of the same proposal. Those rules fold a
+  collect-rooted binding's immediately-following in-place `sort`/`dedup`
+  *toward* the `collect().into_sorted().into_deduped()` form this rule
+  produces, so all three converge on one destination. They never overlap
+  on a single expression: this rule fires on the itertools-adaptor chain,
+  those on a collect-rooted binding sorted/deduped in place by
+  `Vec::sort*` / `Vec::dedup*` on the next statement.
 - **`clippy::needless_collect`** flags collecting an iterator only to
   immediately re-consume it; this rule's *output* deliberately inserts a
   `collect()` (the collect-first form is the point), so it does not feed
