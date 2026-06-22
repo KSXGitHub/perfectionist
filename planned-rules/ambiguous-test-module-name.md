@@ -178,6 +178,27 @@ module that declares it) and is always reached. So the one place
 ambiguity can arise — the production↔test boundary — is exactly the
 place the rule inspects.
 
+**The boundary is defined by `#[cfg(test)]`, not by the name.**
+"Outermost test-only" means the first `#[cfg(test)]` gate encountered
+descending from the crate root, whatever the intervening modules are
+*named*:
+
+```text
+foo::bar::baz::qux      // only `qux` gated ⇒ `qux` is the boundary ⇒ flagged
+foo::bar::tests::qux    // `tests` is a *production* module merely named
+                        // `tests` (no gate); `qux` is gated ⇒ `qux` is the
+                        // boundary ⇒ flagged
+```
+
+In the second case the path *contains* `tests`, but that module is
+production code (it has no `#[cfg(test)]`), so it neither establishes a
+boundary nor places its subtree "under tests". `qux` is the real
+boundary and must announce itself. This is the exact contrast with the
+`selectors::tests::buttons` example above, where `tests` genuinely
+carries `#[cfg(test)]` and so really *is* the boundary — there `buttons`
+is correctly left alone, here `qux` is correctly flagged. A test-named
+but non-test-gated module never counts as a complying ancestor.
+
 ## Autofix
 
 The diagnostic suggests renaming the module identifier so its name
