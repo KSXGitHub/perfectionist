@@ -109,11 +109,13 @@ selectors/mouse.rs
 #[cfg(test)] mod mouse_tests;
 ```
 
-**Not flagged:** a `whole_names` match (the conventional inline module)
+**Not flagged:** a `whole_names` match (`tests`), inline or out-of-line
 
 ```rust
+#[cfg(test)] mod tests;        // out-of-line, backed by `tests.rs`
+
 #[cfg(test)]
-mod tests {
+mod tests {                    // or inline — both accepted
     // ...
 }
 ```
