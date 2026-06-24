@@ -897,12 +897,11 @@ verbatim into the in-tree catalogue (`rules/<rule>.md`) and the docs
 site, so that block must describe *what* the rule flags and *why* —
 never *how* the pass is implemented. "Late pass", "pre-expansion",
 "lowering", "name resolution", "HIR node", the queue/anchor mechanism,
-and the like mean nothing to a catalogue reader. A user-observable
-limitation that *stems* from the implementation is stated
-behaviourally instead: `perfectionist::thiserror_usage` resolves the
-bare `#[derive(Error)]` short-hand crate-wide rather than per-module,
-and says exactly that rather than "the pass runs pre-expansion and
-does not consult name resolution".
+and the like mean nothing to a catalogue reader. When a
+user-observable limitation *stems* from the implementation, state the
+limitation behaviourally (e.g. "resolved crate-wide rather than
+per-module") and drop the mechanism that causes it ("the pass runs
+pre-expansion and does not consult name resolution").
 
 The convention is scoped to the `declare_tool_lint!` block. Docs on
 *internal* items (queue structs, `register_pass`/`register_lint`,
