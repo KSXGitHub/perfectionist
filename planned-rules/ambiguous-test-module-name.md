@@ -243,9 +243,10 @@ Re-parsing preserves the `#[cfg(test)]` attribute the rule keys on.
   into cfg-disabled inline modules does not bite the common case.
 - Anchor each violation at its enclosing HIR node via
   `enclosing_hir::find_enclosing_hir_ids`, emitting through
-  `clippy_utils::diagnostics::span_lint_hir_and_then`, so a
-  `#[allow(perfectionist::ambiguous_test_module_name)]` on the parent
-  module (or crate root) resolves. The diagnostic span is the `mod`
+  `clippy_utils::diagnostics::span_lint_hir_and_then`, so a per-module
+  or crate-root lint-level attribute
+  (`#[expect(perfectionist::ambiguous_test_module_name)]`) on the parent
+  module resolves. The diagnostic span is the `mod`
   item's name identifier.
 - Detecting the `cfg(test)` gate is a small fixed walk of the item's
   `cfg` attribute predicate (is `test` a mandatory conjunct?), not a
