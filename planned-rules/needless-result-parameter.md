@@ -141,7 +141,9 @@ The lint stays silent when:
   handed to a combinator that supplies a `Result`), so the parameter
   type is not freely changeable. (Whole-crate "is it ever used as a
   value?" is itself non-trivial; a conservative implementation may
-  approximate it and lean on `#[allow]` for the rare miss.)
+  approximate it and lean on a local
+  `#[expect(perfectionist::needless_result_parameter)]` for the rare
+  miss.)
 - **The parameter is also used in `Result` form elsewhere** in the
   body — the exactly-once rule already excludes this, but it remains
   the governing principle when the multi-use version lands.
