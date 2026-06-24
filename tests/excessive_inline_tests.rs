@@ -159,18 +159,17 @@ fn does_not_flag_external_module_gated_by_compound_cfg() {
 /// pass under the bug too (vacuous).
 #[test]
 fn does_not_flag_production_module_gated_by_any_test_cfg() {
-    let mut foo = String::from(
-        "pub fn keeps_file_production() -> i32 {\n    1\n}\n\n#[cfg(any(test, unix))]\nmod gated {\n",
-    );
-    for index in 0..60 {
-        foo.push_str(&format!("    pub fn item_{index}() -> i32 {{ {index} }}\n"));
-    }
-    foo.push_str("}\n");
     let (_temp, stderr, success) = run_project_with_config(
         "fixture_itf_any_test_cfg_production",
         cargo_manifest_dir(),
         &shared_target_dir(),
-        &[("src/lib.rs", "pub mod foo;\n"), ("src/foo.rs", &foo)],
+        &[
+            ("src/lib.rs", "pub mod foo;\n"),
+            (
+                "src/foo.rs",
+                include_str!("fixtures/excessive_inline_tests/any_test_cfg_production.rs"),
+            ),
+        ],
         "",
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
@@ -197,18 +196,17 @@ fn does_not_flag_production_module_gated_by_any_test_cfg() {
 /// <https://github.com/KSXGitHub/perfectionist/issues/211>.
 #[test]
 fn does_not_flag_production_module_gated_by_nested_any_in_all_cfg() {
-    let mut foo = String::from(
-        "pub fn keeps_file_production() -> i32 {\n    1\n}\n\n#[cfg(all(any(test, unix), unix))]\nmod gated {\n",
-    );
-    for index in 0..60 {
-        foo.push_str(&format!("    pub fn item_{index}() -> i32 {{ {index} }}\n"));
-    }
-    foo.push_str("}\n");
     let (_temp, stderr, success) = run_project_with_config(
         "fixture_itf_nested_any_in_all_cfg_production",
         cargo_manifest_dir(),
         &shared_target_dir(),
-        &[("src/lib.rs", "pub mod foo;\n"), ("src/foo.rs", &foo)],
+        &[
+            ("src/lib.rs", "pub mod foo;\n"),
+            (
+                "src/foo.rs",
+                include_str!("fixtures/excessive_inline_tests/nested_any_in_all_cfg_production.rs"),
+            ),
+        ],
         "",
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
