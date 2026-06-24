@@ -53,7 +53,7 @@ declare_tool_lint! {
     /// thiserror everywhere. In practice that overlap is rare and
     /// the rule treats it as acceptable false-positive surface; a
     /// project that hits it can suppress individual sites with
-    /// `#[allow(perfectionist::thiserror_usage)]`.
+    /// `#[expect(perfectionist::thiserror_usage)]`.
     ///
     /// ### Why restrict this?
     ///
