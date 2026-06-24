@@ -273,7 +273,7 @@ the crate:
      detection, so a differently-named funnel is still caught.
 3. Emit the help-only diagnostic described above, anchored on a HIR
    node in the subject file so a local
-   `#[allow(perfectionist::unit_test_file_layout_mismatch)]` on the
+   `#[expect(perfectionist::unit_test_file_layout_mismatch)]` on the
    subject module resolves.
 
 A subject below the `min_files` threshold (zero or one test file)
@@ -314,7 +314,7 @@ rule needs because the modules it inspects are all test-gated.
   anchoring the diagnostic on that item's HIR node (via
   `enclosing_hir::find_enclosing_hir_ids` +
   `clippy_utils::diagnostics::span_lint_hir_and_then`) keeps a
-  per-module `#[allow]` working. The aggregator's inner
+  per-module suppression attribute working. The aggregator's inner
   `mod group;` declarations live in a *different* file under a
   disabled cfg, so never anchor there — a span in a cfg-disabled
   file with no HIR node falls back to the crate root and cannot be
