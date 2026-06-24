@@ -892,33 +892,23 @@ out of scope for the catalogue.
 
 ## `declare_tool_lint!` docs describe behaviour, not pass machinery
 
-The rustdoc on a rule's `declare_tool_lint!` block is **user-facing**:
-`tools/gen-docs/` renders it verbatim into the in-tree catalogue
-(`rules/<rule>.md`) and the docs site. It must describe *what* the
-rule flags and *why* — never *how* the pass is implemented. Terms
-like "late pass", "early pass", "pre-expansion", "lowering", "name
-resolution", "HIR node", "the scan", or the queue/anchor mechanism
-are implementation details that mean nothing to a reader of the
-catalogue, so they do not belong in that block.
+`tools/gen-docs/` renders a rule's `declare_tool_lint!` rustdoc
+verbatim into the in-tree catalogue (`rules/<rule>.md`) and the docs
+site, so that block must describe *what* the rule flags and *why* —
+never *how* the pass is implemented. "Late pass", "pre-expansion",
+"lowering", "name resolution", "HIR node", the queue/anchor mechanism,
+and the like mean nothing to a catalogue reader. A user-observable
+limitation that *stems* from the implementation is stated
+behaviourally instead: `perfectionist::thiserror_usage` resolves the
+bare `#[derive(Error)]` short-hand crate-wide rather than per-module,
+and says exactly that rather than "the pass runs pre-expansion and
+does not consult name resolution".
 
-When a real, user-observable limitation happens to *stem* from the
-implementation, document the limitation in behavioural terms and drop
-the mechanism. For example, `perfectionist::thiserror_usage` resolves
-the bare `#[derive(Error)]` short-hand crate-wide rather than
-per-module — a genuine false-positive surface worth stating — but the
-doc states that behaviour directly instead of explaining it via "the
-pass runs pre-expansion and does not consult name resolution".
-
-This convention is scoped to the `declare_tool_lint!` block only. Docs
-on *internal* items — `Pending`/queue structs, `register_pass` /
-`register_lint`, `emit` helpers, process-wide statics, source-walking
-combinators — legitimately describe implementation and are never
-rendered to users; keep the pass machinery there and in ordinary code
-comments.
-
-A borderline case is a doc that names a *rustc* mechanism the user can
-observe directly — `unfulfilled_lint_expectations` notes in their build
-output, rustc's own `unknown_lints` lint, the category a lint name
-falls into. Those describe behaviour the consumer sees, not this
-plugin's pass internals, so they may stay.
+The convention is scoped to the `declare_tool_lint!` block. Docs on
+*internal* items (queue structs, `register_pass`/`register_lint`,
+`emit` helpers, source walkers) describe implementation freely — they
+never reach users. And a doc may name a *rustc* mechanism the user
+observes directly (`unfulfilled_lint_expectations` notes,
+`unknown_lints`): that is behaviour the consumer sees, not this
+plugin's pass internals.
 
