@@ -140,6 +140,37 @@ fn does_not_flag_external_module_gated_by_compound_cfg() {
     );
 }
 
+/// A compound cfg that does *not* imply test — `#[cfg(any(test,
+/// unix))]` — gates real production code: the item is compiled in a
+/// non-test `unix` build too, so it is not test-only. The rule must
+/// descend into such a module and count its body as production, never
+/// charge it against the inline-test budget. With the `any`/`all`
+/// composition bug it was misread as test-only, its (large) body left
+/// uncounted, and the whole module reported as "inline test code spans
+/// N lines". Regression for
+/// <https://github.com/KSXGitHub/perfectionist/issues/211>.
+#[test]
+fn does_not_flag_production_module_gated_by_any_test_cfg() {
+    let mut foo = String::from("#[cfg(any(test, unix))]\nmod gated {\n");
+    for index in 0..60 {
+        foo.push_str(&format!("    pub fn item_{index}() -> i32 {{ {index} }}\n"));
+    }
+    foo.push_str("}\n");
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_itf_any_test_cfg_production",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[("src/lib.rs", "pub mod foo;\n"), ("src/foo.rs", &foo)],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(LINT),
+        "a production module gated by `cfg(any(test, ...))` must not be \
+         flagged as inline test code; stderr was:\n{stderr}",
+    );
+}
+
 /// The on-disk position of an extracted test file is not the rule's
 /// concern: a flattened `src/sib_tests.rs` sibling (loaded via `#[path]`)
 /// is just as acceptable as the nested form. The rule only counts
