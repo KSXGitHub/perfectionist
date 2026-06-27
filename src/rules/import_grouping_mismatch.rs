@@ -542,26 +542,28 @@ impl ImportGroupingMismatch {
     /// A run with neither is just blank lines splitting one block, the
     /// same violation `merge` reports.
     fn message(&self, run: &[UseStmt<'_>]) -> &'static str {
-        let reexport_block =
-            self.config.separate_reexports && run.iter().any(|stmt| stmt.is_reexport);
-        let cfg_block = run.iter().any(|stmt| self.is_cfg_trailing(stmt));
         match self.config.style {
             Style::MultiBlock => "imports are not partitioned into ordered groups",
-            Style::SingleBlock => match (reexport_block, cfg_block) {
-                (true, true) => {
-                    "imports must form one block, with `pub` re-exports in a leading block \
-                     and `#[cfg]`-gated imports in a trailing block"
+            Style::SingleBlock => {
+                let reexport_block =
+                    self.config.separate_reexports && run.iter().any(|stmt| stmt.is_reexport);
+                let cfg_block = run.iter().any(|stmt| self.is_cfg_trailing(stmt));
+                match (reexport_block, cfg_block) {
+                    (true, true) => {
+                        "imports must form one block, with `pub` re-exports in a leading block \
+                         and `#[cfg]`-gated imports in a trailing block"
+                    }
+                    (true, false) => {
+                        "imports must form one block, with `pub` re-exports in a leading block"
+                    }
+                    (false, true) => {
+                        "imports must form one block, with `#[cfg]`-gated imports in a trailing block"
+                    }
+                    (false, false) => {
+                        "blank lines split the imports; this project keeps them in a single block"
+                    }
                 }
-                (true, false) => {
-                    "imports must form one block, with `pub` re-exports in a leading block"
-                }
-                (false, true) => {
-                    "imports must form one block, with `#[cfg]`-gated imports in a trailing block"
-                }
-                (false, false) => {
-                    "blank lines split the imports; this project keeps them in a single block"
-                }
-            },
+            }
         }
     }
 
