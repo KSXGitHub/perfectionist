@@ -473,7 +473,9 @@ impl ImportGroupingMismatch {
         // first statement is left in place by the rewrite but is stranded
         // above a *different* statement when the first one is reordered
         // downward — under `multi_block`, or under `single_block` when a
-        // leading cfg-gated import is hoisted into the trailing block.
+        // leading cfg-gated import is hoisted into the trailing block, or a
+        // re-export below it is hoisted into the leading
+        // `separate_reexports` block.
         // Either way, drop to `MaybeIncorrect` so the fix isn't applied
         // unreviewed. The check is style-agnostic: any statement ranking
         // ahead of the first means the first sorts down.
