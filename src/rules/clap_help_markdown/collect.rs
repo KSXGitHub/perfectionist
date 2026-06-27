@@ -87,7 +87,15 @@ fn walk_items(
                 record_fields(data, override_keys, map);
             }
             ItemKind::Enum(_, _, def) if has_clap_derive(&item.attrs) => {
-                record_node(&item.attrs, override_keys, map);
+                // A `ValueEnum`'s own type-level doc never reaches
+                // `--help`: clap takes the argument help from the
+                // `Args`/`Parser` field whose type is the enum, and the
+                // per-value help from the variant docs. So skip the
+                // container doc for a value-only enum; the variant docs
+                // below are still help sources and stay in scope.
+                if enum_container_doc_reaches_help(&item.attrs) {
+                    record_node(&item.attrs, override_keys, map);
+                }
                 for variant in &def.variants {
                     record_node(&variant.attrs, override_keys, map);
                     record_fields(&variant.data, override_keys, map);
@@ -160,7 +168,7 @@ fn record_node(
 }
 
 fn has_override(attrs: &[Attribute], override_keys: &BTreeSet<Symbol>) -> bool {
-    clap_namespace_items(attrs).any(|inner| {
+    clap_namespace_items(attrs).into_iter().any(|inner| {
         let Some(meta) = inner.meta_item() else {
             return false;
         };
@@ -175,7 +183,7 @@ fn has_override(attrs: &[Attribute], override_keys: &BTreeSet<Symbol>) -> bool {
 
 fn has_verbatim(attrs: &[Attribute]) -> bool {
     let verbatim = Symbol::intern("verbatim_doc_comment");
-    clap_namespace_items(attrs).any(|inner| {
+    clap_namespace_items(attrs).into_iter().any(|inner| {
         let Some(meta) = inner.meta_item() else {
             return false;
         };
@@ -183,13 +191,44 @@ fn has_verbatim(attrs: &[Attribute]) -> bool {
     })
 }
 
-/// Iterate the inner meta items of every `#[clap(...)]` / `#[arg(...)]`
-/// / `#[command(...)]` / `#[value(...)]` attribute on the node.
-fn clap_namespace_items(attrs: &[Attribute]) -> impl Iterator<Item = MetaItemInner> + '_ {
-    attrs
-        .iter()
-        .filter(|attr| is_clap_namespace(attr))
-        .flat_map(|attr| attr.meta_item_list().unwrap_or_default())
+/// Collect the inner meta items of every `#[clap(...)]` / `#[arg(...)]`
+/// / `#[command(...)]` / `#[value(...)]` attribute on the node, looking
+/// through any `#[cfg_attr(<cfg>, clap(...))]` gate — the form a crate
+/// uses to keep its clap attributes behind a `cli` feature. The derive
+/// detector ([`has_clap_derive`]) already descends into `cfg_attr`;
+/// override and `verbatim_doc_comment` detection must match, or a gated
+/// `#[clap(help = "...")]` is missed and the doc comment is wrongly
+/// flagged as leaking into `--help`.
+fn clap_namespace_items(attrs: &[Attribute]) -> Vec<MetaItemInner> {
+    let mut out = Vec::new();
+    for attr in attrs {
+        if is_clap_namespace(attr) {
+            out.extend(attr.meta_item_list().unwrap_or_default());
+        } else if attr.has_name(sym::cfg_attr)
+            && let Some(list) = attr.meta_item_list()
+        {
+            collect_cfg_attr_clap_items(list.get(1..).unwrap_or_default(), &mut out);
+        }
+    }
+    out
+}
+
+/// Pull the inner items of clap-namespace meta items out of the
+/// conditionally-applied tail of a `#[cfg_attr(...)]`, recursing through
+/// nested `cfg_attr` the same way [`cfg_attr_has_derive`] does.
+fn collect_cfg_attr_clap_items(items: &[MetaItemInner], out: &mut Vec<MetaItemInner>) {
+    for item in items {
+        let Some(meta) = item.meta_item() else {
+            continue;
+        };
+        if let MetaItemKind::List(inner) = &meta.kind {
+            if is_clap_namespace_path(meta) {
+                out.extend(inner.iter().cloned());
+            } else if meta.has_name(sym::cfg_attr) {
+                collect_cfg_attr_clap_items(inner.get(1..).unwrap_or_default(), out);
+            }
+        }
+    }
 }
 
 fn is_clap_namespace(attr: &Attribute) -> bool {
@@ -198,42 +237,75 @@ fn is_clap_namespace(attr: &Attribute) -> bool {
         .any(|ns| attr.has_name(Symbol::intern(ns)))
 }
 
+fn is_clap_namespace_path(meta: &rustc_ast::MetaItem) -> bool {
+    meta.path.segments.last().is_some_and(|segment| {
+        CLAP_ATTR_NAMESPACES
+            .iter()
+            .any(|ns| segment.ident.name == Symbol::intern(ns))
+    })
+}
+
+/// The clap derives that turn a *container's* own (type-level) doc
+/// comment into `--help` text: a `Parser` / `CommandFactory` (and the
+/// legacy `Clap`) type's doc becomes the command's `about` / `long_about`.
+/// Used to keep a `ValueEnum` container doc in scope when the enum *also*
+/// derives one of these — an unusual but representable combination.
+const COMMAND_ABOUT_DERIVES: &[&str] = &["Parser", "CommandFactory", "Clap"];
+
 /// Whether the node's attributes derive a clap help-source trait,
 /// including a `#[cfg_attr(<cfg>, derive(...))]`-gated derive.
 fn has_clap_derive(attrs: &[Attribute]) -> bool {
+    has_derive_matching(attrs, &|name| CLAP_DERIVES.contains(&name))
+}
+
+/// Whether an enum's own (type-level) doc comment can reach `--help`. A
+/// `ValueEnum`'s does not — clap reads its argument help from the field
+/// that *uses* the enum, and its per-value help from the variant docs, so
+/// the enum-level doc is rustdoc-only. If the enum *also* derives a
+/// command-producing trait (`Parser` / `CommandFactory`, or the legacy
+/// `Clap`), which does consume the type doc, the container doc is live.
+fn enum_container_doc_reaches_help(attrs: &[Attribute]) -> bool {
+    !has_derive_matching(attrs, &|name| name == "ValueEnum")
+        || has_derive_matching(attrs, &|name| COMMAND_ABOUT_DERIVES.contains(&name))
+}
+
+/// Whether any `#[derive(...)]` on the node — including a
+/// `#[cfg_attr(<cfg>, derive(...))]`-gated one — names a derive matching
+/// `pred`.
+fn has_derive_matching(attrs: &[Attribute], pred: &dyn Fn(&str) -> bool) -> bool {
     attrs.iter().any(|attr| {
         if attr.has_name(sym::derive) {
             attr.meta_item_list()
-                .is_some_and(|entries| derive_entries_match(&entries))
+                .is_some_and(|entries| derive_entries_match(&entries, pred))
         } else if attr.has_name(sym::cfg_attr) {
             attr.meta_item_list()
-                .is_some_and(|args| cfg_attr_has_clap_derive(args.get(1..).unwrap_or(&[])))
+                .is_some_and(|args| cfg_attr_has_derive(args.get(1..).unwrap_or(&[]), pred))
         } else {
             false
         }
     })
 }
 
-fn cfg_attr_has_clap_derive(items: &[MetaItemInner]) -> bool {
+fn cfg_attr_has_derive(items: &[MetaItemInner], pred: &dyn Fn(&str) -> bool) -> bool {
     items.iter().any(|item| {
         let Some(meta) = item.meta_item() else {
             return false;
         };
         if meta.has_name(sym::derive) {
-            matches!(&meta.kind, MetaItemKind::List(entries) if derive_entries_match(entries))
+            matches!(&meta.kind, MetaItemKind::List(entries) if derive_entries_match(entries, pred))
         } else if meta.has_name(sym::cfg_attr) {
-            matches!(&meta.kind, MetaItemKind::List(args) if cfg_attr_has_clap_derive(args.get(1..).unwrap_or(&[])))
+            matches!(&meta.kind, MetaItemKind::List(args) if cfg_attr_has_derive(args.get(1..).unwrap_or(&[]), pred))
         } else {
             false
         }
     })
 }
 
-fn derive_entries_match(entries: &[MetaItemInner]) -> bool {
+fn derive_entries_match(entries: &[MetaItemInner], pred: &dyn Fn(&str) -> bool) -> bool {
     entries.iter().any(|entry| {
         entry
             .meta_item()
             .and_then(|meta| meta.path.segments.last())
-            .is_some_and(|segment| CLAP_DERIVES.contains(&segment.ident.name.as_str()))
+            .is_some_and(|segment| pred(segment.ident.name.as_str()))
     })
 }

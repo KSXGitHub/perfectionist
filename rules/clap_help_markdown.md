@@ -17,6 +17,15 @@ enum deriving `clap::Parser`, `Args`, `Subcommand`, `ValueEnum`,
 or `CommandFactory`, and on the doc comments of their fields and
 variants.
 
+A `ValueEnum`'s own type-level doc comment is left alone: it never
+reaches `--help` — clap takes the argument's help from the
+`Args`/`Parser` field whose type is the enum, and the per-value
+help from the variant doc comments — so only the variants are
+scanned. Derives and override attributes gated behind
+`#[cfg_attr(<cfg>, ...)]` (the form a crate uses to keep clap
+behind a `cli` feature) are recognised the same as their ungated
+forms.
+
 Bold, italics, and lists are not flagged by default — clap
 renders them as their literal characters, which usually reads
 cleanly — but are available through the `extra_constructs` knob.
