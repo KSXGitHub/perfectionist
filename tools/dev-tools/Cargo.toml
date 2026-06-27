@@ -10,7 +10,7 @@ name = "dev-tools"
 path = "src/main.rs"
 
 [dependencies]
-cargo_toml = "0.22.3"
+cargo_toml = "1.0.0"
 clap = { version = "4.6.1", features = ["derive"] }
 command-extra = "1.0.0"
 derive_more = { version = "2.1.1", default-features = false, features = ["display"] }
