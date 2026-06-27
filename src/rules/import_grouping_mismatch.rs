@@ -1,6 +1,6 @@
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::source::indent_of;
-use rustc_ast::{Item, ItemKind, ModKind};
+use rustc_ast::{Item, ItemKind, ModKind, VisibilityKind};
 use rustc_errors::Applicability;
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -39,6 +39,14 @@ declare_tool_lint! {
     ///   and `cfg_block_handling`
     ///   knobs tune the partition; the inner ordering within each group
     ///   is left to `cargo fmt`.
+    ///
+    /// Set `separate_reexports = true` (under either style) to pull every
+    /// `pub` re-export — any `use` with an explicit visibility — into one
+    /// contiguous block above all private imports, separated by a blank
+    /// line. This keeps a module's public surface (`pub use child::Item`)
+    /// apart from its private imports instead of interleaving the two by
+    /// path. A cfg-gated re-export stays in the re-export block, not the
+    /// trailing cfg block: visibility takes precedence.
     ///
     /// This rule only governs the *partitioning* of imports into blocks.
     /// Whether items within each `use` are merged or split is the job of
@@ -126,6 +134,23 @@ declare_tool_lint! {
     /// #[cfg(unix)]
     /// use std::os::unix::fs::MetadataExt;
     /// ```
+    ///
+    /// #### Knob: `separate_reexports = true`
+    ///
+    /// **Avoid:** (a `pub use` re-export mixed in with private imports)
+    ///
+    /// ```rust,ignore
+    /// pub use reflection::Reflection;
+    /// use super::size;
+    /// ```
+    ///
+    /// **Prefer:** (re-exports kept in their own leading block)
+    ///
+    /// ```rust,ignore
+    /// pub use reflection::Reflection;
+    ///
+    /// use super::size;
+    /// ```
     pub perfectionist::IMPORT_GROUPING_MISMATCH,
     Warn,
     "import grouping does not match the configured `import_grouping_mismatch.style`",
@@ -203,6 +228,14 @@ pub(super) struct UseStmt<'ast> {
     /// Lowest byte position to replace — the start of the first
     /// attribute, or of the `use` keyword when there are none.
     lo: BytePos,
+    /// Whether this `use` carries an explicit visibility — a re-export.
+    /// Read by [`ImportGroupingMismatch::message`] to word a violation
+    /// that involves the re-export block.
+    is_reexport: bool,
+    /// Whether this `use` is `#[cfg(...)]`-gated. Combined with the
+    /// config in [`ImportGroupingMismatch::message`] to tell a trailing
+    /// cfg block apart from the re-export block.
+    is_cfg_gated: bool,
 }
 
 /// A detected violation parked until the enclosing HIR node is known.
@@ -356,7 +389,11 @@ impl ImportGroupingMismatch {
         // applies some other attribute — the import itself is always
         // present — so it does not make a statement cfg-gated for grouping.
         let is_cfg_gated = item.attrs.iter().any(|attr| attr.has_name(sym::cfg));
-        let rank = classify::rank(tree, is_cfg_gated, &self.config, local_modules);
+        // A re-export is any `use` with an explicit visibility; only a
+        // private (`Inherited`) import is not one. The `separate_reexports`
+        // knob keys off this to pull re-exports into their own block.
+        let is_reexport = !matches!(item.vis.kind, VisibilityKind::Inherited);
+        let rank = classify::rank(tree, is_reexport, is_cfg_gated, &self.config, local_modules);
 
         // The replacement starts at the first attribute, or at the `use`
         // keyword when there are none. Attributes precede the item span, so
@@ -375,6 +412,8 @@ impl ImportGroupingMismatch {
             rank,
             text,
             lo,
+            is_reexport,
+            is_cfg_gated,
         })
     }
 
@@ -497,19 +536,43 @@ impl ImportGroupingMismatch {
     }
 
     /// The warning header for a violating `run`. Under `single_block` the
-    /// wording depends on the actual violation: a run that carries a
-    /// hoisted cfg-gated import (rank above the single block's `0`) is
-    /// about the trailing cfg block, while a run with none is just blank
-    /// lines splitting one block — the same violation `merge` reports.
+    /// wording depends on the actual violation: which of the two
+    /// separate blocks — a leading `pub` re-export block (under
+    /// `separate_reexports`) or a trailing cfg block — the run carries.
+    /// A run with neither is just blank lines splitting one block, the
+    /// same violation `merge` reports.
     fn message(&self, run: &[UseStmt<'_>]) -> &'static str {
+        let reexport_block =
+            self.config.separate_reexports && run.iter().any(|stmt| stmt.is_reexport);
+        let cfg_block = run.iter().any(|stmt| self.is_cfg_trailing(stmt));
         match self.config.style {
             Style::MultiBlock => "imports are not partitioned into ordered groups",
-            Style::SingleBlock if run.iter().any(|stmt| stmt.rank > 0) => {
-                "imports must form one block, with `#[cfg]`-gated imports in a trailing block"
-            }
-            Style::SingleBlock => {
-                "blank lines split the imports; this project keeps them in a single block"
-            }
+            Style::SingleBlock => match (reexport_block, cfg_block) {
+                (true, true) => {
+                    "imports must form one block, with `pub` re-exports in a leading block \
+                     and `#[cfg]`-gated imports in a trailing block"
+                }
+                (true, false) => {
+                    "imports must form one block, with `pub` re-exports in a leading block"
+                }
+                (false, true) => {
+                    "imports must form one block, with `#[cfg]`-gated imports in a trailing block"
+                }
+                (false, false) => {
+                    "blank lines split the imports; this project keeps them in a single block"
+                }
+            },
         }
+    }
+
+    /// Whether `stmt` is hoisted into the trailing cfg block: a cfg-gated
+    /// import under [`config::CfgBlockHandling::Trailing`] that the re-export
+    /// block did not already claim (a cfg-gated re-export stays with the
+    /// re-exports when `separate_reexports` is on).
+    fn is_cfg_trailing(&self, stmt: &UseStmt<'_>) -> bool {
+        use config::CfgBlockHandling;
+        stmt.is_cfg_gated
+            && matches!(self.config.cfg_block_handling, CfgBlockHandling::Trailing)
+            && !(self.config.separate_reexports && stmt.is_reexport)
     }
 }
