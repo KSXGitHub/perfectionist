@@ -73,9 +73,10 @@ fn block_comment_ranges(text: &str) -> Vec<(usize, usize)> {
 /// rank `0` (so the rule degenerates to "no blank lines anywhere"), bar an
 /// opt-in trailing cfg block at a higher rank; `multi_block` assigns the
 /// std / internal / third-party / cfg ranks. Orthogonally,
-/// `separate_reexports` reserves the leading rank `0` for a re-export
-/// block and shifts every other rank up by one, so even a `single_block`
-/// run then carries one blank line above its private imports.
+/// `separate_reexports` reserves the leading rank `0` for re-exports and
+/// shifts every other rank up by one, so a run that mixes re-exports with
+/// private imports carries one blank line between the two — even under
+/// `single_block`.
 pub(super) fn is_compliant(stmts: &[UseStmt<'_>], blanks: &[usize]) -> bool {
     stmts
         .windows(2)

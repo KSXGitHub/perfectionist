@@ -1,6 +1,8 @@
 //! Configuration for `import_grouping_mismatch`: the chosen [`Style`], the
-//! group [`order`](Config::order), and how `#[cfg(...)]`-gated imports
-//! are slotted ([`CfgBlockHandling`]).
+//! group [`order`](Config::order), how `#[cfg(...)]`-gated imports are
+//! slotted ([`CfgBlockHandling`]), and whether `pub` re-exports form their
+//! own leading block
+//! ([`separate_reexports`](Config::separate_reexports)).
 
 /// How `use` statements are partitioned into blocks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
