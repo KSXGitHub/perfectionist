@@ -7,8 +7,10 @@
 set -euo pipefail
 
 msg_file="$1"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/commit-msg.sh"
-comment_char=$(cm_comment_char)
+lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib"
+source "$lib_dir/comment-char.sh"
+source "$lib_dir/message-body.sh"
+comment_char=$(git_comment_char)
 
 # Scan only the human-authored text. The regex matches GitHub's
 # autolink boundary: "#NNN" is bare unless the "#" is preceded by a
@@ -16,7 +18,7 @@ comment_char=$(cm_comment_char)
 # The trailing boundary keeps "#123abc" and fragments like "#L123" /
 # "#issuecomment-1" from matching.
 bare_refs=$(
-  cm_human_lines "$msg_file" "$comment_char" \
+  message_body "$msg_file" "$comment_char" \
     | grep -E '(^|[^0-9A-Za-z_])#[0-9]+([^0-9A-Za-z_]|$)' || true
 )
 if [ -n "$bare_refs" ]; then
