@@ -91,8 +91,9 @@ fn walk_items(
                 // `--help`: clap takes the argument help from the
                 // `Args`/`Parser` field whose type is the enum, and the
                 // per-value help from the variant docs. So skip the
-                // container doc for a value-only enum; the variant docs
-                // below are still help sources and stay in scope.
+                // container doc for a value-only enum. The variant docs
+                // below can still reach `--help`, so they stay in scope;
+                // `record_node` then drops any that override their help.
                 if enum_container_doc_reaches_help(&item.attrs) {
                     record_node(&item.attrs, override_keys, map);
                 }

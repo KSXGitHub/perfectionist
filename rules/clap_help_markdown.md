@@ -20,8 +20,9 @@ variants.
 A `ValueEnum`'s own type-level doc comment is left alone: it never
 reaches `--help` — clap takes the argument's help from the
 `Args`/`Parser` field whose type is the enum, and the per-value
-help from the variant doc comments — so only the variants are
-scanned. Derives and override attributes gated behind
+help from each variant's own doc comment. So only the variants are
+scanned (and, as for any node, a variant that overrides its help
+is still skipped). Derives and override attributes gated behind
 `#[cfg_attr(<cfg>, ...)]` (the form a crate uses to keep clap
 behind a `cli` feature) are recognised the same as their ungated
 forms.
