@@ -39,12 +39,9 @@ cd "$root"
 
 # See `.githooks/commit-msg` for why the linker override is here.
 #
-# No `--quiet`: a cold build of `_deploy_check` can take many seconds,
-# during which a silent hook looks hung. Cargo writes its build
-# progress to stderr (never stdout), and a git hook signals purely via
-# exit code — nothing parses this hook's output — so surfacing the
-# progress can't corrupt anything. deploy-check's own diagnostics go to
-# stderr too, so the two interleave harmlessly.
+# No `--quiet`: a cold build takes seconds, and a silent hook looks
+# hung. Cargo's progress goes to stderr and hooks signal via exit
+# code, so surfacing it is harmless.
 exec cargo --config 'target."cfg(all())".linker="cc"' run \
   --locked --package _deploy_check --bin deploy-check -- \
   "$root" pre-push <<< "$input"
