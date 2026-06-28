@@ -434,7 +434,7 @@ concentrates in the suggestions, all attached to one diagnostic:
 
 Active by default. The dedented shape is a broad, project-agnostic
 readability regression. Suppress per-site with
-`#[allow(perfectionist::dedented_multiline_string)]` or globally via
+`#[expect(perfectionist::dedented_multiline_string)]` or globally via
 `[perfectionist].disable`.
 
 ## Interaction with sibling rules
