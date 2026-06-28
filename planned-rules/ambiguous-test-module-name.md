@@ -26,16 +26,18 @@ and affixed forms.
 Flag a `mod` item — inline `mod foo { ... }` or out-of-line
 `mod foo;` — when **both** hold:
 
-1. The module is compiled **only** under test — that is, switching
-   `test` *off* would switch the module off. Equivalently, `test` is a
-   mandatory conjunct of the module's `cfg` predicate: bare
-   `#[cfg(test)]`, or an `all(...)` with `test` anywhere among its
-   operands (`#[cfg(all(unix, test))]` counts exactly as
-   `#[cfg(all(test, unix))]` does — conjunct order is irrelevant). A
-   predicate that leaves the module compiled outside test too is **not**
-   a test-only module and is out of scope: `#[cfg(any(unix, test))]`
-   still compiles on `unix` without `test`, and `#[cfg(not(test))]` /
-   `#[cfg(feature = "x")]` are not test-gated at all.
+1. The module is compiled **only** under test — its `cfg` predicate
+   *implies* `test` (is satisfiable only when `test` is set). Composed
+   over the predicate tree: a bare `#[cfg(test)]` qualifies; an
+   `all(...)` qualifies when **some** operand implies `test` (so
+   `#[cfg(all(unix, test))]` does — operand order is irrelevant); an
+   `any(...)` qualifies only when **every** operand implies `test` (so
+   `#[cfg(any(unix, test))]` does **not** — it still compiles on a
+   non-test `unix` build); `not(...)` never does. This composes through
+   nesting: `#[cfg(all(any(test, unix), unix))]` is **not** test-only,
+   because its inner `any(test, unix)` is not. `#[cfg(not(test))]` /
+   `#[cfg(feature = "x")]` are not test-gated at all and are out of
+   scope.
 2. The module's name matches **none** of the configured patterns: it is
    not equal to any `whole_names` entry, does not start with any
    `prefixes` entry, and does not end with any `suffixes` entry.
@@ -120,7 +122,7 @@ mod tests {                    // or inline — both accepted
 }
 ```
 
-**Avoid:** test-only via `all(...)` (conjunct order irrelevant)
+**Avoid:** test-only via `all(...)` (operand order irrelevant)
 
 ```rust
 #[cfg(all(unix, test))]
@@ -136,6 +138,10 @@ mod buttons;          // still compiled on `unix` without `test`;
 
 #[cfg(any(test, feature = "mock"))]
 mod widgets;          // likewise also compiled with `mock`
+
+#[cfg(all(any(test, unix), unix))]
+mod controls;         // inner `any(test, unix)` doesn't imply `test`,
+                      // so neither does the `all(...)`; production
 ```
 
 **Not flagged:** a test submodule nested below a *complying* boundary
@@ -248,9 +254,14 @@ Re-parsing preserves the `#[cfg(test)]` attribute the rule keys on.
   (`#[expect(perfectionist::ambiguous_test_module_name)]`) on the parent
   module resolves. The diagnostic span is the `mod`
   item's name identifier.
-- Detecting the `cfg(test)` gate is a small fixed walk of the item's
-  `cfg` attribute predicate (is `test` a mandatory conjunct?), not a
-  string scan — it does not need the parser-combinator scaffold.
+- The test-only check is the *implies-`test`* predicate already
+  implemented as `cfg_predicate_implies_test` in `excessive_inline_tests`
+  (`src/rules/excessive_inline_tests/cfg_test.rs`): it reads the parsed
+  `CfgTrace` and composes `all` (some operand implies `test`) / `any`
+  (every operand) / `not` (never) over the predicate tree. Two rules now
+  need it, so factor it into a shared crate-internal module (per the
+  cross-rule-helper convention) rather than re-walking the predicate
+  here. Not a string scan — no parser-combinator scaffold.
 - The name check is three literal comparisons against the config lists
   (equality, `str::starts_with`, `str::ends_with`), not a
   parser-combinator scan. (See *"Where to draw the line"* in the
@@ -260,6 +271,14 @@ Re-parsing preserves the `#[cfg(test)]` attribute the rule keys on.
   test-only boundary are not reached — which is the intended scope, not
   a gap. See *"Scope: only the outermost test-only module"* above for
   why the boundary is the only place ambiguity arises.
+
+- The mechanism above is implementation detail. The rule's own
+  `declare_tool_lint!` rustdoc (rendered into the user-facing catalogue)
+  must describe the boundary-only scope **behaviourally** — "only the
+  outermost test-only module is flagged" — and omit the pass machinery
+  ("late pass", "re-parse", "live HIR module") that produces it, per
+  *"`declare_tool_lint!` docs describe behaviour, not pass machinery"*
+  in the conventions file.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
