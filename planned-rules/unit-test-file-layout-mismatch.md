@@ -72,7 +72,10 @@ A test-gate predicate is recognised exactly as
 `perfectionist::excessive_inline_tests` recognises it: a bare
 `#[cfg(test)]` and any compound predicate that still implies test —
 `#[cfg(all(test, unix))]`, `#[cfg(all(test, feature = "..."))]` —
-count as test gates. The aggregator's inner `mod <group>;`
+count as test gates. A predicate that does *not* imply test, such as
+`#[cfg(any(test, feature = "..."))]` (active outside test too), is
+not a test gate, matching `excessive_inline_tests`'s own
+`any(test, …)` handling. The aggregator's inner `mod <group>;`
 declarations need no gate of their own because the module they sit
 in is already test-gated.
 
@@ -245,7 +248,12 @@ declarations without moving the backing files would leave the crate
 unbuildable, which is worse than no fix. So the rule emits a
 **help-only** diagnostic spelling out the moves (as the *Avoid* /
 *Prefer* sections do) and never auto-rewrites. State this limitation
-in the rustdoc so the absence of a `MachineApplicable` suggestion is
+in the user-facing `declare_tool_lint!` doc *behaviourally* — that
+the fix is a filesystem move the lint cannot apply for you, so it
+only emits guidance — without naming the pass internals that cause
+it, per
+[`declare_tool_lint!` docs describe behaviour, not pass machinery](./IMPLEMENTATION_CONVENTIONS.md#declare_tool_lint-docs-describe-behaviour-not-pass-machinery).
+That way the absence of a `MachineApplicable` suggestion reads as
 expected, not an oversight.
 
 ## What to lint
