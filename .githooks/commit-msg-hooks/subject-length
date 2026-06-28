@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# commit-msg check: reject any commit message whose subject line (first
+# line) exceeds 72 characters. GitHub's web UI truncates a longer
+# subject, mangling the title/body split. Pure text, runs for every
+# commit except version-bump commits.
+set -euo pipefail
+
+msg_file="$1"
+lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib"
+source "$lib_dir/comment-char.sh"
+source "$lib_dir/message-subject.sh"
+source "$lib_dir/version-subject.sh"
+comment_char=$(git_comment_char)
+subject=$(message_subject "$msg_file" "$comment_char")
+
+# Version-bump commits are exempt — their subject is just the version,
+# always short.
+if is_version_subject "$subject"; then
+  exit 0
+fi
+
+# Opt-out: set PERFECTIONIST_GIT_HOOK_ALLOW_LONG_SUBJECT=true to skip
+# this one check when a longer subject is genuinely warranted (the
+# other checks still run). `false`, empty, and unset all enforce the
+# cap; any other value is a typo and is rejected rather than silently
+# ignored, so a misspelt opt-out never quietly fails to apply. Mirrors
+# the PERFECTIONIST_CARGO_LOCKED tri-state in the justfile.
+allow_long_subject="${PERFECTIONIST_GIT_HOOK_ALLOW_LONG_SUBJECT:-}"
+case "$allow_long_subject" in
+  true|false|'') ;;
+  *)
+    echo "✖ PERFECTIONIST_GIT_HOOK_ALLOW_LONG_SUBJECT must be 'true', 'false', empty, or unset; got: $allow_long_subject" >&2
+    exit 1
+    ;;
+esac
+
+if [ "$allow_long_subject" = true ]; then
+  exit 0
+fi
+
+subject_limit=72
+# Count UTF-8 characters, not bytes: ${#subject} would count bytes
+# under a C locale (the hook sets none), wrongly rejecting an accented
+# or non-Latin subject that GitHub displays well within the cap. Every
+# UTF-8 character has exactly one leading byte; the rest are
+# continuation bytes 0x80–0xBF. So characters = total bytes minus
+# continuation bytes, computed byte-wise under LC_ALL=C for a result
+# that does not depend on the caller's locale.
+subject_bytes=$(printf '%s' "$subject" | wc -c)
+subject_cont=$(printf '%s' "$subject" | LC_ALL=C tr -dc '\200-\277' | wc -c)
+subject_length=$((subject_bytes - subject_cont))
+if [ "$subject_length" -gt "$subject_limit" ]; then
+  cat >&2 <<EOF
+✖ Commit message rejected: the subject line is too long.
+
+    $subject
+
+The subject is $subject_length characters; the limit is $subject_limit.
+
+GitHub truncates a subject past $subject_limit characters in its web UI: it
+cuts the line, appends a "…", and folds the overflow into the body
+behind another "…", so the commit reads as a mangled title/body split.
+
+Shorten the subject to $subject_limit characters or fewer (the conventional
+ideal is 50). Move any detail that does not fit into the commit body —
+a blank line after the subject, then the rest.
+
+If a longer subject is genuinely warranted, re-run the commit with
+PERFECTIONIST_GIT_HOOK_ALLOW_LONG_SUBJECT=true to skip this check (the other
+commit-message checks still apply).
+EOF
+  exit 1
+fi

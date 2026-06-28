@@ -34,9 +34,9 @@ declare_tool_lint! {
     ///   internal (`crate` / `super` / `self`), then third-party (every
     ///   other crate). A bare-path import of a first-party submodule
     ///   (`mod error; use error::Foo;`) is classified as internal, not
-    ///   third-party: the rule reads source without name resolution, so it
-    ///   recognises a bare first segment that names a `mod` declared in
-    ///   the same module scope. The `order` and `cfg_block_handling`
+    ///   third-party: a bare first segment that names a `mod` declared in
+    ///   the same module scope is recognised as first-party. The `order`
+    ///   and `cfg_block_handling`
     ///   knobs tune the partition; the inner ordering within each group
     ///   is left to `cargo fmt`.
     ///
