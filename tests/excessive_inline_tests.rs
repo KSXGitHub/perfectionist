@@ -140,6 +140,83 @@ fn does_not_flag_external_module_gated_by_compound_cfg() {
     );
 }
 
+/// A compound cfg that does *not* imply test — `#[cfg(any(test,
+/// unix))]` — gates real production code: the item is compiled in a
+/// non-test `unix` build too, so it is not test-only. The rule must
+/// descend into such a module and count its body as production, never
+/// charge it against the inline-test budget. With the `any`/`all`
+/// composition bug it was misread as test-only, its (large) body left
+/// uncounted, and the whole module reported as "inline test code spans
+/// N lines". Regression for
+/// <https://github.com/KSXGitHub/perfectionist/issues/211>.
+///
+/// The file carries a separate top-level production item so the
+/// `production_count == 0` early-return in `emit_inline_style` cannot
+/// mask the regression: under the old bug the gated module is charged
+/// as a >50-line inline-test footprint *and* the file has production,
+/// so the lint fires; the fix records the module as production instead,
+/// so it stays silent. Without the extra production item the test would
+/// pass under the bug too (vacuous).
+#[test]
+fn does_not_flag_production_module_gated_by_any_test_cfg() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_itf_any_test_cfg_production",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub mod foo;\n"),
+            (
+                "src/foo.rs",
+                include_str!("fixtures/excessive_inline_tests/any_test_cfg_production.rs"),
+            ),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(LINT),
+        "a production module gated by `cfg(any(test, ...))` must not be \
+         flagged as inline test code; stderr was:\n{stderr}",
+    );
+}
+
+/// Nested composition: `#[cfg(all(any(test, unix), unix))]` gates real
+/// production code. The inner `any(test, unix)` does *not* imply test
+/// (it holds on a non-test `unix` build), so neither does the enclosing
+/// `all(...)` — the module is production and must be descended into, not
+/// charged against the inline-test budget. This locks in the nested
+/// case the `entry_implies_test` docstring claims: before the fix, both
+/// `all` and `any` reduced with `.any(... mentions test)`, so the inner
+/// `any(test, unix)` was read as test-only and propagated up through the
+/// `all`, mis-flagging the whole module as inline test code. The flat
+/// `any`/`all` tests alone do not exercise this recursion. As above, a
+/// separate top-level production item keeps `production_count` non-zero
+/// so the bug surfaces as a fired lint rather than being masked by the
+/// `emit_inline_style` early-return. Regression for
+/// <https://github.com/KSXGitHub/perfectionist/issues/211>.
+#[test]
+fn does_not_flag_production_module_gated_by_nested_any_in_all_cfg() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_itf_nested_any_in_all_cfg_production",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub mod foo;\n"),
+            (
+                "src/foo.rs",
+                include_str!("fixtures/excessive_inline_tests/nested_any_in_all_cfg_production.rs"),
+            ),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(LINT),
+        "a production module gated by `cfg(all(any(test, ...), ...))` must \
+         not be flagged as inline test code; stderr was:\n{stderr}",
+    );
+}
+
 /// The on-disk position of an extracted test file is not the rule's
 /// concern: a flattened `src/sib_tests.rs` sibling (loaded via `#[path]`)
 /// is just as acceptable as the nested form. The rule only counts

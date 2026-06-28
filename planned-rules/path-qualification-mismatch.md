@@ -68,6 +68,9 @@ style = "unqualified"
 #                  the full path and removal of the `use`.
 
 # Where the lint applies. Each context can be toggled independently.
+# Deliberately an array, not per-context bools: at five members it
+# still reads cleanly, and it's the catalogue's one sanctioned
+# array-of-toggles (see IMPLEMENTATION_CONVENTIONS.md).
 contexts = ["call", "type", "derive", "macro", "trait_bound"]
 
 # Prefixes that the `unqualified` style leaves alone. Defaults to

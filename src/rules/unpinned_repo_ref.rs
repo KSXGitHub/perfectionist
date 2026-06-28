@@ -3,7 +3,7 @@ use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::literal_scan::string_literal_quote_lengths;
 use crate::markdown::{SkipRange, scan_code_regions};
-use config::{Config, ForgeKind, Target, glob_match};
+use config::{Config, ForgeKind, glob_match};
 use emit::{Violation, emit_diagnostic};
 use rustc_ast::LitKind;
 use rustc_hir::{Expr, ExprKind};
@@ -67,9 +67,9 @@ use config::CONFIG_KEY;
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
 pub struct UnpinnedRepoRef {
-    scan_doc: bool,
-    scan_comment: bool,
-    scan_string_literal: bool,
+    scan_doc_comments: bool,
+    scan_regular_comments: bool,
+    scan_string_literals: bool,
     pub(super) sha_recognition_length: usize,
     pub(super) allow_version_patterns: bool,
     /// Hostname globs paired with the forge kind they map to, in
@@ -92,9 +92,9 @@ impl UnpinnedRepoRef {
             .map(|entry| (entry.hostname, entry.kind))
             .collect();
         Self {
-            scan_doc: config.targets.contains(&Target::Doc),
-            scan_comment: config.targets.contains(&Target::Comment),
-            scan_string_literal: config.targets.contains(&Target::StringLiteral),
+            scan_doc_comments: config.scan_doc_comments,
+            scan_regular_comments: config.scan_regular_comments,
+            scan_string_literals: config.scan_string_literals,
             sha_recognition_length: config.sha_recognition_length,
             allow_version_patterns: config.allow_version_patterns,
             hosts,
@@ -120,13 +120,13 @@ impl UnpinnedRepoRef {
     }
 
     fn scans_any_comment(&self) -> bool {
-        self.scan_doc || self.scan_comment
+        self.scan_doc_comments || self.scan_regular_comments
     }
 
     fn scan_chunk(&self, chunk: &CommentChunk<'_>, out: &mut Vec<(Span, Violation)>) {
         let scan = match chunk.surface {
-            CommentSurface::DocBlock | CommentSurface::DocBlockBlock => self.scan_doc,
-            CommentSurface::PlainLine | CommentSurface::PlainBlock => self.scan_comment,
+            CommentSurface::DocBlock | CommentSurface::DocBlockBlock => self.scan_doc_comments,
+            CommentSurface::PlainLine | CommentSurface::PlainBlock => self.scan_regular_comments,
         };
         if !scan {
             return;
@@ -191,7 +191,7 @@ impl<'tcx> LateLintPass<'tcx> for UnpinnedRepoRef {
     }
 
     fn check_expr(&mut self, lint_context: &LateContext<'tcx>, expr: &Expr<'tcx>) {
-        if !self.scan_string_literal {
+        if !self.scan_string_literals {
             return;
         }
         let ExprKind::Lit(literal) = expr.kind else {
