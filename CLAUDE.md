@@ -437,6 +437,25 @@ The single exception is version-bump commits, whose subject is
 just the version itself (e.g. `0.0.0-rc.6`). Use this form only
 for commits that do nothing other than bump the version.
 
+Keep the subject line (the first line) at **72 characters or
+fewer** — the conventional hard cap; 50 is the ideal. GitHub's web
+UI truncates a longer subject, appends a `…`, and folds the
+overflow into the body behind another `…`, so the commit reads as a
+mangled title/body split. The [`commit-msg`
+hook](.githooks/commit-msg) rejects any commit whose subject
+exceeds the cap (version-bump commits are exempt, but are short
+anyway); it measures characters, not bytes, so an accented or
+non-Latin subject is judged by what GitHub displays. Move any
+detail that does not fit into the commit body — a blank line after
+the subject, then the rest.
+
+When a longer subject is genuinely warranted, set
+`PERFECTIONIST_GIT_HOOK_ALLOW_LONG_SUBJECT=true` for that `git
+commit` to skip just this check; the hook's other checks still
+apply. `false`, empty, and unset all enforce the cap, and any other
+value is rejected so a misspelt opt-out never silently fails to
+apply.
+
 ## Issue and PR references in commit messages
 
 Never write a **bare** `#NNN` reference in a commit message. A
