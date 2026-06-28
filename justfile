@@ -68,7 +68,7 @@ install-dev-tools:
 # locally for commit messages and tag pushes.
 install-git-hooks:
   git config core.hooksPath .githooks
-  chmod +x .githooks/commit-msg .githooks/pre-push
+  chmod +x .githooks/commit-msg .githooks/pre-push .githooks/commit-msg-hooks/*
 
 # Undo `install-git-hooks`. Idempotent: silently succeeds when
 # `core.hooksPath` is already unset, so it is safe to run from
