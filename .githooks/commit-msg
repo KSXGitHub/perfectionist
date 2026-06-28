@@ -13,7 +13,7 @@
 #      and needlessly pings a real person. Pure text, runs for every
 #      commit.
 #   3. Reject any commit message whose subject line (first line) exceeds
-#      72 characters (see "Reject over-long subject lines" below).
+#      72 characters (see "Reject overly long subject lines" below).
 #      GitHub truncates a longer subject in its web UI, mangling the
 #      title/body split. Pure text, runs for every commit except
 #      version-bump commits.
@@ -132,7 +132,7 @@ if [[ "$subject" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[^[:space:]]+)?$ ]]; then
   is_version_subject=1
 fi
 
-# --- Reject over-long subject lines ----------------------------------
+# --- Reject overly long subject lines ---------------------------------
 # GitHub's web UI truncates a subject past 72 characters: it cuts the
 # line, appends a "…", and folds the overflow into the body behind
 # another "…", so the commit reads as a mangled title/body split even
