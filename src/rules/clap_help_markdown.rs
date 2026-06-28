@@ -27,15 +27,9 @@ declare_tool_lint! {
     /// or `CommandFactory`, and on the doc comments of their fields and
     /// variants.
     ///
-    /// A `ValueEnum`'s own type-level doc comment is left alone: it never
-    /// reaches `--help` — clap takes the argument's help from the
-    /// `Args`/`Parser` field whose type is the enum, and the per-value
-    /// help from each variant's own doc comment. So only the variants are
-    /// scanned (and, as for any node, a variant that overrides its help
-    /// is still skipped). Derives and override attributes gated behind
-    /// `#[cfg_attr(<cfg>, ...)]` (the form a crate uses to keep clap
-    /// behind a `cli` feature) are recognised the same as their ungated
-    /// forms.
+    /// A `ValueEnum`'s own type-level doc comment is left alone: unlike
+    /// its variant docs — clap's per-value help — it never reaches
+    /// `--help`.
     ///
     /// Bold, italics, and lists are not flagged by default — clap
     /// renders them as their literal characters, which usually reads
