@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# commit-msg check: reject any commit message that contains a bare
+# "#NNN" issue/PR reference. This guards against the most common AI
+# mis-reference: a number that resolves against the wrong repository,
+# or "#1"/"#2" used to enumerate list items. Pure text, runs for every
+# commit.
+set -euo pipefail
+
+msg_file="$1"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/commit-msg.sh"
+comment_char=$(cm_comment_char)
+
+# Scan only the human-authored text. The regex matches GitHub's
+# autolink boundary: "#NNN" is bare unless the "#" is preceded by a
+# word char `[0-9A-Za-z_]` (the tail of the "repo" in "owner/repo#123").
+# The trailing boundary keeps "#123abc" and fragments like "#L123" /
+# "#issuecomment-1" from matching.
+bare_refs=$(
+  cm_human_lines "$msg_file" "$comment_char" \
+    | grep -E '(^|[^0-9A-Za-z_])#[0-9]+([^0-9A-Za-z_]|$)' || true
+)
+if [ -n "$bare_refs" ]; then
+  cat >&2 <<EOF
+✖ Commit message rejected: it contains a bare "#NNN" reference.
+
+$(printf '%s\n' "$bare_refs" | sed 's/^/    /')
+
+A bare "#123" is ambiguous and a common way to mis-reference an issue:
+
+  • Used to enumerate list items ("#1", "#2", "#3"), it instead reads
+    as issue/PR 1, 2, 3. Number the items another way, e.g. "item 1",
+    "1.", or "(1)".
+
+  • Used for a real issue or PR, GitHub resolves a bare "#123" against
+    THIS repository, so a number meant for another repo silently links
+    to the wrong issue here.
+
+Use an unambiguous form instead:
+
+  • Same repo:    KSXGitHub/perfectionist#123
+  • Another repo: owner/repo#123
+  • Absolute URL: https://github.com/owner/repo/issues/123
+
+Qualified ("owner/repo#123") and URL forms are always accepted, so it
+is safe to qualify even same-repo references.
+EOF
+  exit 1
+fi

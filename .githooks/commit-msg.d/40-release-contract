@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# commit-msg check: reject release-shaped commit messages (X.Y.Z or
+# X.Y.Z-<suffix>) whose staged diff fails the version-bump contract
+# enforced by tools/deploy-check.
+set -euo pipefail
+
+msg_file="$1"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/commit-msg.sh"
+comment_char=$(cm_comment_char)
+subject=$(cm_subject "$msg_file" "$comment_char")
+
+# Cheap pre-filter so non-release commits don't pay the cost of
+# spawning cargo: only a bare version-literal subject reaches the
+# version-bump contract.
+if ! cm_is_version_subject "$subject"; then
+  exit 0
+fi
+
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+# `dylint-link` is the workspace linker per `.cargo/config.toml`, so
+# this hook must work even on a fresh checkout where
+# `just install-dev-tools` has not run yet — mirror that recipe's
+# linker override.
+exec cargo --config 'target."cfg(all())".linker="cc"' run \
+  --quiet --locked --package _deploy_check --bin deploy-check -- \
+  "$root" commit-msg "$msg_file"
