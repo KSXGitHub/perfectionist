@@ -40,13 +40,14 @@ declare_tool_lint! {
     ///   knobs tune the partition; the inner ordering within each group
     ///   is left to `cargo fmt`.
     ///
-    /// Set `separate_reexports = true` (under either style) to pull every
-    /// `pub` re-export — any `use` with an explicit visibility — into one
-    /// contiguous block above all private imports, separated by a blank
-    /// line. This keeps a module's public surface (`pub use child::Item`)
-    /// apart from its private imports instead of interleaving the two by
-    /// path. A cfg-gated re-export stays in the re-export block, not the
-    /// trailing cfg block: visibility takes precedence.
+    /// By default (under either style) every `pub` re-export — any `use`
+    /// with an explicit visibility — forms one contiguous block above all
+    /// private imports, separated by a blank line. This keeps a module's
+    /// public surface (`pub use child::Item`) apart from its private
+    /// imports instead of interleaving the two by path. A cfg-gated
+    /// re-export stays in the re-export block, not the trailing cfg block:
+    /// visibility takes precedence. Set `separate_reexports = false` to
+    /// turn this off and classify every `use` purely by its path.
     ///
     /// This rule only governs the *partitioning* of imports into blocks.
     /// Whether items within each `use` are merged or split is the job of
@@ -135,7 +136,7 @@ declare_tool_lint! {
     /// use std::os::unix::fs::MetadataExt;
     /// ```
     ///
-    /// #### Knob: `separate_reexports = true`
+    /// #### Re-exports in their own block (default; `separate_reexports`)
     ///
     /// **Avoid:** (a `pub use` re-export mixed in with private imports)
     ///

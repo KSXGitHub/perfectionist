@@ -187,6 +187,21 @@ fn single_block_separate_reexports_lead_in_their_own_block() {
 }
 
 #[test]
+fn multi_block_reexports_classified_by_path_when_disabled() {
+    // `separate_reexports = false` (the non-default) turns off the leading
+    // re-export block: a `pub use crate::...` is classified internal by
+    // its path and groups with the private `use crate::...` import instead
+    // of leading in its own block.
+    run(
+        "ui-toml/import_grouping_mismatch/multi_block_reexports_by_path",
+        RuleConfig {
+            separate_reexports: Some(false),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
 fn multi_block_partitions_into_ordered_blocks() {
     // The bare-default `multi_block` style with no knobs overridden:
     // imports must be partitioned into std / internal / third-party

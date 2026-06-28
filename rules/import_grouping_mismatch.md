@@ -29,13 +29,14 @@ inactive by default; a project opts in and sets `style` to one of:
   knobs tune the partition; the inner ordering within each group
   is left to `cargo fmt`.
 
-Set `separate_reexports = true` (under either style) to pull every
-`pub` re-export — any `use` with an explicit visibility — into one
-contiguous block above all private imports, separated by a blank
-line. This keeps a module's public surface (`pub use child::Item`)
-apart from its private imports instead of interleaving the two by
-path. A cfg-gated re-export stays in the re-export block, not the
-trailing cfg block: visibility takes precedence.
+By default (under either style) every `pub` re-export — any `use`
+with an explicit visibility — forms one contiguous block above all
+private imports, separated by a blank line. This keeps a module's
+public surface (`pub use child::Item`) apart from its private
+imports instead of interleaving the two by path. A cfg-gated
+re-export stays in the re-export block, not the trailing cfg block:
+visibility takes precedence. Set `separate_reexports = false` to
+turn this off and classify every `use` purely by its path.
 
 This rule only governs the *partitioning* of imports into blocks.
 Whether items within each `use` are merged or split is the job of
@@ -124,7 +125,7 @@ use super::size::Bytes;
 use std::os::unix::fs::MetadataExt;
 ```
 
-### Knob: `separate_reexports = true`
+### Re-exports in their own block (default; `separate_reexports`)
 
 **Avoid:** (a `pub use` re-export mixed in with private imports)
 
@@ -167,14 +168,14 @@ block under `single_block`.
 ### `separate_reexports`: `boolean` (optional)
 
 Whether `pub` re-exports form their own leading block. Defaults to
-`false`: a `use` is classified purely by its path, so a
-`pub use child::Item` sits in the same block as a private import
-of the same path origin. Set `true` to pull every re-export — any
-`use` with an explicit visibility (`pub`, `pub(crate)`,
-`pub(super)`, `pub(in ...)`) — into one contiguous block above all
-private imports, separated by a blank line. A cfg-gated re-export
-stays in the re-export block rather than the trailing cfg block:
-visibility takes precedence, keeping the public surface together.
+`true`: every re-export — any `use` with an explicit visibility
+(`pub`, `pub(crate)`, `pub(super)`, `pub(in ...)`) — is pulled into
+one contiguous block above all private imports, separated by a
+blank line. A cfg-gated re-export stays in the re-export block
+rather than the trailing cfg block: visibility takes precedence,
+keeping the public surface together. Set `false` to classify a
+`use` purely by its path instead, so a `pub use child::Item` sits
+in the same block as a private import of the same origin.
 
 ### Types
 
