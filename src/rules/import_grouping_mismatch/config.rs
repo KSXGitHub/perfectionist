@@ -1,6 +1,8 @@
 //! Configuration for `import_grouping_mismatch`: the chosen [`Style`], the
-//! group [`order`](Config::order), and how `#[cfg(...)]`-gated imports
-//! are slotted ([`CfgBlockHandling`]).
+//! group [`order`](Config::order), how `#[cfg(...)]`-gated imports are
+//! slotted ([`CfgBlockHandling`]), and whether `pub` re-exports form their
+//! own leading block
+//! ([`separate_reexports`](Config::separate_reexports)).
 
 /// How `use` statements are partitioned into blocks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
@@ -71,10 +73,25 @@ pub(super) struct Config {
     /// block under `single_block`.
     #[serde(default)]
     pub(super) cfg_block_handling: CfgBlockHandling,
+    /// Whether `pub` re-exports form their own leading block. Defaults to
+    /// `true`: every re-export — any `use` with an explicit visibility
+    /// (`pub`, `pub(crate)`, `pub(super)`, `pub(in ...)`) — is pulled into
+    /// one contiguous block above all private imports, separated by a
+    /// blank line. A cfg-gated re-export stays in the re-export block
+    /// rather than the trailing cfg block: visibility takes precedence,
+    /// keeping the public surface together. Set `false` to classify a
+    /// `use` purely by its path instead, so a `pub use child::Item` sits
+    /// in the same block as a private import of the same origin.
+    #[serde(default = "default_separate_reexports")]
+    pub(super) separate_reexports: bool,
 }
 
 fn default_order() -> Vec<Group> {
     vec![Group::Std, Group::Internal, Group::Thirdparty]
+}
+
+fn default_separate_reexports() -> bool {
+    true
 }
 
 impl Config {
@@ -134,6 +151,7 @@ mod tests {
         let config = toml::from_str::<Config>(r#"style = "multi_block""#).unwrap();
         assert_eq!(config.order, default_order());
         assert_eq!(config.cfg_block_handling, CfgBlockHandling::Trailing);
+        assert!(config.separate_reexports);
     }
 
     #[test]

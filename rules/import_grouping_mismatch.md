@@ -116,6 +116,23 @@ use super::size::Bytes;
 use std::os::unix::fs::MetadataExt;
 ```
 
+### Re-exports in their own block (default; `separate_reexports`)
+
+**Avoid:** (a `pub use` re-export mixed in with private imports)
+
+```rust,ignore
+pub use reflection::Reflection;
+use super::size;
+```
+
+**Prefer:** (re-exports kept in their own leading block)
+
+```rust,ignore
+pub use reflection::Reflection;
+
+use super::size;
+```
+
 ## Configuration
 
 Configure via `dylint.toml` under `["perfectionist::import_grouping_mismatch"]`. A field marked mandatory must be set; an optional field can be omitted and the per-field prose below states its default.
@@ -138,6 +155,18 @@ How `#[cfg(...)]`-gated imports are grouped. Defaults to
 both styles. Set `merge` to keep cfg-gated imports with the rest —
 in their natural path group under `multi_block`, or in the single
 block under `single_block`.
+
+### `separate_reexports`: `boolean` (optional)
+
+Whether `pub` re-exports form their own leading block. Defaults to
+`true`: every re-export — any `use` with an explicit visibility
+(`pub`, `pub(crate)`, `pub(super)`, `pub(in ...)`) — is pulled into
+one contiguous block above all private imports, separated by a
+blank line. A cfg-gated re-export stays in the re-export block
+rather than the trailing cfg block: visibility takes precedence,
+keeping the public surface together. Set `false` to classify a
+`use` purely by its path instead, so a `pub use child::Item` sits
+in the same block as a private import of the same origin.
 
 ### Types
 

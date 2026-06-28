@@ -68,17 +68,30 @@ fn path_group(tree: &UseTree, local_modules: &HashSet<String>) -> Group {
 /// imports of sibling `mod`s. It is consulted only on the `multi_block`
 /// path: `single_block` ignores path origin, so a sibling-`mod` import
 /// is never distinguished there.
+///
+/// When `separate_reexports` is set, a re-export (`is_reexport`) takes
+/// the dedicated leading rank `0` regardless of style, path, or cfg
+/// gating — visibility outranks every other partition — and every
+/// non-re-export rank shifts up by one to sit below it. The result is
+/// one re-export block above the styled private-import blocks.
 pub(super) fn rank(
     tree: &UseTree,
+    is_reexport: bool,
     is_cfg_gated: bool,
     config: &Config,
     local_modules: &HashSet<String>,
 ) -> usize {
+    if config.separate_reexports && is_reexport {
+        return 0;
+    }
     let cfg_trailing =
         is_cfg_gated && matches!(config.cfg_block_handling, CfgBlockHandling::Trailing);
-    match config.style {
+    let base = match config.style {
         Style::SingleBlock => usize::from(cfg_trailing),
         Style::MultiBlock if cfg_trailing => config.cfg_rank(),
         Style::MultiBlock => config.group_rank(path_group(tree, local_modules)),
-    }
+    };
+    // Shift the private-import ranks down by one so the leading rank `0`
+    // stays reserved for the re-export block whenever the knob is on.
+    base + usize::from(config.separate_reexports)
 }

@@ -30,6 +30,8 @@ struct RuleConfig {
     order: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     cfg_block_handling: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    separate_reexports: Option<bool>,
 }
 
 fn dylint_toml(mut config: RuleConfig) -> String {
@@ -148,6 +150,54 @@ fn bare_path_local_submodule_is_internal() {
     run(
         "ui-toml/import_grouping_mismatch/local_submodule",
         RuleConfig::default(),
+    );
+}
+
+#[test]
+fn multi_block_separate_reexports_lead_in_their_own_block() {
+    // Under `multi_block` with `separate_reexports = true`, every `pub`
+    // re-export is pulled into one leading block above the path-
+    // partitioned private imports. Visibility outranks path and cfg
+    // gating, so a `pub use std::...` and a cfg-gated `pub use` both join
+    // the leading block rather than their natural std / trailing cfg
+    // group.
+    run(
+        "ui-toml/import_grouping_mismatch/multi_block_separate_reexports",
+        RuleConfig {
+            separate_reexports: Some(true),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn single_block_separate_reexports_lead_in_their_own_block() {
+    // Under `single_block` with `separate_reexports = true`, `pub`
+    // re-exports form a leading block, the private imports collapse into
+    // one block below, and a cfg-gated private import still forms a
+    // trailing block.
+    run(
+        "ui-toml/import_grouping_mismatch/single_block_separate_reexports",
+        RuleConfig {
+            style: Some("single_block"),
+            separate_reexports: Some(true),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn multi_block_reexports_classified_by_path_when_disabled() {
+    // `separate_reexports = false` (the non-default) turns off the leading
+    // re-export block: a `pub use crate::...` is classified internal by
+    // its path and groups with the private `use crate::...` import instead
+    // of leading in its own block.
+    run(
+        "ui-toml/import_grouping_mismatch/multi_block_reexports_by_path",
+        RuleConfig {
+            separate_reexports: Some(false),
+            ..Default::default()
+        },
     );
 }
 
