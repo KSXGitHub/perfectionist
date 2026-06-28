@@ -219,7 +219,7 @@ detected structurally (condition (3)) and need no configuration. A
 project that wants the rule off globally lists it under
 `[perfectionist].disable`; a one-off intentional function-local import
 is suppressed with
-`#[allow(perfectionist::underscoped_unconditional_import)]`.
+`#[expect(perfectionist::underscoped_unconditional_import)]`.
 
 ## Implementation notes
 
@@ -340,6 +340,6 @@ are exempt), so it ships a baseline policy and installs unconditionally
 during a `cargo dylint` run. A project that prefers function-local
 imports disables it globally via `[perfectionist].disable`; a one-off
 deliberate function-local `use` is suppressed per site with
-`#[allow(perfectionist::underscoped_unconditional_import)]`. The rule
+`#[expect(perfectionist::underscoped_unconditional_import)]`. The rule
 expresses a single fixed direction rather than a choice, so it has no
 `style` value.

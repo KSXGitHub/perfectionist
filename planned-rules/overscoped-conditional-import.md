@@ -241,7 +241,7 @@ ships no knobs. The one legitimate counter-pattern — a project that
 deliberately keeps all conditional imports at the module header for a
 uniform import block — turns the rule off globally by listing it under
 `[perfectionist].disable`, or suppresses an individual import with
-`#[allow(perfectionist::overscoped_conditional_import)]`.
+`#[expect(perfectionist::overscoped_conditional_import)]`.
 
 ## Implementation notes
 
@@ -361,6 +361,6 @@ during a `cargo dylint` run. A project that prefers a uniform
 module-header import block disables it globally via
 `[perfectionist].disable`; an individual deliberate module-level
 conditional import is suppressed per site with
-`#[allow(perfectionist::overscoped_conditional_import)]`. The rule
+`#[expect(perfectionist::overscoped_conditional_import)]`. The rule
 expresses a single fixed direction rather than a choice, so it has no
 `style` value.
