@@ -27,6 +27,10 @@ declare_tool_lint! {
     /// or `CommandFactory`, and on the doc comments of their fields and
     /// variants.
     ///
+    /// A `ValueEnum`'s own type-level doc comment is left alone: unlike
+    /// its variant docs — clap's per-value help — it never reaches
+    /// `--help`.
+    ///
     /// Bold, italics, and lists are not flagged by default — clap
     /// renders them as their literal characters, which usually reads
     /// cleanly — but are available through the `extra_constructs` knob.
