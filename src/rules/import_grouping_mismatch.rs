@@ -40,15 +40,6 @@ declare_tool_lint! {
     ///   knobs tune the partition; the inner ordering within each group
     ///   is left to `cargo fmt`.
     ///
-    /// By default (under either style) every `pub` re-export — any `use`
-    /// with an explicit visibility — forms one contiguous block above all
-    /// private imports, separated by a blank line. This keeps a module's
-    /// public surface (`pub use child::Item`) apart from its private
-    /// imports instead of interleaving the two by path. A cfg-gated
-    /// re-export stays in the re-export block, not the trailing cfg block:
-    /// visibility takes precedence. Set `separate_reexports = false` to
-    /// turn this off and classify every `use` purely by its path.
-    ///
     /// This rule only governs the *partitioning* of imports into blocks.
     /// Whether items within each `use` are merged or split is the job of
     /// `perfectionist::import_granularity_mismatch`.
