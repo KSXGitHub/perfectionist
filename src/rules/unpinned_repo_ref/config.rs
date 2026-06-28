@@ -11,19 +11,6 @@
 
 pub(super) const CONFIG_KEY: &str = "perfectionist::unpinned_repo_ref";
 
-/// Which text surfaces the rule scans. Each value names one of the
-/// three places a forge URL is written.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub(super) enum Target {
-    /// Doc comments (`///`, `//!`, `/** */`, `/*! */`).
-    Doc,
-    /// Regular comments (`//`, `/* */`).
-    Comment,
-    /// String literals (`"..."`, `r"..."`).
-    StringLiteral,
-}
-
 /// The forge a hostname maps to. The variant fixes the URL shape the
 /// per-kind matcher in [`super::parse`] applies; it does not vary per
 /// host, so a self-hosted instance reuses an existing variant.
@@ -61,10 +48,6 @@ pub(super) struct HostEntry {
     pub(super) kind: ForgeKind,
 }
 
-/// Surfaces scanned when `targets` is omitted: every surface.
-pub(super) const DEFAULT_TARGETS: &[Target] =
-    &[Target::Doc, Target::Comment, Target::StringLiteral];
-
 /// Minimum hex length recognised as a SHA when `sha_recognition_length`
 /// is omitted — Git's own minimum abbreviated-SHA length.
 pub(super) const DEFAULT_SHA_RECOGNITION_LENGTH: usize = 4;
@@ -83,10 +66,13 @@ pub(super) const DEFAULT_HOSTS: &[(&str, ForgeKind)] = &[
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 pub(super) struct Config {
-    /// Surfaces to scan, any subset of `doc`, `comment`, and
-    /// `string_literal`. Defaults to
-    /// `["doc", "comment", "string_literal"]`.
-    pub(super) targets: Vec<Target>,
+    /// Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
+    /// Defaults to `true`.
+    pub(super) scan_doc_comments: bool,
+    /// Scan regular comments (`//`, `/* */`). Defaults to `true`.
+    pub(super) scan_regular_comments: bool,
+    /// Scan string literals (`"..."`, `r"..."`). Defaults to `true`.
+    pub(super) scan_string_literals: bool,
     /// Minimum hex length for a ref to be recognised as a commit SHA.
     /// A pure-hex ref shorter than this is treated as a branch and
     /// rejected. Defaults to `4` (Git's own minimum SHA length),
@@ -120,7 +106,9 @@ pub(super) struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            targets: DEFAULT_TARGETS.to_vec(),
+            scan_doc_comments: true,
+            scan_regular_comments: true,
+            scan_string_literals: true,
             sha_recognition_length: DEFAULT_SHA_RECOGNITION_LENGTH,
             allow_version_patterns: false,
             hosts: DEFAULT_HOSTS

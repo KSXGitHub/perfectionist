@@ -2,7 +2,7 @@
 //! test, accumulates each source file's inline-test footprint, and
 //! emits the inline-style diagnostics once per file.
 
-use super::cfg_test::cfg_predicate_mentions_test;
+use super::cfg_test::cfg_predicate_implies_test;
 use super::config::{ExcessiveInlineTests, InlineStyle};
 use super::{EXCESSIVE_INLINE_TESTS, paths};
 use clippy_utils::diagnostics::span_lint_and_help;
@@ -76,7 +76,7 @@ fn classify(cx: &LateContext<'_>, item: &Item<'_>, files: &mut HashMap<BytePos, 
         return;
     }
 
-    let cfg_test = cfg_predicate_mentions_test(cx.tcx, item.hir_id());
+    let cfg_test = cfg_predicate_implies_test(cx.tcx, item.hir_id());
     let is_test = cfg_test
         || (matches!(item.kind, ItemKind::Fn { .. })
             && is_test_function(cx.tcx, item.owner_id.def_id));

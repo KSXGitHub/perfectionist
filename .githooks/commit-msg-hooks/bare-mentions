@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# commit-msg check: reject any commit message that contains a bare
+# "@handle" mention. GitHub autolinks "@foo" as a user/team mention
+# unless it is wrapped in backticks, so an unescaped handle both reads
+# as a mention GitHub may not intend and needlessly pings a real
+# person. Pure text, runs for every commit.
+set -euo pipefail
+
+msg_file="$1"
+lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib"
+source "$lib_dir/comment-char.sh"
+source "$lib_dir/message-body.sh"
+comment_char=$(git_comment_char)
+
+# Strip the human-authored text of inline-code spans (backtick-wrapped
+# text) so a deliberately escaped `@foo` passes, then scan the
+# remainder for a bare "@handle". The boundary matches GitHub's: "@foo"
+# is a mention unless the "@" is preceded by a word char `[0-9A-Za-z_]`
+# (so an email like "user@example.com" is not a mention). A handle is
+# `[0-9A-Za-z]` then any of `[-0-9A-Za-z]`, which also covers "@org/team"
+# team mentions and "@scope/pkg".
+bare_mentions=$(
+  message_body "$msg_file" "$comment_char" \
+    | awk '{ gsub(/`[^`]*`/, ""); print }' \
+    | grep -Eo '(^|[^0-9A-Za-z_])@[0-9A-Za-z][-0-9A-Za-z]*(/[0-9A-Za-z][-0-9A-Za-z]*)?' \
+    | sed 's/^[^@]*//' || true
+)
+if [ -n "$bare_mentions" ]; then
+  cat >&2 <<EOF
+✖ Commit message rejected: it contains a bare "@handle" mention.
+
+$(printf '%s\n' "$bare_mentions" | sort -u | sed 's/^/    /')
+
+Outside backticks, GitHub autolinks "@foo" as a user or team mention:
+
+  • If you meant it as code (a CLI flag, a path like @scope/pkg, a
+    version like pkg@1.2.3), GitHub still reads it as a mention.
+
+  • If you meant a real account, every commit, comment, and rebase
+    that carries the message pings that person again — needless noise.
+
+Wrap the handle in backticks so it renders as code and never pings:
+
+  • \`@foo\`  instead of  @foo
+
+A genuine, intentional mention is the only case backticks are wrong —
+and a commit message is the wrong place for one. Use the PR or issue
+body instead.
+EOF
+  exit 1
+fi

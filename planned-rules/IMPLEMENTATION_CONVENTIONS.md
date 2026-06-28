@@ -628,14 +628,51 @@ correctly-spelled one (`"crate::internals"`) never does.
 
 ### Not subject to the convention
 
-- `perfectionist::import_grouping_mismatch`'s `std_crates`
-  (`["std", "core", "alloc"]`) and `internal_prefixes`
-  (`["super", "self", "crate"]`) are single-segment crate-name /
-  path-root tokens matched against an import's first segment, not
-  multi-segment paths, so the absolute-vs-relative distinction does
-  not apply.
 - `perfectionist::unpinned_repo_ref`'s `hosts` / `skip_hosts` /
   `hostname` are forge hostnames, not Rust module paths.
+
+## Config shape: boolean fields, not an array of toggles
+
+A fixed, small set of *independent* on/off switches is one boolean
+field per switch — never a multi-select array backed by a
+`Vec<enum>`. The tell-tale signs the array is wrong: it gets
+flattened into N booleans before use, an empty array is overloaded
+to mean "none", and duplicates are meaningless. Separate `bool`s say
+exactly that and drop the empty-vs-absent ambiguity. Settled in
+<https://github.com/KSXGitHub/perfectionist/pull/255> (which replaced
+`wildcard_imports`' `exceptions = ["prelude", "root_reexport"]` with
+the booleans `prelude_exception` / `root_reexport_exception`).
+
+Three shapes are *not* this anti-pattern and stay as arrays/enums: a
+single mutually-exclusive **choice** (a `style` / direction enum like
+`import_granularity`); an **open-ended list** of user strings
+(`allowed_paths`, `extra_*`, `ignore`); and a **permutation** where
+order is the data (`import_grouping`'s `order`). The dividing line is
+fixed-membership-and-independence, not length — so a borderline case
+may keep the array as a *deliberate*, documented call:
+`path_qualification_mismatch`'s `contexts` array is the catalogue's
+one such exception.
+
+### Scan-surface toggles
+
+The recurring concrete instance: a text-scanning rule's *where do I
+scan?* surfaces are three independent booleans, not a `targets`
+array. Reuse the same field names and `true` defaults so the config
+reads identically across rules:
+
+```rust
+/// Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
+/// Defaults to `true`.
+scan_doc_comments: bool,
+/// Scan regular comments (`//`, `/* */`). Defaults to `true`.
+scan_regular_comments: bool,
+/// Scan string literals (`"..."`, `r"..."`). Defaults to `true`.
+scan_string_literals: bool,
+```
+
+`perfectionist::bare_email` and `perfectionist::unpinned_repo_ref`
+already follow this; a rule scanning only a subset omits the surfaces
+it can't reach rather than renaming the ones it keeps.
 
 ## Suppressing proc-macro-synthesised violations
 
@@ -852,4 +889,25 @@ escalation — the same mechanisms rustc already exposes for
 clippy and rustdoc lints. The planning file does not document
 which projects should escalate; that is project-side policy and
 out of scope for the catalogue.
+
+## `declare_tool_lint!` docs describe behaviour, not pass machinery
+
+`tools/gen-docs/` renders a rule's `declare_tool_lint!` rustdoc
+verbatim into the in-tree catalogue (`rules/<rule>.md`) and the docs
+site, so that block must describe *what* the rule flags and *why* —
+never *how* the pass is implemented. "Late pass", "pre-expansion",
+"lowering", "name resolution", "HIR node", the queue/anchor mechanism,
+and the like mean nothing to a catalogue reader. When a
+user-observable limitation *stems* from the implementation, state the
+limitation behaviourally (e.g. "resolved crate-wide rather than
+per-module") and drop the mechanism that causes it ("the pass runs
+pre-expansion and does not consult name resolution").
+
+The convention is scoped to the `declare_tool_lint!` block. Docs on
+*internal* items (queue structs, `register_pass`/`register_lint`,
+`emit` helpers, source walkers) describe implementation freely — they
+never reach users. And a doc may name a *rustc* mechanism the user
+observes directly (`unfulfilled_lint_expectations` notes,
+`unknown_lints`): that is behaviour the consumer sees, not this
+plugin's pass internals.
 

@@ -38,8 +38,10 @@ codebase.
 
 ```toml
 [commit_id_length_mismatch]
-# Where the lint scans. Subset of these.
-targets = ["doc", "comment", "string_literal"]
+# Where the lint scans. Each defaults to `true`.
+scan_doc_comments = true       # `///`, `//!`, `/** */`, `/*! */`
+scan_regular_comments = true   # `//`, `/* */`
+scan_string_literals = true    # `"..."`, `r"..."`
 
 # Range for the SHA length, inclusive.
 #

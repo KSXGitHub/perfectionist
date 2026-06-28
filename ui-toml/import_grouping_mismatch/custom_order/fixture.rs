@@ -1,3 +1,4 @@
+// aux-build:clap.rs
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(
@@ -9,11 +10,11 @@
 
 // Under `order = ["std", "thirdparty", "internal"]`: third-party
 // crates group ahead of internal (`crate` / `super` / `self`) imports.
+// `clap` is a real auxiliary crate (genuinely third-party); `config` is
+// a first-party module reached through `crate::`.
 
-mod clap {
-    pub struct Parser;
-    pub struct Subcommand;
-}
+extern crate clap;
+
 mod config {
     pub struct Args;
     pub struct Bytes;

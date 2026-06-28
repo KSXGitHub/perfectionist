@@ -29,13 +29,7 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     order: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    std_crates: Option<Vec<&'static str>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    internal_prefixes: Option<Vec<&'static str>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     cfg_block_handling: Option<&'static str>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    blank_line_count: Option<usize>,
 }
 
 fn dylint_toml(mut config: RuleConfig) -> String {
@@ -73,6 +67,51 @@ fn single_block_collapses_blank_lines() {
 }
 
 #[test]
+fn single_block_separates_cfg_into_trailing_block_by_default() {
+    // Under `style = "single_block"`, `cfg_block_handling` defaults to
+    // `trailing`: the non-cfg imports stay in one contiguous block and
+    // every `#[cfg(...)]`-gated import is hoisted into a single trailing
+    // block one blank line below. No cfg knob is set, so this also
+    // asserts the default.
+    run(
+        "ui-toml/import_grouping_mismatch/single_block_cfg_trailing",
+        RuleConfig {
+            style: Some("single_block"),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn single_block_cfg_merge_keeps_cfg_in_one_block() {
+    // Under `style = "single_block"` with `cfg_block_handling = "merge"`,
+    // cfg-gated imports are not separated: a blank line above one is a
+    // violation, and the fix collapses everything into one block.
+    run(
+        "ui-toml/import_grouping_mismatch/single_block_cfg_merge",
+        RuleConfig {
+            style: Some("single_block"),
+            cfg_block_handling: Some("merge"),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn std_group_includes_proc_macro_and_test() {
+    // The std group is the fixed set `std` / `core` / `alloc` /
+    // `proc_macro` / `test`. A blank line between a `std` import and a
+    // `proc_macro` / `test` import wrongly splits one group, so it is a
+    // violation the fix collapses into one contiguous block.
+    run(
+        "ui-toml/import_grouping_mismatch/std_builtin_crates",
+        RuleConfig {
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
 fn custom_order_thirdparty_before_internal() {
     // `order = ["std", "thirdparty", "internal"]` (rustfmt's
     // `StdExternalCrate` shape) puts third-party crates before internal
@@ -101,42 +140,14 @@ fn cfg_merge_slots_by_path() {
 }
 
 #[test]
-fn blank_line_count_two_separates_groups() {
-    // `blank_line_count = 2` requires exactly two blank lines between
-    // groups; a single blank line is a violation.
+fn bare_path_local_submodule_is_internal() {
+    // Regression: a bare-path import of a first-party submodule (`use
+    // error::Foo;` where `error` is a sibling `mod`) is grouped with the
+    // internal block, ahead of third-party, instead of being treated as
+    // a third-party crate keyed on the bare first segment.
     run(
-        "ui-toml/import_grouping_mismatch/blank_line_count",
-        RuleConfig {
-            blank_line_count: Some(2),
-            ..Default::default()
-        },
-    );
-}
-
-#[test]
-fn std_crates_extends_std_group() {
-    // Adding a crate to `std_crates` groups its imports with `std` /
-    // `core` / `alloc`, so a blank line splitting it from a real std
-    // import is a violation it would not be without the extension.
-    run(
-        "ui-toml/import_grouping_mismatch/std_crates",
-        RuleConfig {
-            std_crates: Some(vec!["std", "core", "alloc", "my_std"]),
-            ..Default::default()
-        },
-    );
-}
-
-#[test]
-fn internal_prefixes_extends_workspace_root() {
-    // Adding a workspace crate to `internal_prefixes` groups its
-    // imports with `crate` / `super` / `self`, ahead of third-party.
-    run(
-        "ui-toml/import_grouping_mismatch/internal_prefixes",
-        RuleConfig {
-            internal_prefixes: Some(vec!["crate", "super", "self", "my_macros"]),
-            ..Default::default()
-        },
+        "ui-toml/import_grouping_mismatch/local_submodule",
+        RuleConfig::default(),
     );
 }
 

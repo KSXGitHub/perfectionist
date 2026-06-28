@@ -107,6 +107,48 @@ use std::time::Duration;
     );
 }
 
+/// A bare-path import of a first-party submodule is classified as
+/// internal even when the `mod` sits in a separate-file module reached
+/// only through the re-parse. The crate root carries a deliberate
+/// violation (std and internal not blank-separated) so the rule is
+/// proven active, while `src/outer.rs` groups a `crate::`-rooted import
+/// and a bare `use inner::...` (a sibling `mod inner;`) into one internal
+/// block — a layout that is compliant only because the bare import lands
+/// in the internal group, not the third-party catch-all. Before the fix
+/// the bare import was third-party, so the internal block looked
+/// unseparated and `src/outer.rs` was flagged.
+#[test]
+fn bare_path_submodule_groups_as_internal_in_separate_file() {
+    let lib = include_str!("fixtures/import_grouping_mismatch_submodules/bare_internal_lib.rs");
+    let outer = include_str!("fixtures/import_grouping_mismatch_submodules/bare_internal_outer.rs");
+    let inner = "pub struct Thing;\n";
+    let (_temp, stderr, success) = run_project_with_sources_and_config(
+        "fixture_igrp_bare_submodule_internal",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", lib),
+            ("src/outer.rs", outer),
+            ("src/outer/inner.rs", inner),
+        ],
+        CONFIG,
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    // The rule is active: the crate-root run (std then internal with no
+    // blank between) is flagged.
+    assert!(
+        stderr.contains(LINT) && stderr.contains("src/lib.rs"),
+        "expected the crate-root violation to be flagged; stderr was:\n{stderr}",
+    );
+    // The regression: the `src/outer.rs` run is compliant because the
+    // bare `use inner::...` is grouped as internal, so it must not fire.
+    assert!(
+        !stderr.contains("src/outer.rs"),
+        "a bare-path import of a sibling submodule must group as internal; \
+         stderr was:\n{stderr}",
+    );
+}
+
 /// A `#[cfg(...)]`-excluded inline module is not linted. The re-parse
 /// keeps it (parsing does not strip cfg), but it is absent from the
 /// compiled crate, so descending into it would flag — and, since it has
