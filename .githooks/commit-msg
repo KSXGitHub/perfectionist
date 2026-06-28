@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# commit-msg hook. Three independent checks:
+# commit-msg hook. Four independent checks:
 #
 #   1. Reject any commit message that contains a bare "#NNN" issue/PR
 #      reference (see "Reject bare #NNN" below). This guards against the
@@ -12,7 +12,12 @@
 #      unescaped handle both reads as a mention GitHub may not intend
 #      and needlessly pings a real person. Pure text, runs for every
 #      commit.
-#   3. Reject release-shaped commit messages (X.Y.Z or X.Y.Z-<suffix>)
+#   3. Reject any commit message whose subject line (first line) exceeds
+#      72 characters (see "Reject overly long subject lines" below).
+#      GitHub truncates a longer subject in its web UI, mangling the
+#      title/body split. Pure text, runs for every commit except
+#      version-bump commits.
+#   4. Reject release-shaped commit messages (X.Y.Z or X.Y.Z-<suffix>)
 #      whose staged diff fails the version-bump contract enforced by
 #      tools/deploy-check.
 set -euo pipefail
@@ -113,12 +118,84 @@ EOF
   exit 1
 fi
 
+# --- Extract the subject line ----------------------------------------
+# The subject is the first non-blank, non-comment line. Both the
+# length check and the release pre-filter below read it.
+subject=$(awk -v cc="$comment_char" 'index($0, cc) != 1 && NF { print; exit }' "$msg_file")
+
+# Whether the subject is a bare version literal (X.Y.Z or
+# X.Y.Z-<suffix>) — the shape a version-bump commit uses. Such commits
+# are exempt from the length check and are the only ones the release
+# contract below applies to.
+is_version_subject=0
+if [[ "$subject" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[^[:space:]]+)?$ ]]; then
+  is_version_subject=1
+fi
+
+# --- Reject overly long subject lines ---------------------------------
+# GitHub's web UI truncates a subject past 72 characters: it cuts the
+# line, appends a "…", and folds the overflow into the body behind
+# another "…", so the commit reads as a mangled title/body split even
+# though the object is fine. 72 is the conventional hard cap (50 the
+# ideal). Measured in characters (not bytes) so accented or non-Latin
+# subjects are judged by what GitHub displays. Version-bump commits are
+# exempt — their subject is just the version, always short.
+# Opt-out: set PERFECTIONIST_GIT_HOOK_ALLOW_LONG_SUBJECT=true to skip
+# this one check when a longer subject is genuinely warranted (the
+# other checks still run). `false`, empty, and unset all enforce the
+# cap; any other value is a typo and is rejected rather than silently
+# ignored, so a misspelt opt-out never quietly fails to apply. Mirrors
+# the PERFECTIONIST_CARGO_LOCKED tri-state in the justfile.
+allow_long_subject="${PERFECTIONIST_GIT_HOOK_ALLOW_LONG_SUBJECT:-}"
+case "$allow_long_subject" in
+  true|false|'') ;;
+  *)
+    echo "✖ PERFECTIONIST_GIT_HOOK_ALLOW_LONG_SUBJECT must be 'true', 'false', empty, or unset; got: $allow_long_subject" >&2
+    exit 1
+    ;;
+esac
+
+subject_limit=72
+if [ "$is_version_subject" -eq 0 ] && [ "$allow_long_subject" != true ]; then
+  # Count UTF-8 characters, not bytes: ${#subject} would count bytes
+  # under a C locale (the hook sets none), wrongly rejecting an
+  # accented or non-Latin subject that GitHub displays well within the
+  # cap. Every UTF-8 character has exactly one leading byte; the rest
+  # are continuation bytes 0x80–0xBF. So characters = total bytes minus
+  # continuation bytes, computed byte-wise under LC_ALL=C for a result
+  # that does not depend on the caller's locale.
+  subject_bytes=$(printf '%s' "$subject" | wc -c)
+  subject_cont=$(printf '%s' "$subject" | LC_ALL=C tr -dc '\200-\277' | wc -c)
+  subject_length=$((subject_bytes - subject_cont))
+  if [ "$subject_length" -gt "$subject_limit" ]; then
+    cat >&2 <<EOF
+✖ Commit message rejected: the subject line is too long.
+
+    $subject
+
+The subject is $subject_length characters; the limit is $subject_limit.
+
+GitHub truncates a subject past $subject_limit characters in its web UI: it
+cuts the line, appends a "…", and folds the overflow into the body
+behind another "…", so the commit reads as a mangled title/body split.
+
+Shorten the subject to $subject_limit characters or fewer (the conventional
+ideal is 50). Move any detail that does not fit into the commit body —
+a blank line after the subject, then the rest.
+
+If a longer subject is genuinely warranted, re-run the commit with
+PERFECTIONIST_GIT_HOOK_ALLOW_LONG_SUBJECT=true to skip this check (the other
+commit-message checks still apply).
+EOF
+    exit 1
+  fi
+fi
+
 # --- Reject malformed release commits --------------------------------
 # Cheap pre-filter so non-release commits don't pay the cost of
-# spawning cargo. Find the first non-blank, non-comment line and
-# check whether it matches the version-literal grammar.
-subject=$(awk -v cc="$comment_char" 'index($0, cc) != 1 && NF { print; exit }' "$msg_file")
-if ! [[ "$subject" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[^[:space:]]+)?$ ]]; then
+# spawning cargo: only a bare version-literal subject reaches the
+# version-bump contract.
+if [ "$is_version_subject" -eq 0 ]; then
   exit 0
 fi
 
