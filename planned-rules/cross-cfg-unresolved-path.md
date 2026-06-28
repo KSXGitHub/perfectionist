@@ -174,7 +174,7 @@ shared budget. `unresolved_import` carries the same two fields in its own
 - **Diagnostic anchoring.** The reference usually has a live span via
   the re-parse's shared `SourceMap`; anchor there. A reference inside a
   currently-`cfg`-disabled region has real source coordinates but may
-  lack a live HIR node, so a local `#[allow]` may not resolve — note
+  lack a live HIR node, so a local `#[expect]` may not resolve — note
   this where it applies.
 
 - See
@@ -224,5 +224,5 @@ that generous set leaves a satisfiable config uncovered, skipping
 entirely whenever resolution is uncertain (see *Implementation notes*).
 That keeps a false "this won't compile" — the costliest possible
 diagnostic — near zero. A residual false positive is suppressed at the
-site with `#[allow(perfectionist::unresolved_path)]` (or
+site with `#[expect(perfectionist::unresolved_path)]` (or
 `unresolved_import`) and a reason.

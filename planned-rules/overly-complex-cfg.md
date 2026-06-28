@@ -237,7 +237,7 @@ forbid_negation_over_compound = false
   measuring. Anchor each diagnostic at the attribute's own span (which a
   shared `SourceMap` re-parse preserves); where the attribute sits in a
   cfg-disabled region with no live HIR node, the span still points at
-  real source though a local `#[allow]` may not resolve — note this in
+  real source though a local `#[expect]` may not resolve — note this in
   the diagnostic.
 
 - **The cfg parser is a `take_*` combinator set, not a regex.** Parsing
@@ -295,4 +295,4 @@ analyzability boundary, so an out-of-the-box run flags only predicates
 that are simultaneously unreadable and unverifiable. Projects with a
 stricter house style lower the caps; a project that genuinely needs one
 gnarly predicate suppresses it at the site with
-`#[allow(perfectionist::overly_complex_cfg)]` and a reason.
+`#[expect(perfectionist::overly_complex_cfg)]` and a reason.

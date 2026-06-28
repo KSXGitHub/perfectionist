@@ -255,5 +255,5 @@ macro-generated names, type-resolved methods) as a *use*, so the rules
 stay silent unless the deadness witness is unambiguous (see
 *Implementation notes*). The suggested removal is a non-machine-
 applicable hint, never an auto-applied edit. A residual false positive is
-suppressed at the site with `#[allow(perfectionist::dead_code)]` (or the
+suppressed at the site with `#[expect(perfectionist::dead_code)]` (or the
 per-sub-lint name) and a reason.
