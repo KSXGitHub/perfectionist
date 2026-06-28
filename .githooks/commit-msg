@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # commit-msg hook: a thin dispatcher. Each independent check lives in
-# its own file under `.githooks/commit-msg.d/` and is run in turn,
-# numeric-prefix order, against the message file. The first check that
-# rejects aborts the commit; the expensive release-contract check is
-# last so the cheap pure-text checks fail fast. Shared helpers the
-# checks source live in `.githooks/lib/commit-msg.sh`.
+# its own file under `.githooks/commit-msg-hooks/` and is called in turn
+# against the message file. The first check that rejects aborts the
+# commit (`set -e`); the expensive release-contract check is called last
+# so the cheap pure-text checks fail fast. Shared helpers the checks
+# source live in `.githooks/lib/commit-msg.sh`.
 set -euo pipefail
 
 msg_file="$1"
-checks_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/commit-msg.d"
+hooks_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/commit-msg-hooks"
 
-for check in "$checks_dir"/*; do
-  [ -x "$check" ] || continue
-  "$check" "$msg_file"
-done
+"$hooks_dir/bare-issue-refs" "$msg_file"
+"$hooks_dir/bare-mentions" "$msg_file"
+"$hooks_dir/subject-length" "$msg_file"
+"$hooks_dir/release-contract" "$msg_file"

@@ -1,4 +1,5 @@
-# Shared helpers for the `commit-msg` checks in `.githooks/commit-msg.d/`.
+# Shared helpers for the `commit-msg` checks in
+# `.githooks/commit-msg-hooks/`.
 # This file is sourced, not executed — it defines functions and sets no
 # `set -euo pipefail` of its own (the sourcing script owns that).
 
