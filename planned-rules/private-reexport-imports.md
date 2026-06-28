@@ -169,7 +169,7 @@ None. The rule has one correct direction, so there is no knob to tune.
 The one legitimate exception — a module that *intentionally* keeps a
 shared private import for its descendants to reach through `super::` —
 is suppressed at the offending import with
-`#[allow(perfectionist::private_reexport_imports)]` (or `#[expect(…)]`).
+`#[expect(perfectionist::private_reexport_imports)]`.
 A per-site attribute is the right tool *because the violation is
 positional*: the realistic trigger is a relative `use super::Thing;`,
 whose written path is meaningful only inside its own module. There is
@@ -288,5 +288,5 @@ definition or a public re-export), matching
 legitimate counter-pattern — a module that *intentionally* holds a
 shared private import for its descendants to reach through `super::` —
 is suppressed per import with
-`#[allow(perfectionist::private_reexport_imports)]`, not a config knob
+`#[expect(perfectionist::private_reexport_imports)]`, not a config knob
 (see *Configuration*).

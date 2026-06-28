@@ -70,7 +70,7 @@ defect, not a preference.
 > each sub-check is registered as its own flat tool lint
 > `perfectionist::<sub_check_name>` (e.g.
 > `perfectionist::copyable_error`). Suppression attributes use the
-> flat form: `#[allow(perfectionist::copyable_error)]`.
+> flat form: `#[expect(perfectionist::copyable_error)]`.
 
 ### `error_type_derives::unused_error`
 
@@ -106,7 +106,7 @@ despite being the *successful* return type of
 The check is a heuristic, not an absolute defect: small unit-style
 error enums (`enum ParseError { Empty, Negative }`) are legitimate
 `Copy` errors. Suppress per-type with
-`#[allow(perfectionist::copyable_error)]` when the heuristic misfires.
+`#[expect(perfectionist::copyable_error)]` when the heuristic misfires.
 
 ### `error_type_derives::unconventional_error_name`
 
@@ -143,7 +143,7 @@ matching covers the realistic configuration space without a regex
 dependency.
 
 Suppress per-type with
-`#[allow(perfectionist::unconventional_error_name)]` when the
+`#[expect(perfectionist::unconventional_error_name)]` when the
 mismatch is intentional (e.g. a public type whose existing name
 cannot be changed without a breaking release).
 
