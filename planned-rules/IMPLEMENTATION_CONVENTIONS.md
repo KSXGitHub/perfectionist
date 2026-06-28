@@ -890,3 +890,24 @@ clippy and rustdoc lints. The planning file does not document
 which projects should escalate; that is project-side policy and
 out of scope for the catalogue.
 
+## `declare_tool_lint!` docs describe behaviour, not pass machinery
+
+`tools/gen-docs/` renders a rule's `declare_tool_lint!` rustdoc
+verbatim into the in-tree catalogue (`rules/<rule>.md`) and the docs
+site, so that block must describe *what* the rule flags and *why* —
+never *how* the pass is implemented. "Late pass", "pre-expansion",
+"lowering", "name resolution", "HIR node", the queue/anchor mechanism,
+and the like mean nothing to a catalogue reader. When a
+user-observable limitation *stems* from the implementation, state the
+limitation behaviourally (e.g. "resolved crate-wide rather than
+per-module") and drop the mechanism that causes it ("the pass runs
+pre-expansion and does not consult name resolution").
+
+The convention is scoped to the `declare_tool_lint!` block. Docs on
+*internal* items (queue structs, `register_pass`/`register_lint`,
+`emit` helpers, source walkers) describe implementation freely — they
+never reach users. And a doc may name a *rustc* mechanism the user
+observes directly (`unfulfilled_lint_expectations` notes,
+`unknown_lints`): that is behaviour the consumer sees, not this
+plugin's pass internals.
+
