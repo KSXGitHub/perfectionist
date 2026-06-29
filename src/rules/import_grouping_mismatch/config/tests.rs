@@ -1,15 +1,18 @@
 use super::{CfgBlockHandling, Config, ReexportGrouping, Style, default_order};
+use pipe_trait::Pipe;
 
 #[test]
 fn style_values_deserialize() {
     assert_eq!(
-        toml::from_str::<Config>(r#"style = "multi_block""#)
+        "style = \"multi_block\"\nreexports = \"grouped\""
+            .pipe(toml::from_str::<Config>)
             .unwrap()
             .style,
         Style::MultiBlock,
     );
     assert_eq!(
-        toml::from_str::<Config>(r#"style = "single_block""#)
+        "style = \"single_block\"\nreexports = \"grouped\""
+            .pipe(toml::from_str::<Config>)
             .unwrap()
             .style,
         Style::SingleBlock,
@@ -17,37 +20,48 @@ fn style_values_deserialize() {
 }
 
 #[test]
-fn missing_style_is_an_error() {
-    // `style` is required (bare `Style`, no `serde(default)`), so a
-    // table that omits it fails to deserialize rather than defaulting
-    // to a layout — even when another knob is present.
-    assert!(toml::from_str::<Config>("").is_err());
-    assert!(toml::from_str::<Config>(r#"order = ["std"]"#).is_err());
+fn missing_required_fields_are_an_error() {
+    // `style` and `reexports` are both required (bare fields, no
+    // `serde(default)`), so a table that omits either fails to deserialize
+    // rather than defaulting to a layout.
+    assert!("".pipe(toml::from_str::<Config>).is_err());
+    assert!(r#"order = ["std"]"#.pipe(toml::from_str::<Config>).is_err());
+    // `style` set but `reexports` missing — still an error.
+    assert!(r#"style = "multi_block""#.pipe(toml::from_str::<Config>).is_err());
+    // `reexports` set but `style` missing — still an error.
+    assert!(r#"reexports = "grouped""#.pipe(toml::from_str::<Config>).is_err());
 }
 
 #[test]
-fn other_fields_default_when_style_is_set() {
-    // Only `style` is mandatory; the remaining knobs fall back to
+fn optional_fields_default_when_required_are_set() {
+    // With `style` and `reexports` set, the remaining knobs fall back to
     // their per-field defaults when absent.
-    let config = toml::from_str::<Config>(r#"style = "multi_block""#).unwrap();
+    let config = "style = \"multi_block\"\nreexports = \"grouped\""
+        .pipe(toml::from_str::<Config>)
+        .unwrap();
     assert_eq!(config.order, default_order());
     assert_eq!(config.cfg_block_handling, CfgBlockHandling::Trailing);
-    assert_eq!(config.reexports, ReexportGrouping::Grouped);
 }
 
 #[test]
 fn unknown_style_is_rejected() {
-    // There is no neutral `preserve` value; an unrecognised style is
-    // a hard deserialisation error rather than a silent no-op.
-    assert!(toml::from_str::<Config>(r#"style = "preserve""#).is_err());
+    // There is no neutral `preserve` value; an unrecognised style is a
+    // hard deserialisation error rather than a silent no-op (the
+    // `reexports` field is valid here, so the style is the only fault).
+    assert!(
+        "style = \"preserve\"\nreexports = \"grouped\""
+            .pipe(toml::from_str::<Config>)
+            .is_err(),
+    );
 }
 
 #[test]
 fn reexports_values_deserialize() {
-    // The three re-export grouping modes round-trip from their
-    // snake_case spellings, and an unrecognised one is rejected.
+    // The three re-export grouping modes round-trip from their snake_case
+    // spellings, and an unrecognised one is rejected.
     let parse = |value: &str| {
-        toml::from_str::<Config>(&format!("style = \"multi_block\"\nreexports = \"{value}\""))
+        format!("style = \"multi_block\"\nreexports = \"{value}\"")
+            .pipe_deref(toml::from_str::<Config>)
             .map(|config| config.reexports)
     };
     assert_eq!(parse("by_path").unwrap(), ReexportGrouping::ByPath);
@@ -62,7 +76,8 @@ fn reexport_block_offset_tracks_grouping() {
     // re-export region: none for `by_path`, one `grouped` block, two
     // `split` blocks.
     let with = |value: &str| {
-        toml::from_str::<Config>(&format!("style = \"multi_block\"\nreexports = \"{value}\""))
+        format!("style = \"multi_block\"\nreexports = \"{value}\"")
+            .pipe_deref(toml::from_str::<Config>)
             .unwrap()
             .reexport_block_offset()
     };

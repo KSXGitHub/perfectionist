@@ -34,7 +34,7 @@ pub(super) enum Group {
 /// re-export is any `use` with an explicit visibility (`pub`,
 /// `pub(crate)`, `pub(super)`, `pub(in ...)`); a private (`Inherited`)
 /// import is not one.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum ReexportGrouping {
     /// Re-exports get no dedicated block: each is classified purely by
@@ -45,7 +45,6 @@ pub(super) enum ReexportGrouping {
     /// all private imports, separated by a blank line. A cfg-gated
     /// re-export stays in this block rather than the trailing cfg block:
     /// visibility takes precedence, keeping the public surface together.
-    #[default]
     Grouped,
     /// Re-exports form a leading region split into two blank-separated
     /// blocks: *submodule* re-exports (a multi-segment path such as
@@ -83,10 +82,10 @@ pub(super) struct Config {
     // `style` is a required field: an enabled rule with no `style` fails
     // to deserialize rather than silently defaulting to a layout. This
     // is also the syntactic signal gen-docs reads to badge the field
-    // `mandatory`. Every other field keeps a per-field `serde(default)`
-    // so only `style` is mandatory; the config is read only when the
-    // rule is enabled (see `register_pass`), so a disabled rule never
-    // needs it.
+    // `mandatory`. `reexports` is mandatory the same way; `order` and
+    // `cfg_block_handling` keep a per-field `serde(default)`. The config is
+    // read only when the rule is enabled (see `register_pass`), so a
+    // disabled rule never needs any of it.
     /// The grouping style to enforce: `single_block` or `multi_block`. It
     /// has no default — a project enabling the rule states which layout
     /// it wants — so it must be set when the rule is enabled.
@@ -102,15 +101,15 @@ pub(super) struct Config {
     /// block under `single_block`.
     #[serde(default)]
     pub(super) cfg_block_handling: CfgBlockHandling,
-    /// How `pub` re-exports are grouped. Defaults to `grouped`: every
-    /// re-export is pulled into one contiguous leading block above all
-    /// private imports, separated by a blank line. Set `split` to break
-    /// that leading block into two — submodule re-exports
-    /// (`pub use child::Item;`) above alias re-exports (`pub use Item;` /
-    /// `pub use Item as Alias;`) — or `by_path` to give re-exports no
-    /// dedicated block at all, classifying each by its path like a private
-    /// import.
-    #[serde(default)]
+    /// How `pub` re-exports are grouped: `grouped`, `split`, or `by_path`.
+    /// Like `style` it has no default — a project enabling the rule states
+    /// how it wants re-exports laid out — so it must be set when the rule
+    /// is enabled. `grouped` pulls every re-export into one contiguous
+    /// leading block above all private imports; `split` breaks that block
+    /// into two — submodule re-exports (`pub use child::Item;`) above alias
+    /// re-exports (`pub use Item;` / `pub use Item as Alias;`); `by_path`
+    /// gives re-exports no dedicated block at all, classifying each by its
+    /// path like a private import.
     pub(super) reexports: ReexportGrouping,
 }
 

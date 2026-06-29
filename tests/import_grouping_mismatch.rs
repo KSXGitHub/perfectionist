@@ -36,10 +36,12 @@ struct RuleConfig {
 
 fn dylint_toml(mut config: RuleConfig) -> String {
     // The rule is inactive by default, so the config must enable it.
-    // `style` is mandatory once enabled; the knob-focused tests below
-    // leave it unset, meaning the default `multi_block` layout, so fill
-    // it in here rather than at every call site.
+    // `style` and `reexports` are both mandatory once enabled; the
+    // knob-focused tests below leave them unset, meaning the default
+    // `multi_block` / `grouped` layout, so fill them in here rather than
+    // at every call site.
     config.style.get_or_insert("multi_block");
+    config.reexports.get_or_insert("grouped");
     let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
     let rule_table = toml::to_string(&table).expect("serialise rule config as dylint.toml");
     format!("[perfectionist]\nenable = [\"import_grouping_mismatch\"]\n\n{rule_table}")

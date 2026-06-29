@@ -41,14 +41,15 @@ declare_tool_lint! {
     ///   is left to `cargo fmt`.
     ///
     /// Orthogonally to `style`, the `reexports` knob controls `pub`
-    /// re-exports — any `use` with an explicit visibility. It defaults to
-    /// `grouped`: every re-export is pulled into one contiguous leading
-    /// block above the private imports, visibility outranking path and cfg
-    /// gating. Set `split` to break that block into two — submodule
-    /// re-exports (`pub use child::Item;`, a multi-segment path) above
-    /// alias re-exports (`pub use Item;` / `pub use Item as Alias;`, a
-    /// single-segment path) — or `by_path` to give re-exports no dedicated
-    /// block, classifying each by its path like a private import.
+    /// re-exports — any `use` with an explicit visibility. Like `style` it
+    /// is mandatory once the rule is enabled, and is one of: `grouped`,
+    /// which pulls every re-export into one contiguous leading block above
+    /// the private imports, visibility outranking path and cfg gating;
+    /// `split`, which breaks that block into two — submodule re-exports
+    /// (`pub use child::Item;`, a multi-segment path) above alias
+    /// re-exports (`pub use Item;` / `pub use Item as Alias;`, a
+    /// single-segment path); or `by_path`, which gives re-exports no
+    /// dedicated block, classifying each by its path like a private import.
     ///
     /// This rule only governs the *partitioning* of imports into blocks.
     /// Whether items within each `use` are merged or split is the job of
@@ -72,6 +73,7 @@ declare_tool_lint! {
     ///
     /// ["perfectionist::import_grouping_mismatch"]
     /// style = "multi_block"
+    /// reexports = "grouped"
     /// ```
     ///
     /// ### Example
@@ -137,7 +139,7 @@ declare_tool_lint! {
     /// use std::os::unix::fs::MetadataExt;
     /// ```
     ///
-    /// #### Re-exports in their own block (default; `reexports = "grouped"`)
+    /// #### Re-exports in their own block (`reexports = "grouped"`)
     ///
     /// **Avoid:** (a `pub use` re-export mixed in with private imports)
     ///
@@ -204,12 +206,12 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("import_grouping_mismatch", DEFAULT_STATE) {
         return;
     }
-    // The rule is enabled, so `style` is mandatory and has no default.
-    // Read it with `config` rather than `config_or_default`: the latter
-    // needs `Config: Default`, which would force a default style.
-    // `config` instead returns `Ok(None)` when the table is absent and
-    // `Err` when it is present but `style` is missing or invalid — both
-    // are configuration errors we fail loudly on.
+    // The rule is enabled, so `style` and `reexports` are mandatory and
+    // have no default. Read with `config` rather than `config_or_default`:
+    // the latter needs `Config: Default`, which would force defaults for
+    // both. `config` instead returns `Ok(None)` when the table is absent
+    // and `Err` when it is present but a mandatory field is missing or
+    // invalid — both are configuration errors we fail loudly on.
     let config = dylint_linting::config::<Config>(CONFIG_KEY)
         .unwrap_or_else(|error| {
             panic!(
@@ -219,8 +221,9 @@ pub fn register_pass(lint_store: &mut LintStore) {
         })
         .unwrap_or_else(|| {
             panic!(
-                "perfectionist::import_grouping_mismatch is enabled but `style` is not set; \
-                 add `style = \"multi_block\"` or `style = \"single_block\"` under \
+                "perfectionist::import_grouping_mismatch is enabled but not configured; \
+                 set `style` (`multi_block` / `single_block`) and `reexports` \
+                 (`grouped` / `split` / `by_path`) under \
                  `[perfectionist::import_grouping_mismatch]` in dylint.toml",
             )
         });

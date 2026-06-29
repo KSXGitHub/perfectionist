@@ -30,14 +30,15 @@ inactive by default; a project opts in and sets `style` to one of:
   is left to `cargo fmt`.
 
 Orthogonally to `style`, the `reexports` knob controls `pub`
-re-exports — any `use` with an explicit visibility. It defaults to
-`grouped`: every re-export is pulled into one contiguous leading
-block above the private imports, visibility outranking path and cfg
-gating. Set `split` to break that block into two — submodule
-re-exports (`pub use child::Item;`, a multi-segment path) above
-alias re-exports (`pub use Item;` / `pub use Item as Alias;`, a
-single-segment path) — or `by_path` to give re-exports no dedicated
-block, classifying each by its path like a private import.
+re-exports — any `use` with an explicit visibility. Like `style` it
+is mandatory once the rule is enabled, and is one of: `grouped`,
+which pulls every re-export into one contiguous leading block above
+the private imports, visibility outranking path and cfg gating;
+`split`, which breaks that block into two — submodule re-exports
+(`pub use child::Item;`, a multi-segment path) above alias
+re-exports (`pub use Item;` / `pub use Item as Alias;`, a
+single-segment path); or `by_path`, which gives re-exports no
+dedicated block, classifying each by its path like a private import.
 
 This rule only governs the *partitioning* of imports into blocks.
 Whether items within each `use` are merged or split is the job of
@@ -61,6 +62,7 @@ enable = ["import_grouping_mismatch"]
 
 ["perfectionist::import_grouping_mismatch"]
 style = "multi_block"
+reexports = "grouped"
 ```
 
 ## Example
@@ -126,7 +128,7 @@ use super::size::Bytes;
 use std::os::unix::fs::MetadataExt;
 ```
 
-### Re-exports in their own block (default; `reexports = "grouped"`)
+### Re-exports in their own block (`reexports = "grouped"`)
 
 **Avoid:** (a `pub use` re-export mixed in with private imports)
 
@@ -185,16 +187,17 @@ both styles. Set `merge` to keep cfg-gated imports with the rest —
 in their natural path group under `multi_block`, or in the single
 block under `single_block`.
 
-### `reexports`: `ReexportGrouping` (optional)
+### `reexports`: `ReexportGrouping` (mandatory)
 
-How `pub` re-exports are grouped. Defaults to `grouped`: every
-re-export is pulled into one contiguous leading block above all
-private imports, separated by a blank line. Set `split` to break
-that leading block into two — submodule re-exports
-(`pub use child::Item;`) above alias re-exports (`pub use Item;` /
-`pub use Item as Alias;`) — or `by_path` to give re-exports no
-dedicated block at all, classifying each by its path like a private
-import.
+How `pub` re-exports are grouped: `grouped`, `split`, or `by_path`.
+Like `style` it has no default — a project enabling the rule states
+how it wants re-exports laid out — so it must be set when the rule
+is enabled. `grouped` pulls every re-export into one contiguous
+leading block above all private imports; `split` breaks that block
+into two — submodule re-exports (`pub use child::Item;`) above alias
+re-exports (`pub use Item;` / `pub use Item as Alias;`); `by_path`
+gives re-exports no dedicated block at all, classifying each by its
+path like a private import.
 
 ### Types
 
