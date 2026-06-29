@@ -7,7 +7,7 @@
     reason = "ui fixture"
 )]
 
-// Under `style = "multi_block"` with `separate_reexports = false` (the
+// Under `style = "multi_block"` with `reexports = "by_path"` (the
 // non-default): a `pub use` re-export is classified purely by its path,
 // not pulled into a leading re-export block. A `pub use crate::...` is
 // therefore grouped with the private `use crate::...` internal imports,

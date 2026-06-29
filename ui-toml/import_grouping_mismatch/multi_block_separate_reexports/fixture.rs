@@ -7,7 +7,7 @@
     reason = "ui fixture"
 )]
 
-// Under `style = "multi_block"` with `separate_reexports = true`: every
+// Under `style = "multi_block"` with `reexports = "grouped"`: every
 // `pub` re-export forms one leading block, blank-separated from the
 // path-partitioned private imports below. Visibility outranks path and
 // cfg gating, so a `pub use std::...` and a cfg-gated `pub use` both join

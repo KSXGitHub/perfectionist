@@ -31,15 +31,17 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     cfg_block_handling: Option<&'static str>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    separate_reexports: Option<bool>,
+    reexports: Option<&'static str>,
 }
 
 fn dylint_toml(mut config: RuleConfig) -> String {
     // The rule is inactive by default, so the config must enable it.
-    // `style` is mandatory once enabled; the knob-focused tests below
-    // leave it unset, meaning the default `multi_block` layout, so fill
-    // it in here rather than at every call site.
+    // `style` and `reexports` are both mandatory once enabled; the
+    // knob-focused tests below leave them unset, meaning the default
+    // `multi_block` / `grouped` layout, so fill them in here rather than
+    // at every call site.
     config.style.get_or_insert("multi_block");
+    config.reexports.get_or_insert("grouped");
     let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
     let rule_table = toml::to_string(&table).expect("serialise rule config as dylint.toml");
     format!("[perfectionist]\nenable = [\"import_grouping_mismatch\"]\n\n{rule_table}")
@@ -154,33 +156,67 @@ fn bare_path_local_submodule_is_internal() {
 }
 
 #[test]
-fn multi_block_separate_reexports_lead_in_their_own_block() {
-    // Under `multi_block` with `separate_reexports = true`, every `pub`
-    // re-export is pulled into one leading block above the path-
+fn multi_block_grouped_reexports_lead_in_their_own_block() {
+    // Under `multi_block` with the default `reexports = "grouped"`, every
+    // `pub` re-export is pulled into one leading block above the path-
     // partitioned private imports. Visibility outranks path and cfg
     // gating, so a `pub use std::...` and a cfg-gated `pub use` both join
     // the leading block rather than their natural std / trailing cfg
-    // group.
+    // group. The knob is set explicitly to document the intent even
+    // though `grouped` is the default.
     run(
         "ui-toml/import_grouping_mismatch/multi_block_separate_reexports",
         RuleConfig {
-            separate_reexports: Some(true),
+            reexports: Some("grouped"),
             ..Default::default()
         },
     );
 }
 
 #[test]
-fn single_block_separate_reexports_lead_in_their_own_block() {
-    // Under `single_block` with `separate_reexports = true`, `pub`
-    // re-exports form a leading block, the private imports collapse into
-    // one block below, and a cfg-gated private import still forms a
-    // trailing block.
+fn single_block_grouped_reexports_lead_in_their_own_block() {
+    // Under `single_block` with `reexports = "grouped"`, `pub` re-exports
+    // form a leading block, the private imports collapse into one block
+    // below, and a cfg-gated private import still forms a trailing block.
     run(
         "ui-toml/import_grouping_mismatch/single_block_separate_reexports",
         RuleConfig {
             style: Some("single_block"),
-            separate_reexports: Some(true),
+            reexports: Some("grouped"),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn multi_block_split_reexports_form_two_leading_blocks() {
+    // Under `multi_block` with `reexports = "split"`, the leading
+    // re-export region is broken into two blocks: submodule re-exports
+    // (a `::`-qualified path) above alias re-exports (a single-segment
+    // path), each blank-separated, both above the path-partitioned
+    // private imports.
+    run(
+        "ui-toml/import_grouping_mismatch/multi_block_split_reexports",
+        RuleConfig {
+            reexports: Some("split"),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn single_block_split_reexports_form_two_leading_blocks() {
+    // Under `single_block` with `reexports = "split"`, submodule
+    // re-exports and alias re-exports form two leading blocks, the
+    // private imports collapse into one block below, and a cfg-gated
+    // private import still forms a trailing block. A cfg-gated alias
+    // re-export stays in the alias sub-block — visibility/kind outranks
+    // cfg gating.
+    run(
+        "ui-toml/import_grouping_mismatch/single_block_split_reexports",
+        RuleConfig {
+            style: Some("single_block"),
+            reexports: Some("split"),
             ..Default::default()
         },
     );
@@ -188,14 +224,14 @@ fn single_block_separate_reexports_lead_in_their_own_block() {
 
 #[test]
 fn multi_block_reexports_classified_by_path_when_disabled() {
-    // `separate_reexports = false` (the non-default) turns off the leading
+    // `reexports = "by_path"` (the non-default) turns off the leading
     // re-export block: a `pub use crate::...` is classified internal by
     // its path and groups with the private `use crate::...` import instead
     // of leading in its own block.
     run(
         "ui-toml/import_grouping_mismatch/multi_block_reexports_by_path",
         RuleConfig {
-            separate_reexports: Some(false),
+            reexports: Some("by_path"),
             ..Default::default()
         },
     );

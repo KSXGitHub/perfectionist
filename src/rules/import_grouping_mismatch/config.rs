@@ -1,8 +1,7 @@
 //! Configuration for `import_grouping_mismatch`: the chosen [`Style`], the
 //! group [`order`](Config::order), how `#[cfg(...)]`-gated imports are
-//! slotted ([`CfgBlockHandling`]), and whether `pub` re-exports form their
-//! own leading block
-//! ([`separate_reexports`](Config::separate_reexports)).
+//! slotted ([`CfgBlockHandling`]), and how `pub` re-exports are grouped
+//! ([`reexports`](Config::reexports) / [`ReexportGrouping`]).
 
 /// How `use` statements are partitioned into blocks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
@@ -16,6 +15,35 @@ pub(super) enum Style {
     /// std (`std` / `core` / `alloc` / `proc_macro` / `test`), internal
     /// (`crate` / `super` / `self`), and third-party (every other crate).
     MultiBlock,
+}
+
+/// How `pub` re-exports are grouped relative to the private imports. A
+/// re-export is any `use` with an explicit visibility (`pub`,
+/// `pub(crate)`, `pub(super)`, `pub(in ...)`); a private (`Inherited`)
+/// import is not one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(super) enum ReexportGrouping {
+    /// Re-exports get no dedicated block: each is classified purely by
+    /// its path, exactly like a private import, so a `pub use child::Item`
+    /// sits in the same block as a private import of the same origin.
+    ByPath,
+    /// Every re-export is pulled into one contiguous leading block above
+    /// all private imports, separated by a blank line. A cfg-gated
+    /// re-export stays in this block rather than the trailing cfg block:
+    /// visibility takes precedence, keeping the public surface together.
+    Grouped,
+    /// Re-exports form a leading region split into two blank-separated
+    /// blocks: *submodule* re-exports (a multi-segment path such as
+    /// `pub use child::Item;`, which lifts an item out of a child module)
+    /// above *alias* re-exports (a single-segment path such as
+    /// `pub use Item;` or `pub use Item as Alias;`, which only renames an
+    /// item already in scope). The single-vs-multi-segment split is
+    /// purely syntactic; a `pub use foo;` that re-exports an external
+    /// crate counts as an alias re-export. As under `grouped`, a cfg-gated
+    /// re-export stays in its re-export sub-block rather than the trailing
+    /// cfg block.
+    Split,
 }
 
 /// One of the three groups a `use` statement is classified into. The
@@ -54,14 +82,24 @@ pub(super) struct Config {
     // `style` is a required field: an enabled rule with no `style` fails
     // to deserialize rather than silently defaulting to a layout. This
     // is also the syntactic signal gen-docs reads to badge the field
-    // `mandatory`. Every other field keeps a per-field `serde(default)`
-    // so only `style` is mandatory; the config is read only when the
-    // rule is enabled (see `register_pass`), so a disabled rule never
-    // needs it.
+    // `mandatory`. `reexports` is mandatory the same way; `order` and
+    // `cfg_block_handling` keep a per-field `serde(default)`. The config is
+    // read only when the rule is enabled (see `register_pass`), so a
+    // disabled rule never needs any of it.
     /// The grouping style to enforce: `single_block` or `multi_block`. It
     /// has no default — a project enabling the rule states which layout
     /// it wants — so it must be set when the rule is enabled.
     pub(super) style: Style,
+    /// How `pub` re-exports are grouped: `grouped`, `split`, or `by_path`.
+    /// Like `style` it has no default — a project enabling the rule states
+    /// how it wants re-exports laid out — so it must be set when the rule
+    /// is enabled. `grouped` pulls every re-export into one contiguous
+    /// leading block above all private imports; `split` breaks that block
+    /// into two — submodule re-exports (`pub use child::Item;`) above alias
+    /// re-exports (`pub use Item;` / `pub use Item as Alias;`); `by_path`
+    /// gives re-exports no dedicated block at all, classifying each by its
+    /// path like a private import.
+    pub(super) reexports: ReexportGrouping,
     /// The order the groups appear in, top to bottom. Defaults to
     /// `["std", "internal", "thirdparty"]`.
     #[serde(default = "default_order")]
@@ -73,28 +111,34 @@ pub(super) struct Config {
     /// block under `single_block`.
     #[serde(default)]
     pub(super) cfg_block_handling: CfgBlockHandling,
-    /// Whether `pub` re-exports form their own leading block. Defaults to
-    /// `true`: every re-export — any `use` with an explicit visibility
-    /// (`pub`, `pub(crate)`, `pub(super)`, `pub(in ...)`) — is pulled into
-    /// one contiguous block above all private imports, separated by a
-    /// blank line. A cfg-gated re-export stays in the re-export block
-    /// rather than the trailing cfg block: visibility takes precedence,
-    /// keeping the public surface together. Set `false` to classify a
-    /// `use` purely by its path instead, so a `pub use child::Item` sits
-    /// in the same block as a private import of the same origin.
-    #[serde(default = "default_separate_reexports")]
-    pub(super) separate_reexports: bool,
 }
 
 fn default_order() -> Vec<Group> {
     vec![Group::Std, Group::Internal, Group::Thirdparty]
 }
 
-fn default_separate_reexports() -> bool {
-    true
-}
-
 impl Config {
+    /// How far the private-import ranks are shifted down to make room for
+    /// the leading re-export region: `0` when re-exports are classified
+    /// `by_path` (no region), `1` for the single `grouped` block, `2` for
+    /// the two `split` blocks (submodule then alias). Added to every
+    /// non-re-export rank in [`super::classify::rank`].
+    pub(super) fn reexport_block_offset(&self) -> usize {
+        match self.reexports {
+            ReexportGrouping::ByPath => 0,
+            ReexportGrouping::Grouped => 1,
+            ReexportGrouping::Split => 2,
+        }
+    }
+
+    /// Whether re-exports are pulled into their own leading region rather
+    /// than classified by path — true for `grouped` and `split`, false
+    /// for `by_path`. A re-export in such a region outranks its cfg gating,
+    /// so it never joins the trailing cfg block.
+    pub(super) fn separates_reexports(&self) -> bool {
+        !matches!(self.reexports, ReexportGrouping::ByPath)
+    }
+
     /// Rank of the `std` / `internal` / `thirdparty` group `group`
     /// within the configured `order` — its zero-based position, used to
     /// compare two statements' groups. A group absent from `order`
@@ -116,48 +160,4 @@ impl Config {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{CfgBlockHandling, Config, Style, default_order};
-
-    #[test]
-    fn style_values_deserialize() {
-        assert_eq!(
-            toml::from_str::<Config>(r#"style = "multi_block""#)
-                .unwrap()
-                .style,
-            Style::MultiBlock,
-        );
-        assert_eq!(
-            toml::from_str::<Config>(r#"style = "single_block""#)
-                .unwrap()
-                .style,
-            Style::SingleBlock,
-        );
-    }
-
-    #[test]
-    fn missing_style_is_an_error() {
-        // `style` is required (bare `Style`, no `serde(default)`), so a
-        // table that omits it fails to deserialize rather than defaulting
-        // to a layout — even when another knob is present.
-        assert!(toml::from_str::<Config>("").is_err());
-        assert!(toml::from_str::<Config>(r#"order = ["std"]"#).is_err());
-    }
-
-    #[test]
-    fn other_fields_default_when_style_is_set() {
-        // Only `style` is mandatory; the remaining knobs fall back to
-        // their per-field defaults when absent.
-        let config = toml::from_str::<Config>(r#"style = "multi_block""#).unwrap();
-        assert_eq!(config.order, default_order());
-        assert_eq!(config.cfg_block_handling, CfgBlockHandling::Trailing);
-        assert!(config.separate_reexports);
-    }
-
-    #[test]
-    fn unknown_style_is_rejected() {
-        // There is no neutral `preserve` value; an unrecognised style is
-        // a hard deserialisation error rather than a silent no-op.
-        assert!(toml::from_str::<Config>(r#"style = "preserve""#).is_err());
-    }
-}
+mod tests;
