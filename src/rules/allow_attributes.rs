@@ -15,37 +15,21 @@ mod tests;
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Flags `#[allow(<lints>)]` whenever every named lint fires
+    /// Flags `#[allow(<lints>)]` when every named lint fires
     /// deterministically — a built-in rustc lint (not on the exempt
     /// list), a `clippy::*` / `rustdoc::*` lint, or a tool-namespaced
-    /// lint such as `perfectionist::*`. A deterministic `#[allow]` has
-    /// two better forms, and the rule can't tell which one fits because
-    /// it can't see whether the lint still fires at the site, so it
-    /// offers **both** as review-me suggestions:
+    /// lint such as `perfectionist::*`. It suggests two ways to resolve
+    /// the attribute:
     ///
-    /// 1. **Remove** the suppression — the right fix when the lint can no
-    ///    longer fire (a *dead* `#[allow]`, e.g. `clippy::too_many_arguments`
-    ///    left on a function that has since shed its arguments).
-    /// 2. **Replace** `#[allow]` with `#[expect]` — the right fix when the
-    ///    lint still fires and you want the suppression to self-clean.
+    /// 1. **Remove** it — when the lint can no longer fire at the site
+    ///    (a dead suppression, e.g. `clippy::too_many_arguments` left on
+    ///    a function that has since shed its arguments).
+    /// 2. **Replace** it with `#[expect]` — when the lint still fires and
+    ///    you want the suppression to report itself the moment it stops.
     ///
-    /// Both are emitted at `Applicability::MaybeIncorrect`: they are
-    /// hints for a human to choose between, not an autofix. Picking the
-    /// wrong one is itself caught by routine compilation — `#[expect]` on
-    /// a dead lint trips `unfulfilled_lint_expectations`, and removing a
-    /// live `#[allow]` reinstates the original warning.
-    ///
-    /// The `cfg_attr`-wrapped form (`#[cfg_attr(<cfg>, allow(...))]`) is
-    /// handled in place: the `#[expect]` suggestion swaps the inner
-    /// `allow` identifier, and removal is offered only where it can be
-    /// expressed without dropping the `cfg` wrapper.
-    ///
-    /// When an attribute mixes a rewriteable lint with a
-    /// non-rewriteable one (an exempt-list entry or an unknown lint),
-    /// the suggestions act on the rewriteable names only: drop them from
-    /// the `#[allow]`, or split them into a new `#[expect]` — the
-    /// non-rewriteable names stay under `#[allow]` either way, with the
-    /// `reason` field copied to each.
+    /// If the attribute also names a lint the rule leaves alone (an
+    /// exempt or unknown lint), only the deterministic names are
+    /// resolved; the rest stay under `#[allow]`.
     ///
     /// Crate- and module-level scopes (`#![allow(...)]`, and outer
     /// `#[allow(...)]` on a `mod` item) are left alone by default,
