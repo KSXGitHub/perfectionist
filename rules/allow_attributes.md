@@ -12,8 +12,8 @@
 Flags `#[allow(<lints>)]` when every named lint fires
 deterministically — a built-in rustc lint (not on the exempt
 list), a `clippy::*` / `rustdoc::*` lint, or a tool-namespaced
-lint such as `perfectionist::*`. It suggests two ways to resolve
-the attribute:
+lint such as `perfectionist::*`. Such a suppression can be
+resolved two ways:
 
 1. **Remove** it — when the lint can no longer fire at the site
    (a dead suppression, e.g. `clippy::too_many_arguments` left on

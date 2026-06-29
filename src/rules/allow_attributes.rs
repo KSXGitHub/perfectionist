@@ -18,8 +18,8 @@ declare_tool_lint! {
     /// Flags `#[allow(<lints>)]` when every named lint fires
     /// deterministically — a built-in rustc lint (not on the exempt
     /// list), a `clippy::*` / `rustdoc::*` lint, or a tool-namespaced
-    /// lint such as `perfectionist::*`. It suggests two ways to resolve
-    /// the attribute:
+    /// lint such as `perfectionist::*`. Such a suppression can be
+    /// resolved two ways:
     ///
     /// 1. **Remove** it — when the lint can no longer fire at the site
     ///    (a dead suppression, e.g. `clippy::too_many_arguments` left on
@@ -315,10 +315,11 @@ impl AllowAttributes {
 
     /// Apply the rule to a single `allow(...)` invocation.
     ///
-    /// `ident_span` covers the `allow` keyword (the anchor for the
-    /// simple swap). `attr_span` / `attr_style` locate the whole
-    /// attribute (used to render the split rewrite). `args` is the
-    /// attribute's argument list.
+    /// `ident_span` covers the `allow` keyword; it anchors the
+    /// diagnostic and is the target of the `expect` swap. `attr_span` /
+    /// `attr_style` locate the whole attribute, used to classify its
+    /// container and render the removal / split suggestions. `args` is
+    /// the attribute's argument list.
     fn check_allow(
         &self,
         lint_context: &EarlyContext<'_>,
@@ -429,6 +430,17 @@ impl AllowAttributes {
         ident_span: Span,
         container: Option<&Container>,
     ) {
+        // Removal is only offered for a bare attribute; the inner `allow`
+        // of a `cfg_attr` can't be deleted without dropping its `cfg`
+        // wrapper. When it isn't offered, the `#[expect]` suggestion drops
+        // its "otherwise" lead-in, which would otherwise dangle with no
+        // alternative to contrast against.
+        let removable = matches!(container, Some(Container::Bare { .. }));
+        let replace_help = if removable {
+            "otherwise replace `allow` with `expect`, which warns once the lint stops firing"
+        } else {
+            "replace `allow` with `expect`, which warns once the lint stops firing"
+        };
         span_lint_and_then(
             lint_context,
             ALLOW_ATTRIBUTES,
@@ -452,7 +464,7 @@ impl AllowAttributes {
                 // once the lint stops firing.
                 diag.span_suggestion(
                     ident_span,
-                    "otherwise replace `allow` with `expect`, which warns once the lint stops firing",
+                    replace_help,
                     "expect".to_owned(),
                     Applicability::MaybeIncorrect,
                 );

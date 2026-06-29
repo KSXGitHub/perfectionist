@@ -88,7 +88,7 @@ warning: this `#[allow]` stays silent even after its lint stops firing
 LL | #[cfg_attr(all(), allow(clippy::too_many_arguments, reason = "cfg-gated"))]
    |                   ^^^^^
    |
-help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+help: replace `allow` with `expect`, which warns once the lint stops firing
    |
 LL - #[cfg_attr(all(), allow(clippy::too_many_arguments, reason = "cfg-gated"))]
 LL + #[cfg_attr(all(), expect(clippy::too_many_arguments, reason = "cfg-gated"))]
@@ -100,7 +100,7 @@ warning: this `#[allow]` stays silent even after its lint stops firing
 LL | #[cfg_attr(all(), cfg_attr(all(), allow(clippy::type_complexity, reason = "nested")))]
    |                                   ^^^^^
    |
-help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+help: replace `allow` with `expect`, which warns once the lint stops firing
    |
 LL - #[cfg_attr(all(), cfg_attr(all(), allow(clippy::type_complexity, reason = "nested")))]
 LL + #[cfg_attr(all(), cfg_attr(all(), expect(clippy::type_complexity, reason = "nested")))]
