@@ -52,24 +52,12 @@ pub fn install(manifest: &PackageManifest, store: &Store) {}
 
 ## Caveat: linking is not always correct
 
-A backticked word can name a *foreign* symbol the prose only
-mentions — an upstream type the local code mirrors — that
-happens to share its name with an in-scope item. Rewriting
-`` `Foo` `` to `` [`Foo`] `` then resolves to the *local* item,
-manufacturing a self-reference that compiles cleanly while the
-rendered link points the reader at the wrong place:
-
-```rust,ignore
-/// Mirrors the relevant subset of pnpm's [`DepsGraphNode`].
-pub struct DepsGraphNode<Key> { /* ... */ }
-```
-
-Because the rewrite can change meaning, the suggestion is only
-`MaybeIncorrect`, so `cargo fix`, `cargo clippy --fix`, and an
-editor's "apply suggestion" won't apply it blindly. When the
-name really denotes an external symbol, don't link it to the
-local item; write an explicit reference link to the real source
-instead — `` [`Foo`][foo-ext] `` paired with a
+When a backticked word names a *foreign* symbol that merely
+shares its name with an in-scope item, rewriting `` `Foo` `` to
+`` [`Foo`] `` links to the *local* item — a wrong reference that
+still compiles. The suggestion is therefore only
+`MaybeIncorrect`. For an external target, write an explicit
+reference link instead: `` [`Foo`][foo-ext] `` plus a
 `` [foo-ext]: <url> `` definition.
 
 ## Configuration
