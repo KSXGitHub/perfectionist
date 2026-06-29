@@ -50,6 +50,28 @@ pub fn install(manifest: &PackageManifest, store: &Store) {}
 pub fn install(manifest: &PackageManifest, store: &Store) {}
 ```
 
+## Caveat: linking is not always correct
+
+A backticked word can name a *foreign* symbol the prose only
+mentions — an upstream type the local code mirrors — that
+happens to share its name with an in-scope item. Rewriting
+`` `Foo` `` to `` [`Foo`] `` then resolves to the *local* item,
+manufacturing a self-reference that compiles cleanly while the
+rendered link points the reader at the wrong place:
+
+```rust,ignore
+/// Mirrors the relevant subset of pnpm's [`DepsGraphNode`].
+pub struct DepsGraphNode<Key> { /* ... */ }
+```
+
+Because the rewrite can change meaning, the suggestion is only
+`MaybeIncorrect`, so `cargo fix`, `cargo clippy --fix`, and an
+editor's "apply suggestion" won't apply it blindly. When the
+name really denotes an external symbol, don't link it to the
+local item; write an explicit reference link to the real source
+instead — `` [`Foo`][foo-ext] `` paired with a
+`` [foo-ext]: <url> `` definition.
+
 ## Configuration
 
 Configure via `dylint.toml` under `["perfectionist::bare_identifier_reference"]`. Every field is optional; the per-field prose below states the default.

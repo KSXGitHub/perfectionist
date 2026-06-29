@@ -1,10 +1,16 @@
-warning: `Mixed_Thing` resolves in scope; write it as an intra-doc link
+warning: `Mixed_Thing` resolves in scope; consider writing it as an intra-doc link
   --> $DIR/fixture.rs:13:5
    |
 LL | /// `Mixed_Thing`, which is flagged regardless.
-   |     ^^^^^^^^^^^^^ help: wrap as an intra-doc link: `[`Mixed_Thing`]`
+   |     ^^^^^^^^^^^^^
    |
+   = help: if `Mixed_Thing` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`Mixed_Thing`][Mixed_Thing-ext]` with a `[Mixed_Thing-ext]: <url>` definition
    = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
+help: if it refers to this item, wrap it as an intra-doc link
+   |
+LL - /// `Mixed_Thing`, which is flagged regardless.
+LL + /// [`Mixed_Thing`], which is flagged regardless.
+   |
 
 warning: 1 warning emitted
 
