@@ -15,7 +15,7 @@ mod render;
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use crate::module_reparse::{SpanRange, parse_crate_module_files};
-use config::{Config, Style};
+use config::{Config, ReexportGrouping, Style};
 
 declare_tool_lint! {
     /// ### What it does
@@ -39,6 +39,16 @@ declare_tool_lint! {
     ///   and `cfg_block_handling`
     ///   knobs tune the partition; the inner ordering within each group
     ///   is left to `cargo fmt`.
+    ///
+    /// Orthogonally to `style`, the `reexports` knob controls `pub`
+    /// re-exports — any `use` with an explicit visibility. It defaults to
+    /// `grouped`: every re-export is pulled into one contiguous leading
+    /// block above the private imports, visibility outranking path and cfg
+    /// gating. Set `split` to break that block into two — submodule
+    /// re-exports (`pub use child::Item;`, a multi-segment path) above
+    /// alias re-exports (`pub use Item;` / `pub use Item as Alias;`, a
+    /// single-segment path) — or `by_path` to give re-exports no dedicated
+    /// block, classifying each by its path like a private import.
     ///
     /// This rule only governs the *partitioning* of imports into blocks.
     /// Whether items within each `use` are merged or split is the job of
@@ -127,7 +137,7 @@ declare_tool_lint! {
     /// use std::os::unix::fs::MetadataExt;
     /// ```
     ///
-    /// #### Re-exports in their own block (default; `separate_reexports`)
+    /// #### Re-exports in their own block (default; `reexports = "grouped"`)
     ///
     /// **Avoid:** (a `pub use` re-export mixed in with private imports)
     ///
@@ -142,6 +152,25 @@ declare_tool_lint! {
     /// pub use reflection::Reflection;
     ///
     /// use super::size;
+    /// ```
+    ///
+    /// #### Split re-exports (`reexports = "split"`)
+    ///
+    /// **Avoid:** (submodule re-exports and alias re-exports intermixed)
+    ///
+    /// ```rust,ignore
+    /// pub use Reflection as HardlinkListReflection;
+    /// pub use iter::Iter;
+    /// pub use reflection::Reflection;
+    /// ```
+    ///
+    /// **Prefer:** (submodule re-exports lead, alias re-exports follow)
+    ///
+    /// ```rust,ignore
+    /// pub use iter::Iter;
+    /// pub use reflection::Reflection;
+    ///
+    /// pub use Reflection as HardlinkListReflection;
     /// ```
     pub perfectionist::IMPORT_GROUPING_MISMATCH,
     Warn,
@@ -382,8 +411,8 @@ impl ImportGroupingMismatch {
         // present — so it does not make a statement cfg-gated for grouping.
         let is_cfg_gated = item.attrs.iter().any(|attr| attr.has_name(sym::cfg));
         // A re-export is any `use` with an explicit visibility; only a
-        // private (`Inherited`) import is not one. The `separate_reexports`
-        // knob keys off this to pull re-exports into their own block.
+        // private (`Inherited`) import is not one. The `reexports` knob
+        // keys off this to pull re-exports into their own leading region.
         let is_reexport = !matches!(item.vis.kind, VisibilityKind::Inherited);
         let rank = classify::rank(tree, is_reexport, is_cfg_gated, &self.config, local_modules);
 
@@ -466,8 +495,8 @@ impl ImportGroupingMismatch {
         // above a *different* statement when the first one is reordered
         // downward — under `multi_block`, or under `single_block` when a
         // leading cfg-gated import is hoisted into the trailing block, or a
-        // re-export below it is hoisted into the leading
-        // `separate_reexports` block.
+        // re-export below it is hoisted into the leading re-export
+        // region.
         // Either way, drop to `MaybeIncorrect` so the fix isn't applied
         // unreviewed. The check is style-agnostic: any statement ranking
         // ahead of the first means the first sorts down.
@@ -530,30 +559,40 @@ impl ImportGroupingMismatch {
     }
 
     /// The warning header for a violating `run`. Under `single_block` the
-    /// wording depends on the actual violation: which of the two
-    /// separate blocks — a leading `pub` re-export block (under
-    /// `separate_reexports`) or a trailing cfg block — the run carries.
-    /// A run with neither is just blank lines splitting one block, the
-    /// same violation `merge` reports.
+    /// wording depends on which of the separate blocks the run carries: a
+    /// leading `pub` re-export region — one `grouped` block, or two `split`
+    /// blocks (submodule re-exports then aliases) — and/or a trailing cfg
+    /// block. A run with neither is just blank lines splitting one block,
+    /// the same violation `merge` reports.
     fn message(&self, run: &[UseStmt<'_>]) -> &'static str {
         match self.config.style {
             Style::MultiBlock => "imports are not partitioned into ordered groups",
             Style::SingleBlock => {
                 let reexport_block =
-                    self.config.separate_reexports && run.iter().any(|stmt| stmt.is_reexport);
+                    self.config.separates_reexports() && run.iter().any(|stmt| stmt.is_reexport);
+                let split = matches!(self.config.reexports, ReexportGrouping::Split);
                 let cfg_block = run.iter().any(|stmt| self.is_cfg_trailing(stmt));
-                match (reexport_block, cfg_block) {
-                    (true, true) => {
+                match (reexport_block, split, cfg_block) {
+                    (true, true, true) => {
+                        "imports must form one block, with submodule re-exports and alias \
+                         re-exports in separate leading blocks and `#[cfg]`-gated imports in a \
+                         trailing block"
+                    }
+                    (true, true, false) => {
+                        "imports must form one block, with submodule re-exports and alias \
+                         re-exports in separate leading blocks"
+                    }
+                    (true, false, true) => {
                         "imports must form one block, with `pub` re-exports in a leading block \
                          and `#[cfg]`-gated imports in a trailing block"
                     }
-                    (true, false) => {
+                    (true, false, false) => {
                         "imports must form one block, with `pub` re-exports in a leading block"
                     }
-                    (false, true) => {
+                    (false, _, true) => {
                         "imports must form one block, with `#[cfg]`-gated imports in a trailing block"
                     }
-                    (false, false) => {
+                    (false, _, false) => {
                         "blank lines split the imports; this project keeps them in a single block"
                     }
                 }
@@ -562,13 +601,13 @@ impl ImportGroupingMismatch {
     }
 
     /// Whether `stmt` is hoisted into the trailing cfg block: a cfg-gated
-    /// import under [`config::CfgBlockHandling::Trailing`] that the re-export
-    /// block did not already claim (a cfg-gated re-export stays with the
-    /// re-exports when `separate_reexports` is on).
+    /// import under [`config::CfgBlockHandling::Trailing`] that the leading
+    /// re-export region did not already claim (a cfg-gated re-export stays
+    /// with the re-exports when `reexports` separates them).
     fn is_cfg_trailing(&self, stmt: &UseStmt<'_>) -> bool {
         use config::CfgBlockHandling;
         stmt.is_cfg_gated
             && matches!(self.config.cfg_block_handling, CfgBlockHandling::Trailing)
-            && !(self.config.separate_reexports && stmt.is_reexport)
+            && !(self.config.separates_reexports() && stmt.is_reexport)
     }
 }

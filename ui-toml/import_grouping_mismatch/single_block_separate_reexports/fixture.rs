@@ -7,7 +7,7 @@
     reason = "ui fixture"
 )]
 
-// Under `style = "single_block"` with `separate_reexports = true`: `pub`
+// Under `style = "single_block"` with `reexports = "grouped"`: `pub`
 // re-exports form one leading block, the private imports collapse into a
 // single block below, and a `#[cfg(...)]`-gated private import still
 // forms a trailing block. Each run is isolated by a marker item and every

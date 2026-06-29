@@ -29,6 +29,16 @@ inactive by default; a project opts in and sets `style` to one of:
   knobs tune the partition; the inner ordering within each group
   is left to `cargo fmt`.
 
+Orthogonally to `style`, the `reexports` knob controls `pub`
+re-exports — any `use` with an explicit visibility. It defaults to
+`grouped`: every re-export is pulled into one contiguous leading
+block above the private imports, visibility outranking path and cfg
+gating. Set `split` to break that block into two — submodule
+re-exports (`pub use child::Item;`, a multi-segment path) above
+alias re-exports (`pub use Item;` / `pub use Item as Alias;`, a
+single-segment path) — or `by_path` to give re-exports no dedicated
+block, classifying each by its path like a private import.
+
 This rule only governs the *partitioning* of imports into blocks.
 Whether items within each `use` are merged or split is the job of
 `perfectionist::import_granularity_mismatch`.
@@ -116,7 +126,7 @@ use super::size::Bytes;
 use std::os::unix::fs::MetadataExt;
 ```
 
-### Re-exports in their own block (default; `separate_reexports`)
+### Re-exports in their own block (default; `reexports = "grouped"`)
 
 **Avoid:** (a `pub use` re-export mixed in with private imports)
 
@@ -131,6 +141,25 @@ use super::size;
 pub use reflection::Reflection;
 
 use super::size;
+```
+
+### Split re-exports (`reexports = "split"`)
+
+**Avoid:** (submodule re-exports and alias re-exports intermixed)
+
+```rust,ignore
+pub use Reflection as HardlinkListReflection;
+pub use iter::Iter;
+pub use reflection::Reflection;
+```
+
+**Prefer:** (submodule re-exports lead, alias re-exports follow)
+
+```rust,ignore
+pub use iter::Iter;
+pub use reflection::Reflection;
+
+pub use Reflection as HardlinkListReflection;
 ```
 
 ## Configuration
@@ -156,17 +185,16 @@ both styles. Set `merge` to keep cfg-gated imports with the rest —
 in their natural path group under `multi_block`, or in the single
 block under `single_block`.
 
-### `separate_reexports`: `boolean` (optional)
+### `reexports`: `ReexportGrouping` (optional)
 
-Whether `pub` re-exports form their own leading block. Defaults to
-`true`: every re-export — any `use` with an explicit visibility
-(`pub`, `pub(crate)`, `pub(super)`, `pub(in ...)`) — is pulled into
-one contiguous block above all private imports, separated by a
-blank line. A cfg-gated re-export stays in the re-export block
-rather than the trailing cfg block: visibility takes precedence,
-keeping the public surface together. Set `false` to classify a
-`use` purely by its path instead, so a `pub use child::Item` sits
-in the same block as a private import of the same origin.
+How `pub` re-exports are grouped. Defaults to `grouped`: every
+re-export is pulled into one contiguous leading block above all
+private imports, separated by a blank line. Set `split` to break
+that leading block into two — submodule re-exports
+(`pub use child::Item;`) above alias re-exports (`pub use Item;` /
+`pub use Item as Alias;`) — or `by_path` to give re-exports no
+dedicated block at all, classifying each by its path like a private
+import.
 
 ### Types
 
@@ -219,3 +247,36 @@ regardless of the imported path: an always-last group under
 Keep a cfg-gated import with the rest: slotted into its natural
 path group under `multi_block`, or left in the single block under
 `single_block`.
+
+#### `ReexportGrouping` (enum)
+
+How `pub` re-exports are grouped relative to the private imports. A
+re-export is any `use` with an explicit visibility (`pub`,
+`pub(crate)`, `pub(super)`, `pub(in ...)`); a private (`Inherited`)
+import is not one.
+
+##### `"by_path"` (Rust: `ByPath`)
+
+Re-exports get no dedicated block: each is classified purely by
+its path, exactly like a private import, so a `pub use child::Item`
+sits in the same block as a private import of the same origin.
+
+##### `"grouped"` (Rust: `Grouped`)
+
+Every re-export is pulled into one contiguous leading block above
+all private imports, separated by a blank line. A cfg-gated
+re-export stays in this block rather than the trailing cfg block:
+visibility takes precedence, keeping the public surface together.
+
+##### `"split"` (Rust: `Split`)
+
+Re-exports form a leading region split into two blank-separated
+blocks: *submodule* re-exports (a multi-segment path such as
+`pub use child::Item;`, which lifts an item out of a child module)
+above *alias* re-exports (a single-segment path such as
+`pub use Item;` or `pub use Item as Alias;`, which only renames an
+item already in scope). The single-vs-multi-segment split is
+purely syntactic; a `pub use foo;` that re-exports an external
+crate counts as an alias re-export. As under `grouped`, a cfg-gated
+re-export stays in its re-export sub-block rather than the trailing
+cfg block.
