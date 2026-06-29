@@ -50,6 +50,16 @@ pub fn install(manifest: &PackageManifest, store: &Store) {}
 pub fn install(manifest: &PackageManifest, store: &Store) {}
 ```
 
+## Caveat: linking is not always correct
+
+When a backticked word names a *foreign* symbol that merely
+shares its name with an in-scope item, rewriting `` `Foo` `` to
+`` [`Foo`] `` links to the *local* item — a wrong reference that
+still compiles. The rule therefore only suggests the link
+rather than applying it automatically. For an external target,
+write an explicit reference link instead:
+`` [`Foo`][foo-ext] `` plus a `` [foo-ext]: <url> `` definition.
+
 ## Configuration
 
 Configure via `dylint.toml` under `["perfectionist::bare_identifier_reference"]`. Every field is optional; the per-field prose below states the default.

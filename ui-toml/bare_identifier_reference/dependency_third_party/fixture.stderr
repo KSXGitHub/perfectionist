@@ -1,16 +1,29 @@
-warning: `LocalThing` resolves in scope; write it as an intra-doc link
+warning: `LocalThing` resolves in scope; consider writing it as an intra-doc link
   --> $DIR/fixture.rs:10:14
    |
 LL | /// Mentions `LocalThing` (first-party) and `DepThing` (a third-party
-   |              ^^^^^^^^^^^^ help: wrap as an intra-doc link: `[`LocalThing`]`
+   |              ^^^^^^^^^^^^
    |
+   = help: if `LocalThing` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`LocalThing`][LocalThing-ext]` with a `[LocalThing-ext]: <url>` definition
    = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
+help: only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, wrap it as an intra-doc link
+   |
+LL - /// Mentions `LocalThing` (first-party) and `DepThing` (a third-party
+LL + /// Mentions [`LocalThing`] (first-party) and `DepThing` (a third-party
+   |
 
-warning: `DepThing` resolves in scope; write it as an intra-doc link
+warning: `DepThing` resolves in scope; consider writing it as an intra-doc link
   --> $DIR/fixture.rs:10:45
    |
 LL | /// Mentions `LocalThing` (first-party) and `DepThing` (a third-party
-   |                                             ^^^^^^^^^^ help: wrap as an intra-doc link: `[`DepThing`]`
+   |                                             ^^^^^^^^^^
+   |
+   = help: if `DepThing` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`DepThing`][DepThing-ext]` with a `[DepThing-ext]: <url>` definition
+help: only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, wrap it as an intra-doc link
+   |
+LL - /// Mentions `LocalThing` (first-party) and `DepThing` (a third-party
+LL + /// Mentions `LocalThing` (first-party) and [`DepThing`] (a third-party
+   |
 
 warning: 2 warnings emitted
 

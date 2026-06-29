@@ -58,6 +58,16 @@ declare_tool_lint! {
     /// /// Installs the package described by [`PackageManifest`] into [`Store`].
     /// pub fn install(manifest: &PackageManifest, store: &Store) {}
     /// ```
+    ///
+    /// ### Caveat: linking is not always correct
+    ///
+    /// When a backticked word names a *foreign* symbol that merely
+    /// shares its name with an in-scope item, rewriting `` `Foo` `` to
+    /// `` [`Foo`] `` links to the *local* item — a wrong reference that
+    /// still compiles. The rule therefore only suggests the link
+    /// rather than applying it automatically. For an external target,
+    /// write an explicit reference link instead:
+    /// `` [`Foo`][foo-ext] `` plus a `` [foo-ext]: <url> `` definition.
     pub perfectionist::BARE_IDENTIFIER_REFERENCE,
     Warn,
     "backticked identifier in a doc comment that resolves in scope should be an intra-doc link",
@@ -293,7 +303,9 @@ impl BareIdentifierReference {
 #[derive(Clone, Copy)]
 enum Resolution {
     /// Resolves in exactly one namespace — a plain `` [`Foo`] `` link
-    /// is unambiguous, so the autofix is machine-applicable.
+    /// is unambiguous, so the rule offers it as a structured
+    /// suggestion (only `MaybeIncorrect`: see [`emit`], as the name may
+    /// instead denote a foreign symbol that merely shares it).
     Unique,
     /// The name exists in more than one namespace (e.g. a type and a
     /// function). A bare `` [`Foo`] `` would be an ambiguous intra-doc
@@ -571,23 +583,45 @@ fn emit(
         BARE_IDENTIFIER_REFERENCE,
         hir_id,
         span,
-        format!("`{ident}` resolves in scope; write it as an intra-doc link"),
-        |diag| match resolution {
-            Resolution::Unique => {
-                diag.span_suggestion(
-                    span,
-                    "wrap as an intra-doc link",
-                    format!("[{snippet}]"),
-                    Applicability::MachineApplicable,
-                );
+        format!("`{ident}` resolves in scope; consider writing it as an intra-doc link"),
+        |diag| {
+            match resolution {
+                Resolution::Unique => {
+                    // `MaybeIncorrect`, not `MachineApplicable`: the rewrite
+                    // changes meaning when the prose names a foreign symbol
+                    // that merely shares this name (see the caveat help
+                    // below), so `cargo fix` / `cargo clippy --fix` and an
+                    // editor's "apply suggestion" must not apply it blindly.
+                    diag.span_suggestion(
+                        span,
+                        "only once the surrounding context confirms it refers to this \
+                         item, not a foreign symbol of the same name, wrap it as an \
+                         intra-doc link",
+                        format!("[{snippet}]"),
+                        Applicability::MaybeIncorrect,
+                    );
+                }
+                Resolution::Ambiguous(prefix) => {
+                    let prefix = prefix.as_str();
+                    diag.help(format!(
+                        "`{ident}` resolves in more than one namespace; only once the \
+                         surrounding context confirms it refers to this item, not a \
+                         foreign symbol of the same name, write a disambiguated \
+                         intra-doc link such as `[`{ident}`]({prefix}{ident})`",
+                    ));
+                }
             }
-            Resolution::Ambiguous(prefix) => {
-                let prefix = prefix.as_str();
-                diag.help(format!(
-                    "`{ident}` resolves in more than one namespace; write a \
-                     disambiguated intra-doc link such as `[`{ident}`]({prefix}{ident})`",
-                ));
-            }
+            // A backticked name can denote a foreign/upstream symbol the doc
+            // only mentions, coinciding with an in-scope item; an intra-doc
+            // link would then resolve to the wrong target while still
+            // compiling. Point authors at an explicit reference link to the
+            // real source for that case.
+            diag.help(format!(
+                "if `{ident}` instead names a foreign or upstream symbol that the doc \
+                 only mentions by name, do not link it to the local item; write an \
+                 explicit reference link to the real source, such as \
+                 `[`{ident}`][{ident}-ext]` with a `[{ident}-ext]: <url>` definition",
+            ));
         },
     );
 }
