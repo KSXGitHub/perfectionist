@@ -64,10 +64,10 @@ declare_tool_lint! {
     /// When a backticked word names a *foreign* symbol that merely
     /// shares its name with an in-scope item, rewriting `` `Foo` `` to
     /// `` [`Foo`] `` links to the *local* item — a wrong reference that
-    /// still compiles. The suggestion is therefore only
-    /// `MaybeIncorrect`. For an external target, write an explicit
-    /// reference link instead: `` [`Foo`][foo-ext] `` plus a
-    /// `` [foo-ext]: <url> `` definition.
+    /// still compiles. The rule therefore only suggests the link
+    /// rather than applying it automatically. For an external target,
+    /// write an explicit reference link instead:
+    /// `` [`Foo`][foo-ext] `` plus a `` [foo-ext]: <url> `` definition.
     pub perfectionist::BARE_IDENTIFIER_REFERENCE,
     Warn,
     "backticked identifier in a doc comment that resolves in scope should be an intra-doc link",
