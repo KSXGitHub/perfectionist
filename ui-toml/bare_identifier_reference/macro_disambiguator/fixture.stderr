@@ -4,7 +4,7 @@ warning: `dual` resolves in scope; consider writing it as an intra-doc link
 LL | /// A public macro and a private function both answer to `dual`; the
    |                                                          ^^^^^^
    |
-   = help: `dual` resolves in more than one namespace; write a disambiguated intra-doc link such as `[`dual`](macro@dual)`
+   = help: `dual` resolves in more than one namespace; only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, write a disambiguated intra-doc link such as `[`dual`](macro@dual)`
    = help: if `dual` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`dual`][dual-ext]` with a `[dual-ext]: <url>` definition
    = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
 

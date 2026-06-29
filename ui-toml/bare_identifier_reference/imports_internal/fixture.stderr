@@ -6,7 +6,7 @@ LL |     /// Mentions `Defined` (local), `InternalItem` (this module's
    |
    = help: if `Defined` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`Defined`][Defined-ext]` with a `[Defined-ext]: <url>` definition
    = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
-help: if it refers to this item, wrap it as an intra-doc link
+help: only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, wrap it as an intra-doc link
    |
 LL -     /// Mentions `Defined` (local), `InternalItem` (this module's
 LL +     /// Mentions [`Defined`] (local), `InternalItem` (this module's
@@ -19,7 +19,7 @@ LL |     /// Mentions `Defined` (local), `InternalItem` (this module's
    |                                     ^^^^^^^^^^^^^^
    |
    = help: if `InternalItem` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`InternalItem`][InternalItem-ext]` with a `[InternalItem-ext]: <url>` definition
-help: if it refers to this item, wrap it as an intra-doc link
+help: only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, wrap it as an intra-doc link
    |
 LL -     /// Mentions `Defined` (local), `InternalItem` (this module's
 LL +     /// Mentions `Defined` (local), [`InternalItem`] (this module's

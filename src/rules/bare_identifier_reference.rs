@@ -594,7 +594,9 @@ fn emit(
                     // editor's "apply suggestion" must not apply it blindly.
                     diag.span_suggestion(
                         span,
-                        "if it refers to this item, wrap it as an intra-doc link",
+                        "only once the surrounding context confirms it refers to this \
+                         item, not a foreign symbol of the same name, wrap it as an \
+                         intra-doc link",
                         format!("[{snippet}]"),
                         Applicability::MaybeIncorrect,
                     );
@@ -602,8 +604,10 @@ fn emit(
                 Resolution::Ambiguous(prefix) => {
                     let prefix = prefix.as_str();
                     diag.help(format!(
-                        "`{ident}` resolves in more than one namespace; write a \
-                         disambiguated intra-doc link such as `[`{ident}`]({prefix}{ident})`",
+                        "`{ident}` resolves in more than one namespace; only once the \
+                         surrounding context confirms it refers to this item, not a \
+                         foreign symbol of the same name, write a disambiguated \
+                         intra-doc link such as `[`{ident}`]({prefix}{ident})`",
                     ));
                 }
             }

@@ -6,7 +6,7 @@ LL | /// Mentions `LocalThing` (first-party) and `DepThing` (a third-party
    |
    = help: if `LocalThing` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`LocalThing`][LocalThing-ext]` with a `[LocalThing-ext]: <url>` definition
    = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
-help: if it refers to this item, wrap it as an intra-doc link
+help: only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, wrap it as an intra-doc link
    |
 LL - /// Mentions `LocalThing` (first-party) and `DepThing` (a third-party
 LL + /// Mentions [`LocalThing`] (first-party) and `DepThing` (a third-party
@@ -19,7 +19,7 @@ LL | /// Mentions `LocalThing` (first-party) and `DepThing` (a third-party
    |                                             ^^^^^^^^^^
    |
    = help: if `DepThing` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`DepThing`][DepThing-ext]` with a `[DepThing-ext]: <url>` definition
-help: if it refers to this item, wrap it as an intra-doc link
+help: only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, wrap it as an intra-doc link
    |
 LL - /// Mentions `LocalThing` (first-party) and `DepThing` (a third-party
 LL + /// Mentions `LocalThing` (first-party) and [`DepThing`] (a third-party

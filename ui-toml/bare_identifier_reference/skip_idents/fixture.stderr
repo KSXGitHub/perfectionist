@@ -6,7 +6,7 @@ LL | /// Mentions `Flagged`, which still fires, and `Skipped`, which the
    |
    = help: if `Flagged` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`Flagged`][Flagged-ext]` with a `[Flagged-ext]: <url>` definition
    = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
-help: if it refers to this item, wrap it as an intra-doc link
+help: only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, wrap it as an intra-doc link
    |
 LL - /// Mentions `Flagged`, which still fires, and `Skipped`, which the
 LL + /// Mentions [`Flagged`], which still fires, and `Skipped`, which the
