@@ -13,11 +13,12 @@ scan_code_spans = true
 
 # This crate keeps every module's `use` statements in one contiguous
 # block with no blank lines between them, with `pub` re-exports pulled
-# into a leading block. Under `single_block` the `order` and
-# group-classification knobs are ignored.
+# into two leading blocks — submodule re-exports above alias re-exports.
+# Under `single_block` the `order` and group-classification knobs are
+# ignored.
 ["perfectionist::import_grouping_mismatch"]
 style = "single_block"
-reexports = "grouped"
+reexports = "split"
 
 # `tools/gen-docs` parses `declare_tool_lint!` bodies with syn, whose
 # `Token![::]` macro takes a token literal in type position — there is no

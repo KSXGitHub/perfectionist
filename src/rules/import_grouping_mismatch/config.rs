@@ -17,19 +17,6 @@ pub(super) enum Style {
     MultiBlock,
 }
 
-/// One of the three groups a `use` statement is classified into. The
-/// `order` knob is a permutation of these three values.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub(super) enum Group {
-    /// `std`, `core`, `alloc`, `proc_macro`, `test`.
-    Std,
-    /// `crate`, `super`, `self`.
-    Internal,
-    /// Every other crate.
-    Thirdparty,
-}
-
 /// How `pub` re-exports are grouped relative to the private imports. A
 /// re-export is any `use` with an explicit visibility (`pub`,
 /// `pub(crate)`, `pub(super)`, `pub(in ...)`); a private (`Inherited`)
@@ -57,6 +44,19 @@ pub(super) enum ReexportGrouping {
     /// re-export stays in its re-export sub-block rather than the trailing
     /// cfg block.
     Split,
+}
+
+/// One of the three groups a `use` statement is classified into. The
+/// `order` knob is a permutation of these three values.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(super) enum Group {
+    /// `std`, `core`, `alloc`, `proc_macro`, `test`.
+    Std,
+    /// `crate`, `super`, `self`.
+    Internal,
+    /// Every other crate.
+    Thirdparty,
 }
 
 /// How a `#[cfg(...)]`-gated import is grouped.
@@ -90,6 +90,16 @@ pub(super) struct Config {
     /// has no default — a project enabling the rule states which layout
     /// it wants — so it must be set when the rule is enabled.
     pub(super) style: Style,
+    /// How `pub` re-exports are grouped: `grouped`, `split`, or `by_path`.
+    /// Like `style` it has no default — a project enabling the rule states
+    /// how it wants re-exports laid out — so it must be set when the rule
+    /// is enabled. `grouped` pulls every re-export into one contiguous
+    /// leading block above all private imports; `split` breaks that block
+    /// into two — submodule re-exports (`pub use child::Item;`) above alias
+    /// re-exports (`pub use Item;` / `pub use Item as Alias;`); `by_path`
+    /// gives re-exports no dedicated block at all, classifying each by its
+    /// path like a private import.
+    pub(super) reexports: ReexportGrouping,
     /// The order the groups appear in, top to bottom. Defaults to
     /// `["std", "internal", "thirdparty"]`.
     #[serde(default = "default_order")]
@@ -101,16 +111,6 @@ pub(super) struct Config {
     /// block under `single_block`.
     #[serde(default)]
     pub(super) cfg_block_handling: CfgBlockHandling,
-    /// How `pub` re-exports are grouped: `grouped`, `split`, or `by_path`.
-    /// Like `style` it has no default — a project enabling the rule states
-    /// how it wants re-exports laid out — so it must be set when the rule
-    /// is enabled. `grouped` pulls every re-export into one contiguous
-    /// leading block above all private imports; `split` breaks that block
-    /// into two — submodule re-exports (`pub use child::Item;`) above alias
-    /// re-exports (`pub use Item;` / `pub use Item as Alias;`); `by_path`
-    /// gives re-exports no dedicated block at all, classifying each by its
-    /// path like a private import.
-    pub(super) reexports: ReexportGrouping,
 }
 
 fn default_order() -> Vec<Group> {
