@@ -4,7 +4,7 @@ members = ["tools/*", "utils"]
 [package]
 name = "perfectionist"
 description = "Additional linting rules for Rust projects"
-version = "0.0.0-rc.20"
+version = "0.0.0-rc.21"
 authors = ["khai96_ <hvksmr1996@gmail.com>"]
 edition = "2024"
 readme = "README.md"
