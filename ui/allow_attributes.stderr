@@ -1,64 +1,143 @@
-warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+warning: this `#[allow]` stays silent even after its lint stops firing
   --> $DIR/allow_attributes.rs:10:3
    |
 LL | #[allow(non_snake_case, reason = "external API uses camelCase")]
-   |   ^^^^^ help: replace `allow` with `expect`: `expect`
+   |   ^^^^^
    |
    = note: `#[warn(perfectionist::allow_attributes)]` on by default
+help: remove the suppression if its lint can no longer fire here
+   |
+LL - #[allow(non_snake_case, reason = "external API uses camelCase")]
+   |
+help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+   |
+LL - #[allow(non_snake_case, reason = "external API uses camelCase")]
+LL + #[expect(non_snake_case, reason = "external API uses camelCase")]
+   |
 
-warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+warning: this `#[allow]` stays silent even after its lint stops firing
   --> $DIR/allow_attributes.rs:14:3
    |
 LL | #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
-   |   ^^^^^ help: replace `allow` with `expect`: `expect`
+   |   ^^^^^
+   |
+help: remove the suppression if its lint can no longer fire here
+   |
+LL - #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
+   |
+help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+   |
+LL - #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
+LL + #[expect(clippy::too_many_arguments, reason = "matches upstream signature")]
+   |
 
-warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+warning: this `#[allow]` stays silent even after its lint stops firing
   --> $DIR/allow_attributes.rs:18:3
    |
 LL | #[allow(rustdoc::broken_intra_doc_links, reason = "links resolve downstream")]
-   |   ^^^^^ help: replace `allow` with `expect`: `expect`
+   |   ^^^^^
+   |
+help: remove the suppression if its lint can no longer fire here
+   |
+LL - #[allow(rustdoc::broken_intra_doc_links, reason = "links resolve downstream")]
+   |
+help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+   |
+LL - #[allow(rustdoc::broken_intra_doc_links, reason = "links resolve downstream")]
+LL + #[expect(rustdoc::broken_intra_doc_links, reason = "links resolve downstream")]
+   |
 
-warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+warning: this `#[allow]` stays silent even after its lint stops firing
   --> $DIR/allow_attributes.rs:22:3
    |
 LL | #[allow(perfectionist::single_letter_function_param, reason = "math convention")]
-   |   ^^^^^ help: replace `allow` with `expect`: `expect`
+   |   ^^^^^
+   |
+help: remove the suppression if its lint can no longer fire here
+   |
+LL - #[allow(perfectionist::single_letter_function_param, reason = "math convention")]
+   |
+help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+   |
+LL - #[allow(perfectionist::single_letter_function_param, reason = "math convention")]
+LL + #[expect(perfectionist::single_letter_function_param, reason = "math convention")]
+   |
 
-warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+warning: this `#[allow]` stays silent even after its lint stops firing
   --> $DIR/allow_attributes.rs:28:3
    |
 LL | #[allow(
-   |   ^^^^^ help: replace `allow` with `expect`: `expect`
+   |   ^^^^^
+   |
+help: remove the suppression if its lint can no longer fire here
+   |
+LL - #[allow(
+LL -     clippy::type_complexity,
+LL -     reason = "the type mirrors the upstream alias",
+LL - )]
+   |
+help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+   |
+LL - #[allow(
+LL + #[expect(
+   |
 
-warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+warning: this `#[allow]` stays silent even after its lint stops firing
   --> $DIR/allow_attributes.rs:35:19
    |
 LL | #[cfg_attr(all(), allow(clippy::too_many_arguments, reason = "cfg-gated"))]
-   |                   ^^^^^ help: replace `allow` with `expect`: `expect`
+   |                   ^^^^^
+   |
+help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+   |
+LL - #[cfg_attr(all(), allow(clippy::too_many_arguments, reason = "cfg-gated"))]
+LL + #[cfg_attr(all(), expect(clippy::too_many_arguments, reason = "cfg-gated"))]
+   |
 
-warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+warning: this `#[allow]` stays silent even after its lint stops firing
   --> $DIR/allow_attributes.rs:39:35
    |
 LL | #[cfg_attr(all(), cfg_attr(all(), allow(clippy::type_complexity, reason = "nested")))]
-   |                                   ^^^^^ help: replace `allow` with `expect`: `expect`
+   |                                   ^^^^^
+   |
+help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+   |
+LL - #[cfg_attr(all(), cfg_attr(all(), allow(clippy::type_complexity, reason = "nested")))]
+LL + #[cfg_attr(all(), cfg_attr(all(), expect(clippy::type_complexity, reason = "nested")))]
+   |
 
-warning: the deterministically-firing lints here can move to `#[expect]`
-  --> $DIR/allow_attributes.rs:43:1
+warning: some lints in this `#[allow]` stay silent even after they stop firing
+  --> $DIR/allow_attributes.rs:43:3
    |
 LL | #[allow(dead_code, clippy::too_many_arguments, reason = "scaffolding")]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |   ^^^^^
    |
-help: split the deterministic lints into a separate `#[expect]`
+help: drop them from the `#[allow]` if they can no longer fire here
+   |
+LL - #[allow(dead_code, clippy::too_many_arguments, reason = "scaffolding")]
+LL + #[allow(dead_code, reason = "scaffolding")]
+   |
+help: otherwise split them into a separate `#[expect]` that self-cleans
    |
 LL ~ #[allow(dead_code, reason = "scaffolding")]
 LL ~ #[expect(clippy::too_many_arguments, reason = "scaffolding")]
    |
 
-warning: the deterministically-firing lints here can move to `#[expect]`
+warning: some lints in this `#[allow]` stay silent even after they stop firing
   --> $DIR/allow_attributes.rs:47:19
    |
 LL | #[cfg_attr(all(), allow(dead_code, clippy::type_complexity, reason = "split under cfg"))]
-   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: split the deterministic lints into a separate `#[expect]`: `allow(dead_code, reason = "split under cfg"), expect(clippy::type_complexity, reason = "split under cfg")`
+   |                   ^^^^^
+   |
+help: drop them from the `#[allow]` if they can no longer fire here
+   |
+LL - #[cfg_attr(all(), allow(dead_code, clippy::type_complexity, reason = "split under cfg"))]
+LL + #[cfg_attr(all(), allow(dead_code, reason = "split under cfg"))]
+   |
+help: otherwise split them into a separate `#[expect]` that self-cleans
+   |
+LL | #[cfg_attr(all(), allow(dead_code, reason = "split under cfg"), expect(clippy::type_complexity, reason = "split under cfg"))]
+   |                                    ++++++++++++++++++++++++++++++++++++
 
 warning: 9 warnings emitted
 
