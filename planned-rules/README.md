@@ -184,20 +184,22 @@ pattern that several rules call out by reference — live in
   `Lazy*`, i.e. Rust 1.80+).
 
 ### Sorting and deduplication
-- [`in-place-sort-after-collect.md`](./in-place-sort-after-collect.md) —
-  when an iterator is collected into a `Vec` and the very next statement
-  sorts it in place with `Vec::sort*`, fold that sort into the chain via
-  the owning `into_sorted*` method from
+- [`in-place-sort.md`](./in-place-sort.md) —
+  when an owned `Vec` is bound and the very next statement sorts it in
+  place with `Vec::sort*`, fold that sort into the initializer via the
+  owning `into_sorted*` method from
   [`into-sorted`](https://crates.io/crates/into-sorted); rustc's
-  `unused_mut` then clears the now-redundant `mut`. The sorting half of
+  `unused_mut` then clears the now-redundant `mut`. The source can be any
+  owned `Vec` — a `collect()`, a `vec![…]`, a `Vec`-returning call — not
+  just a collect. The sorting half of
   `KSXGitHub/perfectionist#308`. Active by default.
-- [`in-place-dedup-after-collect.md`](./in-place-dedup-after-collect.md)
-  — the deduping counterpart: a collect immediately followed by an
-  in-place `Vec::dedup*` folds into the owning `into_deduped*` method
-  from [`into-deduped`](https://crates.io/crates/into-deduped). Cascades
-  with the sort rule so `collect; sort; dedup` collapses to one chain.
-  Excludes non-consecutive deduplication (`itertools::unique`), which has
-  no `into-deduped` equivalent. Active by default.
+- [`in-place-dedup.md`](./in-place-dedup.md)
+  — the deduping counterpart: any owned `Vec` binding immediately followed
+  by an in-place `Vec::dedup*` folds into the owning `into_deduped*`
+  method from [`into-deduped`](https://crates.io/crates/into-deduped).
+  Cascades with the sort rule so `collect; sort; dedup` collapses to one
+  chain. Excludes non-consecutive deduplication (`itertools::unique`),
+  which has no `into-deduped` equivalent. Active by default.
 - [`itertools-sort-dedup-collect.md`](./itertools-sort-dedup-collect.md)
   — when an `itertools` `sorted*` / `dedup*` adaptor chain is terminated
   by a `Vec` `collect()`, prefer collecting first and applying the

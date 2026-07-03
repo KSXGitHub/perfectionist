@@ -8,7 +8,7 @@ this project's author — over the
 [`itertools`](https://crates.io/crates/itertools) `sorted*` / `dedup*`
 iterator adaptors when their result is immediately collected into a
 `Vec`. This is the codegen half of the proposal; the
-`in-place-sort-after-collect` / `in-place-dedup-after-collect` pair
+`in-place-sort` / `in-place-dedup` pair
 covers the `mut`-elision half.
 
 ## Statement
@@ -93,8 +93,8 @@ compute the same `Vec`. The project prefers B for two reasons:
   can only help the optimiser.
 - **Consistency with the `mut`-elision rules.** B is exactly the
   `collect().into_sorted().into_deduped()` shape that
-  [`in-place-sort-after-collect`](./in-place-sort-after-collect.md) and
-  [`in-place-dedup-after-collect`](./in-place-dedup-after-collect.md)
+  [`in-place-sort`](./in-place-sort.md) and
+  [`in-place-dedup`](./in-place-dedup.md)
   steer the *imperative* spelling toward, so one project-wide form wins.
 
 Because both forms are correct, the rule is a preference, not a
@@ -131,7 +131,7 @@ Emit on the chain (anchored at the first mapped adaptor through the
   *consecutive* duplicates. They are **not** equivalent, so a `unique*`
   call is never rewritten to `into_deduped*` and never extends the run.
   (Same exclusion as
-  [`in-place-dedup-after-collect`](./in-place-dedup-after-collect.md).)
+  [`in-place-dedup`](./in-place-dedup.md).)
 - **`dedup_with_count` / `dedup_by_with_count`.** These yield
   `(count, elem)` pairs — a different element type — so they have no
   `into_deduped` counterpart.
@@ -264,14 +264,14 @@ handled by `[perfectionist].disable`, not a config knob.
 
 ## Interaction with sibling rules
 
-- [`in-place-sort-after-collect`](./in-place-sort-after-collect.md) /
-  [`in-place-dedup-after-collect`](./in-place-dedup-after-collect.md) —
-  the imperative-spelling half of the same proposal. Those rules fold a
-  collect-rooted binding's immediately-following in-place `sort`/`dedup`
+- [`in-place-sort`](./in-place-sort.md) /
+  [`in-place-dedup`](./in-place-dedup.md) —
+  the imperative-spelling half of the same proposal. Those rules fold an
+  owned-`Vec` binding's immediately-following in-place `sort`/`dedup`
   *toward* the `collect().into_sorted().into_deduped()` form this rule
   produces, so all three converge on one destination. They never overlap
   on a single expression: this rule fires on the itertools-adaptor chain,
-  those on a collect-rooted binding sorted/deduped in place by
+  those on an owned-`Vec` binding sorted/deduped in place by
   `Vec::sort*` / `Vec::dedup*` on the next statement.
 - **`clippy::needless_collect`** flags collecting an iterator only to
   immediately re-consume it; this rule's *output* deliberately inserts a
