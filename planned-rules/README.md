@@ -170,6 +170,16 @@ pattern that several rules call out by reference — live in
   matcher-based analysis for unknown `macro_rules!` macros that
   counts each `$name:expr` capture's `$name` references in the
   expansion. Curly-brace invocations are out of scope.
+- [`single-use-macro.md`](./single-use-macro.md) — flag a
+  *private* declarative macro (`macro_rules!` or a macros-2.0
+  `macro`) that is instantiated exactly once in the crate: a
+  macro used once provides no code reuse, so its single
+  expansion belongs inlined at the call site (or as a function /
+  `const`). Sits between rustc's `unused_macros` (zero uses) and
+  genuine reuse (2+); the `macro_rules!` analogue of
+  `clippy::single_call_fn`. Exempts macros whose body fans out
+  over a `$(...)*` repetition, public / re-exported macros, and
+  (via instantiation counting) recursive ones. Active by default.
 
 ### Lazy initialization
 - [`manual-lazy-init.md`](./manual-lazy-init.md) — flag a `Once*` cell
