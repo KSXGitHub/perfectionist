@@ -79,6 +79,18 @@ not a test gate, matching `excessive_inline_tests`'s own
 declarations need no gate of their own because the module they sit
 in is already test-gated.
 
+Not every test file is a test *group*. A split suite often also
+carries **shared test-support modules** — helpers, fixtures, common
+setup used by the groups — conventionally named with a `test` /
+`_test` prefix (`test_utils`, `_test_common`; the leading underscore
+sorts them first). The rule treats a support module as test
+*infrastructure*, not a group. Content, not name, is the
+discriminator — a support module is a test-gated module that defines
+no `#[test]` functions of its own, whereas the group files in the
+issue's own `siblings` layout are named `test_group_1` … and would be
+misread as support by a name prefix alone. See
+[Shared test-support modules](#shared-test-support-modules).
+
 ## What's *not* in scope
 
 - **A single extracted test file.** A subject with exactly one
@@ -132,12 +144,24 @@ style = "aggregated"
 #                `#[cfg(test)] mod <group>;` modules directly.
 
 # Name of the aggregator module the `aggregated` style introduces and
-# the `siblings` style removes. Defaults to `tests`.
+# the `siblings` style removes. Defaults to `tests`; a leading
+# underscore (`_tests`) is fine — the `siblings` style recognises the
+# funnel structurally, not by this name.
 aggregator_module = "tests"
 
-# Minimum number of out-of-line test group files a subject must have
-# before the layout is enforced. Defaults to 2 — a single extracted
-# file is `excessive_inline_tests`'s target, not a split.
+# Modules that hold shared test helpers/fixtures rather than test
+# cases (see "Shared test-support modules"). They ride along with the
+# groups and never count as one. A test-gated module with no `#[test]`
+# functions is treated as support regardless; this list is only an
+# explicit allowlist for any the content heuristic should always
+# include. Defaults to the conventional `test` / `_test`-prefixed
+# names.
+test_support_names = ["test_utils", "_test_utils", "test_common", "_test_common"]
+
+# Minimum number of out-of-line test *group* files (support modules
+# excluded) a subject must have before the layout is enforced.
+# Defaults to 2 — a single extracted file is `excessive_inline_tests`'s
+# target, not a split.
 min_files = 2
 ```
 
@@ -150,6 +174,36 @@ A rule that is not enabled never reads its configuration block, so
 omitting `style` while the rule is disabled is harmless; only an
 *enabled* rule with a missing or invalid `style` is a configuration
 error.
+
+### Shared test-support modules
+
+A split test suite often carries modules that are not test cases but
+shared support for them — helper functions, fixtures, common setup —
+conventionally named with a `test` / `_test` prefix (`test_utils`,
+`_test_common`; the leading underscore sorts them first). The rule
+recognises these and treats them as test *infrastructure*, not
+groups:
+
+- A support module is a test-gated module that defines **no `#[test]`
+  functions** of its own (directly or in a descendant). That content
+  test — not the name — is the discriminator: the issue's own
+  `siblings` layout names its groups `test_group_1` …, which share the
+  `test` prefix yet are groups, so a name prefix alone would
+  misclassify them. `test_support_names` is only a supplementary
+  allowlist for helpers the content heuristic should always include.
+- Support modules do **not** count toward `min_files`. A subject with
+  one real group and a `_test_utils` helper is a single-group subject,
+  not a multi-file split, and neither style fires.
+- The `siblings`-style aggregator-purity check permits them: an
+  aggregator file may re-declare `mod _test_utils;` beside the
+  `mod <group>;` lines and still read as a funnel — both are bare
+  `mod` declarations. The aggregator itself is told apart from a
+  support module structurally (its body is *only* `mod`
+  re-declarations), not by name, even though `tests` also matches the
+  prefix.
+- The described file moves carry them along: aggregating pulls the
+  support modules under `<aggregator_module>/` with the groups;
+  flattening lifts them back up beside the subject.
 
 ## Style: `siblings`
 
@@ -264,28 +318,35 @@ the crate:
 1. Collect its out-of-line **test** module declarations — items of
    the form `mod <name>;` (no inline body) carrying a test-gate
    `#[cfg(...)]` predicate. Ignore inline `mod <name> { ... }`
-   bodies, non-test modules, and items that are not modules.
+   bodies, non-test modules, and items that are not modules. Classify
+   each backing file as the *aggregator* (body is solely `mod`
+   re-declarations), a *support* module (defines no `#[test]`
+   functions, or is listed in `test_support_names`), or a *group* (a
+   test module carrying `#[test]` cases). Only groups count toward
+   `min_files`; support modules ride along (see
+   [Shared test-support modules](#shared-test-support-modules)).
 2. Apply the configured `style`:
-   - **`aggregated`**: if the subject declares `>= min_files`
-     sibling test modules whose names are *not* the
-     `aggregator_module` name (i.e. they are groups, not a single
-     aggregator), flag — the subject should funnel them through one
+   - **`aggregated`**: if the subject declares `>= min_files` sibling
+     test **group** modules (support modules and the aggregator name
+     aside), flag — the subject should funnel the groups and any
+     support modules through one
      `#[cfg(test)] mod <aggregator_module>;`.
    - **`siblings`**: if the subject declares a single test module
-     whose backing file is an *aggregator* — its body consists
-     solely of `>= min_files` plain `mod <group>;` declarations of
-     further test submodules and no other substantive items — flag.
-     Recognise the aggregator structurally (a test-gated out-of-line
-     module whose file only re-declares modules); the
-     `aggregator_module` name drives the *suggestion*, not the
-     detection, so a differently-named funnel is still caught.
+     whose backing file is an *aggregator* — its body is solely bare
+     `mod` declarations re-exporting `>= min_files` test **group**
+     submodules (plus any support modules) and nothing else
+     substantive — flag. Recognise the aggregator structurally (a
+     test-gated out-of-line module whose file only re-declares
+     modules); the `aggregator_module` name drives the *suggestion*,
+     not the detection, so a differently-named funnel is still
+     caught.
 3. Emit the help-only diagnostic described above, anchored on a HIR
    node in the subject file so a local
    `#[expect(perfectionist::unit_test_file_layout_mismatch)]` on the
    subject module resolves.
 
-A subject below the `min_files` threshold (zero or one test file)
-is silent under both styles.
+A subject below the `min_files` threshold (zero or one test *group*
+file, support modules aside) is silent under both styles.
 
 ## Implementation notes
 
