@@ -1,5 +1,5 @@
 warning: clap derives `--help` from this doc comment instead of an explicit override
-  --> $DIR/fixture.rs:15:5
+  --> $DIR/fixture.rs:17:5
    |
 LL | /// The command's own description.
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL | /// The command's own description.
    = note: `#[warn(perfectionist::clap_help_markdown)]` on by default
 
 warning: clap derives `--help` from this doc comment instead of an explicit override
-  --> $DIR/fixture.rs:18:9
+  --> $DIR/fixture.rs:20:9
    |
 LL |     /// Path to the manifest.
    |         ^^^^^^^^^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ LL |     /// Path to the manifest.
    = help: override the help text with a plain string (e.g. `#[arg(help = "...")]` or `#[command(about = "...")]`)
 
 warning: clap derives `--help` from this doc comment instead of an explicit override
-  --> $DIR/fixture.rs:30:9
+  --> $DIR/fixture.rs:36:9
    |
 LL |     /// Uses a `code` span too.
    |         ^^^^^^^^^^^^^^^^^^^^^^^

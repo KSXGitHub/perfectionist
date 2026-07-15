@@ -2,9 +2,11 @@
 //
 //! `require_help_override = true` flags every clap-derived doc comment
 //! that reaches `--help` without an explicit override, and tolerates a
-//! missing override wherever there is no doc comment to leak. The
-//! markdown scan is superseded: the `` `code` `` span below is reported
-//! once as a missing override, not as a code span.
+//! missing override wherever there is no doc comment to leak. An override
+//! counts in either namespace clap accepts — `#[arg(help = "...")]` and
+//! `#[clap(help = "...")]` alike. The markdown scan is superseded: the
+//! `` `code` `` span below is reported once as a missing override, not as
+//! a code span.
 
 #![allow(dead_code, reason = "ui fixture")]
 
@@ -21,6 +23,10 @@ struct Cli {
     /// Enables verbose output.
     #[arg(help = "Enables verbose output.")]
     verbose: bool,
+
+    /// Sets the log level.
+    #[clap(help = "Sets the log level.")]
+    log_level: String,
 
     #[arg(help = "Output directory.")]
     out: PathBuf,
