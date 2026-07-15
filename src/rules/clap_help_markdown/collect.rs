@@ -167,14 +167,14 @@ fn record_fields(data: &VariantData, override_keys: &BTreeSet<Symbol>, nodes: &m
 /// surplus mid-run offsets are harmless: the walker only ever looks up a
 /// run's first line.
 fn record_node(attrs: &[Attribute], override_keys: &BTreeSet<Symbol>, nodes: &mut DocNodes) {
-    // Ascending because `attrs` is in source order, so the first is the
-    // node's opening `///` line — the anchor `first_lines` records.
-    let doc_los: Vec<u32> = attrs
+    let mut doc_los = attrs
         .iter()
         .filter(|attr| matches!(attr.kind, AttrKind::DocComment(..)))
         .map(|attr| attr.span.lo().0)
-        .collect();
-    let Some(&first_line) = doc_los.first() else {
+        .peekable();
+    // Ascending because `attrs` is in source order, so the first is the
+    // node's opening `///` line — the anchor `first_lines` records.
+    let Some(&first_line) = doc_los.peek() else {
         return;
     };
     if has_override(attrs, override_keys) {

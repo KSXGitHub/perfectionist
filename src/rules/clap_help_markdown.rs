@@ -176,9 +176,8 @@ impl<'tcx> LateLintPass<'tcx> for ClapHelpMarkdown {
                     // markdown scan — an override silences that concern
                     // anyway, and `first_lines` holds exactly the
                     // doc-commented, unoverridden nodes.
-                    if doc_nodes.first_lines.contains(&offset)
-                        && let Some(span) = first_doc_line_span(chunk)
-                    {
+                    if doc_nodes.first_lines.contains(&offset) {
+                        let span = first_doc_line_span(chunk);
                         violations.push((span, Violation::MissingOverride));
                     }
                 } else if let Some(state) = doc_nodes.by_line.get(&offset) {
@@ -286,13 +285,13 @@ fn code_span_autofix(span_text: &str) -> Option<String> {
 /// `#[allow]`. Falls back to the whole-block span only for a doc comment
 /// with no content at all (`///` with nothing after it), which cannot
 /// carry markdown and is a degenerate case regardless.
-fn first_doc_line_span(chunk: &CommentChunk<'_>) -> Option<Span> {
+fn first_doc_line_span(chunk: &CommentChunk<'_>) -> Span {
     chunk
         .lines
         .iter()
         .find(|line| line.rendered_len != 0)
         .and_then(|line| chunk.span_for(line.rendered_start, line.rendered_len as u32))
-        .or(Some(chunk.source_span))
+        .unwrap_or(chunk.source_span)
 }
 
 fn emit(cx: &LateContext<'_>, hir_id: hir::HirId, span: Span, violation: &Violation) {
