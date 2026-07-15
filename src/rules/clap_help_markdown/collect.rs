@@ -34,6 +34,34 @@ pub(super) enum NodeState {
     Verbatim,
 }
 
+/// Every clap-bound, doc-commented, non-overridden node in the crate,
+/// indexed two ways for the rule's two checks.
+#[derive(Default)]
+pub(super) struct DocNodes {
+    /// Byte offset of *each* `///` line of a node → its [`NodeState`].
+    /// Keyed per line because an interleaved non-doc attribute splits a
+    /// node's `///` run into several [`crate::comment_walk`] blocks, one
+    /// per consecutive run, each keyed by its own first line's offset —
+    /// so recording only the first would leave a later run's markdown
+    /// unscanned. The markdown scan looks each block up here.
+    pub(super) by_line: HashMap<u32, NodeState>,
+    /// Byte offset of the *first* `///` line of each node — exactly one
+    /// entry per node. The `require_help_override` check anchors its
+    /// single per-node diagnostic here, so a node whose `///` run is
+    /// split across several blocks is still flagged just once (at its
+    /// first block).
+    pub(super) first_lines: HashSet<u32>,
+}
+
+impl DocNodes {
+    /// No clap-bound, doc-commented, non-overridden node exists — so
+    /// neither check has anything to do. `by_line` being empty implies
+    /// `first_lines` is too (a node contributes to both or to neither).
+    pub(super) fn is_empty(&self) -> bool {
+        self.by_line.is_empty()
+    }
+}
+
 /// The final path segment of every derive macro that makes its
 /// container a clap help source. Matched by name (the re-parse runs
 /// before name resolution), which catches `clap::Parser`, an imported
@@ -62,29 +90,29 @@ const CLAP_ATTR_NAMESPACES: &[&str] = &["clap", "arg", "command", "value"];
 pub(super) fn collect_doc_nodes(
     crates: &[Crate],
     live_module_spans: &HashSet<SpanRange>,
-) -> HashMap<u32, NodeState> {
+) -> DocNodes {
     let override_keys: BTreeSet<Symbol> = super::config::OVERRIDE_KEYS
         .iter()
         .map(|key| Symbol::intern(key))
         .collect();
-    let mut map = HashMap::new();
+    let mut nodes = DocNodes::default();
     for krate in crates {
-        walk_items(&krate.items, live_module_spans, &override_keys, &mut map);
+        walk_items(&krate.items, live_module_spans, &override_keys, &mut nodes);
     }
-    map
+    nodes
 }
 
 fn walk_items(
     items: &[Box<Item>],
     live_module_spans: &HashSet<SpanRange>,
     override_keys: &BTreeSet<Symbol>,
-    map: &mut HashMap<u32, NodeState>,
+    nodes: &mut DocNodes,
 ) {
     for item in items {
         match &item.kind {
             ItemKind::Struct(_, _, data) if has_clap_derive(&item.attrs) => {
-                record_node(&item.attrs, override_keys, map);
-                record_fields(data, override_keys, map);
+                record_node(&item.attrs, override_keys, nodes);
+                record_fields(data, override_keys, nodes);
             }
             ItemKind::Enum(_, _, def) if has_clap_derive(&item.attrs) => {
                 // A `ValueEnum`'s own type-level doc never reaches
@@ -95,11 +123,11 @@ fn walk_items(
                 // below can still reach `--help`, so they stay in scope;
                 // `record_node` then drops any that override their help.
                 if enum_container_doc_reaches_help(&item.attrs) {
-                    record_node(&item.attrs, override_keys, map);
+                    record_node(&item.attrs, override_keys, nodes);
                 }
                 for variant in &def.variants {
-                    record_node(&variant.attrs, override_keys, map);
-                    record_fields(&variant.data, override_keys, map);
+                    record_node(&variant.attrs, override_keys, nodes);
+                    record_fields(&variant.data, override_keys, nodes);
                 }
             }
             // Descend into inline `mod { ... }` bodies, but only those
@@ -110,20 +138,16 @@ fn walk_items(
             ItemKind::Mod(_, _, ModKind::Loaded(items, _, spans))
                 if live_module_spans.contains(&(spans.inner_span.lo(), spans.inner_span.hi())) =>
             {
-                walk_items(items, live_module_spans, override_keys, map);
+                walk_items(items, live_module_spans, override_keys, nodes);
             }
             _ => {}
         }
     }
 }
 
-fn record_fields(
-    data: &VariantData,
-    override_keys: &BTreeSet<Symbol>,
-    map: &mut HashMap<u32, NodeState>,
-) {
+fn record_fields(data: &VariantData, override_keys: &BTreeSet<Symbol>, nodes: &mut DocNodes) {
     for field in data.fields() {
-        record_node(&field.attrs, override_keys, map);
+        record_node(&field.attrs, override_keys, nodes);
     }
 }
 
@@ -142,19 +166,17 @@ fn record_fields(
 /// unscanned even though clap concatenates both runs into `--help`. The
 /// surplus mid-run offsets are harmless: the walker only ever looks up a
 /// run's first line.
-fn record_node(
-    attrs: &[Attribute],
-    override_keys: &BTreeSet<Symbol>,
-    map: &mut HashMap<u32, NodeState>,
-) {
-    let mut doc_los = attrs
+fn record_node(attrs: &[Attribute], override_keys: &BTreeSet<Symbol>, nodes: &mut DocNodes) {
+    // Ascending because `attrs` is in source order, so the first is the
+    // node's opening `///` line — the anchor `first_lines` records.
+    let doc_los: Vec<u32> = attrs
         .iter()
         .filter(|attr| matches!(attr.kind, AttrKind::DocComment(..)))
         .map(|attr| attr.span.lo().0)
-        .peekable();
-    if doc_los.peek().is_none() {
+        .collect();
+    let Some(&first_line) = doc_los.first() else {
         return;
-    }
+    };
     if has_override(attrs, override_keys) {
         return;
     }
@@ -163,8 +185,9 @@ fn record_node(
     } else {
         NodeState::Normal
     };
+    nodes.first_lines.insert(first_line);
     for doc_lo in doc_los {
-        map.insert(doc_lo, state);
+        nodes.by_line.insert(doc_lo, state);
     }
 }
 
