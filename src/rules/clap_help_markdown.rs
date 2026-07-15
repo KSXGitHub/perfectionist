@@ -136,18 +136,21 @@ pub fn register_pass(lint_store: &mut LintStore) {
 /// `check_crate_post`.
 enum Violation {
     /// A forbidden markdown construct in a clap-derived doc comment that
-    /// feeds `--help`: which construct category, whether the node opted
-    /// into verbatim rendering (softer note, no autofix), and the
-    /// code-span replacement text when the trivial `` `Foo` `` → `Foo`
-    /// autofix applies.
-    Markdown {
-        category: ConstructCategory,
-        soft: bool,
-        replacement: Option<String>,
-    },
+    /// feeds `--help`.
+    Markdown(MarkdownViolation),
     /// The `require_help_override` mode fired: a clap-derived doc comment
     /// reaches `--help` with no explicit override. One per node.
     MissingOverride,
+}
+
+/// A forbidden markdown construct in a clap-derived doc comment: which
+/// construct category, whether the node opted into verbatim rendering
+/// (softer note, no autofix), and the code-span replacement text when the
+/// trivial `` `Foo` `` → `Foo` autofix applies.
+struct MarkdownViolation {
+    category: ConstructCategory,
+    soft: bool,
+    replacement: Option<String>,
 }
 
 impl<'tcx> LateLintPass<'tcx> for ClapHelpMarkdown {
@@ -238,11 +241,11 @@ impl ClapHelpMarkdown {
             };
             out.push((
                 span,
-                Violation::Markdown {
+                Violation::Markdown(MarkdownViolation {
                     category,
                     soft,
                     replacement,
-                },
+                }),
             ));
         }
     }
@@ -294,11 +297,7 @@ fn first_doc_line_span(chunk: &CommentChunk<'_>) -> Option<Span> {
 
 fn emit(cx: &LateContext<'_>, hir_id: hir::HirId, span: Span, violation: &Violation) {
     match violation {
-        Violation::Markdown {
-            category,
-            soft,
-            replacement,
-        } => emit_markdown(cx, hir_id, span, *category, *soft, replacement.as_deref()),
+        Violation::Markdown(markdown) => emit_markdown(cx, hir_id, span, markdown),
         Violation::MissingOverride => emit_missing_override(cx, hir_id, span),
     }
 }
@@ -307,12 +306,15 @@ fn emit_markdown(
     cx: &LateContext<'_>,
     hir_id: hir::HirId,
     span: Span,
-    category: ConstructCategory,
-    soft: bool,
-    replacement: Option<&str>,
+    markdown: &MarkdownViolation,
 ) {
+    let MarkdownViolation {
+        category,
+        soft,
+        replacement,
+    } = markdown;
     let label = category.label();
-    if soft {
+    if *soft {
         span_lint_hir_and_then(
             cx,
             CLAP_HELP_MARKDOWN,
