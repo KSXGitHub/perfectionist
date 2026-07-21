@@ -1,17 +1,3 @@
-// The test inputs are deliberately branch-ref forge URLs in string
-// literals. `scan_string_literals` defaults to `false`, so the rule
-// doesn't scan them under the crate's config; this suppression guards
-// the case where that surface is opted in. The `cfg_attr` gate keeps
-// it from becoming an `unknown_lints` warning under a plain
-// `cargo build` / `cargo clippy`, where the tool isn't loaded.
-#![cfg_attr(
-    dylint_lib = "perfectionist",
-    allow(
-        perfectionist::unpinned_repo_ref,
-        reason = "test inputs are intentionally unpinned forge URLs"
-    )
-)]
-
 use super::{
     MutableKind, RefOutcome, RefProblem, locate_ref, ref_problem, take_bare_version,
     take_prefixed_version, take_suffixed_version, take_unprefixed_version, take_version_pattern,
