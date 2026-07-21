@@ -63,9 +63,7 @@ Scan regular comments (`//`, `/* */`). Defaults to `true`.
 
 ### `scan_string_literals`: `boolean` (optional)
 
-Scan string literals (`"..."`, `r"..."`). Defaults to `false`; a
-URL in a string literal is usually program data, where a moving
-ref is often deliberate, so this surface is opt-in.
+Scan string literals (`"..."`, `r"..."`). Defaults to `false`.
 
 ### `sha_recognition_length`: `unsigned integer` (optional)
 

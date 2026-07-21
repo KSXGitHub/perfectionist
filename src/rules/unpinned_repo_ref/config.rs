@@ -71,9 +71,7 @@ pub(super) struct Config {
     pub(super) scan_doc_comments: bool,
     /// Scan regular comments (`//`, `/* */`). Defaults to `true`.
     pub(super) scan_regular_comments: bool,
-    /// Scan string literals (`"..."`, `r"..."`). Defaults to `false`; a
-    /// URL in a string literal is usually program data, where a moving
-    /// ref is often deliberate, so this surface is opt-in.
+    /// Scan string literals (`"..."`, `r"..."`). Defaults to `false`.
     pub(super) scan_string_literals: bool,
     /// Minimum hex length for a ref to be recognised as a commit SHA.
     /// A pure-hex ref shorter than this is treated as a branch and
