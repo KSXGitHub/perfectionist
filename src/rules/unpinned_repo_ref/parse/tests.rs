@@ -1,8 +1,8 @@
-// The test inputs are deliberately branch-ref forge URLs written as
-// string literals, which is exactly what this rule flags. Under
-// `cargo dylint` (where the `perfectionist` tool is registered) the
-// rule's own pass would fire on them; the `cfg_attr` gate keeps the
-// suppression from becoming an `unknown_lints` warning under a plain
+// The test inputs are deliberately branch-ref forge URLs in string
+// literals. `scan_string_literals` defaults to `false`, so the rule
+// doesn't scan them under the crate's config; this suppression guards
+// the case where that surface is opted in. The `cfg_attr` gate keeps
+// it from becoming an `unknown_lints` warning under a plain
 // `cargo build` / `cargo clippy`, where the tool isn't loaded.
 #![cfg_attr(
     dylint_lib = "perfectionist",
