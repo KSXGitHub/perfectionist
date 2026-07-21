@@ -656,9 +656,8 @@ one such exception.
 ### Scan-surface toggles
 
 The recurring concrete instance: a text-scanning rule's *where do I
-scan?* surfaces are three independent booleans, not a `targets`
-array. Reuse the same field names and `true` defaults so the config
-reads identically across rules:
+scan?* surfaces are independent booleans, not a `targets` array. Reuse
+the same field names so the config reads identically across rules:
 
 ```rust
 /// Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
@@ -666,13 +665,28 @@ reads identically across rules:
 scan_doc_comments: bool,
 /// Scan regular comments (`//`, `/* */`). Defaults to `true`.
 scan_regular_comments: bool,
-/// Scan string literals (`"..."`, `r"..."`). Defaults to `true`.
+/// Scan string literals (`"..."`, `r"..."`).
 scan_string_literals: bool,
 ```
 
+The field *names and shape* are the convention; each *default* is a
+per-rule call keyed to that surface's false-positive profile (per the
+"Defaults live in field docs" convention in [`CLAUDE.md`](../CLAUDE.md)).
+The two comment surfaces hold prose, where a match is almost always a
+genuine violation, so they default `true`. A string literal holds
+program data, where the same text is often deliberate, so a rule
+chooses `scan_string_literals`'s default by its own exposure:
+`perfectionist::unpinned_repo_ref` defaults it `false` because a URL
+pinned to `main` in a literal is frequently intentional (a bootstrap
+`curl`, a "view latest source" link), whereas a rule that only fires
+on already-pinned text — the planned
+[`commit_id_length_mismatch`](commit-id-length-mismatch.md), which
+checks a SHA's *length* — can safely default it `true`.
+
 `perfectionist::bare_email` and `perfectionist::unpinned_repo_ref`
-already follow this; a rule scanning only a subset omits the surfaces
-it can't reach rather than renaming the ones it keeps.
+already follow the field-name convention; a rule scanning only a
+subset omits the surfaces it can't reach rather than renaming the ones
+it keeps.
 
 ## Suppressing proc-macro-synthesised violations
 

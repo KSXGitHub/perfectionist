@@ -71,7 +71,18 @@ pub(super) struct Config {
     pub(super) scan_doc_comments: bool,
     /// Scan regular comments (`//`, `/* */`). Defaults to `true`.
     pub(super) scan_regular_comments: bool,
-    /// Scan string literals (`"..."`, `r"..."`). Defaults to `true`.
+    /// Scan string literals (`"..."`, `r"..."`). Defaults to `false`.
+    /// A repository URL in a string literal is usually program data —
+    /// a link the code fetches, opens, or renders — and pointing such a
+    /// URL at a moving ref (a `.../blob/main/...` "view latest source"
+    /// link, a `curl .../main/install.sh` bootstrap) is frequently
+    /// deliberate. The scan cannot tell that apart from an accidental
+    /// unpinned permalink, so it is opt-in to keep the default from
+    /// flagging idiomatic code. Doc comments and regular comments,
+    /// where a repository URL is a prose citation that an unpinned ref
+    /// silently rots, stay on by default; this mirrors
+    /// `perfectionist::bare_url`, which likewise scans only the comment
+    /// surfaces.
     pub(super) scan_string_literals: bool,
     /// Minimum hex length for a ref to be recognised as a commit SHA.
     /// A pure-hex ref shorter than this is treated as a branch and
@@ -108,7 +119,7 @@ impl Default for Config {
         Self {
             scan_doc_comments: true,
             scan_regular_comments: true,
-            scan_string_literals: true,
+            scan_string_literals: false,
             sha_recognition_length: DEFAULT_SHA_RECOGNITION_LENGTH,
             allow_version_patterns: false,
             hosts: DEFAULT_HOSTS
