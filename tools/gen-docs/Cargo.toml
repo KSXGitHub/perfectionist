@@ -19,6 +19,6 @@ proc-macro2 = "1.0.95"
 pulldown-cmark = { version = "0.13.4", default-features = false, features = ["html"] }
 quote = "1.0.40"
 strum = { version = "0.28.0", features = ["derive"] }
-syn = { version = "2.0.105", features = ["full", "parsing", "extra-traits"] }
+syn = { version = "3.0.2", features = ["full", "parsing", "extra-traits"] }
 syntect = { version = "5.2.0", default-features = false, features = ["default-fancy"] }
 two-face = { version = "0.5.1", default-features = false, features = ["syntect-fancy"] }
