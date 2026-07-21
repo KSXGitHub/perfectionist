@@ -656,9 +656,8 @@ one such exception.
 ### Scan-surface toggles
 
 The recurring concrete instance: a text-scanning rule's *where do I
-scan?* surfaces are three independent booleans, not a `targets`
-array. Reuse the same field names and `true` defaults so the config
-reads identically across rules:
+scan?* surfaces are independent booleans, not a `targets` array. Reuse
+the same field names so the config reads identically across rules:
 
 ```rust
 /// Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
@@ -666,13 +665,19 @@ reads identically across rules:
 scan_doc_comments: bool,
 /// Scan regular comments (`//`, `/* */`). Defaults to `true`.
 scan_regular_comments: bool,
-/// Scan string literals (`"..."`, `r"..."`). Defaults to `true`.
+/// Scan string literals (`"..."`, `r"..."`).
 scan_string_literals: bool,
 ```
 
+The field names are the convention; each default is a per-rule call.
+The comment surfaces default `true`; a rule may default
+`scan_string_literals` off where a literal URL is program data rather
+than prose (`perfectionist::unpinned_repo_ref` does).
+
 `perfectionist::bare_email` and `perfectionist::unpinned_repo_ref`
-already follow this; a rule scanning only a subset omits the surfaces
-it can't reach rather than renaming the ones it keeps.
+already follow the field-name convention; a rule scanning only a
+subset omits the surfaces it can't reach rather than renaming the ones
+it keeps.
 
 ## Suppressing proc-macro-synthesised violations
 
