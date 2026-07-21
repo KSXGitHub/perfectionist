@@ -25,9 +25,8 @@ declare_tool_lint! {
     /// rather than a commit SHA. Projects that deliberately link to
     /// version-shaped refs can opt into accepting those patterns via
     /// `allow_version_patterns`. Scans doc comments and regular
-    /// comments by default; string-literal scanning, where a repository
-    /// URL is usually program data rather than a prose citation, is
-    /// opt-in via `scan_string_literals`.
+    /// comments by default; string literals are opt-in via
+    /// `scan_string_literals`.
     ///
     /// This rule only concerns whether the ref is mutable; the
     /// *length* of an accepted SHA is `perfectionist::commit_id_length_mismatch`'s

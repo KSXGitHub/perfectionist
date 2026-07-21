@@ -669,19 +669,10 @@ scan_regular_comments: bool,
 scan_string_literals: bool,
 ```
 
-The field *names and shape* are the convention; each *default* is a
-per-rule call keyed to that surface's false-positive profile (per the
-"Defaults live in field docs" convention in [`CLAUDE.md`](../CLAUDE.md)).
-The two comment surfaces hold prose, where a match is almost always a
-genuine violation, so they default `true`. A string literal holds
-program data, where the same text is often deliberate, so a rule
-chooses `scan_string_literals`'s default by its own exposure:
-`perfectionist::unpinned_repo_ref` defaults it `false` because a URL
-pinned to `main` in a literal is frequently intentional (a bootstrap
-`curl`, a "view latest source" link), whereas a rule that only fires
-on already-pinned text — the planned
-[`commit_id_length_mismatch`](commit-id-length-mismatch.md), which
-checks a SHA's *length* — can safely default it `true`.
+The field names are the convention; each default is a per-rule call.
+The comment surfaces default `true`; a rule may default
+`scan_string_literals` off where a literal URL is program data rather
+than prose (`perfectionist::unpinned_repo_ref` does).
 
 `perfectionist::bare_email` and `perfectionist::unpinned_repo_ref`
 already follow the field-name convention; a rule scanning only a
