@@ -580,11 +580,6 @@ things, and only the second may become an alert:
   a `text` fence would render the `**error:**` markers literally
   and lose what the block is showing.
 
-For live examples run `grep -rn '^> ' planned-rules/`. This guide
-deliberately names no planning file: they are deleted as their
-rules land, and the cleanup procedure above greps only
-`planned-rules/`, so a reference from here would rot unnoticed.
-
 ## Symlinks
 
 This file is the authoritative implementation guide. It is also
