@@ -542,8 +542,8 @@ under `ENABLE_TABLES | ENABLE_STRIKETHROUGH | ENABLE_FOOTNOTES`
 
 So the three to keep out of rustdoc-bound docs are **alerts, task
 lists, and mermaid fences**. The alert is the trap worth naming:
-it degrades to a bare `[!IMPORTANT]` string in both the in-tree
-catalogue and the docs site, where it reads as a typo.
+its marker is left as literal text in both the in-tree catalogue
+and the docs site, where it reads as a typo.
 
 `<details>` / `<summary>` renders in all three, but still does
 not belong in rustdoc-bound docs. `rules/*.md` exists so the
