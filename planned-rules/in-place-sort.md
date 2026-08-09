@@ -61,27 +61,50 @@ Each method consumes the `Vec` and returns it sorted. (The stable
 `into_sorted*` methods need the crate's `alloc` feature; the
 `into_sorted_unstable*` methods do not. For a `Vec` both are available.)
 
-### The `mut` is not the trigger — `unused_mut` finishes the job
+### The `mut`'s *necessity* is not the trigger — its *presence* is guaranteed
 
-The rule does **not** try to prove the `mut` is unnecessary. That proof
-is both costly (a borrow walk over every later use of the binding) and
-beside the point, because two facts make it redundant:
+Two questions about the `mut` are easy to conflate; the rule takes
+opposite stances on them.
 
-- A statement-position `vec.sort()` only type-checks when `vec` is
-  already a mutable place, so a `mut` binding is *implied* by the
-  trigger — the rule never has to look for it.
+**Presence — guaranteed, and safe to rely on.** `Vec::sort*` takes
+`&mut self`, so the receiver place must be mutable, and for a binding
+that *owns* its `Vec` by value the only way to get that is `let mut`.
+rustc rejects the alternative outright: `let v = vec![3, 1, 2];
+v.sort();` is E0596, "cannot borrow `v` as mutable, as it is not declared
+as mutable". Every binding this rule can match is therefore already
+`mut`, and the implementation may lean on that — the binding mode is a
+sound, cheap pre-filter (skip a non-`mut` binding before paying for type
+resolution), and the autofix keeps the `mut` as written.
+
+**Necessity — never analysed.** Whether the `mut` is *still* needed once
+the sort folds away is a different question, and proving it costs a
+borrow walk over every later use of the binding. The rule does not do
+that, and a future implementation must not make it a trigger condition,
+because two facts make the proof redundant:
+
 - Folding the sort into the initializer is **value-identical**: the
   binding holds the same sorted `Vec` from that point on, so the rewrite
   is correct no matter how `vec` is used afterward.
+- rustc's built-in `unused_mut` already answers the question after the
+  fold. If nothing else mutates the binding, it fires and offers to drop
+  the `mut`; if something does (a later `push`), the `mut` stays and is
+  correct.
 
-After the fold, whether the `mut` is still needed is exactly the question
-rustc's built-in `unused_mut` already answers. If nothing else mutates
-the binding, `unused_mut` fires and offers to drop the `mut`; if
-something does (a later `push`), the `mut` stays and is correct. So this
-rule keeps the `mut` as-written in its own suggestion and lets
+So this rule keeps the `mut` as-written in its own suggestion and lets
 `unused_mut` take it from there. A binding that is sorted and *then*
 `push`ed is therefore still flagged — the sort folds in, while the `mut`
 and the `push` remain (and `unused_mut` correctly stays quiet).
+
+> **The presence guarantee is scoped to by-value bindings.** It holds
+> *because* the trigger is restricted to a binding that owns its `Vec`
+> (see [What to lint](#what-to-lint)). A `&mut Vec<T>` binding needs no
+> `mut` of its own — `let v: &mut Vec<i32> = buf; v.sort();` compiles,
+> because the mutability rides on the reference rather than the binding.
+> Such bindings are out of scope anyway (`into_sorted` consumes by
+> value), but the check must read the **binding's** type, not the
+> initializer expression's: `let ref mut v = vec![3, 1, 2];` has an
+> initializer of type `Vec<i32>` and a binding of type `&mut Vec<i32>`,
+> with no `mut` binding mode in sight.
 
 ## Why restrict this?
 
@@ -271,10 +294,13 @@ or addable — see Implementation notes.
 
 ## Implementation notes
 
-- **Trigger discovery.** Walk `StmtKind::Let` whose initializer resolves
+- **Trigger discovery.** Walk `StmtKind::Let` whose *binding* resolves
   through `cx.typeck_results()` to an owned `Vec<T>` (reject a `&Vec` /
-  `&mut Vec` binding). The initializer's syntactic form is irrelevant — do
-  **not** require a `collect` root or inspect the chain shape. Then confirm
+  `&mut Vec` binding — and read the **binding**, not the initializer
+  expression: `let ref mut v = vec![…];` has a `Vec<T>` initializer but a
+  `&mut Vec<T>` binding). The initializer's syntactic form is
+  irrelevant — do **not** require a `collect` root or inspect the chain
+  shape. Then confirm
   the binding's next sibling statement in the block is an inherent-`Vec`
   `sort*` method call on that binding, in statement position with its
   result discarded.
