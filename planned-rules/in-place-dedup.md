@@ -378,7 +378,7 @@ config knob.
   form this rule produces. Its exclusion of `itertools::unique*` mirrors
   this rule's: non-consecutive deduplication has no `into-deduped`
   equivalent.
-- **Clippy.** There is no `clippy::manual_into_deduped` equivalent;
+- **Clippy.** There is no `clippy::manual_into_deduped` or equivalent;
   `unused_mut` is this rule's load-bearing partner, removing the `mut` the
   fold leaves behind, which is why this rule does not attempt that
   removal itself.
