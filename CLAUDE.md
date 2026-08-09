@@ -554,42 +554,38 @@ works against its purpose.
 
 ### Choosing the alert type
 
-In files that may use alerts, the type carries meaning. Pick it
-for the reader, not for emphasis:
-
-- `[!IMPORTANT]` — a correctness precondition the reader must not
-  miss.
-- `[!NOTE]` — context that is genuinely optional to skim.
-- `[!TIP]` — optional advice.
-- `[!WARNING]` / `[!CAUTION]` — an actual hazard: data loss,
-  breakage, a security issue. A spec caveat is not a hazard.
-  Reserving these two is what keeps them worth reading.
+GitHub defines five, and their plain meanings apply: `[!NOTE]`,
+`[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`. The one
+editorial rule worth stating is that `[!WARNING]` and
+`[!CAUTION]` mark an actual hazard — data loss, breakage, a
+security issue — never emphasis. A spec caveat is not a hazard,
+and reserving those two is what keeps them worth reading.
 
 ### A blockquote is not always an alert
 
 `>` is also plain markdown for a quotation, and the catalogue
-relies on that: every `## Statement` section in `planned-rules/`
-quotes the rule's upstream style-guide source verbatim — see
-[`em-dash-prose.md`](planned-rules/em-dash-prose.md),
-[`error-type-derives.md`](planned-rules/error-type-derives.md), and
-[`excessive-inline-bounds.md`](planned-rules/excessive-inline-bounds.md).
+relies on that. A `>` block in `planned-rules/` is one of three
+things, and only the second may become an alert:
 
-Those are quotations, not asides. Leave them alone, and do not
-run a sweep that mechanically upgrades every `>` block to an
-alert. Convert a blockquote only when it is already an aside — a
-remark in the author's own voice, addressed to the reader.
-`error-type-derives.md`'s "Lint name shape" block is the worked
-example: it exists to stop a misreading that has a correctness
-consequence for anyone writing the suppression attribute, so it
-is `[!IMPORTANT]`.
+- **A quotation.** Every `## Statement` section quotes the rule's
+  upstream style-guide source verbatim. Leave these alone, and do
+  not run a sweep that mechanically upgrades every `>` block to
+  an alert.
+- **An aside** — a remark in the author's own voice, addressed to
+  the reader. This is the one an alert improves. An aside written
+  to head off a misreading that has a correctness consequence
+  (say, one that would produce a suppression attribute
+  suppressing nothing) is `[!IMPORTANT]`.
+- **A sketch of emitted diagnostic text**, typically introduced
+  by a line ending "should emit text along these lines:". Leave
+  it as a blockquote: the markup inside is part of the sketch, so
+  a `text` fence would render the `**error:**` markers literally
+  and lose what the block is showing.
 
-A blockquote holding a sketch of emitted diagnostic text is a
-third thing again, neither quotation nor aside. Leave it as a
-blockquote. The one under "The implementation should emit text
-along these lines:" in `planned-rules/em-dash-prose.md` is the
-example: the markup inside it is part of the sketch, so a `text`
-fence would render the `**error:**` markers literally and lose
-what the block is showing.
+For live examples run `grep -rn '^> ' planned-rules/`. This guide
+deliberately names no planning file: they are deleted as their
+rules land, and the cleanup procedure above greps only
+`planned-rules/`, so a reference from here would rot unnoticed.
 
 ## Symlinks
 
