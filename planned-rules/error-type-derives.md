@@ -63,6 +63,7 @@ defect, not a preference.
 
 ## What to lint
 
+> [!IMPORTANT]
 > **Lint name shape.** The `error_type_derives::` prefix used in the
 > sub-check headings below is a documentation label grouping related
 > checks under one banner. Per the
