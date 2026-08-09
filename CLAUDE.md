@@ -572,10 +572,8 @@ things, and only the second may become an alert:
   not run a sweep that mechanically upgrades every `>` block to
   an alert.
 - **An aside** — a remark in the author's own voice, addressed to
-  the reader. This is the one an alert improves. An aside written
-  to head off a misreading that has a correctness consequence
-  (say, one that would produce a suppression attribute
-  suppressing nothing) is `[!IMPORTANT]`.
+  the reader. This is the one an alert improves; pick its type by
+  the rules above.
 - **A sketch of emitted diagnostic text**, typically introduced
   by a line ending "should emit text along these lines:". Leave
   it as a blockquote: the markup inside is part of the sketch, so
