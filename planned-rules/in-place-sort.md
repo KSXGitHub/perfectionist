@@ -95,6 +95,7 @@ So this rule keeps the `mut` as-written in its own suggestion and lets
 `push`ed is therefore still flagged — the sort folds in, while the `mut`
 and the `push` remain (and `unused_mut` correctly stays quiet).
 
+> [!IMPORTANT]
 > **The presence guarantee is scoped to by-value bindings.** It holds
 > *because* the trigger is restricted to a binding that owns its `Vec`
 > (see [What to lint](#what-to-lint)). A `&mut Vec<T>` binding needs no
