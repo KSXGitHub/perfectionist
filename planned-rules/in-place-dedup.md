@@ -292,16 +292,29 @@ or addable — see Implementation notes.
 
 ## Implementation notes
 
-- **Trigger discovery.** Walk `StmtKind::Let` whose *binding* resolves
-  through `cx.typeck_results()` to an owned `Vec<T>` (reject a `&Vec` /
-  `&mut Vec` binding — and read the **binding**, not the initializer
-  expression: `let ref mut v = vec![…];` has a `Vec<T>` initializer but a
-  `&mut Vec<T>` binding). The initializer's syntactic form is
-  irrelevant — do **not** require a `collect` root or inspect the chain
-  shape. Then confirm
-  the binding's next sibling statement in the block is an inherent-`Vec`
-  `dedup*` method call on that binding, in statement position with its
-  result discarded.
+- **Trigger discovery — three checks, cheapest first.** Walk
+  `StmtKind::Let` and apply, in order:
+  1. **Binding mode.** The `let` pattern is a plain by-value `mut`
+     binding (`ByRef::No` + `Mutability::Mut`). This is a pure-HIR gate
+     that needs no type resolution, so it narrows the search space
+     before anything expensive runs — and it is sound as a *filter*,
+     because a non-`mut` owned binding could not have compiled (E0596;
+     see "The `mut`'s *necessity* is not the trigger" above). It also
+     discards the `let ref mut v = vec![…];` trap for free, `ref mut`
+     being a by-*reference* binding mode rather than a `mut` one. Keep
+     it a filter: it must never grow into a "is the `mut` removable?"
+     proof.
+  2. **Type.** The *binding* resolves through `cx.typeck_results()` to
+     an owned `Vec<T>`. Still required — step 1 is necessary but not
+     sufficient, since `let mut v: &mut Vec<T> = buf;` is a by-value
+     `mut` binding of a *reference* and must be rejected. Read the
+     binding's type, not the initializer expression's.
+  3. **Adjacency.** The binding's next sibling statement in the block is
+     an inherent-`Vec` `dedup*` method call on that binding, in statement
+     position with its result discarded.
+
+  The initializer's syntactic form is irrelevant at every step — do
+  **not** require a `collect` root or inspect the chain shape.
 - **No use-analysis.** The rule reads only the two adjacent statements;
   it never enumerates the binding's later uses. Correctness comes from
   adjacency (nothing observes the intermediate value) plus value-identity
