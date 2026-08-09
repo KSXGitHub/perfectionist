@@ -533,12 +533,12 @@ extensions, and `tools/gen-docs/` parses with `pulldown-cmark`
 under `ENABLE_TABLES | ENABLE_STRIKETHROUGH | ENABLE_FOOTNOTES`
 (`tools/gen-docs/src/render/markdown.rs`). What survives each:
 
-| Feature | rustdoc | `gen-docs` | GitHub |
-| --- | --- | --- | --- |
-| Alerts (`> [!NOTE]`) | literal text | literal text | callout |
-| Task lists (`- [ ]`) | checkbox | literal text | checkbox |
-| Mermaid fences | code block | code block | diagram |
-| Tables, `~~del~~`, `[^1]` | renders | renders | renders |
+| Feature                   | rustdoc      | `gen-docs`   | GitHub   |
+|---------------------------|--------------|--------------|----------|
+| Alerts (`> [!NOTE]`)      | literal text | literal text | callout  |
+| Task lists (`- [ ]`)      | checkbox     | literal text | checkbox |
+| Mermaid fences            | code block   | code block   | diagram  |
+| Tables, `~~del~~`, `[^1]` | renders      | renders      | renders  |
 
 So the three to keep out of rustdoc-bound docs are **alerts, task
 lists, and mermaid fences**. The alert is the trap worth naming:
