@@ -1,0 +1,21 @@
+warning: ambiguous `#55`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
+  --> $DIR/fixture.rs:1:17
+   |
+LL | /// Bad: closes #55 — the `bare_url` form replaces the `#55` token
+   |                 ^^^ help: substitute the issue URL: `https://github.com/owner/repo/issues/55`
+   |
+   = help: if `#55` is not an issue or pull request, enclose it in backticks so it renders as code
+   = help: or refer to the numbered item with a spelling that has no leading `#`
+   = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
+
+warning: ambiguous `#56`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
+  --> $DIR/fixture.rs:6:16
+   |
+LL | // Bad: closes #56 — plain line comments are scanned too under
+   |                ^^^ help: substitute the issue URL: `https://github.com/owner/repo/issues/56`
+   |
+   = help: if `#56` is not an issue or pull request, enclose it in backticks so it renders as code
+   = help: or refer to the numbered item with a spelling that has no leading `#`
+
+warning: 2 warnings emitted
+
