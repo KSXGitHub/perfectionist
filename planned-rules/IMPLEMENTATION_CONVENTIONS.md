@@ -533,7 +533,7 @@ style = "unqualified"
 The actual `dylint.toml` reads:
 
 ```toml
-[perfectionist::path_qualification_mismatch]
+["perfectionist::path_qualification_mismatch"]
 style = "unqualified"
 ```
 
