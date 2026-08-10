@@ -507,6 +507,79 @@ resolve correctly (GitHub, local editors, agent tooling). Prefer
 relative links in those files; they survive repository renames
 and don't bake in a hosting URL.
 
+## GitHub-specific markdown
+
+Some markdown renders as intended only on GitHub. Whether a file
+may use it depends on who renders that file.
+
+**Documentation that double-serves as rustdoc must not use it.**
+Two things are rustdoc-bound:
+
+- the rustdoc on a `declare_tool_lint!` block, and
+- the generated `rules/*.md`, which `tools/gen-docs/` renders
+  from that rustdoc, together with the docs site built from the
+  same source.
+
+`planned-rules/*.md`, `CLAUDE.md`, and the other in-repo guides
+are only ever rendered by GitHub, local editors, and agent
+tooling, so they may use these features where one genuinely
+helps. `README.md` is the exception among them: `Cargo.toml` sets
+`readme = "README.md"`, so it also ships to crates.io and lib.rs.
+Keep it conservative for the same reason its links are absolute.
+
+The constraint is not "GitHub invented it" but "the other two
+renderers drop it". Rustdoc parses CommonMark plus a few
+extensions, and `tools/gen-docs/` parses with `pulldown-cmark`
+under `ENABLE_TABLES | ENABLE_STRIKETHROUGH | ENABLE_FOOTNOTES`
+(`tools/gen-docs/src/render/markdown.rs`). What survives each:
+
+| Feature                   | rustdoc      | `gen-docs`   | GitHub   |
+|---------------------------|--------------|--------------|----------|
+| Alerts (`> [!NOTE]`)      | literal text | literal text | callout  |
+| Task lists (`- [ ]`)      | checkbox     | literal text | checkbox |
+| Mermaid fences            | code block   | code block   | diagram  |
+| Tables, `~~del~~`, `[^1]` | renders      | renders      | renders  |
+
+So the three to keep out of rustdoc-bound docs are **alerts, task
+lists, and mermaid fences**. The alert is the trap worth naming:
+its marker is left as literal text in both the in-tree catalogue
+and the docs site, where it reads as a typo.
+
+`<details>` / `<summary>` renders in all three, but still does
+not belong in rustdoc-bound docs. `rules/*.md` exists so the
+catalogue can be read in an editor without a browser, and
+`tools/gen-docs/src/render_md.rs` drops the HTML renderer's
+`<details>` panels for that reason; raw HTML in the markdown copy
+works against its purpose.
+
+### Choosing the alert type
+
+GitHub defines five, and their plain meanings apply: `[!NOTE]`,
+`[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`. The one
+editorial rule worth stating is that `[!WARNING]` and
+`[!CAUTION]` mark an actual hazard — data loss, breakage, a
+security issue — never emphasis. A spec caveat is not a hazard,
+and reserving those two is what keeps them worth reading.
+
+### A blockquote is not always an alert
+
+`>` is also plain markdown for a quotation, and the catalogue
+relies on that. A `>` block in `planned-rules/` is one of three
+things, and only the second may become an alert:
+
+- **A quotation.** Every `## Statement` section quotes the rule's
+  upstream style-guide source verbatim. Leave these alone, and do
+  not run a sweep that mechanically upgrades every `>` block to
+  an alert.
+- **An aside** — a remark in the author's own voice, addressed to
+  the reader. This is the one an alert improves; pick its type by
+  the rules above.
+- **A sketch of emitted diagnostic text**, typically introduced
+  by a line ending "should emit text along these lines:". Leave
+  it as a blockquote: the markup inside is part of the sketch, so
+  a `text` fence would render the `**error:**` markers literally
+  and lose what the block is showing.
+
 ## Symlinks
 
 This file is the authoritative implementation guide. It is also
