@@ -542,8 +542,10 @@ only `A-Za-z0-9_-`, so an unquoted
 `[perfectionist::path_qualification_mismatch]` is a parse error, and
 a reader who copies it into their `dylint.toml` gets a syntax error
 instead of a configured rule. Every namespaced table header in this
-repository — in `dylint.toml`, in `rules/`, and in every planning
-file that shows the qualified form — is quoted for that reason.
+repository is quoted for that reason, wherever it appears: the
+`dylint.toml` dylint actually parses, the generated `rules/`
+catalogue, the planning files, and the rustdoc and diagnostic text
+that name a rule's table.
 
 A user-side suppression reads:
 

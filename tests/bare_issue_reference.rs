@@ -152,6 +152,24 @@ fn single_selection_is_still_maybe_incorrect() {
 }
 
 #[test]
+fn both_suggestions_disabled_is_help_only() {
+    // With a detectable forge but both knobs off, the lint has a URL
+    // it is not allowed to offer, so it degrades to help-only and
+    // names the knobs to turn on instead. This is the only fixture
+    // reaching that arm, and it pins the note's spelling of the rule's
+    // `dylint.toml` table header — which has to stay quoted, since
+    // `::` is not permitted in a TOML bare key.
+    run(
+        "ui-toml/bare_issue_reference/no_suggestions",
+        github_repo(RuleConfig {
+            suggest_issue_url: Some(false),
+            suggest_pr_url: Some(false),
+            ..Default::default()
+        }),
+    );
+}
+
+#[test]
 fn reference_form_appends_definition() {
     // The `doc_comment_form = "reference"` fix is a multipart edit:
     // it rewrites `#99` to `[#99]` and appends the matching `[#99]: URL`

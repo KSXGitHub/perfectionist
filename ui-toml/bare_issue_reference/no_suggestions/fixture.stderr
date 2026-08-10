@@ -1,0 +1,13 @@
+warning: ambiguous `#88`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
+  --> $DIR/fixture.rs:1:17
+   |
+LL | /// Bad: closes #88 — `repository` names a recognised forge, so a URL
+   |                 ^^^
+   |
+   = help: enable `suggest_issue_url` and/or `suggest_pr_url` in dylint.toml under `["perfectionist::bare_issue_reference"]` to get a link suggestion
+   = help: if `#88` is not an issue or pull request, enclose it in backticks so it renders as code
+   = help: or refer to the numbered item with a spelling that has no leading `#`
+   = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
+
+warning: 1 warning emitted
+
