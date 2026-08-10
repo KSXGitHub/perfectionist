@@ -64,6 +64,37 @@ fn mailto_style_emits_single_mailto_suggestion() {
     );
 }
 
+#[test]
+fn both_style_emits_single_combined_suggestion() {
+    // `style = "both"` produces one `MachineApplicable` suggestion
+    // that applies the angle-bracket and `mailto:` forms together
+    // (`<mailto:...>`), rather than offering them as alternatives the
+    // way the default `either` style does.
+    run(
+        "ui-toml/bare_email/both_style",
+        RuleConfig {
+            style: Some("both".into()),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
+fn forbid_style_emits_no_suggestion() {
+    // `style = "forbid"` is the one style whose contract is *no*
+    // autofix: no address form is acceptable, so the diagnostic
+    // carries prose only. The fixture guards that contract — a future
+    // edit that attaches a suggestion to this arm changes the
+    // expected output.
+    run(
+        "ui-toml/bare_email/forbid_style",
+        RuleConfig {
+            style: Some("forbid".into()),
+            ..Default::default()
+        },
+    );
+}
+
 /// Regression test for
 /// <https://github.com/KSXGitHub/perfectionist/issues/165>: a per-item
 /// `#[expect]` on the documented item both suppresses the bare-email

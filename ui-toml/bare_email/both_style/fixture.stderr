@@ -1,0 +1,10 @@
+warning: bare email address `security@example.net`
+  --> $DIR/fixture.rs:4:5
+   |
+LL | /// security@example.net.
+   |     ^^^^^^^^^^^^^^^^^^^^ help: wrap in `<mailto:...>`: `<mailto:security@example.net>`
+   |
+   = note: `#[warn(perfectionist::bare_email)]` on by default
+
+warning: 1 warning emitted
+
