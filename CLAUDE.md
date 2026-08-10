@@ -179,10 +179,11 @@ becomes documentation drift. Remove it:
      some entries describe one rule by reference to another.
 
    Fix each reference by either pointing at the implementation
-   source code (e.g., `src/path_qualification_mismatch.rs`) or rewording the
-   prose to drop the link entirely. A reference that just names
-   the rule for context can be reworded to use the lint's
-   namespaced name (`perfectionist::path_qualification_mismatch`) without a
+   source code (e.g., `src/rules/path_qualification_mismatch.rs`)
+   or rewording the prose to drop the link entirely. A reference
+   that just names the rule for context can be reworded to use the
+   lint's namespaced name
+   (`perfectionist::path_qualification_mismatch`) without a
    markdown link.
 
 After the cleanup, the repository should be self-consistent: the
