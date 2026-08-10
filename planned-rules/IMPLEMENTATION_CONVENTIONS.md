@@ -507,7 +507,7 @@ the `declare_tool_lint!` invocation reads:
 
 ```rust
 rustc_session::declare_tool_lint! {
-    pub perfectionist::QUALIFIED_PATHS,
+    pub perfectionist::PATH_QUALIFICATION_MISMATCH,
     Warn,
     "decide whether items from outside the current scope are named \
      by their full path or imported via `use`",
