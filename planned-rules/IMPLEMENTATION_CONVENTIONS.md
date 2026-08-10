@@ -537,16 +537,6 @@ The actual `dylint.toml` reads:
 style = "unqualified"
 ```
 
-The quotes are mandatory, not decoration: a TOML bare key admits
-only `A-Za-z0-9_-`, so an unquoted
-`[perfectionist::path_qualification_mismatch]` is a parse error, and
-a reader who copies it into their `dylint.toml` gets a syntax error
-instead of a configured rule. Every namespaced table header in this
-repository is quoted for that reason, wherever it appears: the
-`dylint.toml` dylint actually parses, the generated `rules/`
-catalogue, the planning files, and the rustdoc and diagnostic text
-that name a rule's table.
-
 A user-side suppression reads:
 
 ```rust
