@@ -37,9 +37,10 @@ struct RuleConfig {
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
-    // The rule is active by default, so unlike the opt-in rules' test
-    // harnesses no `[perfectionist] enable = [...]` table is needed —
-    // only the per-rule `["perfectionist::import_granularity_mismatch"]` knobs.
+    // The rule is active by default, so unlike the opt-in rules'
+    // test harnesses no `[perfectionist] enable = [...]` table is
+    // needed — only the per-rule knobs under
+    // `["perfectionist::import_granularity_mismatch"]`.
     let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
     toml::to_string(&table).expect("serialise rule config as dylint.toml")
 }
