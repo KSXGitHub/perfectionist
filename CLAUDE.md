@@ -41,8 +41,9 @@ Read three things first, in this order:
    - **Lint name namespacing.** Every lint registers under the
      `perfectionist` tool namespace via
      `rustc_session::declare_tool_lint!`. The planning files use
-     the unqualified form (`path_qualification_mismatch`) for readability;
-     the registered name is `perfectionist::path_qualification_mismatch`.
+     the unqualified form (`path_qualification_mismatch`) for
+     readability; the registered name is
+     `perfectionist::path_qualification_mismatch`.
 
 If the rule is one of several that share a helper (markdown
 exclusion, format-string parsing, URL discovery, unicode-width
@@ -393,18 +394,18 @@ scanner, the unicode-width helper, the format-template parser,
 the URL-discovery scanner, and the module-re-parsing helper
 (`src/module_reparse.rs`, which re-parses the crate's module
 source files from a shared `SourceMap` so the import-rewriting
-rules `import_granularity_mismatch` and `uncombined_self_import` reach separate-file
-submodules while keeping `#[cfg(...)]` gates intact). The
-module-re-parsing helper exists because this exact bug — a
-source-layout rule shipped as a pre-expansion `EarlyLintPass`
-silently skipping every separate-file submodule — has been
-written twice; before implementing any rule that reads the
-*written layout* of items across module scopes, read the
+rules `import_granularity_mismatch` and `uncombined_self_import`
+reach separate-file submodules while keeping `#[cfg(...)]` gates
+intact). The module-re-parsing helper exists because this exact
+bug — a source-layout rule shipped as a pre-expansion
+`EarlyLintPass` silently skipping every separate-file submodule —
+has been written twice; before implementing any rule that reads
+the *written layout* of items across module scopes, read the
 "Reaching every module (source-layout rules)" section of
 `planned-rules/IMPLEMENTATION_CONVENTIONS.md`. The planning files
 document who depends on whom in the "Interaction with sibling
-rules" sections. When implementing the *first* rule
-in a dependency cluster, factor the shared helper into a
+rules" sections. When implementing the *first* rule in a
+dependency cluster, factor the shared helper into a
 crate-internal module so the second rule can reuse it. The
 planning files name this expectation explicitly; don't duplicate
 the helper.
