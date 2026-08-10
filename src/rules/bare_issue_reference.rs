@@ -373,6 +373,13 @@ struct IssueRefViolation {
 struct EmitOptions {
     suggest_issue: bool,
     suggest_pr: bool,
+    /// Whether `suggest_pr_url` is capable of producing a suggestion
+    /// on the effective forge at all — see
+    /// [`BareIssueReference::hash_can_mean_pr`]. Distinct from
+    /// `suggest_pr`, which also folds in the knob's own value; the
+    /// "no knob enabled" help needs the two apart so it doesn't
+    /// advise turning on a knob that cannot help.
+    hash_can_mean_pr: bool,
     doc_form: DocForm,
     plain_form: PlainForm,
 }
@@ -400,6 +407,7 @@ impl<'tcx> LateLintPass<'tcx> for BareIssueReference {
             // requests are written `!NNN` — so the PR suggestion never
             // applies to it, whatever `suggest_pr_url` says.
             suggest_pr: self.suggest_pr_url && self.hash_can_mean_pr(),
+            hash_can_mean_pr: self.hash_can_mean_pr(),
             doc_form: self.doc_comment_form,
             plain_form: self.plain_comment_form,
         };
@@ -532,6 +540,7 @@ fn emit_issue_ref(
     let EmitOptions {
         suggest_issue,
         suggest_pr,
+        hash_can_mean_pr,
         doc_form,
         plain_form,
     } = options;
@@ -560,11 +569,22 @@ fn emit_issue_ref(
                     );
                 }
                 Some(_) if !(suggest_issue || suggest_pr) => {
-                    diag.help(
+                    // Name only the knobs that can actually produce a
+                    // suggestion here. On GitLab `suggest_pr_url` is
+                    // inert whatever its value, so listing it would
+                    // send the author after a setting that changes
+                    // nothing — and, when it is already `true`, would
+                    // repeat this very diagnostic verbatim.
+                    diag.help(if hash_can_mean_pr {
                         "enable `suggest_issue_url` and/or `suggest_pr_url` in dylint.toml \
                          under `[\"perfectionist::bare_issue_reference\"]` to get a link \
-                         suggestion",
-                    );
+                         suggestion"
+                    } else {
+                        "enable `suggest_issue_url` in dylint.toml under \
+                         `[\"perfectionist::bare_issue_reference\"]` to get a link suggestion; \
+                         `suggest_pr_url` has no effect on GitLab, where a bare `#NNN` is \
+                         always an issue (merge requests are written `!NNN`)"
+                    });
                 }
                 Some(issue_url) => {
                     if suggest_issue {

@@ -20,6 +20,10 @@ struct RuleConfig {
     suggest_pr_url: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     doc_comment_form: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    include_plain_comments: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    plain_comment_form: Option<String>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -152,6 +156,42 @@ fn single_selection_is_still_maybe_incorrect() {
 }
 
 #[test]
+fn no_suggestion_knobs_names_both_knobs() {
+    // The counterpart to `unrecognised_host_without_forge_is_help_only`
+    // on the other side of the `issue_url` split: the repository *is*
+    // resolvable, so the lint could build a link, but both suggestion
+    // knobs are off. It degrades to help-only and names the two knobs
+    // that would turn the suggestions back on.
+    run(
+        "ui-toml/bare_issue_reference/no_suggestion_knobs",
+        github_repo(RuleConfig {
+            suggest_issue_url: Some(false),
+            suggest_pr_url: Some(false),
+            ..Default::default()
+        }),
+    );
+}
+
+#[test]
+fn gitlab_no_suggestion_knobs_names_only_the_issue_knob() {
+    // On GitLab `suggest_pr_url` can never produce a suggestion — a
+    // bare `#NNN` is always an issue there — so with
+    // `suggest_issue_url` off the lint reaches the same help-only arm
+    // even though `suggest_pr_url` is on. The help must name only
+    // `suggest_issue_url`: telling the author to enable a knob that
+    // is already `true` would leave the diagnostic unchanged.
+    run(
+        "ui-toml/bare_issue_reference/gitlab_pr_only",
+        RuleConfig {
+            repository: Some("https://gitlab.com/owner/repo".into()),
+            suggest_issue_url: Some(false),
+            suggest_pr_url: Some(true),
+            ..Default::default()
+        },
+    );
+}
+
+#[test]
 fn reference_form_appends_definition() {
     // The `doc_comment_form = "reference"` fix is a multipart edit:
     // it rewrites `#99` to `[#99]` and appends the matching `[#99]: URL`
@@ -162,6 +202,41 @@ fn reference_form_appends_definition() {
             suggest_issue_url: Some(true),
             suggest_pr_url: Some(false),
             doc_comment_form: Some("reference".into()),
+            ..Default::default()
+        }),
+    );
+}
+
+#[test]
+fn bare_url_form_substitutes_the_url_on_both_surfaces() {
+    // The `bare_url` form drops the `#NNN` token and puts the URL in
+    // its place, in doc comments and — with `include_plain_comments`
+    // on — in plain line comments, whose shape comes from
+    // `plain_comment_form` (`bare_url` by default).
+    run(
+        "ui-toml/bare_issue_reference/bare_url_form",
+        github_repo(RuleConfig {
+            suggest_issue_url: Some(true),
+            suggest_pr_url: Some(false),
+            doc_comment_form: Some("bare_url".into()),
+            include_plain_comments: Some(true),
+            ..Default::default()
+        }),
+    );
+}
+
+#[test]
+fn bracketed_url_form_wraps_the_url_on_both_surfaces() {
+    // The counterpart to `bare_url_form_substitutes_the_url_on_both_surfaces`:
+    // `bracketed_url` substitutes the same URL but wraps it in `<...>`.
+    run(
+        "ui-toml/bare_issue_reference/bracketed_url_form",
+        github_repo(RuleConfig {
+            suggest_issue_url: Some(true),
+            suggest_pr_url: Some(false),
+            doc_comment_form: Some("bracketed_url".into()),
+            include_plain_comments: Some(true),
+            plain_comment_form: Some("bracketed_url".into()),
             ..Default::default()
         }),
     );
