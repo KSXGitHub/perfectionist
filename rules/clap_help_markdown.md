@@ -32,6 +32,15 @@ then no longer the source of truth for `--help`. A node marked
 `#[clap(verbatim_doc_comment)]` instead gets a softer note that
 the markdown will appear verbatim in the terminal.
 
+A project that never wants a doc comment to become `--help` text
+at all — preferring an explicit override on every command,
+argument, and value — can opt into the stricter
+`require_help_override` mode. It flags every clap-derived doc
+comment that reaches `--help` without such an override, markdown
+or not, and reports each as a single missing-override finding
+rather than per markdown construct. A node with no doc comment is
+still left alone. This mode is off by default.
+
 ## Why is this bad?
 
 By default, clap does **not** render doc comments through a
@@ -95,6 +104,23 @@ the built-in defaults. Empty by default; applied after the merge
 with `extra_constructs`, so this knob always wins. Use it to
 permit a construct in help text, e.g.
 `ignore_constructs = ["code_span"]`.
+
+### `require_help_override`: `boolean` (optional)
+
+For projects that never let a doc comment become `--help` text,
+preferring an explicit clap override (`#[arg(help = "...")]`,
+`#[command(about = "...")]`, ...) on every command, argument, and
+value. When `true`, the rule flags every clap-derived doc comment
+that reaches `--help` without such an override, regardless of
+whether it contains markdown — the doc comment stays for
+`cargo doc`, but `--help` must come from a plain-string override.
+A node with no doc comment is left alone: the requirement is only
+that a *present* doc comment never feeds `--help` unoverridden, so
+a bare `#[arg(help = "...")]` with no `///` is fine. This
+supersedes the markdown scan — an override silences the markdown
+concern anyway — so an unoverridden doc comment is reported once as
+a missing override rather than per markdown construct. Defaults to
+`false`.
 
 ### Types
 

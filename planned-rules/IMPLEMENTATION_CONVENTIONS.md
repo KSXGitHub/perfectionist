@@ -656,9 +656,8 @@ one such exception.
 ### Scan-surface toggles
 
 The recurring concrete instance: a text-scanning rule's *where do I
-scan?* surfaces are three independent booleans, not a `targets`
-array. Reuse the same field names and `true` defaults so the config
-reads identically across rules:
+scan?* surfaces are independent booleans, not a `targets` array. Reuse
+the same field names so the config reads identically across rules:
 
 ```rust
 /// Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
@@ -666,13 +665,19 @@ reads identically across rules:
 scan_doc_comments: bool,
 /// Scan regular comments (`//`, `/* */`). Defaults to `true`.
 scan_regular_comments: bool,
-/// Scan string literals (`"..."`, `r"..."`). Defaults to `true`.
+/// Scan string literals (`"..."`, `r"..."`).
 scan_string_literals: bool,
 ```
 
+The field names are the convention; each default is a per-rule call.
+The comment surfaces default `true`; a rule may default
+`scan_string_literals` off where a literal URL is program data rather
+than prose (`perfectionist::unpinned_repo_ref` does).
+
 `perfectionist::bare_email` and `perfectionist::unpinned_repo_ref`
-already follow this; a rule scanning only a subset omits the surfaces
-it can't reach rather than renaming the ones it keeps.
+already follow the field-name convention; a rule scanning only a
+subset omits the surfaces it can't reach rather than renaming the ones
+it keeps.
 
 ## Suppressing proc-macro-synthesised violations
 
@@ -910,4 +915,23 @@ never reach users. And a doc may name a *rustc* mechanism the user
 observes directly (`unfulfilled_lint_expectations` notes,
 `unknown_lints`): that is behaviour the consumer sees, not this
 plugin's pass internals.
+
+## GitHub-specific markdown in rule docs
+
+A rule's `declare_tool_lint!` rustdoc is rendered by rustdoc and by
+`tools/gen-docs/` as well as by GitHub, so it must stay within the
+markdown all three understand. GitHub alerts (`> [!NOTE]`,
+`> [!IMPORTANT]`, …), task lists, and mermaid fences are out: the
+first two render as literal `[!NOTE]` / `[ ]` text somewhere in the
+chain, and a mermaid fence is just a code block outside GitHub.
+Tables, strikethrough, and footnotes are fine.
+
+The planning files in this directory carry no such constraint — only
+GitHub, local editors, and agent tooling ever render them — so they
+may use alerts where one genuinely helps. Note that a `>` block is
+not automatically an alert: the `## Statement` section of a planning
+file quotes its upstream style-guide source verbatim, and those
+quotations must stay plain blockquotes. See the "GitHub-specific
+markdown" section of [`CLAUDE.md`](../CLAUDE.md) for the full rule,
+the per-renderer table, and how to choose the alert type.
 
