@@ -1,0 +1,17 @@
+warning: some lints in this `#[allow]` stay silent even after they stop firing
+  --> $DIR/fixture.rs:21:11
+   |
+LL |         #[allow(dead_code, non_snake_case, reason = $reason)]
+   |           ^^^^^
+   |
+  ::: $DIR/auxiliary/call_site.rs:6:1
+   |
+LL | silence!("rationale supplied from another file");
+   | ------------------------------------------------ in this macro invocation
+   |
+   = help: drop them from the `#[allow]` if they can no longer fire here, or split them out into a separate `#[expect]` that self-cleans
+   = note: `#[warn(perfectionist::allow_attributes)]` on by default
+   = note: this warning originates in the macro `silence` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: 1 warning emitted
+

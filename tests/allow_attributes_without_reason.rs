@@ -77,6 +77,24 @@ fn min_reason_length_eight_raises_the_floor() {
     );
 }
 
+/// The missing-`reason` finding emitted without a code suggestion,
+/// taken when the attribute's source snippet cannot be recovered.
+///
+/// The fixture reaches it under the default configuration: a
+/// `macro_rules!` attribute whose lint list comes from an `include!`d
+/// second file, so the meta item's span starts in one source file and
+/// ends in another and `span_to_snippet` fails on it. It lives here
+/// rather than in the `ui/` sweep only because a separate directory
+/// keeps the `include!`d call site out of compiletest's fixture
+/// collection.
+#[test]
+fn unrecoverable_snippet_drops_the_reason_suggestion() {
+    run(
+        "ui-toml/allow_attributes_without_reason/cross_file_macro",
+        &dylint_toml(RuleConfig::default()),
+    );
+}
+
 /// `disable = ["allow_attributes_without_reason"]` in the `[perfectionist]`
 /// global table skips this rule's pass entirely; the fixture's
 /// missing `reason` produces no diagnostic.

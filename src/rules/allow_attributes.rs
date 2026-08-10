@@ -371,11 +371,14 @@ impl AllowAttributes {
         // Mixed: act on the rewriteable lints only — drop them, or split
         // them into a separate `#[expect]`. The textual rewrite needs the
         // source snippet to place the new attribute (bare vs inside a
-        // `cfg_attr` arg list) and to copy the `reason` verbatim. If
-        // either is unavailable — only reachable for spans
-        // `is_from_proc_macro` somehow let through — flag the site without
-        // a structured suggestion rather than risk a rewrite that drops
-        // the reason or injects `#[..]` inside a `cfg_attr`.
+        // `cfg_attr` arg list) and to copy the `reason` verbatim. Either
+        // can be unavailable when a `macro_rules!` attribute is assembled
+        // from two source files — e.g. `reason = $reason` with the key in
+        // the macro definition and the literal at an `include!`d call
+        // site — which leaves a span whose ends sit in different files,
+        // and `span_to_snippet` refuses those. Flag the site without a
+        // structured suggestion rather than risk a rewrite that drops the
+        // reason or injects `#[..]` inside a `cfg_attr`.
         let reason_recoverable = reason.is_none() || reason_snippet.is_some();
         match container {
             Some(container) if reason_recoverable => self.emit_split(

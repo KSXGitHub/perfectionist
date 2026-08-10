@@ -1,0 +1,17 @@
+warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
+  --> $DIR/fixture.rs:21:27
+   |
+LL |         #[cfg_attr(all(), allow $lints)]
+   |                           ^^^^^^^^^^^^
+   |
+  ::: $DIR/auxiliary/call_site.rs:6:1
+   |
+LL | silence!((dead_code));
+   | --------------------- in this macro invocation
+   |
+   = help: add a `reason = "..."` argument inside the attribute
+   = note: `#[warn(perfectionist::allow_attributes_without_reason)]` on by default
+   = note: this warning originates in the macro `silence` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: 1 warning emitted
+

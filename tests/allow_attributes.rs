@@ -89,6 +89,25 @@ fn extra_and_ignore_exempt_lints_compose_with_defaults() {
     );
 }
 
+/// The mixed-`#[allow]` fallback that flags the site in prose instead
+/// of offering the split rewrite, taken when the source text the
+/// suggestions need cannot be recovered.
+///
+/// The fixture reaches it under the default configuration: a
+/// `macro_rules!` attribute whose `reason` value comes from an
+/// `include!`d second file, so the meta item's span starts in one
+/// source file and ends in another and `span_to_snippet` fails on it.
+/// It lives here rather than in the `ui/` sweep only because a
+/// separate directory keeps the `include!`d call site out of
+/// compiletest's fixture collection.
+#[test]
+fn unrecoverable_reason_snippet_declines_the_split_fix() {
+    run(
+        "ui-toml/allow_attributes/cross_file_macro",
+        &dylint_toml(RuleConfig::default()),
+    );
+}
+
 /// `disable = ["allow_attributes"]` in the `[perfectionist]`
 /// global table skips this rule's pass entirely.
 #[test]
