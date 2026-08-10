@@ -175,7 +175,7 @@ must not fire on any of them.
 
 ```toml
 # dylint.toml
-[perfectionist::single_use_macro]
+["perfectionist::single_use_macro"]
 # Exempt a single-use macro whose transcriber repeats a captured
 # fragment (`$(...)*` / `$(...)+` / `$(...)?`). One invocation of
 # such a macro still fans its body out across the elements of the
