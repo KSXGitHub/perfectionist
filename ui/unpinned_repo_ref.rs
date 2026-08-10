@@ -1,9 +1,11 @@
-// Default-config sweep for `unpinned_repo_ref`: every surface (doc
-// comment, plain comment, string literal) and every built-in forge
+// Default-config sweep for `unpinned_repo_ref`: the surfaces scanned
+// by default (doc comment, plain comment) and every built-in forge
 // kind. Run by `tests/ui.rs` with an empty `dylint.toml`, so the
-// defaults apply (all three scan surfaces enabled, the built-in host
-// table, `sha_recognition_length = 4`,
-// `allow_version_patterns = false`, no skipped hosts).
+// defaults apply (comment surfaces enabled, string literals *not*
+// scanned, the built-in host table, `sha_recognition_length = 4`,
+// `allow_version_patterns = false`, no skipped hosts). The opt-in
+// `scan_string_literals = true` case lives in
+// `ui-toml/unpinned_repo_ref/scan_string_literals/`.
 //
 // URLs are wrapped in `<...>` throughout: that is the realistic case
 // (`perfectionist::bare_url` already requires wrapping, and this rule
@@ -73,13 +75,12 @@ fn _comment_gitea_commit() {}
 // Bad: sourcehut branch ref: <https://git.sr.ht/~user/repo/tree/main/item/x.rs>
 fn _comment_sourcehut_branch() {}
 
-// --- String literals ---
+// --- String literals (not scanned by default) ---
 
 fn _string_literals() {
-    // Bad: branch ref in a string literal.
-    let _bad = "https://github.com/owner/repo/blob/main/src/lib.rs";
-    // Good: pinned to a commit SHA.
-    let _good = "https://github.com/owner/repo/blob/8c1f6e2a6d33/src/lib.rs";
+    // A branch ref that would be flagged in a comment stays silent in
+    // a string literal: `scan_string_literals` defaults to `false`.
+    let _unscanned = "https://github.com/owner/repo/blob/main/src/lib.rs";
 }
 
 fn main() {}

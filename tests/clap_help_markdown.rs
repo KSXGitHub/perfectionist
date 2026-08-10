@@ -23,6 +23,8 @@ struct RuleConfig {
     extra_constructs: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     ignore_constructs: Option<Vec<&'static str>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    require_help_override: Option<bool>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -60,6 +62,22 @@ fn ignore_constructs_drops_a_construct_from_the_default_set() {
         "ui-toml/clap_help_markdown/ignore_constructs",
         RuleConfig {
             ignore_constructs: Some(vec!["inline_link"]),
+            ..RuleConfig::default()
+        },
+    );
+}
+
+#[test]
+fn require_help_override_flags_unoverridden_doc_comments() {
+    // `require_help_override = true` flags every clap-derived doc comment
+    // that feeds `--help` without an explicit override (container and
+    // field docs alike), tolerates a missing override wherever there is
+    // no doc comment, and supersedes the markdown scan — a code span in
+    // an unoverridden doc is reported once as a missing override.
+    run(
+        "ui-toml/clap_help_markdown/require_help_override",
+        RuleConfig {
+            require_help_override: Some(true),
             ..RuleConfig::default()
         },
     );

@@ -6,7 +6,7 @@
     reason = "the leading comments document each case; they are not rationales to lift",
 )]
 
-// Bad: a built-in lint that is not exempt — simple `allow` -> `expect` swap.
+// Bad: a built-in lint that is not exempt — offers removal or `#[expect]`.
 #[allow(non_snake_case, reason = "external API uses camelCase")]
 fn simple_builtin() {}
 
@@ -24,14 +24,14 @@ fn simple_perfectionist(x: i32) -> i32 {
     x
 }
 
-// Bad: multi-line single-lint attribute, still a simple swap.
+// Bad: multi-line single-lint attribute — removal or `#[expect]`.
 #[allow(
     clippy::type_complexity,
     reason = "the type mirrors the upstream alias",
 )]
 fn multiline_simple() {}
 
-// Bad: `cfg_attr`-wrapped — swap only the inner `allow` identifier.
+// Bad: `cfg_attr`-wrapped — only the inner `allow` -> `expect` swap (no removal).
 #[cfg_attr(all(), allow(clippy::too_many_arguments, reason = "cfg-gated"))]
 fn cfg_attr_simple() {}
 
@@ -39,11 +39,11 @@ fn cfg_attr_simple() {}
 #[cfg_attr(all(), cfg_attr(all(), allow(clippy::type_complexity, reason = "nested")))]
 fn cfg_attr_nested() {}
 
-// Bad: mixed exempt + rewriteable — split into `allow` + `expect`.
+// Bad: mixed exempt + rewriteable — drop the rewriteable lints or split them.
 #[allow(dead_code, clippy::too_many_arguments, reason = "scaffolding")]
 fn split_mixed() {}
 
-// Bad: `cfg_attr`-wrapped split — the inner meta item splits in place.
+// Bad: `cfg_attr`-wrapped mixed — drop or split the inner meta item in place.
 #[cfg_attr(all(), allow(dead_code, clippy::type_complexity, reason = "split under cfg"))]
 fn split_cfg_attr() {}
 
