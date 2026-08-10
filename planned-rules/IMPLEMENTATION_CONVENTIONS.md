@@ -430,15 +430,17 @@ configuration table, in `#[allow(...)]` / `#[deny(...)]`
 attributes, and in compiler diagnostic output is always
 namespaced.
 
-The split is **prose versus code**, not planning file versus
-implementation. Every planning file sits on both sides of it: the
-same file that calls the rule `path_qualification_mismatch` in a
-sentence writes `["perfectionist::path_qualification_mismatch"]` in
-its `## Configuration` fence, because that fence is a `dylint.toml`
-excerpt, and a `dylint.toml` table header is one of the contexts
-listed above as always namespaced. The one unquoted `dylint.toml`
-header is the crate-wide `[perfectionist]` table: that is its
-literal name, and it has no `::` to quote.
+Which form applies follows from what the string *is*, not from which
+file it sits in. A per-rule `dylint.toml` table header is the key the
+plugin looks up, so it has to carry the full namespaced name, quoted;
+that is why a planning file's `## Configuration` fence heads its table
+`["perfectionist::path_qualification_mismatch"]` even where the same
+file calls the rule `path_qualification_mismatch` a paragraph earlier.
+A name that nothing resolves against is under no such constraint: the
+crate-wide `[perfectionist]` table's `enable` / `disable` entries take
+*unqualified* rule names (see
+[`CONFIGURATION.md`](../CONFIGURATION.md)), so `dylint.toml` is not
+uniformly namespaced either.
 
 ### Why namespace at all
 
