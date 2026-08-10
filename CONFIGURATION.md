@@ -15,13 +15,15 @@ Unknown rule names are silently ignored. Listing the same rule under both `enabl
 
 See [CONTROLLING_RULES.md](./CONTROLLING_RULES.md) for the broader picture of how `enable` / `disable` compose with lint-level attributes and `DYLINT_RUSTFLAGS`.
 
-## Per-rule configuration: `[perfectionist::<rule>]` tables
+## Per-rule configuration: `["perfectionist::<rule>"]` tables
 
 Each rule has its own configuration table under its full namespaced name, e.g.:
 
 ```toml
-[perfectionist::exhaustive_error_enums]
+["perfectionist::exhaustive_error_enums"]
 require_for = "pub_crate"
 ```
+
+The header is quoted because a TOML bare key admits only `A-Za-z0-9_-`; the `::` in the namespaced name makes `[perfectionist::exhaustive_error_enums]` a syntax error.
 
 The available knobs for each rule are documented in that rule's planning file. Once a rule is implemented, the same information is reproduced in its module documentation and in [`rules/`](./rules/).

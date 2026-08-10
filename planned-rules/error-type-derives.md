@@ -117,7 +117,7 @@ pattern is the `Error` suffix, matching `std::io::Error`,
 `serde_json::Error`, the thiserror documentation's examples, and the
 parallel-disk-usage convention that motivated the rule. Configure
 under the `[unconventional_error_name]` table (registered as
-`[perfectionist::unconventional_error_name]` in the consumer's
+`["perfectionist::unconventional_error_name"]` in the consumer's
 `dylint.toml` per the
 [lint-name namespacing convention](./IMPLEMENTATION_CONVENTIONS.md#lint-name-namespacing));
 the `error_name_pattern` key accepts one of five forms — pick
@@ -235,7 +235,7 @@ pub enum ParsedValue { /* ... */ }
   consumer's `dylint.toml`, set:
 
   ```toml
-  [perfectionist::unused_error]
+  ["perfectionist::unused_error"]
   flag_pub_types = false
   ```
 

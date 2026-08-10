@@ -533,9 +533,17 @@ style = "unqualified"
 The actual `dylint.toml` reads:
 
 ```toml
-[perfectionist::path_qualification_mismatch]
+["perfectionist::path_qualification_mismatch"]
 style = "unqualified"
 ```
+
+The quotes are mandatory, not decoration: a TOML bare key admits
+only `A-Za-z0-9_-`, so an unquoted
+`[perfectionist::path_qualification_mismatch]` is a parse error, and
+a reader who copies it into their `dylint.toml` gets a syntax error
+instead of a configured rule. Every namespaced table header in this
+repository — in `dylint.toml`, in `rules/`, and in every planning
+file that shows the qualified form — is quoted for that reason.
 
 A user-side suppression reads:
 

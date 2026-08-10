@@ -337,7 +337,7 @@ let s = include_str!("fixtures/create/justfile");
 ## Configuration
 
 ```toml
-[perfectionist::dedented_multiline_string]
+["perfectionist::dedented_multiline_string"]
 # Which fixes the diagnostic offers. All on by default, so the
 # diagnostic shows them as alternatives and `cargo dylint --fix`
 # applies none (each is `MaybeIncorrect`). Set exactly one to `true`

@@ -31,7 +31,7 @@ Each lint registers under the `perfectionist` tool namespace. See [CONTROLLING_R
 
 ## Configuration
 
-`dylint.toml` accepts a crate-wide `[perfectionist]` table and per-rule `[perfectionist::<rule>]` tables. See [CONFIGURATION.md](https://github.com/KSXGitHub/perfectionist/blob/master/CONFIGURATION.md) for the full schema.
+`dylint.toml` accepts a crate-wide `[perfectionist]` table and per-rule `["perfectionist::<rule>"]` tables. See [CONFIGURATION.md](https://github.com/KSXGitHub/perfectionist/blob/master/CONFIGURATION.md) for the full schema.
 
 ## Development
 
