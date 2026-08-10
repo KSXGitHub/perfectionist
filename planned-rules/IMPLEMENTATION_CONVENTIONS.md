@@ -422,12 +422,23 @@ that the rule covers `warn` / `deny` / `forbid`, not just the
 
 Every lint registered by this plugin lives in the `perfectionist`
 *tool namespace*. The planning files in this directory use the
-unqualified form for readability — `path_qualification_mismatch` reads better
-than `perfectionist::path_qualification_mismatch` in a sentence — but the lint
+unqualified form when their **prose** names the lint, for
+readability: `path_qualification_mismatch` reads better than
+`perfectionist::path_qualification_mismatch` in a sentence. The lint
 as it appears in `declare_tool_lint!`, in the `dylint.toml`
 configuration table, in `#[allow(...)]` / `#[deny(...)]`
 attributes, and in compiler diagnostic output is always
 namespaced.
+
+The split is **prose versus code**, not planning file versus
+implementation. Every planning file sits on both sides of it: the
+same file that calls the rule `path_qualification_mismatch` in a
+sentence writes `["perfectionist::path_qualification_mismatch"]` in
+its `## Configuration` fence, because that fence is a `dylint.toml`
+excerpt, and a `dylint.toml` table header is one of the contexts
+listed above as always namespaced. The one unquoted `dylint.toml`
+header is the crate-wide `[perfectionist]` table: that is its
+literal name, and it has no `::` to quote.
 
 ### Why namespace at all
 
@@ -507,7 +518,7 @@ the `declare_tool_lint!` invocation reads:
 
 ```rust
 rustc_session::declare_tool_lint! {
-    pub perfectionist::QUALIFIED_PATHS,
+    pub perfectionist::PATH_QUALIFICATION_MISMATCH,
     Warn,
     "decide whether items from outside the current scope are named \
      by their full path or imported via `use`",
@@ -522,20 +533,22 @@ from the planning H1, uppercase it for the macro identifier, slot
 it under `perfectionist::`. The diagnostic text inside the lint is
 the rule's own one-line summary.
 
-Configuration tables follow the same shape. The planning file
-shows:
-
-```toml
-[path_qualification_mismatch]
-style = "unqualified"
-```
-
-The actual `dylint.toml` reads:
+Configuration tables need no translation at all — they are written
+in their final form, because a planning file's `## Configuration`
+fence *is* a `dylint.toml` excerpt. The planning file and the
+consumer's `dylint.toml` read identically:
 
 ```toml
 ["perfectionist::path_qualification_mismatch"]
 style = "unqualified"
 ```
+
+The header is quoted because `perfectionist::path_qualification_mismatch`
+is not a TOML bare key: bare keys admit only `A-Za-z0-9_-`, so the
+`::` has to sit inside a quoted key. Writing
+`[perfectionist::path_qualification_mismatch]` unquoted is a parse
+error, and writing `[path_qualification_mismatch]` parses but names a
+table the plugin never reads.
 
 A user-side suppression reads:
 
