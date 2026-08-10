@@ -535,22 +535,12 @@ from the planning H1, uppercase it for the macro identifier, slot
 it under `perfectionist::`. The diagnostic text inside the lint is
 the rule's own one-line summary.
 
-Configuration tables need no translation at all — they are written
-in their final form, because a planning file's `## Configuration`
-fence *is* a `dylint.toml` excerpt. The planning file and the
-consumer's `dylint.toml` read identically:
+A configuration table reads:
 
 ```toml
 ["perfectionist::path_qualification_mismatch"]
 style = "unqualified"
 ```
-
-The header is quoted because `perfectionist::path_qualification_mismatch`
-is not a TOML bare key: bare keys admit only `A-Za-z0-9_-`, so the
-`::` has to sit inside a quoted key. Writing
-`[perfectionist::path_qualification_mismatch]` unquoted is a parse
-error, and writing `[path_qualification_mismatch]` parses but names a
-table the plugin never reads.
 
 A user-side suppression reads:
 
