@@ -51,7 +51,7 @@ sources — the workspace / package `[lints]` table in
 `-F` flags, and inherited source attributes (`#![deny(...)]` at
 the crate root, `#[warn(...)]` on a parent module, etc.).
 `dylint.toml` is *not* a level source — it carries per-lint
-configuration tables (e.g. `[perfectionist::<lint>]`), not lint
+configuration tables (e.g. `["perfectionist::<lint>"]`), not lint
 levels.
 
 If the attribute's level is strictly lower than the resolved

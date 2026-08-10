@@ -412,7 +412,7 @@ command.arg(text);
 ## Configuration
 
 ```toml
-[perfectionist::needless_utf8_conversion]
+["perfectionist::needless_utf8_conversion"]
 # Extend or restrict the sink set beyond bound-based detection.
 # Function paths are absolute, so each carries a leading `::`
 # per the leading-`::` convention in IMPLEMENTATION_CONVENTIONS.md.

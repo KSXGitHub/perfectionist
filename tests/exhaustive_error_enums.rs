@@ -44,7 +44,7 @@ struct GlobalConfig {
 
 fn dylint_toml(config: RuleConfig) -> String {
     // Serialise as two top-level tables: `[perfectionist]` (enables
-    // the rule globally) and `[perfectionist::exhaustive_error_enums]`
+    // the rule globally) and `["perfectionist::exhaustive_error_enums"]`
     // (per-rule knobs the test exercises). `toml::to_string` on a
     // serde-friendly wrapper emits both with one call; building the
     // string by concatenation would risk producing `[perfectionist]`
