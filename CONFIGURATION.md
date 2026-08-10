@@ -24,6 +24,4 @@ Each rule has its own configuration table under its full namespaced name, e.g.:
 require_for = "pub_crate"
 ```
 
-The header is quoted because a TOML bare key admits only `A-Za-z0-9_-`; the `::` in the namespaced name makes `[perfectionist::exhaustive_error_enums]` a syntax error.
-
 The available knobs for each rule are documented in that rule's planning file. Once a rule is implemented, the same information is reproduced in its module documentation and in [`rules/`](./rules/).
