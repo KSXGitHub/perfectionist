@@ -1,0 +1,52 @@
+warning: imports are not partitioned into ordered groups
+  --> $DIR/fixture.rs:28:1
+   |
+LL | / use std::time::Duration;
+LL | | pub use crate::config::Args;
+LL | | use crate::config::Opts;
+   | |________________________^
+   |
+   = note: `#[warn(perfectionist::import_grouping_mismatch)]` on by default
+help: regroup the imports
+   |
+LL + pub use crate::config::Args;
+LL + 
+LL + use std::time::Duration;
+LL + 
+LL + use crate::config::Opts;
+   |
+
+warning: imports are not partitioned into ordered groups
+  --> $DIR/fixture.rs:37:1
+   |
+LL | / pub use std::cmp::Ordering;
+LL | | use std::fmt::Write;
+LL | | pub use crate::config::Cfg;
+   | |___________________________^
+   |
+help: regroup the imports
+   |
+LL + pub use std::cmp::Ordering;
+LL + pub use crate::config::Cfg;
+LL + 
+LL + use std::fmt::Write;
+   |
+
+warning: imports are not partitioned into ordered groups
+  --> $DIR/fixture.rs:46:1
+   |
+LL | / use std::mem::swap;
+LL | | #[cfg(unix)]
+LL | | pub use std::collections::BTreeMap;
+   | |___________________________________^
+   |
+help: regroup the imports
+   |
+LL + #[cfg(unix)]
+LL + pub use std::collections::BTreeMap;
+LL + 
+LL + use std::mem::swap;
+   |
+
+warning: 3 warnings emitted
+

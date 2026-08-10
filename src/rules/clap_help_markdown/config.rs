@@ -112,12 +112,30 @@ pub(super) struct Config {
     /// permit a construct in help text, e.g.
     /// `ignore_constructs = ["code_span"]`.
     pub(super) ignore_constructs: Vec<ConstructCategory>,
+    /// For projects that never let a doc comment become `--help` text,
+    /// preferring an explicit clap override (`#[arg(help = "...")]`,
+    /// `#[command(about = "...")]`, ...) on every command, argument, and
+    /// value. When `true`, the rule flags every clap-derived doc comment
+    /// that reaches `--help` without such an override, regardless of
+    /// whether it contains markdown — the doc comment stays for
+    /// `cargo doc`, but `--help` must come from a plain-string override.
+    /// A node with no doc comment is left alone: the requirement is only
+    /// that a *present* doc comment never feeds `--help` unoverridden, so
+    /// a bare `#[arg(help = "...")]` with no `///` is fine. This
+    /// supersedes the markdown scan — an override silences the markdown
+    /// concern anyway — so an unoverridden doc comment is reported once as
+    /// a missing override rather than per markdown construct. Defaults to
+    /// `false`.
+    pub(super) require_help_override: bool,
 }
 
 /// The resolved, runtime form of [`Config`]: the active forbidden-set as
-/// a fast-lookup [`BTreeSet`].
+/// a fast-lookup [`BTreeSet`], plus the `require_help_override` mode flag.
 pub(super) struct ResolvedConfig {
     pub(super) forbid: BTreeSet<ConstructCategory>,
+    /// Whether the stricter "every help-bound doc comment must be
+    /// overridden" mode is active. See [`Config::require_help_override`].
+    pub(super) require_help_override: bool,
 }
 
 impl ResolvedConfig {
@@ -133,7 +151,10 @@ impl ResolvedConfig {
         for category in config.ignore_constructs {
             forbid.remove(&category);
         }
-        Self { forbid }
+        Self {
+            forbid,
+            require_help_override: config.require_help_override,
+        }
     }
 
     /// Whether the classifier needs to look for `*` / `_` emphasis runs

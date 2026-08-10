@@ -8,7 +8,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 
 - [`allow_attributes`](./allow_attributes.md) (default: `active`).
 
-  `#[allow]` for a deterministically-firing lint should be `#[expect]`
+  `#[allow]` for a deterministically-firing lint should be removed or be `#[expect]`
 
 - [`allow_attributes_without_reason`](./allow_attributes_without_reason.md) (default: `active`).
 

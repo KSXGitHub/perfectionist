@@ -34,6 +34,34 @@ pub(super) enum NodeState {
     Verbatim,
 }
 
+/// Every clap-bound, doc-commented, non-overridden node in the crate,
+/// indexed two ways for the rule's two checks.
+#[derive(Default)]
+pub(super) struct DocNodes {
+    /// Byte offset of *each* `///` line of a node → its [`NodeState`].
+    /// Keyed per line because an interleaved non-doc attribute splits a
+    /// node's `///` run into several [`crate::comment_walk`] blocks, one
+    /// per consecutive run, each keyed by its own first line's offset —
+    /// so recording only the first would leave a later run's markdown
+    /// unscanned. The markdown scan looks each block up here.
+    pub(super) by_line: HashMap<u32, NodeState>,
+    /// Byte offset of the *first* `///` line of each node — exactly one
+    /// entry per node. The `require_help_override` check anchors its
+    /// single per-node diagnostic here, so a node whose `///` run is
+    /// split across several blocks is still flagged just once (at its
+    /// first block).
+    pub(super) first_lines: HashSet<u32>,
+}
+
+impl DocNodes {
+    /// No clap-bound, doc-commented, non-overridden node exists — so
+    /// neither check has anything to do. `by_line` being empty implies
+    /// `first_lines` is too (a node contributes to both or to neither).
+    pub(super) fn is_empty(&self) -> bool {
+        self.by_line.is_empty()
+    }
+}
+
 /// The final path segment of every derive macro that makes its
 /// container a clap help source. Matched by name (the re-parse runs
 /// before name resolution), which catches `clap::Parser`, an imported
@@ -62,35 +90,44 @@ const CLAP_ATTR_NAMESPACES: &[&str] = &["clap", "arg", "command", "value"];
 pub(super) fn collect_doc_nodes(
     crates: &[Crate],
     live_module_spans: &HashSet<SpanRange>,
-) -> HashMap<u32, NodeState> {
+) -> DocNodes {
     let override_keys: BTreeSet<Symbol> = super::config::OVERRIDE_KEYS
         .iter()
         .map(|key| Symbol::intern(key))
         .collect();
-    let mut map = HashMap::new();
+    let mut nodes = DocNodes::default();
     for krate in crates {
-        walk_items(&krate.items, live_module_spans, &override_keys, &mut map);
+        walk_items(&krate.items, live_module_spans, &override_keys, &mut nodes);
     }
-    map
+    nodes
 }
 
 fn walk_items(
     items: &[Box<Item>],
     live_module_spans: &HashSet<SpanRange>,
     override_keys: &BTreeSet<Symbol>,
-    map: &mut HashMap<u32, NodeState>,
+    nodes: &mut DocNodes,
 ) {
     for item in items {
         match &item.kind {
             ItemKind::Struct(_, _, data) if has_clap_derive(&item.attrs) => {
-                record_node(&item.attrs, override_keys, map);
-                record_fields(data, override_keys, map);
+                record_node(&item.attrs, override_keys, nodes);
+                record_fields(data, override_keys, nodes);
             }
             ItemKind::Enum(_, _, def) if has_clap_derive(&item.attrs) => {
-                record_node(&item.attrs, override_keys, map);
+                // A `ValueEnum`'s own type-level doc never reaches
+                // `--help`: clap takes the argument help from the
+                // `Args`/`Parser` field whose type is the enum, and the
+                // per-value help from the variant docs. So skip the
+                // container doc for a value-only enum. The variant docs
+                // below can still reach `--help`, so they stay in scope;
+                // `record_node` then drops any that override their help.
+                if enum_container_doc_reaches_help(&item.attrs) {
+                    record_node(&item.attrs, override_keys, nodes);
+                }
                 for variant in &def.variants {
-                    record_node(&variant.attrs, override_keys, map);
-                    record_fields(&variant.data, override_keys, map);
+                    record_node(&variant.attrs, override_keys, nodes);
+                    record_fields(&variant.data, override_keys, nodes);
                 }
             }
             // Descend into inline `mod { ... }` bodies, but only those
@@ -101,20 +138,16 @@ fn walk_items(
             ItemKind::Mod(_, _, ModKind::Loaded(items, _, spans))
                 if live_module_spans.contains(&(spans.inner_span.lo(), spans.inner_span.hi())) =>
             {
-                walk_items(items, live_module_spans, override_keys, map);
+                walk_items(items, live_module_spans, override_keys, nodes);
             }
             _ => {}
         }
     }
 }
 
-fn record_fields(
-    data: &VariantData,
-    override_keys: &BTreeSet<Symbol>,
-    map: &mut HashMap<u32, NodeState>,
-) {
+fn record_fields(data: &VariantData, override_keys: &BTreeSet<Symbol>, nodes: &mut DocNodes) {
     for field in data.fields() {
-        record_node(&field.attrs, override_keys, map);
+        record_node(&field.attrs, override_keys, nodes);
     }
 }
 
@@ -133,19 +166,17 @@ fn record_fields(
 /// unscanned even though clap concatenates both runs into `--help`. The
 /// surplus mid-run offsets are harmless: the walker only ever looks up a
 /// run's first line.
-fn record_node(
-    attrs: &[Attribute],
-    override_keys: &BTreeSet<Symbol>,
-    map: &mut HashMap<u32, NodeState>,
-) {
+fn record_node(attrs: &[Attribute], override_keys: &BTreeSet<Symbol>, nodes: &mut DocNodes) {
     let mut doc_los = attrs
         .iter()
         .filter(|attr| matches!(attr.kind, AttrKind::DocComment(..)))
         .map(|attr| attr.span.lo().0)
         .peekable();
-    if doc_los.peek().is_none() {
+    // Ascending because `attrs` is in source order, so the first is the
+    // node's opening `///` line — the anchor `first_lines` records.
+    let Some(&first_line) = doc_los.peek() else {
         return;
-    }
+    };
     if has_override(attrs, override_keys) {
         return;
     }
@@ -154,13 +185,14 @@ fn record_node(
     } else {
         NodeState::Normal
     };
+    nodes.first_lines.insert(first_line);
     for doc_lo in doc_los {
-        map.insert(doc_lo, state);
+        nodes.by_line.insert(doc_lo, state);
     }
 }
 
 fn has_override(attrs: &[Attribute], override_keys: &BTreeSet<Symbol>) -> bool {
-    clap_namespace_items(attrs).any(|inner| {
+    clap_namespace_items(attrs).into_iter().any(|inner| {
         let Some(meta) = inner.meta_item() else {
             return false;
         };
@@ -175,7 +207,7 @@ fn has_override(attrs: &[Attribute], override_keys: &BTreeSet<Symbol>) -> bool {
 
 fn has_verbatim(attrs: &[Attribute]) -> bool {
     let verbatim = Symbol::intern("verbatim_doc_comment");
-    clap_namespace_items(attrs).any(|inner| {
+    clap_namespace_items(attrs).into_iter().any(|inner| {
         let Some(meta) = inner.meta_item() else {
             return false;
         };
@@ -183,13 +215,44 @@ fn has_verbatim(attrs: &[Attribute]) -> bool {
     })
 }
 
-/// Iterate the inner meta items of every `#[clap(...)]` / `#[arg(...)]`
-/// / `#[command(...)]` / `#[value(...)]` attribute on the node.
-fn clap_namespace_items(attrs: &[Attribute]) -> impl Iterator<Item = MetaItemInner> + '_ {
-    attrs
-        .iter()
-        .filter(|attr| is_clap_namespace(attr))
-        .flat_map(|attr| attr.meta_item_list().unwrap_or_default())
+/// Collect the inner meta items of every `#[clap(...)]` / `#[arg(...)]`
+/// / `#[command(...)]` / `#[value(...)]` attribute on the node, looking
+/// through any `#[cfg_attr(<cfg>, clap(...))]` gate — the form a crate
+/// uses to keep its clap attributes behind a `cli` feature. The derive
+/// detector ([`has_clap_derive`]) already descends into `cfg_attr`;
+/// override and `verbatim_doc_comment` detection must match, or a gated
+/// `#[clap(help = "...")]` is missed and the doc comment is wrongly
+/// flagged as leaking into `--help`.
+fn clap_namespace_items(attrs: &[Attribute]) -> Vec<MetaItemInner> {
+    let mut out = Vec::new();
+    for attr in attrs {
+        if is_clap_namespace(attr) {
+            out.extend(attr.meta_item_list().unwrap_or_default());
+        } else if attr.has_name(sym::cfg_attr)
+            && let Some(list) = attr.meta_item_list()
+        {
+            collect_cfg_attr_clap_items(list.get(1..).unwrap_or_default(), &mut out);
+        }
+    }
+    out
+}
+
+/// Pull the inner items of clap-namespace meta items out of the
+/// conditionally-applied tail of a `#[cfg_attr(...)]`, recursing through
+/// nested `cfg_attr` the same way [`cfg_attr_has_derive`] does.
+fn collect_cfg_attr_clap_items(items: &[MetaItemInner], out: &mut Vec<MetaItemInner>) {
+    for item in items {
+        let Some(meta) = item.meta_item() else {
+            continue;
+        };
+        if let MetaItemKind::List(inner) = &meta.kind {
+            if is_clap_namespace_path(meta) {
+                out.extend(inner.iter().cloned());
+            } else if meta.has_name(sym::cfg_attr) {
+                collect_cfg_attr_clap_items(inner.get(1..).unwrap_or_default(), out);
+            }
+        }
+    }
 }
 
 fn is_clap_namespace(attr: &Attribute) -> bool {
@@ -198,42 +261,75 @@ fn is_clap_namespace(attr: &Attribute) -> bool {
         .any(|ns| attr.has_name(Symbol::intern(ns)))
 }
 
+fn is_clap_namespace_path(meta: &rustc_ast::MetaItem) -> bool {
+    meta.path.segments.last().is_some_and(|segment| {
+        CLAP_ATTR_NAMESPACES
+            .iter()
+            .any(|ns| segment.ident.name == Symbol::intern(ns))
+    })
+}
+
+/// The clap derives that turn a *container's* own (type-level) doc
+/// comment into `--help` text: a `Parser` / `CommandFactory` (and the
+/// legacy `Clap`) type's doc becomes the command's `about` / `long_about`.
+/// Used to keep a `ValueEnum` container doc in scope when the enum *also*
+/// derives one of these — an unusual but representable combination.
+const COMMAND_ABOUT_DERIVES: &[&str] = &["Parser", "CommandFactory", "Clap"];
+
 /// Whether the node's attributes derive a clap help-source trait,
 /// including a `#[cfg_attr(<cfg>, derive(...))]`-gated derive.
 fn has_clap_derive(attrs: &[Attribute]) -> bool {
+    has_derive_matching(attrs, &|name| CLAP_DERIVES.contains(&name))
+}
+
+/// Whether an enum's own (type-level) doc comment can reach `--help`. A
+/// `ValueEnum`'s does not — clap reads its argument help from the field
+/// that *uses* the enum, and its per-value help from the variant docs, so
+/// the enum-level doc is rustdoc-only. If the enum *also* derives a
+/// command-producing trait (`Parser` / `CommandFactory`, or the legacy
+/// `Clap`), which does consume the type doc, the container doc is live.
+fn enum_container_doc_reaches_help(attrs: &[Attribute]) -> bool {
+    !has_derive_matching(attrs, &|name| name == "ValueEnum")
+        || has_derive_matching(attrs, &|name| COMMAND_ABOUT_DERIVES.contains(&name))
+}
+
+/// Whether any `#[derive(...)]` on the node — including a
+/// `#[cfg_attr(<cfg>, derive(...))]`-gated one — names a derive matching
+/// `pred`.
+fn has_derive_matching(attrs: &[Attribute], pred: &dyn Fn(&str) -> bool) -> bool {
     attrs.iter().any(|attr| {
         if attr.has_name(sym::derive) {
             attr.meta_item_list()
-                .is_some_and(|entries| derive_entries_match(&entries))
+                .is_some_and(|entries| derive_entries_match(&entries, pred))
         } else if attr.has_name(sym::cfg_attr) {
             attr.meta_item_list()
-                .is_some_and(|args| cfg_attr_has_clap_derive(args.get(1..).unwrap_or(&[])))
+                .is_some_and(|args| cfg_attr_has_derive(args.get(1..).unwrap_or(&[]), pred))
         } else {
             false
         }
     })
 }
 
-fn cfg_attr_has_clap_derive(items: &[MetaItemInner]) -> bool {
+fn cfg_attr_has_derive(items: &[MetaItemInner], pred: &dyn Fn(&str) -> bool) -> bool {
     items.iter().any(|item| {
         let Some(meta) = item.meta_item() else {
             return false;
         };
         if meta.has_name(sym::derive) {
-            matches!(&meta.kind, MetaItemKind::List(entries) if derive_entries_match(entries))
+            matches!(&meta.kind, MetaItemKind::List(entries) if derive_entries_match(entries, pred))
         } else if meta.has_name(sym::cfg_attr) {
-            matches!(&meta.kind, MetaItemKind::List(args) if cfg_attr_has_clap_derive(args.get(1..).unwrap_or(&[])))
+            matches!(&meta.kind, MetaItemKind::List(args) if cfg_attr_has_derive(args.get(1..).unwrap_or(&[]), pred))
         } else {
             false
         }
     })
 }
 
-fn derive_entries_match(entries: &[MetaItemInner]) -> bool {
+fn derive_entries_match(entries: &[MetaItemInner], pred: &dyn Fn(&str) -> bool) -> bool {
     entries.iter().any(|entry| {
         entry
             .meta_item()
             .and_then(|meta| meta.path.segments.last())
-            .is_some_and(|segment| CLAP_DERIVES.contains(&segment.ident.name.as_str()))
+            .is_some_and(|segment| pred(segment.ident.name.as_str()))
     })
 }

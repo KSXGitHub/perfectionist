@@ -1,16 +1,35 @@
-warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+warning: this `#[allow]` stays silent even after its lint stops firing
   --> $DIR/fixture.rs:8:3
    |
 LL | #[allow(non_snake_case, reason = "module-wide")]
-   |   ^^^^^ help: replace `allow` with `expect`: `expect`
+   |   ^^^^^
    |
    = note: `#[warn(perfectionist::allow_attributes)]` on by default
+help: remove the suppression if its lint can no longer fire here
+   |
+LL - #[allow(non_snake_case, reason = "module-wide")]
+   |
+help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+   |
+LL - #[allow(non_snake_case, reason = "module-wide")]
+LL + #[expect(non_snake_case, reason = "module-wide")]
+   |
 
-warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+warning: this `#[allow]` stays silent even after its lint stops firing
   --> $DIR/fixture.rs:15:8
    |
 LL |     #![allow(clippy::needless_return, reason = "inner attr")]
-   |        ^^^^^ help: replace `allow` with `expect`: `expect`
+   |        ^^^^^
+   |
+help: remove the suppression if its lint can no longer fire here
+   |
+LL -     #![allow(clippy::needless_return, reason = "inner attr")]
+   |
+help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+   |
+LL -     #![allow(clippy::needless_return, reason = "inner attr")]
+LL +     #![expect(clippy::needless_return, reason = "inner attr")]
+   |
 
 warning: 2 warnings emitted
 

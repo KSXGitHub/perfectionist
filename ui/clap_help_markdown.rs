@@ -75,7 +75,8 @@ enum Command {
     Run,
 }
 
-/// A `value` set.
+/// A `value` set: a `ValueEnum`'s enum-level doc never reaches `--help`,
+/// so this `code` span is not flagged.
 #[derive(clap::ValueEnum)]
 #[derive(Clone)]
 enum Mode {
@@ -83,6 +84,30 @@ enum Mode {
     Fast,
     /// The slow mode.
     Slow,
+}
+
+/// The [`DisplayFormat`] of [`Bytes`]: gated behind a `cli` feature, and
+/// — as a `ValueEnum` container doc — never reaching `--help`.
+#[cfg_attr(feature = "cli", derive(clap::ValueEnum))]
+#[derive(Clone)]
+enum BytesFormat {
+    /// Display the value with a unit suffix in [metric scale](fmt::METRIC).
+    #[cfg_attr(
+        feature = "cli",
+        clap(name = "metric", help = "Use metric scale", alias = "1000")
+    )]
+    MetricUnits,
+
+    /// Display the value with a unit suffix in [binary scale](fmt::BINARY).
+    #[cfg_attr(
+        feature = "cli",
+        clap(name = "binary", help = "Use binary scale", alias = "1024")
+    )]
+    BinaryUnits,
+
+    /// Plain [`number`] of bytes, with no help override.
+    #[cfg_attr(feature = "cli", clap(name = "plain"))]
+    PlainNumber,
 }
 
 /// A non-clap struct with `markdown` is not flagged.

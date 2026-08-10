@@ -116,16 +116,18 @@ LL |     /// Run with a `--flag`.
    |                    ^^^^^^^^ help: remove the code span: `--flag`
 
 warning: a code span in a clap-derived doc comment leaks into `--help` output
-  --> $DIR/clap_help_markdown.rs:78:7
-   |
-LL | /// A `value` set.
-   |       ^^^^^^^ help: remove the code span: `value`
-
-warning: a code span in a clap-derived doc comment leaks into `--help` output
-  --> $DIR/clap_help_markdown.rs:82:13
+  --> $DIR/clap_help_markdown.rs:83:13
    |
 LL |     /// The `fast` mode.
    |             ^^^^^^ help: remove the code span: `fast`
+
+warning: an intra-doc link in a clap-derived doc comment leaks into `--help` output
+  --> $DIR/clap_help_markdown.rs:108:15
+   |
+LL |     /// Plain [`number`] of bytes, with no help override.
+   |               ^^^^^^^^^^
+   |
+   = help: override the help text with a plain string (e.g. `#[arg(help = "...")]`) or remove the markdown from the doc comment
 
 warning: 18 warnings emitted
 
