@@ -201,7 +201,7 @@ for x in iter.sorted() {
 #
 # Active by default. Single direction (prefer the collect-first owning
 # form); no per-adaptor toggle.
-[perfectionist::itertools_sort_dedup_collect]
+["perfectionist::itertools_sort_dedup_collect"]
 ```
 
 The rule ships no configuration. Whether the consumer depends on

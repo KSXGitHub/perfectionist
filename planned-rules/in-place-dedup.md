@@ -262,7 +262,7 @@ v.dedup();
 #
 # Active by default. The rule has a single direction (prefer the owning
 # `into_deduped*` method) and no per-method toggle.
-[perfectionist::in_place_dedup]
+["perfectionist::in_place_dedup"]
 ```
 
 The rule ships no configuration. Whether the consumer's crate depends on
