@@ -61,7 +61,7 @@ const CONFIG_KEY: &str = "perfectionist::single_letter_generic";
 
 /// Configuration is reserved for future knobs; the lint currently
 /// has no options. The empty struct still exists so that a stray
-/// `[perfectionist::single_letter_generic]` table in `dylint.toml`
+/// `["perfectionist::single_letter_generic"]` table in `dylint.toml`
 /// deserialises rather than producing a confusing parse error.
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]

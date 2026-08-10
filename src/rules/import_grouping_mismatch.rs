@@ -216,7 +216,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
         .unwrap_or_else(|error| {
             panic!(
                 "perfectionist::import_grouping_mismatch: invalid \
-                 `[perfectionist::import_grouping_mismatch]` configuration: {error}",
+                 `[\"perfectionist::import_grouping_mismatch\"]` configuration: {error}",
             )
         })
         .unwrap_or_else(|| {
@@ -224,7 +224,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
                 "perfectionist::import_grouping_mismatch is enabled but not configured; \
                  set `style` (`multi_block` / `single_block`) and `reexports` \
                  (`grouped` / `split` / `by_path`) under \
-                 `[perfectionist::import_grouping_mismatch]` in dylint.toml",
+                 `[\"perfectionist::import_grouping_mismatch\"]` in dylint.toml",
             )
         });
     // Late pass: out-of-line `mod foo;` modules are `ModKind::Unloaded`

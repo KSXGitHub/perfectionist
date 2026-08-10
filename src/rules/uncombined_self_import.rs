@@ -98,7 +98,7 @@ pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 
 /// Configuration is reserved for future knobs; the lint currently has
 /// no options. The empty struct still exists so that a stray
-/// `[perfectionist::uncombined_self_import]` table in `dylint.toml`
+/// `["perfectionist::uncombined_self_import"]` table in `dylint.toml`
 /// deserialises rather than producing a confusing parse error.
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]

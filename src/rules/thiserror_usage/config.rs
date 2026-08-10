@@ -14,7 +14,7 @@ const THISERROR_PATHS: &[&str] = &["thiserror::Error"];
 
 /// Configuration is reserved for future knobs; the lint currently
 /// has no options. The empty struct still exists so that a stray
-/// `[perfectionist::thiserror_usage]` table in
+/// `["perfectionist::thiserror_usage"]` table in
 /// `dylint.toml` deserialises rather than producing a confusing
 /// parse error.
 #[derive(Debug, Default, serde::Deserialize)]

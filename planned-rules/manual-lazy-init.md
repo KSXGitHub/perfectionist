@@ -193,7 +193,7 @@ reader knows the omission is deliberate.
 # Active by default. The rule has a single direction (prefer `Lazy*`
 # for the eligible shape), so there is no `style` knob, and it covers
 # both std pairs, so there is no per-tier toggle.
-[perfectionist::manual_lazy_init]
+["perfectionist::manual_lazy_init"]
 ```
 
 The rule ships no configuration. The one project-level decision it
