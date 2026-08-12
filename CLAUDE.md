@@ -56,7 +56,7 @@ planning files identify shared infrastructure.
 The catalogue is organised so that each rule has exactly one
 source file at `src/rules/<rule_name>.rs` and exactly one `Config`
 struct keyed by the rule's full namespaced name. The convention
-has two consequences for the implementer:
+has these consequences for the implementer:
 
 1. **Before writing code, check whether the rule is actually one
    rule.** A planning file that bundles several independently-
@@ -173,7 +173,7 @@ becomes documentation drift. Remove it:
    move the entry there.
 3. **Fix every link and prose reference** to the deleted rule.
    Cross-references typically appear in:
-   - Other rules' "Interaction with sibling lints" sections.
+   - Other rules' "Interaction with sibling rules" sections.
    - `planned-rules/IMPLEMENTATION_CONVENTIONS.md`, when the rule
      was an example of a convention.
    - The README's index, beyond just the entry being removed —
