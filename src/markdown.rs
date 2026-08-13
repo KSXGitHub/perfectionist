@@ -141,8 +141,8 @@ pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
 ///
 /// Block-level code is always part of the mask. `include_code_spans`
 /// controls whether inline `` `...` `` spans are masked too: the
-/// `unicode_ellipsis_in_docs` rule exposes this as its
-/// `allow_in_code_spans` knob, since a project may want a flagged
+/// `unicode_ellipsis_in_docs` rule passes the inverse of its
+/// `scan_code_spans` knob, since a project may want a flagged
 /// character caught even inside an inline code span. A code span is
 /// always *parsed* — so a backtick run inside it never spuriously
 /// opens a second span — and only added to the mask when
