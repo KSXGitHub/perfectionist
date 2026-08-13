@@ -108,6 +108,19 @@ fn run() {
         .map(|i| &hex[i..i + 2])
         .collect();
 
+    // Bad: the closure is an argument to a plain function call rather
+    // than a method call, so the callee name is read off the callee's
+    // path instead of a method segment. `apply` is not on the
+    // trivial-callback list and `q * 2 + 1` is not a trivial wrapper,
+    // so `q` fires.
+    let _applied = apply(|q| q * 2 + 1);
+
+    // OK: the same plain-call shape, but the callee path's final
+    // segment (`fold`) is on the trivial-callback list, so the
+    // single-letter parameters stay quiet even though `a + b` is not a
+    // trivial wrapper.
+    let _folded = Iterator::fold(sorted.iter(), 0_i32, |a, b| a + b);
+
     // Bad: multi-statement closure body, single-letter parameter.
     let _formatted: Vec<String> = sorted
         .iter()
@@ -123,6 +136,12 @@ fn run() {
 struct Pair {
     left: i32,
     right: i32,
+}
+
+// Takes a closure by value so a fixture can pass one to a plain
+// function call rather than a method call.
+fn apply<Callback: Fn(i32) -> i32>(f: Callback) -> i32 {
+    f(1)
 }
 
 // Bad: single-letter function parameters outside the conventional set.

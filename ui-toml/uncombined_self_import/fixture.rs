@@ -79,6 +79,14 @@ mod root_mismatch {
     use std::collections::HashMap;
 }
 
+// Imports inside a function body fold the same way. The walker reaches
+// these through a block's statement list rather than a module's item
+// list, which is a separate arm of the AST walk.
+fn block_scope() {
+    use crate::defs::inner;
+    use crate::defs::inner::Baz;
+}
+
 // An intervening item breaks adjacency — no fold.
 mod non_adjacent {
     use crate::defs::inner;

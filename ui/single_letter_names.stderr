@@ -72,17 +72,25 @@ LL |     let m = 5_u32;
    = help: rename to a descriptive identifier
    = note: `#[warn(perfectionist::single_letter_let_binding)]` on by default
 
+warning: closure parameter `q` has a single-letter name
+  --> $DIR/single_letter_names.rs:116:27
+   |
+LL |     let _applied = apply(|q| q * 2 + 1);
+   |                           ^
+   |
+   = help: rename to a descriptive identifier, or rewrite the closure as a trivial single-expression callback
+   = note: `#[warn(perfectionist::single_letter_closure_param)]` on by default
+
 warning: closure parameter `t` has a single-letter name
-  --> $DIR/single_letter_names.rs:114:15
+  --> $DIR/single_letter_names.rs:127:15
    |
 LL |         .map(|t| {
    |               ^
    |
    = help: rename to a descriptive identifier, or rewrite the closure as a trivial single-expression callback
-   = note: `#[warn(perfectionist::single_letter_closure_param)]` on by default
 
 warning: function parameter `w` has a single-letter name
-  --> $DIR/single_letter_names.rs:129:16
+  --> $DIR/single_letter_names.rs:148:16
    |
 LL | fn write_label(w: &mut String, t: &str) {
    |                ^
@@ -91,7 +99,7 @@ LL | fn write_label(w: &mut String, t: &str) {
    = note: `#[warn(perfectionist::single_letter_function_param)]` on by default
 
 warning: function parameter `t` has a single-letter name
-  --> $DIR/single_letter_names.rs:129:32
+  --> $DIR/single_letter_names.rs:148:32
    |
 LL | fn write_label(w: &mut String, t: &str) {
    |                                ^
@@ -99,7 +107,7 @@ LL | fn write_label(w: &mut String, t: &str) {
    = help: rename to a descriptive identifier
 
 warning: `let` binding `a` has a single-letter name
-  --> $DIR/single_letter_names.rs:148:9
+  --> $DIR/single_letter_names.rs:167:9
    |
 LL |     let a = 1_u32;
    |         ^
@@ -107,7 +115,7 @@ LL |     let a = 1_u32;
    = help: rename to a descriptive identifier
 
 warning: `let` binding `b` has a single-letter name
-  --> $DIR/single_letter_names.rs:149:9
+  --> $DIR/single_letter_names.rs:168:9
    |
 LL |     let b = 2_u32;
    |         ^
@@ -115,12 +123,12 @@ LL |     let b = 2_u32;
    = help: rename to a descriptive identifier
 
 warning: `let` binding `c` has a single-letter name
-  --> $DIR/single_letter_names.rs:150:9
+  --> $DIR/single_letter_names.rs:169:9
    |
 LL |     let c = a + b;
    |         ^
    |
    = help: rename to a descriptive identifier
 
-warning: 15 warnings emitted
+warning: 16 warnings emitted
 
