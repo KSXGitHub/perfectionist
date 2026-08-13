@@ -27,6 +27,8 @@ struct RuleConfig {
     allow_version_patterns: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     hosts: Option<Vec<HostEntry>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    skip_hosts: Option<Vec<&'static str>>,
 }
 
 #[derive(serde::Serialize)]
@@ -68,6 +70,7 @@ fn empty_hosts_disables_all_scanning() {
             scan_string_literals: None,
             allow_version_patterns: None,
             hosts: Some(vec![]),
+            skip_hosts: None,
         },
     );
 }
@@ -86,6 +89,7 @@ fn self_hosted_host_is_scanned() {
                 hostname: "git.example.com",
                 kind: "gitlab",
             }]),
+            skip_hosts: None,
         },
     );
 }
@@ -100,6 +104,7 @@ fn allow_version_patterns_accepts_only_version_shaped_refs() {
             scan_string_literals: None,
             allow_version_patterns: Some(true),
             hosts: None,
+            skip_hosts: None,
         },
     );
 }
@@ -115,6 +120,24 @@ fn scan_string_literals_flags_branch_ref_in_literal() {
             scan_string_literals: Some(true),
             allow_version_patterns: None,
             hosts: None,
+            skip_hosts: None,
+        },
+    );
+}
+
+/// `skip_hosts` ignores a matching host even when it is in the `hosts`
+/// table. Patterns are `*`-globs compared case-insensitively, so the
+/// uppercase `GITHUB.COM` entry suppresses a lowercase `github.com`
+/// URL and the `*.internal.example` glob covers a whole subdomain.
+#[test]
+fn skip_hosts_globs_match_case_insensitively() {
+    run(
+        "ui-toml/unpinned_repo_ref/skip_hosts",
+        RuleConfig {
+            scan_string_literals: None,
+            allow_version_patterns: None,
+            hosts: None,
+            skip_hosts: Some(vec!["*.internal.example", "GITHUB.COM"]),
         },
     );
 }
