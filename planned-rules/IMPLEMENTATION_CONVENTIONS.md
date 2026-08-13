@@ -83,7 +83,8 @@ fixed-size byte sequence do not.
 
 ## Markdown parsing
 
-Six rules in this catalogue scan a slice of markdown:
+The rules that scan a slice of markdown — everything that imports
+`src/markdown.rs`:
 
 - `perfectionist::bare_identifier_reference` (`src/rules/bare_identifier_reference.rs`) —
   distinguishes `` `Foo` `` (candidate) from `` [`Foo`] ``, `[Foo]`,
@@ -98,9 +99,15 @@ Six rules in this catalogue scan a slice of markdown:
 - `perfectionist::bare_url` (`src/rules/bare_url.rs`) — skips code
   regions, autolinks (`<...>`), labelled links, and reference-link
   definitions before flagging bare `http(s)://` URLs.
+- `perfectionist::bare_email` (`src/rules/bare_email.rs`) — skips
+  the same regions as `bare_url` before flagging bare email
+  addresses.
 - `perfectionist::unicode_ellipsis_in_docs`
   (`src/rules/unicode_ellipsis_in_docs.rs`) — strips code regions,
   then byte-scans for U+2026.
+- `perfectionist::unpinned_repo_ref`
+  (`src/rules/unpinned_repo_ref.rs`) — strips code regions before
+  scanning the remaining prose for repository URLs.
 - [`em-dash-prose`](./em-dash-prose.md) — strips code regions, then
   byte-scans for `—` / `–`.
 
@@ -119,12 +126,15 @@ Two needs sit on top of the same primitives.
 
 - **Tier A — structural classification.** Distinguishes a code
   span from an inline link from a reference definition from an
-  autolink from an HTML tag from a heading. Consumers:
-  `bare_identifier_reference`, `clap_help_markdown`, `bare_issue_reference`,
-  `bare_url`.
+  autolink from an HTML tag from a heading. Consumers call
+  `scan_skip_regions` (`bare_url`, `bare_email`,
+  `bare_issue_reference`), `classify_constructs`
+  (`clap_help_markdown`), or `scan_code_span_candidates`
+  (`bare_identifier_reference`).
 - **Tier B — code-region mask.** Only needs the predicate "is this
-  byte inside a code span or code block?". Consumers:
-  `perfectionist::unicode_ellipsis_in_docs` (implemented);
+  byte inside a code span or code block?". Consumers call
+  `scan_code_regions`: `perfectionist::unicode_ellipsis_in_docs`
+  and `perfectionist::unpinned_repo_ref` (implemented);
   `em_dash_prose` (planned). The mask is `take_code_span` plus
   `take_code_block` in a loop over the input — `src/markdown.rs`'s
   `scan_code_regions`, not a separate Tier-A-style classifier.
@@ -305,9 +315,9 @@ write a fresh module-discovery or re-parse path; route through:
    so a span there would fall back to the crate root.
 
 A comment-only or token-only scanner that does not need the parsed
-AST (the `bare_url` / `bare_email` / `bare_issue_reference` /
-`unicode_ellipsis_in_*` family) has the same "which files are really
-the crate's modules?" question and answers it with the same helper's
+AST (the prose-scanning family: whichever rules import
+`crate::comment_walk`) has the same "which files are really the
+crate's modules?" question and answers it with the same helper's
 `module_reparse::crate_module_files` (see `src/comment_walk.rs` and
 [#179](https://github.com/KSXGitHub/perfectionist/issues/179)) — do
 not re-derive the file set there either.

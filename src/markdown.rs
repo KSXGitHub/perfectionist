@@ -10,11 +10,14 @@
 //!   is the richer Tier A entry point: it returns every construct's
 //!   byte range *and* its [`ConstructKind`], which
 //!   `clap_help_markdown` maps onto its forbidden-construct
-//!   categories.
+//!   categories. [`scan_code_span_candidates`] is the narrow one,
+//!   returning just the code spans `bare_identifier_reference`
+//!   inspects.
 //! - **Tier B — code-region mask.** [`scan_code_regions`] returns only
 //!   the byte ranges of code spans and code blocks, for rules
-//!   (`unicode_ellipsis_in_docs`) that just need to exclude code from
-//!   a prose scan rather than classify every construct.
+//!   (`unicode_ellipsis_in_docs`, `unpinned_repo_ref`) that just need
+//!   to exclude code from a prose scan rather than classify every
+//!   construct.
 //!
 //! The implementation is a hand-written parser-combinator walk per
 //! the convention documented in
@@ -137,7 +140,7 @@ pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
 /// four-space-indented blocks, which is where doc-test code lives).
 /// Used by rules that scan doc-comment prose and need only to exclude
 /// code from the scan, not classify every construct
-/// (`unicode_ellipsis_in_docs`).
+/// (`unicode_ellipsis_in_docs`, `unpinned_repo_ref`).
 ///
 /// Block-level code is always part of the mask. `include_code_spans`
 /// controls whether inline `` `...` `` spans are masked too: the
