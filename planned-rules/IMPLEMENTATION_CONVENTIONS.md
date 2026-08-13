@@ -154,7 +154,8 @@ One `take_*` per CommonMark construct the catalogue recognises:
   Setext (`h\n===`) headings.
 - `take_emphasis` / `take_list_marker` — `**bold**` / `*italic*` and
   bullet / ordered list markers, behind
-  `perfectionist::clap_help_markdown`'s opt-in `extra_forbid` knob.
+  `perfectionist::clap_help_markdown`'s opt-in `extra_constructs`
+  knob.
 
 The full Tier A classifier `classify_constructs` (used by
 `perfectionist::clap_help_markdown`) stitches these into one walk

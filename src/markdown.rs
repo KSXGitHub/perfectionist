@@ -766,7 +766,8 @@ pub(crate) enum ConstructKind {
 /// on top of the always-classified structural set. Emphasis and list
 /// detection are off unless a consumer asks for them, because their
 /// CommonMark rules are flanking-sensitive and the catalogue only needs
-/// them behind `clap_help_markdown`'s opt-in `extra_forbid` knob.
+/// them behind `clap_help_markdown`'s opt-in `extra_constructs`
+/// knob.
 #[derive(Clone, Copy, Default)]
 pub(crate) struct ClassifyOptions {
     pub(crate) detect_emphasis: bool,
@@ -1100,7 +1101,7 @@ fn take_html_tag(input: &str) -> Option<usize> {
 /// boundary on both sides so intraword underscores (`foo_bar`) do not
 /// register. The imprecision is acceptable because emphasis detection
 /// is only reachable through `clap_help_markdown`'s opt-in
-/// `extra_forbid` knob.
+/// `extra_constructs` knob.
 fn take_emphasis(input: &str, idx: usize) -> Option<(ConstructKind, usize)> {
     let bytes = input.as_bytes();
     let marker = bytes[idx];
