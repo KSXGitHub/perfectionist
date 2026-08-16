@@ -83,42 +83,12 @@ fixed-size byte sequence do not.
 
 ## Markdown parsing
 
-The rules that scan a slice of markdown — everything that imports
-`src/markdown.rs`:
-
-- `perfectionist::bare_identifier_reference` (`src/rules/bare_identifier_reference.rs`) —
-  distinguishes `` `Foo` `` (candidate) from `` [`Foo`] ``, `[Foo]`,
-  `[Foo](path)`, `[Foo][id]` (already linked).
-- `perfectionist::clap_help_markdown`
-  (`src/rules/clap_help_markdown.rs`) — classifies every banned
-  construct (links, code spans, code blocks, HTML tags, headings,
-  reference definitions) and emits a per-construct diagnostic.
-- `perfectionist::bare_issue_reference` (`src/rules/bare_issue_reference.rs`)
-  — skips code regions, existing links, and reference-link
-  definitions before flagging bare `#123` tokens.
-- `perfectionist::bare_url` (`src/rules/bare_url.rs`) — skips code
-  regions, autolinks (`<...>`), labelled links, and reference-link
-  definitions before flagging bare `http(s)://` URLs.
-- `perfectionist::bare_email` (`src/rules/bare_email.rs`) — skips
-  the same regions as `bare_url` before flagging bare email
-  addresses.
-- `perfectionist::unicode_ellipsis_in_docs`
-  (`src/rules/unicode_ellipsis_in_docs.rs`) — strips code regions,
-  then byte-scans for U+2026.
-- `perfectionist::unpinned_repo_ref`
-  (`src/rules/unpinned_repo_ref.rs`) — strips code regions before
-  scanning the remaining prose for repository URLs.
-- [`em-dash-prose`](./em-dash-prose.md) — strips code regions, then
-  byte-scans for `—` / `–`.
-
-They share one crate-internal scanner at `src/markdown.rs`, built
-from `take_*` combinators per the "Parser style" section above.
-The bare-* family already populates Tier A of the surface
-described below; the rules listed above as still-planned extend it
-as they're implemented. The helper is hand-written. **Do not pull
-in `pulldown_cmark`, `comrak`, `markdown-rs`, or `markdown-it`**
-for any of these rules without first revisiting the rationale
-below.
+Several rules scan a slice of markdown: every rule that imports
+`src/markdown.rs`. They share that one crate-internal scanner, built
+from `take_*` combinators per the "Parser style" section above. The
+helper is hand-written. **Do not pull in `pulldown_cmark`, `comrak`,
+`markdown-rs`, or `markdown-it`** for any of them without first
+revisiting the rationale below.
 
 ### Two tiers of consumer
 
@@ -126,18 +96,14 @@ Two needs sit on top of the same primitives.
 
 - **Tier A — structural classification.** Distinguishes a code
   span from an inline link from a reference definition from an
-  autolink from an HTML tag from a heading. Consumers call
-  `scan_skip_regions` (`bare_url`, `bare_email`,
-  `bare_issue_reference`), `classify_constructs`
-  (`clap_help_markdown`), or `scan_code_span_candidates`
-  (`bare_identifier_reference`).
+  autolink from an HTML tag from a heading. Entry points:
+  `scan_skip_regions` returns skip ranges to post-filter against,
+  `classify_constructs` returns every construct's range *and* kind,
+  and `scan_code_span_candidates` returns code spans alone.
 - **Tier B — code-region mask.** Only needs the predicate "is this
-  byte inside a code span or code block?". Consumers call
-  `scan_code_regions`: `perfectionist::unicode_ellipsis_in_docs`
-  and `perfectionist::unpinned_repo_ref` (implemented);
-  `em_dash_prose` (planned). The mask is `take_code_span` plus
-  `take_code_block` in a loop over the input — `src/markdown.rs`'s
-  `scan_code_regions`, not a separate Tier-A-style classifier.
+  byte inside a code span or code block?". Entry point:
+  `scan_code_regions` — `take_code_span` plus `take_code_block` in
+  a loop over the input, not a separate Tier-A-style classifier.
 
 ### Combinator surface
 
@@ -153,29 +119,25 @@ One `take_*` per CommonMark construct the catalogue recognises:
 - `take_atx_heading` / `detect_setext_headings` — ATX (`# h`) and
   Setext (`h\n===`) headings.
 - `take_emphasis` / `take_list_marker` — `**bold**` / `*italic*` and
-  bullet / ordered list markers, behind
-  `perfectionist::clap_help_markdown`'s opt-in `extra_constructs`
-  knob.
+  bullet / ordered list markers, matched only when a consumer opts
+  in via `ClassifyOptions`.
 
-The full Tier A classifier `classify_constructs` (used by
-`perfectionist::clap_help_markdown`) stitches these into one walk
-that returns each construct's byte range and kind. Each combinator
-returns the matched substring and the remainder per the canonical
-shapes in "Parser style". Rust-specific extraction layered on top —
-`bare_identifier_reference` pulling an identifier out of a
-`take_code_span` result, `bare_url` pulling a scheme out of
-`take_autolink` failure-fallback prose — lives in each rule's own
-module, not in `src/markdown.rs`.
+The full Tier A classifier `classify_constructs` stitches these into
+one walk that returns each construct's byte range and kind. Each
+combinator returns the matched substring and the remainder per the
+canonical shapes in "Parser style". Rust-specific extraction layered
+on top — pulling an identifier out of a `take_code_span` result,
+pulling a scheme out of `take_autolink` failure-fallback prose —
+lives in each rule's own module, not in `src/markdown.rs`.
 
 ### Why hand-rolled rather than a library
 
 A Dylint plugin loads into rustc's process; every transitive crate
 is paid for at lint time. The grammar these rules need is a fixed
-set of constructs (the only emphasis handling is
-`perfectionist::clap_help_markdown`'s pragmatic, opt-in
-`**bold**` / `*italic*` matcher, not full CommonMark flanking
-precedence) and no link-reference resolution across the whole
-comment. No library hits that target without overshooting:
+set of constructs (the only emphasis handling is a pragmatic,
+opt-in `**bold**` / `*italic*` matcher, not full CommonMark
+flanking precedence) and no link-reference resolution across the
+whole comment. No library hits that target without overshooting:
 
 - **`pulldown_cmark`** — the de facto Rust choice. Event-based,
   carries source offsets via `OffsetIter`, MIT, fast, used by
@@ -211,11 +173,10 @@ published as a library.
 
 The practical consequence: the scanner's job is to say "this is a
 link, here is its destination text". Whether the destination
-resolves as a Rust path is `bare_identifier_reference`'s job, performed
+resolves as a Rust path is the consuming rule's job, performed
 against `TyCtxt` in a `LateLintPass`, not the scanner's.
-Consumers that need only "is this any kind of link?" (e.g.,
-`clap_help_markdown`, which rejects all link forms) stop at the
-scanner's answer.
+Consumers that need only "is this any kind of link?" — a rule that
+rejects all link forms, say — stop at the scanner's answer.
 
 This also means library choice is downstream of the intra-doc-link
 question, not upstream of it: even if a hypothetical library
