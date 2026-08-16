@@ -616,14 +616,13 @@ exactly that and drop the empty-vs-absent ambiguity. Settled in
 the booleans `prelude_exception` / `root_reexport_exception`).
 
 Three shapes are *not* this anti-pattern and stay as arrays/enums: a
-single mutually-exclusive **choice** (a `style` / direction enum like
-`import_granularity_mismatch`); an **open-ended list** of user
-strings (`allowed_paths`, `extra_*`, `ignore`); and a **permutation**
-where order is the data (`import_grouping_mismatch`'s `order`). The
-dividing line is fixed-membership-and-independence, not length — so a
-borderline case may keep the array as a *deliberate*, documented
-call: `path_qualification_mismatch`'s `contexts` array is the
-catalogue's one such exception.
+single mutually-exclusive **choice** (a `style` / direction enum); an
+**open-ended list** of user strings (`allowed_paths`, `extra_*`,
+`ignore`); and a **permutation** where the sequence is itself the
+configuration (an `order` field). The dividing line is
+fixed-membership-and-independence, not length — so a borderline case
+may keep the array as a *deliberate* call, argued for and documented
+in the rule's own file rather than assumed here.
 
 ### Scan-surface toggles
 
