@@ -171,15 +171,21 @@ Forbid `f(&arg)` and `f(&mut arg)` when `f` is unary AND `arg` is
 liftable onto the left of a pipe. Suggest `arg.pipe_ref(f)` and
 `arg.pipe_mut(f)` respectively.
 
+The two borrow forms are treated identically — mutability picks
+the pipe method and changes nothing else, so read every `pipe_mut`
+below as `pipe_ref` when the borrow is shared.
+
 `arg` is *liftable* in exactly two shapes:
 
 1. **`arg` is an `ExprKind::MethodCall`.** The receiver of the new
    pipe call is a method call, so the pipe continues a chain.
-   `f(&mut obj.method())` becomes `obj.method().pipe_mut(f)`.
+   `f(&mut obj.method())` becomes `obj.method().pipe_mut(f)`, and
+   `f(&obj.method())` becomes `obj.method().pipe_ref(f)`.
 2. **`arg` is a unary `ExprKind::Call`, `g(x)`.**
    `f(&mut g(x))` becomes `x.pipe(g).pipe_mut(f)`: `.pipe(g)` is
    continued by `.pipe_mut(f)`, and `.pipe_mut(f)`'s receiver is
    now a method call, so both pipes sit between chain segments.
+   `f(&g(x))` becomes `x.pipe(g).pipe_ref(f)` the same way.
 
 Any other `arg` — a place expression (local, field, index,
 deref), a nullary call, a call with two or more arguments, a
@@ -198,7 +204,11 @@ run_assertions(&mut ParsedDesc::parse(SOURCE).unwrap());
 run_assertions(&mut ForgetfulQuerier::new(SOURCE));
 run_assertions(&mut MemoQuerier::new(SOURCE));
 
-// the `&` direction, with `f` taking `&Report`
+// the same call sites with a `&`-taking `run_assertions`
+run_assertions(&ParsedDesc::parse(SOURCE).unwrap());
+run_assertions(&ForgetfulQuerier::new(SOURCE));
+
+// any other unary callee, here `f` taking `&Report`
 summarise(&report.entries().collect::<Report>());
 ```
 
@@ -215,6 +225,14 @@ SOURCE
 SOURCE
     .pipe(MemoQuerier::new)
     .pipe_mut(run_assertions);
+
+SOURCE
+    .pipe(ParsedDesc::parse)
+    .unwrap()
+    .pipe_ref(run_assertions);
+SOURCE
+    .pipe(ForgetfulQuerier::new)
+    .pipe_ref(run_assertions);
 
 report
     .entries()
@@ -360,6 +378,7 @@ Columns, in order: `pipe_at_chain_boundary` (**B**),
 | `chain.pipe(f).pipe(g)`                     | ok   | ok           | —    | ok   | good    |
 | `g(f(obj.m()))`                             | —    | flag (inner) | —    | —    | bad     |
 | `f(&mut obj.method())`                      | —    | ok           | flag | —    | bad     |
+| `f(&obj.method())` (shared borrow)          | —    | ok           | flag | —    | bad     |
 | `f(&mut g(x))` (`g` unary)                  | —    | ok           | flag | —    | bad     |
 | `f(&mut value)` (operand is a place)        | —    | ok           | ok   | —    | good    |
 | `f(&mut g(x, y))` (head not unary)          | —    | ok           | ok   | —    | good    |
@@ -378,7 +397,10 @@ different owner, decided by the pipe method's borrowing-ness.
 
 `chain_wrapped_in_call` reads "ok" on every borrow row because
 its argument is an `ExprKind::AddrOf`, not a method call — that
-blind spot is what `borrow_wrapped_in_call` covers.
+blind spot is what `borrow_wrapped_in_call` covers. Only one
+shared-borrow row is listed because each `&mut` row has an
+identical `&` twin: mutability selects `pipe_ref` over `pipe_mut`
+and decides nothing else.
 
 The fixed point under all four checks is the same: every method
 chain stays on the left of any `.pipe(...)` it participates in,
@@ -406,7 +428,7 @@ fixed points for one input.
 # to enforce.
 pipe_at_chain_boundary  = "forbid"  # or "allow" to permit pipe at chain start
 chain_wrapped_in_call   = "forbid"  # or "allow" to permit f(chain) call sites
-borrow_wrapped_in_call  = "forbid"  # or "allow" to permit f(&mut chain) call sites
+borrow_wrapped_in_call  = "forbid"  # or "allow" to permit f(&chain) / f(&mut chain) call sites
 call_at_pipe_chain_head = "forbid"  # or "allow" to permit g(x).…pipe(f) chain heads
 ```
 
@@ -475,14 +497,18 @@ previous direction. For each call:
 1. Confirm the call is unary (exactly one argument).
 2. Confirm the argument is `ExprKind::AddrOf` with exactly one
    layer of borrow. Record its mutability: `Mutability::Mut`
-   selects `pipe_mut`, `Mutability::Not` selects `pipe_ref`.
+   selects `pipe_mut`, `Mutability::Not` selects `pipe_ref`
+   (subject to the coercion check in step 4, which may substitute
+   `pipe_deref` / `pipe_as_ref` / their `_mut` counterparts). Call
+   the result `pipe_borrowing` in the two branches below; nothing
+   else in this direction reads the mutability.
 3. Classify the borrow's operand:
-   - `ExprKind::MethodCall` → suggest `operand.pipe_mut(f)`, with
-     the operand's own chain head lifted if
+   - `ExprKind::MethodCall` → suggest `operand.pipe_borrowing(f)`,
+     with the operand's own chain head lifted if
      `call_at_pipe_chain_head` would demand it (it will, since the
      new chain pipes).
    - `ExprKind::Call` with exactly one argument, `g(x)` → suggest
-     `x.pipe(g).pipe_mut(f)`.
+     `x.pipe(g).pipe_borrowing(f)`.
    - anything else → don't flag.
 4. Check the borrow for coercions before offering an autofix (see
    the implementation notes).
@@ -580,6 +606,12 @@ point convergence in two passes.
     picking between them needs the target type spelled out.
   When the trigger fires but no method choice is certain, the
   diagnostic still stands — only the suggestion degrades.
+  The `&` direction lands in the deref branch far more often than
+  the `&mut` one — `&String` → `&str`, `&Vec<T>` → `&[T]`,
+  `&PathBuf` → `&Path` are everywhere in ordinary code — so don't
+  implement `Mutability::Not` as "emit `pipe_ref`" and leave the
+  type comparison for later. It is the same comparison in both
+  directions; only the frequency of each answer differs.
 - Both wrap-call directions *introduce* a `pipe_*` call, so their
   autofix is only applicable when `pipe_trait::Pipe` is in scope at
   the call site. All nine methods come from that one trait, so the
