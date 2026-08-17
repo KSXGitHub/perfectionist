@@ -92,8 +92,10 @@ pattern that several rules call out by reference — live in
 ### Pipe trait
 - [`pipe-style.md`](./pipe-style.md) — bidirectional pipe-trait
   policy. Flags `value.pipe(f)` at the start of a chain (suggests
-  `f(value)`) and flags `f(chain)` wrapping a method chain
-  (suggests `chain.pipe(f)`). Both checks default to enforce.
+  `f(value)`), flags `f(chain)` wrapping a method chain (suggests
+  `chain.pipe(f)`), and flags `f(&mut chain)` wrapping a borrow of
+  one (suggests `chain.pipe_mut(f)`). All three checks default to
+  enforce.
 
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
