@@ -1,5 +1,5 @@
 warning: unknown lint: `perfectionist::unicode_ellipsis_in_cоmments`
-  --> $DIR/unknown_perfectionist_lints_non_ascii.rs:16:9
+  --> $DIR/unknown_perfectionist_lints_non_ascii.rs:17:9
    |
 LL | #[allow(perfectionist::unicode_ellipsis_in_cоmments)]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -7,5 +7,13 @@ LL | #[allow(perfectionist::unicode_ellipsis_in_cоmments)]
    = help: contains a non-ASCII character: 'о' (U+043E)
    = note: `#[warn(perfectionist::unknown_perfectionist_lints)]` on by default
 
-warning: 1 warning emitted
+warning: unknown lint: `perfectionist::wildcard_imports॑`
+  --> $DIR/unknown_perfectionist_lints_non_ascii.rs:25:9
+   |
+LL | #[allow(perfectionist::wildcard_imports॑)]
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: contains a non-ASCII character: '/u{951}' (U+0951)
+
+warning: 2 warnings emitted
 

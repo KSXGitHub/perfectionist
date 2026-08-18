@@ -210,8 +210,14 @@ impl UnknownPerfectionistLints {
         // character the same way, down to `'о' (U+043E)`.
         if let Some(non_ascii) = candidate.chars().find(|character| !character.is_ascii()) {
             let codepoint = u32::from(non_ascii);
+            // A combining mark would otherwise land on the quote and a
+            // zero-width character would render as nothing at all —
+            // both defeating the point of naming the character. rustc
+            // escapes it the same way: its `uncommon_codepoints` reads
+            // `identifier contains an uncommon character: '\u{951}'`.
+            let escaped = non_ascii.escape_debug();
             return Some(format!(
-                "contains a non-ASCII character: '{non_ascii}' (U+{codepoint:04X})",
+                "contains a non-ASCII character: '{escaped}' (U+{codepoint:04X})",
             ));
         }
         let suggested_name = self.find_closest_match(candidate)?;
