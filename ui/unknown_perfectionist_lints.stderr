@@ -35,7 +35,7 @@ warning: unknown lint: `perfectionist::unicode_ellipsis_in_cоmments`
 LL | #[allow(perfectionist::unicode_ellipsis_in_cоmments)]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: did you mean `perfectionist::unicode_ellipsis_in_comments`?
+   = help: every `perfectionist` lint name is ASCII, but this one contains `о` (U+043E)
 
 warning: unknown lint: `perfectionist::nothing_like_this_anywhere`
   --> $DIR/unknown_perfectionist_lints.rs:39:8

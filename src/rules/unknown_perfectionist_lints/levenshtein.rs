@@ -1,69 +1,20 @@
-//! Edit-distance search behind the rule's "did you mean" hint.
+//! Levenshtein edit distance over ASCII lint names.
 //!
-//! [`Candidate`] is the entry point: it prepares an unknown lint name
-//! once, then measures it against every registered name. Both sides of
-//! every comparison are lint names, so [`levenshtein`] works on slices
-//! rather than on `&str`, and the element type is whichever unit is
-//! cheapest for the candidate at hand.
-
-/// An unknown lint name, prepared for repeated distance measurements
-/// against the registered names.
-///
-/// [`Candidate::distance_to`] runs once per registered lint, so the
-/// per-candidate decoding happens here rather than inside that loop —
-/// and in the ASCII case there is none to do.
-pub(super) enum Candidate<'source> {
-    /// An ASCII candidate, compared byte by byte. Every registered lint
-    /// name is ASCII too, so a byte comparison yields exactly the
-    /// `char`-wise distance while decoding nothing and allocating
-    /// nothing: `str::as_bytes` is free, where `Vec<char>` would cost a
-    /// heap allocation and four bytes per character.
-    Ascii(&'source [u8]),
-    /// A candidate carrying non-ASCII characters — Rust identifiers are
-    /// not restricted to ASCII — compared character by character.
-    ///
-    /// Bytes cannot stand in here: they would count a single multi-byte
-    /// character as up to four edits and so lose the hint for exactly
-    /// the typo that most needs one, a homoglyph. Both
-    /// `unicode_ellipsis_in_cоmments` (Cyrillic `о`) and
-    /// `unicode_ellipsis_in_cｏmments` (fullwidth `ｏ`) are one character
-    /// away from a registered name but two and three bytes away, and
-    /// the latter already exceeds the default `suggestion_distance`.
-    Unicode(Vec<char>),
-}
-
-impl<'source> Candidate<'source> {
-    pub(super) fn new(name: &'source str) -> Self {
-        if name.is_ascii() {
-            Candidate::Ascii(name.as_bytes())
-        } else {
-            Candidate::Unicode(name.chars().collect())
-        }
-    }
-
-    /// The edit distance from this candidate to `registered`, which is
-    /// one of the plugin's own — hence ASCII — lint names.
-    pub(super) fn distance_to(&self, registered: &str) -> usize {
-        match self {
-            Candidate::Ascii(bytes) => levenshtein(bytes, registered.as_bytes()),
-            // Decoding the registered name per comparison is confined
-            // to the non-ASCII path, which is reached only while a
-            // diagnostic is already being emitted.
-            Candidate::Unicode(chars) => {
-                let registered: Vec<char> = registered.chars().collect();
-                levenshtein(chars, &registered)
-            }
-        }
-    }
-}
+//! Both sides of every comparison are lint names, and every lint name
+//! this plugin registers is ASCII, so the distance is measured over
+//! `[u8]`: `str::as_bytes` decodes nothing and allocates nothing, where
+//! a `Vec<char>` would cost a heap allocation per comparison and four
+//! bytes per character. A candidate that is not ASCII cannot be a
+//! near-miss of an ASCII name and never reaches here — the rule names
+//! the offending character instead.
 
 /// The Levenshtein edit distance between `left` and `right`: the fewest
-/// single-element insertions, deletions, and substitutions that turn
-/// one sequence into the other.
+/// single-byte insertions, deletions, and substitutions that turn one
+/// into the other.
 ///
-/// Generic over the element type so the caller compares whichever unit
-/// is cheapest; see [`Candidate`] for the two this rule uses.
-fn levenshtein<Unit: Eq>(left: &[Unit], right: &[Unit]) -> usize {
+/// Both sides are ASCII, where one byte is one character, so this is
+/// the character-wise distance too.
+pub(super) fn levenshtein(left: &[u8], right: &[u8]) -> usize {
     let left_len = left.len();
     let right_len = right.len();
     if left_len == 0 {

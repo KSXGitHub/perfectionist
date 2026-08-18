@@ -30,8 +30,8 @@ mod depth_mismatch {}
 fn no_target() {}
 
 // Bad: homoglyph typo — a Cyrillic `о` where the registered name
-// has an ASCII `o`. That is one character-level edit away, so the hint
-// still applies even though the two names differ by two bytes.
+// has an ASCII `o`. No registered name is spelled with a non-ASCII
+// character, so the hint names that character rather than guessing.
 #[allow(perfectionist::unicode_ellipsis_in_cоmments)]
 fn homoglyph() {}
 

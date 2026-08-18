@@ -1,6 +1,6 @@
 use crate::common::{DefaultState, render_meta_path, resolved_state};
 use clippy_utils::diagnostics::span_lint_and_then;
-use levenshtein::Candidate;
+use levenshtein::levenshtein;
 use rustc_ast::{Attribute, MetaItem, MetaItemInner, MetaItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -23,6 +23,12 @@ declare_tool_lint! {
     /// rustc's own `unknown_lints` covers tool-prefixed names
     /// inconsistently; this rule fills the gap and offers a
     /// "did you mean" hint against the registered set.
+    ///
+    /// Every registered name is ASCII, so a name carrying a
+    /// non-ASCII character cannot be one. Such a name gets that
+    /// character and its codepoint named instead of a guess: a
+    /// homoglyph — a Cyrillic `о` standing in for an ASCII `o` —
+    /// is otherwise invisible in the source.
     ///
     /// ### Example
     ///
@@ -56,7 +62,9 @@ struct Config {
     /// emit a "did you mean" suggestion. Defaults to `2`, which
     /// catches single-character typos and short transpositions
     /// without producing wild guesses. Set to `0` to disable
-    /// suggestions entirely.
+    /// suggestions entirely; a non-ASCII character in the name is
+    /// still pointed out, being a fact about the name rather than a
+    /// guess at what was meant.
     suggestion_distance: u8,
 }
 
@@ -202,14 +210,36 @@ impl UnknownPerfectionistLints {
             .any(|registered| registered == name)
     }
 
+    /// The help line to attach to an unknown name, if there is anything
+    /// useful to say about it.
+    fn help_for(&self, candidate: &str) -> Option<String> {
+        // Every registered lint name is ASCII, so a name that is not
+        // cannot be a near-miss of one however it is measured. Naming
+        // the offending character is the more useful answer anyway: a
+        // homoglyph — a Cyrillic `о` for an ASCII `o`, a fullwidth `ｏ`
+        // — is invisible in the source, and the codepoint is what
+        // identifies it.
+        if let Some(non_ascii) = candidate.chars().find(|character| !character.is_ascii()) {
+            let codepoint = u32::from(non_ascii);
+            return Some(format!(
+                "every `{TOOL_NAME}` lint name is ASCII, but this one contains `{non_ascii}` \
+                 (U+{codepoint:04X})",
+            ));
+        }
+        let suggested_name = self.find_closest_match(candidate)?;
+        Some(format!("did you mean `{TOOL_NAME}::{suggested_name}`?"))
+    }
+
+    /// The registered lint closest to `candidate`, within
+    /// `suggestion_distance` edits of it. `candidate` must be ASCII;
+    /// [`Self::help_for`] rules out everything else beforehand.
     fn find_closest_match(&self, candidate: &str) -> Option<&str> {
         if self.suggestion_distance == 0 {
             return None;
         }
-        let candidate = Candidate::new(candidate);
         let mut closest: Option<(&str, usize)> = None;
         for registered in &self.registered_lints {
-            let distance = candidate.distance_to(registered);
+            let distance = levenshtein(candidate.as_bytes(), registered.as_bytes());
             if distance <= self.suggestion_distance as usize
                 && closest.is_none_or(|(_, closest_distance)| distance < closest_distance)
             {
@@ -221,15 +251,15 @@ impl UnknownPerfectionistLints {
 
     fn report(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem, candidate: &str) {
         let path_text = render_meta_path(meta_item);
-        let suggestion = self.find_closest_match(candidate);
+        let help = self.help_for(candidate);
         span_lint_and_then(
             lint_context,
             UNKNOWN_PERFECTIONIST_LINTS,
             meta_item.span,
             format!("unknown lint: `{path_text}`"),
             |diagnostic| {
-                if let Some(suggested_name) = suggestion {
-                    diagnostic.help(format!("did you mean `{TOOL_NAME}::{suggested_name}`?"));
+                if let Some(help) = help {
+                    diagnostic.help(help);
                 }
             },
         );
