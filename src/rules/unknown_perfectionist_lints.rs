@@ -24,12 +24,6 @@ declare_tool_lint! {
     /// inconsistently; this rule fills the gap and offers a
     /// "did you mean" hint against the registered set.
     ///
-    /// Every registered name is ASCII, so a name carrying a
-    /// non-ASCII character cannot be one. Such a name gets that
-    /// character and its codepoint named instead of a guess: a
-    /// homoglyph — a Cyrillic `о` standing in for an ASCII `o` —
-    /// is otherwise invisible in the source.
-    ///
     /// ### Example
     ///
     /// **Bad:**
@@ -62,9 +56,7 @@ struct Config {
     /// emit a "did you mean" suggestion. Defaults to `2`, which
     /// catches single-character typos and short transpositions
     /// without producing wild guesses. Set to `0` to disable
-    /// suggestions entirely; a non-ASCII character in the name is
-    /// still pointed out, being a fact about the name rather than a
-    /// guess at what was meant.
+    /// suggestions entirely.
     suggestion_distance: u8,
 }
 
