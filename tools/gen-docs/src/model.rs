@@ -126,7 +126,7 @@ pub(crate) struct ConfigDoc {
 /// renderer marks those with an `optional` badge rather than
 /// reproducing the Rust default expression — the prose doc comment
 /// states the default in human-readable form. The exception is the
-/// "Mandatory configuration on opt-in rules" direction fields (e.g.
+/// mandatory-configuration direction fields (e.g.
 /// `import_grouping_mismatch`'s `style`), which are a bare type with no default;
 /// those carry [`ConfigField::optionality`] set to
 /// [`Optionality::Mandatory`] and render a `mandatory` badge instead.

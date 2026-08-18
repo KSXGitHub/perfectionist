@@ -7,10 +7,10 @@ Handling*.
 
 Bundles five sub-checks (`unused_error`, `missing_error`,
 `unused_display`, `copyable_error`, `unconventional_error_name`).
-Per [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
-("One rule per file, one `Config` per rule"), this file is expected
-to fan out into one planning file per sub-check before implementation
-begins. The sub-checks have distinct trigger predicates, disjoint
+Per
+[one rule per file](../CLAUDE.md#one-rule-per-file-one-config-per-rule),
+this file is expected to fan out into one planning file per sub-check
+before implementation begins. The sub-checks have distinct trigger predicates, disjoint
 configuration, and no shared diagnostic, so the split is mechanical.
 
 ## Statement

@@ -12,6 +12,10 @@
 //!   that has found a `#N` and must decide whether it is really an
 //!   issue reference.
 //!
+//! [`classify_trailing`] sits alongside them for a caller that wraps a
+//! URL it found and must decide whether the last byte belongs to the
+//! URL or to the sentence around it.
+//!
 //! The grammar is deliberately small — a scheme run, a non-whitespace
 //! body, optional trailing punctuation classification — per the
 //! parser-combinator convention in

@@ -75,6 +75,14 @@ pub(crate) fn emit_flagged_chars<Cx>(
     }
 }
 
+/// Label on the `...` suggestion, shared so the two emitters cannot
+/// drift apart.
+const SUGGESTION_LABEL: &str = "use ASCII `...` instead";
+
+/// Replacement text the suggestion offers, shared for the same reason
+/// as [`SUGGESTION_LABEL`].
+const ASCII_ELLIPSIS: &str = "...";
+
 /// Emit a single flagged-character diagnostic at `span`, suggesting
 /// the ASCII `...` replacement. The body of [`emit_flagged_chars`]'
 /// loop, split out so the [`HirId`]-anchored
@@ -102,8 +110,8 @@ fn emit_flagged_char<Cx>(
         lint,
         span,
         flagged_char_message(character, context_label),
-        "use ASCII `...` instead",
-        "...".to_owned(),
+        SUGGESTION_LABEL,
+        ASCII_ELLIPSIS.to_owned(),
         flagged_char_applicability(character),
     );
 }
@@ -131,7 +139,7 @@ pub(crate) fn emit_flagged_char_hir(
         span,
         flagged_char_message(character, context_label),
         |diag| {
-            diag.span_suggestion(span, "use ASCII `...` instead", "...", applicability);
+            diag.span_suggestion(span, SUGGESTION_LABEL, ASCII_ELLIPSIS, applicability);
         },
     );
 }

@@ -13,17 +13,17 @@
 //! parsing does not strip cfg, unlike the post-expansion AST, which is
 //! why the pre-expansion pass existed in the first place.
 //!
-//! The entry points share the same re-parse machinery and differ only
-//! in what they hand back:
+//! [`parse_crate_module_files`] is the re-parse itself: it returns
+//! every file's freshly parsed [`Crate`] alongside the body spans of
+//! the crate's live modules (the inline-recursion guard a caller needs
+//! to skip cfg-disabled inline modules). [`for_each_module_file`]
+//! wraps it in a callback for callers that handle one file at a time
+//! and do their own descent.
 //!
-//! - [`parse_crate_module_files`] returns every file's freshly parsed
-//!   [`Crate`] alongside the body spans of the crate's live modules
-//!   (the inline-recursion guard a caller needs to skip cfg-disabled
-//!   inline modules).
-//! - [`for_each_module_file`] is a thin callback wrapper for callers
-//!   that handle one file at a time and do their own descent.
-//! - [`crate_module_files`] returns the [`FileName`] set alone, for
-//!   callers that walk the source text rather than the AST.
+//! [`crate_module_files`] is the file-set step underneath both, walking
+//! the HIR without parsing anything. It is exposed on its own for a
+//! caller that scans source text rather than the AST and only needs to
+//! know which files are really the crate's modules.
 
 use rustc_ast::Crate;
 use rustc_errors::DiagCtxt;

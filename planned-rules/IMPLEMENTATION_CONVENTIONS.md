@@ -134,8 +134,9 @@ One `take_*` per CommonMark construct the catalogue recognises:
 The full Tier A classifier `classify_constructs` stitches these into
 one walk that returns each construct's byte range and kind. Each
 combinator returns the matched substring and the remainder per the
-canonical shapes in "Parser style". Rust-specific extraction layered
-on top — pulling an identifier out of a `take_code_span` result,
+canonical shapes in [Parser style](#parser-style). Rust-specific
+extraction layered on top — pulling an identifier out of a
+`take_code_span` result,
 pulling a scheme out of `take_autolink` failure-fallback prose —
 lives in each rule's own module, not in `src/markdown.rs`.
 

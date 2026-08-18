@@ -143,10 +143,13 @@ The shapes to avoid:
   comprehension, mark it as illustrative ("for example", "among
   them") so no reader mistakes it for exhaustive and nobody has to
   maintain it.
-- **Do not quote another file's heading or prose verbatim.** Link
-  to the section instead. A quoted heading is a copy that no tool
-  checks; a quoted sentence is worse, because anyone may reword the
-  original without knowing the copy exists.
+- **Do not quote another file's heading or prose verbatim.** A
+  quoted heading is a copy that no tool checks; a quoted sentence is
+  worse, because anyone may reword the original without knowing the
+  copy exists. In markdown, link to the section by anchor. In Rust
+  comments and rustdoc, where a repo-relative link does not resolve,
+  name the file and leave the reader to search it — naming a file is
+  a reference, naming its heading is a copy.
 - **State a fact in exactly one place.** Defaults, config shapes,
   and file paths have one home; everything else links to it. The
   [defaults convention](#defaults-live-in-field-docs-not-type-or-variant-docs)
@@ -181,10 +184,11 @@ documentation change: a backticked `src/…`, `tests/…`, `ui/…`,
 `perfectionist::<name>` should name a lint that
 `src/lib.rs::register_lints` registers. Both greps have standing
 exceptions — prose describing a *linted* crate names paths that do
-not exist here, planning files and this guide name rules that are
-not implemented yet, and the `unknown_perfectionist_lints`
-fixtures and `gen-docs`' unit tests use deliberately fake lint
-names — so read the hits rather than the count.
+not exist here; planning files and this guide name rules that are
+not implemented yet; and the misspelt names are the point wherever
+`perfectionist::unknown_perfectionist_lints` is documented, tested
+or fixtured, as they are in `gen-docs`' unit tests. Read the hits
+rather than the count.
 
 ## Defaults live in field docs, not type or variant docs
 
@@ -645,8 +649,8 @@ following, and only the aside may become an alert:
 ## Symlinks
 
 This file is the authoritative implementation guide. It is also
-exposed under two other names so that other AI assistants and
-agent harnesses pick it up automatically:
+exposed under other names so that other AI assistants and agent
+harnesses pick it up automatically:
 
 - `AGENTS.md` (symlink to `CLAUDE.md`).
 - `.github/copilot-instructions.md` (symlink to `CLAUDE.md`).

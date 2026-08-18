@@ -72,7 +72,7 @@ fn extract_rules(source_path: &Path, shared: &SharedTypes) -> Vec<Rule> {
         .collect();
     // Rules that have outgrown a flat `.rs` keep `CONFIG_KEY` and the
     // `Config` struct in a sibling `<rule>/config.rs` (see CLAUDE.md's
-    // "One rule per file, one `Config` per rule"). The extractor
+    // one-rule-per-file convention). The extractor
     // used to only see the parent file's items, so those rules'
     // configurations rendered as "Configuration: none." in the docs.
     // Merging submodule items into a single `syn::File` lets the

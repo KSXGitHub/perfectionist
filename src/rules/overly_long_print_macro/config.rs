@@ -24,10 +24,10 @@ const DEFAULT_MAX_LINE_WIDTH: usize = 100;
 /// the `debug_assert*` family, ...) are deliberately absent; the
 /// reasoning is in `planned-rules/overly-long-print-macro.md`.
 ///
-/// The list covers three groups: the stdout / stderr writers
-/// (`println!`, `eprintln!`, `print!`, `eprint!`), the `Write` writers
-/// (`writeln!`, `write!`), and the `log` family (`log!`, `error!`,
-/// `warn!`, `info!`, `debug!`, `trace!`). The `log` family is matched
+/// The list covers the stdout / stderr writers (`println!`,
+/// `eprintln!`, `print!`, `eprint!`), the `Write` writers (`writeln!`,
+/// `write!`), and the `log` family (`log!`, `error!`, `warn!`,
+/// `info!`, `debug!`, `trace!`). The `log` family is matched
 /// by final path segment, so `error` covers `log::error!` and
 /// `tracing::error!` alike. A project that wants to fold a
 /// differently-named macro replaces this whole list via the
