@@ -141,10 +141,12 @@ action.
 
 ## Configuration
 
-- `em_dash_prose.targets` — array of `"doc"`, `"comment"`, `"macro"`.
-- `em_dash_prose.flag_en_dash` — defaults to `true`.
-- `em_dash_prose.allow_in_tests` — defaults to `true`.
-- `em_dash_prose.message` — optional override for the help text.
+Keys of the `["perfectionist::em_dash_prose"]` table:
+
+- `targets` — array of `"doc"`, `"comment"`, `"macro"`.
+- `flag_en_dash` — defaults to `true`.
+- `allow_in_tests` — defaults to `true`.
+- `message` — optional override for the help text.
   Useful for projects that want to localise the diagnostic or expand
   it with a link to an internal style guide. The default message
   above is used when this is unset.

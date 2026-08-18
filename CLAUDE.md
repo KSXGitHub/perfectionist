@@ -40,10 +40,17 @@ Read three things first, in this order:
      more than the trigger checks.
    - **Lint name namespacing.** Every lint registers under the
      `perfectionist` tool namespace via
-     `rustc_session::declare_tool_lint!`. The planning files use
-     the unqualified form (`path_qualification_mismatch`) for
-     readability; the registered name is
-     `perfectionist::path_qualification_mismatch`.
+     `rustc_session::declare_tool_lint!`. A per-rule `dylint.toml`
+     table is *addressed* by its config key, so its header has to
+     be the namespaced name, quoted —
+     `["perfectionist::path_qualification_mismatch"]` — in a
+     planning file's `## Configuration` fence exactly as in a
+     consumer's `dylint.toml`; `#[allow(...)]` / `#[deny(...)]`
+     likewise take the `perfectionist::`-qualified path rustc
+     resolves. Where the rule is merely *named*, the unqualified
+     `path_qualification_mismatch` is correct — in prose, and in a
+     `[perfectionist]` `enable` / `disable` entry. See the
+     conventions file for the per-context spelling.
 
 If the rule is one of several that share a helper (markdown
 exclusion, format-string parsing, URL discovery, unicode-width

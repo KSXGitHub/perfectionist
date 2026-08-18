@@ -466,7 +466,7 @@ my_proc::custom!(
 ## Configuration
 
 ```toml
-[macro_trailing_comma]
+["perfectionist::macro_trailing_comma"]
 # Additional macros to treat as name-based matches, beyond the
 # built-in core/std and well-known third-party set. Each entry
 # is a fully-qualified macro path (no trailing `!`) or a bare

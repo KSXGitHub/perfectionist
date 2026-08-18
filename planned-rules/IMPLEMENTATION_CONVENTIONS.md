@@ -394,12 +394,25 @@ that the rule covers `warn` / `deny` / `forbid`, not just the
 
 Every lint registered by this plugin lives in the `perfectionist`
 *tool namespace*. The planning files in this directory use the
-unqualified form for readability — `path_qualification_mismatch` reads better
-than `perfectionist::path_qualification_mismatch` in a sentence — but the lint
+unqualified form when their **prose** names the lint, for
+readability: `path_qualification_mismatch` reads better than
+`perfectionist::path_qualification_mismatch` in a sentence. The lint
 as it appears in `declare_tool_lint!`, in the `dylint.toml`
 configuration table, in `#[allow(...)]` / `#[deny(...)]`
 attributes, and in compiler diagnostic output is always
 namespaced.
+
+Which form applies follows from what the string *is*, not from which
+file it sits in. A per-rule `dylint.toml` table header is the key the
+plugin looks up, so it has to carry the full namespaced name, quoted;
+that is why a planning file's `## Configuration` fence heads its table
+`["perfectionist::path_qualification_mismatch"]` even where the same
+file calls the rule `path_qualification_mismatch` a paragraph earlier.
+A name that nothing resolves against is under no such constraint: the
+crate-wide `[perfectionist]` table's `enable` / `disable` entries take
+*unqualified* rule names (see
+[`CONFIGURATION.md`](../CONFIGURATION.md)), so `dylint.toml` is not
+uniformly namespaced either.
 
 ### Why namespace at all
 
@@ -494,15 +507,7 @@ from the planning H1, uppercase it for the macro identifier, slot
 it under `perfectionist::`. The diagnostic text inside the lint is
 the rule's own one-line summary.
 
-Configuration tables follow the same shape. The planning file
-shows:
-
-```toml
-[path_qualification_mismatch]
-style = "unqualified"
-```
-
-The actual `dylint.toml` reads:
+A configuration table reads:
 
 ```toml
 ["perfectionist::path_qualification_mismatch"]

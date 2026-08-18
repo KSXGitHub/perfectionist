@@ -127,7 +127,7 @@ struct Cli {
 ## Configuration
 
 ```toml
-[clap_help_too_long]
+["perfectionist::clap_help_too_long"]
 about_max_lines = 1
 about_max_chars = 120
 long_about_max_lines = 8
