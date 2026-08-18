@@ -41,13 +41,13 @@ Read three things first, in this order:
    - **Lint name namespacing.** Every lint registers under the
      `perfectionist` tool namespace via
      `rustc_session::declare_tool_lint!`. A per-rule `dylint.toml`
-     table is *addressed* by its config key, so its header has to be
-     the namespaced name, quoted —
-     `["perfectionist::path_qualification_mismatch"]` — in a planning
-     file's `## Configuration` fence exactly as in a consumer's
-     `dylint.toml`; `#[allow(...)]` / `#[deny(...)]` likewise take the
-     `perfectionist::`-qualified path rustc resolves. Where the rule
-     is merely *named*, the unqualified
+     table is *addressed* by its config key, so its header has to
+     be the namespaced name, quoted —
+     `["perfectionist::path_qualification_mismatch"]` — in a
+     planning file's `## Configuration` fence exactly as in a
+     consumer's `dylint.toml`; `#[allow(...)]` / `#[deny(...)]`
+     likewise take the `perfectionist::`-qualified path rustc
+     resolves. Where the rule is merely *named*, the unqualified
      `path_qualification_mismatch` is correct — in prose, and in a
      `[perfectionist]` `enable` / `disable` entry. See the
      conventions file for the per-context spelling.
@@ -63,7 +63,7 @@ planning files identify shared infrastructure.
 The catalogue is organised so that each rule has exactly one
 source file at `src/rules/<rule_name>.rs` and exactly one `Config`
 struct keyed by the rule's full namespaced name. The convention
-has two consequences for the implementer:
+has these consequences for the implementer:
 
 1. **Before writing code, check whether the rule is actually one
    rule.** A planning file that bundles several independently-
@@ -116,9 +116,8 @@ has two consequences for the implementer:
 
 4. **Cross-rule helpers are `pub(crate)`, not `pub`.** The crate is
    a dylint `cdylib` with no public API surface, so `pub`
-   over-advertises. Items in `src/common.rs`, `src/macro_path.rs`,
-   `src/enclosing_hir.rs`, `src/literal_scan.rs`, and
-   `src/module_reparse.rs` should all be
+   over-advertises. Items in the crate-internal helper modules —
+   every `src/*.rs` beside `lib.rs` and `rules.rs` — should all be
    `pub(crate)` (or tighter). Use `pub(super)` for items that are
    only meant to leak one module level up — e.g. a rule's `Config`
    struct that's read by the rule's flat `.rs` driver but nowhere
@@ -180,17 +179,18 @@ becomes documentation drift. Remove it:
    move the entry there.
 3. **Fix every link and prose reference** to the deleted rule.
    Cross-references typically appear in:
-   - Other rules' "Interaction with sibling lints" sections.
+   - Other rules' "Interaction with sibling rules" sections.
    - `planned-rules/IMPLEMENTATION_CONVENTIONS.md`, when the rule
      was an example of a convention.
    - The README's index, beyond just the entry being removed —
      some entries describe one rule by reference to another.
 
    Fix each reference by either pointing at the implementation
-   source code (e.g., `src/path_qualification_mismatch.rs`) or rewording the
-   prose to drop the link entirely. A reference that just names
-   the rule for context can be reworded to use the lint's
-   namespaced name (`perfectionist::path_qualification_mismatch`) without a
+   source code (e.g., `src/rules/path_qualification_mismatch.rs`)
+   or rewording the prose to drop the link entirely. A reference
+   that just names the rule for context can be reworded to use the
+   lint's namespaced name
+   (`perfectionist::path_qualification_mismatch`) without a
    markdown link.
 
 After the cleanup, the repository should be self-consistent: the
@@ -400,18 +400,18 @@ scanner, the unicode-width helper, the format-template parser,
 the URL-discovery scanner, and the module-re-parsing helper
 (`src/module_reparse.rs`, which re-parses the crate's module
 source files from a shared `SourceMap` so the import-rewriting
-rules `import_granularity_mismatch` and `uncombined_self_import` reach separate-file
-submodules while keeping `#[cfg(...)]` gates intact). The
-module-re-parsing helper exists because this exact bug — a
-source-layout rule shipped as a pre-expansion `EarlyLintPass`
-silently skipping every separate-file submodule — has been
-written twice; before implementing any rule that reads the
-*written layout* of items across module scopes, read the
+rules `import_granularity_mismatch` and `uncombined_self_import`
+reach separate-file submodules while keeping `#[cfg(...)]` gates
+intact). The module-re-parsing helper exists because this exact
+bug — a source-layout rule shipped as a pre-expansion
+`EarlyLintPass` silently skipping every separate-file submodule —
+has been written twice; before implementing any rule that reads
+the *written layout* of items across module scopes, read the
 "Reaching every module (source-layout rules)" section of
 `planned-rules/IMPLEMENTATION_CONVENTIONS.md`. The planning files
 document who depends on whom in the "Interaction with sibling
-rules" sections. When implementing the *first* rule
-in a dependency cluster, factor the shared helper into a
+rules" sections. When implementing the *first* rule in a
+dependency cluster, factor the shared helper into a
 crate-internal module so the second rule can reuse it. The
 planning files name this expectation explicitly; don't duplicate
 the helper.
