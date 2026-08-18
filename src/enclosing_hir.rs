@@ -6,32 +6,20 @@
 //! A span reaches here from anywhere the rule was not walking the HIR
 //! when it found the violation — a pre-expansion pass that parked the
 //! span for a later one, a re-parse of the crate's module files, a
-//! walk over comment or literal source text.
+//! walk over comment or literal source text. Whichever it was, the
+//! caller feeds in the spans it cares about and gets back, for each
+//! one, an enclosing HIR node to emit at (or [`hir::CRATE_HIR_ID`] if
+//! nothing contained it).
 //!
-//! Whichever it was, the caller feeds in the spans it cares about and
-//! gets back, for each one, the deepest HIR node whose span contains
-//! it (or [`hir::CRATE_HIR_ID`] if nothing did). A payload that
-//! carries more than a span (an insert-versus-remove discriminator,
-//! say) projects to [`Span`] at the call site.
-//!
-//! Pick the entry point by what kind of span you are holding. The two
-//! do not merely differ in whether attributes count toward
-//! containment — they select a different node when several contain
-//! the span — so they are not interchangeable even when both would
-//! find something:
-//!
-//! - [`find_enclosing_hir_ids`] is for a *pre-expansion call site*
-//!   parked by an earlier pass. It walks item spans as rustc reports
-//!   them, which start after any `///` run, keeps the deepest node the
-//!   depth-first walk reaches, and hands the ids back for the caller
-//!   to emit with.
-//! - [`emit_at_enclosing_hir`] is for a span found by *scanning source
-//!   text*. It resolves and emits in one step through
-//!   [`find_comment_anchor_hir_ids`], which folds in attribute spans
-//!   so a doc-comment span anchors on the item that comment documents
-//!   rather than escaping to the enclosing module, resolves macro
-//!   hygiene, and keeps the *narrowest* containing node so a
-//!   derive-generated node cannot steal the anchor.
+//! [`find_enclosing_hir_ids`] resolves spans and hands the ids back;
+//! [`emit_at_enclosing_hir`] resolves and emits in one step, and
+//! carries an arbitrary per-span payload through to its callback.
+//! They are **not** interchangeable: they fold attribute spans in
+//! differently and, where several nodes contain a span, do not pick
+//! the same one. Read the doc on each before choosing — which one a
+//! rule wants follows from how it found the span, and the wrong
+//! choice silently anchors diagnostics on a different node, changing
+//! which `#[allow]` scopes suppress them.
 
 use rustc_hir as hir;
 use rustc_hir::intravisit::{self, Visitor};

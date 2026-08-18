@@ -77,8 +77,8 @@ pub(crate) fn emit_flagged_chars<Cx>(
 
 /// Label on the `...` suggestion. The two emitters below reach
 /// different `clippy_utils` entry points and assemble the diagnostic
-/// separately; naming the label pins the one part of it that is a
-/// bare literal in both.
+/// separately, so each literal they have in common is named here
+/// rather than written twice.
 const SUGGESTION_LABEL: &str = "use ASCII `...` instead";
 
 /// Replacement text the suggestion offers, named for the same reason

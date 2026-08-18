@@ -150,7 +150,10 @@ The shapes to avoid:
 - **Do not quote another file's heading or prose verbatim.** A
   quoted heading is a copy that no tool checks; a quoted sentence is
   worse, because anyone may reword the original without knowing the
-  copy exists. In markdown, link to the section by anchor — the
+  copy exists. Naming a heading the conventions *require* every file
+  of a kind to carry — a planning file's "Interaction with sibling
+  rules", say — is naming the convention, not copying one file's
+  fact, and is fine. In markdown, link to the section by anchor — the
   anchor is a copy too, and equally unchecked, but a stale one
   lands the reader at the top of the right file instead of reading
   as prose that was never true. In Rust
@@ -182,12 +185,16 @@ built-in default list restated in a config field's doc is the only
 copy a user can read, and the `RuleConfig` mirrors in `tests/`
 serialise config the test crate cannot reach any other way. Keep
 those, say in the prose why the copy exists, and claim no more for
-it than it delivers — in particular, do not claim a copy is
-complete, since that is the half most likely to rot.
+it than it delivers. A default list is the exception that must be
+complete — a user cannot act on a partial one — so it is worth
+re-reading against the code whenever that code changes. Anywhere
+else, do not claim a copy is complete: that is the half most
+likely to rot.
 
 The mechanical half of this is worth a grep before you commit a
-documentation change: a backticked `src/…`, `tests/…`, `ui/…`,
-`rules/…` or `planned-rules/…` path should resolve, and a
+documentation change: a backticked in-repo path — `src/…`,
+`tests/…`, `ui/…`, `rules/…`, `planned-rules/…`, `tools/…` —
+should resolve, and a
 `perfectionist::<name>` should name a lint that
 `src/lib.rs::register_lints` registers. Both greps have standing
 exceptions — prose describing a *linted* crate names paths that do
@@ -600,7 +607,7 @@ helps. `README.md` is the exception among them: `Cargo.toml` sets
 `readme = "README.md"`, so it also ships to crates.io and lib.rs.
 Keep it conservative for the same reason its links are absolute.
 
-The constraint is not "GitHub invented it" but "the other two
+The constraint is not "GitHub invented it" but "the other
 renderers drop it". Rustdoc parses CommonMark plus a few
 extensions, and `tools/gen-docs/` parses with `pulldown-cmark`
 under `ENABLE_TABLES | ENABLE_STRIKETHROUGH | ENABLE_FOOTNOTES`
@@ -618,7 +625,7 @@ lists, and mermaid fences**. The alert is the trap worth naming:
 its marker is left as literal text in both the in-tree catalogue
 and the docs site, where it reads as a typo.
 
-`<details>` / `<summary>` renders in all three, but still does
+`<details>` / `<summary>` renders everywhere, but still does
 not belong in rustdoc-bound docs. `rules/*.md` exists so the
 catalogue can be read in an editor without a browser, and
 `tools/gen-docs/src/render_md.rs` drops the HTML renderer's

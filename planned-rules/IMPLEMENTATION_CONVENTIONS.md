@@ -901,12 +901,12 @@ plugin's pass internals.
 
 A rule's `declare_tool_lint!` rustdoc is rendered by rustdoc and by
 `tools/gen-docs/` as well as by GitHub, so it must stay within the
-markdown all three understand. The planning files in this directory
-carry no such constraint — only GitHub, local editors, and agent
-tooling ever render them.
+markdown all of them understand. In practice that rules out GitHub
+alerts (`> [!NOTE]`), task lists, and mermaid fences. The planning
+files in this directory carry no such constraint — only GitHub, local
+editors, and agent tooling ever render them.
 
-Which constructs that rules out, which survive each renderer, when a
-`>` block may become an alert, and how to pick the alert type are all
-settled in
+Which renderer drops what, when a `>` block may become an alert, and
+how to pick the alert type are settled in
 [GitHub-specific markdown](../CLAUDE.md#github-specific-markdown).
 

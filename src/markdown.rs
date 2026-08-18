@@ -1,5 +1,7 @@
-//! Markdown scanners shared by every rule that walks doc-comment text
-//! — whichever rules import `crate::markdown`. Consumers divide by
+//! Markdown scanners shared by every rule that walks markdown-bearing
+//! source text — doc comments, and the attribute string literals clap
+//! renders as `--help`. Whichever rules import `crate::markdown`;
+//! consumers divide by
 //! how much structure they need, per the markdown-parsing convention
 //! in `planned-rules/IMPLEMENTATION_CONVENTIONS.md`:
 //!
