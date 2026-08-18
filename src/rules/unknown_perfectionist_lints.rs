@@ -1,9 +1,12 @@
 use crate::common::{DefaultState, render_meta_path, resolved_state};
 use clippy_utils::diagnostics::span_lint_and_then;
+use levenshtein::Candidate;
 use rustc_ast::{Attribute, MetaItem, MetaItemInner, MetaItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Symbol, sym};
+
+mod levenshtein;
 
 declare_tool_lint! {
     /// ### What it does
@@ -203,9 +206,10 @@ impl UnknownPerfectionistLints {
         if self.suggestion_distance == 0 {
             return None;
         }
+        let candidate = Candidate::new(candidate);
         let mut closest: Option<(&str, usize)> = None;
         for registered in &self.registered_lints {
-            let distance = levenshtein(candidate, registered);
+            let distance = candidate.distance_to(registered);
             if distance <= self.suggestion_distance as usize
                 && closest.is_none_or(|(_, closest_distance)| distance < closest_distance)
             {
@@ -240,30 +244,4 @@ impl UnknownPerfectionistLints {
             |_| {},
         );
     }
-}
-
-fn levenshtein(left: &str, right: &str) -> usize {
-    let left_chars: Vec<char> = left.chars().collect();
-    let right_chars: Vec<char> = right.chars().collect();
-    let left_len = left_chars.len();
-    let right_len = right_chars.len();
-    if left_len == 0 {
-        return right_len;
-    }
-    if right_len == 0 {
-        return left_len;
-    }
-    let mut previous_row: Vec<usize> = (0..=right_len).collect();
-    let mut current_row: Vec<usize> = vec![0; right_len + 1];
-    for i in 1..=left_len {
-        current_row[0] = i;
-        for j in 1..=right_len {
-            let substitution_cost = usize::from(left_chars[i - 1] != right_chars[j - 1]);
-            current_row[j] = (previous_row[j] + 1)
-                .min(current_row[j - 1] + 1)
-                .min(previous_row[j - 1] + substitution_cost);
-        }
-        core::mem::swap(&mut previous_row, &mut current_row);
-    }
-    previous_row[right_len]
 }
