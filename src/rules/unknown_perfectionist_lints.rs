@@ -245,14 +245,16 @@ impl UnknownPerfectionistLints {
 
     fn report(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem, candidate: &str) {
         let path_text = render_meta_path(meta_item);
-        let help = self.help_for(candidate);
         span_lint_and_then(
             lint_context,
             UNKNOWN_PERFECTIONIST_LINTS,
             meta_item.span,
             format!("unknown lint: `{path_text}`"),
+            // Called only when the lint fires, so a site that carries
+            // `#[allow(perfectionist::unknown_perfectionist_lints)]`
+            // pays for neither the distance sweep nor the `String`.
             |diagnostic| {
-                if let Some(help) = help {
+                if let Some(help) = self.help_for(candidate) {
                     diagnostic.help(help);
                 }
             },
