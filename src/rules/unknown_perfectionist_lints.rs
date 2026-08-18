@@ -1,12 +1,9 @@
 use crate::common::{DefaultState, render_meta_path, resolved_state};
 use clippy_utils::diagnostics::span_lint_and_then;
-use levenshtein::levenshtein;
 use rustc_ast::{Attribute, MetaItem, MetaItemInner, MetaItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Symbol, sym};
-
-mod levenshtein;
 
 declare_tool_lint! {
     /// ### What it does
@@ -267,3 +264,38 @@ impl UnknownPerfectionistLints {
         );
     }
 }
+
+/// The Levenshtein edit distance between `left` and `right`: the fewest
+/// single-byte insertions, deletions, and substitutions that turn one
+/// into the other.
+///
+/// Both sides are lint names, and every lint name this plugin registers
+/// is ASCII — a candidate that is not never reaches here — so bytes are
+/// characters, and `str::as_bytes` needs neither decoding nor a
+/// `Vec<char>` to compare them.
+fn levenshtein(left: &[u8], right: &[u8]) -> usize {
+    let left_len = left.len();
+    let right_len = right.len();
+    if left_len == 0 {
+        return right_len;
+    }
+    if right_len == 0 {
+        return left_len;
+    }
+    let mut previous_row: Vec<usize> = (0..=right_len).collect();
+    let mut current_row: Vec<usize> = vec![0; right_len + 1];
+    for i in 1..=left_len {
+        current_row[0] = i;
+        for j in 1..=right_len {
+            let substitution_cost = usize::from(left[i - 1] != right[j - 1]);
+            current_row[j] = (previous_row[j] + 1)
+                .min(current_row[j - 1] + 1)
+                .min(previous_row[j - 1] + substitution_cost);
+        }
+        core::mem::swap(&mut previous_row, &mut current_row);
+    }
+    previous_row[right_len]
+}
+
+#[cfg(test)]
+mod tests;
