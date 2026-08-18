@@ -9,7 +9,7 @@ this project's author — over the
 iterator adaptors when their result is immediately collected into a
 `Vec`. This is the codegen half of the proposal; the
 `in-place-sort` / `in-place-dedup` pair
-covers the `mut`-elision half.
+covers the imperative half.
 
 ## Statement
 
@@ -61,8 +61,8 @@ appended in source order.
 
 ### Why one rule, not two (sort + dedup)
 
-Unlike Problem 1's `mut`-elision pair — where the issue explicitly asks
-for "one for the sorting, one for the deduping" — the itertools case is
+Unlike Problem 1's imperative pair — where the issue explicitly proposes
+"one for the sorting, one for the deduping" — the itertools case is
 naturally **one rule**, because the adaptors *compose in a single chain*
 that must be rewritten as a unit. On `iter.sorted().dedup().collect()`
 the rewrite has to lift the *one* terminal `collect()` to the front and
@@ -91,7 +91,7 @@ compute the same `Vec`. The project prefers B for two reasons:
   the hand-written collect-sort-dedup. Avoiding the itertools adaptor
   layers when the result is going into a `Vec` anyway costs nothing and
   can only help the optimiser.
-- **Consistency with the `mut`-elision rules.** B is exactly the
+- **Consistency with the in-place rules.** B is exactly the
   `collect().into_sorted().into_deduped()` shape that
   [`in-place-sort`](./in-place-sort.md) and
   [`in-place-dedup`](./in-place-dedup.md)
@@ -234,8 +234,7 @@ depend on `itertools` (the adaptors cannot resolve otherwise).
   type-check; prefer the turbofish form for locality.
 - **Proc-macro suppression.** The primary span covers the adaptor-run
   through the `collect` — wider than a bare identifier — so by the
-  "vulnerable exactly when the diagnostic span is narrower than the
-  offending node" test in
+  "vulnerable exactly when" test in
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   ("Suppressing proc-macro-synthesised violations"), the built-in
   `report_in_external_macro: false` filter suffices; no
