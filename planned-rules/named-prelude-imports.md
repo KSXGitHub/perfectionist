@@ -128,7 +128,7 @@ As built (see `src/rules/named_prelude_imports.rs`):
 
 ```toml
 # dylint.toml
-[named_prelude_imports]
+["perfectionist::named_prelude_imports"]
 # Names recognised as prelude segments. Match `wildcard_imports`'s knob
 # of the same name so a project can flip both rules with one value.
 prelude_segment_names = ["prelude"]
