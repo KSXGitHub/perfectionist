@@ -17,6 +17,12 @@ fn typo_close() {}
 #[deny(perfectionist::unknown_perfectionist_lint)]
 fn typo_close_two() {}
 
+// Bad: a whole word fragment dropped (`_in`), putting the candidate
+// three edits from `unicode_ellipsis_in_comments`. Still hinted: the
+// suggestion threshold is a fixed 3.
+#[allow(perfectionist::unicode_ellipsis_comments)]
+fn typo_dropped_fragment() {}
+
 // Bad: depth mismatch — two trailing segments. The joined form
 // (`unknown_perfectionist_lints`) is itself a registered name, so a
 // "did you mean" hint applies.
@@ -27,7 +33,8 @@ mod depth_mismatch {}
 #[allow(perfectionist)]
 fn no_target() {}
 
-// Bad: nothing close enough for the default suggestion threshold.
+// Bad: nothing close enough for the suggestion threshold — the
+// nearest registered name is nineteen edits away.
 #[warn(perfectionist::nothing_like_this_anywhere)]
 fn no_suggestion() {}
 

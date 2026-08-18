@@ -45,38 +45,42 @@ declare_tool_lint! {
 const CONFIG_KEY: &str = "perfectionist::unknown_perfectionist_lints";
 const TOOL_NAME: &str = "perfectionist";
 
-#[derive(Debug, serde::Deserialize)]
+/// Configuration is reserved for future knobs; the lint currently
+/// has no options. The empty struct still exists so that a stray
+/// `["perfectionist::unknown_perfectionist_lints"]` table in
+/// `dylint.toml` deserialises rather than producing a confusing
+/// parse error.
+#[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
-struct Config {
-    /// Maximum Levenshtein edit distance between an unknown
-    /// `perfectionist::*` name and a registered lint for the lint to
-    /// emit a "did you mean" suggestion. Defaults to `2`, which
-    /// catches single-character typos and short transpositions
-    /// without producing wild guesses. Set to `0` to disable this
-    /// suggestion.
-    suggestion_distance: u8,
-}
+struct Config {}
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            suggestion_distance: 2,
-        }
-    }
-}
+/// Maximum Levenshtein edit distance between an unknown
+/// `perfectionist::*` name and a registered lint for the latter to be
+/// offered as a "did you mean" hint.
+///
+/// Deliberately not configurable. The threshold moves neither what the
+/// rule flags nor what it tells you to write — only the wording of an
+/// advisory `help:` line — so a project has nothing to gain by tuning
+/// it, and rustc likewise hard-codes the heuristic behind its own
+/// "did you mean".
+///
+/// `3` is generous enough to survive a dropped word fragment
+/// (`unicode_ellipsis_comments` for `unicode_ellipsis_in_comments`) yet
+/// well inside the catalogue's own spacing: no registered name comes
+/// within `3` edits of another, and the nearest registered name to a
+/// genuinely unrelated one sits an order of magnitude further out. A
+/// wrong guess would cost only a misleading sentence anyway — the hint
+/// carries no suggestion for `cargo fix` to apply.
+const SUGGESTION_DISTANCE: usize = 3;
 
 pub struct UnknownPerfectionistLints {
-    suggestion_distance: u8,
     registered_lints: Vec<String>,
 }
 
 impl UnknownPerfectionistLints {
     fn new(registered_lints: Vec<String>) -> Self {
-        let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        Self {
-            suggestion_distance: config.suggestion_distance,
-            registered_lints,
-        }
+        let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        Self { registered_lints }
     }
 }
 
@@ -225,16 +229,13 @@ impl UnknownPerfectionistLints {
     }
 
     /// The registered lint closest to `candidate`, within
-    /// `suggestion_distance` edits of it. `candidate` must be ASCII;
+    /// [`SUGGESTION_DISTANCE`] edits of it. `candidate` must be ASCII;
     /// [`Self::help_for`] rules out everything else beforehand.
     fn find_closest_match(&self, candidate: &str) -> Option<&str> {
-        if self.suggestion_distance == 0 {
-            return None;
-        }
         let mut closest: Option<(&str, usize)> = None;
         for registered in &self.registered_lints {
             let distance = levenshtein(candidate.as_bytes(), registered.as_bytes());
-            if distance <= self.suggestion_distance as usize
+            if distance <= SUGGESTION_DISTANCE
                 && closest.is_none_or(|(_, closest_distance)| distance < closest_distance)
             {
                 closest = Some((registered.as_str(), distance));
