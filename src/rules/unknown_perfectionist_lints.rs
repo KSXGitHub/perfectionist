@@ -289,4 +289,4 @@ fn levenshtein(left: &[u8], right: &[u8]) -> usize {
 }
 
 #[cfg(test)]
-mod tests;
+mod test_levenshtein;
