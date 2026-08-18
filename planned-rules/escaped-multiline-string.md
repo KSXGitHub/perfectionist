@@ -219,7 +219,7 @@ let _ = text_block! { "foo" "bar" "baz" };  // already inside text_block!
 ## Configuration
 
 ```toml
-[escaped_multiline_string]
+["perfectionist::escaped_multiline_string"]
 style = "text_block_macros"  # or "line_continuation"
 
 # Minimum number of `\n` characters in the decoded value before

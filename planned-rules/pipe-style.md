@@ -423,7 +423,7 @@ fixed points for one input.
 ## Configuration
 
 ```toml
-[pipe_style]
+["perfectionist::pipe_style"]
 # Each sub-check can be turned off independently. All four default
 # to enforce.
 pipe_at_chain_boundary  = "forbid"  # or "allow" to permit pipe at chain start

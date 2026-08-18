@@ -116,15 +116,14 @@ name does not match the project's error-naming convention. The default
 pattern is the `Error` suffix, matching `std::io::Error`,
 `serde_json::Error`, the thiserror documentation's examples, and the
 parallel-disk-usage convention that motivated the rule. Configure
-under the `[unconventional_error_name]` table (registered as
-`["perfectionist::unconventional_error_name"]` in the consumer's
-`dylint.toml` per the
-[lint-name namespacing convention](./IMPLEMENTATION_CONVENTIONS.md#lint-name-namespacing));
+under the `["perfectionist::unconventional_error_name"]` table of the
+consumer's `dylint.toml`, spelt per the
+[lint-name namespacing convention](./IMPLEMENTATION_CONVENTIONS.md#lint-name-namespacing);
 the `error_name_pattern` key accepts one of five forms — pick
 exactly one (uncomment one line, leave the others commented):
 
 ```toml
-[unconventional_error_name]
+["perfectionist::unconventional_error_name"]
 # Default; equivalent to omitting the key.
 error_name_pattern = { suffix = "Error" }
 # Bare-string shorthand for `{ suffix = ... }`.

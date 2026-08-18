@@ -137,7 +137,7 @@ suggestion preserves the spec: `{:>5}` paired with `name` becomes
 ## Configuration
 
 ```toml
-[uninlined_derive_more_args]
+["perfectionist::uninlined_derive_more_args"]
 # Attribute paths to scan. Defaults cover derive_more 1.x.
 attribute_paths = ["display", "debug"]
 

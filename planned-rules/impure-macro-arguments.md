@@ -666,7 +666,7 @@ let payload = serde_json::json!({ "id": next_id(), "ts": now() });
 ## Configuration
 
 ```toml
-[impure_macro_arguments]
+["perfectionist::impure_macro_arguments"]
 # Eligibility mode. Defaults to "allow_and_deny".
 mode = "allow_and_deny"
 
