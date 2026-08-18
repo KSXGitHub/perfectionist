@@ -211,7 +211,7 @@ impl UnknownPerfectionistLints {
         if let Some(non_ascii) = candidate.chars().find(|character| !character.is_ascii()) {
             let codepoint = u32::from(non_ascii);
             return Some(format!(
-                "contains a non-ASCII character: '{non_ascii}' (U+{codepoint:04X})"
+                "contains a non-ASCII character: '{non_ascii}' (U+{codepoint:04X})",
             ));
         }
         let suggested_name = self.find_closest_match(candidate)?;
