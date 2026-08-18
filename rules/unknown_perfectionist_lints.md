@@ -48,5 +48,5 @@ Maximum Levenshtein edit distance between an unknown
 `perfectionist::*` name and a registered lint for the lint to
 emit a "did you mean" suggestion. Defaults to `2`, which
 catches single-character typos and short transpositions
-without producing wild guesses. Set to `0` to disable
-suggestions entirely.
+without producing wild guesses. Set to `0` to disable this
+suggestion.
