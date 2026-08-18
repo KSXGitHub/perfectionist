@@ -400,7 +400,7 @@ rule needs because the modules it inspects are all test-gated.
   catalogue, in particular the lint-name namespacing
   (`perfectionist::*`) that every registered lint follows.
 
-## Interaction with sibling lints
+## Interaction with sibling rules
 
 This rule is the natural continuation of
 `perfectionist::excessive_inline_tests`
