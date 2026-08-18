@@ -7,12 +7,12 @@
 //! per-rule pieces are the lint name, a context label, and how to turn
 //! a byte offset within the text into a [`Span`].
 //!
-//! [`emit_flagged_char`] and its [`HirId`]-anchored sibling
-//! [`emit_flagged_char_hir`] are the single-character core, factored
-//! out so a rule that does its own scanning — one that must consult a
-//! markdown code-region mask and a fallible span map before emitting,
-//! say — shares the exact message, suggestion, and applicability
-//! without duplicating them.
+//! [`emit_flagged_char_hir`] emits one character's diagnostic at a
+//! caller-supplied [`HirId`], for a rule that runs its own scan loop —
+//! one that must consult a markdown code-region mask and a fallible
+//! span map before emitting, say. It shares the message, suggestion,
+//! and applicability with the sweep above rather than restating
+//! them.
 //!
 //! [`string_literal_quote_lengths`] is the companion parser for any
 //! rule that needs to scan a string-literal body without its opening
@@ -75,10 +75,9 @@ pub(crate) fn emit_flagged_chars<Cx>(
 }
 
 /// Emit a single flagged-character diagnostic at `span`, suggesting
-/// the ASCII `...` replacement. Factored out of [`emit_flagged_chars`]
-/// so rules that run their own scan loop (the doc-comment scanner,
-/// which filters against a code-region mask and a fallible span map)
-/// reuse the same message text and applicability.
+/// the ASCII `...` replacement. The body of [`emit_flagged_chars`]'
+/// loop, split out so the [`HirId`]-anchored
+/// [`emit_flagged_char_hir`] can be checked against it at a glance.
 ///
 /// Applicability is [`MachineApplicable`] for U+2026 (the rules'
 /// primary target, which always maps cleanly to `...`) and
@@ -88,7 +87,7 @@ pub(crate) fn emit_flagged_chars<Cx>(
 ///
 /// [`MachineApplicable`]: Applicability::MachineApplicable
 /// [`MaybeIncorrect`]: Applicability::MaybeIncorrect
-pub(crate) fn emit_flagged_char<Cx>(
+fn emit_flagged_char<Cx>(
     lint_context: &Cx,
     lint: &'static Lint,
     character: char,
@@ -108,10 +107,9 @@ pub(crate) fn emit_flagged_char<Cx>(
     );
 }
 
-/// HIR-anchored counterpart of [`emit_flagged_char`] for the
-/// comment-scanning rules (`unicode_ellipsis_in_comments` and
-/// `unicode_ellipsis_in_docs`). They run in a late pass and emit at the
-/// comment's enclosing HIR node — resolved by
+/// HIR-anchored counterpart of [`emit_flagged_char`], for a rule that
+/// runs in a late pass and emits at the enclosing HIR node of the
+/// comment it scanned — resolved by
 /// [`crate::enclosing_hir::emit_at_enclosing_hir`] — so a per-item /
 /// per-module `#[allow]` / `#[expect]` resolves, not just a crate-root
 /// `#![allow]`. The message, suggestion, and applicability match

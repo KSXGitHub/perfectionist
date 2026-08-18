@@ -10,7 +10,7 @@ this file too. The one worth naming here is
 describing what the rules have in common is what this file is for, so
 it is also where hand-maintained rosters of rule names accumulate, and
 every one of those is a copy of the code waiting to go stale. Prefer a
-greppable predicate — "every rule that imports `src/markdown.rs`" —
+greppable predicate — "every rule that imports `crate::markdown`" —
 over naming the rules.
 
 ## Parser style
@@ -94,7 +94,7 @@ fixed-size byte sequence do not.
 
 Several rules scan a slice of markdown: every rule that imports
 `src/markdown.rs`. They share that one crate-internal scanner, built
-from `take_*` combinators per the "Parser style" section above. The
+from `take_*` combinators per [Parser style](#parser-style). The
 helper is hand-written. **Do not pull in `pulldown_cmark`, `comrak`,
 `markdown-rs`, or `markdown-it`** for any of them without first
 revisiting the rationale below.

@@ -70,13 +70,15 @@ Configure via `dylint.toml` under `["perfectionist::unicode_ellipsis_in_panic_me
 
 ### `extra_macros`: `[string]` (optional)
 
-Additional macros whose call site should be scanned for
-the flagged characters. Merged with the built-in defaults
-(the standard panic and assertion macros — `panic`,
-`unimplemented`, `todo`, `unreachable`, `debug_unreachable`,
-and the `assert*` family); empty by default. Use this to
-add project-specific assertion-shaped macros without having
-to re-state the standard ones.
+Additional macros whose call site should be scanned for the
+flagged characters. Empty by default, and merged with the
+built-in set: `panic`, `unimplemented`, `todo`,
+`unreachable`, `assert`, `assert_eq`, `assert_ne`, and the
+`debug_` counterpart of each of those that has one
+(`debug_unreachable`, `debug_assert`, `debug_assert_eq`,
+`debug_assert_ne`). Use this to add project-specific
+assertion-shaped macros without having to re-state the
+standard ones.
 
 ### `ignore_macros`: `[string]` (optional)
 

@@ -22,9 +22,10 @@ behaviour rather than the documented spec for function calls.
 Still pending:
 
 - **Matcher-based declarative-macro auto-detection** (the
-  `$(,)?` / `$(,)*` matcher walk described under "Matcher-based
-  — declarative-macro auto-detection" and "Why matcher-based
-  is harder than name-based" below). Until that lands, only
+  `$(,)?` / `$(,)*` matcher walk described under
+  [Matcher-based](#matcher-based--declarative-macro-auto-detection)
+  and [why it is harder](#why-matcher-based-is-harder-than-name-based)
+  below). Until that lands, only
   macros named in the curated list or in `extra_macros`
   are linted; any `macro_rules!` macro the user writes
   themselves is silently ineligible regardless of its matcher

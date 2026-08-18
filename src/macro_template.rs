@@ -1,7 +1,6 @@
 //! Locating string literals in a macro invocation's token stream.
 //!
-//! Two shapes are on offer, and a rule picks by what it may safely
-//! rewrite:
+//! Which shape a rule wants follows from what it may safely rewrite:
 //!
 //! - [`find_template_literal`] returns the single *format template* — the
 //!   first argument that is, on its own, a lone cooked string literal.

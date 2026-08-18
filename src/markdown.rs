@@ -1,23 +1,18 @@
-//! Markdown scanners shared by sibling rules that walk doc-comment
-//! text. Two consumer tiers sit on the same `take_*` combinators (see
-//! the "Markdown parsing" section of
-//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`):
+//! Markdown scanners shared by every rule that walks doc-comment text
+//! — whichever rules import `crate::markdown`. Two kinds of need sit
+//! on the same `take_*` combinators, per the markdown-parsing
+//! convention in `planned-rules/IMPLEMENTATION_CONVENTIONS.md`:
 //!
-//! - **Tier A — structural classification.** [`scan_skip_regions`]
-//!   produces a vector of byte-range skip regions the consumer
-//!   (`bare_url`, `bare_email`, `bare_issue_reference`) applies as a
-//!   post-filter before emitting diagnostics. [`classify_constructs`]
-//!   is the richer Tier A entry point: it returns every construct's
-//!   byte range *and* its [`ConstructKind`], which
-//!   `clap_help_markdown` maps onto its forbidden-construct
-//!   categories. [`scan_code_span_candidates`] is the narrow one,
-//!   returning just the code spans `bare_identifier_reference`
-//!   inspects.
-//! - **Tier B — code-region mask.** [`scan_code_regions`] returns only
-//!   the byte ranges of code spans and code blocks, for rules
-//!   (`unicode_ellipsis_in_docs`, `unpinned_repo_ref`) that just need
-//!   to exclude code from a prose scan rather than classify every
-//!   construct.
+//! - **Tier A — structural classification**, for a rule that must tell
+//!   one construct from another. [`scan_skip_regions`] produces
+//!   byte-range skip regions to post-filter candidate diagnostics
+//!   against; [`classify_constructs`] returns every construct's byte
+//!   range *and* its [`ConstructKind`], for a rule that acts on the
+//!   kind; and [`scan_code_span_candidates`] is the narrow one,
+//!   returning the code spans alone.
+//! - **Tier B — code-region mask**, for a rule that only needs code
+//!   excluded from a prose scan. [`scan_code_regions`] returns the
+//!   byte ranges of code spans and code blocks and nothing else.
 //!
 //! The implementation is a hand-written parser-combinator walk per
 //! the convention documented in
@@ -727,8 +722,8 @@ pub(crate) struct Construct {
 }
 
 /// The kind of a [`Construct`] — the full Tier A structural taxonomy
-/// (see the "Markdown parsing" section of
-/// `planned-rules/IMPLEMENTATION_CONVENTIONS.md`). `clap_help_markdown`
+/// (see `planned-rules/IMPLEMENTATION_CONVENTIONS.md`).
+/// `clap_help_markdown`
 /// maps each kind onto a user-facing "forbidden construct" category and
 /// decides per kind whether to flag it.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

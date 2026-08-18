@@ -12,7 +12,7 @@ keep the catalogue in sync as you go.
 
 ## Before you write code
 
-Read three things first, in this order:
+Read these first, in this order:
 
 1. **The rule's own file**, `planned-rules/<rule-name>.md`. It
    specifies the lint's identifier, configuration, the precise
@@ -131,16 +131,7 @@ does not. Every such sentence is a future lie with a long fuse.
 Before writing one, ask what would make it go stale, and prefer the
 form that cannot.
 
-This is the most-repeated defect in this repository's
-documentation. It has been filed as an individual stale reference
-several times over — see
-<https://github.com/KSXGitHub/perfectionist/issues/141>,
-<https://github.com/KSXGitHub/perfectionist/issues/286> and
-<https://github.com/KSXGitHub/perfectionist/issues/368> — and the
-first of those failure modes ("docs assert a sibling lint exists")
-then recurred verbatim in an unrelated rule. Fixing instances one
-at a time has not worked, so the shapes to avoid are written down
-here:
+The shapes to avoid:
 
 - **Never introduce a list with its own length.** "The convention
   has two consequences", "Six rules scan a slice of markdown" — the
@@ -185,12 +176,15 @@ it delivers — a mirror that covers part of a rule's configuration
 should not describe itself as the whole shape.
 
 The mechanical half of this is worth a grep before you commit a
-documentation change: every backticked `src/…`, `tests/…`, `ui/…`,
-`rules/…` or `planned-rules/…` path should resolve, and every
-`perfectionist::<name>` outside `planned-rules/` should be a lint
-that `src/lib.rs::register_lints` registers — bar the deliberate
-typo fixtures that `perfectionist::unknown_perfectionist_lints`
-needs.
+documentation change: a backticked `src/…`, `tests/…`, `ui/…`,
+`rules/…` or `planned-rules/…` path should resolve, and a
+`perfectionist::<name>` should name a lint that
+`src/lib.rs::register_lints` registers. Both greps have standing
+exceptions — prose describing a *linted* crate names paths that do
+not exist here, planning files and this guide name rules that are
+not implemented yet, and the `unknown_perfectionist_lints`
+fixtures and `gen-docs`' unit tests use deliberately fake lint
+names — so read the hits rather than the count.
 
 ## Defaults live in field docs, not type or variant docs
 
@@ -582,7 +576,7 @@ Some markdown renders as intended only on GitHub. Whether a file
 may use it depends on who renders that file.
 
 **Documentation that double-serves as rustdoc must not use it.**
-Two things are rustdoc-bound:
+These are rustdoc-bound:
 
 - the rustdoc on a `declare_tool_lint!` block, and
 - the generated `rules/*.md`, which `tools/gen-docs/` renders

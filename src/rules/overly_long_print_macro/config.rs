@@ -21,9 +21,8 @@ const DEFAULT_MAX_LINE_WIDTH: usize = 100;
 /// producer whose output is byte-equivalent before and after the
 /// template is folded across lines. Macros that *return a value*
 /// (`format!`, `format_args!`) or *terminate* (`panic!`, `assert!`,
-/// the `debug_assert*` family, ...) are deliberately absent: see the
-/// "Why not `format!`-family" section of
-/// `planned-rules/overly-long-print-macro.md`.
+/// the `debug_assert*` family, ...) are deliberately absent; the
+/// reasoning is in `planned-rules/overly-long-print-macro.md`.
 ///
 /// The list covers three groups: the stdout / stderr writers
 /// (`println!`, `eprintln!`, `print!`, `eprint!`), the `Write` writers
