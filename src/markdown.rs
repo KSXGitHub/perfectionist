@@ -10,11 +10,14 @@
 //!   is the richer Tier A entry point: it returns every construct's
 //!   byte range *and* its [`ConstructKind`], which
 //!   `clap_help_markdown` maps onto its forbidden-construct
-//!   categories.
+//!   categories. [`scan_code_span_candidates`] is the narrow one,
+//!   returning just the code spans `bare_identifier_reference`
+//!   inspects.
 //! - **Tier B — code-region mask.** [`scan_code_regions`] returns only
 //!   the byte ranges of code spans and code blocks, for rules
-//!   (`unicode_ellipsis_in_docs`) that just need to exclude code from
-//!   a prose scan rather than classify every construct.
+//!   (`unicode_ellipsis_in_docs`, `unpinned_repo_ref`) that just need
+//!   to exclude code from a prose scan rather than classify every
+//!   construct.
 //!
 //! The implementation is a hand-written parser-combinator walk per
 //! the convention documented in
@@ -137,12 +140,12 @@ pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
 /// four-space-indented blocks, which is where doc-test code lives).
 /// Used by rules that scan doc-comment prose and need only to exclude
 /// code from the scan, not classify every construct
-/// (`unicode_ellipsis_in_docs`).
+/// (`unicode_ellipsis_in_docs`, `unpinned_repo_ref`).
 ///
 /// Block-level code is always part of the mask. `include_code_spans`
 /// controls whether inline `` `...` `` spans are masked too: the
-/// `unicode_ellipsis_in_docs` rule exposes this as its
-/// `allow_in_code_spans` knob, since a project may want a flagged
+/// `unicode_ellipsis_in_docs` rule passes the inverse of its
+/// `scan_code_spans` knob, since a project may want a flagged
 /// character caught even inside an inline code span. A code span is
 /// always *parsed* — so a backtick run inside it never spuriously
 /// opens a second span — and only added to the mask when
@@ -763,7 +766,8 @@ pub(crate) enum ConstructKind {
 /// on top of the always-classified structural set. Emphasis and list
 /// detection are off unless a consumer asks for them, because their
 /// CommonMark rules are flanking-sensitive and the catalogue only needs
-/// them behind `clap_help_markdown`'s opt-in `extra_forbid` knob.
+/// them behind `clap_help_markdown`'s opt-in `extra_constructs`
+/// knob.
 #[derive(Clone, Copy, Default)]
 pub(crate) struct ClassifyOptions {
     pub(crate) detect_emphasis: bool,
@@ -1097,7 +1101,7 @@ fn take_html_tag(input: &str) -> Option<usize> {
 /// boundary on both sides so intraword underscores (`foo_bar`) do not
 /// register. The imprecision is acceptable because emphasis detection
 /// is only reachable through `clap_help_markdown`'s opt-in
-/// `extra_forbid` knob.
+/// `extra_constructs` knob.
 fn take_emphasis(input: &str, idx: usize) -> Option<(ConstructKind, usize)> {
     let bytes = input.as_bytes();
     let marker = bytes[idx];
