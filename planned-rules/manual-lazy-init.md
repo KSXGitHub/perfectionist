@@ -66,7 +66,8 @@ The `OnceLock`→`LazyLock` and `OnceCell`→`LazyCell` checks share one
 trigger predicate (parameterised only by a two-row type table), have no
 configuration, emit the same diagnostic shape, and carry the same
 difficulty and MSRV (both `Lazy*` types stabilised in Rust 1.80). Per
-`CLAUDE.md` ("One rule per file"), a split is warranted only when
+[`CLAUDE.md`](../CLAUDE.md#one-rule-per-file-one-config-per-rule), a
+split is warranted only when
 sub-checks have *distinct predicates, disjoint config, and no shared
 diagnostic* — lock-vs-cell has none of those, so they are one rule. The
 name `manual_lazy_init` is deliberately tier-agnostic so it claims no
@@ -182,7 +183,8 @@ does **not** try to detect it. If it proves worth catching, it belongs
 in its own sibling rule (a `const`-promotion lint) rather than as a
 second diagnostic branch here; bundling two distinct triggers and two
 distinct fixes under one banner is the split this catalogue avoids (see
-`CLAUDE.md`, "One rule per file"). The note is recorded here so the next
+[`CLAUDE.md`](../CLAUDE.md#one-rule-per-file-one-config-per-rule)).
+The note is recorded here so the next
 reader knows the omission is deliberate.
 
 ## Configuration
@@ -381,7 +383,7 @@ describes what the lint does for a *consumer*, where an O(N) bound and
 the reasons the check refuses semantic-equivalence, partitioning, and
 inlining would be noise. It must still survive in the code somewhere,
 though: this planning file is deleted once the rule ships (per
-[`CLAUDE.md`](../CLAUDE.md), "When the implementation is complete"), so a
+[`CLAUDE.md`](../CLAUDE.md#when-the-implementation-is-complete)), so a
 future contributor or AI review proposing "couldn't the equality check
 also handle semantically-equivalent closures / partial agreement /
 helper inlining?" should find the bound and its two load-bearing

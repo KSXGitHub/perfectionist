@@ -15,8 +15,7 @@ const LINT_NAME: &str = "perfectionist::named_prelude_imports";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/// The subset of the rule's user-facing configuration these tests
-/// exercise, mirrored here for serialisation.
+/// Serialisation shim for the rule's `dylint.toml` configuration.
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]

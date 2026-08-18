@@ -169,11 +169,11 @@ The shapes to avoid:
 
 None of this forbids duplication that genuinely has to exist. A
 built-in default list restated in a config field's doc is the only
-copy a user can read, and the `RuleConfig` mirrors in `tests/` are
-there because the test crate cannot link the `cdylib`. Keep those,
-say in the prose why the copy exists, and claim no more for it than
-it delivers — a mirror that covers part of a rule's configuration
-should not describe itself as the whole shape.
+copy a user can read, and the `RuleConfig` mirrors in `tests/`
+serialise config the test crate cannot reach any other way. Keep
+those, say in the prose why the copy exists, and claim no more for
+it than it delivers — in particular, do not claim a copy is
+complete, since that is the half most likely to rot.
 
 The mechanical half of this is worth a grep before you commit a
 documentation change: a backticked `src/…`, `tests/…`, `ui/…`,
@@ -281,12 +281,10 @@ explicitly retracted.
 
 ## Registering a new rule in `lib.rs`
 
-Every rule module exposes two registration functions:
-
-- `register_lint(lint_store)` — registers the lint declaration
-  only.
-- `register_pass(lint_store)` — installs the rule's early/late
-  pass.
+Every rule module exposes a `register_lint(lint_store)`, which
+registers the lint declaration only, and a
+`register_pass(lint_store)`, which installs the rule's early/late
+pass.
 
 `src/lib.rs::register_lints` calls them in two phases: every
 `register_lint` first, then every `register_pass`. The phasing
@@ -294,15 +292,18 @@ exists because `unknown_perfectionist_lints::register_pass`
 snapshots the registered `perfectionist::*` lint names out of the
 `LintStore` at construction time, so every rule's lint
 declaration must already be in the store before any pass is
-installed.
+installed. The `register!` macro in `register_lints` emits both
+phases from one list of rule names, so a rule is named there
+exactly once.
 
 When you add a new rule:
 
-1. Add the `mod` line and expose both `register_lint` and
-   `register_pass` from the rule module.
-2. Call `your_rule::register_lint(lint_store)` in the phase-1
-   block of `register_lints` and
-   `your_rule::register_pass(lint_store)` in the phase-2 block.
+1. Add the `pub mod` line to `src/rules.rs`, and expose both
+   `register_lint` and `register_pass` from the rule module.
+2. Add the rule's name to the `register!` invocation in
+   `src/lib.rs::register_lints`, in alphabetical order —
+   except that `unknown_perfectionist_lints` stays last, for the
+   snapshotting reason above.
 3. Do not introduce a parallel `REGISTERED_LINT_NAMES`-style
    array. The `LintStore` is the single source of truth.
 
@@ -346,8 +347,8 @@ automated self-lint did not run.
 
 The lint catalogue at <https://ksxgithub.github.io/perfectionist/>
 is rendered by `tools/gen-docs/` into a single, self-contained
-`gh-pages/index.html`. Two preferences shape what may go on the
-page:
+`gh-pages/index.html`. These preferences shape what may go on
+the page:
 
 - **CSS over JavaScript.** Reach for CSS first; only add an inline
   `<script>` when CSS genuinely can't express the behaviour. When
@@ -400,11 +401,9 @@ drive a headless Chromium from a throwaway Playwright script:
   and/or `getBoundingClientRect` / `getComputedStyle` values.
 
 - Treat the script as scratch, and keep it out of the repository
-  entirely. There are three ways to write temporary files: The first
-  is to write them to directories outside the project directory
-  (such as `/tmp`). The second is to create a directory named `tmp/`
-  and put all temporary files in it. The third is to name the file
-  in the `tmp.*` pattern.
+  entirely. Write temporary files to a directory outside the
+  project directory (such as `/tmp`), or to a directory named
+  `tmp/`, or under a name matching the `tmp.*` pattern.
 
 - Chromium only. For cross-engine concerns (Firefox / Safari
   support of a CSS feature), pair the screenshots with a caniuse
@@ -603,7 +602,7 @@ under `ENABLE_TABLES | ENABLE_STRIKETHROUGH | ENABLE_FOOTNOTES`
 | Mermaid fences            | code block   | code block   | diagram  |
 | Tables, `~~del~~`, `[^1]` | renders      | renders      | renders  |
 
-So the three to keep out of rustdoc-bound docs are **alerts, task
+So the ones to keep out of rustdoc-bound docs are **alerts, task
 lists, and mermaid fences**. The alert is the trap worth naming:
 its marker is left as literal text in both the in-tree catalogue
 and the docs site, where it reads as a typo.
@@ -617,7 +616,7 @@ works against its purpose.
 
 ### Choosing the alert type
 
-GitHub defines five, and their plain meanings apply: `[!NOTE]`,
+GitHub defines these, and their plain meanings apply: `[!NOTE]`,
 `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`. The one
 editorial rule worth stating is that `[!WARNING]` and
 `[!CAUTION]` mark an actual hazard — data loss, breakage, a
@@ -627,8 +626,8 @@ and reserving those two is what keeps them worth reading.
 ### A blockquote is not always an alert
 
 `>` is also plain markdown for a quotation, and the catalogue
-relies on that. A `>` block in `planned-rules/` is one of three
-things, and only the second may become an alert:
+relies on that. A `>` block in `planned-rules/` is one of the
+following, and only the aside may become an alert:
 
 - **A quotation.** Every `## Statement` section quotes the rule's
   upstream style-guide source verbatim. Leave these alone, and do

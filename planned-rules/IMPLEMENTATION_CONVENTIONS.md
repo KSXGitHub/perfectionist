@@ -99,9 +99,9 @@ helper is hand-written. **Do not pull in `pulldown_cmark`, `comrak`,
 `markdown-rs`, or `markdown-it`** for any of them without first
 revisiting the rationale below.
 
-### Two tiers of consumer
+### Tiers of consumer
 
-Two needs sit on top of the same primitives.
+Consumers divide by how much structure they need.
 
 - **Tier A — structural classification.** Distinguishes a code
   span from an inline link from a reference definition from an
@@ -428,7 +428,7 @@ which library to consult or configure.
 
 ### Why a tool namespace rather than a bare prefix
 
-Two reasonable approaches exist:
+These approaches are both reasonable:
 
 - **Tool namespace** (`perfectionist::path_qualification_mismatch`): the
   approach used by `clippy::*` and `rustdoc::*`. Idiomatic, scoped,
@@ -624,7 +624,7 @@ exactly that and drop the empty-vs-absent ambiguity. Settled in
 `wildcard_imports`' `exceptions = ["prelude", "root_reexport"]` with
 the booleans `prelude_exception` / `root_reexport_exception`).
 
-Three shapes are *not* this anti-pattern and stay as arrays/enums: a
+Some shapes are *not* this anti-pattern and stay as arrays/enums: a
 single mutually-exclusive **choice** (a `style` / direction enum); an
 **open-ended list** of user strings (`allowed_paths`, `extra_*`,
 `ignore`); and a **permutation** where the sequence is itself the
@@ -900,18 +900,12 @@ plugin's pass internals.
 
 A rule's `declare_tool_lint!` rustdoc is rendered by rustdoc and by
 `tools/gen-docs/` as well as by GitHub, so it must stay within the
-markdown all three understand. GitHub alerts (`> [!NOTE]`,
-`> [!IMPORTANT]`, …), task lists, and mermaid fences are out: the
-first two render as literal `[!NOTE]` / `[ ]` text somewhere in the
-chain, and a mermaid fence is just a code block outside GitHub.
-Tables, strikethrough, and footnotes are fine.
+markdown all three understand. The planning files in this directory
+carry no such constraint — only GitHub, local editors, and agent
+tooling ever render them.
 
-The planning files in this directory carry no such constraint — only
-GitHub, local editors, and agent tooling ever render them — so they
-may use alerts where one genuinely helps. Note that a `>` block is
-not automatically an alert: the `## Statement` section of a planning
-file quotes its upstream style-guide source verbatim, and those
-quotations must stay plain blockquotes. See the "GitHub-specific
-markdown" section of [`CLAUDE.md`](../CLAUDE.md) for the full rule,
-the per-renderer table, and how to choose the alert type.
+Which constructs that rules out, which survive each renderer, when a
+`>` block may become an alert, and how to pick the alert type are all
+settled in
+[GitHub-specific markdown](../CLAUDE.md#github-specific-markdown).
 

@@ -1,7 +1,7 @@
 //! URL discovery shared by the rules that scan prose for URLs.
 //!
-//! The same grammar is walked in either direction, one entry point
-//! per direction:
+//! The same grammar is walked in either direction, and a caller
+//! picks by which end it is starting from:
 //!
 //! - [`take_url`] commits forward from a candidate `http://` /
 //!   `https://` prefix to determine where the URL ends — the entry

@@ -14,13 +14,17 @@
 //! carries more than a span (an insert-versus-remove discriminator,
 //! say) projects to [`Span`] at the call site.
 //!
-//! Pick the entry point by what the span points at:
+//! The entry points differ in whether an item's attributes count as
+//! part of it, so pick by where the span sits:
 //!
-//! - [`find_enclosing_hir_ids`] resolves plain spans and hands the ids
-//!   back for the caller to emit with.
-//! - [`emit_at_enclosing_hir`] resolves and emits in one step, through
-//!   the attribute-aware [`find_comment_anchor_hir_ids`] so a span
-//!   inside a doc comment anchors on the item that comment documents.
+//! - [`find_enclosing_hir_ids`] walks item spans as rustc reports
+//!   them, which start *after* any `///` run, and hands the resolved
+//!   ids back for the caller to emit with.
+//! - [`emit_at_enclosing_hir`] resolves and emits in one step through
+//!   the attribute-aware [`find_comment_anchor_hir_ids`], so a span
+//!   inside a doc comment anchors on the item that comment documents
+//!   instead of escaping to the enclosing module. A span found by
+//!   scanning comment text needs this one.
 
 use rustc_hir as hir;
 use rustc_hir::intravisit::{self, Visitor};

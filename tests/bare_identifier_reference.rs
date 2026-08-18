@@ -16,9 +16,8 @@ const LINT_NAME: &str = "perfectionist::bare_identifier_reference";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/// The subset of the rule's user-facing configuration these tests
-/// exercise, mirrored here for serialisation. Kept as a separate type
-/// from the lint's own internal
+/// Serialisation shim for the rule's `dylint.toml` configuration. Kept
+/// as a separate type from the lint's own internal
 /// [`Config`](../src/rules/bare_identifier_reference.rs) so the test
 /// surface is independent of the implementation's private struct.
 #[derive(Default, serde::Serialize)]

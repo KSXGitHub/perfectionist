@@ -25,9 +25,10 @@
 //! shared by every rule that walks a *cooked* string literal's body
 //! and must tell a real backslash escape (`\n`, `\\`, `\xNN`,
 //! `\u{...}`, a line continuation, ...) apart from the bytes around
-//! it — whether to bail on the first non-eligible escape, or to locate
-//! the `\n` escapes it folds without being fooled by `\\n` (an escaped
-//! backslash followed by the letter `n`, which is *not* a newline).
+//! it. A caller uses that either to bail on the first non-eligible
+//! escape, or to find the real `\n` escapes in a literal it is about
+//! to fold without being fooled by `\\n` (an escaped backslash
+//! followed by the letter `n`, which is *not* a newline).
 
 use clippy_utils::diagnostics::{span_lint_and_sugg, span_lint_hir_and_then};
 use rustc_errors::Applicability;

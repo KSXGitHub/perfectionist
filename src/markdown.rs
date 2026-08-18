@@ -1,7 +1,7 @@
 //! Markdown scanners shared by every rule that walks doc-comment text
-//! — whichever rules import `crate::markdown`. Two kinds of need sit
-//! on the same `take_*` combinators, per the markdown-parsing
-//! convention in `planned-rules/IMPLEMENTATION_CONVENTIONS.md`:
+//! — whichever rules import `crate::markdown`. Consumers divide by
+//! how much structure they need, per the markdown-parsing convention
+//! in `planned-rules/IMPLEMENTATION_CONVENTIONS.md`:
 //!
 //! - **Tier A — structural classification**, for a rule that must tell
 //!   one construct from another. [`scan_skip_regions`] produces
@@ -625,7 +625,7 @@ fn take_link(input: &str) -> Option<usize> {
 
 /// Like [`take_link`] but also reports which [`LinkForm`] matched. The
 /// length is identical; the form lets a structural-classification
-/// consumer distinguish the three link shapes.
+/// consumer distinguish the link shapes.
 fn classify_link(input: &str) -> Option<(LinkForm, usize)> {
     let bytes = input.as_bytes();
     if bytes.first() != Some(&b'[') {
@@ -722,10 +722,9 @@ pub(crate) struct Construct {
 }
 
 /// The kind of a [`Construct`] — the full Tier A structural taxonomy
-/// (see `planned-rules/IMPLEMENTATION_CONVENTIONS.md`).
-/// `clap_help_markdown`
-/// maps each kind onto a user-facing "forbidden construct" category and
-/// decides per kind whether to flag it.
+/// (see `planned-rules/IMPLEMENTATION_CONVENTIONS.md`). A consumer
+/// maps each kind onto its own user-facing category and decides per
+/// kind whether to flag it.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum ConstructKind {
     /// `` `code` `` inline code span.

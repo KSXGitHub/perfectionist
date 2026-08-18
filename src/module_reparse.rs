@@ -131,14 +131,13 @@ pub(crate) fn parse_crate_module_files(
 /// fragments spliced inline rather than backing their own module, and
 /// proc-macro-synthesised `<proc-macro source>` modules.
 ///
-/// The comment-scanning rules tokenize the local crate's files as Rust
-/// and must filter the source map through this set: `bare_url`,
-/// `bare_email`, `bare_issue_reference`, and `unicode_ellipsis_in_docs`
-/// via the shared [`crate::comment_walk::walk_local_comments`] walker, plus
-/// `unicode_ellipsis_in_comments` through its own token loop. Otherwise
-/// a bare `http(s)://` URL inside an
-/// `include_str!`-ed YAML file lexes as a `//` line comment and gets
-/// flagged (and, worse, autofix-rewritten) as if it were a Rust comment.
+/// Every rule that tokenizes the local crate's files as Rust must
+/// filter the source map through this set — whether it goes through
+/// the shared [`crate::comment_walk::walk_local_comments`] walker or
+/// runs its own token loop. Otherwise a bare `http(s)://` URL inside
+/// an `include_str!`-ed YAML file lexes as a `//` line comment and
+/// gets flagged (and, worse, autofix-rewritten) as if it were a Rust
+/// comment.
 /// See <https://github.com/KSXGitHub/perfectionist/issues/179>.
 pub(crate) fn crate_module_files(lint_context: &LateContext<'_>) -> HashSet<FileName> {
     let tcx = lint_context.tcx;

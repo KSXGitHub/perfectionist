@@ -15,9 +15,8 @@ const LINT_NAME: &str = "perfectionist::clap_help_markdown";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/// The subset of the rule's user-facing configuration these tests
-/// exercise, mirrored here for serialisation, kept separate from the
-/// lint's private `Config`.
+/// Serialisation shim for the rule's `dylint.toml` configuration, kept
+/// separate from the lint's private `Config`.
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
