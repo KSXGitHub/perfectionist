@@ -11,7 +11,6 @@ fn empty_sides_cost_the_other_length() {
 fn textbook_distances() {
     assert_eq!(levenshtein(b"kitten", b"sitting"), 3);
     assert_eq!(levenshtein(b"lint", b"lint"), 0);
-    // Insertion, deletion, substitution, transposition.
     assert_eq!(levenshtein(b"lint", b"lints"), 1);
     assert_eq!(levenshtein(b"lints", b"lint"), 1);
     assert_eq!(levenshtein(b"lint", b"link"), 1);
