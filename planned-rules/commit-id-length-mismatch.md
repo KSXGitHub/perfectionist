@@ -37,7 +37,7 @@ codebase.
 ## Configuration
 
 ```toml
-[commit_id_length_mismatch]
+["perfectionist::commit_id_length_mismatch"]
 # Where the lint scans. Each defaults to `true`.
 scan_doc_comments = true       # `///`, `//!`, `/** */`, `/*! */`
 scan_regular_comments = true   # `//`, `/* */`
