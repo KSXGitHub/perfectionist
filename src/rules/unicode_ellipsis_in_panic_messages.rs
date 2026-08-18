@@ -16,14 +16,12 @@ declare_tool_lint! {
     /// ### What it does
     ///
     /// Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in the message of a
-    /// panic-family or assertion-style macro — `panic!`,
-    /// `unimplemented!`, `todo!`, `unreachable!`, `assert!`,
-    /// `assert_eq!`, `assert_ne!`, and the `debug_` variant of each of
-    /// those that has one (`debug_unreachable!`, `debug_assert!`,
-    /// `debug_assert_eq!`, `debug_assert_ne!`) — and in the `expect` /
-    /// `expect_err` argument on `Option` and `Result`. Prefer the
-    /// three-ASCII-dot form `...`. `extra_macros` and `ignore_macros`
-    /// adjust that set.
+    /// panic-family or assertion-style macro — `panic!` and
+    /// `assert_eq!` among them — and in the `expect` / `expect_err`
+    /// argument on `Option` and `Result`. Prefer the three-ASCII-dot
+    /// form `...`. The built-in macro and method sets are listed on
+    /// the `extra_macros` and `extra_methods` knobs, which extend
+    /// them; `ignore_macros` and `ignore_methods` narrow them.
     ///
     /// ### Why restrict this?
     ///

@@ -67,8 +67,8 @@ trigger predicate (parameterised only by a two-row type table), have no
 configuration, emit the same diagnostic shape, and carry the same
 difficulty and MSRV (both `Lazy*` types stabilised in Rust 1.80). Per
 [`CLAUDE.md`](../CLAUDE.md#one-rule-per-file-one-config-per-rule), a
-split is warranted only when
-sub-checks have *distinct predicates, disjoint config, and no shared
+split is warranted only when sub-checks have *distinct predicates,
+disjoint config, and no shared
 diagnostic* — lock-vs-cell has none of those, so they are one rule. The
 name `manual_lazy_init` is deliberately tier-agnostic so it claims no
 more than it checks; `manual_lazy_lock` would over-claim the moment it
@@ -184,8 +184,8 @@ in its own sibling rule (a `const`-promotion lint) rather than as a
 second diagnostic branch here; bundling two distinct triggers and two
 distinct fixes under one banner is the split this catalogue avoids (see
 [`CLAUDE.md`](../CLAUDE.md#one-rule-per-file-one-config-per-rule)).
-The note is recorded here so the next
-reader knows the omission is deliberate.
+The note is recorded here so the next reader knows the omission is
+deliberate.
 
 ## Configuration
 

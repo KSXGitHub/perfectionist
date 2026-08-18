@@ -75,11 +75,13 @@ pub(crate) fn emit_flagged_chars<Cx>(
     }
 }
 
-/// Label on the `...` suggestion, shared so the two emitters cannot
-/// drift apart.
+/// Label on the `...` suggestion. The two emitters below reach
+/// different `clippy_utils` entry points and assemble the diagnostic
+/// separately; naming the label pins the one part of it that is a
+/// bare literal in both.
 const SUGGESTION_LABEL: &str = "use ASCII `...` instead";
 
-/// Replacement text the suggestion offers, shared for the same reason
+/// Replacement text the suggestion offers, named for the same reason
 /// as [`SUGGESTION_LABEL`].
 const ASCII_ELLIPSIS: &str = "...";
 
@@ -121,8 +123,10 @@ fn emit_flagged_char<Cx>(
 /// comment it scanned — resolved by
 /// [`crate::enclosing_hir::emit_at_enclosing_hir`] — so a per-item /
 /// per-module `#[allow]` / `#[expect]` resolves, not just a crate-root
-/// `#![allow]`. The message, suggestion, and applicability match
-/// [`emit_flagged_char`] exactly.
+/// `#![allow]`. It shares [`flagged_char_message`],
+/// [`flagged_char_applicability`], [`SUGGESTION_LABEL`] and
+/// [`ASCII_ELLIPSIS`] with [`emit_flagged_char`]; anything added to
+/// the diagnostic beyond those has to be added in both places.
 pub(crate) fn emit_flagged_char_hir(
     lint_context: &LateContext<'_>,
     lint: &'static Lint,

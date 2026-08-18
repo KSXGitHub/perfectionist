@@ -136,7 +136,11 @@ The shapes to avoid:
 - **Never introduce a list with its own length.** "The convention
   has two consequences", "Six rules scan a slice of markdown" — the
   number is a second copy of the list, and the copy is what rots.
-  Write "The convention has these consequences".
+  Write "The convention has these consequences". What makes a count
+  dangerous is that the list can grow without it: a count over
+  something that can gain a member is a liability, while a count
+  that *is* the fact ("the walk runs in two phases", "two checks
+  are needed because …") is not a second copy of anything.
 - **Prefer a greppable predicate to a hand-maintained roster.**
   "Every rule that imports `crate::markdown`" stays true forever; a
   list of rule names does not. Where a roster genuinely aids
@@ -146,7 +150,10 @@ The shapes to avoid:
 - **Do not quote another file's heading or prose verbatim.** A
   quoted heading is a copy that no tool checks; a quoted sentence is
   worse, because anyone may reword the original without knowing the
-  copy exists. In markdown, link to the section by anchor. In Rust
+  copy exists. In markdown, link to the section by anchor — the
+  anchor is a copy too, and equally unchecked, but a stale one
+  lands the reader at the top of the right file instead of reading
+  as prose that was never true. In Rust
   comments and rustdoc, where a repo-relative link does not resolve,
   name the file and leave the reader to search it — naming a file is
   a reference, naming its heading is a copy.
@@ -185,10 +192,10 @@ documentation change: a backticked `src/…`, `tests/…`, `ui/…`,
 `src/lib.rs::register_lints` registers. Both greps have standing
 exceptions — prose describing a *linted* crate names paths that do
 not exist here; planning files and this guide name rules that are
-not implemented yet; and the misspelt names are the point wherever
-`perfectionist::unknown_perfectionist_lints` is documented, tested
-or fixtured, as they are in `gen-docs`' unit tests. Read the hits
-rather than the count.
+not implemented yet; a misspelt name is the point wherever
+`perfectionist::unknown_perfectionist_lints` is documented or
+fixtured; and `gen-docs`' unit tests invent lint names outright.
+Read the hits rather than the count.
 
 ## Defaults live in field docs, not type or variant docs
 

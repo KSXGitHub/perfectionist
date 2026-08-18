@@ -93,7 +93,7 @@ fixed-size byte sequence do not.
 ## Markdown parsing
 
 Several rules scan a slice of markdown: every rule that imports
-`src/markdown.rs`. They share that one crate-internal scanner, built
+`crate::markdown`. They share that one crate-internal scanner, built
 from `take_*` combinators per [Parser style](#parser-style). The
 helper is hand-written. **Do not pull in `pulldown_cmark`, `comrak`,
 `markdown-rs`, or `markdown-it`** for any of them without first
@@ -766,12 +766,12 @@ regressing the suppression.
 
 ### Deliberate non-participants
 
-Two kinds of rule skip all of the above on purpose:
+Some rules skip all of the above on purpose:
 
-- Rules declared `report_in_external_macro: true` (`avoidable_string_escapes`,
-  `unicode_ellipsis_in_panic_messages`) *want* to fire inside macro
-  output; the guard would defeat their purpose. The `true` flag is
-  itself the visible record of that intent.
+- A rule declared `report_in_external_macro: true` *wants* to fire
+  inside macro output; the guard would defeat its purpose. The `true`
+  flag is itself the visible record of that intent, and grepping for
+  it is how you find every such rule.
 - A rule whose trigger cannot realistically be derive-generated may
   forgo the guard. `exhaustive_error_enums` was excluded on this basis —
   it is off by default and its `pub` error-shaped trigger is an

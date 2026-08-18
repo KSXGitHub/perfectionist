@@ -14,17 +14,24 @@
 //! carries more than a span (an insert-versus-remove discriminator,
 //! say) projects to [`Span`] at the call site.
 //!
-//! The entry points differ in whether an item's attributes count as
-//! part of it, so pick by where the span sits:
+//! Pick the entry point by what kind of span you are holding. The two
+//! do not merely differ in whether attributes count toward
+//! containment — they select a different node when several contain
+//! the span — so they are not interchangeable even when both would
+//! find something:
 //!
-//! - [`find_enclosing_hir_ids`] walks item spans as rustc reports
-//!   them, which start *after* any `///` run, and hands the resolved
-//!   ids back for the caller to emit with.
-//! - [`emit_at_enclosing_hir`] resolves and emits in one step through
-//!   the attribute-aware [`find_comment_anchor_hir_ids`], so a span
-//!   inside a doc comment anchors on the item that comment documents
-//!   instead of escaping to the enclosing module. A span found by
-//!   scanning comment text needs this one.
+//! - [`find_enclosing_hir_ids`] is for a *pre-expansion call site*
+//!   parked by an earlier pass. It walks item spans as rustc reports
+//!   them, which start after any `///` run, keeps the deepest node the
+//!   depth-first walk reaches, and hands the ids back for the caller
+//!   to emit with.
+//! - [`emit_at_enclosing_hir`] is for a span found by *scanning source
+//!   text*. It resolves and emits in one step through
+//!   [`find_comment_anchor_hir_ids`], which folds in attribute spans
+//!   so a doc-comment span anchors on the item that comment documents
+//!   rather than escaping to the enclosing module, resolves macro
+//!   hygiene, and keeps the *narrowest* containing node so a
+//!   derive-generated node cannot steal the anchor.
 
 use rustc_hir as hir;
 use rustc_hir::intravisit::{self, Visitor};

@@ -37,9 +37,12 @@ const DEFAULT_METHODS: &[&str] = &["expect", "expect_err"];
 struct Config {
     /// Additional macros whose call site should be scanned for the
     /// flagged characters. Empty by default, and merged with the
-    /// built-in set the rule's own documentation names. Use this to
-    /// add project-specific assertion-shaped macros without having
-    /// to re-state the standard ones.
+    /// built-in set: `panic`, `unimplemented`, `todo`, `unreachable`,
+    /// `assert`, `assert_eq`, `assert_ne`, and the `debug_` variant
+    /// of each of those that has one (`debug_unreachable`,
+    /// `debug_assert`, `debug_assert_eq`, `debug_assert_ne`). Use
+    /// this to add project-specific assertion-shaped macros without
+    /// having to re-state the standard ones.
     extra_macros: Vec<String>,
     /// Macros to drop from the scanned set, even if they appear in
     /// the built-in defaults or in `extra_macros`. Empty by

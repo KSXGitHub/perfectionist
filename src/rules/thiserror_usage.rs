@@ -14,7 +14,7 @@ declare_tool_lint! {
     /// ### What it does
     ///
     /// Flags every use of [`thiserror`](https://docs.rs/thiserror) in
-    /// the consumer crate. Three syntactic shapes trigger the lint:
+    /// the consumer crate. These syntactic shapes trigger the lint:
     ///
     /// 1. **Derives.** `#[derive(thiserror::Error)]` directly, or
     ///    `#[derive(Error)]` / `#[derive(te::Error)]` when a sibling
