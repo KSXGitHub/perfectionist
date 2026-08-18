@@ -1,8 +1,8 @@
 //! UI tests for `exhaustive_error_enums`'s configuration knobs. The
-//! default-config sweep lives in `ui/exhaustive_error_enums.rs` and is
-//! picked up by `tests/ui.rs`; these tests each point at their own
-//! one-fixture directory under `ui-toml/exhaustive_error_enums/` and
-//! pass a per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
+//! rule is off by default, so it has no default-config sweep under
+//! `ui/` for `tests/ui.rs` to pick up; these tests each point at their
+//! own one-fixture directory under `ui-toml/exhaustive_error_enums/`
+//! and pass a per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
 //!
 //! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
 //! the duration of `run_tests`. The env var is process-global, so the
