@@ -202,17 +202,16 @@ impl UnknownPerfectionistLints {
     /// The help line to attach to an unknown name, if there is anything
     /// useful to say about it.
     fn help_for(&self, candidate: &str) -> Option<String> {
-        // Every registered lint name is ASCII, so a name that is not
-        // cannot be a near-miss of one however it is measured. Naming
-        // the offending character is the more useful answer anyway: a
-        // homoglyph — a Cyrillic `о` for an ASCII `o`, a fullwidth `ｏ`
-        // — is invisible in the source, and the codepoint is what
-        // identifies it.
+        // No registered lint name holds a non-ASCII character, so a
+        // candidate that does is not a near-miss of one and there is
+        // nothing to guess at. The character itself is the answer: a
+        // homoglyph is invisible in the source, and the codepoint is
+        // what identifies it. rustc words its own reports of such a
+        // character the same way, down to `'о' (U+043E)`.
         if let Some(non_ascii) = candidate.chars().find(|character| !character.is_ascii()) {
             let codepoint = u32::from(non_ascii);
             return Some(format!(
-                "every `{TOOL_NAME}` lint name is ASCII, but this one contains `{non_ascii}` \
-                 (U+{codepoint:04X})",
+                "contains a non-ASCII character: '{non_ascii}' (U+{codepoint:04X})"
             ));
         }
         let suggested_name = self.find_closest_match(candidate)?;
