@@ -168,7 +168,7 @@ The too-short case has no autofix; the diagnostic points at the
 ## Configuration
 
 ```toml
-[lint_downgrade_without_reason]
+["perfectionist::lint_downgrade_without_reason"]
 # Lints excluded from the requirement.
 exempt_lints = [
     # "clippy::module_name_repetitions",
