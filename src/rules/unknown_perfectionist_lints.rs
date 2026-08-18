@@ -264,14 +264,6 @@ impl UnknownPerfectionistLints {
     }
 }
 
-/// The Levenshtein edit distance between `left` and `right`: the fewest
-/// single-byte insertions, deletions, and substitutions that turn one
-/// into the other.
-///
-/// Both sides are lint names, and every lint name this plugin registers
-/// is ASCII — a candidate that is not never reaches here — so bytes are
-/// characters, and `str::as_bytes` needs neither decoding nor a
-/// `Vec<char>` to compare them.
 fn levenshtein(left: &[u8], right: &[u8]) -> usize {
     let left_len = left.len();
     let right_len = right.len();
