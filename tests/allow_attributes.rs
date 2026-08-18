@@ -1,8 +1,12 @@
-//! UI tests for `allow_attributes`'s configuration knobs. The
-//! default-config sweep lives in `ui/allow_attributes.rs` and is
-//! picked up by `tests/ui.rs`; these tests each point at their own
-//! one-fixture directory under `ui-toml/allow_attributes/` and
-//! pass a per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
+//! UI tests for `allow_attributes` that need a directory of their
+//! own: its configuration knobs, plus one default-config fixture
+//! that cannot live in the `ui/` sweep because it `include!`s a
+//! second file the sweep would otherwise collect as a fixture in its
+//! own right. The default-config sweep lives in
+//! `ui/allow_attributes.rs` and is picked up by `tests/ui.rs`; these
+//! tests each point at their own one-fixture directory under
+//! `ui-toml/allow_attributes/` and pass a per-rule `dylint.toml` to
+//! [`dylint_testing::ui::Test`].
 //!
 //! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
 //! the duration of `run_tests`. The env var is process-global, so the
