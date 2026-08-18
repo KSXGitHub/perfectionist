@@ -1,13 +1,16 @@
-//! URL discovery shared between `bare_url` (forward scan) and
-//! `bare_issue_reference` (backward scan for fragment detection).
+//! URL discovery shared by the rules that scan prose for URLs.
 //!
-//! The two consumers walk the same grammar in opposite directions:
+//! The same grammar is walked in either direction, one entry point
+//! per direction:
 //!
-//! - `bare_url` commits forward from a candidate `http://` / `https://`
-//!   prefix to determine where the URL ends.
-//! - `bare_issue_reference` walks backward from a candidate `#N` token
-//!   to determine whether it sits inside a URL fragment such as
-//!   `https://example.com/issues/#123`.
+//! - [`take_url`] commits forward from a candidate `http://` /
+//!   `https://` prefix to determine where the URL ends — the entry
+//!   point for a rule that has found a URL and needs its extent.
+//! - [`back_scan_url_fragment`] walks backward from a candidate `#N`
+//!   token to determine whether it sits inside a URL fragment such as
+//!   `https://example.com/issues/#123` — the entry point for a rule
+//!   that has found a `#N` and must decide whether it is really an
+//!   issue reference.
 //!
 //! The grammar is deliberately small — a scheme run, a non-whitespace
 //! body, optional trailing punctuation classification — per the
@@ -24,9 +27,8 @@ pub(crate) struct UrlMatch<'a> {
     pub(crate) consumed: usize,
 }
 
-/// URL schemes the forward scanner ([`take_url`]) recognises — the
-/// schemes `bare_url` flags as bare URLs in comments. A narrow
-/// subset of the wider [`BACKWARD_URL_SCHEMES`] used by the
+/// Default scheme set for the forward scanner ([`take_url`]). A
+/// narrow subset of the wider [`BACKWARD_URL_SCHEMES`] used by the
 /// `#N`-fragment back-scan: the wrapping concern that motivates
 /// `bare_url` applies to `http` and `https` URLs, the only schemes
 /// commonly written as prose links in doc comments.
@@ -47,8 +49,9 @@ pub(crate) const BACKWARD_URL_SCHEMES: &[&str] = &[
 /// The URL body extends greedily over non-whitespace bytes, but stops
 /// before delimiters that would break a `<URL>` wrap or an enclosing
 /// markdown link: `<`, `>`, `[`, `]`, `)`. Trailing punctuation is
-/// *kept inside* the returned slice — the caller (`bare_url`)
-/// classifies the last byte to decide `MachineApplicable` vs
+/// *kept inside* the returned slice — a caller that offers a wrapping
+/// autofix classifies the last byte itself, with
+/// [`classify_trailing`], to decide `MachineApplicable` vs
 /// `MaybeIncorrect`.
 pub(crate) fn take_url<'a>(input: &'a str, schemes: &[&str]) -> Option<UrlMatch<'a>> {
     let scheme_len = take_scheme(input, schemes)?;
@@ -111,9 +114,7 @@ fn take_scheme(input: &str, schemes: &[&str]) -> Option<usize> {
 /// whitespace.
 ///
 /// Used by `bare_issue_reference` to suppress `#N` matches that are
-/// the fragment of a URL such as
-/// `https://example.com/issues/#123` — see the planning file's
-/// "URL-fragment detection" note.
+/// the fragment of a URL such as `https://example.com/issues/#123`.
 pub(crate) fn back_scan_url_fragment(text: &str, pos: usize) -> bool {
     let bytes = text.as_bytes();
     if pos > bytes.len() {

@@ -1,35 +1,33 @@
 //! Helpers shared by rules that scan string-literal / comment text.
 //!
-//! [`emit_flagged_chars`] is used by the Unicode-ellipsis rules that
-//! scan a contiguous stretch of text (`unicode_ellipsis_in_comments`
-//! and `unicode_ellipsis_in_panic_messages`): walk it, emit a
-//! diagnostic for each flagged character, and offer the same `...`
-//! autofix. The per-character logic is identical; the only per-rule
-//! pieces are the lint name, a context label, and how to turn a byte
-//! offset within the text into a [`Span`].
+//! [`emit_flagged_chars`] serves a rule that has a contiguous stretch
+//! of text to sweep: walk it, emit a diagnostic for each flagged
+//! character, and offer the same `...` autofix. The per-character
+//! logic is identical across the Unicode-ellipsis rules; the only
+//! per-rule pieces are the lint name, a context label, and how to turn
+//! a byte offset within the text into a [`Span`].
 //!
-//! [`emit_flagged_char`] is the single-character core, factored out so
-//! a rule that does its own scanning — `unicode_ellipsis_in_docs`,
-//! which must consult a markdown code-region mask and a fallible
-//! span map before emitting — shares the exact message, suggestion,
-//! and applicability without duplicating them.
+//! [`emit_flagged_char`] and its [`HirId`]-anchored sibling
+//! [`emit_flagged_char_hir`] are the single-character core, factored
+//! out so a rule that does its own scanning — one that must consult a
+//! markdown code-region mask and a fallible span map before emitting,
+//! say — shares the exact message, suggestion, and applicability
+//! without duplicating them.
 //!
 //! [`string_literal_quote_lengths`] is the companion parser for any
 //! rule that needs to scan a string-literal body without its opening
-//! and closing delimiters. Currently used only by
-//! `unicode_ellipsis_in_panic_messages`'s literal scanner, but it
-//! sits here rather than inside that rule because the shape it
-//! recognises (plain and raw display strings) is a generic property
-//! of Rust string literals, not specific to ellipsis detection.
+//! and closing delimiters. It sits here rather than inside any one
+//! rule because the shape it recognises (plain and raw display
+//! strings) is a generic property of Rust string literals, not
+//! specific to any rule's subject.
 //!
 //! [`take_string_escape`] is the escape-aware front-of-body scanner
 //! shared by every rule that walks a *cooked* string literal's body
 //! and must tell a real backslash escape (`\n`, `\\`, `\xNN`,
 //! `\u{...}`, a line continuation, ...) apart from the bytes around
-//! it. `avoidable_string_escapes` uses it to bail on the first non-eligible
-//! escape; `overly_long_print_macro` uses it to locate the `\n` escapes it
-//! folds without being fooled by `\\n` (an escaped backslash followed
-//! by the letter `n`, which is *not* a newline).
+//! it — whether to bail on the first non-eligible escape, or to locate
+//! the `\n` escapes it folds without being fooled by `\\n` (an escaped
+//! backslash followed by the letter `n`, which is *not* a newline).
 
 use clippy_utils::diagnostics::{span_lint_and_sugg, span_lint_hir_and_then};
 use rustc_errors::Applicability;

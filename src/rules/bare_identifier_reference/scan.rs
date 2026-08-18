@@ -6,10 +6,10 @@
 //! The structural classification — distinguishing a bare code span
 //! from one already wrapped as `` [`Foo`] `` — lives in
 //! [`crate::markdown::scan_code_span_candidates`]. The
-//! identifier-extraction step here is the "Rust-specific extraction
-//! layered on top" that the "Markdown parsing" section of
+//! identifier-extraction step here is the Rust-specific layer that
+//! the "Markdown parsing" section of
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md` leaves to each
-//! consuming rule.
+//! consuming rule rather than putting in the shared scanner.
 
 use crate::markdown::scan_code_span_candidates;
 use core::ops::Range;

@@ -1,8 +1,7 @@
-//! Comment-stream walker shared by `bare_url`, `bare_email`,
-//! `bare_issue_reference`, and `unicode_ellipsis_in_docs`.
+//! Comment-stream walker shared by the rules that scan comment prose
+//! — every rule that imports `crate::comment_walk`.
 //!
-//! Each of these rules needs to scan one or both of two distinct
-//! surfaces:
+//! Each of them needs to scan one or both of two distinct surfaces:
 //!
 //! - **Doc-comment blocks** — `///` / `//!` line runs and `/** ... */`
 //!   block doc comments, each block treated as a single markdown

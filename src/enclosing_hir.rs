@@ -3,25 +3,23 @@
 //! `cfg_attr`-wrapped `#[expect]` / `#[allow]` attributes resolve
 //! correctly.
 //!
-//! Two families of rules use it:
+//! Callers arrive by one of two routes, distinguished by what the span
+//! came from rather than by which rule produced it:
 //!
-//! - The pre-expansion → late-pass split of `macro_trailing_comma` and
-//!   `impure_macro_arguments`. They park macro-call spans during a
-//!   pre-expansion pass and, in a late pass, anchor each at the deepest
-//!   enclosing HIR node via [`find_enclosing_hir_ids`].
-//! - The comment-walking rules (`bare_url`, `bare_email`,
-//!   `bare_issue_reference`, `unicode_ellipsis_in_comments`,
-//!   `unicode_ellipsis_in_docs`). They scan source text in a late pass
-//!   and emit through [`emit_at_enclosing_hir`], which uses the
-//!   attribute-aware [`find_comment_anchor_hir_ids`] so a doc comment
-//!   resolves to the item it documents.
+//! - A **pre-expansion → late-pass split**. The rule parks spans
+//!   during a pre-expansion pass and, in a late pass, anchors each at
+//!   the deepest enclosing HIR node via [`find_enclosing_hir_ids`].
+//! - A **source-text walk**. The rule scans comment or literal text in
+//!   a late pass and emits through [`emit_at_enclosing_hir`], which
+//!   uses the attribute-aware [`find_comment_anchor_hir_ids`] so a doc
+//!   comment resolves to the item it documents.
 //!
-//! Callers feed in the spans they care about and get back, for each
-//! one, the deepest HIR node whose span contains it (or
-//! [`hir::CRATE_HIR_ID`] if nothing did). Pre-expansion-pass payloads
-//! that carry more than a span (e.g. `macro_trailing_comma`'s
-//! `Insert` / `Remove` discriminator) project to [`Span`] at the call
-//! site before invoking [`find_enclosing_hir_ids`].
+//! Either way, callers feed in the spans they care about and get back,
+//! for each one, the deepest HIR node whose span contains it (or
+//! [`hir::CRATE_HIR_ID`] if nothing did). A pre-expansion payload that
+//! carries more than a span (an insert-versus-remove discriminator,
+//! say) projects to [`Span`] at the call site before invoking
+//! [`find_enclosing_hir_ids`].
 
 use rustc_hir as hir;
 use rustc_hir::intravisit::{self, Visitor};

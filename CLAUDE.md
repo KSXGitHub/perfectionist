@@ -22,9 +22,11 @@ Read three things first, in this order:
    — the design has usually been argued over already in the PR
    that produced the planning file.
 2. **`planned-rules/README.md`** — the index of all rules, plus
-   the "Out of scope" list at the bottom. The index entry is the
-   one-sentence summary; check that the rule you're implementing
-   still says what you think it says.
+   the
+   [out-of-scope list](planned-rules/README.md#out-of-scope-cannot-be-linted-by-dylint)
+   at the bottom. The index entry is the one-sentence summary;
+   check that the rule you're implementing still says what you
+   think it says.
 3. **`planned-rules/IMPLEMENTATION_CONVENTIONS.md`** — applies
    to every rule. Among the cross-cutting conventions it covers:
    - **Parser style.** Non-trivial string scanners (URLs,
@@ -45,11 +47,12 @@ Read three things first, in this order:
      readability; the registered name is
      `perfectionist::path_qualification_mismatch`.
 
-If the rule is one of several that share a helper (markdown
-exclusion, format-string parsing, URL discovery, unicode-width
-measurement), check whether the helper already exists in the
-codebase before writing a new one. Sibling-rule references in the
-planning files identify shared infrastructure.
+If the rule is one of several that share a helper — markdown
+exclusion, format-string parsing, URL discovery and unicode-width
+measurement are examples, not the whole set — check whether the
+helper already exists in the codebase before writing a new one.
+Sibling-rule references in the planning files identify shared
+infrastructure.
 
 ## One rule per file, one `Config` per rule
 
@@ -101,11 +104,8 @@ has these consequences for the implementer:
    - `scan` / `parser` — source-text walkers and parser combinators.
    - `ordering` / `triviality` — rule-specific algorithms.
 
-   The `impure_macro_arguments/`, `macro_trailing_comma/`,
-   `avoidable_string_escapes/`, `unordered_derives/`,
-   `unicode_ellipsis_in_panic_messages/`, and
-   `single_letter_closure_param/` directories illustrate the
-   pattern.
+   Any rule with a `src/rules/<rule>/` directory beside its flat
+   `.rs` entry is an instance of the pattern.
 
 4. **Cross-rule helpers are `pub(crate)`, not `pub`.** The crate is
    a dylint `cdylib` with no public API surface, so `pub`
@@ -123,6 +123,75 @@ has these consequences for the implementer:
    docstring — a generic HIR walker, a per-character emit loop, a
    path-set parser — earns its own file.
 
+## Do not write documentation that restates the code
+
+Prose that duplicates a fact the code already states is unverified
+by construction: nothing fails when the code changes and the prose
+does not. Every such sentence is a future lie with a long fuse.
+Before writing one, ask what would make it go stale, and prefer the
+form that cannot.
+
+This is the most-repeated defect in this repository's
+documentation. It has been filed as an individual stale reference
+several times over — see
+<https://github.com/KSXGitHub/perfectionist/issues/141>,
+<https://github.com/KSXGitHub/perfectionist/issues/286> and
+<https://github.com/KSXGitHub/perfectionist/issues/368> — and the
+first of those failure modes ("docs assert a sibling lint exists")
+then recurred verbatim in an unrelated rule. Fixing instances one
+at a time has not worked, so the shapes to avoid are written down
+here:
+
+- **Never introduce a list with its own length.** "The convention
+  has two consequences", "Six rules scan a slice of markdown" — the
+  number is a second copy of the list, and the copy is what rots.
+  Write "The convention has these consequences".
+- **Prefer a greppable predicate to a hand-maintained roster.**
+  "Every rule that imports `crate::markdown`" stays true forever; a
+  list of rule names does not. Where a roster genuinely aids
+  comprehension, mark it as illustrative ("for example", "among
+  them") so no reader mistakes it for exhaustive and nobody has to
+  maintain it.
+- **Do not quote another file's heading or prose verbatim.** Link
+  to the section instead. A quoted heading is a copy that no tool
+  checks; a quoted sentence is worse, because anyone may reword the
+  original without knowing the copy exists.
+- **State a fact in exactly one place.** Defaults, config shapes,
+  and file paths have one home; everything else links to it. The
+  [defaults convention](#defaults-live-in-field-docs-not-type-or-variant-docs)
+  below is this rule applied to the case that recurs most.
+- **Do not paste real code into a guide.** An example copied out of
+  a live `Config` struct drifts the moment that struct changes.
+  Write the example with obviously-fake names, or generate it.
+- **Do not describe a lint as existing until it is registered.**
+  Shipped docs — `declare_tool_lint!` rustdoc, plus the `rules/*.md`
+  catalogue and docs site generated from it — must not name a lint
+  that `src/lib.rs::register_lints` does not register: a reader who
+  acts on it and writes `#[expect(perfectionist::<that name>)]` is
+  flagged by `perfectionist::unknown_perfectionist_lints`. Planning
+  files under `planned-rules/` are exempt — naming unimplemented
+  siblings is what they are for.
+- **If a passage exists only to restate the code beneath it, delete
+  it.** Length is not thoroughness. The shortest documentation that
+  is still true next quarter beats the most complete documentation
+  that is wrong.
+
+None of this forbids duplication that genuinely has to exist. A
+built-in default list restated in a config field's doc is the only
+copy a user can read, and the `RuleConfig` mirrors in `tests/` are
+there because the test crate cannot link the `cdylib`. Keep those,
+say in the prose why the copy exists, and claim no more for it than
+it delivers — a mirror that covers part of a rule's configuration
+should not describe itself as the whole shape.
+
+The mechanical half of this is worth a grep before you commit a
+documentation change: every backticked `src/…`, `tests/…`, `ui/…`,
+`rules/…` or `planned-rules/…` path should resolve, and every
+`perfectionist::<name>` outside `planned-rules/` should be a lint
+that `src/lib.rs::register_lints` registers — bar the deliberate
+typo fixtures that `perfectionist::unknown_perfectionist_lints`
+needs.
+
 ## Defaults live in field docs, not type or variant docs
 
 A config field's default value is documented on the **field**, never
@@ -138,26 +207,29 @@ So a field doc states the default in the config-file value form, and
 the type / variant docs describe only what each value *means*:
 
 ```rust
-/// How inline test code is handled. Defaults to `external_when_long`.
-inline_style: InlineStyle,           // field doc carries the default
+/// How the frobnicator is drawn. Defaults to `rounded`.
+frob_style: FrobStyle,               // field doc carries the default
 
-enum InlineStyle {
-    /// Every inline test item is flagged; all test code must move out.
-    ExternalOnly,
-    /// Inline test code is allowed up to the configured budget.
-    ExternalWhenLong,                // variant doc: meaning only, no "the default"
+enum FrobStyle {
+    /// Every corner is left at a right angle.
+    Square,
+    /// Every corner is filleted to the configured radius.
+    Rounded,                     // variant doc: meaning only, no "default"
 }
 ```
 
-The wrong placement — `ExternalWhenLong`'s doc reading "… the
-default." or `InlineStyle`'s own doc reading "Defaults to
-`external_when_long`." — is the recurring mistake this convention
-exists to stop. It already had to be corrected once for
-`ReferenceScope::Crate` in
-<https://github.com/KSXGitHub/perfectionist/pull/218>. The `#[default]`
-*attribute* on a variant is fine — it is code expressing the
-`Default` impl, not prose claiming a default. Only the prose is
-governed here.
+The names above are deliberately fake: an example copied out of a
+live `Config` struct would itself be a restatement of the code, and
+would drift the moment that struct changed.
+
+The wrong placement — `Rounded`'s doc reading "… the default." or
+`FrobStyle`'s own doc reading "Defaults to `rounded`." — is the
+recurring mistake this convention exists to stop. It already had to
+be corrected once for `ReferenceScope::Crate` in
+<https://github.com/KSXGitHub/perfectionist/pull/218>. The
+`#[default]` *attribute* on a variant is fine — it is code
+expressing the `Default` impl, not prose claiming a default. Only
+the prose is governed here.
 
 ## When the implementation is complete
 
@@ -167,9 +239,10 @@ becomes documentation drift. Remove it:
 
 1. **Delete the rule's markdown file** from `planned-rules/`.
 2. **Update `planned-rules/README.md`**: remove the rule's index
-   entry. The "Out of scope" section at the bottom doesn't list
-   implemented rules, only ones that won't be implemented; don't
-   move the entry there.
+   entry. The
+   [out-of-scope list](planned-rules/README.md#out-of-scope-cannot-be-linted-by-dylint)
+   at the bottom doesn't hold implemented rules, only ones that
+   won't be implemented; don't move the entry there.
 3. **Fix every link and prose reference** to the deleted rule.
    Cross-references typically appear in:
    - Other rules' "Interaction with sibling rules" sections.
@@ -179,12 +252,10 @@ becomes documentation drift. Remove it:
      some entries describe one rule by reference to another.
 
    Fix each reference by either pointing at the implementation
-   source code (e.g., `src/rules/path_qualification_mismatch.rs`)
-   or rewording the prose to drop the link entirely. A reference
-   that just names the rule for context can be reworded to use the
-   lint's namespaced name
-   (`perfectionist::path_qualification_mismatch`) without a
-   markdown link.
+   source code (`src/rules/<rule_name>.rs`) or rewording the prose
+   to drop the link entirely. A reference that just names the rule
+   for context can be reworded to use the lint's namespaced name
+   (`perfectionist::<rule_name>`) without a markdown link.
 
 After the cleanup, the repository should be self-consistent: the
 `planned-rules/<rule>.md` file no longer exists, and no other
@@ -388,24 +459,22 @@ coexist with either of the headings above.
 
 ## Notes on cross-rule dependencies
 
-A handful of rules share helpers — the markdown exclusion
-scanner, the unicode-width helper, the format-template parser,
-the URL-discovery scanner, and the module-re-parsing helper
-(`src/module_reparse.rs`, which re-parses the crate's module
-source files from a shared `SourceMap` so the import-rewriting
-rules `import_granularity_mismatch` and `uncombined_self_import`
-reach separate-file submodules while keeping `#[cfg(...)]` gates
-intact). The module-re-parsing helper exists because this exact
-bug — a source-layout rule shipped as a pre-expansion
+Rules share crate-internal helpers: every `src/*.rs` beside
+`lib.rs` and `rules.rs` is one, and each carries a module
+docstring saying what it is for. The module-re-parsing helper
+(`src/module_reparse.rs`) is the one to know about before you
+start — it re-parses the crate's module source files from a
+shared `SourceMap` so a rule reaching separate-file submodules
+still sees `#[cfg(...)]` gates intact. It exists because this
+exact bug — a source-layout rule shipped as a pre-expansion
 `EarlyLintPass` silently skipping every separate-file submodule —
 has been written twice; before implementing any rule that reads
-the *written layout* of items across module scopes, read the
-"Reaching every module (source-layout rules)" section of
-`planned-rules/IMPLEMENTATION_CONVENTIONS.md`. The planning files
-document who depends on whom in the "Interaction with sibling
-rules" sections. When implementing the *first* rule in a
-dependency cluster, factor the shared helper into a
-crate-internal module so the second rule can reuse it. The
+the *written layout* of items across module scopes, read
+[Reaching every module (source-layout rules)](planned-rules/IMPLEMENTATION_CONVENTIONS.md#reaching-every-module-source-layout-rules).
+The planning files document who depends on whom in their
+"Interaction with sibling rules" sections. When implementing the
+*first* rule in a dependency cluster, factor the shared helper
+into a crate-internal module so the second rule can reuse it. The
 planning files name this expectation explicitly; don't duplicate
 the helper.
 
@@ -415,14 +484,13 @@ One shared helper is a suppression guard rather than a parser:
 false-positiving on proc-macro-synthesised nodes that carry a
 user-source span and so slip past `report_in_external_macro:
 false`. This bug class has recurred across rules; before you pick
-a new rule's diagnostic span, read the "Suppressing
-proc-macro-synthesised violations" section of
-`planned-rules/IMPLEMENTATION_CONVENTIONS.md` and add the guard
-plus a `ui/<rule>_proc_macro.rs` regression fixture if the rule is
-vulnerable. The fixture is only real if it fails with the guard
-removed: build it around a trigger the rule actually fires on (not
-an exempt or trivial node), and mutation-check it before trusting
-it.
+a new rule's diagnostic span, read
+[Suppressing proc-macro-synthesised violations](planned-rules/IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations)
+and add the guard plus a `ui/<rule>_proc_macro.rs` regression
+fixture if the rule is vulnerable. The fixture is only real if it
+fails with the guard removed: build it around a trigger the rule
+actually fires on (not an exempt or trivial node), and
+mutation-check it before trusting it.
 
 ## Commit message style
 

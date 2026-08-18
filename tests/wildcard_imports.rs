@@ -18,10 +18,10 @@ const LINT_NAME: &str = "perfectionist::wildcard_imports";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/// The rule's user-facing configuration shape, mirrored here for
-/// serialisation. Kept separate from the lint's own internal `Config` so
-/// the test surface is independent of the implementation's private
-/// struct.
+/// The subset of the rule's user-facing configuration these tests
+/// exercise, mirrored here for serialisation. Kept separate from the
+/// lint's own internal `Config` so the test surface is independent of
+/// the implementation's private struct.
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]

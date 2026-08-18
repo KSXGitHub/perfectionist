@@ -10,8 +10,8 @@
 ## What it does
 
 Flags glob (`*`) `use` statements — `use foo::bar::*;` — in module
-bodies. Two exceptions are enabled by default and each can be
-turned off individually:
+bodies. These exceptions are enabled by default, and each can
+be turned off individually:
 
 - `prelude` — a glob whose final non-glob path segment names a
   prelude module is allowed: `use rayon::prelude::*;`,

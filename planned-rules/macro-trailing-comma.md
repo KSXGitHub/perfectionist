@@ -10,10 +10,10 @@ therefore not exposed — see
 [`impure-macro-arguments.md`](./impure-macro-arguments.md) for the
 sibling rule's handling of the same convention.
 
-The "Vertical only applies to block-indent layouts" caveat from
-the "What to lint" section is also implemented: any multi-line
-invocation whose first top-level token starts on the same line as
-the opening delimiter (the compact / visual-indent shape, e.g.
+The block-indent caveat in [What to lint](#what-to-lint) is also
+implemented: any multi-line invocation whose first top-level token
+starts on the same line as the opening delimiter (the compact /
+visual-indent shape, e.g.
 `vec![Inner { ... }]` or `vec![bar(\n    ...,\n)]`) is skipped.
 The predicate keys off the first token's line, not the element
 count, matching rustfmt's actual `trailing_comma = "Vertical"`

@@ -10,11 +10,12 @@
 ## What it does
 
 Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in the message of a
-panic-family or assertion-style macro (`panic!`,
-`unimplemented!`, `todo!`, `unreachable!`, `assert!`,
-`assert_eq!`, `assert_ne!`, `debug_assert*!`) and in the
-`expect` / `expect_err` argument on `Option` and `Result`.
-Prefer the three-ASCII-dot form `...`.
+panic-family or assertion-style macro — `panic!`, `todo!`,
+`unreachable!`, the `assert*!` family and their `debug_*`
+counterparts among them — and in the `expect` / `expect_err`
+argument on `Option` and `Result`. Prefer the three-ASCII-dot
+form `...`. The built-in macro set is the starting point for
+the `extra_macros` and `ignore_macros` knobs.
 
 ## Why restrict this?
 

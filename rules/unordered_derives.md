@@ -10,8 +10,7 @@
 ## What it does
 
 Enforces a project-wide ordering of trait names inside a single
-`#[derive(...)]` list. Two styles are configurable via
-`style`:
+`#[derive(...)]` list. The `style` knob selects the ordering:
 - `alphabetical` (default) — every trait name must be in
   ASCII-case-insensitive alphabetical order.
 - `prefix_then_alphabetical` — the configured `prefix` list of

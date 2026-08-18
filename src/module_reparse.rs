@@ -1,10 +1,9 @@
 //! Re-parsing a crate's module files from a `LateLintPass`.
 //!
-//! A rule that inspects the *source-level* layout of `use` statements —
-//! the blank-line grouping of `perfectionist::import_grouping_mismatch`, the
-//! granularity of `perfectionist::import_granularity_mismatch`, the module-`self`
-//! folding of `perfectionist::uncombined_self_import` — hits a wall in a
-//! pre-expansion `EarlyLintPass`: an out-of-line `mod foo;` module is
+//! A rule that inspects the *source-level* layout of items — the
+//! blank-line grouping of a module's `use` statements, say, or the
+//! text of its doc comments — hits a wall in a pre-expansion
+//! `EarlyLintPass`: an out-of-line `mod foo;` module is
 //! still `ModKind::Unloaded` there (its file is not parsed until macro
 //! expansion), so the walk never sees it and silently skips every
 //! separate-file submodule.
@@ -14,12 +13,17 @@
 //! parsing does not strip cfg, unlike the post-expansion AST, which is
 //! why the pre-expansion pass existed in the first place.
 //!
-//! Two entry points share the same re-parse machinery:
-//! [`parse_crate_module_files`] returns every file's freshly parsed
-//! [`Crate`] alongside the body spans of the crate's live modules (the
-//! inline-recursion guard a caller needs to skip cfg-disabled inline
-//! modules), and [`for_each_module_file`] is a thin callback wrapper for
-//! callers that handle one file at a time and do their own descent.
+//! The entry points share the same re-parse machinery and differ only
+//! in what they hand back:
+//!
+//! - [`parse_crate_module_files`] returns every file's freshly parsed
+//!   [`Crate`] alongside the body spans of the crate's live modules
+//!   (the inline-recursion guard a caller needs to skip cfg-disabled
+//!   inline modules).
+//! - [`for_each_module_file`] is a thin callback wrapper for callers
+//!   that handle one file at a time and do their own descent.
+//! - [`crate_module_files`] returns the [`FileName`] set alone, for
+//!   callers that walk the source text rather than the AST.
 
 use rustc_ast::Crate;
 use rustc_errors::DiagCtxt;
