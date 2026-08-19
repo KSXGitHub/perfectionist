@@ -136,73 +136,46 @@ The shapes to avoid:
 - **Never introduce a list with its own length.** "The convention
   has two consequences", "Six rules scan a slice of markdown" — the
   number is a second copy of the list, and the copy is what rots.
-  Write "The convention has these consequences". What makes a count
-  dangerous is that the list can grow without it: a count over
-  something that can gain a member is a liability, while a count
-  that *is* the fact ("the walk runs in two phases", "two checks
-  are needed because …") is not a second copy of anything.
+  Write "The convention has these consequences".
 - **Prefer a greppable predicate to a hand-maintained roster.**
   "Every rule that imports `crate::markdown`" stays true forever; a
-  list of rule names does not. Where a roster genuinely aids
-  comprehension, mark it as illustrative ("for example", "among
-  them") so no reader mistakes it for exhaustive and nobody has to
-  maintain it.
-- **Do not quote another file's heading or prose verbatim.** A
-  quoted heading is a copy that no tool checks; a quoted sentence is
-  worse, because anyone may reword the original without knowing the
-  copy exists. Naming a heading the conventions *require* every file
-  of a kind to carry — a planning file's "Interaction with sibling
-  rules", say — is naming the convention, not copying one file's
-  fact, and is fine. In markdown, link to the section by anchor — the
-  anchor is a copy too, and equally unchecked, but a stale one lands
-  the reader at the top of the right file instead of reading as prose
-  that was never true. In Rust comments and rustdoc, where a
-  repo-relative link does not resolve, name the file and leave the
-  reader to search it — naming a file is a reference, naming its
-  heading is a copy.
-- **State a fact in exactly one place.** Defaults, config shapes,
-  and file paths have one home; everything else links to it. The
+  list of rule names does not. Where a roster genuinely helps, mark
+  it illustrative ("for example", "among them").
+- **Do not quote another file's heading or prose verbatim.** It is a
+  copy no tool checks, and the original can be reworded by someone
+  who never sees it. In markdown, link to the section by anchor; in
+  Rust, where a repo-relative link does not resolve, name the file
+  and let the reader search it.
+- **State a fact in exactly one place.** Defaults, config shapes and
+  file paths have one home; everything else links to it. The
   [defaults convention](#defaults-live-in-field-docs-not-type-or-variant-docs)
   below is this rule applied to the case that recurs most.
 - **Do not paste real code into a guide.** An example copied out of
   a live `Config` struct drifts the moment that struct changes.
-  Write the example with obviously-fake names, or generate it.
+  Write it with obviously-fake names.
 - **Do not describe a lint as existing until it is registered.**
-  Shipped docs — `declare_tool_lint!` rustdoc, plus the `rules/*.md`
-  catalogue and docs site generated from it — must not name a lint
-  that `src/lib.rs::register_lints` does not register: a reader who
-  acts on it and writes `#[expect(perfectionist::<that name>)]` is
-  flagged by `perfectionist::unknown_perfectionist_lints`. Planning
-  files under `planned-rules/` are exempt — naming unimplemented
-  siblings is what they are for.
+  Shipped docs — `declare_tool_lint!` rustdoc and the `rules/*.md`
+  catalogue generated from it — must not name a lint that
+  `src/lib.rs::register_lints` does not, or a reader who writes
+  `#[expect(perfectionist::<that name>)]` for it is flagged by
+  `perfectionist::unknown_perfectionist_lints`. Planning files are
+  exempt; naming unimplemented siblings is what they are for.
 - **If a passage exists only to restate the code beneath it, delete
-  it.** Length is not thoroughness. The shortest documentation that
-  is still true next quarter beats the most complete documentation
-  that is wrong.
+  it.** Length is not thoroughness.
 
-None of this forbids duplication that genuinely has to exist. A
-built-in default list restated in a config field's doc is the only
-copy a user can read, and the `RuleConfig` mirrors in `tests/`
-serialise config the test crate cannot reach any other way. Keep
-those, say in the prose why the copy exists, and claim no more for
-it than it delivers. A default list is the exception that must be
-complete — a user cannot act on a partial one — so it is worth
-re-reading against the code whenever that code changes. Anywhere
-else, do not claim a copy is complete: that is the half most
-likely to rot.
+Some copies have to exist: a config field's default list is the only
+one a user can read, and the `RuleConfig` mirrors in `tests/`
+serialise config the test crate cannot reach. Keep those, say why
+they exist, and keep a default list complete — a partial one is
+useless.
 
-The mechanical half of this is worth a grep before you commit a
-documentation change: a backticked in-repo path — `src/…`,
-`tests/…`, `ui/…`, `rules/…`, `planned-rules/…`, `tools/…` —
-should resolve, and a
-`perfectionist::<name>` should name a lint that
-`src/lib.rs::register_lints` registers. Both greps have standing
-exceptions — prose describing a *linted* crate names paths that do
-not exist here; planning files and this guide name rules that are
-not implemented yet; a misspelt name is the point wherever
-`perfectionist::unknown_perfectionist_lints` is documented or
-fixtured; and `gen-docs`' unit tests invent lint names outright.
-Read the hits rather than the count.
+These are heuristics for a writer, not a spec to be lawyered. Two
+are mechanically checkable and worth a grep before committing:
+backticked in-repo paths should resolve, and a `perfectionist::`
+name should be one `register_lints` registers. Both have standing
+exceptions — prose about a *linted* crate, planning files, the
+deliberate typos around `unknown_perfectionist_lints` — so read the
+hits, not the count.
 
 ## Defaults live in field docs, not type or variant docs
 
@@ -229,10 +202,6 @@ enum FrobStyle {
     Rounded,                     // variant doc: meaning only, no "default"
 }
 ```
-
-The names above are deliberately fake: an example copied out of a
-live `Config` struct would itself be a restatement of the code, and
-would drift the moment that struct changed.
 
 The wrong placement — `Rounded`'s doc reading "… the default." or
 `FrobStyle`'s own doc reading "Defaults to `rounded`." — is the
@@ -584,16 +553,8 @@ Every other markdown file in the repository — `CLAUDE.md`,
 `planned-rules/*.md`, and anything else committed alongside the
 source — is only rendered in contexts where relative paths
 resolve correctly (GitHub, local editors, agent tooling). Prefer
-relative links in those files; they survive repository renames
-and don't bake in a hosting URL.
-
-Relative means *repo-root-relative* in `CLAUDE.md`, even though it
-is also exposed from `.github/`. GitHub shows a symlink as a
-pointer rather than rendering it, so those links are never followed
-from the symlinked path; and the alternatives are both worse — a
-`/`-anchored link resolves to the site root on GitHub, not the repo
-root, and an absolute URL is the thing this section reserves for
-`README.md`.
+relative links in those files — repo-root-relative — since they
+survive repository renames and don't bake in a hosting URL.
 
 ## GitHub-specific markdown
 
