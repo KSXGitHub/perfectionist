@@ -21,9 +21,10 @@
 //! and do their own descent.
 //!
 //! [`crate_module_files`] is the file-set step [`parse_crate_module_files`]
-//! runs first, walking the HIR without parsing anything. It is exposed on its own for a
-//! caller that scans source text rather than the AST and only needs to
-//! know which files are really the crate's modules.
+//! runs first, walking the HIR without parsing anything. It is
+//! exposed on its own for a caller that scans source text rather than
+//! the AST and only needs to know which files are really the crate's
+//! modules.
 
 use rustc_ast::Crate;
 use rustc_errors::DiagCtxt;

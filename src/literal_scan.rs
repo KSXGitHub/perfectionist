@@ -90,14 +90,7 @@ const ASCII_ELLIPSIS: &str = "...";
 /// loop, split out so the [`HirId`]-anchored
 /// [`emit_flagged_char_hir`] can be checked against it at a glance.
 ///
-/// Applicability is [`MachineApplicable`] for U+2026 (the rules'
-/// primary target, which always maps cleanly to `...`) and
-/// [`MaybeIncorrect`] for any user-configured `extra_flagged_chars`
-/// entry (whose visual equivalence to `...` is up to the project to
-/// assert).
-///
-/// [`MachineApplicable`]: Applicability::MachineApplicable
-/// [`MaybeIncorrect`]: Applicability::MaybeIncorrect
+/// Applicability comes from [`flagged_char_applicability`].
 fn emit_flagged_char<Cx>(
     lint_context: &Cx,
     lint: &'static Lint,

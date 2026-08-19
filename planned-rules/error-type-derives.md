@@ -5,7 +5,7 @@ Handling*.
 
 ## Status
 
-Bundles five sub-checks (`unused_error`, `missing_error`,
+Bundles several sub-checks (`unused_error`, `missing_error`,
 `unused_display`, `copyable_error`, `unconventional_error_name`).
 Per
 [one rule per file](../CLAUDE.md#one-rule-per-file-one-config-per-rule),

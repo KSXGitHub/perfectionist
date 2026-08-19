@@ -15,11 +15,10 @@
 //! [`emit_at_enclosing_hir`] resolves and emits in one step, and
 //! carries an arbitrary per-span payload through to its callback.
 //! They are **not** interchangeable, and the choice is not about
-//! which is more convenient: **does the span sit inside an
-//! attribute?** A doc comment lowers to `#[doc]`, and a clap
-//! `help = "..."` is an attribute literal; an item's own span starts at
-//! the item keyword, *after* both, so only [`emit_at_enclosing_hir`]
-//! will anchor such a span on the item it belongs to. A span pointing
+//! which is more convenient: **did the span come out of a scan over
+//! comment or literal source text?** If so it wants
+//! [`emit_at_enclosing_hir`], which carries two defences such a scan
+//! needs and the other entry point does not have. A span that points
 //! at ordinary code — a parked macro call, a `use` statement found by
 //! re-parsing — wants [`find_enclosing_hir_ids`]. Picking the wrong
 //! one silently anchors diagnostics on a different node, changing
@@ -86,20 +85,24 @@ fn walk(tcx: TyCtxt<'_>, target_spans: &[Span], include_attr_spans: bool) -> Vec
 /// node — in a single [`find_comment_anchor_hir_ids`] walk — then hand
 /// that node id, the span, and the payload to `emit`.
 ///
-/// The companion to [`find_enclosing_hir_ids`] for a span that sits
-/// inside an attribute — a doc comment, a clap `help = "..."` — found
-/// by a source-text scan in a late pass, outside the HIR walk.
+/// The companion to [`find_enclosing_hir_ids`] for a span found by
+/// scanning comment or literal source text in a late pass, outside
+/// the HIR walk.
 ///
-/// It resolves through [`find_comment_anchor_hir_ids`], which folds
-/// each node's attribute spans into its containment test and keeps
-/// the *narrowest* match; [`find_enclosing_hir_ids`] does neither, so
-/// an attribute-borne span resolves past the item it documents to the
-/// enclosing module. Emitted unanchored, the lint-level builder would
-/// sit at the crate root, so only a crate-root `#![allow]` /
-/// `#![expect]` would apply. Anchoring each diagnostic at its enclosing node — and
-/// emitting through `clippy_utils::diagnostics::span_lint_hir_and_then`
-/// from `emit` — is what lets a per-item / per-field / per-module
-/// `#[allow]` / `#[expect]` resolve.
+/// It resolves through [`find_comment_anchor_hir_ids`], which adds
+/// two independent defences such a scan needs. It folds each node's
+/// *doc-comment* spans into the containment test, because an item's
+/// own span starts at the item keyword, after its `///` run — without
+/// that, a doc-comment span resolves past the item it documents. And
+/// it keeps the *narrowest* match rather than the last one the walk
+/// reaches, so a derive-generated node spanning a whole field list
+/// cannot steal the anchor from the field. Emitted unanchored, the
+/// lint-level builder would sit at the crate root, so only a
+/// crate-root `#![allow]` / `#![expect]` would apply. Anchoring each
+/// diagnostic at its enclosing node — and emitting through
+/// `clippy_utils::diagnostics::span_lint_hir_and_then` from `emit` —
+/// is what lets a per-item / per-field / per-module `#[allow]` /
+/// `#[expect]` resolve.
 pub(crate) fn emit_at_enclosing_hir<Payload>(
     tcx: TyCtxt<'_>,
     violations: Vec<(Span, Payload)>,

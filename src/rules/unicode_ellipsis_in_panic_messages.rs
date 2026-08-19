@@ -67,9 +67,9 @@ declare_tool_lint! {
     /// macros. A custom macro added through this knob is treated
     /// as if its first argument were the message; an
     /// `assert_eq!`-shaped wrapper would therefore also scan its
-    /// value-position literals. Adding per-macro skip counts
-    /// requires extending the configuration schema and is out of
-    /// scope for the initial rule.
+    /// value-position literals. Adding per-macro skip counts would
+    /// require extending the configuration schema, which this rule
+    /// deliberately does not do.
     #[cfg_attr(
         dylint_lib = "perfectionist",
         expect(

@@ -87,5 +87,5 @@ project adding one macro must re-state the rest. Defaults to
 the stdout / stderr writers (`println`, `eprintln`, `print`,
 `eprint`), the `Write` writers (`writeln`, `write`), and the
 `log` family (`log`, `error`, `warn`, `info`, `debug`,
-`trace`) — the last matched by final segment, so `error`
+`trace`). Every one of those is single-segment, so `error`
 covers `log::error!` and `tracing::error!` alike.
