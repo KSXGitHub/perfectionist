@@ -1,6 +1,7 @@
 use super::{EMPTY_CONFIG_DOC, extract_config};
 use crate::extract::shared::SharedTypes;
 use crate::model::Optionality;
+use std::fmt::Write as _;
 use std::path::Path;
 
 #[test]
@@ -136,13 +137,13 @@ fn extract_config_rejects_a_half_defined_struct_only() {
 /// and `body` as its field list. Callers pass [`EMPTY_CONFIG_DOC`]
 /// rather than restating it, so the tests cannot drift from it.
 fn config_source(doc: &str, body: &str) -> String {
-    let doc: String = doc
-        .lines()
-        .map(|line| format!("        /// {line}\n"))
-        .collect();
-    format!(
-        "        const CONFIG_KEY: &str = \"perfectionist::demo\";\n\n{doc}        struct Config {body}\n",
-    )
+    let mut source = String::new();
+    let _ = writeln!(source, r#"const CONFIG_KEY: &str = "perfectionist::demo";"#);
+    for line in doc.lines() {
+        let _ = writeln!(source, "/// {line}");
+    }
+    let _ = writeln!(source, "struct Config {body}");
+    source
 }
 
 #[test]
