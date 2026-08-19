@@ -36,16 +36,16 @@ const EMPTY_CONFIG_DOC: &str = text_block! {
 /// claiming the rule has no knobs. Panics naming the file, the way
 /// this module reports every other broken half of the convention.
 fn check_empty_config_doc(source_path: &Path, attrs: &[Attribute], fields: &[ConfigField]) {
-    let found = doc_attrs_to_markdown(attrs);
+    let actual = doc_attrs_to_markdown(attrs);
     if fields.is_empty() {
-        if found != EMPTY_CONFIG_DOC {
+        if actual != EMPTY_CONFIG_DOC {
             panic!(
                 "{}: a rule with no configuration knobs documents its empty \
-                 `Config` with the fixed text, verbatim.\n\nexpected:\n{EMPTY_CONFIG_DOC}\n\nfound:\n{found}",
+                 `Config` with the fixed text, verbatim.\n\nEXPECTED:\n{EMPTY_CONFIG_DOC}\n\nACTUAL:\n{actual}",
                 source_path.display(),
             );
         }
-    } else if found.lines().next() == EMPTY_CONFIG_DOC.lines().next() {
+    } else if actual.lines().next() == EMPTY_CONFIG_DOC.lines().next() {
         panic!(
             "{}: `Config` has {} field(s) but still carries the knob-less \
              doc comment; document what the rule reads instead.",
