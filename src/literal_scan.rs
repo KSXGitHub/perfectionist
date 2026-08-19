@@ -69,9 +69,7 @@ pub(crate) fn emit_flagged_chars<Cx>(
 }
 
 /// Emit a single flagged-character diagnostic at `span`, suggesting
-/// the ASCII `...` replacement. The body of [`emit_flagged_chars`]'
-/// loop, split out so the [`HirId`]-anchored
-/// [`emit_flagged_char_hir`] can be checked against it at a glance.
+/// the ASCII `...` replacement.
 ///
 /// Applicability comes from [`flagged_char_applicability`].
 fn emit_flagged_char<Cx>(

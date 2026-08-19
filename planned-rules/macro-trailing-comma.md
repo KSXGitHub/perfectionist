@@ -10,7 +10,7 @@ therefore not exposed — see
 [`impure-macro-arguments.md`](./impure-macro-arguments.md) for the
 sibling rule's handling of the same convention.
 
-The block-indent caveat in [What to lint](#what-to-lint) is also
+The visual-indent caveat in [What to lint](#what-to-lint) is also
 implemented: any multi-line invocation whose first top-level token
 starts on the same line as the opening delimiter (the compact /
 visual-indent shape, e.g.

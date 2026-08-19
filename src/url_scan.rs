@@ -9,8 +9,6 @@
 //!   token to determine whether it sits inside a URL fragment such as
 //!   `https://example.com/issues/#123`.
 //!
-//! [`classify_trailing`] sits alongside them.
-//!
 //! The grammar is deliberately small — a scheme run, a non-whitespace
 //! body, optional trailing punctuation classification — per the
 //! parser-combinator convention in
@@ -28,8 +26,8 @@ pub(crate) struct UrlMatch<'a> {
 
 /// Default scheme set for the forward scanner ([`take_url`]). A
 /// narrow subset of the wider [`BACKWARD_URL_SCHEMES`] used by the
-/// `#N`-fragment back-scan: the wrapping concern that motivates the
-/// forward scan applies to `http` and `https` URLs, the only schemes
+/// `#N`-fragment back-scan: the wrapping concern that motivates
+/// `bare_url` applies to `http` and `https` URLs, the only schemes
 /// commonly written as prose links in doc comments.
 pub(crate) const DEFAULT_FORWARD_SCHEMES: &[&str] = &["http", "https"];
 

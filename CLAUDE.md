@@ -104,9 +104,6 @@ has these consequences for the implementer:
    - `scan` / `parser` — source-text walkers and parser combinators.
    - `ordering` / `triviality` — rule-specific algorithms.
 
-   Any rule with a `src/rules/<rule>/` directory beside its flat
-   `.rs` entry is an instance of the pattern.
-
 4. **Cross-rule helpers are `pub(crate)`, not `pub`.** The crate is
    a dylint `cdylib` with no public API surface, so `pub`
    over-advertises. Items in the crate-internal helper modules —
@@ -127,8 +124,8 @@ has these consequences for the implementer:
 
 Prose that duplicates a fact the code already states is unverified
 by construction: nothing fails when the code changes and the prose
-does not. Before writing one, ask what would make it go stale, and
-prefer the form that cannot.
+does not. Before writing such a sentence, ask what would make it go
+stale, and prefer the form that cannot.
 
 The shapes to avoid:
 
@@ -142,9 +139,10 @@ The shapes to avoid:
   it illustrative ("for example", "among them").
 - **Do not quote another file's heading or prose verbatim.** It is a
   copy no tool checks, and the original can be reworded by someone
-  who never sees it. In markdown, link to the section by anchor; in
-  Rust, where a repo-relative link does not resolve, name the file
-  and let the reader search it.
+  who never sees it. Naming a heading every file of a kind must
+  carry is naming the convention, not copying a fact. In markdown,
+  link to the section by anchor; in Rust, where a repo-relative link
+  does not resolve, name the file and let the reader search it.
 - **State a fact in exactly one place.** Defaults, config shapes and
   file paths have one home; everything else links to it. The
   [defaults convention](#defaults-live-in-field-docs-not-type-or-variant-docs)
@@ -171,9 +169,9 @@ These are heuristics for a writer, not a spec to be lawyered. Some
 are mechanically checkable and worth a grep before committing:
 backticked in-repo paths should resolve, and a `perfectionist::`
 name should be one `register_lints` registers. Both have standing
-exceptions — prose about a *linted* crate, planning files, the
-deliberate typos around `unknown_perfectionist_lints` — so read the
-hits, not the count.
+exceptions — prose about a *linted* crate, planning files and this
+guide, the deliberate typos around `unknown_perfectionist_lints` —
+so read the hits, not the count.
 
 ## Defaults live in field docs, not type or variant docs
 

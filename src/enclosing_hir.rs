@@ -5,8 +5,7 @@
 //!
 //! A span found by scanning *comment* text wants
 //! [`emit_at_enclosing_hir`], whose walk is doc-comment-aware;
-//! anything else wants [`find_enclosing_hir_ids`], which resolves
-//! spans and hands the ids back for the caller to emit with.
+//! anything else wants [`find_enclosing_hir_ids`].
 
 use rustc_hir as hir;
 use rustc_hir::intravisit::{self, Visitor};

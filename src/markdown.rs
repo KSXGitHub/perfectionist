@@ -1,13 +1,15 @@
-//! Markdown scanners shared by every rule that imports
-//! `crate::markdown` to walk doc-comment text. Consumers divide by
-//! how much structure they need, per the markdown-parsing convention
-//! in `planned-rules/IMPLEMENTATION_CONVENTIONS.md`:
+//! Markdown scanners for rules that walk doc-comment text, per the
+//! markdown-parsing convention in
+//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`. Consumers divide by
+//! how much structure they need:
 //!
-//! - **Tier A — structural classification**, for a rule that must
-//!   tell one construct from another: [`scan_skip_regions`],
-//!   [`classify_constructs`], [`scan_code_span_candidates`].
-//! - **Tier B — code-region mask**, for a rule that only needs code
-//!   excluded from a prose scan: [`scan_code_regions`].
+//! - **Tier A — structural classification.** [`classify_constructs`]
+//!   returns every construct's range *and* its [`ConstructKind`];
+//!   [`scan_skip_regions`] and [`scan_code_span_candidates`] return
+//!   ranges alone, to post-filter candidate diagnostics against.
+//! - **Tier B — code-region mask.** [`scan_code_regions`] returns the
+//!   ranges of code spans and code blocks, for a rule that only needs
+//!   code excluded from a prose scan.
 //!
 //! The implementation is a hand-written parser-combinator walk. The
 //! recognised constructs are:
@@ -203,9 +205,8 @@ pub(crate) fn scan_code_regions(input: &str, include_code_spans: bool) -> Vec<Sk
 /// inside `` [`Foo`] `` is skipped, having already been swallowed by
 /// [`take_link`]) but never recorded — only the surviving bare code
 /// spans are returned. Pulling a Rust identifier out of each range's
-/// body is left to the consuming rule, per the convention in
-/// `planned-rules/IMPLEMENTATION_CONVENTIONS.md` that Rust-aware
-/// extraction lives in the rule, not in this helper.
+/// body is left to the consuming rule, per
+/// `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
 ///
 /// Like [`scan_skip_regions`], the returned ranges are sorted by start
 /// byte and never overlap.

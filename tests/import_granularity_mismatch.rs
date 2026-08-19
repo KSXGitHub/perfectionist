@@ -18,7 +18,9 @@ const LINT_NAME: &str = "perfectionist::import_granularity_mismatch";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/// Serialisation shim for the rule's `dylint.toml` configuration.
+/// Serialisation shim for the rule's `dylint.toml` configuration,
+/// which the test crate cannot build from the lint's own private
+/// `Config`.
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]

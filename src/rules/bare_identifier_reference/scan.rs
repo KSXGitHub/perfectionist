@@ -8,7 +8,7 @@
 //! [`crate::markdown::scan_code_span_candidates`]. The
 //! identifier-extraction step here is the Rust-specific layer that
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md` leaves to each
-//! consuming rule rather than putting in the shared scanner.
+//! consuming rule.
 
 use crate::markdown::scan_code_span_candidates;
 use core::ops::Range;
