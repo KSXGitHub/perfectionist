@@ -54,8 +54,7 @@ struct Config {}
 
 /// Maximum Levenshtein edit distance between an unknown
 /// `perfectionist::*` name and a registered lint for the latter to be
-/// offered as a "did you mean" hint. `2` covers a single-character
-/// slip or a transposition.
+/// offered as a "did you mean" hint.
 const SUGGESTION_DISTANCE: usize = 2;
 
 pub struct UnknownPerfectionistLints {
