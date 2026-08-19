@@ -59,10 +59,12 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::single_letter_generic";
 
-/// Configuration is reserved for future knobs; the lint currently
-/// has no options. The empty struct still exists so that a stray
-/// `["perfectionist::single_letter_generic"]` table in `dylint.toml`
-/// deserialises rather than producing a confusing parse error.
+/// The rule has no configuration knobs. The empty struct is
+/// load-bearing rather than a placeholder: it makes a mistyped key
+/// under the rule's `dylint.toml` table an error instead of a
+/// silent no-op, and renders as `Configuration: none.` in the
+/// catalogue. See "Rules with no configuration" in
+/// `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}

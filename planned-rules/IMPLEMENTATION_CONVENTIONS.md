@@ -655,6 +655,51 @@ already follow the field-name convention; a rule scanning only a
 subset omits the surfaces it can't reach rather than renaming the ones
 it keeps.
 
+## Rules with no configuration
+
+A rule with no knobs still declares both halves of the configuration
+surface — the `CONFIG_KEY` constant and an empty `Config {}` — and
+still reads it once in the pass's constructor, discarding the value:
+
+```rust
+const CONFIG_KEY: &str = "perfectionist::single_letter_generic";
+
+/// The rule has no configuration knobs. The empty struct is
+/// load-bearing rather than a placeholder: it makes a mistyped key
+/// under the rule's `dylint.toml` table an error instead of a
+/// silent no-op, and renders as `Configuration: none.` in the
+/// catalogue. See "Rules with no configuration" in
+/// `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
+#[derive(Debug, Default, serde::Deserialize)]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
+struct Config {}
+
+// ... and, in the constructor:
+let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+```
+
+Both halves read as dead code and are not:
+
+- **`tools/gen-docs` requires them.** `extract_config` panics, naming
+  the file, on a rule that declares one half without the other. The
+  empty struct is what renders the rule's `Configuration: none.`
+  entry instead of dropping the rule out of the catalogue.
+- **`deny_unknown_fields` makes a mistyped knob loud.**
+  `dylint_linting::config_or_default` panics when the table fails to
+  deserialise, so a `["perfectionist::single_letter_generic"]` table
+  carrying `max_len = 3` reports ``unknown field `max_len` ``. Delete
+  the `config_or_default` call and nothing reads that table at all —
+  the user's configuration then silently does nothing.
+
+Note which way that second point runs. An *empty* table deserialises
+either way, with or without the struct; what the struct buys is the
+error on a key that isn't there. Three of the four rules that predate
+this section had the causality backwards, each in its own words —
+"the empty struct still exists so that a stray table [...] deserialises
+rather than producing a confusing parse error" — which is why the doc
+comment is now one fixed text, copied verbatim at every site. Point
+here rather than explaining the shape afresh.
+
 ## Suppressing proc-macro-synthesised violations
 
 `declare_tool_lint! { ... report_in_external_macro: false }` is the

@@ -88,7 +88,11 @@ has these consequences for the implementer:
    helper function or type, factor it into `src/common.rs` (for
    trivial cross-rule utilities) or a dedicated
    crate-internal module rather than co-housing the rules in one
-   file.
+   file. A rule with no knobs still declares both halves — an
+   empty `Config {}` alongside its `CONFIG_KEY` — with the fixed
+   doc comment given in the "Rules with no configuration" section
+   of `planned-rules/IMPLEMENTATION_CONVENTIONS.md`; copy that
+   text verbatim rather than writing a fresh explanation.
 
 3. **When a rule grows past one screenful, split it into a
    directory module beside the flat `.rs` entry.** This crate
