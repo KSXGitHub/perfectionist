@@ -17,8 +17,8 @@ fn typo_close() {}
 #[deny(perfectionist::unknown_perfectionist_lint)]
 fn typo_close_two() {}
 
-// Bad: word fragment dropped — three edits from
-// `unicode_ellipsis_in_comments`, the threshold's limit.
+// Bad: word fragment dropped — three edits out, one past the
+// threshold, so this fires with no "did you mean" hint.
 #[allow(perfectionist::unicode_ellipsis_comments)]
 fn typo_dropped_fragment() {}
 

@@ -20,8 +20,6 @@ warning: unknown lint: `perfectionist::unicode_ellipsis_comments`
    |
 LL | #[allow(perfectionist::unicode_ellipsis_comments)]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: did you mean `perfectionist::unicode_ellipsis_in_comments`?
 
 warning: unknown lint: `perfectionist::unknown::perfectionist_lints`
   --> $DIR/unknown_perfectionist_lints.rs:28:9
