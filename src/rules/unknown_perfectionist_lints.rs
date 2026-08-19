@@ -45,32 +45,19 @@ declare_tool_lint! {
 const CONFIG_KEY: &str = "perfectionist::unknown_perfectionist_lints";
 const TOOL_NAME: &str = "perfectionist";
 
-/// Configuration is reserved for future knobs; the lint currently
-/// has no options. The empty struct still exists so that a stray
+/// The rule has no options. The empty struct exists so that a stray
 /// `["perfectionist::unknown_perfectionist_lints"]` table in
-/// `dylint.toml` deserialises rather than producing a confusing
-/// parse error.
+/// `dylint.toml` deserialises rather than erroring.
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}
 
 /// Maximum Levenshtein edit distance between an unknown
 /// `perfectionist::*` name and a registered lint for the latter to be
-/// offered as a "did you mean" hint.
-///
-/// Deliberately not configurable. The threshold moves neither what the
-/// rule flags nor what it tells you to write — only the wording of an
-/// advisory `help:` line — so a project has nothing to gain by tuning
-/// it, and rustc likewise hard-codes the heuristic behind its own
-/// "did you mean".
-///
-/// `3` is generous enough to survive a dropped word fragment
-/// (`unicode_ellipsis_comments` for `unicode_ellipsis_in_comments`) yet
-/// well inside the catalogue's own spacing: no registered name comes
-/// within `3` edits of another, and the nearest registered name to a
-/// genuinely unrelated one sits an order of magnitude further out. A
-/// wrong guess would cost only a misleading sentence anyway — the hint
-/// carries no suggestion for `cargo fix` to apply.
+/// offered as a "did you mean" hint. Not configurable: it moves only
+/// the wording of an advisory `help:` line. `3` catches a dropped word
+/// fragment while staying under the 4 edits separating the closest
+/// pair of registered names.
 const SUGGESTION_DISTANCE: usize = 3;
 
 pub struct UnknownPerfectionistLints {
