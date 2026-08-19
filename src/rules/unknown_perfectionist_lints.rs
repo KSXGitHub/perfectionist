@@ -55,16 +55,6 @@ struct Config {}
 /// Maximum Levenshtein edit distance between an unknown
 /// `perfectionist::*` name and a registered lint for the latter to be
 /// offered as a "did you mean" hint.
-///
-/// Three, because a dropped word fragment — `unicode_ellipsis_comments`
-/// for `unicode_ellipsis_in_comments` — is a plausible typo that lands
-/// at exactly three edits, so a threshold of two misses it. The
-/// registered names are sparse enough to absorb the extra edit: the
-/// closest pair among them sits four apart, so no registered name is
-/// itself within the threshold of another, and an unrelated name's
-/// nearest neighbour sits an order of magnitude beyond it. A wrong
-/// guess costs one misleading sentence — the hint carries no structured
-/// suggestion for `cargo fix` to apply.
 const SUGGESTION_DISTANCE: usize = 3;
 
 pub struct UnknownPerfectionistLints {
