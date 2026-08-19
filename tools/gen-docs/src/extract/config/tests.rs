@@ -1,6 +1,7 @@
-use super::extract_config;
+use super::{EMPTY_CONFIG_DOC, extract_config};
 use crate::extract::shared::SharedTypes;
 use crate::model::Optionality;
+use std::fmt::Write as _;
 use std::path::Path;
 
 #[test]
@@ -130,4 +131,59 @@ fn extract_config_rejects_a_half_defined_struct_only() {
     let source = "struct Config {}";
     let file = syn::parse_file(source).unwrap();
     let _ = extract_config(Path::new("half.rs"), &file, &SharedTypes::default());
+}
+
+/// A rule source whose `Config` carries `doc` as its doc comment
+/// and `body` as its field list. Callers pass [`EMPTY_CONFIG_DOC`]
+/// rather than restating it, so the tests cannot drift from it.
+fn config_source(doc: &str, body: &str) -> String {
+    let mut source = String::new();
+    let _ = writeln!(source, r#"const CONFIG_KEY: &str = "perfectionist::demo";"#);
+    for line in doc.lines() {
+        let _ = writeln!(source, "/// {line}");
+    }
+    let _ = writeln!(source, "struct Config {body}");
+    source
+}
+
+#[test]
+fn empty_config_accepts_the_fixed_doc_comment() {
+    let source = config_source(EMPTY_CONFIG_DOC, "{}");
+    let file = syn::parse_file(&source).unwrap();
+    let config = extract_config(Path::new("demo.rs"), &file, &SharedTypes::default());
+    assert!(config.fields.is_empty());
+}
+
+#[test]
+#[should_panic(expected = "fixed text, verbatim")]
+fn empty_config_rejects_a_bespoke_doc_comment() {
+    // The shape this guard exists to stop: a knob-less rule
+    // explaining its empty `Config` in its own words.
+    let source = config_source(
+        "Configuration is reserved for future knobs; the lint has none.",
+        "{}",
+    );
+    let file = syn::parse_file(&source).unwrap();
+    let _ = extract_config(Path::new("demo.rs"), &file, &SharedTypes::default());
+}
+
+#[test]
+#[should_panic(expected = "still carries the knob-less")]
+fn configured_config_rejects_the_knob_less_doc_comment_with_additions() {
+    // Appending does not stop the text claiming the rule has no
+    // knobs, which is why the check is `starts_with`, not `==`.
+    let doc = format!("{EMPTY_CONFIG_DOC}\nThe knob below picks the flavour.");
+    let source = config_source(&doc, "{ count: usize }");
+    let file = syn::parse_file(&source).unwrap();
+    let _ = extract_config(Path::new("demo.rs"), &file, &SharedTypes::default());
+}
+
+#[test]
+#[should_panic(expected = "still carries the knob-less")]
+fn configured_config_rejects_the_knob_less_doc_comment() {
+    // The other direction: a rule gained a knob and the doc kept
+    // insisting it has none.
+    let source = config_source(EMPTY_CONFIG_DOC, "{ count: usize }");
+    let file = syn::parse_file(&source).unwrap();
+    let _ = extract_config(Path::new("demo.rs"), &file, &SharedTypes::default());
 }

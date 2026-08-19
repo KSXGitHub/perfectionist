@@ -41,6 +41,7 @@ dependencies = [
  "strum",
  "syn",
  "syntect",
+ "text-block-macros",
  "two-face",
 ]
 
