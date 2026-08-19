@@ -1,9 +1,9 @@
-//! Markdown scanners shared by every rule that walks markdown-bearing
-//! source text — doc comments, and the attribute string literals clap
-//! renders as `--help`. Whichever rules import `crate::markdown`;
-//! consumers divide by
-//! how much structure they need, per the markdown-parsing convention
-//! in `planned-rules/IMPLEMENTATION_CONVENTIONS.md`:
+//! Markdown scanners shared by every rule that imports
+//! `crate::markdown` to walk markdown-bearing source text — doc
+//! comments, and the attribute string literals clap renders as
+//! `--help`. Consumers divide by how much structure they need, per
+//! the markdown-parsing convention in
+//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`:
 //!
 //! - **Tier A — structural classification**, for a rule that must tell
 //!   one construct from another. [`scan_skip_regions`] produces
@@ -135,9 +135,8 @@ pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
 /// Tier B code-region mask: the byte ranges of CommonMark code
 /// regions — inline code spans and block-level code (fenced and
 /// four-space-indented blocks, which is where doc-test code lives).
-/// Used by rules that scan doc-comment prose and need only to exclude
-/// code from the scan, not classify every construct
-/// (`unicode_ellipsis_in_docs`, `unpinned_repo_ref`).
+/// For a rule that scans prose and needs only to exclude code from
+/// the scan, not classify every construct.
 ///
 /// Block-level code is always part of the mask. `include_code_spans`
 /// controls whether inline `` `...` `` spans are masked too: the

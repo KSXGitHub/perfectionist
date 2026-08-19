@@ -33,15 +33,16 @@ pub(crate) struct UrlMatch<'a> {
 
 /// Default scheme set for the forward scanner ([`take_url`]). A
 /// narrow subset of the wider [`BACKWARD_URL_SCHEMES`] used by the
-/// `#N`-fragment back-scan: the wrapping concern that motivates
-/// `bare_url` applies to `http` and `https` URLs, the only schemes
+/// `#N`-fragment back-scan: the wrapping concern that motivates the
+/// forward scan applies to `http` and `https` URLs, the only schemes
 /// commonly written as prose links in doc comments.
 pub(crate) const DEFAULT_FORWARD_SCHEMES: &[&str] = &["http", "https"];
 
 /// All schemes the backward scan recognises when classifying a `#N`
-/// candidate as a URL fragment. Wider than the forward scan's set —
-/// `bare_issue_reference` does not want to flag fragments of `ssh://`
-/// or `git://` URLs just because `bare_url` doesn't surface them.
+/// candidate as a URL fragment. Wider than the forward scan's set: a
+/// `#N` inside an `ssh://` or `git://` URL is still a fragment and
+/// must not be flagged, even though the forward scan never surfaces
+/// those URLs.
 pub(crate) const BACKWARD_URL_SCHEMES: &[&str] = &[
     "http", "https", "ftp", "ftps", "git", "ssh", "file", "mailto",
 ];

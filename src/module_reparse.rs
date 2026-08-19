@@ -20,8 +20,8 @@
 //! wraps it in a callback for callers that handle one file at a time
 //! and do their own descent.
 //!
-//! [`crate_module_files`] is the file-set step underneath both, walking
-//! the HIR without parsing anything. It is exposed on its own for a
+//! [`crate_module_files`] is the file-set step [`parse_crate_module_files`]
+//! runs first, walking the HIR without parsing anything. It is exposed on its own for a
 //! caller that scans source text rather than the AST and only needs to
 //! know which files are really the crate's modules.
 

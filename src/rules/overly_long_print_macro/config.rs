@@ -24,14 +24,9 @@ const DEFAULT_MAX_LINE_WIDTH: usize = 100;
 /// the `debug_assert*` family, ...) are deliberately absent; the
 /// reasoning is in `planned-rules/overly-long-print-macro.md`.
 ///
-/// The list covers the stdout / stderr writers (`println!`,
-/// `eprintln!`, `print!`, `eprint!`), the `Write` writers (`writeln!`,
-/// `write!`), and the `log` family (`log!`, `error!`, `warn!`,
-/// `info!`, `debug!`, `trace!`). The `log` family is matched
-/// by final path segment, so `error` covers `log::error!` and
-/// `tracing::error!` alike. A project that wants to fold a
-/// differently-named macro replaces this whole list via the
-/// `target_macros` config key.
+/// The entries themselves are documented on the `target_macros`
+/// config field, which is where a user reading the rendered
+/// catalogue looks for them.
 const DEFAULT_TARGET_MACROS: &[&str] = &[
     "println", "eprintln", "print", "eprint", "writeln", "write", "log", "error", "warn", "info",
     "debug", "trace",
@@ -50,7 +45,14 @@ pub(super) struct Config {
     /// trailing `!`). A single-segment entry matches by the
     /// invocation's final segment (so `"info"` covers `log::info!`);
     /// a multi-segment entry tail-matches the invocation path.
-    /// Replaces the built-in list wholesale when present.
+    ///
+    /// Replaces the built-in list wholesale when present, so a
+    /// project adding one macro must re-state the rest. Defaults to
+    /// the stdout / stderr writers (`println`, `eprintln`, `print`,
+    /// `eprint`), the `Write` writers (`writeln`, `write`), and the
+    /// `log` family (`log`, `error`, `warn`, `info`, `debug`,
+    /// `trace`) — the last matched by final segment, so `error`
+    /// covers `log::error!` and `tracing::error!` alike.
     pub target_macros: Vec<String>,
 }
 

@@ -8,11 +8,11 @@
 //! a byte offset within the text into a [`Span`].
 //!
 //! [`emit_flagged_char_hir`] emits one character's diagnostic at a
-//! caller-supplied [`HirId`], for a rule that runs its own scan loop —
-//! one that must consult a markdown code-region mask and a fallible
-//! span map before emitting, say. It shares the message, suggestion,
-//! and applicability with the sweep above rather than restating
-//! them.
+//! caller-supplied [`HirId`], for a rule that runs its own scan loop
+//! and needs the finding anchored on an enclosing node so a per-item
+//! `#[allow]` / `#[expect]` resolves. It shares the message,
+//! suggestion, and applicability with the sweep above rather than
+//! restating them.
 //!
 //! [`string_literal_quote_lengths`] is the companion parser for any
 //! rule that needs to scan a string-literal body without its opening
@@ -75,8 +75,8 @@ pub(crate) fn emit_flagged_chars<Cx>(
     }
 }
 
-/// Label on the `...` suggestion. The two emitters below reach
-/// different `clippy_utils` entry points and assemble the diagnostic
+/// Label on the `...` suggestion. The emitters below reach different
+/// `clippy_utils` entry points and assemble the diagnostic
 /// separately, so each literal they have in common is named here
 /// rather than written twice.
 const SUGGESTION_LABEL: &str = "use ASCII `...` instead";

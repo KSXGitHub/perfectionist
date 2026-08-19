@@ -154,12 +154,12 @@ The shapes to avoid:
   of a kind to carry — a planning file's "Interaction with sibling
   rules", say — is naming the convention, not copying one file's
   fact, and is fine. In markdown, link to the section by anchor — the
-  anchor is a copy too, and equally unchecked, but a stale one
-  lands the reader at the top of the right file instead of reading
-  as prose that was never true. In Rust
-  comments and rustdoc, where a repo-relative link does not resolve,
-  name the file and leave the reader to search it — naming a file is
-  a reference, naming its heading is a copy.
+  anchor is a copy too, and equally unchecked, but a stale one lands
+  the reader at the top of the right file instead of reading as prose
+  that was never true. In Rust comments and rustdoc, where a
+  repo-relative link does not resolve, name the file and leave the
+  reader to search it — naming a file is a reference, naming its
+  heading is a copy.
 - **State a fact in exactly one place.** Defaults, config shapes,
   and file paths have one home; everything else links to it. The
   [defaults convention](#defaults-live-in-field-docs-not-type-or-variant-docs)
@@ -586,6 +586,14 @@ source — is only rendered in contexts where relative paths
 resolve correctly (GitHub, local editors, agent tooling). Prefer
 relative links in those files; they survive repository renames
 and don't bake in a hosting URL.
+
+Relative means *repo-root-relative* in `CLAUDE.md`, even though it
+is also exposed from `.github/`. GitHub shows a symlink as a
+pointer rather than rendering it, so those links are never followed
+from the symlinked path; and the alternatives are both worse — a
+`/`-anchored link resolves to the site root on GitHub, not the repo
+root, and an absolute URL is the thing this section reserves for
+`README.md`.
 
 ## GitHub-specific markdown
 

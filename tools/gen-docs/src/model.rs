@@ -127,8 +127,8 @@ pub(crate) struct ConfigDoc {
 /// reproducing the Rust default expression — the prose doc comment
 /// states the default in human-readable form. The exception is the
 /// mandatory-configuration direction fields (e.g.
-/// `import_grouping_mismatch`'s `style`), which are a bare type with no default;
-/// those carry [`ConfigField::optionality`] set to
+/// `import_grouping_mismatch`'s `style`), which are a bare type with
+/// no default; those carry [`ConfigField::optionality`] set to
 /// [`Optionality::Mandatory`] and render a `mandatory` badge instead.
 #[derive(Clone)]
 pub(crate) struct ConfigField {

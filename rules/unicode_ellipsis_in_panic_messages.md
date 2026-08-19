@@ -11,11 +11,12 @@
 
 Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in the message of a
 panic-family or assertion-style macro — `panic!` and
-`assert_eq!` among them — and in the `expect` / `expect_err`
-argument on `Option` and `Result`. Prefer the three-ASCII-dot
-form `...`. The built-in macro and method sets are listed on
-the `extra_macros` and `extra_methods` knobs, which extend
-them; `ignore_macros` and `ignore_methods` narrow them.
+`assert_eq!` among them — and in the panic-message argument of
+an `Option` / `Result` method such as `expect`. Prefer the
+three-ASCII-dot form `...`. The built-in macro and method sets
+are listed on the `extra_macros` and `extra_methods` knobs,
+which extend them; `ignore_macros` and `ignore_methods` narrow
+them.
 
 ## Why restrict this?
 
