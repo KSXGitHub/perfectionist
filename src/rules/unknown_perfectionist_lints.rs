@@ -55,7 +55,7 @@ struct Config {}
 /// Maximum Levenshtein edit distance between an unknown
 /// `perfectionist::*` name and a registered lint for the latter to be
 /// offered as a "did you mean" hint.
-const SUGGESTION_DISTANCE: usize = 2;
+const SUGGESTION_DISTANCE: usize = 3;
 
 pub struct UnknownPerfectionistLints {
     registered_lints: Vec<String>,
