@@ -132,11 +132,9 @@ fn extract_config_rejects_a_half_defined_struct_only() {
     let _ = extract_config(Path::new("half.rs"), &file, &SharedTypes::default());
 }
 
-/// A rule source whose `Config` carries `doc` as its doc
-/// comment and `body` as its field list. Building the doc from
-/// [`EMPTY_CONFIG_DOC`] rather than restating it keeps these tests
-/// from becoming one more divergent copy of the text they exist to
-/// pin.
+/// A rule source whose `Config` carries `doc` as its doc comment
+/// and `body` as its field list. Callers pass [`EMPTY_CONFIG_DOC`]
+/// rather than restating it, so the tests cannot drift from it.
 fn config_source(doc: &str, body: &str) -> String {
     let doc: String = doc
         .lines()
@@ -164,6 +162,17 @@ fn empty_config_rejects_a_bespoke_doc_comment() {
         "Configuration is reserved for future knobs; the lint has none.",
         "{}",
     );
+    let file = syn::parse_file(&source).unwrap();
+    let _ = extract_config(Path::new("demo.rs"), &file, &SharedTypes::default());
+}
+
+#[test]
+#[should_panic(expected = "still carries the knob-less")]
+fn configured_config_rejects_the_knob_less_doc_comment_with_additions() {
+    // Appending does not stop the text claiming the rule has no
+    // knobs, which is why the check is `starts_with`, not `==`.
+    let doc = format!("{EMPTY_CONFIG_DOC}\nThe knob below picks the flavour.");
+    let source = config_source(&doc, "{ count: usize }");
     let file = syn::parse_file(&source).unwrap();
     let _ = extract_config(Path::new("demo.rs"), &file, &SharedTypes::default());
 }

@@ -15,26 +15,18 @@ use syn::{Attribute, Expr, ExprLit, Item, Lit};
 use text_block_macros::text_block;
 
 /// The doc comment a knob-less rule's empty `Config` carries,
-/// verbatim, one literal per source line. A rule with no knobs has
-/// nothing rule-specific to say about its `Config`, so every such
-/// rule used to say the same thing in its own words — and most of
-/// them said it wrongly, claiming the empty struct exists so a
-/// stray table "deserialises rather than producing a confusing
-/// parse error" when in fact it is what makes a mistyped key an
-/// error at all. Pinning the text here turns that drift into a
-/// `just doc` failure instead of something a reader notices years
-/// later.
+/// verbatim, one literal per source line. Pinned here because
+/// every such rule used to word it differently, and most worded
+/// it wrongly.
 const EMPTY_CONFIG_DOC: &str = text_block! {
     "The rule has no configuration knobs. Not dead code: the read"
     "below rejects a mistyped key in the rule's `dylint.toml` table,"
     "and gen-docs needs the struct for `Configuration: none.`"
 };
 
-/// Hold a knob-less rule's `Config` doc to [`EMPTY_CONFIG_DOC`],
-/// in both directions: an empty `Config` must carry that text
-/// verbatim, and one that has since grown a field must stop
-/// claiming the rule has no knobs. Panics naming the file, the way
-/// this module reports every other broken half of the convention.
+/// Hold a knob-less rule's `Config` doc to [`EMPTY_CONFIG_DOC`]:
+/// an empty `Config` must carry it verbatim, and one that has
+/// grown a field must stop claiming the rule has none.
 fn check_empty_config_doc(source_path: &Path, attrs: &[Attribute], fields: &[ConfigField]) {
     let actual = doc_attrs_to_markdown(attrs);
     if fields.is_empty() {
@@ -45,7 +37,7 @@ fn check_empty_config_doc(source_path: &Path, attrs: &[Attribute], fields: &[Con
                 source_path.display(),
             );
         }
-    } else if actual.lines().next() == EMPTY_CONFIG_DOC.lines().next() {
+    } else if actual.starts_with(EMPTY_CONFIG_DOC) {
         panic!(
             "{}: `Config` has {} field(s) but still carries the knob-less \
              doc comment; document what the rule reads instead.",
