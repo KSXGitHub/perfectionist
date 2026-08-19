@@ -17,6 +17,11 @@ fn typo_close() {}
 #[deny(perfectionist::unknown_perfectionist_lint)]
 fn typo_close_two() {}
 
+// Bad: word fragment dropped — three edits from
+// `unicode_ellipsis_in_comments`, the threshold's limit.
+#[allow(perfectionist::unicode_ellipsis_comments)]
+fn typo_dropped_fragment() {}
+
 // Bad: depth mismatch — two trailing segments. The joined form
 // (`unknown_perfectionist_lints`) is itself a registered name, so a
 // "did you mean" hint applies.

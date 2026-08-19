@@ -32,6 +32,14 @@ fn lint_name_typos() {
         ),
         1,
     );
+    // A dropped word fragment — the case that sets `SUGGESTION_DISTANCE`.
+    assert_eq!(
+        levenshtein(
+            b"unicode_ellipsis_comments",
+            b"unicode_ellipsis_in_comments",
+        ),
+        3,
+    );
     assert_eq!(
         levenshtein(
             b"nothing_like_this_anywhere",
