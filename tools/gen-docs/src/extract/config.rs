@@ -38,15 +38,15 @@ fn check_empty_config_doc(source_path: &Path, attrs: &[Attribute], fields: &[Con
     let found = doc_attrs_to_markdown(attrs);
     let expected = EMPTY_CONFIG_DOC.join("\n");
     if fields.is_empty() {
-        assert!(
-            found == expected,
-            "{}: a rule with no configuration knobs documents its empty \
-             `Config` with the fixed text, verbatim.\n\nexpected:\n{expected}\n\nfound:\n{found}",
-            source_path.display(),
-        );
-    } else {
-        assert!(
-            !found.starts_with(EMPTY_CONFIG_DOC[0]),
+        if found != expected {
+            panic!(
+                "{}: a rule with no configuration knobs documents its empty \
+                 `Config` with the fixed text, verbatim.\n\nexpected:\n{expected}\n\nfound:\n{found}",
+                source_path.display(),
+            );
+        }
+    } else if found.starts_with(EMPTY_CONFIG_DOC[0]) {
+        panic!(
             "{}: `Config` has {} field(s) but still carries the knob-less \
              doc comment; document what the rule reads instead.",
             source_path.display(),
@@ -113,7 +113,7 @@ pub(crate) fn extract_config(
         syn::Fields::Named(named) => named.named.iter().collect::<Vec<_>>(),
         _ => Vec::new(),
     };
-    let fields: Vec<ConfigField> = named_fields
+    let fields = named_fields
         .iter()
         .map(|field| {
             let rust_name = field
@@ -157,13 +157,13 @@ pub(crate) fn extract_config(
         .filter_map(|ident| find_type_doc(file, &ident, shared))
         .collect();
 
-    check_empty_config_doc(source_path, &config_struct.attrs, &fields);
-
-    ConfigDoc {
+    let config = ConfigDoc {
         key,
         fields,
         custom_types,
-    }
+    };
+    check_empty_config_doc(source_path, &config_struct.attrs, &config.fields);
+    config
 }
 
 #[cfg(test)]
