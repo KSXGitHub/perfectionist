@@ -132,14 +132,14 @@ fn extract_config_rejects_a_half_defined_struct_only() {
     let _ = extract_config(Path::new("half.rs"), &file, &SharedTypes::default());
 }
 
-/// A rule source whose `Config` carries `doc_lines` as its doc
+/// A rule source whose `Config` carries `doc` as its doc
 /// comment and `body` as its field list. Building the doc from
 /// [`EMPTY_CONFIG_DOC`] rather than restating it keeps these tests
 /// from becoming one more divergent copy of the text they exist to
 /// pin.
-fn config_source(doc_lines: &[&str], body: &str) -> String {
-    let doc: String = doc_lines
-        .iter()
+fn config_source(doc: &str, body: &str) -> String {
+    let doc: String = doc
+        .lines()
         .map(|line| format!("        /// {line}\n"))
         .collect();
     format!(
@@ -161,7 +161,7 @@ fn empty_config_rejects_a_bespoke_doc_comment() {
     // The shape this guard exists to stop: a knob-less rule
     // explaining its empty `Config` in its own words.
     let source = config_source(
-        &["Configuration is reserved for future knobs; the lint has none."],
+        "Configuration is reserved for future knobs; the lint has none.",
         "{}",
     );
     let file = syn::parse_file(&source).unwrap();
