@@ -5,27 +5,17 @@
 //!
 //! - **Tier A — structural classification.** [`classify_constructs`]
 //!   returns every construct's range *and* its [`ConstructKind`];
-//!   [`scan_skip_regions`] and [`scan_code_span_candidates`] return
-//!   ranges alone, to post-filter candidate diagnostics against.
+//!   [`scan_skip_regions`] returns ranges to post-filter candidate
+//!   diagnostics against; [`scan_code_span_candidates`] returns the
+//!   code spans themselves, as targets.
 //! - **Tier B — code-region mask.** [`scan_code_regions`] returns the
 //!   ranges of code spans and code blocks, for a rule that only needs
 //!   code excluded from a prose scan.
 //!
-//! The implementation is a hand-written parser-combinator walk. The
-//! recognised constructs are:
-//!
-//! - `` `...` `` code spans.
-//! - ` ``` ... ``` ` and `~~~ ... ~~~` fenced code blocks.
-//! - 4-space-indented code blocks.
-//! - `<...>` autolinks.
-//! - `[text](dest)` inline links.
-//! - `[text][id]` reference-style links.
-//! - `[id]: dest` reference-link definitions.
-//! - `<tag ...>` / `</tag>` / `<!-- ... -->` HTML.
-//! - ATX (`# h`) and Setext (`h\n===`) headings.
-//! - `**bold**` / `*italic*` emphasis and bullet / ordered list
-//!   markers (only when [`classify_constructs`] is asked for them; see
-//!   [`ClassifyOptions`]).
+//! The implementation is a hand-written parser-combinator walk; one
+//! `take_*` per construct recognised. Emphasis and list markers are
+//! matched only when [`classify_constructs`] is asked for them (see
+//! [`ClassifyOptions`]).
 
 use core::ops::Range;
 

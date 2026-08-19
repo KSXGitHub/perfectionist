@@ -129,18 +129,19 @@ stale, and prefer the form that cannot.
 
 The shapes to avoid:
 
-- **A count is a second copy of the list.** "The convention has two
-  consequences", "Six rules scan a slice of markdown" — the number
-  rots as soon as the list grows. Write "The convention has these
-  consequences".
+- **A count over a list that can grow is a second copy of it.**
+  "The convention has two consequences", "Six rules scan a slice of
+  markdown" — the number rots the moment the list gains a member.
+  Write "The convention has these consequences".
 - **Prefer a greppable predicate to a hand-maintained roster.**
   "Every rule that imports `crate::markdown`" stays true forever; a
   list of rule names does not. Where a roster genuinely helps, mark
   it illustrative ("for example", "among them").
 - **Do not quote another file's heading or prose verbatim.** It is a
   copy no tool checks, and the original can be reworded by someone
-  who never sees it. Naming a heading every file of a kind must
-  carry is naming the convention, not copying a fact. In markdown,
+  who never sees it. Naming a heading that the conventions require
+  every file of a kind to carry is naming the convention, not copying
+  a fact. In markdown,
   link to the section by anchor; in Rust, where a repo-relative link
   does not resolve, name the file and let the reader search it.
 - **State a fact in exactly one place.** Defaults, config shapes and
@@ -157,7 +158,8 @@ The shapes to avoid:
   `#[expect(perfectionist::<that name>)]` for it is flagged by
   `perfectionist::unknown_perfectionist_lints`. Planning files are
   exempt; naming unimplemented siblings is what they are for.
-- **When in doubt, delete.** Length is not thoroughness.
+- **If a passage exists only to restate the code beneath it, delete
+  it.** Length is not thoroughness.
 
 Some copies have to exist: a config field's default list is the only
 one a user can read, and the `RuleConfig` mirrors in `tests/`
@@ -165,13 +167,14 @@ serialise config the test crate cannot reach. Keep those, say why
 they exist, and keep a default list complete — a partial one is
 useless.
 
-These are heuristics for a writer, not a spec to be lawyered. Some
-are mechanically checkable and worth a grep before committing:
+Some of these are mechanically checkable and worth a grep before
+committing:
 backticked in-repo paths should resolve, and a `perfectionist::`
 name should be one `register_lints` registers. Both have standing
 exceptions — prose about a *linted* crate, planning files and this
-guide, the deliberate typos around `unknown_perfectionist_lints` —
-so read the hits, not the count.
+guide, the deliberate typos around `unknown_perfectionist_lints`, and
+`gen-docs`' unit tests, which invent lint names — so read the hits,
+not the count.
 
 ## Defaults live in field docs, not type or variant docs
 

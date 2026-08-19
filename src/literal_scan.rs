@@ -1,34 +1,7 @@
-//! Helpers shared by rules that scan string-literal / comment text.
-//!
-//! [`emit_flagged_chars`] serves a rule that has a contiguous stretch
-//! of text to sweep: walk it, emit a diagnostic for each flagged
-//! character, and offer the same `...` autofix. The per-character
-//! logic is identical across the Unicode-ellipsis rules; the only
-//! per-rule pieces are the lint name, a context label, and how to turn
-//! a byte offset within the text into a [`Span`].
-//!
-//! [`emit_flagged_char_hir`] emits one character's diagnostic at a
-//! caller-supplied [`HirId`], for a rule that runs its own scan loop
-//! and needs the finding anchored on an enclosing node so a per-item
-//! `#[allow]` / `#[expect]` resolves. It shares the message,
-//! suggestion, and applicability with the sweep above rather than
-//! restating them.
-//!
-//! [`string_literal_quote_lengths`] is the companion parser for any
-//! rule that needs to scan a string-literal body without its opening
-//! and closing delimiters. It sits here rather than inside any one
-//! rule because the shape it recognises (plain and raw display
-//! strings) is a generic property of Rust string literals, not
-//! specific to any rule's subject.
-//!
-//! [`take_string_escape`] is the escape-aware front-of-body scanner
-//! shared by every rule that walks a *cooked* string literal's body
-//! and must tell a real backslash escape (`\n`, `\\`, `\xNN`,
-//! `\u{...}`, a line continuation, ...) apart from the bytes around
-//! it. A caller uses that either to bail on the first non-eligible
-//! escape, or to find the real `\n` escapes in a literal it is about
-//! to fold without being fooled by `\\n` (an escaped backslash
-//! followed by the letter `n`, which is *not* a newline).
+//! Helpers shared by rules that scan string-literal / comment text:
+//! the Unicode-ellipsis diagnostic emitters, a string-literal
+//! delimiter parser, and an escape-aware body scanner. Each carries
+//! its own doc.
 
 use clippy_utils::diagnostics::{span_lint_and_sugg, span_lint_hir_and_then};
 use rustc_errors::Applicability;

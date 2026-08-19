@@ -24,7 +24,7 @@ pub(crate) struct UrlMatch<'a> {
     pub(crate) consumed: usize,
 }
 
-/// Default scheme set for the forward scanner ([`take_url`]). A
+/// URL schemes the forward scanner ([`take_url`]) recognises. A
 /// narrow subset of the wider [`BACKWARD_URL_SCHEMES`] used by the
 /// `#N`-fragment back-scan: the wrapping concern that motivates
 /// `bare_url` applies to `http` and `https` URLs, the only schemes
