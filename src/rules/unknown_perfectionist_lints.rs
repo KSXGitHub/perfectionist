@@ -54,8 +54,7 @@ struct Config {}
 
 /// Maximum Levenshtein edit distance between an unknown
 /// `perfectionist::*` name and a registered lint for the latter to be
-/// offered as a "did you mean" hint. Not configurable: it moves only
-/// the wording of an advisory `help:` line. `3` catches a dropped word
+/// offered as a "did you mean" hint. `3` catches a dropped word
 /// fragment while staying under the 4 edits separating the closest
 /// pair of registered names.
 const SUGGESTION_DISTANCE: usize = 3;
