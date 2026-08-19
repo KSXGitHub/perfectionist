@@ -27,7 +27,7 @@ mod depth_mismatch {}
 #[allow(perfectionist)]
 fn no_target() {}
 
-// Bad: nothing close enough for the default suggestion threshold.
+// Bad: nothing close enough for the suggestion threshold.
 #[warn(perfectionist::nothing_like_this_anywhere)]
 fn no_suggestion() {}
 
