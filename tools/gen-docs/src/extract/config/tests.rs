@@ -1,4 +1,4 @@
-use super::extract_config;
+use super::{EMPTY_CONFIG_DOC, extract_config};
 use crate::extract::shared::SharedTypes;
 use crate::model::Optionality;
 use std::path::Path;
@@ -130,4 +130,50 @@ fn extract_config_rejects_a_half_defined_struct_only() {
     let source = "struct Config {}";
     let file = syn::parse_file(source).unwrap();
     let _ = extract_config(Path::new("half.rs"), &file, &SharedTypes::default());
+}
+
+/// A rule source whose `Config` carries `doc_lines` as its doc
+/// comment and `body` as its field list. Building the doc from
+/// [`EMPTY_CONFIG_DOC`] rather than restating it keeps these tests
+/// from becoming the fifth divergent copy of the text they exist
+/// to pin.
+fn config_source(doc_lines: &[&str], body: &str) -> String {
+    let doc: String = doc_lines
+        .iter()
+        .map(|line| format!("        /// {line}\n"))
+        .collect();
+    format!(
+        "        const CONFIG_KEY: &str = \"perfectionist::demo\";\n\n{doc}        struct Config {body}\n",
+    )
+}
+
+#[test]
+fn empty_config_accepts_the_fixed_doc_comment() {
+    let source = config_source(EMPTY_CONFIG_DOC, "{}");
+    let file = syn::parse_file(&source).unwrap();
+    let config = extract_config(Path::new("demo.rs"), &file, &SharedTypes::default());
+    assert!(config.fields.is_empty());
+}
+
+#[test]
+#[should_panic(expected = "fixed text, verbatim")]
+fn empty_config_rejects_a_bespoke_doc_comment() {
+    // The shape this guard exists to stop: a knob-less rule
+    // explaining its empty `Config` in its own words.
+    let source = config_source(
+        &["Configuration is reserved for future knobs; the lint has none."],
+        "{}",
+    );
+    let file = syn::parse_file(&source).unwrap();
+    let _ = extract_config(Path::new("demo.rs"), &file, &SharedTypes::default());
+}
+
+#[test]
+#[should_panic(expected = "still carries the knob-less")]
+fn configured_config_rejects_the_knob_less_doc_comment() {
+    // The other direction: a rule gained a knob and the doc kept
+    // insisting it has none.
+    let source = config_source(EMPTY_CONFIG_DOC, "{ count: usize }");
+    let file = syn::parse_file(&source).unwrap();
+    let _ = extract_config(Path::new("demo.rs"), &file, &SharedTypes::default());
 }

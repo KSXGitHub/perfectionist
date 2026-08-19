@@ -11,7 +11,49 @@ use crate::extract::ty::{collect_referenced_idents, find_type_doc, is_option, to
 use crate::model::{ConfigDoc, ConfigField, Optionality};
 use std::collections::BTreeSet;
 use std::path::Path;
-use syn::{Expr, ExprLit, Item, Lit};
+use syn::{Attribute, Expr, ExprLit, Item, Lit};
+
+/// The doc comment a knob-less rule's empty `Config` carries,
+/// verbatim, one entry per source line. A rule with no knobs has
+/// nothing rule-specific to say about its `Config`, so the four
+/// such rules each said the same thing differently — and three of
+/// them said it wrongly, claiming the empty struct exists so a
+/// stray table "deserialises rather than producing a confusing
+/// parse error" when in fact it is what makes a mistyped key an
+/// error at all. Pinning the text here turns that drift into a
+/// `just doc` failure instead of something a reader notices years
+/// later.
+const EMPTY_CONFIG_DOC: &[&str] = &[
+    "The rule has no configuration knobs. Not dead code: the read",
+    "below rejects a mistyped key in the rule's `dylint.toml` table,",
+    "and gen-docs needs the struct for `Configuration: none.`",
+];
+
+/// Hold a knob-less rule's `Config` doc to [`EMPTY_CONFIG_DOC`],
+/// in both directions: an empty `Config` must carry that text
+/// verbatim, and one that has since grown a field must stop
+/// claiming the rule has no knobs. Panics naming the file, the way
+/// this module reports every other broken half of the convention.
+fn check_empty_config_doc(source_path: &Path, attrs: &[Attribute], fields: &[ConfigField]) {
+    let found = doc_attrs_to_markdown(attrs);
+    let expected = EMPTY_CONFIG_DOC.join("\n");
+    if fields.is_empty() {
+        assert!(
+            found == expected,
+            "{}: a rule with no configuration knobs documents its empty \
+             `Config` with the fixed text, verbatim.\n\nexpected:\n{expected}\n\nfound:\n{found}",
+            source_path.display(),
+        );
+    } else {
+        assert!(
+            !found.starts_with(EMPTY_CONFIG_DOC[0]),
+            "{}: `Config` has {} field(s) but still carries the knob-less \
+             doc comment; document what the rule reads instead.",
+            source_path.display(),
+            fields.len(),
+        );
+    }
+}
 
 /// Locate the rule's `Config` struct and its `CONFIG_KEY` constant
 /// and bundle them — along with any project-local types the fields
@@ -71,7 +113,7 @@ pub(crate) fn extract_config(
         syn::Fields::Named(named) => named.named.iter().collect::<Vec<_>>(),
         _ => Vec::new(),
     };
-    let fields = named_fields
+    let fields: Vec<ConfigField> = named_fields
         .iter()
         .map(|field| {
             let rust_name = field
@@ -114,6 +156,8 @@ pub(crate) fn extract_config(
         .into_iter()
         .filter_map(|ident| find_type_doc(file, &ident, shared))
         .collect();
+
+    check_empty_config_doc(source_path, &config_struct.attrs, &fields);
 
     ConfigDoc {
         key,

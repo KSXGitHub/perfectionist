@@ -89,10 +89,12 @@ has these consequences for the implementer:
    trivial cross-rule utilities) or a dedicated
    crate-internal module rather than co-housing the rules in one
    file. A rule with no knobs still declares both halves — an
-   empty `Config {}` alongside its `CONFIG_KEY` — with the fixed
-   doc comment given in the "Rules with no configuration" section
-   of `planned-rules/IMPLEMENTATION_CONVENTIONS.md`; copy that
-   text verbatim rather than writing a fresh explanation.
+   empty `Config {}` alongside its `CONFIG_KEY` — and documents
+   the empty struct with the fixed text held in `tools/gen-docs`
+   as `EMPTY_CONFIG_DOC`; copy it verbatim rather than writing a
+   fresh explanation. `extract_config` enforces both directions,
+   so a bespoke text — or a doc still claiming the rule has no
+   knobs after a field lands — fails `just doc`.
 
 3. **When a rule grows past one screenful, split it into a
    directory module beside the flat `.rs` entry.** This crate

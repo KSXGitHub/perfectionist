@@ -12,12 +12,9 @@ const CONFIG_KEY: &str = "perfectionist::thiserror_usage";
 /// The `thiserror` derive paths the rule recognises.
 const THISERROR_PATHS: &[&str] = &["thiserror::Error"];
 
-/// The rule has no configuration knobs. The empty struct is
-/// load-bearing rather than a placeholder: it makes a mistyped key
-/// under the rule's `dylint.toml` table an error instead of a
-/// silent no-op, and renders as `Configuration: none.` in the
-/// catalogue. See "Rules with no configuration" in
-/// `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
+/// The rule has no configuration knobs. Not dead code: the read
+/// below rejects a mistyped key in the rule's `dylint.toml` table,
+/// and gen-docs needs the struct for `Configuration: none.`
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}
