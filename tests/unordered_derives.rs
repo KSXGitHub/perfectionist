@@ -17,9 +17,7 @@ const LINT_NAME: &str = "perfectionist::unordered_derives";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/// Serialisation shim for the rule's `dylint.toml` configuration. Kept
-/// as a separate type from the lint's own internal `Config` so the test
-/// surface is independent of the implementation's private struct.
+/// Serialisation shim for the rule's `dylint.toml` configuration.
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]

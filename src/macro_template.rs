@@ -13,10 +13,6 @@
 //!   has no reason to single out the template, and needs this one to
 //!   reach literals that format-args lowering would otherwise hide
 //!   from the late pass.
-//!
-//! Both skip raw strings (`r"..."`): a fold would mis-handle one, and
-//! a rewrite *into* the raw form has nothing to do on one already
-//! raw.
 
 use rustc_ast::token::{LitKind, TokenKind};
 use rustc_ast::tokenstream::{TokenStream, TokenTree};
@@ -34,9 +30,9 @@ use rustc_span::Span;
 /// a bare literal), `log!`'s is the second (the level comes first), and
 /// `log::info!`'s is the first.
 ///
-/// Raw strings (`r"..."`) are deliberately not matched: both callers
-/// either fold escapes the raw form has none of, or rewrite *into* the
-/// raw form, so a literal that is already raw is never a candidate.
+/// Raw strings (`r"..."`) are deliberately not matched: a caller
+/// either folds escapes the raw form has none of, or rewrites *into*
+/// the raw form, so an already-raw literal is never a candidate.
 pub(crate) fn find_template_literal(tokens: &TokenStream) -> Option<Span> {
     let mut argument_len: usize = 0;
     let mut argument_lead_literal: Option<Span> = None;

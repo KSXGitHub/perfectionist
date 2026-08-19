@@ -3,21 +3,14 @@
 //! how much structure they need, per the markdown-parsing convention
 //! in `planned-rules/IMPLEMENTATION_CONVENTIONS.md`:
 //!
-//! - **Tier A — structural classification**, for a rule that must tell
-//!   one construct from another. [`scan_skip_regions`] produces
-//!   byte-range skip regions to post-filter candidate diagnostics
-//!   against; [`classify_constructs`] returns every construct's byte
-//!   range *and* its [`ConstructKind`], for a rule that acts on the
-//!   kind; and [`scan_code_span_candidates`] is the narrow one,
-//!   returning the code spans alone.
+//! - **Tier A — structural classification**, for a rule that must
+//!   tell one construct from another: [`scan_skip_regions`],
+//!   [`classify_constructs`], [`scan_code_span_candidates`].
 //! - **Tier B — code-region mask**, for a rule that only needs code
-//!   excluded from a prose scan. [`scan_code_regions`] returns the
-//!   byte ranges of code spans and code blocks and nothing else.
+//!   excluded from a prose scan: [`scan_code_regions`].
 //!
-//! The implementation is a hand-written parser-combinator walk per
-//! the convention documented in
-//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`. The recognised
-//! constructs are:
+//! The implementation is a hand-written parser-combinator walk. The
+//! recognised constructs are:
 //!
 //! - `` `...` `` code spans.
 //! - ` ``` ... ``` ` and `~~~ ... ~~~` fenced code blocks.

@@ -3,14 +3,6 @@
 //! `cfg_attr`-wrapped `#[expect]` / `#[allow]` attributes resolve
 //! correctly.
 //!
-//! A span reaches here from anywhere the rule was not walking the HIR
-//! when it found the violation — a pre-expansion pass that parked the
-//! span for a later one, a re-parse of the crate's module files, a
-//! walk over comment or literal source text. Whichever it was, the
-//! caller feeds in the spans it cares about and gets back, for each
-//! one, an enclosing HIR node to emit at (or [`hir::CRATE_HIR_ID`] if
-//! nothing contained it).
-//!
 //! A span found by scanning *comment* text wants
 //! [`emit_at_enclosing_hir`], whose walk is doc-comment-aware;
 //! anything else wants [`find_enclosing_hir_ids`], which resolves
@@ -74,9 +66,8 @@ fn walk(tcx: TyCtxt<'_>, target_spans: &[Span], include_attr_spans: bool) -> Vec
 }
 
 /// Resolve each violation's primary span to its narrowest enclosing
-/// HIR node — in a single [`find_comment_anchor_hir_ids`] walk, whose
-/// doc explains the two defences a comment scan needs — then hand
-/// that node id, the span, and the payload to `emit`.
+/// HIR node — in a single [`find_comment_anchor_hir_ids`] walk — then
+/// hand that node id, the span, and the payload to `emit`.
 ///
 /// The companion to [`find_enclosing_hir_ids`] for a rule that scans
 /// comment text in a late pass, outside the HIR walk. Emitted

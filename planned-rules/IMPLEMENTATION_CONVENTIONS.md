@@ -4,10 +4,6 @@ Conventions shared across multiple rules in this catalogue. Each rule
 is otherwise self-contained; this file exists so the recurring
 guidance lives in exactly one place.
 
-[Do not write documentation that restates the code](../CLAUDE.md#do-not-write-documentation-that-restates-the-code)
-governs this file too — it is where rosters of rule names accumulate
-fastest.
-
 ## Parser style
 
 When a rule needs to parse a non-trivial string — a URL, an email
@@ -896,12 +892,8 @@ plugin's pass internals.
 
 A rule's `declare_tool_lint!` rustdoc is rendered by rustdoc and by
 `tools/gen-docs/` as well as by GitHub, so it must stay within the
-markdown all of them understand. In practice that rules out GitHub
-alerts (`> [!NOTE]`), task lists, and mermaid fences. The planning
-files in this directory carry no such constraint — only GitHub, local
-editors, and agent tooling ever render them.
-
-Which renderer drops what, when a `>` block may become an alert, and
-how to pick the alert type are settled in
+markdown all of them understand; the planning files in this directory
+carry no such constraint. Which renderer drops what, and when a `>`
+block may become an alert, are settled in
 [GitHub-specific markdown](../CLAUDE.md#github-specific-markdown).
 

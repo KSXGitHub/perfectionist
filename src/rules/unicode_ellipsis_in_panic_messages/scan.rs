@@ -129,9 +129,7 @@ fn is_display_string_literal(kind: LiteralKind) -> bool {
 /// Unknown macros — including any added through the configuration's
 /// `extra_macros` knob — default to `0`. A project that adds an
 /// assertion-shaped custom macro through configuration accepts the
-/// false positive in that case; correctly handling it would require
-/// a per-macro skip-count configuration knob, which this rule
-/// deliberately does not offer.
+/// false positive in that case.
 fn arguments_before_message(macro_name: Symbol) -> u32 {
     match macro_name.as_str() {
         "assert" | "debug_assert" => 1,

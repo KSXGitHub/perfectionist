@@ -127,16 +127,15 @@ has these consequences for the implementer:
 
 Prose that duplicates a fact the code already states is unverified
 by construction: nothing fails when the code changes and the prose
-does not. Every such sentence is a future lie with a long fuse.
-Before writing one, ask what would make it go stale, and prefer the
-form that cannot.
+does not. Before writing one, ask what would make it go stale, and
+prefer the form that cannot.
 
 The shapes to avoid:
 
-- **Never introduce a list with its own length.** "The convention
-  has two consequences", "Six rules scan a slice of markdown" — the
-  number is a second copy of the list, and the copy is what rots.
-  Write "The convention has these consequences".
+- **A count is a second copy of the list.** "The convention has two
+  consequences", "Six rules scan a slice of markdown" — the number
+  rots as soon as the list grows. Write "The convention has these
+  consequences".
 - **Prefer a greppable predicate to a hand-maintained roster.**
   "Every rule that imports `crate::markdown`" stays true forever; a
   list of rule names does not. Where a roster genuinely helps, mark
@@ -160,8 +159,7 @@ The shapes to avoid:
   `#[expect(perfectionist::<that name>)]` for it is flagged by
   `perfectionist::unknown_perfectionist_lints`. Planning files are
   exempt; naming unimplemented siblings is what they are for.
-- **If a passage exists only to restate the code beneath it, delete
-  it.** Length is not thoroughness.
+- **When in doubt, delete.** Length is not thoroughness.
 
 Some copies have to exist: a config field's default list is the only
 one a user can read, and the `RuleConfig` mirrors in `tests/`

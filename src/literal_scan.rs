@@ -68,11 +68,6 @@ pub(crate) fn emit_flagged_chars<Cx>(
     }
 }
 
-/// Shared by both emitters, which reach different `clippy_utils`
-/// entry points and would otherwise each spell them out.
-const SUGGESTION_LABEL: &str = "use ASCII `...` instead";
-const ASCII_ELLIPSIS: &str = "...";
-
 /// Emit a single flagged-character diagnostic at `span`, suggesting
 /// the ASCII `...` replacement. The body of [`emit_flagged_chars`]'
 /// loop, split out so the [`HirId`]-anchored
@@ -93,8 +88,8 @@ fn emit_flagged_char<Cx>(
         lint,
         span,
         flagged_char_message(character, context_label),
-        SUGGESTION_LABEL,
-        ASCII_ELLIPSIS.to_owned(),
+        "use ASCII `...` instead",
+        "...".to_owned(),
         flagged_char_applicability(character),
     );
 }
@@ -104,8 +99,7 @@ fn emit_flagged_char<Cx>(
 /// comment it scanned — resolved by
 /// [`crate::enclosing_hir::emit_at_enclosing_hir`] — so a per-item /
 /// per-module `#[allow]` / `#[expect]` resolves, not just a crate-root
-/// `#![allow]`. Anything added to the diagnostic that is not already
-/// shared with [`emit_flagged_char`] has to be added in both.
+/// `#![allow]`.
 pub(crate) fn emit_flagged_char_hir(
     lint_context: &LateContext<'_>,
     lint: &'static Lint,
@@ -122,7 +116,7 @@ pub(crate) fn emit_flagged_char_hir(
         span,
         flagged_char_message(character, context_label),
         |diag| {
-            diag.span_suggestion(span, SUGGESTION_LABEL, ASCII_ELLIPSIS, applicability);
+            diag.span_suggestion(span, "use ASCII `...` instead", "...", applicability);
         },
     );
 }

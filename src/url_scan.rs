@@ -4,17 +4,12 @@
 //! picks by which end it is starting from:
 //!
 //! - [`take_url`] commits forward from a candidate `http://` /
-//!   `https://` prefix to determine where the URL ends — the entry
-//!   point for a rule that has found a URL and needs its extent.
+//!   `https://` prefix to determine where the URL ends.
 //! - [`back_scan_url_fragment`] walks backward from a candidate `#N`
 //!   token to determine whether it sits inside a URL fragment such as
-//!   `https://example.com/issues/#123` — the entry point for a rule
-//!   that has found a `#N` and must decide whether it is really an
-//!   issue reference.
+//!   `https://example.com/issues/#123`.
 //!
-//! [`classify_trailing`] sits alongside them for a caller that wraps a
-//! URL it found and must decide whether the last byte belongs to the
-//! URL or to the sentence around it.
+//! [`classify_trailing`] sits alongside them.
 //!
 //! The grammar is deliberately small — a scheme run, a non-whitespace
 //! body, optional trailing punctuation classification — per the

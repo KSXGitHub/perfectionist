@@ -1,5 +1,5 @@
-//! Comment-stream walker shared by the rules that scan comment prose
-//! — every rule that imports `crate::comment_walk`.
+//! Comment-stream walker shared by every rule that imports
+//! `crate::comment_walk`.
 //!
 //! Each of them needs to scan one or both of two distinct surfaces:
 //!
