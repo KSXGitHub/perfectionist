@@ -135,8 +135,8 @@ fn extract_config_rejects_a_half_defined_struct_only() {
 /// A rule source whose `Config` carries `doc_lines` as its doc
 /// comment and `body` as its field list. Building the doc from
 /// [`EMPTY_CONFIG_DOC`] rather than restating it keeps these tests
-/// from becoming the fifth divergent copy of the text they exist
-/// to pin.
+/// from becoming one more divergent copy of the text they exist to
+/// pin.
 fn config_source(doc_lines: &[&str], body: &str) -> String {
     let doc: String = doc_lines
         .iter()

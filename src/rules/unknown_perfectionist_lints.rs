@@ -45,9 +45,9 @@ declare_tool_lint! {
 const CONFIG_KEY: &str = "perfectionist::unknown_perfectionist_lints";
 const TOOL_NAME: &str = "perfectionist";
 
-/// The rule has no options. The empty struct exists so that a stray
-/// `["perfectionist::unknown_perfectionist_lints"]` table in
-/// `dylint.toml` deserialises rather than erroring.
+/// The rule has no configuration knobs. Not dead code: the read
+/// below rejects a mistyped key in the rule's `dylint.toml` table,
+/// and gen-docs needs the struct for `Configuration: none.`
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}

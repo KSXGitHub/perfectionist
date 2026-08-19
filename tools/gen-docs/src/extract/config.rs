@@ -15,8 +15,8 @@ use syn::{Attribute, Expr, ExprLit, Item, Lit};
 
 /// The doc comment a knob-less rule's empty `Config` carries,
 /// verbatim, one entry per source line. A rule with no knobs has
-/// nothing rule-specific to say about its `Config`, so the four
-/// such rules each said the same thing differently — and three of
+/// nothing rule-specific to say about its `Config`, so every such
+/// rule used to say the same thing in its own words — and most of
 /// them said it wrongly, claiming the empty struct exists so a
 /// stray table "deserialises rather than producing a confusing
 /// parse error" when in fact it is what makes a mistyped key an
