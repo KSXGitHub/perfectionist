@@ -4,14 +4,9 @@ Conventions shared across multiple rules in this catalogue. Each rule
 is otherwise self-contained; this file exists so the recurring
 guidance lives in exactly one place.
 
-The documentation conventions in [`CLAUDE.md`](../CLAUDE.md) govern
-this file too. The one worth naming here is
-[Do not write documentation that restates the code](../CLAUDE.md#do-not-write-documentation-that-restates-the-code):
-describing what the rules have in common is what this file is for, so
-it is also where hand-maintained rosters of rule names accumulate, and
-every one of those is a copy of the code waiting to go stale. Prefer a
-greppable predicate — "every rule that imports `crate::markdown`" —
-over naming the rules.
+[Do not write documentation that restates the code](../CLAUDE.md#do-not-write-documentation-that-restates-the-code)
+governs this file too — it is where rosters of rule names accumulate
+fastest.
 
 ## Parser style
 

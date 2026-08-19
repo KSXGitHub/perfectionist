@@ -169,7 +169,7 @@ serialise config the test crate cannot reach. Keep those, say why
 they exist, and keep a default list complete — a partial one is
 useless.
 
-These are heuristics for a writer, not a spec to be lawyered. Two
+These are heuristics for a writer, not a spec to be lawyered. Some
 are mechanically checkable and worth a grep before committing:
 backticked in-repo paths should resolve, and a `perfectionist::`
 name should be one `register_lints` registers. Both have standing
@@ -553,8 +553,8 @@ Every other markdown file in the repository — `CLAUDE.md`,
 `planned-rules/*.md`, and anything else committed alongside the
 source — is only rendered in contexts where relative paths
 resolve correctly (GitHub, local editors, agent tooling). Prefer
-relative links in those files — repo-root-relative — since they
-survive repository renames and don't bake in a hosting URL.
+relative links in those files; they survive repository renames and
+don't bake in a hosting URL.
 
 ## GitHub-specific markdown
 

@@ -1,9 +1,7 @@
 //! Markdown scanners shared by every rule that imports
-//! `crate::markdown` to walk markdown-bearing source text — doc
-//! comments, and the attribute string literals clap renders as
-//! `--help`. Consumers divide by how much structure they need, per
-//! the markdown-parsing convention in
-//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`:
+//! `crate::markdown` to walk doc-comment text. Consumers divide by
+//! how much structure they need, per the markdown-parsing convention
+//! in `planned-rules/IMPLEMENTATION_CONVENTIONS.md`:
 //!
 //! - **Tier A — structural classification**, for a rule that must tell
 //!   one construct from another. [`scan_skip_regions`] produces

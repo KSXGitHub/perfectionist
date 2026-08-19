@@ -23,10 +23,6 @@ const DEFAULT_MAX_LINE_WIDTH: usize = 100;
 /// (`format!`, `format_args!`) or *terminate* (`panic!`, `assert!`,
 /// the `debug_assert*` family, ...) are deliberately absent; the
 /// reasoning is in `planned-rules/overly-long-print-macro.md`.
-///
-/// The entries themselves are documented on the `target_macros`
-/// config field, which is where a user reading the rendered
-/// catalogue looks for them.
 const DEFAULT_TARGET_MACROS: &[&str] = &[
     "println", "eprintln", "print", "eprint", "writeln", "write", "log", "error", "warn", "info",
     "debug", "trace",

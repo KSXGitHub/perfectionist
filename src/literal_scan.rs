@@ -47,14 +47,7 @@ use rustc_span::Span;
 /// comment scanner, a `BytePos`-arithmetic offset from a literal span
 /// for the panic-message scanner).
 ///
-/// Applicability is [`MachineApplicable`] for U+2026 (the rule's
-/// primary target, which always maps cleanly to `...`) and
-/// [`MaybeIncorrect`] for any user-configured `extra_flagged_chars`
-/// entries (whose visual equivalence to `...` is up to the project to
-/// assert).
-///
-/// [`MachineApplicable`]: Applicability::MachineApplicable
-/// [`MaybeIncorrect`]: Applicability::MaybeIncorrect
+/// Applicability comes from [`flagged_char_applicability`].
 pub(crate) fn emit_flagged_chars<Cx>(
     lint_context: &Cx,
     lint: &'static Lint,
@@ -75,14 +68,9 @@ pub(crate) fn emit_flagged_chars<Cx>(
     }
 }
 
-/// Label on the `...` suggestion. The emitters below reach different
-/// `clippy_utils` entry points and assemble the diagnostic
-/// separately, so each literal they have in common is named here
-/// rather than written twice.
+/// Shared by both emitters, which reach different `clippy_utils`
+/// entry points and would otherwise each spell them out.
 const SUGGESTION_LABEL: &str = "use ASCII `...` instead";
-
-/// Replacement text the suggestion offers, named for the same reason
-/// as [`SUGGESTION_LABEL`].
 const ASCII_ELLIPSIS: &str = "...";
 
 /// Emit a single flagged-character diagnostic at `span`, suggesting
@@ -116,10 +104,8 @@ fn emit_flagged_char<Cx>(
 /// comment it scanned — resolved by
 /// [`crate::enclosing_hir::emit_at_enclosing_hir`] — so a per-item /
 /// per-module `#[allow]` / `#[expect]` resolves, not just a crate-root
-/// `#![allow]`. It shares [`flagged_char_message`],
-/// [`flagged_char_applicability`], [`SUGGESTION_LABEL`] and
-/// [`ASCII_ELLIPSIS`] with [`emit_flagged_char`]; anything added to
-/// the diagnostic beyond those has to be added in both places.
+/// `#![allow]`. Anything added to the diagnostic that is not already
+/// shared with [`emit_flagged_char`] has to be added in both.
 pub(crate) fn emit_flagged_char_hir(
     lint_context: &LateContext<'_>,
     lint: &'static Lint,
