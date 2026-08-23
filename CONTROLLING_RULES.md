@@ -32,7 +32,7 @@ The `DYLINT_RUSTFLAGS=-D perfectionist::<rule>` form mentioned above bypasses so
 
 ## 2. Rule registration (project-wide)
 
-Each rule is either *enabled* (its pass runs) or *disabled* (its pass is never installed, so it produces no diagnostics at all). Most rules are enabled by default; a few — currently `unordered_derives` and `exhaustive_error_enums` — ship disabled and require an explicit opt-in. Flip the registration state via the crate-wide `[perfectionist]` table in `dylint.toml`:
+Each rule is either *enabled* (its pass runs) or *disabled* (its pass is never installed, so it produces no diagnostics at all). Most rules are enabled by default; rules marked `inactive` in the generated [rule catalogue](./rules/README.md) ship disabled and require an explicit opt-in. Flip the registration state via the crate-wide `[perfectionist]` table in `dylint.toml`:
 
 ```toml
 [perfectionist]
