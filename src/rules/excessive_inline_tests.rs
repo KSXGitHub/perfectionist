@@ -2,7 +2,6 @@ use crate::common::{DefaultState, resolved_state};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
-mod cfg_test;
 mod config;
 mod paths;
 mod scan;

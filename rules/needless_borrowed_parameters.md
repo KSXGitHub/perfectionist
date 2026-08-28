@@ -28,6 +28,36 @@ disqualifying, not just the branch arms. The broader
 dominance-analysis cases described in
 `planned-rules/needless-borrowed-parameters.md` are still pending.
 
+A signature the reader cannot change is left alone: a trait
+method, whether in the trait's own declaration or in an
+`impl Trait for T`, and a parameter whose reference carries an
+explicit named lifetime, which may tie it to another parameter
+or to the return type.
+
+## Where it does not apply
+
+Test code and build scripts are exempt by default, because the
+rationale below does not reach them — the copy the rule buys
+back is one neither ever pays for, while the call sites still
+pay the ergonomic cost. Both exemptions are configurable
+(`test_code_exception`, `build_script_exception`).
+
+Test code here means a function gated to test builds by
+`#[cfg(test)]` — or by a compound predicate implying it, such as
+`#[cfg(all(test, unix))]` — whether the gate is on the function
+or on a module containing it; a function declared inside a
+`#[test]` function's body; and every function in an
+integration-test (`tests/`) or benchmark (`benches/`) crate. An
+example (`examples/`) is *not* test code by this measure: it is
+documentation readers copy, so it is held to the library's
+standard.
+
+The rule can only see `#[cfg(test)]` code at all in a build
+where `cfg(test)` is active — the unit-test target that
+`cargo dylint -- --all-targets` adds. Without that flag such
+code is configured out before the rule runs, so the exemption
+has nothing to do.
+
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. Taking
@@ -88,3 +118,30 @@ Method names to drop from the conversion set, even if they
 appear in the built-in defaults or in
 `extra_conversion_methods`. Empty by default; checked after the
 merge with the built-ins, so this knob always wins.
+
+### `test_code_exception`: `boolean` (optional)
+
+Whether test-exclusive code is exempt: a function gated to test
+builds by `#[cfg(test)]` (or a compound predicate implying it),
+one declared inside a `#[test]` function, and every function in
+an integration-test (`tests/`) or benchmark (`benches/`) crate.
+Defaults to `true`; set `false` to hold test code to the same
+signature as production code.
+
+The exemption is off the rule's own rationale: a test helper's
+callers are test bodies holding literals, which would each have
+to write the `.to_owned()` the helper is being told to drop,
+and the copy that buys back is one a test never pays for. An
+example (`examples/`) is not covered — it is documentation that
+readers copy, so it is held to the library's standard.
+
+### `build_script_exception`: `boolean` (optional)
+
+Whether a build script — `build.rs`, or whatever `Cargo.toml`'s
+`build` key names — is exempt. Defaults to `true`; set `false`
+to check build scripts too.
+
+Same rationale as `test_code_exception`: a build script runs
+once per build, so the copy the rule exists to save is worth
+nothing there. Recognising one relies on Cargo's
+`build_script_*` crate-name convention.

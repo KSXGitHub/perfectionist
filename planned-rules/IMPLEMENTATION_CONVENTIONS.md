@@ -300,6 +300,82 @@ only re-parsing in a late pass gives. So if you reach for a
 pre-expansion pass and match `ModKind` to walk module bodies, stop —
 that is the trap.
 
+## Recognising test-exclusive code
+
+A rule whose rationale is about production code — a cost paid at
+runtime, an API someone else calls, a signature a reader copies — has
+to decide what counts as "test code" before it can exempt it. Two
+crate-internal helpers answer that, and every rule that needs the
+answer uses them rather than rolling its own:
+
+- **`crate::test_code::in_test_code`** — is *this node* test code?
+  True when the node or any lexical ancestor carries a `#[cfg(...)]`
+  that implies `test`, and when the node sits inside a `#[test]`
+  function.
+- **`crate::cargo_target::crate_target`** — which Cargo target is the
+  *whole crate*? Under `--all-targets` Cargo hands a lint pass the
+  integration-test, benchmark, example, and build-script crates
+  separately, and the classification tells them apart from the
+  library or binary.
+
+Neither is reachable without `cfg(test)` being on. `#[cfg(test)]`
+items are configured out before a late pass runs, and rustc drops
+`#[test]` functions entirely in a non-test build, so a rule that
+exempts test code sees nothing to exempt unless the run includes the
+unit-test target (`cargo dylint -- --all-targets`). That is also why
+these live in a late pass: the parsed `CfgTrace` predicate rustc
+leaves behind after configuration needs `TyCtxt`.
+
+### What "implies `test`" means
+
+`cfg_predicate_implies_test` asks whether a predicate holds *only*
+in a test build, and composes over the connectives:
+
+| Predicate            | Test-only? |
+|----------------------|------------|
+| `test`               | yes        |
+| `all(test, unix)`    | yes — one conjunct suffices |
+| `any(test, unix)`    | no — `unix` can hold without `test` |
+| `not(test)`          | no — gated *away* from test builds |
+| `not(not(test))`     | yes — the negations cancel |
+
+`clippy_utils::is_cfg_test` recognises only the first row, which is
+why this exists.
+
+`not` is handled by carrying a polarity flag down the walk rather
+than rewriting the predicate: under a negation an `all` behaves like
+an `any` and vice versa, which is De Morgan applied on the fly, in
+one linear pass with no allocation.
+
+### Why this is not a SAT problem
+
+Deciding `P → test` in general *is* co-NP-complete — it is
+unsatisfiability of `P ∧ ¬test` — so the worry that admitting `not`
+drags in a solver is well founded in theory. It does not bite here,
+for two independent reasons, and the second is the one that settles
+it:
+
+1. The instances are hand-written `cfg` attributes with a handful of
+   distinct atoms, where even a brute-force truth table is a few
+   dozen evaluations.
+2. Completeness is not required. The walk computes the
+   negation-normal-form reading, which is **sound** — a `yes` is
+   always right — and gives up only where a contradiction or
+   tautology is spelled out across branches, as in
+   `any(test, all(a, not(a)))`. Those are not shapes anyone writes,
+   and a missed one costs a lint firing on test code, not a wrong
+   suppression.
+
+There is a third option, worth knowing about but deliberately not
+taken: rustc knows the *actual* values of every other `cfg` atom in
+the current compilation, so evaluating `P` with `test` forced false
+against that configuration would decide the question exactly, in
+linear time, with no approximation. It is rejected because it makes
+the answer depend on the build: `any(test, unix)` would be test-only
+on a non-unix target and not on unix, so the same source would lint
+differently per platform. The build-independent reading is the one a
+style rule wants.
+
 ## Naming a lint after the anti-pattern
 
 A lint's name is read in `#[allow(...)]`, `#[expect(...)]`,

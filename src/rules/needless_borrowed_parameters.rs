@@ -1,7 +1,8 @@
+use crate::cargo_target::{CargoTarget, crate_target};
 use crate::common::{
-    DefaultState, binding_hir_id, binding_ident, hir_in_external_macro, resolve_symbol_set,
-    resolved_state,
+    DefaultState, binding_hir_id, binding_ident, hir_in_external_macro, resolved_state,
 };
+use crate::test_code::in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::source::{snippet, snippet_opt};
 use rustc_errors::Applicability;
@@ -15,7 +16,10 @@ use rustc_middle::hir::nested_filter;
 use rustc_middle::ty::{self, AssocContainer, Ty, TyCtxt};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Symbol, sym};
-use std::collections::BTreeSet;
+
+mod config;
+
+use config::{Config, Resolved};
 
 declare_tool_lint! {
     /// ### What it does
@@ -38,6 +42,36 @@ declare_tool_lint! {
     /// disqualifying, not just the branch arms. The broader
     /// dominance-analysis cases described in
     /// `planned-rules/needless-borrowed-parameters.md` are still pending.
+    ///
+    /// A signature the reader cannot change is left alone: a trait
+    /// method, whether in the trait's own declaration or in an
+    /// `impl Trait for T`, and a parameter whose reference carries an
+    /// explicit named lifetime, which may tie it to another parameter
+    /// or to the return type.
+    ///
+    /// ### Where it does not apply
+    ///
+    /// Test code and build scripts are exempt by default, because the
+    /// rationale below does not reach them — the copy the rule buys
+    /// back is one neither ever pays for, while the call sites still
+    /// pay the ergonomic cost. Both exemptions are configurable
+    /// (`test_code_exception`, `build_script_exception`).
+    ///
+    /// Test code here means a function gated to test builds by
+    /// `#[cfg(test)]` — or by a compound predicate implying it, such as
+    /// `#[cfg(all(test, unix))]` — whether the gate is on the function
+    /// or on a module containing it; a function declared inside a
+    /// `#[test]` function's body; and every function in an
+    /// integration-test (`tests/`) or benchmark (`benches/`) crate. An
+    /// example (`examples/`) is *not* test code by this measure: it is
+    /// documentation readers copy, so it is held to the library's
+    /// standard.
+    ///
+    /// The rule can only see `#[cfg(test)]` code at all in a build
+    /// where `cfg(test)` is active — the unit-test target that
+    /// `cargo dylint -- --all-targets` adds. Without that flag such
+    /// code is configured out before the rule runs, so the exemption
+    /// has nothing to do.
     ///
     /// ### Why restrict this?
     ///
@@ -90,51 +124,21 @@ pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
 const CONFIG_KEY: &str = "perfectionist::needless_borrowed_parameters";
 
-/// Method names that count as "convert the borrowed parameter to its
-/// owned form". `into` is included for `param.into()`; the `from`
-/// free-function shape (`String::from(param)`) is recognised
-/// unconditionally and is not part of this set.
-const DEFAULT_CONVERSION_METHODS: &[&str] = &[
-    "to_owned",
-    "to_string",
-    "to_path_buf",
-    "to_vec",
-    "to_os_string",
-    "clone",
-    "into",
-];
-
-#[derive(Debug, Default, serde::Deserialize)]
-#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
-struct Config {
-    /// Additional method names that count as a conversion of the
-    /// borrowed parameter to its owned form. Merged with the built-in
-    /// defaults (`["to_owned", "to_string", "to_path_buf", "to_vec",
-    /// "to_os_string", "clone", "into"]`); empty by default. A
-    /// flagged conversion must still actually produce the owned
-    /// counterpart of the parameter's type, so listing an unrelated
-    /// method here never widens the lint beyond owned-producing calls.
-    extra_conversion_methods: Vec<String>,
-    /// Method names to drop from the conversion set, even if they
-    /// appear in the built-in defaults or in
-    /// `extra_conversion_methods`. Empty by default; checked after the
-    /// merge with the built-ins, so this knob always wins.
-    ignore_conversion_methods: Vec<String>,
-}
-
 pub struct NeedlessBorrowedParameters {
-    conversion_methods: BTreeSet<Symbol>,
+    config: Resolved,
+    /// Whether the whole crate under compilation is exempt, memoised
+    /// on first use: it depends only on which Cargo target this is, so
+    /// it is the same answer for every function in the crate.
+    exempt_crate: Option<bool>,
 }
 
 impl NeedlessBorrowedParameters {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let conversion_methods = resolve_symbol_set(
-            DEFAULT_CONVERSION_METHODS,
-            config.extra_conversion_methods,
-            config.ignore_conversion_methods,
-        );
-        Self { conversion_methods }
+        Self {
+            config: Resolved::from_config(config),
+            exempt_crate: None,
+        }
     }
 }
 
@@ -167,6 +171,9 @@ impl<'tcx> LateLintPass<'tcx> for NeedlessBorrowedParameters {
         if matches!(kind, FnKind::Closure) {
             return;
         }
+        if self.is_exempt(cx, def_id) {
+            return;
+        }
         // A signature dictated by a trait — whether the trait's own
         // declaration or an `impl Trait for T` method — cannot be
         // changed by this rule's reader, so leave it alone. Only free
@@ -191,6 +198,28 @@ impl<'tcx> LateLintPass<'tcx> for NeedlessBorrowedParameters {
 }
 
 impl NeedlessBorrowedParameters {
+    /// Whether the function at `def_id` sits in code the rule stays
+    /// out of, per the `test_code_exception` / `build_script_exception`
+    /// knobs.
+    ///
+    /// The crate-wide half — an integration-test, benchmark, or
+    /// build-script target, where *every* function is exempt — is
+    /// memoised, since it is one answer per crate. The per-function
+    /// half walks the enclosing scopes for a `#[cfg(test)]` gate or a
+    /// `#[test]` function, so it is asked afresh each time.
+    fn is_exempt(&mut self, cx: &LateContext<'_>, def_id: rustc_span::def_id::LocalDefId) -> bool {
+        let test_code_exception = self.config.test_code_exception;
+        let build_script_exception = self.config.build_script_exception;
+        let exempt_crate = *self
+            .exempt_crate
+            .get_or_insert_with(|| match crate_target(cx) {
+                CargoTarget::BuildScript => build_script_exception,
+                target => test_code_exception && target.is_test_target(),
+            });
+        exempt_crate
+            || (test_code_exception && in_test_code(cx.tcx, cx.tcx.local_def_id_to_hir_id(def_id)))
+    }
+
     fn check_param<'tcx>(
         &self,
         cx: &LateContext<'tcx>,
@@ -270,7 +299,7 @@ impl NeedlessBorrowedParameters {
         match conversion.kind {
             ExprKind::MethodCall(segment, receiver, _, _) => {
                 receiver.hir_id == use_expr.hir_id
-                    && self.conversion_methods.contains(&segment.ident.name)
+                    && self.config.conversion_methods.contains(&segment.ident.name)
             }
             ExprKind::Call(callee, args) => {
                 args.len() == 1
