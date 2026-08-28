@@ -96,10 +96,9 @@ const CONFIG_KEY: &str = "perfectionist::uncombined_self_import";
 
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 
-/// Configuration is reserved for future knobs; the lint currently has
-/// no options. The empty struct still exists so that a stray
-/// `["perfectionist::uncombined_self_import"]` table in `dylint.toml`
-/// deserialises rather than producing a confusing parse error.
+/// The rule has no configuration knobs. Not dead code: the read
+/// below rejects a mistyped key in the rule's `dylint.toml` table,
+/// and gen-docs needs the struct for `Configuration: none.`
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}

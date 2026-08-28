@@ -1,21 +1,18 @@
 //! Locating string literals in a macro invocation's token stream.
 //!
-//! Two shapes are needed by two rules:
+//! Which shape a rule wants follows from what it may safely rewrite:
 //!
-//! - [`find_template_literal`] returns the single *format template* — the
-//!   first argument that is, on its own, a lone cooked string literal.
-//!   `overly_long_print_macro` uses it because it may only ever touch a genuine
-//!   format template (its `\n`-fold is output-preserving only there).
+//! - [`find_template_literal`] returns the single *format template* —
+//!   the first argument that is, on its own, a lone cooked string
+//!   literal. A rule whose rewrite is output-preserving only on a
+//!   genuine format template (an `\n`-fold, say) may touch nothing
+//!   else.
 //! - [`find_all_cooked_str_literals`] returns *every* cooked string
 //!   literal anywhere in the token stream, descending into delimited
-//!   groups. `avoidable_string_escapes` uses it: its raw-string rewrite is
-//!   value-preserving for any literal, so it has no reason to single out
-//!   the template, and it must reach literals that format-args lowering
-//!   would otherwise hide from the late pass.
-//!
-//! Both skip raw strings (`r"..."`): `overly_long_print_macro` would mis-fold
-//! one, and `avoidable_string_escapes` rewrites *into* the raw form, so an
-//! already-raw literal is never a candidate.
+//!   groups. A rule whose rewrite is value-preserving for any literal
+//!   has no reason to single out the template, and needs this one to
+//!   reach literals that format-args lowering would otherwise hide
+//!   from the late pass.
 
 use rustc_ast::token::{LitKind, TokenKind};
 use rustc_ast::tokenstream::{TokenStream, TokenTree};
@@ -33,9 +30,9 @@ use rustc_span::Span;
 /// a bare literal), `log!`'s is the second (the level comes first), and
 /// `log::info!`'s is the first.
 ///
-/// Raw strings (`r"..."`) are deliberately not matched: both callers
-/// either fold escapes the raw form has none of, or rewrite *into* the
-/// raw form, so a literal that is already raw is never a candidate.
+/// Raw strings (`r"..."`) are deliberately not matched: a caller
+/// either folds escapes the raw form has none of, or rewrites *into*
+/// the raw form, so an already-raw literal is never a candidate.
 pub(crate) fn find_template_literal(tokens: &TokenStream) -> Option<Span> {
     let mut argument_len: usize = 0;
     let mut argument_lead_literal: Option<Span> = None;
