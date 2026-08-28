@@ -464,16 +464,11 @@ into a crate-internal module so the second rule can reuse it. The
 planning files name this expectation explicitly; don't duplicate
 the helper.
 
-Another pair answers "is this test code?": `crate::test_code`
-(a `#[cfg(...)]` predicate that implies `test`, or a `#[test]`
-function containing the node) and `crate::cargo_target` (which
-Cargo target the crate under compilation is). A rule that exempts
-test code — because its rationale is about production code — uses
-these rather than matching `cfg(test)` itself; before adding such
-an exemption, read
-[Recognising test-exclusive code](planned-rules/IMPLEMENTATION_CONVENTIONS.md#recognising-test-exclusive-code),
-which records what the predicate walk decides, what it declines to
-decide, and why that is not a SAT problem.
+Another pair answers "is this test code?": `crate::test_code` and
+`crate::cargo_target`. A rule that exempts test code uses these
+rather than matching `cfg(test)` itself; before adding such an
+exemption, read
+[Recognising test-exclusive code](planned-rules/IMPLEMENTATION_CONVENTIONS.md#recognising-test-exclusive-code).
 
 One shared helper is a suppression guard rather than a parser:
 `crate::common::hir_in_external_macro` (late passes) and

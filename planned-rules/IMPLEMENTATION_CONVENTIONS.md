@@ -349,74 +349,33 @@ one linear pass with no allocation.
 
 ### Third-party test attributes
 
-`#[rstest]`, `#[test_case]` and their kin do not make the author's
-function a `#[test]` function. They leave it an ordinary `fn` and
-generate a sibling module holding the `#[test]` wrappers that call
-it:
+`#[rstest]`, `#[test_case]` and their kin leave the author's function
+an ordinary `fn` and put the generated `#[test]` wrappers in a sibling
+module, so `in_test_code`'s `#[test]` half never matches it. The `cfg`
+half is what exempts it, and that suffices: the attribute comes from a
+dev-dependency the non-test build cannot resolve, so it can only appear
+under `#[cfg(test)]` or in a test target.
 
-```rust
-// What the author writes.
-#[test_case("a")]
-fn upper(text: &str) -> String {
-    text.to_uppercase()
-}
-
-// Roughly what reaches the lint pass.
-fn upper(text: &str) -> String {
-    text.to_uppercase()
-}
-mod upper {
-    #[test]
-    fn _a_expects() {
-        super::upper("a");
-    }
-}
-```
-
-Consequences for a rule that exempts test code:
-
-- `in_test_code`'s `#[test]` half does not match `upper`: the test
-  descriptors are named after the cases and live in a nested module.
-  The `cfg` half is what makes it test code, and in practice that is
-  enough — the attribute comes from a dev-dependency, which the
-  non-test build cannot resolve, so it can only appear under
-  `#[cfg(test)]` or in a test target.
-- Unlike a `#[test]` function, `upper` takes parameters, so a rule
-  over signatures does see them. Whether it also *fires* on them is a
-  property of the framework, not of the rule: `test_case` re-emits the
-  signature with the author's spans and reaches the rule, while
-  `rstest` rewrites it to strip `#[case]` and is suppressed by
-  `crate::common::hir_in_external_macro`. Never lean on that guard for
-  the exemption.
+Unlike a `#[test]` function, such a function takes parameters, so a
+rule over signatures does see them. Whether it also *fires* is the
+framework's doing — `test_case` re-emits the signature with the
+author's spans, `rstest` rewrites it and trips
+`crate::common::hir_in_external_macro` — so never lean on that guard
+for the exemption.
 
 ### Why this is not a SAT problem
 
-Deciding `P → test` in general *is* co-NP-complete — it is
-unsatisfiability of `P ∧ ¬test` — so the worry that admitting `not`
-drags in a solver is well founded in theory. It does not bite here,
-for two independent reasons, and the second is the one that settles
-it:
+Deciding `P → test` in general is co-NP-complete — it is
+unsatisfiability of `P ∧ ¬test` — but completeness is not required.
+The negation-normal-form reading the walk computes is sound (a `yes`
+is always right) and gives up only on a contradiction spelled out
+across branches, as in `any(test, all(a, not(a)))`; a miss costs a
+lint firing on test code, not a wrong suppression.
 
-1. The instances are hand-written `cfg` attributes with a handful of
-   distinct atoms, where even a brute-force truth table is a few
-   dozen evaluations.
-2. Completeness is not required. The walk computes the
-   negation-normal-form reading, which is **sound** — a `yes` is
-   always right — and gives up only where a contradiction or
-   tautology is spelled out across branches, as in
-   `any(test, all(a, not(a)))`. Those are not shapes anyone writes,
-   and a missed one costs a lint firing on test code, not a wrong
-   suppression.
-
-There is a third option, worth knowing about but deliberately not
-taken: rustc knows the *actual* values of every other `cfg` atom in
-the current compilation, so evaluating `P` with `test` forced false
-against that configuration would decide the question exactly, in
-linear time, with no approximation. It is rejected because it makes
-the answer depend on the build: `any(test, unix)` would be test-only
-on a non-unix target and not on unix, so the same source would lint
-differently per platform. The build-independent reading is the one a
-style rule wants.
+Evaluating `P` against the build's actual `cfg` values with `test`
+forced false would be exact and linear, and is deliberately not done:
+`any(test, unix)` would then be test-only on non-unix targets only, so
+the same source would lint differently per platform.
 
 ## Naming a lint after the anti-pattern
 
