@@ -295,7 +295,7 @@ or addable — see Implementation notes.
 
 ## Implementation notes
 
-- **Trigger discovery — three checks, cheapest first.** Walk
+- **Trigger discovery — cheapest check first.** Walk
   `StmtKind::Let` and apply, in order:
   1. **Binding mode.** The `let` pattern is a plain by-value `mut`
      binding (`ByRef::No` + `Mutability::Mut`). This is a pure-HIR gate
