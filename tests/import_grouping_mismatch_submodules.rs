@@ -12,8 +12,9 @@
 //! `target/integration-fixtures`. Pre-warm with
 //! `just warmup-integration-tests`.
 //!
-//! The rule is inactive by default and `style` is mandatory once
-//! enabled, so each test enables the rule and selects `multi_block`
+//! The rule is inactive by default and `style` / `reexports` are
+//! mandatory once enabled, so each test enables the rule and selects
+//! `multi_block` / `grouped`
 //! through the appended `dylint.toml` config. `--all` (not `--all-targets`) is
 //! kept so `#[cfg(test)]` code stays excluded — the
 //! [`does_not_flag_cfg_excluded_inline_module`] case depends on it.
@@ -36,6 +37,7 @@ enable = [\"import_grouping_mismatch\"]
 
 [\"perfectionist::import_grouping_mismatch\"]
 style = \"multi_block\"
+reexports = \"grouped\"
 ";
 
 /// A blank-line split inside a separate-file module (`mod foo;` →

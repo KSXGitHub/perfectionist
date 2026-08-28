@@ -555,14 +555,14 @@ fn emit_issue_ref(
                     diag.help(
                         "set `repository` (and `forge`, if its host isn't a recognised \
                          service) in dylint.toml under \
-                         `[perfectionist::bare_issue_reference]` to enable issue / PR link \
-                         suggestions",
+                         `[\"perfectionist::bare_issue_reference\"]` to enable issue / PR \
+                         link suggestions",
                     );
                 }
                 Some(_) if !(suggest_issue || suggest_pr) => {
                     diag.help(
                         "enable `suggest_issue_url` and/or `suggest_pr_url` in dylint.toml \
-                         under `[perfectionist::bare_issue_reference]` to get a link \
+                         under `[\"perfectionist::bare_issue_reference\"]` to get a link \
                          suggestion",
                     );
                 }

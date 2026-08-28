@@ -1,0 +1,19 @@
+warning: imports are not partitioned into ordered groups
+  --> $DIR/fixture.rs:24:1
+   |
+LL | / pub use crate::config::Args;
+LL | | use std::time::Duration;
+LL | | use crate::config::Opts;
+   | |________________________^
+   |
+   = note: `#[warn(perfectionist::import_grouping_mismatch)]` on by default
+help: regroup the imports
+   |
+LL + use std::time::Duration;
+LL + 
+LL + pub use crate::config::Args;
+LL + use crate::config::Opts;
+   |
+
+warning: 1 warning emitted
+

@@ -179,7 +179,7 @@ fn log_and_store(name: &str, registry: &mut HashMap<String, u32>) {
 ## Configuration
 
 ```toml
-[needless_borrowed_parameters]
+["perfectionist::needless_borrowed_parameters"]
 # Pairs of (borrowed_type, owned_type) the lint recognises. The
 # defaults cover the standard library's common cases; extend this
 # for project-specific newtypes.

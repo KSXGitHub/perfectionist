@@ -5,7 +5,7 @@
 use std::collections::BTreeSet;
 
 /// The user-facing configuration shape, deserialised from the
-/// `[perfectionist::wildcard_imports]` table of `dylint.toml`.
+/// `["perfectionist::wildcard_imports"]` table of `dylint.toml`.
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 pub(super) struct Config {

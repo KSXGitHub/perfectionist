@@ -10,7 +10,7 @@
 //!    and `Cargo.lock`, and *only* on the two `version` lines above —
 //!    no other line in either file is altered.
 //!
-//! Three entry points use the same check:
+//! The same check is reached from each of these entry points:
 //!
 //! * `verify <version>` — deploy CI (`HEAD` is the tagged commit).
 //! * `commit-msg <file>` — `commit-msg` git hook (index vs. `HEAD`,
