@@ -17,10 +17,9 @@ const LINT_NAME: &str = "perfectionist::unordered_derives";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/// The rule's user-facing configuration shape, mirrored here for
-/// serialisation. Kept as a separate type from the lint's own internal
-/// `Config` so the test surface is independent of the implementation's
-/// private struct.
+/// Serialisation shim for the rule's `dylint.toml` configuration,
+/// which the test crate cannot build from the lint's own private
+/// `Config`.
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -42,7 +41,7 @@ struct GlobalConfig {
 
 fn dylint_toml(config: RuleConfig) -> String {
     // Serialise as two top-level tables: `[perfectionist]` (enables
-    // the rule globally) and `[perfectionist::unordered_derives]`
+    // the rule globally) and `["perfectionist::unordered_derives"]`
     // (per-rule knobs the test exercises). `toml::to_string` on a
     // serde-friendly wrapper emits both with one call; building the
     // string by concatenation would risk producing `[perfectionist]`

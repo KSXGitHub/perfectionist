@@ -81,4 +81,11 @@ Macros eligible for folding, each a `"a::b::c"`-style path (no
 trailing `!`). A single-segment entry matches by the
 invocation's final segment (so `"info"` covers `log::info!`);
 a multi-segment entry tail-matches the invocation path.
-Replaces the built-in list wholesale when present.
+
+Replaces the built-in list wholesale when present, so a
+project adding one macro must re-state the rest. Defaults to
+the stdout / stderr writers (`println`, `eprintln`, `print`,
+`eprint`), the `Write` writers (`writeln`, `write`), and the
+`log` family (`log`, `error`, `warn`, `info`, `debug`,
+`trace`). Every one of those is single-segment, so `error`
+covers `log::error!` and `tracing::error!` alike.

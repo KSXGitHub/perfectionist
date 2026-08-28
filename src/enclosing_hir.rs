@@ -3,25 +3,9 @@
 //! `cfg_attr`-wrapped `#[expect]` / `#[allow]` attributes resolve
 //! correctly.
 //!
-//! Two families of rules use it:
-//!
-//! - The pre-expansion → late-pass split of `macro_trailing_comma` and
-//!   `impure_macro_arguments`. They park macro-call spans during a
-//!   pre-expansion pass and, in a late pass, anchor each at the deepest
-//!   enclosing HIR node via [`find_enclosing_hir_ids`].
-//! - The comment-walking rules (`bare_url`, `bare_email`,
-//!   `bare_issue_reference`, `unicode_ellipsis_in_comments`,
-//!   `unicode_ellipsis_in_docs`). They scan source text in a late pass
-//!   and emit through [`emit_at_enclosing_hir`], which uses the
-//!   attribute-aware [`find_comment_anchor_hir_ids`] so a doc comment
-//!   resolves to the item it documents.
-//!
-//! Callers feed in the spans they care about and get back, for each
-//! one, the deepest HIR node whose span contains it (or
-//! [`hir::CRATE_HIR_ID`] if nothing did). Pre-expansion-pass payloads
-//! that carry more than a span (e.g. `macro_trailing_comma`'s
-//! `Insert` / `Remove` discriminator) project to [`Span`] at the call
-//! site before invoking [`find_enclosing_hir_ids`].
+//! A span found by scanning *comment* text wants
+//! [`emit_at_enclosing_hir`], whose walk is doc-comment-aware;
+//! anything else wants [`find_enclosing_hir_ids`].
 
 use rustc_hir as hir;
 use rustc_hir::intravisit::{self, Visitor};
@@ -80,20 +64,19 @@ fn walk(tcx: TyCtxt<'_>, target_spans: &[Span], include_attr_spans: bool) -> Vec
     best
 }
 
-/// Resolve each violation's primary span to its deepest enclosing HIR
-/// node — in a single [`find_comment_anchor_hir_ids`] walk — then hand
-/// that node id, the span, and the payload to `emit`.
+/// Resolve each violation's primary span to its narrowest enclosing
+/// HIR node — in a single [`find_comment_anchor_hir_ids`] walk — then
+/// hand that node id, the span, and the payload to `emit`.
 ///
-/// The companion to [`find_enclosing_hir_ids`] for the comment-walking
-/// rules (`bare_url`, `bare_email`, `bare_issue_reference`, the two
-/// `unicode_ellipsis_in_*` rules). Those discover violation spans by
-/// scanning source text in a late pass, outside the HIR walk, so the
-/// early-pass lint-level builder would sit at the crate root at
-/// emission time and only a crate-root `#![allow]` / `#![expect]`
-/// would apply. Anchoring each diagnostic at its enclosing node — and
-/// emitting through `clippy_utils::diagnostics::span_lint_hir_and_then`
-/// from `emit` — is what lets a per-item / per-field / per-module
-/// `#[allow]` / `#[expect]` resolve.
+/// The companion to [`find_enclosing_hir_ids`] for a rule that scans
+/// comment text in a late pass, outside the HIR walk. Emitted
+/// unanchored, the
+/// lint-level builder would sit at the crate root, so only a
+/// crate-root `#![allow]` / `#![expect]` would apply. Anchoring each
+/// diagnostic at its enclosing node — and emitting through
+/// `clippy_utils::diagnostics::span_lint_hir_and_then` from `emit` —
+/// is what lets a per-item / per-field / per-module `#[allow]` /
+/// `#[expect]` resolve.
 pub(crate) fn emit_at_enclosing_hir<Payload>(
     tcx: TyCtxt<'_>,
     violations: Vec<(Span, Payload)>,

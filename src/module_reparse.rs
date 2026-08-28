@@ -1,10 +1,9 @@
 //! Re-parsing a crate's module files from a `LateLintPass`.
 //!
-//! A rule that inspects the *source-level* layout of `use` statements —
-//! the blank-line grouping of `perfectionist::import_grouping_mismatch`, the
-//! granularity of `perfectionist::import_granularity_mismatch`, the module-`self`
-//! folding of `perfectionist::uncombined_self_import` — hits a wall in a
-//! pre-expansion `EarlyLintPass`: an out-of-line `mod foo;` module is
+//! A rule that inspects the *source-level* layout of items — the
+//! blank-line grouping of a module's `use` statements, say, or the
+//! text of its doc comments — hits a wall in a pre-expansion
+//! `EarlyLintPass`: an out-of-line `mod foo;` module is
 //! still `ModKind::Unloaded` there (its file is not parsed until macro
 //! expansion), so the walk never sees it and silently skips every
 //! separate-file submodule.
@@ -14,12 +13,10 @@
 //! parsing does not strip cfg, unlike the post-expansion AST, which is
 //! why the pre-expansion pass existed in the first place.
 //!
-//! Two entry points share the same re-parse machinery:
-//! [`parse_crate_module_files`] returns every file's freshly parsed
-//! [`Crate`] alongside the body spans of the crate's live modules (the
-//! inline-recursion guard a caller needs to skip cfg-disabled inline
-//! modules), and [`for_each_module_file`] is a thin callback wrapper for
-//! callers that handle one file at a time and do their own descent.
+//! [`parse_crate_module_files`] is the re-parse itself;
+//! [`for_each_module_file`] wraps it in a callback; and
+//! [`crate_module_files`] exposes the file-set step underneath, for a
+//! caller that walks source text rather than the AST.
 
 use rustc_ast::Crate;
 use rustc_errors::DiagCtxt;
@@ -127,14 +124,13 @@ pub(crate) fn parse_crate_module_files(
 /// fragments spliced inline rather than backing their own module, and
 /// proc-macro-synthesised `<proc-macro source>` modules.
 ///
-/// The comment-scanning rules tokenize the local crate's files as Rust
-/// and must filter the source map through this set: `bare_url`,
-/// `bare_email`, `bare_issue_reference`, and `unicode_ellipsis_in_docs`
-/// via the shared [`crate::comment_walk::walk_local_comments`] walker, plus
-/// `unicode_ellipsis_in_comments` through its own token loop. Otherwise
-/// a bare `http(s)://` URL inside an
-/// `include_str!`-ed YAML file lexes as a `//` line comment and gets
-/// flagged (and, worse, autofix-rewritten) as if it were a Rust comment.
+/// Every rule that tokenizes the local crate's files as Rust must
+/// filter the source map through this set — whether it goes through
+/// the shared [`crate::comment_walk::walk_local_comments`] walker or
+/// runs its own token loop. Otherwise a bare `http(s)://` URL inside
+/// an `include_str!`-ed YAML file lexes as a `//` line comment and
+/// gets flagged (and, worse, autofix-rewritten) as if it were a Rust
+/// comment.
 /// See <https://github.com/KSXGitHub/perfectionist/issues/179>.
 pub(crate) fn crate_module_files(lint_context: &LateContext<'_>) -> HashSet<FileName> {
     let tcx = lint_context.tcx;

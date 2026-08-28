@@ -4,7 +4,7 @@ warning: ambiguous `#88`; a bare `#NNN` could be an issue or pull request, a col
 LL | /// Bad: closes #88 — `repository` is set to a self-hosted host
    |                 ^^^
    |
-   = help: set `repository` (and `forge`, if its host isn't a recognised service) in dylint.toml under `[perfectionist::bare_issue_reference]` to enable issue / PR link suggestions
+   = help: set `repository` (and `forge`, if its host isn't a recognised service) in dylint.toml under `["perfectionist::bare_issue_reference"]` to enable issue / PR link suggestions
    = help: if `#88` is not an issue or pull request, enclose it in backticks so it renders as code
    = help: or refer to the numbered item with a spelling that has no leading `#`
    = note: `#[warn(perfectionist::bare_issue_reference)]` on by default

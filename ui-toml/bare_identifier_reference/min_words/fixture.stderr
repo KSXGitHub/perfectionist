@@ -1,22 +1,42 @@
-warning: `FooBarBaz` resolves in scope; write it as an intra-doc link
+warning: `FooBarBaz` resolves in scope; consider writing it as an intra-doc link
   --> $DIR/fixture.rs:14:33
    |
 LL | /// At or above it and checked: `FooBarBaz` (3), `foo_bar_baz` (3).
-   |                                 ^^^^^^^^^^^ help: wrap as an intra-doc link: `[`FooBarBaz`]`
+   |                                 ^^^^^^^^^^^
    |
+   = help: if `FooBarBaz` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`FooBarBaz`][FooBarBaz-ext]` with a `[FooBarBaz-ext]: <url>` definition
    = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
+help: only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, wrap it as an intra-doc link
+   |
+LL - /// At or above it and checked: `FooBarBaz` (3), `foo_bar_baz` (3).
+LL + /// At or above it and checked: [`FooBarBaz`] (3), `foo_bar_baz` (3).
+   |
 
-warning: `foo_bar_baz` resolves in scope; write it as an intra-doc link
+warning: `foo_bar_baz` resolves in scope; consider writing it as an intra-doc link
   --> $DIR/fixture.rs:14:50
    |
 LL | /// At or above it and checked: `FooBarBaz` (3), `foo_bar_baz` (3).
-   |                                                  ^^^^^^^^^^^^^ help: wrap as an intra-doc link: `[`foo_bar_baz`]`
+   |                                                  ^^^^^^^^^^^^^
+   |
+   = help: if `foo_bar_baz` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`foo_bar_baz`][foo_bar_baz-ext]` with a `[foo_bar_baz-ext]: <url>` definition
+help: only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, wrap it as an intra-doc link
+   |
+LL - /// At or above it and checked: `FooBarBaz` (3), `foo_bar_baz` (3).
+LL + /// At or above it and checked: `FooBarBaz` (3), [`foo_bar_baz`] (3).
+   |
 
-warning: `Mixed_Thing` resolves in scope; write it as an intra-doc link
+warning: `Mixed_Thing` resolves in scope; consider writing it as an intra-doc link
   --> $DIR/fixture.rs:15:44
    |
 LL | /// Non-conformist and checked regardless: `Mixed_Thing`.
-   |                                            ^^^^^^^^^^^^^ help: wrap as an intra-doc link: `[`Mixed_Thing`]`
+   |                                            ^^^^^^^^^^^^^
+   |
+   = help: if `Mixed_Thing` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`Mixed_Thing`][Mixed_Thing-ext]` with a `[Mixed_Thing-ext]: <url>` definition
+help: only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, wrap it as an intra-doc link
+   |
+LL - /// Non-conformist and checked regardless: `Mixed_Thing`.
+LL + /// Non-conformist and checked regardless: [`Mixed_Thing`].
+   |
 
 warning: 3 warnings emitted
 

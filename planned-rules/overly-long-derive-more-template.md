@@ -121,7 +121,7 @@ struct Custom;
 ## Configuration
 
 ```toml
-[overly_long_derive_more_template]
+["perfectionist::overly_long_derive_more_template"]
 # Source-line width that triggers the rule. Default 100 matches
 # rustfmt's column default. Width is unicode display width of the
 # line containing the attribute, not its byte length.

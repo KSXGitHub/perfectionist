@@ -242,7 +242,7 @@ first-class sink — *not* merely as an incidental match of the
 bound-based detection. Its builder methods, which mirror std's
 `Command` setters, are recognized by default:
 
-- `with_arg`, `with_args`, `with_env`, `with_envs` — the
+- `with_arg`, `with_args`, `with_env`, `without_env` — the
   `AsRef<OsStr>` family.
 - `with_current_dir` — the `AsRef<Path>` family.
 
@@ -412,7 +412,7 @@ command.arg(text);
 ## Configuration
 
 ```toml
-[perfectionist::needless_utf8_conversion]
+["perfectionist::needless_utf8_conversion"]
 # Extend or restrict the sink set beyond bound-based detection.
 # Function paths are absolute, so each carries a leading `::`
 # per the leading-`::` convention in IMPLEMENTATION_CONVENTIONS.md.

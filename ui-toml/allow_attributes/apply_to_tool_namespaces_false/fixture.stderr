@@ -1,22 +1,51 @@
-warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+warning: this `#[allow]` stays silent even after its lint stops firing
   --> $DIR/fixture.rs:10:3
    |
 LL | #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
-   |   ^^^^^ help: replace `allow` with `expect`: `expect`
+   |   ^^^^^
    |
    = note: `#[warn(perfectionist::allow_attributes)]` on by default
+help: remove the suppression if its lint can no longer fire here
+   |
+LL - #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
+   |
+help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+   |
+LL - #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
+LL + #[expect(clippy::too_many_arguments, reason = "matches upstream signature")]
+   |
 
-warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+warning: this `#[allow]` stays silent even after its lint stops firing
   --> $DIR/fixture.rs:14:3
    |
 LL | #[allow(rustdoc::broken_intra_doc_links, reason = "links resolve downstream")]
-   |   ^^^^^ help: replace `allow` with `expect`: `expect`
+   |   ^^^^^
+   |
+help: remove the suppression if its lint can no longer fire here
+   |
+LL - #[allow(rustdoc::broken_intra_doc_links, reason = "links resolve downstream")]
+   |
+help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+   |
+LL - #[allow(rustdoc::broken_intra_doc_links, reason = "links resolve downstream")]
+LL + #[expect(rustdoc::broken_intra_doc_links, reason = "links resolve downstream")]
+   |
 
-warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+warning: this `#[allow]` stays silent even after its lint stops firing
   --> $DIR/fixture.rs:18:3
    |
 LL | #[allow(non_snake_case, reason = "external API uses camelCase")]
-   |   ^^^^^ help: replace `allow` with `expect`: `expect`
+   |   ^^^^^
+   |
+help: remove the suppression if its lint can no longer fire here
+   |
+LL - #[allow(non_snake_case, reason = "external API uses camelCase")]
+   |
+help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+   |
+LL - #[allow(non_snake_case, reason = "external API uses camelCase")]
+LL + #[expect(non_snake_case, reason = "external API uses camelCase")]
+   |
 
 warning: 3 warnings emitted
 

@@ -83,51 +83,27 @@ fixed-size byte sequence do not.
 
 ## Markdown parsing
 
-Six rules in this catalogue scan a slice of markdown:
+Several rules scan a slice of markdown: every rule that imports
+`crate::markdown`. They share that one crate-internal scanner, built
+from `take_*` combinators per [Parser style](#parser-style). The
+helper is hand-written. **Do not pull in `pulldown_cmark`, `comrak`,
+`markdown-rs`, or `markdown-it`** for any of them without first
+revisiting the rationale below.
 
-- `perfectionist::bare_identifier_reference` (`src/rules/bare_identifier_reference.rs`) —
-  distinguishes `` `Foo` `` (candidate) from `` [`Foo`] ``, `[Foo]`,
-  `[Foo](path)`, `[Foo][id]` (already linked).
-- `perfectionist::clap_help_markdown`
-  (`src/rules/clap_help_markdown.rs`) — classifies every banned
-  construct (links, code spans, code blocks, HTML tags, headings,
-  reference definitions) and emits a per-construct diagnostic.
-- `perfectionist::bare_issue_reference` (`src/rules/bare_issue_reference.rs`)
-  — skips code regions, existing links, and reference-link
-  definitions before flagging bare `#123` tokens.
-- `perfectionist::bare_url` (`src/rules/bare_url.rs`) — skips code
-  regions, autolinks (`<...>`), labelled links, and reference-link
-  definitions before flagging bare `http(s)://` URLs.
-- `perfectionist::unicode_ellipsis_in_docs`
-  (`src/rules/unicode_ellipsis_in_docs.rs`) — strips code regions,
-  then byte-scans for U+2026.
-- [`em-dash-prose`](./em-dash-prose.md) — strips code regions, then
-  byte-scans for `—` / `–`.
+### Tiers of consumer
 
-They share one crate-internal scanner at `src/markdown.rs`, built
-from `take_*` combinators per the "Parser style" section above.
-The bare-* family already populates Tier A of the surface
-described below; the rules listed above as still-planned extend it
-as they're implemented. The helper is hand-written. **Do not pull
-in `pulldown_cmark`, `comrak`, `markdown-rs`, or `markdown-it`**
-for any of these rules without first revisiting the rationale
-below.
-
-### Two tiers of consumer
-
-Two needs sit on top of the same primitives.
+Consumers divide by how much structure they need.
 
 - **Tier A — structural classification.** Distinguishes a code
   span from an inline link from a reference definition from an
-  autolink from an HTML tag from a heading. Consumers:
-  `bare_identifier_reference`, `clap_help_markdown`, `bare_issue_reference`,
-  `bare_url`.
+  autolink from an HTML tag from a heading. Entry points:
+  `scan_skip_regions` returns skip ranges to post-filter against,
+  `classify_constructs` returns every construct's range *and* kind,
+  and `scan_code_span_candidates` returns code spans alone.
 - **Tier B — code-region mask.** Only needs the predicate "is this
-  byte inside a code span or code block?". Consumers:
-  `perfectionist::unicode_ellipsis_in_docs` (implemented);
-  `em_dash_prose` (planned). The mask is `take_code_span` plus
-  `take_code_block` in a loop over the input — `src/markdown.rs`'s
-  `scan_code_regions`, not a separate Tier-A-style classifier.
+  byte inside a code span or code block?". Entry point:
+  `scan_code_regions` — `take_code_span` plus `take_code_block` in
+  a loop over the input, not a separate Tier-A-style classifier.
 
 ### Combinator surface
 
@@ -143,28 +119,26 @@ One `take_*` per CommonMark construct the catalogue recognises:
 - `take_atx_heading` / `detect_setext_headings` — ATX (`# h`) and
   Setext (`h\n===`) headings.
 - `take_emphasis` / `take_list_marker` — `**bold**` / `*italic*` and
-  bullet / ordered list markers, behind
-  `perfectionist::clap_help_markdown`'s opt-in `extra_forbid` knob.
+  bullet / ordered list markers, matched only when a consumer opts
+  in via `ClassifyOptions`.
 
-The full Tier A classifier `classify_constructs` (used by
-`perfectionist::clap_help_markdown`) stitches these into one walk
-that returns each construct's byte range and kind. Each combinator
-returns the matched substring and the remainder per the canonical
-shapes in "Parser style". Rust-specific extraction layered on top —
-`bare_identifier_reference` pulling an identifier out of a
-`take_code_span` result, `bare_url` pulling a scheme out of
-`take_autolink` failure-fallback prose — lives in each rule's own
-module, not in `src/markdown.rs`.
+The full Tier A classifier `classify_constructs` stitches these into
+one walk that returns each construct's byte range and kind. Each
+combinator returns the matched substring and the remainder per the
+canonical shapes in [Parser style](#parser-style). Rust-specific
+extraction layered on top — pulling an identifier out of a
+`take_code_span` result, pulling a scheme out of `take_autolink`
+failure-fallback prose — lives in each rule's own module, not in
+`src/markdown.rs`.
 
 ### Why hand-rolled rather than a library
 
 A Dylint plugin loads into rustc's process; every transitive crate
 is paid for at lint time. The grammar these rules need is a fixed
-set of constructs (the only emphasis handling is
-`perfectionist::clap_help_markdown`'s pragmatic, opt-in
-`**bold**` / `*italic*` matcher, not full CommonMark flanking
-precedence) and no link-reference resolution across the whole
-comment. No library hits that target without overshooting:
+set of constructs (the only emphasis handling is a pragmatic,
+opt-in `**bold**` / `*italic*` matcher, not full CommonMark
+flanking precedence) and no link-reference resolution across the
+whole comment. No library hits that target without overshooting:
 
 - **`pulldown_cmark`** — the de facto Rust choice. Event-based,
   carries source offsets via `OffsetIter`, MIT, fast, used by
@@ -200,11 +174,10 @@ published as a library.
 
 The practical consequence: the scanner's job is to say "this is a
 link, here is its destination text". Whether the destination
-resolves as a Rust path is `bare_identifier_reference`'s job, performed
+resolves as a Rust path is the consuming rule's job, performed
 against `TyCtxt` in a `LateLintPass`, not the scanner's.
-Consumers that need only "is this any kind of link?" (e.g.,
-`clap_help_markdown`, which rejects all link forms) stop at the
-scanner's answer.
+Consumers that need only "is this any kind of link?" — a rule that
+rejects all link forms, say — stop at the scanner's answer.
 
 This also means library choice is downstream of the intra-doc-link
 question, not upstream of it: even if a hypothetical library
@@ -305,9 +278,9 @@ write a fresh module-discovery or re-parse path; route through:
    so a span there would fall back to the crate root.
 
 A comment-only or token-only scanner that does not need the parsed
-AST (the `bare_url` / `bare_email` / `bare_issue_reference` /
-`unicode_ellipsis_in_*` family) has the same "which files are really
-the crate's modules?" question and answers it with the same helper's
+AST (the prose-scanning family: whichever rules import
+`crate::comment_walk`) has the same "which files are really the
+crate's modules?" question and answers it with the same helper's
 `module_reparse::crate_module_files` (see `src/comment_walk.rs` and
 [#179](https://github.com/KSXGitHub/perfectionist/issues/179)) — do
 not re-derive the file set there either.
@@ -422,12 +395,25 @@ that the rule covers `warn` / `deny` / `forbid`, not just the
 
 Every lint registered by this plugin lives in the `perfectionist`
 *tool namespace*. The planning files in this directory use the
-unqualified form for readability — `path_qualification_mismatch` reads better
-than `perfectionist::path_qualification_mismatch` in a sentence — but the lint
+unqualified form when their **prose** names the lint, for
+readability: `path_qualification_mismatch` reads better than
+`perfectionist::path_qualification_mismatch` in a sentence. The lint
 as it appears in `declare_tool_lint!`, in the `dylint.toml`
 configuration table, in `#[allow(...)]` / `#[deny(...)]`
 attributes, and in compiler diagnostic output is always
 namespaced.
+
+Which form applies follows from what the string *is*, not from which
+file it sits in. A per-rule `dylint.toml` table header is the key the
+plugin looks up, so it has to carry the full namespaced name, quoted;
+that is why a planning file's `## Configuration` fence heads its table
+`["perfectionist::path_qualification_mismatch"]` even where the same
+file calls the rule `path_qualification_mismatch` a paragraph earlier.
+A name that nothing resolves against is under no such constraint: the
+crate-wide `[perfectionist]` table's `enable` / `disable` entries take
+*unqualified* rule names (see
+[`CONFIGURATION.md`](../CONFIGURATION.md)), so `dylint.toml` is not
+uniformly namespaced either.
 
 ### Why namespace at all
 
@@ -447,7 +433,7 @@ which library to consult or configure.
 
 ### Why a tool namespace rather than a bare prefix
 
-Two reasonable approaches exist:
+These approaches are both reasonable:
 
 - **Tool namespace** (`perfectionist::path_qualification_mismatch`): the
   approach used by `clippy::*` and `rustdoc::*`. Idiomatic, scoped,
@@ -507,7 +493,7 @@ the `declare_tool_lint!` invocation reads:
 
 ```rust
 rustc_session::declare_tool_lint! {
-    pub perfectionist::QUALIFIED_PATHS,
+    pub perfectionist::PATH_QUALIFICATION_MISMATCH,
     Warn,
     "decide whether items from outside the current scope are named \
      by their full path or imported via `use`",
@@ -522,18 +508,10 @@ from the planning H1, uppercase it for the macro identifier, slot
 it under `perfectionist::`. The diagnostic text inside the lint is
 the rule's own one-line summary.
 
-Configuration tables follow the same shape. The planning file
-shows:
+A configuration table reads:
 
 ```toml
-[path_qualification_mismatch]
-style = "unqualified"
-```
-
-The actual `dylint.toml` reads:
-
-```toml
-[perfectionist::path_qualification_mismatch]
+["perfectionist::path_qualification_mismatch"]
 style = "unqualified"
 ```
 
@@ -643,22 +621,20 @@ exactly that and drop the empty-vs-absent ambiguity. Settled in
 `wildcard_imports`' `exceptions = ["prelude", "root_reexport"]` with
 the booleans `prelude_exception` / `root_reexport_exception`).
 
-Three shapes are *not* this anti-pattern and stay as arrays/enums: a
-single mutually-exclusive **choice** (a `style` / direction enum like
-`import_granularity`); an **open-ended list** of user strings
-(`allowed_paths`, `extra_*`, `ignore`); and a **permutation** where
-order is the data (`import_grouping`'s `order`). The dividing line is
+Some shapes are *not* this anti-pattern and stay as arrays/enums: a
+single mutually-exclusive **choice** (a `style` / direction enum); an
+**open-ended list** of user strings (`allowed_paths`, `extra_*`,
+`ignore`); and a **permutation** where the sequence is itself the
+configuration (an `order` field). The dividing line is
 fixed-membership-and-independence, not length — so a borderline case
-may keep the array as a *deliberate*, documented call:
-`path_qualification_mismatch`'s `contexts` array is the catalogue's
-one such exception.
+may keep the array as a *deliberate* call, argued for and documented
+in the rule's own file rather than assumed here.
 
 ### Scan-surface toggles
 
 The recurring concrete instance: a text-scanning rule's *where do I
-scan?* surfaces are three independent booleans, not a `targets`
-array. Reuse the same field names and `true` defaults so the config
-reads identically across rules:
+scan?* surfaces are independent booleans, not a `targets` array. Reuse
+the same field names so the config reads identically across rules:
 
 ```rust
 /// Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
@@ -666,13 +642,19 @@ reads identically across rules:
 scan_doc_comments: bool,
 /// Scan regular comments (`//`, `/* */`). Defaults to `true`.
 scan_regular_comments: bool,
-/// Scan string literals (`"..."`, `r"..."`). Defaults to `true`.
+/// Scan string literals (`"..."`, `r"..."`).
 scan_string_literals: bool,
 ```
 
+The field names are the convention; each default is a per-rule call.
+The comment surfaces default `true`; a rule may default
+`scan_string_literals` off where a literal URL is program data rather
+than prose (`perfectionist::unpinned_repo_ref` does).
+
 `perfectionist::bare_email` and `perfectionist::unpinned_repo_ref`
-already follow this; a rule scanning only a subset omits the surfaces
-it can't reach rather than renaming the ones it keeps.
+already follow the field-name convention; a rule scanning only a
+subset omits the surfaces it can't reach rather than renaming the ones
+it keeps.
 
 ## Suppressing proc-macro-synthesised violations
 
@@ -780,12 +762,12 @@ regressing the suppression.
 
 ### Deliberate non-participants
 
-Two kinds of rule skip all of the above on purpose:
+Some rules skip all of the above on purpose:
 
-- Rules declared `report_in_external_macro: true` (`avoidable_string_escapes`,
-  `unicode_ellipsis_in_panic_messages`) *want* to fire inside macro
-  output; the guard would defeat their purpose. The `true` flag is
-  itself the visible record of that intent.
+- A rule declared `report_in_external_macro: true` *wants* to fire
+  inside macro output; the guard would defeat its purpose. The `true`
+  flag is itself the visible record of that intent, and grepping for
+  it is how you find every such rule.
 - A rule whose trigger cannot realistically be derive-generated may
   forgo the guard. `exhaustive_error_enums` was excluded on this basis —
   it is off by default and its `pub` error-shaped trigger is an
@@ -910,4 +892,13 @@ never reach users. And a doc may name a *rustc* mechanism the user
 observes directly (`unfulfilled_lint_expectations` notes,
 `unknown_lints`): that is behaviour the consumer sees, not this
 plugin's pass internals.
+
+## GitHub-specific markdown in rule docs
+
+A rule's `declare_tool_lint!` rustdoc is rendered by rustdoc and by
+`tools/gen-docs/` as well as by GitHub, so it must stay within the
+markdown all of them understand; the planning files in this directory
+carry no such constraint. Which renderer drops what, and when a `>`
+block may become an alert, are settled in
+[GitHub-specific markdown](../CLAUDE.md#github-specific-markdown).
 

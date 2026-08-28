@@ -140,7 +140,7 @@ write!(f, "a\nb {x}")?;  // not in target_macros (write! is splittable)
 ## Configuration
 
 ```toml
-[overly_long_format_macro]
+["perfectionist::overly_long_format_macro"]
 # Source-line width that triggers the rule. Default 100 matches
 # rustfmt's column default. Width is unicode display width of the
 # line containing the macro invocation, not its byte length.

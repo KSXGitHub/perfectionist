@@ -5,8 +5,9 @@
 //! in isolation from any test workspace and has no access to the
 //! caller's `CARGO_TARGET_DIR` or `CARGO_MANIFEST_DIR`.
 
-use std::path::Path;
 pub use tempfile::TempDir;
+
+use std::path::Path;
 
 pub mod dylint;
 pub mod manifest;

@@ -45,7 +45,7 @@ two forms would produce identical behaviour.
 ## Configuration
 
 ```toml
-[serde_wrapper_form_mismatch]
+["perfectionist::serde_wrapper_form_mismatch"]
 # Inactive by default. Enable in `[perfectionist].enable`, then set
 # `style` — it is mandatory and has no default. The value below is an
 # example, not a default.

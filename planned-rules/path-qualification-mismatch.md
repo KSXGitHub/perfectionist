@@ -56,7 +56,7 @@ external module.
 ## Configuration
 
 ```toml
-[path_qualification_mismatch]
+["perfectionist::path_qualification_mismatch"]
 # Inactive by default. Enable in `[perfectionist].enable`, then set
 # `style` — it is mandatory and has no default. The value below is an
 # example, not a default.
@@ -68,9 +68,9 @@ style = "unqualified"
 #                  the full path and removal of the `use`.
 
 # Where the lint applies. Each context can be toggled independently.
-# Deliberately an array, not per-context bools: at five members it
-# still reads cleanly, and it's the catalogue's one sanctioned
-# array-of-toggles (see IMPLEMENTATION_CONVENTIONS.md).
+# Deliberately an array, not per-context bools: at this size it
+# still reads cleanly, and it's a documented exception to the
+# boolean-fields convention (see IMPLEMENTATION_CONVENTIONS.md).
 contexts = ["call", "type", "derive", "macro", "trait_bound"]
 
 # Prefixes that the `unqualified` style leaves alone. Defaults to
