@@ -6,8 +6,8 @@
 //! that same path (under [`CfgBlockHandling::Merge`]) or hoisted into a
 //! single trailing group (under [`CfgBlockHandling::Trailing`]).
 
-use super::config::{CfgBlockHandling, Config, Group, Style};
-use rustc_ast::UseTree;
+use super::config::{CfgBlockHandling, Config, Group, ReexportGrouping, Style};
+use rustc_ast::{UseTree, UseTreeKind};
 use rustc_span::kw;
 use std::collections::HashSet;
 
@@ -52,6 +52,29 @@ fn path_group(tree: &UseTree, local_modules: &HashSet<String>) -> Group {
     }
 }
 
+/// Whether a re-export is an *alias* re-export rather than a *submodule*
+/// re-export, the split [`ReexportGrouping::Split`] draws. An alias
+/// re-export is a single-segment simple path — `pub use Item;` or
+/// `pub use Item as Alias;` — that only renames an item already in scope;
+/// a submodule re-export carries a `::` (`pub use child::Item;`,
+/// `pub use child::{A, B};`, `pub use child::*;`) and lifts an item out of
+/// a child module. The test is purely syntactic: a `Simple` tree whose
+/// written prefix is one segment (ignoring a leading `::`). A nested or
+/// glob tree always carries a `::`, and a top-level brace
+/// (`pub use {a, b};`) has no single segment, so both count as submodule
+/// re-exports. A `pub use foo;` re-exporting an external crate is a
+/// single segment and so classifies as an alias re-export.
+fn is_alias_reexport(tree: &UseTree) -> bool {
+    matches!(tree.kind, UseTreeKind::Simple(_))
+        && tree
+            .prefix
+            .segments
+            .iter()
+            .filter(|segment| segment.ident.name != kw::PathRoot)
+            .count()
+            == 1
+}
+
 /// The rank a statement sorts by. The style decides the partition;
 /// under both, a cfg-gated import is hoisted into a trailing block only
 /// when `cfg_block_handling` is [`CfgBlockHandling::Trailing`]:
@@ -68,17 +91,43 @@ fn path_group(tree: &UseTree, local_modules: &HashSet<String>) -> Group {
 /// imports of sibling `mod`s. It is consulted only on the `multi_block`
 /// path: `single_block` ignores path origin, so a sibling-`mod` import
 /// is never distinguished there.
+///
+/// When `reexports` separates re-exports, a re-export (`is_reexport`)
+/// takes a dedicated leading rank regardless of style, path, or cfg
+/// gating — visibility outranks every other partition — and every
+/// non-re-export rank shifts down past it
+/// ([`Config::reexport_block_offset`]):
+///
+/// - `grouped` gives every re-export the single leading rank `0`, one
+///   block above the styled private-import blocks.
+/// - `split` keeps submodule re-exports at rank `0` and alias re-exports
+///   at rank `1`, two blocks above the private imports — see
+///   [`is_alias_reexport`].
+/// - `by_path` reserves no leading rank; a re-export is classified by its
+///   path exactly like a private import.
 pub(super) fn rank(
     tree: &UseTree,
+    is_reexport: bool,
     is_cfg_gated: bool,
     config: &Config,
     local_modules: &HashSet<String>,
 ) -> usize {
+    if is_reexport {
+        match config.reexports {
+            ReexportGrouping::ByPath => {}
+            ReexportGrouping::Grouped => return 0,
+            ReexportGrouping::Split => return usize::from(is_alias_reexport(tree)),
+        }
+    }
     let cfg_trailing =
         is_cfg_gated && matches!(config.cfg_block_handling, CfgBlockHandling::Trailing);
-    match config.style {
+    let base = match config.style {
         Style::SingleBlock => usize::from(cfg_trailing),
         Style::MultiBlock if cfg_trailing => config.cfg_rank(),
         Style::MultiBlock => config.group_rank(path_group(tree, local_modules)),
-    }
+    };
+    // Shift the private-import ranks down past the leading re-export
+    // region so its ranks (`0`, or `0` and `1` under `split`) stay
+    // reserved for re-exports.
+    base + config.reexport_block_offset()
 }

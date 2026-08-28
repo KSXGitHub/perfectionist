@@ -175,7 +175,7 @@ println!("a\nb");  // short source line
 ## Configuration
 
 ```toml
-[overly_long_print_macro]
+["perfectionist::overly_long_print_macro"]
 # NOT YET IMPLEMENTED — the `style` knob is absent from the current
 # config (only `line_continuation` ships). Setting it today is rejected
 # by `deny_unknown_fields` and aborts the lint driver; leave it out

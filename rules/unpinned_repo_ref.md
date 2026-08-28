@@ -14,13 +14,14 @@ git repository (GitHub, GitLab, Bitbucket, Codeberg / Gitea,
 sourcehut, etc.) when the ref in the URL is a branch or tag
 rather than a commit SHA. Projects that deliberately link to
 version-shaped refs can opt into accepting those patterns via
-`allow_version_patterns`. Scans doc comments, regular comments, and
-string literals.
+`allow_version_patterns`. Scans doc comments and regular
+comments by default; string literals are opt-in via
+`scan_string_literals`.
 
-This rule only concerns whether the ref is mutable; the
-*length* of an accepted SHA is `perfectionist::commit_id_length_mismatch`'s
-concern, and `perfectionist::bare_url` ensures the URL is
-wrapped. The three lints layer rather than overlap.
+This rule only concerns whether the ref is mutable, not the
+*length* of an accepted SHA. `perfectionist::bare_url`
+separately ensures the URL is wrapped; the two layer rather
+than overlap.
 
 ## Why restrict this?
 
@@ -62,7 +63,7 @@ Scan regular comments (`//`, `/* */`). Defaults to `true`.
 
 ### `scan_string_literals`: `boolean` (optional)
 
-Scan string literals (`"..."`, `r"..."`). Defaults to `true`.
+Scan string literals (`"..."`, `r"..."`). Defaults to `false`.
 
 ### `sha_recognition_length`: `unsigned integer` (optional)
 

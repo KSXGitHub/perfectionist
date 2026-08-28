@@ -274,10 +274,10 @@ pub(crate) fn binding_hir_id<'hir>(pat: &'hir hir::Pat<'hir>) -> Option<hir::Hir
 
 /// Resolve a `&str` set from a curated built-in default, a
 /// user-supplied `extras` list, and a user-supplied `ignore`
-/// list. Used by rules whose runtime set key remains a `String`
-/// (currently just `exhaustive_error_enums`, whose suffix lookup is
-/// `str::ends_with`-shaped); the four rules whose late-pass
-/// lookup key is a [`Symbol`] use the sibling
+/// list. Used by rules whose runtime set key remains a `String` —
+/// `exhaustive_error_enums`, whose suffix lookup is
+/// `str::ends_with`-shaped, is one such caller. Rules whose
+/// late-pass lookup key is a [`Symbol`] use the sibling
 /// [`resolve_symbol_set`] instead. The [`BTreeSet`] return is
 /// convenient for set membership lookups and has the side
 /// benefit of dropping duplicates when defaults and extras
@@ -300,11 +300,10 @@ pub(crate) fn resolve_string_set(
 /// Sibling of [`resolve_string_set`] that interns each name as
 /// a [`Symbol`] in one pass — skipping the intermediate
 /// `BTreeSet<String>` of the string-shaped variant. Used by rules
-/// whose late-pass lookup key is already a [`Symbol`]
-/// (`unicode_ellipsis_in_panic_messages`, `single_letter_closure_param`'s
-/// trivial-callback list), so that membership checks reduce to
-/// integer compares instead of `Symbol::as_str` → `String`
-/// round-trips.
+/// whose late-pass lookup key is already a [`Symbol`] — such as
+/// `unicode_ellipsis_in_panic_messages`'s macro and method lists —
+/// so that membership checks reduce to integer compares instead of
+/// `Symbol::as_str` → `String` round-trips.
 ///
 /// Must be called inside a rustc session, since [`Symbol::intern`]
 /// reaches into the per-session symbol table.

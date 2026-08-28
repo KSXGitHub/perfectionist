@@ -16,13 +16,14 @@ inline bound, suggest moving every inline bound into a `where` clause.
 
 ## Threshold
 
-Two heuristics, both configurable:
+Two heuristics, both configurable under the
+`["perfectionist::excessive_inline_bounds"]` table:
 
-- `excessive_inline_bounds.max_inline_bounds_per_param` (default `1`): an
-  individual generic parameter may carry up to this many inline bounds.
-- `excessive_inline_bounds.max_total_inline_bounds` (default `2`): across all
-  generic parameters of one item, the sum of inline bounds may not exceed
-  this number before a `where` clause is required.
+- `max_inline_bounds_per_param` (default `1`): an individual generic
+  parameter may carry up to this many inline bounds.
+- `max_total_inline_bounds` (default `2`): across all generic parameters
+  of one item, the sum of inline bounds may not exceed this number
+  before a `where` clause is required.
 
 Defaults match the examples in both source documents (one inline bound on
 a single param is fine; multiple bounds or multiple params should switch

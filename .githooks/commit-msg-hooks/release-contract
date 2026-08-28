@@ -26,6 +26,10 @@ cd "$root"
 # this hook must work even on a fresh checkout where
 # `just install-dev-tools` has not run yet — mirror that recipe's
 # linker override.
+#
+# No `--quiet`: a cold build takes seconds, and a silent hook looks
+# hung. Cargo's progress goes to stderr and hooks signal via exit
+# code, so surfacing it is harmless.
 exec cargo --config 'target."cfg(all())".linker="cc"' run \
-  --quiet --locked --package _deploy_check --bin deploy-check -- \
+  --locked --package _deploy_check --bin deploy-check -- \
   "$root" commit-msg "$msg_file"
