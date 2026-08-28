@@ -24,4 +24,4 @@ Each rule has its own configuration table under its full namespaced name, e.g.:
 require_for = "pub_crate"
 ```
 
-The available knobs for each rule are documented in that rule's planning file. Once a rule is implemented, the same information is reproduced in its module documentation and in [`rules/`](./rules/).
+The knobs each rule accepts — their types, their defaults, and what each value means — are documented on that rule's page in [`rules/`](./rules/), and on [the homepage](https://KSXGitHub.github.io/perfectionist/).

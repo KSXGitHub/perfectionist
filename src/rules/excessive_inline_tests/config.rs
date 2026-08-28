@@ -8,11 +8,10 @@ use super::CONFIG_KEY;
 #[serde(rename_all = "snake_case")]
 pub(super) enum InlineStyle {
     /// Every inline test item is flagged; all test code must move to an
-    /// external `mod <name>;`. Matches pacquet's strict policy.
+    /// external `mod <name>;`, whatever its length.
     ExternalOnly,
     /// Inline test code is allowed up to the configured budget; beyond
-    /// that it must move to a file. Matches parallel-disk-usage's
-    /// guidance.
+    /// that it must move to an external `mod <name>;`.
     ExternalWhenLong,
 }
 
