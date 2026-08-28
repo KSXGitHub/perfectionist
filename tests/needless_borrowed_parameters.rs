@@ -11,13 +11,15 @@
 //! `["perfectionist::needless_borrowed_parameters"]` table; pass `""`
 //! for the default configuration.
 //!
-//! Every fixture gives its borrowed parameter a distinct name, so an
-//! assertion can name the one function it is about instead of counting
-//! warnings.
+//! The fixture sources live in `fixtures/needless_borrowed_parameters/`
+//! and come in via `include_str!`. Each gives its borrowed parameter a
+//! distinct name, so an assertion can name the one function it is about
+//! instead of counting warnings.
 
 pub mod _utils;
 
 use _utils::{cargo_manifest_dir, run_project_with_config, shared_target_dir};
+use text_block_macros::text_block_fnl;
 
 const LINT: &str = "perfectionist::needless_borrowed_parameters";
 
@@ -58,26 +60,8 @@ fn assert_not_flagged(stderr: &str, parameter: &str) {
 /// A library whose production function is flagged, whose
 /// `#[cfg(test)]` module is not, and whose `#[test]` body's nested
 /// helper is not either.
-const LIB_WITH_TEST_MODULE: &str = "\
-pub fn production(production_param: &str) -> String {
-    production_param.to_owned()
-}
-
-#[cfg(test)]
-mod tests {
-    pub fn helper(cfg_test_param: &str) -> String {
-        cfg_test_param.to_owned()
-    }
-
-    #[test]
-    fn nested() {
-        fn nested_helper(nested_param: &str) -> String {
-            nested_param.to_owned()
-        }
-        assert_eq!(helper(\"a\"), nested_helper(\"a\"));
-    }
-}
-";
+const LIB_WITH_TEST_MODULE: &str =
+    include_str!("fixtures/needless_borrowed_parameters/lib_with_test_module.rs");
 
 #[test]
 fn production_code_is_still_flagged() {
@@ -105,7 +89,10 @@ fn flags_test_code_when_the_exception_is_off() {
     let stderr = run(
         "fixture_nbp_test_exception_off",
         &[("src/lib.rs", LIB_WITH_TEST_MODULE)],
-        "[\"perfectionist::needless_borrowed_parameters\"]\ntest_code_exception = false\n",
+        text_block_fnl! {
+            r#"["perfectionist::needless_borrowed_parameters"]"#
+            "test_code_exception = false"
+        },
     );
     assert_flagged(&stderr, "cfg_test_param");
     assert_flagged(&stderr, "nested_param");
@@ -116,22 +103,8 @@ fn flags_test_code_when_the_exception_is_off() {
 /// is still test-only, and `any(...)` is test-only only if *every*
 /// branch is — `any(test, <anything else>)` can hold in a build without
 /// `test`, so it is production code as far as the rule is concerned.
-const LIB_WITH_COMPOUND_CFGS: &str = "\
-#[cfg(all(test, unix))]
-fn conjunction(conjunction_param: &str) -> String {
-    conjunction_param.to_owned()
-}
-
-#[cfg(not(not(test)))]
-fn double_negation(double_negation_param: &str) -> String {
-    double_negation_param.to_owned()
-}
-
-#[cfg(any(test, target_pointer_width = \"64\"))]
-fn disjunction(disjunction_param: &str) -> String {
-    disjunction_param.to_owned()
-}
-";
+const LIB_WITH_COMPOUND_CFGS: &str =
+    include_str!("fixtures/needless_borrowed_parameters/lib_with_compound_cfgs.rs");
 
 #[test]
 fn does_not_flag_compound_cfg_test_predicates() {
@@ -161,28 +134,11 @@ const SEPARATE_TARGET_SOURCES: &[(&str, &str)] = &[
     ("src/lib.rs", "pub fn nothing() {}\n"),
     (
         "tests/it.rs",
-        "\
-fn helper(integration_param: &str) -> String {
-    integration_param.to_owned()
-}
-
-#[test]
-fn works() {
-    assert_eq!(helper(\"a\"), \"a\");
-}
-",
+        include_str!("fixtures/needless_borrowed_parameters/integration_test.rs"),
     ),
     (
         "examples/demo.rs",
-        "\
-fn helper(example_param: &str) -> String {
-    example_param.to_owned()
-}
-
-fn main() {
-    println!(\"{}\", helper(\"a\"));
-}
-",
+        include_str!("fixtures/needless_borrowed_parameters/example.rs"),
     ),
 ];
 
@@ -207,7 +163,10 @@ fn flags_an_integration_test_crate_when_the_exception_is_off() {
     let stderr = run(
         "fixture_nbp_integration_exception_off",
         SEPARATE_TARGET_SOURCES,
-        "[\"perfectionist::needless_borrowed_parameters\"]\ntest_code_exception = false\n",
+        text_block_fnl! {
+            r#"["perfectionist::needless_borrowed_parameters"]"#
+            "test_code_exception = false"
+        },
     );
     assert_flagged(&stderr, "integration_param");
 }
@@ -219,16 +178,7 @@ const BUILD_SCRIPT_SOURCES: &[(&str, &str)] = &[
     ("src/lib.rs", "pub fn nothing() {}\n"),
     (
         "build.rs",
-        "\
-fn helper(build_script_param: &str) -> String {
-    build_script_param.to_owned()
-}
-
-fn main() {
-    println!(\"cargo::rerun-if-changed=build.rs\");
-    println!(\"cargo::rustc-env=GREETING={}\", helper(\"a\"));
-}
-",
+        include_str!("fixtures/needless_borrowed_parameters/build_script.rs"),
     ),
 ];
 
@@ -243,7 +193,10 @@ fn flags_a_build_script_when_the_exception_is_off() {
     let stderr = run(
         "fixture_nbp_build_script_exception_off",
         BUILD_SCRIPT_SOURCES,
-        "[\"perfectionist::needless_borrowed_parameters\"]\nbuild_script_exception = false\n",
+        text_block_fnl! {
+            r#"["perfectionist::needless_borrowed_parameters"]"#
+            "build_script_exception = false"
+        },
     );
     assert_flagged(&stderr, "build_script_param");
 }
