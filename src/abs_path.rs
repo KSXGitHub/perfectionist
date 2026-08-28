@@ -1,7 +1,7 @@
-//! Shared `allowed_paths` plumbing for `wildcard_imports` and
-//! `named_prelude_imports`: turning a `use` path into the absolute key the
-//! allow list is matched against, and validating that a configured entry
-//! is a well-formed absolute path.
+//! Shared plumbing for every rule with an `allowed_paths` config
+//! field: turning a `use` path into the absolute key the allow list
+//! is matched against, and validating that a configured entry is a
+//! well-formed absolute path.
 //!
 //! Rust has two absolute path forms, written differently:
 //!

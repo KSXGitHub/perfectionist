@@ -62,12 +62,9 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::lint_attribute_trailing_comment";
 
-/// The rule has no options. The empty struct still exists so that a
-/// stray `["perfectionist::lint_attribute_trailing_comment"]` table in
-/// `dylint.toml` deserialises rather than producing a confusing
-/// parse error, and so the generated catalogue renders a
-/// `Configuration: none.` entry consistent with the other
-/// option-free rules.
+/// The rule has no configuration knobs. Not dead code: the read
+/// below rejects a mistyped key in the rule's `dylint.toml` table,
+/// and gen-docs needs the struct for `Configuration: none.`
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}

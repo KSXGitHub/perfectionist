@@ -20,8 +20,7 @@
 //! rejected at config-load time by [`reject_absolute`] rather than
 //! silently coerced into a relative match. This follows the leading-`::`
 //! convention documented in
-//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md` ("Path-shaped config
-//! values: the leading-`::` convention").
+//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
 
 use std::collections::BTreeSet;
 

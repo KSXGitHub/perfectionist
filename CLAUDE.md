@@ -12,7 +12,7 @@ keep the catalogue in sync as you go.
 
 ## Before you write code
 
-Read three things first, in this order:
+Read these first, in this order:
 
 1. **The rule's own file**, `planned-rules/<rule-name>.md`. It
    specifies the lint's identifier, configuration, the precise
@@ -22,9 +22,11 @@ Read three things first, in this order:
    — the design has usually been argued over already in the PR
    that produced the planning file.
 2. **`planned-rules/README.md`** — the index of all rules, plus
-   the "Out of scope" list at the bottom. The index entry is the
-   one-sentence summary; check that the rule you're implementing
-   still says what you think it says.
+   the
+   [out-of-scope list](planned-rules/README.md#out-of-scope-cannot-be-linted-by-dylint)
+   at the bottom. The index entry is the one-sentence summary;
+   check that the rule you're implementing still says what you
+   think it says.
 3. **`planned-rules/IMPLEMENTATION_CONVENTIONS.md`** — applies
    to every rule. Among the cross-cutting conventions it covers:
    - **Parser style.** Non-trivial string scanners (URLs,
@@ -52,11 +54,12 @@ Read three things first, in this order:
      `[perfectionist]` `enable` / `disable` entry. See the
      conventions file for the per-context spelling.
 
-If the rule is one of several that share a helper (markdown
-exclusion, format-string parsing, URL discovery, unicode-width
-measurement), check whether the helper already exists in the
-codebase before writing a new one. Sibling-rule references in the
-planning files identify shared infrastructure.
+If the rule is one of several that share a helper — markdown
+exclusion, format-string parsing, URL discovery and unicode-width
+measurement are examples, not the whole set — check whether the
+helper already exists in the codebase before writing a new one.
+Sibling-rule references in the planning files identify shared
+infrastructure.
 
 ## One rule per file, one `Config` per rule
 
@@ -108,12 +111,6 @@ has these consequences for the implementer:
    - `scan` / `parser` — source-text walkers and parser combinators.
    - `ordering` / `triviality` — rule-specific algorithms.
 
-   The `impure_macro_arguments/`, `macro_trailing_comma/`,
-   `avoidable_string_escapes/`, `unordered_derives/`,
-   `unicode_ellipsis_in_panic_messages/`, and
-   `single_letter_closure_param/` directories illustrate the
-   pattern.
-
 4. **Cross-rule helpers are `pub(crate)`, not `pub`.** The crate is
    a dylint `cdylib` with no public API surface, so `pub`
    over-advertises. Items in the crate-internal helper modules —
@@ -130,6 +127,62 @@ has these consequences for the implementer:
    docstring — a generic HIR walker, a per-character emit loop, a
    path-set parser — earns its own file.
 
+## Do not write documentation that restates the code
+
+Prose that duplicates a fact the code already states is unverified
+by construction: nothing fails when the code changes and the prose
+does not. Before writing such a sentence, ask what would make it go
+stale, and prefer the form that cannot.
+
+The shapes to avoid:
+
+- **A count over a list that can grow is a second copy of it.**
+  "The convention has two consequences", "Six rules scan a slice of
+  markdown" — the number rots the moment the list gains a member.
+  Write "The convention has these consequences".
+- **Prefer a greppable predicate to a hand-maintained roster.**
+  "Every rule that imports `crate::markdown`" stays true forever; a
+  list of rule names does not. Where a roster genuinely helps, mark
+  it illustrative ("for example", "among them").
+- **Do not quote another file's heading or prose verbatim.** It is a
+  copy no tool checks, and the original can be reworded by someone
+  who never sees it. Naming a heading that the conventions require
+  every file of a kind to carry is naming the convention, not copying
+  a fact. In markdown,
+  link to the section by anchor; in Rust, where a repo-relative link
+  does not resolve, name the file and let the reader search it.
+- **State a fact in exactly one place.** Defaults, config shapes and
+  file paths have one home; everything else links to it. The
+  [defaults convention](#defaults-live-in-field-docs-not-type-or-variant-docs)
+  below is this rule applied to the case that recurs most.
+- **Do not paste real code into a guide.** An example copied out of
+  a live `Config` struct drifts the moment that struct changes.
+  Write it with obviously-fake names.
+- **Do not describe a lint as existing until it is registered.**
+  Shipped docs — `declare_tool_lint!` rustdoc and the `rules/*.md`
+  catalogue generated from it — must not name a lint that
+  `src/lib.rs::register_lints` does not, or a reader who writes
+  `#[expect(perfectionist::<that name>)]` for it is flagged by
+  `perfectionist::unknown_perfectionist_lints`. Planning files are
+  exempt; naming unimplemented siblings is what they are for.
+- **If a passage exists only to restate the code beneath it, delete
+  it.** Length is not thoroughness.
+
+Some copies have to exist: a config field's default list is the only
+one a user can read, and the `RuleConfig` mirrors in `tests/`
+serialise config the test crate cannot reach. Keep those, say why
+they exist, and keep a default list complete — a partial one is
+useless.
+
+Some of these are mechanically checkable and worth a grep before
+committing:
+backticked in-repo paths should resolve, and a `perfectionist::`
+name should be one `register_lints` registers. Both have standing
+exceptions — prose about a *linted* crate, planning files and this
+guide, the deliberate typos around `unknown_perfectionist_lints`, and
+`gen-docs`' unit tests, which invent lint names — so read the hits,
+not the count.
+
 ## Defaults live in field docs, not type or variant docs
 
 A config field's default value is documented on the **field**, never
@@ -145,26 +198,25 @@ So a field doc states the default in the config-file value form, and
 the type / variant docs describe only what each value *means*:
 
 ```rust
-/// How inline test code is handled. Defaults to `external_when_long`.
-inline_style: InlineStyle,           // field doc carries the default
+/// How the frobnicator is drawn. Defaults to `rounded`.
+frob_style: FrobStyle,               // field doc carries the default
 
-enum InlineStyle {
-    /// Every inline test item is flagged; all test code must move out.
-    ExternalOnly,
-    /// Inline test code is allowed up to the configured budget.
-    ExternalWhenLong,                // variant doc: meaning only, no "the default"
+enum FrobStyle {
+    /// Every corner is left at a right angle.
+    Square,
+    /// Every corner is filleted to the configured radius.
+    Rounded,                     // variant doc: meaning only, no "default"
 }
 ```
 
-The wrong placement — `ExternalWhenLong`'s doc reading "… the
-default." or `InlineStyle`'s own doc reading "Defaults to
-`external_when_long`." — is the recurring mistake this convention
-exists to stop. It already had to be corrected once for
-`ReferenceScope::Crate` in
-<https://github.com/KSXGitHub/perfectionist/pull/218>. The `#[default]`
-*attribute* on a variant is fine — it is code expressing the
-`Default` impl, not prose claiming a default. Only the prose is
-governed here.
+The wrong placement — `Rounded`'s doc reading "… the default." or
+`FrobStyle`'s own doc reading "Defaults to `rounded`." — is the
+recurring mistake this convention exists to stop. It already had to
+be corrected once for `ReferenceScope::Crate` in
+<https://github.com/KSXGitHub/perfectionist/pull/218>. The
+`#[default]` *attribute* on a variant is fine — it is code
+expressing the `Default` impl, not prose claiming a default. Only
+the prose is governed here.
 
 ## When the implementation is complete
 
@@ -174,9 +226,10 @@ becomes documentation drift. Remove it:
 
 1. **Delete the rule's markdown file** from `planned-rules/`.
 2. **Update `planned-rules/README.md`**: remove the rule's index
-   entry. The "Out of scope" section at the bottom doesn't list
-   implemented rules, only ones that won't be implemented; don't
-   move the entry there.
+   entry. The
+   [out-of-scope list](planned-rules/README.md#out-of-scope-cannot-be-linted-by-dylint)
+   at the bottom doesn't hold implemented rules, only ones that
+   won't be implemented; don't move the entry there.
 3. **Fix every link and prose reference** to the deleted rule.
    Cross-references typically appear in:
    - Other rules' "Interaction with sibling rules" sections.
@@ -186,12 +239,10 @@ becomes documentation drift. Remove it:
      some entries describe one rule by reference to another.
 
    Fix each reference by either pointing at the implementation
-   source code (e.g., `src/rules/path_qualification_mismatch.rs`)
-   or rewording the prose to drop the link entirely. A reference
-   that just names the rule for context can be reworded to use the
-   lint's namespaced name
-   (`perfectionist::path_qualification_mismatch`) without a
-   markdown link.
+   source code (`src/rules/<rule_name>.rs`) or rewording the prose
+   to drop the link entirely. A reference that just names the rule
+   for context can be reworded to use the lint's namespaced name
+   (`perfectionist::<rule_name>`) without a markdown link.
 
 After the cleanup, the repository should be self-consistent: the
 `planned-rules/<rule>.md` file no longer exists, and no other
@@ -223,12 +274,10 @@ explicitly retracted.
 
 ## Registering a new rule in `lib.rs`
 
-Every rule module exposes two registration functions:
-
-- `register_lint(lint_store)` — registers the lint declaration
-  only.
-- `register_pass(lint_store)` — installs the rule's early/late
-  pass.
+Every rule module exposes a `register_lint(lint_store)`, which
+registers the lint declaration only, and a
+`register_pass(lint_store)`, which installs the rule's early/late
+pass.
 
 `src/lib.rs::register_lints` calls them in two phases: every
 `register_lint` first, then every `register_pass`. The phasing
@@ -236,15 +285,18 @@ exists because `unknown_perfectionist_lints::register_pass`
 snapshots the registered `perfectionist::*` lint names out of the
 `LintStore` at construction time, so every rule's lint
 declaration must already be in the store before any pass is
-installed.
+installed. The `register!` macro in `register_lints` emits both
+phases from one list of rule names, so a rule is named there
+exactly once.
 
 When you add a new rule:
 
-1. Add the `mod` line and expose both `register_lint` and
-   `register_pass` from the rule module.
-2. Call `your_rule::register_lint(lint_store)` in the phase-1
-   block of `register_lints` and
-   `your_rule::register_pass(lint_store)` in the phase-2 block.
+1. Add the `pub mod` line to `src/rules.rs`, and expose both
+   `register_lint` and `register_pass` from the rule module.
+2. Add the rule's name to the `register!` invocation in
+   `src/lib.rs::register_lints`, in alphabetical order —
+   except that `unknown_perfectionist_lints` stays last, for the
+   snapshotting reason above.
 3. Do not introduce a parallel `REGISTERED_LINT_NAMES`-style
    array. The `LintStore` is the single source of truth.
 
@@ -288,8 +340,8 @@ automated self-lint did not run.
 
 The lint catalogue at <https://ksxgithub.github.io/perfectionist/>
 is rendered by `tools/gen-docs/` into a single, self-contained
-`gh-pages/index.html`. Two preferences shape what may go on the
-page:
+`gh-pages/index.html`. These preferences shape what may go on
+the page:
 
 - **CSS over JavaScript.** Reach for CSS first; only add an inline
   `<script>` when CSS genuinely can't express the behaviour. When
@@ -342,11 +394,9 @@ drive a headless Chromium from a throwaway Playwright script:
   and/or `getBoundingClientRect` / `getComputedStyle` values.
 
 - Treat the script as scratch, and keep it out of the repository
-  entirely. There are three ways to write temporary files: The first
-  is to write them to directories outside the project directory
-  (such as `/tmp`). The second is to create a directory named `tmp/`
-  and put all temporary files in it. The third is to name the file
-  in the `tmp.*` pattern.
+  entirely. Write temporary files to a directory outside the
+  project directory (such as `/tmp`), or to a directory named
+  `tmp/`, or under a name matching the `tmp.*` pattern.
 
 - Chromium only. For cross-engine concerns (Firefox / Safari
   support of a CSS feature), pair the screenshots with a caniuse
@@ -395,24 +445,22 @@ coexist with either of the headings above.
 
 ## Notes on cross-rule dependencies
 
-A handful of rules share helpers — the markdown exclusion
-scanner, the unicode-width helper, the format-template parser,
-the URL-discovery scanner, and the module-re-parsing helper
-(`src/module_reparse.rs`, which re-parses the crate's module
-source files from a shared `SourceMap` so the import-rewriting
-rules `import_granularity_mismatch` and `uncombined_self_import`
-reach separate-file submodules while keeping `#[cfg(...)]` gates
-intact). The module-re-parsing helper exists because this exact
-bug — a source-layout rule shipped as a pre-expansion
+Rules share crate-internal helpers: every `src/*.rs` beside
+`lib.rs` and `rules.rs` is one, and each carries a module
+docstring saying what it is for. The module-re-parsing helper
+(`src/module_reparse.rs`) is the one to know about before you
+start — it re-parses the crate's module source files from a
+shared `SourceMap` so a rule reaching separate-file submodules
+still sees `#[cfg(...)]` gates intact. It exists because this
+exact bug — a source-layout rule shipped as a pre-expansion
 `EarlyLintPass` silently skipping every separate-file submodule —
 has been written twice; before implementing any rule that reads
-the *written layout* of items across module scopes, read the
-"Reaching every module (source-layout rules)" section of
-`planned-rules/IMPLEMENTATION_CONVENTIONS.md`. The planning files
-document who depends on whom in the "Interaction with sibling
-rules" sections. When implementing the *first* rule in a
-dependency cluster, factor the shared helper into a
-crate-internal module so the second rule can reuse it. The
+the *written layout* of items across module scopes, read
+[Reaching every module (source-layout rules)](planned-rules/IMPLEMENTATION_CONVENTIONS.md#reaching-every-module-source-layout-rules).
+The planning files document who depends on whom in their
+"Interaction with sibling rules" sections. When implementing the
+*first* rule in a dependency cluster, factor the shared helper
+into a crate-internal module so the second rule can reuse it. The
 planning files name this expectation explicitly; don't duplicate
 the helper.
 
@@ -422,14 +470,13 @@ One shared helper is a suppression guard rather than a parser:
 false-positiving on proc-macro-synthesised nodes that carry a
 user-source span and so slip past `report_in_external_macro:
 false`. This bug class has recurred across rules; before you pick
-a new rule's diagnostic span, read the "Suppressing
-proc-macro-synthesised violations" section of
-`planned-rules/IMPLEMENTATION_CONVENTIONS.md` and add the guard
-plus a `ui/<rule>_proc_macro.rs` regression fixture if the rule is
-vulnerable. The fixture is only real if it fails with the guard
-removed: build it around a trigger the rule actually fires on (not
-an exempt or trivial node), and mutation-check it before trusting
-it.
+a new rule's diagnostic span, read
+[Suppressing proc-macro-synthesised violations](planned-rules/IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations)
+and add the guard plus a `ui/<rule>_proc_macro.rs` regression
+fixture if the rule is vulnerable. The fixture is only real if it
+fails with the guard removed: build it around a trigger the rule
+actually fires on (not an exempt or trivial node), and
+mutation-check it before trusting it.
 
 ## Commit message style
 
@@ -512,8 +559,8 @@ Every other markdown file in the repository — `CLAUDE.md`,
 `planned-rules/*.md`, and anything else committed alongside the
 source — is only rendered in contexts where relative paths
 resolve correctly (GitHub, local editors, agent tooling). Prefer
-relative links in those files; they survive repository renames
-and don't bake in a hosting URL.
+relative links in those files; they survive repository renames and
+don't bake in a hosting URL.
 
 ## GitHub-specific markdown
 
@@ -521,7 +568,7 @@ Some markdown renders as intended only on GitHub. Whether a file
 may use it depends on who renders that file.
 
 **Documentation that double-serves as rustdoc must not use it.**
-Two things are rustdoc-bound:
+These are rustdoc-bound:
 
 - the rustdoc on a `declare_tool_lint!` block, and
 - the generated `rules/*.md`, which `tools/gen-docs/` renders
@@ -535,7 +582,7 @@ helps. `README.md` is the exception among them: `Cargo.toml` sets
 `readme = "README.md"`, so it also ships to crates.io and lib.rs.
 Keep it conservative for the same reason its links are absolute.
 
-The constraint is not "GitHub invented it" but "the other two
+The constraint is not "GitHub invented it" but "the other
 renderers drop it". Rustdoc parses CommonMark plus a few
 extensions, and `tools/gen-docs/` parses with `pulldown-cmark`
 under `ENABLE_TABLES | ENABLE_STRIKETHROUGH | ENABLE_FOOTNOTES`
@@ -548,12 +595,12 @@ under `ENABLE_TABLES | ENABLE_STRIKETHROUGH | ENABLE_FOOTNOTES`
 | Mermaid fences            | code block   | code block   | diagram  |
 | Tables, `~~del~~`, `[^1]` | renders      | renders      | renders  |
 
-So the three to keep out of rustdoc-bound docs are **alerts, task
+So the ones to keep out of rustdoc-bound docs are **alerts, task
 lists, and mermaid fences**. The alert is the trap worth naming:
 its marker is left as literal text in both the in-tree catalogue
 and the docs site, where it reads as a typo.
 
-`<details>` / `<summary>` renders in all three, but still does
+`<details>` / `<summary>` renders everywhere, but still does
 not belong in rustdoc-bound docs. `rules/*.md` exists so the
 catalogue can be read in an editor without a browser, and
 `tools/gen-docs/src/render_md.rs` drops the HTML renderer's
@@ -562,7 +609,7 @@ works against its purpose.
 
 ### Choosing the alert type
 
-GitHub defines five, and their plain meanings apply: `[!NOTE]`,
+GitHub defines these, and their plain meanings apply: `[!NOTE]`,
 `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`. The one
 editorial rule worth stating is that `[!WARNING]` and
 `[!CAUTION]` mark an actual hazard — data loss, breakage, a
@@ -572,8 +619,8 @@ and reserving those two is what keeps them worth reading.
 ### A blockquote is not always an alert
 
 `>` is also plain markdown for a quotation, and the catalogue
-relies on that. A `>` block in `planned-rules/` is one of three
-things, and only the second may become an alert:
+relies on that. A `>` block in `planned-rules/` is one of the
+following, and only the aside may become an alert:
 
 - **A quotation.** Every `## Statement` section quotes the rule's
   upstream style-guide source verbatim. Leave these alone, and do
@@ -591,8 +638,8 @@ things, and only the second may become an alert:
 ## Symlinks
 
 This file is the authoritative implementation guide. It is also
-exposed under two other names so that other AI assistants and
-agent harnesses pick it up automatically:
+exposed under other names so that other AI assistants and agent
+harnesses pick it up automatically:
 
 - `AGENTS.md` (symlink to `CLAUDE.md`).
 - `.github/copilot-instructions.md` (symlink to `CLAUDE.md`).
