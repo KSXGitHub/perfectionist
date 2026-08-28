@@ -217,7 +217,7 @@ pattern that several rules call out by reference — live in
   Ancestry-aware counterpart.
 
 ### Conditional compilation (`#[cfg]`)
-These three rules share one helper — a measure of how complex a `#[cfg]`
+These rules share one helper — a measure of how complex a `#[cfg]`
 predicate is (distinct atom count, nesting depth, negated-compound
 presence) plus a bounded satisfiability oracle over the cfg atoms (see
 [`overly-complex-cfg.md`](./overly-complex-cfg.md), which owns it). They

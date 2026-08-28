@@ -199,7 +199,7 @@ fn connect() { /* ... */ }
 ## Configuration
 
 ```toml
-[perfectionist::overly_complex_cfg]
+["perfectionist::overly_complex_cfg"]
 max_distinct_atoms = 4
 max_depth = 3
 max_total_terms = 12

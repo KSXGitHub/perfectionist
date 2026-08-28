@@ -147,7 +147,7 @@ instead.
 Each sub-lint carries its own `Config` (one per rule). Common fields:
 
 ```toml
-[perfectionist::dead_code]
+["perfectionist::dead_code"]
 max_analyzable_atoms = 4
 max_analyzable_depth = 3
 ```

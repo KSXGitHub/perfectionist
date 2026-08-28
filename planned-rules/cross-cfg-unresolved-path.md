@@ -125,7 +125,7 @@ analyzability budget, the rule declines;
 ## Configuration
 
 ```toml
-[perfectionist::unresolved_path]
+["perfectionist::unresolved_path"]
 max_analyzable_atoms = 4
 max_analyzable_depth = 3
 ```
