@@ -39,28 +39,13 @@ pub(super) struct Config {
     /// `extra_conversion_methods`. Empty by default; checked after the
     /// merge with the built-ins, so this knob always wins.
     ignore_conversion_methods: Vec<String>,
-    /// Whether test-exclusive code is exempt: a function gated to test
-    /// builds by `#[cfg(test)]` (or a compound predicate implying it),
-    /// one declared inside a `#[test]` function, and every function in
-    /// an integration-test (`tests/`) or benchmark (`benches/`) crate.
-    /// Defaults to `true`; set `false` to hold test code to the same
-    /// signature as production code.
-    ///
-    /// The exemption is off the rule's own rationale: a test helper's
-    /// callers are test bodies holding literals, which would each have
-    /// to write the `.to_owned()` the helper is being told to drop,
-    /// and the copy that buys back is one a test never pays for. An
-    /// example (`examples/`) is not covered — it is documentation that
-    /// readers copy, so it is held to the library's standard.
+    /// Whether test code is exempt: anything gated to test builds by
+    /// `#[cfg(test)]` (or a compound predicate implying it), anything
+    /// inside a `#[test]` function, and every `tests/` or `benches/`
+    /// crate. An `examples/` crate is not covered. Defaults to `true`.
     pub(super) test_code_exception: bool,
     /// Whether a build script — `build.rs`, or whatever `Cargo.toml`'s
-    /// `build` key names — is exempt. Defaults to `true`; set `false`
-    /// to check build scripts too.
-    ///
-    /// Same rationale as `test_code_exception`: a build script runs
-    /// once per build, so the copy the rule exists to save is worth
-    /// nothing there. Recognising one relies on Cargo's
-    /// `build_script_*` crate-name convention.
+    /// `build` key names — is exempt. Defaults to `true`.
     pub(super) build_script_exception: bool,
 }
 

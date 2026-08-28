@@ -51,34 +51,11 @@ declare_tool_lint! {
     ///
     /// ### Where it does not apply
     ///
-    /// Test code and build scripts are exempt by default, because the
-    /// rationale below does not reach them — the copy the rule buys
-    /// back is one neither ever pays for, while the call sites still
-    /// pay the ergonomic cost. Both exemptions are configurable
-    /// (`test_code_exception`, `build_script_exception`).
-    ///
-    /// Test code here means a function gated to test builds by
-    /// `#[cfg(test)]` — or by a compound predicate implying it, such as
-    /// `#[cfg(all(test, unix))]` — whether the gate is on the function
-    /// or on a module containing it; a function declared inside a
-    /// `#[test]` function's body; and every function in an
-    /// integration-test (`tests/`) or benchmark (`benches/`) crate. An
-    /// example (`examples/`) is *not* test code by this measure: it is
-    /// documentation readers copy, so it is held to the library's
-    /// standard.
-    ///
-    /// A test written with a third-party attribute — `#[rstest]`,
-    /// `#[test_case]` and the like — is covered by the `#[cfg(test)]`
-    /// clause rather than the `#[test]` one. Those attributes leave the
-    /// author's function an ordinary parameter-taking `fn` and put the
-    /// generated `#[test]` wrappers beside it, so it is the function's
-    /// gate, not its own attribute, that exempts it.
-    ///
-    /// The rule can only see `#[cfg(test)]` code at all in a build
-    /// where `cfg(test)` is active — the unit-test target that
-    /// `cargo dylint -- --all-targets` adds. Without that flag such
-    /// code is configured out before the rule runs, so the exemption
-    /// has nothing to do.
+    /// Test code and build scripts are exempt by default. Test code is
+    /// anything gated to test builds by `#[cfg(test)]`, anything inside
+    /// a `#[test]` function, and every `tests/` or `benches/` crate; an
+    /// `examples/` crate is not. Turn either exemption off with
+    /// `test_code_exception` / `build_script_exception`.
     ///
     /// ### Why restrict this?
     ///
