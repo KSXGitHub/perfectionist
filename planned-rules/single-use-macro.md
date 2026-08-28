@@ -106,8 +106,8 @@ All of the following must hold:
 4. **Its single expansion does not fan code out.** By default, a
    macro whose transcriber contains a fragment repetition
    (`$(...)*`, `$(...)+`, `$(...)?`) is exempt even at one call
-   site — see the next section for why one invocation of such a
-   macro is still reuse.
+   site — see [When the rule stays silent](#when-the-rule-stays-silent)
+   for why one invocation of such a macro is still reuse.
 
 ## When the rule stays silent
 
@@ -121,8 +121,8 @@ must not fire on any of them.
 
 - **Two or more instantiations.** Real reuse — the definition earns
   its keep — so the rule is silent. Counting *instantiations* (not
-  textual call sites) makes this robust in two directions that a
-  naïve source scan gets wrong:
+  textual call sites) makes this robust where a naïve source scan
+  gets it wrong:
   - **Recursion is reuse, and counts as reuse for free.** A
     recursive macro invoked once by the user re-instantiates itself
     while it recurses; each self-call is another expansion of the
@@ -194,24 +194,23 @@ exempt_repetition_bodied = true
 exempt_multi_arm = false
 ```
 
-The two knobs are independent on/off switches, so they are two
+The knobs are independent on/off switches, so they are separate
 boolean fields rather than one `exempt = [...]` array, per the
-config-shape convention in
-[`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
+[config-shape convention](./IMPLEMENTATION_CONVENTIONS.md#config-shape-boolean-fields-not-an-array-of-toggles).
 
 ## What to lint
 
-`LateLintPass`. The rule needs three facilities that only exist
-after the crate is compiled far enough for a late pass: the macro's
-`DefId`, its effective visibility, and the crate's macro-expansion
-records. It is **not** a source-layout rule and does **not** route
-through `src/module_reparse.rs`: it reads a *semantic* property
-(how many times a definition was instantiated), and the late pass's
-HIR plus the expansion table already span every module and
-separate file, so the "reaching every module" trap
-([`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md))
-does not apply. The one thing the expansion table cannot see —
-`#[cfg]`-disabled call sites — is discussed under Limitations.
+`LateLintPass`. The rule needs facilities that only exist after the
+crate is compiled far enough for a late pass: the macro's `DefId`,
+its effective visibility, and the crate's macro-expansion records.
+It is **not** a source-layout rule and does **not** route through
+`src/module_reparse.rs`: it reads a *semantic* property (how many
+times a definition was instantiated), and the late pass's HIR plus
+the expansion table already span every module and separate file, so
+the [reaching every module](./IMPLEMENTATION_CONVENTIONS.md#reaching-every-module-source-layout-rules)
+trap does not apply. The one thing the expansion table cannot see —
+`#[cfg]`-disabled call sites — is discussed under
+[Limitations](#limitations).
 
 1. **Collect candidate definitions.** Walk HIR items for
    `ItemKind::Macro(_, MacroKind::Bang)` (both `macro_rules!` and
@@ -282,16 +281,15 @@ tree; the instantiation census is the new part.
   `ui/single_use_macro_proc_macro.rs` fixture (a derive that emits a
   private, single-use, non-repetition `macro_rules!` the rule would
   otherwise fire on) and add `crate::common::hir_in_external_macro`
-  if it fires. Mutation-check the fixture per the "Suppressing
-  proc-macro-synthesised violations" section of
-  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
+  if it fires. Mutation-check the fixture per the
+  [suppression convention](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations):
   delete the guard, confirm the fixture turns red, restore it.
 
 ### Limitations
 
-Two ways the instantiation census can miscount, both worth stating
-in code (not the user-facing `declare_tool_lint!` doc) so a later
-reader knows they were considered:
+The instantiation census can miscount in ways worth stating in code
+(not the user-facing `declare_tool_lint!` doc), so a later reader
+knows they were considered:
 
 - **`#[cfg]`-disabled call sites are invisible.** The expansion
   table only records macros that were actually expanded, i.e. call
@@ -341,8 +339,8 @@ above) turns the rule off via `[perfectionist].disable`.
   overlap (a function is not a macro) and a project may reasonably
   run both. The name is not *mirrored* from clippy (that convention
   is reserved for a genuine refinement of a like-named clippy lint,
-  per
-  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md));
+  per the
+  [naming convention](./IMPLEMENTATION_CONVENTIONS.md#mirror-the-clippy-name-only-for-a-genuine-refinement));
   `single_use_macro` is a fresh anti-pattern name in clippy's
   `single_*` idiom, chosen so `#[allow(perfectionist::single_use_macro)]`
   reads as "permit this single-use macro".
