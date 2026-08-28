@@ -119,7 +119,7 @@ wants the lint to fire ahead of adding the dependency, can set
 # Active by default. The rule has a single direction (prefer
 # `Itertools::join` over an intermediate `collect`), so there is no
 # `style` knob.
-[perfectionist::collect_then_join]
+["perfectionist::collect_then_join"]
 
 # Gate the rule on the workspace already depending on `itertools`.
 # Defaults to `true`: a workspace with no `itertools` dependency anywhere
@@ -162,9 +162,9 @@ The diagnostic spans the `collect().join(...)` tail (from the `.collect`
 method call through the close paren of `.join`) and suggests the
 `itertools` rewrite below.
 
-Guard against proc-macro-synthesised nodes per
-[`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
-("Suppressing proc-macro-synthesised violations"): a macro that
+Guard against proc-macro-synthesised nodes per the
+[suppression convention](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations):
+a macro that
 assembles a `collect().join()` chain from user-source fragments can
 carry a user-source span that slips past `report_in_external_macro:
 false`. Add `crate::common::hir_in_external_macro` and a
@@ -174,9 +174,9 @@ it fails with the guard removed).
 
 ## Autofix
 
-Two rewrite shapes, both keeping the receiver iterator expression
-verbatim and ensuring `use itertools::Itertools;` is in scope (insert it
-if absent; leave it if already imported, e.g. via a `prelude`):
+The rewrite keeps the receiver iterator expression verbatim and ensures
+`use itertools::Itertools;` is in scope (insert it if absent; leave it if
+already imported, e.g. via a `prelude`). It takes one of these shapes:
 
 - **Plain collect-then-join.** `iter.collect::<Vec<_>>().join(sep)` →
   `iter.join(sep)`. Drop the `.collect::<…>()` call and its turbofish;
@@ -228,9 +228,8 @@ there is no neutral baseline to omit.
   lives in `itertools`. `perfectionist::collect_then_join` is therefore
   a **complement**, not a refinement, of `clippy::needless_collect`, and
   the two never fire on the same expression — which is why this rule
-  does **not** borrow the `needless_collect` name (per
-  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md),
-  "Mirror the Clippy name only for a genuine refinement").
+  does **not** borrow the `needless_collect` name (per the
+  [naming convention](./IMPLEMENTATION_CONVENTIONS.md#mirror-the-clippy-name-only-for-a-genuine-refinement)).
 - **Slice-concatenating `join` is out of scope.**
   `vecs.collect::<Vec<_>>().join(&sep_slice)` producing a `Vec<T>` has
   no `itertools` equivalent; step 1's result-type check excludes it.
@@ -238,8 +237,9 @@ there is no neutral baseline to omit.
   concatenation has its own remedies (`.collect::<String>()` for the
   string case, with no `itertools` needed), a distinct trigger and a
   distinct fix; bundling it here would merge two anti-patterns under one
-  banner (see [`CLAUDE.md`](../CLAUDE.md), "One rule per file"). If worth
-  catching it belongs in a sibling rule.
+  banner (see the
+  [one-rule-per-file convention](../CLAUDE.md#one-rule-per-file-one-config-per-rule)).
+  If worth catching it belongs in a sibling rule.
 - **Bound-variable join is out of scope.** A `let v: Vec<String> = …;`
   followed later by `v.join(sep)` is not a direct chain; flagging it
   would require the cross-statement use-analysis `clippy::needless_collect`
