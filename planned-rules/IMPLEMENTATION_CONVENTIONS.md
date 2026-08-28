@@ -84,15 +84,15 @@ fixed-size byte sequence do not.
 ## Markdown parsing
 
 Several rules scan a slice of markdown: every rule that imports
-`src/markdown.rs`. They share that one crate-internal scanner, built
-from `take_*` combinators per the "Parser style" section above. The
+`crate::markdown`. They share that one crate-internal scanner, built
+from `take_*` combinators per [Parser style](#parser-style). The
 helper is hand-written. **Do not pull in `pulldown_cmark`, `comrak`,
 `markdown-rs`, or `markdown-it`** for any of them without first
 revisiting the rationale below.
 
-### Two tiers of consumer
+### Tiers of consumer
 
-Two needs sit on top of the same primitives.
+Consumers divide by how much structure they need.
 
 - **Tier A — structural classification.** Distinguishes a code
   span from an inline link from a reference definition from an
@@ -125,10 +125,11 @@ One `take_*` per CommonMark construct the catalogue recognises:
 The full Tier A classifier `classify_constructs` stitches these into
 one walk that returns each construct's byte range and kind. Each
 combinator returns the matched substring and the remainder per the
-canonical shapes in "Parser style". Rust-specific extraction layered
-on top — pulling an identifier out of a `take_code_span` result,
-pulling a scheme out of `take_autolink` failure-fallback prose —
-lives in each rule's own module, not in `src/markdown.rs`.
+canonical shapes in [Parser style](#parser-style). Rust-specific
+extraction layered on top — pulling an identifier out of a
+`take_code_span` result, pulling a scheme out of `take_autolink`
+failure-fallback prose — lives in each rule's own module, not in
+`src/markdown.rs`.
 
 ### Why hand-rolled rather than a library
 
@@ -432,7 +433,7 @@ which library to consult or configure.
 
 ### Why a tool namespace rather than a bare prefix
 
-Two reasonable approaches exist:
+These approaches are both reasonable:
 
 - **Tool namespace** (`perfectionist::path_qualification_mismatch`): the
   approach used by `clippy::*` and `rustdoc::*`. Idiomatic, scoped,
@@ -620,7 +621,7 @@ exactly that and drop the empty-vs-absent ambiguity. Settled in
 `wildcard_imports`' `exceptions = ["prelude", "root_reexport"]` with
 the booleans `prelude_exception` / `root_reexport_exception`).
 
-Three shapes are *not* this anti-pattern and stay as arrays/enums: a
+Some shapes are *not* this anti-pattern and stay as arrays/enums: a
 single mutually-exclusive **choice** (a `style` / direction enum); an
 **open-ended list** of user strings (`allowed_paths`, `extra_*`,
 `ignore`); and a **permutation** where the sequence is itself the
@@ -761,12 +762,12 @@ regressing the suppression.
 
 ### Deliberate non-participants
 
-Two kinds of rule skip all of the above on purpose:
+Some rules skip all of the above on purpose:
 
-- Rules declared `report_in_external_macro: true` (`avoidable_string_escapes`,
-  `unicode_ellipsis_in_panic_messages`) *want* to fire inside macro
-  output; the guard would defeat their purpose. The `true` flag is
-  itself the visible record of that intent.
+- A rule declared `report_in_external_macro: true` *wants* to fire
+  inside macro output; the guard would defeat its purpose. The `true`
+  flag is itself the visible record of that intent, and grepping for
+  it is how you find every such rule.
 - A rule whose trigger cannot realistically be derive-generated may
   forgo the guard. `exhaustive_error_enums` was excluded on this basis —
   it is off by default and its `pub` error-shaped trigger is an
@@ -896,18 +897,8 @@ plugin's pass internals.
 
 A rule's `declare_tool_lint!` rustdoc is rendered by rustdoc and by
 `tools/gen-docs/` as well as by GitHub, so it must stay within the
-markdown all three understand. GitHub alerts (`> [!NOTE]`,
-`> [!IMPORTANT]`, …), task lists, and mermaid fences are out: the
-first two render as literal `[!NOTE]` / `[ ]` text somewhere in the
-chain, and a mermaid fence is just a code block outside GitHub.
-Tables, strikethrough, and footnotes are fine.
-
-The planning files in this directory carry no such constraint — only
-GitHub, local editors, and agent tooling ever render them — so they
-may use alerts where one genuinely helps. Note that a `>` block is
-not automatically an alert: the `## Statement` section of a planning
-file quotes its upstream style-guide source verbatim, and those
-quotations must stay plain blockquotes. See the "GitHub-specific
-markdown" section of [`CLAUDE.md`](../CLAUDE.md) for the full rule,
-the per-renderer table, and how to choose the alert type.
+markdown all of them understand; the planning files in this directory
+carry no such constraint. Which renderer drops what, and when a `>`
+block may become an alert, are settled in
+[GitHub-specific markdown](../CLAUDE.md#github-specific-markdown).
 

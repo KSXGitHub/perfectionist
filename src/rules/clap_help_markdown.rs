@@ -220,8 +220,9 @@ impl ClapHelpMarkdown {
             // construct's start for a multi-line construct.
             //
             // No `hir_in_external_macro` guard is needed despite the
-            // narrow diagnostic span (see the "Suppressing
-            // proc-macro-synthesised violations" convention): the
+            // narrow diagnostic span (see the proc-macro-suppression
+            // convention in
+            // `planned-rules/IMPLEMENTATION_CONVENTIONS.md`): the
             // violation text is always real user source. `module_reparse`
             // restricts the walk to on-disk module files, the comment
             // text comes from those files via `walk_local_comments`, and
