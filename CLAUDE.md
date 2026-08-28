@@ -185,73 +185,38 @@ not the count.
 
 ## Shipped docs address the consumer, not the contributor
 
-Part of this repository's documentation ships to people who install
-the plugin and never open its source; the rest is written for whoever
-works on it. The two audiences barely overlap, and a sentence aimed at
-one reads in the other as noise, as a dead link, or as an errand the
-reader cannot run.
-
-A doc is shipped if a consumer reads it without cloning: `README.md`,
+A doc is *shipped* if a consumer reads it without cloning: `README.md`,
 `CONFIGURATION.md`, `CONTROLLING_RULES.md`, and everything
 `tools/gen-docs/` renders — a rule's `declare_tool_lint!` rustdoc, its
 `Config` field docs, and the docs on the types and variants those
-fields name, all of which reach the in-tree `rules/` catalogue and the
-docs site. Everything else is contributor-only: `planned-rules/`, this
-guide, module (`//!`) docs, docs on items no `Config` field exposes,
-and everything under `tests/` and `tools/`.
+fields name. Everything else is contributor-only and may say whatever
+is useful: `planned-rules/`, this guide, `//!` docs, docs on items no
+`Config` field exposes, `tests/`, `tools/`.
 
-A shipped doc may name only what the consumer can reach — their own
-code, their `dylint.toml`, a lint `register_lints` registers, rustc
-and Clippy, a published crate. The recurring violations:
+A shipped doc may name only what a consumer can reach — their code,
+their `dylint.toml`, a registered lint, rustc, Clippy, a published
+crate. The recurring violations:
 
-- **A planning file.** `planned-rules/<rule>.md` is a design document
-  for work that may never ship, in a directory a consumer does not
-  have. Citing one from a rule's docs sends the reader off to read
-  about a lint they cannot run.
-- **Unshipped behaviour.** "... is still pending", "the broader cases
-  are not implemented yet" — that is the backlog, not the lint.
-  Describe the trigger the rule *has*; a reader needs to know what
-  fires today, and prose about what does not goes stale on the very
-  commit that implements it.
-- **A private Rust item.** `` [`SomeType::some_fn`] `` resolves under
-  `cargo doc --document-private-items` and nowhere else: the
-  catalogue and the docs site render the brackets literally, so it
-  reads as a typo. State the behaviour instead of linking the code
-  that implements it.
-- **A project the rule was distilled from.** The upstream style
-  guides are credited in
-  [`planned-rules/README.md`](planned-rules/README.md); a consumer
-  has never heard of them, so "matches <project>'s policy" says
-  nothing about what a knob does. Say what the value means. The same
-  goes for a bare "both source projects" — an antecedent that exists
-  only in a file the reader does not have is not an antecedent.
+- **A planning file.** It describes work that may never ship, in a
+  directory the reader does not have.
+- **Unshipped behaviour.** "... is still pending" is the backlog, not
+  the lint. Describe the trigger the rule *has*.
+- **A private Rust item.** `` [`Type::method`] `` is a valid rustdoc
+  link, so no `cargo doc` run flags it — but `gen-docs` has no
+  resolver, and the catalogue and the site render the brackets
+  literally, where it reads as a typo. State the behaviour instead.
+- **A project the rule was distilled from.** A consumer has never
+  heard of it, so "matches <project>'s policy" says nothing about what
+  a knob does, and "both source projects" has no antecedent at all.
+  Say what the value means.
 - **Development tooling.** A `just` recipe, a CI workflow, a dev
-  dependency. The consumer runs `cargo dylint`, not this
-  repository's `justfile`.
+  dependency. The consumer runs `cargo dylint`.
 
-The sibling convention for the same rustdoc block,
-[`declare_tool_lint!` docs describe behaviour, not pass machinery](planned-rules/IMPLEMENTATION_CONVENTIONS.md#declare_tool_lint-docs-describe-behaviour-not-pass-machinery),
-bars the *how*; this one bars the *where it came from* and the *what
-is not built yet*. Both leave contributor-only docs free to say
-whatever is useful.
-
-`README.md` is the one mixed-audience file, and a heading is what
-switches the audience: its development section is written for
-contributors and names `just` recipes freely, and its rules section
-offers `planned-rules/` as the roadmap. Both say who they are for, and
-a reader who opens one has chosen to. A rule's `### What it does`
-announces nothing of the sort — it is read by someone who wants to
-know why the lint fired — so the same reference there is a detour, not
-an offer.
-
-A generated file's do-not-edit banner is exempt on the same grounds:
-the `rules/*.md` preamble names `just gen-rules-md` because it is
-addressed to whoever is about to hand-edit a generated file, which a
-consumer never is.
-
-Two greps before committing: `planned-rules` should appear in no
-shipped doc but `README.md`'s roadmap line, and `rules/*.md` should
-carry no `` [`x`] `` intra-doc link outside a code fence.
+Two exceptions, both where the reader chose the detour: `README.md`
+switches audience by heading (its development section names `just`
+recipes, its rules section offers `planned-rules/` as the roadmap),
+and a generated file's do-not-edit banner names `just gen-rules-md`
+because it addresses whoever is about to hand-edit it.
 
 ## Defaults live in field docs, not type or variant docs
 
