@@ -31,8 +31,8 @@ declare_tool_lint! {
     /// ### What it does
     ///
     /// Flags glob (`*`) `use` statements — `use foo::bar::*;` — in module
-    /// bodies. Two exceptions are enabled by default and each can be
-    /// turned off individually:
+    /// bodies. These exceptions are enabled by default, and each can
+    /// be turned off individually:
     ///
     /// - `prelude` — a glob whose final non-glob path segment names a
     ///   prelude module is allowed: `use rayon::prelude::*;`,
@@ -54,9 +54,9 @@ declare_tool_lint! {
     /// explicit imports. Naming each imported item keeps a module's
     /// dependencies visible at the top of the file, stops an upstream
     /// addition from silently shadowing a local name, and makes a
-    /// grep for where a name comes from land on a real `use`. Preludes
-    /// and root re-exports are the two places the glob form is
-    /// idiomatic, so they are exempt by default.
+    /// grep for where a name comes from land on a real `use`. The glob
+    /// form is idiomatic for preludes and for root re-exports, so
+    /// those are exempt by default.
     ///
     /// ### Why not `clippy::wildcard_imports`?
     ///

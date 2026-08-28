@@ -10,11 +10,13 @@
 ## What it does
 
 Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in the message of a
-panic-family or assertion-style macro (`panic!`,
-`unimplemented!`, `todo!`, `unreachable!`, `assert!`,
-`assert_eq!`, `assert_ne!`, `debug_assert*!`) and in the
-`expect` / `expect_err` argument on `Option` and `Result`.
-Prefer the three-ASCII-dot form `...`.
+panic-family or assertion-style macro — `panic!` and
+`assert_eq!` among them — and in the panic-message argument of
+an `Option` / `Result` method such as `expect`. Prefer the
+three-ASCII-dot form `...`. The built-in macro and method sets
+are listed on the `extra_macros` and `extra_methods` knobs,
+which extend them; `ignore_macros` and `ignore_methods` narrow
+them.
 
 ## Why restrict this?
 
@@ -59,9 +61,9 @@ the message only covers the built-in panic / assertion
 macros. A custom macro added through this knob is treated
 as if its first argument were the message; an
 `assert_eq!`-shaped wrapper would therefore also scan its
-value-position literals. Adding per-macro skip counts
-requires extending the configuration schema and is out of
-scope for the initial rule.
+value-position literals. Adding per-macro skip counts would
+require extending the configuration schema, which this rule
+deliberately does not do.
 
 ## Configuration
 
@@ -69,13 +71,14 @@ Configure via `dylint.toml` under `["perfectionist::unicode_ellipsis_in_panic_me
 
 ### `extra_macros`: `[string]` (optional)
 
-Additional macros whose call site should be scanned for
-the flagged characters. Merged with the built-in defaults
-(the standard panic and assertion macros — `panic`,
-`unimplemented`, `todo`, `unreachable`, `debug_unreachable`,
-and the `assert*` family); empty by default. Use this to
-add project-specific assertion-shaped macros without having
-to re-state the standard ones.
+Additional macros whose call site should be scanned for the
+flagged characters. Empty by default, and merged with the
+built-in set: `panic`, `unimplemented`, `todo`, `unreachable`,
+`assert`, `assert_eq`, `assert_ne`, and the `debug_` variant
+of each of those that has one (`debug_unreachable`,
+`debug_assert`, `debug_assert_eq`, `debug_assert_ne`). Use
+this to add project-specific assertion-shaped macros without
+having to re-state the standard ones.
 
 ### `ignore_macros`: `[string]` (optional)
 

@@ -202,7 +202,8 @@ impl<'tcx> LateLintPass<'tcx> for UnpinnedRepoRef {
             return;
         }
         // No separate `hir_in_external_macro` guard here (cf. the
-        // "Suppressing proc-macro-synthesised violations" convention):
+        // proc-macro-suppression convention in
+        // `planned-rules/IMPLEMENTATION_CONVENTIONS.md`):
         // the scan re-reads source text through `span_to_snippet`
         // below, which is itself the proc-macro defence. A synthesised
         // literal either carries an *expansion* span — filtered by

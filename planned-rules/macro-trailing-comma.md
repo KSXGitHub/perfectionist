@@ -10,10 +10,10 @@ therefore not exposed — see
 [`impure-macro-arguments.md`](./impure-macro-arguments.md) for the
 sibling rule's handling of the same convention.
 
-The "Vertical only applies to block-indent layouts" caveat from
-the "What to lint" section is also implemented: any multi-line
-invocation whose first top-level token starts on the same line as
-the opening delimiter (the compact / visual-indent shape, e.g.
+The visual-indent caveat in [What to lint](#what-to-lint) is also
+implemented: any multi-line invocation whose first top-level token
+starts on the same line as the opening delimiter (the compact /
+visual-indent shape, e.g.
 `vec![Inner { ... }]` or `vec![bar(\n    ...,\n)]`) is skipped.
 The predicate keys off the first token's line, not the element
 count, matching rustfmt's actual `trailing_comma = "Vertical"`
@@ -22,12 +22,12 @@ behaviour rather than the documented spec for function calls.
 Still pending:
 
 - **Matcher-based declarative-macro auto-detection** (the
-  `$(,)?` / `$(,)*` matcher walk described under "Matcher-based
-  — declarative-macro auto-detection" and "Why matcher-based
-  is harder than name-based" below). Until that lands, only
-  macros named in the curated list or in `extra_macros`
-  are linted; any `macro_rules!` macro the user writes
-  themselves is silently ineligible regardless of its matcher
+  `$(,)?` / `$(,)*` matcher walk described under
+  [Matcher-based](#matcher-based--declarative-macro-auto-detection)
+  and [why it is harder](#why-matcher-based-is-harder-than-name-based)
+  below). Until that lands, only macros named in the curated list or
+  in `extra_macros` are linted; any `macro_rules!` macro the user
+  writes themselves is silently ineligible regardless of its matcher
   shape.
 - **Identifier-path-aware name-based matching.** The
   `Implementation notes` section below describes the

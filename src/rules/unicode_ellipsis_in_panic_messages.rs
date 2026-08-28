@@ -16,11 +16,13 @@ declare_tool_lint! {
     /// ### What it does
     ///
     /// Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in the message of a
-    /// panic-family or assertion-style macro (`panic!`,
-    /// `unimplemented!`, `todo!`, `unreachable!`, `assert!`,
-    /// `assert_eq!`, `assert_ne!`, `debug_assert*!`) and in the
-    /// `expect` / `expect_err` argument on `Option` and `Result`.
-    /// Prefer the three-ASCII-dot form `...`.
+    /// panic-family or assertion-style macro — `panic!` and
+    /// `assert_eq!` among them — and in the panic-message argument of
+    /// an `Option` / `Result` method such as `expect`. Prefer the
+    /// three-ASCII-dot form `...`. The built-in macro and method sets
+    /// are listed on the `extra_macros` and `extra_methods` knobs,
+    /// which extend them; `ignore_macros` and `ignore_methods` narrow
+    /// them.
     ///
     /// ### Why restrict this?
     ///
@@ -65,9 +67,9 @@ declare_tool_lint! {
     /// macros. A custom macro added through this knob is treated
     /// as if its first argument were the message; an
     /// `assert_eq!`-shaped wrapper would therefore also scan its
-    /// value-position literals. Adding per-macro skip counts
-    /// requires extending the configuration schema and is out of
-    /// scope for the initial rule.
+    /// value-position literals. Adding per-macro skip counts would
+    /// require extending the configuration schema, which this rule
+    /// deliberately does not do.
     #[cfg_attr(
         dylint_lib = "perfectionist",
         expect(
