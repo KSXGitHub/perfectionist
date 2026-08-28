@@ -1,16 +1,29 @@
-warning: `Defined` resolves in scope; write it as an intra-doc link
+warning: `Defined` resolves in scope; consider writing it as an intra-doc link
   --> $DIR/fixture.rs:16:18
    |
 LL |     /// Mentions `Defined` (local), `InternalItem` (this module's
-   |                  ^^^^^^^^^ help: wrap as an intra-doc link: `[`Defined`]`
+   |                  ^^^^^^^^^
    |
+   = help: if `Defined` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`Defined`][Defined-ext]` with a `[Defined-ext]: <url>` definition
    = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
+help: only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, wrap it as an intra-doc link
+   |
+LL -     /// Mentions `Defined` (local), `InternalItem` (this module's
+LL +     /// Mentions [`Defined`] (local), `InternalItem` (this module's
+   |
 
-warning: `InternalItem` resolves in scope; write it as an intra-doc link
+warning: `InternalItem` resolves in scope; consider writing it as an intra-doc link
   --> $DIR/fixture.rs:16:37
    |
 LL |     /// Mentions `Defined` (local), `InternalItem` (this module's
-   |                                     ^^^^^^^^^^^^^^ help: wrap as an intra-doc link: `[`InternalItem`]`
+   |                                     ^^^^^^^^^^^^^^
+   |
+   = help: if `InternalItem` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`InternalItem`][InternalItem-ext]` with a `[InternalItem-ext]: <url>` definition
+help: only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, wrap it as an intra-doc link
+   |
+LL -     /// Mentions `Defined` (local), `InternalItem` (this module's
+LL +     /// Mentions `Defined` (local), [`InternalItem`] (this module's
+   |
 
 warning: 2 warnings emitted
 

@@ -1,0 +1,55 @@
+warning: imports are not partitioned into ordered groups
+  --> $DIR/fixture.rs:34:1
+   |
+LL | / pub use Reflection as HardlinkListReflection;
+LL | | pub use iter::Iter;
+LL | | pub use reflection::Reflection;
+   | |_______________________________^
+   |
+   = note: `#[warn(perfectionist::import_grouping_mismatch)]` on by default
+help: regroup the imports
+   |
+LL + pub use iter::Iter;
+LL + pub use reflection::Reflection;
+LL + 
+LL + pub use Reflection as HardlinkListReflection;
+   |
+
+warning: imports are not partitioned into ordered groups
+  --> $DIR/fixture.rs:42:1
+   |
+LL | / pub use Summary as SharedLinkSummary;
+LL | | use std::time::Duration;
+LL | | pub use summary::Summary;
+   | |_________________________^
+   |
+help: regroup the imports
+   |
+LL + pub use summary::Summary;
+LL + 
+LL + pub use Summary as SharedLinkSummary;
+LL + 
+LL + use std::time::Duration;
+   |
+
+warning: imports are not partitioned into ordered groups
+  --> $DIR/fixture.rs:50:1
+   |
+LL | / use std::mem::swap;
+LL | | #[cfg(unix)]
+LL | | pub use Node as UnixNode;
+LL | | pub use node::Node;
+   | |___________________^
+   |
+help: regroup the imports
+   |
+LL + pub use node::Node;
+LL + 
+LL + #[cfg(unix)]
+LL + pub use Node as UnixNode;
+LL + 
+LL + use std::mem::swap;
+   |
+
+warning: 3 warnings emitted
+

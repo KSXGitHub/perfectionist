@@ -21,18 +21,8 @@ const DEFAULT_MAX_LINE_WIDTH: usize = 100;
 /// producer whose output is byte-equivalent before and after the
 /// template is folded across lines. Macros that *return a value*
 /// (`format!`, `format_args!`) or *terminate* (`panic!`, `assert!`,
-/// the `debug_assert*` family, ...) are deliberately absent: see the
-/// "Why not `format!`-family" section of
-/// `planned-rules/overly-long-print-macro.md`.
-///
-/// The list covers three groups: the stdout / stderr writers
-/// (`println!`, `eprintln!`, `print!`, `eprint!`), the `Write` writers
-/// (`writeln!`, `write!`), and the `log` family (`log!`, `error!`,
-/// `warn!`, `info!`, `debug!`, `trace!`). The `log` family is matched
-/// by final path segment, so `error` covers `log::error!` and
-/// `tracing::error!` alike. A project that wants to fold a
-/// differently-named macro replaces this whole list via the
-/// `target_macros` config key.
+/// the `debug_assert*` family, ...) are deliberately absent; the
+/// reasoning is in `planned-rules/overly-long-print-macro.md`.
 const DEFAULT_TARGET_MACROS: &[&str] = &[
     "println", "eprintln", "print", "eprint", "writeln", "write", "log", "error", "warn", "info",
     "debug", "trace",
@@ -51,7 +41,14 @@ pub(super) struct Config {
     /// trailing `!`). A single-segment entry matches by the
     /// invocation's final segment (so `"info"` covers `log::info!`);
     /// a multi-segment entry tail-matches the invocation path.
-    /// Replaces the built-in list wholesale when present.
+    ///
+    /// Replaces the built-in list wholesale when present, so a
+    /// project adding one macro must re-state the rest. Defaults to
+    /// the stdout / stderr writers (`println`, `eprintln`, `print`,
+    /// `eprint`), the `Write` writers (`writeln`, `write`), and the
+    /// `log` family (`log`, `error`, `warn`, `info`, `debug`,
+    /// `trace`). Every one of those is single-segment, so `error`
+    /// covers `log::error!` and `tracing::error!` alike.
     pub target_macros: Vec<String>,
 }
 

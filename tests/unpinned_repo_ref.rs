@@ -16,11 +16,13 @@ const LINT_NAME: &str = "perfectionist::unpinned_repo_ref";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/// The rule's user-facing configuration shape, mirrored here for
-/// serialisation so the test surface stays independent of the lint's
-/// private `Config` struct.
+/// Serialisation shim for the rule's `dylint.toml` configuration,
+/// which the test crate cannot build from the lint's own private
+/// `Config`.
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    scan_string_literals: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     allow_version_patterns: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -63,6 +65,7 @@ fn empty_hosts_disables_all_scanning() {
     run(
         "ui-toml/unpinned_repo_ref/empty_hosts",
         RuleConfig {
+            scan_string_literals: None,
             allow_version_patterns: None,
             hosts: Some(vec![]),
         },
@@ -77,6 +80,7 @@ fn self_hosted_host_is_scanned() {
     run(
         "ui-toml/unpinned_repo_ref/self_hosted",
         RuleConfig {
+            scan_string_literals: None,
             allow_version_patterns: None,
             hosts: Some(vec![HostEntry {
                 hostname: "git.example.com",
@@ -93,7 +97,23 @@ fn allow_version_patterns_accepts_only_version_shaped_refs() {
     run(
         "ui-toml/unpinned_repo_ref/allow_version_patterns",
         RuleConfig {
+            scan_string_literals: None,
             allow_version_patterns: Some(true),
+            hosts: None,
+        },
+    );
+}
+
+/// `scan_string_literals = true` turns on the opt-in string-literal
+/// surface (off by default), so a branch ref in a string literal is
+/// flagged while a SHA-pinned one is accepted.
+#[test]
+fn scan_string_literals_flags_branch_ref_in_literal() {
+    run(
+        "ui-toml/unpinned_repo_ref/scan_string_literals",
+        RuleConfig {
+            scan_string_literals: Some(true),
+            allow_version_patterns: None,
             hosts: None,
         },
     );

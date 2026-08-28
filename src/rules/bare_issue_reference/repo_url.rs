@@ -2,7 +2,7 @@
 //! paste — into the canonical web base `https://{host}/{owner}/{repo}`
 //! that `bare_issue_reference` builds issue / PR links from.
 //!
-//! Three input shapes are accepted:
+//! These input shapes are accepted:
 //!
 //! * an HTTP(S) URL — `https://host/owner/repo[.git]`
 //! * an `ssh://` URL — `ssh://[user@]host[:port]/owner/repo[.git]`

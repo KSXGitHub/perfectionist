@@ -27,6 +27,10 @@ declare_tool_lint! {
     /// or `CommandFactory`, and on the doc comments of their fields and
     /// variants.
     ///
+    /// A `ValueEnum`'s own type-level doc comment is left alone: unlike
+    /// its variant docs — clap's per-value help — it never reaches
+    /// `--help`.
+    ///
     /// Bold, italics, and lists are not flagged by default — clap
     /// renders them as their literal characters, which usually reads
     /// cleanly — but are available through the `extra_constructs` knob.
@@ -37,6 +41,15 @@ declare_tool_lint! {
     /// then no longer the source of truth for `--help`. A node marked
     /// `#[clap(verbatim_doc_comment)]` instead gets a softer note that
     /// the markdown will appear verbatim in the terminal.
+    ///
+    /// A project that never wants a doc comment to become `--help` text
+    /// at all — preferring an explicit override on every command,
+    /// argument, and value — can opt into the stricter
+    /// `require_help_override` mode. It flags every clap-derived doc
+    /// comment that reaches `--help` without such an override, markdown
+    /// or not, and reports each as a single missing-override finding
+    /// rather than per markdown construct. A node with no doc comment is
+    /// still left alone. This mode is off by default.
     ///
     /// ### Why is this bad?
     ///
@@ -119,11 +132,22 @@ pub fn register_pass(lint_store: &mut LintStore) {
     lint_store.register_late_pass(|_| Box::new(ClapHelpMarkdown::new()));
 }
 
-/// One parked finding: which construct category, whether the node opted
-/// into verbatim rendering (softer note, no autofix), and the code-span
-/// replacement text when the trivial `` `Foo` `` → `Foo` autofix
-/// applies.
-struct Violation {
+/// One parked finding, resolved to its enclosing HIR node and emitted in
+/// `check_crate_post`.
+enum Violation {
+    /// A forbidden markdown construct in a clap-derived doc comment that
+    /// feeds `--help`.
+    Markdown(MarkdownViolation),
+    /// The `require_help_override` mode fired: a clap-derived doc comment
+    /// reaches `--help` with no explicit override. One per node.
+    MissingOverride,
+}
+
+/// A forbidden markdown construct in a clap-derived doc comment: which
+/// construct category, whether the node opted into verbatim rendering
+/// (softer note, no autofix), and the code-span replacement text when the
+/// trivial `` `Foo` `` → `Foo` autofix applies.
+struct MarkdownViolation {
     category: ConstructCategory,
     soft: bool,
     replacement: Option<String>,
@@ -144,10 +168,22 @@ impl<'tcx> LateLintPass<'tcx> for ClapHelpMarkdown {
         let mut violations: Vec<(Span, Violation)> = Vec::new();
         walk_local_comments(cx, |chunk| match chunk.surface {
             CommentSurface::DocBlock | CommentSurface::DocBlockBlock => {
-                // A doc block belongs to a clap-bound node when its start
-                // offset matches the node's first `///` line; absent ⇒
-                // not a clap node (or overridden) ⇒ skip.
-                if let Some(state) = doc_nodes.get(&chunk.source_span.lo().0) {
+                let offset = chunk.source_span.lo().0;
+                if self.config.require_help_override {
+                    // Stricter mode: every help-bound doc comment must be
+                    // replaced by an explicit override, so flag each node
+                    // once at its opening `///` line. This supersedes the
+                    // markdown scan — an override silences that concern
+                    // anyway, and `first_lines` holds exactly the
+                    // doc-commented, unoverridden nodes.
+                    if doc_nodes.first_lines.contains(&offset) {
+                        let span = first_doc_line_span(chunk);
+                        violations.push((span, Violation::MissingOverride));
+                    }
+                } else if let Some(state) = doc_nodes.by_line.get(&offset) {
+                    // A doc block belongs to a clap-bound node when its
+                    // start offset matches one of the node's `///` lines;
+                    // absent ⇒ not a clap node (or overridden) ⇒ skip.
                     self.scan_chunk(chunk, *state, &mut violations);
                 }
             }
@@ -184,8 +220,9 @@ impl ClapHelpMarkdown {
             // construct's start for a multi-line construct.
             //
             // No `hir_in_external_macro` guard is needed despite the
-            // narrow diagnostic span (see the "Suppressing
-            // proc-macro-synthesised violations" convention): the
+            // narrow diagnostic span (see the proc-macro-suppression
+            // convention in
+            // `planned-rules/IMPLEMENTATION_CONVENTIONS.md`): the
             // violation text is always real user source. `module_reparse`
             // restricts the walk to on-disk module files, the comment
             // text comes from those files via `walk_local_comments`, and
@@ -204,11 +241,11 @@ impl ClapHelpMarkdown {
             };
             out.push((
                 span,
-                Violation {
+                Violation::Markdown(MarkdownViolation {
                     category,
                     soft,
                     replacement,
-                },
+                }),
             ));
         }
     }
@@ -238,9 +275,46 @@ fn code_span_autofix(span_text: &str) -> Option<String> {
     Some(unspaced.to_owned())
 }
 
+/// The source span of the first non-empty rendered line of `chunk`, the
+/// anchor for a [`Violation::MissingOverride`] diagnostic.
+///
+/// A single-line span is used, not the whole (possibly multi-line) doc
+/// block: [`emit_at_enclosing_hir`] resolves each diagnostic to the
+/// documented node through that node's per-line `#[doc]` attribute spans,
+/// and a target spanning several `///` lines is contained by none of them
+/// — it would fall back to the crate root and defeat a per-field
+/// `#[allow]`. Falls back to the whole-block span only for a doc comment
+/// with no content at all (`///` with nothing after it), which cannot
+/// carry markdown and is a degenerate case regardless.
+fn first_doc_line_span(chunk: &CommentChunk<'_>) -> Span {
+    chunk
+        .lines
+        .iter()
+        .find(|line| line.rendered_len != 0)
+        .and_then(|line| chunk.span_for(line.rendered_start, line.rendered_len as u32))
+        .unwrap_or(chunk.source_span)
+}
+
 fn emit(cx: &LateContext<'_>, hir_id: hir::HirId, span: Span, violation: &Violation) {
-    let label = violation.category.label();
-    if violation.soft {
+    match violation {
+        Violation::Markdown(markdown) => emit_markdown(cx, hir_id, span, markdown),
+        Violation::MissingOverride => emit_missing_override(cx, hir_id, span),
+    }
+}
+
+fn emit_markdown(
+    cx: &LateContext<'_>,
+    hir_id: hir::HirId,
+    span: Span,
+    markdown: &MarkdownViolation,
+) {
+    let MarkdownViolation {
+        category,
+        soft,
+        replacement,
+    } = markdown;
+    let label = category.label();
+    if *soft {
         span_lint_hir_and_then(
             cx,
             CLAP_HELP_MARKDOWN,
@@ -263,11 +337,11 @@ fn emit(cx: &LateContext<'_>, hir_id: hir::HirId, span: Span, violation: &Violat
         span,
         format!("{label} in a clap-derived doc comment leaks into `--help` output"),
         |diag| {
-            if let Some(replacement) = &violation.replacement {
+            if let Some(replacement) = replacement {
                 diag.span_suggestion(
                     span,
                     "remove the code span",
-                    replacement.clone(),
+                    replacement.to_owned(),
                     Applicability::MachineApplicable,
                 );
             } else {
@@ -276,6 +350,22 @@ fn emit(cx: &LateContext<'_>, hir_id: hir::HirId, span: Span, violation: &Violat
                      (e.g. `#[arg(help = \"...\")]`) or remove the markdown from the doc comment",
                 );
             }
+        },
+    );
+}
+
+fn emit_missing_override(cx: &LateContext<'_>, hir_id: hir::HirId, span: Span) {
+    span_lint_hir_and_then(
+        cx,
+        CLAP_HELP_MARKDOWN,
+        hir_id,
+        span,
+        "clap derives `--help` from this doc comment instead of an explicit override",
+        |diag| {
+            diag.help(
+                "override the help text with a plain string \
+                 (e.g. `#[arg(help = \"...\")]` or `#[command(about = \"...\")]`)",
+            );
         },
     );
 }

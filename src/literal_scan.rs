@@ -1,35 +1,7 @@
-//! Helpers shared by rules that scan string-literal / comment text.
-//!
-//! [`emit_flagged_chars`] is used by the Unicode-ellipsis rules that
-//! scan a contiguous stretch of text (`unicode_ellipsis_in_comments`
-//! and `unicode_ellipsis_in_panic_messages`): walk it, emit a
-//! diagnostic for each flagged character, and offer the same `...`
-//! autofix. The per-character logic is identical; the only per-rule
-//! pieces are the lint name, a context label, and how to turn a byte
-//! offset within the text into a [`Span`].
-//!
-//! [`emit_flagged_char`] is the single-character core, factored out so
-//! a rule that does its own scanning — `unicode_ellipsis_in_docs`,
-//! which must consult a markdown code-region mask and a fallible
-//! span map before emitting — shares the exact message, suggestion,
-//! and applicability without duplicating them.
-//!
-//! [`string_literal_quote_lengths`] is the companion parser for any
-//! rule that needs to scan a string-literal body without its opening
-//! and closing delimiters. Currently used only by
-//! `unicode_ellipsis_in_panic_messages`'s literal scanner, but it
-//! sits here rather than inside that rule because the shape it
-//! recognises (plain and raw display strings) is a generic property
-//! of Rust string literals, not specific to ellipsis detection.
-//!
-//! [`take_string_escape`] is the escape-aware front-of-body scanner
-//! shared by every rule that walks a *cooked* string literal's body
-//! and must tell a real backslash escape (`\n`, `\\`, `\xNN`,
-//! `\u{...}`, a line continuation, ...) apart from the bytes around
-//! it. `avoidable_string_escapes` uses it to bail on the first non-eligible
-//! escape; `overly_long_print_macro` uses it to locate the `\n` escapes it
-//! folds without being fooled by `\\n` (an escaped backslash followed
-//! by the letter `n`, which is *not* a newline).
+//! Helpers shared by rules that scan string-literal / comment text:
+//! the Unicode-ellipsis diagnostic emitters, a string-literal
+//! delimiter parser, and an escape-aware body scanner. Each carries
+//! its own doc.
 
 use clippy_utils::diagnostics::{span_lint_and_sugg, span_lint_hir_and_then};
 use rustc_errors::Applicability;
@@ -48,14 +20,7 @@ use rustc_span::Span;
 /// comment scanner, a `BytePos`-arithmetic offset from a literal span
 /// for the panic-message scanner).
 ///
-/// Applicability is [`MachineApplicable`] for U+2026 (the rule's
-/// primary target, which always maps cleanly to `...`) and
-/// [`MaybeIncorrect`] for any user-configured `extra_flagged_chars`
-/// entries (whose visual equivalence to `...` is up to the project to
-/// assert).
-///
-/// [`MachineApplicable`]: Applicability::MachineApplicable
-/// [`MaybeIncorrect`]: Applicability::MaybeIncorrect
+/// Applicability comes from [`flagged_char_applicability`].
 pub(crate) fn emit_flagged_chars<Cx>(
     lint_context: &Cx,
     lint: &'static Lint,
@@ -77,20 +42,10 @@ pub(crate) fn emit_flagged_chars<Cx>(
 }
 
 /// Emit a single flagged-character diagnostic at `span`, suggesting
-/// the ASCII `...` replacement. Factored out of [`emit_flagged_chars`]
-/// so rules that run their own scan loop (the doc-comment scanner,
-/// which filters against a code-region mask and a fallible span map)
-/// reuse the same message text and applicability.
+/// the ASCII `...` replacement.
 ///
-/// Applicability is [`MachineApplicable`] for U+2026 (the rules'
-/// primary target, which always maps cleanly to `...`) and
-/// [`MaybeIncorrect`] for any user-configured `extra_flagged_chars`
-/// entry (whose visual equivalence to `...` is up to the project to
-/// assert).
-///
-/// [`MachineApplicable`]: Applicability::MachineApplicable
-/// [`MaybeIncorrect`]: Applicability::MaybeIncorrect
-pub(crate) fn emit_flagged_char<Cx>(
+/// Applicability comes from [`flagged_char_applicability`].
+fn emit_flagged_char<Cx>(
     lint_context: &Cx,
     lint: &'static Lint,
     character: char,
@@ -110,14 +65,12 @@ pub(crate) fn emit_flagged_char<Cx>(
     );
 }
 
-/// HIR-anchored counterpart of [`emit_flagged_char`] for the
-/// comment-scanning rules (`unicode_ellipsis_in_comments` and
-/// `unicode_ellipsis_in_docs`). They run in a late pass and emit at the
-/// comment's enclosing HIR node — resolved by
+/// HIR-anchored counterpart of [`emit_flagged_char`], for a rule that
+/// runs in a late pass and emits at the enclosing HIR node of the
+/// comment it scanned — resolved by
 /// [`crate::enclosing_hir::emit_at_enclosing_hir`] — so a per-item /
 /// per-module `#[allow]` / `#[expect]` resolves, not just a crate-root
-/// `#![allow]`. The message, suggestion, and applicability match
-/// [`emit_flagged_char`] exactly.
+/// `#![allow]`.
 pub(crate) fn emit_flagged_char_hir(
     lint_context: &LateContext<'_>,
     lint: &'static Lint,

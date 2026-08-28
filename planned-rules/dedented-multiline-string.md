@@ -337,7 +337,7 @@ let s = include_str!("fixtures/create/justfile");
 ## Configuration
 
 ```toml
-[perfectionist::dedented_multiline_string]
+["perfectionist::dedented_multiline_string"]
 # Which fixes the diagnostic offers. All on by default, so the
 # diagnostic shows them as alternatives and `cargo dylint --fix`
 # applies none (each is `MaybeIncorrect`). Set exactly one to `true`
@@ -395,8 +395,8 @@ format_macros = [
   cases, and a `tcx.hir_parents(...)` walk for the attribute case.
 - **Proc-macro suppression.** The diagnostic's primary span is the
   **whole literal**, which is wider than the synthesised-identifier
-  spans the "Suppressing proc-macro-synthesised violations" section
-  of [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  spans that the
+  [suppression convention](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations)
   warns about. By the "vulnerable exactly when the diagnostic span
   is narrower than the offending node" test, this rule is **not**
   vulnerable: `declare_tool_lint! { … report_in_external_macro: false }`

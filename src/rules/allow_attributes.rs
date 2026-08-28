@@ -1,5 +1,5 @@
 use crate::common::{DefaultState, render_meta_path, resolve_string_set, resolved_state};
-use clippy_utils::diagnostics::{span_lint_and_help, span_lint_and_sugg};
+use clippy_utils::diagnostics::{span_lint_and_help, span_lint_and_then};
 use clippy_utils::is_from_proc_macro;
 use clippy_utils::source::{indent_of, snippet_opt};
 use rustc_ast::{AttrStyle, Attribute, Item, ItemKind, MetaItem, MetaItemInner, MetaItemKind};
@@ -15,18 +15,21 @@ mod tests;
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Rewrites `#[allow(<lints>)]` to `#[expect(<lints>)]` when every
-    /// named lint fires deterministically — a built-in rustc lint (not
-    /// on the exempt list), a `clippy::*` / `rustdoc::*` lint, or a
-    /// tool-namespaced lint such as `perfectionist::*`. The
-    /// `cfg_attr`-wrapped form (`#[cfg_attr(<cfg>, allow(...))]`) is
-    /// rewritten in place, swapping only the inner `allow` identifier.
+    /// Flags `#[allow(<lints>)]` when every named lint fires
+    /// deterministically — a built-in rustc lint (not on the exempt
+    /// list), a `clippy::*` / `rustdoc::*` lint, or a tool-namespaced
+    /// lint such as `perfectionist::*`. Such a suppression can be
+    /// resolved two ways:
     ///
-    /// When an attribute mixes a rewriteable lint with a
-    /// non-rewriteable one (an exempt-list entry or an unknown lint),
-    /// it is split: the non-rewriteable names stay under `#[allow]` and
-    /// the rewriteable ones move to a new `#[expect]`, copying the
-    /// `reason` field to each.
+    /// 1. **Remove** it — when the lint can no longer fire at the site
+    ///    (a dead suppression, e.g. `clippy::too_many_arguments` left on
+    ///    a function that has since shed its arguments).
+    /// 2. **Replace** it with `#[expect]` — when the lint still fires and
+    ///    you want the suppression to report itself the moment it stops.
+    ///
+    /// If the attribute also names a lint the rule leaves alone (an
+    /// exempt or unknown lint), only the deterministic names are
+    /// resolved; the rest stay under `#[allow]`.
     ///
     /// Crate- and module-level scopes (`#![allow(...)]`, and outer
     /// `#[allow(...)]` on a `mod` item) are left alone by default,
@@ -52,14 +55,15 @@ declare_tool_lint! {
     ///
     /// `clippy::allow_attributes` (`restriction`, off by default)
     /// also pushes `#[allow]` towards `#[expect]`, but rewrites
-    /// *every* `#[allow]` indiscriminately. This rule converts only
-    /// the lints that fire **deterministically**, leaving lint groups
-    /// and conditionally-firing lints under `#[allow]` (splitting a
-    /// mixed attribute in two), so the `#[expect]` it produces is
-    /// always fulfilled rather than a fresh
-    /// `unfulfilled_lint_expectations` warning. Reach for this rule
-    /// for that precision, or `clippy::allow_attributes` for a blunt
-    /// crate-wide sweep.
+    /// *every* `#[allow]` indiscriminately, and only towards `#[expect]`.
+    /// This rule flags only the lints that fire **deterministically**,
+    /// leaving lint groups and conditionally-firing lints under
+    /// `#[allow]`. Crucially, it does not assume `#[expect]` is always
+    /// the answer: a deterministic `#[allow]` may already be dead, in
+    /// which case `#[expect]` would be unfulfilled and removal is the
+    /// right fix, so the rule offers both. Reach for this rule for that
+    /// precision, or `clippy::allow_attributes` for a blunt crate-wide
+    /// sweep.
     ///
     /// ### Example
     ///
@@ -78,7 +82,7 @@ declare_tool_lint! {
     /// ```
     pub perfectionist::ALLOW_ATTRIBUTES,
     Warn,
-    "`#[allow]` for a deterministically-firing lint should be `#[expect]`",
+    "`#[allow]` for a deterministically-firing lint should be removed or be `#[expect]`",
     report_in_external_macro: false
 }
 
@@ -311,10 +315,11 @@ impl AllowAttributes {
 
     /// Apply the rule to a single `allow(...)` invocation.
     ///
-    /// `ident_span` covers the `allow` keyword (the anchor for the
-    /// simple swap). `attr_span` / `attr_style` locate the whole
-    /// attribute (used to render the split rewrite). `args` is the
-    /// attribute's argument list.
+    /// `ident_span` covers the `allow` keyword; it anchors the
+    /// diagnostic and is the target of the `expect` swap. `attr_span` /
+    /// `attr_style` locate the whole attribute, used to classify its
+    /// container and render the removal / split suggestions. `args` is
+    /// the attribute's argument list.
     fn check_allow(
         &self,
         lint_context: &EarlyContext<'_>,
@@ -348,40 +353,35 @@ impl AllowAttributes {
             }
         }
 
-        // Nothing deterministic to move — leave the attribute as-is.
+        // Nothing deterministic to act on — leave the attribute as-is.
         if rewriteable.is_empty() {
             return;
         }
 
         let reason_snippet = reason.and_then(|meta| snippet_opt(lint_context, meta.span));
+        let container = container_of(lint_context, attr_span, attr_style);
 
         if kept.is_empty() {
-            // Every named lint is rewriteable: a one-word swap.
-            span_lint_and_sugg(
-                lint_context,
-                ALLOW_ATTRIBUTES,
-                ident_span,
-                "this `#[allow]` can be `#[expect]` so the suppression self-cleans",
-                "replace `allow` with `expect`",
-                "expect".to_owned(),
-                Applicability::MaybeIncorrect,
-            );
+            // Every named lint is rewriteable: offer removal of the whole
+            // suppression or a one-word `allow` -> `expect` swap.
+            self.emit_simple(lint_context, ident_span, container.as_ref());
             return;
         }
 
-        // Mixed: split the rewriteable lints into a separate `#[expect]`.
-        // The textual rewrite needs the source snippet to place the new
-        // attribute (bare vs inside a `cfg_attr` arg list) and to copy
-        // the `reason` verbatim. If either is unavailable — only
-        // reachable for spans `is_from_proc_macro` somehow let through —
-        // flag the site without an autofix rather than risk emitting a
-        // rewrite that drops the reason or injects `#[..]` inside a
-        // `cfg_attr`.
+        // Mixed: act on the rewriteable lints only — drop them, or split
+        // them into a separate `#[expect]`. The textual rewrite needs the
+        // source snippet to place the new attribute (bare vs inside a
+        // `cfg_attr` arg list) and to copy the `reason` verbatim. If
+        // either is unavailable — only reachable for spans
+        // `is_from_proc_macro` somehow let through — flag the site without
+        // a structured suggestion rather than risk a rewrite that drops
+        // the reason or injects `#[..]` inside a `cfg_attr`.
         let reason_recoverable = reason.is_none() || reason_snippet.is_some();
-        match container_of(lint_context, attr_span, attr_style) {
+        match container {
             Some(container) if reason_recoverable => self.emit_split(
                 lint_context,
-                container,
+                ident_span,
+                &container,
                 &kept,
                 &rewriteable,
                 reason_snippet.as_deref(),
@@ -418,39 +418,111 @@ impl AllowAttributes {
         }
     }
 
+    /// Emit the lint for a simple `#[allow]` whose every named lint is
+    /// rewriteable, offering the two resolutions a deterministic
+    /// suppression has. The lint might still fire here (so `#[expect]`
+    /// keeps the suppression and makes it self-clean) or might be long
+    /// dead (so the suppression should go) — the rule can't tell which,
+    /// so both are `MaybeIncorrect` hints for the author to choose.
+    fn emit_simple(
+        &self,
+        lint_context: &EarlyContext<'_>,
+        ident_span: Span,
+        container: Option<&Container>,
+    ) {
+        // Removal is only offered for a bare attribute; the inner `allow`
+        // of a `cfg_attr` can't be deleted without dropping its `cfg`
+        // wrapper. When it isn't offered, the `#[expect]` suggestion drops
+        // its "otherwise" lead-in, which would otherwise dangle with no
+        // alternative to contrast against.
+        let removable = matches!(container, Some(Container::Bare { .. }));
+        let replace_help = if removable {
+            "otherwise replace `allow` with `expect`, which warns once the lint stops firing"
+        } else {
+            "replace `allow` with `expect`, which warns once the lint stops firing"
+        };
+        span_lint_and_then(
+            lint_context,
+            ALLOW_ATTRIBUTES,
+            ident_span,
+            "this `#[allow]` stays silent even after its lint stops firing",
+            |diag| {
+                // Resolution 1: remove the suppression — correct when the
+                // lint can no longer fire here. Only a bare attribute can
+                // be deleted outright; the inner `allow` of a `cfg_attr`
+                // can't go without dropping its `cfg` wrapper, so removal
+                // is left to the author in that case.
+                if let Some(Container::Bare { span, .. }) = container {
+                    diag.span_suggestion(
+                        *span,
+                        "remove the suppression if its lint can no longer fire here",
+                        String::new(),
+                        Applicability::MaybeIncorrect,
+                    );
+                }
+                // Resolution 2: keep the suppression but make it report
+                // once the lint stops firing.
+                diag.span_suggestion(
+                    ident_span,
+                    replace_help,
+                    "expect".to_owned(),
+                    Applicability::MaybeIncorrect,
+                );
+            },
+        );
+    }
+
+    /// Emit the lint for a mixed `#[allow]`, acting on the rewriteable
+    /// lints only: drop them, or split them into a separate `#[expect]`.
+    /// The kept (non-rewriteable) names stay under `#[allow]` either way.
+    /// Like [`Self::emit_simple`], both are `MaybeIncorrect` hints.
     fn emit_split(
         &self,
         lint_context: &EarlyContext<'_>,
-        container: Container,
+        ident_span: Span,
+        container: &Container,
         kept: &[String],
         rewriteable: &[String],
         reason: Option<&str>,
     ) {
-        let allow_body = render_invocation("allow", kept, reason);
-        let expect_body = render_invocation("expect", rewriteable, reason);
-        let (span, replacement) = match container {
-            Container::CfgAttrInner { span } => (span, format!("{allow_body}, {expect_body}")),
-            Container::Bare { span, style } => {
-                let hash = match style {
-                    AttrStyle::Inner => "#!",
-                    AttrStyle::Outer => "#",
-                };
-                let pad = " ".repeat(indent_of(lint_context, span).unwrap_or(0));
-                (
-                    span,
-                    format!("{hash}[{allow_body}]\n{pad}{hash}[{expect_body}]"),
-                )
-            }
-        };
-        span_lint_and_sugg(
+        let span = container.span();
+        let drop_rewriteable = render_attrs(lint_context, container, &[("allow", kept)], reason);
+        let split = render_attrs(
+            lint_context,
+            container,
+            &[("allow", kept), ("expect", rewriteable)],
+            reason,
+        );
+        span_lint_and_then(
             lint_context,
             ALLOW_ATTRIBUTES,
-            span,
-            "the deterministically-firing lints here can move to `#[expect]`",
-            "split the deterministic lints into a separate `#[expect]`",
-            replacement,
-            Applicability::MaybeIncorrect,
+            ident_span,
+            "some lints in this `#[allow]` stay silent even after they stop firing",
+            |diag| {
+                diag.span_suggestion(
+                    span,
+                    "drop them from the `#[allow]` if they can no longer fire here",
+                    drop_rewriteable,
+                    Applicability::MaybeIncorrect,
+                );
+                diag.span_suggestion(
+                    span,
+                    "otherwise split them into a separate `#[expect]` that self-cleans",
+                    split,
+                    Applicability::MaybeIncorrect,
+                );
+            },
         );
+    }
+}
+
+impl Container {
+    /// The span the suggestions replace — the whole bare attribute, or
+    /// the inner `allow(...)` item of a `cfg_attr`.
+    fn span(&self) -> Span {
+        match *self {
+            Container::Bare { span, .. } | Container::CfgAttrInner { span } => span,
+        }
     }
 }
 
@@ -474,18 +546,52 @@ fn container_of(
     })
 }
 
-/// Flag a mixed `#[allow]` without a machine-applicable suggestion,
-/// used when the source text needed to render a correct split rewrite
-/// is unavailable.
+/// Flag a mixed `#[allow]` without structured suggestions, used when the
+/// source text needed to render them is unavailable. Describes both
+/// resolutions in prose instead.
 fn emit_split_without_fix(lint_context: &EarlyContext<'_>, ident_span: Span) {
     span_lint_and_help(
         lint_context,
         ALLOW_ATTRIBUTES,
         ident_span,
-        "the deterministically-firing lints here can move to `#[expect]`",
+        "some lints in this `#[allow]` stay silent even after they stop firing",
         None,
-        "split the deterministic lints out into a separate `#[expect]`",
+        "drop them from the `#[allow]` if they can no longer fire here, or split them \
+         out into a separate `#[expect]` that self-cleans",
     );
+}
+
+/// Render the replacement text for a list of lint-control invocations
+/// (`("allow", names)`, `("expect", names)`) in the form `container`
+/// expects: standalone `#[..]` attributes for a bare `#[allow]`, or a
+/// comma-joined `allow(..), expect(..)` for the inner item of a
+/// `cfg_attr`. Groups with no names are skipped, so passing only a
+/// non-empty `("allow", kept)` renders the attribute with the
+/// rewriteable lints dropped.
+fn render_attrs(
+    lint_context: &EarlyContext<'_>,
+    container: &Container,
+    groups: &[(&str, &[String])],
+    reason: Option<&str>,
+) -> String {
+    let bodies = groups
+        .iter()
+        .filter(|(_, names)| !names.is_empty())
+        .map(|(keyword, names)| render_invocation(keyword, names, reason));
+    match container {
+        Container::CfgAttrInner { .. } => bodies.collect::<Vec<_>>().join(", "),
+        Container::Bare { span, style } => {
+            let hash = match style {
+                AttrStyle::Inner => "#!",
+                AttrStyle::Outer => "#",
+            };
+            let pad = " ".repeat(indent_of(lint_context, *span).unwrap_or(0));
+            bodies
+                .map(|body| format!("{hash}[{body}]"))
+                .collect::<Vec<_>>()
+                .join(&format!("\n{pad}"))
+        }
+    }
 }
 
 /// Render an `allow(...)` / `expect(...)` invocation from a list of
