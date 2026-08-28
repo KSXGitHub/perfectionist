@@ -27,11 +27,15 @@ use rustc_span::sym;
 /// function.
 ///
 /// The `#[test]` half is `clippy_utils::is_in_test_function`, which
-/// matches the *enclosing* function against the test descriptors rustc
-/// synthesises in the surrounding module. A `#[test]` function cannot
-/// itself take parameters, so for a parameter-shaped rule that half
-/// only ever fires on an item nested inside a test body — a helper
-/// `fn` declared in the test function's own block.
+/// matches the *enclosing* function by name against the test
+/// descriptors rustc synthesises in the surrounding module. Only a
+/// function rustc itself registered as a test matches, and one of
+/// those takes no parameters — so for a parameter-shaped rule this
+/// half fires only on an item nested inside a test body, a helper
+/// `fn` declared in the test function's own block. A test written
+/// with a third-party attribute is *not* matched by it and reaches
+/// the `cfg` half instead; see "Third-party test attributes" in
+/// `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
 ///
 /// The `cfg` half checks `id` itself as well as its ancestors, unlike
 /// `clippy_utils::is_in_cfg_test`, which starts at the parent: a

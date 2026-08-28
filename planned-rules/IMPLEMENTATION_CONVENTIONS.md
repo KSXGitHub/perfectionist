@@ -347,6 +347,48 @@ than rewriting the predicate: under a negation an `all` behaves like
 an `any` and vice versa, which is De Morgan applied on the fly, in
 one linear pass with no allocation.
 
+### Third-party test attributes
+
+`#[rstest]`, `#[test_case]` and their kin do not make the author's
+function a `#[test]` function. They leave it an ordinary `fn` and
+generate a sibling module holding the `#[test]` wrappers that call
+it:
+
+```rust
+// What the author writes.
+#[test_case("a")]
+fn upper(text: &str) -> String {
+    text.to_uppercase()
+}
+
+// Roughly what reaches the lint pass.
+fn upper(text: &str) -> String {
+    text.to_uppercase()
+}
+mod upper {
+    #[test]
+    fn _a_expects() {
+        super::upper("a");
+    }
+}
+```
+
+Consequences for a rule that exempts test code:
+
+- `in_test_code`'s `#[test]` half does not match `upper`: the test
+  descriptors are named after the cases and live in a nested module.
+  The `cfg` half is what makes it test code, and in practice that is
+  enough — the attribute comes from a dev-dependency, which the
+  non-test build cannot resolve, so it can only appear under
+  `#[cfg(test)]` or in a test target.
+- Unlike a `#[test]` function, `upper` takes parameters, so a rule
+  over signatures does see them. Whether it also *fires* on them is a
+  property of the framework, not of the rule: `test_case` re-emits the
+  signature with the author's spans and reaches the rule, while
+  `rstest` rewrites it to strip `#[case]` and is suppressed by
+  `crate::common::hir_in_external_macro`. Never lean on that guard for
+  the exemption.
+
 ### Why this is not a SAT problem
 
 Deciding `P → test` in general *is* co-NP-complete — it is

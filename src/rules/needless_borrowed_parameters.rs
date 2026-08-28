@@ -67,6 +67,13 @@ declare_tool_lint! {
     /// documentation readers copy, so it is held to the library's
     /// standard.
     ///
+    /// A test written with a third-party attribute — `#[rstest]`,
+    /// `#[test_case]` and the like — is covered by the `#[cfg(test)]`
+    /// clause rather than the `#[test]` one. Those attributes leave the
+    /// author's function an ordinary parameter-taking `fn` and put the
+    /// generated `#[test]` wrappers beside it, so it is the function's
+    /// gate, not its own attribute, that exempts it.
+    ///
     /// The rule can only see `#[cfg(test)]` code at all in a build
     /// where `cfg(test)` is active — the unit-test target that
     /// `cargo dylint -- --all-targets` adds. Without that flag such
