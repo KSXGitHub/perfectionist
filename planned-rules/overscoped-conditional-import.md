@@ -232,7 +232,7 @@ untouched (see *Implementation notes*).
 # Active by default. Disable globally via `[perfectionist].disable`.
 # The rule has a single direction (sink a conditional import into the
 # gated scope that uses it), so there is no `style` knob.
-[perfectionist::overscoped_conditional_import]
+["perfectionist::overscoped_conditional_import"]
 # (no configuration)
 ```
 

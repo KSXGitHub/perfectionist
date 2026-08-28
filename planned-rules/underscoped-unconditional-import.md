@@ -136,13 +136,12 @@ certain.
 
 - **Well-known collision-prone paths** — a configurable default list
   (condition (4)). Even when *this* module has no actual second
-  `Write` in scope, a handful of paths are conventionally kept
-  function-local because hoisting them is collision-prone or
-  ambiguity-inviting as the module grows. The canonical pair is
-  `core::fmt::Write` vs. `std::io::Write` (and `std::fmt::Write` vs.
-  `std::io::Write`); the default set also includes the analogous
-  `fmt::Result` vs. `io::Result` pair. The list is tunable via the
-  `extra` / `ignore` knobs (see *Configuration*).
+  `Write` in scope, some paths are conventionally kept function-local
+  because hoisting them is collision-prone or ambiguity-inviting as
+  the module grows — the classic case being the several `Write`
+  traits (`std::io::Write` vs. `core::fmt::Write`). The authoritative
+  default set, and the `extra` / `ignore` knobs that tune it, live in
+  *Configuration*.
 
 - **Glob imports** (`use foo::*;`). A glob has no single leaf to
   re-point and changes name resolution wholesale when hoisted, so it
@@ -184,11 +183,11 @@ certain.
 # Active by default. Disable globally via `[perfectionist].disable`.
 # The rule has a single direction (hoist a collision-free unconditional
 # import to module scope), so there is no `style` knob.
-[perfectionist::underscoped_unconditional_import]
+["perfectionist::underscoped_unconditional_import"]
 
 # Paths kept function-local even when no actual collision exists in
 # the module, because hoisting them is collision-prone or ambiguity-
-# inviting. The default set is built in; the two knobs below extend
+# inviting. The default set is built in; the knobs below extend
 # and trim it, following the `extra` / `ignore` paradigm used by
 # `perfectionist::macro_trailing_comma` (`extra_macros` / `ignore`) and
 # `perfectionist::impure_macro_arguments`
@@ -203,8 +202,8 @@ certain.
 #
 # Entries are path strings matched against the import's resolved path,
 # subject to the leading-`::` absolute-vs-relative convention in
-# IMPLEMENTATION_CONVENTIONS.md ("Path-shaped config values"); reuse
-# `src/abs_path.rs` for the matching.
+# IMPLEMENTATION_CONVENTIONS.md; reuse `src/abs_path.rs` for the
+# matching.
 
 # Additional paths to keep function-local (added to the built-in set).
 extra_keep_local = []
