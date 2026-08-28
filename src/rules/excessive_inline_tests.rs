@@ -41,12 +41,11 @@ declare_tool_lint! {
     ///
     /// ### Why restrict this?
     ///
-    /// This is a stylistic preference, not a correctness issue. Both
-    /// source projects keep large test suites out of the production
-    /// file, so the file an editor tab, a `grep` hit, or a diff shows
-    /// is production code rather than a wall of fixtures. The threshold
-    /// is deliberately configurable because the exact budget varies by
-    /// project.
+    /// This is a stylistic preference, not a correctness issue. Keeping
+    /// a large test suite out of the production file means the file an
+    /// editor tab, a `grep` hit, or a diff shows is production code
+    /// rather than a wall of fixtures. The threshold is deliberately
+    /// configurable because the exact budget varies by project.
     ///
     /// ### Example
     ///

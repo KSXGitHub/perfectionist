@@ -38,12 +38,11 @@ untouched.
 
 ## Why restrict this?
 
-This is a stylistic preference, not a correctness issue. Both
-source projects keep large test suites out of the production
-file, so the file an editor tab, a `grep` hit, or a diff shows
-is production code rather than a wall of fixtures. The threshold
-is deliberately configurable because the exact budget varies by
-project.
+This is a stylistic preference, not a correctness issue. Keeping
+a large test suite out of the production file means the file an
+editor tab, a `grep` hit, or a diff shows is production code
+rather than a wall of fixtures. The threshold is deliberately
+configurable because the exact budget varies by project.
 
 ## Example
 
@@ -99,10 +98,9 @@ How inline test code is treated (the `inline_style` knob).
 ##### `"external_only"` (Rust: `ExternalOnly`)
 
 Every inline test item is flagged; all test code must move to an
-external `mod <name>;`. Matches pacquet's strict policy.
+external `mod <name>;`, whatever its length.
 
 ##### `"external_when_long"` (Rust: `ExternalWhenLong`)
 
 Inline test code is allowed up to the configured budget; beyond
-that it must move to a file. Matches parallel-disk-usage's
-guidance.
+that it must move to an external `mod <name>;`.
