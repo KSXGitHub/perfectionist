@@ -16,9 +16,9 @@ const LINT_NAME: &str = "perfectionist::unpinned_repo_ref";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/// The rule's user-facing configuration shape, mirrored here for
-/// serialisation so the test surface stays independent of the lint's
-/// private `Config` struct.
+/// Serialisation shim for the rule's `dylint.toml` configuration,
+/// which the test crate cannot build from the lint's own private
+/// `Config`.
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]

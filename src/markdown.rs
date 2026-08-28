@@ -1,41 +1,21 @@
-//! Markdown scanners shared by sibling rules that walk doc-comment
-//! text. Two consumer tiers sit on the same `take_*` combinators (see
-//! the "Markdown parsing" section of
-//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`):
+//! Markdown scanners for rules that walk doc-comment text, per the
+//! markdown-parsing convention in
+//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`. Consumers divide by
+//! how much structure they need:
 //!
-//! - **Tier A — structural classification.** [`scan_skip_regions`]
-//!   produces a vector of byte-range skip regions the consumer
-//!   (`bare_url`, `bare_email`, `bare_issue_reference`) applies as a
-//!   post-filter before emitting diagnostics. [`classify_constructs`]
-//!   is the richer Tier A entry point: it returns every construct's
-//!   byte range *and* its [`ConstructKind`], which
-//!   `clap_help_markdown` maps onto its forbidden-construct
-//!   categories. [`scan_code_span_candidates`] is the narrow one,
-//!   returning just the code spans `bare_identifier_reference`
-//!   inspects.
-//! - **Tier B — code-region mask.** [`scan_code_regions`] returns only
-//!   the byte ranges of code spans and code blocks, for rules
-//!   (`unicode_ellipsis_in_docs`, `unpinned_repo_ref`) that just need
-//!   to exclude code from a prose scan rather than classify every
-//!   construct.
+//! - **Tier A — structural classification.** [`classify_constructs`]
+//!   returns every construct's range *and* its [`ConstructKind`];
+//!   [`scan_skip_regions`] returns ranges to post-filter candidate
+//!   diagnostics against; [`scan_code_span_candidates`] returns the
+//!   code spans themselves, as targets.
+//! - **Tier B — code-region mask.** [`scan_code_regions`] returns the
+//!   ranges of code spans and code blocks, for a rule that only needs
+//!   code excluded from a prose scan.
 //!
-//! The implementation is a hand-written parser-combinator walk per
-//! the convention documented in
-//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`. The recognised
-//! constructs are:
-//!
-//! - `` `...` `` code spans.
-//! - ` ``` ... ``` ` and `~~~ ... ~~~` fenced code blocks.
-//! - 4-space-indented code blocks.
-//! - `<...>` autolinks.
-//! - `[text](dest)` inline links.
-//! - `[text][id]` reference-style links.
-//! - `[id]: dest` reference-link definitions.
-//! - `<tag ...>` / `</tag>` / `<!-- ... -->` HTML.
-//! - ATX (`# h`) and Setext (`h\n===`) headings.
-//! - `**bold**` / `*italic*` emphasis and bullet / ordered list
-//!   markers (only when [`classify_constructs`] is asked for them; see
-//!   [`ClassifyOptions`]).
+//! The implementation is a hand-written parser-combinator walk; one
+//! `take_*` per construct recognised. Emphasis and list markers are
+//! matched only when [`classify_constructs`] is asked for them (see
+//! [`ClassifyOptions`]).
 
 use core::ops::Range;
 
@@ -138,9 +118,8 @@ pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
 /// Tier B code-region mask: the byte ranges of CommonMark code
 /// regions — inline code spans and block-level code (fenced and
 /// four-space-indented blocks, which is where doc-test code lives).
-/// Used by rules that scan doc-comment prose and need only to exclude
-/// code from the scan, not classify every construct
-/// (`unicode_ellipsis_in_docs`, `unpinned_repo_ref`).
+/// For a rule that scans prose and needs only to exclude code from
+/// the scan, not classify every construct.
 ///
 /// Block-level code is always part of the mask. `include_code_spans`
 /// controls whether inline `` `...` `` spans are masked too: the
@@ -216,9 +195,8 @@ pub(crate) fn scan_code_regions(input: &str, include_code_spans: bool) -> Vec<Sk
 /// inside `` [`Foo`] `` is skipped, having already been swallowed by
 /// [`take_link`]) but never recorded — only the surviving bare code
 /// spans are returned. Pulling a Rust identifier out of each range's
-/// body is left to the consuming rule (`bare_identifier_reference`), per the
-/// "Markdown parsing" convention that Rust-aware extraction lives in
-/// the rule, not in this helper.
+/// body is left to the consuming rule, per
+/// `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
 ///
 /// Like [`scan_skip_regions`], the returned ranges are sorted by start
 /// byte and never overlap.
@@ -630,7 +608,7 @@ fn take_link(input: &str) -> Option<usize> {
 
 /// Like [`take_link`] but also reports which [`LinkForm`] matched. The
 /// length is identical; the form lets a structural-classification
-/// consumer distinguish the three link shapes.
+/// consumer distinguish the link shapes.
 fn classify_link(input: &str) -> Option<(LinkForm, usize)> {
     let bytes = input.as_bytes();
     if bytes.first() != Some(&b'[') {
@@ -727,10 +705,9 @@ pub(crate) struct Construct {
 }
 
 /// The kind of a [`Construct`] — the full Tier A structural taxonomy
-/// (see the "Markdown parsing" section of
-/// `planned-rules/IMPLEMENTATION_CONVENTIONS.md`). `clap_help_markdown`
-/// maps each kind onto a user-facing "forbidden construct" category and
-/// decides per kind whether to flag it.
+/// (see `planned-rules/IMPLEMENTATION_CONVENTIONS.md`). A consumer
+/// maps each kind onto its own user-facing category and decides per
+/// kind whether to flag it.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum ConstructKind {
     /// `` `code` `` inline code span.
