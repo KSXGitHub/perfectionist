@@ -120,8 +120,8 @@ configured.
 
 A recognised git-hosting service. The chosen forge fixes the
 issue / PR URL layout. It can be given explicitly (needed for a
-self-hosted instance, whose host isn't recognised) or detected
-from the repository's host via [`Forge::detect`].
+self-hosted instance, whose host isn't recognised) or left unset
+and detected from the `repository` host.
 
 ##### `"github"` (Rust: `GitHub`)
 

@@ -7,11 +7,10 @@ use std::collections::BTreeSet;
 
 /// A markdown construct category the rule can be configured to forbid,
 /// as it appears in the `extra_constructs` / `ignore_constructs` arrays
-/// of `dylint.toml`. The coarse policy counterpart to the scanner's
-/// fine-grained [`ConstructKind`]: several kinds map onto one category
-/// via [`ConstructCategory::from_kind`] — `reference_link` covers both a
-/// `[text][id]` link and its `[id]: dest` definition, and an autolink
-/// maps to nothing (it is never forbidden).
+/// of `dylint.toml`. A category is coarser than the constructs it
+/// names: `reference_link` covers both a `[text][id]` link and its
+/// `[id]: dest` definition, while an autolink (`<https://example.com>`)
+/// falls under no category at all and is never forbidden.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum ConstructCategory {

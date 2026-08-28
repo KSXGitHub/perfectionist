@@ -32,16 +32,14 @@ declare_tool_lint! {
     /// `into`, or `String::from(..)` and friends. Such a parameter
     /// should take the owned form directly.
     ///
-    /// Only the conservative single-use case is implemented: the
+    /// Only the conservative single-use case is flagged: the
     /// parameter must be referenced exactly once, that use must be the
     /// conversion, and the conversion must execute unconditionally — no
     /// `if` / `match` / loop, closure, or short-circuiting `&&` / `||`
     /// may sit between it and the enclosing function. This is
     /// deliberately conservative: even the always-executed `if`
     /// condition and `match` scrutinee positions count as
-    /// disqualifying, not just the branch arms. The broader
-    /// dominance-analysis cases described in
-    /// `planned-rules/needless-borrowed-parameters.md` are still pending.
+    /// disqualifying, not just the branch arms.
     ///
     /// ### Where it does not apply
     ///
