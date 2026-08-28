@@ -5,22 +5,25 @@
 **Default state:** `active`  
 **Source:** [`src/rules/allow_attributes.rs`](../src/rules/allow_attributes.rs)
 
-> `#[allow]` for a deterministically-firing lint should be `#[expect]`
+> `#[allow]` for a deterministically-firing lint should be removed or be `#[expect]`
 
 ## What it does
 
-Rewrites `#[allow(<lints>)]` to `#[expect(<lints>)]` when every
-named lint fires deterministically — a built-in rustc lint (not
-on the exempt list), a `clippy::*` / `rustdoc::*` lint, or a
-tool-namespaced lint such as `perfectionist::*`. The
-`cfg_attr`-wrapped form (`#[cfg_attr(<cfg>, allow(...))]`) is
-rewritten in place, swapping only the inner `allow` identifier.
+Flags `#[allow(<lints>)]` when every named lint fires
+deterministically — a built-in rustc lint (not on the exempt
+list), a `clippy::*` / `rustdoc::*` lint, or a tool-namespaced
+lint such as `perfectionist::*`. Such a suppression can be
+resolved two ways:
 
-When an attribute mixes a rewriteable lint with a
-non-rewriteable one (an exempt-list entry or an unknown lint),
-it is split: the non-rewriteable names stay under `#[allow]` and
-the rewriteable ones move to a new `#[expect]`, copying the
-`reason` field to each.
+1. **Remove** it — when the lint can no longer fire at the site
+   (a dead suppression, e.g. `clippy::too_many_arguments` left on
+   a function that has since shed its arguments).
+2. **Replace** it with `#[expect]` — when the lint still fires and
+   you want the suppression to report itself the moment it stops.
+
+If the attribute also names a lint the rule leaves alone (an
+exempt or unknown lint), only the deterministic names are
+resolved; the rest stay under `#[allow]`.
 
 Crate- and module-level scopes (`#![allow(...)]`, and outer
 `#[allow(...)]` on a `mod` item) are left alone by default,
@@ -46,14 +49,15 @@ issue is observed rather than hidden.
 
 `clippy::allow_attributes` (`restriction`, off by default)
 also pushes `#[allow]` towards `#[expect]`, but rewrites
-*every* `#[allow]` indiscriminately. This rule converts only
-the lints that fire **deterministically**, leaving lint groups
-and conditionally-firing lints under `#[allow]` (splitting a
-mixed attribute in two), so the `#[expect]` it produces is
-always fulfilled rather than a fresh
-`unfulfilled_lint_expectations` warning. Reach for this rule
-for that precision, or `clippy::allow_attributes` for a blunt
-crate-wide sweep.
+*every* `#[allow]` indiscriminately, and only towards `#[expect]`.
+This rule flags only the lints that fire **deterministically**,
+leaving lint groups and conditionally-firing lints under
+`#[allow]`. Crucially, it does not assume `#[expect]` is always
+the answer: a deterministic `#[allow]` may already be dead, in
+which case `#[expect]` would be unfulfilled and removal is the
+right fix, so the rule offers both. Reach for this rule for that
+precision, or `clippy::allow_attributes` for a blunt crate-wide
+sweep.
 
 ## Example
 

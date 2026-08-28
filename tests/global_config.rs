@@ -1,5 +1,5 @@
 //! Integration tests for the crate-wide `[perfectionist]` table in
-//! `dylint.toml`. The per-rule `[perfectionist::<rule>]` tables are
+//! `dylint.toml`. The per-rule `["perfectionist::<rule>"]` tables are
 //! exercised by each rule's own `tests/<rule>.rs`; these tests live
 //! here because they're about the global table, which isn't tied to
 //! any one rule.

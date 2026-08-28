@@ -45,38 +45,26 @@ declare_tool_lint! {
 const CONFIG_KEY: &str = "perfectionist::unknown_perfectionist_lints";
 const TOOL_NAME: &str = "perfectionist";
 
-#[derive(Debug, serde::Deserialize)]
+/// The rule has no configuration knobs. Not dead code: the read
+/// below rejects a mistyped key in the rule's `dylint.toml` table,
+/// and gen-docs needs the struct for `Configuration: none.`
+#[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
-struct Config {
-    /// Maximum Levenshtein edit distance between an unknown
-    /// `perfectionist::*` name and a registered lint for the lint to
-    /// emit a "did you mean" suggestion. Defaults to `2`, which
-    /// catches single-character typos and short transpositions
-    /// without producing wild guesses. Set to `0` to disable
-    /// suggestions entirely.
-    suggestion_distance: u8,
-}
+struct Config {}
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            suggestion_distance: 2,
-        }
-    }
-}
+/// Maximum Levenshtein edit distance between an unknown
+/// `perfectionist::*` name and a registered lint for the latter to be
+/// offered as a "did you mean" hint.
+const SUGGESTION_DISTANCE: usize = 3;
 
 pub struct UnknownPerfectionistLints {
-    suggestion_distance: u8,
     registered_lints: Vec<String>,
 }
 
 impl UnknownPerfectionistLints {
     fn new(registered_lints: Vec<String>) -> Self {
-        let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        Self {
-            suggestion_distance: config.suggestion_distance,
-            registered_lints,
-        }
+        let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        Self { registered_lints }
     }
 }
 
@@ -199,14 +187,39 @@ impl UnknownPerfectionistLints {
             .any(|registered| registered == name)
     }
 
-    fn find_closest_match(&self, candidate: &str) -> Option<&str> {
-        if self.suggestion_distance == 0 {
-            return None;
+    /// The help line to attach to an unknown name, if there is anything
+    /// useful to say about it.
+    fn help_for(&self, candidate: &str) -> Option<String> {
+        // No registered lint name holds a non-ASCII character, so a
+        // candidate that does is not a near-miss of one and there is
+        // nothing to guess at. The character itself is the answer: a
+        // homoglyph is invisible in the source, and the codepoint is
+        // what identifies it. rustc words its own reports of such a
+        // character the same way, down to `'о' (U+043E)`.
+        if let Some(non_ascii) = candidate.chars().find(|character| !character.is_ascii()) {
+            let codepoint = u32::from(non_ascii);
+            // A combining mark would otherwise land on the quote and a
+            // zero-width character would render as nothing at all —
+            // both defeating the point of naming the character. rustc
+            // escapes it the same way: its `uncommon_codepoints` reads
+            // `identifier contains an uncommon character: '\u{951}'`.
+            let escaped = non_ascii.escape_debug();
+            return Some(format!(
+                "contains a non-ASCII character: '{escaped}' (U+{codepoint:04X})",
+            ));
         }
+        let suggested_name = self.find_closest_match(candidate)?;
+        Some(format!("did you mean `{TOOL_NAME}::{suggested_name}`?"))
+    }
+
+    /// The registered lint closest to `candidate`, within
+    /// [`SUGGESTION_DISTANCE`] edits of it. `candidate` must be ASCII;
+    /// [`Self::help_for`] rules out everything else beforehand.
+    fn find_closest_match(&self, candidate: &str) -> Option<&str> {
         let mut closest: Option<(&str, usize)> = None;
         for registered in &self.registered_lints {
-            let distance = levenshtein(candidate, registered);
-            if distance <= self.suggestion_distance as usize
+            let distance = levenshtein(candidate.as_bytes(), registered.as_bytes());
+            if distance <= SUGGESTION_DISTANCE
                 && closest.is_none_or(|(_, closest_distance)| distance < closest_distance)
             {
                 closest = Some((registered.as_str(), distance));
@@ -217,15 +230,17 @@ impl UnknownPerfectionistLints {
 
     fn report(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem, candidate: &str) {
         let path_text = render_meta_path(meta_item);
-        let suggestion = self.find_closest_match(candidate);
         span_lint_and_then(
             lint_context,
             UNKNOWN_PERFECTIONIST_LINTS,
             meta_item.span,
             format!("unknown lint: `{path_text}`"),
+            // Called only when the lint fires, so a site that carries
+            // `#[allow(perfectionist::unknown_perfectionist_lints)]`
+            // pays for neither the distance sweep nor the `String`.
             |diagnostic| {
-                if let Some(suggested_name) = suggestion {
-                    diagnostic.help(format!("did you mean `{TOOL_NAME}::{suggested_name}`?"));
+                if let Some(help) = self.help_for(candidate) {
+                    diagnostic.help(help);
                 }
             },
         );
@@ -242,11 +257,9 @@ impl UnknownPerfectionistLints {
     }
 }
 
-fn levenshtein(left: &str, right: &str) -> usize {
-    let left_chars: Vec<char> = left.chars().collect();
-    let right_chars: Vec<char> = right.chars().collect();
-    let left_len = left_chars.len();
-    let right_len = right_chars.len();
+fn levenshtein(left: &[u8], right: &[u8]) -> usize {
+    let left_len = left.len();
+    let right_len = right.len();
     if left_len == 0 {
         return right_len;
     }
@@ -258,7 +271,7 @@ fn levenshtein(left: &str, right: &str) -> usize {
     for i in 1..=left_len {
         current_row[0] = i;
         for j in 1..=right_len {
-            let substitution_cost = usize::from(left_chars[i - 1] != right_chars[j - 1]);
+            let substitution_cost = usize::from(left[i - 1] != right[j - 1]);
             current_row[j] = (previous_row[j] + 1)
                 .min(current_row[j - 1] + 1)
                 .min(previous_row[j - 1] + substitution_cost);
@@ -267,3 +280,6 @@ fn levenshtein(left: &str, right: &str) -> usize {
     }
     previous_row[right_len]
 }
+
+#[cfg(test)]
+mod test_levenshtein;

@@ -393,8 +393,7 @@ fn locate_outermost_parens(snippet: &str) -> Option<(usize, usize)> {
 /// scanner is anchored at the outermost `(` / `)` of the snippet
 /// regardless of the wrapper.
 ///
-/// The three layouts the planning file enumerates each map to a
-/// different splice:
+/// Each argument-list layout maps to a different splice:
 ///
 /// - Single line, no trailing comma — insert `, reason = ""` right
 ///   before the closing `)`.

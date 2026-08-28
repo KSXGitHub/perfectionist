@@ -1,10 +1,19 @@
-warning: this `#[allow]` can be `#[expect]` so the suppression self-cleans
+warning: this `#[allow]` stays silent even after its lint stops firing
   --> $DIR/fixture.rs:15:3
    |
 LL | #[allow(dead_code, reason = "kept around for symmetry")]
-   |   ^^^^^ help: replace `allow` with `expect`: `expect`
+   |   ^^^^^
    |
    = note: `#[warn(perfectionist::allow_attributes)]` on by default
+help: remove the suppression if its lint can no longer fire here
+   |
+LL - #[allow(dead_code, reason = "kept around for symmetry")]
+   |
+help: otherwise replace `allow` with `expect`, which warns once the lint stops firing
+   |
+LL - #[allow(dead_code, reason = "kept around for symmetry")]
+LL + #[expect(dead_code, reason = "kept around for symmetry")]
+   |
 
 warning: 1 warning emitted
 

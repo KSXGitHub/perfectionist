@@ -1,22 +1,14 @@
 warning: repository URL ref `main` is not a pinned commit SHA
-  --> $DIR/unpinned_repo_ref.rs:80:52
-   |
-LL |     let _bad = "https://github.com/owner/repo/blob/main/src/lib.rs";
-   |                                                    ^^^^
-   |
-   = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
-   = note: `#[warn(perfectionist::unpinned_repo_ref)]` on by default
-
-warning: repository URL ref `main` is not a pinned commit SHA
-  --> $DIR/unpinned_repo_ref.rs:18:41
+  --> $DIR/unpinned_repo_ref.rs:20:41
    |
 LL | /// <https://github.com/owner/repo/blob/main/src/lib.rs>.
    |                                         ^^^^
    |
    = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
+   = note: `#[warn(perfectionist::unpinned_repo_ref)]` on by default
 
 warning: repository URL ref `v1.2.3` is not a pinned commit SHA
-  --> $DIR/unpinned_repo_ref.rs:22:41
+  --> $DIR/unpinned_repo_ref.rs:24:41
    |
 LL | /// <https://github.com/owner/repo/blob/v1.2.3/src/lib.rs>.
    |                                         ^^^^^^
@@ -24,7 +16,7 @@ LL | /// <https://github.com/owner/repo/blob/v1.2.3/src/lib.rs>.
    = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
 
 warning: repository URL ref `abc` is not a pinned commit SHA
-  --> $DIR/unpinned_repo_ref.rs:34:41
+  --> $DIR/unpinned_repo_ref.rs:36:41
    |
 LL | /// <https://github.com/owner/repo/blob/abc/src/lib.rs>.
    |                                         ^^^
@@ -32,7 +24,7 @@ LL | /// <https://github.com/owner/repo/blob/abc/src/lib.rs>.
    = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
 
 warning: repository URL ref `master` is not a pinned commit SHA
-  --> $DIR/unpinned_repo_ref.rs:38:40
+  --> $DIR/unpinned_repo_ref.rs:40:40
    |
 LL | /// <https://gitee.com/owner/repo/blob/master/src/lib.rs>.
    |                                        ^^^^^^
@@ -40,7 +32,7 @@ LL | /// <https://gitee.com/owner/repo/blob/master/src/lib.rs>.
    = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
 
 warning: repository URL ref `main` is not a pinned commit SHA
-  --> $DIR/unpinned_repo_ref.rs:51:66
+  --> $DIR/unpinned_repo_ref.rs:53:66
    |
 LL | // Bad: gitlab branch ref: <https://gitlab.com/group/repo/-/blob/main/x.rs>
    |                                                                  ^^^^
@@ -48,7 +40,7 @@ LL | // Bad: gitlab branch ref: <https://gitlab.com/group/repo/-/blob/main/x.rs>
    = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
 
 warning: repository URL ref `develop` is not a pinned commit SHA
-  --> $DIR/unpinned_repo_ref.rs:55:46
+  --> $DIR/unpinned_repo_ref.rs:57:46
    |
 LL | // <https://gitlab.com/group/sub/repo/-/tree/develop/dir>
    |                                              ^^^^^^^
@@ -56,7 +48,7 @@ LL | // <https://gitlab.com/group/sub/repo/-/tree/develop/dir>
    = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
 
 warning: repository URL ref `master` is not a pinned commit SHA
-  --> $DIR/unpinned_repo_ref.rs:58:69
+  --> $DIR/unpinned_repo_ref.rs:60:69
    |
 LL | // Bad: bitbucket branch ref: <https://bitbucket.org/owner/repo/src/master/f.rs>
    |                                                                     ^^^^^^
@@ -64,7 +56,7 @@ LL | // Bad: bitbucket branch ref: <https://bitbucket.org/owner/repo/src/master/
    = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
 
 warning: repository URL references branch `main` instead of a commit SHA
-  --> $DIR/unpinned_repo_ref.rs:62:48
+  --> $DIR/unpinned_repo_ref.rs:64:48
    |
 LL | // <https://codeberg.org/owner/repo/src/branch/main/src/lib.rs>
    |                                                ^^^^
@@ -72,7 +64,7 @@ LL | // <https://codeberg.org/owner/repo/src/branch/main/src/lib.rs>
    = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
 
 warning: repository URL references tag `v1.2.3` instead of a commit SHA
-  --> $DIR/unpinned_repo_ref.rs:66:45
+  --> $DIR/unpinned_repo_ref.rs:68:45
    |
 LL | // <https://codeberg.org/owner/repo/src/tag/v1.2.3/src/lib.rs>
    |                                             ^^^^^^
@@ -80,12 +72,12 @@ LL | // <https://codeberg.org/owner/repo/src/tag/v1.2.3/src/lib.rs>
    = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
 
 warning: repository URL ref `main` is not a pinned commit SHA
-  --> $DIR/unpinned_repo_ref.rs:73:66
+  --> $DIR/unpinned_repo_ref.rs:75:66
    |
 LL | // Bad: sourcehut branch ref: <https://git.sr.ht/~user/repo/tree/main/item/x.rs>
    |                                                                  ^^^^
    |
    = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
 
-warning: 11 warnings emitted
+warning: 10 warnings emitted
 

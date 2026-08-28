@@ -1,8 +1,8 @@
 //! UI tests for `exhaustive_error_enums`'s configuration knobs. The
-//! default-config sweep lives in `ui/exhaustive_error_enums.rs` and is
-//! picked up by `tests/ui.rs`; these tests each point at their own
-//! one-fixture directory under `ui-toml/exhaustive_error_enums/` and
-//! pass a per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
+//! rule is off by default, so it has no default-config sweep under
+//! `ui/` for `tests/ui.rs` to pick up; these tests each point at their
+//! own one-fixture directory under `ui-toml/exhaustive_error_enums/`
+//! and pass a per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
 //!
 //! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
 //! the duration of `run_tests`. The env var is process-global, so the
@@ -17,10 +17,9 @@ const LINT_NAME: &str = "perfectionist::exhaustive_error_enums";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/// The rule's user-facing configuration shape, mirrored here for
-/// serialisation. Kept as a separate type from the lint's own internal
-/// `Config` so the test surface is independent of the implementation's
-/// private struct.
+/// Serialisation shim for the rule's `dylint.toml` configuration,
+/// which the test crate cannot build from the lint's own private
+/// `Config`.
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -44,7 +43,7 @@ struct GlobalConfig {
 
 fn dylint_toml(config: RuleConfig) -> String {
     // Serialise as two top-level tables: `[perfectionist]` (enables
-    // the rule globally) and `[perfectionist::exhaustive_error_enums]`
+    // the rule globally) and `["perfectionist::exhaustive_error_enums"]`
     // (per-rule knobs the test exercises). `toml::to_string` on a
     // serde-friendly wrapper emits both with one call; building the
     // string by concatenation would risk producing `[perfectionist]`

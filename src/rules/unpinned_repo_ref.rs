@@ -24,13 +24,14 @@ declare_tool_lint! {
     /// sourcehut, etc.) when the ref in the URL is a branch or tag
     /// rather than a commit SHA. Projects that deliberately link to
     /// version-shaped refs can opt into accepting those patterns via
-    /// `allow_version_patterns`. Scans doc comments, regular comments, and
-    /// string literals.
+    /// `allow_version_patterns`. Scans doc comments and regular
+    /// comments by default; string literals are opt-in via
+    /// `scan_string_literals`.
     ///
-    /// This rule only concerns whether the ref is mutable; the
-    /// *length* of an accepted SHA is `perfectionist::commit_id_length_mismatch`'s
-    /// concern, and `perfectionist::bare_url` ensures the URL is
-    /// wrapped. The three lints layer rather than overlap.
+    /// This rule only concerns whether the ref is mutable, not the
+    /// *length* of an accepted SHA. `perfectionist::bare_url`
+    /// separately ensures the URL is wrapped; the two layer rather
+    /// than overlap.
     ///
     /// ### Why restrict this?
     ///
@@ -201,7 +202,8 @@ impl<'tcx> LateLintPass<'tcx> for UnpinnedRepoRef {
             return;
         }
         // No separate `hir_in_external_macro` guard here (cf. the
-        // "Suppressing proc-macro-synthesised violations" convention):
+        // proc-macro-suppression convention in
+        // `planned-rules/IMPLEMENTATION_CONVENTIONS.md`):
         // the scan re-reads source text through `span_to_snippet`
         // below, which is itself the proc-macro defence. A synthesised
         // literal either carries an *expansion* span — filtered by

@@ -1,0 +1,48 @@
+warning: imports must form one block, with submodule re-exports and alias re-exports in separate leading blocks
+  --> $DIR/fixture.rs:33:1
+   |
+LL | / pub use Reflection as HardlinkListReflection;
+LL | | use std::time::Duration;
+LL | | pub use iter::Iter;
+LL | | pub use reflection::Reflection;
+LL | | use std::io::stdin;
+   | |___________________^
+   |
+   = note: `#[warn(perfectionist::import_grouping_mismatch)]` on by default
+help: regroup the imports
+   |
+LL + pub use iter::Iter;
+LL + pub use reflection::Reflection;
+LL + 
+LL + pub use Reflection as HardlinkListReflection;
+LL + 
+LL + use std::time::Duration;
+LL + use std::io::stdin;
+   |
+
+warning: imports must form one block, with submodule re-exports and alias re-exports in separate leading blocks and `#[cfg]`-gated imports in a trailing block
+  --> $DIR/fixture.rs:44:1
+   |
+LL | / use std::cmp::Ordering;
+LL | | #[cfg(unix)]
+LL | | pub use Node as UnixNode;
+LL | | pub use node::Node;
+LL | | #[cfg(unix)]
+LL | | use std::collections::BTreeMap;
+   | |_______________________________^
+   |
+help: regroup the imports
+   |
+LL + pub use node::Node;
+LL + 
+LL + #[cfg(unix)]
+LL + pub use Node as UnixNode;
+LL + 
+LL + use std::cmp::Ordering;
+LL + 
+LL + #[cfg(unix)]
+LL + use std::collections::BTreeMap;
+   |
+
+warning: 2 warnings emitted
+

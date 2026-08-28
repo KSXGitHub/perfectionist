@@ -18,10 +18,9 @@ const LINT_NAME: &str = "perfectionist::import_granularity_mismatch";
 
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/// The rule's user-facing configuration shape, mirrored here for
-/// serialisation. Kept separate from the lint's own internal `Config`
-/// so the test surface is independent of the implementation's private
-/// struct.
+/// Serialisation shim for the rule's `dylint.toml` configuration,
+/// which the test crate cannot build from the lint's own private
+/// `Config`.
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -37,9 +36,10 @@ struct RuleConfig {
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
-    // The rule is active by default, so unlike the opt-in rules' test
-    // harnesses no `[perfectionist] enable = [...]` table is needed —
-    // only the per-rule `[perfectionist::import_granularity_mismatch]` knobs.
+    // The rule is active by default, so unlike the opt-in rules'
+    // test harnesses no `[perfectionist] enable = [...]` table is
+    // needed — only the per-rule knobs under
+    // `["perfectionist::import_granularity_mismatch"]`.
     let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
     toml::to_string(&table).expect("serialise rule config as dylint.toml")
 }

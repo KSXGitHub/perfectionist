@@ -5,13 +5,14 @@ Handling*.
 
 ## Status
 
-Bundles five sub-checks (`unused_error`, `missing_error`,
+Bundles several sub-checks (`unused_error`, `missing_error`,
 `unused_display`, `copyable_error`, `unconventional_error_name`).
-Per [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
-("One rule per file, one `Config` per rule"), this file is expected
-to fan out into one planning file per sub-check before implementation
-begins. The sub-checks have distinct trigger predicates, disjoint
-configuration, and no shared diagnostic, so the split is mechanical.
+Per
+[one rule per file](../CLAUDE.md#one-rule-per-file-one-config-per-rule),
+this file is expected to fan out into one planning file per sub-check
+before implementation begins. The sub-checks have distinct trigger
+predicates, disjoint configuration, and no shared diagnostic, so the
+split is mechanical.
 
 ## Statement
 
@@ -63,6 +64,7 @@ defect, not a preference.
 
 ## What to lint
 
+> [!IMPORTANT]
 > **Lint name shape.** The `error_type_derives::` prefix used in the
 > sub-check headings below is a documentation label grouping related
 > checks under one banner. Per the
@@ -115,15 +117,14 @@ name does not match the project's error-naming convention. The default
 pattern is the `Error` suffix, matching `std::io::Error`,
 `serde_json::Error`, the thiserror documentation's examples, and the
 parallel-disk-usage convention that motivated the rule. Configure
-under the `[unconventional_error_name]` table (registered as
-`[perfectionist::unconventional_error_name]` in the consumer's
-`dylint.toml` per the
-[lint-name namespacing convention](./IMPLEMENTATION_CONVENTIONS.md#lint-name-namespacing));
+under the `["perfectionist::unconventional_error_name"]` table of the
+consumer's `dylint.toml`, spelt per the
+[lint-name namespacing convention](./IMPLEMENTATION_CONVENTIONS.md#lint-name-namespacing);
 the `error_name_pattern` key accepts one of five forms — pick
 exactly one (uncomment one line, leave the others commented):
 
 ```toml
-[unconventional_error_name]
+["perfectionist::unconventional_error_name"]
 # Default; equivalent to omitting the key.
 error_name_pattern = { suffix = "Error" }
 # Bare-string shorthand for `{ suffix = ... }`.
@@ -234,7 +235,7 @@ pub enum ParsedValue { /* ... */ }
   consumer's `dylint.toml`, set:
 
   ```toml
-  [perfectionist::unused_error]
+  ["perfectionist::unused_error"]
   flag_pub_types = false
   ```
 

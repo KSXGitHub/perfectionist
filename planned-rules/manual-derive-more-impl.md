@@ -133,7 +133,7 @@ exercised on real codebases.
 ## Configuration
 
 ```toml
-[manual_derive_more_impl]
+["perfectionist::manual_derive_more_impl"]
 # Easy sub-lints — on by default. Each registers as its own flat tool
 # lint `perfectionist::manual_<trait>_impl`.
 manual_from_impl       = true
