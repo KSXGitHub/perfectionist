@@ -43,12 +43,6 @@ declare_tool_lint! {
     /// dominance-analysis cases described in
     /// `planned-rules/needless-borrowed-parameters.md` are still pending.
     ///
-    /// A signature the reader cannot change is left alone: a trait
-    /// method, whether in the trait's own declaration or in an
-    /// `impl Trait for T`, and a parameter whose reference carries an
-    /// explicit named lifetime, which may tie it to another parameter
-    /// or to the return type.
-    ///
     /// ### Where it does not apply
     ///
     /// Test code and build scripts are exempt by default. Test code is
