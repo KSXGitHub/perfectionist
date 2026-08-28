@@ -206,17 +206,17 @@ crate. The recurring violations:
   resolver, and the catalogue and the site render the brackets
   literally, where it reads as a typo. State the behaviour instead.
 - **A project the rule was distilled from.** A consumer has never
-  heard of it, so "matches <project>'s policy" says nothing about what
+  heard of it, so `matches <project>'s policy` says nothing about what
   a knob does, and "both source projects" has no antecedent at all.
   Say what the value means.
 - **Development tooling.** A `just` recipe, a CI workflow, a dev
   dependency. The consumer runs `cargo dylint`.
 
-Two exceptions, both where the reader chose the detour: `README.md`
-switches audience by heading (its development section names `just`
-recipes, its rules section offers `planned-rules/` as the roadmap),
-and a generated file's do-not-edit banner names `just gen-rules-md`
-because it addresses whoever is about to hand-edit it.
+Exceptions, where the reader chose the detour: `README.md` switches
+audience by heading (its development section names `just` recipes, its
+rules section offers `planned-rules/` as the roadmap), and a generated
+file's do-not-edit banner names `just gen-rules-md` because it
+addresses whoever is about to hand-edit it.
 
 ## Defaults live in field docs, not type or variant docs
 
