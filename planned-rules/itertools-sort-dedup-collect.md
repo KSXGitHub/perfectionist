@@ -233,10 +233,9 @@ depend on `itertools` (the adaptors cannot resolve otherwise).
   annotation. Drop the now-redundant `let` annotation or keep it — both
   type-check; prefer the turbofish form for locality.
 - **Proc-macro suppression.** The primary span covers the adaptor-run
-  through the `collect` — wider than a bare identifier — so by the
-  "vulnerable exactly when" test in
-  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
-  ("Suppressing proc-macro-synthesised violations"), the built-in
+  through the `collect` — wider than a bare identifier — so, by the
+  [proc-macro suppression convention](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations),
+  the built-in
   `report_in_external_macro: false` filter suffices; no
   `hir_in_external_macro` guard or `ui/<rule>_proc_macro.rs` fixture is
   required. Record that reasoning at the span-selection site.

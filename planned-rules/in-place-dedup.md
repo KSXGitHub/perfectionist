@@ -334,10 +334,9 @@ or addable — see Implementation notes.
   already depends on `into-deduped`; otherwise `MaybeIncorrect`, since a
   late pass cannot add the dependency to `Cargo.toml`.
 - **Proc-macro suppression.** The primary span is the `dedup*` call —
-  wider than a bare identifier — so by the "vulnerable exactly when"
-  test in
-  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
-  ("Suppressing proc-macro-synthesised violations"), the built-in
+  wider than a bare identifier — so, by the
+  [proc-macro suppression convention](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations),
+  the built-in
   `report_in_external_macro: false` filter suffices; no
   `hir_in_external_macro` guard or `ui/<rule>_proc_macro.rs` fixture is
   required. Record that reasoning at the span-selection site.
