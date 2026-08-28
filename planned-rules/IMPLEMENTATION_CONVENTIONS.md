@@ -893,6 +893,11 @@ observes directly (`unfulfilled_lint_expectations` notes,
 `unknown_lints`): that is behaviour the consumer sees, not this
 plugin's pass internals.
 
+What else a shipped doc may not name — a planning file, unshipped
+behaviour, a private Rust item, an upstream style guide, a `just`
+recipe — and which docs count as shipped are settled in
+[Shipped docs address the consumer, not the contributor](../CLAUDE.md#shipped-docs-address-the-consumer-not-the-contributor).
+
 ## GitHub-specific markdown in rule docs
 
 A rule's `declare_tool_lint!` rustdoc is rendered by rustdoc and by
