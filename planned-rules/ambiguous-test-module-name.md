@@ -24,7 +24,7 @@ and affixed forms.
 ## What to lint
 
 Flag a `mod` item — inline `mod foo { ... }` or out-of-line
-`mod foo;` — when **both** hold:
+`mod foo;` — when **all** of these hold:
 
 1. The module is compiled **only** under test — its `cfg` predicate
    *implies* `test` (is satisfiable only when `test` is set). Composed
@@ -53,7 +53,7 @@ considered at all.
 ## Configuration
 
 ```toml
-[perfectionist::ambiguous_test_module_name]
+["perfectionist::ambiguous_test_module_name"]
 # A name accepted when it equals the whole module name.
 # Allows `tests.rs`, `spec.rs`, etc.
 whole_names = ["test", "testing", "tests", "spec", "specs"]
@@ -65,17 +65,18 @@ prefixes = ["test_", "testing_", "spec_"]
 suffixes = ["_test", "_testing", "_tests", "_spec", "_specs"]
 ```
 
-Each field is an open-ended list of user strings, so all three stay
-arrays (per the *"Config shape"* section of
-[`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md) — an
-open-ended list is one of the shapes that is *not* the boolean-toggle
-anti-pattern). A test-only module is accepted when its name matches
-**any** entry across the three lists. Because the affixes include their
-own separator, a project that wants a bare-word prefix (`testbuttons`)
-or a different separator (`test-` is not a valid identifier, but
-`test2_` would be) controls it entirely through the entry text. An
-empty list disables that matching mode; emptying all three makes every
-test-only module ambiguous, so the defaults are the intended baseline.
+Each field is an open-ended list of user strings, so they stay arrays
+(per the
+[config-shape convention](./IMPLEMENTATION_CONVENTIONS.md#config-shape-boolean-fields-not-an-array-of-toggles)
+— an open-ended list is one of the shapes that is *not* the
+boolean-toggle anti-pattern). A test-only module is accepted when its
+name matches **any** entry across the lists. Because the affixes include
+their own separator, a project that wants a bare-word prefix
+(`testbuttons`) or a different separator (`test-` is not a valid
+identifier, but `test2_` would be) controls it entirely through the
+entry text. An empty list disables that matching mode; emptying every
+list makes every test-only module ambiguous, so the defaults are the
+intended baseline.
 
 ## Examples
 
@@ -215,7 +216,7 @@ matches a configured pattern. When `prefixes` is non-empty it offers
 `suffixes` is non-empty it offers `<name><first suffix>` (e.g.
 `buttons` → `buttons_test`). The user picks; an IDE shows both.
 
-The fix is **`MaybeIncorrect`**, never machine-applicable, for two
+The fix is **`MaybeIncorrect`**, never machine-applicable, for these
 reasons:
 
 1. For an out-of-line `mod foo;`, the backing file must be renamed in
@@ -229,9 +230,8 @@ reasons:
 ## Implementation notes
 
 This rule reads the **written layout** of items across module scopes,
-so it follows the source-layout discipline in the *"Reaching every
-module"* section of
-[`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
+so it follows the
+[source-layout discipline](./IMPLEMENTATION_CONVENTIONS.md#reaching-every-module-source-layout-rules):
 run as a `LateLintPass` and re-parse the crate's module files through
 `src/module_reparse.rs` rather than walking the AST in an
 `EarlyLintPass`. An `EarlyLintPass` would be wrong twice over here —
@@ -262,23 +262,22 @@ Re-parsing preserves the `#[cfg(test)]` attribute the rule keys on.
   need it, so factor it into a shared crate-internal module (per the
   cross-rule-helper convention) rather than re-walking the predicate
   here. Not a string scan — no parser-combinator scaffold.
-- The name check is three literal comparisons against the config lists
-  (equality, `str::starts_with`, `str::ends_with`), not a
-  parser-combinator scan. (See *"Where to draw the line"* in the
-  conventions file.)
+- The name check is literal string matching against the config lists
+  (equality for `whole_names`, `str::starts_with` for `prefixes`,
+  `str::ends_with` for `suffixes`), not a parser-combinator scan (see
+  [where to draw the line](./IMPLEMENTATION_CONVENTIONS.md#where-to-draw-the-line)).
 
 - Walking only live module files means test submodules nested below a
   test-only boundary are not reached — which is the intended scope, not
-  a gap. See *"Scope: only the outermost test-only module"* above for
-  why the boundary is the only place ambiguity arises.
+  a gap. See [Scope](#scope-only-the-outermost-test-only-module) above
+  for why the boundary is the only place ambiguity arises.
 
 - The mechanism above is implementation detail. The rule's own
   `declare_tool_lint!` rustdoc (rendered into the user-facing catalogue)
   must describe the boundary-only scope **behaviourally** — "only the
   outermost test-only module is flagged" — and omit the pass machinery
   ("late pass", "re-parse", "live HIR module") that produces it, per
-  *"`declare_tool_lint!` docs describe behaviour, not pass machinery"*
-  in the conventions file.
+  [behaviour, not pass machinery](./IMPLEMENTATION_CONVENTIONS.md#declare_tool_lint-docs-describe-behaviour-not-pass-machinery).
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
@@ -309,11 +308,13 @@ at a glance, in both the file tree and the list of `mod` declarations.
 
 A `mod` declaration is not a node a derive macro realistically
 synthesises with a user-source span, and the diagnostic span covers
-the whole construct's name rather than a borrowed inner token, so the
-*"vulnerable exactly when"* test in the conventions file clears this
-rule: no proc-macro guard or `ui/ambiguous_test_module_name_proc_macro.rs`
-fixture is required. Record the omission as deliberate at the
-span-selection site.
+the whole construct's name rather than a borrowed inner token. So by
+the "vulnerable exactly when the diagnostic span is narrower than the
+offending node" test in the
+[suppression convention](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations),
+this rule is **not** vulnerable: no proc-macro guard or
+`ui/ambiguous_test_module_name_proc_macro.rs` fixture is required.
+Record the omission as deliberate at the span-selection site.
 
 ## Interaction with sibling lints
 
@@ -338,4 +339,4 @@ a recognized test-name pattern* — is not presumptuous: the default
 lists accept the whole-word, prefix, and suffix forms of the common
 `test` / `testing` / `spec` conventions, so the rule stays quiet on
 idiomatic code and a project with a different convention adjusts the
-three lists.
+lists.
