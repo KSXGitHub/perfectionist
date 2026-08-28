@@ -13,8 +13,8 @@ one arrangement and enforce it.
 
 When the unit tests for a single subject file are split across
 **more than one** out-of-line file, the *filesystem layout* of
-those files is a project-style decision. Two arrangements are in
-common use:
+those files is a project-style decision. Projects commonly use
+one of these arrangements:
 
 - **Siblings**: the subject file declares each test group directly
   as a sibling `#[cfg(test)] mod <group>;`, and the group files
@@ -111,7 +111,7 @@ misread as support by a name prefix alone. See
 - **Deeper nesting.** The rule normalises exactly one level of
   split — the subject and its immediate test groups. A project that
   nests groups further (`test_subject/tests/parsing/edge.rs`) is
-  beyond the two documented layouts and is left alone.
+  beyond the layouts documented here and is left alone.
 - **Inline test code in the subject file.** Whether test code
   belongs inline or extracted at all is
   `perfectionist::excessive_inline_tests`'s decision. This rule
@@ -440,7 +440,7 @@ better, the rule ships no baseline and is opt-in.
 **Medium.** The detection itself is a small amount of AST shape
 matching (count test-gated out-of-line `mod` declarations; for the
 `siblings` direction, peek into the aggregator file and check its
-body is only `mod` declarations). The two real costs are (1)
+body is only `mod` declarations). The real costs are (1)
 reaching the cfg-disabled test files at all under a non-`cfg(test)`
 build, which forces manual module-file resolution rather than HIR
 liveness, and (2) accepting that there is no machine-applicable
