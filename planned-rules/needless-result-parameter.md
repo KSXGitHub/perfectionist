@@ -147,11 +147,10 @@ The lint stays silent when:
 - **The parameter is also used in `Result` form elsewhere** in the
   body — the exactly-once rule already excludes this, but it remains
   the governing principle when the multi-use version lands.
-- Proc-macro-synthesised parameters (see
-  [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md),
-  "Suppressing proc-macro-synthesised violations") — guard with
-  `crate::common::hir_in_external_macro` since the diagnostic span is
-  the narrow parameter, not the whole node.
+- Proc-macro-synthesised parameters (see the
+  [proc-macro suppression convention](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations))
+  — guard with `crate::common::hir_in_external_macro` since the
+  diagnostic span is the narrow parameter, not the whole node.
 
 Closures are out of scope: their parameter types are usually inferred
 rather than written, and the "the signature lies" argument is about a
@@ -201,7 +200,7 @@ fn line_count(contents: Result<String, io::Error>) -> usize {
 ## Configuration
 
 ```toml
-[needless_result_parameter]
+["perfectionist::needless_result_parameter"]
 # Method calls that count as "demand the Ok value or panic". The
 # defaults cover the std inherent methods; extend for project-specific
 # wrappers that panic on Err (e.g. a logging `expect`-alike).

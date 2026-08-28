@@ -54,7 +54,7 @@ one frame away from the code that owns the policy.
 
 `Option` carries a weaker version of the argument than `Result`,
 though, which is why this rule is a separate, opt-in lint rather than
-part of the `Result` one — see "Default state".
+part of the `Result` one — see [Default state](#default-state).
 
 ## What to lint
 
@@ -79,8 +79,9 @@ handles `None` (`match` / `if let`, `p.unwrap_or(..)`,
 The conservative starting cut (fire only on an exactly-once use), the
 trait-method and referenced-as-a-value exemptions, the
 closures-out-of-scope scope, and the proc-macro suppression guard all
-carry over verbatim from the `Result` rule; see its "What to lint"
-section. The two rules share the "parameter whose only uses are
+carry over verbatim from the `Result` rule; see
+[its "What to lint" section](./needless-result-parameter.md#what-to-lint).
+The two rules share the "parameter whose only uses are
 success-demanding" body walk — factor it into a crate-internal helper
 when implementing whichever lands first, parameterised by the wrapper
 type (`Result` vs `Option`) and the propagation desugaring.
@@ -119,7 +120,7 @@ fn render(template: Option<Template>, ctx: &Context) -> String {
 ## Configuration
 
 ```toml
-[needless_option_parameter]
+["perfectionist::needless_option_parameter"]
 # Method calls that count as "demand the Some value or panic".
 panic_methods = ["unwrap", "expect", "unwrap_unchecked"]
 
@@ -149,8 +150,8 @@ threaded from `HashMap::get`, builder fields that default when absent,
 and `Option`-returning APIs whose `None` truly is a programmer error at
 a given call site all produce a legitimate `param.unwrap()`. Shipping
 this active by default would false-positive on ordinary code, which
-[`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
-("Rule activation model") reserves `Inactive by default` for. A project
+the [rule activation model](./IMPLEMENTATION_CONVENTIONS.md#rule-activation-model)
+reserves `Inactive by default` for. A project
 that wants the stricter `Option` discipline opts in via
 `[perfectionist].enable`.
 
