@@ -318,13 +318,14 @@ answer uses them rather than rolling its own:
   separately, and the classification tells them apart from the
   library or binary.
 
-Neither is reachable without `cfg(test)` being on. `#[cfg(test)]`
-items are configured out before a late pass runs, and rustc drops
-`#[test]` functions entirely in a non-test build, so a rule that
-exempts test code sees nothing to exempt unless the run includes the
-unit-test target (`cargo dylint -- --all-targets`). That is also why
-these live in a late pass: the parsed `CfgTrace` predicate rustc
-leaves behind after configuration needs `TyCtxt`.
+`in_test_code` finds anything only in a build where `cfg(test)` is
+on: `#[cfg(test)]` items are configured out before a late pass runs
+and `#[test]` functions are dropped, so a rule exempting test code
+needs the unit-test target (`cargo dylint -- --all-targets`).
+`crate_target` has no such limit — the build-script and example
+crates it names are built without `cfg(test)`. Both need a late pass:
+the `CfgTrace` predicate rustc leaves after configuration needs
+`TyCtxt`.
 
 ### What "implies `test`" means
 
