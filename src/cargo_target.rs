@@ -9,6 +9,7 @@
 
 use rustc_hir::def_id::LOCAL_CRATE;
 use rustc_lint::{LateContext, LintContext};
+use std::ffi::OsStr;
 use std::path::Path;
 
 /// Cargo's crate-name prefix for a build script. Cargo names the
@@ -102,7 +103,8 @@ fn classify(crate_name: &str, root: Option<&Path>) -> CargoTarget {
 /// (`lib.rs`, `main.rs`, `bin/<name>.rs`). Matching the target
 /// directory itself — not some farther ancestor — keeps a library that
 /// merely lives below such a directory (a workspace member at
-/// `tests/<crate>/src/lib.rs`, say) classified as a library.
+/// `tests/<crate>/src/lib.rs`, or one whose own directory is named
+/// `examples`) classified as a library.
 fn target_directory(root: &Path) -> Option<&str> {
     let parent = root.parent();
     // A `main.rs` leaf is ambiguous: `tests/main.rs` is the flat form
@@ -114,9 +116,18 @@ fn target_directory(root: &Path) -> Option<&str> {
     // Trying the parent first would read that as an integration test.
     // The fallback covers `tests/main.rs`, whose grandparent is
     // nothing.
+    //
+    // A parent of `src` is not a target name but a package root, and
+    // rustc is handed a workspace member's root relative to the
+    // *workspace*: a member directory named `examples` would otherwise
+    // make `examples/src/main.rs` an example, exempting a whole
+    // production crate. Cargo does allow a separate target named `src`
+    // (`tests/src/main.rs`), which this then reads as a binary — the
+    // rarer shape, and it over-lints rather than silently skipping.
     (root.file_name().and_then(|name| name.to_str()) == Some("main.rs"))
-        .then(|| directory_name(parent.and_then(Path::parent)))
+        .then(|| parent.filter(|parent| parent.file_name() != Some(OsStr::new("src"))))
         .flatten()
+        .and_then(|parent| directory_name(parent.parent()))
         .or_else(|| directory_name(parent))
 }
 

@@ -74,6 +74,25 @@ fn build_scripts_are_recognised_by_crate_name() {
 }
 
 #[test]
+fn a_workspace_member_named_after_a_target_directory_is_a_library() {
+    // rustc is handed a member's crate root relative to the workspace
+    // root, so a member directory named like a target directory would
+    // otherwise swallow the whole crate.
+    for path in [
+        "examples/src/main.rs",
+        "tests/src/main.rs",
+        "benches/src/main.rs",
+        "tests/mycrate/src/main.rs",
+    ] {
+        assert_eq!(
+            library_crate(path),
+            CargoTarget::LibOrBin,
+            "`{path}` should classify as a library or binary",
+        );
+    }
+}
+
+#[test]
 fn a_target_named_after_another_target_directory_uses_the_right_one() {
     // Both components name a target directory, so only their order
     // says which is Cargo's and which is the target's own name.
