@@ -331,13 +331,13 @@ leaves behind after configuration needs `TyCtxt`.
 `cfg_predicate_implies_test` asks whether a predicate holds *only*
 in a test build, and composes over the connectives:
 
-| Predicate            | Test-only? |
-|----------------------|------------|
-| `test`               | yes        |
-| `all(test, unix)`    | yes — one conjunct suffices |
-| `any(test, unix)`    | no — `unix` can hold without `test` |
-| `not(test)`          | no — gated *away* from test builds |
-| `not(not(test))`     | yes — the negations cancel |
+| Predicate         | Test-only? | Why                            |
+|-------------------|------------|--------------------------------|
+| `test`            | yes        | —                              |
+| `all(test, unix)` | yes        | one conjunct suffices          |
+| `any(test, unix)` | no         | `unix` can hold without `test` |
+| `not(test)`       | no         | gated *away* from test builds  |
+| `not(not(test))`  | yes        | the negations cancel           |
 
 `clippy_utils::is_cfg_test` recognises only the first row, which is
 why this exists.
