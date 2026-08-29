@@ -150,6 +150,7 @@ fn does_not_flag_compound_cfg_test_predicates() {
     );
     assert_not_flagged(&stderr, "conjunction_param");
     assert_not_flagged(&stderr, "double_negation_param");
+    assert_not_flagged(&stderr, "negated_disjunction_param");
 }
 
 /// Guards the fixture above against going vacuous. With the exemption
@@ -169,6 +170,8 @@ fn every_compound_cfg_function_reaches_the_rule() {
     assert_flagged(&stderr, "conjunction_param");
     assert_flagged(&stderr, "double_negation_param");
     assert_flagged(&stderr, "disjunction_param");
+    assert_flagged(&stderr, "negated_conjunction_param");
+    assert_flagged(&stderr, "negated_disjunction_param");
 }
 
 #[test]
@@ -179,6 +182,7 @@ fn flags_a_cfg_predicate_that_admits_more_than_test() {
         "",
     );
     assert_flagged(&stderr, "disjunction_param");
+    assert_flagged(&stderr, "negated_conjunction_param");
 }
 
 /// The separate-target fixture: an integration test and a benchmark
