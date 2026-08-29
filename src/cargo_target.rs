@@ -99,7 +99,7 @@ fn classify(crate_name: &str, root: Option<&Path>) -> CargoTarget {
 /// `src`, or anything under that `src`'s `bin` subdirectory.
 ///
 /// Matching Cargo's layouts is what tells `src/bin/tests/main.rs` — a
-/// binary auto-discovered under the name `tests` — from
+/// binary whose own name happens to match a target directory — from
 /// `src/tests/it.rs`, an integration test that a `[[test]] path = ...`
 /// entry put under `src/`. Scanning for a bare `src` component would
 /// read both as the package's own, and would also let a checkout under
