@@ -365,17 +365,12 @@ for the exemption.
 
 ### Why this is not a SAT problem
 
-Deciding `P → test` in general is co-NP-complete — it is
-unsatisfiability of `P ∧ ¬test` — but completeness is not required.
-The negation-normal-form reading the walk computes is sound (a `yes`
-is always right) and gives up only on a contradiction spelled out
-across branches, as in `any(test, all(a, not(a)))`; a miss costs a
-lint firing on test code, not a wrong suppression.
-
-Evaluating `P` against the build's actual `cfg` values with `test`
-forced false would be exact and linear, and is deliberately not done:
-`any(test, unix)` would then be test-only on non-unix targets only, so
-the same source would lint differently per platform.
+Deciding `P → test` in general is co-NP-complete, but completeness is
+not required: the walk's negation-normal-form reading is sound, and
+gives up only on a contradiction spelled across branches
+(`any(test, all(a, not(a)))`). Evaluating against the build's real
+`cfg` values instead would be exact, and is rejected — it would make
+the same source lint differently per platform.
 
 ## Naming a lint after the anti-pattern
 
