@@ -89,6 +89,9 @@ fn a_package_root_is_never_read_as_a_target_directory() {
         "src/bin/tests/main.rs",
         "src/bin/benches/main.rs",
         "src/bin/examples.rs",
+        // An ancestor named `src` must not move the anchor off the
+        // package's own `src`.
+        "/home/user/src/proj/src/bin/tests/main.rs",
     ] {
         assert_eq!(
             library_crate(path),
@@ -107,6 +110,10 @@ fn a_target_declared_under_src_is_still_a_separate_target() {
         ("src/tests/it.rs", CargoTarget::IntegrationTest),
         ("src/benches/bench.rs", CargoTarget::Benchmark),
         ("src/examples/demo.rs", CargoTarget::Example),
+        (
+            "/home/user/src/proj/tests/it.rs",
+            CargoTarget::IntegrationTest,
+        ),
     ] {
         assert_eq!(
             library_crate(path),

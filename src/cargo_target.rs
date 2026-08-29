@@ -105,13 +105,18 @@ fn classify(crate_name: &str, root: Option<&Path>) -> CargoTarget {
 /// read both as the package's own, and would also let a checkout under
 /// a directory called `src` swallow every target below it.
 fn is_package_source(root: &Path) -> bool {
-    let mut after_src = root
-        .components()
-        .map(Component::as_os_str)
-        .skip_while(|component| *component != OsStr::new("src"))
-        .skip(1);
+    // Anchor on the *last* `src`, so an ancestor that happens to be
+    // named `src` — a checkout under `~/src`, a `WORKDIR /src` — does
+    // not move the anchor off the package's own.
+    let components: Vec<_> = root.components().map(Component::as_os_str).collect();
+    let Some(src) = components
+        .iter()
+        .rposition(|name| *name == OsStr::new("src"))
+    else {
+        return false;
+    };
     matches!(
-        after_src.next().and_then(OsStr::to_str),
+        components.get(src + 1).copied().and_then(OsStr::to_str),
         Some("lib.rs" | "main.rs" | "bin"),
     )
 }
