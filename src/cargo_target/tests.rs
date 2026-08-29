@@ -74,6 +74,20 @@ fn build_scripts_are_recognised_by_crate_name() {
 }
 
 #[test]
+fn a_test_crate_named_like_a_build_script_stays_an_integration_test() {
+    // Cargo names an integration test after its file, so this crate
+    // name carries the build-script prefix without being one. The
+    // path is what tells them apart.
+    assert_eq!(
+        classify(
+            "build_script_env",
+            Some(Path::new("tests/build_script_env.rs")),
+        ),
+        CargoTarget::IntegrationTest,
+    );
+}
+
+#[test]
 fn a_missing_crate_root_is_not_a_separate_target() {
     // `local_crate_source_file` is `None` when the crate came from
     // stdin or a virtual file; treat that as ordinary code rather

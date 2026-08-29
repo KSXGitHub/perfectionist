@@ -79,13 +79,16 @@ pub(crate) fn crate_target(cx: &LateContext<'_>) -> CargoTarget {
 /// function so the path arithmetic can be unit-tested without a
 /// compiler context.
 fn classify(crate_name: &str, root: Option<&Path>) -> CargoTarget {
-    if crate_name.starts_with(BUILD_SCRIPT_CRATE_NAME_PREFIX) {
-        return CargoTarget::BuildScript;
-    }
+    // The crate root's directory decides first. Cargo names an
+    // integration test after its file, so `tests/build_script_env.rs`
+    // reaches rustc under a crate name a build script's prefix also
+    // matches; the path is the stronger signal, and a build script
+    // never roots in one of these directories.
     match root.and_then(target_directory) {
         Some("tests") => CargoTarget::IntegrationTest,
         Some("benches") => CargoTarget::Benchmark,
         Some("examples") => CargoTarget::Example,
+        _ if crate_name.starts_with(BUILD_SCRIPT_CRATE_NAME_PREFIX) => CargoTarget::BuildScript,
         _ => CargoTarget::LibOrBin,
     }
 }
