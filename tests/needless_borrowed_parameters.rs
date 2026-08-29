@@ -103,6 +103,11 @@ fn flags_test_code_when_the_exception_is_off() {
 /// is still test-only, and `any(...)` is test-only only if *every*
 /// branch is — `any(test, <anything else>)` can hold in a build without
 /// `test`, so it is production code as far as the rule is concerned.
+///
+/// The `all(...)` conjunct is `debug_assertions` rather than something
+/// like `unix` so that the item exists on every platform. Under a
+/// conjunct that is false for the host, it would be configured out and
+/// the assertion would pass without the rule having looked at it.
 const LIB_WITH_COMPOUND_CFGS: &str =
     include_str!("fixtures/needless_borrowed_parameters/lib_with_compound_cfgs.rs");
 
@@ -117,8 +122,27 @@ fn does_not_flag_compound_cfg_test_predicates() {
     assert_not_flagged(&stderr, "double_negation_param");
 }
 
+/// Guards the fixture above against going vacuous. With the exemption
+/// off, every one of its functions must be flagged; if a `cfg`
+/// conjunct ever configures one out of the test build, this fails
+/// instead of the exemption test quietly passing on nothing.
 #[test]
-fn flags_a_cfg_predicate_that_only_admits_test() {
+fn every_compound_cfg_function_reaches_the_rule() {
+    let stderr = run(
+        "fixture_nbp_compound_cfg_exception_off",
+        &[("src/lib.rs", LIB_WITH_COMPOUND_CFGS)],
+        text_block_fnl! {
+            r#"["perfectionist::needless_borrowed_parameters"]"#
+            "test_code_exception = false"
+        },
+    );
+    assert_flagged(&stderr, "conjunction_param");
+    assert_flagged(&stderr, "double_negation_param");
+    assert_flagged(&stderr, "disjunction_param");
+}
+
+#[test]
+fn flags_a_cfg_predicate_that_admits_more_than_test() {
     let stderr = run(
         "fixture_nbp_disjunction_cfg",
         &[("src/lib.rs", LIB_WITH_COMPOUND_CFGS)],

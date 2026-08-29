@@ -1,4 +1,4 @@
-#[cfg(all(test, unix))]
+#[cfg(all(test, debug_assertions))]
 fn conjunction(conjunction_param: &str) -> String {
     conjunction_param.to_owned()
 }
