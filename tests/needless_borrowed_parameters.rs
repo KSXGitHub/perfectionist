@@ -161,19 +161,24 @@ const SEPARATE_TARGET_SOURCES: &[(&str, &str)] = &[
         include_str!("fixtures/needless_borrowed_parameters/integration_test.rs"),
     ),
     (
+        "benches/bench.rs",
+        include_str!("fixtures/needless_borrowed_parameters/benchmark.rs"),
+    ),
+    (
         "examples/demo.rs",
         include_str!("fixtures/needless_borrowed_parameters/example.rs"),
     ),
 ];
 
 #[test]
-fn does_not_flag_an_integration_test_crate() {
+fn does_not_flag_an_integration_test_or_benchmark_crate() {
     let stderr = run(
         "fixture_nbp_integration_target",
         SEPARATE_TARGET_SOURCES,
         "",
     );
     assert_not_flagged(&stderr, "integration_param");
+    assert_not_flagged(&stderr, "benchmark_param");
 }
 
 #[test]
@@ -183,7 +188,7 @@ fn flags_an_example_crate() {
 }
 
 #[test]
-fn flags_an_integration_test_crate_when_the_exception_is_off() {
+fn flags_a_test_target_when_the_exception_is_off() {
     let stderr = run(
         "fixture_nbp_integration_exception_off",
         SEPARATE_TARGET_SOURCES,
@@ -193,6 +198,7 @@ fn flags_an_integration_test_crate_when_the_exception_is_off() {
         },
     );
     assert_flagged(&stderr, "integration_param");
+    assert_flagged(&stderr, "benchmark_param");
 }
 
 /// A package whose build script holds the violation. Cargo picks
