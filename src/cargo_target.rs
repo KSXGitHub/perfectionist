@@ -105,18 +105,19 @@ fn classify(crate_name: &str, root: Option<&Path>) -> CargoTarget {
 /// `tests/<crate>/src/lib.rs`, say) classified as a library.
 fn target_directory(root: &Path) -> Option<&str> {
     let parent = root.parent();
-    // Flat form `<dir>/<name>.rs` — including `<dir>/main.rs`, a target
-    // literally named `main` — roots directly in the target directory,
-    // so check the immediate parent first. The subdirectory form
-    // `<dir>/<name>/main.rs` roots one level deeper, so for a `main.rs`
-    // leaf also accept the grandparent. Checking the parent first is
-    // what keeps `tests/main.rs` matched instead of walking past `tests`
-    // to nothing.
-    directory_name(parent).or_else(|| {
-        (root.file_name().and_then(|name| name.to_str()) == Some("main.rs"))
-            .then(|| directory_name(parent.and_then(Path::parent)))
-            .flatten()
-    })
+    // A `main.rs` leaf is ambiguous: `tests/main.rs` is the flat form
+    // for a target named `main`, while `tests/foo/main.rs` is the
+    // subdirectory form for a target named `foo`. Try the grandparent
+    // first, because a target directory sits at the package root: in
+    // `examples/tests/main.rs` the `tests` component is the target's
+    // *name*, and only `examples` is the directory Cargo rooted it in.
+    // Trying the parent first would read that as an integration test.
+    // The fallback covers `tests/main.rs`, whose grandparent is
+    // nothing.
+    (root.file_name().and_then(|name| name.to_str()) == Some("main.rs"))
+        .then(|| directory_name(parent.and_then(Path::parent)))
+        .flatten()
+        .or_else(|| directory_name(parent))
 }
 
 /// `dir`'s final component, when it is one of Cargo's separate-target

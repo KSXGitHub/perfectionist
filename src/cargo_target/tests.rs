@@ -74,6 +74,23 @@ fn build_scripts_are_recognised_by_crate_name() {
 }
 
 #[test]
+fn a_target_named_after_another_target_directory_uses_the_right_one() {
+    // Both components name a target directory, so only their order
+    // says which is Cargo's and which is the target's own name.
+    for (path, expected) in [
+        ("examples/tests/main.rs", CargoTarget::Example),
+        ("tests/examples/main.rs", CargoTarget::IntegrationTest),
+        ("benches/examples/main.rs", CargoTarget::Benchmark),
+    ] {
+        assert_eq!(
+            library_crate(path),
+            expected,
+            "`{path}` should classify as `{expected:?}`",
+        );
+    }
+}
+
+#[test]
 fn a_test_crate_named_like_a_build_script_stays_an_integration_test() {
     // Cargo names an integration test after its file, so this crate
     // name carries the build-script prefix without being one. The
