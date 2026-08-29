@@ -9,7 +9,6 @@
 
 use rustc_hir::def_id::LOCAL_CRATE;
 use rustc_lint::{LateContext, LintContext};
-use std::ffi::OsStr;
 use std::path::Path;
 
 /// Cargo's crate-name prefix for a build script. Cargo names the
@@ -100,12 +99,29 @@ fn classify(crate_name: &str, root: Option<&Path>) -> CargoTarget {
 /// Cargo roots these targets at `<dir>/<name>.rs` or
 /// `<dir>/<name>/main.rs`, where `<dir>` is `tests/`, `benches/`, or
 /// `examples/`, while a library or binary roots under `src/`
-/// (`lib.rs`, `main.rs`, `bin/<name>.rs`). Matching the target
-/// directory itself — not some farther ancestor — keeps a library that
-/// merely lives below such a directory (a workspace member at
-/// `tests/<crate>/src/lib.rs`, or one whose own directory is named
-/// `examples`) classified as a library.
+/// (`lib.rs`, `main.rs`, `bin/<name>.rs`, `bin/<name>/main.rs`).
+///
+/// This reads a path Cargo passes relative to the workspace root, so a
+/// leading `src` component is always the package's own — including a
+/// workspace member's, whose root arrives as `<member>/src/lib.rs`.
 fn target_directory(root: &Path) -> Option<&str> {
+    // Cargo never roots a separate target under `src/`, so a `src`
+    // component settles it: this is the package's own library or
+    // binary. That covers `src/bin/tests/main.rs` — a binary named
+    // `tests` — and a workspace member whose own directory is named
+    // like a target directory, as in `examples/src/main.rs`. Both
+    // would otherwise be read as separate targets and skipped whole.
+    //
+    // The cost is a separate target that itself contains a `src`
+    // component: `tests/src/main.rs`, an integration test named `src`.
+    // Cargo allows it, and this reads it as a binary — the rarer
+    // shape, and it over-lints rather than going quiet.
+    if root
+        .components()
+        .any(|component| component.as_os_str() == "src")
+    {
+        return None;
+    }
     let parent = root.parent();
     // A `main.rs` leaf is ambiguous: `tests/main.rs` is the flat form
     // for a target named `main`, while `tests/foo/main.rs` is the
@@ -113,21 +129,11 @@ fn target_directory(root: &Path) -> Option<&str> {
     // first, because a target directory sits at the package root: in
     // `examples/tests/main.rs` the `tests` component is the target's
     // *name*, and only `examples` is the directory Cargo rooted it in.
-    // Trying the parent first would read that as an integration test.
     // The fallback covers `tests/main.rs`, whose grandparent is
     // nothing.
-    //
-    // A parent of `src` is not a target name but a package root, and
-    // rustc is handed a workspace member's root relative to the
-    // *workspace*: a member directory named `examples` would otherwise
-    // make `examples/src/main.rs` an example, exempting a whole
-    // production crate. Cargo does allow a separate target named `src`
-    // (`tests/src/main.rs`), which this then reads as a binary — the
-    // rarer shape, and it over-lints rather than silently skipping.
     (root.file_name().and_then(|name| name.to_str()) == Some("main.rs"))
-        .then(|| parent.filter(|parent| parent.file_name() != Some(OsStr::new("src"))))
+        .then(|| directory_name(parent.and_then(Path::parent)))
         .flatten()
-        .and_then(|parent| directory_name(parent.parent()))
         .or_else(|| directory_name(parent))
 }
 

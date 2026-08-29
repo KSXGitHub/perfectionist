@@ -74,15 +74,21 @@ fn build_scripts_are_recognised_by_crate_name() {
 }
 
 #[test]
-fn a_workspace_member_named_after_a_target_directory_is_a_library() {
-    // rustc is handed a member's crate root relative to the workspace
-    // root, so a member directory named like a target directory would
-    // otherwise swallow the whole crate.
+fn a_package_root_is_never_read_as_a_target_directory() {
+    // Anything under `src/` is the package's own code, however its
+    // directories are named. rustc is handed a member's crate root
+    // relative to the workspace root, so a member directory named like
+    // a target directory would otherwise swallow the whole crate.
     for path in [
         "examples/src/main.rs",
         "tests/src/main.rs",
         "benches/src/main.rs",
         "tests/mycrate/src/main.rs",
+        // A binary named after a target directory, in both of the
+        // shapes Cargo auto-discovers under `src/bin`.
+        "src/bin/tests/main.rs",
+        "src/bin/benches/main.rs",
+        "src/bin/examples.rs",
     ] {
         assert_eq!(
             library_crate(path),
