@@ -9,7 +9,8 @@
 
 use rustc_hir::def_id::LOCAL_CRATE;
 use rustc_lint::{LateContext, LintContext};
-use std::path::Path;
+use std::ffi::OsStr;
+use std::path::{Component, Path};
 
 /// Cargo's crate-name prefix for a build script. Cargo names the
 /// build-script target `build-script-<file stem>`, which reaches rustc
@@ -93,6 +94,28 @@ fn classify(crate_name: &str, root: Option<&Path>) -> CargoTarget {
     }
 }
 
+/// Whether `root` is the package's own library or binary root rather
+/// than a separate target's: `lib.rs` or `main.rs` directly under a
+/// `src`, or anything under that `src`'s `bin` subdirectory.
+///
+/// Matching Cargo's layouts is what tells `src/bin/tests/main.rs` — a
+/// binary auto-discovered under the name `tests` — from
+/// `src/tests/it.rs`, an integration test that a `[[test]] path = ...`
+/// entry put under `src/`. Scanning for a bare `src` component would
+/// read both as the package's own, and would also let a checkout under
+/// a directory called `src` swallow every target below it.
+fn is_package_source(root: &Path) -> bool {
+    let mut after_src = root
+        .components()
+        .map(Component::as_os_str)
+        .skip_while(|component| *component != OsStr::new("src"))
+        .skip(1);
+    matches!(
+        after_src.next().and_then(OsStr::to_str),
+        Some("lib.rs" | "main.rs" | "bin"),
+    )
+}
+
 /// The name of the Cargo target directory `root` is rooted in, when it
 /// is one of the separate-target directories.
 ///
@@ -100,26 +123,12 @@ fn classify(crate_name: &str, root: Option<&Path>) -> CargoTarget {
 /// `<dir>/<name>/main.rs`, where `<dir>` is `tests/`, `benches/`, or
 /// `examples/`, while a library or binary roots under `src/`
 /// (`lib.rs`, `main.rs`, `bin/<name>.rs`, `bin/<name>/main.rs`).
-///
-/// This reads a path Cargo passes relative to the workspace root, so a
-/// leading `src` component is always the package's own — including a
-/// workspace member's, whose root arrives as `<member>/src/lib.rs`.
 fn target_directory(root: &Path) -> Option<&str> {
-    // Cargo never roots a separate target under `src/`, so a `src`
-    // component settles it: this is the package's own library or
-    // binary. That covers `src/bin/tests/main.rs` — a binary named
-    // `tests` — and a workspace member whose own directory is named
-    // like a target directory, as in `examples/src/main.rs`. Both
-    // would otherwise be read as separate targets and skipped whole.
-    //
-    // The cost is a separate target that itself contains a `src`
-    // component: `tests/src/main.rs`, an integration test named `src`.
-    // Cargo allows it, and this reads it as a binary — the rarer
-    // shape, and it over-lints rather than going quiet.
-    if root
-        .components()
-        .any(|component| component.as_os_str() == "src")
-    {
+    // A library or binary root is never a separate target, however its
+    // directories are named. This also covers a workspace member whose
+    // own directory is named like a target directory: rustc is handed
+    // that root relative to the workspace, as `examples/src/main.rs`.
+    if is_package_source(root) {
         return None;
     }
     let parent = root.parent();

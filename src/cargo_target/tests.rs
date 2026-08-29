@@ -99,6 +99,24 @@ fn a_package_root_is_never_read_as_a_target_directory() {
 }
 
 #[test]
+fn a_target_declared_under_src_is_still_a_separate_target() {
+    // Nothing stops a `[[test]] path = ...` entry from pointing under
+    // `src/`; only Cargo's own `lib.rs` / `main.rs` / `bin` layouts
+    // there belong to the package itself.
+    for (path, expected) in [
+        ("src/tests/it.rs", CargoTarget::IntegrationTest),
+        ("src/benches/bench.rs", CargoTarget::Benchmark),
+        ("src/examples/demo.rs", CargoTarget::Example),
+    ] {
+        assert_eq!(
+            library_crate(path),
+            expected,
+            "`{path}` should classify as `{expected:?}`",
+        );
+    }
+}
+
+#[test]
 fn a_target_named_after_another_target_directory_uses_the_right_one() {
     // Both components name a target directory, so only their order
     // says which is Cargo's and which is the target's own name.
