@@ -98,6 +98,36 @@ fn flags_test_code_when_the_exception_is_off() {
     assert_flagged(&stderr, "nested_param");
 }
 
+/// A `#[test]` function at file scope, with no `#[cfg(test)]` on it or
+/// around it. Its nested helper is reachable only through the
+/// `is_in_test_function` half of `in_test_code`; the `cfg` half finds
+/// nothing to match.
+const LIB_WITH_UNGATED_TEST: &str =
+    include_str!("fixtures/needless_borrowed_parameters/lib_with_ungated_test.rs");
+
+#[test]
+fn does_not_flag_a_helper_inside_an_ungated_test_function() {
+    let stderr = run(
+        "fixture_nbp_ungated_test",
+        &[("src/lib.rs", LIB_WITH_UNGATED_TEST)],
+        "",
+    );
+    assert_not_flagged(&stderr, "ungated_test_param");
+}
+
+#[test]
+fn flags_an_ungated_test_helper_when_the_exception_is_off() {
+    let stderr = run(
+        "fixture_nbp_ungated_test_exception_off",
+        &[("src/lib.rs", LIB_WITH_UNGATED_TEST)],
+        text_block_fnl! {
+            r#"["perfectionist::needless_borrowed_parameters"]"#
+            "test_code_exception = false"
+        },
+    );
+    assert_flagged(&stderr, "ungated_test_param");
+}
+
 /// The compound-predicate cases: `all(...)` is test-only as soon as one
 /// conjunct is, `not(...)` composes by De Morgan so a double negation
 /// is still test-only, and `any(...)` is test-only only if *every*
