@@ -43,28 +43,16 @@ single-field enum variant.
 
 ## Why restrict this?
 
-This is a stylistic preference, not a correctness issue. The
-attribute compiles to exactly the code the derive emits without it,
-so nothing is broken by keeping one.
+This is a stylistic preference, not a correctness issue: the
+attribute compiles to exactly the code the derive emits without it.
+It is the same shape of dead weight as an unused import or a needless
+borrow — it restates what the compiler already does, and a reader has
+to read the whole template before concluding it changes nothing.
 
-What it costs is reader attention. A format template is the one place
-a reader looks to find out how a type renders, so every template
-carries an implicit promise that it *does* something — that some
-prefix, suffix, width, or field selection is being applied. A
-template that resolves to "and then just print the field" spends that
-attention and returns nothing. In a module of error newtypes the
-effect compounds: every type looks like it renders deliberately, and
-telling apart the ones that really do means reading each template
-character by character.
-
-The redundant form is also a small maintenance liability. It restates
-the field's name or index, so renaming the field means editing the
-attribute too, and a container that grows a second field turns a
-template that was a no-op into one that silently keeps only the first
-field — no diagnostic, because the attribute was already there. The
-derive's own default fails loudly in that situation instead: a
-container with more than one field and no template is a compile
-error.
+The one consequence past tidiness is worth knowing. Because the
+attribute names the field, a container that later grows a second
+field keeps compiling and silently renders only the first; the bare
+derive fails to compile there instead.
 
 ## What to lint
 
