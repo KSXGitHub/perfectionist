@@ -209,3 +209,14 @@ The two lints together cover the full surface:
 Enabling both gives a project consistent inlined-format-args style
 across both source positions. Neither subsumes the other; they look
 at different syntactic surfaces.
+
+## Interaction with `redundant_derive_more_forward_template`
+
+[`redundant-derive-more-forward-template`](./redundant-derive-more-forward-template.md)
+deletes an attribute whose template is nothing but the forward the
+derive already performs. Its trigger set is closed under this rule's
+rewrite — it flags `#[display("{}", _0)]` and `#[display("{_0}")]`
+alike — so the two agree on which containers are affected whichever
+runs first. Running the deletion first is still the cheaper order: an
+attribute that is about to disappear does not need its arguments
+inlined.
