@@ -177,9 +177,6 @@ and a `Number` that does not implement `Display` is still rejected at
 the same place with the same error. A field whose type contains no
 type parameter (`String` above) contributes no bound either way.
 
-Nothing here needs an explicit `#[display(bound(...))]`; if one is
-written anyway it is a separate attribute and the fix leaves it alone.
-
 ## Examples
 
 ### Tuple struct
