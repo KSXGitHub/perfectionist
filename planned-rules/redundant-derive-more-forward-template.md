@@ -49,11 +49,6 @@ It is the same shape of dead weight as an unused import or a needless
 borrow — it restates what the compiler already does, and a reader has
 to read the whole template before concluding it changes nothing.
 
-The one consequence past tidiness is worth knowing. Because the
-attribute names the field, a container that later grows a second
-field keeps compiling and silently renders only the first; the bare
-derive fails to compile there instead.
-
 ## What to lint
 
 `derive_more` compiles a formatting template that is *nothing but a
