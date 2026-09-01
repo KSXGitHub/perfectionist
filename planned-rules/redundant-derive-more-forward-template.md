@@ -341,6 +341,26 @@ either compiles to the derive's own default or it does not.
   `clippy_utils::diagnostics::span_lint_hir_and_then` so a local
   `#[allow]` / `#[expect]` resolves.
 
+- **One diagnostic per attribute, not per container.** An enum whose
+  variants are *all* single-field forwards carries one redundant
+  attribute per variant, and every one of them is independently
+  removable:
+
+  ```rust
+  #[derive(Display)]
+  enum Value {
+      #[display("{_0}")] String(String),
+      #[display("{_0}")] Integer(i128),
+      #[display("{_0}")] Float(f64),
+  }
+  ```
+
+  A per-container diagnostic could not describe the mixed enum under
+  *Examples* above, where only some variants qualify. Anchor each
+  finding at its own variant rather than at the enum, so an `#[allow]`
+  on one variant silences just that variant while an `#[allow]` on the
+  enum still covers them all through the usual lint-level nesting.
+
 - **Derive matching is by final path segment**, so `derive_more::Display`,
   a plain `Display` imported from `derive_more`, and a same-name
   re-export all match. A derive renamed through
