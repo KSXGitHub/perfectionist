@@ -16,6 +16,7 @@ pub mod macro_trailing_comma;
 pub mod named_prelude_imports;
 pub mod needless_borrowed_parameters;
 pub mod overly_long_print_macro;
+pub mod redundant_derive_more_forward_template;
 pub mod single_letter_closure_param;
 pub mod single_letter_const_generic;
 pub mod single_letter_const_item;

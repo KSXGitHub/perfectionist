@@ -4,8 +4,10 @@
 //! correctly.
 //!
 //! A span found by scanning *comment* text wants
-//! [`emit_at_enclosing_hir`], whose walk is doc-comment-aware;
-//! anything else wants [`find_enclosing_hir_ids`].
+//! [`emit_at_enclosing_hir`], whose walk is doc-comment-aware; so does
+//! one that has to anchor on an enum variant or a struct field, which
+//! only that walk registers. Anything else wants
+//! [`find_enclosing_hir_ids`].
 
 use rustc_hir as hir;
 use rustc_hir::intravisit::{self, Visitor};
@@ -68,9 +70,9 @@ fn walk(tcx: TyCtxt<'_>, target_spans: &[Span], include_attr_spans: bool) -> Vec
 /// HIR node — in a single [`find_comment_anchor_hir_ids`] walk — then
 /// hand that node id, the span, and the payload to `emit`.
 ///
-/// The companion to [`find_enclosing_hir_ids`] for a rule that scans
-/// comment text in a late pass, outside the HIR walk. Emitted
-/// unanchored, the
+/// The companion to [`find_enclosing_hir_ids`] for a rule that
+/// discovers its violations outside the HIR walk — by scanning comment
+/// text, or by walking a re-parsed module AST. Emitted unanchored, the
 /// lint-level builder would sit at the crate root, so only a
 /// crate-root `#![allow]` / `#![expect]` would apply. Anchoring each
 /// diagnostic at its enclosing node — and emitting through
