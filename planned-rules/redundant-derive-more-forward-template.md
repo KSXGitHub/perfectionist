@@ -124,6 +124,13 @@ one field, and the placeholder's argument resolves to that field:
 matches `r#type`) for a named one, or `self.0` / `self.field` written
 out as an argument.
 
+The borrowed and dereferenced spellings of those arguments —
+`#[display("{}", *_0)]`, `#[display("{}", &self.0)]` — forward
+identically, because `derive_more` wraps an argument it cannot match
+to a field in `&(...)` and the blanket `impl Display for &T` collapses
+the extra reference. Recognising them is optional: they are rare, and
+leaving them out costs only a missed diagnostic.
+
 ### Trigger: an enum restating `{_variant}`
 
 An enum-level `#[display("{_variant}")]` is the container-level
@@ -419,37 +426,6 @@ already a bail.
 - **Rewriting a non-redundant template.** Shortening, re-wrapping, or
   inlining a template that does real work belongs to the sibling
   rules below.
-
-## Why this name
-
-Three modifiers each earn their place under
-[Do not over-claim in the name](./IMPLEMENTATION_CONVENTIONS.md#do-not-over-claim-in-the-name),
-and the alternatives that drop one all claim ground the trigger does
-not hold:
-
-- **`redundant`** is the defect, in Clippy's adjective vocabulary.
-  `explicit_derive_more_forward` names a property instead, and would
-  read under `#[deny]` as forbidding explicit forwards in general —
-  including the two the rule leaves alone, a multi-field container's
-  mandatory template and `#[lower_hex("{_0}")]`.
-  `manual_derive_more_forward` borrows Clippy's `manual_*` idiom for
-  a longhand *reimplementation*, which this is not, and would collide
-  with [`manual-derive-more-impl`](./manual-derive-more-impl.md)'s
-  `Display` sub-check.
-- **`template`** scopes the name to formatting. Without it,
-  `redundant_derive_more_forward` reads as though it also covered a
-  redundant `#[as_ref(forward)]` or `#[from(forward)]` — `forward` is
-  `derive_more`'s own keyword on those derives, and the sibling above
-  plans to touch them.
-- **`forward`** scopes it to *this* kind of redundant template.
-  `redundant_derive_more_template` would also claim the unit-variant
-  case under *Non-goals*, which needs a different predicate and is
-  unsafe to fold in under `rename_all`.
-
-Naming the trait (`redundant_display_attribute`) was rejected for the
-opposite reason: the rule covers every `Display`-like derive in the
-table above, so `display` would under-describe it while inviting
-confusion with `std::fmt::Display`.
 
 ## Interaction with sibling rules
 
