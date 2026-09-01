@@ -167,6 +167,36 @@ it cannot change any variant's output.
   not always hold, can make the field count differ between
   configurations. Bail rather than guess.
 
+### A generic container is not a bail-out
+
+The one shape that looks like it should bail and does not.
+`derive_more` infers a formatting bound for every type parameter a
+template interpolates directly, so deleting a template raises the
+question of whether the bound goes with it:
+
+```rust
+#[derive(Display)]
+enum StringOrNumber<Number> {
+    #[display("{_0}")] // redundant
+    String(String),
+    #[display("{_0}")] // redundant
+    Number(Number),
+}
+```
+
+It does not. Both spellings emit the same predicate, by two routes
+that are forced to agree: with a template the bound pairs the field's
+type with the trait the *placeholder* names, and without one it pairs
+the same field's type with the trait the *derive* implements. Flagging
+already requires those two traits to be equal, so wherever the rule
+fires the bounds are equal too — `Number: Display` survives the fix,
+and a `Number` that does not implement `Display` is still rejected at
+the same place with the same error. A field whose type contains no
+type parameter (`String` above) contributes no bound either way.
+
+Nothing here needs an explicit `#[display(bound(...))]`; if one is
+written anyway it is a separate attribute and the fix leaves it alone.
+
 ## Examples
 
 ### Tuple struct
