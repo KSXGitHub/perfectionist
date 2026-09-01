@@ -11,50 +11,46 @@
 
 Flags a `derive_more` formatting attribute whose template is
 nothing but the forward the derive already performs, and
-suggests deleting the attribute.
+suggests deleting it.
 
-A `derive_more` formatting derive on a container holding
-exactly one field forwards to that field. Spelling the forward
-out — `#[display("{_0}")]` on a newtype, `#[display("{}",
-message)]` on a one-field struct, `#[display("{_0}")]` on a
-single-field enum variant — compiles to the identical call. So
-does an enum-level `#[display("{_variant}")]`, which restates
-how every variant is formatted when the enum carries no shared
-template at all.
+A formatting derive on a container with exactly one field
+forwards to that field, so a template that does nothing but
+name that field says nothing the derive does not — written
+inline (`#[display("{_0}")]`,
+`#[display("{the_only_field}")]`) or as an argument
+(`#[display("{}", _0)]`, `#[display("{}", self.0)]`), on a
+struct or on a single-field enum variant. An enum-level
+`#[display("{_variant}")]` is the container-level counterpart:
+it names exactly what each variant would be formatted with
+anyway.
 
-The same holds for each of `derive_more`'s other formatting
-derives through its own helper attribute: `Binary` /
-`#[binary(...)]`, `LowerExp` / `#[lower_exp(...)]`, `LowerHex`
-/ `#[lower_hex(...)]`, `Octal` / `#[octal(...)]`, `Pointer` /
-`#[pointer(...)]`, `UpperExp` / `#[upper_exp(...)]`, and
-`UpperHex` / `#[upper_hex(...)]`.
+Each of `derive_more`'s formatting derives is read through its
+own helper attribute — `Display` through `#[display(...)]`,
+`LowerHex` through `#[lower_hex(...)]`, and so on — but the
+trait a template forwards to comes from the *placeholder*, not
+from the attribute's name. So `#[lower_hex("{_0}")]` stays
+unflagged: a bare `{}` forwards to `Display`, which is not
+what the `LowerHex` derive would have done.
 
-The rule stays silent wherever deleting the attribute would
-change the output:
+`#[debug(...)]` is never flagged. `derive_more`'s `Debug`
+derive defaults to the struct-shaped `Wrapper("inner")` output
+rather than to a forward, so its template always changes the
+rendering.
 
-- A container with zero or more than one field — with more than
-  one the template is mandatory, with none there is nothing to
-  forward to.
-- `#[debug(...)]`. `derive_more`'s `Debug` derive defaults to
-  the struct-shaped `Wrapper("inner")` builder output rather
-  than to a forward, so `#[debug("{_0:?}")]` genuinely changes
-  the rendering.
-- A placeholder selecting a different trait than the derive
-  implements. `#[display("{_0:?}")]` forwards to `Debug` and
-  `#[lower_hex("{_0}")]` forwards to `Display`; both differ
-  from the default forward.
-- Any adorned placeholder. `#[display("{_0:>8}")]` applies its
+Beyond that the rule is silent wherever deleting the attribute
+would change the output — among them:
+
+- An adorned placeholder: `#[display("{_0:>8}")]` applies its
   own width instead of passing the caller's format spec
-  through, so it is not a forward at all.
+  through.
 - A variant under an enum-level template that does not mention
   `{_variant}`, which is what the variant would fall back to.
-- A container whose field count is `cfg`-dependent, and a
-  template written inside a `#[cfg_attr(...)]`.
+- A `cfg`-gated field, or a template inside a
+  `#[cfg_attr(...)]`: the field count may differ between
+  configurations.
 
-A derive is matched by its final path segment, so
-`derive_more::Display`, a plain `Display` imported from
-`derive_more`, and a same-name re-export all count; a derive
-renamed through `use derive_more::Display as D;` does not.
+A derive renamed on import (`use derive_more::Display as D;`)
+is not recognised; a re-export under the same name is.
 
 ## Why restrict this?
 
