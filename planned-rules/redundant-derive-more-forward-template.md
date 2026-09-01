@@ -82,16 +82,16 @@ Flag an attribute when **all** of these hold:
    carries a `#[derive(...)]` naming one of the `Display`-like
    derives, and the attribute's name is that derive's attribute name:
 
-   | Derive | Attribute | Placeholder type |
-   |--------|-----------|------------------|
-   | `Binary` | `#[binary(...)]` | `{:b}` |
-   | `Display` | `#[display(...)]` | `{}` |
-   | `LowerExp` | `#[lower_exp(...)]` | `{:e}` |
-   | `LowerHex` | `#[lower_hex(...)]` | `{:x}` |
-   | `Octal` | `#[octal(...)]` | `{:o}` |
-   | `Pointer` | `#[pointer(...)]` | `{:p}` |
-   | `UpperExp` | `#[upper_exp(...)]` | `{:E}` |
-   | `UpperHex` | `#[upper_hex(...)]` | `{:X}` |
+   | Derive     | Attribute           | Placeholder type |
+   |------------|---------------------|------------------|
+   | `Binary`   | `#[binary(...)]`    | `{:b}`           |
+   | `Display`  | `#[display(...)]`   | `{}`             |
+   | `LowerExp` | `#[lower_exp(...)]` | `{:e}`           |
+   | `LowerHex` | `#[lower_hex(...)]` | `{:x}`           |
+   | `Octal`    | `#[octal(...)]`     | `{:o}`           |
+   | `Pointer`  | `#[pointer(...)]`   | `{:p}`           |
+   | `UpperExp` | `#[upper_exp(...)]` | `{:E}`           |
+   | `UpperHex` | `#[upper_hex(...)]` | `{:X}`           |
 
 2. **The template is one placeholder and nothing else.** No literal
    text before, after, or between; no second placeholder; no escaped
