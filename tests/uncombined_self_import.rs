@@ -12,6 +12,7 @@ use text_block_macros::text_block_fnl;
 
 #[test]
 fn folds_adjacent_module_and_item_imports() {
+    _utils::scratch::redirect_temp_dir();
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), "ui-toml/uncombined_self_import")
         .dylint_toml(text_block_fnl! {
             "[perfectionist]"

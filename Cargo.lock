@@ -30,6 +30,7 @@ dependencies = [
 name = "_gen_docs"
 version = "0.0.0"
 dependencies = [
+ "_utils",
  "cargo_toml",
  "clap",
  "command-extra",

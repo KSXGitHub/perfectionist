@@ -1,9 +1,13 @@
-//! Test-support building blocks for perfectionist's integration
-//! tests. These helpers materialise a minimal Cargo project on disk
+//! Test-support building blocks for perfectionist's test suites.
+//! Most of these helpers materialise a minimal Cargo project on disk
 //! and shell out to `cargo dylint` against it. Path inputs are taken
 //! as parameters rather than discovered, because this crate is built
 //! in isolation from any test workspace and has no access to the
 //! caller's `CARGO_TARGET_DIR` or `CARGO_MANIFEST_DIR`.
+//!
+//! The exception is [`scratch`], which every test suite in the
+//! repository — the gen-docs unit tests included — goes through to
+//! keep its temporary files out of `/tmp` proper.
 
 pub use tempfile::TempDir;
 
@@ -12,6 +16,7 @@ use std::path::Path;
 pub mod dylint;
 pub mod manifest;
 pub mod project;
+pub mod scratch;
 
 pub use dylint::{run_dylint, run_dylint_all_targets};
 pub use manifest::{
@@ -19,18 +24,19 @@ pub use manifest::{
 };
 pub use project::{build_project, build_project_with_config};
 
-/// Materialise a fixture project in a fresh [`TempDir`], run
-/// `cargo dylint --all` against it (sharing the warmed `target/`), and
-/// return the [`TempDir`] guard, the stderr output, and the success
-/// flag. The [`TempDir`] is yielded first so the caller keeps the
-/// project on disk for the duration of its assertions.
+/// Materialise a fixture project in a fresh [`TempDir`] under
+/// [`scratch::root`], run `cargo dylint --all` against it (sharing
+/// the warmed `target/`), and return the [`TempDir`] guard, the
+/// stderr output, and the success flag. The [`TempDir`] is yielded
+/// first so the caller keeps the project on disk for the duration of
+/// its assertions.
 pub fn run_project_with_sources(
     package_name: &str,
     perfectionist_dir: &Path,
     shared_target_dir: &Path,
     sources: &[(&str, &str)],
 ) -> (TempDir, String, bool) {
-    let temp = TempDir::new().expect("failed to create temp dir");
+    let temp = TempDir::new_in(scratch::root()).expect("failed to create temp dir");
     build_project(temp.path(), package_name, perfectionist_dir, sources);
     let (stderr, success) = run_dylint(temp.path(), shared_target_dir);
     (temp, stderr, success)
@@ -49,7 +55,7 @@ pub fn run_project_with_sources_and_config(
     sources: &[(&str, &str)],
     dylint_config: &str,
 ) -> (TempDir, String, bool) {
-    let temp = TempDir::new().expect("failed to create temp dir");
+    let temp = TempDir::new_in(scratch::root()).expect("failed to create temp dir");
     build_project_with_config(
         temp.path(),
         package_name,
@@ -73,7 +79,7 @@ pub fn run_project_with_config(
     sources: &[(&str, &str)],
     dylint_config: &str,
 ) -> (TempDir, String, bool) {
-    let temp = TempDir::new().expect("failed to create temp dir");
+    let temp = TempDir::new_in(scratch::root()).expect("failed to create temp dir");
     build_project_with_config(
         temp.path(),
         package_name,

@@ -38,6 +38,7 @@ fn dylint_toml(config: RuleConfig) -> String {
 
 fn run(src_base: &str, contents: &str) {
     let _serial = SERIAL.lock().unwrap_or_else(|err| err.into_inner());
+    _utils::scratch::redirect_temp_dir();
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), src_base)
         .dylint_toml(contents)
         .run();

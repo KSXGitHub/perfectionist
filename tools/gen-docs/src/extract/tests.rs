@@ -2,22 +2,11 @@ use super::collect_rules;
 use std::fs;
 use std::path::PathBuf;
 
-/// Allocate a fresh temp directory unique across both processes
-/// (cargo's test harness forks per binary) and across tests in
-/// the same binary (the atomic counter handles concurrent runs
-/// and any label collision). Mirrors the helper in
-/// `check_md.rs`'s test module; kept local so the two test
-/// modules stay self-contained.
+/// Allocate a fresh temp directory of this module's own, so a
+/// `label` it shares with another test module still gets a
+/// directory to itself.
 fn tempdir(label: &str) -> PathBuf {
-    static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-    let seq = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let base = std::env::temp_dir().join(format!(
-        "perfectionist-gen-docs-extract-{label}-{}-{seq}",
-        std::process::id(),
-    ));
-    let _ = fs::remove_dir_all(&base);
-    fs::create_dir_all(&base).unwrap();
-    base
+    _utils::scratch::dir(&format!("gen-docs-extract-{label}"))
 }
 
 /// Directory-module rules keep `CONFIG_KEY` and `Config` in

@@ -23,3 +23,6 @@ syn = { version = "2.0.105", features = ["full", "parsing", "extra-traits"] }
 syntect = { version = "5.2.0", default-features = false, features = ["default-fancy"] }
 text-block-macros = "0.2.0"
 two-face = { version = "0.5.1", default-features = false, features = ["syntect-fancy"] }
+
+[dev-dependencies]
+_utils = { path = "../../utils" }

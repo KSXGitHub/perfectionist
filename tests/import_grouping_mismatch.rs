@@ -50,6 +50,7 @@ fn run(src_base: &str, config: RuleConfig) {
     // A poisoned mutex from a previous panic doesn't make this lock
     // unsafe — recover the inner guard and proceed.
     let _serial = SERIAL.lock().unwrap_or_else(|err| err.into_inner());
+    _utils::scratch::redirect_temp_dir();
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), src_base)
         .dylint_toml(dylint_toml(config))
         .run();

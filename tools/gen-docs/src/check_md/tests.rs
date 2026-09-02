@@ -20,22 +20,9 @@ fn fake_rule(name: &str) -> Rule {
 
 /// Build a temporary directory unique to *this call*, so the
 /// test doesn't litter the working tree and can't collide with
-/// another test running in parallel. The path includes both the
-/// process id (for cross-process isolation under `cargo test`'s
-/// test harness, which forks per binary) and a per-process
-/// atomic counter (for inter-test isolation within the same
-/// binary, so two tests that happen to share a `label` don't
-/// share a directory).
+/// another test running in parallel.
 fn tempdir(label: &str) -> PathBuf {
-    static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-    let seq = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let base = std::env::temp_dir().join(format!(
-        "perfectionist-gen-docs-{label}-{}-{seq}",
-        std::process::id(),
-    ));
-    let _ = fs::remove_dir_all(&base);
-    fs::create_dir_all(&base).unwrap();
-    base
+    _utils::scratch::dir(&format!("gen-docs-check-md-{label}"))
 }
 
 #[test]

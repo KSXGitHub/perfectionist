@@ -1,5 +1,6 @@
 #[test]
 fn ui() {
+    _utils::scratch::redirect_temp_dir();
     // Pin the `ui/` sweep to an empty `dylint.toml` so `dylint_testing`
     // doesn't fall back to the crate's own `dylint.toml` which contains
     // non-default settings specific to this repo.
