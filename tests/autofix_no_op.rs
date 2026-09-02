@@ -23,16 +23,25 @@
 //! and reasoning about them produced a wrong answer in both directions
 //! before this test existed.
 //!
-//! Ignored by default: it builds the lint, fetches `derive_more` and
-//! runs three expansions, which does not belong in the gating suite.
+//! Like the other integration tests here, the fixture is materialised
+//! fresh in a `TempDir` while `CARGO_TARGET_DIR` points at the warmed
+//! `target/integration-fixtures`, so the compiled std and the built
+//! perfectionist plugin are reused instead of paid for from cold. Only
+//! `derive_more` is new to that cache, and only on the first run.
+//!
+//! Ignored by default: it fetches `derive_more`, runs the fixer and
+//! three expansions, which does not belong in the gating suite.
 //!
 //! ```text
 //! cargo test --test autofix_no_op -- --ignored --nocapture
 //! ```
 
+pub mod _utils;
+
+use _utils::{TempDir, cargo_manifest_dir, fixture_dylint_toml, shared_target_dir};
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
 /// `(name, as the user writes it, with the attribute deleted by hand)`.
@@ -256,21 +265,22 @@ const ACCEPTED_MISSED_DIAGNOSTICS: &[&str] = &[
 #[test]
 #[ignore = "builds the lint, fetches `derive_more`, runs three expansions; see the module docs"]
 fn autofix_never_changes_the_generated_code() {
-    let dir = scratch_crate();
+    let fixture = fixture_crate();
+    let dir = fixture.path();
 
-    write_source(&dir, |case| case.1);
-    let before = expand(&dir, "as written");
-    let source_before = read_source(&dir);
+    write_source(dir, |case| case.1);
+    let before = expand(dir, "as written");
+    let source_before = read_source(dir);
 
-    apply_the_real_fix(&dir);
-    let source_after = read_source(&dir);
-    let after = expand(&dir, "after `cargo dylint --fix`");
-    assert_compiles(&dir, "the fixed crate");
+    apply_the_real_fix(dir);
+    let source_after = read_source(dir);
+    let after = expand(dir, "after `cargo dylint --fix`");
+    assert_compiles(dir, "the fixed crate");
 
     // A third expansion, of every attribute deleted by hand, is what
     // lets a declined shape be told from one that never needed fixing.
-    write_source(&dir, |case| case.2);
-    let deleted = expand(&dir, "attribute deleted by hand");
+    write_source(dir, |case| case.2);
+    let deleted = expand(dir, "attribute deleted by hand");
 
     let mut failures = Vec::new();
     for (name, _, _) in CASES {
@@ -293,25 +303,33 @@ fn autofix_never_changes_the_generated_code() {
     assert!(failures.is_empty(), "\n{}", failures.join("\n\n"));
 }
 
-/// A throwaway crate depending on the real `derive_more` and pointing
-/// `cargo dylint` at this workspace's lint library.
-fn scratch_crate() -> PathBuf {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let dir = root.join("target/autofix-no-op");
-    fs::create_dir_all(dir.join("src")).expect("create scratch crate");
+/// A fixture crate depending on the real `derive_more`, materialised
+/// fresh so the sources under test are never inherited from a previous
+/// run. Only the *build* is shared, through [`shared_target_dir`].
+///
+/// The manifest is written here rather than through
+/// `_utils::build_project` because this fixture needs a real
+/// dependency, which the shared builder does not model; the
+/// `dylint.toml` still goes through [`fixture_dylint_toml`], so the
+/// plugin is discovered exactly as in every other fixture.
+fn fixture_crate() -> TempDir {
+    let fixture = TempDir::new().expect("create fixture dir");
+    let dir = fixture.path();
+    fs::create_dir_all(dir.join("src")).expect("create fixture src dir");
     fs::write(
         dir.join("Cargo.toml"),
-        format!(
-            "[package]\nname = \"autofix_no_op\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n\
-             [dependencies]\nderive_more = {{ version = \"2\", features = [\"full\"] }}\n\n\
-             [workspace]\nmetadata.dylint.libraries = [{{ path = {:?} }}]\n",
-            root,
-        ),
+        "[package]\nname = \"autofix_no_op\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n\
+         [lib]\npath = \"src/lib.rs\"\n\n\
+         [dependencies]\nderive_more = { version = \"2\", features = [\"full\"] }\n\n\
+         [workspace]\n",
     )
-    .expect("write scratch manifest");
-    fs::copy(root.join("rust-toolchain"), dir.join("rust-toolchain"))
-        .expect("pin the scratch crate to this toolchain");
-    dir
+    .expect("write fixture manifest");
+    fs::write(
+        dir.join("dylint.toml"),
+        fixture_dylint_toml(cargo_manifest_dir()),
+    )
+    .expect("write fixture dylint.toml");
+    fixture
 }
 
 fn write_source(dir: &Path, pick: impl Fn(&Case) -> &'static str) {
@@ -337,12 +355,16 @@ fn read_source(dir: &Path) -> BTreeMap<String, String> {
         .collect()
 }
 
+/// Prepare a Cargo invocation inside the fixture, sharing the warmed
+/// integration-test target dir so std and the perfectionist plugin are
+/// not rebuilt, and with the pinned `cargo-dylint` on `PATH`.
 fn cargo(dir: &Path) -> Command {
     let mut command = Command::new(env!("CARGO"));
-    let dev_tools = Path::new(env!("CARGO_MANIFEST_DIR")).join(".dev-tools/bin");
+    let dev_tools = cargo_manifest_dir().join(".dev-tools/bin");
     let path = std::env::var("PATH").unwrap_or_default();
     command
         .current_dir(dir)
+        .env("CARGO_TARGET_DIR", shared_target_dir())
         .env("PATH", format!("{}:{path}", dev_tools.display()));
     command
 }
