@@ -1,0 +1,18 @@
+# Manifest for the fixture crate `tests/autofix_no_op.rs` materialises.
+# Kept as a real `.toml` file rather than a Rust string so it reads as
+# the manifest it is; the test copies it into a `TempDir` verbatim.
+
+[package]
+name = "autofix_no_op"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+derive_more = { version = "2", features = ["full"] }
+
+# Declare an empty workspace so cargo does not try to enroll the
+# fixture into whatever workspace its `TempDir` happens to sit in.
+[workspace]

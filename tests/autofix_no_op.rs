@@ -303,27 +303,23 @@ fn autofix_never_changes_the_generated_code() {
     assert!(failures.is_empty(), "\n{}", failures.join("\n\n"));
 }
 
+/// The fixture crate's manifest. It needs a real `derive_more`
+/// dependency, which `_utils::fixture_cargo_toml` does not model, so it
+/// lives beside the other fixture inputs rather than being built here.
+const FIXTURE_MANIFEST: &str = include_str!("fixtures/autofix_no_op/Cargo.toml");
+
 /// A fixture crate depending on the real `derive_more`, materialised
 /// fresh so the sources under test are never inherited from a previous
 /// run. Only the *build* is shared, through [`shared_target_dir`].
 ///
-/// The manifest is written here rather than through
-/// `_utils::build_project` because this fixture needs a real
-/// dependency, which the shared builder does not model; the
-/// `dylint.toml` still goes through [`fixture_dylint_toml`], so the
-/// plugin is discovered exactly as in every other fixture.
+/// The manifest comes from [`FIXTURE_MANIFEST`]; the `dylint.toml`
+/// still goes through [`fixture_dylint_toml`], so the plugin is
+/// discovered exactly as in every other fixture.
 fn fixture_crate() -> TempDir {
     let fixture = TempDir::new().expect("create fixture dir");
     let dir = fixture.path();
     fs::create_dir_all(dir.join("src")).expect("create fixture src dir");
-    fs::write(
-        dir.join("Cargo.toml"),
-        "[package]\nname = \"autofix_no_op\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n\
-         [lib]\npath = \"src/lib.rs\"\n\n\
-         [dependencies]\nderive_more = { version = \"2\", features = [\"full\"] }\n\n\
-         [workspace]\n",
-    )
-    .expect("write fixture manifest");
+    fs::write(dir.join("Cargo.toml"), FIXTURE_MANIFEST).expect("write fixture manifest");
     fs::write(
         dir.join("dylint.toml"),
         fixture_dylint_toml(cargo_manifest_dir()),
