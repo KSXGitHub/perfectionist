@@ -38,7 +38,7 @@
 
 pub mod _utils;
 
-use _utils::{TempDir, cargo_manifest_dir, fixture_dylint_toml, shared_target_dir};
+use _utils::{TempDir, cargo_manifest_dir, fixture_dylint_toml, run_dylint_fix, shared_target_dir};
 use command_extra::CommandExtra;
 use pipe_trait::Pipe;
 use std::collections::BTreeMap;
@@ -355,38 +355,21 @@ fn read_source(dir: &Path) -> BTreeMap<String, String> {
 
 /// Prepare a Cargo invocation inside the fixture, sharing the warmed
 /// integration-test target dir so std and the perfectionist plugin are
-/// not rebuilt, and with the pinned `cargo-dylint` on `PATH`.
+/// not rebuilt. Only the invocations that are not `cargo dylint` are
+/// built here; that one goes through [`run_dylint_fix`], beside its
+/// siblings.
 fn cargo(dir: &Path) -> Command {
-    let dev_tools = cargo_manifest_dir().join(".dev-tools/bin");
-    let path = std::env::var("PATH").unwrap_or_default();
     env!("CARGO")
         .pipe(Command::new)
         .with_current_dir(dir)
         .with_env("CARGO_TARGET_DIR", shared_target_dir())
-        .with_env("PATH", format!("{}:{path}", dev_tools.display()))
 }
 
-/// Run the rule's own autofix over the scratch crate, so the deletion
-/// under test is the one the rule actually emits.
+/// Run the rule's own autofix over the fixture, so the deletion under
+/// test is the one the rule actually emits.
 fn apply_the_real_fix(dir: &Path) {
-    let output = cargo(dir)
-        .with_arg("dylint")
-        .with_arg("--fix")
-        .with_arg("--all")
-        // Everything after the separator goes to the underlying
-        // `cargo fix`, which refuses to rewrite sources it cannot see
-        // under version control.
-        .with_arg("--")
-        .with_arg("--lib")
-        .with_arg("--allow-no-vcs")
-        .with_arg("--allow-dirty")
-        .output()
-        .expect("run cargo dylint --fix");
-    assert!(
-        output.status.success(),
-        "cargo dylint --fix failed:\n{}",
-        String::from_utf8_lossy(&output.stderr),
-    );
+    let (stderr, success) = run_dylint_fix(dir, &shared_target_dir());
+    assert!(success, "cargo dylint --fix failed:\n{stderr}");
 }
 
 fn assert_compiles(dir: &Path, what: &str) {
