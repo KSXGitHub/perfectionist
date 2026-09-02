@@ -39,6 +39,8 @@
 pub mod _utils;
 
 use _utils::{TempDir, cargo_manifest_dir, fixture_dylint_toml, shared_target_dir};
+use command_extra::CommandExtra;
+use pipe_trait::Pipe;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
@@ -355,29 +357,29 @@ fn read_source(dir: &Path) -> BTreeMap<String, String> {
 /// integration-test target dir so std and the perfectionist plugin are
 /// not rebuilt, and with the pinned `cargo-dylint` on `PATH`.
 fn cargo(dir: &Path) -> Command {
-    let mut command = Command::new(env!("CARGO"));
     let dev_tools = cargo_manifest_dir().join(".dev-tools/bin");
     let path = std::env::var("PATH").unwrap_or_default();
-    command
-        .current_dir(dir)
-        .env("CARGO_TARGET_DIR", shared_target_dir())
-        .env("PATH", format!("{}:{path}", dev_tools.display()));
-    command
+    env!("CARGO")
+        .pipe(Command::new)
+        .with_current_dir(dir)
+        .with_env("CARGO_TARGET_DIR", shared_target_dir())
+        .with_env("PATH", format!("{}:{path}", dev_tools.display()))
 }
 
 /// Run the rule's own autofix over the scratch crate, so the deletion
 /// under test is the one the rule actually emits.
 fn apply_the_real_fix(dir: &Path) {
     let output = cargo(dir)
-        .args([
-            "dylint",
-            "--fix",
-            "--all",
-            "--",
-            "--lib",
-            "--allow-no-vcs",
-            "--allow-dirty",
-        ])
+        .with_arg("dylint")
+        .with_arg("--fix")
+        .with_arg("--all")
+        // Everything after the separator goes to the underlying
+        // `cargo fix`, which refuses to rewrite sources it cannot see
+        // under version control.
+        .with_arg("--")
+        .with_arg("--lib")
+        .with_arg("--allow-no-vcs")
+        .with_arg("--allow-dirty")
         .output()
         .expect("run cargo dylint --fix");
     assert!(
@@ -389,7 +391,9 @@ fn apply_the_real_fix(dir: &Path) {
 
 fn assert_compiles(dir: &Path, what: &str) {
     let output = cargo(dir)
-        .args(["check", "--quiet", "--lib"])
+        .with_arg("check")
+        .with_arg("--quiet")
+        .with_arg("--lib")
         .output()
         .expect("run cargo check");
     assert!(
@@ -402,7 +406,11 @@ fn assert_compiles(dir: &Path, what: &str) {
 /// Expand the scratch crate and return the generated code per case.
 fn expand(dir: &Path, what: &str) -> BTreeMap<String, String> {
     let output = cargo(dir)
-        .args(["rustc", "--quiet", "--lib", "--", "-Zunpretty=expanded"])
+        .with_arg("rustc")
+        .with_arg("--quiet")
+        .with_arg("--lib")
+        .with_arg("--")
+        .with_arg("-Zunpretty=expanded")
         .output()
         .expect("run cargo rustc");
     assert!(
