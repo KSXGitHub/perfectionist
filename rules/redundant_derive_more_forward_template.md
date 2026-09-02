@@ -38,22 +38,12 @@ rather than to a forward, so its template always changes the
 rendering.
 
 Beyond that the rule is silent wherever deleting the attribute
-would change the output — among them:
-
-- An adorned placeholder: `#[display("{_0:>8}")]` applies its
-  own width instead of passing the caller's format spec
-  through.
-- A variant under an enum-level template that does not mention
-  `{_variant}`, which is what the variant would fall back to.
-- An argument that is any expression other than a bare field
-  name — `#[display("{}", self.0)]`. `derive_more` wraps it as
-  `&(self.0)` and infers no bound from it, so the deletion would
-  not leave the generated impl alone.
-- A `bound(...)` beside the template: `derive_more` folds those
-  predicates in only while a template is present.
-- A `cfg`-gated field, or a template inside a
-  `#[cfg_attr(...)]`: the field count may differ between
-  configurations.
+would change the generated impl — among them an adorned
+placeholder such as `#[display("{_0:>8}")]`, a variant under any
+enum-level template, an argument that is not a bare field name
+(`#[display("{}", self.0)]`), a `bound(...)` written beside the
+template, a `cfg`-gated container or field, and a template
+inside a `#[cfg_attr(...)]`.
 
 The rule runs only in a crate where a `derive_more` derive
 actually expands. Within one, a derive renamed on import

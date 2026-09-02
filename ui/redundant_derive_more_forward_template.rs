@@ -95,7 +95,8 @@ enum Status {
     Running(u64),
 }
 
-// Bad twice: the enum-level `{_variant}` and the variant it wraps.
+// Bad once: the enum-level `{_variant}`. The variant under it is left
+// alone — see `Wrapped` below for why any enum-level template shadows.
 #[derive(Display)]
 #[display("{_variant}")]
 enum Transparent {
@@ -103,11 +104,29 @@ enum Transparent {
     Text(String),
 }
 
-// Bad: an enum-level template that mentions `{_variant}` wraps rather
-// than replaces, so the variant's own attribute is still removable.
+// Good: under a wrapping enum-level template `derive_more` leaves the
+// transparent path. For `Display` the deletion happens to be a no-op,
+// but for `Pointer` the wrapped form dereferences the field and prints
+// a different address, so the whole shape is declined.
 #[derive(Display)]
 #[display("wrapped: {_variant}")]
 enum Wrapped {
+    #[display("{_0}")]
+    Inner(String),
+}
+
+#[derive(derive_more::Pointer)]
+#[pointer("p: {_variant}")]
+enum WrappedPointer {
+    #[pointer("{_0:p}")]
+    Inner(Box<u32>),
+}
+
+// Good: aliasing the placeholder makes a `{_variant}` template
+// replacing, so the variant would fall back to it.
+#[derive(Display)]
+#[display("{_variant}", _variant = 1)]
+enum AliasedVariant {
     #[display("{_0}")]
     Inner(String),
 }
@@ -236,13 +255,29 @@ enum UnitVariant {
     Idle,
 }
 
-// Good: the container is not in the compiled crate at all, so there is
-// no HIR node to anchor a finding at — and an `#[allow]` on the item
-// could not silence one.
+// Good: the container may not be in the compiled crate at all, and one
+// that is not has no HIR node to anchor a finding at — an `#[allow]` on
+// the item could not silence one. That holds wherever it sits, so the
+// nested cases below are declined too.
 #[cfg(any())]
 #[derive(Display)]
 #[display("{_0}")]
 struct NotBuilt(String);
+
+mod inline_module {
+    #[cfg(any())]
+    #[derive(super::Display)]
+    #[display("{_0}")]
+    struct NotBuiltNested(String);
+}
+
+#[derive(Display)]
+enum DisabledVariant {
+    #[cfg(any())]
+    #[display("{_0}")]
+    Gone(String),
+    Kept,
+}
 
 // Good: a `cfg`-gated field makes the field count depend on the
 // configuration.

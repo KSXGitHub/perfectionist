@@ -10,7 +10,7 @@
 
 use super::attrs::{
     AttributeCall, FieldReference, FormattingTrait, Forward, attribute_calls, formatting_trait,
-    lone_forward, parse_call, template_literal, wraps_variants,
+    lone_forward, parse_call, template_literal,
 };
 use crate::module_reparse::SpanRange;
 use rustc_ast::tokenstream::TokenStream;
@@ -69,7 +69,7 @@ fn walk_items(
 ) {
     for item in items {
         match &item.kind {
-            ItemKind::Struct(ident, _, data) => {
+            ItemKind::Struct(ident, _, data) if !is_cfg_gated(&item.attrs) => {
                 let derives = derive_names(&item.attrs);
                 check_container(
                     &item.attrs,
@@ -80,7 +80,9 @@ fn walk_items(
                     violations,
                 );
             }
-            ItemKind::Enum(ident, _, def) => check_enum(item, ident.span, def, violations),
+            ItemKind::Enum(ident, _, def) if !is_cfg_gated(&item.attrs) => {
+                check_enum(item, ident.span, def, violations);
+            }
             // Descend into inline `mod { ... }` bodies, but only those
             // live in the compiled crate. A re-parse keeps cfg-disabled
             // inline modules, which have no HIR node and so could not be
@@ -147,11 +149,25 @@ fn check_enum(item: &Item, anchor: Span, def: &EnumDef, violations: &mut Vec<Vio
     if derives.is_empty() {
         return;
     }
-    // An enum-level template that does *not* mention `{_variant}` is
-    // what a variant falls back to once its own attribute is gone, so a
-    // variant attribute under one is not removable. Gated enum-level
-    // templates count too: one that applies only under some `cfg` still
-    // shadows its variants there.
+    // Any enum-level template shadows its variants' own attributes.
+    //
+    // A template that does not mention `{_variant}` is simply what a
+    // variant falls back to once its own attribute is gone. One that
+    // *does* mention it looks safe — the variant is wrapped either way
+    // — but only for some traits: under a wrapping template
+    // `derive_more` abandons the transparent path, and for `Pointer` it
+    // then dereferences the field, so the wrapped form prints the
+    // pointee's address and the deleted form prints the binding's.
+    // Aliasing the placeholder (`#[display("{_variant}", _variant = 1)]`)
+    // makes the template replacing again. Both are narrow, and reasoning
+    // about which combinations survive has been wrong more than once, so
+    // the enum-level template is treated as shadowing regardless of what
+    // it says. Gated templates count too: one that applies only under
+    // some `cfg` still shadows its variants there.
+    //
+    // The cost is a missed diagnostic on a variant under a wrapping
+    // template; the enum-level attribute is still flagged on its own
+    // terms, and deleting it re-exposes the variant.
     let mut shadowed: HashSet<&'static str> = HashSet::new();
     let calls = attribute_calls_of(&item.attrs);
     let configured = non_template_helpers(&calls);
@@ -161,15 +177,12 @@ fn check_enum(item: &Item, anchor: Span, def: &EnumDef, violations: &mut Vec<Vio
         };
         // Keyed on the template literal alone rather than on a full
         // parse: an enum-level template whose arguments this rule
-        // cannot read is still a template, and still replaces its
+        // cannot read is still a template, and still governs its
         // variants' formatting.
-        let Some(template) = template_literal(call.tokens) else {
-            continue;
-        };
-        if !wraps_variants(&template) {
-            shadowed.insert(formatting.attribute);
+        if template_literal(call.tokens).is_none() {
             continue;
         }
+        shadowed.insert(formatting.attribute);
         // The enum-level counterpart of the single-field trigger: a
         // template that is nothing *but* `{_variant}` is exactly what
         // `derive_more` does with no enum-level template at all.
@@ -183,6 +196,9 @@ fn check_enum(item: &Item, anchor: Span, def: &EnumDef, violations: &mut Vec<Vio
         }
     }
     for variant in &def.variants {
+        if is_cfg_gated(&variant.attrs) {
+            continue;
+        }
         check_container(
             &variant.attrs,
             variant.ident.span,
@@ -316,6 +332,14 @@ fn attribute_calls_of(attrs: &[Attribute]) -> Vec<AttributeCall<'_>> {
 
 /// Whether a `#[cfg(...)]` gates the node, including one applied
 /// through a `#[cfg_attr(...)]`.
+///
+/// Applied to a container as well as to its fields. A gated container
+/// may not be in the compiled crate at all, and one that is not has no
+/// HIR node — so a finding on it anchors at whatever live node encloses
+/// it (an inline `mod`, a function body, the enum around a gated
+/// variant) and cannot be silenced by an `#[allow]` on the item itself.
+/// The re-parse deliberately keeps such items, so the walk has to
+/// decline them.
 fn is_cfg_gated(attrs: &[Attribute]) -> bool {
     attrs.iter().any(|attr| {
         attr.has_name(sym::cfg)

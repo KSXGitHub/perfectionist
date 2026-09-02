@@ -287,21 +287,6 @@ fn resolve(placeholder: &Placeholder<'_>, supplied: Option<&TemplateArgument>) -
 /// `derive_more`'s enum-level stand-in for a variant's own formatting.
 const VARIANT_PLACEHOLDER: &str = "_variant";
 
-/// Whether a template mentions `{_variant}` anywhere. An enum-level
-/// template that does is a wrapper around each variant's own
-/// formatting, so a variant's attribute is still removable under it; one
-/// that does not replaces the variant's formatting outright, and
-/// removing a variant's attribute would change the output to this text.
-/// An unparsable template counts as replacing — the conservative answer.
-pub(super) fn wraps_variants(template: &str) -> bool {
-    parse_template(template).is_some_and(|segments| {
-        segments.iter().any(|segment| {
-            matches!(segment, Segment::Placeholder(placeholder)
-                if placeholder.argument == VARIANT_PLACEHOLDER)
-        })
-    })
-}
-
 /// Read a field reference out of a placeholder argument or a bare
 /// identifier argument. `None` for an explicit positional index
 /// (`{0}`), which names an argument rather than a field.

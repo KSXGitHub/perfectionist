@@ -89,7 +89,7 @@ LL | | enum Status {
    | |_- help: remove the attribute
 
 warning: `#[display("{_variant}")]` only restates how the `Display` derive already formats every variant
-  --> $DIR/redundant_derive_more_forward_template.rs:100:1
+  --> $DIR/redundant_derive_more_forward_template.rs:101:1
    |
 LL |   #[display("{_variant}")]
    |  _-^^^^^^^^^^^^^^^^^^^^^^^
@@ -97,7 +97,7 @@ LL | | enum Transparent {
    | |_- help: remove the attribute
 
 warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
-  --> $DIR/redundant_derive_more_forward_template.rs:102:5
+  --> $DIR/redundant_derive_more_forward_template.rs:138:5
    |
 LL |       #[display("{_0}")]
    |  _-   ^^^^^^^^^^^^^^^^^^
@@ -105,23 +105,7 @@ LL | |     Text(String),
    | |_- help: remove the attribute
 
 warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
-  --> $DIR/redundant_derive_more_forward_template.rs:111:5
-   |
-LL |       #[display("{_0}")]
-   |  _-   ^^^^^^^^^^^^^^^^^^
-LL | |     Inner(String),
-   | |_- help: remove the attribute
-
-warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
-  --> $DIR/redundant_derive_more_forward_template.rs:119:5
-   |
-LL |       #[display("{_0}")]
-   |  _-   ^^^^^^^^^^^^^^^^^^
-LL | |     Text(String),
-   | |_- help: remove the attribute
-
-warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
-  --> $DIR/redundant_derive_more_forward_template.rs:121:5
+  --> $DIR/redundant_derive_more_forward_template.rs:140:5
    |
 LL |       #[display("{_0}")]
    |  _-   ^^^^^^^^^^^^^^^^^^
@@ -129,7 +113,7 @@ LL | |     Number(Number),
    | |_- help: remove the attribute
 
 warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
-  --> $DIR/redundant_derive_more_forward_template.rs:129:5
+  --> $DIR/redundant_derive_more_forward_template.rs:148:5
    |
 LL |     #[display("{_0}")] Text(String),
    |     ^^^^^^^^^^^^^^^^^^-
@@ -137,7 +121,7 @@ LL |     #[display("{_0}")] Text(String),
    |     help: remove the attribute
 
 warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
-  --> $DIR/redundant_derive_more_forward_template.rs:145:5
+  --> $DIR/redundant_derive_more_forward_template.rs:164:5
    |
 LL |       #[display("{_0}")]
    |  _-   ^^^^^^^^^^^^^^^^^^
@@ -145,7 +129,7 @@ LL | |     Reported(String),
    | |_- help: remove the attribute
 
 warning: `#[pointer(...)]` only forwards to the single field, which the `Pointer` derive already does
-  --> $DIR/redundant_derive_more_forward_template.rs:158:1
+  --> $DIR/redundant_derive_more_forward_template.rs:177:1
    |
 LL |   #[pointer("{_0:p}")]
    |  _-^^^^^^^^^^^^^^^^^^^
@@ -153,7 +137,7 @@ LL | | struct Address(&'static u32);
    | |_- help: remove the attribute
 
 warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
-  --> $DIR/redundant_derive_more_forward_template.rs:199:1
+  --> $DIR/redundant_derive_more_forward_template.rs:218:1
    |
 LL |   #[display("{0}", _0)]
    |  _-^^^^^^^^^^^^^^^^^^^^
@@ -161,7 +145,7 @@ LL | | struct ExplicitPositional(String);
    | |_- help: remove the attribute
 
 warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
-  --> $DIR/redundant_derive_more_forward_template.rs:299:5
+  --> $DIR/redundant_derive_more_forward_template.rs:334:5
    |
 LL |       #[display("{_0}")]
    |  _-   ^^^^^^^^^^^^^^^^^^
@@ -169,12 +153,12 @@ LL | |     struct Local(String);
    | |_- help: remove the attribute
 
 warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
-  --> $DIR/redundant_derive_more_forward_template.rs:306:5
+  --> $DIR/redundant_derive_more_forward_template.rs:341:5
    |
 LL |       #[display("{_0}")]
    |  _-   ^^^^^^^^^^^^^^^^^^
 LL | |     struct InConstBlock(String);
    | |_- help: remove the attribute
 
-warning: 22 warnings emitted
+warning: 20 warnings emitted
 

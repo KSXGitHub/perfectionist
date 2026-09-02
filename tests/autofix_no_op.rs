@@ -1,23 +1,30 @@
-//! Proves the `redundant_derive_more_forward_template` autofix is a
-//! no-op, against the real `derive_more`.
+//! End-to-end proof that the `redundant_derive_more_forward_template`
+//! autofix is a no-op, against the real `derive_more`.
 //!
-//! The rule's suggestion is `MachineApplicable`, so applying it must
-//! leave the generated code *identical* — same body, same `where`
-//! clause. Reading the expander is not enough to establish that: the
-//! deref injection in `additional_deref_args` and the bound assembly in
-//! `generate_bounds` both look decisive in isolation and are not, and
-//! reasoning about them produced a wrong answer in each direction
+//! ## What this actually tests
+//!
+//! Not `derive_more`'s behaviour — that would be a tautology. The
+//! subject is *this crate's trigger*, and `derive_more` is only the
+//! oracle it is judged against. Each case is compiled, then run through
+//! `cargo dylint --fix`, so the rule itself decides what gets deleted
+//! and its own suggestion span performs the deletion. Whatever the fixer
+//! touched must then expand to byte-identical generated code — same
+//! body, same `where` clause — and still compile. A trigger that grows
+//! to cover a new shape is therefore checked automatically; nothing here
+//! restates a hand-maintained list of what the rule is believed to do.
+//!
+//! The converse matters too, so a case the fixer leaves alone is
+//! compared against the same attribute deleted by hand: if that changes
+//! nothing, the rule is refusing a shape it could have fixed, and the
+//! bail-out has to justify itself or go.
+//!
+//! Reading the expander is not a substitute. `additional_deref_args`
+//! and `generate_bounds` each look decisive in isolation and are not,
+//! and reasoning about them produced a wrong answer in both directions
 //! before this test existed.
 //!
-//! So each case is compiled twice — once as the user wrote it, once
-//! with the attribute deleted exactly as the fix deletes it — and the
-//! two macro expansions are compared. [`FLAGGED`] must expand
-//! identically; [`REFUSED`] must not, which is what makes each bail-out
-//! earn its place instead of being cargo-culted forward.
-//!
-//! Ignored by default: it fetches `derive_more` and shells out to two
-//! full expansions, which does not belong in the gating suite. Run it
-//! when the trigger changes:
+//! Ignored by default: it builds the lint, fetches `derive_more` and
+//! runs three expansions, which does not belong in the gating suite.
 //!
 //! ```text
 //! cargo test --test autofix_no_op -- --ignored --nocapture
@@ -28,11 +35,16 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// `(name, as written, with the attribute deleted)`.
+/// `(name, as the user writes it, with the attribute deleted by hand)`.
+///
+/// The second form is *not* the expected fix — the fixer produces that
+/// itself. It is only used to ask whether a shape the rule declined was
+/// one it could safely have fixed.
 type Case = (&'static str, &'static str, &'static str);
 
-/// Shapes the rule flags. Deleting the attribute must change nothing.
-const FLAGGED: &[Case] = &[
+/// Cases are one line each so the fixer's line-deletion leaves a
+/// well-formed module either way.
+const CASES: &[Case] = &[
     (
         "tuple_newtype",
         r#"#[derive(derive_more::Display)] #[display("{_0}")] pub struct S(pub String);"#,
@@ -98,8 +110,6 @@ const FLAGGED: &[Case] = &[
         r#"#[derive(derive_more::UpperHex)] #[upper_hex("{_0:X}")] pub struct S(pub u32);"#,
         r#"#[derive(derive_more::UpperHex)] pub struct S(pub u32);"#,
     ),
-    // `Pointer` takes the transparent path for a lone placeholder, so
-    // `additional_deref_args` never applies to a template flagged here.
     (
         "pointer_reference",
         r#"#[derive(derive_more::Pointer)] #[pointer("{_0:p}")] pub struct S(pub &'static u32);"#,
@@ -115,8 +125,7 @@ const FLAGGED: &[Case] = &[
         r#"#[derive(derive_more::Pointer)] #[pointer("{_0:p}")] pub struct S<T>(pub T);"#,
         r#"#[derive(derive_more::Pointer)] pub struct S<T>(pub T);"#,
     ),
-    // Generic containers: the `where` clause is the interface, and it
-    // has to survive the deletion unchanged.
+    // Generic containers: the `where` clause is the interface.
     (
         "generic_inline",
         r#"#[derive(derive_more::Display)] #[display("{_0}")] pub struct S<T>(pub T);"#,
@@ -149,7 +158,7 @@ const FLAGGED: &[Case] = &[
     ),
     (
         "two_derives",
-        r#"#[derive(derive_more::Display, derive_more::LowerHex)] #[display("{_0}")] #[lower_hex("{_0:x}")] pub struct S(pub u32);"#,
+        r#"#[derive(derive_more::Display, derive_more::LowerHex)] #[display("{_0}")] pub struct S(pub u32);"#,
         r#"#[derive(derive_more::Display, derive_more::LowerHex)] pub struct S(pub u32);"#,
     ),
     (
@@ -163,157 +172,224 @@ const FLAGGED: &[Case] = &[
         r#"#[derive(derive_more::Display)] pub enum S { A, #[display("r {_0}")] B(u64) }"#,
     ),
     (
-        "enum_variant_under_wrapping_template",
-        r#"#[derive(derive_more::Display)] #[display("w: {_variant}")] pub enum S { #[display("{_0}")] A(String) }"#,
-        r#"#[derive(derive_more::Display)] #[display("w: {_variant}")] pub enum S { A(String) }"#,
-    ),
-    (
         "enum_generic_variants",
         r#"#[derive(derive_more::Display)] pub enum S<N> { #[display("{_0}")] T(String), #[display("{_0}")] N(N) }"#,
         r#"#[derive(derive_more::Display)] pub enum S<N> { T(String), N(N) }"#,
     ),
-];
-
-/// Shapes the rule refuses. Deleting the attribute must change the
-/// generated code — otherwise the bail-out is dead weight.
-const REFUSED: &[Case] = &[
+    // Shapes the rule must refuse. Each deletion changes the generated
+    // code, so the fixer must leave every one of them alone.
     (
-        "self_dot_index_rewrites_the_body",
+        "refused_self_dot_index",
         r#"#[derive(derive_more::Display)] #[display("{}", self.0)] pub struct S(pub String);"#,
         r#"#[derive(derive_more::Display)] pub struct S(pub String);"#,
     ),
     (
-        "self_dot_name_rewrites_the_body",
-        r#"#[derive(derive_more::Display)] #[display("{}", self.message)] pub struct S { pub message: String }"#,
-        r#"#[derive(derive_more::Display)] pub struct S { pub message: String }"#,
-    ),
-    (
-        "self_dot_on_generic_adds_a_bound",
-        r#"#[derive(derive_more::Display)] #[display("{}", self.0)] pub struct S<T>(pub T);"#,
-        r#"#[derive(derive_more::Display)] pub struct S<T>(pub T);"#,
-    ),
-    (
-        "bound_beside_template_is_dropped",
+        "refused_bound_beside_template",
         r#"#[derive(derive_more::Display)] #[display("{_0}")] #[display(bound(T: Clone))] pub struct S<T>(pub T);"#,
         r#"#[derive(derive_more::Display)] #[display(bound(T: Clone))] pub struct S<T>(pub T);"#,
     ),
     (
-        "display_placeholder_under_lower_hex",
+        "refused_display_placeholder_under_lower_hex",
         r#"#[derive(derive_more::LowerHex)] #[lower_hex("{_0}")] pub struct S(pub u32);"#,
         r#"#[derive(derive_more::LowerHex)] pub struct S(pub u32);"#,
     ),
     (
-        "debug_does_not_default_to_a_forward",
+        "refused_debug",
         r#"#[derive(derive_more::Debug)] #[debug("{_0:?}")] pub struct S(pub Vec<u8>);"#,
         r#"#[derive(derive_more::Debug)] pub struct S(pub Vec<u8>);"#,
     ),
     (
-        "debug_placeholder_under_display",
+        "refused_debug_placeholder_under_display",
         r#"#[derive(derive_more::Display)] #[display("{_0:?}")] pub struct S(pub u32);"#,
         r#"#[derive(derive_more::Display)] pub struct S(pub u32);"#,
     ),
     (
-        "adorned_placeholder",
+        "refused_adorned_placeholder",
         r#"#[derive(derive_more::Display)] #[display("{_0:>8}")] pub struct S(pub u32);"#,
         r#"#[derive(derive_more::Display)] pub struct S(pub u32);"#,
     ),
     (
-        "index_past_the_argument_list",
-        r#"#[derive(derive_more::Display)] #[display("{1}", _0)] pub struct S<T>(pub T);"#,
-        r#"#[derive(derive_more::Display)] pub struct S<T>(pub T);"#,
+        "refused_index_past_arguments",
+        r#"#[derive(derive_more::Display)] #[display("{1}", _0)] pub struct S(pub String);"#,
+        r#"#[derive(derive_more::Display)] pub struct S(pub String);"#,
     ),
     (
-        "variant_under_replacing_enum_template",
+        "refused_variant_under_replacing_template",
         r#"#[derive(derive_more::Display)] #[display("unknown")] pub enum S { #[display("{_0}")] A(String) }"#,
         r#"#[derive(derive_more::Display)] #[display("unknown")] pub enum S { A(String) }"#,
     ),
     (
-        "non_transparent_pointer_template",
-        r#"#[derive(derive_more::Pointer)] #[pointer("p {_0:p}")] pub struct S(pub Box<u32>);"#,
-        r#"#[derive(derive_more::Pointer)] pub struct S(pub Box<u32>);"#,
+        "display_variant_under_wrapping",
+        r#"#[derive(derive_more::Display)] #[display("d: {_variant}")] pub enum S { #[display("{_0}")] A(String) }"#,
+        r#"#[derive(derive_more::Display)] #[display("d: {_variant}")] pub enum S { A(String) }"#,
+    ),
+    // Under a wrapping enum template `derive_more` leaves the
+    // transparent path, and for `Pointer` it then dereferences: the
+    // wrapped form prints the pointee's address, the deleted form the
+    // binding's.
+    (
+        "refused_pointer_variant_under_wrapping",
+        r#"#[derive(derive_more::Pointer)] #[pointer("p: {_variant}")] pub enum S { #[pointer("{_0:p}")] A(Box<u32>) }"#,
+        r#"#[derive(derive_more::Pointer)] #[pointer("p: {_variant}")] pub enum S { A(Box<u32>) }"#,
+    ),
+    // Aliasing the placeholder makes a `{_variant}` template replacing.
+    (
+        "refused_aliased_variant_placeholder",
+        r#"#[derive(derive_more::Display)] #[display("{_variant}", _variant = 1)] pub enum S { #[display("{_0}")] A(String) }"#,
+        r#"#[derive(derive_more::Display)] #[display("{_variant}", _variant = 1)] pub enum S { A(String) }"#,
     ),
 ];
 
+/// Shapes the rule declines even though the deletion would be a no-op.
+/// Each is a deliberate false negative, not an oversight.
+const ACCEPTED_MISSED_DIAGNOSTICS: &[&str] = &[
+    // A variant under a wrapping enum-level template. Safe for
+    // `Display`, unsafe for `Pointer` (see the case below), and the
+    // rule declines the whole shape rather than splitting by trait.
+    "display_variant_under_wrapping",
+    // `{1}` naming the sole argument is transparent for a concrete
+    // field type; the generic form, where the inferred bound would
+    // differ, does not compile as written.
+    "refused_index_past_arguments",
+];
+
 #[test]
-#[ignore = "fetches `derive_more` and runs two full expansions; see the module docs"]
+#[ignore = "builds the lint, fetches `derive_more`, runs three expansions; see the module docs"]
 fn autofix_never_changes_the_generated_code() {
     let dir = scratch_crate();
-    let as_written = expand(&dir, Variant::AsWritten);
-    let fixed = expand(&dir, Variant::Fixed);
+
+    write_source(&dir, |case| case.1);
+    let before = expand(&dir, "as written");
+    let source_before = read_source(&dir);
+
+    apply_the_real_fix(&dir);
+    let source_after = read_source(&dir);
+    let after = expand(&dir, "after `cargo dylint --fix`");
+    assert_compiles(&dir, "the fixed crate");
+
+    // A third expansion, of every attribute deleted by hand, is what
+    // lets a declined shape be told from one that never needed fixing.
+    write_source(&dir, |case| case.2);
+    let deleted = expand(&dir, "attribute deleted by hand");
 
     let mut failures = Vec::new();
-    for (name, _, _) in FLAGGED {
-        let (before, after) = (&as_written[*name], &fixed[*name]);
-        if before != after {
+    for (name, _, _) in CASES {
+        let fixed = source_before[*name] != source_after[*name];
+        if fixed {
+            if before[*name] != after[*name] {
+                failures.push(format!(
+                    "{name}: the rule deleted the attribute and the generated code changed\n  \
+                     before: {}\n  after:  {}",
+                    before[*name], after[*name],
+                ));
+            }
+        } else if before[*name] == deleted[*name] && !ACCEPTED_MISSED_DIAGNOSTICS.contains(name) {
             failures.push(format!(
-                "{name}: the fix changed the generated code\n  as written: {before}\n  fixed:      {after}",
-            ));
-        }
-    }
-    for (name, _, _) in REFUSED {
-        if as_written[*name] == fixed[*name] {
-            failures.push(format!(
-                "{name}: deleting the attribute changes nothing, so the rule's \
-                 refusal to flag it is unnecessary",
+                "{name}: the rule left this alone, but deleting the attribute changes \
+                 nothing — either flag it or record it as a deliberate miss",
             ));
         }
     }
     assert!(failures.is_empty(), "\n{}", failures.join("\n\n"));
 }
 
-enum Variant {
-    /// The attribute as a user writes it.
-    AsWritten,
-    /// The attribute deleted, exactly as the autofix deletes it.
-    Fixed,
-}
-
-fn cases() -> impl Iterator<Item = &'static Case> {
-    FLAGGED.iter().chain(REFUSED)
-}
-
-/// A throwaway crate depending on the real `derive_more`, sharing this
-/// workspace's `target/` so the dependency is fetched at most once.
+/// A throwaway crate depending on the real `derive_more` and pointing
+/// `cargo dylint` at this workspace's lint library.
 fn scratch_crate() -> PathBuf {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/autofix-no-op");
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let dir = root.join("target/autofix-no-op");
     fs::create_dir_all(dir.join("src")).expect("create scratch crate");
     fs::write(
         dir.join("Cargo.toml"),
-        "[package]\nname = \"autofix_no_op\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n\
-         [dependencies]\nderive_more = { version = \"2\", features = [\"full\"] }\n\n\
-         [workspace]\n",
+        format!(
+            "[package]\nname = \"autofix_no_op\"\nversion = \"0.0.0\"\nedition = \"2021\"\n\n\
+             [dependencies]\nderive_more = {{ version = \"2\", features = [\"full\"] }}\n\n\
+             [workspace]\nmetadata.dylint.libraries = [{{ path = {:?} }}]\n",
+            root,
+        ),
     )
     .expect("write scratch manifest");
-    fs::copy(
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("rust-toolchain"),
-        dir.join("rust-toolchain"),
-    )
-    .expect("pin the scratch crate to this toolchain");
+    fs::copy(root.join("rust-toolchain"), dir.join("rust-toolchain"))
+        .expect("pin the scratch crate to this toolchain");
     dir
 }
 
-/// Expand every case in one compilation, returning the generated code
-/// per case.
-fn expand(dir: &Path, variant: Variant) -> BTreeMap<String, String> {
-    let source: String = cases()
-        .map(|(name, as_written, fixed)| {
-            let body = match variant {
-                Variant::AsWritten => as_written,
-                Variant::Fixed => fixed,
-            };
-            format!("pub mod {name} {{ {body} }}\n")
-        })
+fn write_source(dir: &Path, pick: impl Fn(&Case) -> &'static str) {
+    let source: String = CASES
+        .iter()
+        .map(|case| format!("pub mod {} {{ {} }}\n", case.0, pick(case)))
         .collect();
     fs::write(dir.join("src/lib.rs"), source).expect("write scratch source");
+}
 
-    let output = Command::new(env!("CARGO"))
+fn read_source(dir: &Path) -> BTreeMap<String, String> {
+    let source = fs::read_to_string(dir.join("src/lib.rs")).expect("read scratch source");
+    source
+        .lines()
+        .filter_map(|line| {
+            let rest = line.strip_prefix("pub mod ")?;
+            let (name, body) = rest.split_once(' ')?;
+            Some((
+                name.to_owned(),
+                body.split_whitespace().collect::<Vec<_>>().join(" "),
+            ))
+        })
+        .collect()
+}
+
+fn cargo(dir: &Path) -> Command {
+    let mut command = Command::new(env!("CARGO"));
+    let dev_tools = Path::new(env!("CARGO_MANIFEST_DIR")).join(".dev-tools/bin");
+    let path = std::env::var("PATH").unwrap_or_default();
+    command
         .current_dir(dir)
-        .args(["rustc", "--quiet", "--", "-Zunpretty=expanded"])
+        .env("PATH", format!("{}:{path}", dev_tools.display()));
+    command
+}
+
+/// Run the rule's own autofix over the scratch crate, so the deletion
+/// under test is the one the rule actually emits.
+fn apply_the_real_fix(dir: &Path) {
+    let output = cargo(dir)
+        .args([
+            "dylint",
+            "--fix",
+            "--all",
+            "--",
+            "--lib",
+            "--allow-no-vcs",
+            "--allow-dirty",
+        ])
         .output()
-        .expect("run cargo");
+        .expect("run cargo dylint --fix");
+    assert!(
+        output.status.success(),
+        "cargo dylint --fix failed:\n{}",
+        String::from_utf8_lossy(&output.stderr),
+    );
+}
+
+fn assert_compiles(dir: &Path, what: &str) {
+    let output = cargo(dir)
+        .args(["check", "--quiet", "--lib"])
+        .output()
+        .expect("run cargo check");
+    assert!(
+        output.status.success(),
+        "{what} does not compile:\n{}",
+        String::from_utf8_lossy(&output.stderr),
+    );
+}
+
+/// Expand the scratch crate and return the generated code per case.
+fn expand(dir: &Path, what: &str) -> BTreeMap<String, String> {
+    let output = cargo(dir)
+        .args(["rustc", "--quiet", "--lib", "--", "-Zunpretty=expanded"])
+        .output()
+        .expect("run cargo rustc");
     assert!(
         !output.stdout.is_empty(),
-        "expansion produced nothing:\n{}",
+        "expanding the crate {what} produced nothing:\n{}",
         String::from_utf8_lossy(&output.stderr),
     );
     split_modules(&String::from_utf8_lossy(&output.stdout))
@@ -344,7 +420,7 @@ fn split_modules(expanded: &str) -> BTreeMap<String, String> {
             }
         }
     }
-    for (name, _, _) in cases() {
+    for (name, _, _) in CASES {
         assert!(modules.contains_key(*name), "case `{name}` did not expand");
     }
     modules
@@ -355,8 +431,8 @@ fn count(line: &str, brace: char) -> isize {
 }
 
 /// Reduce an expanded module to just the code the derive generated:
-/// drop the echoed helper attribute (which differs by construction —
-/// the whole point is that it is gone) and collapse whitespace, so the
+/// drop the echoed helper attribute, which differs by construction —
+/// the whole point is that it is gone — and collapse whitespace so the
 /// pretty-printer's line wrapping cannot masquerade as a difference.
 fn normalise(expanded: &str) -> String {
     const HELPERS: &[&str] = &[
