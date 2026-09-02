@@ -41,13 +41,9 @@ declare_tool_lint! {
     /// condition and `match` scrutinee positions count as
     /// disqualifying, not just the branch arms.
     ///
-    /// ### Where it does not apply
-    ///
-    /// Test code and build scripts are exempt by default. Test code is
-    /// anything gated to test builds by `#[cfg(test)]`, anything inside
-    /// a `#[test]` function, and every `tests/` or `benches/` crate; an
-    /// `examples/` crate is not. Turn either exemption off with
-    /// `test_code_exception` / `build_script_exception`.
+    /// Test code and build scripts are exempt by default;
+    /// `test_code_exception` and `build_script_exception` turn either
+    /// off.
     ///
     /// ### Why restrict this?
     ///
