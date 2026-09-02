@@ -39,6 +39,7 @@ struct UninlinedPositional(String);
 #[display("{}", self.0)]
 struct SelfIndexed(String);
 
+// Good: the same, spelled with a named field.
 #[derive(Display)]
 #[display("{}", self.message)]
 struct SelfNamed {
@@ -115,6 +116,8 @@ enum Wrapped {
     Inner(String),
 }
 
+// Good: the `Pointer` case the paragraph above describes — deleting
+// the variant attribute here really does change the printed address.
 #[derive(derive_more::Pointer)]
 #[pointer("p: {_variant}")]
 enum WrappedPointer {
@@ -265,14 +268,19 @@ enum UnitVariant {
 struct NotBuilt(String);
 
 mod inline_module {
+    // Good: the enclosing module is live, so a finding here would
+    // anchor at it rather than fall back to the crate root.
     #[cfg(any())]
     #[derive(super::Display)]
     #[display("{_0}")]
     struct NotBuiltNested(String);
 }
 
+// Good: the enum itself is built and holds nothing redundant; the
+// declined subject is the disabled variant inside it.
 #[derive(Display)]
 enum DisabledVariant {
+    // Good: likewise, the enclosing enum is live.
     #[cfg(any())]
     #[display("{_0}")]
     Gone(String),
@@ -309,6 +317,7 @@ struct Bounded<Inner>(Inner);
 #[display(bound(Inner: Display))]
 struct BoundBesideTemplate<Inner>(Inner);
 
+// Good: `where(...)` is the same attribute under another spelling.
 #[derive(Display)]
 #[display("{_0}")]
 #[display(where(Inner: Display))]
@@ -342,4 +351,5 @@ const _: () = {
     struct InConstBlock(String);
 };
 
+// Not a subject: `main` is what makes this fixture a runnable crate.
 fn main() {}
