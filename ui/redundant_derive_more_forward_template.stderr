@@ -161,12 +161,28 @@ LL | |     Reported(String),
    | |_- help: remove the attribute
 
 warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
-  --> $DIR/redundant_derive_more_forward_template.rs:191:1
+  --> $DIR/redundant_derive_more_forward_template.rs:198:1
    |
 LL |   #[display("{0}", _0)]
    |  _-^^^^^^^^^^^^^^^^^^^^
 LL | | struct ExplicitPositional(String);
    | |_- help: remove the attribute
 
-warning: 21 warnings emitted
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:298:5
+   |
+LL |       #[display("{_0}")]
+   |  _-   ^^^^^^^^^^^^^^^^^^
+LL | |     struct Local(String);
+   | |_- help: remove the attribute
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:305:5
+   |
+LL |       #[display("{_0}")]
+   |  _-   ^^^^^^^^^^^^^^^^^^
+LL | |     struct InConstBlock(String);
+   | |_- help: remove the attribute
+
+warning: 23 warnings emitted
 

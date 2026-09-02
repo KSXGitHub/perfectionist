@@ -150,6 +150,13 @@ enum PerVariantExpect {
 #[lower_hex("{_0}")]
 struct DisplayUnderLowerHex(u32);
 
+// Good: derive_more dereferences the field for a `Pointer`
+// placeholder, so the template prints the field's own address where
+// the attribute-less derive prints the address of the binding.
+#[derive(derive_more::Pointer)]
+#[pointer("{_0:p}")]
+struct Address(&'static u32);
+
 // Good: `Debug` does not default to a forward.
 #[derive(derive_more::Debug)]
 #[debug("{_0:?}")]
@@ -228,6 +235,14 @@ enum UnitVariant {
     Idle,
 }
 
+// Good: the container is not in the compiled crate at all, so there is
+// no HIR node to anchor a finding at — and an `#[allow]` on the item
+// could not silence one.
+#[cfg(any())]
+#[derive(Display)]
+#[display("{_0}")]
+struct NotBuilt(String);
+
 // Good: a `cfg`-gated field makes the field count depend on the
 // configuration.
 #[derive(Display)]
@@ -276,5 +291,19 @@ enum VariantBound<Inner> {
 #[derive(Display)]
 #[display(fmt = "{}", _0)]
 struct LegacyShape(String);
+
+// Bad: a container declared inside a function body is reached too.
+fn local_container() {
+    #[derive(Display)]
+    #[display("{_0}")]
+    struct Local(String);
+}
+
+// Bad: and one inside a `const _: () = { ... }` block.
+const _: () = {
+    #[derive(Display)]
+    #[display("{_0}")]
+    struct InConstBlock(String);
+};
 
 fn main() {}

@@ -15,7 +15,8 @@ use super::attrs::{
 use crate::module_reparse::SpanRange;
 use rustc_ast::tokenstream::TokenStream;
 use rustc_ast::{
-    Attribute, Crate, EnumDef, Item, ItemKind, MetaItemInner, MetaItemKind, ModKind, VariantData,
+    Attribute, Block, Crate, EnumDef, Expr, ExprKind, Item, ItemKind, MetaItemInner, MetaItemKind,
+    ModKind, StmtKind, VariantData,
 };
 use rustc_span::{Span, Symbol, sym};
 use std::collections::HashSet;
@@ -89,8 +90,55 @@ fn walk_items(
             {
                 walk_items(items, live_module_spans, violations);
             }
+            // A container can also be declared inside a function body
+            // or a `const _: () = { ... }` block. Neither is a module,
+            // so neither needs the `live_module_spans` guard — an
+            // unbuilt one has no HIR node and is dropped at emit time.
+            ItemKind::Fn(func) => {
+                if let Some(body) = &func.body {
+                    walk_block(body, live_module_spans, violations);
+                }
+            }
+            ItemKind::Const(item) => {
+                walk_initialiser(item.rhs_kind.expr(), live_module_spans, violations);
+            }
+            ItemKind::Static(item) => {
+                walk_initialiser(item.expr.as_deref(), live_module_spans, violations);
+            }
             _ => {}
         }
+    }
+}
+
+fn walk_block(
+    block: &Block,
+    live_module_spans: &HashSet<SpanRange>,
+    violations: &mut Vec<Violation>,
+) {
+    for stmt in &block.stmts {
+        match &stmt.kind {
+            StmtKind::Item(item) => {
+                walk_items(core::slice::from_ref(item), live_module_spans, violations);
+            }
+            StmtKind::Expr(expr) | StmtKind::Semi(expr) => {
+                walk_initialiser(Some(expr), live_module_spans, violations);
+            }
+            _ => {}
+        }
+    }
+}
+
+fn walk_initialiser(
+    expr: Option<&Expr>,
+    live_module_spans: &HashSet<SpanRange>,
+    violations: &mut Vec<Violation>,
+) {
+    if let Some(Expr {
+        kind: ExprKind::Block(block, _),
+        ..
+    }) = expr
+    {
+        walk_block(block, live_module_spans, violations);
     }
 }
 

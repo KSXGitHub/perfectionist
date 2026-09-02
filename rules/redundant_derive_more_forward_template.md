@@ -49,8 +49,13 @@ would change the output — among them:
   `#[cfg_attr(...)]`: the field count may differ between
   configurations.
 
-The rule runs only in a crate that depends on `derive_more`.
-Within one, a derive renamed on import
+`#[pointer(...)]` is never flagged either: `derive_more`
+dereferences the field for a `Pointer` placeholder, so the
+template prints the field's own address where the attribute-less
+derive prints the address of the binding holding it.
+
+The rule runs only in a crate where a `derive_more` derive
+actually expands. Within one, a derive renamed on import
 (`use derive_more::Display as D;`) is not recognised; a
 re-export under the same name is.
 

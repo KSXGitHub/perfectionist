@@ -27,7 +27,14 @@ macro_rules! inert_derive {
             )
         )]
         pub fn $fn_name(_input: TokenStream) -> TokenStream {
-            TokenStream::new()
+            // Not inert: the rule establishes that `derive_more` is
+            // what generated a container's impl by looking for a
+            // derive expansion attributed to this crate, so each
+            // derive has to leave *something* behind. An anonymous
+            // const is the smallest item that can be emitted once per
+            // invocation without colliding with itself, and carries
+            // the expansion context the rule looks for.
+            "const _: () = ();".parse().unwrap()
         }
     };
 }

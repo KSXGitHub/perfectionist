@@ -35,9 +35,14 @@ pub(super) struct FormattingTrait {
 /// Every `derive_more` derive whose no-attribute default is a forward
 /// to the container's single field.
 ///
-/// `Debug` is deliberately absent: its default is the struct-shaped
-/// `Wrapper("inner")` builder output rather than a forward, so a
-/// `#[debug("{_0:?}")]` genuinely changes the rendering.
+/// Two of `derive_more`'s formatting derives are deliberately absent.
+/// `Debug`'s default is the struct-shaped `Wrapper("inner")` builder
+/// output rather than a forward, so a `#[debug("{_0:?}")]` genuinely
+/// changes the rendering. `Pointer`'s template path dereferences every
+/// field a `Pointer` placeholder names — the expansion passes
+/// `_0 = *_0` — while the attribute-less path formats the binding
+/// itself, one reference further out; the two print different
+/// addresses, so `#[pointer("{_0:p}")]` is never redundant either.
 const FORMATTING_TRAITS: &[FormattingTrait] = &[
     FormattingTrait {
         derive: "Binary",
@@ -63,11 +68,6 @@ const FORMATTING_TRAITS: &[FormattingTrait] = &[
         derive: "Octal",
         attribute: "octal",
         spec_type: "o",
-    },
-    FormattingTrait {
-        derive: "Pointer",
-        attribute: "pointer",
-        spec_type: "p",
     },
     FormattingTrait {
         derive: "UpperExp",

@@ -6,6 +6,7 @@ use rustc_errors::Applicability;
 use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
+use rustc_span::hygiene::{ExpnKind, MacroKind};
 use rustc_span::source_map::SourceMap;
 use rustc_span::{BytePos, Span, Symbol};
 
@@ -57,8 +58,13 @@ declare_tool_lint! {
     ///   `#[cfg_attr(...)]`: the field count may differ between
     ///   configurations.
     ///
-    /// The rule runs only in a crate that depends on `derive_more`.
-    /// Within one, a derive renamed on import
+    /// `#[pointer(...)]` is never flagged either: `derive_more`
+    /// dereferences the field for a `Pointer` placeholder, so the
+    /// template prints the field's own address where the attribute-less
+    /// derive prints the address of the binding holding it.
+    ///
+    /// The rule runs only in a crate where a `derive_more` derive
+    /// actually expands. Within one, a derive renamed on import
     /// (`use derive_more::Display as D;`) is not recognised; a
     /// re-export under the same name is.
     ///
@@ -132,7 +138,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
 
 impl<'tcx> LateLintPass<'tcx> for RedundantDeriveMoreForwardTemplate {
     fn check_crate_post(&mut self, cx: &LateContext<'tcx>) {
-        if !links_derive_more(cx) {
+        if !expanded_derive_more_here(cx) {
             return;
         }
         // Re-parse the crate's module files so the `#[derive(...)]`
@@ -157,28 +163,57 @@ impl<'tcx> LateLintPass<'tcx> for RedundantDeriveMoreForwardTemplate {
             .map(|violation| (violation.anchor, violation))
             .collect();
         emit_at_enclosing_hir(cx.tcx, anchored, |hir_id, _anchor, violation| {
+            // A container the compiled crate does not contain — one
+            // behind a false `#[cfg(...)]`, which the re-parse keeps —
+            // has no HIR node to anchor at, so the walk falls back to
+            // the crate root. Reporting it there would flag code that
+            // is not built and could not be silenced by an `#[allow]`
+            // on the item itself.
+            if hir_id == hir::CRATE_HIR_ID {
+                return;
+            }
             emit(cx, hir_id, &violation);
         });
     }
 }
 
-/// Whether `derive_more` is in the crate graph at all.
+/// The crates whose proc macros count as `derive_more`'s. The derives
+/// live in `derive_more_impl` and are re-exported by the `derive_more`
+/// facade, so an expansion is attributed to whichever of the two the
+/// user's path resolved through.
+const DERIVE_MORE_CRATES: &[&str] = &["derive_more", "derive_more_impl"];
+
+/// Whether any `derive_more` derive actually expanded in this crate.
 ///
 /// The rule recognises a derive by its final path segment, which cannot
-/// tell `derive_more::Display` from any other crate's `Display` derive
-/// declaring a `display` helper attribute — `parse_display::Display` is
-/// one, and its `#[display("{field}")]` is mandatory rather than
-/// redundant, so deleting it does not compile. Requiring the crate to
-/// be linked keeps the whole rule off such a crate instead of offering
-/// it a fix that breaks the build. Where both crates are linked the
-/// final-segment limitation still stands, as it does for the sibling
-/// derive-reading rules.
-fn links_derive_more(cx: &LateContext<'_>) -> bool {
-    let derive_more = Symbol::intern("derive_more");
-    cx.tcx
-        .crates(())
+/// tell `derive_more::Display` from another crate's `Display` derive
+/// declaring a `display` helper attribute. `parse_display::Display` is
+/// one, and its `#[display("{field}")]` is required rather than
+/// redundant — deleting it does not compile — so a rule that offers a
+/// deletion has to establish that `derive_more` is what generated the
+/// impl.
+///
+/// Asking whether a `derive_more` derive *expanded here* is what makes
+/// that check mean something. The weaker question — whether the crate
+/// is in the dependency graph — is answered "yes" for any crate with
+/// `derive_more` anywhere in its transitive closure, including one that
+/// never names it, so it would leave a `parse_display` crate exposed.
+///
+/// The check is per crate rather than per container, so a crate using
+/// both still falls back to the final-segment limitation the sibling
+/// derive-reading rules carry.
+fn expanded_derive_more_here(cx: &LateContext<'_>) -> bool {
+    let names: Vec<Symbol> = DERIVE_MORE_CRATES
         .iter()
-        .any(|&krate| cx.tcx.crate_name(krate) == derive_more)
+        .map(|name| Symbol::intern(name))
+        .collect();
+    cx.tcx.hir_free_items().any(|item_id| {
+        let expansion = cx.tcx.hir_item(item_id).span.ctxt().outer_expn_data();
+        matches!(expansion.kind, ExpnKind::Macro(MacroKind::Derive, _))
+            && expansion
+                .macro_def_id
+                .is_some_and(|def_id| names.contains(&cx.tcx.crate_name(def_id.krate)))
+    })
 }
 
 fn emit(cx: &LateContext<'_>, hir_id: hir::HirId, violation: &Violation) {
