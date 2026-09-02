@@ -16,7 +16,7 @@ use crate::format_template::{Placeholder, Segment, parse_template};
 use rustc_ast::token::TokenKind;
 use rustc_ast::tokenstream::{TokenStream, TokenTree};
 use rustc_ast::{AttrArgs, AttrKind, Attribute, LitKind};
-use rustc_span::{Span, Symbol, kw, sym};
+use rustc_span::{Span, Symbol, sym};
 
 /// One `derive_more` formatting trait, in the three spellings the rule
 /// has to line up: the derive that implements it, the helper attribute
@@ -35,14 +35,9 @@ pub(super) struct FormattingTrait {
 /// Every `derive_more` derive whose no-attribute default is a forward
 /// to the container's single field.
 ///
-/// Two of `derive_more`'s formatting derives are deliberately absent.
-/// `Debug`'s default is the struct-shaped `Wrapper("inner")` builder
-/// output rather than a forward, so a `#[debug("{_0:?}")]` genuinely
-/// changes the rendering. `Pointer`'s template path dereferences every
-/// field a `Pointer` placeholder names — the expansion passes
-/// `_0 = *_0` — while the attribute-less path formats the binding
-/// itself, one reference further out; the two print different
-/// addresses, so `#[pointer("{_0:p}")]` is never redundant either.
+/// `Debug` is deliberately absent: its default is the struct-shaped
+/// `Wrapper("inner")` builder output rather than a forward, so a
+/// `#[debug("{_0:?}")]` genuinely changes the rendering.
 const FORMATTING_TRAITS: &[FormattingTrait] = &[
     FormattingTrait {
         derive: "Binary",
@@ -63,6 +58,11 @@ const FORMATTING_TRAITS: &[FormattingTrait] = &[
         derive: "LowerHex",
         attribute: "lower_hex",
         spec_type: "x",
+    },
+    FormattingTrait {
+        derive: "Pointer",
+        attribute: "pointer",
+        spec_type: "p",
     },
     FormattingTrait {
         derive: "Octal",
@@ -182,8 +182,7 @@ struct TemplateArgument {
 /// How a template names a field of the container it sits on.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum FieldReference {
-    /// A tuple field by index: `_0` as a placeholder argument, `self.0`
-    /// as an attribute argument.
+    /// A tuple field by index, written `_0`.
     Index(usize),
     /// A named field, unraw-ed — `{type}` names `r#type`.
     Name(Symbol),
@@ -333,32 +332,21 @@ fn take_argument(group: &[&TokenTree]) -> Option<TemplateArgument> {
     })
 }
 
-/// Parse an argument's value. Only the two spellings that name a field
-/// are recognised — a bare `_0` / `message`, and `self.0` /
-/// `self.message`. The borrowed and dereferenced spellings (`*_0`,
-/// `&self.0`) forward identically but are rare, so leaving them out
-/// costs only a missed diagnostic.
+/// Parse an argument's value. Only a bare identifier counts — `_0`,
+/// `message` — because that is the only spelling `derive_more`
+/// resolves to the field itself.
+///
+/// Every other expression, `self.0` and `self.message` included, it
+/// wraps as `&(<expr>)` and infers no formatting bound from. Deleting
+/// such an attribute therefore rewrites the generated body and, on a
+/// generic container, adds the bound the expression form never
+/// contributed — so the spelling is left unflagged rather than fixed
+/// into a different impl.
 fn take_value(tokens: &[&TokenTree]) -> Option<FieldReference> {
     match tokens {
         [only] => field_reference(ident_name(only)?.as_str()),
-        [receiver, dot, field]
-            if ident_name(receiver) == Some(kw::SelfLower)
-                && matches!(dot, TokenTree::Token(token, _) if token.kind == TokenKind::Dot) =>
-        {
-            self_field(field)
-        }
         _ => None,
     }
-}
-
-/// The field named by the tail of a `self.<field>` argument: an
-/// identifier for a named field, an integer literal for a tuple one.
-fn self_field(token: &TokenTree) -> Option<FieldReference> {
-    if let Some(name) = ident_name(token) {
-        return Some(FieldReference::Name(name));
-    }
-    let index = integer_literal(token)?;
-    Some(FieldReference::Index(index))
 }
 
 /// Split a token stream into comma-separated groups. A comma inside a
@@ -399,17 +387,4 @@ fn str_literal(tree: &TokenTree) -> Option<String> {
         return None;
     };
     Some(symbol.as_str().to_owned())
-}
-
-fn integer_literal(tree: &TokenTree) -> Option<usize> {
-    let TokenTree::Token(token, _) = tree else {
-        return None;
-    };
-    let TokenKind::Literal(literal) = token.kind else {
-        return None;
-    };
-    let LitKind::Int(value, _suffix) = LitKind::from_token_lit(literal).ok()? else {
-        return None;
-    };
-    usize::try_from(value.get()).ok()
 }

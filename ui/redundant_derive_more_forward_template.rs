@@ -31,12 +31,14 @@ struct Warning {
 #[display("{}", _0)]
 struct UninlinedPositional(String);
 
-// Bad: the `self.<index>` argument form.
+// Good: `derive_more` resolves a bare field name to the field, but wraps
+// any other expression as `&(...)` and infers no bound from it, so
+// deleting these would rewrite the generated body — and, on a generic
+// container, add a bound the expression form never contributed.
 #[derive(Display)]
 #[display("{}", self.0)]
 struct SelfIndexed(String);
 
-// Bad: the `self.<name>` argument form.
 #[derive(Display)]
 #[display("{}", self.message)]
 struct SelfNamed {
@@ -150,9 +152,8 @@ enum PerVariantExpect {
 #[lower_hex("{_0}")]
 struct DisplayUnderLowerHex(u32);
 
-// Good: derive_more dereferences the field for a `Pointer`
-// placeholder, so the template prints the field's own address where
-// the attribute-less derive prints the address of the binding.
+// Bad: a lone unadorned placeholder takes derive_more's transparent
+// path, which is what the attribute-less derive emits too.
 #[derive(derive_more::Pointer)]
 #[pointer("{_0:p}")]
 struct Address(&'static u32);

@@ -17,9 +17,9 @@ A formatting derive on a container with exactly one field
 forwards to that field, so a template that does nothing but
 name that field says nothing the derive does not — written
 inline (`#[display("{_0}")]`,
-`#[display("{the_only_field}")]`) or as an argument
-(`#[display("{}", _0)]`, `#[display("{}", self.0)]`), on a
-struct or on a single-field enum variant. An enum-level
+`#[display("{the_only_field}")]`) or as an argument naming that
+field (`#[display("{}", _0)]`), on a struct or on a
+single-field enum variant. An enum-level
 `#[display("{_variant}")]` is the container-level counterpart:
 it names exactly what each variant would be formatted with
 anyway.
@@ -45,14 +45,15 @@ would change the output — among them:
   through.
 - A variant under an enum-level template that does not mention
   `{_variant}`, which is what the variant would fall back to.
+- An argument that is any expression other than a bare field
+  name — `#[display("{}", self.0)]`. `derive_more` wraps it as
+  `&(self.0)` and infers no bound from it, so the deletion would
+  not leave the generated impl alone.
+- A `bound(...)` beside the template: `derive_more` folds those
+  predicates in only while a template is present.
 - A `cfg`-gated field, or a template inside a
   `#[cfg_attr(...)]`: the field count may differ between
   configurations.
-
-`#[pointer(...)]` is never flagged either: `derive_more`
-dereferences the field for a `Pointer` placeholder, so the
-template prints the field's own address where the attribute-less
-derive prints the address of the binding holding it.
 
 The rule runs only in a crate where a `derive_more` derive
 actually expands. Within one, a derive renamed on import
