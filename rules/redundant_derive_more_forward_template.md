@@ -49,8 +49,10 @@ would change the output — among them:
   `#[cfg_attr(...)]`: the field count may differ between
   configurations.
 
-A derive renamed on import (`use derive_more::Display as D;`)
-is not recognised; a re-export under the same name is.
+The rule runs only in a crate that depends on `derive_more`.
+Within one, a derive renamed on import
+(`use derive_more::Display as D;`) is not recognised; a
+re-export under the same name is.
 
 ## Why restrict this?
 

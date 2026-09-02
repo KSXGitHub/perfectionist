@@ -7,7 +7,7 @@ use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::source_map::SourceMap;
-use rustc_span::{BytePos, Span};
+use rustc_span::{BytePos, Span, Symbol};
 
 mod attrs;
 mod collect;
@@ -57,8 +57,10 @@ declare_tool_lint! {
     ///   `#[cfg_attr(...)]`: the field count may differ between
     ///   configurations.
     ///
-    /// A derive renamed on import (`use derive_more::Display as D;`)
-    /// is not recognised; a re-export under the same name is.
+    /// The rule runs only in a crate that depends on `derive_more`.
+    /// Within one, a derive renamed on import
+    /// (`use derive_more::Display as D;`) is not recognised; a
+    /// re-export under the same name is.
     ///
     /// ### Why restrict this?
     ///
@@ -130,6 +132,9 @@ pub fn register_pass(lint_store: &mut LintStore) {
 
 impl<'tcx> LateLintPass<'tcx> for RedundantDeriveMoreForwardTemplate {
     fn check_crate_post(&mut self, cx: &LateContext<'tcx>) {
+        if !links_derive_more(cx) {
+            return;
+        }
         // Re-parse the crate's module files so the `#[derive(...)]`
         // list and the formatting attribute survive (macro expansion
         // has consumed both by the late pass) and every separate-file
@@ -155,6 +160,25 @@ impl<'tcx> LateLintPass<'tcx> for RedundantDeriveMoreForwardTemplate {
             emit(cx, hir_id, &violation);
         });
     }
+}
+
+/// Whether `derive_more` is in the crate graph at all.
+///
+/// The rule recognises a derive by its final path segment, which cannot
+/// tell `derive_more::Display` from any other crate's `Display` derive
+/// declaring a `display` helper attribute — `parse_display::Display` is
+/// one, and its `#[display("{field}")]` is mandatory rather than
+/// redundant, so deleting it does not compile. Requiring the crate to
+/// be linked keeps the whole rule off such a crate instead of offering
+/// it a fix that breaks the build. Where both crates are linked the
+/// final-segment limitation still stands, as it does for the sibling
+/// derive-reading rules.
+fn links_derive_more(cx: &LateContext<'_>) -> bool {
+    let derive_more = Symbol::intern("derive_more");
+    cx.tcx
+        .crates(())
+        .iter()
+        .any(|&krate| cx.tcx.crate_name(krate) == derive_more)
 }
 
 fn emit(cx: &LateContext<'_>, hir_id: hir::HirId, violation: &Violation) {

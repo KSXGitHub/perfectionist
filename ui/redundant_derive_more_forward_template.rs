@@ -185,15 +185,38 @@ struct Angled(String);
 #[display("{{{_0}}}")]
 struct Braced(String);
 
-// Good: an explicit positional index names an argument, not the field.
+// Bad: `{}` and `{0}` are the implicit and explicit spellings of the
+// same first argument.
 #[derive(Display)]
 #[display("{0}", _0)]
 struct ExplicitPositional(String);
+
+// Good: a higher index still forwards to the sole argument, but the
+// bound derive_more infers is no longer the one the attribute-less
+// derive infers, so the deletion would not be output-preserving.
+#[derive(Display)]
+#[display("{1}", _0)]
+struct MismatchedIndex(String);
+
+// Good: an explicit positional index with no argument to name.
+#[derive(Display)]
+#[display("{0}")]
+struct BareIndex(String);
 
 // Good: deleting the variant attribute would fall back to `"unknown"`.
 #[derive(Display)]
 #[display("unknown")]
 enum Opaque {
+    #[display("{_0}")]
+    Known(String),
+}
+
+// Good: the enum-level template takes arguments this rule does not
+// read, but it is still a template, and still replaces the variant's
+// formatting.
+#[derive(Display)]
+#[display("{a}-{b}", a = 1, b = 2)]
+enum UnreadableShared {
     #[display("{_0}")]
     Known(String),
 }
@@ -226,6 +249,27 @@ struct RenamedDerive(String);
 #[derive(Display)]
 #[display(bound(Inner: Display))]
 struct Bounded<Inner>(Inner);
+
+// Good: derive_more folds `bound(...)` into the impl only while a
+// template is present, so deleting the template here would silently
+// drop the predicate. The `where(...)` spelling is the same attribute.
+#[derive(Display)]
+#[display("{_0}")]
+#[display(bound(Inner: Display))]
+struct BoundBesideTemplate<Inner>(Inner);
+
+#[derive(Display)]
+#[display("{_0}")]
+#[display(where(Inner: Display))]
+struct WhereBesideTemplate<Inner>(Inner);
+
+// Good: a variant carrying its own `bound(...)` beside the template.
+#[derive(Display)]
+enum VariantBound<Inner> {
+    #[display("{_0}")]
+    #[display(bound(Inner: Display))]
+    Only(Inner),
+}
 
 // Good: `derive_more` 0.99's `fmt = "..."` shape has no leading string
 // literal, so it never reaches the trigger.

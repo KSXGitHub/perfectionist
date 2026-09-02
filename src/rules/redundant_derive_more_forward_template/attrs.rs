@@ -189,18 +189,35 @@ pub(super) enum FieldReference {
     Name(Symbol),
 }
 
+/// The template literal a formatting attribute opens with, whatever
+/// follows it. `None` when the attribute is not a template at all:
+/// `#[display(bound(...))]` (also spelled `bounds(...)` / `where(...)`)
+/// and `#[display(rename_all = "...")]` are the shapes `derive_more`
+/// parses as alternatives to a template, and `derive_more` 0.99's
+/// `#[display(fmt = "...")]` is a third. None of them opens with a lone
+/// string literal, which is what rules them out here.
+///
+/// Separate from [`parse_call`] because the two questions differ. The
+/// enum-level shadow scan needs to know that an attribute *is* a
+/// template even when its arguments are in a shape this module cannot
+/// read: such a template still replaces its variants' formatting, so
+/// treating it as absent would flag a variant whose attribute is not
+/// removable.
+pub(super) fn template_literal(tokens: &TokenStream) -> Option<String> {
+    let groups = split_top_level_commas(tokens);
+    match groups.first()?.as_slice() {
+        [tree] => str_literal(tree),
+        _ => None,
+    }
+}
+
 /// Parse a formatting attribute's tokens into its template and
-/// argument. `None` when the tokens are not a template at all —
-/// `#[display(bound(...))]` and `#[display(rename_all = "...")]` are
-/// the alternatives `derive_more` parses instead, and `derive_more`
-/// 0.99's `#[display(fmt = "...")]` is a third. All three lack the
-/// leading string literal, which is what rules them out here.
+/// argument. `None` when it is not a template (see
+/// [`template_literal`]), when it carries more than one argument, or
+/// when its argument is in a shape this module does not read.
 pub(super) fn parse_call(tokens: &TokenStream) -> Option<ParsedCall> {
-    let mut groups = split_top_level_commas(tokens).into_iter();
-    let template = match groups.next()?.as_slice() {
-        [tree] => str_literal(tree)?,
-        _ => return None,
-    };
+    let template = template_literal(tokens)?;
+    let mut groups = split_top_level_commas(tokens).into_iter().skip(1);
     // A trailing comma leaves an empty final group; anything beyond one
     // argument cannot be consumed by a lone placeholder, so bail.
     let argument = match groups.next() {
@@ -256,7 +273,14 @@ fn resolve(placeholder: &Placeholder<'_>, supplied: Option<&TemplateArgument>) -
     };
     let names_the_argument = match supplied.name {
         Some(name) => placeholder.argument == name.as_str(),
-        None => placeholder.argument.is_empty(),
+        // `{}` and `{0}` are the implicit and explicit spellings of
+        // "the first argument", and `derive_more` compiles both to the
+        // same forward. A higher index is deliberately left alone:
+        // `derive_more` would still forward to the sole argument, but
+        // the bound it infers is then not the one the attribute-less
+        // derive infers, so the deletion would not be
+        // output-preserving.
+        None => matches!(placeholder.argument, "" | "0"),
     };
     names_the_argument.then_some(Forward::Field(supplied.value))
 }
@@ -270,8 +294,8 @@ const VARIANT_PLACEHOLDER: &str = "_variant";
 /// that does not replaces the variant's formatting outright, and
 /// removing a variant's attribute would change the output to this text.
 /// An unparsable template counts as replacing — the conservative answer.
-pub(super) fn wraps_variants(call: &ParsedCall) -> bool {
-    parse_template(&call.template).is_some_and(|segments| {
+pub(super) fn wraps_variants(template: &str) -> bool {
+    parse_template(template).is_some_and(|segments| {
         segments.iter().any(|segment| {
             matches!(segment, Segment::Placeholder(placeholder)
                 if placeholder.argument == VARIANT_PLACEHOLDER)

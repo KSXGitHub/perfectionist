@@ -9,8 +9,8 @@
 //! submodule, which a pre-expansion `EarlyLintPass` would not.
 
 use super::attrs::{
-    AttributeCall, FieldReference, FormattingTrait, Forward, ParsedCall, attribute_calls,
-    formatting_trait, lone_forward, parse_call, wraps_variants,
+    AttributeCall, FieldReference, FormattingTrait, Forward, attribute_calls, formatting_trait,
+    lone_forward, parse_call, template_literal, wraps_variants,
 };
 use crate::module_reparse::SpanRange;
 use rustc_ast::tokenstream::TokenStream;
@@ -105,19 +105,33 @@ fn check_enum(item: &Item, anchor: Span, def: &EnumDef, violations: &mut Vec<Vio
     // templates count too: one that applies only under some `cfg` still
     // shadows its variants there.
     let mut shadowed: HashSet<&'static str> = HashSet::new();
-    for call in attribute_calls_of(&item.attrs) {
-        let Some((formatting, parsed)) = formatting_call(&call, &derives) else {
+    let calls = attribute_calls_of(&item.attrs);
+    let configured = non_template_helpers(&calls);
+    for call in &calls {
+        let Some(formatting) = derived_formatting_trait(call, &derives) else {
             continue;
         };
-        if !wraps_variants(&parsed) {
+        // Keyed on the template literal alone rather than on a full
+        // parse: an enum-level template whose arguments this rule
+        // cannot read is still a template, and still replaces its
+        // variants' formatting.
+        let Some(template) = template_literal(call.tokens) else {
+            continue;
+        };
+        if !wraps_variants(&template) {
             shadowed.insert(formatting.attribute);
             continue;
         }
         // The enum-level counterpart of the single-field trigger: a
         // template that is nothing *but* `{_variant}` is exactly what
         // `derive_more` does with no enum-level template at all.
-        if !call.gated && lone_forward(&parsed, formatting) == Some(Forward::Variant) {
-            violations.push(violation(anchor, &call, formatting, ForwardKind::Variant));
+        if call.gated || configured.contains(&call.name) {
+            continue;
+        }
+        if parse_call(call.tokens)
+            .is_some_and(|parsed| lone_forward(&parsed, formatting) == Some(Forward::Variant))
+        {
+            violations.push(violation(anchor, call, formatting, ForwardKind::Variant));
         }
     }
     for variant in &def.variants {
@@ -159,28 +173,50 @@ fn check_container(
     let Some(sole_field) = sole_field_reference(data) else {
         return;
     };
-    for call in attribute_calls_of(attrs) {
+    let calls = attribute_calls_of(attrs);
+    let configured = non_template_helpers(&calls);
+    for call in &calls {
         // A gated attribute is read nowhere but the enum-level shadow
         // scan: the field count it would be checked against need not
         // hold under every configuration.
-        if call.gated {
+        if call.gated || configured.contains(&call.name) {
             continue;
         }
-        let Some((formatting, parsed)) = formatting_call(&call, derives) else {
+        let Some(formatting) = derived_formatting_trait(call, derives) else {
             continue;
         };
         if shadowed.contains(formatting.attribute) {
             continue;
         }
+        let Some(parsed) = parse_call(call.tokens) else {
+            continue;
+        };
         if lone_forward(&parsed, formatting) == Some(Forward::Field(sole_field)) {
             violations.push(violation(
                 anchor,
-                &call,
+                call,
                 formatting,
                 ForwardKind::SingleField,
             ));
         }
     }
+}
+
+/// The helper attributes the node configures through one of
+/// `derive_more`'s non-template shapes — `#[display(bound(...))]` and
+/// its `bounds(...)` / `where(...)` spellings, `rename_all = "..."`.
+///
+/// A helper named here is never flagged on this node. `derive_more`
+/// folds a `bound(...)` predicate into the impl only on the branch
+/// where a format attribute is present, so deleting the template would
+/// silently drop the predicates the user wrote beside it — a change to
+/// the generated impl, not the no-op the fix promises.
+fn non_template_helpers(calls: &[AttributeCall<'_>]) -> HashSet<Symbol> {
+    calls
+        .iter()
+        .filter(|call| template_literal(call.tokens).is_none())
+        .map(|call| call.name)
+        .collect()
 }
 
 fn violation(
@@ -198,19 +234,18 @@ fn violation(
     }
 }
 
-/// The formatting trait `call` configures, and its parsed contents.
-/// `None` unless the attribute names one of the formatting helpers, the
-/// container derives the matching trait, and the attribute holds a
-/// template rather than one of `derive_more`'s other argument shapes.
-fn formatting_call(
+/// The formatting trait `call` configures. `None` unless the attribute
+/// names one of the formatting helpers *and* the container derives the
+/// matching trait — a helper attribute means nothing without the derive
+/// that declares it.
+fn derived_formatting_trait(
     call: &AttributeCall<'_>,
     derives: &HashSet<Symbol>,
-) -> Option<(&'static FormattingTrait, ParsedCall)> {
+) -> Option<&'static FormattingTrait> {
     let formatting = formatting_trait(call.name)?;
-    if !derives.contains(&Symbol::intern(formatting.derive)) {
-        return None;
-    }
-    Some((formatting, parse_call(call.tokens)?))
+    derives
+        .contains(&Symbol::intern(formatting.derive))
+        .then_some(formatting)
 }
 
 /// The field a single-field container's template can name: the index
