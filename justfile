@@ -53,7 +53,7 @@ lint:
 
 # Run all the tests
 test:
-  mkdir -p "{{test_tmp_dir}}"
+  mkdir -pv "{{test_tmp_dir}}"
   just warmup-integration-tests
   TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets {{locked}}
 
