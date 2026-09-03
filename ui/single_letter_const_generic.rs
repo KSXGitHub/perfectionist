@@ -20,12 +20,12 @@ impl<const C: usize> Buf<C> {
     }
 }
 
-// OK: descriptive const generic name.
+// Good: descriptive const generic name.
 struct Matrix<const ROWS: usize, const COLS: usize> {
     cells: [[f64; COLS]; ROWS],
 }
 
-// OK: lifetime parameters are not const generics.
+// Good: lifetime parameters are not const generics.
 fn borrow<'a>(text: &'a str) -> &'a str {
     text
 }
