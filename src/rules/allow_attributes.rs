@@ -597,10 +597,9 @@ fn render_attrs(
 /// Render an `allow(...)` / `expect(...)` invocation from a list of
 /// lint names and an optional verbatim `reason = "..."` snippet.
 fn render_invocation(keyword: &str, names: &[String], reason: Option<&str>) -> String {
-    let mut parts: Vec<&str> = names.iter().map(String::as_str).collect();
-    if let Some(reason) = reason {
-        parts.push(reason);
-    }
+    // `Option` iterates over its zero-or-one item, so an absent reason
+    // contributes nothing and needs no branch.
+    let parts: Vec<&str> = names.iter().map(String::as_str).chain(reason).collect();
     format!("{keyword}({})", parts.join(", "))
 }
 
