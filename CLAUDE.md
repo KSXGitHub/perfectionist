@@ -499,6 +499,12 @@ into a crate-internal module so the second rule can reuse it. The
 planning files name this expectation explicitly; don't duplicate
 the helper.
 
+Another pair answers "is this test code?": `crate::test_code` and
+`crate::cargo_target`. A rule that exempts test code uses these
+rather than matching `cfg(test)` itself; before adding such an
+exemption, read
+[Recognising test-exclusive code](planned-rules/IMPLEMENTATION_CONVENTIONS.md#recognising-test-exclusive-code).
+
 One shared helper is a suppression guard rather than a parser:
 `crate::common::hir_in_external_macro` (late passes) and
 `clippy_utils::is_from_proc_macro` (early passes) keep rules from

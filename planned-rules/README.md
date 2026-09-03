@@ -55,9 +55,10 @@ pattern that several rules call out by reference — live in
 - [`needless-borrowed-parameters.md`](./needless-borrowed-parameters.md) — when a
   function takes `&T` but the body unconditionally calls
   `.to_owned()` / `.to_path_buf()` / equivalent, take `T` directly.
-  Pairs with `clippy::ptr_arg` and `clippy::needless_pass_by_value`
-  to cover the full owned-vs-borrowed trade-off from the pacquet
-  guide.
+  Test code and build scripts are exempt by default, since neither
+  collects on the copy the owned signature saves. Pairs with
+  `clippy::ptr_arg` and `clippy::needless_pass_by_value` to cover the
+  full owned-vs-borrowed trade-off from the pacquet guide.
 
 ### OS strings, paths, and bytes
 - [`needless-utf8-conversion.md`](./needless-utf8-conversion.md)

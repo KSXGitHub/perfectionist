@@ -8,7 +8,7 @@ static N: AtomicUsize = AtomicUsize::new(0);
 // Bad: free `static` item with a different single-letter name.
 static D: u64 = 64;
 
-// OK: descriptive `static` item name.
+// Good: descriptive `static` item name.
 static REQUEST_COUNT: AtomicUsize = AtomicUsize::new(0);
 
 fn run() {

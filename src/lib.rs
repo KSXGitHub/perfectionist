@@ -19,6 +19,7 @@ dylint_linting::dylint_library!();
 
 mod abs_path;
 mod ascii_letter;
+mod cargo_target;
 mod comment_walk;
 mod common;
 mod enclosing_hir;
@@ -29,6 +30,7 @@ mod macro_template;
 mod markdown;
 mod module_reparse;
 mod rules;
+mod test_code;
 mod url_scan;
 
 #[unsafe(no_mangle)]
