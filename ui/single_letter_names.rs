@@ -115,7 +115,7 @@ fn run() {
     // so `q` fires.
     let _applied = apply(|q| q * 2 + 1);
 
-    // OK: the same plain-call shape, but the callee path's final
+    // Good: the same plain-call shape, but the callee path's final
     // segment (`fold`) is on the trivial-callback list, so the
     // single-letter parameters stay quiet even though `a + b` is not a
     // trivial wrapper.
