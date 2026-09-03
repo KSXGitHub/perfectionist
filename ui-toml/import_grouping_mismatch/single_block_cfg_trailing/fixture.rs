@@ -39,4 +39,14 @@ use std::env::args;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
+struct Sep3;
+
+// Good: a `#[cfg(...)]` applied through a `#[cfg_attr(...)]` gates the
+// import's existence just as a bare one does, so it is hoisted into the
+// trailing block too.
+use std::fmt::Write;
+
+#[cfg_attr(all(), cfg(unix))]
+use std::os::unix::ffi::OsStrExt;
+
 fn main() {}

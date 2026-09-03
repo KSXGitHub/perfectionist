@@ -269,7 +269,11 @@ Every other crate.
 
 #### `CfgBlockHandling` (enum)
 
-How a `#[cfg(...)]`-gated import is grouped.
+How a `#[cfg(...)]`-gated import is grouped. An import is gated
+whether the `cfg` is written directly or applied through a
+`#[cfg_attr(<cfg>, cfg(...))]`; a `cfg_attr` that applies any
+other attribute leaves the import unconditionally present and
+does not gate it.
 
 ##### `"trailing"` (Rust: `Trailing`)
 
