@@ -233,11 +233,11 @@ pub fn register_pass(lint_store: &mut LintStore) {
     // [`crate::module_reparse`]), reaching every submodule while keeping
     // `#[cfg(...)]` gates intact — parsing does not strip cfg, the reason
     // a pre-expansion pass would otherwise be needed.
-    lint_store.register_late_pass(move |_| {
+    lint_store.register_late_lint_pass(Box::new(move |_| {
         Box::new(ImportGroupingMismatch {
             config: config.clone(),
         })
-    });
+    }));
 }
 
 /// One `use` statement admitted into a run. The submodules

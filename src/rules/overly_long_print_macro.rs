@@ -96,8 +96,8 @@ pub fn register_pass(lint_store: &mut LintStore) {
     // it; the late pass walks the HIR and emits each at its deepest
     // enclosing node, by which point `cfg_attr` has resolved and
     // lint-level attributes apply.
-    lint_store.register_pre_expansion_pass(|| Box::new(OverlyLongPrintMacro::new()));
-    lint_store.register_late_pass(|_| Box::new(OverlyLongPrintMacroLate));
+    lint_store.register_pre_expansion_lint_pass(Box::new(|| Box::new(OverlyLongPrintMacro::new())));
+    lint_store.register_late_lint_pass(Box::new(|_| Box::new(OverlyLongPrintMacroLate)));
 }
 
 /// Rewrites the pre-expansion pass has built, waiting for the late pass

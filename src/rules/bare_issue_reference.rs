@@ -351,7 +351,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("bare_issue_reference", DefaultState::Active) {
         return;
     }
-    lint_store.register_late_pass(|_| Box::new(BareIssueReference::new()));
+    lint_store.register_late_lint_pass(Box::new(|_| Box::new(BareIssueReference::new())));
 }
 
 /// One bare `#NNN` finding, parked during the comment walk and emitted

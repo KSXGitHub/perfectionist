@@ -85,7 +85,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("single_letter_generic", DefaultState::Active) {
         return;
     }
-    lint_store.register_late_pass(|_| Box::new(SingleLetterGeneric::new()));
+    lint_store.register_late_lint_pass(Box::new(|_| Box::new(SingleLetterGeneric::new())));
 }
 
 impl<'tcx> LateLintPass<'tcx> for SingleLetterGeneric {

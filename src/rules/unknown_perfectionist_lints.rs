@@ -86,9 +86,9 @@ pub fn register_pass(lint_store: &mut LintStore) {
         return;
     }
     let registered_lints: Vec<String> = collect_registered_lint_names(lint_store);
-    lint_store.register_early_pass(move || {
+    lint_store.register_early_lint_pass(Box::new(move || {
         Box::new(UnknownPerfectionistLints::new(registered_lints.clone()))
-    });
+    }));
 }
 
 fn collect_registered_lint_names(lint_store: &LintStore) -> Vec<String> {

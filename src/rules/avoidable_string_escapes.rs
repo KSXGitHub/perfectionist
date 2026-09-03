@@ -240,8 +240,10 @@ pub fn register_pass(lint_store: &mut LintStore) {
     // the source tokens are intact — including the ones lowering would
     // consume before the HIR exists — and parks each rewrite for the late
     // pass to dedup, anchor, and emit. See [`mod@early`].
-    lint_store.register_pre_expansion_pass(|| Box::new(AvoidableStringEscapesEarly::new()));
-    lint_store.register_late_pass(|_| Box::new(AvoidableStringEscapes::new()));
+    lint_store.register_pre_expansion_lint_pass(Box::new(|| {
+        Box::new(AvoidableStringEscapesEarly::new())
+    }));
+    lint_store.register_late_lint_pass(Box::new(|_| Box::new(AvoidableStringEscapes::new())));
 }
 
 impl<'tcx> LateLintPass<'tcx> for AvoidableStringEscapes {

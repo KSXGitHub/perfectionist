@@ -95,7 +95,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
     {
         return;
     }
-    lint_store.register_late_pass(|_| Box::new(SingleLetterConstGeneric::new()));
+    lint_store.register_late_lint_pass(Box::new(|_| Box::new(SingleLetterConstGeneric::new())));
 }
 
 impl<'tcx> LateLintPass<'tcx> for SingleLetterConstGeneric {

@@ -131,7 +131,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
     {
         return;
     }
-    lint_store.register_early_pass(|| Box::new(AllowAttributesWithoutReason::new()));
+    lint_store.register_early_lint_pass(Box::new(|| Box::new(AllowAttributesWithoutReason::new())));
 }
 
 impl EarlyLintPass for AllowAttributesWithoutReason {

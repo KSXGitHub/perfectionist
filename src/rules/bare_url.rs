@@ -130,7 +130,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("bare_url", DefaultState::Active) {
         return;
     }
-    lint_store.register_late_pass(|_| Box::new(BareUrl::new()));
+    lint_store.register_late_lint_pass(Box::new(|_| Box::new(BareUrl::new())));
 }
 
 /// One bare-URL finding, parked during the comment walk and emitted

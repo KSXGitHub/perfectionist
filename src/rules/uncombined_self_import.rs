@@ -121,7 +121,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
     // `check_crate` re-parses each source file instead (see the module
     // docs), reaching every module-scoped submodule while keeping
     // `#[cfg(...)]` gates intact.
-    lint_store.register_late_pass(|_| Box::new(UncombinedSelfImport));
+    lint_store.register_late_lint_pass(Box::new(|_| Box::new(UncombinedSelfImport)));
 }
 
 /// A detected violation parked until its enclosing HIR node is known.

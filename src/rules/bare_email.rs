@@ -140,7 +140,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("bare_email", DefaultState::Active) {
         return;
     }
-    lint_store.register_late_pass(|_| Box::new(BareEmail::new()));
+    lint_store.register_late_lint_pass(Box::new(|_| Box::new(BareEmail::new())));
 }
 
 impl<'tcx> LateLintPass<'tcx> for BareEmail {

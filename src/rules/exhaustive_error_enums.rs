@@ -198,7 +198,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("exhaustive_error_enums", DEFAULT_STATE) {
         return;
     }
-    lint_store.register_late_pass(|_| Box::new(ExhaustiveErrorEnums::new()));
+    lint_store.register_late_lint_pass(Box::new(|_| Box::new(ExhaustiveErrorEnums::new())));
 }
 
 impl<'tcx> LateLintPass<'tcx> for ExhaustiveErrorEnums {

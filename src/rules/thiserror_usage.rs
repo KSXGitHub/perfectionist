@@ -114,7 +114,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
     // `#[derive(...)]` attribute by the time the rule looks for it.
     // The sibling `perfectionist::unordered_derives` rule uses the same
     // hook for the same reason.
-    lint_store.register_pre_expansion_pass(|| Box::new(ThiserrorUsage::new()));
+    lint_store.register_pre_expansion_lint_pass(Box::new(|| Box::new(ThiserrorUsage::new())));
 }
 
 impl EarlyLintPass for ThiserrorUsage {

@@ -99,7 +99,7 @@ pub fn register_pass(lint_store: &mut LintStore) {
     {
         return;
     }
-    lint_store.register_early_pass(|| Box::new(LintAttributeTrailingComment::new()));
+    lint_store.register_early_lint_pass(Box::new(|| Box::new(LintAttributeTrailingComment::new())));
 }
 
 const LINT_LEVEL_NAMES: [Symbol; 5] = [sym::allow, sym::expect, sym::warn, sym::deny, sym::forbid];
