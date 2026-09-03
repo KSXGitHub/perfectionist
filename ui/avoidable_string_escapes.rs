@@ -64,7 +64,7 @@ fn _assert_eq_message_placeholder() {
     assert_eq!(value, value, "v = \"{value}\"");
 }
 
-// Bad, exactly once: a string-literal *operand* of `assert_eq!`
+// Bad: a string-literal *operand* of `assert_eq!`
 // survives lowering as an ordinary value, so the late pass flags it. The
 // pre-expansion scan also sees it, but the byte-range dedup drops the
 // duplicate — this fixture pins that there is no double diagnostic.
