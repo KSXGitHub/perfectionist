@@ -56,7 +56,7 @@ fn trailing_multiline_comma() {}
 #[cfg_attr(all(), allow(dead_code))] // cfg_attr wrap
 fn trailing_cfg_attr() {}
 
-// Bad once: `cfg_attr` expanding to *two* synth lint-level attrs
+// Bad: `cfg_attr` expanding to *two* synth lint-level attrs
 // shares a single trailing comment. The rule lifts the comment
 // onto the first synth attr only — emitting a suggestion for
 // every synth would produce overlapping `delete_span`s on the
@@ -71,7 +71,7 @@ fn trailing_cfg_attr_multi_synth() {}
 #[cfg_attr(all(), cfg_attr(all(), allow(dead_code)))] // nested wrap
 fn trailing_nested_cfg_attr() {}
 
-// Bad once: cfg_attr's first synth already carries `reason`, so it
+// Bad: cfg_attr's first synth already carries `reason`, so it
 // doesn't emit; the pending trace must stay live so the *second*
 // synth can still lift the trailing comment. (The bug version
 // consumed the trace unconditionally after the first synth was
