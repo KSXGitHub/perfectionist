@@ -41,8 +41,8 @@ pub(crate) trait RuleRegistration {
 /// generate for it. Both are spelled out because `macro_rules!`
 /// cannot case-convert an identifier.
 ///
-/// Entries are in ascending order, which a `const` assertion below
-/// enforces: [`is_registered_lint`] binary-searches [`LINT_NAMES`].
+/// Entries are in ascending order, since [`is_registered_lint`]
+/// binary-searches [`LINT_NAMES`]; the tests below hold them to it.
 macro_rules! rule_index {
     ($( $rule_name:ident => $marker:ident ),+ $(,)?) => {
         $(
@@ -117,41 +117,9 @@ rule_index! {
     wildcard_imports => WildcardImportsRule,
 }
 
-const _: () = assert!(
-    is_ascending(LINT_NAMES),
-    "rule_index! entries must be in ascending order",
-);
-
 /// Whether `name` is one of [`LINT_NAMES`].
 pub(crate) fn is_registered_lint(name: &str) -> bool {
     LINT_NAMES.binary_search(&name).is_ok()
-}
-
-/// Whether `names` is strictly ascending, and so a valid subject for
-/// [`slice::binary_search`].
-const fn is_ascending(names: &[&str]) -> bool {
-    let mut index = 1;
-    while index < names.len() {
-        if !precedes(names[index - 1].as_bytes(), names[index].as_bytes()) {
-            return false;
-        }
-        index += 1;
-    }
-    true
-}
-
-/// Whether `left` sorts before `right`, comparing bytes — the order
-/// [`str`]'s own comparison operators define, spelled out here
-/// because they are not `const`.
-const fn precedes(left: &[u8], right: &[u8]) -> bool {
-    let mut index = 0;
-    while index < left.len() && index < right.len() {
-        if left[index] != right[index] {
-            return left[index] < right[index];
-        }
-        index += 1;
-    }
-    left.len() < right.len()
 }
 
 #[cfg(test)]

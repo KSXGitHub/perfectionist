@@ -1,6 +1,7 @@
-//! Unit tests that keep the index and `src/rules/` in step: every
-//! entry names a rule module that declares the matching lint, and
-//! every rule module is named by an entry.
+//! Unit tests that keep the index and `src/rules/` in step: its
+//! entries are in the order [`super::is_registered_lint`] searches
+//! them in, every entry names a rule module that declares the
+//! matching lint, and every rule module is named by an entry.
 //!
 //! The `LintStore` used to answer the first question by construction
 //! — the names came out of it — and the compiler answers the second
@@ -30,6 +31,12 @@ fn declared_lint_name(source: &str) -> Option<String> {
 
 fn read_rule_source(path: &Path) -> String {
     fs::read_to_string(path).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
+}
+
+#[test]
+fn entries_are_in_ascending_order() {
+    let disorder = LINT_NAMES.windows(2).find(|pair| pair[0] >= pair[1]);
+    assert_eq!(disorder, None, "`rule_index!` entries are out of order");
 }
 
 #[test]
