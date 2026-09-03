@@ -50,16 +50,18 @@ fn run_dylint_inner(
     shared_target_dir: &Path,
     all_targets: bool,
 ) -> (String, bool) {
-    let mut command = "cargo"
+    let output = "cargo"
         .pipe(Command::new)
         .with_arg("dylint")
         .with_arg("--all")
         .with_current_dir(project_dir)
-        .with_env("CARGO_TARGET_DIR", shared_target_dir);
-    if all_targets {
-        command = command.with_arg("--").with_arg("--all-targets");
-    }
-    let output = command.output().expect("failed to run `cargo dylint`");
+        .with_env("CARGO_TARGET_DIR", shared_target_dir)
+        .with_args(match all_targets {
+            true => ["--", "--all-targets"].as_slice(),
+            false => &[],
+        })
+        .output()
+        .expect("failed to run `cargo dylint`");
     let stderr = String::from_utf8(output.stderr).expect("dylint stderr is not UTF-8");
     (stderr, output.status.success())
 }
