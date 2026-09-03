@@ -8,17 +8,18 @@
 //! macro expansion. Re-parsing also reaches every separate-file
 //! submodule, which a pre-expansion `EarlyLintPass` would not.
 
-use super::attrs::{
-    AttributeCall, FieldReference, Fix, FormattingTrait, Forward, attribute_calls,
-    formatting_trait, lone_forward, parse_call, template_literal,
+use super::formatting_traits::{FormattingTrait, formatting_trait};
+use super::forward_template::{
+    FieldReference, Fix, Forward, lone_forward, parse_call, template_literal,
 };
+use crate::attr_tokens::{AttributeCall, attribute_calls_of, is_cfg_gated};
+use crate::derive_list::derive_names;
 use crate::module_reparse::SpanRange;
-use rustc_ast::tokenstream::TokenStream;
 use rustc_ast::{
-    Attribute, Block, Crate, EnumDef, Expr, ExprKind, Item, ItemKind, MetaItemInner, MetaItemKind,
-    ModKind, StmtKind, VariantData,
+    Attribute, Block, Crate, EnumDef, Expr, ExprKind, Item, ItemKind, ModKind, StmtKind,
+    VariantData,
 };
-use rustc_span::{Span, Symbol, sym};
+use rustc_span::{Span, Symbol};
 use std::collections::HashSet;
 
 /// One removable formatting attribute.
@@ -342,60 +343,4 @@ fn sole_field_reference(data: &VariantData) -> Option<FieldReference> {
         Some(ident) => FieldReference::Name(ident.name),
         None => FieldReference::Index(0),
     })
-}
-
-fn attribute_calls_of(attrs: &[Attribute]) -> Vec<AttributeCall<'_>> {
-    attrs.iter().flat_map(attribute_calls).collect()
-}
-
-/// Whether a `#[cfg(...)]` gates the node, including one applied
-/// through a `#[cfg_attr(...)]`.
-///
-/// Applied to a container as well as to its fields. A gated container
-/// may not be in the compiled crate at all, and one that is not has no
-/// HIR node — so a finding on it anchors at whatever live node encloses
-/// it (an inline `mod`, a function body, the enum around a gated
-/// variant) and cannot be silenced by an `#[allow]` on the item itself.
-/// The re-parse deliberately keeps such items, so the walk has to
-/// decline them.
-fn is_cfg_gated(attrs: &[Attribute]) -> bool {
-    attrs.iter().any(|attr| {
-        attr.has_name(sym::cfg)
-            || attribute_calls(attr)
-                .iter()
-                .any(|call| call.name == sym::cfg)
-    })
-}
-
-/// Final path segment of every derive on the node, including
-/// `#[cfg_attr(<cfg>, derive(...))]`-gated ones — a gated derive still
-/// governs what its helper attribute means wherever it applies.
-///
-/// Matching by final segment catches `derive_more::Display`, a plain
-/// `Display` imported from `derive_more`, and a same-name re-export; a
-/// derive renamed through `use derive_more::Display as D;` is not
-/// caught, the same accepted limitation the sibling
-/// `perfectionist::unordered_derives` and
-/// `perfectionist::clap_help_markdown` already carry.
-fn derive_names(attrs: &[Attribute]) -> HashSet<Symbol> {
-    let mut names = HashSet::new();
-    for call in attribute_calls_of(attrs) {
-        if call.name == sym::derive {
-            names.extend(derive_entries(call.tokens));
-        }
-    }
-    names
-}
-
-/// Final path segment of each entry in a `derive(...)` list.
-fn derive_entries(tokens: &TokenStream) -> Vec<Symbol> {
-    let Some(entries) = MetaItemKind::list_from_tokens(tokens.clone()) else {
-        return Vec::new();
-    };
-    entries
-        .iter()
-        .filter_map(MetaItemInner::meta_item)
-        .filter_map(|meta| meta.path.segments.last())
-        .map(|segment| segment.ident.name)
-        .collect()
 }

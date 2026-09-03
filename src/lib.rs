@@ -19,9 +19,11 @@ dylint_linting::dylint_library!();
 
 mod abs_path;
 mod ascii_letter;
+mod attr_tokens;
 mod cargo_target;
 mod comment_walk;
 mod common;
+mod derive_list;
 mod enclosing_hir;
 mod format_template;
 mod literal_scan;

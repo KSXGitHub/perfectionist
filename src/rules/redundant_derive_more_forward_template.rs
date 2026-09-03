@@ -10,11 +10,12 @@ use rustc_span::hygiene::{ExpnKind, MacroKind};
 use rustc_span::source_map::SourceMap;
 use rustc_span::{BytePos, Span, Symbol};
 
-mod attrs;
 mod collect;
+mod formatting_traits;
+mod forward_template;
 
-use attrs::Fix;
 use collect::{ForwardKind, Violation, collect_violations};
+use forward_template::Fix;
 
 declare_tool_lint! {
     /// ### What it does
