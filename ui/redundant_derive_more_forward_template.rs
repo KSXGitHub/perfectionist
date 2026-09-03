@@ -226,15 +226,11 @@ struct Braced(String);
 #[display("{0}", _0)]
 struct ExplicitPositional(String);
 
-// Bad, but warn-only: `{1}` forwards to the sole argument all the same
-// — derive_more's transparent path throws the index away — so this is
-// redundant as written and compiles identically to the bare derive.
-// But the index names an argument that was never supplied, so it reads
-// as a forgotten one; the rule warns without an autofix, because the
-// fix could be either deleting the attribute or supplying the argument.
-// (`BareIndex`, `#[display("{0}")]` with no argument, used to sit here;
-// it does not compile with real derive_more — `invalid reference to
-// positional argument` — so it can never reach the rule and was removed.)
+// Bad: `{1}` forwards to the sole argument all the same — derive_more's
+// transparent path throws the index away — so this is redundant and
+// compiles identically to the bare derive. But the index names an
+// argument that was never supplied, so the rule warns without an autofix:
+// the fix could be to delete the attribute or to supply the argument.
 #[derive(Display)]
 #[display("{1}", _0)]
 struct MismatchedIndex(String);
