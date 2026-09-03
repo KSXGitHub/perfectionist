@@ -13,6 +13,7 @@ use rustc_span::{BytePos, Span, Symbol};
 mod attrs;
 mod collect;
 
+use attrs::Fix;
 use collect::{ForwardKind, Violation, collect_violations};
 
 declare_tool_lint! {
@@ -45,6 +46,14 @@ declare_tool_lint! {
     /// derive defaults to the struct-shaped `Wrapper("inner")` output
     /// rather than to a forward, so its template always changes the
     /// rendering.
+    ///
+    /// A stray positional index is flagged but not auto-fixed.
+    /// `#[display("{1}", _0)]` forwards to the field regardless of the
+    /// index — `derive_more` throws it away — so it is just as
+    /// redundant, but the `{1}` names an argument that was never
+    /// supplied and so may be a forgotten one. The rule warns without
+    /// offering the deletion, leaving the choice between removing the
+    /// attribute and supplying the argument to the author.
     ///
     /// Beyond that the rule is silent wherever deleting the attribute
     /// would change the generated impl — among them an adorned
@@ -211,6 +220,7 @@ fn emit(cx: &LateContext<'_>, hir_id: hir::HirId, violation: &Violation) {
     let Violation {
         attribute,
         kind,
+        fix,
         attribute_name,
         derive_name,
         ..
@@ -231,13 +241,26 @@ fn emit(cx: &LateContext<'_>, hir_id: hir::HirId, violation: &Violation) {
         hir_id,
         *attribute,
         message,
-        |diagnostic| {
-            diagnostic.span_suggestion(
-                deletion_span(cx.sess().source_map(), *attribute),
-                "remove the attribute",
-                String::new(),
-                Applicability::MachineApplicable,
-            );
+        |diagnostic| match fix {
+            Fix::Delete => {
+                diagnostic.span_suggestion(
+                    deletion_span(cx.sess().source_map(), *attribute),
+                    "remove the attribute",
+                    String::new(),
+                    Applicability::MachineApplicable,
+                );
+            }
+            // A stray positional index (`{1}`): redundant as written, but
+            // the index names an argument that was never supplied, so it
+            // may be a forgotten one. Warn without an autofix — the fix
+            // is the author's to choose, delete or supply.
+            Fix::WarnOnly => {
+                diagnostic.note(
+                    "the positional index names no supplied argument, so this template \
+                     may be missing one; remove the attribute, or supply the argument \
+                     the index refers to",
+                );
+            }
         },
     );
 }

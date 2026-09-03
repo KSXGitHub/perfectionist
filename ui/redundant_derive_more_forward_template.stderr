@@ -145,7 +145,15 @@ LL | | struct ExplicitPositional(String);
    | |_- help: remove the attribute
 
 warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
-  --> $DIR/redundant_derive_more_forward_template.rs:348:5
+  --> $DIR/redundant_derive_more_forward_template.rs:239:1
+   |
+LL | #[display("{1}", _0)]
+   | ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: the positional index names no supplied argument, so this template may be missing one; remove the attribute, or supply the argument the index refers to
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:349:5
    |
 LL |       #[display("{_0}")]
    |  _-   ^^^^^^^^^^^^^^^^^^
@@ -153,12 +161,12 @@ LL | |     struct Local(String);
    | |_- help: remove the attribute
 
 warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
-  --> $DIR/redundant_derive_more_forward_template.rs:355:5
+  --> $DIR/redundant_derive_more_forward_template.rs:356:5
    |
 LL |       #[display("{_0}")]
    |  _-   ^^^^^^^^^^^^^^^^^^
 LL | |     struct InConstBlock(String);
    | |_- help: remove the attribute
 
-warning: 20 warnings emitted
+warning: 21 warnings emitted
 

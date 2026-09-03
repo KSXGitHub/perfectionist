@@ -235,7 +235,7 @@ pub(super) fn parse_call(tokens: &TokenStream) -> Option<ParsedCall> {
 /// template — one with literal text, a second placeholder, an escaped
 /// brace, a fill / width / precision, or a placeholder selecting a
 /// different trait than the derive implements.
-pub(super) fn lone_forward(call: &ParsedCall, formatting: &FormattingTrait) -> Option<Forward> {
+pub(super) fn lone_forward(call: &ParsedCall, formatting: &FormattingTrait) -> Option<LoneForward> {
     let segments = parse_template(&call.template)?;
     let [Segment::Placeholder(placeholder)] = segments.as_slice() else {
         return None;
@@ -244,6 +244,13 @@ pub(super) fn lone_forward(call: &ParsedCall, formatting: &FormattingTrait) -> O
         return None;
     }
     resolve(placeholder, call.argument.as_ref())
+}
+
+/// A lone forwarding template: what it forwards to, and whether the
+/// whole attribute can be deleted outright or only warned about.
+pub(super) struct LoneForward {
+    pub(super) target: Forward,
+    pub(super) fix: Fix,
 }
 
 /// The value a lone placeholder interpolates.
@@ -256,32 +263,72 @@ pub(super) enum Forward {
     Variant,
 }
 
+/// Whether a recognised forward is safe to rewrite away, or only to
+/// warn about.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum Fix {
+    /// The template names the value unambiguously — `{}`, `{0}`, `{_0}`,
+    /// `{field}`, a named argument, or `{_variant}`. Deleting the whole
+    /// attribute is a `MachineApplicable` no-op.
+    Delete,
+    /// The template forwards to the sole field via an explicit positional
+    /// index `>= 1`. `derive_more`'s transparent path throws the index
+    /// away, so the output is identical to the derive's own forward and
+    /// the code even compiles — but the index names an argument that was
+    /// never supplied, which reads as a forgotten one. Redundant as
+    /// written, yet the intended fix might be to *supply* the argument
+    /// rather than delete it, so warn without offering an autofix.
+    WarnOnly,
+}
+
 /// Resolve a placeholder's argument against the attribute's own
 /// argument list. With no argument supplied the placeholder names the
 /// value directly (`{_0}`); with one supplied the placeholder names the
 /// argument, which in turn names the value (`{}`, `_0`).
-fn resolve(placeholder: &Placeholder<'_>, supplied: Option<&TemplateArgument>) -> Option<Forward> {
+fn resolve(
+    placeholder: &Placeholder<'_>,
+    supplied: Option<&TemplateArgument>,
+) -> Option<LoneForward> {
     let Some(supplied) = supplied else {
-        return match placeholder.argument {
+        let target = match placeholder.argument {
             // `{}` with nothing to interpolate is not a forward — it is
             // not even a template `derive_more` accepts.
-            "" => None,
-            VARIANT_PLACEHOLDER => Some(Forward::Variant),
-            name => field_reference(name).map(Forward::Field),
+            "" => return None,
+            VARIANT_PLACEHOLDER => Forward::Variant,
+            name => Forward::Field(field_reference(name)?),
         };
+        return Some(LoneForward {
+            target,
+            fix: Fix::Delete,
+        });
     };
-    let names_the_argument = match supplied.name {
-        Some(name) => placeholder.argument == name.as_str(),
-        // `{}` and `{0}` are the implicit and explicit spellings of
-        // "the first argument", and `derive_more` compiles both to the
-        // same forward. A higher index is deliberately left alone:
-        // `derive_more` would still forward to the sole argument, but
-        // the bound it infers is then not the one the attribute-less
-        // derive infers, so the deletion would not be
-        // output-preserving.
-        None => matches!(placeholder.argument, "" | "0"),
+    let fix = match supplied.name {
+        // A named argument (`#[display("{x}", x = _0)]`) is a clean
+        // forward when the placeholder names it.
+        Some(name) => (placeholder.argument == name.as_str()).then_some(Fix::Delete)?,
+        None => match positional_index(placeholder.argument)? {
+            // `{}` and `{0}` are the implicit and explicit spellings of
+            // "the first (and only) argument".
+            0 => Fix::Delete,
+            // `{1}`, `{2}`, ... — see [`Fix::WarnOnly`].
+            _ => Fix::WarnOnly,
+        },
     };
-    names_the_argument.then_some(Forward::Field(supplied.value))
+    Some(LoneForward {
+        target: Forward::Field(supplied.value),
+        fix,
+    })
+}
+
+/// The positional index a placeholder argument denotes: `{}` is the
+/// implicit first (index 0), `{0}` / `{1}` / ... are explicit. `None`
+/// for a named placeholder, which a positional argument cannot satisfy.
+fn positional_index(argument: &str) -> Option<usize> {
+    if argument.is_empty() {
+        Some(0)
+    } else {
+        argument.parse().ok()
+    }
 }
 
 /// `derive_more`'s enum-level stand-in for a variant's own formatting.

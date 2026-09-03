@@ -9,8 +9,8 @@
 //! submodule, which a pre-expansion `EarlyLintPass` would not.
 
 use super::attrs::{
-    AttributeCall, FieldReference, FormattingTrait, Forward, attribute_calls, formatting_trait,
-    lone_forward, parse_call, template_literal,
+    AttributeCall, FieldReference, Fix, FormattingTrait, Forward, attribute_calls,
+    formatting_trait, lone_forward, parse_call, template_literal,
 };
 use crate::module_reparse::SpanRange;
 use rustc_ast::tokenstream::TokenStream;
@@ -32,9 +32,13 @@ pub(super) struct Violation {
     /// node's leading attributes.
     pub(super) anchor: Span,
     /// The whole attribute — the diagnostic's primary span, and what
-    /// the suggestion deletes.
+    /// the suggestion deletes when there is one.
     pub(super) attribute: Span,
     pub(super) kind: ForwardKind,
+    /// Whether the whole attribute may be deleted outright, or only
+    /// warned about (a stray positional index that may name a forgotten
+    /// argument).
+    pub(super) fix: Fix,
     /// The helper attribute's name, for the diagnostic.
     pub(super) attribute_name: &'static str,
     /// The derive whose default the template restates.
@@ -190,9 +194,18 @@ fn check_enum(item: &Item, anchor: Span, def: &EnumDef, violations: &mut Vec<Vio
             continue;
         }
         if parse_call(call.tokens)
-            .is_some_and(|parsed| lone_forward(&parsed, formatting) == Some(Forward::Variant))
+            .and_then(|parsed| lone_forward(&parsed, formatting))
+            .is_some_and(|forward| forward.target == Forward::Variant)
         {
-            violations.push(violation(anchor, call, formatting, ForwardKind::Variant));
+            // `{_variant}` is a named placeholder, never a stray index,
+            // so the enum-level forward is always a clean deletion.
+            violations.push(violation(
+                anchor,
+                call,
+                formatting,
+                ForwardKind::Variant,
+                Fix::Delete,
+            ));
         }
     }
     for variant in &def.variants {
@@ -255,12 +268,15 @@ fn check_container(
         let Some(parsed) = parse_call(call.tokens) else {
             continue;
         };
-        if lone_forward(&parsed, formatting) == Some(Forward::Field(sole_field)) {
+        if let Some(forward) = lone_forward(&parsed, formatting)
+            && forward.target == Forward::Field(sole_field)
+        {
             violations.push(violation(
                 anchor,
                 call,
                 formatting,
                 ForwardKind::SingleField,
+                forward.fix,
             ));
         }
     }
@@ -288,11 +304,13 @@ fn violation(
     call: &AttributeCall<'_>,
     formatting: &'static FormattingTrait,
     kind: ForwardKind,
+    fix: Fix,
 ) -> Violation {
     Violation {
         anchor,
         attribute: call.span,
         kind,
+        fix,
         attribute_name: formatting.attribute,
         derive_name: formatting.derive,
     }

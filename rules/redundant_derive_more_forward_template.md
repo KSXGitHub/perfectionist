@@ -37,6 +37,14 @@ derive defaults to the struct-shaped `Wrapper("inner")` output
 rather than to a forward, so its template always changes the
 rendering.
 
+A stray positional index is flagged but not auto-fixed.
+`#[display("{1}", _0)]` forwards to the field regardless of the
+index — `derive_more` throws it away — so it is just as
+redundant, but the `{1}` names an argument that was never
+supplied and so may be a forgotten one. The rule warns without
+offering the deletion, leaving the choice between removing the
+attribute and supplying the argument to the author.
+
 Beyond that the rule is silent wherever deleting the attribute
 would change the generated impl — among them an adorned
 placeholder such as `#[display("{_0:>8}")]`, a variant under any

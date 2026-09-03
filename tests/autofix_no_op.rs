@@ -219,8 +219,11 @@ const CASES: &[Case] = &[
         r#"#[derive(derive_more::Display)] #[display("{_0:>8}")] pub struct S(pub u32);"#,
         r#"#[derive(derive_more::Display)] pub struct S(pub u32);"#,
     ),
+    // Warn-only: `{1}` forwards to the sole argument (transparent path),
+    // so hand-deletion is a no-op — but the rule offers no autofix, so
+    // the fixer must leave it untouched. See `WARN_ONLY`.
     (
-        "refused_index_past_arguments",
+        "warn_only_stray_index",
         r#"#[derive(derive_more::Display)] #[display("{1}", _0)] pub struct S(pub String);"#,
         r#"#[derive(derive_more::Display)] pub struct S(pub String);"#,
     ),
@@ -258,11 +261,14 @@ const ACCEPTED_MISSED_DIAGNOSTICS: &[&str] = &[
     // `Display`, unsafe for `Pointer` (see the case below), and the
     // rule declines the whole shape rather than splitting by trait.
     "display_variant_under_wrapping",
-    // `{1}` naming the sole argument is transparent for a concrete
-    // field type; the generic form, where the inferred bound would
-    // differ, does not compile as written.
-    "refused_index_past_arguments",
 ];
+
+/// Shapes the rule *flags* but deliberately offers no autofix for — a
+/// stray positional index (`{1}`) that may name a forgotten argument.
+/// The fixer must leave them untouched (there is no suggestion to
+/// apply); that they are warned is asserted by the UI `.stderr`, not
+/// here, since this harness only observes the fixer.
+const WARN_ONLY: &[&str] = &["warn_only_stray_index"];
 
 #[test]
 #[ignore = "builds the lint, fetches `derive_more`, runs three expansions; see the module docs"]
@@ -287,14 +293,22 @@ fn autofix_never_changes_the_generated_code() {
     let mut failures = Vec::new();
     for (name, _, _) in CASES {
         let fixed = source_before[*name] != source_after[*name];
+        let warn_only = WARN_ONLY.contains(name);
         if fixed {
-            if before[*name] != after[*name] {
+            if warn_only {
+                failures.push(format!(
+                    "{name}: a warn-only case must offer no autofix, but the fixer changed it",
+                ));
+            } else if before[*name] != after[*name] {
                 failures.push(format!(
                     "{name}: the rule deleted the attribute and the generated code changed\n  \
                      before: {}\n  after:  {}",
                     before[*name], after[*name],
                 ));
             }
+        } else if warn_only {
+            // Correct: flagged (per the UI `.stderr`) but no autofix, so
+            // the fixer leaves it untouched.
         } else if before[*name] == deleted[*name] && !ACCEPTED_MISSED_DIAGNOSTICS.contains(name) {
             failures.push(format!(
                 "{name}: the rule left this alone, but deleting the attribute changes \

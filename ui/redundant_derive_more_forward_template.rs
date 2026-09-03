@@ -226,17 +226,18 @@ struct Braced(String);
 #[display("{0}", _0)]
 struct ExplicitPositional(String);
 
-// Good: a higher index still forwards to the sole argument, but the
-// bound derive_more infers is no longer the one the attribute-less
-// derive infers, so the deletion would not be output-preserving.
+// Bad, but warn-only: `{1}` forwards to the sole argument all the same
+// — derive_more's transparent path throws the index away — so this is
+// redundant as written and compiles identically to the bare derive.
+// But the index names an argument that was never supplied, so it reads
+// as a forgotten one; the rule warns without an autofix, because the
+// fix could be either deleting the attribute or supplying the argument.
+// (`BareIndex`, `#[display("{0}")]` with no argument, used to sit here;
+// it does not compile with real derive_more — `invalid reference to
+// positional argument` — so it can never reach the rule and was removed.)
 #[derive(Display)]
 #[display("{1}", _0)]
 struct MismatchedIndex(String);
-
-// Good: an explicit positional index with no argument to name.
-#[derive(Display)]
-#[display("{0}")]
-struct BareIndex(String);
 
 // Good: deleting the variant attribute would fall back to `"unknown"`.
 #[derive(Display)]
