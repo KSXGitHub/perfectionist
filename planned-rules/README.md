@@ -86,6 +86,14 @@ pattern that several rules call out by reference — live in
   `impl` blocks that could be replaced by a `derive_more` derive
   (`From`, `Into`, `AsRef`, `Deref`, etc., with `Display` and
   `Error` available behind opt-in flags due to detection difficulty).
+- [`redundant-derive-more-forward-template.md`](./redundant-derive-more-forward-template.md)
+  — flag a `derive_more` formatting attribute whose template does
+  nothing but the forward the derive already performs — a
+  single-field container restating its own field
+  (`#[display("{_0}")]`, `#[display("{}", _0)]`,
+  `#[display("{the_only_field}")]`) or an enum restating
+  `{_variant}` — and delete it. Silent wherever deletion would
+  change the rendering. Active by default.
 - [`uninlined-derive-more-args.md`](./uninlined-derive-more-args.md) —
   `clippy::uninlined_format_args` for `#[display(...)]` and
   `#[debug(...)]` attributes from `derive_more`.

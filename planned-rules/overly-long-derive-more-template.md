@@ -212,3 +212,8 @@ one of the four. The shared
 [`uninlined-derive-more-args`](./uninlined-derive-more-args.md) rule
 operates at a different layer (placeholder syntax inside the
 template), and runs orthogonally to all four.
+
+[`redundant-derive-more-forward-template`](./redundant-derive-more-forward-template.md)
+is likewise orthogonal, and cannot collide with this rule: it fires
+only on a template that is a lone unadorned placeholder, which is far
+too short to reach any sane `max_line_width`.
