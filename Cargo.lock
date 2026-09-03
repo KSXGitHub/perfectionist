@@ -306,9 +306,9 @@ checksum = "1d07550c9036bf2ae0c684c4297d503f838287c83c53686d05370d0e139ae570"
 
 [[package]]
 name = "command-extra"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1b4fe32ea3f2a8d975b6c5cdd3f02ac358f471ca24dbb18d7a4ca58b3193d2d"
+checksum = "9cbb5b5fa60d2c7c7597ca3c25c67a39fc536a5553da20627a06d5076c2dd325"
 
 [[package]]
 name = "compiletest_rs"
