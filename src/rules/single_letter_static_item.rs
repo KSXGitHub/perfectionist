@@ -3,6 +3,7 @@ use crate::common::{
     DefaultState, hir_in_external_macro, is_single_ascii_letter, resolve_symbol_set_from_chars,
     resolved_state,
 };
+use crate::rule_index::{RuleRegistration, SingleLetterStaticItemRule};
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
@@ -82,17 +83,19 @@ impl SingleLetterStaticItem {
 
 impl_lint_pass!(SingleLetterStaticItem => [SINGLE_LETTER_STATIC_ITEM]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[SINGLE_LETTER_STATIC_ITEM]);
-}
-
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive =
-        resolved_state("single_letter_static_item", DefaultState::Active)
-    {
-        return;
+impl RuleRegistration for SingleLetterStaticItemRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[SINGLE_LETTER_STATIC_ITEM]);
     }
-    lint_store.register_late_pass(|_| Box::new(SingleLetterStaticItem::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive =
+            resolved_state("single_letter_static_item", DefaultState::Active)
+        {
+            return;
+        }
+        lint_store.register_late_pass(|_| Box::new(SingleLetterStaticItem::new()));
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for SingleLetterStaticItem {

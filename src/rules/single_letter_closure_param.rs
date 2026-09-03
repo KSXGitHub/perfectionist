@@ -3,6 +3,7 @@ use crate::common::{
     DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter, resolve_symbol_set,
     resolve_symbol_set_from_chars, resolved_state,
 };
+use crate::rule_index::{RuleRegistration, SingleLetterClosureParamRule};
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
@@ -241,17 +242,19 @@ impl SingleLetterClosureParam {
 
 impl_lint_pass!(SingleLetterClosureParam => [SINGLE_LETTER_CLOSURE_PARAM]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[SINGLE_LETTER_CLOSURE_PARAM]);
-}
-
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive =
-        resolved_state("single_letter_closure_param", DefaultState::Active)
-    {
-        return;
+impl RuleRegistration for SingleLetterClosureParamRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[SINGLE_LETTER_CLOSURE_PARAM]);
     }
-    lint_store.register_late_pass(|_| Box::new(SingleLetterClosureParam::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive =
+            resolved_state("single_letter_closure_param", DefaultState::Active)
+        {
+            return;
+        }
+        lint_store.register_late_pass(|_| Box::new(SingleLetterClosureParam::new()));
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for SingleLetterClosureParam {

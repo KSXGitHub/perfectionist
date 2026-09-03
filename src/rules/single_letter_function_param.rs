@@ -3,6 +3,7 @@ use crate::common::{
     DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter,
     resolve_symbol_set_from_chars, resolved_state,
 };
+use crate::rule_index::{RuleRegistration, SingleLetterFunctionParamRule};
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_hir as hir;
 use rustc_hir::intravisit::FnKind;
@@ -105,17 +106,19 @@ impl SingleLetterFunctionParam {
 
 impl_lint_pass!(SingleLetterFunctionParam => [SINGLE_LETTER_FUNCTION_PARAM]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[SINGLE_LETTER_FUNCTION_PARAM]);
-}
-
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive =
-        resolved_state("single_letter_function_param", DefaultState::Active)
-    {
-        return;
+impl RuleRegistration for SingleLetterFunctionParamRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[SINGLE_LETTER_FUNCTION_PARAM]);
     }
-    lint_store.register_late_pass(|_| Box::new(SingleLetterFunctionParam::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive =
+            resolved_state("single_letter_function_param", DefaultState::Active)
+        {
+            return;
+        }
+        lint_store.register_late_pass(|_| Box::new(SingleLetterFunctionParam::new()));
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for SingleLetterFunctionParam {

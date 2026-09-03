@@ -3,6 +3,7 @@ use crate::common::{
     DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter,
     resolve_symbol_set_from_chars, resolved_state,
 };
+use crate::rule_index::{RuleRegistration, SingleLetterLetBindingRule};
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
@@ -99,17 +100,19 @@ impl SingleLetterLetBinding {
 
 impl_lint_pass!(SingleLetterLetBinding => [SINGLE_LETTER_LET_BINDING]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[SINGLE_LETTER_LET_BINDING]);
-}
-
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive =
-        resolved_state("single_letter_let_binding", DefaultState::Active)
-    {
-        return;
+impl RuleRegistration for SingleLetterLetBindingRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[SINGLE_LETTER_LET_BINDING]);
     }
-    lint_store.register_late_pass(|_| Box::new(SingleLetterLetBinding::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive =
+            resolved_state("single_letter_let_binding", DefaultState::Active)
+        {
+            return;
+        }
+        lint_store.register_late_pass(|_| Box::new(SingleLetterLetBinding::new()));
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for SingleLetterLetBinding {

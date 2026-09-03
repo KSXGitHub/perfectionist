@@ -22,6 +22,7 @@
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use crate::module_reparse::for_each_module_file;
+use crate::rule_index::{RuleRegistration, UncombinedSelfImportRule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_ast::visit::{self, Visitor};
 use rustc_ast::{Block, Item, ItemKind, ModKind, Stmt, StmtKind};
@@ -107,21 +108,23 @@ pub struct UncombinedSelfImport;
 
 impl_lint_pass!(UncombinedSelfImport => [UNCOMBINED_SELF_IMPORT]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[UNCOMBINED_SELF_IMPORT]);
-}
-
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("uncombined_self_import", DEFAULT_STATE) {
-        return;
+impl RuleRegistration for UncombinedSelfImportRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[UNCOMBINED_SELF_IMPORT]);
     }
-    let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-    // Late pass: out-of-line `mod foo;` modules are `ModKind::Unloaded`
-    // until macro expansion, so a pre-expansion pass never sees them.
-    // `check_crate` re-parses each source file instead (see the module
-    // docs), reaching every module-scoped submodule while keeping
-    // `#[cfg(...)]` gates intact.
-    lint_store.register_late_pass(|_| Box::new(UncombinedSelfImport));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive = resolved_state("uncombined_self_import", DEFAULT_STATE) {
+            return;
+        }
+        let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        // Late pass: out-of-line `mod foo;` modules are `ModKind::Unloaded`
+        // until macro expansion, so a pre-expansion pass never sees them.
+        // `check_crate` re-parses each source file instead (see the module
+        // docs), reaching every module-scoped submodule while keeping
+        // `#[cfg(...)]` gates intact.
+        lint_store.register_late_pass(|_| Box::new(UncombinedSelfImport));
+    }
 }
 
 /// A detected violation parked until its enclosing HIR node is known.

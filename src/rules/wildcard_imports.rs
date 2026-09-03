@@ -13,6 +13,7 @@
 //! `live_module_spans` guard that keeps the walk from descending into a
 //! cfg-disabled inline module that is not part of the compiled crate.
 
+use crate::rule_index::{RuleRegistration, WildcardImportsRule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_ast::{Item, ItemKind, ModKind, UseTree, UseTreeKind, VisibilityKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
@@ -118,8 +119,8 @@ declare_tool_lint! {
 
 /// Active by default: both exceptions ship enabled, so the only globs
 /// flagged out of the box are non-prelude, non-re-export ones such as
-/// `use super::*;`. Read by [`register_pass`]; gen-docs picks the
-/// constant up to render the rule's default state.
+/// `use super::*;`. Read by [`RuleRegistration::register_pass`];
+/// gen-docs picks the constant up to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
 const CONFIG_KEY: &str = "perfectionist::wildcard_imports";
@@ -130,35 +131,34 @@ pub struct WildcardImports {
 
 impl_lint_pass!(WildcardImports => [WILDCARD_IMPORTS]);
 
-/// Register this rule's lint declaration. Paired with [`register_pass`];
-/// see the module-level convention documented in `register_lints`.
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[WILDCARD_IMPORTS]);
-}
-
-/// Install this rule's pass.
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("wildcard_imports", DEFAULT_STATE) {
-        return;
+impl RuleRegistration for WildcardImportsRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[WILDCARD_IMPORTS]);
     }
-    let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-    // Reject a misconfigured `allowed_paths` entry loudly: each must be an
-    // absolute path (`crate::...` or `::<extern crate>::...`), otherwise it
-    // could never match the absolute key the rule builds from a glob `use`.
-    for entry in &config.allowed_paths {
-        crate::abs_path::validate_absolute(entry).unwrap_or_else(|message| {
-            panic!("perfectionist::wildcard_imports: {message}");
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive = resolved_state("wildcard_imports", DEFAULT_STATE) {
+            return;
+        }
+        let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        // Reject a misconfigured `allowed_paths` entry loudly: each must be an
+        // absolute path (`crate::...` or `::<extern crate>::...`), otherwise it
+        // could never match the absolute key the rule builds from a glob `use`.
+        for entry in &config.allowed_paths {
+            crate::abs_path::validate_absolute(entry).unwrap_or_else(|message| {
+                panic!("perfectionist::wildcard_imports: {message}");
+            });
+        }
+        // Late pass: the cfg-gated `#[cfg(test)] mod tests { use super::*; }`
+        // case (and any out-of-line `mod foo;` submodule) is only reachable
+        // by re-parsing each module file in a late pass — see the module
+        // docs and [`crate::module_reparse`].
+        lint_store.register_late_pass(move |_| {
+            Box::new(WildcardImports {
+                config: Resolved::from_config(config.clone()),
+            })
         });
     }
-    // Late pass: the cfg-gated `#[cfg(test)] mod tests { use super::*; }`
-    // case (and any out-of-line `mod foo;` submodule) is only reachable
-    // by re-parsing each module file in a late pass — see the module
-    // docs and [`crate::module_reparse`].
-    lint_store.register_late_pass(move |_| {
-        Box::new(WildcardImports {
-            config: Resolved::from_config(config.clone()),
-        })
-    });
 }
 
 /// A detected violation parked until the enclosing HIR node is known.

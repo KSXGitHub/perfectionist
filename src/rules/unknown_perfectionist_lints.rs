@@ -1,4 +1,7 @@
 use crate::common::{DefaultState, render_meta_path, resolved_state};
+use crate::rule_index::{
+    LINT_NAMES, RuleRegistration, UnknownPerfectionistLintsRule, is_registered_lint,
+};
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Attribute, MetaItem, MetaItemInner, MetaItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
@@ -57,61 +60,37 @@ struct Config {}
 /// offered as a "did you mean" hint.
 const SUGGESTION_DISTANCE: usize = 3;
 
-pub struct UnknownPerfectionistLints {
-    registered_lints: Vec<String>,
-}
+pub struct UnknownPerfectionistLints;
 
 impl UnknownPerfectionistLints {
-    fn new(registered_lints: Vec<String>) -> Self {
+    fn new() -> Self {
         let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        Self { registered_lints }
+        UnknownPerfectionistLints
     }
 }
 
 impl_lint_pass!(UnknownPerfectionistLints => [UNKNOWN_PERFECTIONIST_LINTS]);
 
-/// Register this rule's lint declaration. Paired with [`register_pass`];
-/// see the module-level convention documented in `register_lints`.
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[UNKNOWN_PERFECTIONIST_LINTS]);
-}
-
-/// Install this rule's early pass. Must be called *after* every rule module
-/// has registered its lints, since the pass snapshots the registered
-/// `perfectionist::*` names from `lint_store` at construction time.
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive =
-        resolved_state("unknown_perfectionist_lints", DefaultState::Active)
-    {
-        return;
+impl RuleRegistration for UnknownPerfectionistLintsRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[UNKNOWN_PERFECTIONIST_LINTS]);
     }
-    let registered_lints: Vec<String> = collect_registered_lint_names(lint_store);
-    lint_store.register_early_pass(move || {
-        Box::new(UnknownPerfectionistLints::new(registered_lints.clone()))
-    });
-}
 
-fn collect_registered_lint_names(lint_store: &LintStore) -> Vec<String> {
-    let tool_prefix = format!("{TOOL_NAME}::");
-    lint_store
-        .get_lints()
-        .iter()
-        .filter_map(|lint| {
-            // `Lint::name` is the upper-case macro identifier
-            // (`perfectionist::UNICODE_ELLIPSIS_IN_COMMENTS`); `name_lower()`
-            // returns the snake-case form rustc surfaces in diagnostics and
-            // attribute references (`perfectionist::unicode_ellipsis_in_comments`).
-            let lower_name = lint.name_lower();
-            lower_name.strip_prefix(&tool_prefix).map(str::to_owned)
-        })
-        .collect()
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive =
+            resolved_state("unknown_perfectionist_lints", DefaultState::Active)
+        {
+            return;
+        }
+        lint_store.register_early_pass(|| Box::new(UnknownPerfectionistLints::new()));
+    }
 }
 
 impl EarlyLintPass for UnknownPerfectionistLints {
     fn check_attribute(&mut self, lint_context: &EarlyContext<'_>, attribute: &Attribute) {
         if is_lint_level_attribute(attribute) {
             if let Some(lint_names) = attribute.meta_item_list() {
-                self.check_lint_name_list(lint_context, &lint_names);
+                check_lint_name_list(lint_context, &lint_names);
             }
         } else if attribute.has_name(sym::cfg_attr) {
             let Some(cfg_attr_args) = attribute.meta_item_list() else {
@@ -127,7 +106,7 @@ impl EarlyLintPass for UnknownPerfectionistLints {
                 let MetaItemKind::List(lint_names) = &wrapped_meta_item.kind else {
                     continue;
                 };
-                self.check_lint_name_list(lint_context, lint_names);
+                check_lint_name_list(lint_context, lint_names);
             }
         }
     }
@@ -148,113 +127,105 @@ fn is_lint_level_meta_item(meta_item: &MetaItem) -> bool {
         .any(|name| meta_item.has_name(*name))
 }
 
-impl UnknownPerfectionistLints {
-    fn check_lint_name_list(&self, lint_context: &EarlyContext<'_>, lint_names: &[MetaItemInner]) {
-        for lint_name in lint_names {
-            let Some(meta_item) = lint_name.meta_item() else {
-                continue;
-            };
-            self.check_lint_name(lint_context, meta_item);
-        }
-    }
-
-    fn check_lint_name(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem) {
-        let segments = &meta_item.path.segments;
-        let Some(first_segment) = segments.first() else {
-            return;
+fn check_lint_name_list(lint_context: &EarlyContext<'_>, lint_names: &[MetaItemInner]) {
+    for lint_name in lint_names {
+        let Some(meta_item) = lint_name.meta_item() else {
+            continue;
         };
-        if first_segment.ident.name.as_str() != TOOL_NAME {
-            return;
+        check_lint_name(lint_context, meta_item);
+    }
+}
+
+fn check_lint_name(lint_context: &EarlyContext<'_>, meta_item: &MetaItem) {
+    let segments = &meta_item.path.segments;
+    let Some(first_segment) = segments.first() else {
+        return;
+    };
+    if first_segment.ident.name.as_str() != TOOL_NAME {
+        return;
+    }
+    let segments_after_tool: Vec<&str> = segments[1..]
+        .iter()
+        .map(|segment| segment.ident.name.as_str())
+        .collect();
+    match segments_after_tool.as_slice() {
+        [name] if is_registered_lint(name) => {}
+        [name] => report(lint_context, meta_item, name),
+        [] => report_no_name(lint_context, meta_item),
+        _ => {
+            let candidate = segments_after_tool.join("_");
+            report(lint_context, meta_item, &candidate);
         }
-        let segments_after_tool: Vec<&str> = segments[1..]
-            .iter()
-            .map(|segment| segment.ident.name.as_str())
-            .collect();
-        match segments_after_tool.as_slice() {
-            [name] if self.is_registered(name) => {}
-            [name] => self.report(lint_context, meta_item, name),
-            [] => self.report_no_name(lint_context, meta_item),
-            _ => {
-                let candidate = segments_after_tool.join("_");
-                self.report(lint_context, meta_item, &candidate);
+    }
+}
+
+/// The help line to attach to an unknown name, if there is anything
+/// useful to say about it.
+fn help_for(candidate: &str) -> Option<String> {
+    // No registered lint name holds a non-ASCII character, so a
+    // candidate that does is not a near-miss of one and there is
+    // nothing to guess at. The character itself is the answer: a
+    // homoglyph is invisible in the source, and the codepoint is
+    // what identifies it. rustc words its own reports of such a
+    // character the same way, down to `'о' (U+043E)`.
+    if let Some(non_ascii) = candidate.chars().find(|character| !character.is_ascii()) {
+        let codepoint = u32::from(non_ascii);
+        // A combining mark would otherwise land on the quote and a
+        // zero-width character would render as nothing at all —
+        // both defeating the point of naming the character. rustc
+        // escapes it the same way: its `uncommon_codepoints` reads
+        // `identifier contains an uncommon character: '\u{951}'`.
+        let escaped = non_ascii.escape_debug();
+        return Some(format!(
+            "contains a non-ASCII character: '{escaped}' (U+{codepoint:04X})",
+        ));
+    }
+    let suggested_name = find_closest_match(candidate)?;
+    Some(format!("did you mean `{TOOL_NAME}::{suggested_name}`?"))
+}
+
+/// The registered lint closest to `candidate`, within
+/// [`SUGGESTION_DISTANCE`] edits of it. `candidate` must be ASCII;
+/// [`help_for`] rules out everything else beforehand.
+fn find_closest_match(candidate: &str) -> Option<&'static str> {
+    let mut closest: Option<(&'static str, usize)> = None;
+    for registered in LINT_NAMES {
+        let distance = levenshtein(candidate.as_bytes(), registered.as_bytes());
+        if distance <= SUGGESTION_DISTANCE
+            && closest.is_none_or(|(_, closest_distance)| distance < closest_distance)
+        {
+            closest = Some((*registered, distance));
+        }
+    }
+    closest.map(|(name, _)| name)
+}
+
+fn report(lint_context: &EarlyContext<'_>, meta_item: &MetaItem, candidate: &str) {
+    let path_text = render_meta_path(meta_item);
+    span_lint_and_then(
+        lint_context,
+        UNKNOWN_PERFECTIONIST_LINTS,
+        meta_item.span,
+        format!("unknown lint: `{path_text}`"),
+        // Called only when the lint fires, so a site that carries
+        // `#[allow(perfectionist::unknown_perfectionist_lints)]`
+        // pays for neither the distance sweep nor the `String`.
+        |diagnostic| {
+            if let Some(help) = help_for(candidate) {
+                diagnostic.help(help);
             }
-        }
-    }
+        },
+    );
+}
 
-    fn is_registered(&self, name: &str) -> bool {
-        self.registered_lints
-            .iter()
-            .any(|registered| registered == name)
-    }
-
-    /// The help line to attach to an unknown name, if there is anything
-    /// useful to say about it.
-    fn help_for(&self, candidate: &str) -> Option<String> {
-        // No registered lint name holds a non-ASCII character, so a
-        // candidate that does is not a near-miss of one and there is
-        // nothing to guess at. The character itself is the answer: a
-        // homoglyph is invisible in the source, and the codepoint is
-        // what identifies it. rustc words its own reports of such a
-        // character the same way, down to `'о' (U+043E)`.
-        if let Some(non_ascii) = candidate.chars().find(|character| !character.is_ascii()) {
-            let codepoint = u32::from(non_ascii);
-            // A combining mark would otherwise land on the quote and a
-            // zero-width character would render as nothing at all —
-            // both defeating the point of naming the character. rustc
-            // escapes it the same way: its `uncommon_codepoints` reads
-            // `identifier contains an uncommon character: '\u{951}'`.
-            let escaped = non_ascii.escape_debug();
-            return Some(format!(
-                "contains a non-ASCII character: '{escaped}' (U+{codepoint:04X})",
-            ));
-        }
-        let suggested_name = self.find_closest_match(candidate)?;
-        Some(format!("did you mean `{TOOL_NAME}::{suggested_name}`?"))
-    }
-
-    /// The registered lint closest to `candidate`, within
-    /// [`SUGGESTION_DISTANCE`] edits of it. `candidate` must be ASCII;
-    /// [`Self::help_for`] rules out everything else beforehand.
-    fn find_closest_match(&self, candidate: &str) -> Option<&str> {
-        let mut closest: Option<(&str, usize)> = None;
-        for registered in &self.registered_lints {
-            let distance = levenshtein(candidate.as_bytes(), registered.as_bytes());
-            if distance <= SUGGESTION_DISTANCE
-                && closest.is_none_or(|(_, closest_distance)| distance < closest_distance)
-            {
-                closest = Some((registered.as_str(), distance));
-            }
-        }
-        closest.map(|(name, _)| name)
-    }
-
-    fn report(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem, candidate: &str) {
-        let path_text = render_meta_path(meta_item);
-        span_lint_and_then(
-            lint_context,
-            UNKNOWN_PERFECTIONIST_LINTS,
-            meta_item.span,
-            format!("unknown lint: `{path_text}`"),
-            // Called only when the lint fires, so a site that carries
-            // `#[allow(perfectionist::unknown_perfectionist_lints)]`
-            // pays for neither the distance sweep nor the `String`.
-            |diagnostic| {
-                if let Some(help) = self.help_for(candidate) {
-                    diagnostic.help(help);
-                }
-            },
-        );
-    }
-
-    fn report_no_name(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem) {
-        span_lint_and_then(
-            lint_context,
-            UNKNOWN_PERFECTIONIST_LINTS,
-            meta_item.span,
-            format!("unknown lint: `{TOOL_NAME}` is a tool prefix, not a lint name"),
-            |_| {},
-        );
-    }
+fn report_no_name(lint_context: &EarlyContext<'_>, meta_item: &MetaItem) {
+    span_lint_and_then(
+        lint_context,
+        UNKNOWN_PERFECTIONIST_LINTS,
+        meta_item.span,
+        format!("unknown lint: `{TOOL_NAME}` is a tool prefix, not a lint name"),
+        |_| {},
+    );
 }
 
 fn levenshtein(left: &[u8], right: &[u8]) -> usize {

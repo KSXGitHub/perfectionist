@@ -1,4 +1,5 @@
 use crate::common::{DefaultState, resolved_state};
+use crate::rule_index::{MacroTrailingCommaRule, RuleRegistration};
 use rustc_ast::MacCall;
 use rustc_ast::token::TokenKind;
 use rustc_ast::tokenstream::TokenTree;
@@ -82,24 +83,27 @@ declare_tool_lint! {
 impl_lint_pass!(MacroTrailingComma => [MACRO_TRAILING_COMMA]);
 impl_lint_pass!(MacroTrailingCommaLate => [MACRO_TRAILING_COMMA]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[MACRO_TRAILING_COMMA]);
-}
-
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("macro_trailing_comma", DefaultState::Active) {
-        return;
+impl RuleRegistration for MacroTrailingCommaRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[MACRO_TRAILING_COMMA]);
     }
-    // Split across two passes per
-    // <https://github.com/KSXGitHub/parallel-disk-usage/issues/409>:
-    // pre-expansion sees the `MacCall` tokens but runs before
-    // `cfg_attr` is evaluated, so a `cfg_attr`-wrapped `#[expect]`
-    // is invisible at emission time. The pre-expansion pass parks
-    // violation spans in `PENDING_VIOLATIONS`; the late pass walks
-    // the HIR and emits each at its deepest enclosing node, by which
-    // point `cfg_attr` has resolved and lint-level attributes apply.
-    lint_store.register_pre_expansion_pass(|| Box::new(MacroTrailingComma::new()));
-    lint_store.register_late_pass(|_| Box::new(MacroTrailingCommaLate));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive = resolved_state("macro_trailing_comma", DefaultState::Active)
+        {
+            return;
+        }
+        // Split across two passes per
+        // <https://github.com/KSXGitHub/parallel-disk-usage/issues/409>:
+        // pre-expansion sees the `MacCall` tokens but runs before
+        // `cfg_attr` is evaluated, so a `cfg_attr`-wrapped `#[expect]`
+        // is invisible at emission time. The pre-expansion pass parks
+        // violation spans in `PENDING_VIOLATIONS`; the late pass walks
+        // the HIR and emits each at its deepest enclosing node, by which
+        // point `cfg_attr` has resolved and lint-level attributes apply.
+        lint_store.register_pre_expansion_pass(|| Box::new(MacroTrailingComma::new()));
+        lint_store.register_late_pass(|_| Box::new(MacroTrailingCommaLate));
+    }
 }
 
 /// Violations the pre-expansion pass has found, waiting to be emitted

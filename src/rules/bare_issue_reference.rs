@@ -2,6 +2,7 @@ use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::markdown::{position_in_skip, scan_skip_regions, utf8_char_len};
+use crate::rule_index::{BareIssueReferenceRule, RuleRegistration};
 use crate::url_scan::back_scan_url_fragment;
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
@@ -343,15 +344,18 @@ fn host_of(url: &str) -> Option<&str> {
 
 impl_lint_pass!(BareIssueReference => [BARE_ISSUE_REFERENCE]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[BARE_ISSUE_REFERENCE]);
-}
-
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("bare_issue_reference", DefaultState::Active) {
-        return;
+impl RuleRegistration for BareIssueReferenceRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[BARE_ISSUE_REFERENCE]);
     }
-    lint_store.register_late_pass(|_| Box::new(BareIssueReference::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive = resolved_state("bare_issue_reference", DefaultState::Active)
+        {
+            return;
+        }
+        lint_store.register_late_pass(|_| Box::new(BareIssueReference::new()));
+    }
 }
 
 /// One bare `#NNN` finding, parked during the comment walk and emitted

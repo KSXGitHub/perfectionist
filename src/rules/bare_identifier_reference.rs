@@ -1,6 +1,7 @@
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
 use crate::common::{DefaultState, resolve_symbol_set, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
+use crate::rule_index::{BareIdentifierReferenceRule, RuleRegistration};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use core::num::NonZeroUsize;
 use rustc_errors::Applicability;
@@ -219,17 +220,19 @@ impl BareIdentifierReference {
 
 impl_lint_pass!(BareIdentifierReference => [BARE_IDENTIFIER_REFERENCE]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[BARE_IDENTIFIER_REFERENCE]);
-}
-
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive =
-        resolved_state("bare_identifier_reference", DefaultState::Active)
-    {
-        return;
+impl RuleRegistration for BareIdentifierReferenceRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[BARE_IDENTIFIER_REFERENCE]);
     }
-    lint_store.register_late_pass(|_| Box::new(BareIdentifierReference::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive =
+            resolved_state("bare_identifier_reference", DefaultState::Active)
+        {
+            return;
+        }
+        lint_store.register_late_pass(|_| Box::new(BareIdentifierReference::new()));
+    }
 }
 
 /// One parked finding: the identifier text plus the source snippet of

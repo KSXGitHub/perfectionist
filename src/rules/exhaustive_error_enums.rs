@@ -1,4 +1,5 @@
 use crate::common::{DefaultState, resolve_string_set, resolved_state};
+use crate::rule_index::{ExhaustiveErrorEnumsRule, RuleRegistration};
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::source::indent_of;
 use clippy_utils::sym;
@@ -88,8 +89,8 @@ declare_tool_lint! {
 /// Off by default — enable it in `dylint.toml` via the crate-wide
 /// `[perfectionist] enable = ["exhaustive_error_enums"]` (or the
 /// `[[perfectionist.enable]]` array-of-tables form). Read by
-/// [`register_pass`] below; gen-docs picks the constant up via syn
-/// to render the rule's default state.
+/// [`RuleRegistration::register_pass`] below; gen-docs picks the
+/// constant up via syn to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 
 const CONFIG_KEY: &str = "perfectionist::exhaustive_error_enums";
@@ -187,18 +188,17 @@ impl ExhaustiveErrorEnums {
 
 impl_lint_pass!(ExhaustiveErrorEnums => [EXHAUSTIVE_ERROR_ENUMS]);
 
-/// Register this rule's lint declaration. Paired with [`register_pass`];
-/// see the module-level convention documented in `register_lints`.
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[EXHAUSTIVE_ERROR_ENUMS]);
-}
-
-/// Install this rule's late pass.
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("exhaustive_error_enums", DEFAULT_STATE) {
-        return;
+impl RuleRegistration for ExhaustiveErrorEnumsRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[EXHAUSTIVE_ERROR_ENUMS]);
     }
-    lint_store.register_late_pass(|_| Box::new(ExhaustiveErrorEnums::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive = resolved_state("exhaustive_error_enums", DEFAULT_STATE) {
+            return;
+        }
+        lint_store.register_late_pass(|_| Box::new(ExhaustiveErrorEnums::new()));
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for ExhaustiveErrorEnums {

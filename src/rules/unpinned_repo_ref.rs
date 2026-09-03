@@ -3,6 +3,7 @@ use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::literal_scan::string_literal_quote_lengths;
 use crate::markdown::{SkipRange, scan_code_regions};
+use crate::rule_index::{RuleRegistration, UnpinnedRepoRefRule};
 use config::{Config, ForgeKind, glob_match};
 use emit::{Violation, emit_diagnostic};
 use rustc_ast::LitKind;
@@ -166,15 +167,17 @@ impl UnpinnedRepoRef {
 
 impl_lint_pass!(UnpinnedRepoRef => [UNPINNED_REPO_REF]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[UNPINNED_REPO_REF]);
-}
-
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("unpinned_repo_ref", DEFAULT_STATE) {
-        return;
+impl RuleRegistration for UnpinnedRepoRefRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[UNPINNED_REPO_REF]);
     }
-    lint_store.register_late_pass(|_| Box::new(UnpinnedRepoRef::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive = resolved_state("unpinned_repo_ref", DEFAULT_STATE) {
+            return;
+        }
+        lint_store.register_late_pass(|_| Box::new(UnpinnedRepoRef::new()));
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for UnpinnedRepoRef {

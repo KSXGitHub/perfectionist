@@ -2,6 +2,7 @@ use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::literal_scan::emit_flagged_char_hir;
 use crate::module_reparse::crate_module_files;
+use crate::rule_index::{RuleRegistration, UnicodeEllipsisInCommentsRule};
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -100,17 +101,19 @@ impl UnicodeEllipsisInComments {
 
 impl_lint_pass!(UnicodeEllipsisInComments => [UNICODE_ELLIPSIS_IN_COMMENTS]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[UNICODE_ELLIPSIS_IN_COMMENTS]);
-}
-
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive =
-        resolved_state("unicode_ellipsis_in_comments", DefaultState::Active)
-    {
-        return;
+impl RuleRegistration for UnicodeEllipsisInCommentsRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[UNICODE_ELLIPSIS_IN_COMMENTS]);
     }
-    lint_store.register_late_pass(|_| Box::new(UnicodeEllipsisInComments::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive =
+            resolved_state("unicode_ellipsis_in_comments", DefaultState::Active)
+        {
+            return;
+        }
+        lint_store.register_late_pass(|_| Box::new(UnicodeEllipsisInComments::new()));
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for UnicodeEllipsisInComments {

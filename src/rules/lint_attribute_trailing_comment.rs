@@ -1,4 +1,5 @@
 use crate::common::{DefaultState, resolved_state};
+use crate::rule_index::{LintAttributeTrailingCommentRule, RuleRegistration};
 use rustc_ast::Attribute;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -89,17 +90,19 @@ impl LintAttributeTrailingComment {
 
 impl_lint_pass!(LintAttributeTrailingComment => [LINT_ATTRIBUTE_TRAILING_COMMENT]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[LINT_ATTRIBUTE_TRAILING_COMMENT]);
-}
-
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive =
-        resolved_state("lint_attribute_trailing_comment", DefaultState::Active)
-    {
-        return;
+impl RuleRegistration for LintAttributeTrailingCommentRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[LINT_ATTRIBUTE_TRAILING_COMMENT]);
     }
-    lint_store.register_early_pass(|| Box::new(LintAttributeTrailingComment::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive =
+            resolved_state("lint_attribute_trailing_comment", DefaultState::Active)
+        {
+            return;
+        }
+        lint_store.register_early_pass(|| Box::new(LintAttributeTrailingComment::new()));
+    }
 }
 
 const LINT_LEVEL_NAMES: [Symbol; 5] = [sym::allow, sym::expect, sym::warn, sym::deny, sym::forbid];

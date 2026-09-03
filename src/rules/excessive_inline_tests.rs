@@ -1,4 +1,5 @@
 use crate::common::{DefaultState, resolved_state};
+use crate::rule_index::{ExcessiveInlineTestsRule, RuleRegistration};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
@@ -79,28 +80,30 @@ const CONFIG_KEY: &str = "perfectionist::excessive_inline_tests";
 
 impl_lint_pass!(ExcessiveInlineTests => [EXCESSIVE_INLINE_TESTS]);
 
-/// Register this rule's lint declaration. Paired with [`register_pass`];
-/// see the module-level convention documented in `register_lints`.
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[EXCESSIVE_INLINE_TESTS]);
-}
-
-/// Install this rule's late pass.
-///
-/// A late pass is required because the only reliable way to tell that
-/// an item carries `#[cfg(test)]` is the `CfgTrace` attribute rustc
-/// leaves behind after configuration, which
-/// `crate::test_code::cfg_predicate_implies_test` reads — information
-/// that needs `TyCtxt` and is unavailable to the pre-/post-expansion
-/// AST passes (the raw `#[cfg(test)]` attribute is consumed during
-/// configuration). Consequently the rule only sees test code in a
-/// build where `cfg(test)` is active, i.e. the unit-test target that
-/// `cargo dylint -- --all-targets` checks.
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("excessive_inline_tests", DefaultState::Active) {
-        return;
+impl RuleRegistration for ExcessiveInlineTestsRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[EXCESSIVE_INLINE_TESTS]);
     }
-    lint_store.register_late_pass(|_| Box::new(ExcessiveInlineTests::new()));
+
+    /// Install this rule's late pass.
+    ///
+    /// A late pass is required because the only reliable way to tell that
+    /// an item carries `#[cfg(test)]` is the `CfgTrace` attribute rustc
+    /// leaves behind after configuration, which
+    /// `crate::test_code::cfg_predicate_implies_test` reads — information
+    /// that needs `TyCtxt` and is unavailable to the pre-/post-expansion
+    /// AST passes (the raw `#[cfg(test)]` attribute is consumed during
+    /// configuration). Consequently the rule only sees test code in a
+    /// build where `cfg(test)` is active, i.e. the unit-test target that
+    /// `cargo dylint -- --all-targets` checks.
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive =
+            resolved_state("excessive_inline_tests", DefaultState::Active)
+        {
+            return;
+        }
+        lint_store.register_late_pass(|_| Box::new(ExcessiveInlineTests::new()));
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for ExcessiveInlineTests {

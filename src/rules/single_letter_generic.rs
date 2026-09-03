@@ -1,4 +1,5 @@
 use crate::common::{DefaultState, hir_in_external_macro, is_single_ascii_letter, resolved_state};
+use crate::rule_index::{RuleRegistration, SingleLetterGenericRule};
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
@@ -77,15 +78,19 @@ impl SingleLetterGeneric {
 
 impl_lint_pass!(SingleLetterGeneric => [SINGLE_LETTER_GENERIC]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[SINGLE_LETTER_GENERIC]);
-}
-
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("single_letter_generic", DefaultState::Active) {
-        return;
+impl RuleRegistration for SingleLetterGenericRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[SINGLE_LETTER_GENERIC]);
     }
-    lint_store.register_late_pass(|_| Box::new(SingleLetterGeneric::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive =
+            resolved_state("single_letter_generic", DefaultState::Active)
+        {
+            return;
+        }
+        lint_store.register_late_pass(|_| Box::new(SingleLetterGeneric::new()));
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for SingleLetterGeneric {

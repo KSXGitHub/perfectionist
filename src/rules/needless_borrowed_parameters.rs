@@ -2,6 +2,7 @@ use crate::cargo_target::{CargoTarget, crate_target};
 use crate::common::{
     DefaultState, binding_hir_id, binding_ident, hir_in_external_macro, resolved_state,
 };
+use crate::rule_index::{NeedlessBorrowedParametersRule, RuleRegistration};
 use crate::test_code::in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::source::{snippet, snippet_opt};
@@ -90,8 +91,9 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. Read by [`register_pass`] below; gen-docs picks
-/// the constant up via syn to render the rule's default state.
+/// Active by default. Read by [`RuleRegistration::register_pass`]
+/// below; gen-docs picks the constant up via syn to render the rule's
+/// default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
 const CONFIG_KEY: &str = "perfectionist::needless_borrowed_parameters";
@@ -116,18 +118,19 @@ impl NeedlessBorrowedParameters {
 
 impl_lint_pass!(NeedlessBorrowedParameters => [NEEDLESS_BORROWED_PARAMETERS]);
 
-/// Register this rule's lint declaration. Paired with [`register_pass`];
-/// see the module-level convention documented in `register_lints`.
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[NEEDLESS_BORROWED_PARAMETERS]);
-}
-
-/// Install this rule's late pass.
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("needless_borrowed_parameters", DEFAULT_STATE) {
-        return;
+impl RuleRegistration for NeedlessBorrowedParametersRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[NEEDLESS_BORROWED_PARAMETERS]);
     }
-    lint_store.register_late_pass(|_| Box::new(NeedlessBorrowedParameters::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive =
+            resolved_state("needless_borrowed_parameters", DEFAULT_STATE)
+        {
+            return;
+        }
+        lint_store.register_late_pass(|_| Box::new(NeedlessBorrowedParameters::new()));
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for NeedlessBorrowedParameters {

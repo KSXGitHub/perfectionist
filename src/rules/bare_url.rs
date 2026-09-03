@@ -2,6 +2,7 @@ use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::markdown::{position_in_skip, scan_skip_regions, utf8_char_len};
+use crate::rule_index::{BareUrlRule, RuleRegistration};
 use crate::url_scan::{DEFAULT_FORWARD_SCHEMES, TrailingClass, classify_trailing, take_url};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
@@ -122,15 +123,17 @@ impl BareUrl {
 
 impl_lint_pass!(BareUrl => [BARE_URL]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[BARE_URL]);
-}
-
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("bare_url", DefaultState::Active) {
-        return;
+impl RuleRegistration for BareUrlRule {
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[BARE_URL]);
     }
-    lint_store.register_late_pass(|_| Box::new(BareUrl::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        if let DefaultState::Inactive = resolved_state("bare_url", DefaultState::Active) {
+            return;
+        }
+        lint_store.register_late_pass(|_| Box::new(BareUrl::new()));
+    }
 }
 
 /// One bare-URL finding, parked during the comment walk and emitted
