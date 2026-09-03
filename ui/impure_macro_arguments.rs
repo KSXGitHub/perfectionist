@@ -205,6 +205,10 @@ fn _all_pure_shapes_accepted() {
     debug_assert_eq!(*pointer, *pointer, "deref of a path");
     debug_assert_eq!(0u32 as u64, MAX as u64, "pure cast");
     debug_assert_eq!(::std::u32::MAX, std::u32::MAX, "rooted path");
+    // The cast *target* is a rooted path too, which the type-position
+    // parser reaches through a separate arm from the expression one
+    // exercised by `rooted path` above.
+    debug_assert_eq!(0u32 as ::std::primitive::u64, 0, "rooted cast target");
     let flag: bool = true;
     let mask: u32 = 0;
     debug_assert!(!flag, "unary not on a path");

@@ -1,8 +1,12 @@
-//! UI tests for `allow_attributes`'s configuration knobs. The
-//! default-config sweep lives in `ui/allow_attributes.rs` and is
-//! picked up by `tests/ui.rs`; these tests each point at their own
-//! one-fixture directory under `ui-toml/allow_attributes/` and
-//! pass a per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
+//! UI tests for `allow_attributes` that need a directory of their
+//! own: its configuration knobs, plus one default-config fixture
+//! that cannot live in the `ui/` sweep because it `include!`s a
+//! second file the sweep would otherwise collect as a fixture in its
+//! own right. The default-config sweep lives in
+//! `ui/allow_attributes.rs` and is picked up by `tests/ui.rs`; these
+//! tests each point at their own one-fixture directory under
+//! `ui-toml/allow_attributes/` and pass a per-rule `dylint.toml` to
+//! [`dylint_testing::ui::Test`].
 //!
 //! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
 //! the duration of `run_tests`. The env var is process-global, so the
@@ -85,6 +89,25 @@ fn extra_and_ignore_exempt_lints_compose_with_defaults() {
             ignore_exempt_lints: Some(vec!["dead_code"]),
             ..Default::default()
         }),
+    );
+}
+
+/// The mixed-`#[allow]` fallback that flags the site in prose instead
+/// of offering the split rewrite, taken when the source text the
+/// suggestions need cannot be recovered.
+///
+/// The fixture reaches it under the default configuration: a
+/// `macro_rules!` attribute whose `reason` value comes from an
+/// `include!`d second file, so the meta item's span starts in one
+/// source file and ends in another and `span_to_snippet` fails on it.
+/// It lives here rather than in the `ui/` sweep only because a
+/// separate directory keeps the `include!`d call site out of
+/// compiletest's fixture collection.
+#[test]
+fn unrecoverable_reason_snippet_declines_the_split_fix() {
+    run(
+        "ui-toml/allow_attributes/cross_file_macro",
+        &dylint_toml(RuleConfig::default()),
     );
 }
 

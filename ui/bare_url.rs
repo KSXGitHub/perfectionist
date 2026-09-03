@@ -58,6 +58,19 @@ fn _doc_html_attribute_skip() {}
 // URL with trailing dot: https://example.org. — should be `MaybeIncorrect`.
 fn _plain_trailing_dot() {}
 
+// A finding anchors to the nearest documentable HIR node. Items and
+// impl items are covered above; trait items and foreign items are
+// separate arms of that walk.
+trait _DocumentedTrait {
+    /// Bad: bare URL on a trait item — https://example.com/trait.
+    fn documented_method(&self);
+}
+
+extern "C" {
+    /// Bad: bare URL on a foreign item — https://example.com/foreign.
+    fn documented_foreign();
+}
+
 fn main() {
     let _ = "https://not-a-comment.example"; // string literal, ignored
 }

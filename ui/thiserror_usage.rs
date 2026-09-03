@@ -19,12 +19,11 @@
 // emits exactly as it would against the real crate.
 //
 // The derive-side cases (`#[derive(thiserror::Error)]`,
-// `#[error(...)]` on a thiserror-derived item) need a real
-// proc-macro `Error` derive — which would require the test fixture
-// to depend on the actual `thiserror` crate or a proc-macro
-// auxiliary, neither of which fits this ui test's setup. They are
-// exercised manually by reading the rule's implementation; the
-// `use`-side coverage here covers every alias-collection branch.
+// `#[error(...)]` on a thiserror-derived item) need an `Error` derive
+// that actually resolves, which this local stub is not, so they live
+// in `ui/thiserror_usage_derive.rs` — same trick, but against a
+// proc-macro auxiliary rather than a `mod`. What remains here is the
+// `use`-side coverage, which covers every alias-collection branch.
 mod thiserror {
     pub struct Error;
 }

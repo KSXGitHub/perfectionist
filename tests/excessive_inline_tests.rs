@@ -12,6 +12,7 @@
 pub mod _utils;
 
 use _utils::{cargo_manifest_dir, run_project_with_config, shared_target_dir};
+use text_block_macros::text_block_fnl;
 
 const LINT: &str = "perfectionist::excessive_inline_tests";
 
@@ -510,5 +511,48 @@ fn external_only_flags_inline_tests() {
     assert!(
         stderr.contains("inline test code should live in an external module"),
         "expected the external_only message; stderr was:\n{stderr}",
+    );
+}
+
+/// `inline_max_fraction_of_file` adds a relative cap on top of the
+/// always-active absolute one. The fixture's inline tests sit well
+/// under the default 50-line `inline_max_lines`, so only the fraction
+/// can flag them — and the diagnostic uses the fraction-specific
+/// wording rather than the line-count one.
+#[test]
+fn inline_max_fraction_of_file_flags_a_short_but_test_heavy_file() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_itf_inline_fraction",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("src/lib.rs", "pub mod heavy;\n"),
+            (
+                "src/heavy.rs",
+                text_block_fnl! {
+                    "pub fn negate(value: i32) -> i32 {"
+                    "    -value"
+                    "}"
+                    ""
+                    "#[cfg(test)]"
+                    "mod tests {"
+                    "    #[test]"
+                    "    fn works() { assert_eq!(super::negate(1), -1); }"
+                    "    #[test]"
+                    "    fn twice() { assert_eq!(super::negate(2), -2); }"
+                    "}"
+                },
+            ),
+        ],
+        "[\"perfectionist::excessive_inline_tests\"]\ninline_max_fraction_of_file = 0.25\n",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        stderr.contains("over the configured fraction"),
+        "expected the fraction-specific message; stderr was:\n{stderr}",
+    );
+    assert!(
+        !stderr.contains("over the limit of"),
+        "the absolute cap must not be what fired; stderr was:\n{stderr}",
     );
 }

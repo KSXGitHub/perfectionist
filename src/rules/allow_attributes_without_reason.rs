@@ -329,8 +329,12 @@ impl AllowAttributesWithoutReason {
 }
 
 /// Emit the "missing reason" diagnostic without a code suggestion.
-/// Used when the source snippet is unavailable (macro expansion) or
-/// when [`build_insertion`] cannot make sense of the snippet.
+/// Used when the source snippet is unavailable or when
+/// [`build_insertion`] cannot make sense of it. The reachable case is
+/// a `macro_rules!` attribute assembled from two source files — e.g.
+/// `allow $lints` with the key in the macro definition and the list at
+/// an `include!`d call site — which leaves a span whose ends sit in
+/// different files, and `span_to_snippet` refuses those.
 fn emit_missing_field_no_sugg(lint_context: &EarlyContext<'_>, invocation_span: Span) {
     span_lint_and_then(
         lint_context,

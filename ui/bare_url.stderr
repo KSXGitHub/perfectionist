@@ -36,5 +36,17 @@ warning: bare URL `https://example.org.`; wrap in `<...>` or use a labelled mark
 LL | // URL with trailing dot: https://example.org. — should be `MaybeIncorrect`.
    |                           ^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.org.>`
 
-warning: 6 warnings emitted
+warning: bare URL `https://example.com/trait.`; wrap in `<...>` or use a labelled markdown link
+  --> $DIR/bare_url.rs:65:41
+   |
+LL |     /// Bad: bare URL on a trait item — https://example.com/trait.
+   |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.com/trait.>`
+
+warning: bare URL `https://example.com/foreign.`; wrap in `<...>` or use a labelled markdown link
+  --> $DIR/bare_url.rs:70:43
+   |
+LL |     /// Bad: bare URL on a foreign item — https://example.com/foreign.
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.com/foreign.>`
+
+warning: 8 warnings emitted
 
