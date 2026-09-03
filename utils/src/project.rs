@@ -34,26 +34,23 @@ pub fn build_project_with_config(
     sources: &[(&str, &str)],
     extra_dylint_toml: &str,
 ) {
-    let base_dylint_toml = fixture_dylint_toml(perfectionist_dir);
-    let dylint_toml = match extra_dylint_toml {
-        "" => base_dylint_toml,
-        extra => format!("{base_dylint_toml}\n{extra}"),
-    };
-    let entries: BTreeMap<String, FileSystemTree<String, String>> = [
-        (
-            "Cargo.toml".to_owned(),
-            FileSystemTree::File(fixture_cargo_toml(package_name)),
-        ),
-        ("dylint.toml".to_owned(), FileSystemTree::File(dylint_toml)),
-    ]
-    .into_iter()
-    .chain(sources.iter().map(|(path, contents)| {
-        (
+    let mut entries: BTreeMap<String, FileSystemTree<String, String>> = BTreeMap::new();
+    entries.insert(
+        "Cargo.toml".to_owned(),
+        FileSystemTree::File(fixture_cargo_toml(package_name)),
+    );
+    let mut dylint_toml = fixture_dylint_toml(perfectionist_dir);
+    if !extra_dylint_toml.is_empty() {
+        dylint_toml.push('\n');
+        dylint_toml.push_str(extra_dylint_toml);
+    }
+    entries.insert("dylint.toml".to_owned(), FileSystemTree::File(dylint_toml));
+    for (path, contents) in sources {
+        entries.insert(
             (*path).to_owned(),
             FileSystemTree::File((*contents).to_owned()),
-        )
-    }))
-    .collect();
+        );
+    }
     let tree = MergeableFileSystemTree::from(FileSystemTree::Directory(entries));
     tree.build(project_dir)
         .expect("failed to materialise project tree");
