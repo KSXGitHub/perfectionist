@@ -1,0 +1,172 @@
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:19:1
+   |
+LL |   #[display("{_0}")]
+   |  _-^^^^^^^^^^^^^^^^^
+LL | | struct SanitizedHtml(String);
+   | |_- help: remove the attribute
+   |
+   = note: `#[warn(perfectionist::redundant_derive_more_forward_template)]` on by default
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:24:1
+   |
+LL |   #[display("{message}")]
+   |  _-^^^^^^^^^^^^^^^^^^^^^^
+LL | | struct Warning {
+   | |_- help: remove the attribute
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:31:1
+   |
+LL |   #[display("{}", _0)]
+   |  _-^^^^^^^^^^^^^^^^^^^
+LL | | struct UninlinedPositional(String);
+   | |_- help: remove the attribute
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:51:1
+   |
+LL |   #[display("{x}", x = _0)]
+   |  _-^^^^^^^^^^^^^^^^^^^^^^^^
+LL | | struct NamedArgument(String);
+   | |_- help: remove the attribute
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:56:1
+   |
+LL |   #[display("{type}")]
+   |  _-^^^^^^^^^^^^^^^^^^^
+LL | | struct RawIdentField {
+   | |_- help: remove the attribute
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:63:1
+   |
+LL |   #[display("{_0:}")]
+   |  _-^^^^^^^^^^^^^^^^^^
+LL | | struct EmptySpec(String);
+   | |_- help: remove the attribute
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:68:1
+   |
+LL |   #[display("{_0}")]
+   |  _-^^^^^^^^^^^^^^^^^
+LL | | struct QualifiedDerive(String);
+   | |_- help: remove the attribute
+
+warning: `#[lower_hex(...)]` only forwards to the single field, which the `LowerHex` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:73:1
+   |
+LL |   #[lower_hex("{_0:x}")]
+   |  _-^^^^^^^^^^^^^^^^^^^^^
+LL | | struct Mask(u32);
+   | |_- help: remove the attribute
+
+warning: `#[binary(...)]` only forwards to the single field, which the `Binary` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:78:1
+   |
+LL |   #[binary("{_0:b}")]
+   |  _-^^^^^^^^^^^^^^^^^^
+LL | | struct Flags(u8);
+   | |_- help: remove the attribute
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:84:5
+   |
+LL |       #[display("{_0}")]
+   |  _-   ^^^^^^^^^^^^^^^^^^
+LL | |     Io(String),
+   | |_- help: remove the attribute
+
+warning: `#[display("{_variant}")]` only restates how the `Display` derive already formats every variant
+  --> $DIR/redundant_derive_more_forward_template.rs:92:1
+   |
+LL |   #[display("{_variant}")]
+   |  _-^^^^^^^^^^^^^^^^^^^^^^^
+LL | | enum Status {
+   | |_- help: remove the attribute
+
+warning: `#[display("{_variant}")]` only restates how the `Display` derive already formats every variant
+  --> $DIR/redundant_derive_more_forward_template.rs:104:1
+   |
+LL |   #[display("{_variant}")]
+   |  _-^^^^^^^^^^^^^^^^^^^^^^^
+LL | | enum Transparent {
+   | |_- help: remove the attribute
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:145:5
+   |
+LL |       #[display("{_0}")]
+   |  _-   ^^^^^^^^^^^^^^^^^^
+LL | |     Text(String),
+   | |_- help: remove the attribute
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:147:5
+   |
+LL |       #[display("{_0}")]
+   |  _-   ^^^^^^^^^^^^^^^^^^
+LL | |     Number(Number),
+   | |_- help: remove the attribute
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:155:5
+   |
+LL |     #[display("{_0}")] Text(String),
+   |     ^^^^^^^^^^^^^^^^^^-
+   |     |
+   |     help: remove the attribute
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:172:5
+   |
+LL |       #[display("{_0}")]
+   |  _-   ^^^^^^^^^^^^^^^^^^
+LL | |     Reported(String),
+   | |_- help: remove the attribute
+
+warning: `#[pointer(...)]` only forwards to the single field, which the `Pointer` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:185:1
+   |
+LL |   #[pointer("{_0:p}")]
+   |  _-^^^^^^^^^^^^^^^^^^^
+LL | | struct Address(&'static u32);
+   | |_- help: remove the attribute
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:226:1
+   |
+LL |   #[display("{0}", _0)]
+   |  _-^^^^^^^^^^^^^^^^^^^^
+LL | | struct ExplicitPositional(String);
+   | |_- help: remove the attribute
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:235:1
+   |
+LL | #[display("{1}", _0)]
+   | ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: the positional index names no supplied argument, so this template may be missing one; remove the attribute, or supply the argument the index refers to
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:345:5
+   |
+LL |       #[display("{_0}")]
+   |  _-   ^^^^^^^^^^^^^^^^^^
+LL | |     struct Local(String);
+   | |_- help: remove the attribute
+
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> $DIR/redundant_derive_more_forward_template.rs:352:5
+   |
+LL |       #[display("{_0}")]
+   |  _-   ^^^^^^^^^^^^^^^^^^
+LL | |     struct InConstBlock(String);
+   | |_- help: remove the attribute
+
+warning: 21 warnings emitted
+

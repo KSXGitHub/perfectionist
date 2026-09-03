@@ -1074,6 +1074,7 @@ version = "0.0.0-rc.22"
 dependencies = [
  "_utils",
  "clippy_utils",
+ "command-extra",
  "dylint_linting",
  "dylint_testing",
  "pipe-trait",
