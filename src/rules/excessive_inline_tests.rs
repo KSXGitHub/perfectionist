@@ -2,7 +2,6 @@ use crate::common::{DefaultState, resolved_state};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
-mod cfg_test;
 mod config;
 mod paths;
 mod scan;
@@ -89,13 +88,14 @@ pub fn register_lint(lint_store: &mut LintStore) {
 /// Install this rule's late pass.
 ///
 /// A late pass is required because the only reliable way to tell that
-/// an item carries `#[cfg(test)]` is `clippy_utils::is_cfg_test`,
-/// which reads the `CfgTrace` attribute rustc leaves behind after
-/// configuration — information that needs `TyCtxt` and is unavailable
-/// to the pre-/post-expansion AST passes (the raw `#[cfg(test)]`
-/// attribute is consumed during configuration). Consequently the rule
-/// only sees test code in a build where `cfg(test)` is active, i.e.
-/// the unit-test target that `cargo dylint -- --all-targets` checks.
+/// an item carries `#[cfg(test)]` is the `CfgTrace` attribute rustc
+/// leaves behind after configuration, which
+/// `crate::test_code::cfg_predicate_implies_test` reads — information
+/// that needs `TyCtxt` and is unavailable to the pre-/post-expansion
+/// AST passes (the raw `#[cfg(test)]` attribute is consumed during
+/// configuration). Consequently the rule only sees test code in a
+/// build where `cfg(test)` is active, i.e. the unit-test target that
+/// `cargo dylint -- --all-targets` checks.
 pub fn register_pass(lint_store: &mut LintStore) {
     if let DefaultState::Inactive = resolved_state("excessive_inline_tests", DefaultState::Active) {
         return;

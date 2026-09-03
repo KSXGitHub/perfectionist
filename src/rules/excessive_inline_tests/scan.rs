@@ -2,9 +2,10 @@
 //! test, accumulates each source file's inline-test footprint, and
 //! emits the inline-style diagnostics once per file.
 
-use super::cfg_test::cfg_predicate_implies_test;
 use super::config::{ExcessiveInlineTests, InlineStyle};
 use super::{EXCESSIVE_INLINE_TESTS, paths};
+use crate::cargo_target::crate_target;
+use crate::test_code::cfg_predicate_implies_test;
 use clippy_utils::diagnostics::span_lint_and_help;
 use clippy_utils::is_test_function;
 use rustc_hir::{Item, ItemKind, Mod};
@@ -43,9 +44,17 @@ struct FileAcc {
 
 pub(super) fn run(state: &ExcessiveInlineTests, cx: &LateContext<'_>) {
     // Integration tests, benchmarks, and examples are separate crates
-    // Cargo hands the rule under `--all-targets`; their test code is the
-    // target itself, not misplaced unit tests, so leave them untouched.
-    if paths::is_separate_test_target(cx) {
+    // Cargo hands the rule under `--all-targets`. For the ones built
+    // under `cfg(test)` — integration tests, benchmarks, and
+    // `test = true` examples — the top-level `#[test]` functions *are*
+    // the target, not unit tests misplaced inside a production file;
+    // sitting beside ordinary helper `fn`s the rule counts as
+    // production, they would otherwise be flagged. (A plain example
+    // builds without `cfg(test)`, so the rule sees no test items there
+    // regardless, but it is skipped for the same reason and to cover
+    // the `test = true` case.) This rule only governs where a library
+    // or binary keeps its unit tests, so skip these targets whole.
+    if crate_target(cx).is_separate_target() {
         return;
     }
     let mut files: HashMap<BytePos, FileAcc> = HashMap::new();

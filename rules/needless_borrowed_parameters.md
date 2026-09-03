@@ -26,6 +26,10 @@ deliberately conservative: even the always-executed `if`
 condition and `match` scrutinee positions count as
 disqualifying, not just the branch arms.
 
+Test code and build scripts are exempt by default;
+`test_code_exception` and `build_script_exception` turn either
+off.
+
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. Taking
@@ -86,3 +90,15 @@ Method names to drop from the conversion set, even if they
 appear in the built-in defaults or in
 `extra_conversion_methods`. Empty by default; checked after the
 merge with the built-ins, so this knob always wins.
+
+### `test_code_exception`: `boolean` (optional)
+
+Whether test code is exempt: anything gated to test builds by
+`#[cfg(test)]` (or a compound predicate implying it), anything
+inside a `#[test]` function, and every `tests/` or `benches/`
+crate. An `examples/` crate is not covered. Defaults to `true`.
+
+### `build_script_exception`: `boolean` (optional)
+
+Whether a build script — `build.rs`, or whatever `Cargo.toml`'s
+`build` key names — is exempt. Defaults to `true`.

@@ -300,6 +300,79 @@ only re-parsing in a late pass gives. So if you reach for a
 pre-expansion pass and match `ModKind` to walk module bodies, stop —
 that is the trap.
 
+## Recognising test-exclusive code
+
+A rule whose rationale is about production code — a cost paid at
+runtime, an API someone else calls, a signature a reader copies — has
+to decide what counts as "test code" before it can exempt it. Two
+crate-internal helpers answer that, and every rule that needs the
+answer uses them rather than rolling its own:
+
+- **`crate::test_code::in_test_code`** — is *this node* test code?
+  True when the node or any lexical ancestor carries a `#[cfg(...)]`
+  that implies `test`, and when the node sits inside a `#[test]`
+  function.
+- **`crate::cargo_target::crate_target`** — which Cargo target is the
+  *whole crate*? Under `--all-targets` Cargo hands a lint pass the
+  integration-test, benchmark, example, and build-script crates
+  separately, and the classification tells them apart from the
+  library or binary.
+
+`in_test_code` finds anything only in a build where `cfg(test)` is
+on: `#[cfg(test)]` items are configured out before a late pass runs
+and `#[test]` functions are dropped, so a rule exempting test code
+needs the unit-test target (`cargo dylint -- --all-targets`).
+`crate_target` has no such limit — the build-script and example
+crates it names are built without `cfg(test)`. Both need a late pass:
+the `CfgTrace` predicate rustc leaves after configuration needs
+`TyCtxt`.
+
+### What "implies `test`" means
+
+`cfg_predicate_implies_test` asks whether a predicate holds *only*
+in a test build, and composes over the connectives:
+
+| Predicate         | Test-only? | Why                            |
+|-------------------|------------|--------------------------------|
+| `test`            | yes        | —                              |
+| `all(test, unix)` | yes        | one conjunct suffices          |
+| `any(test, unix)` | no         | `unix` can hold without `test` |
+| `not(test)`       | no         | gated *away* from test builds  |
+| `not(not(test))`  | yes        | the negations cancel           |
+
+`clippy_utils::is_cfg_test` recognises only the first row, which is
+why this exists.
+
+`not` is handled by carrying a polarity flag down the walk rather
+than rewriting the predicate: under a negation an `all` behaves like
+an `any` and vice versa, which is De Morgan applied on the fly, in
+one linear pass with no allocation.
+
+### Third-party test attributes
+
+`#[rstest]`, `#[test_case]` and their kin leave the author's function
+an ordinary `fn` and put the generated `#[test]` wrappers in a sibling
+module, so `in_test_code`'s `#[test]` half never matches it. The `cfg`
+half is what exempts it, and that suffices: the attribute comes from a
+dev-dependency the non-test build cannot resolve, so it can only appear
+under `#[cfg(test)]` or in a test target.
+
+Unlike a `#[test]` function, such a function takes parameters, so a
+rule over signatures does see them. Whether it also *fires* is the
+framework's doing — `test_case` re-emits the signature with the
+author's spans, `rstest` rewrites it and trips
+`crate::common::hir_in_external_macro` — so never lean on that guard
+for the exemption.
+
+### Why this is not a SAT problem
+
+Deciding `P → test` in general is co-NP-complete, but completeness is
+not required: the walk's negation-normal-form reading is sound, and
+gives up only on a contradiction spelled across branches
+(`any(test, all(a, not(a)))`). Evaluating against the build's real
+`cfg` values instead would be exact, and is rejected — it would make
+the same source lint differently per platform.
+
 ## Naming a lint after the anti-pattern
 
 A lint's name is read in `#[allow(...)]`, `#[expect(...)]`,
