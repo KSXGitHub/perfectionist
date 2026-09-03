@@ -16,6 +16,11 @@ locked := if perfectionist_cargo_locked == "true" {
     error("PERFECTIONIST_CARGO_LOCKED must be 'true', 'false', empty, or unset; got: " + perfectionist_cargo_locked)
   }
 
+# Where `test` points `TMPDIR`. `compiletest_rs` takes its output
+# directory from `std::env::temp_dir()` and offers no way to override
+# it, so without this every fixture litters the temp dir itself.
+test_tmp_dir := env_var_or_default("TMPDIR", "/tmp") + "/perfectionist-tests"
+
 _default:
   @just --list
 
@@ -48,8 +53,9 @@ lint:
 
 # Run all the tests
 test:
+  mkdir -pv "{{test_tmp_dir}}"
   just warmup-integration-tests
-  cargo test --workspace --all-targets {{locked}}
+  TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets {{locked}}
 
 # Run perfectionist's own lints on its source
 self-lint:
