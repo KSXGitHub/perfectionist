@@ -1,15 +1,14 @@
-//! Unit tests that keep the index and `src/rules/` in step: its
-//! entries are in the order [`super::is_registered_lint`] searches
-//! them in, every entry names a rule module that declares the
-//! matching lint, and every rule module is named by an entry.
+//! Unit tests for the index's invariants: its entries are in the
+//! order [`super::is_registered_lint`] searches them in, every entry
+//! names a rule module that declares the matching lint, and every
+//! rule module is named by an entry.
 //!
-//! The `LintStore` used to answer the first question by construction
-//! — the names came out of it — and the compiler answers the second
-//! one, since a rule module implements [`super::RuleRegistration`]
-//! for a marker type only the index defines. What neither catches is
-//! an entry whose spelling has drifted from the name its
-//! `declare_tool_lint!` block declares, which would leave
-//! `unknown_perfectionist_lints` reporting a shipped lint as unknown.
+//! Reading the names out of the `LintStore` made the last two hold
+//! by construction. A written-out index can drift instead: an entry
+//! whose spelling parts ways with the name its `declare_tool_lint!`
+//! block declares leaves `unknown_perfectionist_lints` reporting a
+//! shipped lint as unknown, and a rule module the index never names
+//! registers nothing at all.
 
 use super::LINT_NAMES;
 use std::collections::BTreeSet;

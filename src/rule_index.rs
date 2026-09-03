@@ -1,11 +1,10 @@
 //! The index of every rule this plugin ships.
 //!
-//! `rule_index!` turns one list of rule names into the three
-//! things the rest of the crate needs from it: a marker type per
-//! rule, the [`LINT_NAMES`] set, and [`register_all`] — which
-//! [`crate::register_lints`] calls, and which is the only place the
-//! rule modules are reached from. Each rule's own module implements
-//! [`RuleRegistration`] for its marker type.
+//! `rule_index!` turns one list of rule names into what the rest of
+//! the crate needs from it: a marker type per rule, the
+//! [`LINT_NAMES`] set, and [`register_all`], which
+//! [`crate::register_lints`] calls. Each rule's own module
+//! implements [`RuleRegistration`] for its marker type.
 //!
 //! The name set is what keeps the list free of ordering exceptions.
 //! `unknown_perfectionist_lints` reports a `perfectionist::*` name
@@ -22,9 +21,8 @@ use rustc_lint::LintStore;
 /// for the marker type `rule_index!` generates for it.
 pub(crate) trait RuleRegistration {
     /// Add the rule's lint declaration to the store. Called for
-    /// every rule, including one the user turned off: the lint stays
-    /// registered either way so that
-    /// `#[allow(perfectionist::<rule>)]` keeps resolving.
+    /// every rule, whatever `dylint.toml` says about it — only
+    /// [`Self::register_pass`] consults the rule's resolved state.
     fn register_lint(lint_store: &mut LintStore);
 
     /// Install the rule's pass, unless
@@ -47,9 +45,9 @@ macro_rules! rule_index {
     ($( $rule_name:ident => $marker:ident ),+ $(,)?) => {
         $(
             #[doc = concat!(
-                "Index marker for the `",
-                stringify!($rule_name),
-                "` rule.",
+                "Rule marker for `", stringify!($rule_name),
+                "`; `src/rules/", stringify!($rule_name),
+                ".rs` implements [`RuleRegistration`] for it.",
             )]
             pub(crate) struct $marker;
         )+
@@ -69,7 +67,9 @@ macro_rules! rule_index {
         /// and no allocation in the runs that never consult it.
         pub(crate) static LINT_NAMES: &[&str] = &[$( stringify!($rule_name) ),+];
 
-        /// Register every rule's lint and install its pass.
+        /// Register every rule. Each rule's two calls are made
+        /// back to back — no entry depends on another having
+        /// registered first.
         pub(crate) fn register_all(lint_store: &mut LintStore) {
             $(
                 <$marker as RuleRegistration>::register_lint(lint_store);
@@ -117,7 +117,8 @@ rule_index! {
     wildcard_imports => WildcardImportsRule,
 }
 
-/// Whether `name` is one of [`LINT_NAMES`].
+/// Whether `name` — with the `perfectionist::` prefix already
+/// stripped — is a lint this plugin registers.
 pub(crate) fn is_registered_lint(name: &str) -> bool {
     LINT_NAMES.binary_search(&name).is_ok()
 }

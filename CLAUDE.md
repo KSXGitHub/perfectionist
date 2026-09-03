@@ -310,29 +310,26 @@ explicitly retracted.
 ## Registering a new rule in the index
 
 `src/rule_index.rs` indexes every rule the plugin ships. Its
-`rule_index!` invocation names each rule once and expands to three
-things: a marker type per rule, the `LINT_NAMES` set, and the
-`register_all` function that `src/lib.rs::register_lints` calls.
-Each rule module implements the index's `RuleRegistration` trait
-for its own marker — `register_lint` adds the lint declaration,
-`register_pass` installs the early/late pass.
+`rule_index!` invocation names each rule once and expands to a
+marker type per rule, the `LINT_NAMES` set, and the `register_all`
+function that `src/lib.rs::register_lints` calls. Each rule module
+implements the index's `RuleRegistration` trait for its own marker:
+`register_lint` adds the lint declaration, `register_pass` installs
+the early/late pass.
 
-Nothing in the list depends on its neighbours' positions, so it is
-plain alphabetical throughout. The rule that needs the whole set of
-lint names, `perfectionist::unknown_perfectionist_lints`, reads
-`LINT_NAMES` rather than the `LintStore` it is registering into —
-which is what dropped the exception that once pinned it to the end
-of the list.
+The list is alphabetical with no exceptions — no entry depends on
+another's position, for the reason the module's own docstring
+gives.
 
 When you add a new rule:
 
 1. Add the `pub mod` line to `src/rules.rs`.
 2. Add an entry to the `rule_index!` invocation in
-   `src/rule_index.rs`, in alphabetical order — a `const`
-   assertion rejects an out-of-order one, since `LINT_NAMES` is
-   binary-searched. The entry pairs the rule's snake_case name
-   (its file name, and the name its `declare_tool_lint!` block
-   declares) with the marker type to generate for it.
+   `src/rule_index.rs`, in alphabetical order — `LINT_NAMES` is
+   binary-searched, so the index's tests reject an out-of-order
+   entry. The entry pairs the rule's snake_case name (its file
+   name, and the name its `declare_tool_lint!` block declares)
+   with the marker type to generate for it.
 3. Implement `RuleRegistration` for that marker in the rule's own
    file.
 4. Do not introduce a second list of rule names. The `rule_index!`
