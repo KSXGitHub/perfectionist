@@ -106,7 +106,12 @@ fn toml_type_label_custom_idents_pass_through() {
 
 #[test]
 fn toml_type_label_shared_newtype_uses_definition_label() {
-    let tmp = _utils::scratch::dir("gen-docs-ty-shared");
+    let tmp = std::env::temp_dir().join(format!(
+        "perfectionist-gen-docs-ty-shared-{}",
+        std::process::id(),
+    ));
+    let _ = std::fs::remove_dir_all(&tmp);
+    std::fs::create_dir_all(&tmp).unwrap();
     std::fs::write(
         tmp.join("ascii_letter.rs"),
         r#"
@@ -150,7 +155,12 @@ fn collect_referenced_idents_inspects_only_last_segment() {
 
 #[test]
 fn collect_referenced_idents_skips_shared_newtypes() {
-    let tmp = _utils::scratch::dir("gen-docs-ty-shared-collect");
+    let tmp = std::env::temp_dir().join(format!(
+        "perfectionist-gen-docs-ty-shared-collect-{}",
+        std::process::id(),
+    ));
+    let _ = std::fs::remove_dir_all(&tmp);
+    std::fs::create_dir_all(&tmp).unwrap();
     std::fs::write(
         tmp.join("ascii_letter.rs"),
         r#"

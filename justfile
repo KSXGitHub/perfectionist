@@ -46,10 +46,24 @@ doc:
 lint:
   cargo clippy --workspace --all-targets {{locked}} -- -D warnings
 
+# Where the test suites put their scratch files, instead of straight
+# into the system temp dir. `compiletest_rs` — which `dylint_testing`
+# drives — takes its output directory from `std::env::temp_dir()` and
+# offers no way to override it, so every `ui/` and `ui-toml/` fixture
+# would otherwise drop a `.err`, `.out`, `.stage-id`, `.stage-id.aux`
+# and `.rs-stage-id.stamp` entry into `/tmp` proper. Overriding
+# `TMPDIR` catches those, plus the `tempfile` scratch dirs the fixture
+# projects and the gen-docs unit tests allocate — leaving one
+# directory to `rm -rf` instead of a few hundred loose entries.
+#
+# Running `cargo test` directly bypasses this and scatters as before.
+test_tmp_dir := env_var_or_default("TMPDIR", "/tmp") + "/perfectionist-tests"
+
 # Run all the tests
 test:
+  mkdir -p "{{test_tmp_dir}}"
   just warmup-integration-tests
-  cargo test --workspace --all-targets {{locked}}
+  TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets {{locked}}
 
 # Run perfectionist's own lints on its source
 self-lint:

@@ -62,7 +62,10 @@ fn source_link_prefix_for_rejects_symlink_rules_dir() {
     // refuses before any orphan-delete can follow the link.
     // Skip on platforms where symlink creation isn't
     // supported in the test sandbox.
-    let base = _utils::scratch::dir("gen-docs-symlink-test");
+    let base =
+        std::env::temp_dir().join(format!("perfectionist-symlink-test-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&base);
+    std::fs::create_dir_all(&base).unwrap();
     let real = base.join("real");
     std::fs::create_dir_all(&real).unwrap();
     let link = base.join("rules");

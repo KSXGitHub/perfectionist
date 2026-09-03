@@ -1,13 +1,20 @@
 use super::{CACHE_DIR_ENV, DOWNLOADS, cache_dir, ensure_cached, install_into};
 use std::path::{Path, PathBuf};
 
-/// A scratch directory under the shared scratch root, removed on drop,
-/// so the filesystem-touching tests don't litter or collide.
+/// A scratch directory under the system temp dir, removed on drop, so the
+/// filesystem-touching tests don't litter or collide.
 struct TempDir(PathBuf);
 
 impl TempDir {
     fn new(tag: &str) -> Self {
-        TempDir(_utils::scratch::dir(&format!("gen-docs-fonts-{tag}")))
+        let path = std::env::temp_dir().join(format!(
+            "perfectionist-fonts-{tag}-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id(),
+        ));
+        let _ = std::fs::remove_dir_all(&path);
+        std::fs::create_dir_all(&path).unwrap();
+        TempDir(path)
     }
 
     fn path(&self) -> &Path {

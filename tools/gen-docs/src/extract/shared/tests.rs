@@ -2,11 +2,19 @@ use super::SharedTypes;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// Allocate a fresh temp directory of this module's own, so a
-/// `label` it shares with another test module still gets a
-/// directory to itself.
+/// Allocate a fresh temp directory unique across both processes
+/// and across tests in the same binary, matching the helper in
+/// `extract.rs`'s own tests.
 fn tempdir(label: &str) -> PathBuf {
-    _utils::scratch::dir(&format!("gen-docs-shared-{label}"))
+    static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let seq = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let base = std::env::temp_dir().join(format!(
+        "perfectionist-gen-docs-shared-{label}-{}-{seq}",
+        std::process::id(),
+    ));
+    let _ = fs::remove_dir_all(&base);
+    fs::create_dir_all(&base).unwrap();
+    base
 }
 
 #[test]
