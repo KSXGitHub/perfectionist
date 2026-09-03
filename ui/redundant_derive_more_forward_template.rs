@@ -96,8 +96,10 @@ enum Status {
     Running(u64),
 }
 
-// Bad once: the enum-level `{_variant}`. The variant under it is left
-// alone — see `Wrapped` below for why any enum-level template shadows.
+// Bad: the enum-level `{_variant}` restates what the derive does when
+// an enum carries no shared template at all. Only that attribute is
+// reported; a variant sitting under an enum-level template is never
+// flagged.
 #[derive(Display)]
 #[display("{_variant}")]
 enum Transparent {
@@ -105,10 +107,11 @@ enum Transparent {
     Text(String),
 }
 
-// Good: under a wrapping enum-level template `derive_more` leaves the
-// transparent path. For `Display` the deletion happens to be a no-op,
-// but for `Pointer` the wrapped form dereferences the field and prints
-// a different address, so the whole shape is declined.
+// Good: a variant under an enum-level template is never flagged. Under
+// a wrapping template `derive_more` leaves the transparent path, and
+// whether the deletion is still a no-op then depends on which trait is
+// derived, so the rule declines the shape rather than splitting by
+// trait.
 #[derive(Display)]
 #[display("wrapped: {_variant}")]
 enum Wrapped {
@@ -116,8 +119,9 @@ enum Wrapped {
     Inner(String),
 }
 
-// Good: the `Pointer` case the paragraph above describes — deleting
-// the variant attribute here really does change the printed address.
+// Good: with `Pointer` the wrapping template makes `derive_more`
+// dereference the field, so deleting the variant attribute changes the
+// printed address from the pointee's to the binding's.
 #[derive(derive_more::Pointer)]
 #[pointer("p: {_variant}")]
 enum WrappedPointer {
@@ -134,8 +138,8 @@ enum AliasedVariant {
     Inner(String),
 }
 
-// Bad twice: a type parameter is no reason to bail. Both spellings emit
-// the same `Number: Display` predicate.
+// Bad: a type parameter is no reason to bail, so both variants are
+// reported. Either spelling emits the same `Number: Display` predicate.
 #[derive(Display)]
 enum StringOrNumber<Number> {
     #[display("{_0}")]
@@ -151,8 +155,9 @@ enum SameLine {
     #[display("{_0}")] Text(String),
 }
 
-// Bad once: the expectation on the first variant resolves to that
-// variant alone, so the second is still reported.
+// Bad: only the second variant is reported. The expectation on the
+// first resolves to that variant alone, which is what a per-variant
+// suppression has to do.
 #[derive(Display)]
 enum PerVariantExpect {
     #[cfg_attr(
@@ -260,8 +265,7 @@ enum UnitVariant {
 
 // Good: the container may not be in the compiled crate at all, and one
 // that is not has no HIR node to anchor a finding at — an `#[allow]` on
-// the item could not silence one. That holds wherever it sits, so the
-// nested cases below are declined too.
+// the item could not silence one.
 #[cfg(any())]
 #[derive(Display)]
 #[display("{_0}")]
@@ -280,7 +284,8 @@ mod inline_module {
 // declined subject is the disabled variant inside it.
 #[derive(Display)]
 enum DisabledVariant {
-    // Good: likewise, the enclosing enum is live.
+    // Good: a gated variant is declined for the same reason, and the
+    // enclosing enum is live, so a finding would anchor at it.
     #[cfg(any())]
     #[display("{_0}")]
     Gone(String),
