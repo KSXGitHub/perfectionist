@@ -31,10 +31,8 @@ fn run_dylint_inner(
         .with_arg("--all")
         .with_current_dir(project_dir)
         .with_env("CARGO_TARGET_DIR", shared_target_dir)
-        .with_args(match all_targets {
-            true => ["--", "--all-targets"].as_slice(),
-            false => &[],
-        })
+        .with_args(all_targets.then_some("--"))
+        .with_args(all_targets.then_some("--all-targets"))
         .output()
         .expect("failed to run `cargo dylint`");
     let stderr = String::from_utf8(output.stderr).expect("dylint stderr is not UTF-8");
