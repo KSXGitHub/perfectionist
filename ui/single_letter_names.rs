@@ -66,39 +66,39 @@ struct Wrapper<T> {
 fn run() {
     // Bad: single-letter `let` binding outside test code.
     let m = 5_u32;
-    // OK: `n` is in the default `let` exempt set.
+    // Good: `n` is in the default `let` exempt set.
     let n = 10_u32;
 
     let items = vec![3_i32, 1, 2];
 
-    // OK: comparison closure with single-letter parameters as a single
+    // Good: comparison closure with single-letter parameters as a single
     // expression callback.
     let mut sorted = items.clone();
     sorted.sort_by(|a, b| a.cmp(b));
 
-    // OK: trivial wrapper closure (single method call on the parameter).
+    // Good: trivial wrapper closure (single method call on the parameter).
     let _doubled: Vec<i32> = sorted.iter().map(|x| x.abs()).collect();
 
-    // OK: trivial wrapper closure (field access).
+    // Good: trivial wrapper closure (field access).
     let pairs = vec![Pair { left: 1, right: 2 }];
     let _lefts: Vec<i32> = pairs.iter().map(|p| p.left).collect();
 
-    // OK: trivial wrapper closure with a deref peel — `(*s).method()`
+    // Good: trivial wrapper closure with a deref peel — `(*s).method()`
     // is still structurally a method call on the parameter.
     let names = ["one", "two"];
     let _owned: Vec<String> = names.iter().map(|s| (*s).to_owned()).collect();
 
-    // OK: macro-call body. `vec![x]` expands to
+    // Good: macro-call body. `vec![x]` expands to
     // `<[_]>::into_vec(Box::new([x]))`, which doesn't pattern-match
     // any of the HIR-level trivial-wrapper arms, so the rule relies
     // on the body's expansion-origin span to recognise it.
     let _nested: Vec<Vec<i32>> = sorted.iter().copied().map(|x| vec![x]).collect();
-    // OK: `n` is in the default closure-parameter exempt set, so the
+    // Good: `n` is in the default closure-parameter exempt set, so the
     // body shape doesn't matter for this one — the conventional-name
     // filter exempts the closure before the trivial-wrapper check.
     let _shouted: Vec<String> = sorted.iter().map(|n| format!("{n}!")).collect();
 
-    // OK: `i` is in the default closure-parameter exempt set
+    // Good: `i` is in the default closure-parameter exempt set
     // (index convention). The body slices `hex` by `i`, which is
     // not a trivial-wrapper shape, so the exempt set is what keeps
     // the closure quiet.
@@ -149,12 +149,12 @@ fn write_label(w: &mut String, t: &str) {
     w.push_str(t);
 }
 
-// OK: `n` is in the default function-parameter exempt set.
+// Good: `n` is in the default function-parameter exempt set.
 fn take_n(n: usize) -> usize {
     n + 1
 }
 
-// OK: `f` is in the default exempt set (formatter convention).
+// Good: `f` is in the default exempt set (formatter convention).
 struct DisplayMe;
 impl std::fmt::Display for DisplayMe {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

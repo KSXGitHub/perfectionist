@@ -17,16 +17,18 @@ the body is to produce its owned counterpart (`String`,
 `into`, or `String::from(..)` and friends. Such a parameter
 should take the owned form directly.
 
-Only the conservative single-use case is implemented: the
+Only the conservative single-use case is flagged: the
 parameter must be referenced exactly once, that use must be the
 conversion, and the conversion must execute unconditionally — no
 `if` / `match` / loop, closure, or short-circuiting `&&` / `||`
 may sit between it and the enclosing function. This is
 deliberately conservative: even the always-executed `if`
 condition and `match` scrutinee positions count as
-disqualifying, not just the branch arms. The broader
-dominance-analysis cases described in
-`planned-rules/needless-borrowed-parameters.md` are still pending.
+disqualifying, not just the branch arms.
+
+Test code and build scripts are exempt by default;
+`test_code_exception` and `build_script_exception` turn either
+off.
 
 ## Why restrict this?
 
@@ -88,3 +90,15 @@ Method names to drop from the conversion set, even if they
 appear in the built-in defaults or in
 `extra_conversion_methods`. Empty by default; checked after the
 merge with the built-ins, so this knob always wins.
+
+### `test_code_exception`: `boolean` (optional)
+
+Whether test code is exempt: anything gated to test builds by
+`#[cfg(test)]` (or a compound predicate implying it), anything
+inside a `#[test]` function, and every `tests/` or `benches/`
+crate. An `examples/` crate is not covered. Defaults to `true`.
+
+### `build_script_exception`: `boolean` (optional)
+
+Whether a build script — `build.rs`, or whatever `Cargo.toml`'s
+`build` key names — is exempt. Defaults to `true`.

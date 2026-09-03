@@ -157,8 +157,7 @@ both qualify.
 - **Parser style.** Implement the template scanner as parser-
   combinator-style `take_*` functions per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md).
-  Reuse the placeholder/literal helpers from
-  [`uninlined-derive-more-args`](./uninlined-derive-more-args.md),
+  Reuse the placeholder/literal helpers in `src/format_template.rs`,
   the escape scanner in `src/rules/avoidable_string_escapes.rs`,
   [`overly-long-print-macro`](./overly-long-print-macro.md), and
   [`overly-long-format-macro`](./overly-long-format-macro.md). The split logic
@@ -212,3 +211,8 @@ one of the four. The shared
 [`uninlined-derive-more-args`](./uninlined-derive-more-args.md) rule
 operates at a different layer (placeholder syntax inside the
 template), and runs orthogonally to all four.
+
+`perfectionist::redundant_derive_more_forward_template` is likewise
+orthogonal, and cannot collide with this rule: it fires only on a
+template that is a lone unadorned placeholder, which is far too short
+to reach any sane `max_line_width`.

@@ -31,9 +31,13 @@ conservative single-use starting point described under
   with an explicit named lifetime, and proc-macro-synthesised nodes
   (`hir_in_external_macro` guard, regression fixture
   `ui/needless_borrowed_parameters_proc_macro.rs`).
+- Exemptions for code the rationale does not reach — test code and
+  build scripts — described under
+  ["Exemptions"](#exemptions) below.
 - Configuration: `extra_conversion_methods` / `ignore_conversion_methods`
   (the repository's extras-plus-ignore convention) rather than the
-  single replacement list sketched under "Configuration" below.
+  single replacement list sketched under "Configuration" below, plus
+  the `test_code_exception` / `build_script_exception` toggles.
 
 **Still pending:**
 
@@ -122,6 +126,33 @@ The lint stays silent when:
   body (e.g., printed via `{:?}` and *then* converted). Owning the
   parameter changes nothing for those uses, but the lint stays
   conservative — the user can refactor manually.
+- The function is test code or lives in a build script, per the two
+  exemptions below.
+
+#### Test code and build scripts
+
+The rule's whole argument is that the owned signature saves the
+caller a copy. Two bodies of code never collect on that: a test,
+which is not on anyone's hot path, and a build script, which runs
+once per build. Both still pay the argument's price — every call
+site that holds a borrow has to write the `.to_owned()` the callee
+just gave up — and a test's call sites are exactly the ones that
+hold borrows, since they pass string literals. So the trade the rule
+is selling is a straight loss there, and both are exempt by default.
+`test_code_exception` / `build_script_exception` turn the exemptions
+off for a project that wants one signature style everywhere.
+
+An **example** (`examples/`) is deliberately not exempt even when
+`test = true` has Cargo build it under `cfg(test)`: an example is
+documentation that readers copy into their own code, so it is worth
+holding to the library's standard.
+
+Test code is recognised by `crate::test_code::in_test_code`, and the
+`tests/` / `benches/` / build-script targets by
+`crate::cargo_target::crate_target`. See
+[Recognising test-exclusive code](./IMPLEMENTATION_CONVENTIONS.md#recognising-test-exclusive-code)
+for what each does and does not decide — in particular why
+`cfg(any(test, ...))` is not treated as test-only.
 
 ## Examples
 
@@ -196,6 +227,11 @@ type_pairs = [
 conversion_methods = [
   "to_owned", "to_string", "to_path_buf", "to_vec", "clone", "into",
 ]
+
+# Whether test code / a build script is exempt. Both default to
+# `true`; see "Test code and build scripts" above.
+test_code_exception = true
+build_script_exception = true
 ```
 
 ## Implementation notes

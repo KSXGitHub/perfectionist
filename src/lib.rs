@@ -19,15 +19,20 @@ dylint_linting::dylint_library!();
 
 mod abs_path;
 mod ascii_letter;
+mod attr_tokens;
+mod cargo_target;
 mod comment_walk;
 mod common;
+mod derive_list;
 mod enclosing_hir;
+mod format_template;
 mod literal_scan;
 mod macro_path;
 mod macro_template;
 mod markdown;
 mod module_reparse;
 mod rules;
+mod test_code;
 mod url_scan;
 
 #[unsafe(no_mangle)]
@@ -65,6 +70,7 @@ pub fn register_lints(session: &Session, lint_store: &mut LintStore) {
         named_prelude_imports
         needless_borrowed_parameters
         overly_long_print_macro
+        redundant_derive_more_forward_template
         single_letter_closure_param
         single_letter_const_generic
         single_letter_const_item

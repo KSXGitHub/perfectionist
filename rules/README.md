@@ -78,6 +78,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   splittable print macro with an embedded-newline template exceeds the configured line width
 
+- [`redundant_derive_more_forward_template`](./redundant_derive_more_forward_template.md) (default: `active`).
+
+  `derive_more` formatting template only restates the forward the derive already performs
+
 - [`single_letter_closure_param`](./single_letter_closure_param.md) (default: `active`).
 
   closure parameter has a single-letter name

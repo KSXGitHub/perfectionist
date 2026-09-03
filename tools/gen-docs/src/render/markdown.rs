@@ -13,10 +13,8 @@ use syntect::parsing::SyntaxSet;
 use syntect::util::LinesWithEndings;
 
 pub(crate) fn markdown_to_html(markdown: &str) -> String {
-    let mut options = Options::empty();
-    options.insert(Options::ENABLE_TABLES);
-    options.insert(Options::ENABLE_STRIKETHROUGH);
-    options.insert(Options::ENABLE_FOOTNOTES);
+    let options =
+        Options::ENABLE_TABLES | Options::ENABLE_STRIKETHROUGH | Options::ENABLE_FOOTNOTES;
     let parser = pulldown_cmark::Parser::new_ext(markdown, options);
     let events = highlight_code_blocks(parser);
     let mut buffer = String::new();

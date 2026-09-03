@@ -160,19 +160,16 @@ but the inlined form for positional ones can flip
 - Match the attribute path against `attribute_paths`. The match
   uses the trailing segment only, so `#[display(...)]` and
   `#[derive_more::display(...)]` both qualify.
-- **Parser style.** Implement the format-string scanner as
-  parser-combinator-style `take_*` functions per
+- **Parser style.** The format-string scanner already exists
+  crate-internally, written as parser-combinator-style `take_*`
+  functions per
   [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md):
-  `take_literal_text` (everything up to the next `{`),
-  `take_placeholder` (a `{...}` block, returning its position
-  argument and format spec), `take_escaped_brace` (`{{` and `}}`).
-  Composing these yields a stream of tokens whose argument-mapping
-  pass is straightforward — far easier to maintain than the
-  equivalent regex.
-- Reuse the parser between this rule and any future rule that
-  inspects `format!`-shaped attributes (e.g., a future
-  `derive_more_format_spec_check` lint). Factor the helper
-  crate-internally.
+  `src/format_template.rs` splits a template into literal runs,
+  `{{` / `}}` escapes, and placeholders carrying their argument and
+  format spec. Reuse it rather than writing a second scanner — the
+  argument-mapping pass on top of its segment stream is
+  straightforward, and far easier to maintain than the equivalent
+  regex.
 - The argument list is an `&[NestedMeta]` (or its post-attr-tokens
   equivalent). For each entry, classify with a small helper
   `is_simple_ident(tokens) -> Option<Symbol>`. Reject anything that
@@ -209,3 +206,15 @@ The two lints together cover the full surface:
 Enabling both gives a project consistent inlined-format-args style
 across both source positions. Neither subsumes the other; they look
 at different syntactic surfaces.
+
+## Interaction with `redundant_derive_more_forward_template`
+
+`perfectionist::redundant_derive_more_forward_template`
+([`src/rules/redundant_derive_more_forward_template.rs`](../src/rules/redundant_derive_more_forward_template.rs))
+deletes an attribute whose template is nothing but the forward the
+derive already performs. Its trigger set is closed under this rule's
+rewrite — it flags `#[display("{}", _0)]` and `#[display("{_0}")]`
+alike — so the two agree on which containers are affected whichever
+runs first. Running the deletion first is still the cheaper order: an
+attribute that is about to disappear does not need its arguments
+inlined.

@@ -263,8 +263,8 @@ fn join_url(base_url: &str, path: &str, number: &str) -> String {
 
 /// A recognised git-hosting service. The chosen forge fixes the
 /// issue / PR URL layout. It can be given explicitly (needed for a
-/// self-hosted instance, whose host isn't recognised) or detected
-/// from the repository's host via [`Forge::detect`].
+/// self-hosted instance, whose host isn't recognised) or left unset
+/// and detected from the `repository` host.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum Forge {

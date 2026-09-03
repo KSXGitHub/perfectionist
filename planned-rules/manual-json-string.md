@@ -373,29 +373,30 @@ json_macro_path = "serde_json::json"
 - **Test-context detection.** `LateLintPass::check_expr`. When
   `restrict_to_tests = false`, skip this detection entirely and
   treat trigger 1 as satisfied for every expression. Otherwise:
-  - Call `clippy_utils::is_in_test(tcx, expr.hir_id)`. That
-    helper combines `is_in_test_function` (walks parents looking
-    for a `fn` whose post-expansion ident is tagged with rustc's
-    internal `RustcTestMarker` — catches every proc-macro test
-    framework, since they all expand to `#[test]`-marked fns) and
-    `is_in_cfg_test` (walks `hir_parent_id_iter` for an ancestor
-    carrying a positive `#[cfg(test)]` predicate, including the
-    enclosing fn itself, not just modules). Fire if it returns
-    true.
+  - Call `crate::test_code::in_test_code(tcx, expr.hir_id)`, and
+    `crate::cargo_target::crate_target(cx).is_test_target()` for
+    the `tests/` and `benches/` crates. Fire if either holds.
+    Reach for these rather than the `clippy_utils` equivalents:
+    `is_in_cfg_test` misses a compound `#[cfg(all(test, unix))]`
+    (<https://github.com/KSXGitHub/perfectionist/issues/187>), and
+    `is_in_test_function` does not match a function carrying a
+    third-party attribute — `#[rstest]` and `#[test_case]` leave
+    the author's `fn` beside the generated `#[test]` wrapper
+    rather than marking it. See
+    [Recognising test-exclusive code](./IMPLEMENTATION_CONVENTIONS.md#recognising-test-exclusive-code).
   - Otherwise, resolve the test-directory set
     (`["tests"]` + `extra_test_directories`,
     minus `ignore_test_directories`) via the catalogue's
     standard `resolve_string_set` helper. Check whether the
     expression's source file path (from
     `tcx.sess.source_map()`) is at or under any of those
-    directories at the crate root. Fire if so. This branch is
-    what catches integration-test helper functions in
-    `tests/foo.rs` that aren't themselves `#[test]`-marked.
+    directories at the crate root. Fire if so. `crate_target`
+    already covers the default `tests/`, so this branch exists
+    only for the configured extras.
 
-  Don't roll a custom `#[test]` / `#[cfg(test)]` walk: the
-  catalogue's existing rules (e.g.
-  `src/rules/single_letter_let_binding.rs` historically) lean on
-  `is_in_test` for exactly this reason.
+  Don't roll a custom `#[test]` / `#[cfg(test)]` walk, and don't
+  hand-roll the target-directory check either — both live in
+  `crate::test_code` and `crate::cargo_target`.
 
 - **JSON detection — literal mode.** For
   `ExprKind::Lit(LitKind::Str(..))`, run `serde_json::from_str`

@@ -55,7 +55,7 @@ impl Builder {
     }
 }
 
-// OK: the conversion is conditional (nested in an `if` arm).
+// Good: the conversion is conditional (nested in an `if` arm).
 fn conditional(flag: bool, name: &str) -> Option<String> {
     if flag {
         Some(name.to_owned())
@@ -64,7 +64,7 @@ fn conditional(flag: bool, name: &str) -> Option<String> {
     }
 }
 
-// OK: the parameter is also used in borrowed form (used more than once).
+// Good: the parameter is also used in borrowed form (used more than once).
 fn log_and_store(name: &str, registry: &mut HashMap<String, u32>) {
     eprintln!("inserting {name}");
     registry.insert(name.to_owned(), 0);
@@ -77,19 +77,19 @@ trait Sink {
 struct Bucket;
 
 impl Sink for Bucket {
-    // OK: the signature is fixed by the trait, so the implementer
+    // Good: the signature is fixed by the trait, so the implementer
     // cannot change the parameter type.
     fn absorb(&self, value: &str) {
         let _owned = value.to_owned();
     }
 }
 
-// OK: `&mut` references are out of the conservative rule's scope.
+// Good: `&mut` references are out of the conservative rule's scope.
 fn via_mut(value: &mut str) -> String {
     value.to_owned()
 }
 
-// OK: an explicit named lifetime may tie the parameter to another
+// Good: an explicit named lifetime may tie the parameter to another
 // parameter or the return type.
 fn explicit<'a>(value: &'a str) -> String {
     value.to_owned()
@@ -104,7 +104,7 @@ impl Sanitized {
     }
 }
 
-// OK: `Sanitized::from` is not `String`'s own `from`, so dropping the
+// Good: `Sanitized::from` is not `String`'s own `from`, so dropping the
 // call in a suggestion would lose the trimming. The rule must not flag
 // this even though the result type is `String`.
 fn sanitize(value: &str) -> String {

@@ -183,6 +183,41 @@ guide, the deliberate typos around `unknown_perfectionist_lints`, and
 `gen-docs`' unit tests, which invent lint names — so read the hits,
 not the count.
 
+## Shipped docs address the consumer, not the contributor
+
+A doc is *shipped* if a consumer reads it without cloning: `README.md`,
+`CONFIGURATION.md`, `CONTROLLING_RULES.md`, and everything
+`tools/gen-docs/` renders — a rule's `declare_tool_lint!` rustdoc, its
+`Config` field docs, and the docs on the types and variants those
+fields name. Everything else is contributor-only and may say whatever
+is useful: `planned-rules/`, this guide, `//!` docs, docs on items no
+`Config` field exposes, `tests/`, `tools/`.
+
+A shipped doc may name only what a consumer can reach — their code,
+their `dylint.toml`, a registered lint, rustc, Clippy, a published
+crate. The recurring violations:
+
+- **A planning file.** It describes work that may never ship, in a
+  directory the reader does not have.
+- **Unshipped behaviour.** "... is still pending" is the backlog, not
+  the lint. Describe the trigger the rule *has*.
+- **A private Rust item.** `` [`Type::method`] `` is a valid rustdoc
+  link, so no `cargo doc` run flags it — but `gen-docs` has no
+  resolver, and the catalogue and the site render the brackets
+  literally, where it reads as a typo. State the behaviour instead.
+- **A project the rule was distilled from.** A consumer has never
+  heard of it, so `matches <project>'s policy` says nothing about what
+  a knob does, and "both source projects" has no antecedent at all.
+  Say what the value means.
+- **Development tooling.** A `just` recipe, a CI workflow, a dev
+  dependency. The consumer runs `cargo dylint`.
+
+Exceptions, where the reader chose the detour: `README.md` switches
+audience by heading (its development section names `just` recipes, its
+rules section offers `planned-rules/` as the roadmap), and a generated
+file's do-not-edit banner names `just gen-rules-md` because it
+addresses whoever is about to hand-edit it.
+
 ## Defaults live in field docs, not type or variant docs
 
 A config field's default value is documented on the **field**, never
@@ -463,6 +498,12 @@ The planning files document who depends on whom in their
 into a crate-internal module so the second rule can reuse it. The
 planning files name this expectation explicitly; don't duplicate
 the helper.
+
+Another pair answers "is this test code?": `crate::test_code` and
+`crate::cargo_target`. A rule that exempts test code uses these
+rather than matching `cfg(test)` itself; before adding such an
+exemption, read
+[Recognising test-exclusive code](planned-rules/IMPLEMENTATION_CONVENTIONS.md#recognising-test-exclusive-code).
 
 One shared helper is a suppression guard rather than a parser:
 `crate::common::hir_in_external_macro` (late passes) and

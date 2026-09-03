@@ -6,7 +6,7 @@ const N: usize = 2;
 // Bad: free `const` item with a different single-letter name.
 const D: u64 = 64;
 
-// OK: descriptive `const` item name.
+// Good: descriptive `const` item name.
 const DIMENSION_COUNT: usize = 2;
 
 struct Buffer {
@@ -17,7 +17,7 @@ impl Buffer {
     // Bad: associated `const` in an inherent impl with a single-letter name.
     const C: usize = 64;
 
-    // OK: descriptive associated `const`.
+    // Good: descriptive associated `const`.
     const DEFAULT_CAPACITY: usize = 64;
 }
 
