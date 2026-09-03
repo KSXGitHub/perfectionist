@@ -1,7 +1,7 @@
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::module_reparse::parse_crate_module_files;
-use crate::rule_index::{RedundantDeriveMoreForwardTemplateRule, RuleRegistration};
+use crate::rule_index::{RedundantDeriveMoreForwardTemplateRule, Register};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir as hir;
@@ -99,9 +99,9 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. Read by [`RuleRegistration::register_pass`]
-/// below; gen-docs picks the constant up via syn to render the rule's
-/// default state.
+/// Active by default. Read by [`Register::register_pass`] below;
+/// gen-docs picks the constant up via syn to render the rule's default
+/// state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
 const CONFIG_KEY: &str = "perfectionist::redundant_derive_more_forward_template";
@@ -124,7 +124,7 @@ impl RedundantDeriveMoreForwardTemplate {
 
 impl_lint_pass!(RedundantDeriveMoreForwardTemplate => [REDUNDANT_DERIVE_MORE_FORWARD_TEMPLATE]);
 
-impl RuleRegistration for RedundantDeriveMoreForwardTemplateRule {
+impl Register for RedundantDeriveMoreForwardTemplateRule {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[REDUNDANT_DERIVE_MORE_FORWARD_TEMPLATE]);
     }

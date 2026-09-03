@@ -13,7 +13,7 @@
 //! `live_module_spans` guard that keeps the walk from descending into a
 //! cfg-disabled inline module that is not part of the compiled crate.
 
-use crate::rule_index::{RuleRegistration, WildcardImportsRule};
+use crate::rule_index::{Register, WildcardImportsRule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_ast::{Item, ItemKind, ModKind, UseTree, UseTreeKind, VisibilityKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
@@ -119,8 +119,8 @@ declare_tool_lint! {
 
 /// Active by default: both exceptions ship enabled, so the only globs
 /// flagged out of the box are non-prelude, non-re-export ones such as
-/// `use super::*;`. Read by [`RuleRegistration::register_pass`];
-/// gen-docs picks the constant up to render the rule's default state.
+/// `use super::*;`. Read by [`Register::register_pass`]; gen-docs picks
+/// the constant up to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
 const CONFIG_KEY: &str = "perfectionist::wildcard_imports";
@@ -131,7 +131,7 @@ pub struct WildcardImports {
 
 impl_lint_pass!(WildcardImports => [WILDCARD_IMPORTS]);
 
-impl RuleRegistration for WildcardImportsRule {
+impl Register for WildcardImportsRule {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[WILDCARD_IMPORTS]);
     }

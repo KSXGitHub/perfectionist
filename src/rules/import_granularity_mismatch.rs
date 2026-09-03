@@ -1,4 +1,4 @@
-use crate::rule_index::{ImportGranularityMismatchRule, RuleRegistration};
+use crate::rule_index::{ImportGranularityMismatchRule, Register};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::source::indent_of;
 use rustc_ast::{
@@ -117,8 +117,8 @@ declare_tool_lint! {
 
 /// Active by default. `module` is the shipped baseline; a project that
 /// prefers `crate` or `item` sets `style` in `dylint.toml`. Read by
-/// [`RuleRegistration::register_pass`]; gen-docs picks the constant up
-/// to render the rule's default state.
+/// [`Register::register_pass`]; gen-docs picks the constant up to
+/// render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
 const CONFIG_KEY: &str = "perfectionist::import_granularity_mismatch";
@@ -146,7 +146,7 @@ impl ImportGranularityMismatch {
 
 impl_lint_pass!(ImportGranularityMismatch => [IMPORT_GRANULARITY_MISMATCH]);
 
-impl RuleRegistration for ImportGranularityMismatchRule {
+impl Register for ImportGranularityMismatchRule {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[IMPORT_GRANULARITY_MISMATCH]);
     }

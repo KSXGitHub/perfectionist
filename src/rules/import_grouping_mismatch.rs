@@ -1,4 +1,4 @@
-use crate::rule_index::{ImportGroupingMismatchRule, RuleRegistration};
+use crate::rule_index::{ImportGroupingMismatchRule, Register};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::source::indent_of;
 use rustc_ast::{Item, ItemKind, ModKind, VisibilityKind};
@@ -184,9 +184,8 @@ declare_tool_lint! {
 /// Inactive by default. The rule is direction-less: a project that
 /// adopts it picks `multi_block` (ordered, blank-line-separated blocks)
 /// or `single_block` (one contiguous block), so `style` is mandatory
-/// whenever the rule is enabled. Read by
-/// [`RuleRegistration::register_pass`]; gen-docs picks the constant up
-/// to render the rule's default state.
+/// whenever the rule is enabled. Read by [`Register::register_pass`];
+/// gen-docs picks the constant up to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 
 const CONFIG_KEY: &str = "perfectionist::import_grouping_mismatch";
@@ -197,7 +196,7 @@ pub struct ImportGroupingMismatch {
 
 impl_lint_pass!(ImportGroupingMismatch => [IMPORT_GROUPING_MISMATCH]);
 
-impl RuleRegistration for ImportGroupingMismatchRule {
+impl Register for ImportGroupingMismatchRule {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[IMPORT_GROUPING_MISMATCH]);
     }

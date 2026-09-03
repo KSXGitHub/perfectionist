@@ -1,5 +1,5 @@
 use crate::common::{DefaultState, resolved_state};
-use crate::rule_index::{RuleRegistration, UnicodeEllipsisInPanicMessagesRule};
+use crate::rule_index::{Register, UnicodeEllipsisInPanicMessagesRule};
 use clippy_utils::macros::root_macro_call_first_node;
 use clippy_utils::res::MaybeDef;
 use rustc_ast::LitKind;
@@ -91,7 +91,7 @@ declare_tool_lint! {
 
 impl_lint_pass!(UnicodeEllipsisInPanicMessages => [UNICODE_ELLIPSIS_IN_PANIC_MESSAGES]);
 
-impl RuleRegistration for UnicodeEllipsisInPanicMessagesRule {
+impl Register for UnicodeEllipsisInPanicMessagesRule {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[UNICODE_ELLIPSIS_IN_PANIC_MESSAGES]);
     }

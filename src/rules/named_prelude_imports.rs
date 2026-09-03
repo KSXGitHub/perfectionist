@@ -17,7 +17,7 @@
 //!   [`UseKind::Single`] item per leaf, so each cherry-picked name is
 //!   flagged individually with no flattening of our own.)
 
-use crate::rule_index::{NamedPreludeImportsRule, RuleRegistration};
+use crate::rule_index::{NamedPreludeImportsRule, Register};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir::def::Res;
@@ -92,8 +92,8 @@ declare_tool_lint! {
 
 /// Active by default. The prelude convention is the shipped baseline;
 /// `prelude_segment_names` / `allowed_paths` tune it. Read by
-/// [`RuleRegistration::register_pass`]; gen-docs picks the constant up
-/// to render the rule's default state.
+/// [`Register::register_pass`]; gen-docs picks the constant up to
+/// render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
 const CONFIG_KEY: &str = "perfectionist::named_prelude_imports";
@@ -104,7 +104,7 @@ pub struct NamedPreludeImports {
 
 impl_lint_pass!(NamedPreludeImports => [NAMED_PRELUDE_IMPORTS]);
 
-impl RuleRegistration for NamedPreludeImportsRule {
+impl Register for NamedPreludeImportsRule {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[NAMED_PRELUDE_IMPORTS]);
     }

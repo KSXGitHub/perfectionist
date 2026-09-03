@@ -1,4 +1,4 @@
-use crate::rule_index::{AvoidableStringEscapesRule, RuleRegistration};
+use crate::rule_index::{AvoidableStringEscapesRule, Register};
 use clippy_utils::diagnostics::span_lint_and_sugg;
 use core::num::NonZeroUsize;
 use rustc_ast::{LitKind, StrStyle};
@@ -228,7 +228,7 @@ fn queue(violation: PendingViolation) {
 impl_lint_pass!(AvoidableStringEscapes => [AVOIDABLE_STRING_ESCAPES]);
 impl_lint_pass!(AvoidableStringEscapesEarly => [AVOIDABLE_STRING_ESCAPES]);
 
-impl RuleRegistration for AvoidableStringEscapesRule {
+impl Register for AvoidableStringEscapesRule {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[AVOIDABLE_STRING_ESCAPES]);
     }

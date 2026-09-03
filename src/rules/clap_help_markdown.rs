@@ -3,7 +3,7 @@ use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::markdown::{ClassifyOptions, classify_constructs};
 use crate::module_reparse::parse_crate_module_files;
-use crate::rule_index::{ClapHelpMarkdownRule, RuleRegistration};
+use crate::rule_index::{ClapHelpMarkdownRule, Register};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir as hir;
@@ -101,9 +101,9 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. Read by [`RuleRegistration::register_pass`]
-/// below; gen-docs picks the constant up via syn to render the rule's
-/// default state.
+/// Active by default. Read by [`Register::register_pass`] below;
+/// gen-docs picks the constant up via syn to render the rule's default
+/// state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
 const CONFIG_KEY: &str = "perfectionist::clap_help_markdown";
@@ -123,7 +123,7 @@ impl ClapHelpMarkdown {
 
 impl_lint_pass!(ClapHelpMarkdown => [CLAP_HELP_MARKDOWN]);
 
-impl RuleRegistration for ClapHelpMarkdownRule {
+impl Register for ClapHelpMarkdownRule {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[CLAP_HELP_MARKDOWN]);
     }

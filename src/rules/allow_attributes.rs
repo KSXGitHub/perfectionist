@@ -1,5 +1,5 @@
 use crate::common::{DefaultState, render_meta_path, resolve_string_set, resolved_state};
-use crate::rule_index::{AllowAttributesRule, RuleRegistration};
+use crate::rule_index::{AllowAttributesRule, Register};
 use clippy_utils::diagnostics::{span_lint_and_help, span_lint_and_then};
 use clippy_utils::is_from_proc_macro;
 use clippy_utils::source::{indent_of, snippet_opt};
@@ -89,9 +89,8 @@ declare_tool_lint! {
 
 /// Active by default. The rewrite is conservative — it only fires when
 /// every named lint is known to fire deterministically — so a baseline
-/// policy is not presumptuous. Read by
-/// [`RuleRegistration::register_pass`]; gen-docs picks the constant up
-/// to render the rule's default state.
+/// policy is not presumptuous. Read by [`Register::register_pass`];
+/// gen-docs picks the constant up to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
 const CONFIG_KEY: &str = "perfectionist::allow_attributes";
@@ -215,7 +214,7 @@ impl AllowAttributes {
 
 impl_lint_pass!(AllowAttributes => [ALLOW_ATTRIBUTES]);
 
-impl RuleRegistration for AllowAttributesRule {
+impl Register for AllowAttributesRule {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[ALLOW_ATTRIBUTES]);
     }

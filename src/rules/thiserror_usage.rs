@@ -1,4 +1,4 @@
-use crate::rule_index::{RuleRegistration, ThiserrorUsageRule};
+use crate::rule_index::{Register, ThiserrorUsageRule};
 use rustc_ast::{Crate, Item, ItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -96,14 +96,14 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. Read by [`RuleRegistration::register_pass`]
-/// below; gen-docs picks the constant up via syn to render the rule's
-/// default state.
+/// Active by default. Read by [`Register::register_pass`] below;
+/// gen-docs picks the constant up via syn to render the rule's default
+/// state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
 impl_lint_pass!(ThiserrorUsage => [THISERROR_USAGE]);
 
-impl RuleRegistration for ThiserrorUsageRule {
+impl Register for ThiserrorUsageRule {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[THISERROR_USAGE]);
     }

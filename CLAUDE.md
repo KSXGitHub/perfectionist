@@ -98,9 +98,9 @@ has these consequences for the implementer:
    forbids the `mod.rs` form (via `clippy::mod_module_files`,
    enabled in `Cargo.toml`), so the layout is `src/rules/<rule>.rs` next to
    `src/rules/<rule>/<concern>.rs`. The flat `.rs` entry keeps the
-   `declare_tool_lint!` block, the `RuleRegistration` impl, the
-   `EarlyLintPass` / `LateLintPass` driver, and any
-   process-wide state (`static PENDING_VIOLATIONS`, etc.). Common
+   `declare_tool_lint!` block, the `Register` impl, the
+   `EarlyLintPass` / `LateLintPass` driver, and any process-wide
+   state (`static PENDING_VIOLATIONS`, etc.). Common
    submodule names that have emerged:
    - `config` — `Config` struct, default lists, in-memory rule state.
    - `early` / `late` — the corresponding pass implementation when
@@ -313,7 +313,7 @@ explicitly retracted.
 `rule_index!` invocation names each rule once and expands to a
 marker type per rule, the `LINT_NAMES` set, and the `register_all`
 function that `src/lib.rs::register_lints` calls. Each rule module
-implements the index's `RuleRegistration` trait for its own marker:
+implements the index's `Register` trait for its own marker:
 `register_lint` adds the lint declaration, `register_pass` installs
 the early/late pass.
 
@@ -330,8 +330,7 @@ When you add a new rule:
    entry. The entry pairs the rule's snake_case name (its file
    name, and the name its `declare_tool_lint!` block declares)
    with the marker type to generate for it.
-3. Implement `RuleRegistration` for that marker in the rule's own
-   file.
+3. Implement `Register` for that marker in the rule's own file.
 4. Do not introduce a second list of rule names. The `rule_index!`
    invocation is the single source of truth, and
    `src/rule_index/tests.rs` holds it to the `declare_tool_lint!`

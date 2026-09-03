@@ -1,4 +1,4 @@
-use crate::rule_index::{RuleRegistration, UnorderedDerivesRule};
+use crate::rule_index::{Register, UnorderedDerivesRule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Attribute, MetaItemInner, MetaItemKind};
 use rustc_errors::Applicability;
@@ -95,8 +95,8 @@ declare_tool_lint! {
 /// Off by default — enable it in `dylint.toml` via the crate-wide
 /// `[perfectionist] enable = ["unordered_derives"]` (or the
 /// `[[perfectionist.enable]]` array-of-tables form). Read by
-/// [`RuleRegistration::register_pass`] below; gen-docs picks the
-/// constant up via syn to render the rule's default state.
+/// [`Register::register_pass`] below; gen-docs picks the constant up
+/// via syn to render the rule's default state.
 pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 
 const CONFIG_KEY: &str = "perfectionist::unordered_derives";
@@ -163,7 +163,7 @@ impl UnorderedDerives {
 
 impl_lint_pass!(UnorderedDerives => [UNORDERED_DERIVES]);
 
-impl RuleRegistration for UnorderedDerivesRule {
+impl Register for UnorderedDerivesRule {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[UNORDERED_DERIVES]);
     }

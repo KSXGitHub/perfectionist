@@ -4,7 +4,7 @@
 //! the crate needs from it: a marker type per rule, the
 //! [`LINT_NAMES`] set, and [`register_all`], which
 //! [`crate::register_lints`] calls. Each rule's own module
-//! implements [`RuleRegistration`] for its marker type.
+//! implements [`Register`] for its marker type.
 //!
 //! The name set is what keeps the list free of ordering exceptions.
 //! `unknown_perfectionist_lints` reports a `perfectionist::*` name
@@ -19,7 +19,7 @@ use rustc_lint::LintStore;
 
 /// What the index needs from a rule, implemented by each rule module
 /// for the marker type `rule_index!` generates for it.
-pub(crate) trait RuleRegistration {
+pub(crate) trait Register {
     /// Add the rule's lint declaration to the store. Called for
     /// every rule, whatever `dylint.toml` says about it — only
     /// [`Self::register_pass`] consults the rule's resolved state.
@@ -47,7 +47,7 @@ macro_rules! rule_index {
             #[doc = concat!(
                 "Rule marker for `", stringify!($rule_name),
                 "`; `src/rules/", stringify!($rule_name),
-                ".rs` implements [`RuleRegistration`] for it.",
+                ".rs` implements [`Register`] for it.",
             )]
             pub(crate) struct $marker;
         )+
@@ -72,8 +72,8 @@ macro_rules! rule_index {
         /// registered first.
         pub(crate) fn register_all(lint_store: &mut LintStore) {
             $(
-                <$marker as RuleRegistration>::register_lint(lint_store);
-                <$marker as RuleRegistration>::register_pass(lint_store);
+                <$marker as Register>::register_lint(lint_store);
+                <$marker as Register>::register_pass(lint_store);
             )+
         }
     };

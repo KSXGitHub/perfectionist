@@ -3,7 +3,7 @@ use crate::common::{
     DefaultState, hir_in_external_macro, is_single_ascii_letter, resolve_symbol_set_from_chars,
     resolved_state,
 };
-use crate::rule_index::{RuleRegistration, SingleLetterStaticItemRule};
+use crate::rule_index::{Register, SingleLetterStaticItemRule};
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
@@ -83,7 +83,7 @@ impl SingleLetterStaticItem {
 
 impl_lint_pass!(SingleLetterStaticItem => [SINGLE_LETTER_STATIC_ITEM]);
 
-impl RuleRegistration for SingleLetterStaticItemRule {
+impl Register for SingleLetterStaticItemRule {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[SINGLE_LETTER_STATIC_ITEM]);
     }
