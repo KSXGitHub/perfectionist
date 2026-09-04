@@ -127,16 +127,71 @@ fn page_emits_one_sidebar_entry_per_rule_with_anchor_links() {
     // these assertions pass on their own.
     assert_eq!(sidebar.matches("<li>").count(), rules.len());
     assert!(sidebar.contains(r##"<li><a href="#/rule/alpha"><code>alpha</code></a></li>"##));
-    // A multi-word rule name is rendered as-is (`beta_gamma`)
-    // but its anchor is kebab-cased (`beta-gamma`).
+    // A multi-word rule name keeps its underscores (`beta_gamma`,
+    // with `<wbr>` marking where the sidebar's narrow column may
+    // break it) but its anchor is kebab-cased (`beta-gamma`).
     assert!(
-        sidebar.contains(r##"<li><a href="#/rule/beta-gamma"><code>beta_gamma</code></a></li>"##),
+        sidebar
+            .contains(r##"<li><a href="#/rule/beta-gamma"><code>beta_<wbr>gamma</code></a></li>"##),
     );
     // The rule articles those anchors resolve to must exist
     // outside the sidebar slice, otherwise the sidebar links
     // dangle.
     assert!(html.contains(r#"id="/rule/alpha""#));
     assert!(html.contains(r#"id="/rule/beta-gamma""#));
+}
+
+#[test]
+fn lint_names_offer_a_line_break_after_every_underscore() {
+    // Nothing inside a lint identifier is a line-break opportunity,
+    // so a name too long for its column is cut mid-segment by the
+    // `overflow-wrap: anywhere` fallback. Every place the page
+    // prints a lint name marks the segment boundaries with `<wbr>`
+    // so the break lands after a `_` instead.
+    let name = "redundant_derive_more_forward_template";
+    let html = render_page(&[fake_rule(name)], &fake_context());
+    let broken = "redundant_<wbr>derive_<wbr>more_<wbr>forward_<wbr>template";
+    // The index table's "Lint" cell — the narrowest of the three
+    // columns, and the one that motivated this.
+    let cell = format!(
+        r##"<td><a href="#/rule/redundant-derive-more-forward-template"><code>{broken}</code></a></td>"##,
+    );
+    assert!(
+        html.contains(&cell),
+        "the index table's lint name must break on `_` boundaries",
+    );
+    assert!(
+        sidebar_list(&html).contains(&format!("<code>{broken}</code>")),
+        "the sidebar's lint name must break on `_` boundaries",
+    );
+    // The heading's namespace prefix is a break opportunity of its
+    // own: two adjacent inline boxes no more license a break between
+    // them than `_` does inside the name.
+    let heading = format!(
+        r#"<span class="lint-prefix">perfectionist::</span><wbr><span class="lint-name">{broken}</span>"#,
+    );
+    assert!(
+        html.contains(&heading),
+        "the rule heading must break after the namespace and on `_` boundaries",
+    );
+}
+
+#[test]
+fn lint_name_line_breaks_add_no_text() {
+    // `<wbr>` is chosen over a zero-width space precisely because it
+    // contributes no character: the name a reader selects, copies or
+    // ctrl-Fs must still be the identifier they can paste into an
+    // `#[expect(...)]`, underscores and all.
+    let html = render_page(&[fake_rule("beta_gamma")], &fake_context());
+    assert!(
+        !html.contains('\u{200b}'),
+        "a zero-width space would travel with the copied lint name; use <wbr>",
+    );
+    assert!(
+        html.replace("<wbr>", "")
+            .contains("<code>beta_gamma</code>"),
+        "removing the break opportunities must leave the identifier intact",
+    );
 }
 
 #[test]
@@ -720,6 +775,29 @@ fn nav_toggle_script_is_a_single_iife() {
     // a future edit can't reintroduce the same bug silently.
     assert_eq!(NAV_TOGGLE_SCRIPT.matches("(function () {").count(), 1);
     assert_eq!(NAV_TOGGLE_SCRIPT.matches("})();").count(), 1);
+}
+
+#[test]
+fn config_key_offers_a_line_break_after_every_underscore() {
+    // The `dylint.toml` table header names the same identifier the
+    // index table does, in a sentence just as liable to be squeezed
+    // on a narrow viewport, so it breaks on `_` boundaries too. The
+    // namespace stays whole: it carries no `_`.
+    let config = ConfigDoc {
+        key: "perfectionist::demo_rule".to_owned(),
+        fields: vec![ConfigField {
+            name: "some_field".to_owned(),
+            type_label: "bool".to_owned(),
+            doc_markdown: String::new(),
+            optionality: Optionality::Optional,
+        }],
+        custom_types: Vec::new(),
+    };
+    let html = crate::render::config::config_section(&config).into_string();
+    assert!(
+        html.contains("[&quot;perfectionist::demo_<wbr>rule&quot;]"),
+        "the dylint.toml key must break on `_` boundaries, got: {html}",
+    );
 }
 
 #[test]

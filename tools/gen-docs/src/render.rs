@@ -157,7 +157,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                             tr {
                                 td {
                                     a href={ "#" (anchor_for(&rule.namespaced)) } {
-                                        code { (unnamespaced(&rule.namespaced)) }
+                                        code { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
                                     }
                                 }
                                 td { (state_badge(rule.default_state)) }
@@ -338,7 +338,7 @@ fn nav_drawer(rules: &[Rule]) -> Markup {
                 @for rule in rules {
                     li {
                         a href={ "#" (anchor_for(&rule.namespaced)) } {
-                            code { (unnamespaced(&rule.namespaced)) }
+                            code { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
                         }
                     }
                 }
@@ -369,7 +369,8 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                 code {
                     a.rule-anchor href={ "#" (anchor_for(&rule.namespaced)) } aria-label="Permalink to this rule" {}
                     span.lint-prefix { (NAMESPACE) }
-                    span.lint-name { (unnamespaced(&rule.namespaced)) }
+                    wbr;
+                    span.lint-name { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
                 }
                 a.rule-jump-link href="#catalogue" aria-label="Back to catalogue" { "↑ top" }
             }
@@ -406,6 +407,36 @@ fn state_badge(default_state: DefaultState) -> Markup {
 /// `querySelector("#" + ...)`.
 fn anchor_for(namespaced: &str) -> String {
     format!("/rule/{}", unnamespaced(namespaced).replace('_', "-"))
+}
+
+/// Render a lint identifier with an explicit line-break opportunity
+/// after each `_`.
+///
+/// A lint name is one long unbreakable "word": Unicode line breaking
+/// (UAX `#14`) classes `_` as an ordinary letter, so a browser sees no
+/// place to break `redundant_derive_more_forward_template` and — once
+/// it outgrows its column — falls back on the arbitrary break
+/// `overflow-wrap: anywhere` licenses, splitting mid-segment
+/// (`...forward_te` / `mplate`) or stranding a `_` at the head of the
+/// next line. Breaking on the segment boundaries instead keeps each
+/// fragment a readable piece of the name.
+///
+/// `<wbr>` is the element for exactly this: it marks a break
+/// opportunity and contributes no character of its own, so the text
+/// still selects, copies and ctrl-Fs as the plain identifier —
+/// underscores included, and none added. It only *offers* the break,
+/// so a name that fits stays on one line, and `overflow-wrap: anywhere`
+/// remains the fallback for the case no `<wbr>` can help with: a single
+/// segment wider than the column it sits in.
+fn breakable_lint_name(name: &str) -> Markup {
+    html! {
+        @for (index, segment) in name.split_inclusive('_').enumerate() {
+            @if index > 0 {
+                wbr;
+            }
+            (segment)
+        }
+    }
 }
 
 fn unnamespaced(namespaced: &str) -> &str {
