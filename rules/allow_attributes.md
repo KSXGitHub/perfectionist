@@ -79,7 +79,10 @@ fn build_fetcher(/* ... */) {}
 
 Configure via `dylint.toml` under `["perfectionist::allow_attributes"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_exempt_lints`: `[string]` (optional)
+### `extra_exempt_lints`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Extra lints to exempt, on top of the built-in default set (the
 `cfg`-conditional `unused_*` / reachability lints). Names are
@@ -87,20 +90,29 @@ matched against the fully-namespaced lint name shown in
 diagnostics (e.g. `clippy::too_many_arguments`). Merged with the
 defaults rather than replacing them.
 
-### `ignore_exempt_lints`: `[string]` (optional)
+### `ignore_exempt_lints`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Lints to drop from the exempt set, even if they appear in the
 built-in defaults or in `extra_exempt_lints`. Use this to opt a
 default exemption back into rewriting (e.g. `["dead_code"]` in a
 project with no `cfg`-gated dead code).
 
-### `apply_to_outer_scopes`: `boolean` (optional)
+### `apply_to_outer_scopes`
+
+- _Type:_ `boolean`
+- _Optional_
 
 When true, also rewrite crate-level `#![allow(...)]` and
 module-level `#[allow(...)]` attributes. Default `false`
 because `cfg`-conditional bodies inside the scope are common.
 
-### `apply_to_tool_namespaces`: `boolean` (optional)
+### `apply_to_tool_namespaces`
+
+- _Type:_ `boolean`
+- _Optional_
 
 When false, only `clippy::*`, `rustdoc::*`, and built-in lints
 are rewritten; other tool namespaces (`perfectionist::*` and

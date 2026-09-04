@@ -152,15 +152,27 @@ pub(crate) struct ConfigField {
 }
 
 /// Whether a [`ConfigField`] is optional or mandatory in TOML. Its
-/// string form (`"optional"` / `"mandatory"`) doubles as the rendered
-/// badge label and — prefixed with `badge-` — the badge's CSS class, so
-/// the renderers read it off the `strum`-derived `AsRef<str>` rather
-/// than hand-writing the two words.
+/// lower-case string form (`"optional"` / `"mandatory"`) doubles as
+/// the HTML badge label and — prefixed with `badge-` — the badge's CSS
+/// class, so the HTML renderer reads it off the `strum`-derived
+/// `AsRef<str>` rather than hand-writing the two words. The markdown
+/// catalogue, where the word opens a sentence-like bullet instead of
+/// filling a badge, uses [`Optionality::label`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, AsRefStr)]
 #[strum(serialize_all = "snake_case")]
 pub(crate) enum Optionality {
     Optional,
     Mandatory,
+}
+
+impl Optionality {
+    /// Sentence-case form of the same word.
+    pub(crate) fn label(self) -> &'static str {
+        match self {
+            Optionality::Optional => "Optional",
+            Optionality::Mandatory => "Mandatory",
+        }
+    }
 }
 
 /// A non-built-in type that one of the `Config` fields references.

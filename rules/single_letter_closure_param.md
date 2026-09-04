@@ -94,7 +94,10 @@ the one-knob sweep.
 
 Configure via `dylint.toml` under `["perfectionist::single_letter_closure_param"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_trivial_callback_methods`: `[string]` (optional)
+### `extra_trivial_callback_methods`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Additional method / function names whose closure argument
 may carry single-letter parameters when the body is a
@@ -105,7 +108,10 @@ project-specific DSL helpers (`when`, `iter_by`, third-party
 callbacks such as `into_sorted_by`, ...) here without having
 to re-state the standard ones.
 
-### `ignore_trivial_callback_methods`: `[string]` (optional)
+### `ignore_trivial_callback_methods`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Method / function names to drop from the trivial-callback
 set, even if they appear in the built-in defaults or in
@@ -114,7 +120,10 @@ after the merge with the built-ins, so this knob always
 wins. Useful for opting back into linting on a default
 entry the project does not consider trivial.
 
-### `extra_allowed_idents`: `[single-letter string]` (optional)
+### `extra_allowed_idents`
+
+- _Type:_ `[single-letter string]`
+- _Optional_
 
 Additional identifiers to allow as closure parameter names.
 Merged with the built-in defaults
@@ -124,7 +133,10 @@ having to re-state the standard ones. Each entry is a
 single ASCII letter (`a`-`z`, `A`-`Z`); any other
 character is rejected at config-parse time.
 
-### `extra_denied_idents`: `[single-letter string]` (optional)
+### `extra_denied_idents`
+
+- _Type:_ `[single-letter string]`
+- _Optional_
 
 Identifiers to deny (always flag), removing them from the
 exempt set even if they appear in the built-in defaults or

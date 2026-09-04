@@ -89,7 +89,10 @@ struct Cli {
 
 Configure via `dylint.toml` under `["perfectionist::clap_help_markdown"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_constructs`: `[ConstructCategory]` (optional)
+### `extra_constructs`
+
+- _Type:_ `[ConstructCategory]`
+- _Optional_
 
 Markdown constructs to forbid in addition to the built-in default
 set (`html`, `inline_link`, `reference_link`, `intra_doc_link`,
@@ -97,7 +100,10 @@ set (`html`, `inline_link`, `reference_link`, `intra_doc_link`,
 `italic`, and `list` are the usual additions — clap renders them
 acceptably, so they are off by default.
 
-### `ignore_constructs`: `[ConstructCategory]` (optional)
+### `ignore_constructs`
+
+- _Type:_ `[ConstructCategory]`
+- _Optional_
 
 Constructs to drop from the forbidden set, even if they appear in
 the built-in defaults. Empty by default; applied after the merge
@@ -105,7 +111,10 @@ with `extra_constructs`, so this knob always wins. Use it to
 permit a construct in help text, e.g.
 `ignore_constructs = ["code_span"]`.
 
-### `require_help_override`: `boolean` (optional)
+### `require_help_override`
+
+- _Type:_ `boolean`
+- _Optional_
 
 For projects that never let a doc comment become `--help` text,
 preferring an explicit clap override (`#[arg(help = "...")]`,
@@ -124,7 +133,7 @@ a missing override rather than per markdown construct. Defaults to
 
 ### Types
 
-#### `ConstructCategory` (enum)
+#### `ConstructCategory`
 
 A markdown construct category the rule can be configured to forbid,
 as it appears in the `extra_constructs` / `ignore_constructs` arrays
@@ -133,43 +142,63 @@ names: `reference_link` covers both a `[text][id]` link and its
 `[id]: dest` definition, while an autolink (`<https://example.com>`)
 falls under no category at all and is never forbidden.
 
-##### `"html"` (Rust: `Html`)
+##### `"html"`
+
+- _Rust:_ `Html`
 
 Raw HTML tags (`<br>`, `<code>`, `<a href="...">`, ...).
 
-##### `"inline_link"` (Rust: `InlineLink`)
+##### `"inline_link"`
+
+- _Rust:_ `InlineLink`
 
 Inline links: `[text](https://example.com)`.
 
-##### `"reference_link"` (Rust: `ReferenceLink`)
+##### `"reference_link"`
+
+- _Rust:_ `ReferenceLink`
 
 Reference links (`[text][id]`) and their `[id]: ...`
 definitions.
 
-##### `"intra_doc_link"` (Rust: `IntraDocLink`)
+##### `"intra_doc_link"`
+
+- _Rust:_ `IntraDocLink`
 
 Intra-doc links: `` [`Type`] `` and `[Type]`.
 
-##### `"code_block"` (Rust: `CodeBlock`)
+##### `"code_block"`
+
+- _Rust:_ `CodeBlock`
 
 Fenced, `~~~`-fenced, or four-space-indented code blocks.
 
-##### `"code_span"` (Rust: `CodeSpan`)
+##### `"code_span"`
+
+- _Rust:_ `CodeSpan`
 
 Inline code spans: `` `value` ``.
 
-##### `"heading"` (Rust: `Heading`)
+##### `"heading"`
+
+- _Rust:_ `Heading`
 
 ATX (`# Heading`) and Setext (`Heading\n=====`) headings.
 
-##### `"bold"` (Rust: `Bold`)
+##### `"bold"`
+
+- _Rust:_ `Bold`
 
 `**bold**` / `__bold__` strong emphasis.
 
-##### `"italic"` (Rust: `Italic`)
+##### `"italic"`
+
+- _Rust:_ `Italic`
 
 `*italic*` / `_italic_` emphasis.
 
-##### `"list"` (Rust: `List`)
+##### `"list"`
+
+- _Rust:_ `List`
 
 Bullet and ordered list markers.

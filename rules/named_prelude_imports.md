@@ -62,13 +62,19 @@ use diesel::prelude::*;
 
 Configure via `dylint.toml` under `["perfectionist::named_prelude_imports"]`. Every field is optional; the per-field prose below states the default.
 
-### `prelude_segment_names`: `[string]` (optional)
+### `prelude_segment_names`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Path segment names recognised as preludes. Matches the knob of
 the same name on `perfectionist::wildcard_imports`, so a project
 can flip both rules with one value. Defaults to `["prelude"]`.
 
-### `allowed_paths`: `[string]` (optional)
+### `allowed_paths`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Prelude module paths whose named imports are never flagged — the
 module path leading up to and including the prelude segment. Each

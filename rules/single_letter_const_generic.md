@@ -54,7 +54,10 @@ struct Data<Left, Right, const LEFT_LEN: usize, const RIGHT_LEN: usize> {
 
 Configure via `dylint.toml` under `["perfectionist::single_letter_const_generic"]`. Every field is optional; the per-field prose below states the default.
 
-### `allowed_idents`: `[single-letter string]` (optional)
+### `allowed_idents`
+
+- _Type:_ `[single-letter string]`
+- _Optional_
 
 Identifiers the rule will not flag. Empty by default. Each
 entry is a single ASCII letter (`a`-`z`, `A`-`Z`); any other

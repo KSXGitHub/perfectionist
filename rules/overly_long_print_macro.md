@@ -67,7 +67,10 @@ println!(
 
 Configure via `dylint.toml` under `["perfectionist::overly_long_print_macro"]`. Every field is optional; the per-field prose below states the default.
 
-### `max_line_width`: `unsigned integer` (optional)
+### `max_line_width`
+
+- _Type:_ `unsigned integer`
+- _Optional_
 
 Source-line width that triggers the rule. The width is the
 Unicode *display* width of the line containing the macro
@@ -75,7 +78,10 @@ invocation, not its byte length, so a line of CJK text is
 measured the way a terminal renders it. Common alternatives to
 the default `100` are `80` (terminal) or `120` (wide editors).
 
-### `target_macros`: `[string]` (optional)
+### `target_macros`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Macros eligible for folding, each a `"a::b::c"`-style path (no
 trailing `!`). A single-segment entry matches by the

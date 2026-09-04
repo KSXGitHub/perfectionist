@@ -168,13 +168,19 @@ pub use Reflection as HardlinkListReflection;
 
 Configure via `dylint.toml` under `["perfectionist::import_grouping_mismatch"]`. A field marked mandatory must be set; an optional field can be omitted and the per-field prose below states its default.
 
-### `style`: `Style` (mandatory)
+### `style`
+
+- _Type:_ `Style`
+- _Mandatory_
 
 The grouping style to enforce: `single_block` or `multi_block`. It
 has no default — a project enabling the rule states which layout
 it wants — so it must be set when the rule is enabled.
 
-### `reexports`: `ReexportGrouping` (mandatory)
+### `reexports`
+
+- _Type:_ `ReexportGrouping`
+- _Mandatory_
 
 How `pub` re-exports are grouped: `grouped`, `split`, or `by_path`.
 Like `style` it has no default — a project enabling the rule states
@@ -186,12 +192,18 @@ re-exports (`pub use Item;` / `pub use Item as Alias;`); `by_path`
 gives re-exports no dedicated block at all, classifying each by its
 path like a private import.
 
-### `order`: `[Group]` (optional)
+### `order`
+
+- _Type:_ `[Group]`
+- _Optional_
 
 The order the groups appear in, top to bottom. Defaults to
 `["std", "internal", "thirdparty"]`.
 
-### `cfg_block_handling`: `CfgBlockHandling` (optional)
+### `cfg_block_handling`
+
+- _Type:_ `CfgBlockHandling`
+- _Optional_
 
 How `#[cfg(...)]`-gated imports are grouped. Defaults to
 `trailing`: a cfg-gated import forms its own trailing block under
@@ -201,43 +213,53 @@ block under `single_block`.
 
 ### Types
 
-#### `Style` (enum)
+#### `Style`
 
 How `use` statements are partitioned into blocks.
 
-##### `"single_block"` (Rust: `SingleBlock`)
+##### `"single_block"`
+
+- _Rust:_ `SingleBlock`
 
 Every `use` statement sits in one contiguous block, with no
 blank lines between imports.
 
-##### `"multi_block"` (Rust: `MultiBlock`)
+##### `"multi_block"`
+
+- _Rust:_ `MultiBlock`
 
 Imports are partitioned into ordered groups separated by exactly
 one blank line. The group set is
 std (`std` / `core` / `alloc` / `proc_macro` / `test`), internal
 (`crate` / `super` / `self`), and third-party (every other crate).
 
-#### `ReexportGrouping` (enum)
+#### `ReexportGrouping`
 
 How `pub` re-exports are grouped relative to the private imports. A
 re-export is any `use` with an explicit visibility (`pub`,
 `pub(crate)`, `pub(super)`, `pub(in ...)`); a private (`Inherited`)
 import is not one.
 
-##### `"by_path"` (Rust: `ByPath`)
+##### `"by_path"`
+
+- _Rust:_ `ByPath`
 
 Re-exports get no dedicated block: each is classified purely by
 its path, exactly like a private import, so a `pub use child::Item`
 sits in the same block as a private import of the same origin.
 
-##### `"grouped"` (Rust: `Grouped`)
+##### `"grouped"`
+
+- _Rust:_ `Grouped`
 
 Every re-export is pulled into one contiguous leading block above
 all private imports, separated by a blank line. A cfg-gated
 re-export stays in this block rather than the trailing cfg block:
 visibility takes precedence, keeping the public surface together.
 
-##### `"split"` (Rust: `Split`)
+##### `"split"`
+
+- _Rust:_ `Split`
 
 Re-exports form a leading region split into two blank-separated
 blocks: *submodule* re-exports (a multi-segment path such as
@@ -250,35 +272,45 @@ crate counts as an alias re-export. As under `grouped`, a cfg-gated
 re-export stays in its re-export sub-block rather than the trailing
 cfg block.
 
-#### `Group` (enum)
+#### `Group`
 
 One of the three groups a `use` statement is classified into. The
 `order` knob is a permutation of these three values.
 
-##### `"std"` (Rust: `Std`)
+##### `"std"`
+
+- _Rust:_ `Std`
 
 `std`, `core`, `alloc`, `proc_macro`, `test`.
 
-##### `"internal"` (Rust: `Internal`)
+##### `"internal"`
+
+- _Rust:_ `Internal`
 
 `crate`, `super`, `self`.
 
-##### `"thirdparty"` (Rust: `Thirdparty`)
+##### `"thirdparty"`
+
+- _Rust:_ `Thirdparty`
 
 Every other crate.
 
-#### `CfgBlockHandling` (enum)
+#### `CfgBlockHandling`
 
 How a `#[cfg(...)]`-gated import is grouped.
 
-##### `"trailing"` (Rust: `Trailing`)
+##### `"trailing"`
+
+- _Rust:_ `Trailing`
 
 Give every `#[cfg(...)]`-gated import its own trailing block,
 regardless of the imported path: an always-last group under
 `multi_block`, a trailing block below the single block under
 `single_block`.
 
-##### `"merge"` (Rust: `Merge`)
+##### `"merge"`
+
+- _Rust:_ `Merge`
 
 Keep a cfg-gated import with the rest: slotted into its natural
 path group under `multi_block`, or left in the single block under

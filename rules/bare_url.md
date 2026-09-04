@@ -40,16 +40,25 @@ them, GitHub renders them, but plain CommonMark does not. The
 
 Configure via `dylint.toml` under `["perfectionist::bare_url"]`. Every field is optional; the per-field prose below states the default.
 
-### `scan_doc_comments`: `boolean` (optional)
+### `scan_doc_comments`
+
+- _Type:_ `boolean`
+- _Optional_
 
 Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
 Defaults to `true`.
 
-### `scan_regular_comments`: `boolean` (optional)
+### `scan_regular_comments`
+
+- _Type:_ `boolean`
+- _Optional_
 
 Scan regular comments (`//`, `/* */`). Defaults to `true`.
 
-### `safe_trailing_chars`: `[single-character string]` (optional)
+### `safe_trailing_chars`
+
+- _Type:_ `[single-character string]`
+- _Optional_
 
 Characters that, when the URL ends in one of them, keep the
 autofix at `MachineApplicable`. Defaults to `["/", "_", "-",
@@ -57,7 +66,10 @@ autofix at `MachineApplicable`. Defaults to `["/", "_", "-",
 treated as safe regardless of this list; entries here
 supplement that built-in set.
 
-### `skip_hosts`: `[string]` (optional)
+### `skip_hosts`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Hosts to skip, compared case-insensitively. Defaults to
 `["localhost"]`.

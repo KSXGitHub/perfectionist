@@ -74,7 +74,10 @@ fn push_path(list: &mut Vec<PathBuf>, item: PathBuf) {
 
 Configure via `dylint.toml` under `["perfectionist::needless_borrowed_parameters"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_conversion_methods`: `[string]` (optional)
+### `extra_conversion_methods`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Additional method names that count as a conversion of the
 borrowed parameter to its owned form. Merged with the built-in
@@ -84,21 +87,30 @@ flagged conversion must still actually produce the owned
 counterpart of the parameter's type, so listing an unrelated
 method here never widens the lint beyond owned-producing calls.
 
-### `ignore_conversion_methods`: `[string]` (optional)
+### `ignore_conversion_methods`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Method names to drop from the conversion set, even if they
 appear in the built-in defaults or in
 `extra_conversion_methods`. Empty by default; checked after the
 merge with the built-ins, so this knob always wins.
 
-### `test_code_exception`: `boolean` (optional)
+### `test_code_exception`
+
+- _Type:_ `boolean`
+- _Optional_
 
 Whether test code is exempt: anything gated to test builds by
 `#[cfg(test)]` (or a compound predicate implying it), anything
 inside a `#[test]` function, and every `tests/` or `benches/`
 crate. An `examples/` crate is not covered. Defaults to `true`.
 
-### `build_script_exception`: `boolean` (optional)
+### `build_script_exception`
+
+- _Type:_ `boolean`
+- _Optional_
 
 Whether a build script — `build.rs`, or whatever `Cargo.toml`'s
 `build` key names — is exempt. Defaults to `true`.

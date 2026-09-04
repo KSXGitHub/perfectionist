@@ -94,25 +94,37 @@ pub use submodule::*;
 
 Configure via `dylint.toml` under `["perfectionist::wildcard_imports"]`. Every field is optional; the per-field prose below states the default.
 
-### `prelude_exception`: `boolean` (optional)
+### `prelude_exception`
+
+- _Type:_ `boolean`
+- _Optional_
 
 Whether a glob whose final non-glob path segment names a prelude
 module (`use rayon::prelude::*;`) is exempt. The recognised
 segment names come from `prelude_segment_names`. Defaults to
 `true`; set `false` to flag prelude globs too.
 
-### `root_reexport_exception`: `boolean` (optional)
+### `root_reexport_exception`
+
+- _Type:_ `boolean`
+- _Optional_
 
 Whether a bare-`pub` re-export glob (`pub use submodule::*;`) at
 the top level of a module body is exempt. Defaults to `true`; set
 `false` to flag re-export globs too.
 
-### `prelude_segment_names`: `[string]` (optional)
+### `prelude_segment_names`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Path segment names recognised as preludes for the `prelude`
 exception. Defaults to `["prelude"]`.
 
-### `allowed_paths`: `[string]` (optional)
+### `allowed_paths`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Module paths whose glob import is never flagged, regardless of the
 exceptions above — the path before the `::*` of a `use <path>::*`.

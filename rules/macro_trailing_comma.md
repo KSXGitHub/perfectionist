@@ -69,7 +69,10 @@ let ys = vec![1, 2, 3];
 
 Configure via `dylint.toml` under `["perfectionist::macro_trailing_comma"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_macros`: `[string]` (optional)
+### `extra_macros`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Additional macro paths to treat as name-based eligible, on top
 of the curated built-in list. Each entry is matched by its
@@ -80,7 +83,10 @@ syntactically optional at the top level; macros that treat
 the comma as a fully optional separator throughout (rather
 than only at the tail) should not be listed here.
 
-### `ignore`: `[string]` (optional)
+### `ignore`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Macro paths to opt out of the rule, even if they would
 otherwise be eligible via the built-in list or

@@ -69,7 +69,10 @@ deliberately does not do.
 
 Configure via `dylint.toml` under `["perfectionist::unicode_ellipsis_in_panic_messages"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_macros`: `[string]` (optional)
+### `extra_macros`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Additional macros whose call site should be scanned for the
 flagged characters. Empty by default, and merged with the
@@ -80,7 +83,10 @@ of each of those that has one (`debug_unreachable`,
 this to add project-specific assertion-shaped macros without
 having to re-state the standard ones.
 
-### `ignore_macros`: `[string]` (optional)
+### `ignore_macros`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Macros to drop from the scanned set, even if they appear in
 the built-in defaults or in `extra_macros`. Empty by
@@ -88,7 +94,10 @@ default; checked after the merge with the built-ins, so
 this knob always wins. Use it when a project deliberately
 uses `…` in one of the default macros.
 
-### `extra_methods`: `[string]` (optional)
+### `extra_methods`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Additional method names on `Option` / `Result` whose first
 argument is the panic message. Merged with the built-in
@@ -96,14 +105,20 @@ defaults (`expect`, `expect_err`); empty by default. Use
 this to add project-specific `expect`-shaped wrappers
 without having to re-state the standard pair.
 
-### `ignore_methods`: `[string]` (optional)
+### `ignore_methods`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Methods to drop from the scanned set, even if they appear
 in the built-in defaults or in `extra_methods`. Empty by
 default; checked after the merge with the built-ins, so
 this knob always wins.
 
-### `extra_flagged_chars`: `[single-character string]` (optional)
+### `extra_flagged_chars`
+
+- _Type:_ `[single-character string]`
+- _Optional_
 
 Extra characters to flag alongside U+2026. Useful for catching
 near-relatives such as U+22EF MIDLINE HORIZONTAL ELLIPSIS (`⋯`)

@@ -44,14 +44,20 @@ technical writing.
 
 Configure via `dylint.toml` under `["perfectionist::unicode_ellipsis_in_docs"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_flagged_chars`: `[single-character string]` (optional)
+### `extra_flagged_chars`
+
+- _Type:_ `[single-character string]`
+- _Optional_
 
 Extra characters to flag alongside U+2026. Useful for catching
 near-relatives such as U+22EF MIDLINE HORIZONTAL ELLIPSIS (`⋯`)
 or U+2025 TWO DOT LEADER (`‥`) that the same autocorrect
 pipelines occasionally insert. Empty by default.
 
-### `scan_code_spans`: `boolean` (optional)
+### `scan_code_spans`
+
+- _Type:_ `boolean`
+- _Optional_
 
 Whether to also flag a character inside an inline code span
 (`` `...` ``). Defaults to `false`: code spans often quote example
