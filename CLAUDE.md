@@ -362,28 +362,25 @@ automated self-lint did not run.
 
 ## Normalised `.stderr` fixtures
 
-The `ui/` and `ui-toml/` compiletest fixtures pin each diagnostic's
-`line:column` to `LL:CC` in the committed `.stderr`, so inserting a
-line above a diagnostic no longer churns every header below it. This
-relies on a per-file `// normalize-stderr-test` directive in each
-`.stderr`-bearing fixture; `just sanitize-fixtures` adds it and
-rewrites the `.stderr` files, and `just check-fixtures-sanitized`
-(part of `just all`) fails if a fixture is missed. Both recipes carry
-the mechanism in their justfile comments.
+The `ui/` and `ui-toml/` compiletest fixtures keep each diagnostic's
+`line:column` pinned to `LL:CC` in the committed `.stderr`, so
+inserting a line above a diagnostic no longer churns every header
+below it — and the `.rs` fixtures themselves stay untouched.
 
-The workflow when a fixture's expected output changes: copy the
-driver's actual output into the `.stderr` (its `line:column` numbers
-are real, since the directive only rewrites the *test's* view of that
-output), then run `just sanitize-fixtures` before committing. A new
-fixture picks up the directive the same way — write the `.rs` and
-`.stderr`, then run the recipe.
+The gutter `LL` comes for free: `dylint_testing` runs rustc under
+`-Zui-testing`, whose `ANONYMIZED_LINE_PREFIX` is a fixed `LL`
+regardless of the real line's digit count, so a three-digit line is
+`LL |`, not `LLL |`. That mode leaves the `--> …:line:col` header
+alone, so the header is normalised separately: every UI test runs from
+a throwaway copy of its fixtures made by
+[`copy_fixtures_with_directive`](utils/src/ui_fixtures.rs), which
+injects a compiletest `// normalize-stderr-test` directive into the
+copy — never the committed `.rs`. See that module for the mechanism
+and why the copy lives at an absolute path.
 
-The source-line gutter (`LL |`) is already anonymised upstream:
-`dylint_testing` runs rustc under `-Zui-testing`, whose
-`ANONYMIZED_LINE_PREFIX` is a fixed `LL` regardless of the real line's
-digit count, so a three-digit line is `LL |`, not `LLL |`. Only the
-`--> …:line:col` header, which that mode leaves alone, needs the
-directive.
+When a fixture's expected output changes, spell the `line:column` in
+the new `.stderr` as `LL:CC`; the injected directive collapses the
+driver's real numbers to match.
 
 ## Generated documentation site (`tools/gen-docs/`)
 

@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `min_reason_length = 8` raises the floor; a five-character
 // `reason` is now too short.
 

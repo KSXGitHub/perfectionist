@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `mode = "deny_only"` flags only invocations of the curated deny
 // list (`debug_assert*`). Every other macro is silently accepted —
 // the uncatalogued `my_macro!` here gets a free pass even though its

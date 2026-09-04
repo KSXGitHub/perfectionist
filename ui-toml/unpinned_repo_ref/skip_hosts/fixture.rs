@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `skip_hosts = ["*.internal.example", "GITHUB.COM"]` (see
 // `tests/unpinned_repo_ref.rs`) ignores matching hosts even when they
 // are in the `hosts` table. Patterns are `*`-globs compared

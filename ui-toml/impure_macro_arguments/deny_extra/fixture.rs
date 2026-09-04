@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `deny_extra` adds a project-specific macro to the deny set. The
 // `inner::their_macro!` invocation here matches the multi-segment
 // entry `inner::their_macro` — multi-segment entries tail-match the

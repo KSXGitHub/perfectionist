@@ -1,13 +1,16 @@
 //! Test-support building blocks for perfectionist's integration
-//! tests. These helpers materialise a minimal Cargo project on disk
-//! and shell out to `cargo dylint` against it. Path inputs are taken
-//! as parameters rather than discovered, because this crate is built
-//! in isolation from any test workspace and has no access to the
-//! caller's `CARGO_TARGET_DIR` or `CARGO_MANIFEST_DIR`.
+//! tests. These helpers materialise fixtures in a fresh temp dir —
+//! either a minimal Cargo project to shell out to `cargo dylint`
+//! against, or a throwaway copy of a compiletest UI tree (see
+//! [`ui_fixtures`]). Path inputs are taken as parameters rather than
+//! discovered, because this crate is built in isolation from any test
+//! workspace and has no access to the caller's `CARGO_TARGET_DIR` or
+//! `CARGO_MANIFEST_DIR`.
 
 pub mod dylint;
 pub mod manifest;
 pub mod project;
+pub mod ui_fixtures;
 
 pub use dylint::{run_dylint, run_dylint_all_targets, run_dylint_fix};
 pub use manifest::{
@@ -15,6 +18,7 @@ pub use manifest::{
 };
 pub use project::{build_project, build_project_with_config};
 pub use tempfile::TempDir;
+pub use ui_fixtures::copy_fixtures_with_directive;
 
 use std::path::Path;
 

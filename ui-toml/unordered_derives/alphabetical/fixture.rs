@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // Bad: `Debug` should come after `Clone` and `Copy` under
 // alphabetical ordering.
 #[derive(Debug, Clone, Copy)]

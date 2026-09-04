@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // Bad: `inner::their_macro!` is matched by the multi-segment entry
 // `inner::their_macro` in `extra_macros`. The same machinery
 // applies to a third-party macro referenced as

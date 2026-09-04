@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 #![allow(unused_imports, unused, reason = "ui fixture deliberately leaves imports unused")]
 
 mod defs {

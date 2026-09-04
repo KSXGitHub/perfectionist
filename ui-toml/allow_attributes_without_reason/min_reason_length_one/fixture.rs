@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `min_reason_length = 1` is the floor's lowest legal value
 // (`0` is rejected at parse time by the `NonZeroUsize` field).
 // At this setting every non-blank reason satisfies the length

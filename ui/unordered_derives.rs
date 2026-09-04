@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // The rule ships disabled by default
 // (`DEFAULT_STATE = DefaultState::Disabled` in
 // `src/rules/unordered_derives.rs`), so without a `dylint.toml` that

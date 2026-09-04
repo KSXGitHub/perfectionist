@@ -44,7 +44,7 @@ warning: impure expression passed directly to a macro
    |
 LL |       let _ = dsl_macro!({
    |  ________________________^
-LL | |         #[allow(unused, reason = "$DIR fixture")]
+LL | |         #[allow(unused, reason = "ui fixture")]
 LL | |         let x: u32 = MAX;
 LL | |         x
 LL | |     });

@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 #![allow(dead_code, unused_variables, unused_assignments, dropping_copy_types, reason = "ui fixture")]
 
 // Bad: generic type parameter with a single letter on a long function.

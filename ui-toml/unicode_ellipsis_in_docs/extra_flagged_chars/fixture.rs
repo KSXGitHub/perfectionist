@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 /// Default target U+2026 ellipsis… is flagged.
 fn _u2026() {}
 

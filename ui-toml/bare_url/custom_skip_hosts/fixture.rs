@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 /// Good: `skip_hosts = ["example.net"]` suppresses this URL even
 /// though it's a bare URL by default: https://example.net/ here.
 fn _configured_skip_host() {}

@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // aux-build:proc_macro_synth_binding.rs
 
 // Regression test: `single_letter_static_item` must not fire on

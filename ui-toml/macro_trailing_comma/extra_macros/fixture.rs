@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // Bad: `my_macro!` is not on the built-in name-based list. The
 // fixture's `dylint.toml` adds the bare segment `"my_macro"` to
 // `extra_macros`, so the missing multi-line trailing comma must

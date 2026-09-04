@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // Default-config sweep for `unpinned_repo_ref`: the surfaces scanned
 // by default (doc comment, plain comment) and every built-in forge
 // kind. Run by `tests/ui.rs` with an empty `dylint.toml`, so the

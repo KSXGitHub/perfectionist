@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `mode = "blanket"` flags every function-like or array-like
 // invocation that carries an impure argument, regardless of which
 // set (if any) the macro would otherwise match. `format!` is in

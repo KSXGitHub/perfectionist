@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // A per-item `#[allow]` suppresses only that item's doc-comment
 // finding; a sibling item with no attribute still fires. This pins the
 // fix for <https://github.com/KSXGitHub/perfectionist/issues/165>: the

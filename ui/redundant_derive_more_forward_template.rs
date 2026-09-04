@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // aux-build:derive_more.rs
 //
 // UI sweep for `redundant_derive_more_forward_template` under the

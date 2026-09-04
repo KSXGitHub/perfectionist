@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `min_escapes_to_trigger = 2`: a literal with only one
 // eliminable escape stays untouched; a literal with two or more
 // is flagged.

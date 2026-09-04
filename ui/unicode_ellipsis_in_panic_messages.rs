@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // Macro invocations: each of the following should fire once
 // per U+2026 codepoint in the literal.
 

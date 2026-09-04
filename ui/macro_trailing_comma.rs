@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 macro_rules! my_macro {
     ($($item:expr),* $(,)?) => {{ $(let _ = $item;)* 0 }};
 }

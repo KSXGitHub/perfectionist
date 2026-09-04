@@ -1,4 +1,3 @@
-// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 //! UI sweep for `bare_identifier_reference` under the default configuration.
 //!
 //! The crate-level mention of `Helper` resolves at the crate root, so
