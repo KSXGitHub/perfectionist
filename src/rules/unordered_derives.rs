@@ -1,3 +1,4 @@
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Attribute, MetaItemInner, MetaItemKind};
 use rustc_errors::Applicability;
@@ -7,7 +8,7 @@ use rustc_span::sym;
 
 mod ordering;
 
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use ordering::{DeriveEntry, Style, desired_order, is_identity};
 
 declare_tool_lint! {
@@ -91,13 +92,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Off by default — enable it in `dylint.toml` via the crate-wide
-/// `[perfectionist] enable = ["unordered_derives"]` (or the
-/// `[[perfectionist.enable]]` array-of-tables form). Read by
-/// [`register_pass`] below; gen-docs picks the constant up via syn
-/// to render the rule's default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
-
 const CONFIG_KEY: &str = "perfectionist::unordered_derives";
 
 /// Default `prefix` list for the `prefix_then_alphabetical` style.
@@ -162,20 +156,24 @@ impl UnorderedDerives {
 
 impl_lint_pass!(UnorderedDerives => [UNORDERED_DERIVES]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[UNORDERED_DERIVES]);
-}
+impl Register for rule::UnorderedDerives {
+    /// Off by default — enable it in `dylint.toml` via the crate-wide
+    /// `[perfectionist] enable = ["unordered_derives"]` (or the
+    /// `[[perfectionist.enable]]` array-of-tables form).
+    const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("unordered_derives", DEFAULT_STATE) {
-        return;
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[UNORDERED_DERIVES]);
     }
-    // Pre-expansion: derives are consumed during macro expansion, so
-    // a regular (post-expansion) `EarlyLintPass` no longer sees the
-    // `#[derive(...)]` attribute by the time `check_attribute` would
-    // be invoked. Running before expansion keeps the attribute
-    // tokens intact.
-    lint_store.register_pre_expansion_lint_pass(Box::new(|| Box::new(UnorderedDerives::new())));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        // Pre-expansion: derives are consumed during macro expansion, so
+        // a regular (post-expansion) `EarlyLintPass` no longer sees the
+        // `#[derive(...)]` attribute by the time `check_attribute` would
+        // be invoked. Running before expansion keeps the attribute
+        // tokens intact.
+        lint_store.register_pre_expansion_lint_pass(Box::new(|| Box::new(UnorderedDerives::new())));
+    }
 }
 
 impl EarlyLintPass for UnorderedDerives {

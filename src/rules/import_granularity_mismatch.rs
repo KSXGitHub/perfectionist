@@ -1,3 +1,4 @@
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::source::indent_of;
 use rustc_ast::{
@@ -13,7 +14,7 @@ mod config;
 mod model;
 mod render;
 
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use crate::module_reparse::for_each_module_file;
 use check::is_compliant;
@@ -114,12 +115,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. `module` is the shipped baseline; a project that
-/// prefers `crate` or `item` sets `style` in `dylint.toml`. Read by
-/// [`register_pass`]; gen-docs picks the constant up to render the rule's
-/// default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
-
 const CONFIG_KEY: &str = "perfectionist::import_granularity_mismatch";
 
 pub struct ImportGranularityMismatch {
@@ -145,23 +140,24 @@ impl ImportGranularityMismatch {
 
 impl_lint_pass!(ImportGranularityMismatch => [IMPORT_GRANULARITY_MISMATCH]);
 
-/// Register this rule's lint declaration. Paired with [`register_pass`];
-/// see the module-level convention documented in `register_lints`.
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[IMPORT_GRANULARITY_MISMATCH]);
-}
+impl Register for rule::ImportGranularityMismatch {
+    /// Active by default. `module` is the shipped baseline; a project
+    /// that prefers `crate` or `item` sets `style` in `dylint.toml`.
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
-/// Install this rule's pass.
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("import_granularity_mismatch", DEFAULT_STATE) {
-        return;
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[IMPORT_GRANULARITY_MISMATCH]);
     }
-    // Late pass: out-of-line `mod foo;` modules are `ModKind::Unloaded`
-    // until macro expansion, so a pre-expansion pass never sees them.
-    // `check_crate` re-parses each source file instead, which reaches
-    // every submodule while keeping `#[cfg(...)]` gates intact (parsing
-    // does not strip cfg, unlike the post-expansion AST).
-    lint_store.register_late_lint_pass(Box::new(|_| Box::new(ImportGranularityMismatch::new())));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        // Late pass: out-of-line `mod foo;` modules are `ModKind::Unloaded`
+        // until macro expansion, so a pre-expansion pass never sees them.
+        // `check_crate` re-parses each source file instead, which reaches
+        // every submodule while keeping `#[cfg(...)]` gates intact (parsing
+        // does not strip cfg, unlike the post-expansion AST).
+        lint_store
+            .register_late_lint_pass(Box::new(|_| Box::new(ImportGranularityMismatch::new())));
+    }
 }
 
 /// A detected violation parked until the enclosing HIR node is known.

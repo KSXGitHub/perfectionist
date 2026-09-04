@@ -1,8 +1,9 @@
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::literal_scan::string_literal_quote_lengths;
 use crate::markdown::{SkipRange, scan_code_regions};
+use crate::rule_index::{Register, rule};
 use config::{Config, ForgeKind, glob_match};
 use emit::{Violation, emit_diagnostic};
 use rustc_ast::LitKind;
@@ -64,8 +65,6 @@ declare_tool_lint! {
 }
 
 use config::CONFIG_KEY;
-
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
 pub struct UnpinnedRepoRef {
     scan_doc_comments: bool,
@@ -166,15 +165,16 @@ impl UnpinnedRepoRef {
 
 impl_lint_pass!(UnpinnedRepoRef => [UNPINNED_REPO_REF]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[UNPINNED_REPO_REF]);
-}
+impl Register for rule::UnpinnedRepoRef {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("unpinned_repo_ref", DEFAULT_STATE) {
-        return;
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[UNPINNED_REPO_REF]);
     }
-    lint_store.register_late_lint_pass(Box::new(|_| Box::new(UnpinnedRepoRef::new())));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        lint_store.register_late_lint_pass(Box::new(|_| Box::new(UnpinnedRepoRef::new())));
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for UnpinnedRepoRef {

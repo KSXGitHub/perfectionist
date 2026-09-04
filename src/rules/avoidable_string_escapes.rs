@@ -1,3 +1,4 @@
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_sugg;
 use core::num::NonZeroUsize;
 use rustc_ast::{LitKind, StrStyle};
@@ -13,7 +14,7 @@ mod emit;
 mod parser;
 mod queue;
 
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use early::AvoidableStringEscapesEarly;
 use parser::{
@@ -227,23 +228,23 @@ fn queue(violation: PendingViolation) {
 impl_lint_pass!(AvoidableStringEscapes => [AVOIDABLE_STRING_ESCAPES]);
 impl_lint_pass!(AvoidableStringEscapesEarly => [AVOIDABLE_STRING_ESCAPES]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[AVOIDABLE_STRING_ESCAPES]);
-}
+impl Register for rule::AvoidableStringEscapes {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("avoidable_string_escapes", DefaultState::Active)
-    {
-        return;
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[AVOIDABLE_STRING_ESCAPES]);
     }
-    // The pre-expansion pass sees every macro's string literals while
-    // the source tokens are intact — including the ones lowering would
-    // consume before the HIR exists — and parks each rewrite for the late
-    // pass to dedup, anchor, and emit. See [`mod@early`].
-    lint_store.register_pre_expansion_lint_pass(Box::new(|| {
-        Box::new(AvoidableStringEscapesEarly::new())
-    }));
-    lint_store.register_late_lint_pass(Box::new(|_| Box::new(AvoidableStringEscapes::new())));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        // The pre-expansion pass sees every macro's string literals while
+        // the source tokens are intact — including the ones lowering would
+        // consume before the HIR exists — and parks each rewrite for the late
+        // pass to dedup, anchor, and emit. See [`mod@early`].
+        lint_store.register_pre_expansion_lint_pass(Box::new(|| {
+            Box::new(AvoidableStringEscapesEarly::new())
+        }));
+        lint_store.register_late_lint_pass(Box::new(|_| Box::new(AvoidableStringEscapes::new())));
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for AvoidableStringEscapes {

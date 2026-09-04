@@ -1,8 +1,9 @@
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::markdown::{ClassifyOptions, classify_constructs};
 use crate::module_reparse::parse_crate_module_files;
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir as hir;
@@ -100,10 +101,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. Read by [`register_pass`] below; gen-docs picks
-/// the constant up via syn to render the rule's default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
-
 const CONFIG_KEY: &str = "perfectionist::clap_help_markdown";
 
 pub struct ClapHelpMarkdown {
@@ -121,15 +118,16 @@ impl ClapHelpMarkdown {
 
 impl_lint_pass!(ClapHelpMarkdown => [CLAP_HELP_MARKDOWN]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[CLAP_HELP_MARKDOWN]);
-}
+impl Register for rule::ClapHelpMarkdown {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("clap_help_markdown", DEFAULT_STATE) {
-        return;
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[CLAP_HELP_MARKDOWN]);
     }
-    lint_store.register_late_lint_pass(Box::new(|_| Box::new(ClapHelpMarkdown::new())));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        lint_store.register_late_lint_pass(Box::new(|_| Box::new(ClapHelpMarkdown::new())));
+    }
 }
 
 /// One parked finding, resolved to its enclosing HIR node and emitted in
