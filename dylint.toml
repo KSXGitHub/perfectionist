@@ -5,14 +5,8 @@ libraries = [
 
 # `import_grouping_mismatch` is inactive by default, so it must be enabled here
 # for the self-lint to keep enforcing this crate's import layout.
-#
-# `arbitrary_source_item_ordering` is active by default and this crate does not
-# yet satisfy it. Adopting the layout is a source change of its own, kept out of
-# the commit that adds the rule so each reviews on its own terms; drop this entry
-# in the same change that reorders the offending module bodies.
 [perfectionist]
 enable = ["import_grouping_mismatch"]
-disable = ["arbitrary_source_item_ordering"]
 
 ["perfectionist::unicode_ellipsis_in_docs"]
 scan_code_spans = true
