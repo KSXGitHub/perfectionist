@@ -6,6 +6,7 @@
     unused_imports,
     ambiguous_glob_reexports,
     hidden_glob_reexports,
+    perfectionist::arbitrary_source_item_ordering,
     reason = "ui fixture"
 )]
 

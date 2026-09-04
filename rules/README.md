@@ -14,6 +14,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   `#[allow]` / `#[expect]` attribute lacks an explanatory `reason = "..."` field
 
+- [`arbitrary_source_item_ordering`](./arbitrary_source_item_ordering.md) (default: `active`).
+
+  item in a module body sits below a section it belongs above: `pub mod`, then `pub use`, then private imports and other items
+
 - [`avoidable_string_escapes`](./avoidable_string_escapes.md) (default: `active`).
 
   string literal contains only raw-expressible escapes; prefer the raw-string form
@@ -37,6 +41,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`clap_help_markdown`](./clap_help_markdown.md) (default: `active`).
 
   markdown construct in a clap-derived doc comment leaks into `--help` output
+
+- [`core_instead_of_std`](./core_instead_of_std.md) (default: `inactive`).
+
+  item named through `core` or `alloc` instead of `std`
 
 - [`excessive_inline_tests`](./excessive_inline_tests.md) (default: `active`).
 

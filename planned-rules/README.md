@@ -17,16 +17,7 @@ pattern that several rules call out by reference — live in
 
 ## Index
 
-### Module and file layout
-- [`arbitrary-source-item-ordering.md`](./arbitrary-source-item-ordering.md) — within a module file,
-  `pub mod` first, then `pub use`, then private items.
-
 ### Imports
-- [`core-instead-of-std.md`](./core-instead-of-std.md) — for projects that
-  target `std` exclusively, flag `core::` / `alloc::` paths whose item is
-  also reachable through `std::`, and suggest the `std::` form. Inactive
-  by default. The opposite direction (preferring `core`) is out of scope —
-  it is covered by `clippy::std_instead_of_core` + `std_instead_of_alloc`.
 - [`private-reexport-imports.md`](./private-reexport-imports.md) — flag
   a named `use` that reaches its item through a *private* re-export (a
   non-`pub` `use` in another module reached via ancestor privilege,

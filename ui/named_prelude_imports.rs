@@ -1,6 +1,13 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
-#![allow(unknown_lints, dead_code, unused_imports, non_snake_case, reason = "ui fixture")]
+#![allow(
+    unknown_lints,
+    dead_code,
+    unused_imports,
+    non_snake_case,
+    perfectionist::arbitrary_source_item_ordering,
+    reason = "ui fixture"
+)]
 
 // A prelude module re-exporting items from their canonical home, so the
 // fix has a real `DefId` to resolve a canonical path against. Each case
