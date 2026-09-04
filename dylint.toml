@@ -33,3 +33,8 @@ ignore = ["Token"]
 # lower it as they are split.
 ["perfectionist::excessive_cognitive_complexity"]
 max_complexity = 47
+
+# The same ratchet for `too_many_local_bindings`: the widest existing
+# body binds 29 names; lower the ceiling as bodies are split.
+["perfectionist::too_many_local_bindings"]
+max_bindings = 29
