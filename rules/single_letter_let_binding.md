@@ -50,7 +50,10 @@ let metadata = entry.metadata()?;
 
 Configure via `dylint.toml` under `["perfectionist::single_letter_let_binding"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_allowed_idents`: `[single-letter string]` (optional)
+### Field: `extra_allowed_idents`
+
+- _Type:_ `[single-letter string]`
+- _Optional_
 
 Additional identifiers to allow as `let` binding names.
 Merged with the built-in defaults (`["n"]`); empty by
@@ -60,7 +63,10 @@ standard ones. Each entry is a single ASCII letter
 (`a`-`z`, `A`-`Z`); any other character is rejected at
 config-parse time.
 
-### `extra_denied_idents`: `[single-letter string]` (optional)
+### Field: `extra_denied_idents`
+
+- _Type:_ `[single-letter string]`
+- _Optional_
 
 Identifiers to deny (always flag), removing them from the
 exempt set even if they appear in the built-in defaults or

@@ -116,11 +116,11 @@ impl Register for rule::NamedPreludeImports {
         config::validate(&config).unwrap_or_else(|message| {
             panic!("perfectionist::named_prelude_imports: {message}");
         });
-        lint_store.register_late_pass(move |_| {
+        lint_store.register_late_lint_pass(Box::new(move |_| {
             Box::new(NamedPreludeImports {
                 config: Resolved::from_config(config.clone()),
             })
-        });
+        }));
     }
 }
 

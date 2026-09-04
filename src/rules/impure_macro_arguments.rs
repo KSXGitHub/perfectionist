@@ -130,8 +130,9 @@ impl Register for rule::ImpureMacroArguments {
         // violation spans, a late pass walks the HIR and emits each at the
         // deepest enclosing node so `cfg_attr`-wrapped `#[expect]` and
         // `#[allow]` attributes resolve correctly.
-        lint_store.register_pre_expansion_pass(|| Box::new(ImpureMacroArguments::new()));
-        lint_store.register_late_pass(|_| Box::new(ImpureMacroArgumentsLate));
+        lint_store
+            .register_pre_expansion_lint_pass(Box::new(|| Box::new(ImpureMacroArguments::new())));
+        lint_store.register_late_lint_pass(Box::new(|_| Box::new(ImpureMacroArgumentsLate)));
     }
 }
 

@@ -57,7 +57,10 @@ and the pull-request link for the other:
 
 Configure via `dylint.toml` under `["perfectionist::bare_issue_reference"]`. Every field is optional; the per-field prose below states the default.
 
-### `forge`: `Forge` (optional)
+### Field: `forge`
+
+- _Type:_ `Forge`
+- _Optional_
 
 Git-hosting service the repository is on — one of `github`,
 `gitlab`, `gitea` — which fixes the issue / PR path layout.
@@ -70,7 +73,10 @@ host that gives no such hint (e.g. `git.example.com`). If it is
 neither set nor detected from the host, no issue / PR link is
 suggested.
 
-### `repository`: `string` (optional)
+### Field: `repository`
+
+- _Type:_ `string`
+- _Optional_
 
 The repository's URL, in any form you'd clone or paste: an
 `http(s)://` URL (`"https://github.com/owner/repo"`), an
@@ -78,19 +84,28 @@ The repository's URL, in any form you'd clone or paste: an
 scp-like shorthand (`"git@github.com:owner/repo.git"`). No
 fixed default.
 
-### `suggest_issue_url`: `boolean` (optional)
+### Field: `suggest_issue_url`
+
+- _Type:_ `boolean`
+- _Optional_
 
 Offer a suggestion that links the reference as an *issue*.
 Defaults to `true`.
 
-### `suggest_pr_url`: `boolean` (optional)
+### Field: `suggest_pr_url`
+
+- _Type:_ `boolean`
+- _Optional_
 
 Offer a suggestion that links the reference as a *pull
 request*. Defaults to `true`. Ignored on GitLab, where a bare
 `#NNN` is always an issue (merge requests are written `!NNN`),
 so only the issue suggestion is offered there.
 
-### `doc_comment_form`: `DocForm` (optional)
+### Field: `doc_comment_form`
+
+- _Type:_ `DocForm`
+- _Optional_
 
 Doc-comment fix form: `inline` for `[#N](URL)`, `reference`
 for the two-piece `[#N]` + `[#N]: URL` form (the definition is
@@ -99,7 +114,10 @@ the `#N` token is rewritten and the definition is left to the
 author). Defaults to `inline`. Ignored for plain-comment fixes
 — those follow `plain_comment_form` instead.
 
-### `include_plain_comments`: `boolean` (optional)
+### Field: `include_plain_comments`
+
+- _Type:_ `boolean`
+- _Optional_
 
 When `true`, also lint plain `//` line comments. The
 autofix in plain comments uses `plain_comment_form`'s URL
@@ -107,7 +125,10 @@ shape (since plain comments aren't markdown). Plain block
 comments (`/* ... */`) are out of scope regardless.
 Defaults to `false`.
 
-### `plain_comment_form`: `PlainForm` (optional)
+### Field: `plain_comment_form`
+
+- _Type:_ `PlainForm`
+- _Optional_
 
 Replacement form used inside plain `//` comments when
 `include_plain_comments = true`. Defaults to `bare_url`.
@@ -116,38 +137,48 @@ configured.
 
 ### Types
 
-#### `Forge` (enum)
+#### Type: `Forge`
 
 A recognised git-hosting service. The chosen forge fixes the
 issue / PR URL layout. It can be given explicitly (needed for a
 self-hosted instance, whose host isn't recognised) or left unset
 and detected from the `repository` host.
 
-##### `"github"` (Rust: `GitHub`)
+##### Choice: `"github"`
+
+- _Rust:_ `GitHub`
 
 GitHub or a GitHub Enterprise instance. Paths:
 `/issues/{number}`, `/pull/{number}`.
 
-##### `"gitlab"` (Rust: `GitLab`)
+##### Choice: `"gitlab"`
+
+- _Rust:_ `GitLab`
 
 GitLab (gitlab.com or self-hosted). Paths:
 `/-/issues/{number}`, `/-/merge_requests/{number}`.
 
-##### `"gitea"` (Rust: `Gitea`)
+##### Choice: `"gitea"`
+
+- _Rust:_ `Gitea`
 
 Gitea / Forgejo (including Codeberg). Paths:
 `/issues/{number}`, `/pulls/{number}`.
 
-#### `DocForm` (enum)
+#### Type: `DocForm`
 
 Markdown-link shape produced by the autofix inside doc comments.
 
-##### `"inline"` (Rust: `Inline`)
+##### Choice: `"inline"`
+
+- _Rust:_ `Inline`
 
 `[#123](URL)` — the URL is inlined. Keeps `#123` as the
 visible link text.
 
-##### `"reference"` (Rust: `Reference`)
+##### Choice: `"reference"`
+
+- _Rust:_ `Reference`
 
 `[#123]`, with a matching `[#123]: URL` definition appended to
 the end of the doc block (after a blank line so it parses as a
@@ -155,7 +186,9 @@ definition). In a `/** */` block doc comment the definition
 can't be placed safely, so there the fix rewrites only the
 `#123` token and leaves the definition to the author.
 
-##### `"bare_url"` (Rust: `BareUrl`)
+##### Choice: `"bare_url"`
+
+- _Rust:_ `BareUrl`
 
 `https://.../issues/123` — the bare URL replaces the `#123`
 token outright (the `#123` text is not kept). NB: in a doc
@@ -163,17 +196,21 @@ comment the sibling `perfectionist::bare_url` lint then flags
 the substituted URL; pick `bracketed_url` for a form it
 accepts.
 
-##### `"bracketed_url"` (Rust: `BracketedUrl`)
+##### Choice: `"bracketed_url"`
+
+- _Rust:_ `BracketedUrl`
 
 `<https://.../issues/123>` — a markdown autolink replaces the
 `#123` token outright. `bare_url` accepts this form.
 
-#### `PlainForm` (enum)
+#### Type: `PlainForm`
 
 URL shape used inside plain `//` comments when
 `include_plain_comments = true`.
 
-##### `"bare_url"` (Rust: `BareUrl`)
+##### Choice: `"bare_url"`
+
+- _Rust:_ `BareUrl`
 
 Substitute the URL itself (`https://...`), unwrapped.
 Many editors auto-detect a bare URL as clickable. NB: the
@@ -181,7 +218,9 @@ sibling `perfectionist::bare_url` lint, whose default also
 scans regular comments, will then flag the substituted URL —
 pick `bracketed_url` to produce a form both rules accept.
 
-##### `"bracketed_url"` (Rust: `BracketedUrl`)
+##### Choice: `"bracketed_url"`
+
+- _Rust:_ `BracketedUrl`
 
 Substitute `<https://...>`. The angle-bracket delimiter gives
 the URL a clear boundary when it abuts surrounding

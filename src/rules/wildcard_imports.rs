@@ -149,11 +149,11 @@ impl Register for rule::WildcardImports {
         // case (and any out-of-line `mod foo;` submodule) is only reachable
         // by re-parsing each module file in a late pass — see the module
         // docs and [`crate::module_reparse`].
-        lint_store.register_late_pass(move |_| {
+        lint_store.register_late_lint_pass(Box::new(move |_| {
             Box::new(WildcardImports {
                 config: Resolved::from_config(config.clone()),
             })
-        });
+        }));
     }
 }
 

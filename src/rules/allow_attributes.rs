@@ -220,8 +220,9 @@ impl Register for rule::AllowAttributes {
 
     fn register_pass(lint_store: &mut LintStore) {
         let builtin_lints = collect_builtin_lint_names(lint_store);
-        lint_store
-            .register_early_pass(move || Box::new(AllowAttributes::new(builtin_lints.clone())));
+        lint_store.register_early_lint_pass(Box::new(move || {
+            Box::new(AllowAttributes::new(builtin_lints.clone()))
+        }));
     }
 }
 

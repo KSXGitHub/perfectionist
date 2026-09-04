@@ -175,7 +175,7 @@ impl Register for rule::UnorderedDerives {
         // `#[derive(...)]` attribute by the time `check_attribute` would
         // be invoked. Running before expansion keeps the attribute
         // tokens intact.
-        lint_store.register_pre_expansion_pass(|| Box::new(UnorderedDerives::new()));
+        lint_store.register_pre_expansion_lint_pass(Box::new(|| Box::new(UnorderedDerives::new())));
     }
 }
 

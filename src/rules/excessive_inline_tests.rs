@@ -99,7 +99,7 @@ impl Register for rule::ExcessiveInlineTests {
     /// build where `cfg(test)` is active, i.e. the unit-test target that
     /// `cargo dylint -- --all-targets` checks.
     fn register_pass(lint_store: &mut LintStore) {
-        lint_store.register_late_pass(|_| Box::new(ExcessiveInlineTests::new()));
+        lint_store.register_late_lint_pass(Box::new(|_| Box::new(ExcessiveInlineTests::new())));
     }
 }
 

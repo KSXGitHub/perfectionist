@@ -8,6 +8,17 @@
 //! so that PRs that touch a rule get an in-tree doc diff for
 //! review.
 //!
+//! A heading names one item and says what kind of item it is —
+//! `Field:`, `Type:`, `Choice:` — and carries nothing else. It
+//! doubles as a link target and a URL fragment, so the two things a
+//! heading may hold are the ones fixed for as long as the item
+//! exists: its name, and what it is. Everything that varies
+//! independently of the item — its TOML type, whether it is
+//! optional, the Rust identifier behind a renamed variant — goes
+//! into a metadata list underneath, where changing it can't break an
+//! inbound link. The kind word doubles as a namespace, keeping a
+//! field and a same-named type from slugifying to one anchor.
+//!
 //! Every rendered string ends with exactly one trailing newline so
 //! the `check-md` byte-comparison stays stable across editors that
 //! strip or add a final newline. Inline doc-comment prose is taken
@@ -189,26 +200,16 @@ fn render_config_section(config: &ConfigDoc, out: &mut String) {
 }
 
 fn render_field(field: &ConfigField, out: &mut String) {
-    // `name: type` rather than `name — type`: the em dash isn't a
-    // separator in English typography, it sets off parenthetical
-    // prose. The HTML renderer uses `:` for the same reason.
-    let _ = writeln!(
-        out,
-        "### `{name}`: `{ty}` ({optionality})",
-        name = field.name,
-        ty = field.type_label,
-        optionality = field.optionality.as_ref(),
-    );
+    let _ = writeln!(out, "### Field: `{name}`", name = field.name);
+    out.push('\n');
+    write_metadata(out, "Type", Some(&field.type_label));
+    write_metadata(out, field.optionality.label(), None);
     out.push('\n');
     append_doc(&field.doc_markdown, out);
 }
 
 fn render_type(ty: &TypeDoc, out: &mut String) {
-    let kind_label = match ty.kind {
-        TypeKind::Enum { .. } => "enum",
-        TypeKind::Struct { .. } => "struct",
-    };
-    let _ = writeln!(out, "#### `{name}` ({kind_label})", name = ty.name);
+    let _ = writeln!(out, "#### Type: `{name}`", name = ty.name);
     out.push('\n');
     if !ty.doc_markdown.is_empty() {
         out.push_str(&ty.doc_markdown);
@@ -232,28 +233,36 @@ fn render_type(ty: &TypeDoc, out: &mut String) {
 }
 
 fn render_variant(variant: &EnumVariant, out: &mut String) {
-    if variant.rust_name == variant.serialized {
-        let _ = writeln!(out, r#"##### `"{}"`"#, variant.serialized);
-    } else {
-        let _ = writeln!(
-            out,
-            r#"##### `"{}"` (Rust: `{}`)"#,
-            variant.serialized, variant.rust_name,
-        );
-    }
+    let _ = writeln!(out, r#"##### Choice: `"{}"`"#, variant.serialized);
     out.push('\n');
+    // The Rust identifier is worth naming only where it differs
+    // from the string a TOML author writes; when the two coincide
+    // the bullet would repeat the heading.
+    if variant.rust_name != variant.serialized {
+        write_metadata(out, "Rust", Some(&variant.rust_name));
+        out.push('\n');
+    }
     append_doc(&variant.doc_markdown, out);
 }
 
 fn render_struct_field(field: &StructField, out: &mut String) {
-    let _ = writeln!(
-        out,
-        "##### `{name}`: `{ty}`",
-        name = field.name,
-        ty = field.type_label,
-    );
+    let _ = writeln!(out, "##### Field: `{name}`", name = field.name);
+    out.push('\n');
+    write_metadata(out, "Type", Some(&field.type_label));
     out.push('\n');
     append_doc(&field.doc_markdown, out);
+}
+
+/// Write one bullet of the metadata list that sits between an item's
+/// heading and its prose. `value` is rendered in backticks after an
+/// italicised `label:`; passing `None` renders the label alone, for
+/// the standalone words (`Optional`, `Mandatory`) that qualify the
+/// item rather than naming a property of it.
+fn write_metadata(out: &mut String, label: &str, value: Option<&str>) {
+    let _ = match value {
+        Some(value) => writeln!(out, "- _{label}:_ `{value}`"),
+        None => writeln!(out, "- _{label}_"),
+    };
 }
 
 /// Append a doc-comment block, normalising trailing whitespace so
