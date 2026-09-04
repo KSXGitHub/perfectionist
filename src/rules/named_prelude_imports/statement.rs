@@ -149,7 +149,7 @@ impl Statement {
         let nameable = self
             .leaves
             .iter()
-            .all(|leaf| leaf.flagged.as_ref().is_none_or(|c| c.public));
+            .all(|leaf| leaf.flagged.as_ref().is_none_or(|c| c.nameable));
         let snippet = source_map.span_to_snippet(span).ok()?;
         let commented = snippet.contains("//") || snippet.contains("/*");
         Some(Fix {

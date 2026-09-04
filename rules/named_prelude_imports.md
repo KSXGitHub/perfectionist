@@ -39,11 +39,21 @@ sharing a prefix the rewrite keeps them in one statement
 `diesel::{table, AsChangeset}`); grouping them any differently is
 `perfectionist::import_granularity_mismatch`'s business.
 
-Two shapes get a `help` instead of a rewrite: a name that
-resolves to items in several modules at once, which no single
-`use` reproduces, and a statement holding a `self` entry
-(`use foo::prelude::{self, Bar};`), which would stop binding
-only the module once the tree is rebuilt around it.
+These shapes get a `help` instead of a rewrite:
+
+- A name that resolves to items in several modules at once,
+  which no single `use` reproduces.
+- A statement holding a `self` entry
+  (`use foo::prelude::{self, Bar};`), which would stop binding
+  only the module once the tree is rebuilt around it.
+- A macro, which `#[macro_export]` reaches at its crate root
+  rather than through the module it is written in.
+
+A rewrite onto a module in some *third* crate — `std`'s prelude
+re-exports items that live in `alloc` — names the right module
+but a crate this file has not necessarily linked, so it is
+offered for you to check rather than applied by
+`cargo dylint --fix`.
 
 ## Example
 
