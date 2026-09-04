@@ -75,7 +75,7 @@ let path = r"C:\Users\foo\bar";
 
 Configure via `dylint.toml` under `["perfectionist::avoidable_string_escapes"]`. Every field is optional; the per-field prose below states the default.
 
-### `min_escapes_to_trigger`
+### Field: `min_escapes_to_trigger`
 
 - _Type:_ `non-zero unsigned integer`
 - _Optional_
@@ -89,7 +89,7 @@ suggesting `r"hello"` for `"hello"` would just trip
 `clippy::needless_raw_strings` on the next pass, and a
 minimum of `1` already excludes that case.
 
-### `eligible_escapes`
+### Field: `eligible_escapes`
 
 - _Type:_ `[string]`
 - _Optional_

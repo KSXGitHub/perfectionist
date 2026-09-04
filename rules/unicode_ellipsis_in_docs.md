@@ -44,7 +44,7 @@ technical writing.
 
 Configure via `dylint.toml` under `["perfectionist::unicode_ellipsis_in_docs"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_flagged_chars`
+### Field: `extra_flagged_chars`
 
 - _Type:_ `[single-character string]`
 - _Optional_
@@ -54,7 +54,7 @@ near-relatives such as U+22EF MIDLINE HORIZONTAL ELLIPSIS (`⋯`)
 or U+2025 TWO DOT LEADER (`‥`) that the same autocorrect
 pipelines occasionally insert. Empty by default.
 
-### `scan_code_spans`
+### Field: `scan_code_spans`
 
 - _Type:_ `boolean`
 - _Optional_

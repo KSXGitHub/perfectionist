@@ -99,31 +99,32 @@ fn rule_md_with_config_lists_fields_and_types() {
         md.contains("A field marked mandatory must be set;"),
         "got:\n{md}",
     );
-    // Every heading is the item's bare name; the type, the
-    // optionality and the kind ride in the metadata list below it.
+    // A heading names the item and what kind of item it is; the
+    // type, the optionality and the enum/struct kind ride in the
+    // metadata list below it.
     assert!(
-        md.contains("### `style`\n\n- _Type:_ `Style`\n- _Mandatory_\n\n"),
+        md.contains("### Field: `style`\n\n- _Type:_ `Style`\n- _Mandatory_\n\n"),
         "got:\n{md}",
     );
     assert!(
-        !md.contains("### `style`\n\n- _Type:_ `Style`\n- _Optional_"),
+        !md.contains("### Field: `style`\n\n- _Type:_ `Style`\n- _Optional_"),
         "got:\n{md}",
     );
     assert!(
-        md.contains("### `extras`\n\n- _Type:_ `[string]`\n- _Optional_\n\n"),
+        md.contains("### Field: `extras`\n\n- _Type:_ `[string]`\n- _Optional_\n\n"),
         "got:\n{md}",
     );
     assert!(md.contains("Pick a style."));
-    assert!(md.contains("#### `Style`\n"), "got:\n{md}");
+    assert!(md.contains("#### Type: `Style`\n"), "got:\n{md}");
     assert!(!md.contains("(enum)"), "got:\n{md}");
     // Renamed variant carries the Rust-side annotation below the
     // heading.
     assert!(
-        md.contains("##### `\"preserve\"`\n\n- _Rust:_ `Preserve`\n\n"),
+        md.contains("##### Choice: `\"preserve\"`\n\n- _Rust:_ `Preserve`\n\n"),
         "got:\n{md}",
     );
     // Same-named variant doesn't.
-    assert!(md.contains(r#"##### `"Same"`"#));
+    assert!(md.contains(r#"##### Choice: `"Same"`"#));
     assert!(!md.contains("_Rust:_ `Same`"));
     // Empty doc fall-back.
     assert!(md.contains("*Undocumented.*"));
@@ -132,8 +133,8 @@ fn rule_md_with_config_lists_fields_and_types() {
 #[test]
 fn rule_md_struct_type_fields_carry_a_type_bullet() {
     // The struct branch of the Types section follows the same
-    // heading convention as the enum branch: the field name alone
-    // in the heading, its TOML type in the metadata list.
+    // heading convention as the enum branch: a kind word and the
+    // name in the heading, the TOML type in the metadata list.
     let mut rule = fake_rule();
     rule.config = ConfigDoc {
         key: "perfectionist::demo_rule".to_owned(),
@@ -156,10 +157,10 @@ fn rule_md_struct_type_fields_carry_a_type_bullet() {
         }],
     };
     let md = render_rule_md(&rule, "../");
-    assert!(md.contains("#### `HostEntry`\n"), "got:\n{md}");
+    assert!(md.contains("#### Type: `HostEntry`\n"), "got:\n{md}");
     assert!(!md.contains("(struct)"), "got:\n{md}");
     assert!(
-        md.contains("##### `host`\n\n- _Type:_ `string`\n\nThe hostname.\n"),
+        md.contains("##### Field: `host`\n\n- _Type:_ `string`\n\nThe hostname.\n"),
         "got:\n{md}",
     );
 }

@@ -64,7 +64,7 @@ fn build_fetcher(/* ... */) {}
 
 Configure via `dylint.toml` under `["perfectionist::allow_attributes_without_reason"]`. Every field is optional; the per-field prose below states the default.
 
-### `exempt_lints`
+### Field: `exempt_lints`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -75,7 +75,7 @@ rather than per-site. Each entry is the lint's full name as
 it appears inside the attribute (`clippy::module_name_repetitions`,
 `dead_code`, ...).
 
-### `min_reason_length`
+### Field: `min_reason_length`
 
 - _Type:_ `non-zero unsigned integer`
 - _Optional_

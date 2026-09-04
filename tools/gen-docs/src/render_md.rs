@@ -8,11 +8,16 @@
 //! so that PRs that touch a rule get an in-tree doc diff for
 //! review.
 //!
-//! A heading holds the item's name and nothing else. It doubles as
-//! a link target and a URL fragment, so a TOML type, an optionality
-//! marker, or the Rust identifier behind a renamed variant goes into
-//! a metadata list underneath the heading instead of decorating the
-//! title text.
+//! A heading names one item and says what kind of item it is —
+//! `Field:`, `Type:`, `Choice:` — and carries nothing else. It
+//! doubles as a link target and a URL fragment, so the two things a
+//! heading may hold are the ones fixed for as long as the item
+//! exists: its name, and what it is. Everything that varies
+//! independently of the item — its TOML type, whether it is
+//! optional, the Rust identifier behind a renamed variant — goes
+//! into a metadata list underneath, where changing it can't break an
+//! inbound link. The kind word doubles as a namespace, keeping a
+//! field and a same-named type from slugifying to one anchor.
 //!
 //! Every rendered string ends with exactly one trailing newline so
 //! the `check-md` byte-comparison stays stable across editors that
@@ -195,7 +200,7 @@ fn render_config_section(config: &ConfigDoc, out: &mut String) {
 }
 
 fn render_field(field: &ConfigField, out: &mut String) {
-    let _ = writeln!(out, "### `{name}`", name = field.name);
+    let _ = writeln!(out, "### Field: `{name}`", name = field.name);
     out.push('\n');
     write_metadata(out, "Type", Some(&field.type_label));
     write_metadata(out, field.optionality.label(), None);
@@ -204,7 +209,7 @@ fn render_field(field: &ConfigField, out: &mut String) {
 }
 
 fn render_type(ty: &TypeDoc, out: &mut String) {
-    let _ = writeln!(out, "#### `{name}`", name = ty.name);
+    let _ = writeln!(out, "#### Type: `{name}`", name = ty.name);
     out.push('\n');
     if !ty.doc_markdown.is_empty() {
         out.push_str(&ty.doc_markdown);
@@ -228,7 +233,7 @@ fn render_type(ty: &TypeDoc, out: &mut String) {
 }
 
 fn render_variant(variant: &EnumVariant, out: &mut String) {
-    let _ = writeln!(out, r#"##### `"{}"`"#, variant.serialized);
+    let _ = writeln!(out, r#"##### Choice: `"{}"`"#, variant.serialized);
     out.push('\n');
     // The Rust identifier is worth naming only where it differs
     // from the string a TOML author writes; when the two coincide
@@ -241,7 +246,7 @@ fn render_variant(variant: &EnumVariant, out: &mut String) {
 }
 
 fn render_struct_field(field: &StructField, out: &mut String) {
-    let _ = writeln!(out, "##### `{name}`", name = field.name);
+    let _ = writeln!(out, "##### Field: `{name}`", name = field.name);
     out.push('\n');
     write_metadata(out, "Type", Some(&field.type_label));
     out.push('\n');

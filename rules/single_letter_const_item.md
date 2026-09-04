@@ -52,7 +52,7 @@ const DIMENSION_COUNT: usize = 2;
 
 Configure via `dylint.toml` under `["perfectionist::single_letter_const_item"]`. Every field is optional; the per-field prose below states the default.
 
-### `allowed_idents`
+### Field: `allowed_idents`
 
 - _Type:_ `[single-letter string]`
 - _Optional_

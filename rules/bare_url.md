@@ -40,7 +40,7 @@ them, GitHub renders them, but plain CommonMark does not. The
 
 Configure via `dylint.toml` under `["perfectionist::bare_url"]`. Every field is optional; the per-field prose below states the default.
 
-### `scan_doc_comments`
+### Field: `scan_doc_comments`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -48,14 +48,14 @@ Configure via `dylint.toml` under `["perfectionist::bare_url"]`. Every field is 
 Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
 Defaults to `true`.
 
-### `scan_regular_comments`
+### Field: `scan_regular_comments`
 
 - _Type:_ `boolean`
 - _Optional_
 
 Scan regular comments (`//`, `/* */`). Defaults to `true`.
 
-### `safe_trailing_chars`
+### Field: `safe_trailing_chars`
 
 - _Type:_ `[single-character string]`
 - _Optional_
@@ -66,7 +66,7 @@ autofix at `MachineApplicable`. Defaults to `["/", "_", "-",
 treated as safe regardless of this list; entries here
 supplement that built-in set.
 
-### `skip_hosts`
+### Field: `skip_hosts`
 
 - _Type:_ `[string]`
 - _Optional_

@@ -64,7 +64,7 @@ write an explicit reference link instead:
 
 Configure via `dylint.toml` under `["perfectionist::bare_identifier_reference"]`. Every field is optional; the per-field prose below states the default.
 
-### `skip_idents`
+### Field: `skip_idents`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -75,7 +75,7 @@ comment deliberately mentions without wanting a cross-reference
 — a historical type kept for context, or a word that happens to
 collide with an in-scope item but is meant as prose.
 
-### `reference_scope`
+### Field: `reference_scope`
 
 - _Type:_ `ReferenceScope`
 - _Optional_
@@ -88,7 +88,7 @@ churn, so a project can narrow (or widen) this. Defaults to
 `crate`: a project's own items are kept linked, but mentions of
 the standard library and third-party crates are left alone.
 
-### `check_pascal_case`
+### Field: `check_pascal_case`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -100,7 +100,7 @@ A mixed or non-conformist name (`fooBar`, `foo_BAR`, `__foo`,
 is rare and, when it matches a local identifier, rarely an
 accident.
 
-### `check_upper_case`
+### Field: `check_upper_case`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -113,7 +113,7 @@ A mixed or non-conformist name (`fooBar`, `foo_BAR`, `__foo`,
 is rare and, when it matches a local identifier, rarely an
 accident.
 
-### `check_snake_case`
+### Field: `check_snake_case`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -125,7 +125,7 @@ A mixed or non-conformist name (`fooBar`, `foo_BAR`, `__foo`,
 is rare and, when it matches a local identifier, rarely an
 accident.
 
-### `min_words`
+### Field: `min_words`
 
 - _Type:_ `non-zero unsigned integer`
 - _Optional_
@@ -142,21 +142,21 @@ an accident.
 
 ### Types
 
-#### `ReferenceScope`
+#### Type: `ReferenceScope`
 
 How far from the documenting item a referenced name may resolve for
 the rule to check it, configured by `reference_scope`. The axis is
 *where the referenced item lives relative to the documenting item's
 module*, not the spelling of the `use` path that brought it in.
 
-##### `"own_module"`
+##### Choice: `"own_module"`
 
 - _Rust:_ `OwnModule`
 
 Only items defined directly in the documenting item's own module.
 Every name reached through a `use` is left alone.
 
-##### `"module_tree"`
+##### Choice: `"module_tree"`
 
 - _Rust:_ `ModuleTree`
 
@@ -165,7 +165,7 @@ through `use self::child::Item`), but still not names that reach
 outside the module — `use super::...`, `use crate::...`, and
 imports from other crates.
 
-##### `"crate"`
+##### Choice: `"crate"`
 
 - _Rust:_ `Crate`
 
@@ -175,7 +175,7 @@ documentation drifts — a rename leaves a stale mention — while the
 standard library and third-party crates are stable and outside the
 project's control, so a bare mention of them is low risk.
 
-##### `"third_party"`
+##### Choice: `"third_party"`
 
 - _Rust:_ `ThirdParty`
 
@@ -184,7 +184,7 @@ standard / built-in libraries (`std`, `core`, `alloc`,
 `proc_macro`, `test`). Use this when dependency references are
 worth checking but the frozen standard library is not.
 
-##### `"anywhere"`
+##### Choice: `"anywhere"`
 
 - _Rust:_ `Anywhere`
 

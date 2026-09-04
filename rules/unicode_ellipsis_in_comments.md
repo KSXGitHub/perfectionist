@@ -39,7 +39,7 @@ by accident from autocorrect.
 
 Configure via `dylint.toml` under `["perfectionist::unicode_ellipsis_in_comments"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_flagged_chars`
+### Field: `extra_flagged_chars`
 
 - _Type:_ `[single-character string]`
 - _Optional_
@@ -49,14 +49,14 @@ near-relatives such as U+22EF MIDLINE HORIZONTAL ELLIPSIS (`⋯`)
 or U+2025 TWO DOT LEADER (`‥`) that the same autocorrect
 pipelines occasionally insert. Empty by default.
 
-### `scan_line_comments`
+### Field: `scan_line_comments`
 
 - _Type:_ `boolean`
 - _Optional_
 
 Scan `//` line comments. Defaults to `true`.
 
-### `scan_block_comments`
+### Field: `scan_block_comments`
 
 - _Type:_ `boolean`
 - _Optional_

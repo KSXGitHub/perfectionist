@@ -99,7 +99,7 @@ use std::collections::HashMap;
 
 Configure via `dylint.toml` under `["perfectionist::import_granularity_mismatch"]`. Every field is optional; the per-field prose below states the default.
 
-### `style`
+### Field: `style`
 
 - _Type:_ `Style`
 - _Optional_
@@ -109,7 +109,7 @@ shape that scales best as a `use` block grows. Set `crate` to
 collapse every crate root into one nested `use`, or `item` to
 put every imported name on its own line.
 
-### `respect_cfg_blocks`
+### Field: `respect_cfg_blocks`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -120,7 +120,7 @@ platform-gated import is never folded together with an
 unconditional one. Set `false` to ignore cfg attributes when
 deciding what may merge.
 
-### `respect_visibility`
+### Field: `respect_visibility`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -130,7 +130,7 @@ plain `use`, or two re-exports whose visibility differs.
 Defaults to `true`. Set `false` to ignore visibility when
 deciding what may merge.
 
-### `respect_doc_comments`
+### Field: `respect_doc_comments`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -140,7 +140,7 @@ Never merge a `use` that carries its own doc comment (`///` or
 keeps describing exactly the import it was written above.
 Defaults to `true`. Set `false` to allow such a `use` to merge.
 
-### `self_merge`
+### Field: `self_merge`
 
 - _Type:_ `SelfMerge`
 - _Optional_
@@ -157,13 +157,13 @@ Ignored under `module` and `item` style.
 
 ### Types
 
-#### `Style`
+#### Type: `Style`
 
 Import-granularity style. The three values map one-to-one onto
 rustfmt's unstable `imports_granularity` option (`Crate`, `Module`,
 `Item`).
 
-##### `"crate"`
+##### Choice: `"crate"`
 
 - _Rust:_ `Crate`
 
@@ -171,7 +171,7 @@ One `use` per crate root. Every shared prefix is collapsed into
 nested braces, e.g.
 `use std::{collections::HashMap, io::{Error, ErrorKind}};`.
 
-##### `"module"`
+##### Choice: `"module"`
 
 - _Rust:_ `Module`
 
@@ -180,14 +180,14 @@ merged into a single braced list; items from sibling modules sit
 on their own `use` lines, e.g.
 `use std::collections::{BTreeMap, HashMap};`.
 
-##### `"item"`
+##### Choice: `"item"`
 
 - _Rust:_ `Item`
 
 One `use` per leaf item. Every imported name lives on its own
 line, e.g. `use std::collections::BTreeMap;`.
 
-#### `SelfMerge`
+#### Type: `SelfMerge`
 
 How to resolve a path segment that names **both** an item and a
 module under `crate` style — `use crate::thing;` next to
@@ -195,7 +195,7 @@ module under `crate` style — `use crate::thing;` next to
 interchangeable, so unless this knob is set the rule offers both and
 the author picks. Only consulted under `style = "crate"`.
 
-##### `"fold"`
+##### Choice: `"fold"`
 
 - _Rust:_ `Fold`
 
@@ -203,7 +203,7 @@ Always enforce the `self`-fold `use crate::thing::{self, T};` —
 the shape rustfmt's `imports_granularity = "Crate"` produces. The
 sibling-split form is flagged and rewritten to it.
 
-##### `"split"`
+##### Choice: `"split"`
 
 - _Rust:_ `Split`
 

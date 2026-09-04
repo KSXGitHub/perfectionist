@@ -86,7 +86,7 @@ struct Point;
 
 Configure via `dylint.toml` under `["perfectionist::unordered_derives"]`. Every field is optional; the per-field prose below states the default.
 
-### `style`
+### Field: `style`
 
 - _Type:_ `Style`
 - _Optional_
@@ -95,7 +95,7 @@ Ordering policy. Defaults to `alphabetical`; set
 `prefix_then_alphabetical` to pin a configured `prefix` list
 of traits ahead of the alphabetised tail.
 
-### `prefix`
+### Field: `prefix`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -108,16 +108,16 @@ path segment, so a configured `"Debug"` matches both
 
 ### Types
 
-#### `Style`
+#### Type: `Style`
 
-##### `"alphabetical"`
+##### Choice: `"alphabetical"`
 
 - _Rust:_ `Alphabetical`
 
 Every trait name must appear in ASCII-case-insensitive
 alphabetical order.
 
-##### `"prefix_then_alphabetical"`
+##### Choice: `"prefix_then_alphabetical"`
 
 - _Rust:_ `PrefixThenAlphabetical`
 

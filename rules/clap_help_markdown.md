@@ -89,7 +89,7 @@ struct Cli {
 
 Configure via `dylint.toml` under `["perfectionist::clap_help_markdown"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_constructs`
+### Field: `extra_constructs`
 
 - _Type:_ `[ConstructCategory]`
 - _Optional_
@@ -100,7 +100,7 @@ set (`html`, `inline_link`, `reference_link`, `intra_doc_link`,
 `italic`, and `list` are the usual additions — clap renders them
 acceptably, so they are off by default.
 
-### `ignore_constructs`
+### Field: `ignore_constructs`
 
 - _Type:_ `[ConstructCategory]`
 - _Optional_
@@ -111,7 +111,7 @@ with `extra_constructs`, so this knob always wins. Use it to
 permit a construct in help text, e.g.
 `ignore_constructs = ["code_span"]`.
 
-### `require_help_override`
+### Field: `require_help_override`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -133,7 +133,7 @@ a missing override rather than per markdown construct. Defaults to
 
 ### Types
 
-#### `ConstructCategory`
+#### Type: `ConstructCategory`
 
 A markdown construct category the rule can be configured to forbid,
 as it appears in the `extra_constructs` / `ignore_constructs` arrays
@@ -142,62 +142,62 @@ names: `reference_link` covers both a `[text][id]` link and its
 `[id]: dest` definition, while an autolink (`<https://example.com>`)
 falls under no category at all and is never forbidden.
 
-##### `"html"`
+##### Choice: `"html"`
 
 - _Rust:_ `Html`
 
 Raw HTML tags (`<br>`, `<code>`, `<a href="...">`, ...).
 
-##### `"inline_link"`
+##### Choice: `"inline_link"`
 
 - _Rust:_ `InlineLink`
 
 Inline links: `[text](https://example.com)`.
 
-##### `"reference_link"`
+##### Choice: `"reference_link"`
 
 - _Rust:_ `ReferenceLink`
 
 Reference links (`[text][id]`) and their `[id]: ...`
 definitions.
 
-##### `"intra_doc_link"`
+##### Choice: `"intra_doc_link"`
 
 - _Rust:_ `IntraDocLink`
 
 Intra-doc links: `` [`Type`] `` and `[Type]`.
 
-##### `"code_block"`
+##### Choice: `"code_block"`
 
 - _Rust:_ `CodeBlock`
 
 Fenced, `~~~`-fenced, or four-space-indented code blocks.
 
-##### `"code_span"`
+##### Choice: `"code_span"`
 
 - _Rust:_ `CodeSpan`
 
 Inline code spans: `` `value` ``.
 
-##### `"heading"`
+##### Choice: `"heading"`
 
 - _Rust:_ `Heading`
 
 ATX (`# Heading`) and Setext (`Heading\n=====`) headings.
 
-##### `"bold"`
+##### Choice: `"bold"`
 
 - _Rust:_ `Bold`
 
 `**bold**` / `__bold__` strong emphasis.
 
-##### `"italic"`
+##### Choice: `"italic"`
 
 - _Rust:_ `Italic`
 
 `*italic*` / `_italic_` emphasis.
 
-##### `"list"`
+##### Choice: `"list"`
 
 - _Rust:_ `List`
 

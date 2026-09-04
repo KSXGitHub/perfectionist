@@ -77,14 +77,14 @@ pub enum RuntimeError {
 
 Configure via `dylint.toml` under `["perfectionist::exhaustive_error_enums"]`. Every field is optional; the per-field prose below states the default.
 
-### `require_for`
+### Field: `require_for`
 
 - _Type:_ `RequireFor`
 - _Optional_
 
 Visibility threshold for the rule.
 
-### `extra_suffixes`
+### Field: `extra_suffixes`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -96,7 +96,7 @@ implementations. Merged with the built-in defaults
 vocabulary here (`Failure`, `Fault`, ...) without having to
 re-state the standard suffix.
 
-### `ignore_suffixes`
+### Field: `ignore_suffixes`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -112,9 +112,9 @@ the by-name branch — types that implement
 
 ### Types
 
-#### `RequireFor`
+#### Type: `RequireFor`
 
-##### `"pub"`
+##### Choice: `"pub"`
 
 - _Rust:_ `Pub`
 
@@ -124,7 +124,7 @@ reachable from outside the crate (declared `pub`, re-exported
 `pub enum FooError` inside a non-`pub` module is not flagged
 because it cannot be matched on by any downstream crate.
 
-##### `"pub_crate"`
+##### Choice: `"pub_crate"`
 
 - _Rust:_ `PubCrate`
 
@@ -134,7 +134,7 @@ to the crate root). Items declared `pub(in some::module)`
 are not promoted by this mode even if their effective reach
 happens to extend to the crate root.
 
-##### `"all"`
+##### Choice: `"all"`
 
 - _Rust:_ `All`
 

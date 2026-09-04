@@ -94,7 +94,7 @@ the one-knob sweep.
 
 Configure via `dylint.toml` under `["perfectionist::single_letter_closure_param"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_trivial_callback_methods`
+### Field: `extra_trivial_callback_methods`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -108,7 +108,7 @@ project-specific DSL helpers (`when`, `iter_by`, third-party
 callbacks such as `into_sorted_by`, ...) here without having
 to re-state the standard ones.
 
-### `ignore_trivial_callback_methods`
+### Field: `ignore_trivial_callback_methods`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -120,7 +120,7 @@ after the merge with the built-ins, so this knob always
 wins. Useful for opting back into linting on a default
 entry the project does not consider trivial.
 
-### `extra_allowed_idents`
+### Field: `extra_allowed_idents`
 
 - _Type:_ `[single-letter string]`
 - _Optional_
@@ -133,7 +133,7 @@ having to re-state the standard ones. Each entry is a
 single ASCII letter (`a`-`z`, `A`-`Z`); any other
 character is rejected at config-parse time.
 
-### `extra_denied_idents`
+### Field: `extra_denied_idents`
 
 - _Type:_ `[single-letter string]`
 - _Optional_

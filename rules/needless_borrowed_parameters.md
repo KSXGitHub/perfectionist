@@ -74,7 +74,7 @@ fn push_path(list: &mut Vec<PathBuf>, item: PathBuf) {
 
 Configure via `dylint.toml` under `["perfectionist::needless_borrowed_parameters"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_conversion_methods`
+### Field: `extra_conversion_methods`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -87,7 +87,7 @@ flagged conversion must still actually produce the owned
 counterpart of the parameter's type, so listing an unrelated
 method here never widens the lint beyond owned-producing calls.
 
-### `ignore_conversion_methods`
+### Field: `ignore_conversion_methods`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -97,7 +97,7 @@ appear in the built-in defaults or in
 `extra_conversion_methods`. Empty by default; checked after the
 merge with the built-ins, so this knob always wins.
 
-### `test_code_exception`
+### Field: `test_code_exception`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -107,7 +107,7 @@ Whether test code is exempt: anything gated to test builds by
 inside a `#[test]` function, and every `tests/` or `benches/`
 crate. An `examples/` crate is not covered. Defaults to `true`.
 
-### `build_script_exception`
+### Field: `build_script_exception`
 
 - _Type:_ `boolean`
 - _Optional_

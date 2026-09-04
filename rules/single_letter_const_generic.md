@@ -54,7 +54,7 @@ struct Data<Left, Right, const LEFT_LEN: usize, const RIGHT_LEN: usize> {
 
 Configure via `dylint.toml` under `["perfectionist::single_letter_const_generic"]`. Every field is optional; the per-field prose below states the default.
 
-### `allowed_idents`
+### Field: `allowed_idents`
 
 - _Type:_ `[single-letter string]`
 - _Optional_

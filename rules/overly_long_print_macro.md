@@ -67,7 +67,7 @@ println!(
 
 Configure via `dylint.toml` under `["perfectionist::overly_long_print_macro"]`. Every field is optional; the per-field prose below states the default.
 
-### `max_line_width`
+### Field: `max_line_width`
 
 - _Type:_ `unsigned integer`
 - _Optional_
@@ -78,7 +78,7 @@ invocation, not its byte length, so a line of CJK text is
 measured the way a terminal renders it. Common alternatives to
 the default `100` are `80` (terminal) or `120` (wide editors).
 
-### `target_macros`
+### Field: `target_macros`
 
 - _Type:_ `[string]`
 - _Optional_

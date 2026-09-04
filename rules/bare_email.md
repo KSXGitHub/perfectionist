@@ -44,7 +44,7 @@ explicit.
 
 Configure via `dylint.toml` under `["perfectionist::bare_email"]`. Every field is optional; the per-field prose below states the default.
 
-### `style`
+### Field: `style`
 
 - _Type:_ `Style`
 - _Optional_
@@ -52,7 +52,7 @@ Configure via `dylint.toml` under `["perfectionist::bare_email"]`. Every field i
 Required form for compliant email addresses. Defaults to
 `either`.
 
-### `scan_doc_comments`
+### Field: `scan_doc_comments`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -60,14 +60,14 @@ Required form for compliant email addresses. Defaults to
 Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
 Defaults to `true`.
 
-### `scan_regular_comments`
+### Field: `scan_regular_comments`
 
 - _Type:_ `boolean`
 - _Optional_
 
 Scan regular comments (`//`, `/* */`). Defaults to `true`.
 
-### `skip_addresses`
+### Field: `skip_addresses`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -76,7 +76,7 @@ Skip these exact addresses. Useful for `noreply@github.com`
 and similar placeholders that the project deliberately leaves
 bare in changelog entries. Empty by default.
 
-### `skip_domains`
+### Field: `skip_domains`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -86,29 +86,29 @@ Empty by default.
 
 ### Types
 
-#### `Style`
+#### Type: `Style`
 
 Required form for compliant email addresses.
 
-##### `"angle_brackets"`
+##### Choice: `"angle_brackets"`
 
 - _Rust:_ `AngleBrackets`
 
 Wrap the address with `<` and `>` — `<user@example.com>`.
 
-##### `"mailto"`
+##### Choice: `"mailto"`
 
 - _Rust:_ `Mailto`
 
 Prefix the address with `mailto:` — `mailto:user@example.com`.
 
-##### `"both"`
+##### Choice: `"both"`
 
 - _Rust:_ `Both`
 
 Combine both — `<mailto:user@example.com>`.
 
-##### `"either"`
+##### Choice: `"either"`
 
 - _Rust:_ `Either`
 
@@ -116,7 +116,7 @@ Accept any of the three wrapped forms (`<email>`,
 `mailto:email`, or `<mailto:email>`); the autofix emits two
 `MaybeIncorrect` suggestions for the author to pick from.
 
-##### `"forbid"`
+##### Choice: `"forbid"`
 
 - _Rust:_ `Forbid`
 

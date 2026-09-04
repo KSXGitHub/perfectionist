@@ -72,7 +72,7 @@ mod tests;
 
 Configure via `dylint.toml` under `["perfectionist::excessive_inline_tests"]`. Every field is optional; the per-field prose below states the default.
 
-### `inline_style`
+### Field: `inline_style`
 
 - _Type:_ `InlineStyle`
 - _Optional_
@@ -80,7 +80,7 @@ Configure via `dylint.toml` under `["perfectionist::excessive_inline_tests"]`. E
 How inline test code is handled. Defaults to
 `external_when_long`.
 
-### `inline_max_lines`
+### Field: `inline_max_lines`
 
 - _Type:_ `unsigned integer`
 - _Optional_
@@ -88,7 +88,7 @@ How inline test code is handled. Defaults to
 Absolute cap, in lines, on the summed inline-test footprint of a
 file under `external_when_long`; always active. Defaults to `50`.
 
-### `inline_max_fraction_of_file`
+### Field: `inline_max_fraction_of_file`
 
 - _Type:_ `float`
 - _Optional_
@@ -100,18 +100,18 @@ relative cap (the default).
 
 ### Types
 
-#### `InlineStyle`
+#### Type: `InlineStyle`
 
 How inline test code is treated (the `inline_style` knob).
 
-##### `"external_only"`
+##### Choice: `"external_only"`
 
 - _Rust:_ `ExternalOnly`
 
 Every inline test item is flagged; all test code must move to an
 external `mod <name>;`, whatever its length.
 
-##### `"external_when_long"`
+##### Choice: `"external_when_long"`
 
 - _Rust:_ `ExternalWhenLong`
 

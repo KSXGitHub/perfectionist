@@ -69,7 +69,7 @@ deliberately does not do.
 
 Configure via `dylint.toml` under `["perfectionist::unicode_ellipsis_in_panic_messages"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_macros`
+### Field: `extra_macros`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -83,7 +83,7 @@ of each of those that has one (`debug_unreachable`,
 this to add project-specific assertion-shaped macros without
 having to re-state the standard ones.
 
-### `ignore_macros`
+### Field: `ignore_macros`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -94,7 +94,7 @@ default; checked after the merge with the built-ins, so
 this knob always wins. Use it when a project deliberately
 uses `…` in one of the default macros.
 
-### `extra_methods`
+### Field: `extra_methods`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -105,7 +105,7 @@ defaults (`expect`, `expect_err`); empty by default. Use
 this to add project-specific `expect`-shaped wrappers
 without having to re-state the standard pair.
 
-### `ignore_methods`
+### Field: `ignore_methods`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -115,7 +115,7 @@ in the built-in defaults or in `extra_methods`. Empty by
 default; checked after the merge with the built-ins, so
 this knob always wins.
 
-### `extra_flagged_chars`
+### Field: `extra_flagged_chars`
 
 - _Type:_ `[single-character string]`
 - _Optional_

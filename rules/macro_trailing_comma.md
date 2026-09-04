@@ -69,7 +69,7 @@ let ys = vec![1, 2, 3];
 
 Configure via `dylint.toml` under `["perfectionist::macro_trailing_comma"]`. Every field is optional; the per-field prose below states the default.
 
-### `extra_macros`
+### Field: `extra_macros`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -83,7 +83,7 @@ syntactically optional at the top level; macros that treat
 the comma as a fully optional separator throughout (rather
 than only at the tail) should not be listed here.
 
-### `ignore`
+### Field: `ignore`
 
 - _Type:_ `[string]`
 - _Optional_

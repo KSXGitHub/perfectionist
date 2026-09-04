@@ -104,14 +104,14 @@ debug_assert_eq!(ejected, None, "duplicate");
 
 Configure via `dylint.toml` under `["perfectionist::impure_macro_arguments"]`. Every field is optional; the per-field prose below states the default.
 
-### `mode`
+### Field: `mode`
 
 - _Type:_ `Mode`
 - _Optional_
 
 Eligibility mode. Defaults to `allow_and_deny`.
 
-### `deny_extra`
+### Field: `deny_extra`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -120,7 +120,7 @@ Macros added to the built-in deny set. Each entry is a
 fully-qualified macro path (no trailing `!`) or a bare macro
 name to match by final segment only.
 
-### `allow_extra`
+### Field: `allow_extra`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -131,7 +131,7 @@ name to match by final segment only. Only meaningful in
 `AllowAndDeny` and `Blanket` modes; in `DenyOnly` the allow
 set is unused.
 
-### `ignore`
+### Field: `ignore`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -141,7 +141,7 @@ otherwise match. Each entry is a fully-qualified macro path
 (no trailing `!`) or a bare macro name to match by final
 segment only.
 
-### `extra_pure_methods`
+### Field: `extra_pure_methods`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -156,7 +156,7 @@ for the surrounding macro to drop or duplicate the call
 `O(1)` side-effect-free getter that the lint's syntactic
 classification can't otherwise see.
 
-### `ignore_pure_methods`
+### Field: `ignore_pure_methods`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -169,7 +169,7 @@ the project does not consider pure — for example, removing
 `as_ref` for a project that wraps it in an impure
 implementation.
 
-### `extra_pure_macros`
+### Field: `extra_pure_macros`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -186,7 +186,7 @@ rule's pure-as-drop-or-duplicate-safe definition trivially,
 since there is no runtime expression for the surrounding
 macro to drop or duplicate.
 
-### `ignore_pure_macros`
+### Field: `ignore_pure_macros`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -197,18 +197,18 @@ Checked after the merge, so this knob always wins.
 
 ### Types
 
-#### `Mode`
+#### Type: `Mode`
 
 Eligibility mode.
 
-##### `"deny_only"`
+##### Choice: `"deny_only"`
 
 - _Rust:_ `DenyOnly`
 
 Flag only invocations of the curated deny set (`debug_assert*`
 plus `deny_extra`). Every other macro is silently accepted.
 
-##### `"blanket"`
+##### Choice: `"blanket"`
 
 - _Rust:_ `Blanket`
 
@@ -218,7 +218,7 @@ classification — unless the invocation matches an `allow_extra`
 entry. The built-in allow set is deliberately ignored in this
 mode; project exceptions go in `allow_extra`.
 
-##### `"allow_and_deny"`
+##### Choice: `"allow_and_deny"`
 
 - _Rust:_ `AllowAndDeny`
 

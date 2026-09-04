@@ -52,7 +52,7 @@ ref that always denotes the exact content the author linked to.
 
 Configure via `dylint.toml` under `["perfectionist::unpinned_repo_ref"]`. Every field is optional; the per-field prose below states the default.
 
-### `scan_doc_comments`
+### Field: `scan_doc_comments`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -60,21 +60,21 @@ Configure via `dylint.toml` under `["perfectionist::unpinned_repo_ref"]`. Every 
 Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
 Defaults to `true`.
 
-### `scan_regular_comments`
+### Field: `scan_regular_comments`
 
 - _Type:_ `boolean`
 - _Optional_
 
 Scan regular comments (`//`, `/* */`). Defaults to `true`.
 
-### `scan_string_literals`
+### Field: `scan_string_literals`
 
 - _Type:_ `boolean`
 - _Optional_
 
 Scan string literals (`"..."`, `r"..."`). Defaults to `false`.
 
-### `sha_recognition_length`
+### Field: `sha_recognition_length`
 
 - _Type:_ `unsigned integer`
 - _Optional_
@@ -87,7 +87,7 @@ which trades a small false-negative window (branch names like
 branch names that merely look hex-ish. Set to `1` to treat any
 pure-hex ref as a SHA.
 
-### `allow_version_patterns`
+### Field: `allow_version_patterns`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -99,7 +99,7 @@ commit SHA. Defaults to `false`; tags can move, and a
 version-shaped branch name is valid Git, so projects must opt in
 to this convenience explicitly.
 
-### `hosts`
+### Field: `hosts`
 
 - _Type:_ `[HostEntry]`
 - _Optional_
@@ -112,7 +112,7 @@ Register a self-hosted instance by adding an entry with the
 matching `kind`. Supplying this field replaces the built-in
 list rather than extending it.
 
-### `skip_hosts`
+### Field: `skip_hosts`
 
 - _Type:_ `[string]`
 - _Optional_
@@ -124,12 +124,12 @@ Defaults to `[]`.
 
 ### Types
 
-#### `HostEntry`
+#### Type: `HostEntry`
 
 One row of the `hosts` table: a hostname (or glob) and the forge
 kind whose URL shape applies to it.
 
-##### `hostname`
+##### Field: `hostname`
 
 - _Type:_ `string`
 
@@ -137,7 +137,7 @@ Hostname to match, compared case-insensitively. A `*` wildcard
 matches any run of characters, so `gitlab.*.example.com`
 covers every subdomain in one entry.
 
-##### `kind`
+##### Field: `kind`
 
 - _Type:_ `ForgeKind`
 
