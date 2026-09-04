@@ -1,0 +1,39 @@
+error[E0425]: cannot find value `step_51` in this scope
+  --> $DIR/overly_long_function.rs:62:5
+   |
+LL |     step_51
+   |     ^^^^^^^
+   |
+help: a local variable with a similar name exists
+   |
+LL -     step_51
+LL +     step_1
+   |
+
+error[E0425]: cannot find value `step_50` in this scope
+  --> $DIR/overly_long_function.rs:116:5
+   |
+LL |     step_50
+   |     ^^^^^^^
+   |
+help: a local variable with a similar name exists
+   |
+LL -     step_50
+LL +     step_10
+   |
+
+error[E0425]: cannot find value `step_49` in this scope
+  --> $DIR/overly_long_function.rs:270:5
+   |
+LL |     step_49
+   |     ^^^^^^^
+   |
+help: a local variable with a similar name exists
+   |
+LL -     step_49
+LL +     step_19
+   |
+
+error: aborting due to 3 previous errors
+
+For more information about this error, try `rustc --explain E0425`.

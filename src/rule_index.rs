@@ -116,6 +116,7 @@ rule_index! {
     macro_trailing_comma => MacroTrailingComma,
     named_prelude_imports => NamedPreludeImports,
     needless_borrowed_parameters => NeedlessBorrowedParameters,
+    overly_long_function => OverlyLongFunction,
     overly_long_print_macro => OverlyLongPrintMacro,
     redundant_derive_more_forward_template => RedundantDeriveMoreForwardTemplate,
     single_letter_closure_param => SingleLetterClosureParam,
