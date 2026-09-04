@@ -1,3 +1,4 @@
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::source::indent_of;
 use rustc_ast::{Item, ItemKind, ModKind, VisibilityKind};
@@ -13,7 +14,7 @@ mod config;
 mod render;
 
 use crate::attr_tokens::is_cfg_gated;
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use crate::module_reparse::{SpanRange, parse_crate_module_files};
 use config::{Config, ReexportGrouping, Style};
@@ -181,13 +182,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Inactive by default. The rule is direction-less: a project that
-/// adopts it picks `multi_block` (ordered, blank-line-separated blocks) or
-/// `single_block` (one contiguous block), so `style` is mandatory
-/// whenever the rule is enabled. Read by [`register_pass`]; gen-docs picks
-/// the constant up to render the rule's default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
-
 const CONFIG_KEY: &str = "perfectionist::import_grouping_mismatch";
 
 pub struct ImportGroupingMismatch {
@@ -196,49 +190,51 @@ pub struct ImportGroupingMismatch {
 
 impl_lint_pass!(ImportGroupingMismatch => [IMPORT_GROUPING_MISMATCH]);
 
-/// Register this rule's lint declaration. Paired with [`register_pass`];
-/// see the module-level convention documented in `register_lints`.
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[IMPORT_GROUPING_MISMATCH]);
-}
+impl Register for rule::ImportGroupingMismatch {
+    /// Inactive by default. The rule is direction-less: a project that
+    /// adopts it picks `multi_block` (ordered, blank-line-separated
+    /// blocks) or `single_block` (one contiguous block), so `style` is
+    /// mandatory whenever the rule is enabled.
+    const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 
-/// Install this rule's pass.
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("import_grouping_mismatch", DEFAULT_STATE) {
-        return;
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[IMPORT_GROUPING_MISMATCH]);
     }
-    // The rule is enabled, so `style` and `reexports` are mandatory and
-    // have no default. Read with `config` rather than `config_or_default`:
-    // the latter needs `Config: Default`, which would force defaults for
-    // both. `config` instead returns `Ok(None)` when the table is absent
-    // and `Err` when it is present but a mandatory field is missing or
-    // invalid — both are configuration errors we fail loudly on.
-    let config = dylint_linting::config::<Config>(CONFIG_KEY)
-        .unwrap_or_else(|error| {
-            panic!(
-                "perfectionist::import_grouping_mismatch: invalid \
-                 `[\"perfectionist::import_grouping_mismatch\"]` configuration: {error}",
-            )
-        })
-        .unwrap_or_else(|| {
-            panic!(
-                "perfectionist::import_grouping_mismatch is enabled but not configured; \
-                 set `style` (`multi_block` / `single_block`) and `reexports` \
-                 (`grouped` / `split` / `by_path`) under \
-                 `[\"perfectionist::import_grouping_mismatch\"]` in dylint.toml",
-            )
+
+    fn register_pass(lint_store: &mut LintStore) {
+        // The rule is enabled, so `style` and `reexports` are mandatory and
+        // have no default. Read with `config` rather than `config_or_default`:
+        // the latter needs `Config: Default`, which would force defaults for
+        // both. `config` instead returns `Ok(None)` when the table is absent
+        // and `Err` when it is present but a mandatory field is missing or
+        // invalid — both are configuration errors we fail loudly on.
+        let config = dylint_linting::config::<Config>(CONFIG_KEY)
+            .unwrap_or_else(|error| {
+                panic!(
+                    "perfectionist::import_grouping_mismatch: invalid \
+                     `[\"perfectionist::import_grouping_mismatch\"]` configuration: {error}",
+                )
+            })
+            .unwrap_or_else(|| {
+                panic!(
+                    "perfectionist::import_grouping_mismatch is enabled but not configured; \
+                     set `style` (`multi_block` / `single_block`) and `reexports` \
+                     (`grouped` / `split` / `by_path`) under \
+                     `[\"perfectionist::import_grouping_mismatch\"]` in dylint.toml",
+                )
+            });
+        // Late pass: out-of-line `mod foo;` modules are `ModKind::Unloaded`
+        // until macro expansion, so a pre-expansion pass never sees them.
+        // `check_crate` re-parses each module file instead (see
+        // [`crate::module_reparse`]), reaching every submodule while keeping
+        // `#[cfg(...)]` gates intact — parsing does not strip cfg, the reason
+        // a pre-expansion pass would otherwise be needed.
+        lint_store.register_late_pass(move |_| {
+            Box::new(ImportGroupingMismatch {
+                config: config.clone(),
+            })
         });
-    // Late pass: out-of-line `mod foo;` modules are `ModKind::Unloaded`
-    // until macro expansion, so a pre-expansion pass never sees them.
-    // `check_crate` re-parses each module file instead (see
-    // [`crate::module_reparse`]), reaching every submodule while keeping
-    // `#[cfg(...)]` gates intact — parsing does not strip cfg, the reason
-    // a pre-expansion pass would otherwise be needed.
-    lint_store.register_late_pass(move |_| {
-        Box::new(ImportGroupingMismatch {
-            config: config.clone(),
-        })
-    });
+    }
 }
 
 /// One `use` statement admitted into a run. The submodules

@@ -1,4 +1,5 @@
 use super::collect_rules;
+use crate::model::DefaultState;
 use std::fs;
 use std::path::PathBuf;
 
@@ -74,6 +75,59 @@ fn collect_rules_finds_config_in_submodule_file() {
     assert_eq!(config.key, "perfectionist::demo_rule");
     let names: Vec<&str> = config.fields.iter().map(|f| f.name.as_str()).collect();
     assert_eq!(names, vec!["knob"]);
+
+    let _ = fs::remove_dir_all(&base);
+}
+
+/// The default-state axis lives in the rule's `Register` impl, so
+/// reading it means walking an associated const rather than a
+/// module-level one. Miss that and every off-by-default rule renders
+/// as shipping on.
+#[test]
+fn collect_rules_reads_default_state_from_the_register_impl() {
+    let base = tempdir("impl-default-state");
+    let rules_dir = base.join("rules");
+    fs::create_dir_all(&rules_dir).unwrap();
+    fs::write(
+        rules_dir.join("demo_rule.rs"),
+        r#"
+            use rustc_session::declare_tool_lint;
+
+            declare_tool_lint! {
+                /// ### What it does
+                /// Demo.
+                pub perfectionist::DEMO_RULE,
+                Warn,
+                "demo description"
+            }
+
+            const CONFIG_KEY: &str = "perfectionist::demo_rule";
+
+            #[derive(serde::Deserialize)]
+            #[serde(default, rename_all = "snake_case")]
+            struct Config {
+                /// Demo knob.
+                knob: bool,
+            }
+
+            impl Register for rule::DemoRule {
+                const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
+
+                fn register_lint(lint_store: &mut LintStore) {}
+
+                fn register_pass(lint_store: &mut LintStore) {}
+            }
+        "#,
+    )
+    .unwrap();
+
+    let rules = collect_rules(&rules_dir);
+    assert_eq!(rules.len(), 1, "exactly one rule should be discovered");
+    assert!(
+        matches!(rules[0].default_state, DefaultState::Inactive),
+        "default state should come from the impl, got {:?}",
+        rules[0].default_state,
+    );
 
     let _ = fs::remove_dir_all(&base);
 }

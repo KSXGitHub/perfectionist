@@ -1,6 +1,7 @@
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::module_reparse::parse_crate_module_files;
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir as hir;
@@ -98,10 +99,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. Read by [`register_pass`] below; gen-docs picks
-/// the constant up via syn to render the rule's default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
-
 const CONFIG_KEY: &str = "perfectionist::redundant_derive_more_forward_template";
 
 /// The rule has no configuration knobs. Not dead code: the read
@@ -122,17 +119,16 @@ impl RedundantDeriveMoreForwardTemplate {
 
 impl_lint_pass!(RedundantDeriveMoreForwardTemplate => [REDUNDANT_DERIVE_MORE_FORWARD_TEMPLATE]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[REDUNDANT_DERIVE_MORE_FORWARD_TEMPLATE]);
-}
+impl Register for rule::RedundantDeriveMoreForwardTemplate {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive =
-        resolved_state("redundant_derive_more_forward_template", DEFAULT_STATE)
-    {
-        return;
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[REDUNDANT_DERIVE_MORE_FORWARD_TEMPLATE]);
     }
-    lint_store.register_late_pass(|_| Box::new(RedundantDeriveMoreForwardTemplate::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        lint_store.register_late_pass(|_| Box::new(RedundantDeriveMoreForwardTemplate::new()));
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for RedundantDeriveMoreForwardTemplate {

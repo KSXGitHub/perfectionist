@@ -1,4 +1,5 @@
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
+use crate::rule_index::{Register, rule};
 use rustc_ast::MacCall;
 use rustc_ast::token::Delimiter;
 use rustc_ast::tokenstream::TokenTree;
@@ -117,20 +118,21 @@ declare_tool_lint! {
 impl_lint_pass!(ImpureMacroArguments => [IMPURE_MACRO_ARGUMENTS]);
 impl_lint_pass!(ImpureMacroArgumentsLate => [IMPURE_MACRO_ARGUMENTS]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[IMPURE_MACRO_ARGUMENTS]);
-}
+impl Register for rule::ImpureMacroArguments {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("impure_macro_arguments", DefaultState::Active) {
-        return;
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[IMPURE_MACRO_ARGUMENTS]);
     }
-    // Same split as `macro_trailing_comma`: a pre-expansion pass parks
-    // violation spans, a late pass walks the HIR and emits each at the
-    // deepest enclosing node so `cfg_attr`-wrapped `#[expect]` and
-    // `#[allow]` attributes resolve correctly.
-    lint_store.register_pre_expansion_pass(|| Box::new(ImpureMacroArguments::new()));
-    lint_store.register_late_pass(|_| Box::new(ImpureMacroArgumentsLate));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        // Same split as `macro_trailing_comma`: a pre-expansion pass parks
+        // violation spans, a late pass walks the HIR and emits each at the
+        // deepest enclosing node so `cfg_attr`-wrapped `#[expect]` and
+        // `#[allow]` attributes resolve correctly.
+        lint_store.register_pre_expansion_pass(|| Box::new(ImpureMacroArguments::new()));
+        lint_store.register_late_pass(|_| Box::new(ImpureMacroArgumentsLate));
+    }
 }
 
 /// Violation spans the pre-expansion pass has parked, waiting for the

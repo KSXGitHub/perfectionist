@@ -17,6 +17,7 @@
 //!   [`UseKind::Single`] item per leaf, so each cherry-picked name is
 //!   flagged individually with no flattening of our own.)
 
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir::def::Res;
@@ -29,7 +30,7 @@ use rustc_span::kw;
 
 mod config;
 
-use crate::common::{DefaultState, hir_in_external_macro, resolved_state};
+use crate::common::{DefaultState, hir_in_external_macro};
 use config::{Config, Resolved};
 
 declare_tool_lint! {
@@ -89,12 +90,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. The prelude convention is the shipped baseline;
-/// `prelude_segment_names` / `allowed_paths` tune it. Read by
-/// [`register_pass`]; gen-docs picks the constant up to render the rule's
-/// default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
-
 const CONFIG_KEY: &str = "perfectionist::named_prelude_imports";
 
 pub struct NamedPreludeImports {
@@ -103,30 +98,30 @@ pub struct NamedPreludeImports {
 
 impl_lint_pass!(NamedPreludeImports => [NAMED_PRELUDE_IMPORTS]);
 
-/// Register this rule's lint declaration. Paired with [`register_pass`];
-/// see the module-level convention documented in `register_lints`.
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[NAMED_PRELUDE_IMPORTS]);
-}
+impl Register for rule::NamedPreludeImports {
+    /// Active by default. The prelude convention is the shipped
+    /// baseline; `prelude_segment_names` / `allowed_paths` tune it.
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
-/// Install this rule's pass.
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("named_prelude_imports", DEFAULT_STATE) {
-        return;
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[NAMED_PRELUDE_IMPORTS]);
     }
-    let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-    // Every `allowed_paths` entry has to end with a prelude segment (it
-    // matches the path up to and including the prelude), so reject a
-    // misconfigured one loudly rather than letting it silently match
-    // nothing.
-    config::validate(&config).unwrap_or_else(|message| {
-        panic!("perfectionist::named_prelude_imports: {message}");
-    });
-    lint_store.register_late_pass(move |_| {
-        Box::new(NamedPreludeImports {
-            config: Resolved::from_config(config.clone()),
-        })
-    });
+
+    fn register_pass(lint_store: &mut LintStore) {
+        let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        // Every `allowed_paths` entry has to end with a prelude segment (it
+        // matches the path up to and including the prelude), so reject a
+        // misconfigured one loudly rather than letting it silently match
+        // nothing.
+        config::validate(&config).unwrap_or_else(|message| {
+            panic!("perfectionist::named_prelude_imports: {message}");
+        });
+        lint_store.register_late_pass(move |_| {
+            Box::new(NamedPreludeImports {
+                config: Resolved::from_config(config.clone()),
+            })
+        });
+    }
 }
 
 impl<'tcx> LateLintPass<'tcx> for NamedPreludeImports {

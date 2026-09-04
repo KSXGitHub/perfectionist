@@ -879,14 +879,17 @@ past regression skipped.
 ## Rule activation model
 
 Every rule registered by this plugin is declared at the `Warn`
-lint level. Each rule documents its **default state**: whether
+lint level. Each rule documents its **default state** — whether
 the rule's pass installs at all when the consumer runs
-`cargo dylint` without overrides.
+`cargo dylint` without overrides — as the `DEFAULT_STATE`
+constant of its `Register` impl, where the rule index reads it to
+decide whether to call `register_pass` at all:
 
 ```rust
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
-// or
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
+impl Register for rule::SomeExampleRule {
+    /// Why this rule ships on (or off) out of the box.
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+    // or DefaultState::Inactive
 ```
 
 The two states map to the consumer-visible behaviour as follows:
