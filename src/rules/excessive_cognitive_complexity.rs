@@ -1,6 +1,6 @@
 use crate::common::DefaultState;
+use crate::measured_fn::measured_fn;
 use crate::rule_index::{Register, rule};
-use crate::test_code::fn_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_hir as hir;
 use rustc_hir::def_id::LocalDefId;
@@ -162,22 +162,20 @@ impl<'tcx> LateLintPass<'tcx> for ExcessiveCognitiveComplexity {
         _span: Span,
         def_id: LocalDefId,
     ) {
-        // A closure is scored as part of the function that contains it.
-        let (FnKind::ItemFn(ident, ..) | FnKind::Method(ident, ..)) = kind else {
+        let Some(function) = measured_fn(cx, kind, def_id, self.config.exempt_test) else {
             return;
         };
-        let def_span = cx.tcx.def_span(def_id);
-        if def_span.from_expansion() {
-            return;
-        }
-        if self.config.exempt_test && fn_in_test_code(cx, def_id) {
-            return;
-        }
         let score = score_body(cx, def_id, body);
         if score.total <= self.config.max_complexity {
             return;
         }
-        emit(cx, def_span, ident.name, score, self.config.max_complexity);
+        emit(
+            cx,
+            function.span,
+            function.name,
+            score,
+            self.config.max_complexity,
+        );
     }
 }
 

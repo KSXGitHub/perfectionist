@@ -1,6 +1,6 @@
 use crate::common::DefaultState;
+use crate::measured_fn::measured_fn;
 use crate::rule_index::{Register, rule};
-use crate::test_code::fn_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_hir as hir;
 use rustc_hir::def_id::LocalDefId;
@@ -149,23 +149,15 @@ impl<'tcx> LateLintPass<'tcx> for TooManyLocalBindings {
         _span: Span,
         def_id: LocalDefId,
     ) {
-        // A closure's bindings belong to the function that contains it.
-        let (FnKind::ItemFn(ident, ..) | FnKind::Method(ident, ..)) = kind else {
+        let Some(function) = measured_fn(cx, kind, def_id, self.config.test_code_exception) else {
             return;
         };
-        let def_span = cx.tcx.def_span(def_id);
-        if def_span.from_expansion() {
-            return;
-        }
-        if self.config.test_code_exception && fn_in_test_code(cx, def_id) {
-            return;
-        }
         let count = count_local_bindings(cx.tcx, body);
         if count <= self.config.max_bindings {
             return;
         }
         let max = self.config.max_bindings;
-        let name = ident.name;
+        let name = function.name;
         let noun = if count == 1 { "name" } else { "names" };
         let message = format!(
             "function `{name}` binds {count} distinct local {noun}, above the limit of {max}",
@@ -173,7 +165,7 @@ impl<'tcx> LateLintPass<'tcx> for TooManyLocalBindings {
         span_lint_and_help(
             cx,
             TOO_MANY_LOCAL_BINDINGS,
-            def_span,
+            function.span,
             message,
             None,
             "split the body into one function per step, or gather related values into a struct",

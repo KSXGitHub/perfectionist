@@ -22,6 +22,7 @@
 //! that a `for` or `while` loop lowers to are not branches the reader
 //! sees, so they add nothing beyond the loop's own increment.
 
+use crate::common::span_is_macro_generated;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{
@@ -30,8 +31,6 @@ use rustc_hir::{
 use rustc_lint::LateContext;
 use rustc_middle::hir::nested_filter;
 use rustc_middle::ty::{TyCtxt, TypeckResults};
-use rustc_span::Span;
-use rustc_span::hygiene::ExpnKind;
 
 /// The score of one function body, split so the diagnostic can say how
 /// much of it is nesting.
@@ -124,7 +123,7 @@ impl<'tcx> Scorer<'tcx> {
         let Some(els) = els else {
             return;
         };
-        if matches!(els.kind, ExprKind::If(..)) && !is_macro_generated(els.span) {
+        if matches!(els.kind, ExprKind::If(..)) && !span_is_macro_generated(els.span) {
             self.else_if = true;
             self.visit_expr(els);
         } else {
@@ -216,7 +215,7 @@ impl<'tcx> Visitor<'tcx> for Scorer<'tcx> {
 
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
         let logical_parent = self.logical_parent.take();
-        if is_macro_generated(expr.span) {
+        if span_is_macro_generated(expr.span) {
             self.else_if = false;
             intravisit::walk_expr(self, expr);
             return;
@@ -254,17 +253,9 @@ impl<'tcx> Visitor<'tcx> for Scorer<'tcx> {
         let Some(els) = local.els else {
             return;
         };
-        if !is_macro_generated(local.span) {
+        if !span_is_macro_generated(local.span) {
             self.flat();
         }
         self.nested(|scorer| scorer.visit_block(els));
     }
-}
-
-/// Whether `span` was produced by a macro expansion — a `macro_rules!`
-/// or proc macro, from this crate or another — as opposed to written
-/// by the author or produced by a compiler desugaring.
-fn is_macro_generated(span: Span) -> bool {
-    span.macro_backtrace()
-        .any(|expansion| matches!(expansion.kind, ExpnKind::Macro(..)))
 }
