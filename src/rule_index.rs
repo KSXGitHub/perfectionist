@@ -51,18 +51,6 @@ pub(crate) trait Register {
 ///
 /// Entries are in ascending order, since [`is_registered_lint`]
 /// binary-searches [`LINT_NAMES`]; the tests below hold them to it.
-/// Register one rule: its lint declaration always, its pass where
-/// `dylint.toml` and [`Register::DEFAULT_STATE`] leave it active.
-/// Module scope rather than the macro body, so each entry expands to
-/// a call rather than to another copy of this.
-fn register_rule<Rule: Register>(lint_store: &mut LintStore, name: &str) {
-    Rule::register_lint(lint_store);
-    match resolved_state(name, Rule::DEFAULT_STATE) {
-        DefaultState::Active => Rule::register_pass(lint_store),
-        DefaultState::Inactive => {}
-    }
-}
-
 macro_rules! rule_index {
     ($( $rule_name:ident => $marker:ident ),+ $(,)?) => {
         /// One type per rule, standing in for it wherever the
@@ -143,6 +131,18 @@ rule_index! {
     unordered_derives => UnorderedDerives,
     unpinned_repo_ref => UnpinnedRepoRef,
     wildcard_imports => WildcardImports,
+}
+
+/// Register one rule: its lint declaration always, its pass where
+/// `dylint.toml` and [`Register::DEFAULT_STATE`] leave it active.
+/// Module scope rather than the macro body, so each entry expands to
+/// a call rather than to another copy of this.
+fn register_rule<Rule: Register>(lint_store: &mut LintStore, name: &str) {
+    Rule::register_lint(lint_store);
+    match resolved_state(name, Rule::DEFAULT_STATE) {
+        DefaultState::Active => Rule::register_pass(lint_store),
+        DefaultState::Inactive => {}
+    }
 }
 
 /// Whether `name` — with the `perfectionist::` prefix already
