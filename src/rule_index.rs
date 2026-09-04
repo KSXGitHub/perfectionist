@@ -88,16 +88,18 @@ macro_rules! rule_index {
         /// registered on its own — no entry depends on another
         /// having registered first.
         pub(crate) fn register_all(lint_store: &mut LintStore) {
-            $({
+            $(
                 <rule::$marker as Register>::register_lint(lint_store);
-                let state = resolved_state(
+                match resolved_state(
                     stringify!($rule_name),
                     <rule::$marker as Register>::DEFAULT_STATE,
-                );
-                if let DefaultState::Active = state {
-                    <rule::$marker as Register>::register_pass(lint_store);
+                ) {
+                    DefaultState::Active => {
+                        <rule::$marker as Register>::register_pass(lint_store);
+                    }
+                    DefaultState::Inactive => {}
                 }
-            })+
+            )+
         }
     };
 }
