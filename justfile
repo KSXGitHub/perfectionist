@@ -27,7 +27,6 @@ _default:
 # Check everything
 all:
   just fmt
-  just check-fixtures-sanitized
   just build
   just doc
   just lint
@@ -65,65 +64,6 @@ self-lint:
 # Pre-warm `target/integration-fixtures`
 warmup-integration-tests:
   cargo run {{locked}} --package _utils --bin warmup -- "$(pwd)"
-
-# Normalise the `line:column` numbers in the compiletest `.stderr`
-# fixtures under `ui/` and `ui-toml/` (or the roots given as arguments).
-#
-# `dylint_testing` drives rustc with `-Zui-testing`, which anonymises
-# the source-line gutter to `LL` but leaves the real `line:column` in
-# every `--> $DIR/<file>.rs:LINE:COL` header; those numbers churn
-# whenever a line is added above a diagnostic, producing noisy diffs.
-# compiletest has no switch for them, but honours a per-file
-# `// normalize-stderr-test` header directive — a regex applied to the
-# driver's actual output before it is diffed against the committed
-# `.stderr`. This recipe gives every `.stderr`-bearing fixture that
-# directive and rewrites the committed `.stderr` to match, collapsing
-# each `.rs:LINE:COL` to `.rs:LL:CC`. Run it after adding or updating a
-# fixture. It is idempotent: `.rs:LL:CC` has no digits to re-match, and
-# the directive is inserted only when absent.
-sanitize-fixtures *roots:
-  #!/usr/bin/env bash
-  set -euo pipefail
-  roots=({{roots}})
-  if [ "${#roots[@]}" -eq 0 ]; then
-    roots=(ui ui-toml)
-  fi
-  # A plain `//` line comment (not a doc comment) carrying no URL,
-  # e-mail, `#issue`, backtick, or repo ref, and no Unicode ellipsis,
-  # so no text-scanning lint (`bare_*`, `unpinned_repo_ref`,
-  # `unicode_ellipsis_in_comments`, ...) fires on it.
-  directive='// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"'
-  while IFS= read -r -d '' stderr; do
-    rs="${stderr%.stderr}.rs"
-    if [ -f "$rs" ] && ! grep -qF 'normalize-stderr-test:' "$rs"; then
-      printf '%s\n' "$directive" | cat - "$rs" >"$rs.tmp"
-      mv "$rs.tmp" "$rs"
-    fi
-    perl -i -pe 's/\.rs:\d+:\d+/.rs:LL:CC/g' "$stderr"
-  done < <(find "${roots[@]}" -name '*.stderr' -print0)
-
-# Verify every `.stderr` fixture is sanitised: it carries no bare
-# `.rs:LINE:COL`, and its sibling `.rs` carries the normalisation
-# directive. Read-only; fails listing any offender. Part of `just all`.
-check-fixtures-sanitized:
-  #!/usr/bin/env bash
-  set -euo pipefail
-  status=0
-  while IFS= read -r -d '' stderr; do
-    rs="${stderr%.stderr}.rs"
-    if [ -f "$rs" ] && ! grep -qF 'normalize-stderr-test:' "$rs"; then
-      echo "error: $rs lacks the normalize-stderr-test directive" >&2
-      status=1
-    fi
-    if grep -qE '\.rs:[0-9]+:[0-9]+' "$stderr"; then
-      echo "error: $stderr has un-normalised .rs:LINE:COL" >&2
-      status=1
-    fi
-  done < <(find ui ui-toml -name '*.stderr' -print0)
-  if [ "$status" -ne 0 ]; then
-    echo "run 'just sanitize-fixtures' to fix" >&2
-  fi
-  exit "$status"
 
 # Install cargo-dylint and dylint-link into `.dev-tools/`
 install-dev-tools:
