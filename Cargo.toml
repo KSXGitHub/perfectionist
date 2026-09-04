@@ -43,7 +43,7 @@ mod_module_files = "warn"
 std_instead_of_core = "warn"
 
 [dependencies]
-clippy_utils = "=0.1.99"
+clippy_utils = "=0.1.100"
 dylint_linting = "6.0.4"
 serde = { version = "1.0.228", features = ["derive"] }
 unicode-width = "0.2.2"
