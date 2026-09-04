@@ -234,9 +234,11 @@ For each path:
   user is expected to use. `Vec` is defined in `alloc::vec::Vec`
   but most projects refer to it as `std::vec::Vec` or just `Vec`.
   The lint's path resolution should respect the
-  [`core-instead-of-std`](./core-instead-of-std.md) preference if it is
-  active, so a suggested path uses `std::` rather than the
-  `core` / `alloc` definition path.
+  `perfectionist::core_instead_of_std` preference if that rule is
+  enabled, so a suggested path uses `std::` rather than the
+  `core` / `alloc` definition path. Its config lives under
+  `["perfectionist::core_instead_of_std"]`; the rule itself is
+  implemented in `src/rules/core_instead_of_std.rs`.
 - **Parser style.** The configuration parser
   (`allowed_paths`, `forbidden_paths`) takes path strings; parse
   them with parser-combinator-style `take_*` functions per
@@ -258,7 +260,7 @@ For each path:
   but slows the lint slightly. Both are acceptable trade-offs.
 - The `qualified` direction's autofix has the
   canonical-vs-preferred-path problem described above. Handle by
-  consulting [`core-instead-of-std`](./core-instead-of-std.md) config when
+  consulting `perfectionist::core_instead_of_std`'s config when
   present.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)

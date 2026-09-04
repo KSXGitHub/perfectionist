@@ -22,11 +22,6 @@ pattern that several rules call out by reference — live in
   `pub mod` first, then `pub use`, then private items.
 
 ### Imports
-- [`core-instead-of-std.md`](./core-instead-of-std.md) — for projects that
-  target `std` exclusively, flag `core::` / `alloc::` paths whose item is
-  also reachable through `std::`, and suggest the `std::` form. Inactive
-  by default. The opposite direction (preferring `core`) is out of scope —
-  it is covered by `clippy::std_instead_of_core` + `std_instead_of_alloc`.
 - [`named-prelude-imports.md`](./named-prelude-imports.md) — dual of
   `perfectionist::wildcard_imports`. Forbid named imports from a
   `prelude` module (`use foo::prelude::Item;`); allow the glob form
