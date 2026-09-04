@@ -27,12 +27,6 @@ pattern that several rules call out by reference — live in
   also reachable through `std::`, and suggest the `std::` form. Inactive
   by default. The opposite direction (preferring `core`) is out of scope —
   it is covered by `clippy::std_instead_of_core` + `std_instead_of_alloc`.
-- [`named-prelude-imports.md`](./named-prelude-imports.md) — dual of
-  `perfectionist::wildcard_imports`. Forbid named imports from a
-  `prelude` module (`use foo::prelude::Item;`); allow the glob form
-  (`use foo::prelude::*;`). Implemented and active by default; the file
-  stays only because the brace-list-leaf autofix is still pending (see
-  its Status section).
 - [`private-reexport-imports.md`](./private-reexport-imports.md) — flag
   a named `use` that reaches its item through a *private* re-export (a
   non-`pub` `use` in another module reached via ancestor privilege,
