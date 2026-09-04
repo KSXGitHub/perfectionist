@@ -1,5 +1,5 @@
 warning: named item cherry-picked from a prelude module
-  --> $DIR/named_prelude_imports.rs:22:9
+  --> $DIR/named_prelude_imports.rs:29:9
    |
 LL |     use crate::prelude::A;
    |         ^^^^^^^^^^^^^^^^^ help: import the item from its canonical module: `crate::thing::A`
@@ -7,13 +7,13 @@ LL |     use crate::prelude::A;
    = note: `#[warn(perfectionist::named_prelude_imports)]` on by default
 
 warning: named item cherry-picked from a prelude module
-  --> $DIR/named_prelude_imports.rs:27:9
+  --> $DIR/named_prelude_imports.rs:34:9
    |
 LL |     use crate::prelude::B as Renamed;
    |         ^^^^^^^^^^^^^^^^^ help: import the item from its canonical module: `crate::thing::B`
 
 warning: named item cherry-picked from a prelude module
-  --> $DIR/named_prelude_imports.rs:32:26
+  --> $DIR/named_prelude_imports.rs:39:26
    |
 LL |     use crate::prelude::{A, helper};
    |                          ^
@@ -21,7 +21,7 @@ LL |     use crate::prelude::{A, helper};
    = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
 
 warning: named item cherry-picked from a prelude module
-  --> $DIR/named_prelude_imports.rs:32:29
+  --> $DIR/named_prelude_imports.rs:39:29
    |
 LL |     use crate::prelude::{A, helper};
    |                             ^^^^^^
@@ -29,7 +29,7 @@ LL |     use crate::prelude::{A, helper};
    = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
 
 warning: named item cherry-picked from a prelude module
-  --> $DIR/named_prelude_imports.rs:65:9
+  --> $DIR/named_prelude_imports.rs:72:9
    |
 LL |     use crate::multi::prelude::Dual;
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -37,7 +37,7 @@ LL |     use crate::multi::prelude::Dual;
    = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
 
 warning: named item cherry-picked from a prelude module
-  --> $DIR/named_prelude_imports.rs:81:9
+  --> $DIR/named_prelude_imports.rs:88:9
    |
 LL |     use crate::kw_prelude::prelude::Thing;
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: import the item from its canonical module: `crate::r#type::Thing`

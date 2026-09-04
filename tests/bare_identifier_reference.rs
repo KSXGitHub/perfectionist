@@ -27,7 +27,17 @@ struct RuleConfig {
 
 fn dylint_toml(config: RuleConfig) -> String {
     let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
-    toml::to_string(&table).expect("serialise rule config as dylint.toml")
+    let rule_table = toml::to_string(&table).expect("serialise rule config as dylint.toml");
+    // The fixtures order their support modules, imports and re-exports
+    // to read as cases for the rule under test, a layout
+    // `arbitrary_source_item_ordering` flags; disable it so its findings
+    // stay out of the snapshot.
+    format!(
+        "[perfectionist]\n\
+         disable = [\"arbitrary_source_item_ordering\"]\n\
+         \n\
+         {rule_table}",
+    )
 }
 
 fn run(src_base: &str, contents: &str) {
@@ -55,7 +65,11 @@ fn skip_idents_silences_listed_identifiers() {
 fn reference_scope_toml(reference_scope: &str) -> String {
     format!(
         "[perfectionist]\n\
-         disable = [\"import_grouping_mismatch\", \"import_granularity_mismatch\"]\n\
+         disable = [\n\
+         \"import_grouping_mismatch\",\n\
+         \"import_granularity_mismatch\",\n\
+         \"arbitrary_source_item_ordering\",\n\
+         ]\n\
          \n\
          [\"perfectionist::bare_identifier_reference\"]\n\
          reference_scope = \"{reference_scope}\"\n",

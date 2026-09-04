@@ -1,5 +1,6 @@
 pub mod allow_attributes;
 pub mod allow_attributes_without_reason;
+pub mod arbitrary_source_item_ordering;
 pub mod avoidable_string_escapes;
 pub mod bare_email;
 pub mod bare_identifier_reference;

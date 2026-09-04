@@ -98,6 +98,7 @@ macro_rules! rule_index {
 rule_index! {
     allow_attributes => AllowAttributes,
     allow_attributes_without_reason => AllowAttributesWithoutReason,
+    arbitrary_source_item_ordering => ArbitrarySourceItemOrdering,
     avoidable_string_escapes => AvoidableStringEscapes,
     bare_email => BareEmail,
     bare_identifier_reference => BareIdentifierReference,

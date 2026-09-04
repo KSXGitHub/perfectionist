@@ -14,6 +14,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   `#[allow]` / `#[expect]` attribute lacks an explanatory `reason = "..."` field
 
+- [`arbitrary_source_item_ordering`](./arbitrary_source_item_ordering.md) (default: `active`).
+
+  item in a module body sits below a section it belongs above: `pub mod`, then `pub use`, then private imports and other items
+
 - [`avoidable_string_escapes`](./avoidable_string_escapes.md) (default: `active`).
 
   string literal contains only raw-expressible escapes; prefer the raw-string form
