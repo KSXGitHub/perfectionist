@@ -7,6 +7,7 @@ use rustc_ast::{MetaItem, MetaItemInner, MetaItemKind, MetaItemLit};
 use rustc_hir as hir;
 use rustc_hir::HirId;
 use rustc_lint::{LateContext, LintContext};
+use rustc_span::hygiene::ExpnKind;
 use rustc_span::{Span, Symbol, sym};
 use std::collections::{BTreeSet, HashMap};
 use std::sync::OnceLock;
@@ -367,4 +368,15 @@ pub(crate) fn resolve_symbol_set_from_chars(
         .map(intern)
         .filter(|sym| !ignore.contains(sym))
         .collect()
+}
+
+/// Whether `span` was produced by a macro expansion — a `macro_rules!`
+/// or proc macro, from this crate or another — as opposed to written
+/// by the author or produced by a compiler desugaring. The
+/// per-function measurement rules (`excessive_cognitive_complexity`
+/// and its siblings) treat such code as opaque: it is not what the
+/// author wrote, so it is not what they can split or flatten.
+pub(crate) fn span_is_macro_generated(span: Span) -> bool {
+    span.macro_backtrace()
+        .any(|expansion| matches!(expansion.kind, ExpnKind::Macro(..)))
 }
