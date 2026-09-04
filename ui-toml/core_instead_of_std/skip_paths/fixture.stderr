@@ -1,0 +1,17 @@
+warning: item named through `core` instead of `std`
+  --> $DIR/fixture.rs:14:21
+   |
+LL |     use core::mem::{size_of, transmute};
+   |                     ^^^^^^^
+   |
+   = help: name this item through `std`: the `core` segment is shared with a name that has to keep it, so it cannot be rewritten in place
+   = note: `#[warn(perfectionist::core_instead_of_std)]` on by default
+
+warning: item named through `core` instead of `std`
+  --> $DIR/fixture.rs:19:9
+   |
+LL |     use core::fmt::Display;
+   |         ^^^^ help: name the item through `std`: `std`
+
+warning: 2 warnings emitted
+

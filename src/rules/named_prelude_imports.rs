@@ -26,11 +26,10 @@ use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::def_id::{DefId, LOCAL_CRATE};
-use rustc_span::kw;
 
 mod config;
 
-use crate::common::{DefaultState, hir_in_external_macro};
+use crate::common::{DefaultState, hir_in_external_macro, join_path_segments};
 use config::{Config, Resolved};
 
 declare_tool_lint! {
@@ -153,17 +152,17 @@ impl<'tcx> LateLintPass<'tcx> for NamedPreludeImports {
 
         // `allowed_paths` entries are absolute (e.g. `crate::prelude` for a
         // crate-root path, `::serde::prelude` for an extern crate).
-        // `join_segments` drops any `PathRoot`, so both `use crate::prelude::Item`
+        // `join_path_segments` drops any `PathRoot`, so both `use crate::prelude::Item`
         // and a `::`-rooted form arrive identically; `canonical_key` forms
         // the absolute key matched against the allow list. The key is the
         // module path up to and including the prelude segment.
         let prelude_path =
-            crate::abs_path::canonical_key(&join_segments(&segments[..=prelude_index]));
+            crate::abs_path::canonical_key(&join_path_segments(&segments[..=prelude_index]));
         if self.config.allowed_paths.contains(&prelude_path) {
             return;
         }
 
-        let written_path = join_segments(segments);
+        let written_path = join_path_segments(segments);
         let fix = canonical_fix(cx, path.res, path.span, &written_path);
         span_lint_hir_and_then(
             cx,
@@ -188,22 +187,6 @@ impl<'tcx> LateLintPass<'tcx> for NamedPreludeImports {
             },
         );
     }
-}
-
-/// The dotted-path string of a run of path segments
-/// (`["serde", "prelude", "Serialize"]` → `"serde::prelude::Serialize"`).
-/// A leading `::` shows up in the HIR path as a synthetic `PathRoot`
-/// segment; skip it (as `wildcard_imports::collect_globs` and
-/// `uncombined_self_import::real_segments` do) so a `use ::serde::prelude::Item;`
-/// normalises to `serde::prelude::Item` for `allowed_paths` matching
-/// rather than `{{root}}::serde::prelude::Item`.
-fn join_segments(segments: &[rustc_hir::PathSegment<'_>]) -> String {
-    segments
-        .iter()
-        .filter(|segment| segment.ident.name != kw::PathRoot)
-        .map(|segment| segment.ident.name.to_string())
-        .collect::<Vec<_>>()
-        .join("::")
 }
 
 /// Build the `(replacement, applicability)` for rewriting the import to

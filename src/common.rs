@@ -240,6 +240,23 @@ pub(crate) fn display_width(text: &str) -> usize {
     UnicodeWidthStr::width(text)
 }
 
+/// The dotted-path string of a run of HIR path segments
+/// (`["serde", "prelude", "Serialize"]` → `"serde::prelude::Serialize"`).
+/// A leading `::` shows up in the HIR path as a synthetic `PathRoot`
+/// segment; it is skipped, so `use ::serde::prelude::Item;` normalises
+/// to `serde::prelude::Item` rather than `{{root}}::serde::prelude::Item`
+/// and compares equal to the unrooted spelling. Feed the result to
+/// [`crate::abs_path::canonical_key`] to get the absolute key a
+/// path-shaped config field is matched against.
+pub(crate) fn join_path_segments(segments: &[hir::PathSegment<'_>]) -> String {
+    segments
+        .iter()
+        .filter(|segment| segment.ident.name != rustc_span::kw::PathRoot)
+        .map(|segment| segment.ident.name.to_string())
+        .collect::<Vec<_>>()
+        .join("::")
+}
+
 /// Whether `name` is exactly one ASCII letter (`a`..=`z` or
 /// `A`..=`Z`). Used by every `single_letter_*` rule.
 pub(crate) fn is_single_ascii_letter(name: &str) -> bool {

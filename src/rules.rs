@@ -7,6 +7,7 @@ pub mod bare_identifier_reference;
 pub mod bare_issue_reference;
 pub mod bare_url;
 pub mod clap_help_markdown;
+pub mod core_instead_of_std;
 pub mod excessive_inline_tests;
 pub mod exhaustive_error_enums;
 pub mod import_granularity_mismatch;

@@ -105,6 +105,7 @@ rule_index! {
     bare_issue_reference => BareIssueReference,
     bare_url => BareUrl,
     clap_help_markdown => ClapHelpMarkdown,
+    core_instead_of_std => CoreInsteadOfStd,
     excessive_inline_tests => ExcessiveInlineTests,
     exhaustive_error_enums => ExhaustiveErrorEnums,
     import_granularity_mismatch => ImportGranularityMismatch,

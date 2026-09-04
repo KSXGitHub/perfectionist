@@ -42,6 +42,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   markdown construct in a clap-derived doc comment leaks into `--help` output
 
+- [`core_instead_of_std`](./core_instead_of_std.md) (default: `inactive`).
+
+  item named through `core` or `alloc` instead of `std`
+
 - [`excessive_inline_tests`](./excessive_inline_tests.md) (default: `active`).
 
   inline test code should be extracted to a separate file
