@@ -310,8 +310,7 @@ explicitly retracted.
 ## Registering a new rule in the index
 
 `src/rule_index.rs` indexes every rule the plugin ships: its
-`rule_index!` invocation names each rule once, and the module's
-docstring says what that expands to.
+`rule_index!` invocation names each rule once.
 
 The list is alphabetical.
 
