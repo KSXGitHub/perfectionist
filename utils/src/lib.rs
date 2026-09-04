@@ -5,10 +5,6 @@
 //! in isolation from any test workspace and has no access to the
 //! caller's `CARGO_TARGET_DIR` or `CARGO_MANIFEST_DIR`.
 
-pub use tempfile::TempDir;
-
-use std::path::Path;
-
 pub mod dylint;
 pub mod manifest;
 pub mod project;
@@ -18,6 +14,9 @@ pub use manifest::{
     DylintLibrary, DylintMetadata, DylintWorkspaceMetadata, fixture_cargo_toml, fixture_dylint_toml,
 };
 pub use project::{build_project, build_project_with_config};
+pub use tempfile::TempDir;
+
+use std::path::Path;
 
 /// Materialise a fixture project in a fresh [`TempDir`], run
 /// `cargo dylint --all` against it (sharing the warmed `target/`), and
