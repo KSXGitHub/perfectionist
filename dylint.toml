@@ -26,3 +26,10 @@ reexports = "split"
 # exactly-once concern the rule guards against does not apply.
 ["perfectionist::impure_macro_arguments"]
 ignore = ["Token"]
+
+# The markdown and URL scanners predate `excessive_cognitive_complexity`
+# and several of them score far above its default of 15. This ceiling
+# sits just above the highest of them so no new function may join them;
+# lower it as they are split.
+["perfectionist::excessive_cognitive_complexity"]
+max_complexity = 47
