@@ -300,6 +300,10 @@ fn attr_class(attr: &Attribute) -> AttrClass {
     let is_doc_comment = matches!(attr.kind, AttrKind::DocComment(..))
         || (attr.has_name(sym::doc)
             && matches!(attr.meta_kind(), Some(MetaItemKind::NameValue(_))));
+    // A `cfg_attr` is classified `Cfg` whatever it applies: the question
+    // here is which attributes `respect_cfg_blocks` governs, not whether
+    // the import is conditional, so this is deliberately not
+    // `crate::attr_tokens::is_cfg_gated`.
     if is_doc_comment {
         AttrClass::Doc
     } else if attr.has_name(sym::cfg) || attr.has_name(sym::cfg_attr) {

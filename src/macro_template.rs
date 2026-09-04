@@ -14,7 +14,8 @@
 //!   reach literals that format-args lowering would otherwise hide
 //!   from the late pass.
 
-use rustc_ast::token::{LitKind, TokenKind};
+use crate::attr_tokens::{split_top_level_commas, token_literal};
+use rustc_ast::token::LitKind;
 use rustc_ast::tokenstream::{TokenStream, TokenTree};
 use rustc_span::Span;
 
@@ -34,46 +35,21 @@ use rustc_span::Span;
 /// either folds escapes the raw form has none of, or rewrites *into*
 /// the raw form, so an already-raw literal is never a candidate.
 pub(crate) fn find_template_literal(tokens: &TokenStream) -> Option<Span> {
-    let mut argument_len: usize = 0;
-    let mut argument_lead_literal: Option<Span> = None;
-    let mut found: Option<Span> = None;
-    let finish_argument = |len: usize, lead: Option<Span>, found: &mut Option<Span>| {
-        if found.is_none() && len == 1 {
-            *found = lead;
-        }
-    };
-    for tree in tokens.iter() {
-        if is_top_level_comma(tree) {
-            finish_argument(argument_len, argument_lead_literal, &mut found);
-            argument_len = 0;
-            argument_lead_literal = None;
-            continue;
-        }
-        if argument_len == 0 {
-            argument_lead_literal = cooked_str_literal_span(tree);
-        }
-        argument_len += 1;
-    }
-    finish_argument(argument_len, argument_lead_literal, &mut found);
-    found
-}
-
-fn is_top_level_comma(tree: &TokenTree) -> bool {
-    matches!(tree, TokenTree::Token(token, _) if token.kind == TokenKind::Comma)
+    split_top_level_commas(tokens)
+        .into_iter()
+        .find_map(|argument| match argument.as_slice() {
+            [tree] => cooked_str_literal_span(tree),
+            _ => None,
+        })
 }
 
 fn cooked_str_literal_span(tree: &TokenTree) -> Option<Span> {
-    let TokenTree::Token(token, _) = tree else {
-        return None;
-    };
-    let TokenKind::Literal(literal) = token.kind else {
-        return None;
-    };
+    let (literal, span) = token_literal(tree)?;
     // Cooked (`"..."`) only. A raw string (`r"..."`) treats `\` as an
     // ordinary character, so neither the escape-aware fold in
     // `overly_long_print_macro` nor the escape-elimination scan in
     // `avoidable_string_escapes` may run over one.
-    matches!(literal.kind, LitKind::Str).then_some(token.span)
+    matches!(literal.kind, LitKind::Str).then_some(span)
 }
 
 /// Span of every cooked string literal anywhere in `tokens`, in source

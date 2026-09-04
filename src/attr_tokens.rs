@@ -9,15 +9,15 @@
 //! attribute: [`attribute_calls`] unwraps a `#[name(...)]` (looking
 //! through `#[cfg_attr(...)]`), [`is_cfg_gated`] answers whether a
 //! `#[cfg(...)]` gates a node, and [`split_top_level_commas`] /
-//! [`ident_name`] / [`str_literal`] read the argument tokens.
+//! [`ident_name`] / [`token_literal`] / [`str_literal`] read the
+//! argument tokens.
 //!
-//! Several rules already do these things by hand on parsed meta-items or
-//! macro-call streams — `unordered_derives` and `clap_help_markdown`
-//! recurse through `cfg_attr`, `import_grouping_mismatch` checks
-//! `cfg`-gating, `crate::macro_template` reads cooked string literals —
-//! so these are the shared forms those call sites can move onto.
+//! The token readers are useful beyond attributes: a macro call's
+//! arguments are the same comma-separated token stream, which is what
+//! `crate::macro_template` and `perfectionist::impure_macro_arguments`
+//! split.
 
-use rustc_ast::token::TokenKind;
+use rustc_ast::token::{Lit, TokenKind};
 use rustc_ast::tokenstream::{TokenStream, TokenTree};
 use rustc_ast::{AttrArgs, AttrKind, Attribute, LitKind};
 use rustc_span::{Span, Symbol, sym};
@@ -137,15 +137,24 @@ pub(crate) fn ident_name(tree: &TokenTree) -> Option<Symbol> {
     token.ident().map(|(ident, _raw)| ident.name)
 }
 
-/// The cooked value of a string literal token, raw and escaped forms
-/// alike — `r"{_0}"` and `"{_0}"` are the same string.
-pub(crate) fn str_literal(tree: &TokenTree) -> Option<String> {
+/// The literal a token tree holds, with the token's span. Callers that
+/// want the literal's *value* decode it further; one that only needs to
+/// point at it — `crate::macro_template` locating a format template —
+/// keeps the span.
+pub(crate) fn token_literal(tree: &TokenTree) -> Option<(Lit, Span)> {
     let TokenTree::Token(token, _) = tree else {
         return None;
     };
     let TokenKind::Literal(literal) = token.kind else {
         return None;
     };
+    Some((literal, token.span))
+}
+
+/// The cooked value of a string literal token, raw and escaped forms
+/// alike — `r"{_0}"` and `"{_0}"` are the same string.
+pub(crate) fn str_literal(tree: &TokenTree) -> Option<String> {
+    let (literal, _span) = token_literal(tree)?;
     let LitKind::Str(symbol, _style) = LitKind::from_token_lit(literal).ok()? else {
         return None;
     };

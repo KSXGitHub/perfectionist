@@ -4,8 +4,8 @@
 //! describing the target source order under a chosen [`Style`]. The
 //! identity permutation means the entries are already in order.
 
+use crate::derive_list::DeriveEntry;
 use core::cmp::Ordering;
-use rustc_span::Span;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -18,16 +18,6 @@ pub(super) enum Style {
     /// listed order; remaining traits are sorted alphabetically
     /// after.
     PrefixThenAlphabetical,
-}
-
-pub(super) struct DeriveEntry {
-    /// Final segment of the entry's path. `serde::Deserialize` is
-    /// represented as `"Deserialize"`. Used for ordering decisions;
-    /// the full path is recovered from `span` via the source map
-    /// when emitting the suggestion.
-    pub(super) final_name: String,
-    /// Source span of the entry, covering its full path text.
-    pub(super) span: Span,
 }
 
 /// Return a permutation of `0..entries.len()` describing the desired
@@ -44,7 +34,7 @@ pub(super) fn desired_order(
             // `slice::sort_by` is stable, so equal-key entries
             // retain their original relative order.
             indices.sort_by(|left, right| {
-                ascii_ci_cmp(&entries[*left].final_name, &entries[*right].final_name)
+                ascii_ci_cmp(entries[*left].name.as_str(), entries[*right].name.as_str())
             });
             indices
         }
@@ -59,7 +49,7 @@ pub(super) fn desired_order(
             // ordering", not "required to be present".
             for prefix_name in prefix {
                 for (index, entry) in entries.iter().enumerate() {
-                    if !used[index] && entry.final_name == *prefix_name {
+                    if !used[index] && entry.name.as_str() == prefix_name.as_str() {
                         order.push(index);
                         used[index] = true;
                         break;
@@ -68,7 +58,7 @@ pub(super) fn desired_order(
             }
             let mut rest: Vec<usize> = (0..entries.len()).filter(|index| !used[*index]).collect();
             rest.sort_by(|left, right| {
-                ascii_ci_cmp(&entries[*left].final_name, &entries[*right].final_name)
+                ascii_ci_cmp(entries[*left].name.as_str(), entries[*right].name.as_str())
             });
             order.extend(rest);
             order

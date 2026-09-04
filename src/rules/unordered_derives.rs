@@ -1,6 +1,7 @@
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
-use rustc_ast::{Attribute, MetaItemInner, MetaItemKind};
+use rustc_ast::Attribute;
+use rustc_ast::tokenstream::TokenStream;
 use rustc_errors::Applicability;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -8,8 +9,10 @@ use rustc_span::sym;
 
 mod ordering;
 
+use crate::attr_tokens::attribute_calls;
 use crate::common::DefaultState;
-use ordering::{DeriveEntry, Style, desired_order, is_identity};
+use crate::derive_list::derive_entries;
+use ordering::{Style, desired_order, is_identity};
 
 declare_tool_lint! {
     /// ### What it does
@@ -184,75 +187,33 @@ impl EarlyLintPass for UnorderedDerives {
         // still named `cfg_attr` with the `derive(...)` un-applied
         // inside its argument list. A post-expansion pass would never
         // see either, since the derive tokens are consumed during
-        // expansion — that is also why the `cfg_attr` form has to be
-        // unwrapped here rather than waiting for the synthesised
-        // `derive` attribute (which never materialises pre-expansion).
-        if attribute.has_name(sym::derive) {
-            if let Some(entries) = attribute.meta_item_list() {
-                self.check_derive_list(lint_context, &entries);
+        // expansion — that is also why `attribute_calls` has to unwrap
+        // the `cfg_attr` form here rather than waiting for the
+        // synthesised `derive` attribute (which never materialises
+        // pre-expansion).
+        for call in attribute_calls(attribute) {
+            if call.name == sym::derive {
+                self.check_derive_list(lint_context, call.tokens);
             }
-        } else if attribute.has_name(sym::cfg_attr)
-            && let Some(cfg_attr_args) = attribute.meta_item_list()
-        {
-            self.check_cfg_attr_args(lint_context, &cfg_attr_args);
         }
     }
 }
 
 impl UnorderedDerives {
-    /// Order every `derive(...)` gated by a `cfg_attr`, given its
-    /// argument list `cfg_attr(<cfg>, attr_1, attr_2, ...)`. The first
-    /// item is the `cfg` predicate (left untouched); every item after it
-    /// is an attribute the predicate gates. Any of them may be a
-    /// `derive(...)` whose list we must order — or a nested `cfg_attr`
-    /// (`cfg_attr(a, cfg_attr(b, derive(...)))`, equivalent to
-    /// `cfg_attr(all(a, b), derive(...))`), whose own argument list we
-    /// recurse into so a derive wrapped at any nesting depth is reached.
-    fn check_cfg_attr_args(
-        &self,
-        lint_context: &EarlyContext<'_>,
-        cfg_attr_args: &[MetaItemInner],
-    ) {
-        for wrapped_attribute in cfg_attr_args.iter().skip(1) {
-            let Some(wrapped_meta_item) = wrapped_attribute.meta_item() else {
-                continue;
-            };
-            let MetaItemKind::List(entries) = &wrapped_meta_item.kind else {
-                continue;
-            };
-            if wrapped_meta_item.has_name(sym::derive) {
-                self.check_derive_list(lint_context, entries);
-            } else if wrapped_meta_item.has_name(sym::cfg_attr) {
-                self.check_cfg_attr_args(lint_context, entries);
-            }
-        }
-    }
-
-    fn check_derive_list(&self, lint_context: &EarlyContext<'_>, entries: &[MetaItemInner]) {
+    fn check_derive_list(&self, lint_context: &EarlyContext<'_>, tokens: &TokenStream) {
+        // A list with an entry that is not a path is malformed, and
+        // reordering entries we could not read would emit a confusing
+        // suggestion.
+        let Some(parsed) = derive_entries(tokens) else {
+            return;
+        };
         // Fewer than two entries can never be in the wrong order: a
         // zero- or one-entry list is vacuously sorted. The same
         // bail-out also short-circuits the very common case of
         // `#[derive(Foo)]` with a single trait. Two-entry lists
         // *can* be out of order and are analysed in full below.
-        if entries.len() < 2 {
+        if parsed.len() < 2 {
             return;
-        }
-        let mut parsed: Vec<DeriveEntry> = Vec::with_capacity(entries.len());
-        for entry in entries {
-            // `MetaItemInner::Lit` cannot legally appear inside a
-            // `#[derive(...)]` list — derive takes paths only. If we
-            // see one, the attribute is malformed; bail rather than
-            // emit a confusing suggestion.
-            let Some(meta_item) = entry.meta_item() else {
-                return;
-            };
-            let Some(last_segment) = meta_item.path.segments.last() else {
-                return;
-            };
-            parsed.push(DeriveEntry {
-                final_name: last_segment.ident.name.as_str().to_owned(),
-                span: entry.span(),
-            });
         }
         let desired = desired_order(self.style, &self.prefix, &parsed);
         if is_identity(&desired) {
@@ -270,7 +231,7 @@ impl UnorderedDerives {
                 // snippet is unavailable for any reason, fall back
                 // to the final-segment name. The suggestion stays
                 // applicable; only the path prefix is lost.
-                Err(_) => snippets.push(parsed[index].final_name.clone()),
+                Err(_) => snippets.push(parsed[index].name.as_str().to_owned()),
             }
         }
         let new_text = snippets.join(", ");

@@ -19,6 +19,7 @@
 //! implementation notes. The walker is `take_*`-style per
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
 
+use crate::attr_tokens::split_top_level_commas;
 use rustc_ast::token::{Delimiter, IdentIsRaw, Token, TokenKind};
 use rustc_ast::tokenstream::{TokenStream, TokenTree};
 use rustc_span::kw;
@@ -49,23 +50,20 @@ pub(super) struct PurityContext<'a> {
 /// argument's [`looks_like_expression`] check can skip it as a
 /// non-expression position the macro author chose.
 pub(super) fn split_top_level_arguments(stream: &TokenStream) -> Option<Vec<Vec<TokenTree>>> {
-    let mut arguments: Vec<Vec<TokenTree>> = Vec::new();
-    let mut current: Vec<TokenTree> = Vec::new();
-    for tree in stream.iter() {
-        if let TokenTree::Token(token, _) = tree {
-            match token.kind {
-                TokenKind::Semi => return None,
-                TokenKind::Comma => {
-                    arguments.push(core::mem::take(&mut current));
-                    continue;
-                }
-                _ => {}
-            }
-        }
-        current.push(tree.clone());
+    if stream
+        .iter()
+        .any(|tree| matches!(tree, TokenTree::Token(token, _) if token.kind == TokenKind::Semi))
+    {
+        return None;
     }
-    if !current.is_empty() {
-        arguments.push(current);
+    let mut arguments: Vec<Vec<TokenTree>> = split_top_level_commas(stream)
+        .into_iter()
+        .map(|argument| argument.into_iter().cloned().collect())
+        .collect();
+    // A comma opens a new group, so a trailing comma leaves an empty
+    // last group that is not an argument the rule can check.
+    if arguments.last().is_some_and(|argument| argument.is_empty()) {
+        arguments.pop();
     }
     Some(arguments)
 }

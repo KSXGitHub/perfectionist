@@ -15,11 +15,13 @@
 //! block up by its start offset, so a block whose offset is absent
 //! belongs to a non-clap item (or an overridden node) and is skipped.
 
+use crate::attr_tokens::attribute_calls_of;
+use crate::derive_list::derive_names;
 use crate::module_reparse::SpanRange;
 use rustc_ast::{
     AttrKind, Attribute, Crate, Item, ItemKind, MetaItemInner, MetaItemKind, ModKind, VariantData,
 };
-use rustc_span::{Symbol, sym};
+use rustc_span::Symbol;
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 /// What the lint should do with a clap-bound, doc-commented node.
@@ -218,55 +220,18 @@ fn has_verbatim(attrs: &[Attribute]) -> bool {
 /// Collect the inner meta items of every `#[clap(...)]` / `#[arg(...)]`
 /// / `#[command(...)]` / `#[value(...)]` attribute on the node, looking
 /// through any `#[cfg_attr(<cfg>, clap(...))]` gate — the form a crate
-/// uses to keep its clap attributes behind a `cli` feature. The derive
-/// detector ([`has_clap_derive`]) already descends into `cfg_attr`;
-/// override and `verbatim_doc_comment` detection must match, or a gated
-/// `#[clap(help = "...")]` is missed and the doc comment is wrongly
-/// flagged as leaking into `--help`.
+/// uses to keep its clap attributes behind a `cli` feature. Gate
+/// handling has to match the derive detector's ([`has_clap_derive`]),
+/// or a gated `#[clap(help = "...")]` is missed and the doc comment is
+/// wrongly flagged as leaking into `--help`; both read their attributes
+/// through [`crate::attr_tokens`].
 fn clap_namespace_items(attrs: &[Attribute]) -> Vec<MetaItemInner> {
-    let mut out = Vec::new();
-    for attr in attrs {
-        if is_clap_namespace(attr) {
-            out.extend(attr.meta_item_list().unwrap_or_default());
-        } else if attr.has_name(sym::cfg_attr)
-            && let Some(list) = attr.meta_item_list()
-        {
-            collect_cfg_attr_clap_items(list.get(1..).unwrap_or_default(), &mut out);
-        }
-    }
-    out
-}
-
-/// Pull the inner items of clap-namespace meta items out of the
-/// conditionally-applied tail of a `#[cfg_attr(...)]`, recursing through
-/// nested `cfg_attr` the same way [`cfg_attr_has_derive`] does.
-fn collect_cfg_attr_clap_items(items: &[MetaItemInner], out: &mut Vec<MetaItemInner>) {
-    for item in items {
-        let Some(meta) = item.meta_item() else {
-            continue;
-        };
-        if let MetaItemKind::List(inner) = &meta.kind {
-            if is_clap_namespace_path(meta) {
-                out.extend(inner.iter().cloned());
-            } else if meta.has_name(sym::cfg_attr) {
-                collect_cfg_attr_clap_items(inner.get(1..).unwrap_or_default(), out);
-            }
-        }
-    }
-}
-
-fn is_clap_namespace(attr: &Attribute) -> bool {
-    CLAP_ATTR_NAMESPACES
-        .iter()
-        .any(|ns| attr.has_name(Symbol::intern(ns)))
-}
-
-fn is_clap_namespace_path(meta: &rustc_ast::MetaItem) -> bool {
-    meta.path.segments.last().is_some_and(|segment| {
-        CLAP_ATTR_NAMESPACES
-            .iter()
-            .any(|ns| segment.ident.name == Symbol::intern(ns))
-    })
+    attribute_calls_of(attrs)
+        .into_iter()
+        .filter(|call| CLAP_ATTR_NAMESPACES.contains(&call.name.as_str()))
+        .filter_map(|call| MetaItemKind::list_from_tokens(call.tokens.clone()))
+        .flatten()
+        .collect()
 }
 
 /// The clap derives that turn a *container's* own (type-level) doc
@@ -279,7 +244,7 @@ const COMMAND_ABOUT_DERIVES: &[&str] = &["Parser", "CommandFactory", "Clap"];
 /// Whether the node's attributes derive a clap help-source trait,
 /// including a `#[cfg_attr(<cfg>, derive(...))]`-gated derive.
 fn has_clap_derive(attrs: &[Attribute]) -> bool {
-    has_derive_matching(attrs, &|name| CLAP_DERIVES.contains(&name))
+    derives_any(&derive_names(attrs), CLAP_DERIVES)
 }
 
 /// Whether an enum's own (type-level) doc comment can reach `--help`. A
@@ -289,47 +254,15 @@ fn has_clap_derive(attrs: &[Attribute]) -> bool {
 /// command-producing trait (`Parser` / `CommandFactory`, or the legacy
 /// `Clap`), which does consume the type doc, the container doc is live.
 fn enum_container_doc_reaches_help(attrs: &[Attribute]) -> bool {
-    !has_derive_matching(attrs, &|name| name == "ValueEnum")
-        || has_derive_matching(attrs, &|name| COMMAND_ABOUT_DERIVES.contains(&name))
+    let derives = derive_names(attrs);
+    !derives_any(&derives, &["ValueEnum"]) || derives_any(&derives, COMMAND_ABOUT_DERIVES)
 }
 
-/// Whether any `#[derive(...)]` on the node — including a
-/// `#[cfg_attr(<cfg>, derive(...))]`-gated one — names a derive matching
-/// `pred`.
-fn has_derive_matching(attrs: &[Attribute], pred: &dyn Fn(&str) -> bool) -> bool {
-    attrs.iter().any(|attr| {
-        if attr.has_name(sym::derive) {
-            attr.meta_item_list()
-                .is_some_and(|entries| derive_entries_match(&entries, pred))
-        } else if attr.has_name(sym::cfg_attr) {
-            attr.meta_item_list()
-                .is_some_and(|args| cfg_attr_has_derive(args.get(1..).unwrap_or(&[]), pred))
-        } else {
-            false
-        }
-    })
-}
-
-fn cfg_attr_has_derive(items: &[MetaItemInner], pred: &dyn Fn(&str) -> bool) -> bool {
-    items.iter().any(|item| {
-        let Some(meta) = item.meta_item() else {
-            return false;
-        };
-        if meta.has_name(sym::derive) {
-            matches!(&meta.kind, MetaItemKind::List(entries) if derive_entries_match(entries, pred))
-        } else if meta.has_name(sym::cfg_attr) {
-            matches!(&meta.kind, MetaItemKind::List(args) if cfg_attr_has_derive(args.get(1..).unwrap_or(&[]), pred))
-        } else {
-            false
-        }
-    })
-}
-
-fn derive_entries_match(entries: &[MetaItemInner], pred: &dyn Fn(&str) -> bool) -> bool {
-    entries.iter().any(|entry| {
-        entry
-            .meta_item()
-            .and_then(|meta| meta.path.segments.last())
-            .is_some_and(|segment| pred(segment.ident.name.as_str()))
-    })
+/// Whether any of `names` — final path segments, as
+/// [`crate::derive_list::derive_names`] yields them — is among the
+/// node's derives.
+fn derives_any(derives: &HashSet<Symbol>, names: &[&str]) -> bool {
+    derives
+        .iter()
+        .any(|derive| names.contains(&derive.as_str()))
 }

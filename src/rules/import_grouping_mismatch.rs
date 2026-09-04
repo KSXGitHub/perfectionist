@@ -5,7 +5,7 @@ use rustc_ast::{Item, ItemKind, ModKind, VisibilityKind};
 use rustc_errors::Applicability;
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::{BytePos, Span, sym};
+use rustc_span::{BytePos, Span};
 use std::collections::HashSet;
 
 mod check;
@@ -13,6 +13,7 @@ mod classify;
 mod config;
 mod render;
 
+use crate::attr_tokens::is_cfg_gated;
 use crate::common::DefaultState;
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use crate::module_reparse::{SpanRange, parse_crate_module_files};
@@ -404,11 +405,12 @@ impl ImportGroupingMismatch {
         if item.span.from_expansion() {
             return None;
         }
-        // Only `#[cfg(...)]` gates the import's *existence*, which is what
-        // the trailing cfg group is about. `#[cfg_attr(...)]` conditionally
-        // applies some other attribute — the import itself is always
-        // present — so it does not make a statement cfg-gated for grouping.
-        let is_cfg_gated = item.attrs.iter().any(|attr| attr.has_name(sym::cfg));
+        // A `#[cfg(...)]` gates the import's *existence*, which is what
+        // the trailing cfg group is about — including one applied through
+        // `#[cfg_attr(<cfg>, cfg(...))]`. A `cfg_attr` that applies any
+        // other attribute leaves the import unconditionally present, so
+        // it does not make a statement cfg-gated for grouping.
+        let is_cfg_gated = is_cfg_gated(&item.attrs);
         // A re-export is any `use` with an explicit visibility; only a
         // private (`Inherited`) import is not one. The `reexports` knob
         // keys off this to pull re-exports into their own leading region.
