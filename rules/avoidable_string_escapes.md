@@ -75,7 +75,10 @@ let path = r"C:\Users\foo\bar";
 
 Configure via `dylint.toml` under `["perfectionist::avoidable_string_escapes"]`. Every field is optional; the per-field prose below states the default.
 
-### `min_escapes_to_trigger`: `non-zero unsigned integer` (optional)
+### Field: `min_escapes_to_trigger`
+
+- _Type:_ `non-zero unsigned integer`
+- _Optional_
 
 Minimum number of eliminable escapes a string must contain
 before the lint fires. Default `1` catches every escapable
@@ -86,7 +89,10 @@ suggesting `r"hello"` for `"hello"` would just trip
 `clippy::needless_raw_strings` on the next pass, and a
 minimum of `1` already excludes that case.
 
-### `eligible_escapes`: `[string]` (optional)
+### Field: `eligible_escapes`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Escape sequences considered eliminable by switching to raw
 form. Only the three Rust escapes whose decoded character

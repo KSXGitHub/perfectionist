@@ -52,20 +52,32 @@ ref that always denotes the exact content the author linked to.
 
 Configure via `dylint.toml` under `["perfectionist::unpinned_repo_ref"]`. Every field is optional; the per-field prose below states the default.
 
-### `scan_doc_comments`: `boolean` (optional)
+### Field: `scan_doc_comments`
+
+- _Type:_ `boolean`
+- _Optional_
 
 Scan doc comments (`///`, `//!`, `/** */`, `/*! */`).
 Defaults to `true`.
 
-### `scan_regular_comments`: `boolean` (optional)
+### Field: `scan_regular_comments`
+
+- _Type:_ `boolean`
+- _Optional_
 
 Scan regular comments (`//`, `/* */`). Defaults to `true`.
 
-### `scan_string_literals`: `boolean` (optional)
+### Field: `scan_string_literals`
+
+- _Type:_ `boolean`
+- _Optional_
 
 Scan string literals (`"..."`, `r"..."`). Defaults to `false`.
 
-### `sha_recognition_length`: `unsigned integer` (optional)
+### Field: `sha_recognition_length`
+
+- _Type:_ `unsigned integer`
+- _Optional_
 
 Minimum hex length for a ref to be recognised as a commit SHA.
 A pure-hex ref shorter than this is treated as a branch and
@@ -75,7 +87,10 @@ which trades a small false-negative window (branch names like
 branch names that merely look hex-ish. Set to `1` to treat any
 pure-hex ref as a SHA.
 
-### `allow_version_patterns`: `boolean` (optional)
+### Field: `allow_version_patterns`
+
+- _Type:_ `boolean`
+- _Optional_
 
 Whether refs shaped like version patterns (`1.2.3`, `v1.2.3`, or
 either form with a non-empty `-suffix` of ASCII letters, ASCII
@@ -84,7 +99,10 @@ commit SHA. Defaults to `false`; tags can move, and a
 version-shaped branch name is valid Git, so projects must opt in
 to this convenience explicitly.
 
-### `hosts`: `[HostEntry]` (optional)
+### Field: `hosts`
+
+- _Type:_ `[HostEntry]`
+- _Optional_
 
 Hostnames to scan, each mapped to the forge kind that fixes its
 URL shape. Defaults to the common public forges:
@@ -94,7 +112,10 @@ Register a self-hosted instance by adding an entry with the
 matching `kind`. Supplying this field replaces the built-in
 list rather than extending it.
 
-### `skip_hosts`: `[string]` (optional)
+### Field: `skip_hosts`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Hostnames to skip, as `*`-glob patterns compared
 case-insensitively against the URL host. A host matching any
@@ -103,18 +124,22 @@ Defaults to `[]`.
 
 ### Types
 
-#### `HostEntry` (struct)
+#### Type: `HostEntry`
 
 One row of the `hosts` table: a hostname (or glob) and the forge
 kind whose URL shape applies to it.
 
-##### `hostname`: `string`
+##### Field: `hostname`
+
+- _Type:_ `string`
 
 Hostname to match, compared case-insensitively. A `*` wildcard
 matches any run of characters, so `gitlab.*.example.com`
 covers every subdomain in one entry.
 
-##### `kind`: `ForgeKind`
+##### Field: `kind`
+
+- _Type:_ `ForgeKind`
 
 Forge kind whose URL shape applies to this hostname: one of
 `github` (also covers gitee), `gitlab`, `bitbucket`, `gitea`

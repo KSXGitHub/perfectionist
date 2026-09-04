@@ -77,11 +77,17 @@ pub enum RuntimeError {
 
 Configure via `dylint.toml` under `["perfectionist::exhaustive_error_enums"]`. Every field is optional; the per-field prose below states the default.
 
-### `require_for`: `RequireFor` (optional)
+### Field: `require_for`
+
+- _Type:_ `RequireFor`
+- _Optional_
 
 Visibility threshold for the rule.
 
-### `extra_suffixes`: `[string]` (optional)
+### Field: `extra_suffixes`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Additional identifier suffixes that mark a type as "an
 error" purely by name, without inspecting its trait
@@ -90,7 +96,10 @@ implementations. Merged with the built-in defaults
 vocabulary here (`Failure`, `Fault`, ...) without having to
 re-state the standard suffix.
 
-### `ignore_suffixes`: `[string]` (optional)
+### Field: `ignore_suffixes`
+
+- _Type:_ `[string]`
+- _Optional_
 
 Identifier suffixes to drop from the by-name match set,
 even if they appear in the built-in defaults or in
@@ -103,9 +112,11 @@ the by-name branch — types that implement
 
 ### Types
 
-#### `RequireFor` (enum)
+#### Type: `RequireFor`
 
-##### `"pub"` (Rust: `Pub`)
+##### Choice: `"pub"`
+
+- _Rust:_ `Pub`
 
 Require `#[non_exhaustive]` on items that are *effectively*
 reachable from outside the crate (declared `pub`, re-exported
@@ -113,7 +124,9 @@ reachable from outside the crate (declared `pub`, re-exported
 `pub enum FooError` inside a non-`pub` module is not flagged
 because it cannot be matched on by any downstream crate.
 
-##### `"pub_crate"` (Rust: `PubCrate`)
+##### Choice: `"pub_crate"`
+
+- _Rust:_ `PubCrate`
 
 In addition to the `Pub` case, require `#[non_exhaustive]`
 on items literally declared `pub(crate)` (i.e., restricted
@@ -121,7 +134,9 @@ to the crate root). Items declared `pub(in some::module)`
 are not promoted by this mode even if their effective reach
 happens to extend to the crate root.
 
-##### `"all"` (Rust: `All`)
+##### Choice: `"all"`
+
+- _Rust:_ `All`
 
 Require `#[non_exhaustive]` on every error-shaped item
 regardless of visibility.
