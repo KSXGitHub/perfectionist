@@ -43,7 +43,17 @@ fn dylint_toml(mut config: RuleConfig) -> String {
     config.reexports.get_or_insert("grouped");
     let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
     let rule_table = toml::to_string(&table).expect("serialise rule config as dylint.toml");
-    format!("[perfectionist]\nenable = [\"import_grouping_mismatch\"]\n\n{rule_table}")
+    // The fixtures order their support modules, imports and re-exports
+    // to read as cases for the rule under test, a layout
+    // `arbitrary_source_item_ordering` flags; disable it so its findings
+    // stay out of the snapshot.
+    format!(
+        "[perfectionist]\n\
+         enable = [\"import_grouping_mismatch\"]\n\
+         disable = [\"arbitrary_source_item_ordering\"]\n\
+         \n\
+         {rule_table}",
+    )
 }
 
 fn run(src_base: &str, config: RuleConfig) {

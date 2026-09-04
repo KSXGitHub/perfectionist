@@ -17,10 +17,6 @@ pattern that several rules call out by reference — live in
 
 ## Index
 
-### Module and file layout
-- [`arbitrary-source-item-ordering.md`](./arbitrary-source-item-ordering.md) — within a module file,
-  `pub mod` first, then `pub use`, then private items.
-
 ### Imports
 - [`core-instead-of-std.md`](./core-instead-of-std.md) — for projects that
   target `std` exclusively, flag `core::` / `alloc::` paths whose item is

@@ -3,6 +3,7 @@
 #![allow(
     unknown_lints, perfectionist::import_granularity_mismatch,
     perfectionist::import_grouping_mismatch,
+    perfectionist::arbitrary_source_item_ordering,
     dead_code,
     unused_imports,
     unused_extern_crates,

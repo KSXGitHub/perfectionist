@@ -2,7 +2,13 @@
 //!
 //! The crate-level mention of `Helper` resolves at the crate root, so
 //! this very line is flagged too.
-#![allow(dead_code, reason = "ui fixture")]
+#![feature(register_tool)]
+#![register_tool(perfectionist)]
+#![allow(
+    dead_code,
+    perfectionist::arbitrary_source_item_ordering,
+    reason = "ui fixture"
+)]
 
 pub struct Helper;
 

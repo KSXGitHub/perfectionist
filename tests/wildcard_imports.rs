@@ -37,7 +37,17 @@ fn dylint_toml(config: RuleConfig) -> String {
     // The rule is active by default, so no `[perfectionist] enable`
     // table is needed — only the per-rule knobs.
     let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
-    toml::to_string(&table).expect("serialise rule config as dylint.toml")
+    let rule_table = toml::to_string(&table).expect("serialise rule config as dylint.toml");
+    // The fixtures order their support modules, imports and re-exports
+    // to read as cases for the rule under test, a layout
+    // `arbitrary_source_item_ordering` flags; disable it so its findings
+    // stay out of the snapshot.
+    format!(
+        "[perfectionist]\n\
+         disable = [\"arbitrary_source_item_ordering\"]\n\
+         \n\
+         {rule_table}",
+    )
 }
 
 fn run(src_base: &str, config: RuleConfig) {

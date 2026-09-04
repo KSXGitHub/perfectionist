@@ -1,0 +1,81 @@
+warning: `pub mod` declaration appears after a `pub use` re-export
+  --> $DIR/arbitrary_source_item_ordering.rs:32:5
+   |
+LL |     pub mod parser {}
+   |     ^^^^^^^^^^^^^^^^^
+   |
+note: this `pub use` re-export belongs below it
+  --> $DIR/arbitrary_source_item_ordering.rs:30:5
+   |
+LL |     pub use self::printer::Printer;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: a module body is ordered `pub mod` declarations, then `pub use` re-exports, then private imports and other items
+   = note: `#[warn(perfectionist::arbitrary_source_item_ordering)]` on by default
+
+warning: `pub use` re-export appears after a private `use` import
+  --> $DIR/arbitrary_source_item_ordering.rs:39:5
+   |
+LL |     pub use std::path::Path;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this private `use` import belongs below it
+  --> $DIR/arbitrary_source_item_ordering.rs:37:5
+   |
+LL |     use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: a module body is ordered `pub mod` declarations, then `pub use` re-exports, then private imports and other items
+
+warning: `pub mod` declaration appears after a private `use` import
+  --> $DIR/arbitrary_source_item_ordering.rs:46:5
+   |
+LL |     pub mod nested {}
+   |     ^^^^^^^^^^^^^^^^^
+   |
+note: this private `use` import belongs below it
+  --> $DIR/arbitrary_source_item_ordering.rs:44:5
+   |
+LL |     use std::collections::BTreeMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: a module body is ordered `pub mod` declarations, then `pub use` re-exports, then private imports and other items
+
+warning: `pub use` re-export appears after a non-import item
+  --> $DIR/arbitrary_source_item_ordering.rs:53:5
+   |
+LL |     pub use std::path::Component;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this non-import item belongs below it
+  --> $DIR/arbitrary_source_item_ordering.rs:51:5
+   |
+LL |     fn helper() {}
+   |     ^^^^^^^^^^^^^^
+   = help: a module body is ordered `pub mod` declarations, then `pub use` re-exports, then private imports and other items
+
+warning: `pub mod` declaration appears after a non-import item
+  --> $DIR/arbitrary_source_item_ordering.rs:64:5
+   |
+LL |     pub mod first {}
+   |     ^^^^^^^^^^^^^^^^
+   |
+note: this non-import item belongs below it
+  --> $DIR/arbitrary_source_item_ordering.rs:60:5
+   |
+LL |     struct Registry;
+   |     ^^^^^^^^^^^^^^^^
+   = help: a module body is ordered `pub mod` declarations, then `pub use` re-exports, then private imports and other items
+
+warning: `pub mod` declaration appears after a non-import item
+  --> $DIR/arbitrary_source_item_ordering.rs:66:5
+   |
+LL |     pub mod second {}
+   |     ^^^^^^^^^^^^^^^^^
+   |
+note: this non-import item belongs below it
+  --> $DIR/arbitrary_source_item_ordering.rs:60:5
+   |
+LL |     struct Registry;
+   |     ^^^^^^^^^^^^^^^^
+   = help: a module body is ordered `pub mod` declarations, then `pub use` re-exports, then private imports and other items
+
+warning: 6 warnings emitted
+
