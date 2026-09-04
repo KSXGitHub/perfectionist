@@ -155,7 +155,8 @@ impl Register for rule::ImportGranularityMismatch {
         // `check_crate` re-parses each source file instead, which reaches
         // every submodule while keeping `#[cfg(...)]` gates intact (parsing
         // does not strip cfg, unlike the post-expansion AST).
-        lint_store.register_late_pass(|_| Box::new(ImportGranularityMismatch::new()));
+        lint_store
+            .register_late_lint_pass(Box::new(|_| Box::new(ImportGranularityMismatch::new())));
     }
 }
 

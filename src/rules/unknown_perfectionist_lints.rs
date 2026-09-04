@@ -77,7 +77,8 @@ impl Register for rule::UnknownPerfectionistLints {
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        lint_store.register_early_pass(|| Box::new(UnknownPerfectionistLints::new()));
+        lint_store
+            .register_early_lint_pass(Box::new(|| Box::new(UnknownPerfectionistLints::new())));
     }
 }
 

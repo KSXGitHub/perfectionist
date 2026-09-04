@@ -250,7 +250,7 @@ impl Register for rule::SingleLetterClosureParam {
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        lint_store.register_late_pass(|_| Box::new(SingleLetterClosureParam::new()));
+        lint_store.register_late_lint_pass(Box::new(|_| Box::new(SingleLetterClosureParam::new())));
     }
 }
 
