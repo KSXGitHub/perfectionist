@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 #![allow(dead_code, non_camel_case_types, reason = "ui fixture")]
 
 pub struct Foo;

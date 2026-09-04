@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // aux-build:clap.rs
 //
 //! UI sweep for `clap_help_markdown` under the default

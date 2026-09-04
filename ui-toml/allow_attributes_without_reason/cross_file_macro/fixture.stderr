@@ -1,10 +1,10 @@
 warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
-  --> $DIR/fixture.rs:21:27
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |         #[cfg_attr(all(), allow $lints)]
    |                           ^^^^^^^^^^^^
    |
-  ::: $DIR/auxiliary/call_site.rs:6:1
+  ::: $DIR/auxiliary/call_site.rs:LL:CC
    |
 LL | silence!((dead_code));
    | --------------------- in this macro invocation

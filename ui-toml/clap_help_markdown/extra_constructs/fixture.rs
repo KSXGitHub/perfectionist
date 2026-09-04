@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // aux-build:clap.rs
 //
 //! `extra_constructs = ["bold", "italic", "list"]` flags emphasis and

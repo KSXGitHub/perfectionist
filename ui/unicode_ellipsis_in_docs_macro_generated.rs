@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // Regression test for
 // <https://github.com/KSXGitHub/perfectionist/pull/166#issuecomment-4562112957>:
 // a per-site `#[expect]` forwarded through a `macro_rules!` onto a

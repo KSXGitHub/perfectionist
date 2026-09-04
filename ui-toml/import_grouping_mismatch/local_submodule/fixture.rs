@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // aux-build:clap.rs
 #![feature(register_tool)]
 #![register_tool(perfectionist)]

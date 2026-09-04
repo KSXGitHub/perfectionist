@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 macro_rules! my_log {
     ($($arg:tt)*) => {};
 }

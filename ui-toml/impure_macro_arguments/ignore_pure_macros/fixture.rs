@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `ignore_pure_macros` drops names from the curated pure-macro
 // list. After putting `cfg` in `ignore_pure_macros`, the call is
 // treated as a regular macro invocation again and the surrounding

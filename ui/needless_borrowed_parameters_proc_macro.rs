@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // aux-build:proc_macro_synth_binding.rs
 
 // Regression test: `needless_borrowed_parameters` must not fire on a

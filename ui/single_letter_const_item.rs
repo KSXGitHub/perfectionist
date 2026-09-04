@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 #![allow(dead_code, unused_variables, reason = "ui fixture")]
 
 // Bad: free `const` item with a single-letter name.

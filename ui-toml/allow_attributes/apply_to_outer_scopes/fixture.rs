@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `apply_to_outer_scopes = true`: crate-level `#![allow(...)]` and
 // outer `#[allow(...)]` on a `mod` item become eligible.
 

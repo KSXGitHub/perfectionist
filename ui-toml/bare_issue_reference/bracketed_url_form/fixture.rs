@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 /// Bad: closes #55 — the `bracketed_url` form replaces the `#55`
 /// token with the issue URL wrapped in `<...>`, the autolink spelling
 /// that keeps rustdoc from swallowing trailing punctuation.

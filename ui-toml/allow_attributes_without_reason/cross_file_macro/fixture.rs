@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // The `emit_missing_field_no_sugg` fallback: the missing-`reason`
 // finding emitted without a code suggestion, because the attribute's
 // source snippet cannot be recovered.

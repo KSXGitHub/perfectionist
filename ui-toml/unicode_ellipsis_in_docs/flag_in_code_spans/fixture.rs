@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 /// Ellipsis inside an inline code span `let s = "…";` is flagged here.
 fn _code_span() {}
 

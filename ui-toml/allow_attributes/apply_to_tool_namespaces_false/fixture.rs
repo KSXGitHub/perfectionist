@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `apply_to_tool_namespaces = false`: `clippy::*`, `rustdoc::*`, and
 // built-in lints are still rewritten, but other tool namespaces such
 // as `perfectionist::*` are left alone.

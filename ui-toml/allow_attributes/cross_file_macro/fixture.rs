@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // The `emit_split_without_fix` fallback: a mixed `#[allow]` flagged
 // with prose only, because the source text the structured suggestions
 // need cannot be recovered.

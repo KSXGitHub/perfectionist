@@ -1,5 +1,5 @@
 warning: bare URL `https://example.com`; wrap in `<...>` or use a labelled markdown link
-  --> $DIR/bare_url.rs:1:48
+  --> $DIR/bare_url.rs:LL:CC
    |
 LL | // Bad: bare URL in a plain line comment — see https://example.com for details.
    |                                                ^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.com>`
@@ -7,43 +7,43 @@ LL | // Bad: bare URL in a plain line comment — see https://example.com for de
    = note: `#[warn(perfectionist::bare_url)]` on by default
 
 warning: bare URL `https://example.org.`; wrap in `<...>` or use a labelled markdown link
-  --> $DIR/bare_url.rs:4:39
+  --> $DIR/bare_url.rs:LL:CC
    |
 LL | /* Bad: bare URL in a block comment — https://example.org. */
    |                                       ^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.org.>`
 
 warning: bare URL `https://example.com`; wrap in `<...>` or use a labelled markdown link
-  --> $DIR/bare_url.rs:7:42
+  --> $DIR/bare_url.rs:LL:CC
    |
 LL | /// Bad: bare URL in a doc comment — see https://example.com for details.
    |                                          ^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.com>`
 
 warning: bare URL `https://example.org.`; wrap in `<...>` or use a labelled markdown link
-  --> $DIR/bare_url.rs:10:53
+  --> $DIR/bare_url.rs:LL:CC
    |
 LL | /** Bad: bare URL in a `/** */` doc-block comment — https://example.org. */
    |                                                     ^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.org.>`
 
 warning: bare URL `https://example.com.`; wrap in `<...>` or use a labelled markdown link
-  --> $DIR/bare_url.rs:14:56
+  --> $DIR/bare_url.rs:LL:CC
    |
 LL |     /*! Bad: bare URL in an inner `/*! */` doc-block — https://example.com. */
    |                                                        ^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.com.>`
 
 warning: bare URL `https://example.org.`; wrap in `<...>` or use a labelled markdown link
-  --> $DIR/bare_url.rs:58:27
+  --> $DIR/bare_url.rs:LL:CC
    |
 LL | // URL with trailing dot: https://example.org. — should be `MaybeIncorrect`.
    |                           ^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.org.>`
 
 warning: bare URL `https://example.com/trait.`; wrap in `<...>` or use a labelled markdown link
-  --> $DIR/bare_url.rs:65:41
+  --> $DIR/bare_url.rs:LL:CC
    |
 LL |     /// Bad: bare URL on a trait item — https://example.com/trait.
    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.com/trait.>`
 
 warning: bare URL `https://example.com/foreign.`; wrap in `<...>` or use a labelled markdown link
-  --> $DIR/bare_url.rs:70:43
+  --> $DIR/bare_url.rs:LL:CC
    |
 LL |     /// Bad: bare URL on a foreign item — https://example.com/foreign.
    |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.com/foreign.>`

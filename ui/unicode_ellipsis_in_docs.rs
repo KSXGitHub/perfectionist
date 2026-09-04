@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 //! Crate-level inner doc comment with ellipsis… is flagged.
 
 /// Outer doc comment with ellipsis… is flagged.

@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `scan_string_literals = true` (see `tests/unpinned_repo_ref.rs`)
 // turns on the opt-in string-literal surface, which is off by default,
 // so a branch ref in a string literal is flagged. A SHA-pinned literal

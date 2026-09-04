@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `extra_exempt_lints = ["clippy::too_many_arguments"]` adds an
 // exemption, and `ignore_exempt_lints = ["dead_code"]` drops a default
 // one: the clippy lint becomes exempt while `dead_code` is rewritten.

@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 /// Bad: bare email under `style = "mailto"` should emit a single
 /// `MachineApplicable` suggestion prefixing `mailto:` —
 /// security@example.net.

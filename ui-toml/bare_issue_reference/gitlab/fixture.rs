@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 /// Bad: closes #55 — with a `gitlab.com` `repository`, the forge
 /// is inferred as GitLab. A bare `#55` is always an issue on GitLab
 /// (merge requests are `!55`), so only the `/-/issues/55` suggestion

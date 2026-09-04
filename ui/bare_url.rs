@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // Bad: bare URL in a plain line comment — see https://example.com for details.
 // Good: <https://example.com> wrapped explicitly.
 

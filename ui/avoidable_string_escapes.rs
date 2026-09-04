@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // Bad: escaped quotes — JSON snippet.
 fn _escaped_quotes() {
     let _ = "{\"name\":\"foo\"}";

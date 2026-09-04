@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // aux-build:thiserror_stub.rs
 #![allow(dead_code, reason = "ui fixture")]
 

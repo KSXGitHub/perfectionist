@@ -1,5 +1,5 @@
 warning: imports must form one block, with `pub` re-exports in a leading block
-  --> $DIR/fixture.rs:24:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / use std::time::Duration;
 LL | | pub use crate::config::Args;
@@ -16,7 +16,7 @@ LL + use std::io::stdin;
    |
 
 warning: imports must form one block, with `pub` re-exports in a leading block and `#[cfg]`-gated imports in a trailing block
-  --> $DIR/fixture.rs:32:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / use std::cmp::Ordering;
 LL | | pub use crate::config::Opts;

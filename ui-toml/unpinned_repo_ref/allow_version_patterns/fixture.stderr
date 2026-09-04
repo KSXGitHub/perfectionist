@@ -1,5 +1,5 @@
 warning: repository URL ref `main` is not a pinned commit SHA
-  --> $DIR/fixture.rs:16:41
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// <https://github.com/owner/repo/blob/main/src/lib.rs>.
    |                                         ^^^^
@@ -8,7 +8,7 @@ LL | /// <https://github.com/owner/repo/blob/main/src/lib.rs>.
    = note: `#[warn(perfectionist::unpinned_repo_ref)]` on by default
 
 warning: repository URL ref `v1.2.3-abc$def` is not a pinned commit SHA
-  --> $DIR/fixture.rs:21:41
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// <https://github.com/owner/repo/blob/v1.2.3-abc$def/src/lib.rs>.
    |                                         ^^^^^^^^^^^^^^

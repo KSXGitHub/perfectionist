@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `hosts = [{ hostname = "git.example.com", kind = "gitlab" }]` (see
 // `tests/unpinned_repo_ref.rs`) registers a self-hosted GitLab, so the
 // gitlab-shaped branch URL below is flagged even though the host is

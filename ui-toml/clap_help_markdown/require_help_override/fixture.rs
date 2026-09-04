@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // aux-build:clap.rs
 //
 //! `require_help_override = true` flags every clap-derived doc comment

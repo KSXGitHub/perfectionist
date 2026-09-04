@@ -1,17 +1,17 @@
 warning: Unicode `…` (U+2026) in `my_panic!` message
-  --> $DIR/fixture.rs:33:39
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     my_panic!("project-specific panic …");
    |                                       ^ help: use ASCII `...` instead: `...`
    |
 note: the lint level is defined here
-  --> $DIR/fixture.rs:5:9
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #![warn(perfectionist::unicode_ellipsis_in_panic_messages)]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 warning: Unicode `…` (U+2026) in `expect_with` message
-  --> $DIR/fixture.rs:40:63
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     let _: i32 = Some(1).expect_with("project-specific expect …");
    |                                                               ^ help: use ASCII `...` instead: `...`

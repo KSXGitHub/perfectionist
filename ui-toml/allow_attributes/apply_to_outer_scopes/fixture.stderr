@@ -1,5 +1,5 @@
 warning: this `#[allow]` stays silent even after its lint stops firing
-  --> $DIR/fixture.rs:8:3
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[allow(non_snake_case, reason = "module-wide")]
    |   ^^^^^
@@ -16,7 +16,7 @@ LL + #[expect(non_snake_case, reason = "module-wide")]
    |
 
 warning: this `#[allow]` stays silent even after its lint stops firing
-  --> $DIR/fixture.rs:15:8
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     #![allow(clippy::needless_return, reason = "inner attr")]
    |        ^^^^^

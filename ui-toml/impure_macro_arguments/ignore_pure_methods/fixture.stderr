@@ -1,5 +1,5 @@
 warning: impure expression passed directly to a macro
-  --> $DIR/fixture.rs:10:19
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     debug_assert!(value.as_ref().is_some());
    |                   ^^^^^^^^^^^^^^^^^^^^^^^^

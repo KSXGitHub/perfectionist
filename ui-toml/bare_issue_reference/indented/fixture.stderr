@@ -1,5 +1,5 @@
 warning: ambiguous `#51`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
-  --> $DIR/fixture.rs:5:47
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     /// sits on the continuation line: closes #51 — which earlier was
    |                                               ^^^

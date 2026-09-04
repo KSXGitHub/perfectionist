@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // Default prefix is `[Debug, Default, Clone, Copy, PartialEq, Eq,
 // PartialOrd, Ord, Hash]`. Every derive used below is in the
 // prefix, so the rule enforces the prefix's exact order without

@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `ignore_pure_methods` drops names from the curated pure-method
 // list. After putting `as_ref` in `ignore_pure_methods`, the call
 // is treated as a regular method call again and the surrounding

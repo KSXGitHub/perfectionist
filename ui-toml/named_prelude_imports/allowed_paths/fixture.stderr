@@ -1,5 +1,5 @@
 warning: named item cherry-picked from a prelude module
-  --> $DIR/fixture.rs:27:9
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use crate::other::prelude::B;
    |         ^^^^^^^^^^^^^^^^^^^^^^^^ help: import the item from its canonical module: `crate::thing::B`

@@ -1,5 +1,5 @@
 warning: `Defined` resolves in scope; consider writing it as an intra-doc link
-  --> $DIR/fixture.rs:16:18
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     /// Mentions `Defined` (local), `InternalItem` (this module's
    |                  ^^^^^^^^^

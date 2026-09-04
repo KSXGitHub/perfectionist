@@ -1,5 +1,5 @@
 warning: unknown lint: `perfectionist::unicode_ellipsis_in_cоmments`
-  --> $DIR/unknown_perfectionist_lints_non_ascii.rs:17:9
+  --> $DIR/unknown_perfectionist_lints_non_ascii.rs:LL:CC
    |
 LL | #[allow(perfectionist::unicode_ellipsis_in_cоmments)]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL | #[allow(perfectionist::unicode_ellipsis_in_cоmments)]
    = note: `#[warn(perfectionist::unknown_perfectionist_lints)]` on by default
 
 warning: unknown lint: `perfectionist::wildcard_imports॑`
-  --> $DIR/unknown_perfectionist_lints_non_ascii.rs:25:9
+  --> $DIR/unknown_perfectionist_lints_non_ascii.rs:LL:CC
    |
 LL | #[allow(perfectionist::wildcard_imports॑)]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

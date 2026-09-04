@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // Bad: bare email in a plain line comment — report to security@example.com.
 // Good (angle): <security@example.com>.
 // Good (mailto): mailto:security@example.com.

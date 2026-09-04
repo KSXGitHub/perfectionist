@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `exempt_lints = ["clippy::module_name_repetitions"]`: an
 // attribute whose every named lint is on the exempt list is
 // accepted without a `reason`; a mixed list (one exempt, one not)

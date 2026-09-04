@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 /// Bad: closes #55 — the `bare_url` form replaces the `#55` token
 /// outright with the issue URL, dropping the token rather than
 /// wrapping it in markdown.

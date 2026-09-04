@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // Bare `#NNN` in a plain `//` comment is NOT flagged with default config
 // (`include_plain_comments = false`): fixes #999, supersedes #1000.
 

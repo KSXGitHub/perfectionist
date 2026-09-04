@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 //! Regression test for
 //! <https://github.com/KSXGitHub/perfectionist/issues/179>.
 //!

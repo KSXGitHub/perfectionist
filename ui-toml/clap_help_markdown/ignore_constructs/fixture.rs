@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // aux-build:clap.rs
 //
 //! `ignore_constructs = ["inline_link"]` drops inline links from the

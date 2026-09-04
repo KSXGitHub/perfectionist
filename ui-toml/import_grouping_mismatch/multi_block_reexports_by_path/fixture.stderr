@@ -1,5 +1,5 @@
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:24:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / pub use crate::config::Args;
 LL | | use std::time::Duration;

@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 #![allow(dead_code, reason = "ui fixture")]
 
 #[macro_export]

@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 use std::fmt::Write;
 
 // Stand-in for a `log`-family macro (the real `log` crate isn't linked

@@ -1,5 +1,5 @@
 warning: blank lines split the imports; this project keeps them in a single block
-  --> $DIR/fixture.rs:22:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / use std::time::Duration;
 LL | |

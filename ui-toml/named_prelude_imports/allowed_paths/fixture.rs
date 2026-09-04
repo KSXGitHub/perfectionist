@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(unknown_lints, dead_code, unused_imports, reason = "ui fixture")]

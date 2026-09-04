@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // Custom prefix is `["Hash", "Debug"]`. Traits not in this short
 // prefix list — `Clone`, `Copy`, `PartialEq` — are alphabetised
 // after the prefix-listed ones.

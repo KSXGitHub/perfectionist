@@ -1,5 +1,5 @@
 warning: imports are not collapsed to one `use` per crate root
-  --> $DIR/fixture.rs:15:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /     use std::collections::HashMap;
 LL | |     use std::io::Read;
@@ -10,20 +10,20 @@ LL | |     use std::path::PathBuf;
    = note: `#[warn(perfectionist::import_granularity_mismatch)]` on by default
 
 warning: imports are not collapsed to one `use` per crate root
-  --> $DIR/fixture.rs:24:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use std::{path::Path, path::PathBuf};
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: reorganize the imports: `use std::path::{Path, PathBuf};`
 
 warning: imports are not collapsed to one `use` per crate root
-  --> $DIR/fixture.rs:41:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /     use std::io::Read;
 LL | |     use std::io::*;
    | |___________________^ help: reorganize the imports: `use std::io::{Read, *};`
 
 warning: imports are not collapsed to one `use` per crate root
-  --> $DIR/fixture.rs:57:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /     use crate::thing;
 LL | |     use crate::thing::T;
@@ -41,7 +41,7 @@ LL +     use crate::{thing, thing::T};
    |
 
 warning: glob import brings an unbounded set of names into scope
-  --> $DIR/fixture.rs:42:9
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use std::io::*;
    |         ^^^^^^^^^^

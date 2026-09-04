@@ -1,3 +1,4 @@
+// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC"
 // `allow_version_patterns = true` (see `tests/unpinned_repo_ref.rs`)
 // accepts version-shaped refs. It does not disable the rule:
 // ordinary branch refs are still flagged.
