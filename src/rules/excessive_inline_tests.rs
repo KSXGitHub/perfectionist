@@ -1,4 +1,4 @@
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::rule_index::{Register, rule};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -81,6 +81,8 @@ const CONFIG_KEY: &str = "perfectionist::excessive_inline_tests";
 impl_lint_pass!(ExcessiveInlineTests => [EXCESSIVE_INLINE_TESTS]);
 
 impl Register for rule::ExcessiveInlineTests {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[EXCESSIVE_INLINE_TESTS]);
     }
@@ -97,11 +99,6 @@ impl Register for rule::ExcessiveInlineTests {
     /// build where `cfg(test)` is active, i.e. the unit-test target that
     /// `cargo dylint -- --all-targets` checks.
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive =
-            resolved_state("excessive_inline_tests", DefaultState::Active)
-        {
-            return;
-        }
         lint_store.register_late_pass(|_| Box::new(ExcessiveInlineTests::new()));
     }
 }

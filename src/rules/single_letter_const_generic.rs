@@ -1,7 +1,6 @@
 use crate::ascii_letter::AsciiLetter;
 use crate::common::{
     DefaultState, hir_in_external_macro, is_single_ascii_letter, resolve_symbol_set_from_chars,
-    resolved_state,
 };
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_help;
@@ -87,16 +86,13 @@ impl SingleLetterConstGeneric {
 impl_lint_pass!(SingleLetterConstGeneric => [SINGLE_LETTER_CONST_GENERIC]);
 
 impl Register for rule::SingleLetterConstGeneric {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[SINGLE_LETTER_CONST_GENERIC]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive =
-            resolved_state("single_letter_const_generic", DefaultState::Active)
-        {
-            return;
-        }
         lint_store.register_late_pass(|_| Box::new(SingleLetterConstGeneric::new()));
     }
 }

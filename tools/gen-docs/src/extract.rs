@@ -143,10 +143,9 @@ fn extract_rules(source_path: &Path, shared: &SharedTypes) -> Vec<Rule> {
             // Catalogue policy (see `README.md` and the
             // `Rule::default_state` doc comment): every rule's
             // `declare_tool_lint!` declares level `Warn`. The
-            // default-disabled axis lives in
-            // `pub(crate) const DEFAULT_STATE: DefaultState =
-            // DefaultState::Inactive;` alongside the macro, not in
-            // the level. A non-`Warn` here means the source has
+            // default-disabled axis lives in the rule's `Register`
+            // impl, as `const DEFAULT_STATE: DefaultState =
+            // DefaultState::Inactive;`, not in the level. A non-`Warn` here means the source has
             // drifted from the policy; we panic so a doc
             // regeneration catches it rather than silently
             // rendering the old "Default level" surface we removed.
@@ -154,10 +153,9 @@ fn extract_rules(source_path: &Path, shared: &SharedTypes) -> Vec<Rule> {
                 panic!(
                     "{} declares level `{level_ident}`; catalogue policy is that \
                      every `declare_tool_lint!` uses level `Warn`. Move the \
-                     off-by-default signal into \
-                     `pub(crate) const DEFAULT_STATE: DefaultState = \
-                     DefaultState::Inactive;` next to the macro and change \
-                     the level to `Warn`.",
+                     off-by-default signal into the rule's `Register` impl, \
+                     as `const DEFAULT_STATE: DefaultState = \
+                     DefaultState::Inactive;`, and change the level to `Warn`.",
                     source_path.display(),
                 );
             }
@@ -173,68 +171,83 @@ fn extract_rules(source_path: &Path, shared: &SharedTypes) -> Vec<Rule> {
         .collect()
 }
 
-/// Find a `pub(crate) const DEFAULT_STATE: DefaultState = <variant>;`
-/// item in `merged_file` and translate its enum-variant initializer
-/// into the corresponding [`DefaultState`]. The merged file already
-/// includes submodule items, so the constant can live in either the
-/// flat rule file or a sibling `<rule>/<concern>.rs` (in practice
-/// every rule keeps it next to `declare_tool_lint!`). Absence of the
-/// constant means the rule is on out of the box — the common case
-/// across the catalogue — so the function returns
-/// [`DefaultState::Active`].
+/// Find the `const DEFAULT_STATE: DefaultState = <variant>;` item in
+/// the rule's `Register` impl (see the rule activation model in
+/// `planned-rules/IMPLEMENTATION_CONVENTIONS.md`) and translate its
+/// enum-variant initializer into the corresponding [`DefaultState`].
+/// The merged file already includes submodule items, so the impl can
+/// live in either the flat rule file or a sibling `<rule>/<concern>.rs`
+/// (in practice every rule keeps it next to `declare_tool_lint!`).
+///
+/// The trait requires the constant, so a rule that reaches the
+/// registry has one. A source file that states none — a stand-in in a
+/// test, a rule-shaped file that never registered — is reported as on
+/// out of the box, the catalogue default.
 ///
 /// No `bool` intermediate: the runtime constant uses the same enum
 /// shape gen-docs renders, and we read its initializer's *path* end
 /// segment directly. `DefaultState::Inactive` and a `use ... Inactive`
 /// alias both work because we only inspect the last segment.
 fn extract_default_state(source_path: &Path, merged_file: &syn::File) -> DefaultState {
-    use syn::{Expr, ExprPath, Type, TypePath};
-
     for item in &merged_file.items {
-        let Item::Const(item_const) = item else {
+        let Item::Impl(item_impl) = item else {
             continue;
         };
-        if item_const.ident != "DEFAULT_STATE" {
-            continue;
+        for impl_item in &item_impl.items {
+            let syn::ImplItem::Const(impl_const) = impl_item else {
+                continue;
+            };
+            if impl_const.ident != "DEFAULT_STATE" {
+                continue;
+            }
+            return read_default_state(source_path, &impl_const.ty, &impl_const.expr);
         }
-        let is_default_state_type = matches!(
-            &*item_const.ty,
-            Type::Path(TypePath { path, qself: None }) if path.is_ident("DefaultState"),
-        );
-        if !is_default_state_type {
-            panic!(
-                "{}: `DEFAULT_STATE` must be typed `DefaultState`",
-                source_path.display(),
-            );
-        }
-        let Expr::Path(ExprPath {
-            path, qself: None, ..
-        }) = &*item_const.expr
-        else {
-            panic!(
-                "{}: `DEFAULT_STATE` initializer must be a `DefaultState` \
-                 variant path (e.g. `DefaultState::Active`); other \
-                 expressions defeat the gen-docs syntactic extraction",
-                source_path.display(),
-            );
-        };
-        let Some(last_segment) = path.segments.last() else {
-            panic!(
-                "{}: `DEFAULT_STATE` initializer has an empty path",
-                source_path.display(),
-            );
-        };
-        return match last_segment.ident.to_string().as_str() {
-            "Active" => DefaultState::Active,
-            "Inactive" => DefaultState::Inactive,
-            other => panic!(
-                "{}: `DEFAULT_STATE` initializer names unknown `DefaultState` \
-                 variant `{other}`; only `Active` and `Inactive` are valid.",
-                source_path.display(),
-            ),
-        };
     }
     DefaultState::Active
+}
+
+/// Validate one `DEFAULT_STATE` constant's type and initializer, and
+/// name the [`DefaultState`] its initializer points at. Every panic
+/// here names the file, since the fix is a source edit in it.
+fn read_default_state(source_path: &Path, ty: &syn::Type, expr: &syn::Expr) -> DefaultState {
+    use syn::{Expr, ExprPath, Type, TypePath};
+
+    let is_default_state_type = matches!(
+        ty,
+        Type::Path(TypePath { path, qself: None }) if path.is_ident("DefaultState"),
+    );
+    if !is_default_state_type {
+        panic!(
+            "{}: `DEFAULT_STATE` must be typed `DefaultState`",
+            source_path.display(),
+        );
+    }
+    let Expr::Path(ExprPath {
+        path, qself: None, ..
+    }) = expr
+    else {
+        panic!(
+            "{}: `DEFAULT_STATE` initializer must be a `DefaultState` \
+             variant path (e.g. `DefaultState::Active`); other \
+             expressions defeat the gen-docs syntactic extraction",
+            source_path.display(),
+        );
+    };
+    let Some(last_segment) = path.segments.last() else {
+        panic!(
+            "{}: `DEFAULT_STATE` initializer has an empty path",
+            source_path.display(),
+        );
+    };
+    match last_segment.ident.to_string().as_str() {
+        "Active" => DefaultState::Active,
+        "Inactive" => DefaultState::Inactive,
+        other => panic!(
+            "{}: `DEFAULT_STATE` initializer names unknown `DefaultState` \
+             variant `{other}`; only `Active` and `Inactive` are valid.",
+            source_path.display(),
+        ),
+    }
 }
 
 /// Return a `syn::File` containing `parent`'s items followed by every

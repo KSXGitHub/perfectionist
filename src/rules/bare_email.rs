@@ -1,5 +1,5 @@
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::markdown::{position_in_skip, scan_skip_regions, utf8_char_len};
 use crate::rule_index::{Register, rule};
@@ -134,14 +134,13 @@ impl BareEmail {
 impl_lint_pass!(BareEmail => [BARE_EMAIL]);
 
 impl Register for rule::BareEmail {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[BARE_EMAIL]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive = resolved_state("bare_email", DefaultState::Active) {
-            return;
-        }
         lint_store.register_late_pass(|_| Box::new(BareEmail::new()));
     }
 }

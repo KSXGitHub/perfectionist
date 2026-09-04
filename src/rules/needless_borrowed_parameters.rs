@@ -1,7 +1,5 @@
 use crate::cargo_target::{CargoTarget, crate_target};
-use crate::common::{
-    DefaultState, binding_hir_id, binding_ident, hir_in_external_macro, resolved_state,
-};
+use crate::common::{DefaultState, binding_hir_id, binding_ident, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use crate::test_code::in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
@@ -91,11 +89,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. Read by [`Register::register_pass`] below;
-/// gen-docs picks the constant up via syn to render the rule's default
-/// state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
-
 const CONFIG_KEY: &str = "perfectionist::needless_borrowed_parameters";
 
 pub struct NeedlessBorrowedParameters {
@@ -119,16 +112,13 @@ impl NeedlessBorrowedParameters {
 impl_lint_pass!(NeedlessBorrowedParameters => [NEEDLESS_BORROWED_PARAMETERS]);
 
 impl Register for rule::NeedlessBorrowedParameters {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[NEEDLESS_BORROWED_PARAMETERS]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive =
-            resolved_state("needless_borrowed_parameters", DEFAULT_STATE)
-        {
-            return;
-        }
         lint_store.register_late_pass(|_| Box::new(NeedlessBorrowedParameters::new()));
     }
 }

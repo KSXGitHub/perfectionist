@@ -1,4 +1,4 @@
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::rule_index::{Register, rule};
 use rustc_ast::MacCall;
 use rustc_ast::token::TokenKind;
@@ -84,15 +84,13 @@ impl_lint_pass!(MacroTrailingComma => [MACRO_TRAILING_COMMA]);
 impl_lint_pass!(MacroTrailingCommaLate => [MACRO_TRAILING_COMMA]);
 
 impl Register for rule::MacroTrailingComma {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[MACRO_TRAILING_COMMA]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive = resolved_state("macro_trailing_comma", DefaultState::Active)
-        {
-            return;
-        }
         // Split across two passes per
         // <https://github.com/KSXGitHub/parallel-disk-usage/issues/409>:
         // pre-expansion sees the `MacCall` tokens but runs before

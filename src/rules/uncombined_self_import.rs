@@ -19,7 +19,7 @@
 //! gates intact (parsing does not strip cfg, unlike the post-expansion
 //! AST). The sibling `import_granularity_mismatch` rule shares the same machinery.
 
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use crate::module_reparse::for_each_module_file;
 use crate::rule_index::{Register, rule};
@@ -95,8 +95,6 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::uncombined_self_import";
 
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
-
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
 /// and gen-docs needs the struct for `Configuration: none.`
@@ -109,14 +107,13 @@ pub struct UncombinedSelfImport;
 impl_lint_pass!(UncombinedSelfImport => [UNCOMBINED_SELF_IMPORT]);
 
 impl Register for rule::UncombinedSelfImport {
+    const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[UNCOMBINED_SELF_IMPORT]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive = resolved_state("uncombined_self_import", DEFAULT_STATE) {
-            return;
-        }
         let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         // Late pass: out-of-line `mod foo;` modules are `ModKind::Unloaded`
         // until macro expansion, so a pre-expansion pass never sees them.

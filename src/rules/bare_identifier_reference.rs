@@ -1,5 +1,5 @@
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
-use crate::common::{DefaultState, resolve_symbol_set, resolved_state};
+use crate::common::{DefaultState, resolve_symbol_set};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
@@ -221,16 +221,13 @@ impl BareIdentifierReference {
 impl_lint_pass!(BareIdentifierReference => [BARE_IDENTIFIER_REFERENCE]);
 
 impl Register for rule::BareIdentifierReference {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[BARE_IDENTIFIER_REFERENCE]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive =
-            resolved_state("bare_identifier_reference", DefaultState::Active)
-        {
-            return;
-        }
         lint_store.register_late_pass(|_| Box::new(BareIdentifierReference::new()));
     }
 }

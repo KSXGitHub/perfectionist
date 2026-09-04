@@ -1,4 +1,4 @@
-use crate::common::{DefaultState, render_meta_path, resolve_string_set, resolved_state};
+use crate::common::{DefaultState, render_meta_path, resolve_string_set};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::{span_lint_and_help, span_lint_and_then};
 use clippy_utils::is_from_proc_macro;
@@ -86,12 +86,6 @@ declare_tool_lint! {
     "`#[allow]` for a deterministically-firing lint should be removed or be `#[expect]`",
     report_in_external_macro: false
 }
-
-/// Active by default. The rewrite is conservative — it only fires when
-/// every named lint is known to fire deterministically — so a baseline
-/// policy is not presumptuous. Read by [`Register::register_pass`];
-/// gen-docs picks the constant up to render the rule's default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
 const CONFIG_KEY: &str = "perfectionist::allow_attributes";
 
@@ -215,14 +209,16 @@ impl AllowAttributes {
 impl_lint_pass!(AllowAttributes => [ALLOW_ATTRIBUTES]);
 
 impl Register for rule::AllowAttributes {
+    /// Active by default. The rewrite is conservative — it only fires
+    /// when every named lint is known to fire deterministically — so a
+    /// baseline policy is not presumptuous.
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[ALLOW_ATTRIBUTES]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive = resolved_state("allow_attributes", DEFAULT_STATE) {
-            return;
-        }
         let builtin_lints = collect_builtin_lint_names(lint_store);
         lint_store
             .register_early_pass(move || Box::new(AllowAttributes::new(builtin_lints.clone())));

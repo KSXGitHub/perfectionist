@@ -1,4 +1,4 @@
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::rule_index::{Register, rule};
 use rustc_ast::Attribute;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
@@ -91,16 +91,13 @@ impl LintAttributeTrailingComment {
 impl_lint_pass!(LintAttributeTrailingComment => [LINT_ATTRIBUTE_TRAILING_COMMENT]);
 
 impl Register for rule::LintAttributeTrailingComment {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[LINT_ATTRIBUTE_TRAILING_COMMENT]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive =
-            resolved_state("lint_attribute_trailing_comment", DefaultState::Active)
-        {
-            return;
-        }
         lint_store.register_early_pass(|| Box::new(LintAttributeTrailingComment::new()));
     }
 }

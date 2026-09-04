@@ -23,7 +23,7 @@ use std::collections::HashSet;
 
 mod config;
 
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use crate::module_reparse::{SpanRange, parse_crate_module_files};
 use config::{Config, Resolved};
@@ -117,12 +117,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default: both exceptions ship enabled, so the only globs
-/// flagged out of the box are non-prelude, non-re-export ones such as
-/// `use super::*;`. Read by [`Register::register_pass`]; gen-docs picks
-/// the constant up to render the rule's default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
-
 const CONFIG_KEY: &str = "perfectionist::wildcard_imports";
 
 pub struct WildcardImports {
@@ -132,14 +126,16 @@ pub struct WildcardImports {
 impl_lint_pass!(WildcardImports => [WILDCARD_IMPORTS]);
 
 impl Register for rule::WildcardImports {
+    /// Active by default: both exceptions ship enabled, so the only
+    /// globs flagged out of the box are non-prelude, non-re-export ones
+    /// such as `use super::*;`.
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[WILDCARD_IMPORTS]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive = resolved_state("wildcard_imports", DEFAULT_STATE) {
-            return;
-        }
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         // Reject a misconfigured `allowed_paths` entry loudly: each must be an
         // absolute path (`crate::...` or `::<extern crate>::...`), otherwise it

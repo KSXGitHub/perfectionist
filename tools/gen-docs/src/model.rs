@@ -41,10 +41,9 @@ pub(crate) struct Rule {
     /// Whether the rule's pass is registered out of the box, or only
     /// after the user opts in via
     /// `[perfectionist] enable = ["<rule>"]` in `dylint.toml`. Read
-    /// from a `pub(crate) const DEFAULT_STATE: DefaultState = ...;`
-    /// item in the rule's source file when present; absent
-    /// constants imply [`DefaultState::Active`] (the catalogue
-    /// default). The runtime side uses its own [`DefaultState`] enum
+    /// from the `const DEFAULT_STATE: DefaultState = ...;` item in
+    /// the rule's `Register` impl; a source file stating none implies
+    /// [`DefaultState::Active`] (the catalogue default). The runtime side uses its own [`DefaultState`] enum
     /// of the same shape (`src/common.rs`), so the constant's
     /// initializer is read directly here as an enum-variant path
     /// — no `bool` intermediate. The renderer surfaces this as the
@@ -72,12 +71,11 @@ pub(crate) struct Rule {
 }
 
 /// Whether a rule's pass is installed by default. Mirrors the
-/// `pub(crate) const DEFAULT_STATE: DefaultState = ...;` constant
-/// the extractor reads from the rule's source. The runtime side
-/// defines its own [`DefaultState`] of the same shape; gen-docs has
-/// its own copy because the two crates don't link. Defaults to
-/// [`DefaultState::Active`] when a rule omits the constant — the
-/// common case across the catalogue.
+/// `const DEFAULT_STATE: DefaultState = ...;` constant the extractor
+/// reads from the rule's `Register` impl. The runtime side defines
+/// its own [`DefaultState`] of the same shape; gen-docs has its own
+/// copy because the two crates don't link. Defaults to
+/// [`DefaultState::Active`] for a source file that states none.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DefaultState {
     Active,
@@ -216,9 +214,9 @@ pub(crate) struct StructField {
 /// The set of lint levels rustc / Dylint accept as the second
 /// positional argument to `declare_tool_lint!`. The catalogue's
 /// convention is that every rule declares `Warn`; rules that should
-/// be off out of the box live behind a
-/// `pub(crate) const DEFAULT_STATE: DefaultState =
-/// DefaultState::Inactive;` instead of a stricter or looser level.
+/// be off out of the box live behind a `const DEFAULT_STATE:
+/// DefaultState = DefaultState::Inactive;` in the rule's `Register`
+/// impl instead of a stricter or looser level.
 /// The extractor still parses the identifier so a future rule that
 /// drifts from the convention
 /// trips a clear panic naming the file.

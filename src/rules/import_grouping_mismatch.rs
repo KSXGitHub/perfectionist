@@ -13,7 +13,7 @@ mod classify;
 mod config;
 mod render;
 
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use crate::module_reparse::{SpanRange, parse_crate_module_files};
 use config::{Config, ReexportGrouping, Style};
@@ -181,13 +181,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Inactive by default. The rule is direction-less: a project that
-/// adopts it picks `multi_block` (ordered, blank-line-separated blocks)
-/// or `single_block` (one contiguous block), so `style` is mandatory
-/// whenever the rule is enabled. Read by [`Register::register_pass`];
-/// gen-docs picks the constant up to render the rule's default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
-
 const CONFIG_KEY: &str = "perfectionist::import_grouping_mismatch";
 
 pub struct ImportGroupingMismatch {
@@ -197,14 +190,17 @@ pub struct ImportGroupingMismatch {
 impl_lint_pass!(ImportGroupingMismatch => [IMPORT_GROUPING_MISMATCH]);
 
 impl Register for rule::ImportGroupingMismatch {
+    /// Inactive by default. The rule is direction-less: a project that
+    /// adopts it picks `multi_block` (ordered, blank-line-separated
+    /// blocks) or `single_block` (one contiguous block), so `style` is
+    /// mandatory whenever the rule is enabled.
+    const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[IMPORT_GROUPING_MISMATCH]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive = resolved_state("import_grouping_mismatch", DEFAULT_STATE) {
-            return;
-        }
         // The rule is enabled, so `style` and `reexports` are mandatory and
         // have no default. Read with `config` rather than `config_or_default`:
         // the latter needs `Config: Default`, which would force defaults for

@@ -14,7 +14,7 @@ mod config;
 mod model;
 mod render;
 
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use crate::module_reparse::for_each_module_file;
 use check::is_compliant;
@@ -115,12 +115,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. `module` is the shipped baseline; a project that
-/// prefers `crate` or `item` sets `style` in `dylint.toml`. Read by
-/// [`Register::register_pass`]; gen-docs picks the constant up to
-/// render the rule's default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
-
 const CONFIG_KEY: &str = "perfectionist::import_granularity_mismatch";
 
 pub struct ImportGranularityMismatch {
@@ -147,15 +141,15 @@ impl ImportGranularityMismatch {
 impl_lint_pass!(ImportGranularityMismatch => [IMPORT_GRANULARITY_MISMATCH]);
 
 impl Register for rule::ImportGranularityMismatch {
+    /// Active by default. `module` is the shipped baseline; a project
+    /// that prefers `crate` or `item` sets `style` in `dylint.toml`.
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[IMPORT_GRANULARITY_MISMATCH]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive = resolved_state("import_granularity_mismatch", DEFAULT_STATE)
-        {
-            return;
-        }
         // Late pass: out-of-line `mod foo;` modules are `ModKind::Unloaded`
         // until macro expansion, so a pre-expansion pass never sees them.
         // `check_crate` re-parses each source file instead, which reaches

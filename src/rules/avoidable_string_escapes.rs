@@ -14,7 +14,7 @@ mod emit;
 mod parser;
 mod queue;
 
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use early::AvoidableStringEscapesEarly;
 use parser::{
@@ -229,16 +229,13 @@ impl_lint_pass!(AvoidableStringEscapes => [AVOIDABLE_STRING_ESCAPES]);
 impl_lint_pass!(AvoidableStringEscapesEarly => [AVOIDABLE_STRING_ESCAPES]);
 
 impl Register for rule::AvoidableStringEscapes {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[AVOIDABLE_STRING_ESCAPES]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive =
-            resolved_state("avoidable_string_escapes", DefaultState::Active)
-        {
-            return;
-        }
         // The pre-expansion pass sees every macro's string literals while
         // the source tokens are intact — including the ones lowering would
         // consume before the HIR exists — and parks each rewrite for the late

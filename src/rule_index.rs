@@ -15,19 +15,29 @@
 //! registration starts, and the rule sits in the list alphabetically
 //! like any other.
 
+use crate::common::{DefaultState, resolved_state};
 use rustc_lint::LintStore;
 
 /// What the index needs from a rule, implemented by each rule module
 /// for the type `rule_index!` generates for it.
 pub(crate) trait Register {
+    /// Whether the rule's pass installs when `dylint.toml` says
+    /// nothing about the rule either way. Each rule's own impl
+    /// documents why it chose what it chose; the choice itself is
+    /// governed by the rule activation model in
+    /// `planned-rules/IMPLEMENTATION_CONVENTIONS.md`. `gen-docs`
+    /// reads the initializer with syn to render the rule's
+    /// catalogue entry, so it has to be a plain [`DefaultState`]
+    /// variant rather than anything computed.
+    const DEFAULT_STATE: DefaultState;
+
     /// Add the rule's lint declaration to the store. Called for
-    /// every rule, whatever `dylint.toml` says about it — only
-    /// [`Self::register_pass`] consults the rule's resolved state.
+    /// every rule, whatever `dylint.toml` says about it — the lint
+    /// stays registered even where the pass does not install.
     fn register_lint(lint_store: &mut LintStore);
 
-    /// Install the rule's pass, unless
-    /// [`crate::common::resolved_state`] resolves the rule to
-    /// [`crate::common::DefaultState::Inactive`].
+    /// Install the rule's pass. Called only for a rule that
+    /// [`register_all`] resolved to [`DefaultState::Active`].
     fn register_pass(lint_store: &mut LintStore);
 }
 
@@ -73,14 +83,21 @@ macro_rules! rule_index {
         /// and no allocation in the runs that never consult it.
         pub(crate) static LINT_NAMES: &[&str] = &[$( stringify!($rule_name) ),+];
 
-        /// Register every rule. Each rule's two calls are made
-        /// back to back — no entry depends on another having
-        /// registered first.
+        /// Register every rule: its lint declaration always, its
+        /// pass where the rule resolves to active. Each rule is
+        /// registered on its own — no entry depends on another
+        /// having registered first.
         pub(crate) fn register_all(lint_store: &mut LintStore) {
-            $(
+            $({
                 <rule::$marker as Register>::register_lint(lint_store);
-                <rule::$marker as Register>::register_pass(lint_store);
-            )+
+                let state = resolved_state(
+                    stringify!($rule_name),
+                    <rule::$marker as Register>::DEFAULT_STATE,
+                );
+                if let DefaultState::Active = state {
+                    <rule::$marker as Register>::register_pass(lint_store);
+                }
+            })+
         }
     };
 }

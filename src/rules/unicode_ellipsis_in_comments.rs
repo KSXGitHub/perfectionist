@@ -1,4 +1,4 @@
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::literal_scan::emit_flagged_char_hir;
 use crate::module_reparse::crate_module_files;
@@ -102,16 +102,13 @@ impl UnicodeEllipsisInComments {
 impl_lint_pass!(UnicodeEllipsisInComments => [UNICODE_ELLIPSIS_IN_COMMENTS]);
 
 impl Register for rule::UnicodeEllipsisInComments {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[UNICODE_ELLIPSIS_IN_COMMENTS]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive =
-            resolved_state("unicode_ellipsis_in_comments", DefaultState::Active)
-        {
-            return;
-        }
         lint_store.register_late_pass(|_| Box::new(UnicodeEllipsisInComments::new()));
     }
 }

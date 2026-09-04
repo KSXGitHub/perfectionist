@@ -1,4 +1,4 @@
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::macro_template::find_template_literal;
 use crate::rule_index::{Register, rule};
 use rustc_ast::MacCall;
@@ -83,16 +83,13 @@ impl_lint_pass!(OverlyLongPrintMacro => [OVERLY_LONG_PRINT_MACRO]);
 impl_lint_pass!(OverlyLongPrintMacroLate => [OVERLY_LONG_PRINT_MACRO]);
 
 impl Register for rule::OverlyLongPrintMacro {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[OVERLY_LONG_PRINT_MACRO]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive =
-            resolved_state("overly_long_print_macro", DefaultState::Active)
-        {
-            return;
-        }
         // Same pre-expansion → late split as `macro_trailing_comma` and
         // `impure_macro_arguments`: the pre-expansion pass sees the
         // `MacCall` tokens and builds the rewrite from source, then parks

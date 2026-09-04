@@ -30,7 +30,7 @@ use rustc_span::kw;
 
 mod config;
 
-use crate::common::{DefaultState, hir_in_external_macro, resolved_state};
+use crate::common::{DefaultState, hir_in_external_macro};
 use config::{Config, Resolved};
 
 declare_tool_lint! {
@@ -90,12 +90,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. The prelude convention is the shipped baseline;
-/// `prelude_segment_names` / `allowed_paths` tune it. Read by
-/// [`Register::register_pass`]; gen-docs picks the constant up to
-/// render the rule's default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
-
 const CONFIG_KEY: &str = "perfectionist::named_prelude_imports";
 
 pub struct NamedPreludeImports {
@@ -105,14 +99,15 @@ pub struct NamedPreludeImports {
 impl_lint_pass!(NamedPreludeImports => [NAMED_PRELUDE_IMPORTS]);
 
 impl Register for rule::NamedPreludeImports {
+    /// Active by default. The prelude convention is the shipped
+    /// baseline; `prelude_segment_names` / `allowed_paths` tune it.
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[NAMED_PRELUDE_IMPORTS]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive = resolved_state("named_prelude_imports", DEFAULT_STATE) {
-            return;
-        }
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         // Every `allowed_paths` entry has to end with a prelude segment (it
         // matches the path up to and including the prelude), so reject a

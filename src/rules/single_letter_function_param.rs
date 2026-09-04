@@ -1,7 +1,7 @@
 use crate::ascii_letter::AsciiLetter;
 use crate::common::{
     DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter,
-    resolve_symbol_set_from_chars, resolved_state,
+    resolve_symbol_set_from_chars,
 };
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_help;
@@ -107,16 +107,13 @@ impl SingleLetterFunctionParam {
 impl_lint_pass!(SingleLetterFunctionParam => [SINGLE_LETTER_FUNCTION_PARAM]);
 
 impl Register for rule::SingleLetterFunctionParam {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[SINGLE_LETTER_FUNCTION_PARAM]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive =
-            resolved_state("single_letter_function_param", DefaultState::Active)
-        {
-            return;
-        }
         lint_store.register_late_pass(|_| Box::new(SingleLetterFunctionParam::new()));
     }
 }

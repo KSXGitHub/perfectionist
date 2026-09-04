@@ -1,4 +1,4 @@
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::rule_index::{Register, rule};
 use rustc_ast::MacCall;
 use rustc_ast::token::Delimiter;
@@ -119,16 +119,13 @@ impl_lint_pass!(ImpureMacroArguments => [IMPURE_MACRO_ARGUMENTS]);
 impl_lint_pass!(ImpureMacroArgumentsLate => [IMPURE_MACRO_ARGUMENTS]);
 
 impl Register for rule::ImpureMacroArguments {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[IMPURE_MACRO_ARGUMENTS]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive =
-            resolved_state("impure_macro_arguments", DefaultState::Active)
-        {
-            return;
-        }
         // Same split as `macro_trailing_comma`: a pre-expansion pass parks
         // violation spans, a late pass walks the HIR and emits each at the
         // deepest enclosing node so `cfg_attr`-wrapped `#[expect]` and

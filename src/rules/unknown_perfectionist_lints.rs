@@ -1,4 +1,4 @@
-use crate::common::{DefaultState, render_meta_path, resolved_state};
+use crate::common::{DefaultState, render_meta_path};
 use crate::rule_index::{LINT_NAMES, Register, is_registered_lint, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Attribute, MetaItem, MetaItemInner, MetaItemKind};
@@ -70,16 +70,13 @@ impl UnknownPerfectionistLints {
 impl_lint_pass!(UnknownPerfectionistLints => [UNKNOWN_PERFECTIONIST_LINTS]);
 
 impl Register for rule::UnknownPerfectionistLints {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[UNKNOWN_PERFECTIONIST_LINTS]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive =
-            resolved_state("unknown_perfectionist_lints", DefaultState::Active)
-        {
-            return;
-        }
         lint_store.register_early_pass(|| Box::new(UnknownPerfectionistLints::new()));
     }
 }

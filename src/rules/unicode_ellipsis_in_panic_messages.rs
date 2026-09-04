@@ -1,4 +1,4 @@
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::rule_index::{Register, rule};
 use clippy_utils::macros::root_macro_call_first_node;
 use clippy_utils::res::MaybeDef;
@@ -92,16 +92,13 @@ declare_tool_lint! {
 impl_lint_pass!(UnicodeEllipsisInPanicMessages => [UNICODE_ELLIPSIS_IN_PANIC_MESSAGES]);
 
 impl Register for rule::UnicodeEllipsisInPanicMessages {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[UNICODE_ELLIPSIS_IN_PANIC_MESSAGES]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        if let DefaultState::Inactive =
-            resolved_state("unicode_ellipsis_in_panic_messages", DefaultState::Active)
-        {
-            return;
-        }
         lint_store.register_late_pass(|_| Box::new(UnicodeEllipsisInPanicMessages::new()));
     }
 }
