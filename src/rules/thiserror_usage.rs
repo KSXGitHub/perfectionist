@@ -1,3 +1,4 @@
+use crate::rule_index::{Register, rule};
 use rustc_ast::{Crate, Item, ItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -7,7 +8,7 @@ mod detect;
 mod emit;
 mod scan;
 
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use config::ThiserrorUsage;
 
 declare_tool_lint! {
@@ -95,26 +96,23 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// Active by default. Read by [`register_pass`] below; gen-docs picks
-/// the constant up via syn to render the rule's default state.
-pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
-
 impl_lint_pass!(ThiserrorUsage => [THISERROR_USAGE]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[THISERROR_USAGE]);
-}
+impl Register for rule::ThiserrorUsage {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("thiserror_usage", DEFAULT_STATE) {
-        return;
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[THISERROR_USAGE]);
     }
-    // Pre-expansion: derives are consumed during macro expansion, so a
-    // regular (post-expansion) pass no longer sees the
-    // `#[derive(...)]` attribute by the time the rule looks for it.
-    // The sibling `perfectionist::unordered_derives` rule uses the same
-    // hook for the same reason.
-    lint_store.register_pre_expansion_pass(|| Box::new(ThiserrorUsage::new()));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        // Pre-expansion: derives are consumed during macro expansion, so a
+        // regular (post-expansion) pass no longer sees the
+        // `#[derive(...)]` attribute by the time the rule looks for it.
+        // The sibling `perfectionist::unordered_derives` rule uses the same
+        // hook for the same reason.
+        lint_store.register_pre_expansion_pass(|| Box::new(ThiserrorUsage::new()));
+    }
 }
 
 impl EarlyLintPass for ThiserrorUsage {

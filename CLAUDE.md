@@ -98,9 +98,9 @@ has these consequences for the implementer:
    forbids the `mod.rs` form (via `clippy::mod_module_files`,
    enabled in `Cargo.toml`), so the layout is `src/rules/<rule>.rs` next to
    `src/rules/<rule>/<concern>.rs`. The flat `.rs` entry keeps the
-   `declare_tool_lint!` block, the `register_lint` / `register_pass`
-   functions, the `EarlyLintPass` / `LateLintPass` driver, and any
-   process-wide state (`static PENDING_VIOLATIONS`, etc.). Common
+   `declare_tool_lint!` block, the `Register` impl, the
+   `EarlyLintPass` / `LateLintPass` driver, and any process-wide
+   state (`static PENDING_VIOLATIONS`, etc.). Common
    submodule names that have emerged:
    - `config` — `Config` struct, default lists, in-memory rule state.
    - `early` / `late` — the corresponding pass implementation when
@@ -161,7 +161,7 @@ The shapes to avoid:
 - **Do not describe a lint as existing until it is registered.**
   Shipped docs — `declare_tool_lint!` rustdoc and the `rules/*.md`
   catalogue generated from it — must not name a lint that
-  `src/lib.rs::register_lints` does not, or a reader who writes
+  `src/rule_index.rs` does not, or a reader who writes
   `#[expect(perfectionist::<that name>)]` for it is flagged by
   `perfectionist::unknown_perfectionist_lints`. Planning files are
   exempt; naming unimplemented siblings is what they are for.
@@ -177,11 +177,11 @@ useless.
 Some of these are mechanically checkable and worth a grep before
 committing:
 backticked in-repo paths should resolve, and a `perfectionist::`
-name should be one `register_lints` registers. Both have standing
-exceptions — prose about a *linted* crate, planning files and this
-guide, the deliberate typos around `unknown_perfectionist_lints`, and
-`gen-docs`' unit tests, which invent lint names — so read the hits,
-not the count.
+name should be one the `rule_index!` invocation names. Both have
+standing exceptions — prose about a *linted* crate, planning files
+and this guide, the deliberate typos around
+`unknown_perfectionist_lints`, and `gen-docs`' unit tests, which
+invent lint names — so read the hits, not the count.
 
 ## Shipped docs address the consumer, not the contributor
 
@@ -307,33 +307,22 @@ knobs, or autofix branches, the planning file stays:
 The rule file lives until everything in it is implemented or
 explicitly retracted.
 
-## Registering a new rule in `lib.rs`
+## Registering a new rule in the index
 
-Every rule module exposes a `register_lint(lint_store)`, which
-registers the lint declaration only, and a
-`register_pass(lint_store)`, which installs the rule's early/late
-pass.
+`src/rule_index.rs` indexes every rule the plugin ships: its
+`rule_index!` invocation names each rule once.
 
-`src/lib.rs::register_lints` calls them in two phases: every
-`register_lint` first, then every `register_pass`. The phasing
-exists because `unknown_perfectionist_lints::register_pass`
-snapshots the registered `perfectionist::*` lint names out of the
-`LintStore` at construction time, so every rule's lint
-declaration must already be in the store before any pass is
-installed. The `register!` macro in `register_lints` emits both
-phases from one list of rule names, so a rule is named there
-exactly once.
+The list is alphabetical.
 
 When you add a new rule:
 
-1. Add the `pub mod` line to `src/rules.rs`, and expose both
-   `register_lint` and `register_pass` from the rule module.
-2. Add the rule's name to the `register!` invocation in
-   `src/lib.rs::register_lints`, in alphabetical order —
-   except that `unknown_perfectionist_lints` stays last, for the
-   snapshotting reason above.
-3. Do not introduce a parallel `REGISTERED_LINT_NAMES`-style
-   array. The `LintStore` is the single source of truth.
+1. Add the `pub mod` line to `src/rules.rs`.
+2. Add an entry to the `rule_index!` invocation in
+   `src/rule_index.rs`.
+3. Implement `Register` for the type that entry generates, in the
+   rule's own file.
+4. Do not introduce a second list of rule names; the `rule_index!`
+   invocation is the single source of truth.
 
 ## Validating Rust changes
 

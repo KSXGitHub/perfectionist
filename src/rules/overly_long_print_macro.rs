@@ -1,5 +1,6 @@
-use crate::common::{DefaultState, resolved_state};
+use crate::common::DefaultState;
 use crate::macro_template::find_template_literal;
+use crate::rule_index::{Register, rule};
 use rustc_ast::MacCall;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -81,23 +82,23 @@ declare_tool_lint! {
 impl_lint_pass!(OverlyLongPrintMacro => [OVERLY_LONG_PRINT_MACRO]);
 impl_lint_pass!(OverlyLongPrintMacroLate => [OVERLY_LONG_PRINT_MACRO]);
 
-pub fn register_lint(lint_store: &mut LintStore) {
-    lint_store.register_lints(&[OVERLY_LONG_PRINT_MACRO]);
-}
+impl Register for rule::OverlyLongPrintMacro {
+    const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
-pub fn register_pass(lint_store: &mut LintStore) {
-    if let DefaultState::Inactive = resolved_state("overly_long_print_macro", DefaultState::Active)
-    {
-        return;
+    fn register_lint(lint_store: &mut LintStore) {
+        lint_store.register_lints(&[OVERLY_LONG_PRINT_MACRO]);
     }
-    // Same pre-expansion → late split as `macro_trailing_comma` and
-    // `impure_macro_arguments`: the pre-expansion pass sees the
-    // `MacCall` tokens and builds the rewrite from source, then parks
-    // it; the late pass walks the HIR and emits each at its deepest
-    // enclosing node, by which point `cfg_attr` has resolved and
-    // lint-level attributes apply.
-    lint_store.register_pre_expansion_pass(|| Box::new(OverlyLongPrintMacro::new()));
-    lint_store.register_late_pass(|_| Box::new(OverlyLongPrintMacroLate));
+
+    fn register_pass(lint_store: &mut LintStore) {
+        // Same pre-expansion → late split as `macro_trailing_comma` and
+        // `impure_macro_arguments`: the pre-expansion pass sees the
+        // `MacCall` tokens and builds the rewrite from source, then parks
+        // it; the late pass walks the HIR and emits each at its deepest
+        // enclosing node, by which point `cfg_attr` has resolved and
+        // lint-level attributes apply.
+        lint_store.register_pre_expansion_pass(|| Box::new(OverlyLongPrintMacro::new()));
+        lint_store.register_late_pass(|_| Box::new(OverlyLongPrintMacroLate));
+    }
 }
 
 /// Rewrites the pre-expansion pass has built, waiting for the late pass
