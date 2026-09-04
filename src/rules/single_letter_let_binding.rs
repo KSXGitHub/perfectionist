@@ -3,7 +3,7 @@ use crate::common::{
     DefaultState, binding_ident, hir_in_external_macro, is_single_ascii_letter,
     resolve_symbol_set_from_chars, resolved_state,
 };
-use crate::rule_index::{Register, SingleLetterLetBindingRule};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
@@ -100,7 +100,7 @@ impl SingleLetterLetBinding {
 
 impl_lint_pass!(SingleLetterLetBinding => [SINGLE_LETTER_LET_BINDING]);
 
-impl Register for SingleLetterLetBindingRule {
+impl Register for rule::SingleLetterLetBinding {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[SINGLE_LETTER_LET_BINDING]);
     }

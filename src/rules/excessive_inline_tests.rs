@@ -1,5 +1,5 @@
 use crate::common::{DefaultState, resolved_state};
-use crate::rule_index::{ExcessiveInlineTestsRule, Register};
+use crate::rule_index::{Register, rule};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
@@ -80,7 +80,7 @@ const CONFIG_KEY: &str = "perfectionist::excessive_inline_tests";
 
 impl_lint_pass!(ExcessiveInlineTests => [EXCESSIVE_INLINE_TESTS]);
 
-impl Register for ExcessiveInlineTestsRule {
+impl Register for rule::ExcessiveInlineTests {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[EXCESSIVE_INLINE_TESTS]);
     }

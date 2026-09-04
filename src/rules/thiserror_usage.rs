@@ -1,4 +1,4 @@
-use crate::rule_index::{Register, ThiserrorUsageRule};
+use crate::rule_index::{Register, rule};
 use rustc_ast::{Crate, Item, ItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -103,7 +103,7 @@ pub(crate) const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
 impl_lint_pass!(ThiserrorUsage => [THISERROR_USAGE]);
 
-impl Register for ThiserrorUsageRule {
+impl Register for rule::ThiserrorUsage {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[THISERROR_USAGE]);
     }

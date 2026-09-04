@@ -3,7 +3,7 @@ use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::markdown::{ClassifyOptions, classify_constructs};
 use crate::module_reparse::parse_crate_module_files;
-use crate::rule_index::{ClapHelpMarkdownRule, Register};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir as hir;
@@ -123,7 +123,7 @@ impl ClapHelpMarkdown {
 
 impl_lint_pass!(ClapHelpMarkdown => [CLAP_HELP_MARKDOWN]);
 
-impl Register for ClapHelpMarkdownRule {
+impl Register for rule::ClapHelpMarkdown {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[CLAP_HELP_MARKDOWN]);
     }

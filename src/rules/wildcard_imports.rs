@@ -13,7 +13,7 @@
 //! `live_module_spans` guard that keeps the walk from descending into a
 //! cfg-disabled inline module that is not part of the compiled crate.
 
-use crate::rule_index::{Register, WildcardImportsRule};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_ast::{Item, ItemKind, ModKind, UseTree, UseTreeKind, VisibilityKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
@@ -131,7 +131,7 @@ pub struct WildcardImports {
 
 impl_lint_pass!(WildcardImports => [WILDCARD_IMPORTS]);
 
-impl Register for WildcardImportsRule {
+impl Register for rule::WildcardImports {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[WILDCARD_IMPORTS]);
     }

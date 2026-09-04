@@ -1,4 +1,4 @@
-use crate::rule_index::{ImportGranularityMismatchRule, Register};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::source::indent_of;
 use rustc_ast::{
@@ -146,7 +146,7 @@ impl ImportGranularityMismatch {
 
 impl_lint_pass!(ImportGranularityMismatch => [IMPORT_GRANULARITY_MISMATCH]);
 
-impl Register for ImportGranularityMismatchRule {
+impl Register for rule::ImportGranularityMismatch {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[IMPORT_GRANULARITY_MISMATCH]);
     }

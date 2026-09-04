@@ -311,9 +311,10 @@ explicitly retracted.
 
 `src/rule_index.rs` indexes every rule the plugin ships. Its
 `rule_index!` invocation names each rule once and expands to a
-marker type per rule, the `LINT_NAMES` set, and the `register_all`
-function that `src/lib.rs::register_lints` calls. Each rule module
-implements the index's `Register` trait for its own marker:
+type per rule (in the index's `rule` module), the `LINT_NAMES` set,
+and the `register_all` function that `src/lib.rs::register_lints`
+calls. Each rule module implements the index's `Register` trait for
+its own type:
 `register_lint` adds the lint declaration, `register_pass` installs
 the early/late pass.
 
@@ -329,8 +330,9 @@ When you add a new rule:
    binary-searched, so the index's tests reject an out-of-order
    entry. The entry pairs the rule's snake_case name (its file
    name, and the name its `declare_tool_lint!` block declares)
-   with the marker type to generate for it.
-3. Implement `Register` for that marker in the rule's own file.
+   with the type to generate for it.
+3. Implement `Register` for `rule::<ThatType>` in the rule's own
+   file.
 4. Do not introduce a second list of rule names. The `rule_index!`
    invocation is the single source of truth, and
    `src/rule_index/tests.rs` holds it to the `declare_tool_lint!`

@@ -2,7 +2,7 @@ use crate::cargo_target::{CargoTarget, crate_target};
 use crate::common::{
     DefaultState, binding_hir_id, binding_ident, hir_in_external_macro, resolved_state,
 };
-use crate::rule_index::{NeedlessBorrowedParametersRule, Register};
+use crate::rule_index::{Register, rule};
 use crate::test_code::in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::source::{snippet, snippet_opt};
@@ -118,7 +118,7 @@ impl NeedlessBorrowedParameters {
 
 impl_lint_pass!(NeedlessBorrowedParameters => [NEEDLESS_BORROWED_PARAMETERS]);
 
-impl Register for NeedlessBorrowedParametersRule {
+impl Register for rule::NeedlessBorrowedParameters {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[NEEDLESS_BORROWED_PARAMETERS]);
     }

@@ -3,7 +3,7 @@ use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::literal_scan::emit_flagged_char_hir;
 use crate::markdown::{position_in_skip, scan_code_regions};
-use crate::rule_index::{Register, UnicodeEllipsisInDocsRule};
+use crate::rule_index::{Register, rule};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Span;
@@ -97,7 +97,7 @@ impl UnicodeEllipsisInDocs {
 
 impl_lint_pass!(UnicodeEllipsisInDocs => [UNICODE_ELLIPSIS_IN_DOCS]);
 
-impl Register for UnicodeEllipsisInDocsRule {
+impl Register for rule::UnicodeEllipsisInDocs {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[UNICODE_ELLIPSIS_IN_DOCS]);
     }

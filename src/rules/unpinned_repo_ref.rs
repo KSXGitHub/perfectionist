@@ -3,7 +3,7 @@ use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::literal_scan::string_literal_quote_lengths;
 use crate::markdown::{SkipRange, scan_code_regions};
-use crate::rule_index::{Register, UnpinnedRepoRefRule};
+use crate::rule_index::{Register, rule};
 use config::{Config, ForgeKind, glob_match};
 use emit::{Violation, emit_diagnostic};
 use rustc_ast::LitKind;
@@ -167,7 +167,7 @@ impl UnpinnedRepoRef {
 
 impl_lint_pass!(UnpinnedRepoRef => [UNPINNED_REPO_REF]);
 
-impl Register for UnpinnedRepoRefRule {
+impl Register for rule::UnpinnedRepoRef {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[UNPINNED_REPO_REF]);
     }

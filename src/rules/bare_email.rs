@@ -2,7 +2,7 @@ use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::markdown::{position_in_skip, scan_skip_regions, utf8_char_len};
-use crate::rule_index::{BareEmailRule, Register};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir::HirId;
@@ -133,7 +133,7 @@ impl BareEmail {
 
 impl_lint_pass!(BareEmail => [BARE_EMAIL]);
 
-impl Register for BareEmailRule {
+impl Register for rule::BareEmail {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[BARE_EMAIL]);
     }

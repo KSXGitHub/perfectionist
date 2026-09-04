@@ -1,7 +1,7 @@
 use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
 use crate::common::{DefaultState, resolve_symbol_set, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
-use crate::rule_index::{BareIdentifierReferenceRule, Register};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use core::num::NonZeroUsize;
 use rustc_errors::Applicability;
@@ -220,7 +220,7 @@ impl BareIdentifierReference {
 
 impl_lint_pass!(BareIdentifierReference => [BARE_IDENTIFIER_REFERENCE]);
 
-impl Register for BareIdentifierReferenceRule {
+impl Register for rule::BareIdentifierReference {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[BARE_IDENTIFIER_REFERENCE]);
     }

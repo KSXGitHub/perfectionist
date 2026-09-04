@@ -1,5 +1,5 @@
 use crate::common::{DefaultState, resolved_state};
-use crate::rule_index::{LintAttributeTrailingCommentRule, Register};
+use crate::rule_index::{Register, rule};
 use rustc_ast::Attribute;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -90,7 +90,7 @@ impl LintAttributeTrailingComment {
 
 impl_lint_pass!(LintAttributeTrailingComment => [LINT_ATTRIBUTE_TRAILING_COMMENT]);
 
-impl Register for LintAttributeTrailingCommentRule {
+impl Register for rule::LintAttributeTrailingComment {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[LINT_ATTRIBUTE_TRAILING_COMMENT]);
     }

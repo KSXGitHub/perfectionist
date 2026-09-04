@@ -1,5 +1,5 @@
 use crate::common::{DefaultState, render_meta_path, resolved_state};
-use crate::rule_index::{LINT_NAMES, Register, UnknownPerfectionistLintsRule, is_registered_lint};
+use crate::rule_index::{LINT_NAMES, Register, is_registered_lint, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Attribute, MetaItem, MetaItemInner, MetaItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
@@ -69,7 +69,7 @@ impl UnknownPerfectionistLints {
 
 impl_lint_pass!(UnknownPerfectionistLints => [UNKNOWN_PERFECTIONIST_LINTS]);
 
-impl Register for UnknownPerfectionistLintsRule {
+impl Register for rule::UnknownPerfectionistLints {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[UNKNOWN_PERFECTIONIST_LINTS]);
     }

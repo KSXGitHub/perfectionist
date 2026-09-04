@@ -1,5 +1,5 @@
 use crate::common::{DefaultState, resolve_string_set, resolved_state};
-use crate::rule_index::{ExhaustiveErrorEnumsRule, Register};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::source::indent_of;
 use clippy_utils::sym;
@@ -188,7 +188,7 @@ impl ExhaustiveErrorEnums {
 
 impl_lint_pass!(ExhaustiveErrorEnums => [EXHAUSTIVE_ERROR_ENUMS]);
 
-impl Register for ExhaustiveErrorEnumsRule {
+impl Register for rule::ExhaustiveErrorEnums {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[EXHAUSTIVE_ERROR_ENUMS]);
     }

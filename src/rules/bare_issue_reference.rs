@@ -2,7 +2,7 @@ use crate::comment_walk::{CommentChunk, CommentSurface, walk_local_comments};
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::markdown::{position_in_skip, scan_skip_regions, utf8_char_len};
-use crate::rule_index::{BareIssueReferenceRule, Register};
+use crate::rule_index::{Register, rule};
 use crate::url_scan::back_scan_url_fragment;
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
@@ -344,7 +344,7 @@ fn host_of(url: &str) -> Option<&str> {
 
 impl_lint_pass!(BareIssueReference => [BARE_ISSUE_REFERENCE]);
 
-impl Register for BareIssueReferenceRule {
+impl Register for rule::BareIssueReference {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[BARE_ISSUE_REFERENCE]);
     }

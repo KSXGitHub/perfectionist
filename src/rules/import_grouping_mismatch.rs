@@ -1,4 +1,4 @@
-use crate::rule_index::{ImportGroupingMismatchRule, Register};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::source::indent_of;
 use rustc_ast::{Item, ItemKind, ModKind, VisibilityKind};
@@ -196,7 +196,7 @@ pub struct ImportGroupingMismatch {
 
 impl_lint_pass!(ImportGroupingMismatch => [IMPORT_GROUPING_MISMATCH]);
 
-impl Register for ImportGroupingMismatchRule {
+impl Register for rule::ImportGroupingMismatch {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[IMPORT_GROUPING_MISMATCH]);
     }

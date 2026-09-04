@@ -17,7 +17,7 @@
 //!   [`UseKind::Single`] item per leaf, so each cherry-picked name is
 //!   flagged individually with no flattening of our own.)
 
-use crate::rule_index::{NamedPreludeImportsRule, Register};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir::def::Res;
@@ -104,7 +104,7 @@ pub struct NamedPreludeImports {
 
 impl_lint_pass!(NamedPreludeImports => [NAMED_PRELUDE_IMPORTS]);
 
-impl Register for NamedPreludeImportsRule {
+impl Register for rule::NamedPreludeImports {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[NAMED_PRELUDE_IMPORTS]);
     }

@@ -1,5 +1,5 @@
 use crate::common::{DefaultState, render_meta_path, resolve_string_set, resolved_state};
-use crate::rule_index::{AllowAttributesRule, Register};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::{span_lint_and_help, span_lint_and_then};
 use clippy_utils::is_from_proc_macro;
 use clippy_utils::source::{indent_of, snippet_opt};
@@ -214,7 +214,7 @@ impl AllowAttributes {
 
 impl_lint_pass!(AllowAttributes => [ALLOW_ATTRIBUTES]);
 
-impl Register for AllowAttributesRule {
+impl Register for rule::AllowAttributes {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[ALLOW_ATTRIBUTES]);
     }

@@ -1,5 +1,5 @@
 use crate::common::{DefaultState, hir_in_external_macro, is_single_ascii_letter, resolved_state};
-use crate::rule_index::{Register, SingleLetterGenericRule};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
@@ -78,7 +78,7 @@ impl SingleLetterGeneric {
 
 impl_lint_pass!(SingleLetterGeneric => [SINGLE_LETTER_GENERIC]);
 
-impl Register for SingleLetterGenericRule {
+impl Register for rule::SingleLetterGeneric {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[SINGLE_LETTER_GENERIC]);
     }

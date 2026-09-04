@@ -1,7 +1,7 @@
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::emit_at_enclosing_hir;
 use crate::module_reparse::parse_crate_module_files;
-use crate::rule_index::{RedundantDeriveMoreForwardTemplateRule, Register};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
 use rustc_hir as hir;
@@ -124,7 +124,7 @@ impl RedundantDeriveMoreForwardTemplate {
 
 impl_lint_pass!(RedundantDeriveMoreForwardTemplate => [REDUNDANT_DERIVE_MORE_FORWARD_TEMPLATE]);
 
-impl Register for RedundantDeriveMoreForwardTemplateRule {
+impl Register for rule::RedundantDeriveMoreForwardTemplate {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[REDUNDANT_DERIVE_MORE_FORWARD_TEMPLATE]);
     }

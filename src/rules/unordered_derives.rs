@@ -1,4 +1,4 @@
-use crate::rule_index::{Register, UnorderedDerivesRule};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Attribute, MetaItemInner, MetaItemKind};
 use rustc_errors::Applicability;
@@ -163,7 +163,7 @@ impl UnorderedDerives {
 
 impl_lint_pass!(UnorderedDerives => [UNORDERED_DERIVES]);
 
-impl Register for UnorderedDerivesRule {
+impl Register for rule::UnorderedDerives {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[UNORDERED_DERIVES]);
     }

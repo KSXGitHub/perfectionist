@@ -1,6 +1,6 @@
 use crate::common::{DefaultState, resolved_state};
 use crate::macro_template::find_template_literal;
-use crate::rule_index::{OverlyLongPrintMacroRule, Register};
+use crate::rule_index::{Register, rule};
 use rustc_ast::MacCall;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -82,7 +82,7 @@ declare_tool_lint! {
 impl_lint_pass!(OverlyLongPrintMacro => [OVERLY_LONG_PRINT_MACRO]);
 impl_lint_pass!(OverlyLongPrintMacroLate => [OVERLY_LONG_PRINT_MACRO]);
 
-impl Register for OverlyLongPrintMacroRule {
+impl Register for rule::OverlyLongPrintMacro {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[OVERLY_LONG_PRINT_MACRO]);
     }

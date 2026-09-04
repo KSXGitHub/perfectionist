@@ -1,10 +1,10 @@
 //! The index of every rule this plugin ships.
 //!
 //! `rule_index!` turns one list of rule names into what the rest of
-//! the crate needs from it: a marker type per rule, the
+//! the crate needs from it: a type per rule, the
 //! [`LINT_NAMES`] set, and [`register_all`], which
 //! [`crate::register_lints`] calls. Each rule's own module
-//! implements [`Register`] for its marker type.
+//! implements [`Register`] for its type.
 //!
 //! The name set is what keeps the list free of ordering exceptions.
 //! `unknown_perfectionist_lints` reports a `perfectionist::*` name
@@ -18,7 +18,7 @@
 use rustc_lint::LintStore;
 
 /// What the index needs from a rule, implemented by each rule module
-/// for the marker type `rule_index!` generates for it.
+/// for the type `rule_index!` generates for it.
 pub(crate) trait Register {
     /// Add the rule's lint declaration to the store. Called for
     /// every rule, whatever `dylint.toml` says about it — only
@@ -35,22 +35,28 @@ pub(crate) trait Register {
 ///
 /// Each entry pairs the rule's name — the snake_case one it wears in
 /// `dylint.toml` and in `#[allow(perfectionist::...)]`, and the name
-/// of its `src/rules/<name>.rs` file — with the marker type to
-/// generate for it. Both are spelled out because `macro_rules!`
+/// of its `src/rules/<name>.rs` file — with the type to generate
+/// for it. Both are spelled out because `macro_rules!`
 /// cannot case-convert an identifier.
 ///
 /// Entries are in ascending order, since [`is_registered_lint`]
 /// binary-searches [`LINT_NAMES`]; the tests below hold them to it.
 macro_rules! rule_index {
     ($( $rule_name:ident => $marker:ident ),+ $(,)?) => {
-        $(
-            #[doc = concat!(
-                "Rule marker for `", stringify!($rule_name),
-                "`; `src/rules/", stringify!($rule_name),
-                ".rs` implements [`Register`] for it.",
-            )]
-            pub(crate) struct $marker;
-        )+
+        /// One type per rule, standing in for it wherever the
+        /// index needs something to implement [`Register`] on. They
+        /// are a module of their own because a rule's type and the
+        /// rule's lint pass want the same name.
+        pub(crate) mod rule {
+            $(
+                #[doc = concat!(
+                    "The `", stringify!($rule_name),
+                    "` rule; `src/rules/", stringify!($rule_name),
+                    ".rs` implements [`Register`](super::Register) for it.",
+                )]
+                pub(crate) struct $marker;
+            )+
+        }
 
         /// Every lint this plugin registers, unqualified — the name
         /// as it appears after the `perfectionist::` prefix — in
@@ -72,49 +78,49 @@ macro_rules! rule_index {
         /// registered first.
         pub(crate) fn register_all(lint_store: &mut LintStore) {
             $(
-                <$marker as Register>::register_lint(lint_store);
-                <$marker as Register>::register_pass(lint_store);
+                <rule::$marker as Register>::register_lint(lint_store);
+                <rule::$marker as Register>::register_pass(lint_store);
             )+
         }
     };
 }
 
 rule_index! {
-    allow_attributes => AllowAttributesRule,
-    allow_attributes_without_reason => AllowAttributesWithoutReasonRule,
-    avoidable_string_escapes => AvoidableStringEscapesRule,
-    bare_email => BareEmailRule,
-    bare_identifier_reference => BareIdentifierReferenceRule,
-    bare_issue_reference => BareIssueReferenceRule,
-    bare_url => BareUrlRule,
-    clap_help_markdown => ClapHelpMarkdownRule,
-    excessive_inline_tests => ExcessiveInlineTestsRule,
-    exhaustive_error_enums => ExhaustiveErrorEnumsRule,
-    import_granularity_mismatch => ImportGranularityMismatchRule,
-    import_grouping_mismatch => ImportGroupingMismatchRule,
-    impure_macro_arguments => ImpureMacroArgumentsRule,
-    lint_attribute_trailing_comment => LintAttributeTrailingCommentRule,
-    macro_trailing_comma => MacroTrailingCommaRule,
-    named_prelude_imports => NamedPreludeImportsRule,
-    needless_borrowed_parameters => NeedlessBorrowedParametersRule,
-    overly_long_print_macro => OverlyLongPrintMacroRule,
-    redundant_derive_more_forward_template => RedundantDeriveMoreForwardTemplateRule,
-    single_letter_closure_param => SingleLetterClosureParamRule,
-    single_letter_const_generic => SingleLetterConstGenericRule,
-    single_letter_const_item => SingleLetterConstItemRule,
-    single_letter_function_param => SingleLetterFunctionParamRule,
-    single_letter_generic => SingleLetterGenericRule,
-    single_letter_let_binding => SingleLetterLetBindingRule,
-    single_letter_static_item => SingleLetterStaticItemRule,
-    thiserror_usage => ThiserrorUsageRule,
-    uncombined_self_import => UncombinedSelfImportRule,
-    unicode_ellipsis_in_comments => UnicodeEllipsisInCommentsRule,
-    unicode_ellipsis_in_docs => UnicodeEllipsisInDocsRule,
-    unicode_ellipsis_in_panic_messages => UnicodeEllipsisInPanicMessagesRule,
-    unknown_perfectionist_lints => UnknownPerfectionistLintsRule,
-    unordered_derives => UnorderedDerivesRule,
-    unpinned_repo_ref => UnpinnedRepoRefRule,
-    wildcard_imports => WildcardImportsRule,
+    allow_attributes => AllowAttributes,
+    allow_attributes_without_reason => AllowAttributesWithoutReason,
+    avoidable_string_escapes => AvoidableStringEscapes,
+    bare_email => BareEmail,
+    bare_identifier_reference => BareIdentifierReference,
+    bare_issue_reference => BareIssueReference,
+    bare_url => BareUrl,
+    clap_help_markdown => ClapHelpMarkdown,
+    excessive_inline_tests => ExcessiveInlineTests,
+    exhaustive_error_enums => ExhaustiveErrorEnums,
+    import_granularity_mismatch => ImportGranularityMismatch,
+    import_grouping_mismatch => ImportGroupingMismatch,
+    impure_macro_arguments => ImpureMacroArguments,
+    lint_attribute_trailing_comment => LintAttributeTrailingComment,
+    macro_trailing_comma => MacroTrailingComma,
+    named_prelude_imports => NamedPreludeImports,
+    needless_borrowed_parameters => NeedlessBorrowedParameters,
+    overly_long_print_macro => OverlyLongPrintMacro,
+    redundant_derive_more_forward_template => RedundantDeriveMoreForwardTemplate,
+    single_letter_closure_param => SingleLetterClosureParam,
+    single_letter_const_generic => SingleLetterConstGeneric,
+    single_letter_const_item => SingleLetterConstItem,
+    single_letter_function_param => SingleLetterFunctionParam,
+    single_letter_generic => SingleLetterGeneric,
+    single_letter_let_binding => SingleLetterLetBinding,
+    single_letter_static_item => SingleLetterStaticItem,
+    thiserror_usage => ThiserrorUsage,
+    uncombined_self_import => UncombinedSelfImport,
+    unicode_ellipsis_in_comments => UnicodeEllipsisInComments,
+    unicode_ellipsis_in_docs => UnicodeEllipsisInDocs,
+    unicode_ellipsis_in_panic_messages => UnicodeEllipsisInPanicMessages,
+    unknown_perfectionist_lints => UnknownPerfectionistLints,
+    unordered_derives => UnorderedDerives,
+    unpinned_repo_ref => UnpinnedRepoRef,
+    wildcard_imports => WildcardImports,
 }
 
 /// Whether `name` — with the `perfectionist::` prefix already

@@ -22,7 +22,7 @@
 use crate::common::{DefaultState, resolved_state};
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use crate::module_reparse::for_each_module_file;
-use crate::rule_index::{Register, UncombinedSelfImportRule};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_ast::visit::{self, Visitor};
 use rustc_ast::{Block, Item, ItemKind, ModKind, Stmt, StmtKind};
@@ -108,7 +108,7 @@ pub struct UncombinedSelfImport;
 
 impl_lint_pass!(UncombinedSelfImport => [UNCOMBINED_SELF_IMPORT]);
 
-impl Register for UncombinedSelfImportRule {
+impl Register for rule::UncombinedSelfImport {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[UNCOMBINED_SELF_IMPORT]);
     }

@@ -1,5 +1,5 @@
 use crate::common::{DefaultState, attr_has_reason, render_meta_path, resolved_state};
-use crate::rule_index::{AllowAttributesWithoutReasonRule, Register};
+use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::{span_lint_and_sugg, span_lint_and_then};
 use clippy_utils::is_from_proc_macro;
 use core::num::NonZeroUsize;
@@ -122,7 +122,7 @@ impl AllowAttributesWithoutReason {
 
 impl_lint_pass!(AllowAttributesWithoutReason => [ALLOW_ATTRIBUTES_WITHOUT_REASON]);
 
-impl Register for AllowAttributesWithoutReasonRule {
+impl Register for rule::AllowAttributesWithoutReason {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[ALLOW_ATTRIBUTES_WITHOUT_REASON]);
     }

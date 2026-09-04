@@ -1,5 +1,5 @@
 use crate::common::{DefaultState, resolved_state};
-use crate::rule_index::{MacroTrailingCommaRule, Register};
+use crate::rule_index::{Register, rule};
 use rustc_ast::MacCall;
 use rustc_ast::token::TokenKind;
 use rustc_ast::tokenstream::TokenTree;
@@ -83,7 +83,7 @@ declare_tool_lint! {
 impl_lint_pass!(MacroTrailingComma => [MACRO_TRAILING_COMMA]);
 impl_lint_pass!(MacroTrailingCommaLate => [MACRO_TRAILING_COMMA]);
 
-impl Register for MacroTrailingCommaRule {
+impl Register for rule::MacroTrailingComma {
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[MACRO_TRAILING_COMMA]);
     }
