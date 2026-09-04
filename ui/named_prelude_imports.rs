@@ -22,14 +22,51 @@ mod named {
     use crate::prelude::A;
 }
 
-// Bad: same, with an `as` rename preserved by the fix.
+// Bad: same, with an `as` rename. The replaced span stops before the
+// rename, so the fix leaves it in place rather than reproducing it.
 mod renamed {
     use crate::prelude::B as Renamed;
 }
 
-// Bad: a brace list flags each leaf in turn.
+// Bad: a brace list flags each leaf in turn. The fix rebuilds the whole
+// tree, so it is offered once — on the first leaf — and both entries
+// land back under the prefix they now share.
 mod braced {
     use crate::prelude::{A, helper};
+}
+
+// Bad: a brace list whose entries keep their renames when the tree is
+// rebuilt around the canonical prefix.
+mod braced_rename {
+    use crate::prelude::{A as First, B as Second};
+}
+
+// Bad: a redundant one-entry brace list. The rebuilt tree drops the
+// braces along with the prelude.
+mod braced_single {
+    use crate::prelude::{helper};
+}
+
+// Bad: only the named entry is a cherry-pick. The glob is left as
+// written, and the rebuilt tree folds out only the prefix the two
+// actually share.
+mod braced_glob {
+    use crate::prelude::{A, *};
+}
+
+// Bad, but not fixed: rebuilding the tree around `crate` would turn the
+// `self` entry into a bare `use crate::prelude;`, which binds the name
+// in every namespace instead of just the module.
+mod braced_self {
+    use crate::prelude::{self, A};
+}
+
+// Bad: the statement's attributes sit outside the replaced span, so the
+// rewrite carries them without having to reproduce them.
+mod attributed {
+    /// A doc comment and a `#[cfg(...)]`, both outside the rewrite.
+    #[cfg(not(test))]
+    pub use crate::prelude::{A, helper};
 }
 
 // Not flagged: the glob form is the canonical prelude shape.
@@ -65,6 +102,12 @@ mod multi_ns {
     use crate::multi::prelude::Dual;
 }
 
+// The same name inside a brace list: one entry cannot be re-pointed, so
+// the whole tree stays unrewritten and every entry carries a `help`.
+mod multi_ns_braced {
+    use crate::multi::prelude::{Dual};
+}
+
 // A keyword-named module (`r#type`) re-exported through a prelude: the
 // canonical-module fix must round-trip the keyword as a raw identifier
 // (`crate::r#type::Thing`), not the bare `crate::type::Thing` that would
@@ -79,6 +122,21 @@ pub mod kw_prelude {
 }
 mod kw_cherry {
     use crate::kw_prelude::prelude::Thing;
+}
+
+// One prelude curating items from two modules: the rebuilt tree can only
+// fold out the crate root the two canonical modules share.
+pub mod other {
+    pub struct C;
+}
+pub mod mixed {
+    pub mod prelude {
+        pub use crate::other::C;
+        pub use crate::thing::A;
+    }
+}
+mod mixed_cherry {
+    use crate::mixed::prelude::{A, C};
 }
 
 fn main() {}

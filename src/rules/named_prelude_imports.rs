@@ -7,7 +7,7 @@
 //! plain HIR [`LateLintPass`] rather than a re-parsing one. Two reasons:
 //!
 //! - Its autofix rewrites the import to the item's *canonical* module,
-//!   which is resolved from the item's [`DefId`] — information that only
+//!   which is resolved from the item's `DefId` — information that only
 //!   exists for items the compiler actually resolved, i.e. not for
 //!   `#[cfg(...)]`-disabled code a re-parse would additionally reach.
 //! - A HIR walk already reaches every compiled module, including
@@ -16,22 +16,31 @@
 //!   which this rule needs. (HIR lowers `use a::{b, c}` into one
 //!   [`UseKind::Single`] item per leaf, so each cherry-picked name is
 //!   flagged individually with no flattening of our own.)
+//!
+//! Lowering does drop one thing the fix needs: which leaves were
+//! written as one statement. A brace-list leaf's path span holds only
+//! its name, so the rewrite has to rebuild the statement's whole use
+//! tree (see [`statement`]). The desugaring emits a statement's
+//! `ListStem` ahead of its leaves and nests every leaf span inside the
+//! stem's, so the pass rebuilds that grouping as it walks: a `use` item
+//! the current statement's span does not contain starts the next one.
 
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
-use rustc_hir::def::Res;
-use rustc_hir::{Item, ItemKind, UseKind};
+use rustc_hir::def::{PerNS, Res};
+use rustc_hir::{Item, ItemKind, PathSegment, UseKind, UsePath};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
-use rustc_middle::ty::{self, TyCtxt};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::def_id::{DefId, LOCAL_CRATE};
 use rustc_span::kw;
 
+mod canonical;
 mod config;
+mod statement;
 
 use crate::common::{DefaultState, hir_in_external_macro};
 use config::{Config, Resolved};
+use statement::{Fix, Leaf, Statement};
 
 declare_tool_lint! {
     /// ### What it does
@@ -55,11 +64,22 @@ declare_tool_lint! {
     /// crate author decided should always travel together as a glob.
     /// Cherry-picking individual items from a prelude defeats that
     /// intent and usually means the importer should reach into the
-    /// prelude's source module instead. A standalone import is rewritten
-    /// to the item's canonical module; a brace-list leaf
-    /// (`use foo::prelude::{A, B};`) — or a name that resolves through
-    /// several modules at once — is flagged with a `help` instead, since
-    /// a single `use` can't always reproduce it.
+    /// prelude's source module instead.
+    ///
+    /// Each cherry-picked name is flagged on its own, and the rewrite
+    /// re-points the whole `use` onto the canonical modules at once —
+    /// so it is offered once per statement, on the first name it
+    /// covers, and the rest carry a `help`. Where the entries end up
+    /// sharing a prefix the rewrite keeps them in one statement
+    /// (`diesel::prelude::{table, AsChangeset}` becomes
+    /// `diesel::{table, AsChangeset}`); grouping them any differently is
+    /// `perfectionist::import_granularity_mismatch`'s business.
+    ///
+    /// Two shapes get a `help` instead of a rewrite: a name that
+    /// resolves to items in several modules at once, which no single
+    /// `use` reproduces, and a statement holding a `self` entry
+    /// (`use foo::prelude::{self, Bar};`), which would stop binding
+    /// only the module once the tree is rebuilt around it.
     ///
     /// ### Example
     ///
@@ -92,8 +112,19 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::named_prelude_imports";
 
+/// The one diagnostic the rule emits, once per cherry-picked name.
+const MESSAGE: &str = "named item cherry-picked from a prelude module";
+
+/// Fallback for a leaf no mechanical rewrite is offered for.
+const HELP: &str = "import this item from its canonical module, or glob-import the prelude with \
+                    `use ...::prelude::*;`";
+
 pub struct NamedPreludeImports {
     config: Resolved,
+    /// The `use` statement being walked, held until the pass reaches an
+    /// item outside it. A brace list's fix rewrites the statement as a
+    /// whole, so no leaf can be judged until every sibling leaf is in.
+    statement: Option<Statement>,
 }
 
 impl_lint_pass!(NamedPreludeImports => [NAMED_PRELUDE_IMPORTS]);
@@ -119,6 +150,7 @@ impl Register for rule::NamedPreludeImports {
         lint_store.register_late_lint_pass(Box::new(move |_| {
             Box::new(NamedPreludeImports {
                 config: Resolved::from_config(config.clone()),
+                statement: None,
             })
         }));
     }
@@ -126,30 +158,91 @@ impl Register for rule::NamedPreludeImports {
 
 impl<'tcx> LateLintPass<'tcx> for NamedPreludeImports {
     fn check_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx Item<'tcx>) {
-        // Only single (named) imports are flagged; the glob and the
-        // synthetic `ListStem` forms are left alone.
-        let ItemKind::Use(path, UseKind::Single(_)) = &item.kind else {
+        let ItemKind::Use(path, kind) = &item.kind else {
             return;
         };
         if item.span.from_expansion() || hir_in_external_macro(cx, item.hir_id(), item.span) {
+            self.flush(cx);
             return;
         }
+        let leaf = self.leaf(cx, item, path, *kind);
+        // A statement's leaves are lowered nested inside its head item's
+        // span, so an item that head does not contain opens the next
+        // statement.
+        if !self
+            .statement
+            .as_ref()
+            .is_some_and(|statement| statement.span.contains(item.span))
+        {
+            self.flush(cx);
+            self.statement = Some(Statement::new(item, path.span, *kind));
+        }
+        if let (Some(statement), Some(leaf)) = (self.statement.as_mut(), leaf) {
+            statement.leaves.push(leaf);
+        }
+    }
 
+    fn check_crate_post(&mut self, cx: &LateContext<'tcx>) {
+        self.flush(cx);
+    }
+}
+
+impl NamedPreludeImports {
+    /// Read one lowered `use` item as a leaf of the statement being
+    /// walked. `None` for a `ListStem`, which is the statement's head
+    /// rather than anything it imports.
+    fn leaf(
+        &self,
+        cx: &LateContext<'_>,
+        item: &Item<'_>,
+        path: &UsePath<'_>,
+        kind: UseKind,
+    ) -> Option<Leaf> {
         let segments = path.segments;
+        let rename = match kind {
+            UseKind::Single(binding) => statement::rename_suffix(segments, binding),
+            UseKind::Glob => String::new(),
+            UseKind::ListStem => return None,
+        };
+        let mut written = statement::written_path(segments);
+        if matches!(kind, UseKind::Glob) && !written.is_empty() {
+            written.push_str("::*");
+        }
+        Some(Leaf {
+            hir_id: item.hir_id(),
+            path_span: path.span,
+            is_self: cx
+                .sess()
+                .source_map()
+                .span_to_snippet(path.span)
+                .is_ok_and(|source| statement::is_self_entry(&source)),
+            flagged: matches!(kind, UseKind::Single(_))
+                .then(|| self.cherry_pick(cx, segments, path.res))
+                .flatten(),
+            written,
+            rename,
+        })
+    }
+
+    /// Where a leaf's item canonically lives, when the leaf cherry-picks
+    /// it out of a prelude; `None` when the path names no prelude, or
+    /// names one the configuration exempts.
+    fn cherry_pick(
+        &self,
+        cx: &LateContext<'_>,
+        segments: &[PathSegment<'_>],
+        res: PerNS<Option<Res>>,
+    ) -> Option<canonical::Canonical> {
         // The last segment is the imported item itself; a prelude segment
         // must sit *before* it (something is cherry-picked from under the
         // prelude). `use serde::prelude;` — the prelude as the leaf — is
         // not a cherry-pick and is left alone.
-        let Some(item_split) = segments.len().checked_sub(1) else {
-            return;
-        };
-        let Some(prelude_index) = segments[..item_split].iter().position(|segment| {
+        let item_split = segments.len().checked_sub(1)?;
+        let prelude_index = segments[..item_split].iter().position(|segment| {
             self.config
                 .prelude_segment_names
                 .contains(segment.ident.name.as_str())
-        }) else {
-            return;
-        };
+        })?;
 
         // `allowed_paths` entries are absolute (e.g. `crate::prelude` for a
         // crate-root path, `::serde::prelude` for an extern crate).
@@ -160,34 +253,65 @@ impl<'tcx> LateLintPass<'tcx> for NamedPreludeImports {
         let prelude_path =
             crate::abs_path::canonical_key(&join_segments(&segments[..=prelude_index]));
         if self.config.allowed_paths.contains(&prelude_path) {
-            return;
+            return None;
         }
-
-        let written_path = join_segments(segments);
-        let fix = canonical_fix(cx, path.res, path.span, &written_path);
-        span_lint_hir_and_then(
-            cx,
-            NAMED_PRELUDE_IMPORTS,
-            item.hir_id(),
-            path.span,
-            "named item cherry-picked from a prelude module",
-            |diagnostic| {
-                if let Some((replacement, applicability)) = &fix {
-                    diagnostic.span_suggestion(
-                        path.span,
-                        "import the item from its canonical module",
-                        replacement,
-                        *applicability,
-                    );
-                } else {
-                    diagnostic.help(
-                        "import this item from its canonical module, or glob-import the \
-                         prelude with `use ...::prelude::*;`",
-                    );
-                }
-            },
-        );
+        Some(canonical::resolve(cx.tcx, res))
     }
+
+    /// Emit for the statement just walked past, if any of its leaves
+    /// cherry-picked from a prelude.
+    fn flush(&mut self, cx: &LateContext<'_>) {
+        let Some(statement) = self.statement.take() else {
+            return;
+        };
+        let flagged: Vec<&Leaf> = statement
+            .leaves
+            .iter()
+            .filter(|leaf| leaf.flagged.is_some())
+            .collect();
+        let Some((&first, rest)) = flagged.split_first() else {
+            return;
+        };
+
+        // Only one rewrite is offered per statement: it replaces the
+        // statement's whole use tree, so it already covers every
+        // cherry-pick in it. It rides the first of them; the rest carry
+        // the fallback help.
+        emit(cx, first, statement.rewrite(cx));
+        for &leaf in rest {
+            emit(cx, leaf, None);
+        }
+    }
+}
+
+/// A rewrite onto a canonical path every importer can name is
+/// mechanical; one onto a path that is private somewhere up to the
+/// crate root needs a human's eye.
+fn applicability(nameable: bool) -> Applicability {
+    if nameable {
+        Applicability::MachineApplicable
+    } else {
+        Applicability::MaybeIncorrect
+    }
+}
+
+/// Emit one leaf's diagnostic, carrying `fix` when a mechanical rewrite
+/// is offered for it and the fallback [`HELP`] otherwise.
+fn emit(cx: &LateContext<'_>, leaf: &Leaf, fix: Option<Fix>) {
+    span_lint_hir_and_then(
+        cx,
+        NAMED_PRELUDE_IMPORTS,
+        leaf.hir_id,
+        leaf.path_span,
+        MESSAGE,
+        |diagnostic| {
+            if let Some(fix) = fix {
+                diagnostic.span_suggestion(fix.span, fix.label, fix.replacement, fix.applicability);
+            } else {
+                diagnostic.help(HELP);
+            }
+        },
+    );
 }
 
 /// The dotted-path string of a run of path segments
@@ -204,109 +328,4 @@ fn join_segments(segments: &[rustc_hir::PathSegment<'_>]) -> String {
         .map(|segment| segment.ident.name.to_string())
         .collect::<Vec<_>>()
         .join("::")
-}
-
-/// Build the `(replacement, applicability)` for rewriting the import to
-/// the item's canonical module, or `None` when no mechanical fix is
-/// offered: the item didn't resolve, its definition path has an
-/// unnameable component, or the written path span doesn't match the
-/// reconstructed `written_path` (an awkward brace-list leaf whose span
-/// covers only part of the source path). The un-fixable leaves are still
-/// flagged — they just carry a `help` rather than a suggestion.
-fn canonical_fix(
-    cx: &LateContext<'_>,
-    res: rustc_hir::def::PerNS<Option<Res>>,
-    path_span: rustc_span::Span,
-    written_path: &str,
-) -> Option<(String, Applicability)> {
-    // A `use` brings in *every* namespace the name resolves to. Collect a
-    // DefId per resolved namespace (type / value / macro), not just the
-    // first: a name bound in two namespaces can resolve to items in
-    // *different* modules, and a single rewritten `use` cannot reproduce
-    // that.
-    let def_ids: Vec<DefId> = [res.type_ns, res.value_ns, res.macro_ns]
-        .into_iter()
-        .flatten()
-        .filter_map(|res| res.opt_def_id())
-        .collect();
-
-    // The distinct nameable canonical paths the name resolves to. An
-    // unnameable component (a tuple/unit struct's value-namespace
-    // constructor, an `impl`, and so on) drops out via
-    // `canonical_use_path`'s `None`, which is what leaves a unit struct —
-    // type plus constructor — with the single struct path. Only offer a
-    // mechanical fix when every resolved namespace agrees on one canonical
-    // path; more than one means the import spans several modules and no
-    // single `use` reproduces it, so it stays flagged with a `help`
-    // instead of a wrong machine-applicable rewrite.
-    let mut canonicals: Vec<String> = def_ids
-        .iter()
-        .filter_map(|&def_id| canonical_use_path(cx.tcx, def_id))
-        .collect();
-    canonicals.sort();
-    canonicals.dedup();
-    let [canonical] = canonicals.as_slice() else {
-        return None;
-    };
-
-    // Only offer the suggestion when the written path span snippet is
-    // exactly the path we'd reconstruct from its segments — a
-    // self-contained `serde::prelude::Serialize`, not a brace-list leaf
-    // whose span covers only part of the source path. Replacing the
-    // whole span then stays well-formed and preserves any `as` rename
-    // and trailing `;` that sit outside the path span.
-    let written = cx.sess().source_map().span_to_snippet(path_span).ok()?;
-    if written != written_path {
-        return None;
-    }
-
-    // The canonical path is publicly nameable when every component of
-    // every resolved namespace is `pub` up to the crate root; otherwise a
-    // definition module may be private and the rewrite needs a human's eye.
-    let applicability = if def_ids.iter().all(|&def_id| all_public(cx.tcx, def_id)) {
-        Applicability::MachineApplicable
-    } else {
-        Applicability::MaybeIncorrect
-    };
-    Some((canonical.clone(), applicability))
-}
-
-/// The canonical `use`-able path for a [`DefId`]: the crate (`crate` for
-/// the local crate, else the crate's name) followed by each named
-/// component of the item's *definition* path. Returns `None` if any
-/// component has no nameable identifier (an `impl`, a closure, etc.), which
-/// means the item can't be addressed by a plain path.
-fn canonical_use_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
-    let def_path = tcx.def_path(def_id);
-    let mut segments = Vec::with_capacity(def_path.data.len() + 1);
-    if def_path.krate == LOCAL_CRATE {
-        segments.push("crate".to_owned());
-    } else {
-        segments.push(tcx.crate_name(def_path.krate).to_string());
-    }
-    for component in &def_path.data {
-        // Render each name through an `Ident` so a keyword module name
-        // round-trips as a raw identifier (`r#type`, not the bare keyword
-        // `type`); a plain `Symbol::to_string()` drops the `r#` and the
-        // suggested path would fail to parse. Mirrors
-        // `uncombined_self_import::render_segments`.
-        let name = component.data.get_opt_name()?;
-        segments.push(rustc_span::Ident::with_dummy_span(name).to_string());
-    }
-    Some(segments.join("::"))
-}
-
-/// Whether `def_id` and every enclosing module up to the crate root is
-/// `pub`, so the canonical path is nameable from any importing site.
-fn all_public(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    let mut current = def_id;
-    loop {
-        if !matches!(tcx.visibility(current), ty::Visibility::Public) {
-            return false;
-        }
-        match tcx.opt_parent(current) {
-            Some(parent) => current = parent,
-            None => return true,
-        }
-    }
 }
