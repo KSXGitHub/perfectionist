@@ -38,3 +38,8 @@ max_complexity = 47
 # body binds 29 names; lower the ceiling as bodies are split.
 ["perfectionist::too_many_local_bindings"]
 max_bindings = 29
+
+# The same ratchet for `overly_long_function`: the longest existing body
+# has 97 lines of code; lower the ceiling as bodies are split.
+["perfectionist::overly_long_function"]
+max_lines = 97

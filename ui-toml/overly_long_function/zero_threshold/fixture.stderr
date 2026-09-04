@@ -1,0 +1,91 @@
+warning: function `work` has 1 line of code, above the limit of 0
+  --> $DIR/fixture.rs:10:1
+   |
+LL | fn work(value: u32) -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the function into smaller ones, each doing one thing
+   = note: `#[warn(perfectionist::overly_long_function)]` on by default
+
+warning: function `one_line` has 1 line of code, above the limit of 0
+  --> $DIR/fixture.rs:23:1
+   |
+LL | fn one_line() {
+   | ^^^^^^^^^^^^^
+   |
+   = help: split the function into smaller ones, each doing one thing
+
+warning: function `two_lines_with_a_gap` has 2 lines of code, above the limit of 0
+  --> $DIR/fixture.rs:28:1
+   |
+LL | fn two_lines_with_a_gap() {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the function into smaller ones, each doing one thing
+
+warning: function `multi_line_string` has 3 lines of code, above the limit of 0
+  --> $DIR/fixture.rs:35:1
+   |
+LL | fn multi_line_string() -> &'static str {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the function into smaller ones, each doing one thing
+
+warning: function `trailing_comment` has 1 line of code, above the limit of 0
+  --> $DIR/fixture.rs:42:1
+   |
+LL | fn trailing_comment() {
+   | ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the function into smaller ones, each doing one thing
+
+warning: function `block_comment` has 1 line of code, above the limit of 0
+  --> $DIR/fixture.rs:47:1
+   |
+LL | fn block_comment() {
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the function into smaller ones, each doing one thing
+
+warning: function `with_nested_function` has 4 lines of code, above the limit of 0
+  --> $DIR/fixture.rs:54:1
+   |
+LL | fn with_nested_function() {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the function into smaller ones, each doing one thing
+
+warning: function `inner` has 1 line of code, above the limit of 0
+  --> $DIR/fixture.rs:55:5
+   |
+LL |     fn inner() {
+   |     ^^^^^^^^^^
+   |
+   = help: split the function into smaller ones, each doing one thing
+
+warning: function `single_expression` has 1 line of code, above the limit of 0
+  --> $DIR/fixture.rs:62:1
+   |
+LL | fn single_expression() -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the function into smaller ones, each doing one thing
+
+warning: function `count` has 2 lines of code, above the limit of 0
+  --> $DIR/fixture.rs:70:5
+   |
+LL |     fn count(&self) -> u32 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the function into smaller ones, each doing one thing
+
+warning: function `formatting` has 1 line of code, above the limit of 0
+  --> $DIR/fixture.rs:78:1
+   |
+LL | fn formatting() -> String {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the function into smaller ones, each doing one thing
+
+warning: 11 warnings emitted
+
