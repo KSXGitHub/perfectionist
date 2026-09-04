@@ -68,6 +68,25 @@ fn disable_accepts_array_of_tables_form() {
     );
 }
 
+/// Disabling a rule skips its `register_pass` call only: the lint
+/// declaration registers whatever the rule's resolved state, so a
+/// call site that suppresses the rule keeps resolving. Guarding
+/// `register_lint` the same way would turn every such
+/// `#[allow(perfectionist::<rule>)]` into an `unknown_lints` warning
+/// from rustc — the fixture carries one, and expects no output.
+/// `allow_attributes` is turned off alongside it so that the
+/// fixture's own suppression is not itself a finding.
+#[test]
+fn disable_keeps_the_lint_name_resolvable() {
+    run(
+        "ui-toml/impure_macro_arguments/disabled_with_allow",
+        text_block_fnl! {
+            "[perfectionist]"
+            r#"disable = ["impure_macro_arguments", "allow_attributes"]"#
+        },
+    );
+}
+
 /// `enable = ["<rule>"]` flips a default-off rule to on, so the
 /// fixture's `pub enum FooError {}` produces the snapshot's
 /// diagnostic. Reuses the `exhaustive_error_enums/baseline` fixture
