@@ -7,6 +7,7 @@ pub mod bare_identifier_reference;
 pub mod bare_issue_reference;
 pub mod bare_url;
 pub mod clap_help_markdown;
+pub mod cloning_getter;
 pub mod core_instead_of_std;
 pub mod excessive_cognitive_complexity;
 pub mod excessive_inline_tests;

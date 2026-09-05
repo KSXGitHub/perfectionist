@@ -1,0 +1,43 @@
+warning: getter `first_name` returns an owned copy of `self.first_name`
+  --> $DIR/cloning_getter.rs:18:5
+   |
+LL |     fn first_name(&self) -> String {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: return a borrow (`&str`, `&Path`, `&[T]`, `Option<&T>`, `&T`) and let a caller that needs ownership copy at the call site
+   = note: `#[warn(perfectionist::cloning_getter)]` on by default
+
+warning: getter `middle_name` returns an owned copy of `self.middle_name`
+  --> $DIR/cloning_getter.rs:23:5
+   |
+LL |     fn middle_name(&self) -> Option<String> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: return a borrow (`&str`, `&Path`, `&[T]`, `Option<&T>`, `&T`) and let a caller that needs ownership copy at the call site
+
+warning: getter `home` returns an owned copy of `self.home`
+  --> $DIR/cloning_getter.rs:28:5
+   |
+LL |     fn home(&self) -> PathBuf {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: return a borrow (`&str`, `&Path`, `&[T]`, `Option<&T>`, `&T`) and let a caller that needs ownership copy at the call site
+
+warning: getter `tags` returns an owned copy of `self.tags`
+  --> $DIR/cloning_getter.rs:33:5
+   |
+LL |     fn tags(&self) -> Vec<String> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: return a borrow (`&str`, `&Path`, `&[T]`, `Option<&T>`, `&T`) and let a caller that needs ownership copy at the call site
+
+warning: getter `display_name` returns an owned copy of `self.first_name`
+  --> $DIR/cloning_getter.rs:38:5
+   |
+LL |     fn display_name(&self) -> String {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: return a borrow (`&str`, `&Path`, `&[T]`, `Option<&T>`, `&T`) and let a caller that needs ownership copy at the call site
+
+warning: 5 warnings emitted
+
