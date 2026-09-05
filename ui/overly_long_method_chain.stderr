@@ -1,0 +1,32 @@
+warning: method chain has 6 calls, above the limit of 5
+  --> $DIR/overly_long_method_chain.rs:8:5
+   |
+LL | /     names
+LL | |         .iter()
+LL | |         .filter(|name| !name.is_empty())
+LL | |         .map(|name| name.trim().to_owned())
+LL | |         .rev()
+LL | |         .collect::<Vec<_>>()
+LL | |         .join(", ")
+   | |___________________^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+   = note: `#[warn(perfectionist::overly_long_method_chain)]` on by default
+
+warning: method chain has 6 calls, above the limit of 5
+  --> $DIR/overly_long_method_chain.rs:61:17
+   |
+LL |       let count = fetch
+   |  _________________^
+LL | |         .await?
+LL | |         .lines()
+LL | |         .map(str::trim)
+...  |
+LL | |         .max()
+LL | |         .unwrap_or(0);
+   | |_____________________^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+
+warning: 2 warnings emitted
+
