@@ -13,8 +13,9 @@ declare_tool_lint! {
     /// Flags an `if` or `if let` whose `else` branch does nothing but
     /// leave — a bare `return`, `break`, or `continue`, or, when the
     /// `if` is the last expression of a function body, a bare value such
-    /// as `None`, `false`, or `Ok(())` — while the branch before it has
-    /// at least `min_then_lines` (default `3`) lines of code.
+    /// as `None`, `false`, or `Ok(())` — while the branch before it holds
+    /// at least `min_then_statements` (default `2`) statements, its tail
+    /// expression included.
     ///
     /// Only an `if` in statement position or at the end of a block is
     /// flagged; one whose value feeds a `let` or a call is left alone,
