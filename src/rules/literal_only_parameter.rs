@@ -414,7 +414,7 @@ fn emit(
         let breakdown = breakdown.join(", ");
         (
             format!(
-                "parameter `{name}` of `{function}` is only ever passed a literal: {breakdown}"
+                "parameter `{name}` of `{function}` is only ever passed a literal: {breakdown}",
             ),
             "split the function into one per case and move what the cases share into a helper",
         )
