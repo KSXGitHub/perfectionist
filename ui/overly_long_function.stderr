@@ -1,5 +1,5 @@
 error[E0425]: cannot find value `step_51` in this scope
-  --> $DIR/overly_long_function.rs:62:5
+  --> $DIR/overly_long_function.rs:LL:CC
    |
 LL |     step_51
    |     ^^^^^^^
@@ -11,7 +11,7 @@ LL +     step_1
    |
 
 error[E0425]: cannot find value `step_50` in this scope
-  --> $DIR/overly_long_function.rs:116:5
+  --> $DIR/overly_long_function.rs:LL:CC
    |
 LL |     step_50
    |     ^^^^^^^
@@ -23,7 +23,7 @@ LL +     step_10
    |
 
 error[E0425]: cannot find value `step_49` in this scope
-  --> $DIR/overly_long_function.rs:270:5
+  --> $DIR/overly_long_function.rs:LL:CC
    |
 LL |     step_49
    |     ^^^^^^^
