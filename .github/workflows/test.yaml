@@ -62,7 +62,7 @@ jobs:
       PERFECTIONIST_CARGO_LOCKED: 'true'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Cache rustup toolchain
         uses: actions/cache@v5

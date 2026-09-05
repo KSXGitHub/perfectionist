@@ -33,7 +33,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # The version-bump-contract check needs the tagged commit's
           # parent to diff against, so fetch one extra commit beyond
