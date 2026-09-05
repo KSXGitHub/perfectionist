@@ -1,5 +1,5 @@
 warning: method chain has 6 calls, above the limit of 5
-  --> $DIR/overly_long_method_chain.rs:8:5
+  --> $DIR/overly_long_method_chain.rs:LL:CC
    |
 LL | /     names
 LL | |         .iter()
@@ -14,7 +14,7 @@ LL | |         .join(", ")
    = note: `#[warn(perfectionist::overly_long_method_chain)]` on by default
 
 warning: method chain has 6 calls, above the limit of 5
-  --> $DIR/overly_long_method_chain.rs:61:17
+  --> $DIR/overly_long_method_chain.rs:LL:CC
    |
 LL |       let count = fetch
    |  _________________^
