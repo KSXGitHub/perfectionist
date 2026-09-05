@@ -18,7 +18,7 @@ their head, weighted by how deeply it is nested. Each construct
 adds to the score as follows.
 
 | Construct                                                                         | Increment                                                    |
-|:---------------------------------------------------------------------------------:|:------------------------------------------------------------:|
+|-----------------------------------------------------------------------------------|:------------------------------------------------------------:|
 | `if`, `match`, `for`, `while`, `loop`                                             | 1, plus 1 for each enclosing `if` / `match` / loop / closure |
 | `else if`, `else`, `let ... else`, a match-arm guard                              | 1                                                            |
 | each run of like boolean operators (`a && b && c` is one; `a && b \|\| c` is two) | 1                                                            |
