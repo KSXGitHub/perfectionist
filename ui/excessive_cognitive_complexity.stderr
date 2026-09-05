@@ -1,0 +1,21 @@
+warning: function `over_the_limit` has a cognitive complexity of 16, above the limit of 15
+  --> $DIR/excessive_cognitive_complexity.rs:LL:CC
+   |
+LL | fn over_the_limit(kind: u8, items: &[u8], flag: bool) -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: nesting accounts for 7 of the 16
+   = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
+   = note: `#[warn(perfectionist::excessive_cognitive_complexity)]` on by default
+
+warning: function `step` has a cognitive complexity of 16, above the limit of 15
+  --> $DIR/excessive_cognitive_complexity.rs:LL:CC
+   |
+LL |     fn step(&self, state: u8, inputs: &[bool]) -> u8 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: nesting accounts for 8 of the 16
+   = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
+
+warning: 2 warnings emitted
+
