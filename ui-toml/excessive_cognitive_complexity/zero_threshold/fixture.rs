@@ -2,6 +2,10 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
+#![allow(
+    perfectionist::literal_only_parameter,
+    reason = "the nested function is called once, with a literal, to be scored"
+)]
 
 // With `max_complexity = 0` every function whose score is at least 1 is
 // flagged and the diagnostic states its score, which pins the increment
