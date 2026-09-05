@@ -1,5 +1,5 @@
 warning: file `$DIR/fixture.rs` has 10 lines of code, above the limit of 0
-  --> $DIR/fixture.rs:2:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #![feature(register_tool)]
    | ^

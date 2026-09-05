@@ -1,5 +1,5 @@
 warning: file `$DIR/overly_long_file.rs` has 514 lines of code, above the limit of 500
-  --> $DIR/overly_long_file.rs:2:1
+  --> $DIR/overly_long_file.rs:LL:CC
    |
 LL | #![feature(register_tool)]
    | ^
