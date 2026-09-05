@@ -1,5 +1,5 @@
 warning: function `sixteen_names` binds 16 distinct local names, above the limit of 15
-  --> $DIR/too_many_local_bindings.rs:11:1
+  --> $DIR/too_many_local_bindings.rs:LL:CC
    |
 LL | fn sixteen_names(seed: u32) -> u32 {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL | fn sixteen_names(seed: u32) -> u32 {
    = note: `#[warn(perfectionist::too_many_local_bindings)]` on by default
 
 warning: function `every_binding_shape` binds 16 distinct local names, above the limit of 15
-  --> $DIR/too_many_local_bindings.rs:75:1
+  --> $DIR/too_many_local_bindings.rs:LL:CC
    |
 LL | fn every_binding_shape(items: &[(u32, u32)], maybe: Option<u32>) -> u32 {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
