@@ -16,14 +16,14 @@ pub(super) struct Config {
     /// `#[cfg(test)]` module, `#[test]` functions, and everything in
     /// an integration-test or benchmark target. Defaults to `false`,
     /// so a test is held to the same limit as the code it exercises.
-    pub exempt_test: bool,
+    pub exempt_tests: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             max_complexity: DEFAULT_MAX_COMPLEXITY,
-            exempt_test: false,
+            exempt_tests: false,
         }
     }
 }

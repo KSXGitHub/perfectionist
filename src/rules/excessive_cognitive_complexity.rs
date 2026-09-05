@@ -47,7 +47,7 @@ declare_tool_lint! {
     /// them.
     ///
     /// Test code is measured like any other code; set
-    /// `exempt_test` to leave it alone.
+    /// `exempt_tests` to leave it alone.
     ///
     /// ### Why restrict this?
     ///
@@ -170,7 +170,7 @@ impl<'tcx> LateLintPass<'tcx> for ExcessiveCognitiveComplexity {
         if def_span.from_expansion() {
             return;
         }
-        if self.config.exempt_test && fn_in_test_code(cx, def_id) {
+        if self.config.exempt_tests && fn_in_test_code(cx, def_id) {
             return;
         }
         let score = score_body(cx, def_id, body);
