@@ -82,6 +82,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field
 
+- [`literal_only_parameter`](./literal_only_parameter.md) (default: `active`).
+
+  `bool` or `Option` parameter that every call site passes as a literal
+
 - [`macro_trailing_comma`](./macro_trailing_comma.md) (default: `active`).
 
   macro invocation does not follow rustfmt's vertical trailing-comma policy
