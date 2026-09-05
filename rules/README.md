@@ -90,6 +90,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   borrowed parameter is only used to produce its owned form
 
+- [`overly_complex_condition`](./overly_complex_condition.md) (default: `active`).
+
+  condition has more boolean operators than the configured maximum
+
 - [`overly_long_file`](./overly_long_file.md) (default: `active`).
 
   source file has more lines of code than the configured maximum
