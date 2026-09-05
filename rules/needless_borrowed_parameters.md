@@ -27,7 +27,7 @@ condition and `match` scrutinee positions count as
 disqualifying, not just the branch arms.
 
 Test code and build scripts are exempt by default;
-`test_code_exception` and `build_script_exception` turn either
+`exempt_tests` and `exempt_build_scripts` turn either
 off.
 
 ## Why restrict this?
@@ -97,7 +97,7 @@ appear in the built-in defaults or in
 `extra_conversion_methods`. Empty by default; checked after the
 merge with the built-ins, so this knob always wins.
 
-### Field: `test_code_exception`
+### Field: `exempt_tests`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -107,7 +107,7 @@ Whether test code is exempt: anything gated to test builds by
 inside a `#[test]` function, and every `tests/` or `benches/`
 crate. An `examples/` crate is not covered. Defaults to `true`.
 
-### Field: `build_script_exception`
+### Field: `exempt_build_scripts`
 
 - _Type:_ `boolean`
 - _Optional_

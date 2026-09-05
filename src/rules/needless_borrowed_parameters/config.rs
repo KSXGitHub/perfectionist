@@ -43,10 +43,10 @@ pub(super) struct Config {
     /// `#[cfg(test)]` (or a compound predicate implying it), anything
     /// inside a `#[test]` function, and every `tests/` or `benches/`
     /// crate. An `examples/` crate is not covered. Defaults to `true`.
-    pub(super) test_code_exception: bool,
+    pub(super) exempt_tests: bool,
     /// Whether a build script — `build.rs`, or whatever `Cargo.toml`'s
     /// `build` key names — is exempt. Defaults to `true`.
-    pub(super) build_script_exception: bool,
+    pub(super) exempt_build_scripts: bool,
 }
 
 impl Default for Config {
@@ -54,8 +54,8 @@ impl Default for Config {
         Self {
             extra_conversion_methods: Vec::new(),
             ignore_conversion_methods: Vec::new(),
-            test_code_exception: true,
-            build_script_exception: true,
+            exempt_tests: true,
+            exempt_build_scripts: true,
         }
     }
 }
@@ -65,8 +65,8 @@ impl Default for Config {
 /// exemption toggles carried verbatim.
 pub(super) struct Resolved {
     pub(super) conversion_methods: BTreeSet<Symbol>,
-    pub(super) test_code_exception: bool,
-    pub(super) build_script_exception: bool,
+    pub(super) exempt_tests: bool,
+    pub(super) exempt_build_scripts: bool,
 }
 
 impl Resolved {
@@ -77,8 +77,8 @@ impl Resolved {
                 config.extra_conversion_methods,
                 config.ignore_conversion_methods,
             ),
-            test_code_exception: config.test_code_exception,
-            build_script_exception: config.build_script_exception,
+            exempt_tests: config.exempt_tests,
+            exempt_build_scripts: config.exempt_build_scripts,
         }
     }
 }

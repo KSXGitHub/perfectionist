@@ -41,7 +41,7 @@ declare_tool_lint! {
     /// disqualifying, not just the branch arms.
     ///
     /// Test code and build scripts are exempt by default;
-    /// `test_code_exception` and `build_script_exception` turn either
+    /// `exempt_tests` and `exempt_build_scripts` turn either
     /// off.
     ///
     /// ### Why restrict this?
@@ -165,7 +165,7 @@ impl<'tcx> LateLintPass<'tcx> for NeedlessBorrowedParameters {
 
 impl NeedlessBorrowedParameters {
     /// Whether the function at `def_id` sits in code the rule stays
-    /// out of, per the `test_code_exception` / `build_script_exception`
+    /// out of, per the `exempt_tests` / `exempt_build_scripts`
     /// knobs.
     ///
     /// The crate-wide half — an integration-test, benchmark, or
@@ -174,16 +174,16 @@ impl NeedlessBorrowedParameters {
     /// half walks the enclosing scopes for a `#[cfg(test)]` gate or a
     /// `#[test]` function, so it is asked afresh each time.
     fn is_exempt(&mut self, cx: &LateContext<'_>, def_id: rustc_span::def_id::LocalDefId) -> bool {
-        let test_code_exception = self.config.test_code_exception;
-        let build_script_exception = self.config.build_script_exception;
+        let exempt_tests = self.config.exempt_tests;
+        let exempt_build_scripts = self.config.exempt_build_scripts;
         let exempt_crate = *self
             .exempt_crate
             .get_or_insert_with(|| match crate_target(cx) {
-                CargoTarget::BuildScript => build_script_exception,
-                target => test_code_exception && target.is_test_target(),
+                CargoTarget::BuildScript => exempt_build_scripts,
+                target => exempt_tests && target.is_test_target(),
             });
         exempt_crate
-            || (test_code_exception && in_test_code(cx.tcx, cx.tcx.local_def_id_to_hir_id(def_id)))
+            || (exempt_tests && in_test_code(cx.tcx, cx.tcx.local_def_id_to_hir_id(def_id)))
     }
 
     fn check_param<'tcx>(
