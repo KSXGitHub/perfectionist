@@ -94,7 +94,7 @@ pub use submodule::*;
 
 Configure via `dylint.toml` under `["perfectionist::wildcard_imports"]`. Every field is optional; the per-field prose below states the default.
 
-### Field: `prelude_exception`
+### Field: `exempt_prelude`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -104,7 +104,7 @@ module (`use rayon::prelude::*;`) is exempt. The recognised
 segment names come from `prelude_segment_names`. Defaults to
 `true`; set `false` to flag prelude globs too.
 
-### Field: `root_reexport_exception`
+### Field: `exempt_reexports`
 
 - _Type:_ `boolean`
 - _Optional_

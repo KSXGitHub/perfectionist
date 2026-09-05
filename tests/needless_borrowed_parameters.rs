@@ -91,7 +91,7 @@ fn flags_test_code_when_the_exception_is_off() {
         &[("src/lib.rs", LIB_WITH_TEST_MODULE)],
         text_block_fnl! {
             r#"["perfectionist::needless_borrowed_parameters"]"#
-            "test_code_exception = false"
+            "exempt_tests = false"
         },
     );
     assert_flagged(&stderr, "cfg_test_param");
@@ -122,7 +122,7 @@ fn flags_an_ungated_test_helper_when_the_exception_is_off() {
         &[("src/lib.rs", LIB_WITH_UNGATED_TEST)],
         text_block_fnl! {
             r#"["perfectionist::needless_borrowed_parameters"]"#
-            "test_code_exception = false"
+            "exempt_tests = false"
         },
     );
     assert_flagged(&stderr, "ungated_test_param");
@@ -164,7 +164,7 @@ fn every_compound_cfg_function_reaches_the_rule() {
         &[("src/lib.rs", LIB_WITH_COMPOUND_CFGS)],
         text_block_fnl! {
             r#"["perfectionist::needless_borrowed_parameters"]"#
-            "test_code_exception = false"
+            "exempt_tests = false"
         },
     );
     assert_flagged(&stderr, "conjunction_param");
@@ -228,7 +228,7 @@ fn flags_a_test_target_when_the_exception_is_off() {
         SEPARATE_TARGET_SOURCES,
         text_block_fnl! {
             r#"["perfectionist::needless_borrowed_parameters"]"#
-            "test_code_exception = false"
+            "exempt_tests = false"
         },
     );
     assert_flagged(&stderr, "integration_param");
@@ -259,7 +259,7 @@ fn flags_a_build_script_when_the_exception_is_off() {
         BUILD_SCRIPT_SOURCES,
         text_block_fnl! {
             r#"["perfectionist::needless_borrowed_parameters"]"#
-            "build_script_exception = false"
+            "exempt_build_scripts = false"
         },
     );
     assert_flagged(&stderr, "build_script_param");
