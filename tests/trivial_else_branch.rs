@@ -32,14 +32,15 @@ fn dylint_toml(config: RuleConfig) -> String {
 
 #[test]
 fn zero_threshold_reports_every_trivial_else() {
-    dylint_testing::ui::Test::src_base(
-        env!("CARGO_PKG_NAME"),
+    let fixtures = _utils::copy_fixtures_with_directive(
+        env!("CARGO_MANIFEST_DIR"),
         "ui-toml/trivial_else_branch/zero_threshold",
-    )
-    .dylint_toml(dylint_toml(RuleConfig {
-        min_then_statements: Some(0),
-    }))
-    .run();
+    );
+    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+        .dylint_toml(dylint_toml(RuleConfig {
+            min_then_statements: Some(0),
+        }))
+        .run();
 }
 
 /// A library whose production function, `#[cfg(test)]` helper, and
