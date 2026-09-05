@@ -14,10 +14,13 @@
 //! runs otherwise. That build is the unit-test target
 //! `cargo dylint -- --all-targets` adds.
 
+use crate::cargo_target::crate_target;
 use clippy_utils::is_in_test_function;
 use core::iter::once;
 use rustc_hir::attrs::CfgEntry;
+use rustc_hir::def_id::LocalDefId;
 use rustc_hir::{HirId, find_attr};
+use rustc_lint::LateContext;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::sym;
 
@@ -115,4 +118,11 @@ fn entry_implies_test(cfg: &CfgEntry, negated: bool) -> bool {
         CfgEntry::Not(entry, _) => entry_implies_test(entry, !negated),
         CfgEntry::Bool(..) | CfgEntry::Version(..) => false,
     }
+}
+
+/// Whether the item `def_id` is test code under either reading:
+/// the whole crate is an integration-test or benchmark target, or the
+/// item sits in test-exclusive code per [`in_test_code`].
+pub(crate) fn item_in_test_code(cx: &LateContext<'_>, def_id: LocalDefId) -> bool {
+    crate_target(cx).is_test_target() || in_test_code(cx.tcx, cx.tcx.local_def_id_to_hir_id(def_id))
 }
