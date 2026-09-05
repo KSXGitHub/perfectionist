@@ -24,9 +24,9 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    prelude_exception: Option<bool>,
+    exempt_prelude: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    root_reexport_exception: Option<bool>,
+    exempt_reexports: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     prelude_segment_names: Option<Vec<&'static str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -65,8 +65,8 @@ fn exceptions_disabled_flags_every_glob() {
     run(
         "ui-toml/wildcard_imports/exceptions_disabled",
         RuleConfig {
-            prelude_exception: Some(false),
-            root_reexport_exception: Some(false),
+            exempt_prelude: Some(false),
+            exempt_reexports: Some(false),
             ..Default::default()
         },
     );
@@ -82,8 +82,8 @@ fn allowed_paths_exempts_listed_module() {
     run(
         "ui-toml/wildcard_imports/allowed_paths",
         RuleConfig {
-            prelude_exception: Some(false),
-            root_reexport_exception: Some(false),
+            exempt_prelude: Some(false),
+            exempt_reexports: Some(false),
             allowed_paths: Some(vec!["crate::secret::internals", "::std::collections"]),
             ..Default::default()
         },
