@@ -1,5 +1,5 @@
 warning: parameter `verbose` of `render` is only ever passed a literal: `true` at 1 call site, `false` at 1 call site
-  --> $DIR/literal_only_parameter.rs:12:26
+  --> $DIR/literal_only_parameter.rs:LL:CC
    |
 LL | fn render(items: &[u32], verbose: bool) -> u32 {
    |                          ^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL | fn render(items: &[u32], verbose: bool) -> u32 {
    = note: `#[warn(perfectionist::literal_only_parameter)]` on by default
 
 warning: parameter `trailing_newline` of `emit` is always passed `true`
-  --> $DIR/literal_only_parameter.rs:27:21
+  --> $DIR/literal_only_parameter.rs:LL:CC
    |
 LL | fn emit(value: u32, trailing_newline: bool) -> u32 {
    |                     ^^^^^^^^^^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ LL | fn emit(value: u32, trailing_newline: bool) -> u32 {
    = help: drop the parameter and inline the value it always has
 
 warning: parameter `fallback` of `lookup` is only ever passed a literal: `None` at 1 call site, `Some(..)` at 1 call site
-  --> $DIR/literal_only_parameter.rs:36:21
+  --> $DIR/literal_only_parameter.rs:LL:CC
    |
 LL | fn lookup(key: u32, fallback: Option<u32>) -> u32 {
    |                     ^^^^^^^^^^^^^^^^^^^^^
@@ -24,7 +24,7 @@ LL | fn lookup(key: u32, fallback: Option<u32>) -> u32 {
    = help: split the function into one per case and move what the cases share into a helper
 
 warning: parameter `reset` of `step` is only ever passed a literal: `true` at 1 call site, `false` at 2 call sites
-  --> $DIR/literal_only_parameter.rs:57:24
+  --> $DIR/literal_only_parameter.rs:LL:CC
    |
 LL |     fn step(&mut self, reset: bool) {
    |                        ^^^^^^^^^^^
