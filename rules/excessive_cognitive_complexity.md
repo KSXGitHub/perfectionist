@@ -38,7 +38,7 @@ measured on their own, not as part of the function that contains
 them.
 
 Test code is measured like any other code; set
-`test_code_exception` to leave it alone.
+`exempt_test` to leave it alone.
 
 ## Why restrict this?
 
@@ -128,7 +128,7 @@ Configure via `dylint.toml` under `["perfectionist::excessive_cognitive_complexi
 The highest cognitive complexity a function may have without
 being flagged. Defaults to `15`.
 
-### Field: `test_code_exception`
+### Field: `exempt_test`
 
 - _Type:_ `boolean`
 - _Optional_
