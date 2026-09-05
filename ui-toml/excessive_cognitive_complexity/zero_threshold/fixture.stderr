@@ -1,5 +1,5 @@
 warning: function `one_if` has a cognitive complexity of 1, above the limit of 0
-  --> $DIR/fixture.rs:26:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn one_if(first: bool) {
    | ^^^^^^^^^^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL | fn one_if(first: bool) {
    = note: `#[warn(perfectionist::excessive_cognitive_complexity)]` on by default
 
 warning: function `if_else` has a cognitive complexity of 2, above the limit of 0
-  --> $DIR/fixture.rs:33:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn if_else(first: bool) {
    | ^^^^^^^^^^^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ LL | fn if_else(first: bool) {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `else_if_chain` has a cognitive complexity of 3, above the limit of 0
-  --> $DIR/fixture.rs:42:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn else_if_chain(n: u8) {
    | ^^^^^^^^^^^^^^^^^^^^^^^
@@ -24,7 +24,7 @@ LL | fn else_if_chain(n: u8) {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `nested_if` has a cognitive complexity of 3, above the limit of 0
-  --> $DIR/fixture.rs:53:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn nested_if(first: bool, second: bool) {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -33,7 +33,7 @@ LL | fn nested_if(first: bool, second: bool) {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `for_loop` has a cognitive complexity of 3, above the limit of 0
-  --> $DIR/fixture.rs:62:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn for_loop(items: &[u8]) {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -42,7 +42,7 @@ LL | fn for_loop(items: &[u8]) {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `while_loop` has a cognitive complexity of 1, above the limit of 0
-  --> $DIR/fixture.rs:71:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn while_loop(mut n: u8) {
    | ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -50,7 +50,7 @@ LL | fn while_loop(mut n: u8) {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `while_let` has a cognitive complexity of 1, above the limit of 0
-  --> $DIR/fixture.rs:78:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn while_let(mut items: impl Iterator<Item = u8>) {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -58,7 +58,7 @@ LL | fn while_let(mut items: impl Iterator<Item = u8>) {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `bare_loop` has a cognitive complexity of 1, above the limit of 0
-  --> $DIR/fixture.rs:85:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn bare_loop() {
    | ^^^^^^^^^^^^^^
@@ -66,7 +66,7 @@ LL | fn bare_loop() {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `labelled_continue` has a cognitive complexity of 7, above the limit of 0
-  --> $DIR/fixture.rs:92:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn labelled_continue() {
    | ^^^^^^^^^^^^^^^^^^^^^^
@@ -75,7 +75,7 @@ LL | fn labelled_continue() {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `matching` has a cognitive complexity of 2, above the limit of 0
-  --> $DIR/fixture.rs:103:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn matching(n: u8) {
    | ^^^^^^^^^^^^^^^^^^
@@ -83,7 +83,7 @@ LL | fn matching(n: u8) {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `boolean_runs` has a cognitive complexity of 2, above the limit of 0
-  --> $DIR/fixture.rs:112:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn boolean_runs(first: bool, second: bool, third: bool, fourth: bool) -> bool {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -91,7 +91,7 @@ LL | fn boolean_runs(first: bool, second: bool, third: bool, fourth: bool) -> bo
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `boolean_parenthesised` has a cognitive complexity of 2, above the limit of 0
-  --> $DIR/fixture.rs:117:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn boolean_parenthesised(first: bool, second: bool, third: bool) -> bool {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -99,7 +99,7 @@ LL | fn boolean_parenthesised(first: bool, second: bool, third: bool) -> bool {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `negation` has a cognitive complexity of 1, above the limit of 0
-  --> $DIR/fixture.rs:122:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn negation(first: bool, second: bool) -> bool {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -107,7 +107,7 @@ LL | fn negation(first: bool, second: bool) -> bool {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `let_else` has a cognitive complexity of 1, above the limit of 0
-  --> $DIR/fixture.rs:133:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn let_else(input: Option<u8>) -> u8 {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -115,7 +115,7 @@ LL | fn let_else(input: Option<u8>) -> u8 {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `closure_nesting` has a cognitive complexity of 3, above the limit of 0
-  --> $DIR/fixture.rs:141:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn closure_nesting(items: &[u8]) -> Vec<u8> {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -124,7 +124,7 @@ LL | fn closure_nesting(items: &[u8]) -> Vec<u8> {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `recursive` has a cognitive complexity of 3, above the limit of 0
-  --> $DIR/fixture.rs:149:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn recursive(n: u32) -> u32 {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -132,7 +132,7 @@ LL | fn recursive(n: u32) -> u32 {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `count_down` has a cognitive complexity of 2, above the limit of 0
-  --> $DIR/fixture.rs:157:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     fn count_down(&self, n: u32) {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -140,7 +140,7 @@ LL |     fn count_down(&self, n: u32) {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `branch_in_macro_argument` has a cognitive complexity of 2, above the limit of 0
-  --> $DIR/fixture.rs:165:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn branch_in_macro_argument(first: bool) {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -148,7 +148,7 @@ LL | fn branch_in_macro_argument(first: bool) {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `awaiting` has a cognitive complexity of 1, above the limit of 0
-  --> $DIR/fixture.rs:185:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | async fn awaiting(ready: impl Future<Output = bool>) {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -156,7 +156,7 @@ LL | async fn awaiting(ready: impl Future<Output = bool>) {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `if_let_chain` has a cognitive complexity of 2, above the limit of 0
-  --> $DIR/fixture.rs:192:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | fn if_let_chain(input: Option<u8>, first: bool) {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -164,7 +164,7 @@ LL | fn if_let_chain(input: Option<u8>, first: bool) {
    = help: split the function into smaller ones, each doing one thing, and flatten nested branches with early returns
 
 warning: function `inner` has a cognitive complexity of 1, above the limit of 0
-  --> $DIR/fixture.rs:200:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     fn inner(first: bool) {
    |     ^^^^^^^^^^^^^^^^^^^^^

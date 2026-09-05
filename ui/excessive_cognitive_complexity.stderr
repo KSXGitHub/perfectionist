@@ -1,5 +1,5 @@
 warning: function `over_the_limit` has a cognitive complexity of 16, above the limit of 15
-  --> $DIR/excessive_cognitive_complexity.rs:10:1
+  --> $DIR/excessive_cognitive_complexity.rs:LL:CC
    |
 LL | fn over_the_limit(kind: u8, items: &[u8], flag: bool) -> u32 {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -9,7 +9,7 @@ LL | fn over_the_limit(kind: u8, items: &[u8], flag: bool) -> u32 {
    = note: `#[warn(perfectionist::excessive_cognitive_complexity)]` on by default
 
 warning: function `step` has a cognitive complexity of 16, above the limit of 15
-  --> $DIR/excessive_cognitive_complexity.rs:128:5
+  --> $DIR/excessive_cognitive_complexity.rs:LL:CC
    |
 LL |     fn step(&self, state: u8, inputs: &[bool]) -> u8 {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
