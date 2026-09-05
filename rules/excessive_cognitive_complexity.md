@@ -17,13 +17,13 @@ Rust: a count of how much control flow a reader has to hold in
 their head, weighted by how deeply it is nested. Each construct
 adds to the score as follows.
 
-| Construct | Increment |
-|---|---|
-| `if`, `match`, `for`, `while`, `loop` | 1, plus 1 for each enclosing `if` / `match` / loop / closure |
-| `else if`, `else`, `let ... else`, a match-arm guard | 1 |
-| each run of like boolean operators (`a && b && c` is one; `a && b \|\| c` is two) | 1 |
-| each labelled `break` or `continue` | 1 |
-| each call the function makes to itself | 1 |
+| Construct                                                                         | Increment                                                    |
+|:---------------------------------------------------------------------------------:|:------------------------------------------------------------:|
+| `if`, `match`, `for`, `while`, `loop`                                             | 1, plus 1 for each enclosing `if` / `match` / loop / closure |
+| `else if`, `else`, `let ... else`, a match-arm guard                              | 1                                                            |
+| each run of like boolean operators (`a && b && c` is one; `a && b \|\| c` is two) | 1                                                            |
+| each labelled `break` or `continue`                                               | 1                                                            |
+| each call the function makes to itself                                            | 1                                                            |
 
 A closure adds nothing itself but deepens the nesting of what it
 contains. `?`, `.await`, `return`, and an unlabelled `break` or
