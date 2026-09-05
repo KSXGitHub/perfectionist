@@ -90,6 +90,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   borrowed parameter is only used to produce its owned form
 
+- [`overly_long_file`](./overly_long_file.md) (default: `active`).
+
+  source file has more lines of code than the configured maximum
+
 - [`overly_long_function`](./overly_long_function.md) (default: `active`).
 
   function body has more lines of code than the configured maximum
