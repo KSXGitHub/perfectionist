@@ -14,7 +14,7 @@ path = "cli/warmup.rs"
 
 [dependencies]
 build-fs-tree = "0.8.1"
-cargo_toml = "0.22.3"
+cargo_toml = "1.0.1"
 clap = { version = "4.6.1", features = ["derive"] }
 command-extra = "1.0.0"
 pipe-trait = "0.4.0"
