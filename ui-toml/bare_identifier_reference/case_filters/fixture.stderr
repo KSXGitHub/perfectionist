@@ -1,5 +1,5 @@
 warning: `Mixed_Thing` resolves in scope; consider writing it as an intra-doc link
-  --> $DIR/fixture.rs:13:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// `Mixed_Thing`, which is flagged regardless.
    |     ^^^^^^^^^^^^^

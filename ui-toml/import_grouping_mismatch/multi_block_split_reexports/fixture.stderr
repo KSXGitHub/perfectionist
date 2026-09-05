@@ -1,5 +1,5 @@
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:34:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / pub use Reflection as HardlinkListReflection;
 LL | | pub use iter::Iter;
@@ -16,7 +16,7 @@ LL + pub use Reflection as HardlinkListReflection;
    |
 
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:42:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / pub use Summary as SharedLinkSummary;
 LL | | use std::time::Duration;
@@ -33,7 +33,7 @@ LL + use std::time::Duration;
    |
 
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:50:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / use std::mem::swap;
 LL | | #[cfg(unix)]

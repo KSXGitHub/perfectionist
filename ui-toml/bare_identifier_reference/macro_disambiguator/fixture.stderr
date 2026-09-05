@@ -1,5 +1,5 @@
 warning: `dual` resolves in scope; consider writing it as an intra-doc link
-  --> $DIR/fixture.rs:10:58
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// A public macro and a private function both answer to `dual`; the
    |                                                          ^^^^^^

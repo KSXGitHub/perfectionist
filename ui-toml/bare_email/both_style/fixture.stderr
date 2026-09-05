@@ -1,5 +1,5 @@
 warning: bare email address `security@example.net`
-  --> $DIR/fixture.rs:4:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// security@example.net.
    |     ^^^^^^^^^^^^^^^^^^^^ help: wrap in `<mailto:...>`: `<mailto:security@example.net>`

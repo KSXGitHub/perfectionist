@@ -1,5 +1,5 @@
 warning: bare email address `other@elsewhere.test`
-  --> $DIR/fixture.rs:7:24
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// email still fires: other@elsewhere.test here.
    |                        ^^^^^^^^^^^^^^^^^^^^

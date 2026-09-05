@@ -1,5 +1,5 @@
 warning: repository URL ref `main` is not a pinned commit SHA
-  --> $DIR/fixture.rs:10:52
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     let _bad = "https://github.com/owner/repo/blob/main/src/lib.rs";
    |                                                    ^^^^

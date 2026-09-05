@@ -1,5 +1,5 @@
 warning: ambiguous `#99`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
-  --> $DIR/fixture.rs:1:17
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// Bad: closes #99 — under `doc_comment_form = "reference"`, but this block
    |                 ^^^

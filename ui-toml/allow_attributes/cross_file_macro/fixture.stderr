@@ -1,10 +1,10 @@
 warning: some lints in this `#[allow]` stay silent even after they stop firing
-  --> $DIR/fixture.rs:21:11
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |         #[allow(dead_code, non_snake_case, reason = $reason)]
    |           ^^^^^
    |
-  ::: $DIR/auxiliary/call_site.rs:6:1
+  ::: $DIR/auxiliary/call_site.rs:LL:CC
    |
 LL | silence!("rationale supplied from another file");
    | ------------------------------------------------ in this macro invocation

@@ -1,5 +1,5 @@
 warning: print macro with an embedded newline exceeds the configured line width
-  --> $DIR/overly_long_print_macro.rs:15:5
+  --> $DIR/overly_long_print_macro.rs:LL:CC
    |
 LL |     println!("error: the operation failed because of {err_src} deep inside the subsystem/nhint: run {magic_cmd} to repair it");
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -14,7 +14,7 @@ LL ~     );
    |
 
 warning: print macro with an embedded newline exceeds the configured line width
-  --> $DIR/overly_long_print_macro.rs:24:5
+  --> $DIR/overly_long_print_macro.rs:LL:CC
    |
 LL |     writeln!(out, "header field that is intentionally verbose: {header} and keeps going/nbody field follows here: {body}")?;
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -28,7 +28,7 @@ LL ~     )?;
    |
 
 warning: print macro with an embedded newline exceeds the configured line width
-  --> $DIR/overly_long_print_macro.rs:33:5
+  --> $DIR/overly_long_print_macro.rs:LL:CC
    |
 LL |     println!("the first value is {} and there is plenty of padding here to clear the width limit/nthe second value is {}", first, second);
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -42,7 +42,7 @@ LL ~     );
    |
 
 warning: print macro with an embedded newline exceeds the configured line width
-  --> $DIR/overly_long_print_macro.rs:38:5
+  --> $DIR/overly_long_print_macro.rs:LL:CC
    |
 LL |     eprintln!("warning: the request took an unusually long time to finish and may have stalled/ncheck the upstream service");
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -56,7 +56,7 @@ LL ~     );
    |
 
 warning: print macro with an embedded newline exceeds the configured line width
-  --> $DIR/overly_long_print_macro.rs:45:5
+  --> $DIR/overly_long_print_macro.rs:LL:CC
    |
 LL |     info!("user {user} performed an action that we want to record in a fairly verbose log line/nfollow-up details are here");
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -70,7 +70,7 @@ LL ~     );
    |
 
 warning: print macro with an embedded newline exceeds the configured line width
-  --> $DIR/overly_long_print_macro.rs:89:5
+  --> $DIR/overly_long_print_macro.rs:LL:CC
    |
 LL | /     println!("a long message padded out so that this source line comfortably exceeds the width limit/nsecond {}", value // keep th...
 LL | |     );

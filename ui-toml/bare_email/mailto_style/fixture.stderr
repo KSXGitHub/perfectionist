@@ -1,5 +1,5 @@
 warning: bare email address `security@example.net`
-  --> $DIR/fixture.rs:3:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// security@example.net.
    |     ^^^^^^^^^^^^^^^^^^^^ help: prefix with `mailto:`: `mailto:security@example.net`

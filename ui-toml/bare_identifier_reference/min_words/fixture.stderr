@@ -1,5 +1,5 @@
 warning: `FooBarBaz` resolves in scope; consider writing it as an intra-doc link
-  --> $DIR/fixture.rs:14:33
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// At or above it and checked: `FooBarBaz` (3), `foo_bar_baz` (3).
    |                                 ^^^^^^^^^^^
@@ -13,7 +13,7 @@ LL + /// At or above it and checked: [`FooBarBaz`] (3), `foo_bar_baz` (3).
    |
 
 warning: `foo_bar_baz` resolves in scope; consider writing it as an intra-doc link
-  --> $DIR/fixture.rs:14:50
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// At or above it and checked: `FooBarBaz` (3), `foo_bar_baz` (3).
    |                                                  ^^^^^^^^^^^^^
@@ -26,7 +26,7 @@ LL + /// At or above it and checked: `FooBarBaz` (3), [`foo_bar_baz`] (3).
    |
 
 warning: `Mixed_Thing` resolves in scope; consider writing it as an intra-doc link
-  --> $DIR/fixture.rs:15:44
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// Non-conformist and checked regardless: `Mixed_Thing`.
    |                                            ^^^^^^^^^^^^^

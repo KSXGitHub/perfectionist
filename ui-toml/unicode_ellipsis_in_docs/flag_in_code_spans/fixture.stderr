@@ -1,5 +1,5 @@
 warning: Unicode `…` (U+2026) in doc comment
-  --> $DIR/fixture.rs:1:51
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// Ellipsis inside an inline code span `let s = "…";` is flagged here.
    |                                                   ^ help: use ASCII `...` instead: `...`
@@ -7,7 +7,7 @@ LL | /// Ellipsis inside an inline code span `let s = "…";` is flagged here.
    = note: `#[warn(perfectionist::unicode_ellipsis_in_docs)]` on by default
 
 warning: Unicode `…` (U+2026) in doc comment
-  --> $DIR/fixture.rs:11:19
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// Prose ellipsis… is flagged regardless.
    |                   ^ help: use ASCII `...` instead: `...`

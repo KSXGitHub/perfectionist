@@ -1,5 +1,5 @@
 warning: repository URL ref `main` is not a pinned commit SHA
-  --> $DIR/fixture.rs:19:43
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// <https://gitlab.com/group/repo/-/blob/main/src/lib.rs>.
    |                                           ^^^^

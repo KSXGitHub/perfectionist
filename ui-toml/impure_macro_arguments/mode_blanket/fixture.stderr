@@ -1,5 +1,5 @@
 warning: impure expression passed directly to a macro
-  --> $DIR/fixture.rs:11:35
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     let _ = format!("count = {}", value());
    |                                   ^^^^^^^

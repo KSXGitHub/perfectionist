@@ -1,5 +1,5 @@
 warning: `Flagged` resolves in scope; consider writing it as an intra-doc link
-  --> $DIR/fixture.rs:7:14
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// Mentions `Flagged`, which still fires, and `Skipped`, which the
    |              ^^^^^^^^^

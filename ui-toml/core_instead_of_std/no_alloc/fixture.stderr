@@ -1,5 +1,5 @@
 warning: item named through `core` instead of `std`
-  --> $DIR/fixture.rs:15:9
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use core::fmt::Display;
    |         ^^^^ help: name the item through `std`: `std`
