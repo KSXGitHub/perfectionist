@@ -1,5 +1,5 @@
 warning: the `else` branch only leaves; write the exit first as a guard clause
-  --> $DIR/trivial_else_branch.rs:16:12
+  --> $DIR/trivial_else_branch.rs:LL:CC
    |
 LL |       } else {
    |  ____________^
@@ -11,7 +11,7 @@ LL | |     }
    = note: `#[warn(perfectionist::trivial_else_branch)]` on by default
 
 warning: the `else` branch only leaves; write the exit first as a guard clause
-  --> $DIR/trivial_else_branch.rs:38:16
+  --> $DIR/trivial_else_branch.rs:LL:CC
    |
 LL |           } else {
    |  ________________^
@@ -22,7 +22,7 @@ LL | |         }
    = help: bind with `let ... else { <exit> };` and move the long branch after it, unindented
 
 warning: the `else` branch only yields a value; return it first as a guard clause
-  --> $DIR/trivial_else_branch.rs:62:12
+  --> $DIR/trivial_else_branch.rs:LL:CC
    |
 LL |       } else {
    |  ____________^
