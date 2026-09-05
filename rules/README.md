@@ -46,9 +46,17 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   item named through `core` or `alloc` instead of `std`
 
+- [`excessive_cognitive_complexity`](./excessive_cognitive_complexity.md) (default: `active`).
+
+  function body has a cognitive complexity above the configured maximum
+
 - [`excessive_inline_tests`](./excessive_inline_tests.md) (default: `active`).
 
   inline test code should be extracted to a separate file
+
+- [`excessive_nesting`](./excessive_nesting.md) (default: `active`).
+
+  function body nests constructs deeper than the configured maximum
 
 - [`exhaustive_error_enums`](./exhaustive_error_enums.md) (default: `inactive`).
 
@@ -81,6 +89,22 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`needless_borrowed_parameters`](./needless_borrowed_parameters.md) (default: `active`).
 
   borrowed parameter is only used to produce its owned form
+
+- [`overly_complex_condition`](./overly_complex_condition.md) (default: `active`).
+
+  condition has more boolean operators than the configured maximum
+
+- [`overly_long_file`](./overly_long_file.md) (default: `active`).
+
+  source file has more lines of code than the configured maximum
+
+- [`overly_long_function`](./overly_long_function.md) (default: `active`).
+
+  function body has more lines of code than the configured maximum
+
+- [`overly_long_method_chain`](./overly_long_method_chain.md) (default: `active`).
+
+  expression chains more method calls than the configured maximum
 
 - [`overly_long_print_macro`](./overly_long_print_macro.md) (default: `active`).
 
@@ -121,6 +145,14 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`thiserror_usage`](./thiserror_usage.md) (default: `active`).
 
   `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`
+
+- [`too_many_local_bindings`](./too_many_local_bindings.md) (default: `active`).
+
+  function body binds more distinct local names than the configured maximum
+
+- [`too_many_struct_fields`](./too_many_struct_fields.md) (default: `active`).
+
+  struct has more fields than the configured maximum
 
 - [`uncombined_self_import`](./uncombined_self_import.md) (default: `inactive`).
 
