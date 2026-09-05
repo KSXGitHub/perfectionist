@@ -17,6 +17,7 @@ pub mod import_granularity_mismatch;
 pub mod import_grouping_mismatch;
 pub mod impure_macro_arguments;
 pub mod lint_attribute_trailing_comment;
+pub mod literal_only_parameter;
 pub mod macro_trailing_comma;
 pub mod named_prelude_imports;
 pub mod needless_borrowed_parameters;

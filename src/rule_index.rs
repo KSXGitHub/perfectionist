@@ -115,6 +115,7 @@ rule_index! {
     import_grouping_mismatch => ImportGroupingMismatch,
     impure_macro_arguments => ImpureMacroArguments,
     lint_attribute_trailing_comment => LintAttributeTrailingComment,
+    literal_only_parameter => LiteralOnlyParameter,
     macro_trailing_comma => MacroTrailingComma,
     named_prelude_imports => NamedPreludeImports,
     needless_borrowed_parameters => NeedlessBorrowedParameters,
