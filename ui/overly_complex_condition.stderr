@@ -1,5 +1,5 @@
 warning: condition has 4 boolean operators, above the limit of 3
-  --> $DIR/overly_complex_condition.rs:10:8
+  --> $DIR/overly_complex_condition.rs:LL:CC
    |
 LL |     if first && second && third && fourth && fifth {
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL |     if first && second && third && fourth && fifth {
    = note: `#[warn(perfectionist::overly_complex_condition)]` on by default
 
 warning: condition has 4 boolean operators, above the limit of 3
-  --> $DIR/overly_complex_condition.rs:32:11
+  --> $DIR/overly_complex_condition.rs:LL:CC
    |
 LL |     while first || second || third || fourth || fifth {
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ LL |     while first || second || third || fourth || fifth {
    = help: bind the condition, or the part of it that names a concept, to a `let`
 
 warning: condition has 4 boolean operators, above the limit of 3
-  --> $DIR/overly_complex_condition.rs:36:14
+  --> $DIR/overly_complex_condition.rs:LL:CC
    |
 LL |         0 if first && second && third && fourth && fifth => work(),
    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
