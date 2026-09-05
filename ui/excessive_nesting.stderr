@@ -1,0 +1,29 @@
+warning: function `four_levels` nests 4 levels deep, above the limit of 3
+  --> $DIR/excessive_nesting.rs:10:1
+   |
+LL | fn four_levels(entries: &[Option<u8>], limit: u8) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 4 levels deep
+  --> $DIR/excessive_nesting.rs:16:21
+   |
+LL |                     if *size > limit {
+   |                     ^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+   = note: `#[warn(perfectionist::excessive_nesting)]` on by default
+
+warning: function `step` nests 4 levels deep, above the limit of 3
+  --> $DIR/excessive_nesting.rs:87:5
+   |
+LL |     fn step(&self, inputs: &[Vec<bool>]) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 4 levels deep
+  --> $DIR/excessive_nesting.rs:91:21
+   |
+LL |                     match row.len() {
+   |                     ^^^^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: 2 warnings emitted
+
