@@ -124,6 +124,35 @@ declare_tool_lint! {
     ///     }
     /// }
     /// ```
+    ///
+    /// ### Fixing a flagged function
+    ///
+    /// The diagnostic splits the score into what came from *branching*
+    /// and what came from *nesting depth*. Read that split first; it
+    /// says which fix is the real one.
+    ///
+    /// - *Mostly nesting.* The function is deeply indented rather than
+    ///   broad. Flatten it: return early on the error, empty, and
+    ///   absent cases so the happy path stops drifting rightward, and
+    ///   replace a nested `if` / `match` with a `let ... else` guard.
+    ///   Each level removed takes its per-level penalty with it, so the
+    ///   score falls because the reader's burden fell.
+    /// - *Mostly branching.* The function is doing several independent
+    ///   things in one body. Move each into its own function named for
+    ///   the one thing it does; a `match` moved into its own function
+    ///   also sheds the nesting penalty it carried at the call site.
+    ///
+    /// One shortcut is worth naming, because it is tempting. The score
+    /// is measured per function body, and a call counts as one step
+    /// however much stands behind it, so pulling a tangled block into a
+    /// private helper always lowers the number, even when it helps the
+    /// reader not at all. That moves the complexity; it does not remove
+    /// it. An extraction is real only when the new function stands on
+    /// its own: a name that describes one responsibility, a small
+    /// interface, and no mutable state threaded back to the caller. If
+    /// the helper only makes sense read together with its single call
+    /// site, the tangle is still there under a new name. The goal is
+    /// the reader's burden, not the number.
     pub perfectionist::EXCESSIVE_COGNITIVE_COMPLEXITY,
     Warn,
     "function body has a cognitive complexity above the configured maximum",
@@ -163,8 +192,10 @@ impl<'tcx> LateLintPass<'tcx> for ExcessiveCognitiveComplexity {
         def_id: LocalDefId,
     ) {
         // A closure is scored as part of the function that contains it.
-        let (FnKind::ItemFn(ident, ..) | FnKind::Method(ident, ..)) = kind else {
-            return;
+        let (ident, kind_label) = match kind {
+            FnKind::ItemFn(ident, ..) => (ident, "function"),
+            FnKind::Method(ident, ..) => (ident, "method"),
+            FnKind::Closure => return,
         };
         let def_span = cx.tcx.def_span(def_id);
         if def_span.from_expansion() {
@@ -177,22 +208,56 @@ impl<'tcx> LateLintPass<'tcx> for ExcessiveCognitiveComplexity {
         if score.total <= self.config.max_complexity {
             return;
         }
-        emit(cx, def_span, ident.name, score, self.config.max_complexity);
+        emit(
+            cx,
+            def_span,
+            kind_label,
+            ident.name,
+            score,
+            self.config.max_complexity,
+        );
     }
 }
 
-fn emit(cx: &LateContext<'_>, span: Span, name: rustc_span::Symbol, score: Score, max: usize) {
-    let total = score.total;
-    let from_nesting = score.from_nesting;
+fn emit(
+    cx: &LateContext<'_>,
+    span: Span,
+    kind_label: &str,
+    name: rustc_span::Symbol,
+    score: Score,
+    max: usize,
+) {
+    let Score {
+        total,
+        from_nesting,
+    } = score;
+    let from_branches = total - from_nesting;
     let message = format!(
-        "function `{name}` has a cognitive complexity of {total}, above the limit of {max}",
+        "{kind_label} `{name}` has a cognitive complexity of {total}, above the limit of {max}",
     );
     span_lint_and_then(cx, EXCESSIVE_COGNITIVE_COMPLEXITY, span, message, |diag| {
-        if from_nesting > 0 {
-            diag.note(format!(
-                "nesting accounts for {from_nesting} of the {total}",
+        diag.note(format!(
+            "{from_branches} from branching, {from_nesting} from nesting depth",
+        ));
+        if from_nesting >= from_branches {
+            diag.help(
+                "flatten the deepest branches: return early on the error and empty \
+                 cases, and replace nested `if` / `match` with `let ... else` guards",
+            );
+        } else {
+            diag.help(format!(
+                "this {kind_label} does several independent things — move each into \
+                 its own function named for that one responsibility",
             ));
         }
-        diag.help("split the function into smaller ones, each doing one thing, and flatten nested branches with early returns");
+        diag.help(
+            "reducing the score honestly (not just relocating it): see \
+             rules/excessive_cognitive_complexity.md in the perfectionist repo \
+             (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)",
+        );
+        diag.help(
+            "or the rendered catalogue: \
+             https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity",
+        );
     });
 }
