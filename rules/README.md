@@ -54,6 +54,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   inline test code should be extracted to a separate file
 
+- [`excessive_nesting`](./excessive_nesting.md) (default: `active`).
+
+  function body nests constructs deeper than the configured maximum
+
 - [`exhaustive_error_enums`](./exhaustive_error_enums.md) (default: `inactive`).
 
   error-shaped type is missing `#[non_exhaustive]`

@@ -2,6 +2,10 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
+#![allow(
+    perfectionist::excessive_nesting,
+    reason = "the functions nest deliberately to reach a given score"
+)]
 
 fn work() {}
 
