@@ -1,0 +1,19 @@
+warning: struct `Eleven` has 11 fields, above the limit of 10
+  --> $DIR/too_many_struct_fields.rs:7:1
+   |
+LL | struct Eleven {
+   | ^^^^^^^^^^^^^
+   |
+   = help: group related fields into a struct of their own, or split the type by the concerns its fields serve
+   = note: `#[warn(perfectionist::too_many_struct_fields)]` on by default
+
+warning: struct `Tuple` has 11 fields, above the limit of 10
+  --> $DIR/too_many_struct_fields.rs:59:1
+   |
+LL | struct Tuple(u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32);
+   | ^^^^^^^^^^^^
+   |
+   = help: group related fields into a struct of their own, or split the type by the concerns its fields serve
+
+warning: 2 warnings emitted
+
