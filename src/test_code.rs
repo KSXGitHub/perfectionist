@@ -120,10 +120,9 @@ fn entry_implies_test(cfg: &CfgEntry, negated: bool) -> bool {
     }
 }
 
-/// Whether the function `fn_def_id` is test code under either reading:
+/// Whether the item `def_id` is test code under either reading:
 /// the whole crate is an integration-test or benchmark target, or the
-/// function sits in test-exclusive code per [`in_test_code`].
-pub(crate) fn fn_in_test_code(cx: &LateContext<'_>, fn_def_id: LocalDefId) -> bool {
-    crate_target(cx).is_test_target()
-        || in_test_code(cx.tcx, cx.tcx.local_def_id_to_hir_id(fn_def_id))
+/// item sits in test-exclusive code per [`in_test_code`].
+pub(crate) fn item_in_test_code(cx: &LateContext<'_>, def_id: LocalDefId) -> bool {
+    crate_target(cx).is_test_target() || in_test_code(cx.tcx, cx.tcx.local_def_id_to_hir_id(def_id))
 }

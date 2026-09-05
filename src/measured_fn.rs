@@ -7,9 +7,9 @@
 //! when the rule's `test_code_exception` is off. A closure is part of
 //! the function that contains it; a function produced by a macro is
 //! nothing the author can split; and test code is exempt on request
-//! through [`crate::test_code::fn_in_test_code`].
+//! through [`crate::test_code::item_in_test_code`].
 
-use crate::test_code::fn_in_test_code;
+use crate::test_code::item_in_test_code;
 use rustc_hir::def_id::LocalDefId;
 use rustc_hir::intravisit::FnKind;
 use rustc_lint::LateContext;
@@ -38,7 +38,7 @@ pub(crate) fn measured_fn(
     if span.from_expansion() {
         return None;
     }
-    if test_code_exception && fn_in_test_code(cx, def_id) {
+    if test_code_exception && item_in_test_code(cx, def_id) {
         return None;
     }
     Some(MeasuredFn {

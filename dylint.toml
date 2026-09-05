@@ -48,3 +48,9 @@ max_lines = 97
 # nests five levels; lower the ceiling as bodies are flattened.
 ["perfectionist::excessive_nesting"]
 max_depth = 5
+
+# The same ratchet for `overly_long_file`: the longest existing file,
+# the markdown scanner, has 839 lines of code; lower the ceiling as
+# files are split.
+["perfectionist::overly_long_file"]
+max_lines = 839

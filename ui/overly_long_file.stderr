@@ -1,0 +1,11 @@
+warning: file `$DIR/overly_long_file.rs` has 514 lines of code, above the limit of 500
+  --> $DIR/overly_long_file.rs:2:1
+   |
+LL | #![feature(register_tool)]
+   | ^
+   |
+   = help: split the module into submodules, one concern each
+   = note: `#[warn(perfectionist::overly_long_file)]` on by default
+
+warning: 1 warning emitted
+
