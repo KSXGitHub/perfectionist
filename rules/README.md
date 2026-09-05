@@ -98,6 +98,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   function body has more lines of code than the configured maximum
 
+- [`overly_long_method_chain`](./overly_long_method_chain.md) (default: `active`).
+
+  expression chains more method calls than the configured maximum
+
 - [`overly_long_print_macro`](./overly_long_print_macro.md) (default: `active`).
 
   splittable print macro with an embedded-newline template exceeds the configured line width

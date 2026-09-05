@@ -54,3 +54,8 @@ max_depth = 5
 # files are split.
 ["perfectionist::overly_long_file"]
 max_lines = 839
+
+# The same ratchet for `overly_long_method_chain`: the longest existing
+# chain has eight distinct steps; lower the ceiling as chains are named.
+["perfectionist::overly_long_method_chain"]
+max_calls = 8

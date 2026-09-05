@@ -1,0 +1,96 @@
+warning: method chain has 1 call, above the limit of 0
+  --> $DIR/fixture.rs:21:5
+   |
+LL |     items.len()
+   |     ^^^^^^^^^^^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+   = note: `#[warn(perfectionist::overly_long_method_chain)]` on by default
+
+warning: method chain has 3 calls, above the limit of 0
+  --> $DIR/fixture.rs:26:5
+   |
+LL |     items.iter().copied().sum()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+
+warning: method chain has 2 calls, above the limit of 0
+  --> $DIR/fixture.rs:31:5
+   |
+LL |     holder.items.iter().count()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+
+warning: method chain has 2 calls, above the limit of 0
+  --> $DIR/fixture.rs:36:5
+   |
+LL |     Vec::<u32>::new().iter().count()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+
+warning: method chain has 2 calls, above the limit of 0
+  --> $DIR/fixture.rs:41:17
+   |
+LL |     let count = input?.trim().len();
+   |                 ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+
+warning: method chain has 3 calls, above the limit of 0
+  --> $DIR/fixture.rs:47:5
+   |
+LL |     rows.iter().map(|row| row.len()).count()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+
+warning: method chain has 1 call, above the limit of 0
+  --> $DIR/fixture.rs:47:27
+   |
+LL |     rows.iter().map(|row| row.len()).count()
+   |                           ^^^^^^^^^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+
+warning: method chain has 2 calls, above the limit of 0
+  --> $DIR/fixture.rs:52:5
+   |
+LL |     items.iter().eq(other.iter())
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+
+warning: method chain has 1 call, above the limit of 0
+  --> $DIR/fixture.rs:52:21
+   |
+LL |     items.iter().eq(other.iter())
+   |                     ^^^^^^^^^^^^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+
+warning: method chain has 2 calls, above the limit of 0
+  --> $DIR/fixture.rs:58:5
+   |
+LL | /     std::process::Command::new("ls")
+LL | |         .arg("-l")
+LL | |         .arg("-a")
+LL | |         .arg("-h")
+LL | |         .arg("/")
+LL | |         .status()
+   | |_________________^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+
+warning: method chain has 1 call, above the limit of 0
+  --> $DIR/fixture.rs:69:20
+   |
+LL |     println!("{}", items.len());
+   |                    ^^^^^^^^^^^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+
+warning: 11 warnings emitted
+

@@ -119,6 +119,7 @@ rule_index! {
     needless_borrowed_parameters => NeedlessBorrowedParameters,
     overly_long_file => OverlyLongFile,
     overly_long_function => OverlyLongFunction,
+    overly_long_method_chain => OverlyLongMethodChain,
     overly_long_print_macro => OverlyLongPrintMacro,
     redundant_derive_more_forward_template => RedundantDeriveMoreForwardTemplate,
     single_letter_closure_param => SingleLetterClosureParam,

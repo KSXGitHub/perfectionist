@@ -21,6 +21,7 @@ pub mod named_prelude_imports;
 pub mod needless_borrowed_parameters;
 pub mod overly_long_file;
 pub mod overly_long_function;
+pub mod overly_long_method_chain;
 pub mod overly_long_print_macro;
 pub mod redundant_derive_more_forward_template;
 pub mod single_letter_closure_param;
