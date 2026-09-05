@@ -80,7 +80,7 @@ declare_tool_lint! {
     /// ### Example
     ///
     /// **Avoid:** a nested `if` inside a `for` inside a `match` — the
-    /// innermost `if` alone costs 3 —
+    /// innermost `if` alone costs 3
     ///
     /// ```rust,ignore
     /// fn describe(kind: Kind, items: &[Item]) -> String {
@@ -101,7 +101,7 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// **Prefer:** one function per thing, each flat —
+    /// **Prefer:** one function per thing, each flat
     ///
     /// ```rust,ignore
     /// fn describe(kind: Kind, items: &[Item]) -> String {
