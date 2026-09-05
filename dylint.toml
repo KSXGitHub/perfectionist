@@ -59,3 +59,8 @@ max_lines = 839
 # chain has eight distinct steps; lower the ceiling as chains are named.
 ["perfectionist::overly_long_method_chain"]
 max_calls = 8
+
+# The same ratchet for `overly_complex_condition`: the widest existing
+# condition has six operators; lower the ceiling as conditions are named.
+["perfectionist::overly_complex_condition"]
+max_operators = 6
