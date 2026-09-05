@@ -46,6 +46,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   item named through `core` or `alloc` instead of `std`
 
+- [`excessive_cognitive_complexity`](./excessive_cognitive_complexity.md) (default: `active`).
+
+  function body has a cognitive complexity above the configured maximum
+
 - [`excessive_inline_tests`](./excessive_inline_tests.md) (default: `active`).
 
   inline test code should be extracted to a separate file
@@ -81,6 +85,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`needless_borrowed_parameters`](./needless_borrowed_parameters.md) (default: `active`).
 
   borrowed parameter is only used to produce its owned form
+
+- [`overly_long_function`](./overly_long_function.md) (default: `active`).
+
+  function body has more lines of code than the configured maximum
 
 - [`overly_long_print_macro`](./overly_long_print_macro.md) (default: `active`).
 
@@ -121,6 +129,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`thiserror_usage`](./thiserror_usage.md) (default: `active`).
 
   `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`
+
+- [`too_many_local_bindings`](./too_many_local_bindings.md) (default: `active`).
+
+  function body binds more distinct local names than the configured maximum
 
 - [`uncombined_self_import`](./uncombined_self_import.md) (default: `inactive`).
 
