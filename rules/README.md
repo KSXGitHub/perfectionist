@@ -158,6 +158,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   struct has more fields than the configured maximum
 
+- [`trivial_else_branch`](./trivial_else_branch.md) (default: `active`).
+
+  `else` branch only leaves; invert the condition into a guard clause
+
 - [`uncombined_self_import`](./uncombined_self_import.md) (default: `inactive`).
 
   a module import and an adjacent item import from it can be combined through `self`

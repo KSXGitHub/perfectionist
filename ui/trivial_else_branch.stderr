@@ -1,0 +1,36 @@
+warning: the `else` branch only leaves; write the exit first as a guard clause
+  --> $DIR/trivial_else_branch.rs:16:12
+   |
+LL |       } else {
+   |  ____________^
+LL | |         return;
+LL | |     }
+   | |_____^
+   |
+   = help: write `if !<condition> { <exit> }` and move the long branch after it, unindented
+   = note: `#[warn(perfectionist::trivial_else_branch)]` on by default
+
+warning: the `else` branch only leaves; write the exit first as a guard clause
+  --> $DIR/trivial_else_branch.rs:38:16
+   |
+LL |           } else {
+   |  ________________^
+LL | |             continue;
+LL | |         }
+   | |_________^
+   |
+   = help: bind with `let ... else { <exit> };` and move the long branch after it, unindented
+
+warning: the `else` branch only yields a value; return it first as a guard clause
+  --> $DIR/trivial_else_branch.rs:62:12
+   |
+LL |       } else {
+   |  ____________^
+LL | |         None
+LL | |     }
+   | |_____^
+   |
+   = help: bind with `let ... else { <exit> };` and move the long branch after it, unindented
+
+warning: 3 warnings emitted
+
