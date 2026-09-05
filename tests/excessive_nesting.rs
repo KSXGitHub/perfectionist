@@ -32,12 +32,13 @@ fn dylint_toml(config: RuleConfig) -> String {
 
 #[test]
 fn zero_threshold_reports_every_depth() {
-    dylint_testing::ui::Test::src_base(
-        env!("CARGO_PKG_NAME"),
+    let fixtures = _utils::copy_fixtures_with_directive(
+        env!("CARGO_MANIFEST_DIR"),
         "ui-toml/excessive_nesting/zero_threshold",
-    )
-    .dylint_toml(dylint_toml(RuleConfig { max_depth: Some(0) }))
-    .run();
+    );
+    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+        .dylint_toml(dylint_toml(RuleConfig { max_depth: Some(0) }))
+        .run();
 }
 
 /// A library whose production function, `#[cfg(test)]` helper, and
