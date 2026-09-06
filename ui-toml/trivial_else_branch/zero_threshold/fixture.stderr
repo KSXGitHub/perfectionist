@@ -1,0 +1,82 @@
+warning: the `else` branch only leaves; write the exit first as a guard clause
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |       } else {
+   |  ____________^
+LL | |         return;
+LL | |     }
+   | |_____^
+   |
+   = help: write `if !<condition> { <exit> }` and move the long branch after it, unindented
+   = note: `#[warn(perfectionist::trivial_else_branch)]` on by default
+
+warning: the `else` branch only leaves; write the exit first as a guard clause
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |       } else {
+   |  ____________^
+LL | |         return 0;
+LL | |     }
+   | |_____^
+   |
+   = help: write `if !<condition> { <exit> }` and move the long branch after it, unindented
+
+warning: the `else` branch only leaves; write the exit first as a guard clause
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |           } else {
+   |  ________________^
+LL | |             break;
+LL | |         }
+   | |_________^
+   |
+   = help: write `if !<condition> { <exit> }` and move the long branch after it, unindented
+
+warning: the `else` branch only leaves; write the exit first as a guard clause
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |           } else {
+   |  ________________^
+LL | |             continue;
+LL | |         }
+   | |_________^
+   |
+   = help: write `if !<condition> { <exit> }` and move the long branch after it, unindented
+
+warning: the `else` branch only yields a value; return it first as a guard clause
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if ready { Some(work(1)) } else { None }
+   |                                     ^^^^^^^^
+   |
+   = help: write `if !<condition> { <exit> }` and move the long branch after it, unindented
+
+warning: the `else` branch only yields a value; return it first as a guard clause
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if ready { work(1) > 0 } else { false }
+   |                                   ^^^^^^^^^
+   |
+   = help: write `if !<condition> { <exit> }` and move the long branch after it, unindented
+
+warning: the `else` branch only yields a value; return it first as a guard clause
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if ready { Ok(work(1)).map(|_| ()) } else { Ok(()) }
+   |                                               ^^^^^^^^^^
+   |
+   = help: write `if !<condition> { <exit> }` and move the long branch after it, unindented
+
+warning: the `else` branch only leaves; write the exit first as a guard clause
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |           } else {
+   |  ________________^
+LL | |             return 0;
+LL | |         }
+   | |_________^
+   |
+   = help: write `if !<condition> { <exit> }` and move the long branch after it, unindented
+
+warning: 8 warnings emitted
+
