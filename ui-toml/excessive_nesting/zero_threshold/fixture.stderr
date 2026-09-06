@@ -1,0 +1,263 @@
+warning: function `one_if` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn one_if(ready: bool) {
+   | ^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if ready {
+   |     ^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+   = note: `#[warn(perfectionist::excessive_nesting)]` on by default
+
+warning: function `nested_if` nests 2 levels deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn nested_if(first: bool, second: bool) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 2 levels deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |         if second {
+   |         ^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `else_if_chain` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn else_if_chain(value: u8) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if value == 0 {
+   |     ^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `if_inside_else_if` nests 2 levels deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn if_inside_else_if(value: u8, ready: bool) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 2 levels deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |         if ready {
+   |         ^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `matching` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn matching(value: u8) {
+   | ^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     match value {
+   |     ^^^^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `if_in_arm` nests 2 levels deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn if_in_arm(value: u8, ready: bool) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 2 levels deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |             if ready {
+   |             ^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `for_loop` nests 2 levels deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn for_loop(items: &[u8]) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 2 levels deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |         if *item > 1 {
+   |         ^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `while_loop` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn while_loop(mut count: u8) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     while count > 0 {
+   |     ^^^^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `while_let` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn while_let(mut items: impl Iterator<Item = u8>) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     while let Some(_item) = items.next() {
+   |     ^^^^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `bare_loop` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn bare_loop() {
+   | ^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     loop {
+   |     ^^^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `closure` nests 2 levels deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn closure(items: &[u8]) -> Vec<u8> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 2 levels deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |         .map(|item| if *item > 0 { 1 } else { 0 })
+   |                     ^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `scoped_block` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn scoped_block() {
+   | ^^^^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     {
+   |     ^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `let_block` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn let_block() -> u8 {
+   | ^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     let value = {
+   |                 ^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `unsafe_block` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn unsafe_block() -> u8 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     let value = unsafe { core::mem::transmute::<u8, u8>(1) };
+   |                 ^^^^^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `let_else` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn let_else(input: Option<u8>) -> u8 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     let Some(value) = input else {
+   |                                  ^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `awaiting` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | async fn awaiting(ready: impl Future<Output = bool>) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if ready.await {
+   |     ^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `async_block` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn async_block(ready: bool) -> impl Future<Output = ()> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |         if ready {
+   |         ^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `branch_in_macro_argument` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn branch_in_macro_argument(ready: bool) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     println!("{}", if ready { 1 } else { 0 });
+   |                    ^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `inner` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     fn inner(ready: bool) {
+   |     ^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |         if ready {
+   |         ^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: function `count` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     fn count(&self, ready: bool) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: this is 1 level deep
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |         if ready {
+   |         ^^
+   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+
+warning: 20 warnings emitted
+
