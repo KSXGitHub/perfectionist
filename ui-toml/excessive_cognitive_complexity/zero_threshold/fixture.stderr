@@ -1,0 +1,234 @@
+warning: function `one_if` has a cognitive complexity of 1, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn one_if(first: bool) {
+   | ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 1 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+   = note: `#[warn(perfectionist::excessive_cognitive_complexity)]` on by default
+
+warning: function `if_else` has a cognitive complexity of 2, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn if_else(first: bool) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 2 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `else_if_chain` has a cognitive complexity of 3, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn else_if_chain(n: u8) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 3 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `nested_if` has a cognitive complexity of 3, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn nested_if(first: bool, second: bool) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 2 from branching, 1 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `for_loop` has a cognitive complexity of 3, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn for_loop(items: &[u8]) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 2 from branching, 1 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `while_loop` has a cognitive complexity of 1, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn while_loop(mut n: u8) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 1 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `while_let` has a cognitive complexity of 1, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn while_let(mut items: impl Iterator<Item = u8>) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 1 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `bare_loop` has a cognitive complexity of 1, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn bare_loop() {
+   | ^^^^^^^^^^^^^^
+   |
+   = note: 1 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `labelled_continue` has a cognitive complexity of 7, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn labelled_continue() {
+   | ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 4 from branching, 3 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `matching` has a cognitive complexity of 2, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn matching(n: u8) {
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = note: 2 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `boolean_runs` has a cognitive complexity of 2, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn boolean_runs(first: bool, second: bool, third: bool, fourth: bool) -> bool {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 2 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `boolean_parenthesised` has a cognitive complexity of 2, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn boolean_parenthesised(first: bool, second: bool, third: bool) -> bool {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 2 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `negation` has a cognitive complexity of 1, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn negation(first: bool, second: bool) -> bool {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 1 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `let_else` has a cognitive complexity of 1, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn let_else(input: Option<u8>) -> u8 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 1 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `closure_nesting` has a cognitive complexity of 3, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn closure_nesting(items: &[u8]) -> Vec<u8> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 2 from branching, 1 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `recursive` has a cognitive complexity of 3, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn recursive(n: u32) -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 3 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: method `count_down` has a cognitive complexity of 2, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     fn count_down(&self, n: u32) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 2 from branching, 0 from nesting depth
+   = help: this method does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `branch_in_macro_argument` has a cognitive complexity of 2, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn branch_in_macro_argument(first: bool) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 2 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `awaiting` has a cognitive complexity of 1, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | async fn awaiting(ready: impl Future<Output = bool>) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 1 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `if_let_chain` has a cognitive complexity of 2, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn if_let_chain(input: Option<u8>, first: bool) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 2 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: function `inner` has a cognitive complexity of 1, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     fn inner(first: bool) {
+   |     ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 1 from branching, 0 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: 21 warnings emitted
+
