@@ -1,0 +1,123 @@
+warning: function `one_let` binds 1 distinct local name, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn one_let(seed: u32) -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+   = note: `#[warn(perfectionist::too_many_local_bindings)]` on by default
+
+warning: function `shadowed` binds 1 distinct local name, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn shadowed(seed: u32) -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+
+warning: function `destructured` binds 2 distinct local names, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn destructured(pair: (u32, u32)) -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+
+warning: function `for_pattern` binds 2 distinct local names, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn for_pattern(items: &[u32]) -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+
+warning: function `if_let` binds 1 distinct local name, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn if_let(maybe: Option<u32>) -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+
+warning: function `while_let` binds 1 distinct local name, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn while_let(mut items: impl Iterator<Item = u32>) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+
+warning: function `let_else` binds 1 distinct local name, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn let_else(maybe: Option<u32>) -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+
+warning: function `match_arms` binds 2 distinct local names, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn match_arms(maybe: Result<u32, u32>) -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+
+warning: function `closure_params` binds 2 distinct local names, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn closure_params(items: &[(u32, u32)]) -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+
+warning: function `closure_body` binds 2 distinct local names, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn closure_body(items: &[u32]) -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+
+warning: function `question_mark` binds 1 distinct local name, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn question_mark(input: Result<u32, ()>) -> Result<u32, ()> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+
+warning: function `formatting` binds 1 distinct local name, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn formatting(seed: u32) -> String {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+
+warning: function `local_macro` binds 1 distinct local name, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn local_macro(seed: u32) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+
+warning: function `inner` binds 1 distinct local name, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     fn inner(seed: u32) -> u32 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+
+warning: function `count` binds 1 distinct local name, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     fn count(&self, seed: u32) -> u32 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+
+warning: 15 warnings emitted
+

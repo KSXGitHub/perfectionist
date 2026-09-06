@@ -7,6 +7,12 @@
 
 #![allow(dead_code, reason = "ui fixture")]
 
+#![feature(register_tool)]
+#![register_tool(perfectionist)]
+#![allow(
+    perfectionist::too_many_struct_fields,
+    reason = "one clap struct carries every help shape under test"
+)]
 extern crate clap;
 
 use std::path::PathBuf;

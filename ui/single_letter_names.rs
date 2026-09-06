@@ -1,3 +1,9 @@
+#![feature(register_tool)]
+#![register_tool(perfectionist)]
+#![allow(
+    perfectionist::too_many_local_bindings,
+    reason = "one body binds every single-letter shape on purpose"
+)]
 #![allow(dead_code, unused_variables, unused_assignments, dropping_copy_types, reason = "ui fixture")]
 
 // Bad: generic type parameter with a single letter on a long function.
