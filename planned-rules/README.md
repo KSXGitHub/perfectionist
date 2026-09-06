@@ -91,6 +91,13 @@ pattern that several rules call out by reference — live in
   pipes (suggests `x.pipe(g)`). All four checks default to enforce.
 
 ### Tests
+- [`ambiguous-test-module-name.md`](./ambiguous-test-module-name.md) —
+  flag a submodule compiled only under `#[cfg(test)]` whose name
+  matches none of the configured test-name patterns (`whole_names`,
+  `prefixes`, `suffixes`; defaults cover `test` / `testing` / `spec`
+  forms), so a `#[cfg(test)] mod buttons;` is distinguishable from a
+  production submodule in the `mod` line and the file tree. The
+  conventional `tests` / `test` names match out of the box.
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
   `#[cfg_attr(..., ignore = "...")]` over `#[cfg(...)]` on `#[test]`s, and
   require an `ignore` reason string.
