@@ -26,3 +26,25 @@ reexports = "split"
 # exactly-once concern the rule guards against does not apply.
 ["perfectionist::impure_macro_arguments"]
 ignore = ["Token"]
+
+# The markdown and URL scanners predate `excessive_cognitive_complexity`
+# and several of them score far above its default of 15. This ceiling
+# sits just above the highest of them so no new function may join them;
+# lower it as they are split.
+["perfectionist::excessive_cognitive_complexity"]
+max_complexity = 47
+
+# The same ratchet for `too_many_local_bindings`: the widest existing
+# body binds 29 names; lower the ceiling as bodies are split.
+["perfectionist::too_many_local_bindings"]
+max_bindings = 29
+
+# The same ratchet for `overly_long_function`: the longest existing body
+# has 97 lines of code; lower the ceiling as bodies are split.
+["perfectionist::overly_long_function"]
+max_lines = 97
+
+# The same ratchet for `excessive_nesting`: the deepest existing body
+# nests five levels; lower the ceiling as bodies are flattened.
+["perfectionist::excessive_nesting"]
+max_depth = 5
