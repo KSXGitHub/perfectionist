@@ -208,6 +208,35 @@ pattern that several rules call out by reference — live in
   inherited level (`deny → warn`, `warn → allow`, etc.).
   Ancestry-aware counterpart.
 
+### Conditional compilation (`#[cfg]`)
+These rules share one helper — a measure of how complex a `#[cfg]`
+predicate is (distinct atom count, nesting depth, negated-compound
+presence) plus a bounded satisfiability oracle over the cfg atoms (see
+[`overly-complex-cfg.md`](./overly-complex-cfg.md), which owns it). They
+exist because rustc resolves `#[cfg]` before name resolution and
+analysis, so its own `dead_code` / `unused_*` / name-resolution checks
+see only the single configuration being built; cross-configuration
+problems need a CI matrix to find. The analysis rules deliberately leave
+every in-configuration case to rustc and fire only on cfg-induced
+discrepancies whose predicates are simple enough to decide soundly.
+- [`overly-complex-cfg.md`](./overly-complex-cfg.md) — flag `#[cfg]` /
+  `#[cfg_attr]` / `cfg!` predicates that exceed a structural budget
+  (distinct atoms, depth, negated compounds). No rustc/Clippy
+  counterpart — `clippy::non_minimal_cfg` only unwraps trivially
+  redundant `any()`/`all()`, it does not cap size. Owns the shared
+  complexity measure. Active by default.
+- [`cross-cfg-dead-code.md`](./cross-cfg-dead-code.md) — cross-`cfg`
+  counterparts of rustc's `dead_code`, `unused_imports`, and
+  `unused_variables`: an item/import/binding compiled in some
+  configuration where none of its uses are. Mirrors the rustc lint names
+  under the `perfectionist::` namespace. Skips complex cfg. Active by
+  default (conservative: treats any uncertain match as a use).
+- [`cross-cfg-unresolved-path.md`](./cross-cfg-unresolved-path.md) —
+  `unresolved_path` / `unresolved_import`: a reference to a name that is
+  undefined in some configuration the reference compiles in (a latent
+  `E0425`/`E0432` rustc never checks). Skips complex cfg. Active by
+  default.
+
 ### Clap derive help
 - [`clap-help-too-long.md`](./clap-help-too-long.md) — flag clap-bound doc
   comments that exceed configurable line / character budgets (catches
