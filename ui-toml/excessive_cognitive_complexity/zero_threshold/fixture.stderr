@@ -153,6 +153,17 @@ LL | fn let_else(input: Option<u8>) -> u8 {
    = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
    = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
 
+warning: function `let_else_nested` has a cognitive complexity of 3, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn let_else_nested(input: Option<u8>, flag: bool) -> u8 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 2 from branching, 1 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
 warning: function `closure_nesting` has a cognitive complexity of 3, above the limit of 0
   --> $DIR/fixture.rs:LL:CC
    |
@@ -230,5 +241,5 @@ LL |     fn inner(first: bool) {
    = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
    = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
 
-warning: 21 warnings emitted
+warning: 22 warnings emitted
 
