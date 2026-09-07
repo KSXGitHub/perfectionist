@@ -137,6 +137,17 @@ fn let_else(input: Option<u8>) -> u8 {
     value
 }
 
+// 3: the `else` block nests the `if` (1 + 1); the `let ... else` adds 1.
+fn let_else_nested(input: Option<u8>, flag: bool) -> u8 {
+    let Some(value) = input else {
+        if flag {
+            return 1;
+        }
+        return 0;
+    };
+    value
+}
+
 // 3: the closure nests the `if` (2) and the `else` adds 1.
 fn closure_nesting(items: &[u8]) -> Vec<u8> {
     items
