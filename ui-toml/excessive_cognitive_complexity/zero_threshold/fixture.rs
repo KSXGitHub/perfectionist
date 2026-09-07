@@ -3,10 +3,6 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
-// With `max_complexity = 0` every function whose score is at least 1 is
-// flagged and the diagnostic states its score, which pins the increment
-// each construct earns.
-
 use std::future::Future;
 
 fn work() {}
@@ -22,14 +18,14 @@ fn straight_line(items: &[u8]) -> usize {
     count
 }
 
-// 1.
+// Bad: a single `if`.
 fn one_if(first: bool) {
     if first {
         work();
     }
 }
 
-// 2: `if`, `else`.
+// Bad: `if`, `else`.
 fn if_else(first: bool) {
     if first {
         work();
@@ -38,7 +34,7 @@ fn if_else(first: bool) {
     }
 }
 
-// 3: `if`, `else if`, `else` — the chain adds no nesting.
+// Bad: `if`, `else if`, `else` — the chain adds no nesting.
 fn else_if_chain(n: u8) {
     if n == 0 {
         work();
@@ -49,7 +45,7 @@ fn else_if_chain(n: u8) {
     }
 }
 
-// 5: `for` 1; the `if` pays 1 for nesting; `else if` and `else` each add 1
+// Bad: `for` 1; the `if` pays 1 for nesting; `else if` and `else` each add 1
 // with no nesting penalty, since they continue the `if` the reader is in.
 fn nested_else_if(items: &[u8]) {
     for item in items {
@@ -63,7 +59,7 @@ fn nested_else_if(items: &[u8]) {
     }
 }
 
-// 3: the inner `if` pays 1 for nesting.
+// Bad: the inner `if` pays 1 for nesting.
 fn nested_if(first: bool, second: bool) {
     if first {
         if second {
@@ -72,7 +68,7 @@ fn nested_if(first: bool, second: bool) {
     }
 }
 
-// 3: `for`, then an `if` nested inside it.
+// Bad: `for`, then an `if` nested inside it.
 fn for_loop(items: &[u8]) {
     for item in items {
         if *item > 1 {
@@ -81,28 +77,28 @@ fn for_loop(items: &[u8]) {
     }
 }
 
-// 1: the `if` a `while` lowers to is not a branch of its own.
+// Bad: the `if` a `while` lowers to is not a branch of its own.
 fn while_loop(mut n: u8) {
     while n > 0 {
         n -= 1;
     }
 }
 
-// 1: `while let` is a `while`.
+// Bad: `while let` is a `while`.
 fn while_let(mut items: impl Iterator<Item = u8>) {
     while let Some(_item) = items.next() {
         work();
     }
 }
 
-// 1: an unlabelled `break` is free.
+// Bad: the `loop`; an unlabelled `break` is free.
 fn bare_loop() {
     loop {
         break;
     }
 }
 
-// 7: `for` 1, `for` 2, `if` 3, labelled `continue` 1.
+// Bad: `for` 1, `for` 2, `if` 3, labelled `continue` 1.
 fn labelled_continue() {
     'outer: for first in 0..3 {
         for second in 0..3 {
@@ -113,7 +109,7 @@ fn labelled_continue() {
     }
 }
 
-// 2: `match` 1, guard 1; the arms themselves are free.
+// Bad: `match` 1, guard 1; the arms themselves are free.
 fn matching(n: u8) {
     match n {
         0 => work(),
@@ -122,17 +118,17 @@ fn matching(n: u8) {
     }
 }
 
-// 2: one `&&` run and one `||` run.
+// Bad: one `&&` run and one `||` run.
 fn boolean_runs(first: bool, second: bool, third: bool, fourth: bool) -> bool {
     first && second && third || fourth
 }
 
-// 2: parentheses start a new run.
+// Bad: parentheses start a new run.
 fn boolean_parenthesised(first: bool, second: bool, third: bool) -> bool {
     first && (second || third)
 }
 
-// 1: `!` is free.
+// Bad: one `&&` run; `!` is free.
 fn negation(first: bool, second: bool) -> bool {
     !(first && second)
 }
@@ -143,7 +139,7 @@ fn question_mark(input: Result<u8, ()>) -> Result<u8, ()> {
     Ok(value)
 }
 
-// 1: `let ... else`.
+// Bad: `let ... else`.
 fn let_else(input: Option<u8>) -> u8 {
     let Some(value) = input else {
         return 0;
@@ -151,7 +147,7 @@ fn let_else(input: Option<u8>) -> u8 {
     value
 }
 
-// 3: the `else` block nests the `if` (1 + 1); the `let ... else` adds 1.
+// Bad: the `else` block nests the `if` (1 + 1); the `let ... else` adds 1.
 fn let_else_nested(input: Option<u8>, flag: bool) -> u8 {
     let Some(value) = input else {
         if flag {
@@ -162,7 +158,7 @@ fn let_else_nested(input: Option<u8>, flag: bool) -> u8 {
     value
 }
 
-// 3: the closure nests the `if` (2) and the `else` adds 1.
+// Bad: the closure nests the `if` (2) and the `else` adds 1.
 fn closure_nesting(items: &[u8]) -> Vec<u8> {
     items
         .iter()
@@ -170,12 +166,12 @@ fn closure_nesting(items: &[u8]) -> Vec<u8> {
         .collect()
 }
 
-// 3: `if` 1, `else` 1, the recursive call 1.
+// Bad: `if` 1, `else` 1, the recursive call 1.
 fn recursive(n: u32) -> u32 {
     if n == 0 { 0 } else { recursive(n - 1) }
 }
 
-// 2: a method calling itself is recursion too.
+// Bad: a method calling itself is recursion too.
 struct Counter;
 
 impl Counter {
@@ -186,7 +182,7 @@ impl Counter {
     }
 }
 
-// 2: the `if` written as a macro argument counts; the expansion does not.
+// Bad: the `if` written as a macro argument counts; the expansion does not.
 fn branch_in_macro_argument(first: bool) {
     println!("{}", if first { 1 } else { 0 });
 }
@@ -206,21 +202,23 @@ fn built_from_a_local_macro(first: bool) {
     local_branchy!(first);
 }
 
-// 1: `.await` is free.
+// Bad: the `if`; `.await` is free.
 async fn awaiting(ready: impl Future<Output = bool>) {
     if ready.await {
         work();
     }
 }
 
-// 2: `if let` 1, the `&&` joining the chain 1.
+// Bad: `if let` 1, the `&&` joining the chain 1.
 fn if_let_chain(input: Option<u8>, first: bool) {
-    if let Some(_value) = input && first {
+    if let Some(_value) = input
+        && first
+    {
         work();
     }
 }
 
-// Outer not flagged, inner 1: a nested function is scored on its own.
+// Bad for inner; outer is Not flagged — a nested function is scored on its own.
 fn outer() {
     fn inner(first: bool) {
         if first {
