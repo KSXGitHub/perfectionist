@@ -11,12 +11,12 @@ const DEFAULT_MAX_COMPLEXITY: usize = 15;
 pub(super) struct Config {
     /// The highest cognitive complexity a function may have without
     /// being flagged. Defaults to `15`.
-    pub max_complexity: usize,
+    pub(super) max_complexity: usize,
     /// Whether test code is left alone: functions inside a
     /// `#[cfg(test)]` module, `#[test]` functions, and everything in
     /// an integration-test or benchmark target. Defaults to `false`,
     /// so a test is held to the same limit as the code it exercises.
-    pub exempt_tests: bool,
+    pub(super) exempt_tests: bool,
 }
 
 impl Default for Config {
