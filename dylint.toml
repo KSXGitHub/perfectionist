@@ -34,7 +34,8 @@ ignore = ["Token"]
 ["perfectionist::excessive_cognitive_complexity"]
 max_complexity = 47
 
-# The same ratchet for `too_many_local_bindings`: the widest existing
-# body binds 29 names; lower the ceiling as bodies are split.
+# Several existing bodies bind more names than the default. This
+# ceiling sits just above the widest of them so no new body may join
+# them; lower it as they are split.
 ["perfectionist::too_many_local_bindings"]
 max_bindings = 29
