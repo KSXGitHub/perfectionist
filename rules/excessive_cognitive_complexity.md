@@ -10,7 +10,7 @@
 ## What it does
 
 Measures the cognitive complexity of every function and method
-body and flags the ones above `max_complexity` (default `15`).
+body and flags the ones above `max_complexity`.
 
 The measure is SonarSource's Cognitive Complexity, applied to
 Rust: a count of how much control flow a reader has to hold in
