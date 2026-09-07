@@ -49,6 +49,20 @@ fn else_if_chain(n: u8) {
     }
 }
 
+// 5: `for` 1; the `if` pays 1 for nesting; `else if` and `else` each add 1
+// with no nesting penalty, since they continue the `if` the reader is in.
+fn nested_else_if(items: &[u8]) {
+    for item in items {
+        if *item == 0 {
+            work();
+        } else if *item == 1 {
+            work();
+        } else {
+            work();
+        }
+    }
+}
+
 // 3: the inner `if` pays 1 for nesting.
 fn nested_if(first: bool, second: bool) {
     if first {
