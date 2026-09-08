@@ -74,9 +74,6 @@ pub(crate) fn render_rule_md(rule: &Rule, source_link_prefix: &str) -> String {
     out.push('\n');
     write_metadata(&mut out, "Default state", Some(rule.default_state.word()));
     let source_path = source_path_str(rule);
-    // Written out rather than passed to `write_metadata`: the
-    // backticks that helper adds belong around the path inside the
-    // link, not around the whole `[text](url)` span.
     let _ = writeln!(
         out,
         "- _Source:_ [`{source_path}`]({source_link_prefix}{source_path})",
