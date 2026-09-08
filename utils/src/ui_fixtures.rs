@@ -11,28 +11,6 @@
 //! before it is diffed against the committed `.stderr`. Rather than
 //! commit that directive into every fixture, [`copy_fixtures_with_directive`]
 //! injects it into a temporary copy at test time.
-//!
-//! # Keeping the copy's path legible
-//!
-//! compiletest names each test after the *last component* of its
-//! `src_base`, followed by the fixture's path relative to that
-//! `src_base`. Handing it the temp dir itself therefore names every
-//! test after a random string:
-//!
-//! ```text
-//! test [ui] .tmpRisvpQ/fixture.rs ... ok
-//! ```
-//!
-//! which says nothing about which fixture ran. So the copy reproduces
-//! the fixture's repository-relative path *inside* the temp dir, and
-//! [`FixtureCopy::path`] points at the copy of the path's first
-//! component rather than at the temp dir. compiletest then walks down
-//! to the fixture through the remaining components and spells the whole
-//! relative path in the test name:
-//!
-//! ```text
-//! test [ui] ui-toml/allow_attributes/apply_to_outer_scopes/fixture.rs ... ok
-//! ```
 
 use crate::TempDir;
 use std::fs;
