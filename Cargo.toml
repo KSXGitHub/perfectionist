@@ -59,24 +59,9 @@ toml = "1.1.2"
 [package.metadata.rust-analyzer]
 rustc_private = true
 
-# The dylint driver hashes each lint library to decide whether rustc may
-# reuse its incremental cache, and it does so by reading the file whole —
-# every byte, on every rustc invocation, which during a `cargo test` run
-# means once per UI-test fixture. So what the library costs is its size.
-#
-# `debug = false` drops the debuginfo that made up most of it (136 MB ->
-# 10 MB); `opt-level = 3` shrinks the generated code the rest of the way
-# (-> 3.6 MB), and together they take the suite from ~117s to ~19s. A
-# panic still reports its own `file:line` (that comes from
-# `#[track_caller]`, not debuginfo) and a backtrace still names every
-# frame; only the `at <file>:<line>` under each frame is lost, which
-# matters to a debugger this project does not use.
-#
-# Both settings are scoped rather than set on `[profile.dev]` as a whole.
-# Only this crate and the dependencies linked into its `cdylib` affect
-# that file; the tools, `utils`, and the test binaries do not, and
-# optimizing them buys nothing while making every rebuild of them several
-# times slower.
+# The dylint driver reads each lint library whole to hash it, once per
+# rustc invocation, so the library's size is what the test suite pays.
+# Scoped: only this crate and its `cdylib`'s dependencies reach it.
 [profile.dev.package.perfectionist]
 debug = false
 opt-level = 3
