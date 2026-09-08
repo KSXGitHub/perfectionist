@@ -205,6 +205,19 @@ impl<'tcx> Visitor<'tcx> for BindingCollector<'tcx> {
         self.tcx
     }
 
+    fn visit_local(&mut self, local: &'tcx hir::LetStmt<'tcx>) {
+        // Lowering an `async fn` re-binds each parameter inside the
+        // coroutine body as `let <param> = <param>;`, reusing the
+        // parameter's own pattern — author-written span and all — so the
+        // binding clears every guard in `visit_pat` below. The
+        // function's own parameters are not counted, in an `async fn` as
+        // anywhere else, so drop the whole statement.
+        if matches!(local.source, hir::LocalSource::AsyncFn) {
+            return;
+        }
+        intravisit::walk_local(self, local);
+    }
+
     fn visit_pat(&mut self, pat: &'tcx Pat<'tcx>) {
         // A binding the compiler makes up for a desugaring — the `iter`
         // of a `for` loop, the `val` and `residual` of a `?` — carries a
