@@ -2,7 +2,7 @@
 
 # `perfectionist::too_many_local_bindings`
 
-**Default state:** `active`  
+**Default state:** `active`
 **Source:** [`src/rules/too_many_local_bindings.rs`](../src/rules/too_many_local_bindings.rs)
 
 > function body binds more distinct local names than the configured maximum
@@ -24,7 +24,7 @@ part of the function that contains it. A function that is itself
 produced by a macro is not counted.
 
 Test code is counted like any other code; set
-`test_code_exception` to leave it alone.
+`exempt_tests` to leave it alone.
 
 ## Why restrict this?
 
@@ -90,7 +90,7 @@ Configure via `dylint.toml` under `["perfectionist::too_many_local_bindings"]`. 
 The most distinct local names a function body may bind without
 being flagged. Defaults to `15`.
 
-### Field: `test_code_exception`
+### Field: `exempt_tests`
 
 - _Type:_ `boolean`
 - _Optional_

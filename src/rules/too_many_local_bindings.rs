@@ -31,7 +31,7 @@ declare_tool_lint! {
     /// produced by a macro is not counted.
     ///
     /// Test code is counted like any other code; set
-    /// `test_code_exception` to leave it alone.
+    /// `exempt_tests` to leave it alone.
     ///
     /// ### Why restrict this?
     ///
@@ -105,14 +105,14 @@ struct Config {
     /// `#[cfg(test)]` module, `#[test]` functions, and everything in
     /// an integration-test or benchmark target. Defaults to `false`,
     /// so a test is held to the same limit as the code it exercises.
-    test_code_exception: bool,
+    exempt_tests: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             max_bindings: DEFAULT_MAX_BINDINGS,
-            test_code_exception: false,
+            exempt_tests: false,
         }
     }
 }
@@ -157,7 +157,7 @@ impl<'tcx> LateLintPass<'tcx> for TooManyLocalBindings {
         if def_span.from_expansion() {
             return;
         }
-        if self.config.test_code_exception && fn_in_test_code(cx, def_id) {
+        if self.config.exempt_tests && fn_in_test_code(cx, def_id) {
             return;
         }
         let count = count_local_bindings(cx.tcx, body);
