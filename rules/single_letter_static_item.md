@@ -2,8 +2,8 @@
 
 # `perfectionist::single_letter_static_item`
 
-**Default state:** `active`  
-**Source:** [`src/rules/single_letter_static_item.rs`](../src/rules/single_letter_static_item.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/single_letter_static_item.rs`](../src/rules/single_letter_static_item.rs)
 
 > static item has a single-letter name
 

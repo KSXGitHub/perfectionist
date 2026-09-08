@@ -19,12 +19,14 @@
 //! inbound link. The kind word doubles as a namespace, keeping a
 //! field and a same-named type from slugifying to one anchor.
 //!
-//! Every rendered string ends with exactly one trailing newline so
-//! the `check-md` byte-comparison stays stable across editors that
-//! strip or add a final newline. Inline doc-comment prose is taken
-//! verbatim — the extractor has already normalised the leading
-//! convention space — and is wrapped in blank lines on either side
-//! so it never glues itself to the headings around it.
+//! Every rendered string ends with exactly one trailing newline and
+//! no rendered line ends in whitespace, so the `check-md`
+//! byte-comparison stays stable across editors that strip or add a
+//! final newline and that trim trailing whitespace on save. Inline
+//! doc-comment prose is taken verbatim — the extractor has already
+//! normalised the leading convention space — and is wrapped in
+//! blank lines on either side so it never glues itself to the
+//! headings around it.
 
 use crate::model::{
     ConfigDoc, ConfigField, EnumVariant, NAMESPACE, Optionality, Rule, StructField, TypeDoc,
@@ -70,11 +72,11 @@ pub(crate) fn render_rule_md(rule: &Rule, source_link_prefix: &str) -> String {
     out.push('\n');
     let _ = writeln!(out, "# `{}`", rule.namespaced);
     out.push('\n');
-    let _ = writeln!(out, "**Default state:** `{}`  ", rule.default_state.word());
+    write_metadata(&mut out, "Default state", Some(rule.default_state.word()));
     let source_path = source_path_str(rule);
     let _ = writeln!(
         out,
-        "**Source:** [`{source_path}`]({source_link_prefix}{source_path})",
+        "- _Source:_ [`{source_path}`]({source_link_prefix}{source_path})",
     );
     out.push('\n');
     let _ = writeln!(out, "> {}", rule.short_desc);
