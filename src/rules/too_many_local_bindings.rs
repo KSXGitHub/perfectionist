@@ -30,8 +30,8 @@ declare_tool_lint! {
     /// part of the function that contains it. A function that is itself
     /// produced by a macro is not counted.
     ///
-    /// Test code is counted like any other code; set
-    /// `exempt_tests` to leave it alone.
+    /// Test code is counted like any other code; set `exempt_tests`
+    /// to leave it alone.
     ///
     /// ### Why restrict this?
     ///
