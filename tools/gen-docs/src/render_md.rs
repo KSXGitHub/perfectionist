@@ -82,7 +82,7 @@ pub(crate) fn render_rule_md(rule: &Rule, source_link_prefix: &str) -> String {
     // generated file one save away from silent drift: the break
     // disappeared, `check-md` reported a mismatch, and the diff
     // showed two identical-looking lines. Keep the backslash.
-    let _ = writeln!(out, "**Default state:** `{}`\\", rule.default_state.word());
+    let _ = writeln!(out, r"**Default state:** `{}`\", rule.default_state.word());
     let source_path = source_path_str(rule);
     let _ = writeln!(
         out,
