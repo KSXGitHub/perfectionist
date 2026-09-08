@@ -111,7 +111,7 @@ LL |     fn inner(seed: u32) -> u32 {
    |
    = help: split the body into one function per step, or gather related values into a struct
 
-warning: function `count` binds 1 distinct local name, above the limit of 0
+warning: method `count` binds 1 distinct local name, above the limit of 0
   --> $DIR/fixture.rs:LL:CC
    |
 LL |     fn count(&self, seed: u32) -> u32 {

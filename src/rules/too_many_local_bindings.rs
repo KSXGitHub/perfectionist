@@ -148,9 +148,11 @@ impl<'tcx> LateLintPass<'tcx> for TooManyLocalBindings {
         _span: Span,
         def_id: LocalDefId,
     ) {
-        // A closure's bindings belong to the function that contains it.
-        let (FnKind::ItemFn(ident, ..) | FnKind::Method(ident, ..)) = kind else {
-            return;
+        let (item, ident) = match kind {
+            FnKind::ItemFn(ident, ..) => ("function", ident),
+            FnKind::Method(ident, ..) => ("method", ident),
+            // A closure's bindings belong to the function that contains it.
+            FnKind::Closure => return,
         };
         let def_span = cx.tcx.def_span(def_id);
         if def_span.from_expansion() {
@@ -167,7 +169,7 @@ impl<'tcx> LateLintPass<'tcx> for TooManyLocalBindings {
         let name = ident.name;
         let noun = if count == 1 { "name" } else { "names" };
         let message = format!(
-            "function `{name}` binds {count} distinct local {noun}, above the limit of {max}",
+            "{item} `{name}` binds {count} distinct local {noun}, above the limit of {max}",
         );
         span_lint_and_help(
             cx,
