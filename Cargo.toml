@@ -59,15 +59,21 @@ toml = "1.1.2"
 [package.metadata.rust-analyzer]
 rustc_private = true
 
-# The `cdylib` this crate builds carries the debuginfo of everything
-# linked into it, and the dylint driver `dlopen`s that library once per
-# UI-test fixture — so the library's size is paid ~200 times over a
-# `cargo test` run. Full debuginfo makes it 136 MB and costs ~0.8s per
-# fixture; line tables alone make it 24 MB and cost ~0.14s, while
-# keeping the file and line numbers a backtrace needs.
+# The dylint driver reads this crate's `cdylib` in full — a single
+# `read` of every byte, on top of `dlopen` — once per UI-test fixture,
+# so the library's size is paid a few hundred times over a `cargo test`
+# run. Two knobs shrink it, together taking the library from 136 MB to
+# under 4 MB and the suite from ~117s to ~19s:
 #
-# `split-debuginfo = "unpacked"` reaches the same speed while retaining
-# full debuginfo, but is not supported on Windows-MSVC, so it is left
-# to whoever wants it in a local `.cargo/config.toml`.
+# `debug = false` drops the debuginfo that made up most of those bytes.
+# A panic still reports its own `file:line` (that comes from
+# `#[track_caller]`, not debuginfo) and a backtrace still names every
+# frame; only the `at <file>:<line>` under each frame is lost, which
+# matters to a debugger this project does not use.
+#
+# `opt-level = 3` then shrinks the generated code itself. It does not
+# cost rebuild time here: with no debuginfo to emit, an incremental
+# rebuild of this crate comes out slightly ahead of an unoptimized one.
 [profile.dev]
-debug = "line-tables-only"
+debug = false
+opt-level = 3
