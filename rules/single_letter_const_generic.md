@@ -2,8 +2,8 @@
 
 # `perfectionist::single_letter_const_generic`
 
-**Default state:** `active`
-**Source:** [`src/rules/single_letter_const_generic.rs`](../src/rules/single_letter_const_generic.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/single_letter_const_generic.rs`](../src/rules/single_letter_const_generic.rs)
 
 > const generic parameter has a single-letter name
 

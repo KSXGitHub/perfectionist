@@ -2,8 +2,8 @@
 
 # `perfectionist::bare_issue_reference`
 
-**Default state:** `active`
-**Source:** [`src/rules/bare_issue_reference.rs`](../src/rules/bare_issue_reference.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/bare_issue_reference.rs`](../src/rules/bare_issue_reference.rs)
 
 > ambiguous bare `#NNN` issue / PR reference in comment
 

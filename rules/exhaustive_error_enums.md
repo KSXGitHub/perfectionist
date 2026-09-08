@@ -2,8 +2,8 @@
 
 # `perfectionist::exhaustive_error_enums`
 
-**Default state:** `inactive`
-**Source:** [`src/rules/exhaustive_error_enums.rs`](../src/rules/exhaustive_error_enums.rs)
+- _Default state:_ `inactive`
+- _Source:_ [`src/rules/exhaustive_error_enums.rs`](../src/rules/exhaustive_error_enums.rs)
 
 > error-shaped type is missing `#[non_exhaustive]`
 
