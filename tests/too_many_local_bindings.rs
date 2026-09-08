@@ -49,14 +49,33 @@ fn zero_threshold_reports_every_binding_shape() {
 const LIB_WITH_TEST_MODULE: &str =
     include_str!("fixtures/too_many_local_bindings/lib_with_test_module.rs");
 
+/// A library whose only source is that fixture.
+const LIB_SOURCES: &[(&str, &str)] = &[("src/lib.rs", LIB_WITH_TEST_MODULE)];
+
+/// An integration test and a benchmark are wholly test code by virtue of
+/// the Cargo target they sit in, with no `#[cfg(test)]` gate or `#[test]`
+/// attribute on the flagged function itself. `exempt_tests` has to reach
+/// them through the target as well.
+const SEPARATE_TARGET_SOURCES: &[(&str, &str)] = &[
+    ("src/lib.rs", "pub fn nothing() {}\n"),
+    (
+        "tests/it.rs",
+        include_str!("fixtures/too_many_local_bindings/integration_test.rs"),
+    ),
+    (
+        "benches/bench.rs",
+        include_str!("fixtures/too_many_local_bindings/benchmark.rs"),
+    ),
+];
+
 /// Run the fixture and return its stderr, asserting that `cargo dylint`
 /// itself succeeded.
-fn run(package_name: &str, config: &str) -> String {
+fn run(package_name: &str, sources: &[(&str, &str)], config: &str) -> String {
     let (_temp, stderr, success) = run_project_with_config(
         package_name,
         cargo_manifest_dir(),
         &shared_target_dir(),
-        &[("src/lib.rs", LIB_WITH_TEST_MODULE)],
+        sources,
         config,
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
@@ -81,7 +100,7 @@ fn assert_not_flagged(stderr: &str, function: &str) {
 
 #[test]
 fn test_code_is_counted_by_default() {
-    let stderr = run("fixture_tmlb_default", "");
+    let stderr = run("fixture_tmlb_default", LIB_SOURCES, "");
     assert_flagged(&stderr, "production");
     assert_flagged(&stderr, "cfg_test_helper");
     assert_flagged(&stderr, "test_function");
@@ -91,6 +110,7 @@ fn test_code_is_counted_by_default() {
 fn exempt_tests_leaves_test_code_alone() {
     let stderr = run(
         "fixture_tmlb_test_exception",
+        LIB_SOURCES,
         text_block_fnl! {
             r#"["perfectionist::too_many_local_bindings"]"#
             "exempt_tests = true"
@@ -99,4 +119,25 @@ fn exempt_tests_leaves_test_code_alone() {
     assert_flagged(&stderr, "production");
     assert_not_flagged(&stderr, "cfg_test_helper");
     assert_not_flagged(&stderr, "test_function");
+}
+
+#[test]
+fn counts_a_test_target_by_default() {
+    let stderr = run("fixture_tmlb_target_default", SEPARATE_TARGET_SOURCES, "");
+    assert_flagged(&stderr, "integration_binder");
+    assert_flagged(&stderr, "benchmark_binder");
+}
+
+#[test]
+fn exempt_tests_leaves_a_test_target_alone() {
+    let stderr = run(
+        "fixture_tmlb_target_exempt",
+        SEPARATE_TARGET_SOURCES,
+        text_block_fnl! {
+            r#"["perfectionist::too_many_local_bindings"]"#
+            "exempt_tests = true"
+        },
+    );
+    assert_not_flagged(&stderr, "integration_binder");
+    assert_not_flagged(&stderr, "benchmark_binder");
 }
