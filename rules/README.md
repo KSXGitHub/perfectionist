@@ -46,6 +46,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   item named through `core` or `alloc` instead of `std`
 
+- [`excessive_cognitive_complexity`](./excessive_cognitive_complexity.md) (default: `active`).
+
+  function body has a cognitive complexity above the configured maximum
+
 - [`excessive_inline_tests`](./excessive_inline_tests.md) (default: `active`).
 
   inline test code should be extracted to a separate file

@@ -1,0 +1,25 @@
+warning: function `over_the_limit` has a cognitive complexity of 16, above the limit of 15
+  --> $DIR/excessive_cognitive_complexity.rs:LL:CC
+   |
+LL | fn over_the_limit(kind: u8, items: &[u8], flag: bool) -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 9 from branching, 7 from nesting depth
+   = help: this function does several independent things — move each into its own function named for that one responsibility
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+   = note: `#[warn(perfectionist::excessive_cognitive_complexity)]` on by default
+
+warning: method `step` has a cognitive complexity of 16, above the limit of 15
+  --> $DIR/excessive_cognitive_complexity.rs:LL:CC
+   |
+LL |     fn step(&self, state: u8, inputs: &[bool]) -> u8 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: 8 from branching, 8 from nesting depth
+   = help: flatten the deepest branches: return early on the error and empty cases, and replace nested `if` / `match` with `let ... else` guards
+   = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
+   = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
+
+warning: 2 warnings emitted
+

@@ -375,8 +375,9 @@ alone, so the header is normalised separately: every UI test runs from
 a throwaway copy of its fixtures made by
 [`copy_fixtures_with_directive`](utils/src/ui_fixtures.rs), which
 injects a compiletest `// normalize-stderr-test` directive into the
-copy — never the committed `.rs`. See that module for the mechanism
-and why the copy lives at an absolute path.
+copy — never the committed `.rs`. See that module for the mechanism,
+and for why the copy reproduces each fixture's repository-relative
+path.
 
 When a fixture's expected output changes, spell the `line:column` in
 the new `.stderr` as `LL:CC`; the injected directive collapses the
