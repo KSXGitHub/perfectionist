@@ -14,7 +14,7 @@
 
 use crate::TempDir;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// The compiletest header directive that collapses each
 /// `.rs:LINE:COL` in a fixture's actual output to `.rs:LL:CC`. It is a
@@ -24,22 +24,57 @@ use std::path::Path;
 const NORMALIZE_STDERR_DIRECTIVE: &str =
     r#"// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC""#;
 
+/// A throwaway copy of a fixture tree, laid out so that compiletest
+/// names each test after the fixture's repository-relative path.
+///
+/// Hold it until the test has run: dropping it deletes the copy.
+pub struct FixtureCopy {
+    /// Held only for its `Drop`, which removes the copy from disk.
+    _temp: TempDir,
+    /// The directory to hand to `dylint_testing::ui::Test::src_base`.
+    src_base: PathBuf,
+}
+
+impl FixtureCopy {
+    /// The `src_base` to hand to `dylint_testing::ui::Test::src_base`.
+    /// It is the copy of the *first* component of the path passed to
+    /// [`copy_fixtures_with_directive`], not the temp dir and not the
+    /// fixture directory itself, so that the components in between end
+    /// up in compiletest's test names.
+    pub fn path(&self) -> &Path {
+        &self.src_base
+    }
+}
+
 /// Copy the fixture directory `<manifest_dir>/<relative>` into a fresh
-/// [`TempDir`] and prepend [`NORMALIZE_STDERR_DIRECTIVE`] to every `.rs`
-/// that has a sibling `.stderr`. The returned guard's path is the
-/// sanitised copy, ready to hand to `dylint_testing::ui::Test::src_base`;
-/// hold it until the test has run so the copy outlives the assertions.
+/// [`TempDir`] — reproducing `relative` inside it — and prepend
+/// [`NORMALIZE_STDERR_DIRECTIVE`] to every `.rs` that has a sibling
+/// `.stderr`. Pass the returned guard's [`FixtureCopy::path`] to
+/// `dylint_testing::ui::Test::src_base`, and hold the guard until the
+/// test has run so the copy outlives the assertions.
 ///
 /// Only `.rs` files paired with a `.stderr` are touched, so `auxiliary/`
 /// crates and `include!`-ed sources are copied verbatim — the injected
 /// directive on the paired fixture already rewrites every header in that
 /// fixture's output, wherever the span originates.
-pub fn copy_fixtures_with_directive(manifest_dir: &str, relative: &str) -> TempDir {
-    let source = Path::new(manifest_dir).join(relative);
+pub fn copy_fixtures_with_directive(manifest_dir: &str, relative: &str) -> FixtureCopy {
+    let relative = Path::new(relative);
     let temp = TempDir::new().expect("create fixture copy dir");
-    copy_dir(&source, temp.path());
-    inject_directive(temp.path());
-    temp
+    let destination = temp.path().join(relative);
+    copy_dir(&Path::new(manifest_dir).join(relative), &destination);
+    inject_directive(&destination);
+    // compiletest recurses from `src_base`, and the copy holds nothing
+    // but `relative`, so starting at the first component still collects
+    // exactly the fixtures that were copied.
+    let root = relative
+        .components()
+        .next()
+        .expect("fixture path is not empty");
+    let src_base = temp.path().join(root);
+    FixtureCopy {
+        _temp: temp,
+        src_base,
+    }
 }
 
 /// Recursively copy the contents of `source` into `destination`,
