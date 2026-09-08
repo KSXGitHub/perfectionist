@@ -2,7 +2,7 @@
 
 # `perfectionist::too_many_local_bindings`
 
-**Default state:** `active`
+**Default state:** `active`  
 **Source:** [`src/rules/too_many_local_bindings.rs`](../src/rules/too_many_local_bindings.rs)
 
 > function body binds more distinct local names than the configured maximum
