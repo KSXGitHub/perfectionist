@@ -58,3 +58,14 @@ toml = "1.1.2"
 
 [package.metadata.rust-analyzer]
 rustc_private = true
+
+# The dylint driver reads each lint library whole to hash it, once per
+# rustc invocation, so the library's size is what the test suite pays.
+# Scoped: only this crate and its `cdylib`'s dependencies reach it.
+[profile.dev.package.perfectionist]
+debug = false
+opt-level = 3
+
+[profile.dev.package."*"]
+debug = false
+opt-level = 3
