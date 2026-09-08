@@ -2,8 +2,8 @@
 
 # `perfectionist::bare_identifier_reference`
 
-- _Default state:_ `active`
-- _Source:_ [`src/rules/bare_identifier_reference.rs`](../src/rules/bare_identifier_reference.rs)
+**Default state:** `active`
+**Source:** [`src/rules/bare_identifier_reference.rs`](../src/rules/bare_identifier_reference.rs)
 
 > backticked identifier in a doc comment that resolves in scope should be an intra-doc link
 

@@ -2,8 +2,8 @@
 
 # `perfectionist::named_prelude_imports`
 
-- _Default state:_ `active`
-- _Source:_ [`src/rules/named_prelude_imports.rs`](../src/rules/named_prelude_imports.rs)
+**Default state:** `active`
+**Source:** [`src/rules/named_prelude_imports.rs`](../src/rules/named_prelude_imports.rs)
 
 > named item cherry-picked from a prelude module instead of glob-imported
 

@@ -2,8 +2,8 @@
 
 # `perfectionist::thiserror_usage`
 
-- _Default state:_ `active`
-- _Source:_ [`src/rules/thiserror_usage.rs`](../src/rules/thiserror_usage.rs)
+**Default state:** `active`
+**Source:** [`src/rules/thiserror_usage.rs`](../src/rules/thiserror_usage.rs)
 
 > `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`
 

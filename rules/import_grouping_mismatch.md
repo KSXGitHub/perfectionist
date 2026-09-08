@@ -2,8 +2,8 @@
 
 # `perfectionist::import_grouping_mismatch`
 
-- _Default state:_ `inactive`
-- _Source:_ [`src/rules/import_grouping_mismatch.rs`](../src/rules/import_grouping_mismatch.rs)
+**Default state:** `inactive`
+**Source:** [`src/rules/import_grouping_mismatch.rs`](../src/rules/import_grouping_mismatch.rs)
 
 > import grouping does not match the configured `import_grouping_mismatch.style`
 

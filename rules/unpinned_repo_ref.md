@@ -2,8 +2,8 @@
 
 # `perfectionist::unpinned_repo_ref`
 
-- _Default state:_ `active`
-- _Source:_ [`src/rules/unpinned_repo_ref.rs`](../src/rules/unpinned_repo_ref.rs)
+**Default state:** `active`
+**Source:** [`src/rules/unpinned_repo_ref.rs`](../src/rules/unpinned_repo_ref.rs)
 
 > repository URL references a branch or tag instead of a commit SHA
 

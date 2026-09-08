@@ -2,8 +2,8 @@
 
 # `perfectionist::single_letter_closure_param`
 
-- _Default state:_ `active`
-- _Source:_ [`src/rules/single_letter_closure_param.rs`](../src/rules/single_letter_closure_param.rs)
+**Default state:** `active`
+**Source:** [`src/rules/single_letter_closure_param.rs`](../src/rules/single_letter_closure_param.rs)
 
 > closure parameter has a single-letter name
 

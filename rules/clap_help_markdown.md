@@ -2,8 +2,8 @@
 
 # `perfectionist::clap_help_markdown`
 
-- _Default state:_ `active`
-- _Source:_ [`src/rules/clap_help_markdown.rs`](../src/rules/clap_help_markdown.rs)
+**Default state:** `active`
+**Source:** [`src/rules/clap_help_markdown.rs`](../src/rules/clap_help_markdown.rs)
 
 > markdown construct in a clap-derived doc comment leaks into `--help` output
 

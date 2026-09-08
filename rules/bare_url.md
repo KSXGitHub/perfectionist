@@ -2,8 +2,8 @@
 
 # `perfectionist::bare_url`
 
-- _Default state:_ `active`
-- _Source:_ [`src/rules/bare_url.rs`](../src/rules/bare_url.rs)
+**Default state:** `active`
+**Source:** [`src/rules/bare_url.rs`](../src/rules/bare_url.rs)
 
 > bare URL in comment or doc comment; wrap in `<...>` or use a labelled markdown link
 

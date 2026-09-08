@@ -2,8 +2,8 @@
 
 # `perfectionist::import_granularity_mismatch`
 
-- _Default state:_ `active`
-- _Source:_ [`src/rules/import_granularity_mismatch.rs`](../src/rules/import_granularity_mismatch.rs)
+**Default state:** `active`
+**Source:** [`src/rules/import_granularity_mismatch.rs`](../src/rules/import_granularity_mismatch.rs)
 
 > import granularity does not match the configured `import_granularity_mismatch.style`
 

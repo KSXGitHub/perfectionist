@@ -23,14 +23,11 @@
 //! no rendered line ends in whitespace, so the `check-md`
 //! byte-comparison stays stable across editors that strip or add a
 //! final newline and that trim trailing whitespace on save. The
-//! second half of that rules out CommonMark hard line breaks, whose
-//! two-space spelling is the whitespace an editor trims and whose
-//! backslash spelling is line noise; the layout uses lists and
-//! blank lines to separate what would otherwise need one. Inline
-//! doc-comment prose is taken verbatim — the extractor has already
-//! normalised the leading convention space — and is wrapped in
-//! blank lines on either side so it never glues itself to the
-//! headings around it.
+//! second half of that rules out the two-space spelling of a
+//! CommonMark hard line break. Inline doc-comment prose is taken
+//! verbatim — the extractor has already normalised the leading
+//! convention space — and is wrapped in blank lines on either side
+//! so it never glues itself to the headings around it.
 
 use crate::model::{
     ConfigDoc, ConfigField, EnumVariant, NAMESPACE, Optionality, Rule, StructField, TypeDoc,
@@ -76,24 +73,18 @@ pub(crate) fn render_rule_md(rule: &Rule, source_link_prefix: &str) -> String {
     out.push('\n');
     let _ = writeln!(out, "# `{}`", rule.namespaced);
     out.push('\n');
-    // The rule's own metadata list, the same shape as the one under
-    // every field, type and variant heading below. A list rather
-    // than two lines of one paragraph, because that paragraph needs
-    // a hard line break between them and neither CommonMark
-    // spelling of one is fit to commit: two trailing spaces
-    // disappear the moment an editor that trims trailing whitespace
-    // saves the file, leaving `check-md` to report drift over a
-    // diff whose two sides look identical, and a trailing backslash
-    // is line noise in a file meant to be read as source. A list
-    // puts each entry on its own line and needs no break at all.
-    write_metadata(&mut out, "Default state", Some(rule.default_state.word()));
+    // No hard line break between these two lines. CommonMark
+    // spells one as two trailing spaces, and that is whitespace an
+    // editor deletes on save, which left every generated file one
+    // save away from `check-md` drift over a diff whose two sides
+    // look identical. Rendered, the two facts now run together on
+    // one line; in the file — which is where this copy is meant to
+    // be read — they stay on their own lines.
+    let _ = writeln!(out, "**Default state:** `{}`", rule.default_state.word());
     let source_path = source_path_str(rule);
-    // Not `write_metadata`: the value is a link, and the backticks
-    // that helper adds belong around the path inside it, not around
-    // the whole `[text](url)` span.
     let _ = writeln!(
         out,
-        "- _Source:_ [`{source_path}`]({source_link_prefix}{source_path})",
+        "**Source:** [`{source_path}`]({source_link_prefix}{source_path})",
     );
     out.push('\n');
     let _ = writeln!(out, "> {}", rule.short_desc);
