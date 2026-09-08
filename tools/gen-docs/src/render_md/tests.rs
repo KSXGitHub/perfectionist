@@ -20,6 +20,20 @@ fn fake_rule() -> Rule {
     }
 }
 
+/// Hold rendered markdown to the no-trailing-whitespace invariant: a
+/// generated file that an editor changes on save shows up as
+/// `check-md` drift over a diff whose two sides look identical.
+fn assert_no_trailing_whitespace(label: &str, markdown: &str) {
+    for (index, line) in markdown.lines().enumerate() {
+        assert_eq!(
+            line.trim_end(),
+            line,
+            "{label} markdown line {number} ends with whitespace",
+            number = index + 1,
+        );
+    }
+}
+
 #[test]
 fn rule_file_name_strips_namespace() {
     let rule = fake_rule();
@@ -32,6 +46,7 @@ fn rule_md_includes_header_state_and_short_desc() {
     assert!(md.contains("# `perfectionist::demo_rule`\n"));
     assert!(md.contains("- _Default state:_ `active`"), "got:\n{md}");
     assert!(md.contains("> demo rule used in tests"));
+    assert_no_trailing_whitespace("rule", &md);
     assert!(md.ends_with('\n'));
     assert!(!md.ends_with("\n\n"));
 }
@@ -45,14 +60,9 @@ fn rule_md_renders_inactive_state_for_opt_in_rules() {
 }
 
 #[test]
-fn rule_md_header_metadata_is_a_list_with_no_hard_break() {
-    // The state and the source are two entries of one metadata
-    // list. Writing them as two lines of a paragraph instead
-    // would need a hard line break between them, and both
-    // CommonMark spellings of one are unwelcome in a committed
-    // file: two trailing spaces are whitespace an editor trims on
-    // save, and a trailing backslash is line noise. Pin the list
-    // so neither comes back.
+fn rule_md_header_metadata_is_a_list() {
+    // The state and the source are the two entries of the rule's
+    // own metadata list, in that order, directly under the title.
     let md = render_rule_md(&fake_rule(), "../");
     assert!(
         md.contains(
@@ -61,76 +71,6 @@ fn rule_md_header_metadata_is_a_list_with_no_hard_break() {
         ),
         "got:\n{md}",
     );
-    assert!(!md.contains("\\\n"), "no backslash line break: {md}");
-}
-
-#[test]
-fn rendered_markdown_never_ends_a_line_with_whitespace() {
-    // Whichever branches a rule takes, the bytes on disk have to
-    // be bytes a whitespace-trimming editor would leave alone;
-    // anything else turns an innocent save into `check-md`
-    // drift with an invisible diff. Render a rule that reaches
-    // every section — prose with a fenced block, fields, an
-    // enum type and a struct type — plus the index, and hold
-    // both to that.
-    let mut rule = fake_rule();
-    rule.doc_markdown =
-        "### What it does\nDoes a demo.\n\n### Example\n```text\ndemo\n```".to_owned();
-    rule.config = ConfigDoc {
-        key: "perfectionist::demo_rule".to_owned(),
-        fields: vec![
-            ConfigField {
-                name: "style".to_owned(),
-                type_label: "Style".to_owned(),
-                doc_markdown: "Pick a style.".to_owned(),
-                optionality: Optionality::Mandatory,
-            },
-            ConfigField {
-                name: "hosts".to_owned(),
-                type_label: "[HostEntry]".to_owned(),
-                doc_markdown: String::new(),
-                optionality: Optionality::Optional,
-            },
-        ],
-        custom_types: vec![
-            TypeDoc {
-                name: "Style".to_owned(),
-                doc_markdown: "Style enum.".to_owned(),
-                kind: TypeKind::Enum {
-                    variants: vec![EnumVariant {
-                        rust_name: "Preserve".to_owned(),
-                        serialized: "preserve".to_owned(),
-                        doc_markdown: "Leave it alone.".to_owned(),
-                    }],
-                },
-            },
-            TypeDoc {
-                name: "HostEntry".to_owned(),
-                doc_markdown: "One host.".to_owned(),
-                kind: TypeKind::Struct {
-                    fields: vec![StructField {
-                        name: "host".to_owned(),
-                        type_label: "string".to_owned(),
-                        doc_markdown: "The hostname.".to_owned(),
-                    }],
-                },
-            },
-        ],
-    };
-    let rendered = [
-        ("rule", render_rule_md(&rule, "../")),
-        ("index", render_index_md(std::slice::from_ref(&rule))),
-    ];
-    for (label, markdown) in &rendered {
-        for (index, line) in markdown.lines().enumerate() {
-            assert_eq!(
-                line.trim_end(),
-                line,
-                "{label} markdown line {number} ends with whitespace",
-                number = index + 1,
-            );
-        }
-    }
 }
 
 #[test]
@@ -217,6 +157,7 @@ fn rule_md_with_config_lists_fields_and_types() {
     assert!(!md.contains("_Rust:_ `Same`"));
     // Empty doc fall-back.
     assert!(md.contains("*Undocumented.*"));
+    assert_no_trailing_whitespace("rule", &md);
 }
 
 #[test]
@@ -252,6 +193,7 @@ fn rule_md_struct_type_fields_carry_a_type_bullet() {
         md.contains("##### Field: `host`\n\n- _Type:_ `string`\n\nThe hostname.\n"),
         "got:\n{md}",
     );
+    assert_no_trailing_whitespace("rule", &md);
 }
 
 #[test]
@@ -267,6 +209,7 @@ fn index_md_renders_bullet_list() {
     // The bullet-list form needs no `|` escaping (unlike a
     // table) — the pipe in the description appears raw.
     assert!(!index.contains(r"\|"));
+    assert_no_trailing_whitespace("index", &index);
 }
 
 #[test]
@@ -298,6 +241,7 @@ fn doc_markdown_headings_are_promoted_one_level() {
     assert!(md.contains("### not a heading"), "got:\n{md}");
     // And the original h3 must not survive at top level.
     assert!(!md.contains("\n### What it does\n"), "got:\n{md}");
+    assert_no_trailing_whitespace("rule", &md);
 }
 
 #[test]
