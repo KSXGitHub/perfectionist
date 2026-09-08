@@ -30,7 +30,7 @@ fn rule_file_name_strips_namespace() {
 fn rule_md_includes_header_state_and_short_desc() {
     let md = render_rule_md(&fake_rule(), "../");
     assert!(md.contains("# `perfectionist::demo_rule`\n"));
-    assert!(md.contains("**Default state:** `active`"));
+    assert!(md.contains("- _Default state:_ `active`"), "got:\n{md}");
     assert!(md.contains("> demo rule used in tests"));
     assert!(md.ends_with('\n'));
     assert!(!md.ends_with("\n\n"));
@@ -41,26 +41,27 @@ fn rule_md_renders_inactive_state_for_opt_in_rules() {
     let mut rule = fake_rule();
     rule.default_state = DefaultState::Inactive;
     let md = render_rule_md(&rule, "../");
-    assert!(md.contains("**Default state:** `inactive`"));
+    assert!(md.contains("- _Default state:_ `inactive`"), "got:\n{md}");
 }
 
 #[test]
-fn rule_md_hard_break_between_header_lines_is_a_backslash() {
-    // The state and source lines are one paragraph split by a
-    // hard line break. Spelling that break CommonMark's other
-    // way — two trailing spaces — put every generated file one
-    // save away from drift, since editors trim trailing
-    // whitespace and `check-md` compares bytes. Assert the
-    // backslash so nobody swaps it back, and assert the two
-    // lines still sit together so nobody drops the break.
+fn rule_md_header_metadata_is_a_list_with_no_hard_break() {
+    // The state and the source are two entries of one metadata
+    // list. Writing them as two lines of a paragraph instead
+    // would need a hard line break between them, and both
+    // CommonMark spellings of one are unwelcome in a committed
+    // file: two trailing spaces are whitespace an editor trims on
+    // save, and a trailing backslash is line noise. Pin the list
+    // so neither comes back.
     let md = render_rule_md(&fake_rule(), "../");
     assert!(
         md.contains(
-            "**Default state:** `active`\\\n\
-             **Source:** [`src/rules/demo_rule.rs`](../src/rules/demo_rule.rs)\n",
+            "- _Default state:_ `active`\n\
+             - _Source:_ [`src/rules/demo_rule.rs`](../src/rules/demo_rule.rs)\n",
         ),
         "got:\n{md}",
     );
+    assert!(!md.contains("\\\n"), "no backslash line break: {md}");
 }
 
 #[test]

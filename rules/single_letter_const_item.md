@@ -2,8 +2,8 @@
 
 # `perfectionist::single_letter_const_item`
 
-**Default state:** `active`\
-**Source:** [`src/rules/single_letter_const_item.rs`](../src/rules/single_letter_const_item.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/single_letter_const_item.rs`](../src/rules/single_letter_const_item.rs)
 
 > const item has a single-letter name
 

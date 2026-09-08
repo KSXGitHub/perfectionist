@@ -2,8 +2,8 @@
 
 # `perfectionist::unordered_derives`
 
-**Default state:** `inactive`\
-**Source:** [`src/rules/unordered_derives.rs`](../src/rules/unordered_derives.rs)
+- _Default state:_ `inactive`
+- _Source:_ [`src/rules/unordered_derives.rs`](../src/rules/unordered_derives.rs)
 
 > trait names in a `#[derive(...)]` list are not in the configured order
 

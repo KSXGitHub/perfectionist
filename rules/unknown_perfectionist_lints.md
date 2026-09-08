@@ -2,8 +2,8 @@
 
 # `perfectionist::unknown_perfectionist_lints`
 
-**Default state:** `active`\
-**Source:** [`src/rules/unknown_perfectionist_lints.rs`](../src/rules/unknown_perfectionist_lints.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/unknown_perfectionist_lints.rs`](../src/rules/unknown_perfectionist_lints.rs)
 
 > lint-control attribute references a `perfectionist::*` lint that this plugin does not register
 
