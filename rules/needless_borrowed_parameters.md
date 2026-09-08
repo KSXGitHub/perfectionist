@@ -2,7 +2,7 @@
 
 # `perfectionist::needless_borrowed_parameters`
 
-**Default state:** `active`  
+**Default state:** `active`\
 **Source:** [`src/rules/needless_borrowed_parameters.rs`](../src/rules/needless_borrowed_parameters.rs)
 
 > borrowed parameter is only used to produce its owned form

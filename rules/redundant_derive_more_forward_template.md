@@ -2,7 +2,7 @@
 
 # `perfectionist::redundant_derive_more_forward_template`
 
-**Default state:** `active`  
+**Default state:** `active`\
 **Source:** [`src/rules/redundant_derive_more_forward_template.rs`](../src/rules/redundant_derive_more_forward_template.rs)
 
 > `derive_more` formatting template only restates the forward the derive already performs

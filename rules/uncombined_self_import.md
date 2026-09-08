@@ -2,7 +2,7 @@
 
 # `perfectionist::uncombined_self_import`
 
-**Default state:** `inactive`  
+**Default state:** `inactive`\
 **Source:** [`src/rules/uncombined_self_import.rs`](../src/rules/uncombined_self_import.rs)
 
 > a module import and an adjacent item import from it can be combined through `self`

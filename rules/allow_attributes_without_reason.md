@@ -2,7 +2,7 @@
 
 # `perfectionist::allow_attributes_without_reason`
 
-**Default state:** `active`  
+**Default state:** `active`\
 **Source:** [`src/rules/allow_attributes_without_reason.rs`](../src/rules/allow_attributes_without_reason.rs)
 
 > `#[allow]` / `#[expect]` attribute lacks an explanatory `reason = "..."` field

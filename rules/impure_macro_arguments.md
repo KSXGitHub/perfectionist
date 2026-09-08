@@ -2,7 +2,7 @@
 
 # `perfectionist::impure_macro_arguments`
 
-**Default state:** `active`  
+**Default state:** `active`\
 **Source:** [`src/rules/impure_macro_arguments.rs`](../src/rules/impure_macro_arguments.rs)
 
 > macro invocation passes an impure expression that should be bound to a `let` first

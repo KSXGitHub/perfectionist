@@ -2,7 +2,7 @@
 
 # `perfectionist::allow_attributes`
 
-**Default state:** `active`  
+**Default state:** `active`\
 **Source:** [`src/rules/allow_attributes.rs`](../src/rules/allow_attributes.rs)
 
 > `#[allow]` for a deterministically-firing lint should be removed or be `#[expect]`

@@ -2,7 +2,7 @@
 
 # `perfectionist::bare_email`
 
-**Default state:** `active`  
+**Default state:** `active`\
 **Source:** [`src/rules/bare_email.rs`](../src/rules/bare_email.rs)
 
 > bare email address in comment or doc comment; wrap in `<...>` or prefix with `mailto:`

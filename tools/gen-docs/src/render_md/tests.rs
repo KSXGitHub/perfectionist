@@ -45,6 +45,94 @@ fn rule_md_renders_inactive_state_for_opt_in_rules() {
 }
 
 #[test]
+fn rule_md_hard_break_between_header_lines_is_a_backslash() {
+    // The state and source lines are one paragraph split by a
+    // hard line break. Spelling that break CommonMark's other
+    // way — two trailing spaces — put every generated file one
+    // save away from drift, since editors trim trailing
+    // whitespace and `check-md` compares bytes. Assert the
+    // backslash so nobody swaps it back, and assert the two
+    // lines still sit together so nobody drops the break.
+    let md = render_rule_md(&fake_rule(), "../");
+    assert!(
+        md.contains(
+            "**Default state:** `active`\\\n\
+             **Source:** [`src/rules/demo_rule.rs`](../src/rules/demo_rule.rs)\n",
+        ),
+        "got:\n{md}",
+    );
+}
+
+#[test]
+fn rendered_markdown_never_ends_a_line_with_whitespace() {
+    // Whichever branches a rule takes, the bytes on disk have to
+    // be bytes a whitespace-trimming editor would leave alone;
+    // anything else turns an innocent save into `check-md`
+    // drift with an invisible diff. Render a rule that reaches
+    // every section — prose with a fenced block, fields, an
+    // enum type and a struct type — plus the index, and hold
+    // both to that.
+    let mut rule = fake_rule();
+    rule.doc_markdown =
+        "### What it does\nDoes a demo.\n\n### Example\n```text\ndemo\n```".to_owned();
+    rule.config = ConfigDoc {
+        key: "perfectionist::demo_rule".to_owned(),
+        fields: vec![
+            ConfigField {
+                name: "style".to_owned(),
+                type_label: "Style".to_owned(),
+                doc_markdown: "Pick a style.".to_owned(),
+                optionality: Optionality::Mandatory,
+            },
+            ConfigField {
+                name: "hosts".to_owned(),
+                type_label: "[HostEntry]".to_owned(),
+                doc_markdown: String::new(),
+                optionality: Optionality::Optional,
+            },
+        ],
+        custom_types: vec![
+            TypeDoc {
+                name: "Style".to_owned(),
+                doc_markdown: "Style enum.".to_owned(),
+                kind: TypeKind::Enum {
+                    variants: vec![EnumVariant {
+                        rust_name: "Preserve".to_owned(),
+                        serialized: "preserve".to_owned(),
+                        doc_markdown: "Leave it alone.".to_owned(),
+                    }],
+                },
+            },
+            TypeDoc {
+                name: "HostEntry".to_owned(),
+                doc_markdown: "One host.".to_owned(),
+                kind: TypeKind::Struct {
+                    fields: vec![StructField {
+                        name: "host".to_owned(),
+                        type_label: "string".to_owned(),
+                        doc_markdown: "The hostname.".to_owned(),
+                    }],
+                },
+            },
+        ],
+    };
+    let rendered = [
+        ("rule", render_rule_md(&rule, "../")),
+        ("index", render_index_md(std::slice::from_ref(&rule))),
+    ];
+    for (label, markdown) in &rendered {
+        for (index, line) in markdown.lines().enumerate() {
+            assert_eq!(
+                line.trim_end(),
+                line,
+                "{label} markdown line {number} ends with whitespace",
+                number = index + 1,
+            );
+        }
+    }
+}
+
+#[test]
 fn rule_md_with_no_config_prints_none_section() {
     let md = render_rule_md(&fake_rule(), "../");
     assert!(md.contains("## Configuration"));

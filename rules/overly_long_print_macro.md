@@ -2,7 +2,7 @@
 
 # `perfectionist::overly_long_print_macro`
 
-**Default state:** `active`  
+**Default state:** `active`\
 **Source:** [`src/rules/overly_long_print_macro.rs`](../src/rules/overly_long_print_macro.rs)
 
 > splittable print macro with an embedded-newline template exceeds the configured line width

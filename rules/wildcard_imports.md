@@ -2,7 +2,7 @@
 
 # `perfectionist::wildcard_imports`
 
-**Default state:** `active`  
+**Default state:** `active`\
 **Source:** [`src/rules/wildcard_imports.rs`](../src/rules/wildcard_imports.rs)
 
 > glob (`*`) import in a module body, outside the prelude and root-re-export exceptions

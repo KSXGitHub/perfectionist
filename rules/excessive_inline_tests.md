@@ -2,7 +2,7 @@
 
 # `perfectionist::excessive_inline_tests`
 
-**Default state:** `active`  
+**Default state:** `active`\
 **Source:** [`src/rules/excessive_inline_tests.rs`](../src/rules/excessive_inline_tests.rs)
 
 > inline test code should be extracted to a separate file

@@ -2,7 +2,7 @@
 
 # `perfectionist::lint_attribute_trailing_comment`
 
-**Default state:** `active`  
+**Default state:** `active`\
 **Source:** [`src/rules/lint_attribute_trailing_comment.rs`](../src/rules/lint_attribute_trailing_comment.rs)
 
 > trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field

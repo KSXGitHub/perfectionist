@@ -2,7 +2,7 @@
 
 # `perfectionist::avoidable_string_escapes`
 
-**Default state:** `active`  
+**Default state:** `active`\
 **Source:** [`src/rules/avoidable_string_escapes.rs`](../src/rules/avoidable_string_escapes.rs)
 
 > string literal contains only raw-expressible escapes; prefer the raw-string form

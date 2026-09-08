@@ -2,7 +2,7 @@
 
 # `perfectionist::core_instead_of_std`
 
-**Default state:** `inactive`  
+**Default state:** `inactive`\
 **Source:** [`src/rules/core_instead_of_std.rs`](../src/rules/core_instead_of_std.rs)
 
 > item named through `core` or `alloc` instead of `std`

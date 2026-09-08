@@ -2,7 +2,7 @@
 
 # `perfectionist::excessive_cognitive_complexity`
 
-**Default state:** `active`  
+**Default state:** `active`\
 **Source:** [`src/rules/excessive_cognitive_complexity.rs`](../src/rules/excessive_cognitive_complexity.rs)
 
 > function body has a cognitive complexity above the configured maximum
