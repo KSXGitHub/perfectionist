@@ -28,3 +28,11 @@ fn an_empty_body_has_no_lines() {
     assert_eq!(count_code_lines(""), 0);
     assert_eq!(count_code_lines("\n    \n"), 0);
 }
+
+#[test]
+fn a_last_line_without_a_trailing_newline_still_counts() {
+    // A one-line body: `body_interior` leaves no newline at all, so the
+    // count comes entirely from the tail of `count_code_lines`.
+    assert_eq!(count_code_lines(" work() "), 1);
+    assert_eq!(count_code_lines("\n    first();\n    last()"), 2);
+}
