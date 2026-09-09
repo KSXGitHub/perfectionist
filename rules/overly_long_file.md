@@ -2,8 +2,8 @@
 
 # `perfectionist::overly_long_file`
 
-**Default state:** `active`  
-**Source:** [`src/rules/overly_long_file.rs`](../src/rules/overly_long_file.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/overly_long_file.rs`](../src/rules/overly_long_file.rs)
 
 > source file has more lines of code than the configured maximum
 
