@@ -20,7 +20,7 @@ measured. A nested function's lines count towards the function
 that contains it, since they sit in its body.
 
 Test code is measured like any other code; set
-`test_code_exception` to leave it alone.
+`exempt_tests` to leave it alone.
 
 ## Why restrict this?
 
@@ -60,7 +60,7 @@ Configure via `dylint.toml` under `["perfectionist::overly_long_function"]`. Eve
 The most lines of code a function body may have without being
 flagged. Defaults to `50`.
 
-### Field: `test_code_exception`
+### Field: `exempt_tests`
 
 - _Type:_ `boolean`
 - _Optional_
