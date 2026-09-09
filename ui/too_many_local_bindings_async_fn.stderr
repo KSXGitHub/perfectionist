@@ -1,0 +1,11 @@
+warning: function `with_bindings` binds 16 distinct local names, above the limit of 15
+  --> $DIR/too_many_local_bindings_async_fn.rs:LL:CC
+   |
+LL | async fn with_bindings(seed: u32) -> u32 {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the body into one function per step, or gather related values into a struct
+   = note: `#[warn(perfectionist::too_many_local_bindings)]` on by default
+
+warning: 1 warning emitted
+

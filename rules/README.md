@@ -126,6 +126,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`
 
+- [`too_many_local_bindings`](./too_many_local_bindings.md) (default: `active`).
+
+  function body binds more distinct local names than the configured maximum
+
 - [`uncombined_self_import`](./uncombined_self_import.md) (default: `inactive`).
 
   a module import and an adjacent item import from it can be combined through `self`

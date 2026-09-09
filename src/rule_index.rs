@@ -126,6 +126,7 @@ rule_index! {
     single_letter_let_binding => SingleLetterLetBinding,
     single_letter_static_item => SingleLetterStaticItem,
     thiserror_usage => ThiserrorUsage,
+    too_many_local_bindings => TooManyLocalBindings,
     uncombined_self_import => UncombinedSelfImport,
     unicode_ellipsis_in_comments => UnicodeEllipsisInComments,
     unicode_ellipsis_in_docs => UnicodeEllipsisInDocs,
