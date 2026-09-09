@@ -1,5 +1,5 @@
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:28:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / use std::time::Duration;
 LL | | pub use crate::config::Args;
@@ -17,7 +17,7 @@ LL + use crate::config::Opts;
    |
 
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:37:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / pub use std::cmp::Ordering;
 LL | | use std::fmt::Write;
@@ -33,7 +33,7 @@ LL + use std::fmt::Write;
    |
 
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:46:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / use std::mem::swap;
 LL | | #[cfg(unix)]

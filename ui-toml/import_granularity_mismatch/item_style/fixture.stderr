@@ -1,5 +1,5 @@
 warning: imports are not split into one `use` per item
-  --> $DIR/fixture.rs:14:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use std::path::{Path, PathBuf};
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -12,7 +12,7 @@ LL +     use std::path::PathBuf;
    |
 
 warning: imports are not split into one `use` per item
-  --> $DIR/fixture.rs:19:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use std::{collections::HashMap, io::Read};
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -24,7 +24,7 @@ LL +     use std::io::Read;
    |
 
 warning: imports are not split into one `use` per item
-  --> $DIR/fixture.rs:36:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use std::io::{self, Read};
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -36,7 +36,7 @@ LL +     use std::io::{self};
    |
 
 warning: glob import brings an unbounded set of names into scope
-  --> $DIR/fixture.rs:30:9
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use std::io::*;
    |         ^^^^^^^^^^

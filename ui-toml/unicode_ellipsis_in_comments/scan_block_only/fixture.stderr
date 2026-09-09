@@ -1,5 +1,5 @@
 warning: Unicode `…` (U+2026) in comment
-  --> $DIR/fixture.rs:2:31
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /* Block comment with ellipsis… */
    |                               ^ help: use ASCII `...` instead: `...`

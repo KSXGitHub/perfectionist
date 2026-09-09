@@ -1,5 +1,5 @@
 warning: bare email address `security@example.net`
-  --> $DIR/fixture.rs:3:33
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// address out of the source — security@example.net.
    |                                 ^^^^^^^^^^^^^^^^^^^^

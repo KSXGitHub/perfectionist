@@ -1,5 +1,5 @@
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:32:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / use clap::Parser;
 LL | | use std::time::Duration;
@@ -17,7 +17,7 @@ LL + use clap::Parser;
    |
 
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:40:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / use clap::ValueEnum;
 LL | |
@@ -32,7 +32,7 @@ LL + use clap::ValueEnum;
    |
 
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:47:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / use std::io::Read;
 LL | |
@@ -46,7 +46,7 @@ LL + use std::time::Instant;
    |
 
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:54:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / use std::fmt::Write;
 LL | | use crate::config::Bytes;
@@ -57,7 +57,7 @@ help: regroup the imports
    | +
 
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:61:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / #[cfg(unix)]
 LL | | use std::collections::BTreeMap;

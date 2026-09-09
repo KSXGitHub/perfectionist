@@ -1,11 +1,11 @@
 warning: enum `ConfigFailure` is missing `#[non_exhaustive]`
-  --> $DIR/fixture.rs:13:10
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | pub enum ConfigFailure {
    |          ^^^^^^^^^^^^^
    |
 note: the lint level is defined here
-  --> $DIR/fixture.rs:4:9
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #![warn(perfectionist::exhaustive_error_enums)]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

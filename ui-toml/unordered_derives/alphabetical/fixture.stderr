@@ -1,5 +1,5 @@
 warning: derive list is not in ASCII-case-insensitive alphabetical order
-  --> $DIR/fixture.rs:3:10
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[derive(Debug, Clone, Copy)]
    |          ^^^^^^^^^^^^^^^^^^ help: reorder the derive list: `Clone, Copy, Debug`
@@ -7,13 +7,13 @@ LL | #[derive(Debug, Clone, Copy)]
    = note: `#[warn(perfectionist::unordered_derives)]` on by default
 
 warning: derive list is not in ASCII-case-insensitive alphabetical order
-  --> $DIR/fixture.rs:16:10
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[derive(PartialEq, Eq, Hash)]
    |          ^^^^^^^^^^^^^^^^^^^ help: reorder the derive list: `Eq, Hash, PartialEq`
 
 warning: derive list is not in ASCII-case-insensitive alphabetical order
-  --> $DIR/fixture.rs:26:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /     Debug,
 LL | |     Clone,
@@ -21,37 +21,37 @@ LL | |     Copy,
    | |________^ help: reorder the derive list: `Clone, Copy, Debug`
 
 warning: derive list is not in ASCII-case-insensitive alphabetical order
-  --> $DIR/fixture.rs:36:10
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[derive(Debug /* keep me */, Clone, Copy)]
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: reorder the derive list: `Clone, Copy, Debug`
 
 warning: derive list is not in ASCII-case-insensitive alphabetical order
-  --> $DIR/fixture.rs:42:25
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[cfg_attr(unix, derive(Debug, Clone, Copy))]
    |                         ^^^^^^^^^^^^^^^^^^ help: reorder the derive list: `Clone, Copy, Debug`
 
 warning: derive list is not in ASCII-case-insensitive alphabetical order
-  --> $DIR/fixture.rs:48:25
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[cfg_attr(unix, derive(Debug, Clone), derive(Eq, PartialEq))]
    |                         ^^^^^^^^^^^^ help: reorder the derive list: `Clone, Debug`
 
 warning: derive list is not in ASCII-case-insensitive alphabetical order
-  --> $DIR/fixture.rs:54:59
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[cfg_attr(all(unix, target_pointer_width = "64"), derive(Debug, Clone))]
    |                                                           ^^^^^^^^^^^^ help: reorder the derive list: `Clone, Debug`
 
 warning: derive list is not in ASCII-case-insensitive alphabetical order
-  --> $DIR/fixture.rs:61:55
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[cfg_attr(unix, cfg_attr(target_os = "linux", derive(Debug, Clone)))]
    |                                                       ^^^^^^^^^^^^ help: reorder the derive list: `Clone, Debug`
 
 warning: derive list is not in ASCII-case-insensitive alphabetical order
-  --> $DIR/fixture.rs:70:28
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[cfg_attr(windows, derive(Debug, Clone, Copy))]
    |                            ^^^^^^^^^^^^^^^^^^ help: reorder the derive list: `Clone, Copy, Debug`

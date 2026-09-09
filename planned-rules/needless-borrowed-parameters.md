@@ -37,7 +37,7 @@ conservative single-use starting point described under
 - Configuration: `extra_conversion_methods` / `ignore_conversion_methods`
   (the repository's extras-plus-ignore convention) rather than the
   single replacement list sketched under "Configuration" below, plus
-  the `test_code_exception` / `build_script_exception` toggles.
+  the `exempt_tests` / `exempt_build_scripts` toggles.
 
 **Still pending:**
 
@@ -139,7 +139,7 @@ site that holds a borrow has to write the `.to_owned()` the callee
 just gave up — and a test's call sites are exactly the ones that
 hold borrows, since they pass string literals. So the trade the rule
 is selling is a straight loss there, and both are exempt by default.
-`test_code_exception` / `build_script_exception` turn the exemptions
+`exempt_tests` / `exempt_build_scripts` turn the exemptions
 off for a project that wants one signature style everywhere.
 
 An **example** (`examples/`) is deliberately not exempt even when
@@ -230,8 +230,8 @@ conversion_methods = [
 
 # Whether test code / a build script is exempt. Both default to
 # `true`; see "Test code and build scripts" above.
-test_code_exception = true
-build_script_exception = true
+exempt_tests = true
+exempt_build_scripts = true
 ```
 
 ## Implementation notes

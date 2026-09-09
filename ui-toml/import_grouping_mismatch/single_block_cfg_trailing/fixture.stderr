@@ -1,5 +1,5 @@
 warning: imports must form one block, with `#[cfg]`-gated imports in a trailing block
-  --> $DIR/fixture.rs:19:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / use std::time::Duration;
 LL | | #[cfg(unix)]
@@ -18,7 +18,7 @@ LL + use std::os::unix::fs::MetadataExt;
    |
 
 warning: blank lines split the imports; this project keeps them in a single block
-  --> $DIR/fixture.rs:28:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / use std::io::stdin;
 LL | |

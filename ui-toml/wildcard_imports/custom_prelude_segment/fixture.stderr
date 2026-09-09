@@ -1,5 +1,5 @@
 warning: glob import brings an unbounded set of names into scope
-  --> $DIR/fixture.rs:23:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | use crate::foo::prelude::*;
    |     ^^^^^^^^^^^^^^^^^^^^^^

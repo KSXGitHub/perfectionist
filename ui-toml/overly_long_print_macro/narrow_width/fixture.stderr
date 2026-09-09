@@ -1,5 +1,5 @@
 warning: print macro with an embedded newline exceeds the configured line width
-  --> $DIR/fixture.rs:6:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     println!("processing item number {item}/nfinished processing it now");
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

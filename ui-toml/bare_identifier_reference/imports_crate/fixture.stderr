@@ -1,5 +1,5 @@
 warning: `Defined` resolves in scope; consider writing it as an intra-doc link
-  --> $DIR/fixture.rs:16:18
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     /// Mentions `Defined` (local), `InternalItem` (this module's
    |                  ^^^^^^^^^
@@ -13,7 +13,7 @@ LL +     /// Mentions [`Defined`] (local), `InternalItem` (this module's
    |
 
 warning: `InternalItem` resolves in scope; consider writing it as an intra-doc link
-  --> $DIR/fixture.rs:16:37
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     /// Mentions `Defined` (local), `InternalItem` (this module's
    |                                     ^^^^^^^^^^^^^^
@@ -26,7 +26,7 @@ LL +     /// Mentions `Defined` (local), [`InternalItem`] (this module's
    |
 
 warning: `RootItem` resolves in scope; consider writing it as an intra-doc link
-  --> $DIR/fixture.rs:17:19
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     /// subtree), `RootItem` (reached via `crate::`), and `HashMap`
    |                   ^^^^^^^^^^

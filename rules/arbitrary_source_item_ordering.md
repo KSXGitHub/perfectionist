@@ -2,8 +2,8 @@
 
 # `perfectionist::arbitrary_source_item_ordering`
 
-**Default state:** `active`  
-**Source:** [`src/rules/arbitrary_source_item_ordering.rs`](../src/rules/arbitrary_source_item_ordering.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/arbitrary_source_item_ordering.rs`](../src/rules/arbitrary_source_item_ordering.rs)
 
 > item in a module body sits below a section it belongs above: `pub mod`, then `pub use`, then private imports and other items
 

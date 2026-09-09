@@ -692,7 +692,7 @@ to mean "none", and duplicates are meaningless. Separate `bool`s say
 exactly that and drop the empty-vs-absent ambiguity. Settled in
 <https://github.com/KSXGitHub/perfectionist/pull/255> (which replaced
 `wildcard_imports`' `exceptions = ["prelude", "root_reexport"]` with
-the booleans `prelude_exception` / `root_reexport_exception`).
+the booleans `exempt_prelude` / `exempt_reexports`).
 
 Some shapes are *not* this anti-pattern and stay as arrays/enums: a
 single mutually-exclusive **choice** (a `style` / direction enum); an

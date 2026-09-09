@@ -1,5 +1,5 @@
 warning: print macro with an embedded newline exceeds the configured line width
-  --> $DIR/fixture.rs:8:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     my_log!("a long diagnostic line padded out to comfortably exceed the configured width limit here/nsecond line of the diagnostic");
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

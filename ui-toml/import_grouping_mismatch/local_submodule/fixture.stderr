@@ -1,5 +1,5 @@
 warning: imports are not partitioned into ordered groups
-  --> $DIR/fixture.rs:26:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / use std::time::Duration;
 LL | |

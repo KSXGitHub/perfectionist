@@ -1,5 +1,5 @@
 warning: item named through `core` instead of `std`
-  --> $DIR/fixture.rs:12:9
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use core::fmt::Display;
    |         ^^^^ help: name the item through `std`: `std`
@@ -7,25 +7,25 @@ LL |     use core::fmt::Display;
    = note: `#[warn(perfectionist::core_instead_of_std)]` on by default
 
 warning: item named through `alloc` instead of `std`
-  --> $DIR/fixture.rs:17:9
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use alloc::sync::Arc;
    |         ^^^^^ help: name the item through `std`: `std`
 
 warning: item named through `core` instead of `std`
-  --> $DIR/fixture.rs:22:11
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use ::core::hash::Hash;
    |           ^^^^ help: name the item through `std`: `std`
 
 warning: item named through `core` instead of `std`
-  --> $DIR/fixture.rs:33:9
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use core::fmt::{Binary, Octal};
    |         ^^^^ help: name the item through `std`: `std`
 
 warning: item named through `core` instead of `std`
-  --> $DIR/fixture.rs:47:23
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use core::panic::{Location, PanicInfo};
    |                       ^^^^^^^^
@@ -33,19 +33,19 @@ LL |     use core::panic::{Location, PanicInfo};
    = help: name this item through `std`: the `core` segment is shared with a name that has to keep it, so it cannot be rewritten in place
 
 warning: item named through `core` instead of `std`
-  --> $DIR/fixture.rs:52:31
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     pub fn describe(_address: core::net::IpAddr) {}
    |                               ^^^^ help: name the item through `std`: `std`
 
 warning: item named through `core` instead of `std`
-  --> $DIR/fixture.rs:58:9
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |         core::ptr::null::<u32>()
    |         ^^^^ help: name the item through `std`: `std`
 
 warning: item named through `alloc` instead of `std`
-  --> $DIR/fixture.rs:71:9
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use alloc::vec;
    |         ^^^^^ help: name the item through `std`: `std`

@@ -1,5 +1,5 @@
 warning: const item `N` has a single-letter name
-  --> $DIR/single_letter_const_item.rs:4:7
+  --> $DIR/single_letter_const_item.rs:LL:CC
    |
 LL | const N: usize = 2;
    |       ^
@@ -8,7 +8,7 @@ LL | const N: usize = 2;
    = note: `#[warn(perfectionist::single_letter_const_item)]` on by default
 
 warning: const item `D` has a single-letter name
-  --> $DIR/single_letter_const_item.rs:7:7
+  --> $DIR/single_letter_const_item.rs:LL:CC
    |
 LL | const D: u64 = 64;
    |       ^
@@ -16,7 +16,7 @@ LL | const D: u64 = 64;
    = help: rename to a descriptive identifier (e.g. `DIMENSION`, `BUFFER_LEN`, `MAX_RETRIES`)
 
 warning: const item `C` has a single-letter name
-  --> $DIR/single_letter_const_item.rs:18:11
+  --> $DIR/single_letter_const_item.rs:LL:CC
    |
 LL |     const C: usize = 64;
    |           ^
@@ -24,7 +24,7 @@ LL |     const C: usize = 64;
    = help: rename to a descriptive identifier (e.g. `DIMENSION`, `BUFFER_LEN`, `MAX_RETRIES`)
 
 warning: const item `M` has a single-letter name
-  --> $DIR/single_letter_const_item.rs:26:11
+  --> $DIR/single_letter_const_item.rs:LL:CC
    |
 LL |     const M: usize;
    |           ^
@@ -32,7 +32,7 @@ LL |     const M: usize;
    = help: rename to a descriptive identifier (e.g. `DIMENSION`, `BUFFER_LEN`, `MAX_RETRIES`)
 
 warning: const item `K` has a single-letter name
-  --> $DIR/single_letter_const_item.rs:29:11
+  --> $DIR/single_letter_const_item.rs:LL:CC
    |
 LL |     const K: usize = 8;
    |           ^
@@ -40,7 +40,7 @@ LL |     const K: usize = 8;
    = help: rename to a descriptive identifier (e.g. `DIMENSION`, `BUFFER_LEN`, `MAX_RETRIES`)
 
 warning: const item `M` has a single-letter name
-  --> $DIR/single_letter_const_item.rs:34:11
+  --> $DIR/single_letter_const_item.rs:LL:CC
    |
 LL |     const M: usize = 16;
    |           ^
@@ -48,7 +48,7 @@ LL |     const M: usize = 16;
    = help: rename to a descriptive identifier (e.g. `DIMENSION`, `BUFFER_LEN`, `MAX_RETRIES`)
 
 warning: const item `K` has a single-letter name
-  --> $DIR/single_letter_const_item.rs:35:11
+  --> $DIR/single_letter_const_item.rs:LL:CC
    |
 LL |     const K: usize = 8;
    |           ^
@@ -56,7 +56,7 @@ LL |     const K: usize = 8;
    = help: rename to a descriptive identifier (e.g. `DIMENSION`, `BUFFER_LEN`, `MAX_RETRIES`)
 
 warning: const item `A` has a single-letter name
-  --> $DIR/single_letter_const_item.rs:40:11
+  --> $DIR/single_letter_const_item.rs:LL:CC
    |
 LL |     const A: u32 = 1;
    |           ^

@@ -3,6 +3,7 @@
 //! the shape of any project-local enums or structs the fields reach.
 
 use crate::model::{ConfigDoc, TypeDoc, TypeKind};
+use crate::render::breakable_lint_name;
 use crate::render::markdown::markdown_to_html;
 use maud::{Markup, PreEscaped, html};
 
@@ -37,7 +38,7 @@ pub(crate) fn config_section(config: &ConfigDoc) -> Markup {
             summary.config-summary { "Configuration" }
             p {
                 "Configure via " code { "dylint.toml" } " under "
-                code { r#"[""# (config.key) r#""]"# } "."
+                code { r#"[""# (breakable_lint_name(&config.key)) r#""]"# } "."
             }
             dl.config {
                 @for field in &config.fields {

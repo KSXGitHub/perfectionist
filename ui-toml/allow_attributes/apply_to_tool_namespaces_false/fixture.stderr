@@ -1,5 +1,5 @@
 warning: this `#[allow]` stays silent even after its lint stops firing
-  --> $DIR/fixture.rs:10:3
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
    |   ^^^^^
@@ -16,7 +16,7 @@ LL + #[expect(clippy::too_many_arguments, reason = "matches upstream signature")
    |
 
 warning: this `#[allow]` stays silent even after its lint stops firing
-  --> $DIR/fixture.rs:14:3
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[allow(rustdoc::broken_intra_doc_links, reason = "links resolve downstream")]
    |   ^^^^^
@@ -32,7 +32,7 @@ LL + #[expect(rustdoc::broken_intra_doc_links, reason = "links resolve downstrea
    |
 
 warning: this `#[allow]` stays silent even after its lint stops firing
-  --> $DIR/fixture.rs:18:3
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[allow(non_snake_case, reason = "external API uses camelCase")]
    |   ^^^^^

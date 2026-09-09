@@ -1,5 +1,5 @@
 warning: imports must form one block, with submodule re-exports and alias re-exports in separate leading blocks
-  --> $DIR/fixture.rs:33:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / pub use Reflection as HardlinkListReflection;
 LL | | use std::time::Duration;
@@ -21,7 +21,7 @@ LL + use std::io::stdin;
    |
 
 warning: imports must form one block, with submodule re-exports and alias re-exports in separate leading blocks and `#[cfg]`-gated imports in a trailing block
-  --> $DIR/fixture.rs:44:1
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | / use std::cmp::Ordering;
 LL | | #[cfg(unix)]

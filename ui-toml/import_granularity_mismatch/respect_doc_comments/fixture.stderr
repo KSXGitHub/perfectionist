@@ -1,5 +1,5 @@
 warning: imports are not grouped into one `use` per module
-  --> $DIR/fixture.rs:16:5
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /     /// Keep the two collection imports together.
 LL | |     use std::collections::HashMap;

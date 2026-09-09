@@ -1,5 +1,5 @@
 warning: this `#[allow]` stays silent even after its lint stops firing
-  --> $DIR/allow_attributes.rs:10:3
+  --> $DIR/allow_attributes.rs:LL:CC
    |
 LL | #[allow(non_snake_case, reason = "external API uses camelCase")]
    |   ^^^^^
@@ -16,7 +16,7 @@ LL + #[expect(non_snake_case, reason = "external API uses camelCase")]
    |
 
 warning: this `#[allow]` stays silent even after its lint stops firing
-  --> $DIR/allow_attributes.rs:14:3
+  --> $DIR/allow_attributes.rs:LL:CC
    |
 LL | #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
    |   ^^^^^
@@ -32,7 +32,7 @@ LL + #[expect(clippy::too_many_arguments, reason = "matches upstream signature")
    |
 
 warning: this `#[allow]` stays silent even after its lint stops firing
-  --> $DIR/allow_attributes.rs:18:3
+  --> $DIR/allow_attributes.rs:LL:CC
    |
 LL | #[allow(rustdoc::broken_intra_doc_links, reason = "links resolve downstream")]
    |   ^^^^^
@@ -48,7 +48,7 @@ LL + #[expect(rustdoc::broken_intra_doc_links, reason = "links resolve downstrea
    |
 
 warning: this `#[allow]` stays silent even after its lint stops firing
-  --> $DIR/allow_attributes.rs:22:3
+  --> $DIR/allow_attributes.rs:LL:CC
    |
 LL | #[allow(perfectionist::single_letter_function_param, reason = "math convention")]
    |   ^^^^^
@@ -64,7 +64,7 @@ LL + #[expect(perfectionist::single_letter_function_param, reason = "math conven
    |
 
 warning: this `#[allow]` stays silent even after its lint stops firing
-  --> $DIR/allow_attributes.rs:28:3
+  --> $DIR/allow_attributes.rs:LL:CC
    |
 LL | #[allow(
    |   ^^^^^
@@ -83,7 +83,7 @@ LL + #[expect(
    |
 
 warning: this `#[allow]` stays silent even after its lint stops firing
-  --> $DIR/allow_attributes.rs:35:19
+  --> $DIR/allow_attributes.rs:LL:CC
    |
 LL | #[cfg_attr(all(), allow(clippy::too_many_arguments, reason = "cfg-gated"))]
    |                   ^^^^^
@@ -95,7 +95,7 @@ LL + #[cfg_attr(all(), expect(clippy::too_many_arguments, reason = "cfg-gated"))
    |
 
 warning: this `#[allow]` stays silent even after its lint stops firing
-  --> $DIR/allow_attributes.rs:39:35
+  --> $DIR/allow_attributes.rs:LL:CC
    |
 LL | #[cfg_attr(all(), cfg_attr(all(), allow(clippy::type_complexity, reason = "nested")))]
    |                                   ^^^^^
@@ -107,7 +107,7 @@ LL + #[cfg_attr(all(), cfg_attr(all(), expect(clippy::type_complexity, reason = 
    |
 
 warning: some lints in this `#[allow]` stay silent even after they stop firing
-  --> $DIR/allow_attributes.rs:43:3
+  --> $DIR/allow_attributes.rs:LL:CC
    |
 LL | #[allow(dead_code, clippy::too_many_arguments, reason = "scaffolding")]
    |   ^^^^^
@@ -124,7 +124,7 @@ LL ~ #[expect(clippy::too_many_arguments, reason = "scaffolding")]
    |
 
 warning: some lints in this `#[allow]` stay silent even after they stop firing
-  --> $DIR/allow_attributes.rs:47:19
+  --> $DIR/allow_attributes.rs:LL:CC
    |
 LL | #[cfg_attr(all(), allow(dead_code, clippy::type_complexity, reason = "split under cfg"))]
    |                   ^^^^^

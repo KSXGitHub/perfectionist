@@ -1,5 +1,5 @@
 warning: derive list does not match the configured `prefix_then_alphabetical` order
-  --> $DIR/fixture.rs:7:10
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[derive(Debug, Clone, Hash, PartialEq, Copy)]
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: reorder the derive list: `Hash, Debug, Clone, Copy, PartialEq`

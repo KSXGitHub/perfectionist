@@ -20,6 +20,20 @@ fn fake_rule() -> Rule {
     }
 }
 
+/// Hold rendered markdown to the no-trailing-whitespace invariant: a
+/// generated file that an editor changes on save shows up as
+/// `check-md` drift over a diff whose two sides look identical.
+fn assert_no_trailing_whitespace(label: &str, markdown: &str) {
+    for (index, line) in markdown.lines().enumerate() {
+        assert_eq!(
+            line.trim_end(),
+            line,
+            "{label} markdown line {number} ends with whitespace",
+            number = index + 1,
+        );
+    }
+}
+
 #[test]
 fn rule_file_name_strips_namespace() {
     let rule = fake_rule();
@@ -30,8 +44,9 @@ fn rule_file_name_strips_namespace() {
 fn rule_md_includes_header_state_and_short_desc() {
     let md = render_rule_md(&fake_rule(), "../");
     assert!(md.contains("# `perfectionist::demo_rule`\n"));
-    assert!(md.contains("**Default state:** `active`"));
+    assert!(md.contains("- _Default state:_ `active`"), "got:\n{md}");
     assert!(md.contains("> demo rule used in tests"));
+    assert_no_trailing_whitespace("rule", &md);
     assert!(md.ends_with('\n'));
     assert!(!md.ends_with("\n\n"));
 }
@@ -41,7 +56,21 @@ fn rule_md_renders_inactive_state_for_opt_in_rules() {
     let mut rule = fake_rule();
     rule.default_state = DefaultState::Inactive;
     let md = render_rule_md(&rule, "../");
-    assert!(md.contains("**Default state:** `inactive`"));
+    assert!(md.contains("- _Default state:_ `inactive`"), "got:\n{md}");
+}
+
+#[test]
+fn rule_md_header_metadata_is_a_list() {
+    // The state and the source are the two entries of the rule's
+    // own metadata list, in that order, directly under the title.
+    let md = render_rule_md(&fake_rule(), "../");
+    assert!(
+        md.contains(
+            "- _Default state:_ `active`\n\
+             - _Source:_ [`src/rules/demo_rule.rs`](../src/rules/demo_rule.rs)\n",
+        ),
+        "got:\n{md}",
+    );
 }
 
 #[test]
@@ -128,6 +157,7 @@ fn rule_md_with_config_lists_fields_and_types() {
     assert!(!md.contains("_Rust:_ `Same`"));
     // Empty doc fall-back.
     assert!(md.contains("*Undocumented.*"));
+    assert_no_trailing_whitespace("rule", &md);
 }
 
 #[test]
@@ -163,6 +193,7 @@ fn rule_md_struct_type_fields_carry_a_type_bullet() {
         md.contains("##### Field: `host`\n\n- _Type:_ `string`\n\nThe hostname.\n"),
         "got:\n{md}",
     );
+    assert_no_trailing_whitespace("rule", &md);
 }
 
 #[test]
@@ -178,6 +209,7 @@ fn index_md_renders_bullet_list() {
     // The bullet-list form needs no `|` escaping (unlike a
     // table) — the pipe in the description appears raw.
     assert!(!index.contains(r"\|"));
+    assert_no_trailing_whitespace("index", &index);
 }
 
 #[test]
@@ -209,6 +241,7 @@ fn doc_markdown_headings_are_promoted_one_level() {
     assert!(md.contains("### not a heading"), "got:\n{md}");
     // And the original h3 must not survive at top level.
     assert!(!md.contains("\n### What it does\n"), "got:\n{md}");
+    assert_no_trailing_whitespace("rule", &md);
 }
 
 #[test]

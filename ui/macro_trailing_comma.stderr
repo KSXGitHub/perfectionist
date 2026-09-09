@@ -1,5 +1,5 @@
 warning: multi-line macro invocation should end with a trailing comma
-  --> $DIR/macro_trailing_comma.rs:10:10
+  --> $DIR/macro_trailing_comma.rs:LL:CC
    |
 LL |         3
    |          ^ help: add a trailing comma: `,`
@@ -7,25 +7,25 @@ LL |         3
    = note: `#[warn(perfectionist::macro_trailing_comma)]` on by default
 
 warning: single-line macro invocation should not end with a trailing comma
-  --> $DIR/macro_trailing_comma.rs:16:25
+  --> $DIR/macro_trailing_comma.rs:LL:CC
    |
 LL |     let _ = vec![1, 2, 3,];
    |                         ^ help: remove the trailing comma
 
 warning: multi-line macro invocation should end with a trailing comma
-  --> $DIR/macro_trailing_comma.rs:22:18
+  --> $DIR/macro_trailing_comma.rs:LL:CC
    |
 LL |         compute()
    |                  ^ help: add a trailing comma: `,`
 
 warning: multi-line macro invocation should end with a trailing comma
-  --> $DIR/macro_trailing_comma.rs:32:27
+  --> $DIR/macro_trailing_comma.rs:LL:CC
    |
 LL |         "decoder mismatch"
    |                           ^ help: add a trailing comma: `,`
 
 warning: multi-line macro invocation should end with a trailing comma
-  --> $DIR/macro_trailing_comma.rs:41:10
+  --> $DIR/macro_trailing_comma.rs:LL:CC
    |
 LL |         2
    |          ^ help: add a trailing comma: `,`

@@ -266,7 +266,7 @@ impl WildcardImports {
     /// `use` item carries bare `pub` visibility (the `root_reexport`
     /// exception's contract).
     fn is_exempt(&self, module: &[String], is_reexport: bool) -> bool {
-        if self.config.prelude_exception
+        if self.config.exempt_prelude
             && module
                 .last()
                 .is_some_and(|last| self.config.prelude_segment_names.contains(last))
@@ -276,7 +276,7 @@ impl WildcardImports {
         // The `root_reexport` exception only ever applies to module-scoped
         // items: a `use` inside a block can't carry a visibility, so
         // `is_reexport` is already false there.
-        if self.config.root_reexport_exception && is_reexport {
+        if self.config.exempt_reexports && is_reexport {
             return true;
         }
         // `allowed_paths` entries are absolute. `collect_globs` already

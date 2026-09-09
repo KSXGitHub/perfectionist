@@ -2,8 +2,8 @@
 
 # `perfectionist::unicode_ellipsis_in_docs`
 
-**Default state:** `active`  
-**Source:** [`src/rules/unicode_ellipsis_in_docs.rs`](../src/rules/unicode_ellipsis_in_docs.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/unicode_ellipsis_in_docs.rs`](../src/rules/unicode_ellipsis_in_docs.rs)
 
 > U+2026 HORIZONTAL ELLIPSIS in doc comments; prefer `...`
 

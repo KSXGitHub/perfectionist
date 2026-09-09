@@ -1,5 +1,5 @@
 warning: this `#[allow]` stays silent even after its lint stops firing
-  --> $DIR/fixture.rs:15:3
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[allow(dead_code, reason = "kept around for symmetry")]
    |   ^^^^^

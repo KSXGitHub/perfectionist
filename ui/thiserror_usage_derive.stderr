@@ -1,5 +1,5 @@
 warning: error type derived through `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
-  --> $DIR/thiserror_usage_derive.rs:23:10
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL | #[derive(thiserror::Error)]
    |          ^^^^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL | #[derive(thiserror::Error)]
    = note: `#[warn(perfectionist::thiserror_usage)]` on by default
 
 warning: `#[error(...)]` attribute belongs to `thiserror`'s namespace; this catalogue prefers `derive_more::Display`
-  --> $DIR/thiserror_usage_derive.rs:24:1
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL | #[error("boom")]
    | ^^^^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ LL | #[error("boom")]
    = help: rename to `#[display(...)]` and translate positional placeholders (`{0}` -> `{_0}`)
 
 warning: `thiserror` import; this catalogue prefers `derive_more::{Display, Error}`
-  --> $DIR/thiserror_usage_derive.rs:30:1
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL | use thiserror::Error;
    | ^^^^^^^^^^^^^^^^^^^^^
@@ -24,7 +24,7 @@ LL | use thiserror::Error;
    = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
 
 warning: error type derived through `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
-  --> $DIR/thiserror_usage_derive.rs:32:10
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL | #[derive(Error)]
    |          ^^^^^
@@ -32,7 +32,7 @@ LL | #[derive(Error)]
    = help: replace the derive list and migrate the `#[error(...)]` attributes to `#[display(...)]`
 
 warning: `#[error(...)]` attribute belongs to `thiserror`'s namespace; this catalogue prefers `derive_more::Display`
-  --> $DIR/thiserror_usage_derive.rs:33:1
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL | #[error("aliased")]
    | ^^^^^^^^^^^^^^^^^^^
@@ -40,7 +40,7 @@ LL | #[error("aliased")]
    = help: rename to `#[display(...)]` and translate positional placeholders (`{0}` -> `{_0}`)
 
 warning: `thiserror` import; this catalogue prefers `derive_more::{Display, Error}`
-  --> $DIR/thiserror_usage_derive.rs:38:1
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL | use thiserror as te;
    | ^^^^^^^^^^^^^^^^^^^^
@@ -48,7 +48,7 @@ LL | use thiserror as te;
    = help: drop the import and migrate the error type to `#[derive(derive_more::Display, derive_more::Error)]`
 
 warning: error type derived through `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
-  --> $DIR/thiserror_usage_derive.rs:40:10
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL | #[derive(te::Error)]
    |          ^^^^^^^^^
@@ -56,7 +56,7 @@ LL | #[derive(te::Error)]
    = help: replace the derive list and migrate the `#[error(...)]` attributes to `#[display(...)]`
 
 warning: `#[error(...)]` attribute belongs to `thiserror`'s namespace; this catalogue prefers `derive_more::Display`
-  --> $DIR/thiserror_usage_derive.rs:41:1
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL | #[error("crate-aliased")]
    | ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -64,7 +64,7 @@ LL | #[error("crate-aliased")]
    = help: rename to `#[display(...)]` and translate positional placeholders (`{0}` -> `{_0}`)
 
 warning: error type derived through `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
-  --> $DIR/thiserror_usage_derive.rs:46:26
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL | #[cfg_attr(all(), derive(thiserror::Error))]
    |                          ^^^^^^^^^^^^^^^^
@@ -72,7 +72,7 @@ LL | #[cfg_attr(all(), derive(thiserror::Error))]
    = help: replace the derive list and migrate the `#[error(...)]` attributes to `#[display(...)]`
 
 warning: `#[error(...)]` attribute belongs to `thiserror`'s namespace; this catalogue prefers `derive_more::Display`
-  --> $DIR/thiserror_usage_derive.rs:47:19
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL | #[cfg_attr(all(), error("conditional"))]
    |                   ^^^^^^^^^^^^^^^^^^^^
@@ -80,7 +80,7 @@ LL | #[cfg_attr(all(), error("conditional"))]
    = help: rename to `#[display(...)]` and translate positional placeholders (`{0}` -> `{_0}`)
 
 warning: error type derived through `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
-  --> $DIR/thiserror_usage_derive.rs:51:10
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL | #[derive(thiserror::Error)]
    |          ^^^^^^^^^^^^^^^^
@@ -88,7 +88,7 @@ LL | #[derive(thiserror::Error)]
    = help: replace the derive list and migrate the `#[error(...)]` attributes to `#[display(...)]`
 
 warning: `#[error(...)]` attribute belongs to `thiserror`'s namespace; this catalogue prefers `derive_more::Display`
-  --> $DIR/thiserror_usage_derive.rs:53:5
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL |     #[error("field")]
    |     ^^^^^^^^^^^^^^^^^
@@ -96,7 +96,7 @@ LL |     #[error("field")]
    = help: rename to `#[display(...)]` and translate positional placeholders (`{0}` -> `{_0}`)
 
 warning: error type derived through `thiserror`; this catalogue prefers `derive_more::{Display, Error}`
-  --> $DIR/thiserror_usage_derive.rs:59:10
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL | #[derive(thiserror::Error)]
    |          ^^^^^^^^^^^^^^^^
@@ -104,7 +104,7 @@ LL | #[derive(thiserror::Error)]
    = help: replace the derive list and migrate the `#[error(...)]` attributes to `#[display(...)]`
 
 warning: `#[error(...)]` attribute belongs to `thiserror`'s namespace; this catalogue prefers `derive_more::Display`
-  --> $DIR/thiserror_usage_derive.rs:61:5
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL |     #[error("unit variant")]
    |     ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -112,7 +112,7 @@ LL |     #[error("unit variant")]
    = help: rename to `#[display(...)]` and translate positional placeholders (`{0}` -> `{_0}`)
 
 warning: `#[error(...)]` attribute belongs to `thiserror`'s namespace; this catalogue prefers `derive_more::Display`
-  --> $DIR/thiserror_usage_derive.rs:64:9
+  --> $DIR/thiserror_usage_derive.rs:LL:CC
    |
 LL |         #[error("variant field")]
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^

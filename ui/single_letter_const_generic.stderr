@@ -1,5 +1,5 @@
 warning: const generic parameter `M` has a single-letter name
-  --> $DIR/single_letter_const_generic.rs:4:26
+  --> $DIR/single_letter_const_generic.rs:LL:CC
    |
 LL | struct Data<Left, Right, const M: usize, const N: usize> {
    |                          ^^^^^^^^^^^^^^
@@ -8,7 +8,7 @@ LL | struct Data<Left, Right, const M: usize, const N: usize> {
    = note: `#[warn(perfectionist::single_letter_const_generic)]` on by default
 
 warning: const generic parameter `N` has a single-letter name
-  --> $DIR/single_letter_const_generic.rs:4:42
+  --> $DIR/single_letter_const_generic.rs:LL:CC
    |
 LL | struct Data<Left, Right, const M: usize, const N: usize> {
    |                                          ^^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ LL | struct Data<Left, Right, const M: usize, const N: usize> {
    = help: rename to a descriptive identifier (e.g. `LEN`, `COLS`, `LANES`)
 
 warning: const generic parameter `K` has a single-letter name
-  --> $DIR/single_letter_const_generic.rs:10:12
+  --> $DIR/single_letter_const_generic.rs:LL:CC
    |
 LL | fn first_n<const K: usize>(slice: &[u8]) -> &[u8] {
    |            ^^^^^^^^^^^^^^
@@ -24,7 +24,7 @@ LL | fn first_n<const K: usize>(slice: &[u8]) -> &[u8] {
    = help: rename to a descriptive identifier (e.g. `LEN`, `COLS`, `LANES`)
 
 warning: const generic parameter `C` has a single-letter name
-  --> $DIR/single_letter_const_generic.rs:15:12
+  --> $DIR/single_letter_const_generic.rs:LL:CC
    |
 LL | struct Buf<const C: usize>([u8; C]);
    |            ^^^^^^^^^^^^^^
@@ -32,7 +32,7 @@ LL | struct Buf<const C: usize>([u8; C]);
    = help: rename to a descriptive identifier (e.g. `LEN`, `COLS`, `LANES`)
 
 warning: const generic parameter `C` has a single-letter name
-  --> $DIR/single_letter_const_generic.rs:17:6
+  --> $DIR/single_letter_const_generic.rs:LL:CC
    |
 LL | impl<const C: usize> Buf<C> {
    |      ^^^^^^^^^^^^^^

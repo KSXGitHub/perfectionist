@@ -1,5 +1,5 @@
 warning: Unicode `…` (U+2026) in doc comment
-  --> $DIR/fixture.rs:4:36
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// Outer doc comment with ellipsis…
    |                                    ^ help: use ASCII `...` instead: `...`
@@ -7,7 +7,7 @@ LL | /// Outer doc comment with ellipsis…
    = note: `#[warn(perfectionist::unicode_ellipsis_in_docs)]` on by default
 
 warning: Unicode `…` (U+2026) in doc comment
-  --> $DIR/fixture.rs:8:40
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     //! Inner doc comment with ellipsis…
    |                                        ^ help: use ASCII `...` instead: `...`

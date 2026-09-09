@@ -1,5 +1,5 @@
 warning: static item `N` has a single-letter name
-  --> $DIR/single_letter_static_item.rs:6:8
+  --> $DIR/single_letter_static_item.rs:LL:CC
    |
 LL | static N: AtomicUsize = AtomicUsize::new(0);
    |        ^
@@ -8,7 +8,7 @@ LL | static N: AtomicUsize = AtomicUsize::new(0);
    = note: `#[warn(perfectionist::single_letter_static_item)]` on by default
 
 warning: static item `D` has a single-letter name
-  --> $DIR/single_letter_static_item.rs:9:8
+  --> $DIR/single_letter_static_item.rs:LL:CC
    |
 LL | static D: u64 = 64;
    |        ^
@@ -16,7 +16,7 @@ LL | static D: u64 = 64;
    = help: rename to a descriptive identifier (e.g. `BUFFER`, `CACHE`, `COUNTER`)
 
 warning: static item `A` has a single-letter name
-  --> $DIR/single_letter_static_item.rs:16:12
+  --> $DIR/single_letter_static_item.rs:LL:CC
    |
 LL |     static A: u32 = 1;
    |            ^

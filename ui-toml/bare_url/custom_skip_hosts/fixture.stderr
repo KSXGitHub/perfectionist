@@ -1,5 +1,5 @@
 warning: bare URL `https://example.com/`; wrap in `<...>` or use a labelled markdown link
-  --> $DIR/fixture.rs:7:26
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// `localhost` default: https://example.com/ here.
    |                          ^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.com/>`

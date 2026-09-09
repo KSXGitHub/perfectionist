@@ -1,5 +1,5 @@
 warning: ambiguous `#123`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
-  --> $DIR/bare_issue_reference.rs:4:17
+  --> $DIR/bare_issue_reference.rs:LL:CC
    |
 LL | /// Bad: closes #123 and supersedes #124.
    |                 ^^^^
@@ -10,7 +10,7 @@ LL | /// Bad: closes #123 and supersedes #124.
    = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
 
 warning: ambiguous `#124`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
-  --> $DIR/bare_issue_reference.rs:4:37
+  --> $DIR/bare_issue_reference.rs:LL:CC
    |
 LL | /// Bad: closes #123 and supersedes #124.
    |                                     ^^^^
@@ -20,7 +20,7 @@ LL | /// Bad: closes #123 and supersedes #124.
    = help: or refer to the numbered item with a spelling that has no leading `#`
 
 warning: ambiguous `#200`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
-  --> $DIR/bare_issue_reference.rs:7:17
+  --> $DIR/bare_issue_reference.rs:LL:CC
    |
 LL | /** Bad: closes #200 (in a `/** */` block doc comment). */
    |                 ^^^^

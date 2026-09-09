@@ -2,8 +2,8 @@
 
 # `perfectionist::wildcard_imports`
 
-**Default state:** `active`  
-**Source:** [`src/rules/wildcard_imports.rs`](../src/rules/wildcard_imports.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/wildcard_imports.rs`](../src/rules/wildcard_imports.rs)
 
 > glob (`*`) import in a module body, outside the prelude and root-re-export exceptions
 
@@ -94,7 +94,7 @@ pub use submodule::*;
 
 Configure via `dylint.toml` under `["perfectionist::wildcard_imports"]`. Every field is optional; the per-field prose below states the default.
 
-### Field: `prelude_exception`
+### Field: `exempt_prelude`
 
 - _Type:_ `boolean`
 - _Optional_
@@ -104,7 +104,7 @@ module (`use rayon::prelude::*;`) is exempt. The recognised
 segment names come from `prelude_segment_names`. Defaults to
 `true`; set `false` to flag prelude globs too.
 
-### Field: `root_reexport_exception`
+### Field: `exempt_reexports`
 
 - _Type:_ `boolean`
 - _Optional_

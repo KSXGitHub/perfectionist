@@ -1,5 +1,5 @@
 warning: `LocalThing` resolves in scope; consider writing it as an intra-doc link
-  --> $DIR/fixture.rs:10:14
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// Mentions `LocalThing` (first-party) and `DepThing` (a third-party
    |              ^^^^^^^^^^^^
@@ -13,7 +13,7 @@ LL + /// Mentions [`LocalThing`] (first-party) and `DepThing` (a third-party
    |
 
 warning: `DepThing` resolves in scope; consider writing it as an intra-doc link
-  --> $DIR/fixture.rs:10:45
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// Mentions `LocalThing` (first-party) and `DepThing` (a third-party
    |                                             ^^^^^^^^^^

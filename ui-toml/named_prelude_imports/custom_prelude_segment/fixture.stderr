@@ -1,5 +1,5 @@
 warning: named item cherry-picked from a prelude module
-  --> $DIR/fixture.rs:20:9
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     use crate::api::A;
    |         ^^^^^^^^^^^^^ help: import the item from its canonical module: `crate::thing::A`

@@ -1,5 +1,5 @@
 warning: Unicode `…` (U+2026) in doc comment
-  --> $DIR/fixture.rs:1:35
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// Default target U+2026 ellipsis… is flagged.
    |                                   ^ help: use ASCII `...` instead: `...`
@@ -7,7 +7,7 @@ LL | /// Default target U+2026 ellipsis… is flagged.
    = note: `#[warn(perfectionist::unicode_ellipsis_in_docs)]` on by default
 
 warning: Unicode `⋯` (U+22EF) in doc comment
-  --> $DIR/fixture.rs:4:32
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | /// Configured midline ellipsis⋯ is flagged too.
    |                                ^ help: use ASCII `...` instead: `...`

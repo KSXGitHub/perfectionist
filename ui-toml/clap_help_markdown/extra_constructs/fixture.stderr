@@ -1,5 +1,5 @@
 warning: bold text in a clap-derived doc comment leaks into `--help` output
-  --> $DIR/fixture.rs:14:14
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     /// Uses **bold** emphasis.
    |              ^^^^^^^^
@@ -8,7 +8,7 @@ LL |     /// Uses **bold** emphasis.
    = note: `#[warn(perfectionist::clap_help_markdown)]` on by default
 
 warning: italic text in a clap-derived doc comment leaks into `--help` output
-  --> $DIR/fixture.rs:17:14
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     /// Uses *italic* emphasis.
    |              ^^^^^^^^
@@ -16,7 +16,7 @@ LL |     /// Uses *italic* emphasis.
    = help: override the help text with a plain string (e.g. `#[arg(help = "...")]`) or remove the markdown from the doc comment
 
 warning: a list marker in a clap-derived doc comment leaks into `--help` output
-  --> $DIR/fixture.rs:22:9
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     /// - first
    |         ^
@@ -24,7 +24,7 @@ LL |     /// - first
    = help: override the help text with a plain string (e.g. `#[arg(help = "...")]`) or remove the markdown from the doc comment
 
 warning: a list marker in a clap-derived doc comment leaks into `--help` output
-  --> $DIR/fixture.rs:23:9
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     /// - second
    |         ^

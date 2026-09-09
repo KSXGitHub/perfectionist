@@ -1,5 +1,5 @@
 warning: impure expression passed directly to a macro
-  --> $DIR/fixture.rs:31:33
+  --> $DIR/fixture.rs:LL:CC
    |
 LL |     let _ = inner::their_macro!(value());
    |                                 ^^^^^^^

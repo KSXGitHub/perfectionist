@@ -1,5 +1,5 @@
 warning: `reason` is shorter than the configured minimum
-  --> $DIR/fixture.rs:13:29
+  --> $DIR/fixture.rs:LL:CC
    |
 LL | #[allow(dead_code, reason = "short")]
    |                             ^^^^^^^
