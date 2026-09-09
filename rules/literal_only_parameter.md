@@ -2,8 +2,8 @@
 
 # `perfectionist::literal_only_parameter`
 
-**Default state:** `active`  
-**Source:** [`src/rules/literal_only_parameter.rs`](../src/rules/literal_only_parameter.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/literal_only_parameter.rs`](../src/rules/literal_only_parameter.rs)
 
 > `bool` or `Option` parameter that every call site passes as a literal
 
