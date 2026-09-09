@@ -2,8 +2,8 @@
 
 # `perfectionist::overly_complex_condition`
 
-**Default state:** `active`  
-**Source:** [`src/rules/overly_complex_condition.rs`](../src/rules/overly_complex_condition.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/overly_complex_condition.rs`](../src/rules/overly_complex_condition.rs)
 
 > condition has more boolean operators than the configured maximum
 
