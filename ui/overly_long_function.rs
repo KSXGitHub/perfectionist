@@ -2,6 +2,11 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
+#![allow(
+    perfectionist::too_many_local_bindings,
+    reason = "these bodies are long by way of many bindings; the
+              fixture exercises overly_long_function"
+)]
 
 fn work(value: u32) -> u32 {
     value
@@ -59,7 +64,7 @@ fn fifty_one_lines() -> u32 {
     let step_48 = work(48);
     let step_49 = work(49);
     let step_50 = work(50);
-    step_51
+    step_50
 }
 
 // Good: fifty lines of code is not above the limit.
@@ -113,7 +118,7 @@ fn fifty_lines() -> u32 {
     let step_47 = work(47);
     let step_48 = work(48);
     let step_49 = work(49);
-    step_50
+    step_49
 }
 
 // Good: blank lines and comment-only lines are not code, so this body
@@ -267,7 +272,7 @@ fn commented_and_spaced() -> u32 {
     /* And this block comment,
        spanning three lines,
        is not code either. */
-    step_49
+    step_48
 }
 
 fn main() {}
