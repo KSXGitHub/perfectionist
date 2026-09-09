@@ -2,8 +2,8 @@
 
 # `perfectionist::excessive_nesting`
 
-**Default state:** `active`  
-**Source:** [`src/rules/excessive_nesting.rs`](../src/rules/excessive_nesting.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/excessive_nesting.rs`](../src/rules/excessive_nesting.rs)
 
 > function body nests constructs deeper than the configured maximum
 
