@@ -1,32 +1,66 @@
 use super::{body_interior, count_code_lines};
+use text_block_macros::{text_block, text_block_fnl};
 
 #[test]
 fn braces_are_stripped() {
-    assert_eq!(body_interior("{\n    work();\n}"), "\n    work();\n");
+    assert_eq!(
+        body_interior(text_block! {
+            "{"
+            "    work();"
+            "}"
+        }),
+        text_block_fnl! {
+            ""
+            "    work();"
+        },
+    );
     assert_eq!(body_interior("work()"), "work()");
 }
 
 #[test]
 fn blank_and_comment_only_lines_are_free() {
-    let source = "\n    // setup\n    let first = 1;\n\n    /* a\n       block */\n    let second = 2; // trailing\n";
+    let source = text_block_fnl! {
+        ""
+        "    // setup"
+        "    let first = 1;"
+        ""
+        "    /* a"
+        "       block */"
+        "    let second = 2; // trailing"
+    };
     assert_eq!(count_code_lines(source), 2);
 }
 
 #[test]
 fn a_multi_line_string_counts_every_line_it_spans() {
-    let source = "\n    let text = \"one\ntwo\nthree\";\n";
+    let source = text_block_fnl! {
+        ""
+        r#"    let text = "one"#
+        "two"
+        r#"three";"#
+    };
     assert_eq!(count_code_lines(source), 3);
 }
 
 #[test]
 fn a_comment_inside_a_string_is_still_code() {
-    assert_eq!(count_code_lines("\n    let url = \"http://x\";\n"), 1);
+    let source = text_block_fnl! {
+        ""
+        r#"    let url = "http://x";"#
+    };
+    assert_eq!(count_code_lines(source), 1);
 }
 
 #[test]
 fn an_empty_body_has_no_lines() {
     assert_eq!(count_code_lines(""), 0);
-    assert_eq!(count_code_lines("\n    \n"), 0);
+    assert_eq!(
+        count_code_lines(text_block_fnl! {
+            ""
+            "    "
+        }),
+        0,
+    );
 }
 
 #[test]
@@ -34,5 +68,12 @@ fn a_last_line_without_a_trailing_newline_still_counts() {
     // A one-line body: `body_interior` leaves no newline at all, so the
     // count comes entirely from the tail of `count_code_lines`.
     assert_eq!(count_code_lines(" work() "), 1);
-    assert_eq!(count_code_lines("\n    first();\n    last()"), 2);
+    assert_eq!(
+        count_code_lines(text_block! {
+            ""
+            "    first();"
+            "    last()"
+        }),
+        2,
+    );
 }
