@@ -2,8 +2,8 @@
 
 # `perfectionist::overly_long_method_chain`
 
-**Default state:** `active`  
-**Source:** [`src/rules/overly_long_method_chain.rs`](../src/rules/overly_long_method_chain.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/overly_long_method_chain.rs`](../src/rules/overly_long_method_chain.rs)
 
 > expression chains more method calls than the configured maximum
 
