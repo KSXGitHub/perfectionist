@@ -25,7 +25,7 @@ declare_tool_lint! {
     /// that contains it, since they sit in its body.
     ///
     /// Test code is measured like any other code; set
-    /// `test_code_exception` to leave it alone.
+    /// `exempt_tests` to leave it alone.
     ///
     /// ### Why restrict this?
     ///
@@ -73,14 +73,14 @@ struct Config {
     /// `#[cfg(test)]` module, `#[test]` functions, and everything in
     /// an integration-test or benchmark target. Defaults to `false`,
     /// so a test is held to the same limit as the code it exercises.
-    test_code_exception: bool,
+    exempt_tests: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             max_lines: DEFAULT_MAX_LINES,
-            test_code_exception: false,
+            exempt_tests: false,
         }
     }
 }
@@ -117,7 +117,7 @@ impl<'tcx> LateLintPass<'tcx> for OverlyLongFunction {
         _span: Span,
         def_id: LocalDefId,
     ) {
-        let Some(function) = measured_fn(cx, kind, def_id, self.config.test_code_exception) else {
+        let Some(function) = measured_fn(cx, kind, def_id, self.config.exempt_tests) else {
             return;
         };
         let Some(source) = snippet_opt(cx, body.value.span) else {
