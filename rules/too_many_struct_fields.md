@@ -2,8 +2,8 @@
 
 # `perfectionist::too_many_struct_fields`
 
-**Default state:** `active`  
-**Source:** [`src/rules/too_many_struct_fields.rs`](../src/rules/too_many_struct_fields.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/too_many_struct_fields.rs`](../src/rules/too_many_struct_fields.rs)
 
 > struct has more fields than the configured maximum
 
