@@ -45,6 +45,15 @@ declare_tool_lint! {
     /// the same limit it holds their complexity and nesting to, with the
     /// same knobs. Enable one or the other, not both.
     ///
+    /// The two also disagree on generated code. Clippy measures a
+    /// function produced by a macro defined in the same crate, and
+    /// skips only what another crate's macro produced. This rule skips
+    /// every generated function: its line count reflects how the
+    /// macro's body happens to be laid out rather than anything a
+    /// reader scrolls through, one macro invoked many times reports the
+    /// same body many times over, and the remedy is to change the macro
+    /// rather than the function the diagnostic points at.
+    ///
     /// ### Example
     ///
     /// **Avoid:** a body that reads, validates, transforms, and writes
