@@ -23,10 +23,12 @@ declare_tool_lint! {
     ///
     /// A name counts once however many times it is bound, so
     /// shadowing (`let input = input.trim();`) is free. A name that
-    /// begins with `_` is not counted, nor is a binding produced by a
-    /// macro expansion or a compiler desugaring, nor are the function's
-    /// own parameters. A nested function is counted on its own, not as
-    /// part of the function that contains it. A function that is itself
+    /// begins with `_` is not counted, nor is a name invented by a
+    /// macro expansion or by a compiler desugaring, nor are the
+    /// function's own parameters. A name the author passed into a
+    /// macro does count, even though the `let` around it came from the
+    /// expansion. A nested function is counted on its own, not as part
+    /// of the function that contains it. A function that is itself
     /// produced by a macro is not counted.
     ///
     /// Test code is counted like any other code; set `exempt_tests`
