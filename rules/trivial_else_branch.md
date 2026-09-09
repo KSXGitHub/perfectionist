@@ -2,8 +2,8 @@
 
 # `perfectionist::trivial_else_branch`
 
-**Default state:** `active`  
-**Source:** [`src/rules/trivial_else_branch.rs`](../src/rules/trivial_else_branch.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/trivial_else_branch.rs`](../src/rules/trivial_else_branch.rs)
 
 > `else` branch only leaves; invert the condition into a guard clause
 
