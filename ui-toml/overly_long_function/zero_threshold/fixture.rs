@@ -79,4 +79,8 @@ fn formatting() -> String {
     format!("{}", work(1))
 }
 
+// 1: a body written on one physical line ends without a newline of
+// its own, so its only line is counted by the tail of the counter.
+fn one_physical_line() -> u32 { work(1) }
+
 fn main() {}

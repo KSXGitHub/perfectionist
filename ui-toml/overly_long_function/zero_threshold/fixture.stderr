@@ -87,5 +87,13 @@ LL | fn formatting() -> String {
    |
    = help: split the function into smaller ones, each doing one thing
 
-warning: 11 warnings emitted
+warning: function `one_physical_line` has 1 line of code, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn one_physical_line() -> u32 { work(1) }
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: split the function into smaller ones, each doing one thing
+
+warning: 12 warnings emitted
 
