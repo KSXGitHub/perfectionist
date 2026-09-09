@@ -2,8 +2,8 @@
 
 # `perfectionist::cloning_getter`
 
-**Default state:** `active`  
-**Source:** [`src/rules/cloning_getter.rs`](../src/rules/cloning_getter.rs)
+- _Default state:_ `active`
+- _Source:_ [`src/rules/cloning_getter.rs`](../src/rules/cloning_getter.rs)
 
 > getter returns an owned copy of a field where a borrow would serve
 
