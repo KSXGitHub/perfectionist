@@ -35,15 +35,15 @@ function named for what it does.
 ## Interaction with Clippy
 
 `clippy::too_many_lines` (`pedantic`, off by default) measures
-the same thing with a default of 100 and no exemption for test
-code, and it measures a function produced by a macro defined in
-the same crate, skipping only what another crate's macro
-produced. This rule skips every generated function, whose line
-count tracks the macro body's layout rather than what a reader
-scrolls through, and it exists so a project can hold its
-functions to the same limit it holds their complexity and
-their local bindings to, with the same knobs. Enable one or
-the other, not both.
+the same thing, but it measures a function produced by a macro
+defined in the same crate and skips only what another crate's
+macro produced, where this rule skips every generated function,
+whose line count tracks the macro body's layout rather than
+what a reader scrolls through. Clippy also has no exemption for
+test code, and its default cap is 100. This rule exists so a
+project can hold its functions to the same limit it holds their
+complexity and their local bindings to, with the same knobs.
+Enable one or the other, not both.
 
 ## Example
 
