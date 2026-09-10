@@ -549,14 +549,9 @@ The single exception is version-bump commits, whose subject is
 just the version itself (e.g. `0.0.0-rc.6`). Use this form only
 for commits that do nothing other than bump the version.
 
-The subject is **one line**. Git does not stop at the first line: it
-takes every line up to the first blank one and joins them with
-spaces, so a subject wrapped onto a second line swallows that line
-instead of starting the body. The [`commit-msg`
+The subject is **one line**. The [`commit-msg`
 hook](.githooks/commit-msg) rejects any commit whose first paragraph
-spans more than one line. That check has no opt-out — Conventional
-Commits specifies a single-line header, and git's own convention is
-subject, blank line, body.
+spans more than one line, with no opt-out.
 
 Keep the subject at **72 characters or fewer** — the conventional
 hard cap; 50 is the ideal. GitHub's web UI truncates a longer
