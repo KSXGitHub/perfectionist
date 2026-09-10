@@ -61,18 +61,27 @@ fn run(package_name: &str, config: &str) -> String {
     stderr
 }
 
+/// Whether `stderr` carries *this* rule's diagnostic for `function`.
+///
+/// Keyed on the name and the verb rather than on the whole opening
+/// phrase: the diagnostic calls a method a `method`, so a fixture that
+/// grew one would not match a hardcoded `function` prefix. `nests` is
+/// this rule's own verb, so the pair is specific enough.
+fn is_flagged(stderr: &str, function: &str) -> bool {
+    let phrase = format!("`{function}` nests");
+    stderr.lines().any(|line| line.contains(&phrase))
+}
+
 fn assert_flagged(stderr: &str, function: &str) {
-    let expected = format!("function `{function}` nests");
     assert!(
-        stderr.contains(&expected),
+        is_flagged(stderr, function),
         "expected `{function}` to be flagged; stderr was:\n{stderr}",
     );
 }
 
 fn assert_not_flagged(stderr: &str, function: &str) {
-    let unexpected = format!("function `{function}` nests");
     assert!(
-        !stderr.contains(&unexpected),
+        !is_flagged(stderr, function),
         "expected `{function}` to be exempt; stderr was:\n{stderr}",
     );
 }

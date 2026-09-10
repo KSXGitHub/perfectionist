@@ -12,7 +12,7 @@ LL |                     if *size > limit {
    = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
    = note: `#[warn(perfectionist::excessive_nesting)]` on by default
 
-warning: function `step` nests 4 levels deep, above the limit of 3
+warning: method `step` nests 4 levels deep, above the limit of 3
   --> $DIR/excessive_nesting.rs:LL:CC
    |
 LL |     fn step(&self, inputs: &[Vec<bool>]) {
