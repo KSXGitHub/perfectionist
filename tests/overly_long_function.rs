@@ -42,8 +42,8 @@ fn zero_threshold_reports_every_line_count() {
 }
 
 /// A library whose production function, `#[cfg(test)]` helper, and
-/// `#[test]` function each bind sixteen names — one above the default
-/// limit.
+/// `#[test]` function each have fifty-two lines of code — two above
+/// the default limit.
 const LIB_WITH_TEST_MODULE: &str =
     include_str!("fixtures/overly_long_function/lib_with_test_module.rs");
 
@@ -61,18 +61,30 @@ fn run(package_name: &str, config: &str) -> String {
     stderr
 }
 
+/// Whether `stderr` carries *this* rule's diagnostic for `function`.
+///
+/// The name alone is not enough to key on:
+/// `excessive_cognitive_complexity` opens with the same
+/// ``<kind> `<name>` has`` prefix, so a fixture that grew a branch
+/// would satisfy a prefix-only match. The tail is what makes the
+/// phrase this rule's own.
+fn is_flagged(stderr: &str, function: &str) -> bool {
+    let name = format!("`{function}` has");
+    stderr
+        .lines()
+        .any(|line| line.contains(&name) && line.contains("of code, above the limit of"))
+}
+
 fn assert_flagged(stderr: &str, function: &str) {
-    let expected = format!("function `{function}` has");
     assert!(
-        stderr.contains(&expected),
+        is_flagged(stderr, function),
         "expected `{function}` to be flagged; stderr was:\n{stderr}",
     );
 }
 
 fn assert_not_flagged(stderr: &str, function: &str) {
-    let unexpected = format!("function `{function}` has");
     assert!(
-        !stderr.contains(&unexpected),
+        !is_flagged(stderr, function),
         "expected `{function}` to be exempt; stderr was:\n{stderr}",
     );
 }
