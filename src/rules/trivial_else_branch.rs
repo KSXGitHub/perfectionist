@@ -22,7 +22,7 @@ declare_tool_lint! {
     /// as is an `else if` chain, and an `if` produced by a macro.
     ///
     /// Test code is measured like any other code; set
-    /// `test_code_exception` to leave it alone.
+    /// `exempt_tests` to leave it alone.
     ///
     /// ### Why restrict this?
     ///
@@ -95,14 +95,14 @@ struct Config {
     /// Whether test code is left alone: an `if` inside a `#[cfg(test)]`
     /// module, a `#[test]` function, or an integration-test or
     /// benchmark target. Defaults to `false`.
-    test_code_exception: bool,
+    exempt_tests: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             min_then_statements: DEFAULT_MIN_THEN_STATEMENTS,
-            test_code_exception: false,
+            exempt_tests: false,
         }
     }
 }
@@ -159,7 +159,7 @@ impl<'tcx> LateLintPass<'tcx> for TrivialElseBranch {
         if then_statements(then) < self.config.min_then_statements {
             return;
         }
-        if self.config.test_code_exception
+        if self.config.exempt_tests
             && item_in_test_code(cx, cx.tcx.hir_enclosing_body_owner(expr.hir_id))
         {
             return;

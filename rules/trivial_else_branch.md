@@ -21,7 +21,7 @@ flagged; one whose value feeds a `let` or a call is left alone,
 as is an `else if` chain, and an `if` produced by a macro.
 
 Test code is measured like any other code; set
-`test_code_exception` to leave it alone.
+`exempt_tests` to leave it alone.
 
 ## Why restrict this?
 
@@ -86,7 +86,7 @@ The fewest statements, tail expression included, the branch
 before the `else` must hold for the `if` to be flagged. Defaults
 to `2`.
 
-### Field: `test_code_exception`
+### Field: `exempt_tests`
 
 - _Type:_ `boolean`
 - _Optional_
