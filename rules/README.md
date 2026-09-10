@@ -86,6 +86,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   borrowed parameter is only used to produce its owned form
 
+- [`overly_long_function`](./overly_long_function.md) (default: `active`).
+
+  function body has more lines of code than the configured maximum
+
 - [`overly_long_print_macro`](./overly_long_print_macro.md) (default: `active`).
 
   splittable print macro with an embedded-newline template exceeds the configured line width
