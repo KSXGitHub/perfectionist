@@ -1,8 +1,0 @@
-# Store every text file with LF endings and check it out that way on
-# every platform. The tree is all text today; `text=auto` rather than a
-# bare `text` keeps that from mangling a binary asset added later.
-#
-# `eol=lf` is not cosmetic here. The `.stderr` fixtures under `ui/` and
-# `ui-toml/` are compared byte-for-byte against the driver's output,
-# which is LF; a CRLF working tree would fail every UI test.
-* text=auto eol=lf
