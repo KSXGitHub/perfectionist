@@ -6,10 +6,10 @@
 //! `loop`, a closure, a `let ... else` body, and a free-standing block —
 //! a statement block, an `unsafe` block, or the block a `let`
 //! initialises from. The block that *is* a construct's body does not
-//! nest again on its own: `if x { y }` is one level, not two.
+//! nest again on its own: `if x { y }` is 1 level, not 2.
 //!
 //! The walk measures what the author wrote. A construct produced by a
-//! macro expansion adds no level, though the author's constructs inside
+//! macro expansion is not a level, though the author's constructs inside
 //! a macro's arguments still count, and the desugared shape of a `for`
 //! or `while` loop, a `?`, an `.await`, or an `async` body adds nothing
 //! beyond the construct the author wrote.

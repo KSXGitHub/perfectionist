@@ -5,7 +5,7 @@
 
 fn work() {}
 
-// Bad: `for`, `if let`, `match`, `if` — four levels, one above the
+// Bad: `for`, `if let`, `match`, `if` — 4 levels, 1 above the
 // default limit.
 fn four_levels(entries: &[Option<u8>], limit: u8) {
     for entry in entries {
@@ -22,7 +22,7 @@ fn four_levels(entries: &[Option<u8>], limit: u8) {
     }
 }
 
-// Good: the same logic with a guard and a `match` guard is two levels.
+// Good: the same logic with a guard and a `match` guard is 2 levels.
 fn two_levels(entries: &[Option<u8>], limit: u8) {
     for entry in entries {
         let Some(size) = entry else {
@@ -35,7 +35,7 @@ fn two_levels(entries: &[Option<u8>], limit: u8) {
     }
 }
 
-// Good: exactly three is not above the limit.
+// Good: exactly 3 is not above the limit.
 fn three_levels(first: bool, second: bool, third: bool) {
     if first {
         if second {
@@ -46,7 +46,7 @@ fn three_levels(first: bool, second: bool, third: bool) {
     }
 }
 
-// Good: an `else if` chain stays at one level however long it is.
+// Good: an `else if` chain stays at 1 level however long it is.
 fn else_if_chain(value: u8) {
     if value == 0 {
         work();
@@ -61,7 +61,7 @@ fn else_if_chain(value: u8) {
     }
 }
 
-// Good: a macro expansion adds no levels of its own.
+// Good: a construct a macro expansion produces is not a level.
 macro_rules! deeply {
     ($flag:expr) => {
         if $flag {
@@ -80,7 +80,7 @@ fn built_from_a_macro(flag: bool) {
     deeply!(flag);
 }
 
-// Bad: a closure is a level, so `for`, closure, `if`, `match` is four.
+// Bad: a closure is a level, so `for`, closure, `if`, `match` is 4.
 struct Machine;
 
 impl Machine {

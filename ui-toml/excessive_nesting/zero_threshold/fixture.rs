@@ -108,6 +108,17 @@ fn if_in_arm(value: u8, ready: bool) {
     }
 }
 
+// Bad: 2 levels — an `if` in an arm guard sits under the `match` just
+// as one in an arm body does, but a guard must evaluate to `bool`, so
+// such an `if` always has an `else` and never draws the arm-guard
+// suggestion.
+fn if_in_arm_guard(value: u8, ready: bool) {
+    match value {
+        n if (if ready { n > 1 } else { false }) => work(),
+        _ => {}
+    }
+}
+
 // Bad: 2 levels — `for` around an `if`.
 fn for_loop(items: &[u8]) {
     for item in items {
