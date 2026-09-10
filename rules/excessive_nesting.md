@@ -91,20 +91,25 @@ for entry in entries {
 }
 ```
 
-**Prefer, equally:** extraction, when the inner levels have a
-name of their own — `report_or_descend` is named for what it
-does, and takes one entry rather than the loop's state
+**Prefer:** the same body, cut where it has a name of its own —
+`report_or_descend` is named for what it does and takes three
+values, none of them the loop's state. Two levels are left on
+each side of the cut.
 
 ```rust,ignore
 for entry in entries {
-    let Some(meta) = entry.metadata() else { continue };
-    report_or_descend(entry, meta, limit);
+    if let Some(meta) = entry.metadata() {
+        report_or_descend(entry, meta, limit);
+    }
 }
 
 fn report_or_descend(entry: Entry, meta: Meta, limit: u64) {
     match meta.kind() {
-        Kind::File if meta.len() > limit => report(entry),
-        Kind::File => {}
+        Kind::File => {
+            if meta.len() > limit {
+                report(entry);
+            }
+        }
         Kind::Dir => descend(entry),
     }
 }
