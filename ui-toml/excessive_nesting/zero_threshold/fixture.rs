@@ -62,6 +62,28 @@ fn if_let(input: Option<u8>) {
     }
 }
 
+// 1: a let chain binds a pattern like a bare `if let` does, so the
+// path names it `if let` and the suggestion is `let ... else`.
+fn if_let_chain(input: Option<u8>, ready: bool) {
+    if let Some(_value) = input
+        && ready
+    {
+        work();
+    }
+}
+
+// 2: an `if` inside an `if` that has an `else` cannot become `&&`, so
+// the suggestion falls back to the general advice.
+fn if_in_if_with_else(first: bool, second: bool) {
+    if first {
+        if second {
+            work();
+        }
+    } else {
+        work();
+    }
+}
+
 // 1: a `match`; its arms are inside it, not levels of their own.
 fn matching(value: u8) {
     match value {
@@ -163,6 +185,16 @@ async fn awaiting(ready: impl Future<Output = bool>) {
     if ready.await {
         work();
     }
+}
+
+// 2: an `async` closure is one the author wrote, so it is a level like
+// any other closure, and the `if` inside it is another.
+fn async_closure(ready: bool) {
+    let _make = async move || {
+        if ready {
+            work();
+        }
+    };
 }
 
 // 1: an `async` block is not a level either.
