@@ -21,6 +21,7 @@ mod abs_path;
 mod ascii_letter;
 mod attr_tokens;
 mod cargo_target;
+mod code_lines;
 mod comment_walk;
 mod common;
 mod derive_list;
