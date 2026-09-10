@@ -183,6 +183,23 @@ and this guide, the deliberate typos around
 `unknown_perfectionist_lints`, and `gen-docs`' unit tests, which
 invent lint names — so read the hits, not the count.
 
+## Repeat the word; do not vary it
+
+A synonym signals a distinction. Where there is none, it sends the
+reader looking for one. Use the same word for the same thing, however
+often it recurs.
+
+- The same word in rustdoc, in comments, and in fixtures. "measured
+  on its own" in one place and "measured independently" in the next
+  describe one behaviour and read as two.
+- Spell a value the way the code spells it. The diagnostic says
+  `nests 1 level deep`, so the comment says `1 level`, not
+  `one level`.
+
+The
+[fact-duplication rule](#do-not-write-documentation-that-restates-the-code)
+is this one's complement: repeat words freely, never facts.
+
 ## Shipped docs address the consumer, not the contributor
 
 A doc is *shipped* if a consumer reads it without cloning: `README.md`,
