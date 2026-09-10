@@ -10,7 +10,7 @@
 ## What it does
 
 Counts the lines of code in a function or method body and flags
-the body when the count is above `max_lines` (default `50`).
+the body when the count is above `max_lines`.
 
 A line counts when it holds anything other than whitespace and
 comments, so blank lines, comment-only lines, and the lines a
@@ -42,8 +42,8 @@ produced. This rule skips every generated function, whose line
 count tracks the macro body's layout rather than what a reader
 scrolls through, and it exists so a project can hold its
 functions to the same limit it holds their complexity and
-nesting to, with the same knobs. Enable one or the other, not
-both.
+their local bindings to, with the same knobs. Enable one or
+the other, not both.
 
 ## Example
 
