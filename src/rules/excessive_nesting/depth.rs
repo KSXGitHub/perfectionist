@@ -214,7 +214,16 @@ impl<'tcx> Visitor<'tcx> for Walker<'tcx> {
         if let Some(init) = local.init {
             self.visit_expr(init);
         }
-        if let Some(els) = local.els {
+        let Some(els) = local.els else {
+            return;
+        };
+        // A `let` statement reaches the walk as a statement, so it never
+        // passes the macro guard in `visit_expr`; an expansion's
+        // `let ... else` is no more the author's than an expansion's
+        // `if`, and its `else` body is not somewhere they can flatten.
+        if span_is_macro_generated(local.span) {
+            intravisit::walk_block(self, els);
+        } else {
             self.enter(els.span, |walker| intravisit::walk_block(walker, els));
         }
     }

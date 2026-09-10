@@ -188,6 +188,21 @@ fn built_from_a_local_macro(ready: bool) {
     local_nested!(ready);
 }
 
+macro_rules! local_guard {
+    ($input:expr) => {
+        let Some(_value) = $input else {
+            return;
+        };
+    };
+}
+
+// Not flagged: the `let ... else` comes from the expansion too, even
+// though a `let` statement reaches the walk as a statement rather than
+// as an expression.
+fn let_else_from_a_local_macro(input: Option<u8>) {
+    local_guard!(input);
+}
+
 // Outer not flagged, inner 1: a nested function is measured on its own.
 fn outer() {
     fn inner(ready: bool) {
