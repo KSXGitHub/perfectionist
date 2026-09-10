@@ -4,8 +4,7 @@ warning: file `$DIR/fixture.rs` has 10 lines of code, above the limit of 0
 LL | #![feature(register_tool)]
    | ^
    |
-   = help: split the module into submodules, one concern each
+   = help: split the file into modules: name each for what it holds, not where the file was cut; if each needs most of the other's items, the lines moved rather than the concerns separated
    = note: `#[warn(perfectionist::overly_long_file)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted
