@@ -363,10 +363,12 @@ automated self-lint did not run.
 ## Normalised `.stderr` fixtures
 
 A `.stderr` under `ui/` or `ui-toml/` is a normalised copy of the
-driver's output rather than the output itself, so pasting a raw failure
-message into one will not match.
+driver's output rather than the output itself: a span header's
+`line:column` reads `LL:CC`, so inserting a line above a diagnostic
+does not renumber every header below it. Spell it that way when
+writing one — pasting the driver's real numbers in will not match.
 [`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs) performs the
-normalisation and explains each rule.
+normalisation and explains how.
 
 ## Generated documentation site (`tools/gen-docs/`)
 
