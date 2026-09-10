@@ -3,7 +3,7 @@
 //! The default-config sweep lives in `ui/overly_long_file.rs` and is
 //! picked up by `tests/ui.rs`. The `max_lines` knob is covered by a UI
 //! fixture under `ui-toml/overly_long_file/` run with a per-rule
-//! `dylint.toml`; out-of-line modules and `test_code_exception` need a
+//! `dylint.toml`; out-of-line modules and `exempt_tests` need a
 //! real crate layout, so they are covered by a minimal Cargo project run
 //! through `cargo dylint --all -- --all-targets`, the way
 //! `tests/needless_borrowed_parameters.rs` does it.
@@ -98,12 +98,12 @@ fn out_of_line_modules_are_measured_and_test_files_count_by_default() {
 }
 
 #[test]
-fn test_code_exception_leaves_test_files_alone() {
+fn exempt_tests_leaves_test_files_alone() {
     let stderr = run(
         "fixture_olfile_test_exception",
         text_block_fnl! {
             r#"["perfectionist::overly_long_file"]"#
-            "test_code_exception = true"
+            "exempt_tests = true"
         },
     );
     assert_flagged(&stderr, "big.rs");

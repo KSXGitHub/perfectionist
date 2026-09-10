@@ -21,7 +21,7 @@ of its own.
 
 A file of test code — a `mod tests;` behind `#[cfg(test)]`, or
 any file of an integration-test or benchmark target — is
-measured like any other; set `test_code_exception` to leave it
+measured like any other; set `exempt_tests` to leave it
 alone.
 
 ## Why restrict this?
@@ -57,7 +57,7 @@ Configure via `dylint.toml` under `["perfectionist::overly_long_file"]`. Every f
 The most lines of code a file may have without being flagged.
 Defaults to `500`.
 
-### Field: `test_code_exception`
+### Field: `exempt_tests`
 
 - _Type:_ `boolean`
 - _Optional_

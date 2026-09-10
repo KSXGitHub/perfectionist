@@ -25,7 +25,7 @@ declare_tool_lint! {
     ///
     /// A file of test code — a `mod tests;` behind `#[cfg(test)]`, or
     /// any file of an integration-test or benchmark target — is
-    /// measured like any other; set `test_code_exception` to leave it
+    /// measured like any other; set `exempt_tests` to leave it
     /// alone.
     ///
     /// ### Why restrict this?
@@ -69,14 +69,14 @@ struct Config {
     /// `#[cfg(test)]`, and every file of an integration-test or
     /// benchmark target. Defaults to `false`, so a test file is held
     /// to the same limit as the code it exercises.
-    test_code_exception: bool,
+    exempt_tests: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             max_lines: DEFAULT_MAX_LINES,
-            test_code_exception: false,
+            exempt_tests: false,
         }
     }
 }
@@ -108,7 +108,7 @@ impl<'tcx> LateLintPass<'tcx> for OverlyLongFile {
         let Some(file) = own_file(cx, module, hir_id) else {
             return;
         };
-        if self.config.test_code_exception && item_in_test_code(cx, hir_id.expect_owner().def_id) {
+        if self.config.exempt_tests && item_in_test_code(cx, hir_id.expect_owner().def_id) {
             return;
         }
         let Some(source) = file.src.as_deref() else {
