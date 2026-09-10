@@ -1,4 +1,4 @@
-//! Integration tests for `cloning_getter`'s `test_code_exception`,
+//! Integration tests for `cloning_getter`'s `exempt_tests`,
 //! which needs `#[cfg(test)]` code to exist and so runs a minimal Cargo
 //! project through `cargo dylint --all -- --all-targets`, the way
 //! `tests/needless_borrowed_parameters.rs` does it. The default-config
@@ -49,12 +49,12 @@ fn test_code_is_measured_by_default() {
 }
 
 #[test]
-fn test_code_exception_leaves_test_code_alone() {
+fn exempt_tests_leaves_test_code_alone() {
     let stderr = run(
         "fixture_cg_test_exception",
         text_block_fnl! {
             r#"["perfectionist::cloning_getter"]"#
-            "test_code_exception = true"
+            "exempt_tests = true"
         },
     );
     assert_flagged(&stderr, "name");

@@ -20,7 +20,7 @@ A method of a trait impl is left alone, since the trait fixes
 its signature, and so is a method produced by a macro.
 
 Test code is measured like any other code; set
-`test_code_exception` to leave it alone.
+`exempt_tests` to leave it alone.
 
 ## Why restrict this?
 
@@ -73,7 +73,7 @@ impl Person {
 
 Configure via `dylint.toml` under `["perfectionist::cloning_getter"]`. Every field is optional; the per-field prose below states the default.
 
-### Field: `test_code_exception`
+### Field: `exempt_tests`
 
 - _Type:_ `boolean`
 - _Optional_
