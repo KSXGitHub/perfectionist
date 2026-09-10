@@ -134,16 +134,17 @@ impl<'tcx> LateLintPass<'tcx> for OverlyLongFunction {
         }
         let max = self.config.max_lines;
         let name = function.name;
+        let kind = function.kind_label;
         let noun = if count == 1 { "line" } else { "lines" };
         let message =
-            format!("function `{name}` has {count} {noun} of code, above the limit of {max}");
+            format!("{kind} `{name}` has {count} {noun} of code, above the limit of {max}");
         span_lint_and_help(
             cx,
             OVERLY_LONG_FUNCTION,
             function.span,
             message,
             None,
-            "split the function into smaller ones, each doing one thing",
+            "split the body into smaller functions, each doing one thing",
         );
     }
 }
