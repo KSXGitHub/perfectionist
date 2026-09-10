@@ -380,6 +380,70 @@ fn style_references_rule_anchor_icon() {
 }
 
 #[test]
+fn a_rustdoc_table_reaches_the_page_as_a_bare_table() {
+    // A markdown table in a rule's rustdoc carries no class of its
+    // own, so the only thing that can dress it is a selector anchored
+    // on the article around it — and the striping selector needs the
+    // rows to sit in a `<tbody>`. Pin the shape the renderer emits
+    // against the selectors rules.css writes for it; a renderer that
+    // started wrapping or classing the table would leave it on the UA
+    // stylesheet, which draws neither rules nor padding.
+    let mut rule = fake_rule("alpha");
+    rule.doc_markdown = "| Construct | Increment |\n|---|:-:|\n| `if` | 1 |".to_owned();
+    let html = render_page(&[rule], &fake_context());
+    let article = html
+        .find(r#"<article class="rule" id="/rule/alpha">"#)
+        .expect("rule article missing");
+    let table = html[article..]
+        .find("<table>")
+        .expect("the rustdoc table must render as a bare <table> inside the article");
+    assert!(
+        html[article + table..].starts_with("<table><thead><tr><th>Construct</th>"),
+        "the table's header cells must be <th>s the header rule can reach",
+    );
+    assert!(
+        html[article + table..].contains("</thead><tbody>"),
+        "the rows must sit in a <tbody> for `tbody tr:nth-child(even)` to stripe them",
+    );
+    // The author's `:-:` alignment survives as an inline style, which
+    // outranks the sheet's `text-align: left` on the same cell — the
+    // reason that rule can default the unaligned columns without
+    // overriding the aligned ones.
+    assert!(
+        html[article + table..].contains(r#"<th style="text-align: center">Increment</th>"#),
+        "a column aligned in the markdown source must keep its inline text-align",
+    );
+}
+
+#[test]
+fn rustdoc_tables_are_dressed_in_every_colour_layer() {
+    // The table's shape lives in the structural sheet and its colours
+    // in both colour layers, so a table styled in Light but bare in
+    // Dark (or vice versa) can't ship. Dark repeats each colour under
+    // its two override tiers; check the striping selector in each.
+    let stripe = "article.rule table tbody tr:nth-child(even)";
+    let rules = stylesheet("rules.css");
+    assert!(
+        rules.contains("article.rule table {") && rules.contains("border-collapse: collapse"),
+        "rules.css must collapse the rustdoc tables' borders",
+    );
+    assert!(
+        stylesheet("light.css").contains(stripe),
+        "light.css must stripe the rustdoc tables' rows",
+    );
+    let dark = stylesheet("dark.css");
+    for tier in [
+        r#"html:not([color-scheme-override="light"])"#,
+        r#"html[color-scheme-override="dark"]"#,
+    ] {
+        assert!(
+            dark.contains(&format!("{tier} {stripe}")),
+            "dark.css must stripe the rustdoc tables' rows under {tier}",
+        );
+    }
+}
+
+#[test]
 fn base_css_font_face_references_the_downloaded_font() {
     // The font the build downloads and links beside index.html must be
     // reachable through a `@font-face` `url(...)` whose name matches it,
