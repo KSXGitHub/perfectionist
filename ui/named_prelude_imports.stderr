@@ -42,4 +42,4 @@ warning: named item cherry-picked from a prelude module
 LL |     use crate::kw_prelude::prelude::Thing;
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: import the item from its canonical module: `crate::r#type::Thing`
 
-warning: NN warnings emitted
+warning: N warnings emitted

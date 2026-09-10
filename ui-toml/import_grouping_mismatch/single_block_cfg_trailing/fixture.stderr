@@ -31,4 +31,4 @@ LL + use std::io::stdin;
 LL + use std::process::exit;
    |
 
-warning: NN warnings emitted
+warning: N warnings emitted

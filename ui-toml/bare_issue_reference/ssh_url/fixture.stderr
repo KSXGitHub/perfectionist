@@ -18,4 +18,4 @@ LL - /// Bad: closes #321 — `repository` is given as an scp-like SSH clone
 LL + /// Bad: closes [#321](https://github.com/owner/repo/pull/321) — `repository` is given as an scp-like SSH clone
    |
 
-warning: NN warnings emitted
+warning: N warnings emitted

@@ -6,14 +6,15 @@
 //! `dylint_testing` drives rustc under `-Zui-testing`, which anonymises
 //! the source-line gutter to `LL` but leaves everything else verbatim:
 //! the real `line:column` in every `--> .../<file>.rs:LINE:COL` span
-//! header, a `warning: N warnings emitted` tally, a trailing space on
-//! each rendered suggestion line that inserts a blank line, and a blank
-//! line at the very end. compiletest can rewrite all of that, but only
-//! through per-file `// normalize-stderr-test` header directives — each
-//! a regex applied to the driver's actual output before it is diffed
-//! against the committed `.stderr`. Rather than commit those directives
-//! into every fixture, [`copy_fixtures_with_directives`] injects them
-//! into a temporary copy at test time.
+//! header, the real count in the closing warning tally, a trailing
+//! space on each rendered suggestion line that inserts a blank line,
+//! and a blank line at the very end. compiletest can rewrite all of
+//! that, but only through per-file `// normalize-stderr-test` header
+//! directives — each a regex applied to the driver's actual output
+//! before it is diffed against the committed `.stderr`. Rather than
+//! commit those directives into every fixture,
+//! [`copy_fixtures_with_directives`] injects them into a temporary
+//! copy at test time.
 
 use crate::TempDir;
 use std::fs;
@@ -29,7 +30,7 @@ use std::path::{Path, PathBuf};
 ///
 /// 1. `.rs:LINE:COL` becomes `.rs:LL:CC`, so inserting a line above a
 ///    diagnostic no longer renumbers every span header below it.
-/// 2. The closing tally becomes `warning: NN warnings emitted`, so
+/// 2. The closing tally becomes `warning: N warnings emitted`, so
 ///    adding or removing a case no longer rewrites a line that counts
 ///    the diagnostics already spelled out above it. The singular
 ///    `1 warning emitted` collapses into the same text, which is the
@@ -48,7 +49,7 @@ use std::path::{Path, PathBuf};
 /// whitespace-only last line into an empty one for rule 4 to absorb.
 const NORMALIZE_STDERR_DIRECTIVES: &[&str] = &[
     r#"// normalize-stderr-test: "\.rs:\d+:\d+" -> ".rs:LL:CC""#,
-    r#"// normalize-stderr-test: "(?m)^warning: \d+ warnings? emitted$" -> "warning: NN warnings emitted""#,
+    r#"// normalize-stderr-test: "(?m)^warning: \d+ warnings? emitted$" -> "warning: N warnings emitted""#,
     r#"// normalize-stderr-test: "(?m) +$" -> """#,
     r#"// normalize-stderr-test: "(\n)\n+\z" -> "$1""#,
 ];

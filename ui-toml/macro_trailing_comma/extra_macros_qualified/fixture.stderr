@@ -6,4 +6,4 @@ LL |         3
    |
    = note: `#[warn(perfectionist::macro_trailing_comma)]` on by default
 
-warning: NN warnings emitted
+warning: N warnings emitted

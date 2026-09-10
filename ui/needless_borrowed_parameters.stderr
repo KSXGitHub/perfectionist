@@ -107,4 +107,4 @@ LL ~     fn named(&self, value: String) -> String {
 LL ~         value
    |
 
-warning: NN warnings emitted
+warning: N warnings emitted

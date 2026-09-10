@@ -6,4 +6,4 @@ LL | #[allow(clippy::module_name_repetitions, dead_code)]
    |
    = note: `#[warn(perfectionist::allow_attributes_without_reason)]` on by default
 
-warning: NN warnings emitted
+warning: N warnings emitted

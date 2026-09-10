@@ -38,4 +38,4 @@ LL - /// Non-conformist and checked regardless: `Mixed_Thing`.
 LL + /// Non-conformist and checked regardless: [`Mixed_Thing`].
    |
 
-warning: NN warnings emitted
+warning: N warnings emitted

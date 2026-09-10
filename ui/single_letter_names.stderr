@@ -130,4 +130,4 @@ LL |     let c = a + b;
    |
    = help: rename to a descriptive identifier
 
-warning: NN warnings emitted
+warning: N warnings emitted

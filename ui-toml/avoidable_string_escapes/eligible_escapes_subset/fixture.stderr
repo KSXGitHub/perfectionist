@@ -6,4 +6,4 @@ LL |     let _ = "say /"hello/"";
    |
    = note: `#[warn(perfectionist::avoidable_string_escapes)]` on by default
 
-warning: NN warnings emitted
+warning: N warnings emitted

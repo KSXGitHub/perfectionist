@@ -168,4 +168,4 @@ LL |       #[display("{_0}")]
 LL | |     struct InConstBlock(String);
    | |_- help: remove the attribute
 
-warning: NN warnings emitted
+warning: N warnings emitted

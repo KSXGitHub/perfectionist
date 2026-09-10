@@ -84,4 +84,4 @@ LL +         second {}", value, // keep this note
 LL ~     );
    |
 
-warning: NN warnings emitted
+warning: N warnings emitted

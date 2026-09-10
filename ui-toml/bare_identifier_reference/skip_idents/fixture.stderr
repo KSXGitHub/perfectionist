@@ -12,4 +12,4 @@ LL - /// Mentions `Flagged`, which still fires, and `Skipped`, which the
 LL + /// Mentions [`Flagged`], which still fires, and `Skipped`, which the
    |
 
-warning: NN warnings emitted
+warning: N warnings emitted

@@ -6,4 +6,4 @@ LL | /// security@example.net.
    |
    = note: `#[warn(perfectionist::bare_email)]` on by default
 
-warning: NN warnings emitted
+warning: N warnings emitted

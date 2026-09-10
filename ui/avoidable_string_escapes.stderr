@@ -78,4 +78,4 @@ warning: string literal uses escapes that a raw string would avoid
 LL |     let _ = stringify!("a/"b");
    |                        ^^^^^^ help: use a raw string: `r#"a"b"#`
 
-warning: NN warnings emitted
+warning: N warnings emitted

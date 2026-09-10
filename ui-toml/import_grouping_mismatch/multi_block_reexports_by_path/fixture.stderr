@@ -15,4 +15,4 @@ LL + pub use crate::config::Args;
 LL + use crate::config::Opts;
    |
 
-warning: NN warnings emitted
+warning: N warnings emitted

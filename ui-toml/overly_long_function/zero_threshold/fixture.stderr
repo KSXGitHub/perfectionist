@@ -95,4 +95,4 @@ LL | fn one_physical_line() -> u32 { work(1) }
    |
    = help: split the body into smaller functions, each doing one thing
 
-warning: NN warnings emitted
+warning: N warnings emitted

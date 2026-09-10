@@ -38,4 +38,4 @@ LL -     /// subtree), `RootItem` (reached via `crate::`), and `HashMap`
 LL +     /// subtree), [`RootItem`] (reached via `crate::`), and `HashMap`
    |
 
-warning: NN warnings emitted
+warning: N warnings emitted

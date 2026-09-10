@@ -48,4 +48,4 @@ LL +
 LL + use std::mem::swap;
    |
 
-warning: NN warnings emitted
+warning: N warnings emitted

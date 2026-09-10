@@ -31,4 +31,4 @@ LL -     #![allow(clippy::needless_return, reason = "inner attr")]
 LL +     #![expect(clippy::needless_return, reason = "inner attr")]
    |
 
-warning: NN warnings emitted
+warning: N warnings emitted

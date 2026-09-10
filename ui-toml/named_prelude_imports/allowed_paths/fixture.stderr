@@ -6,4 +6,4 @@ LL |     use crate::other::prelude::B;
    |
    = note: `#[warn(perfectionist::named_prelude_imports)]` on by default
 
-warning: NN warnings emitted
+warning: N warnings emitted

@@ -15,4 +15,4 @@ LL + use proc_macro::TokenStream;
 LL + use test::Bencher;
    |
 
-warning: NN warnings emitted
+warning: N warnings emitted

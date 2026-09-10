@@ -15,4 +15,4 @@ LL + #[cfg(unix)]
 LL + use std::os::unix::fs::MetadataExt;
    |
 
-warning: NN warnings emitted
+warning: N warnings emitted

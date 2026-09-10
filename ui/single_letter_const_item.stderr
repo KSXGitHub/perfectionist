@@ -63,4 +63,4 @@ LL |     const A: u32 = 1;
    |
    = help: rename to a descriptive identifier (e.g. `DIMENSION`, `BUFFER_LEN`, `MAX_RETRIES`)
 
-warning: NN warnings emitted
+warning: N warnings emitted

@@ -6,4 +6,4 @@ LL |     use core::fmt::Display;
    |
    = note: `#[warn(perfectionist::core_instead_of_std)]` on by default
 
-warning: NN warnings emitted
+warning: N warnings emitted
