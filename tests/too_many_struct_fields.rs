@@ -3,7 +3,7 @@
 //! The default-config sweep lives in `ui/too_many_struct_fields.rs`
 //! and is picked up by `tests/ui.rs`. The `max_fields` knob is
 //! covered by a UI fixture under `ui-toml/too_many_struct_fields/` run
-//! with a per-rule `dylint.toml`; `test_code_exception` needs
+//! with a per-rule `dylint.toml`; `exempt_tests` needs
 //! `#[cfg(test)]` code to exist, so it is covered by a minimal Cargo
 //! project run through `cargo dylint --all -- --all-targets`, the way
 //! `tests/needless_borrowed_parameters.rs` does it.
@@ -88,12 +88,12 @@ fn test_code_is_measured_by_default() {
 }
 
 #[test]
-fn test_code_exception_leaves_test_code_alone() {
+fn exempt_tests_leaves_test_code_alone() {
     let stderr = run(
         "fixture_tmsf_test_exception",
         text_block_fnl! {
             r#"["perfectionist::too_many_struct_fields"]"#
-            "test_code_exception = true"
+            "exempt_tests = true"
         },
     );
     assert_flagged(&stderr, "Production");

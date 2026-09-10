@@ -16,7 +16,7 @@ A struct produced by a macro expansion is not measured. Enum
 variants and unions are not measured.
 
 Test code is measured like any other code; set
-`test_code_exception` to leave it alone.
+`exempt_tests` to leave it alone.
 
 ## Why restrict this?
 
@@ -84,7 +84,7 @@ Configure via `dylint.toml` under `["perfectionist::too_many_struct_fields"]`. E
 The most fields a struct may have without being flagged.
 Defaults to `10`.
 
-### Field: `test_code_exception`
+### Field: `exempt_tests`
 
 - _Type:_ `boolean`
 - _Optional_

@@ -16,7 +16,7 @@ declare_tool_lint! {
     /// variants and unions are not measured.
     ///
     /// Test code is measured like any other code; set
-    /// `test_code_exception` to leave it alone.
+    /// `exempt_tests` to leave it alone.
     ///
     /// ### Why restrict this?
     ///
@@ -92,14 +92,14 @@ struct Config {
     /// module or an integration-test or benchmark target. Defaults to
     /// `false`, so a test fixture is held to the same limit as the code
     /// it exercises.
-    test_code_exception: bool,
+    exempt_tests: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             max_fields: DEFAULT_MAX_FIELDS,
-            test_code_exception: false,
+            exempt_tests: false,
         }
     }
 }
@@ -138,7 +138,7 @@ impl<'tcx> LateLintPass<'tcx> for TooManyStructFields {
         if count <= self.config.max_fields || item.span.from_expansion() {
             return;
         }
-        if self.config.test_code_exception && item_in_test_code(cx, item.owner_id.def_id) {
+        if self.config.exempt_tests && item_in_test_code(cx, item.owner_id.def_id) {
             return;
         }
         let max = self.config.max_fields;
