@@ -1,11 +1,11 @@
 //! Shaping the diagnostic for one over-nested body.
 //!
-//! Two things decide whether a report leads to a genuine change. The
-//! note names the constructs on the way down, so the reader can see
-//! which level to attack rather than only where the bottom is. The
-//! helps then offer both directions honestly: flattening the shape
-//! that is actually there, and extraction with the test that tells a
-//! real extraction from a relocation.
+//! What makes a report lead to a genuine change is what it points at.
+//! The note names the constructs on the way down, so the reader can
+//! see which level to attack rather than only where the bottom is.
+//! The helps then offer both directions honestly: flattening the
+//! shape that is actually there, and extraction with the test that
+//! tells a real extraction from a relocation.
 
 use super::EXCESSIVE_NESTING;
 use super::depth::{Construct, Deepest};
@@ -21,7 +21,8 @@ const EXTRACTION_HELP: &str = "or extract the inner levels — name the new func
                                function's locals as parameters, the nesting moved rather than \
                                went away";
 
-/// The fallback when the deepest point is not one of the shapes below.
+/// The fallback when the deepest point is not a shape [`shape_hint`]
+/// recognises.
 const FLATTEN_HELP: &str = "return early with a guard clause or `let ... else` so the rest of \
                             the body stops being nested";
 

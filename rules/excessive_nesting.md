@@ -23,10 +23,11 @@ construct's own body is not a level of its own, so
 
 The depth counts what the author wrote. A construct produced by
 a macro expansion adds no level, though an `if` written inside a
-macro's arguments still counts; `?`, `.await`, and the desugared
-shape of `for`, `while`, and `async` add nothing. A function
-produced by a macro is not measured, and a nested function is
-measured on its own.
+macro's arguments still counts; `?` and `.await` add none, a
+`for` or `while` loop counts once, and the body of an `async fn`
+or `async` block is not a level of its own. A function produced
+by a macro is not measured, and a nested function is measured on
+its own.
 
 Test code is measured like any other code; set
 `exempt_tests` to leave it alone.
