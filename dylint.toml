@@ -51,8 +51,9 @@ max_lines = 97
 ["perfectionist::excessive_nesting"]
 max_depth = 5
 
-# The same ratchet for `overly_long_file`: the longest existing file,
-# the markdown scanner, has 839 lines of code; lower the ceiling as
-# files are split.
+# A ratchet: existing files are longer than this rule's default of 500
+# lines, the longest -- the markdown scanner -- at 839. This ceiling
+# sits at that length so no new file may go longer; lower it as they
+# are split.
 ["perfectionist::overly_long_file"]
 max_lines = 839

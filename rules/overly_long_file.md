@@ -39,11 +39,11 @@ happened to be open.
 
 **Avoid:** `src/config.rs` holding the settings struct, the
 parser for each of three file formats, the environment overlay,
-and the validation, in two thousand lines.
+and the validation, in 2000 lines.
 
 **Prefer:** `src/config.rs` declaring the struct and
-`pub mod env; pub mod validate; pub mod yaml;`, each a file a
-reader can take in whole.
+`pub mod env; pub mod json; pub mod toml; pub mod validate;
+pub mod yaml;`, each a file a reader can take in whole.
 
 ## Configuration
 

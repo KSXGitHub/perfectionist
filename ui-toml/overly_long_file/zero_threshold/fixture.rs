@@ -3,9 +3,9 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
-// With `max_lines = 0` the file is flagged and the diagnostic states
-// its count: the three attribute lines above, the items below, and no
-// comment or blank line.
+// Bad: this file has 10 lines of code, above the limit of 0 — the 3
+// attribute lines above and the items below; its comments and blank
+// lines are free.
 
 /// A documented function; the doc comment is not code.
 fn work(value: u32) -> u32 {

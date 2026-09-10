@@ -43,11 +43,11 @@ declare_tool_lint! {
     ///
     /// **Avoid:** `src/config.rs` holding the settings struct, the
     /// parser for each of three file formats, the environment overlay,
-    /// and the validation, in two thousand lines.
+    /// and the validation, in 2000 lines.
     ///
     /// **Prefer:** `src/config.rs` declaring the struct and
-    /// `pub mod env; pub mod validate; pub mod yaml;`, each a file a
-    /// reader can take in whole.
+    /// `pub mod env; pub mod json; pub mod toml; pub mod validate;
+    /// pub mod yaml;`, each a file a reader can take in whole.
     pub perfectionist::OVERLY_LONG_FILE,
     Warn,
     "source file has more lines of code than the configured maximum",
@@ -127,7 +127,9 @@ impl<'tcx> LateLintPass<'tcx> for OverlyLongFile {
             module.spans.inner_span.shrink_to_lo(),
             message,
             None,
-            "split the module into submodules, one concern each",
+            "split the file into modules: name each for what it holds, not where the \
+             file was cut; if each needs most of the other's items, the lines moved \
+             rather than the concerns separated",
         );
     }
 }
