@@ -171,11 +171,12 @@ impl<'tcx> LateLintPass<'tcx> for ExcessiveNesting {
             return;
         }
         let max = self.config.max_depth;
+        let kind = function.kind_label;
         let name = function.name;
         let depth = deepest.depth;
         let noun = if depth == 1 { "level" } else { "levels" };
         let message =
-            format!("function `{name}` nests {depth} {noun} deep, above the limit of {max}");
+            format!("{kind} `{name}` nests {depth} {noun} deep, above the limit of {max}");
         let deepest_span = cx.sess().source_map().span_until_whitespace(deepest.span);
         span_lint_and_then(cx, EXCESSIVE_NESTING, function.span, message, |diag| {
             diag.span_note(deepest_span, format!("this is {depth} {noun} deep"));

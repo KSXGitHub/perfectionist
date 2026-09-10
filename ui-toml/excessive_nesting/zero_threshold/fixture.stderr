@@ -246,7 +246,7 @@ LL |         if ready {
    |         ^^
    = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
 
-warning: function `count` nests 1 level deep, above the limit of 0
+warning: method `count` nests 1 level deep, above the limit of 0
   --> $DIR/fixture.rs:LL:CC
    |
 LL |     fn count(&self, ready: bool) {
