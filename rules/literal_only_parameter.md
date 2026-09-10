@@ -26,7 +26,7 @@ called, a function that is also used as a value (passed to
 An argument produced by a macro expansion counts as computed.
 
 Test code is judged like any other code; set
-`test_code_exception` to leave it alone.
+`exempt_tests` to leave it alone.
 
 ## Why restrict this?
 
@@ -90,7 +90,7 @@ fn render(entries: &[Entry], line: impl Fn(&Entry) -> String) -> String {
 
 Configure via `dylint.toml` under `["perfectionist::literal_only_parameter"]`. Every field is optional; the per-field prose below states the default.
 
-### Field: `test_code_exception`
+### Field: `exempt_tests`
 
 - _Type:_ `boolean`
 - _Optional_

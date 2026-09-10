@@ -34,7 +34,7 @@ declare_tool_lint! {
     /// An argument produced by a macro expansion counts as computed.
     ///
     /// Test code is judged like any other code; set
-    /// `test_code_exception` to leave it alone.
+    /// `exempt_tests` to leave it alone.
     ///
     /// ### Why restrict this?
     ///
@@ -109,7 +109,7 @@ struct Config {
     /// integration-test or benchmark target. Calls made from test code
     /// to a production function still count as call sites. Defaults to
     /// `false`.
-    test_code_exception: bool,
+    exempt_tests: bool,
 }
 
 /// What a call site passed for one parameter.
@@ -208,7 +208,7 @@ impl<'tcx> LateLintPass<'tcx> for LiteralOnlyParameter {
         {
             return;
         }
-        if self.config.test_code_exception && item_in_test_code(cx, def_id) {
+        if self.config.exempt_tests && item_in_test_code(cx, def_id) {
             return;
         }
         let inputs = cx
