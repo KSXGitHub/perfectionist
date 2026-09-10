@@ -1,17 +1,18 @@
 use crate::common::DefaultState;
 use crate::measured_fn::measured_fn;
 use crate::rule_index::{Register, rule};
-use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_hir as hir;
 use rustc_hir::def_id::LocalDefId;
 use rustc_hir::intravisit::FnKind;
-use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
+use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Span;
 
 mod depth;
+mod emit;
 
 use depth::deepest_nesting;
+use emit::emit;
 
 declare_tool_lint! {
     /// ### What it does
@@ -46,8 +47,13 @@ declare_tool_lint! {
     /// code at the deepest point can only be understood by re-reading
     /// the way in. Deep nesting almost always flattens: a guard clause
     /// or `let ... else` returns early instead of wrapping the rest, an
-    /// inner loop body becomes a function, an arm's body becomes a
-    /// call. The limit of three is the one SonarSource ships.
+    /// arm guard folds a condition into a pattern, `continue` unindents
+    /// a loop body. Extracting the inner levels answers it just as
+    /// well, when the new function can be named for what it does rather
+    /// than where it came from and needs few of the enclosing locals; one
+    /// that takes most of them as parameters has moved the nesting into
+    /// an argument list rather than removed it. The limit of three is the
+    /// one SonarSource ships.
     ///
     /// ### Interaction with Clippy
     ///
@@ -85,6 +91,25 @@ declare_tool_lint! {
     /// ```rust,ignore
     /// for entry in entries {
     ///     let Some(meta) = entry.metadata() else { continue };
+    ///     match meta.kind() {
+    ///         Kind::File if meta.len() > limit => report(entry),
+    ///         Kind::File => {}
+    ///         Kind::Dir => descend(entry),
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// **Prefer, equally:** extraction, when the inner levels have a
+    /// name of their own — `report_or_descend` is named for what it
+    /// does, and takes one entry rather than the loop's state
+    ///
+    /// ```rust,ignore
+    /// for entry in entries {
+    ///     let Some(meta) = entry.metadata() else { continue };
+    ///     report_or_descend(entry, meta, limit);
+    /// }
+    ///
+    /// fn report_or_descend(entry: Entry, meta: Meta, limit: u64) {
     ///     match meta.kind() {
     ///         Kind::File if meta.len() > limit => report(entry),
     ///         Kind::File => {}
@@ -164,20 +189,9 @@ impl<'tcx> LateLintPass<'tcx> for ExcessiveNesting {
         let Some(deepest) = deepest_nesting(cx.tcx, body) else {
             return;
         };
-        if deepest.depth <= self.config.max_depth {
+        if deepest.depth() <= self.config.max_depth {
             return;
         }
-        let max = self.config.max_depth;
-        let kind = function.kind_label;
-        let name = function.name;
-        let depth = deepest.depth;
-        let noun = if depth == 1 { "level" } else { "levels" };
-        let message =
-            format!("{kind} `{name}` nests {depth} {noun} deep, above the limit of {max}");
-        let deepest_span = cx.sess().source_map().span_until_whitespace(deepest.span);
-        span_lint_and_then(cx, EXCESSIVE_NESTING, function.span, message, |diag| {
-            diag.span_note(deepest_span, format!("this is {depth} {noun} deep"));
-            diag.help("return early with a guard clause or `let ... else`, or move the inner levels into their own function");
-        });
+        emit(cx, &function, &deepest, self.config.max_depth);
     }
 }

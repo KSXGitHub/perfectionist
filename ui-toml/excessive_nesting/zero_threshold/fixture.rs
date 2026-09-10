@@ -55,6 +55,13 @@ fn if_inside_else_if(value: u8, ready: bool) {
     }
 }
 
+// 1: an `if let` is a level like any `if`.
+fn if_let(input: Option<u8>) {
+    if let Some(_value) = input {
+        work();
+    }
+}
+
 // 1: a `match`; its arms are inside it, not levels of their own.
 fn matching(value: u8) {
     match value {
