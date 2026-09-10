@@ -41,18 +41,14 @@ declare_tool_lint! {
     ///
     /// `clippy::too_many_lines` (`pedantic`, off by default) measures
     /// the same thing with a default of 100 and no exemption for test
-    /// code. This rule exists so a project can hold its functions to
-    /// the same limit it holds their complexity and nesting to, with the
-    /// same knobs. Enable one or the other, not both.
-    ///
-    /// The two also disagree on generated code. Clippy measures a
-    /// function produced by a macro defined in the same crate, and
-    /// skips only what another crate's macro produced. This rule skips
-    /// every generated function: its line count reflects how the
-    /// macro's body happens to be laid out rather than anything a
-    /// reader scrolls through, one macro invoked many times reports the
-    /// same body many times over, and the remedy is to change the macro
-    /// rather than the function the diagnostic points at.
+    /// code, and it measures a function produced by a macro defined in
+    /// the same crate, skipping only what another crate's macro
+    /// produced. This rule skips every generated function, whose line
+    /// count tracks the macro body's layout rather than what a reader
+    /// scrolls through, and it exists so a project can hold its
+    /// functions to the same limit it holds their complexity and
+    /// nesting to, with the same knobs. Enable one or the other, not
+    /// both.
     ///
     /// ### Example
     ///
