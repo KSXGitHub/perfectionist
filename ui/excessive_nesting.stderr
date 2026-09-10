@@ -4,12 +4,13 @@ warning: function `four_levels` nests 4 levels deep, above the limit of 3
 LL | fn four_levels(entries: &[Option<u8>], limit: u8) {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-note: this is 4 levels deep
+note: the deepest path is `for` -> `if let` -> `match` -> `if`
   --> $DIR/excessive_nesting.rs:LL:CC
    |
 LL |                     if *size > limit {
    |                     ^^
-   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+   = help: an `if` inside a `match` arm: an arm guard folds the condition into the pattern and removes this level
+   = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
    = note: `#[warn(perfectionist::excessive_nesting)]` on by default
 
 warning: method `step` nests 4 levels deep, above the limit of 3
@@ -18,12 +19,13 @@ warning: method `step` nests 4 levels deep, above the limit of 3
 LL |     fn step(&self, inputs: &[Vec<bool>]) {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-note: this is 4 levels deep
+note: the deepest path is `for` -> closure -> `if` -> `match`
   --> $DIR/excessive_nesting.rs:LL:CC
    |
 LL |                     match row.len() {
    |                     ^^^^^
-   = help: return early with a guard clause or `let ... else`, or move the inner levels into their own function
+   = help: return early with a guard clause or `let ... else` so the rest of the body stops being nested
+   = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
 
 warning: 2 warnings emitted
 

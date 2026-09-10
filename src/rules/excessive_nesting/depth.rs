@@ -21,19 +21,57 @@ use rustc_middle::hir::nested_filter;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
 
-/// The deepest point of a body: how many constructs enclose it and the
-/// span of the construct at that depth.
-#[derive(Debug, Clone, Copy)]
+/// One level of nesting: a construct the reader indents for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Construct {
+    If,
+    IfLet,
+    Match,
+    For,
+    While,
+    Loop,
+    Closure,
+    LetElse,
+    Block,
+}
+
+impl Construct {
+    /// How the diagnostic names this construct.
+    pub(super) fn label(self) -> &'static str {
+        match self {
+            Construct::If => "`if`",
+            Construct::IfLet => "`if let`",
+            Construct::Match => "`match`",
+            Construct::For => "`for`",
+            Construct::While => "`while`",
+            Construct::Loop => "`loop`",
+            Construct::Closure => "closure",
+            Construct::LetElse => "`let ... else`",
+            Construct::Block => "block",
+        }
+    }
+}
+
+/// The deepest point of a body: the constructs enclosing it, outermost
+/// first, and the span of the innermost one.
+#[derive(Debug, Clone)]
 pub(super) struct Deepest {
-    pub depth: usize,
+    pub path: Vec<Construct>,
     pub span: Span,
+}
+
+impl Deepest {
+    /// How many constructs enclose the deepest point.
+    pub(super) fn depth(&self) -> usize {
+        self.path.len()
+    }
 }
 
 /// The deepest nesting in `body`, or `None` when nothing in it nests.
 pub(super) fn deepest_nesting<'tcx>(tcx: TyCtxt<'tcx>, body: &'tcx Body<'tcx>) -> Option<Deepest> {
     let mut walker = Walker {
         tcx,
-        depth: 0,
+        path: Vec::new(),
         deepest: None,
         else_if: false,
     };
@@ -43,8 +81,8 @@ pub(super) fn deepest_nesting<'tcx>(tcx: TyCtxt<'tcx>, body: &'tcx Body<'tcx>) -
 
 struct Walker<'tcx> {
     tcx: TyCtxt<'tcx>,
-    /// How many constructs enclose the node being visited.
-    depth: usize,
+    /// The constructs enclosing the node being visited, outermost first.
+    path: Vec<Construct>,
     deepest: Option<Deepest>,
     /// Set by an `if` for the `if` in its `else` position, which is an
     /// `else if` and stays at the outer `if`'s level.
@@ -53,19 +91,20 @@ struct Walker<'tcx> {
 
 impl<'tcx> Walker<'tcx> {
     /// Visit the inside of a construct one level deeper.
-    fn enter(&mut self, span: Span, visit: impl FnOnce(&mut Self)) {
-        self.depth += 1;
+    fn enter(&mut self, construct: Construct, span: Span, visit: impl FnOnce(&mut Self)) {
+        self.path.push(construct);
         if self
             .deepest
-            .is_none_or(|deepest| self.depth > deepest.depth)
+            .as_ref()
+            .is_none_or(|deepest| self.path.len() > deepest.depth())
         {
             self.deepest = Some(Deepest {
-                depth: self.depth,
+                path: self.path.clone(),
                 span,
             });
         }
         visit(self);
-        self.depth -= 1;
+        self.path.pop();
     }
 
     /// Visit an expression in body position — the `then` of an `if`, an
@@ -117,7 +156,12 @@ impl<'tcx> Walker<'tcx> {
         if is_else_if {
             visit_branches(self);
         } else {
-            self.enter(expr.span, visit_branches);
+            let construct = if matches!(cond.kind, ExprKind::Let(..)) {
+                Construct::IfLet
+            } else {
+                Construct::If
+            };
+            self.enter(construct, expr.span, visit_branches);
         }
     }
 
@@ -138,7 +182,7 @@ impl<'tcx> Walker<'tcx> {
             }
         };
         if matches!(source, MatchSource::Normal | MatchSource::Postfix) {
-            self.enter(expr.span, visit_arms);
+            self.enter(Construct::Match, expr.span, visit_arms);
         } else {
             visit_arms(self);
         }
@@ -152,8 +196,15 @@ impl<'tcx> Walker<'tcx> {
             LoopSource::Loop => expr.span.desugaring_kind().is_none(),
             LoopSource::While | LoopSource::ForLoop => true,
         };
+        let construct = match source {
+            LoopSource::Loop => Construct::Loop,
+            LoopSource::While => Construct::While,
+            LoopSource::ForLoop => Construct::For,
+        };
         if is_authored {
-            self.enter(expr.span, |walker| intravisit::walk_block(walker, block));
+            self.enter(construct, expr.span, |walker| {
+                intravisit::walk_block(walker, block);
+            });
         } else {
             intravisit::walk_block(self, block);
         }
@@ -165,7 +216,9 @@ impl<'tcx> Walker<'tcx> {
         let is_authored =
             matches!(kind, ClosureKind::Closure) && expr.span.desugaring_kind().is_none();
         if is_authored {
-            self.enter(expr.span, |walker| walker.visit_body_expr(body.value));
+            self.enter(Construct::Closure, expr.span, |walker| {
+                walker.visit_body_expr(body.value);
+            });
         } else {
             self.visit_body_expr(body.value);
         }
@@ -201,7 +254,9 @@ impl<'tcx> Visitor<'tcx> for Walker<'tcx> {
                 intravisit::walk_block(self, block);
             }
             ExprKind::Block(block, _) => {
-                self.enter(expr.span, |walker| intravisit::walk_block(walker, block));
+                self.enter(Construct::Block, expr.span, |walker| {
+                    intravisit::walk_block(walker, block);
+                });
             }
             // The wrapper an `async fn` body lowers into; the body inside it
             // is the function's own.
@@ -224,7 +279,9 @@ impl<'tcx> Visitor<'tcx> for Walker<'tcx> {
         if span_is_macro_generated(local.span) {
             intravisit::walk_block(self, els);
         } else {
-            self.enter(els.span, |walker| intravisit::walk_block(walker, els));
+            self.enter(Construct::LetElse, els.span, |walker| {
+                intravisit::walk_block(walker, els);
+            });
         }
     }
 }

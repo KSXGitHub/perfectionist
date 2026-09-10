@@ -39,8 +39,13 @@ their head while reading everything inside it; past three, the
 code at the deepest point can only be understood by re-reading
 the way in. Deep nesting almost always flattens: a guard clause
 or `let ... else` returns early instead of wrapping the rest, an
-inner loop body becomes a function, an arm's body becomes a
-call. The limit of three is the one SonarSource ships.
+arm guard folds a condition into a pattern, `continue` unindents
+a loop body. Extracting the inner levels answers it just as
+well, when the new function can be named for what it does rather
+than where it came from and needs few of the enclosing locals; one
+that takes most of them as parameters has moved the nesting into
+an argument list rather than removed it. The limit of three is the
+one SonarSource ships.
 
 ## Interaction with Clippy
 
@@ -78,6 +83,25 @@ for entry in entries {
 ```rust,ignore
 for entry in entries {
     let Some(meta) = entry.metadata() else { continue };
+    match meta.kind() {
+        Kind::File if meta.len() > limit => report(entry),
+        Kind::File => {}
+        Kind::Dir => descend(entry),
+    }
+}
+```
+
+**Prefer, equally:** extraction, when the inner levels have a
+name of their own — `report_or_descend` is named for what it
+does, and takes one entry rather than the loop's state
+
+```rust,ignore
+for entry in entries {
+    let Some(meta) = entry.metadata() else { continue };
+    report_or_descend(entry, meta, limit);
+}
+
+fn report_or_descend(entry: Entry, meta: Meta, limit: u64) {
     match meta.kind() {
         Kind::File if meta.len() > limit => report(entry),
         Kind::File => {}
