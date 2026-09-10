@@ -23,7 +23,7 @@ is. The `let` that binds a boolean is not a condition, so naming
 the expression is what satisfies the rule.
 
 Test code is measured like any other code; set
-`test_code_exception` to leave it alone.
+`exempt_tests` to leave it alone.
 
 ## Why restrict this?
 
@@ -67,7 +67,7 @@ Configure via `dylint.toml` under `["perfectionist::overly_complex_condition"]`.
 The most `&&` and `||` operators a condition may have without
 being flagged. Defaults to `3`.
 
-### Field: `test_code_exception`
+### Field: `exempt_tests`
 
 - _Type:_ `boolean`
 - _Optional_

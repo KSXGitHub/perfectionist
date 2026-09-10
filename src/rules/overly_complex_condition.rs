@@ -24,7 +24,7 @@ declare_tool_lint! {
     /// the expression is what satisfies the rule.
     ///
     /// Test code is measured like any other code; set
-    /// `test_code_exception` to leave it alone.
+    /// `exempt_tests` to leave it alone.
     ///
     /// ### Why restrict this?
     ///
@@ -76,14 +76,14 @@ struct Config {
     /// `#[cfg(test)]` module, a `#[test]` function, or an
     /// integration-test or benchmark target. Defaults to `false`, so a
     /// test is held to the same limit as the code it exercises.
-    test_code_exception: bool,
+    exempt_tests: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             max_operators: DEFAULT_MAX_OPERATORS,
-            test_code_exception: false,
+            exempt_tests: false,
         }
     }
 }
@@ -135,7 +135,7 @@ impl OverlyComplexCondition {
         if count <= self.config.max_operators {
             return;
         }
-        if self.config.test_code_exception
+        if self.config.exempt_tests
             && item_in_test_code(cx, cx.tcx.hir_enclosing_body_owner(condition.hir_id))
         {
             return;
