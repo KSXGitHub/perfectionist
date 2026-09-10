@@ -4,7 +4,7 @@ warning: function `fifty_one_lines` has 51 lines of code, above the limit of 50
 LL | fn fifty_one_lines() -> u32 {
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: split the function into smaller ones, each doing one thing
+   = help: split the body into smaller functions, each doing one thing
    = note: `#[warn(perfectionist::overly_long_function)]` on by default
 
 warning: 1 warning emitted
