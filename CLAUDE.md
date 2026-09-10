@@ -362,26 +362,64 @@ automated self-lint did not run.
 
 ## Normalised `.stderr` fixtures
 
-The `ui/` and `ui-toml/` compiletest fixtures keep each diagnostic's
-`line:column` pinned to `LL:CC` in the committed `.stderr`, so
-inserting a line above a diagnostic no longer churns every header
-below it — and the `.rs` fixtures themselves stay untouched.
+The `ui/` and `ui-toml/` compiletest fixtures do not commit the
+driver's output verbatim. Each `.stderr` is a *normalised* copy of it,
+so that editing a fixture rewrites the lines whose diagnostics actually
+changed and nothing else — and the `.rs` fixtures themselves stay
+untouched.
 
 The gutter `LL` comes for free: `dylint_testing` runs rustc under
 `-Zui-testing`, whose `ANONYMIZED_LINE_PREFIX` is a fixed `LL`
 regardless of the real line's digit count, so a three-digit line is
-`LL |`, not `LLL |`. That mode leaves the `--> …:line:col` header
-alone, so the header is normalised separately: every UI test runs from
-a throwaway copy of its fixtures made by
-[`copy_fixtures_with_directive`](utils/src/ui_fixtures.rs), which
-injects a compiletest `// normalize-stderr-test` directive into the
-copy — never the committed `.rs`. See that module for the mechanism,
-and for why the copy reproduces each fixture's repository-relative
-path.
+`LL |`, not `LLL |`. Everything else that varies is normalised
+separately: every UI test runs from a throwaway copy of its fixtures
+made by
+[`copy_fixtures_with_directives`](utils/src/ui_fixtures.rs), which
+prepends compiletest `// normalize-stderr-test` directives to the copy
+— never to the committed `.rs`. Each directive rewrites the driver's
+actual output before compiletest diffs it, so the committed file is
+written in the normalised spelling. Read that module for the full set
+and the reasoning behind each; when writing a `.stderr` by hand, the
+spellings to know are:
 
-When a fixture's expected output changes, spell the `line:column` in
-the new `.stderr` as `LL:CC`; the injected directive collapses the
-driver's real numbers to match.
+- a span header's `line:column` is `LL:CC`, never the real numbers;
+- the closing tally is `warning: NN warnings emitted`, whatever the
+  count and whether or not it is 1;
+- no line carries trailing whitespace, including the `LL +` row of a
+  suggestion that inserts a blank line;
+- the file ends with exactly one newline.
+
+The trailing-whitespace and final-newline spellings are the whitespace
+policy below; a `.stderr` satisfies it through these directives rather
+than through an exemption.
+
+## Whitespace in committed files
+
+Every tracked file follows the ordinary UNIX text conventions: LF line
+endings, no trailing whitespace on any line, and exactly one newline at
+the end — no final blank line, and none missing.
+
+`just check-whitespace` enforces all three. It is part of `just all`,
+and it also has a CI workflow of its own that, unlike the test suite,
+is not path-filtered: a documentation-only push is precisely the one
+that can reintroduce what the rule forbids. `.editorconfig` states the
+same conventions in the form editors read, and `.gitattributes` keeps
+the line endings LF in the repository and in the working tree.
+
+Nothing is exempt, `.stderr` fixtures included. They earn that the hard
+way, through the normalisation directives above, because their content
+is rustc's and rustc emits both a trailing space (on a suggestion row
+that inserts a blank line) and a final blank line. Consequences worth
+knowing:
+
+- Do not hand-strip whitespace out of a `.stderr` and expect the test
+  to break. It will not, and the reverse is the trap: pasting the
+  driver's raw output back in reintroduces exactly what the check
+  rejects.
+- A whitespace-stripping editor run over the tree is safe now. It was
+  not before — the strip-then-restore pair in
+  <https://github.com/KSXGitHub/perfectionist/pull/403> is what this
+  policy exists to prevent.
 
 ## Generated documentation site (`tools/gen-docs/`)
 
