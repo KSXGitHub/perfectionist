@@ -29,7 +29,7 @@ produced by a macro is not measured, and a nested function is
 measured on its own.
 
 Test code is measured like any other code; set
-`test_code_exception` to leave it alone.
+`exempt_tests` to leave it alone.
 
 ## Why restrict this?
 
@@ -101,7 +101,7 @@ Configure via `dylint.toml` under `["perfectionist::excessive_nesting"]`. Every 
 The deepest a construct may sit without the function being
 flagged. Defaults to `3`.
 
-### Field: `test_code_exception`
+### Field: `exempt_tests`
 
 - _Type:_ `boolean`
 - _Optional_
