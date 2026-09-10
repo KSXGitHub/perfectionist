@@ -52,12 +52,12 @@ fn private_functions_are_judged_and_exported_ones_are_not() {
 }
 
 #[test]
-fn test_code_exception_leaves_test_code_alone() {
+fn exempt_tests_leaves_test_code_alone() {
     let stderr = run(
         "fixture_lop_test_exception",
         text_block_fnl! {
             r#"["perfectionist::literal_only_parameter"]"#
-            "test_code_exception = true"
+            "exempt_tests = true"
         },
     );
     assert_flagged(&stderr, "private");
