@@ -362,39 +362,11 @@ automated self-lint did not run.
 
 ## Normalised `.stderr` fixtures
 
-The `ui/` and `ui-toml/` fixtures do not commit the driver's output
-verbatim. Every UI test runs from a throwaway copy of its fixtures made
-by [`copy_fixtures_with_directives`](utils/src/ui_fixtures.rs), which
-prepends compiletest `// normalize-stderr-test` directives to the copy
-— never to the committed `.rs`. Each rewrites the actual output before
-it is diffed, so an edit churns the lines whose diagnostics changed and
-nothing else. Read that module for the directives and the reasoning
-behind them; the `.stderr` spellings they imply are:
-
-- a span header's `line:column` is `LL:CC`, never the real numbers;
-- the closing tally is `warning: NN warnings emitted`, whatever the
-  count and whether or not it is 1;
-- no line carries trailing whitespace, including the `LL +` row of a
-  suggestion that inserts a blank line;
-- the file ends with exactly one newline.
-
-The gutter `LL` comes for free: `-Zui-testing` fixes
-`ANONYMIZED_LINE_PREFIX` at `LL` whatever the real line's digit count,
-so a three-digit line is `LL |`, not `LLL |`.
-
-## Whitespace in committed files
-
-Every tracked file ends with exactly one newline and carries no
-trailing whitespace; `.editorconfig` and `.gitattributes` state that
-for editors and pin line endings to LF. Most of the tree holds it
-mechanically, since `cargo fmt --check`, `check-rules-md` and the UI
-tests all compare for exact equality and so reject a stray space as
-they would any other difference. The hand-written remainder rests on
-care. The construct to avoid is the markdown hard line break — two
-invisible trailing spaces — which is what the generated catalogue
-carried until
-<https://github.com/KSXGitHub/perfectionist/pull/421>; use a blank line
-or a list instead.
+A `.stderr` under `ui/` or `ui-toml/` is a normalised copy of the
+driver's output rather than the output itself, so pasting a raw failure
+message into one will not match.
+[`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs) performs the
+normalisation and explains each rule.
 
 ## Generated documentation site (`tools/gen-docs/`)
 
