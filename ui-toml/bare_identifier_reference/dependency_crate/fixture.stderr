@@ -12,5 +12,4 @@ LL - /// Mentions `LocalThing` (first-party) and `DepThing` (a third-party
 LL + /// Mentions [`LocalThing`] (first-party) and `DepThing` (a third-party
    |
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

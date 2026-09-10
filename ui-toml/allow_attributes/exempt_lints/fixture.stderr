@@ -15,5 +15,4 @@ LL - #[allow(dead_code, reason = "kept around for symmetry")]
 LL + #[expect(dead_code, reason = "kept around for symmetry")]
    |
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

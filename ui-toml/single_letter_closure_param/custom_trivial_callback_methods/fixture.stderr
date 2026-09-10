@@ -19,5 +19,4 @@ LL |     pairs.sort_by(|a, b| a.0.cmp(&b.0));
    |
    = help: rename to a descriptive identifier, or rewrite the closure as a trivial single-expression callback
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

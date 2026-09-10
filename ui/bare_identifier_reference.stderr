@@ -100,5 +100,4 @@ LL | /// The inverse of `mixed_vis`: the type (`flipped_vis`) is private and
    = help: `flipped_vis` resolves in more than one namespace; only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, write a disambiguated intra-doc link such as `[`flipped_vis`](value@flipped_vis)`
    = help: if `flipped_vis` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`flipped_vis`][flipped_vis-ext]` with a `[flipped_vis-ext]: <url>` definition
 
-warning: 9 warnings emitted
-
+warning: N warnings emitted

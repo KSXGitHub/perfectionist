@@ -32,7 +32,7 @@ fn dylint_toml(config: RuleConfig) -> String {
 
 #[test]
 fn zero_threshold_reports_every_construct_score() {
-    let fixtures = _utils::copy_fixtures_with_directive(
+    let fixtures = _utils::copy_fixtures_with_directives(
         env!("CARGO_MANIFEST_DIR"),
         "ui-toml/excessive_cognitive_complexity/zero_threshold",
     );

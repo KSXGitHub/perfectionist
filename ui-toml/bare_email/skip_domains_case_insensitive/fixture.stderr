@@ -15,5 +15,4 @@ help: or prefix with `mailto:`
 LL | /// email still fires: mailto:other@elsewhere.test here.
    |                        +++++++
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

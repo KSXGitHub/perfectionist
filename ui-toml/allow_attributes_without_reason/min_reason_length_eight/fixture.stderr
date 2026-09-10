@@ -7,5 +7,4 @@ LL | #[allow(dead_code, reason = "short")]
    = help: write a rationale of at least 8 characters
    = note: `#[warn(perfectionist::allow_attributes_without_reason)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

@@ -39,5 +39,4 @@ LL | impl<const C: usize> Buf<C> {
    |
    = help: rename to a descriptive identifier (e.g. `LEN`, `COLS`, `LANES`)
 
-warning: 5 warnings emitted
-
+warning: N warnings emitted

@@ -18,7 +18,7 @@ pub use manifest::{
 };
 pub use project::{build_project, build_project_with_config};
 pub use tempfile::TempDir;
-pub use ui_fixtures::{FixtureCopy, copy_fixtures_with_directive};
+pub use ui_fixtures::{FixtureCopy, copy_fixtures_with_directives};
 
 use std::path::Path;
 

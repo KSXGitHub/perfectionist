@@ -23,5 +23,4 @@ LL |     /// Uses a `code` span too.
    |
    = help: override the help text with a plain string (e.g. `#[arg(help = "...")]` or `#[command(about = "...")]`)
 
-warning: 3 warnings emitted
-
+warning: N warnings emitted

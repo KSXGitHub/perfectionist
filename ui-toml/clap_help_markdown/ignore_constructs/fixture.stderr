@@ -6,5 +6,4 @@ LL |     /// A `code` span and [a link](https://example.com) together.
    |
    = note: `#[warn(perfectionist::clap_help_markdown)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

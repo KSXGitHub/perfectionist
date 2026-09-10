@@ -10,7 +10,7 @@ LL | | use std::io::stdin;
 help: regroup the imports
    |
 LL + pub use crate::config::Args;
-LL + 
+LL +
 LL + use std::time::Duration;
 LL + use std::io::stdin;
    |
@@ -27,12 +27,11 @@ LL | | use std::collections::BTreeMap;
 help: regroup the imports
    |
 LL + pub use crate::config::Opts;
-LL + 
+LL +
 LL + use std::cmp::Ordering;
-LL + 
+LL +
 LL + #[cfg(unix)]
 LL + use std::collections::BTreeMap;
    |
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

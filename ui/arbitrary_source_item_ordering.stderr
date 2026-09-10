@@ -77,5 +77,4 @@ LL |     struct Registry;
    |     ^^^^^^^^^^^^^^^^
    = help: a module body is ordered `pub mod` declarations, then `pub use` re-exports, then private imports and other items
 
-warning: 6 warnings emitted
-
+warning: N warnings emitted

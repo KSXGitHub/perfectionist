@@ -362,26 +362,13 @@ automated self-lint did not run.
 
 ## Normalised `.stderr` fixtures
 
-The `ui/` and `ui-toml/` compiletest fixtures keep each diagnostic's
-`line:column` pinned to `LL:CC` in the committed `.stderr`, so
-inserting a line above a diagnostic no longer churns every header
-below it — and the `.rs` fixtures themselves stay untouched.
-
-The gutter `LL` comes for free: `dylint_testing` runs rustc under
-`-Zui-testing`, whose `ANONYMIZED_LINE_PREFIX` is a fixed `LL`
-regardless of the real line's digit count, so a three-digit line is
-`LL |`, not `LLL |`. That mode leaves the `--> …:line:col` header
-alone, so the header is normalised separately: every UI test runs from
-a throwaway copy of its fixtures made by
-[`copy_fixtures_with_directive`](utils/src/ui_fixtures.rs), which
-injects a compiletest `// normalize-stderr-test` directive into the
-copy — never the committed `.rs`. See that module for the mechanism,
-and for why the copy reproduces each fixture's repository-relative
-path.
-
-When a fixture's expected output changes, spell the `line:column` in
-the new `.stderr` as `LL:CC`; the injected directive collapses the
-driver's real numbers to match.
+A `.stderr` under `ui/` or `ui-toml/` is a normalised copy of the
+driver's output rather than the output itself: a span header's
+`line:column` reads `LL:CC`, so inserting a line above a diagnostic
+does not renumber every header below it. Spell it that way when
+writing one — pasting the driver's real numbers in will not match.
+[`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs) performs the
+normalisation and explains how.
 
 ## Generated documentation site (`tools/gen-docs/`)
 

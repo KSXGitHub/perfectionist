@@ -20,5 +20,4 @@ LL | /     use std::collections::HashMap;
 LL | |     use std::io::Read;
    | |______________________^ help: reorganize the imports: `use std::{collections::HashMap, io::Read};`
 
-warning: 3 warnings emitted
-
+warning: N warnings emitted

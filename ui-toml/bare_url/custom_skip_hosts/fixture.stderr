@@ -6,5 +6,4 @@ LL | /// `localhost` default: https://example.com/ here.
    |
    = note: `#[warn(perfectionist::bare_url)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

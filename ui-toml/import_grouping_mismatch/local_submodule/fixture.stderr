@@ -12,11 +12,10 @@ LL | | use error::Foo;
 help: regroup the imports
    |
 LL + use std::time::Duration;
-LL + 
+LL +
 LL + use error::Foo;
-LL + 
+LL +
 LL + use clap::Parser;
    |
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

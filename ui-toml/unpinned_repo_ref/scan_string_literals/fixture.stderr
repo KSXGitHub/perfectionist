@@ -7,5 +7,4 @@ LL |     let _bad = "https://github.com/owner/repo/blob/main/src/lib.rs";
    = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
    = note: `#[warn(perfectionist::unpinned_repo_ref)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

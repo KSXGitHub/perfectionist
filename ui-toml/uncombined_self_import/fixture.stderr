@@ -117,5 +117,4 @@ LL -     use crate::defs::inner::Baz;
 LL +     use crate::defs::inner::{self, Baz};
    |
 
-warning: 9 warnings emitted
-
+warning: N warnings emitted

@@ -20,5 +20,4 @@ LL | /     use crate::thing::{self};
 LL | |     use crate::thing::{self as alt};
    | |____________________________________^ help: reorganize the imports: `use crate::thing::{self, self as alt};`
 
-warning: 3 warnings emitted
-
+warning: N warnings emitted

@@ -22,5 +22,4 @@ LL | #[allow(dead_code, reason = "   ")]
    |
    = help: write a rationale into the blank `reason` literal
 
-warning: 3 warnings emitted
-
+warning: N warnings emitted

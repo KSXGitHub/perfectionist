@@ -12,5 +12,4 @@ warning: Unicode `…` (U+2026) in doc comment
 LL |     //! Inner doc comment with ellipsis…
    |                                        ^ help: use ASCII `...` instead: `...`
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

@@ -7,5 +7,4 @@ LL | async fn with_bindings(seed: u32) -> u32 {
    = help: split the body into one function per step, or gather related values into a struct
    = note: `#[warn(perfectionist::too_many_local_bindings)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

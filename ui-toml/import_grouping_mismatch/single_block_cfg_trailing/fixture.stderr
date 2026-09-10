@@ -12,7 +12,7 @@ help: regroup the imports
    |
 LL + use std::time::Duration;
 LL + use std::cmp::Ordering;
-LL + 
+LL +
 LL + #[cfg(unix)]
 LL + use std::os::unix::fs::MetadataExt;
    |
@@ -31,5 +31,4 @@ LL + use std::io::stdin;
 LL + use std::process::exit;
    |
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

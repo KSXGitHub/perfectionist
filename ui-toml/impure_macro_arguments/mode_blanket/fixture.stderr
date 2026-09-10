@@ -7,5 +7,4 @@ LL |     let _ = format!("count = {}", value());
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
    = note: `#[warn(perfectionist::impure_macro_arguments)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

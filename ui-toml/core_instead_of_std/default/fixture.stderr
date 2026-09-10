@@ -50,5 +50,4 @@ warning: item named through `alloc` instead of `std`
 LL |     use alloc::vec;
    |         ^^^^^ help: name the item through `std`: `std`
 
-warning: 8 warnings emitted
-
+warning: N warnings emitted

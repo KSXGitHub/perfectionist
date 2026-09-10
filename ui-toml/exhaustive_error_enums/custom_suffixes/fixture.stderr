@@ -15,5 +15,4 @@ LL + #[non_exhaustive]
 LL | pub enum ConfigFailure {
    |
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

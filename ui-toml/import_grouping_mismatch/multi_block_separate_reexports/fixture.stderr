@@ -10,9 +10,9 @@ LL | | use crate::config::Opts;
 help: regroup the imports
    |
 LL + pub use crate::config::Args;
-LL + 
+LL +
 LL + use std::time::Duration;
-LL + 
+LL +
 LL + use crate::config::Opts;
    |
 
@@ -28,7 +28,7 @@ help: regroup the imports
    |
 LL + pub use std::cmp::Ordering;
 LL + pub use crate::config::Cfg;
-LL + 
+LL +
 LL + use std::fmt::Write;
    |
 
@@ -44,9 +44,8 @@ help: regroup the imports
    |
 LL + #[cfg(unix)]
 LL + pub use std::collections::BTreeMap;
-LL + 
+LL +
 LL + use std::mem::swap;
    |
 
-warning: 3 warnings emitted
-
+warning: N warnings emitted

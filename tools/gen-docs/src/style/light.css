@@ -183,6 +183,18 @@ div.custom-type {
 div.custom-type dl.config {
   background: transparent;
 }
+article.rule table th, article.rule table td {
+  border-color: #d0d7de;
+}
+article.rule table th {
+  background: #eaeef2;
+}
+article.rule table tbody tr:nth-child(even) {
+  background: #f6f8fa;
+}
+article.rule table code {
+  background: none;
+}
 .settings-toggle {
   background: #ffffff;
   border-color: #d0d7de;
