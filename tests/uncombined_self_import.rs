@@ -12,7 +12,7 @@ use text_block_macros::text_block_fnl;
 
 #[test]
 fn folds_adjacent_module_and_item_imports() {
-    let fixtures = _utils::copy_fixtures_with_directive(
+    let fixtures = _utils::copy_fixtures_with_directives(
         env!("CARGO_MANIFEST_DIR"),
         "ui-toml/uncombined_self_import",
     );
