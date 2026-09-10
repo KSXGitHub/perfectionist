@@ -239,9 +239,6 @@ div.custom-type dl.config {
   margin: 0.25rem 0 0;
 }
 
-/* A markdown table in a rule's rustdoc arrives as a bare `<table>`,
-   which the UA stylesheet leaves unruled and unpadded. Scoped to the
-   article so the catalogue's index table above keeps its own look. */
 article.rule table {
   border-collapse: collapse;
   margin: 1rem 0 1.5rem;
@@ -254,16 +251,10 @@ article.rule table td {
   vertical-align: top;
 }
 
-/* A `<th>` is centred by the UA stylesheet; the index table's headers
-   read left-aligned and these should match. A column the author
-   aligned in markdown keeps the renderer's inline `text-align`, which
-   outranks this. */
 article.rule table th {
   text-align: left;
 }
 
-/* A `<code>` chip tints whole columns in a table that is mostly code,
-   and its side padding spaces a run out as `if , match`. */
 article.rule table code {
   padding: 0;
 }
