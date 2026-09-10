@@ -1,0 +1,43 @@
+warning: struct `One` has 1 field, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | struct One {
+   | ^^^^^^^^^^
+   |
+   = help: group related fields into a struct of their own, or split the type by the concerns its fields serve
+   = note: `#[warn(perfectionist::too_many_struct_fields)]` on by default
+
+warning: struct `Three` has 3 fields, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | struct Three {
+   | ^^^^^^^^^^^^
+   |
+   = help: group related fields into a struct of their own, or split the type by the concerns its fields serve
+
+warning: struct `Pair` has 2 fields, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | struct Pair(u32, u32);
+   | ^^^^^^^^^^^
+   |
+   = help: group related fields into a struct of their own, or split the type by the concerns its fields serve
+
+warning: struct `Wrapper` has 1 field, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | struct Wrapper<Value> {
+   | ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: group related fields into a struct of their own, or split the type by the concerns its fields serve
+
+warning: struct `Local` has 1 field, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     struct Local {
+   |     ^^^^^^^^^^^^
+   |
+   = help: group related fields into a struct of their own, or split the type by the concerns its fields serve
+
+warning: 5 warnings emitted
+

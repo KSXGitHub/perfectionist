@@ -1,0 +1,59 @@
+warning: condition has 1 boolean operator, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if first && second {
+   |        ^^^^^^^^^^^^^^^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = note: `#[warn(perfectionist::overly_complex_condition)]` on by default
+
+warning: condition has 2 boolean operators, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if first && second || third {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let`
+
+warning: condition has 1 boolean operator, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if let Some(_value) = input && ready {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let`
+
+warning: condition has 1 boolean operator, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     while count > 0 && ready {
+   |           ^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let`
+
+warning: condition has 1 boolean operator, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |         0 if first || second => work(),
+   |              ^^^^^^^^^^^^^^^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let`
+
+warning: condition has 1 boolean operator, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if flag && items.iter().any(|item| *item || flag) {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let`
+
+warning: condition has 2 boolean operators, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     } else if second && third || first {
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let`
+
+warning: 7 warnings emitted
+
