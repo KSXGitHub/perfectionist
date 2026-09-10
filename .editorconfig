@@ -1,0 +1,15 @@
+# Whitespace conventions for every committed file, in the format most
+# editors read without a plugin. https://editorconfig.org
+#
+# These three settings are the ones `just check-whitespace` enforces, so
+# an editor that honours this file keeps a checkout passing that recipe
+# without anyone thinking about it. Indentation is deliberately absent:
+# `cargo fmt` owns it for Rust, and nothing else here is uniform enough
+# to state in one rule.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
