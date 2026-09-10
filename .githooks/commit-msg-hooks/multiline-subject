@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# commit-msg check: reject any commit message whose first paragraph
+# spans more than one line. Pure text, runs for every commit. Ordered
+# before `subject-length`, whose first line is then the whole subject.
+set -euo pipefail
+
+msg_file="$1"
+lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib"
+source "$lib_dir/comment-char.sh"
+source "$lib_dir/message-body.sh"
+comment_char=$(git_comment_char)
+
+# Read from `message_body`, not the raw file: under `git commit`'s
+# default template, line 2 is a comment rather than a blank.
+paragraph=$(
+  message_body "$msg_file" "$comment_char" \
+    | awk 'NF == 0 { if (seen) exit; next } { seen = 1; print }'
+)
+
+# Git aborts an empty message on its own.
+if [ -z "$paragraph" ]; then
+  exit 0
+fi
+
+if [ "$(printf '%s\n' "$paragraph" | wc -l)" -le 1 ]; then
+  exit 0
+fi
+
+# Join as git does. Exact only under the `strip` cleanup an editor
+# commit gets: `git commit -F` keeps a comment line sitting inside the
+# paragraph, which this join omits. That changes the report, never the
+# verdict.
+joined=$(
+  printf '%s\n' "$paragraph" |
+    awk '
+      { sub(/[[:space:]]+$/, ""); printf "%s%s", (NR > 1 ? " " : ""), $0 }
+      END { print "" }
+    '
+)
+
+cat >&2 <<EOF
+✖ Commit message rejected: the subject spans more than one line.
+
+$(printf '%s\n' "$paragraph" | sed 's/^/    /')
+
+Git does not read the subject as the first line: it takes every line
+up to the first blank one and joins them with spaces. So every line
+above lands in the title rather than the body, and the subject reads:
+
+    $joined
+
+Put a blank line after the subject so the rest becomes the body, or
+fold the extra words into the subject itself. A first paragraph of
+more than one line has no legitimate form, so this check has no
+opt-out.
+EOF
+exit 1
