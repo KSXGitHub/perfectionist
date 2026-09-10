@@ -108,6 +108,7 @@ rule_index! {
     core_instead_of_std => CoreInsteadOfStd,
     excessive_cognitive_complexity => ExcessiveCognitiveComplexity,
     excessive_inline_tests => ExcessiveInlineTests,
+    excessive_nesting => ExcessiveNesting,
     exhaustive_error_enums => ExhaustiveErrorEnums,
     import_granularity_mismatch => ImportGranularityMismatch,
     import_grouping_mismatch => ImportGroupingMismatch,

@@ -44,3 +44,9 @@ max_bindings = 29
 # has 97 lines of code; lower the ceiling as bodies are split.
 ["perfectionist::overly_long_function"]
 max_lines = 97
+
+# A ratchet: existing bodies nest deeper than this rule's default of
+# three, the deepest at five levels. This ceiling sits at that depth so
+# no new body may go deeper; lower it as they are flattened.
+["perfectionist::excessive_nesting"]
+max_depth = 5

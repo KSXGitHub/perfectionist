@@ -10,6 +10,7 @@ pub mod clap_help_markdown;
 pub mod core_instead_of_std;
 pub mod excessive_cognitive_complexity;
 pub mod excessive_inline_tests;
+pub mod excessive_nesting;
 pub mod exhaustive_error_enums;
 pub mod import_granularity_mismatch;
 pub mod import_grouping_mismatch;
