@@ -25,7 +25,7 @@ declare_tool_lint! {
     /// its signature, and so is a method produced by a macro.
     ///
     /// Test code is measured like any other code; set
-    /// `test_code_exception` to leave it alone.
+    /// `exempt_tests` to leave it alone.
     ///
     /// ### Why restrict this?
     ///
@@ -97,7 +97,7 @@ struct Config {
     /// Whether test code is left alone: getters inside a `#[cfg(test)]`
     /// module or an integration-test or benchmark target. Defaults to
     /// `false`.
-    test_code_exception: bool,
+    exempt_tests: bool,
 }
 
 pub struct CloningGetter {
@@ -156,7 +156,7 @@ impl<'tcx> LateLintPass<'tcx> for CloningGetter {
         let Some(field) = self.copied_field(body.value) else {
             return;
         };
-        if self.config.test_code_exception && item_in_test_code(cx, def_id) {
+        if self.config.exempt_tests && item_in_test_code(cx, def_id) {
             return;
         }
         let getter = ident.name;
