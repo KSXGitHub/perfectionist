@@ -36,8 +36,8 @@ use std::path::{Path, PathBuf};
 ///    point: the line is meant to read the same in every fixture.
 /// 3. Trailing spaces come off every line. A suggestion that inserts a
 ///    blank line renders as an `LL + ` row with nothing after the `+`,
-///    and committing that invites the next whitespace-stripping editor
-///    to break the test.
+///    which `.editorconfig` has every conforming editor strip on save,
+///    breaking a committed fixture that depended on it.
 /// 4. A run of newlines at the end collapses to one, so each `.stderr`
 ///    ends like every other text file in the tree. Its capture group is
 ///    what keeps the surviving newline: a compiletest replacement is
