@@ -1,15 +1,26 @@
-table.index {
-  width: 100%;
+table {
   border-collapse: collapse;
-  margin-bottom: 2rem;
+  margin: 1rem 0 1.5rem;
 }
 
-table.index td,
-table.index th {
+th,
+td {
   text-align: left;
-  padding: 0.4rem 0.6rem;
-  border-bottom: 1px solid;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid;
   vertical-align: top;
+}
+
+/* A `<code>` chip tints whole columns in a table that is mostly code,
+   and its side padding spaces a run out as `if , match`. */
+th code,
+td code {
+  padding: 0;
+}
+
+table.index {
+  width: 100%;
+  margin-bottom: 2rem;
 }
 
 /* On phone-sized viewports the three-column index table no longer
@@ -47,7 +58,7 @@ table.index th {
   }
 
   table.index td {
-    border-bottom: none;
+    border: none;
     padding: 0.15rem 0;
   }
 
@@ -237,53 +248,4 @@ div.custom-type > p:first-child {
 div.custom-type dl.config {
   padding: 0;
   margin: 0.25rem 0 0;
-}
-
-/* A table written in a rule's rustdoc — `excessive_cognitive_complexity`
-   has one, pairing each construct with its increment — reaches the page
-   as a bare `<table>` from the markdown renderer, with no class of its
-   own, so the UA stylesheet is all that dresses it: no borders, no
-   padding, no separation between the rows. Give it the same ruling and
-   padding as the index table above, plus row striping, which that table
-   doesn't need (each of its rows is one line) but a prose table's
-   wrapped multi-line cells do.
-
-   The width stays at the UA's `auto` so the box shrink-to-fits: a
-   two-column table keeps its own width instead of being stretched
-   across the body of a wide monitor, and it still can't grow past the
-   article. `overflow-wrap: anywhere` on the cells is what keeps that
-   ceiling honest — it lets a long word inside a cell break, so a table
-   too wide for the article wraps instead of pushing the page
-   sideways. */
-article.rule table {
-  border-collapse: collapse;
-  margin: 1rem 0 1.5rem;
-}
-
-article.rule table th,
-article.rule table td {
-  padding: 0.4rem 0.7rem;
-  border: 1px solid;
-  vertical-align: top;
-  overflow-wrap: anywhere;
-}
-
-/* A `<th>` is centred by the UA stylesheet; the index table's headers
-   read left-aligned and these should match. A column the author
-   aligned in the markdown source arrives with the renderer's inline
-   `style="text-align: ..."`, which outranks this. */
-article.rule table th {
-  text-align: left;
-}
-
-/* Cells here tend to be code end to end — a table pairing Rust
-   constructs with a number leaves nothing else to set — so the chip
-   each `<code>` normally carries tints whole columns rather than
-   marking a span within a sentence, and its side padding spaces a
-   comma-separated run out as `if , match`. Drop both, as `pre code`
-   does, and let the monospace family do the marking; the chip's
-   background is the tint the striped rows already use, so on those
-   rows it draws nothing anyway. */
-article.rule table code {
-  padding: 0;
 }

@@ -111,11 +111,17 @@ a {
 .nav-sidebar-list a code {
   background: none;
 }
-table.index td, table.index th {
-  border-bottom-color: #eaeef2;
+th, td {
+  border-color: #d0d7de;
 }
-table.index th {
+th {
+  background: #eaeef2;
+}
+tbody tr:nth-child(even) {
   background: #f6f8fa;
+}
+th code, td code {
+  background: none;
 }
 table.index tr {
   border-bottom-color: #eaeef2;
@@ -182,18 +188,6 @@ div.custom-type {
 }
 div.custom-type dl.config {
   background: transparent;
-}
-article.rule table th, article.rule table td {
-  border-color: #d0d7de;
-}
-article.rule table th {
-  background: #eaeef2;
-}
-article.rule table tbody tr:nth-child(even) {
-  background: #f6f8fa;
-}
-article.rule table code {
-  background: none;
 }
 .settings-toggle {
   background: #ffffff;
