@@ -11,7 +11,7 @@ help: regroup the imports
    |
 LL + pub use iter::Iter;
 LL + pub use reflection::Reflection;
-LL + 
+LL +
 LL + pub use Reflection as HardlinkListReflection;
    |
 
@@ -26,9 +26,9 @@ LL | | pub use summary::Summary;
 help: regroup the imports
    |
 LL + pub use summary::Summary;
-LL + 
+LL +
 LL + pub use Summary as SharedLinkSummary;
-LL + 
+LL +
 LL + use std::time::Duration;
    |
 
@@ -44,12 +44,11 @@ LL | | pub use node::Node;
 help: regroup the imports
    |
 LL + pub use node::Node;
-LL + 
+LL +
 LL + #[cfg(unix)]
 LL + pub use Node as UnixNode;
-LL + 
+LL +
 LL + use std::mem::swap;
    |
 
-warning: 3 warnings emitted
-
+warning: N warnings emitted

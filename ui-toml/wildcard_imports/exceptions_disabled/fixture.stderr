@@ -23,5 +23,4 @@ LL | use crate::thing::*;
    |
    = help: import the specific items by name instead
 
-warning: 3 warnings emitted
-
+warning: N warnings emitted

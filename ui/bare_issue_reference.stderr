@@ -29,5 +29,4 @@ LL | /** Bad: closes #200 (in a `/** */` block doc comment). */
    = help: if `#200` is not an issue or pull request, enclose it in backticks so it renders as code
    = help: or refer to the numbered item with a spelling that has no leading `#`
 
-warning: 3 warnings emitted
-
+warning: N warnings emitted

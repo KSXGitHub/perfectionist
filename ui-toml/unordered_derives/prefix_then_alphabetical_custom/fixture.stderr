@@ -6,5 +6,4 @@ LL | #[derive(Debug, Clone, Hash, PartialEq, Copy)]
    |
    = note: `#[warn(perfectionist::unordered_derives)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

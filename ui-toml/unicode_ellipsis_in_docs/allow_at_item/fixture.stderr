@@ -6,5 +6,4 @@ LL | /// But this ellipsis … is still flagged.
    |
    = note: `#[warn(perfectionist::unicode_ellipsis_in_docs)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

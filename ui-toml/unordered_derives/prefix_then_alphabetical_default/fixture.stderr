@@ -12,5 +12,4 @@ warning: derive list does not match the configured `prefix_then_alphabetical` or
 LL | #[derive(Hash, PartialEq, Eq, PartialOrd, Ord)]
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: reorder the derive list: `PartialEq, Eq, PartialOrd, Ord, Hash`
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

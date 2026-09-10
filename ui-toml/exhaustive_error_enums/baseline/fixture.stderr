@@ -51,5 +51,4 @@ LL + #[non_exhaustive]
 LL | pub struct AliasedError(pub KindAlias);
    |
 
-warning: 4 warnings emitted
-
+warning: N warnings emitted

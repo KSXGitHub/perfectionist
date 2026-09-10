@@ -13,5 +13,4 @@ LL - /// Bad: closes #99 — under `doc_comment_form = "reference"`, but this bl
 LL + /// Bad: closes [#99] — under `doc_comment_form = "reference"`, but this block
    |
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

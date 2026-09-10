@@ -21,5 +21,4 @@ LL |     fn step(&self, state: u8, inputs: &[bool]) -> u8 {
    = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
    = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

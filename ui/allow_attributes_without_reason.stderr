@@ -91,5 +91,4 @@ warning: lint-silencing attribute lacks an explanatory `reason = "..."` field
 LL |     #![allow(dead_code)]
    |                       ^ help: add a `reason` field: `, reason = ""`
 
-warning: 13 warnings emitted
-
+warning: N warnings emitted

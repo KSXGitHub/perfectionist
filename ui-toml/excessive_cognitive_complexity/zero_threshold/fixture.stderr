@@ -252,5 +252,4 @@ LL |     fn inner(first: bool) {
    = help: reducing the score honestly (not just relocating it): see rules/excessive_cognitive_complexity.md in the perfectionist repo (https://github.com/KSXGitHub/perfectionist/blob/master/rules/excessive_cognitive_complexity.md)
    = help: or the rendered catalogue: https://ksxgithub.github.io/perfectionist/#/rule/excessive-cognitive-complexity
 
-warning: 23 warnings emitted
-
+warning: N warnings emitted

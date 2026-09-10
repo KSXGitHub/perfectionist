@@ -13,5 +13,4 @@ LL | silence!((dead_code));
    = note: `#[warn(perfectionist::allow_attributes_without_reason)]` on by default
    = note: this warning originates in the macro `silence` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

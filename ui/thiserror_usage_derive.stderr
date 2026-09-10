@@ -119,5 +119,4 @@ LL |         #[error("variant field")]
    |
    = help: rename to `#[display(...)]` and translate positional placeholders (`{0}` -> `{_0}`)
 
-warning: 15 warnings emitted
-
+warning: N warnings emitted

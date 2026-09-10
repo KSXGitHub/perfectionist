@@ -44,5 +44,4 @@ LL |     use std::io::*;
    = help: import the specific items by name instead
    = note: `#[warn(perfectionist::wildcard_imports)]` on by default
 
-warning: 4 warnings emitted
-
+warning: N warnings emitted

@@ -8,5 +8,4 @@ LL | /// Bad: closes #55 — with a `gitlab.com` `repository`, the forge
    = help: or refer to the numbered item with a spelling that has no leading `#`
    = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

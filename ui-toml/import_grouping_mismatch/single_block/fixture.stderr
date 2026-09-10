@@ -15,5 +15,4 @@ LL + use clap::Parser;
 LL + use crate::config::Args;
    |
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

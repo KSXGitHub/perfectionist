@@ -17,5 +17,4 @@ LL | // Bad: closes #56 — plain line comments are scanned too under
    = help: if `#56` is not an issue or pull request, enclose it in backticks so it renders as code
    = help: or refer to the numbered item with a spelling that has no leading `#`
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

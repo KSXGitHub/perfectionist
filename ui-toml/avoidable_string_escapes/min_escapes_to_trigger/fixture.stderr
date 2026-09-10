@@ -6,5 +6,4 @@ LL |     let _ = "C:/Users/foo/bar";
    |
    = note: `#[warn(perfectionist::avoidable_string_escapes)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

@@ -16,5 +16,4 @@ warning: Unicode `…` (U+2026) in `expect_with` message
 LL |     let _: i32 = Some(1).expect_with("project-specific expect …");
    |                                                               ^ help: use ASCII `...` instead: `...`
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

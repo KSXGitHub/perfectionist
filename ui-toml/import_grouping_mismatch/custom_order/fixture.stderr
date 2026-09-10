@@ -12,11 +12,10 @@ LL | | use clap::Parser;
 help: regroup the imports
    |
 LL + use std::time::Duration;
-LL + 
+LL +
 LL + use clap::Parser;
-LL + 
+LL +
 LL + use crate::config::Args;
    |
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

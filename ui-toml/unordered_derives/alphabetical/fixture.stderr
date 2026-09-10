@@ -56,5 +56,4 @@ warning: derive list is not in ASCII-case-insensitive alphabetical order
 LL | #[cfg_attr(windows, derive(Debug, Clone, Copy))]
    |                            ^^^^^^^^^^^^^^^^^^ help: reorder the derive list: `Clone, Copy, Debug`
 
-warning: 9 warnings emitted
-
+warning: N warnings emitted

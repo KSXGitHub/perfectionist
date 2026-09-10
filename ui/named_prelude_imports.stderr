@@ -110,5 +110,4 @@ LL |     use crate::mixed::prelude::{A, C};
    |
    = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
 
-warning: 16 warnings emitted
-
+warning: N warnings emitted

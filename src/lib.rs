@@ -30,6 +30,7 @@ mod literal_scan;
 mod macro_path;
 mod macro_template;
 mod markdown;
+mod measured_fn;
 mod module_reparse;
 mod rule_index;
 mod rules;
