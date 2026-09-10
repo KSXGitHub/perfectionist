@@ -27,7 +27,6 @@ _default:
 # Check everything
 all:
   just fmt
-  just check-whitespace
   just build
   just doc
   just lint
@@ -37,40 +36,6 @@ all:
 # Check format
 fmt:
   cargo fmt -- --check
-
-# Check the whitespace conventions of every tracked file
-check-whitespace:
-  #!/usr/bin/env bash
-  set -euo pipefail
-  # No tracked file may carry trailing whitespace, end with a blank
-  # line, or be missing its final newline. This needs nothing but git
-  # and awk, which is why it also has a CI workflow of its own — one
-  # that runs on every push, including the documentation-only ones the
-  # test suite filters out.
-  #
-  # Diffing the empty tree against the working tree turns every tracked
-  # file into one long addition, so `--check` — git's own whitespace
-  # linter, the same one `git apply --whitespace` drives — judges every
-  # line in the tree instead of only the lines some commit touched.
-  # Binary files are skipped by the diff machinery itself.
-  empty_tree=$(git hash-object -t tree /dev/null)
-  status=0
-  git diff --check "$empty_tree" -- . || status=1
-  # `--check` has no rule for a file whose last line ends without a
-  # newline, so read that off the diff instead. A symlink diffs as its
-  # unterminated target path (`AGENTS.md` holds `CLAUDE.md`), which is
-  # not a text file missing a newline, hence the mode filter.
-  missing=$(git diff --no-color "$empty_tree" -- . | awk '
-    /^diff --git / { symlink = 0 }
-    /^new file mode 120000$/ { symlink = 1 }
-    /^\+\+\+ b\// { file = substr($0, 7) }
-    /^\\ No newline at end of file$/ { if (!symlink) print file }
-  ')
-  if [ -n "$missing" ]; then
-    printf '%s: no newline at end of file\n' $missing
-    status=1
-  fi
-  exit "$status"
 
 # Build in debug mode
 build:

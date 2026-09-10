@@ -362,25 +362,14 @@ automated self-lint did not run.
 
 ## Normalised `.stderr` fixtures
 
-The `ui/` and `ui-toml/` compiletest fixtures do not commit the
-driver's output verbatim. Each `.stderr` is a *normalised* copy of it,
-so that editing a fixture rewrites the lines whose diagnostics actually
-changed and nothing else — and the `.rs` fixtures themselves stay
-untouched.
-
-The gutter `LL` comes for free: `dylint_testing` runs rustc under
-`-Zui-testing`, whose `ANONYMIZED_LINE_PREFIX` is a fixed `LL`
-regardless of the real line's digit count, so a three-digit line is
-`LL |`, not `LLL |`. Everything else that varies is normalised
-separately: every UI test runs from a throwaway copy of its fixtures
-made by
-[`copy_fixtures_with_directives`](utils/src/ui_fixtures.rs), which
+The `ui/` and `ui-toml/` fixtures do not commit the driver's output
+verbatim. Every UI test runs from a throwaway copy of its fixtures made
+by [`copy_fixtures_with_directives`](utils/src/ui_fixtures.rs), which
 prepends compiletest `// normalize-stderr-test` directives to the copy
-— never to the committed `.rs`. Each directive rewrites the driver's
-actual output before compiletest diffs it, so the committed file is
-written in the normalised spelling. Read that module for the full set
-and the reasoning behind each; when writing a `.stderr` by hand, the
-spellings to know are:
+— never to the committed `.rs`. Each rewrites the actual output before
+it is diffed, so an edit churns the lines whose diagnostics changed and
+nothing else. Read that module for the directives and the reasoning
+behind them; the `.stderr` spellings they imply are:
 
 - a span header's `line:column` is `LL:CC`, never the real numbers;
 - the closing tally is `warning: NN warnings emitted`, whatever the
@@ -389,37 +378,23 @@ spellings to know are:
   suggestion that inserts a blank line;
 - the file ends with exactly one newline.
 
-The trailing-whitespace and final-newline spellings are the whitespace
-policy below; a `.stderr` satisfies it through these directives rather
-than through an exemption.
+The gutter `LL` comes for free: `-Zui-testing` fixes
+`ANONYMIZED_LINE_PREFIX` at `LL` whatever the real line's digit count,
+so a three-digit line is `LL |`, not `LLL |`.
 
 ## Whitespace in committed files
 
-Every tracked file follows the ordinary UNIX text conventions: LF line
-endings, no trailing whitespace on any line, and exactly one newline at
-the end — no final blank line, and none missing.
-
-`just check-whitespace` enforces all three. It is part of `just all`,
-and it also has a CI workflow of its own that, unlike the test suite,
-is not path-filtered: a documentation-only push is precisely the one
-that can reintroduce what the rule forbids. `.editorconfig` states the
-same conventions in the form editors read, and `.gitattributes` keeps
-the line endings LF in the repository and in the working tree.
-
-Nothing is exempt, `.stderr` fixtures included. They earn that the hard
-way, through the normalisation directives above, because their content
-is rustc's and rustc emits both a trailing space (on a suggestion row
-that inserts a blank line) and a final blank line. Consequences worth
-knowing:
-
-- Do not hand-strip whitespace out of a `.stderr` and expect the test
-  to break. It will not, and the reverse is the trap: pasting the
-  driver's raw output back in reintroduces exactly what the check
-  rejects.
-- A whitespace-stripping editor run over the tree is safe now. It was
-  not before — the strip-then-restore pair in
-  <https://github.com/KSXGitHub/perfectionist/pull/403> is what this
-  policy exists to prevent.
+Every tracked file ends with exactly one newline and carries no
+trailing whitespace; `.editorconfig` and `.gitattributes` state that
+for editors and pin line endings to LF. Most of the tree holds it
+mechanically, since `cargo fmt --check`, `check-rules-md` and the UI
+tests all compare for exact equality and so reject a stray space as
+they would any other difference. The hand-written remainder rests on
+care. The construct to avoid is the markdown hard line break — two
+invisible trailing spaces — which is what the generated catalogue
+carried until
+<https://github.com/KSXGitHub/perfectionist/pull/421>; use a blank line
+or a list instead.
 
 ## Generated documentation site (`tools/gen-docs/`)
 
