@@ -24,5 +24,4 @@ warning: Unicode `…` (U+2026) in comment
 LL |  * multiple lines, each scanned independently…
    |                                              ^ help: use ASCII `...` instead: `...`
 
-warning: 4 warnings emitted
-
+warning: N warnings emitted

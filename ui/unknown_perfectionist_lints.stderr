@@ -43,5 +43,4 @@ warning: unknown lint: `perfectionist::nothing_like_this_anywhere`
 LL | #[warn(perfectionist::nothing_like_this_anywhere)]
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-warning: 6 warnings emitted
-
+warning: N warnings emitted

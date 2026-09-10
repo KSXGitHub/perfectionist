@@ -10,10 +10,9 @@ LL | | use crate::config::Opts;
 help: regroup the imports
    |
 LL + use std::time::Duration;
-LL + 
+LL +
 LL + pub use crate::config::Args;
 LL + use crate::config::Opts;
    |
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

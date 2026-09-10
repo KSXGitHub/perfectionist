@@ -79,5 +79,4 @@ LL | // Bad: sourcehut branch ref: <https://git.sr.ht/~user/repo/tree/main/item/
    |
    = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
 
-warning: 10 warnings emitted
-
+warning: N warnings emitted

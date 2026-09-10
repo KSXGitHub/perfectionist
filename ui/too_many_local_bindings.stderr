@@ -15,5 +15,4 @@ LL | fn every_binding_shape(items: &[(u32, u32)], maybe: Option<u32>) -> u32 {
    |
    = help: split the body into one function per step, or gather related values into a struct
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

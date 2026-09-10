@@ -13,5 +13,4 @@ warning: item named through `core` instead of `std`
 LL |     use core::fmt::Display;
    |         ^^^^ help: name the item through `std`: `std`
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

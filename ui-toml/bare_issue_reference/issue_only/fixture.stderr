@@ -8,5 +8,4 @@ LL | /// Bad: closes #42 — with only `suggest_issue_url` enabled, a single
    = help: or refer to the numbered item with a spelling that has no leading `#`
    = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

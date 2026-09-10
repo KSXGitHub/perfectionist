@@ -8,5 +8,4 @@ LL | |     use std::collections::HashMap;
    = help: these statements differ in visibility or `#[cfg(...)]`; merge them by hand to avoid changing what is compiled or exported
    = note: `#[warn(perfectionist::import_granularity_mismatch)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

@@ -47,5 +47,4 @@ LL - #[allow(non_snake_case, reason = "external API uses camelCase")]
 LL + #[expect(non_snake_case, reason = "external API uses camelCase")]
    |
 
-warning: 3 warnings emitted
-
+warning: N warnings emitted

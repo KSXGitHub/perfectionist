@@ -17,5 +17,4 @@ LL + ///
 LL + /// [#99]: https://github.com/owner/repo/issues/99
    |
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

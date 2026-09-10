@@ -15,5 +15,4 @@ LL + #[cfg(unix)]
 LL + use std::collections::BTreeMap;
    |
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

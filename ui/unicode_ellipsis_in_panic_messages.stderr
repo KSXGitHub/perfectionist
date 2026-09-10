@@ -132,5 +132,4 @@ warning: Unicode `…` (U+2026) in `assert!` message
 LL |     assert!(true, "message with …");
    |                                 ^ help: use ASCII `...` instead: `...`
 
-warning: 22 warnings emitted
-
+warning: N warnings emitted

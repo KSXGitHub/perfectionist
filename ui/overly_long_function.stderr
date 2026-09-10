@@ -7,5 +7,4 @@ LL | fn fifty_one_lines() -> u32 {
    = help: split the body into smaller functions, each doing one thing
    = note: `#[warn(perfectionist::overly_long_function)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

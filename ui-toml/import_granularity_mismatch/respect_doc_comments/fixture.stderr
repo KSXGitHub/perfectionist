@@ -13,5 +13,4 @@ LL ~     /// Keep the two collection imports together.
 LL +     use std::collections::{BTreeMap, HashMap};
    |
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

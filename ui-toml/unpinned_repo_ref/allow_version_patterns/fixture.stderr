@@ -15,5 +15,4 @@ LL | /// <https://github.com/owner/repo/blob/v1.2.3-abc$def/src/lib.rs>.
    |
    = help: pin the URL to a commit SHA so the linked file or directory cannot change without warning
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

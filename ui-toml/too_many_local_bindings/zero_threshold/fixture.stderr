@@ -119,5 +119,4 @@ LL |     fn count(&self, seed: u32) -> u32 {
    |
    = help: split the body into one function per step, or gather related values into a struct
 
-warning: 15 warnings emitted
-
+warning: N warnings emitted

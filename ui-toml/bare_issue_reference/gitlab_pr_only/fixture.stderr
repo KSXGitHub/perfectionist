@@ -9,5 +9,4 @@ LL | /// Bad: closes #77 — on GitLab a bare `#77` is always an issue, so
    = help: or refer to the numbered item with a spelling that has no leading `#`
    = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

@@ -15,5 +15,4 @@ LL | #[allow(perfectionist::wildcard_imports॑)]
    |
    = help: contains a non-ASCII character: '/u{951}' (U+0951)
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

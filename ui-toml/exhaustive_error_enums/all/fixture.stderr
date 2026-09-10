@@ -39,5 +39,4 @@ LL + #[non_exhaustive]
 LL | enum PrivateError {
    |
 
-warning: 3 warnings emitted
-
+warning: N warnings emitted

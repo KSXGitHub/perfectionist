@@ -63,5 +63,4 @@ help: or prefix with `mailto:`
 LL | /** Bad: bare email in a `/** */` doc-block comment — mailto:security@example.org. */
    |                                                       +++++++
 
-warning: 4 warnings emitted
-
+warning: N warnings emitted
