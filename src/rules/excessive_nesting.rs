@@ -79,15 +79,12 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// **Prefer:** a guard and a function per level of meaning
+    /// **Prefer:** two levels — a `let ... else` guard in place of the
+    /// `if let`, an arm guard in place of the `if`
     ///
     /// ```rust,ignore
     /// for entry in entries {
     ///     let Some(meta) = entry.metadata() else { continue };
-    ///     visit(entry, meta, limit);
-    /// }
-    ///
-    /// fn visit(entry: Entry, meta: Meta, limit: u64) {
     ///     match meta.kind() {
     ///         Kind::File if meta.len() > limit => report(entry),
     ///         Kind::File => {}
