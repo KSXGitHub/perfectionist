@@ -1,0 +1,16 @@
+warning: `map` callback has 3 top-level statements, above the limit of 2
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |       let _ = [1, 2].into_iter().map(|value| {
+   |  ____________________________________^
+LL | |         let doubled = value * 2;
+LL | |         let incremented = doubled + 1;
+LL | |         incremented
+LL | |     });
+   | |_____^
+   |
+   = help: extract a named helper, or use an explicit loop for eager work when it preserves the required behavior and performance
+   = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behavior and short-circuit results
+   = note: `#[warn(perfectionist::multi_statement_iterator_closure)]` on by default
+
+warning: N warnings emitted
