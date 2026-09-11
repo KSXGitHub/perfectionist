@@ -34,9 +34,8 @@ Each cherry-picked name is flagged on its own, and the rewrite
 re-points the whole `use` onto the canonical modules at once —
 so it is offered once per statement, on the first name it
 covers, and the rest carry a `help`. Where the entries end up
-sharing a prefix the rewrite keeps them in one statement
-(`diesel::prelude::{table, AsChangeset}` becomes
-`diesel::{table, AsChangeset}`); grouping them any differently is
+sharing a prefix the rewrite keeps them in one statement;
+grouping them any differently is
 `perfectionist::import_granularity_mismatch`'s business.
 
 These shapes get a `help` instead of a rewrite:
