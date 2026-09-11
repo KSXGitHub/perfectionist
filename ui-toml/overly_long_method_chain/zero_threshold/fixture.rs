@@ -3,8 +3,10 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
-// With `max_calls = 0` every chain is flagged and the diagnostic states
-// its count, which pins where a chain starts and ends.
+// The rule is inactive by default, so this directory's `dylint.toml`
+// enables it and sets `max_calls = 0`. Every chain is then flagged and
+// the diagnostic states its count, which pins where a chain starts and
+// ends.
 
 struct Holder {
     items: Vec<u32>,
@@ -16,44 +18,46 @@ impl Holder {
     }
 }
 
-// 1.
+// Bad: 1 call.
 fn one_call(items: &[u32]) -> usize {
     items.len()
 }
 
-// 3.
+// Bad: 3 calls.
 fn three_calls(items: &[u32]) -> u32 {
     items.iter().copied().sum()
 }
 
-// 2: a field access starts the chain; it is not a call.
+// Bad: 2 calls — a field access starts the chain; it is not a call.
 fn field_then_calls(holder: &Holder) -> usize {
     holder.items.iter().count()
 }
 
-// 2: a function call starts the chain; it is not a method call.
+// Bad: 2 calls — a function call starts the chain; it is not a method
+// call.
 fn function_then_calls() -> usize {
     Vec::<u32>::new().iter().count()
 }
 
-// 2: `?` runs through the chain without counting.
+// Bad: 2 calls — `?` runs through the chain without counting.
 fn through_try(input: Result<String, ()>) -> Result<usize, ()> {
     let count = input?.trim().len();
     Ok(count)
 }
 
-// 3 and 1: the closure's chain is its own.
+// Bad: 3 calls and 1 call — the closure's chain is its own.
 fn closure_chain(rows: &[Vec<u32>]) -> usize {
     rows.iter().map(|row| row.len()).count()
 }
 
-// 2 and 1: an argument's chain is its own too.
+// Bad: 2 calls and 1 call — an argument's chain is its own too.
 fn argument_chain(items: &[u32], other: &[u32]) -> bool {
     items.iter().eq(other.iter())
 }
 
-// 2: a run of the same method is one step, so a builder is measured by
-// its distinct steps, `arg` and `status`; `new` is a function call.
+// Bad: 2 calls — a run of the same method is one step, so a builder is
+// measured by its distinct steps, `arg` and `status`; `new` is a
+// function call.
 fn builder() -> std::io::Result<std::process::ExitStatus> {
     std::process::Command::new("ls")
         .arg("-l")
@@ -63,8 +67,8 @@ fn builder() -> std::io::Result<std::process::ExitStatus> {
         .status()
 }
 
-// 1: a method call written as a macro argument counts; the expansion
-// does not.
+// Bad: 1 call — a method call written as a macro argument counts; the
+// expansion does not.
 fn call_in_macro_argument(items: &[u32]) {
     println!("{}", items.len());
 }

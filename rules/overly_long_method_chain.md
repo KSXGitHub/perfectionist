@@ -2,7 +2,7 @@
 
 # `perfectionist::overly_long_method_chain`
 
-- _Default state:_ `active`
+- _Default state:_ `inactive`
 - _Source:_ [`src/rules/overly_long_method_chain.rs`](../src/rules/overly_long_method_chain.rs)
 
 > expression chains more method calls than the configured maximum
@@ -26,6 +26,17 @@ produced by a macro expansion is not measured.
 
 Test code is measured like any other code; set
 `exempt_tests` to leave it alone.
+
+Where a chain stops being readable is a matter of taste, and a
+codebase written around iterator pipelines will disagree with
+one written around named intermediates. The rule is therefore
+inactive by default — enable it per crate by adding to
+`dylint.toml`:
+
+```toml
+[perfectionist]
+enable = ["overly_long_method_chain"]
+```
 
 ## Why restrict this?
 

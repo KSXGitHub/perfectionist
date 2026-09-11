@@ -1,9 +1,16 @@
 // edition:2024
-#![feature(register_tool)]
-#![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
-// Bad: six calls, one above the default limit.
+// The rule ships inactive by default
+// (`DEFAULT_STATE = DefaultState::Inactive` in
+// `src/rules/overly_long_method_chain.rs`), so without a `dylint.toml`
+// that enables it the pass never registers and nothing in this file
+// produces a diagnostic. Both chains below are above the default limit
+// of 5 and would be flagged once the rule is on, which is what makes
+// the empty `.stderr` mean something. The limit and its knobs are
+// exercised under `ui-toml/overly_long_method_chain/`, each with its
+// own `dylint.toml` that opts the rule in.
+
 fn six_calls(names: &[String]) -> String {
     names
         .iter()
@@ -14,47 +21,6 @@ fn six_calls(names: &[String]) -> String {
         .join(", ")
 }
 
-// Good: a run of the same method is one step, so this builder has
-// two: `arg` and `status`.
-fn builder() -> std::io::Result<std::process::ExitStatus> {
-    std::process::Command::new("ls")
-        .arg("-l")
-        .arg("-a")
-        .arg("-h")
-        .arg("--color")
-        .arg("/")
-        .status()
-}
-
-// Good: the same pipeline with its middle named.
-fn named_stage(names: &[String]) -> String {
-    let trimmed: Vec<String> = names
-        .iter()
-        .filter(|name| !name.is_empty())
-        .map(|name| name.trim().to_owned())
-        .collect();
-    trimmed.join(", ")
-}
-
-// Good: exactly five is not above the limit.
-fn five_calls(names: &[String]) -> usize {
-    names
-        .iter()
-        .filter(|name| !name.is_empty())
-        .map(|name| name.trim())
-        .map(str::len)
-        .sum()
-}
-
-// Good: a closure's chain is measured on its own, so three outside and
-// three inside are two chains of three.
-fn chains_in_closures(rows: &[Vec<String>]) -> usize {
-    rows.iter()
-        .map(|row| row.iter().filter(|name| name.is_empty()).count())
-        .sum()
-}
-
-// Bad: `?` and `.await` do not break a chain; this one has six calls.
 async fn through_await_and_try(
     fetch: impl Future<Output = Result<String, ()>>,
 ) -> Result<usize, ()> {
@@ -67,24 +33,6 @@ async fn through_await_and_try(
         .max()
         .unwrap_or(0);
     Ok(count)
-}
-
-// Good: a macro's expansion is not measured.
-macro_rules! chained {
-    ($items:expr) => {
-        $items
-            .iter()
-            .map(|item| item + 1)
-            .map(|item| item + 1)
-            .map(|item| item + 1)
-            .map(|item| item + 1)
-            .map(|item| item + 1)
-            .sum::<u32>()
-    };
-}
-
-fn built_from_a_macro(items: &[u32]) -> u32 {
-    chained!(items)
 }
 
 fn main() {}

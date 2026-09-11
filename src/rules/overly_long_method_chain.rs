@@ -28,6 +28,17 @@ declare_tool_lint! {
     /// Test code is measured like any other code; set
     /// `exempt_tests` to leave it alone.
     ///
+    /// Where a chain stops being readable is a matter of taste, and a
+    /// codebase written around iterator pipelines will disagree with
+    /// one written around named intermediates. The rule is therefore
+    /// inactive by default — enable it per crate by adding to
+    /// `dylint.toml`:
+    ///
+    /// ```toml
+    /// [perfectionist]
+    /// enable = ["overly_long_method_chain"]
+    /// ```
+    ///
     /// ### Why restrict this?
     ///
     /// This is a stylistic preference, not a correctness issue. A long
@@ -113,7 +124,10 @@ pub struct OverlyLongMethodChain {
 impl_lint_pass!(OverlyLongMethodChain => [OVERLY_LONG_METHOD_CHAIN]);
 
 impl Register for rule::OverlyLongMethodChain {
-    const DEFAULT_STATE: DefaultState = DefaultState::Active;
+    /// Off by default — enable it in `dylint.toml` via the crate-wide
+    /// `[perfectionist] enable = ["overly_long_method_chain"]` (or the
+    /// `[[perfectionist.enable]]` array-of-tables form).
+    const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
 
     fn register_lint(lint_store: &mut LintStore) {
         lint_store.register_lints(&[OVERLY_LONG_METHOD_CHAIN]);

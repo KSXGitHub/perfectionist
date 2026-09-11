@@ -98,7 +98,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   function body has more lines of code than the configured maximum
 
-- [`overly_long_method_chain`](./overly_long_method_chain.md) (default: `active`).
+- [`overly_long_method_chain`](./overly_long_method_chain.md) (default: `inactive`).
 
   expression chains more method calls than the configured maximum
 

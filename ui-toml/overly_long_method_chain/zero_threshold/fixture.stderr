@@ -92,5 +92,4 @@ LL |     println!("{}", items.len());
    |
    = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
 
-warning: 11 warnings emitted
-
+warning: N warnings emitted

@@ -57,10 +57,3 @@ max_depth = 5
 # are split.
 ["perfectionist::overly_long_file"]
 max_lines = 839
-
-# A ratchet: existing chains are longer than this rule's default of 5
-# distinct calls, the longest -- the `Command` builders and `pipe`
-# chains in `utils/` and `tools/` -- at 8. This ceiling sits at that
-# length so no new chain may go longer; lower it as they are named.
-["perfectionist::overly_long_method_chain"]
-max_calls = 8
