@@ -13,8 +13,8 @@ Counts the lines of code in a function or method body and flags
 the body when the count is above `max_lines`.
 
 A line counts when it holds anything other than whitespace and
-comments, so blank lines, comment-only lines, and the lines a
-block comment spans are free. The braces that open and close
+comments, so blank lines, comment-only lines, doc comments, and
+the lines a block comment spans are free. The braces that open and close
 the body are not counted. A function produced by a macro is not
 measured. A nested function's lines count towards the function
 that contains it, since they sit in its body.
