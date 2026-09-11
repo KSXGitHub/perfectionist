@@ -17,7 +17,7 @@ fn six_calls(names: &[String]) -> String {
         .join(", ")
 }
 
-// Not flagged: a run of the same method is one step, so this builder
+// Not flagged: a run of the same method is one call, so this builder
 // has 2, `arg` and `status`.
 fn builder() -> std::io::Result<std::process::ExitStatus> {
     std::process::Command::new("ls")
@@ -40,7 +40,7 @@ fn named_stage(names: &[String]) -> String {
 }
 
 // Not flagged: 5 calls is exactly the limit, and a chain is flagged
-// only above the limit, never at it. No two adjacent steps share a
+// only above the limit, never at it. No two adjacent calls share a
 // method name, so nothing here collapses and the count is the number
 // of calls written.
 fn five_calls(names: &[String]) -> usize {

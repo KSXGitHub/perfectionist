@@ -100,7 +100,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 
 - [`overly_long_method_chain`](./overly_long_method_chain.md) (default: `inactive`).
 
-  expression chains more method calls than the configured maximum
+  expression chain has more method calls than the configured maximum
 
 - [`overly_long_print_macro`](./overly_long_print_macro.md) (default: `active`).
 

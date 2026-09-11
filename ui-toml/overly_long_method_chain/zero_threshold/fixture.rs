@@ -55,8 +55,8 @@ fn argument_chain(items: &[u32], other: &[u32]) -> bool {
     items.iter().eq(other.iter())
 }
 
-// Bad: 2 calls — a run of the same method is one step, so a builder is
-// measured by its distinct steps, `arg` and `status`; `new` is a
+// Bad: 2 calls — a run of the same method is one call, so a builder is
+// measured by its distinct calls, `arg` and `status`; `new` is a
 // function call.
 fn builder() -> std::io::Result<std::process::ExitStatus> {
     std::process::Command::new("ls")

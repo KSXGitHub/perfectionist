@@ -5,7 +5,7 @@
 - _Default state:_ `inactive`
 - _Source:_ [`src/rules/overly_long_method_chain.rs`](../src/rules/overly_long_method_chain.rs)
 
-> expression chains more method calls than the configured maximum
+> expression chain has more method calls than the configured maximum
 
 ## What it does
 
@@ -16,7 +16,7 @@ is above `max_calls` (default `5`).
 Only method calls on the chain's spine count: the receiver of
 each call, down to the value the chain starts from. A run of the
 same method — `.arg("-v").arg("build").arg(path)` — counts once,
-so a builder is measured by its distinct steps. A `?` or an
+so a builder is measured by its distinct calls. A `?` or an
 `.await` between two calls neither counts nor breaks the chain.
 A field access (`self.items.iter()` starts at `self.items`) and
 a function call (`Vec::new().push(1)` starts at `Vec::new()`)
