@@ -30,29 +30,18 @@ Cherry-picking individual items from a prelude defeats that
 intent and usually means the importer should reach into the
 prelude's source module instead.
 
-Each cherry-picked name is flagged on its own, and the rewrite
-re-points the whole `use` onto the canonical modules at once —
-so it is offered once per statement, on the first name it
-covers, and the rest carry a `help`. Where the entries end up
-sharing a prefix the rewrite keeps them in one statement;
-grouping them any differently is
+Each cherry-picked name is flagged on its own, but the rewrite
+re-points the whole `use` at once, so it is offered only on the
+first of them and the rest carry a `help`. Names that end up
+sharing a prefix stay in one statement; regrouping them is
 `perfectionist::import_granularity_mismatch`'s business.
 
-These shapes get a `help` instead of a rewrite:
-
-- A name that resolves to items in several modules at once,
-  which no single `use` reproduces.
-- A statement holding a `self` entry
-  (`use foo::prelude::{self, Bar};`), which would stop binding
-  only the module once the tree is rebuilt around it.
-- A macro, which `#[macro_export]` reaches at its crate root
-  rather than through the module it is written in.
-
-A rewrite onto a module in some *third* crate — `std`'s prelude
-re-exports items that live in `alloc` — names the right module
-but a crate this file has not necessarily linked, so it is
-offered for you to check rather than applied by
-`cargo dylint --fix`.
+A `help` replaces the rewrite for a name bound in several
+modules at once, for a statement holding a `self` entry, and for
+a macro. A rewrite onto a third crate — `std`'s prelude
+re-exports items that live in `alloc` — is offered but never
+`MachineApplicable`, since this file need not have linked that
+crate.
 
 ## Example
 
