@@ -90,18 +90,26 @@ const SOURCES: &[(&str, &str)] = &[
     ),
 ];
 
+/// A crate whose root holds a single line of code, so the diagnostic
+/// has to put its noun in the singular.
+const ONE_LINE_SOURCES: &[(&str, &str)] = &[("src/lib.rs", "pub fn nothing() {}\n")];
+
 /// Run the fixture and return its stderr, asserting that `cargo dylint`
 /// itself succeeded.
-fn run(package_name: &str, config: &str) -> String {
+fn run_sources(package_name: &str, sources: &[(&str, &str)], config: &str) -> String {
     let (_temp, stderr, success) = run_project_with_config(
         package_name,
         cargo_manifest_dir(),
         &shared_target_dir(),
-        SOURCES,
+        sources,
         config,
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     stderr
+}
+
+fn run(package_name: &str, config: &str) -> String {
+    run_sources(package_name, SOURCES, config)
 }
 
 fn assert_flagged(stderr: &str, file: &str) {
@@ -143,4 +151,20 @@ fn exempt_tests_leaves_test_files_alone() {
     assert_not_flagged(&stderr, "tests.rs");
     assert_not_flagged(&stderr, "it.rs");
     assert_not_flagged(&stderr, "bench.rs");
+}
+
+#[test]
+fn a_file_of_one_line_reads_as_one_line() {
+    let stderr = run_sources(
+        "fixture_olfile_singular",
+        ONE_LINE_SOURCES,
+        &dylint_toml(RuleConfig {
+            max_lines: Some(0),
+            ..RuleConfig::default()
+        }),
+    );
+    assert!(
+        stderr.contains("has 1 line of code"),
+        "expected the noun to agree with the count; stderr was:\n{stderr}",
+    );
 }
