@@ -248,15 +248,22 @@ impl NamedPreludeImports {
         // The written path's own root says which crates this site is
         // known to have linked, which is half of whether the canonical
         // path can be promised to resolve. `PathRoot` is the leading
-        // `::` of `use ::serde::...`, not a segment of its own.
-        let written_root = segments
+        // `::` of `use ::serde::...`, not a segment of its own, so it is
+        // recorded separately and skipped when reading the first one.
+        let rooted = segments
+            .first()
+            .is_some_and(|segment| segment.ident.name == kw::PathRoot);
+        let name = segments
             .iter()
             .map(|segment| segment.ident.name)
             .find(|name| *name != kw::PathRoot);
         Some(canonical::resolve(
             cx.tcx,
             res,
-            written_root.as_ref().map(rustc_span::Symbol::as_str),
+            canonical::WrittenRoot {
+                name: name.as_ref().map(rustc_span::Symbol::as_str),
+                rooted,
+            },
         ))
     }
 

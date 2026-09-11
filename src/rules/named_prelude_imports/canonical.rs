@@ -18,6 +18,11 @@
 //!   re-exporting from a private sibling behaves the same way. The
 //!   module named is still the right one, so the path is offered and
 //!   only [`Canonical::nameable`] is withheld.
+//! - **A definition path names its crate unrooted.** An import written
+//!   `use ::dep::prelude::Item;` pinned `dep` to the extern prelude;
+//!   rewriting it to `dep::thing::Item` drops the pin, so a module
+//!   named `dep` at the rewrite site captures the path instead. The
+//!   leading `::` is put back rather than the path withheld.
 //! - **A macro's definition path need not be the path it answers to.** A
 //!   `#[macro_export] macro_rules!` written inside `mod thing` has the
 //!   definition path `crate::thing::shout`, but resolves only as
@@ -52,14 +57,22 @@ pub(super) struct Canonical {
     pub(super) nameable: bool,
 }
 
+/// How the `use` being rewritten reaches its crate.
+pub(super) struct WrittenRoot<'a> {
+    /// Its first segment (`std` of `use std::prelude::v1::Vec;`), which
+    /// says which crate the importer is known to have linked. `None`
+    /// for a path with no segment before the item.
+    pub(super) name: Option<&'a str>,
+    /// Whether a leading `::` pinned that segment to the extern
+    /// prelude, which the rewrite has to keep.
+    pub(super) rooted: bool,
+}
+
 /// Resolve the canonical path for the namespaces one `use` path binds.
-/// `written_root` is the first segment of the path being rewritten
-/// (`std` of `use std::prelude::v1::Vec;`), which says which crates the
-/// importer is known to have linked.
 pub(super) fn resolve(
     tcx: TyCtxt<'_>,
     res: PerNS<Option<Res>>,
-    written_root: Option<&str>,
+    written: WrittenRoot<'_>,
 ) -> Canonical {
     // A `use` brings in *every* namespace the name resolves to. Collect
     // a `DefId` per resolved namespace (type / value / macro), not just
@@ -105,11 +118,25 @@ pub(super) fn resolve(
             nameable: false,
         };
     };
-    let nameable = crate_is_linked(path, written_root)
+    let nameable = crate_is_linked(path, written.name)
         && def_ids.iter().all(|&def_id| all_public(tcx, def_id));
     Canonical {
-        path: Some(path.clone()),
+        path: Some(root_as_written(path, written.rooted)),
         nameable,
+    }
+}
+
+/// Put back the leading `::` when the path being rewritten carried one.
+/// `use ::dep::prelude::Item;` names the extern crate `dep` whatever
+/// else is in scope; rewriting it to `dep::thing::Item` hands that first
+/// segment back to ordinary resolution, where a module named `dep` at
+/// the rewrite site captures it. The local crate is exempt, since
+/// `::crate` is not a path and `crate::` is already unambiguous.
+fn root_as_written(canonical: &str, rooted: bool) -> String {
+    if rooted && canonical.split("::").next() != Some("crate") {
+        format!("::{canonical}")
+    } else {
+        canonical.to_owned()
     }
 }
 

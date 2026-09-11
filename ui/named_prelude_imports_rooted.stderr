@@ -1,0 +1,9 @@
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports_rooted.rs:LL:CC
+   |
+LL |     use ::rooted_prelude::prelude::Item;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: import the item from its canonical module: `::rooted_prelude::thing::Item`
+   |
+   = note: `#[warn(perfectionist::named_prelude_imports)]` on by default
+
+warning: N warnings emitted
