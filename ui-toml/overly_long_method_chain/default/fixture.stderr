@@ -16,6 +16,35 @@ LL | |         .join(", ")
 warning: method chain has 6 calls, above the limit of 5
   --> $DIR/fixture.rs:LL:CC
    |
+LL | /     loader
+LL | |         .load()
+LL | |         .await
+LL | |         .lines()
+...  |
+LL | |         .map(str::len)
+LL | |         .count()
+   | |________________^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+
+warning: method chain has 6 calls, above the limit of 5
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |       let count = input
+   |  _________________^
+LL | |         .trim()
+LL | |         .parse::<u32>()?
+LL | |         .to_string()
+LL | |         .chars()
+LL | |         .filter(char::is_ascii_digit)
+LL | |         .count();
+   | |________________^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+
+warning: method chain has 6 calls, above the limit of 5
+  --> $DIR/fixture.rs:LL:CC
+   |
 LL |       let count = fetch
    |  _________________^
 LL | |         .await?

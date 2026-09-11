@@ -40,13 +40,15 @@ fn named_stage(names: &[String]) -> String {
 }
 
 // Not flagged: 5 calls is exactly the limit, and a chain is flagged
-// only above the limit, never at it.
+// only above the limit, never at it. No two adjacent steps share a
+// method name, so nothing here collapses and the count is the number
+// of calls written.
 fn five_calls(names: &[String]) -> usize {
     names
         .iter()
         .filter(|name| !name.is_empty())
-        .map(|name| name.trim())
-        .map(str::len)
+        .map(|name| name.trim().len())
+        .take(3)
         .sum()
 }
 
@@ -56,6 +58,40 @@ fn chains_in_closures(rows: &[Vec<String>]) -> usize {
     rows.iter()
         .map(|row| row.iter().filter(|name| name.is_empty()).count())
         .sum()
+}
+
+struct Loader;
+
+impl Loader {
+    async fn load(&self) -> String {
+        String::new()
+    }
+}
+
+// Bad: 6 calls — an `.await` mid-chain neither counts nor breaks it,
+// so `load` below the `.await` joins the 5 above it.
+async fn through_await(loader: Loader) -> usize {
+    loader
+        .load()
+        .await
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(str::len)
+        .count()
+}
+
+// Bad: 6 calls — a `?` mid-chain is the same, so `trim` and `parse`
+// below it join the 4 above.
+fn through_try(input: &str) -> Result<usize, std::num::ParseIntError> {
+    let count = input
+        .trim()
+        .parse::<u32>()?
+        .to_string()
+        .chars()
+        .filter(char::is_ascii_digit)
+        .count();
+    Ok(count)
 }
 
 // Bad: 6 calls — `?` and `.await` do not break a chain.
@@ -90,6 +126,24 @@ macro_rules! chained {
 // Not flagged: the calls come from the expansion.
 fn built_from_a_macro(items: &[u32]) -> u32 {
     chained!(items)
+}
+
+macro_rules! source {
+    ($items:expr) => {
+        $items.iter().copied()
+    };
+}
+
+// Not flagged: 5 calls. The head is written here, so the chain is
+// measured, but the spine stops where the expansion starts rather than
+// counting the 2 calls inside it.
+fn head_over_a_macro_receiver(items: &[u32]) -> u32 {
+    source!(items)
+        .map(|item| item + 1)
+        .filter(|item| *item > 1)
+        .rev()
+        .max()
+        .unwrap_or(0)
 }
 
 fn main() {}
