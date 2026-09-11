@@ -63,7 +63,9 @@ pub(super) struct Statement {
     /// rewrite replaces.
     pub(super) span: Span,
     /// The head's written path span. For a single import this covers
-    /// the whole path and is what the rewrite replaces; for a brace list
+    /// the whole path and is what the rewrite replaces — checked
+    /// against the path itself, since a skipped `ListStem` can leave a
+    /// brace-list leaf heading a statement of its own. For a brace list
     /// it stops at the prefix shared by the entries, which is why such a
     /// statement is re-rendered whole instead.
     path_span: Span,
@@ -139,6 +141,18 @@ impl Statement {
             };
             (self.span, format!("{vis}use {tree};"))
         } else {
+            // Outside a brace list the replaced span has to hold the
+            // whole path being replaced, which is true of a statement
+            // the pass walked intact. It is not true of a brace-list
+            // leaf that became a head of its own because the `ListStem`
+            // around it was macro-generated and skipped: that span holds
+            // one entry from between the braces — or the caller's token
+            // that produced it — so a whole path pasted there does not
+            // parse.
+            let written = &self.leaves.first()?.written;
+            if source_map.span_to_snippet(self.path_span).ok()? != *written {
+                return None;
+            }
             (self.path_span, tree)
         };
 

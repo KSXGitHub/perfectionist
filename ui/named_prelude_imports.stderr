@@ -110,4 +110,20 @@ LL |     use crate::mixed::prelude::{A, C};
    |
    = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
 
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports.rs:LL:CC
+   |
+LL |     cherry_pick!(A, helper);
+   |                  ^
+   |
+   = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
+
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports.rs:LL:CC
+   |
+LL |     cherry_pick!(A, helper);
+   |                     ^^^^^^
+   |
+   = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
+
 warning: N warnings emitted

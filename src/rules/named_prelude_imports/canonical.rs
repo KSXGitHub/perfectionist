@@ -93,10 +93,10 @@ pub(super) fn resolve(
     // resolved namespace agrees; more than one means the import spans
     // several modules and no single `use` reproduces it, so no rewrite
     // is offered rather than a wrong one.
-    // A macro is dropped rather than resolved: `#[macro_export]` lifts
-    // it to its crate root, so its definition path names a module it
-    // cannot be reached through. Dropping it leaves `paths` empty, which
-    // withholds the suggestion for the whole statement.
+    // A macro is never resolved: `#[macro_export]` lifts it to its
+    // crate root, so its definition path names a module it cannot be
+    // reached through. Withhold the path, which withholds the rewrite
+    // for the whole statement.
     if def_ids
         .iter()
         .any(|&def_id| matches!(tcx.def_kind(def_id), DefKind::Macro(_)))

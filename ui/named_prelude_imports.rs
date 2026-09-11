@@ -146,4 +146,19 @@ mod mixed_cherry {
     use crate::mixed::prelude::{A, C};
 }
 
+// Bad, but not rewritten: the braces live in the macro body, so the
+// `use` around these names is skipped as macro-generated while the
+// names themselves are the caller's own tokens. Each then heads a
+// statement of its own, and its span holds one entry rather than a
+// whole path — pasting a canonical path over `A` would rewrite the
+// macro call, not the import it expands to.
+macro_rules! cherry_pick {
+    ($($entry:tt)*) => {
+        use crate::prelude::{$($entry)*};
+    };
+}
+mod macro_generated {
+    cherry_pick!(A, helper);
+}
+
 fn main() {}
