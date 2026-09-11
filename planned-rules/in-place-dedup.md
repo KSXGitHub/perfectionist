@@ -6,8 +6,9 @@ which proposes preferring the
 [`into-deduped`](https://crates.io/crates/into-deduped) crates — both by
 this project's author — over the in-place `Vec::sort*` / `Vec::dedup*`
 mutation of a freshly-bound `Vec`. This rule covers the deduping half; its
-sibling [`in-place-sort`](./in-place-sort.md) covers the sorting half. The
-two are deliberately parallel and **cascade** (see
+sibling [`in-place-sort`](./in-place-sort.md) covers the sorting half —
+and fires more broadly, since `sort*` are slice methods while `dedup` is
+`Vec`-only. Where both apply, on a `Vec`, they **cascade** (see
 [Interaction](#interaction-with-sibling-rules)).
 
 ## Statement
@@ -365,13 +366,13 @@ config knob.
 
 ## Interaction with sibling rules
 
-- [`in-place-sort`](./in-place-sort.md) — the sorting half. The two
-  **cascade**: each accepts *any* owned-`Vec` initializer and folds the
-  in-place operation that immediately follows it, so `collect` → `sort` →
-  `dedup` collapses to a single
+- [`in-place-sort`](./in-place-sort.md) — the sorting half, and the
+  **broader** rule: it fires on any sortable-slice owner (`Vec`, `[T; N]`,
+  `Box<[T]>`, `&mut [T]`, …), whereas `dedup` is `Vec`-only, so this rule
+  fires only on a `Vec`. Where both apply — a `Vec` sorted then deduped —
+  they **cascade**: `collect` → `sort` → `dedup` collapses to a single
   `collect().into_sorted().into_deduped()` over successive fixes, source
-  order preserved. Neither needs to know about the other's operation; each
-  just re-fires on the owned `Vec` the other produced.
+  order preserved, each rule re-firing on the `Vec` the other produced.
 - [`itertools-sort-dedup-collect`](./itertools-sort-dedup-collect.md) —
   the itertools spelling, rewriting *toward* the `collect().into_deduped()`
   form this rule produces. Its exclusion of `itertools::unique*` mirrors

@@ -188,14 +188,14 @@ pattern that several rules call out by reference — live in
 
 ### Sorting and deduplication
 - [`in-place-sort.md`](./in-place-sort.md) —
-  when an owned `Vec` is bound and the very next statement sorts it in
-  place with `Vec::sort*`, fold that sort into the initializer via the
-  owning `into_sorted*` method from
-  [`into-sorted`](https://crates.io/crates/into-sorted); rustc's
-  `unused_mut` then clears the now-redundant `mut`. The source can be any
-  owned `Vec` — a `collect()`, a `vec![…]`, a `Vec`-returning call — not
-  just a collect. The sorting half of
-  `KSXGitHub/perfectionist#308`. Active by default.
+  when a sortable-slice owner is bound and the very next statement sorts
+  it in place with a slice `sort*` method, fold that sort into the
+  initializer via the owning `into_sorted*` method from
+  [`into-sorted`](https://crates.io/crates/into-sorted); for an owned
+  receiver rustc's `unused_mut` then clears the now-redundant `mut`. Fires
+  on anything `into_sorted` accepts (`AsMut<[Item]> + Sized`) — `Vec<T>`,
+  `[T; N]`, `Box<[T]>`, `&mut [T]`, … — not just `Vec`. The sorting half
+  of `KSXGitHub/perfectionist#308`. Active by default.
 - [`in-place-dedup.md`](./in-place-dedup.md)
   — the deduping counterpart: any owned `Vec` binding immediately followed
   by an in-place `Vec::dedup*` folds into the owning `into_deduped*`
