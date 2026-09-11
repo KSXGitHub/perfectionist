@@ -30,18 +30,10 @@ Cherry-picking individual items from a prelude defeats that
 intent and usually means the importer should reach into the
 prelude's source module instead.
 
-Each cherry-picked name is flagged on its own, but the rewrite
-re-points the whole `use` at once, so it is offered only on the
-first of them and the rest carry a `help`. Names that end up
-sharing a prefix stay in one statement; regrouping them is
-`perfectionist::import_granularity_mismatch`'s business.
-
-A `help` replaces the rewrite for a name bound in several
-modules at once, for a statement holding a `self` entry, and for
-a macro. A rewrite onto a third crate — `std`'s prelude
-re-exports items that live in `alloc` — is offered but never
-`MachineApplicable`, since this file need not have linked that
-crate.
+One rewrite covers the whole `use`: a statement with several
+cherry-picks carries it once, and a `help` on the rest. Where
+the rewrite cannot be shown to preserve what the `use` binds,
+only the `help` is offered.
 
 ## Example
 
