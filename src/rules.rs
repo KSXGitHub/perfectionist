@@ -17,6 +17,7 @@ pub mod import_grouping_mismatch;
 pub mod impure_macro_arguments;
 pub mod lint_attribute_trailing_comment;
 pub mod macro_trailing_comma;
+pub mod multi_statement_iterator_closure;
 pub mod named_prelude_imports;
 pub mod needless_borrowed_parameters;
 pub mod overly_long_function;

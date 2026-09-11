@@ -82,6 +82,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   macro invocation does not follow rustfmt's vertical trailing-comma policy
 
+- [`multi_statement_iterator_closure`](./multi_statement_iterator_closure.md) (default: `inactive`).
+
+  iterator callback has too many top-level statements
+
 - [`named_prelude_imports`](./named_prelude_imports.md) (default: `active`).
 
   named item cherry-picked from a prelude module instead of glob-imported
