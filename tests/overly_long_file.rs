@@ -23,6 +23,8 @@ const LINT_NAME: &str = "perfectionist::overly_long_file";
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     max_lines: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    exempt_tests: Option<bool>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -32,18 +34,39 @@ fn dylint_toml(config: RuleConfig) -> String {
 
 #[test]
 fn zero_threshold_reports_the_file_count() {
-    let fixtures = _utils::copy_fixtures_with_directive(
+    let fixtures = _utils::copy_fixtures_with_directives(
         env!("CARGO_MANIFEST_DIR"),
         "ui-toml/overly_long_file/zero_threshold",
     );
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
-        .dylint_toml(dylint_toml(RuleConfig { max_lines: Some(0) }))
+        .dylint_toml(dylint_toml(RuleConfig {
+            max_lines: Some(0),
+            ..RuleConfig::default()
+        }))
         .run();
 }
 
-/// A crate whose root is four lines, whose `big.rs` module and
-/// `#[cfg(test)] mod tests;` file each hold over five hundred lines of
-/// code.
+#[test]
+fn a_file_at_the_limit_is_not_flagged() {
+    let fixtures = _utils::copy_fixtures_with_directives(
+        env!("CARGO_MANIFEST_DIR"),
+        "ui-toml/overly_long_file/at_the_limit",
+    );
+    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+        .dylint_toml(dylint_toml(RuleConfig {
+            max_lines: Some(5),
+            ..RuleConfig::default()
+        }))
+        .run();
+}
+
+/// A crate whose root is 4 lines, and whose `big.rs` module,
+/// `#[cfg(test)] mod tests;` file, integration test, and benchmark each
+/// hold over 500 lines of code.
+///
+/// The last two carry no `#[cfg(test)]` gate: they are test code by
+/// virtue of the Cargo target they sit in, which `exempt_tests` has to
+/// reach through the target rather than through an attribute.
 const SOURCES: &[(&str, &str)] = &[
     (
         "src/lib.rs",
@@ -56,6 +79,14 @@ const SOURCES: &[(&str, &str)] = &[
     (
         "src/tests.rs",
         include_str!("fixtures/overly_long_file/tests.rs"),
+    ),
+    (
+        "tests/it.rs",
+        include_str!("fixtures/overly_long_file/big.rs"),
+    ),
+    (
+        "benches/bench.rs",
+        include_str!("fixtures/overly_long_file/big.rs"),
     ),
 ];
 
@@ -94,6 +125,8 @@ fn out_of_line_modules_are_measured_and_test_files_count_by_default() {
     let stderr = run("fixture_olfile_default", "");
     assert_flagged(&stderr, "big.rs");
     assert_flagged(&stderr, "tests.rs");
+    assert_flagged(&stderr, "it.rs");
+    assert_flagged(&stderr, "bench.rs");
     assert_not_flagged(&stderr, "lib.rs");
 }
 
@@ -108,4 +141,6 @@ fn exempt_tests_leaves_test_files_alone() {
     );
     assert_flagged(&stderr, "big.rs");
     assert_not_flagged(&stderr, "tests.rs");
+    assert_not_flagged(&stderr, "it.rs");
+    assert_not_flagged(&stderr, "bench.rs");
 }

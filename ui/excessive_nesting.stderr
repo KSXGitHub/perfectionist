@@ -27,5 +27,4 @@ LL |                     match row.len() {
    = help: return early with a guard clause or `let ... else` so the rest of the body stops being nested
    = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

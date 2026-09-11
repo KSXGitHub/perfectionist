@@ -6,17 +6,19 @@
 //! `loop`, a closure, a `let ... else` body, and a free-standing block —
 //! a statement block, an `unsafe` block, or the block a `let`
 //! initialises from. The block that *is* a construct's body does not
-//! nest again on its own: `if x { y }` is one level, not two.
+//! nest again on its own: `if x { y }` is 1 level, not 2.
 //!
 //! The walk measures what the author wrote. A construct produced by a
-//! macro expansion adds no level, though the author's constructs inside
+//! macro expansion is not a level, though the author's constructs inside
 //! a macro's arguments still count, and the desugared shape of a `for`
 //! or `while` loop, a `?`, an `.await`, or an `async` body adds nothing
 //! beyond the construct the author wrote.
 
 use crate::common::span_is_macro_generated;
 use rustc_hir::intravisit::{self, Visitor};
-use rustc_hir::{Arm, Block, Body, ClosureKind, Expr, ExprKind, LetStmt, LoopSource, MatchSource};
+use rustc_hir::{
+    Arm, BinOpKind, Block, Body, ClosureKind, Expr, ExprKind, LetStmt, LoopSource, MatchSource,
+};
 use rustc_middle::hir::nested_filter;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
@@ -24,8 +26,13 @@ use rustc_span::Span;
 /// One level of nesting: a construct the reader indents for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Construct {
-    If,
-    IfLet,
+    /// An `if`, carrying what a suggested rewrite has to know about it:
+    /// whether it binds a pattern, and whether it has an `else` the
+    /// rewrite would have to carry along.
+    If {
+        binds: bool,
+        has_else: bool,
+    },
     Match,
     For,
     While,
@@ -39,8 +46,8 @@ impl Construct {
     /// How the diagnostic names this construct.
     pub(super) fn label(self) -> &'static str {
         match self {
-            Construct::If => "`if`",
-            Construct::IfLet => "`if let`",
+            Construct::If { binds: true, .. } => "`if let`",
+            Construct::If { binds: false, .. } => "`if`",
             Construct::Match => "`match`",
             Construct::For => "`for`",
             Construct::While => "`while`",
@@ -49,6 +56,19 @@ impl Construct {
             Construct::LetElse => "`let ... else`",
             Construct::Block => "block",
         }
+    }
+}
+
+/// Whether an `if` condition binds a pattern: a bare `if let`, or a let
+/// chain with a `let` anywhere in it. A chain is `&&`-nested `Binary`,
+/// not a single `Let`, so matching only the latter misses it.
+fn binds_a_pattern(cond: &Expr<'_>) -> bool {
+    match cond.kind {
+        ExprKind::Let(..) => true,
+        ExprKind::Binary(op, lhs, rhs) if op.node == BinOpKind::And => {
+            binds_a_pattern(lhs) || binds_a_pattern(rhs)
+        }
+        _ => false,
     }
 }
 
@@ -156,10 +176,9 @@ impl<'tcx> Walker<'tcx> {
         if is_else_if {
             visit_branches(self);
         } else {
-            let construct = if matches!(cond.kind, ExprKind::Let(..)) {
-                Construct::IfLet
-            } else {
-                Construct::If
+            let construct = Construct::If {
+                binds: binds_a_pattern(cond),
+                has_else: els.is_some(),
             };
             self.enter(construct, expr.span, visit_branches);
         }
@@ -211,10 +230,13 @@ impl<'tcx> Walker<'tcx> {
     }
 
     fn visit_closure(&mut self, expr: &'tcx Expr<'tcx>, kind: ClosureKind, body: &'tcx Body<'tcx>) {
-        // An `async` block or `async fn` body is a coroutine closure the
-        // author never wrote as one, so it is not a level.
-        let is_authored =
-            matches!(kind, ClosureKind::Closure) && expr.span.desugaring_kind().is_none();
+        // `|| {}` and `async || {}` are both closures the author wrote;
+        // the coroutine an `async` block or `async fn` body lowers to is
+        // not one they wrote as a closure, so it is not a level.
+        let is_authored = matches!(
+            kind,
+            ClosureKind::Closure | ClosureKind::CoroutineClosure(_),
+        ) && expr.span.desugaring_kind().is_none();
         if is_authored {
             self.enter(Construct::Closure, expr.span, |walker| {
                 walker.visit_body_expr(body.value);

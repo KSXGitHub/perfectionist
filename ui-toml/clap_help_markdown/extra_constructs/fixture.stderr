@@ -31,5 +31,4 @@ LL |     /// - second
    |
    = help: override the help text with a plain string (e.g. `#[arg(help = "...")]`) or remove the markdown from the doc comment
 
-warning: 4 warnings emitted
-
+warning: N warnings emitted

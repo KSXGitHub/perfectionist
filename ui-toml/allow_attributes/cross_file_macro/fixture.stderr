@@ -13,5 +13,4 @@ LL | silence!("rationale supplied from another file");
    = note: `#[warn(perfectionist::allow_attributes)]` on by default
    = note: this warning originates in the macro `silence` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

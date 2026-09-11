@@ -139,5 +139,4 @@ help: otherwise split them into a separate `#[expect]` that self-cleans
 LL | #[cfg_attr(all(), allow(dead_code, reason = "split under cfg"), expect(clippy::type_complexity, reason = "split under cfg"))]
    |                                    ++++++++++++++++++++++++++++++++++++
 
-warning: 9 warnings emitted
-
+warning: N warnings emitted

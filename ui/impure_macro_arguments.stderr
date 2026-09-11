@@ -140,5 +140,4 @@ LL |     debug_assert!(text.parse::<u32>().is_ok());
    |
    = help: bind the expression to a `let` immediately before the macro call so it is evaluated exactly once, regardless of how the macro expands
 
-warning: 17 warnings emitted
-
+warning: N warnings emitted

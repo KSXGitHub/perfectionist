@@ -24,7 +24,7 @@ note: the deepest path is `if` -> `if`
    |
 LL |         if second {
    |         ^^
-   = help: an `if` directly inside an `if`: `&&` combines the two conditions when neither has an `else`
+   = help: an `if` directly inside an `if`: `&&` combines the two conditions
    = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
 
 warning: function `else_if_chain` nests 1 level deep, above the limit of 0
@@ -52,7 +52,7 @@ note: the deepest path is `if` -> `if`
    |
 LL |         if ready {
    |         ^^
-   = help: an `if` directly inside an `if`: `&&` combines the two conditions when neither has an `else`
+   = help: return early with a guard clause or `let ... else` so the rest of the body stops being nested
    = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
 
 warning: function `if_let` nests 1 level deep, above the limit of 0
@@ -67,6 +67,34 @@ note: the deepest path is `if let`
 LL |     if let Some(_value) = input {
    |     ^^
    = help: an `if let` here: `let ... else` binds the same pattern and leaves early, so the rest of the block stops being nested
+   = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
+
+warning: function `if_let_chain` nests 1 level deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn if_let_chain(input: Option<u8>, ready: bool) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: the deepest path is `if let`
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if let Some(_value) = input
+   |     ^^
+   = help: an `if let` here: `let ... else` binds the same pattern and leaves early, so the rest of the block stops being nested
+   = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
+
+warning: function `if_in_if_with_else` nests 2 levels deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn if_in_if_with_else(first: bool, second: bool) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: the deepest path is `if` -> `if`
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |         if second {
+   |         ^^
+   = help: return early with a guard clause or `let ... else` so the rest of the body stops being nested
    = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
 
 warning: function `matching` nests 1 level deep, above the limit of 0
@@ -95,6 +123,20 @@ note: the deepest path is `match` -> `if`
 LL |             if ready {
    |             ^^
    = help: an `if` inside a `match` arm: an arm guard folds the condition into the pattern and removes this level
+   = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
+
+warning: function `if_in_arm_guard` nests 2 levels deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn if_in_arm_guard(value: u8, ready: bool) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: the deepest path is `match` -> `if`
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |         n if (if ready { n > 1 } else { false }) => work(),
+   |              ^^^
+   = help: return early with a guard clause or `let ... else` so the rest of the body stops being nested
    = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
 
 warning: function `for_loop` nests 2 levels deep, above the limit of 0
@@ -178,7 +220,7 @@ note: the deepest path is block
    |
 LL |     {
    |     ^
-   = help: return early with a guard clause or `let ... else` so the rest of the body stops being nested
+   = help: a free-standing block is a level: drop the braces where they only scope a temporary, or give the block a name of its own
    = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
 
 warning: function `let_block` nests 1 level deep, above the limit of 0
@@ -192,7 +234,7 @@ note: the deepest path is block
    |
 LL |     let value = {
    |                 ^
-   = help: return early with a guard clause or `let ... else` so the rest of the body stops being nested
+   = help: a free-standing block is a level: drop the braces where they only scope a temporary, or give the block a name of its own
    = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
 
 warning: function `unsafe_block` nests 1 level deep, above the limit of 0
@@ -206,7 +248,7 @@ note: the deepest path is block
    |
 LL |     let value = unsafe { core::mem::transmute::<u8, u8>(1) };
    |                 ^^^^^^
-   = help: return early with a guard clause or `let ... else` so the rest of the body stops being nested
+   = help: a free-standing block is a level: drop the braces where they only scope a temporary, or give the block a name of its own
    = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
 
 warning: function `let_else` nests 1 level deep, above the limit of 0
@@ -220,7 +262,7 @@ note: the deepest path is `let ... else`
    |
 LL |     let Some(value) = input else {
    |                                  ^
-   = help: return early with a guard clause or `let ... else` so the rest of the body stops being nested
+   = help: the `else` body of a `let ... else` is the level here: it has to diverge, so keep it to the `return`, `break`, or `continue` that leaves
    = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
 
 warning: function `awaiting` nests 1 level deep, above the limit of 0
@@ -234,6 +276,20 @@ note: the deepest path is `if`
    |
 LL |     if ready.await {
    |     ^^
+   = help: return early with a guard clause or `let ... else` so the rest of the body stops being nested
+   = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
+
+warning: function `async_closure` nests 2 levels deep, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | fn async_closure(ready: bool) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: the deepest path is closure -> `if`
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |         if ready {
+   |         ^^
    = help: return early with a guard clause or `let ... else` so the rest of the body stops being nested
    = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
 
@@ -293,5 +349,4 @@ LL |         if ready {
    = help: return early with a guard clause or `let ... else` so the rest of the body stops being nested
    = help: or extract the inner levels — name the new function for what it does, not where it came from; if it needs most of this function's locals as parameters, the nesting moved rather than went away
 
-warning: 21 warnings emitted
-
+warning: N warnings emitted

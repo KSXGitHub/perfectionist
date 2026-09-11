@@ -169,6 +169,18 @@
   html:not([color-scheme-override="light"]) div.custom-type dl.config {
     background: transparent;
   }
+  html:not([color-scheme-override="light"]) article.rule table th, html:not([color-scheme-override="light"]) article.rule table td {
+    border-color: #30363d;
+  }
+  html:not([color-scheme-override="light"]) article.rule table th {
+    background: #21262d;
+  }
+  html:not([color-scheme-override="light"]) article.rule table tbody tr:nth-child(even) {
+    background: #161b22;
+  }
+  html:not([color-scheme-override="light"]) article.rule table code {
+    background: none;
+  }
   html:not([color-scheme-override="light"]) .settings-toggle {
     background: #0d1117;
     border-color: #30363d;
@@ -374,6 +386,18 @@ html[color-scheme-override="dark"] .custom-type-kind {
 }
 html[color-scheme-override="dark"] div.custom-type dl.config {
   background: transparent;
+}
+html[color-scheme-override="dark"] article.rule table th, html[color-scheme-override="dark"] article.rule table td {
+  border-color: #30363d;
+}
+html[color-scheme-override="dark"] article.rule table th {
+  background: #21262d;
+}
+html[color-scheme-override="dark"] article.rule table tbody tr:nth-child(even) {
+  background: #161b22;
+}
+html[color-scheme-override="dark"] article.rule table code {
+  background: none;
 }
 html[color-scheme-override="dark"] .settings-toggle {
   background: #0d1117;

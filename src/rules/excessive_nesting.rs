@@ -21,20 +21,21 @@ declare_tool_lint! {
     /// nest and flags the body when the deepest point is more than
     /// `max_depth` (default `3`) levels down.
     ///
-    /// A construct is one level: an `if` (an `else if` stays at the
+    /// Each construct is a level: an `if` (an `else if` stays at the
     /// same level; an `else` body is inside), a `match` (its arms are
     /// inside), a `for`, `while`, or `loop`, a closure, the body of a
     /// `let ... else`, and a free-standing block such as an `unsafe`
     /// block or the block a `let` initialises from. The block that is a
     /// construct's own body is not a level of its own, so
-    /// `if ready { work() }` is one level, not two.
+    /// `if ready { work() }` is 1 level, not 2.
     ///
     /// The depth counts what the author wrote. A construct produced by
-    /// a macro expansion adds no level, though an `if` written inside a
-    /// macro's arguments still counts; `?`, `.await`, and the desugared
-    /// shape of `for`, `while`, and `async` add nothing. A function
-    /// produced by a macro is not measured, and a nested function is
-    /// measured on its own.
+    /// a macro expansion is not a level, though an `if` written inside a
+    /// macro's arguments still counts; `?` and `.await` are not levels,
+    /// a `for` or `while` loop counts once, and the body of an
+    /// `async fn` or `async` block is not a level of its own. A function produced
+    /// by a macro is not measured, and a nested function is measured on
+    /// its own.
     ///
     /// Test code is measured like any other code; set
     /// `exempt_tests` to leave it alone.
@@ -68,7 +69,7 @@ declare_tool_lint! {
     ///
     /// ### Example
     ///
-    /// **Avoid:** four levels — `for`, `if let`, `match`, `if`
+    /// **Avoid:** 4 levels — `for`, `if let`, `match`, `if`
     ///
     /// ```rust,ignore
     /// for entry in entries {
@@ -85,7 +86,7 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// **Prefer:** two levels — a `let ... else` guard in place of the
+    /// **Prefer:** 2 levels — a `let ... else` guard in place of the
     /// `if let`, an arm guard in place of the `if`
     ///
     /// ```rust,ignore
@@ -101,7 +102,7 @@ declare_tool_lint! {
     ///
     /// **Prefer:** the same body, cut where it has a name of its own —
     /// `report_or_descend` is named for what it does and takes three
-    /// values, none of them the loop's state. Two levels are left on
+    /// values, none of them the loop's state. That leaves 2 levels on
     /// each side of the cut.
     ///
     /// ```rust,ignore

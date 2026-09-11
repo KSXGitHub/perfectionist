@@ -1,11 +1,11 @@
 //! Shaping the diagnostic for one over-nested body.
 //!
-//! Two things decide whether a report leads to a genuine change. The
-//! note names the constructs on the way down, so the reader can see
-//! which level to attack rather than only where the bottom is. The
-//! helps then offer both directions honestly: flattening the shape
-//! that is actually there, and extraction with the test that tells a
-//! real extraction from a relocation.
+//! What makes a report lead to a genuine change is what it points at.
+//! The note names the constructs on the way down, so the reader can
+//! see which level to attack rather than only where the bottom is.
+//! The helps then offer both directions honestly: flattening the
+//! shape that is actually there, and extraction with the test that
+//! tells a real extraction from a relocation.
 
 use super::EXCESSIVE_NESTING;
 use super::depth::{Construct, Deepest};
@@ -21,7 +21,8 @@ const EXTRACTION_HELP: &str = "or extract the inner levels — name the new func
                                function's locals as parameters, the nesting moved rather than \
                                went away";
 
-/// The fallback when the deepest point is not one of the shapes below.
+/// The fallback when the deepest point is not a shape [`shape_hint`]
+/// recognises.
 const FLATTEN_HELP: &str = "return early with a guard clause or `let ... else` so the rest of \
                             the body stops being nested";
 
@@ -53,34 +54,62 @@ fn path(deepest: &Deepest) -> String {
 }
 
 /// A transform that removes a level from the shape at the bottom, when
-/// the two innermost constructs are one the walk can recognise.
+/// the walk recorded enough about it to be sure the transform applies.
 ///
 /// Each of these flattens in place, so none of them trades a level for
 /// an argument list. `None` when the shape is not one of them, which
 /// leaves the general guard-clause advice.
 fn shape_hint(deepest: &Deepest) -> Option<&'static str> {
     let innermost = *deepest.path.last()?;
-    // An `if let` has one canonical flattening whatever encloses it.
-    if innermost == Construct::IfLet {
-        return Some(
-            "an `if let` here: `let ... else` binds the same pattern and leaves early, \
-             so the rest of the block stops being nested",
-        );
+    match innermost {
+        // An `if let` has one canonical flattening whatever encloses it.
+        Construct::If { binds: true, .. } => {
+            return Some(
+                "an `if let` here: `let ... else` binds the same pattern and leaves early, \
+                 so the rest of the block stops being nested",
+            );
+        }
+        // The author already wrote the guard the general advice would
+        // suggest; what is deep is the body they gave it.
+        Construct::LetElse => {
+            return Some(
+                "the `else` body of a `let ... else` is the level here: it has to diverge, \
+                 so keep it to the `return`, `break`, or `continue` that leaves",
+            );
+        }
+        // A guard clause removes nothing from a block that is not a
+        // condition in the first place.
+        Construct::Block => {
+            return Some(
+                "a free-standing block is a level: drop the braces where they only scope a \
+                 temporary, or give the block a name of its own",
+            );
+        }
+        _ => {}
     }
+    // Every hint below rewrites the innermost `if`'s condition, which
+    // works only when it has no `else` branch to carry along.
+    let Construct::If {
+        has_else: false, ..
+    } = innermost
+    else {
+        return None;
+    };
     let parent = *deepest.path.get(deepest.depth().checked_sub(2)?)?;
-    match (parent, innermost) {
-        (Construct::Match, Construct::If) => Some(
+    match parent {
+        Construct::Match => Some(
             "an `if` inside a `match` arm: an arm guard folds the condition into the \
              pattern and removes this level",
         ),
-        (Construct::For | Construct::While | Construct::Loop, Construct::If) => Some(
+        Construct::For | Construct::While | Construct::Loop => Some(
             "an `if` inside a loop: `continue` on the opposite condition removes this \
              level and unindents the body",
         ),
-        (Construct::If, Construct::If) => Some(
-            "an `if` directly inside an `if`: `&&` combines the two conditions when \
-             neither has an `else`",
-        ),
+        // An `else`-less `if` has only a `then` branch, so the inner
+        // `if` is certainly inside it and the two conditions merge.
+        Construct::If {
+            has_else: false, ..
+        } => Some("an `if` directly inside an `if`: `&&` combines the two conditions"),
         _ => None,
     }
 }

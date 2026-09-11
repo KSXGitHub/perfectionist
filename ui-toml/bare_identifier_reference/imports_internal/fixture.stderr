@@ -25,5 +25,4 @@ LL -     /// Mentions `Defined` (local), `InternalItem` (this module's
 LL +     /// Mentions `Defined` (local), [`InternalItem`] (this module's
    |
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

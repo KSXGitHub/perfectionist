@@ -981,4 +981,3 @@ markdown all of them understand; the planning files in this directory
 carry no such constraint. Which renderer drops what, and when a `>`
 block may become an alert, are settled in
 [GitHub-specific markdown](../CLAUDE.md#github-specific-markdown).
-

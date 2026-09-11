@@ -16,6 +16,18 @@ fn blank_and_comment_only_lines_are_free() {
 }
 
 #[test]
+fn a_doc_comment_is_free() {
+    let source = text_block_fnl! {
+        "/// Documented."
+        "fn work() {}"
+        "/** Block form."
+        "    still a comment. */"
+        "fn other() {}"
+    };
+    assert_eq!(count_code_lines(source), 2);
+}
+
+#[test]
 fn a_multi_line_string_counts_every_line_it_spans() {
     let source = text_block_fnl! {
         ""

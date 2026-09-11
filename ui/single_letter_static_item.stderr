@@ -23,5 +23,4 @@ LL |     static A: u32 = 1;
    |
    = help: rename to a descriptive identifier (e.g. `BUFFER`, `CACHE`, `COUNTER`)
 
-warning: 3 warnings emitted
-
+warning: N warnings emitted

@@ -32,7 +32,7 @@ fn dylint_toml(config: RuleConfig) -> String {
 
 #[test]
 fn zero_threshold_reports_every_depth() {
-    let fixtures = _utils::copy_fixtures_with_directive(
+    let fixtures = _utils::copy_fixtures_with_directives(
         env!("CARGO_MANIFEST_DIR"),
         "ui-toml/excessive_nesting/zero_threshold",
     );
@@ -42,7 +42,7 @@ fn zero_threshold_reports_every_depth() {
 }
 
 /// A library whose production function, `#[cfg(test)]` helper, and
-/// `#[test]` function each nest four levels deep — one above the
+/// `#[test]` function each nest 4 levels deep — 1 above the
 /// default limit.
 const LIB_WITH_TEST_MODULE: &str =
     include_str!("fixtures/excessive_nesting/lib_with_test_module.rs");

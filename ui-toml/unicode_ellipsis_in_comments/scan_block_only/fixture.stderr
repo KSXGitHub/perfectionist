@@ -6,5 +6,4 @@ LL | /* Block comment with ellipsis… */
    |
    = note: `#[warn(perfectionist::unicode_ellipsis_in_comments)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

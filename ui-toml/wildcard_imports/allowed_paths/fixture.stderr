@@ -7,5 +7,4 @@ LL | use crate::other::*;
    = help: import the specific items by name instead
    = note: `#[warn(perfectionist::wildcard_imports)]` on by default
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

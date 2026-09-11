@@ -12,5 +12,4 @@ LL - /// `Mixed_Thing`, which is flagged regardless.
 LL + /// [`Mixed_Thing`], which is flagged regardless.
    |
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

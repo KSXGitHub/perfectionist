@@ -13,9 +13,9 @@ help: regroup the imports
    |
 LL + pub use iter::Iter;
 LL + pub use reflection::Reflection;
-LL + 
+LL +
 LL + pub use Reflection as HardlinkListReflection;
-LL + 
+LL +
 LL + use std::time::Duration;
 LL + use std::io::stdin;
    |
@@ -34,15 +34,14 @@ LL | | use std::collections::BTreeMap;
 help: regroup the imports
    |
 LL + pub use node::Node;
-LL + 
+LL +
 LL + #[cfg(unix)]
 LL + pub use Node as UnixNode;
-LL + 
+LL +
 LL + use std::cmp::Ordering;
-LL + 
+LL +
 LL + #[cfg(unix)]
 LL + use std::collections::BTreeMap;
    |
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

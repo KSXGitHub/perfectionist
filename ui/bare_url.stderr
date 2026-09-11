@@ -48,5 +48,4 @@ warning: bare URL `https://example.com/foreign.`; wrap in `<...>` or use a label
 LL |     /// Bad: bare URL on a foreign item — https://example.com/foreign.
    |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.com/foreign.>`
 
-warning: 8 warnings emitted
-
+warning: N warnings emitted

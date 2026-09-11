@@ -144,5 +144,4 @@ LL - #[cfg_attr(all(), allow(dead_code, reason = "explained"), allow(unused_vari
 LL + #[cfg_attr(all(), allow(dead_code, reason = "explained"), allow(unused_variables, reason = "for second synth"))]
    |
 
-warning: 12 warnings emitted
-
+warning: N warnings emitted

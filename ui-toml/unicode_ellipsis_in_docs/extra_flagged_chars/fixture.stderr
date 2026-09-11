@@ -12,5 +12,4 @@ warning: Unicode `⋯` (U+22EF) in doc comment
 LL | /// Configured midline ellipsis⋯ is flagged too.
    |                                ^ help: use ASCII `...` instead: `...`
 
-warning: 2 warnings emitted
-
+warning: N warnings emitted

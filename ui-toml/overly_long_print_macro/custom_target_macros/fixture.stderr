@@ -13,5 +13,4 @@ LL +         second line of the diagnostic",
 LL ~     );
    |
 
-warning: 1 warning emitted
-
+warning: N warnings emitted

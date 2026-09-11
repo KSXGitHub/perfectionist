@@ -80,5 +80,4 @@ LL | use thiserror::*;
    = help: import the specific items by name instead
    = note: `#[warn(perfectionist::wildcard_imports)]` on by default
 
-warning: 10 warnings emitted
-
+warning: N warnings emitted
