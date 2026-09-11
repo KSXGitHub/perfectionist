@@ -120,8 +120,7 @@ impl<'tcx> LateLintPass<'tcx> for OverlyLongFile {
         }
         let max = self.config.max_lines;
         let name = cx.sess().source_map().filename_for_diagnostics(&file.name);
-        let noun = if count == 1 { "line" } else { "lines" };
-        let message = format!("file `{name}` has {count} {noun} of code, above the limit of {max}");
+        let message = format!("file `{name}` has {count} lines of code, above the limit of {max}");
         span_lint_and_help(
             cx,
             OVERLY_LONG_FILE,
