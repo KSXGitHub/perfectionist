@@ -1,0 +1,18 @@
+warning: expression builds a collection, walks it again, and builds another
+  --> $DIR/collection_round_trip.rs:LL:CC
+   |
+LL |     names.into_iter().collect::<HashSet<_>>().into_iter().collect()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the first collection to a `let` named for what it holds: the walk that follows is a second computation, and the type it walks is what the collection was chosen for
+   = note: `#[warn(perfectionist::collection_round_trip)]` on by default
+
+warning: expression builds a collection, walks it again, and builds another
+  --> $DIR/collection_round_trip.rs:LL:CC
+   |
+LL |     values.into_iter().collect::<BTreeSet<_>>().into_iter().rev().collect()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the first collection to a `let` named for what it holds: the walk that follows is a second computation, and the type it walks is what the collection was chosen for
+
+warning: N warnings emitted

@@ -105,6 +105,7 @@ rule_index! {
     bare_issue_reference => BareIssueReference,
     bare_url => BareUrl,
     clap_help_markdown => ClapHelpMarkdown,
+    collection_round_trip => CollectionRoundTrip,
     core_instead_of_std => CoreInsteadOfStd,
     excessive_cognitive_complexity => ExcessiveCognitiveComplexity,
     excessive_inline_tests => ExcessiveInlineTests,
