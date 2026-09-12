@@ -1,7 +1,7 @@
 use crate::common::{DefaultState, span_is_macro_generated};
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
-use clippy_utils::diagnostics::span_lint_and_help;
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_hir::{Expr, ExprKind, HirId, MatchSource};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -92,6 +92,24 @@ const CONFIG_KEY: &str = "perfectionist::overly_long_method_chain";
 /// spare.
 const DEFAULT_MAX_CALLS: usize = 5;
 
+/// What to do. The count is a stand-in for the real complaint -- the
+/// chain's intermediate values have no names -- so the help asks for a
+/// name rather than for a shorter chain, and says what the name should
+/// be about. Naming the remedy after the cut (`an intermediate
+/// result`) would hand the reader the very name the rule is trying to
+/// prevent.
+const NAMING_HELP: &str = "give a stage a name — bind it to a `let`, or move a run of stages \
+                           into a function — named for the value it produces, not for the \
+                           stages it replaces";
+
+/// How to tell the fix did not work, in the shape `overly_long_file`
+/// and `excessive_nesting` use: a mechanical split passes the rule
+/// while leaving the chain exactly as unreadable, and only the name
+/// reveals it.
+const CUT_HELP: &str = "if the only name that fits describes the steps rather than the value \
+                        (`filtered`, `mapped`, `result`), the cut is in the wrong place; split \
+                        where the chain produces something you can name";
+
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
@@ -162,15 +180,11 @@ impl<'tcx> LateLintPass<'tcx> for OverlyLongMethodChain {
         }
         let max = self.config.max_calls;
         let noun = if count == 1 { "call" } else { "calls" };
-        let message = format!("method chain has {count} {noun}, above the limit of {max}");
-        span_lint_and_help(
-            cx,
-            OVERLY_LONG_METHOD_CHAIN,
-            expr.span,
-            message,
-            None,
-            "bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function",
-        );
+        let message = format!("method chain has {count} distinct {noun}, above the limit of {max}");
+        span_lint_and_then(cx, OVERLY_LONG_METHOD_CHAIN, expr.span, message, |diag| {
+            diag.help(NAMING_HELP);
+            diag.help(CUT_HELP);
+        });
     }
 }
 
