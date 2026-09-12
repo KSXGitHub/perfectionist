@@ -318,11 +318,22 @@ or addable — see Implementation notes.
 
 ## Out of scope
 
-- **A `ref` / `ref mut` binding.** `let ref mut v = vec![…];` binds a
-  *reference to* the initializer, not the sortable value itself, so there
-  is no by-value owner to fold `into_sorted` onto. The trigger requires a
-  by-value (`ByRef::No`) binding; a `&mut [T]` / `&mut Vec<T>` value bound
-  by value *is* in scope, but the `ref`-mode pattern is not.
+- **A `ref` / `ref mut` pattern binding** (distinct from a by-value
+  binding *of* a reference). `let s: &mut [T] = buf; s.sort();` is in
+  scope — a by-value binding whose value is a `&mut [T]`, folded to
+  `buf.into_sorted()`. A `ref mut` binding is not: it binds *by reference*
+  to a field or element of the scrutinee — a top-level `let ref mut v =
+  …`, or a destructuring `let` / `match` / `if let` — so it has **no
+  initializer to fold into**. (Plain `ref` binds `&T` and cannot be a
+  `sort*` receiver at all.) The everyday shape — a `ref mut` field sorted
+  in a `match` arm — is idiomatic in place with no cleaner form; the one
+  foldable shape, a destructured *literal aggregate of owned values* each
+  sorted, needs multi-site, type-aware machinery this rule avoids by
+  design (several sorts rather than strict two-statement adjacency, and a
+  binding-type change to propagate), so it is left to a possible
+  **separate** rule. (`clippy::toplevel_ref_arg` already steers a
+  top-level `let ref mut v = E` toward `let v = &mut E`, the `&mut` form
+  this rule *does* cover.)
 - **A receiver sortable only through `DerefMut`.** `into_sorted` needs
   `AsMut<[Item]>`; a smart pointer that reaches `[T]` through `DerefMut`
   but does not implement `AsMut<[Item]>` can call `.sort()`, yet the
