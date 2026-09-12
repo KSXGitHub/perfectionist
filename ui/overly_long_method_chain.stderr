@@ -28,5 +28,19 @@ LL | |         .unwrap_or(0);
    |
    = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
 
-warning: 2 warnings emitted
+warning: method chain has 6 calls, above the limit of 5
+  --> $DIR/overly_long_method_chain.rs:LL:CC
+   |
+LL | /     rows.iter()
+LL | |         .filter(|row| {
+LL | |             let total: u32 = row.iter().sum();
+LL | |             total > 10
+...  |
+LL | |         })
+LL | |         .collect()
+   | |__________________^
+   |
+   = help: bind an intermediate result to a `let` named for what it holds, or move part of the chain into a function
+
+warning: 3 warnings emitted
 

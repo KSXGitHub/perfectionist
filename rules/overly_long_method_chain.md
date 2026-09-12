@@ -81,6 +81,14 @@ Configure via `dylint.toml` under `["perfectionist::overly_long_method_chain"]`.
 The most method calls one chain may have without being flagged.
 Defaults to `5`.
 
+### Field: `closure_weight`
+
+- _Type:_ `unsigned integer`
+- _Optional_
+
+What a call counts as when its argument is a closure whose body
+spans more than one line. Defaults to `2`.
+
 ### Field: `exempt_tests`
 
 - _Type:_ `boolean`

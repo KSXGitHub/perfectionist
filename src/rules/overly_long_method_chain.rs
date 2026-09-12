@@ -3,8 +3,9 @@ use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_hir::{Expr, ExprKind, HirId, MatchSource};
-use rustc_lint::{LateContext, LateLintPass, LintStore};
+use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
+use rustc_span::Span;
 use std::collections::HashSet;
 
 declare_tool_lint! {
@@ -81,12 +82,19 @@ const CONFIG_KEY: &str = "perfectionist::overly_long_method_chain";
 /// spare.
 const DEFAULT_MAX_CALLS: usize = 5;
 
+/// A stage that carries several lines of its own is worth two that
+/// read as a word.
+const DEFAULT_CLOSURE_WEIGHT: usize = 2;
+
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// The most method calls one chain may have without being flagged.
     /// Defaults to `5`.
     max_calls: usize,
+    /// What a call counts as when its argument is a closure whose body
+    /// spans more than one line. Defaults to `2`.
+    closure_weight: usize,
     /// Whether test code is left alone: chains inside a `#[cfg(test)]`
     /// module, a `#[test]` function, or an integration-test or
     /// benchmark target. Defaults to `false`, so a test is held to the
@@ -98,6 +106,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             max_calls: DEFAULT_MAX_CALLS,
+            closure_weight: DEFAULT_CLOSURE_WEIGHT,
             exempt_tests: false,
         }
     }
@@ -137,7 +146,7 @@ impl<'tcx> LateLintPass<'tcx> for OverlyLongMethodChain {
         if span_is_macro_generated(expr.span) {
             return;
         }
-        let count = self.count_spine(expr);
+        let count = self.count_spine(cx, expr);
         if count <= self.config.max_calls {
             return;
         }
@@ -160,22 +169,55 @@ impl<'tcx> LateLintPass<'tcx> for OverlyLongMethodChain {
     }
 }
 
+/// Whether one of `arguments` is a closure whose body spans more than
+/// one line. Such a stage is several lines of reading on its own, not a
+/// word in a sentence.
+fn carries_multiline_closure<'tcx>(cx: &LateContext<'tcx>, arguments: &'tcx [Expr<'tcx>]) -> bool {
+    arguments.iter().any(|argument| match argument.kind {
+        ExprKind::Closure(closure) => {
+            let body = cx.tcx.hir_body(closure.body);
+            spans_lines(cx, body.value.span)
+        }
+        _ => false,
+    })
+}
+
+/// Whether `span` covers more than one line of source. A span from a
+/// macro expansion is measured where it was written, so a closure body
+/// of `|error| anyhow!("{error}")` counts as the one line it is.
+fn spans_lines(cx: &LateContext<'_>, span: Span) -> bool {
+    let span = span.source_callsite();
+    let source_map = cx.sess().source_map();
+    match (
+        source_map.lookup_line(span.lo()),
+        source_map.lookup_line(span.hi()),
+    ) {
+        (Ok(start), Ok(end)) => start.line != end.line,
+        _ => false,
+    }
+}
+
 impl OverlyLongMethodChain {
-    /// The number of method calls from `head` down its receivers, a run
-    /// of one method counted once, marking each call so it is not
+    /// What the calls from `head` down its receivers come to: a run of
+    /// one method counted once, and a call carrying a multi-line closure
+    /// counted as `closure_weight`. Marks each call so it is not
     /// measured again as a chain of its own.
-    fn count_spine(&mut self, head: &Expr<'_>) -> usize {
+    fn count_spine<'tcx>(&mut self, cx: &LateContext<'tcx>, head: &'tcx Expr<'tcx>) -> usize {
         let mut count = 0;
         let mut previous_method = None;
         let mut current = head;
         loop {
             match current.kind {
-                ExprKind::MethodCall(segment, receiver, ..)
+                ExprKind::MethodCall(segment, receiver, arguments, _)
                     if !span_is_macro_generated(current.span) =>
                 {
                     self.counted.insert(current.hir_id);
                     if previous_method != Some(segment.ident.name) {
-                        count += 1;
+                        count += if carries_multiline_closure(cx, arguments) {
+                            self.config.closure_weight
+                        } else {
+                            1
+                        };
                     }
                     previous_method = Some(segment.ident.name);
                     current = receiver;

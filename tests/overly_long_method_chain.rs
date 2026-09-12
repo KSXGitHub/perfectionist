@@ -23,6 +23,8 @@ const LINT_NAME: &str = "perfectionist::overly_long_method_chain";
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     max_calls: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    closure_weight: Option<usize>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -37,7 +39,24 @@ fn zero_threshold_reports_every_chain_length() {
         "ui-toml/overly_long_method_chain/zero_threshold",
     );
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
-        .dylint_toml(dylint_toml(RuleConfig { max_calls: Some(0) }))
+        .dylint_toml(dylint_toml(RuleConfig {
+            max_calls: Some(0),
+            ..RuleConfig::default()
+        }))
+        .run();
+}
+
+#[test]
+fn closure_weight_of_one_counts_every_stage_alike() {
+    let fixtures = _utils::copy_fixtures_with_directive(
+        env!("CARGO_MANIFEST_DIR"),
+        "ui-toml/overly_long_method_chain/closure_weight_one",
+    );
+    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+        .dylint_toml(dylint_toml(RuleConfig {
+            closure_weight: Some(1),
+            ..RuleConfig::default()
+        }))
         .run();
 }
 
