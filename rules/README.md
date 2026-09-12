@@ -42,6 +42,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   markdown construct in a clap-derived doc comment leaks into `--help` output
 
+- [`collection_round_trip`](./collection_round_trip.md) (default: `active`).
+
+  expression builds a collection, walks it again, and builds another
+
 - [`core_instead_of_std`](./core_instead_of_std.md) (default: `inactive`).
 
   item named through `core` or `alloc` instead of `std`
