@@ -1,0 +1,106 @@
+warning: method chain has 1 distinct call, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     items.len()
+   |     ^^^^^^^^^^^
+   |
+   = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
+   = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
+   = note: `#[warn(perfectionist::overly_long_method_chain)]` on by default
+
+warning: method chain has 3 distinct calls, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     items.iter().copied().sum()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
+   = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
+
+warning: method chain has 2 distinct calls, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     holder.items.iter().count()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
+   = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
+
+warning: method chain has 2 distinct calls, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     Vec::<u32>::new().iter().count()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
+   = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
+
+warning: method chain has 2 distinct calls, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     let count = input?.trim().len();
+   |                 ^^^^^^^^^^^^^^^^^^^
+   |
+   = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
+   = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
+
+warning: method chain has 3 distinct calls, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     rows.iter().map(|row| row.len()).count()
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
+   = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
+
+warning: method chain has 1 distinct call, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     rows.iter().map(|row| row.len()).count()
+   |                           ^^^^^^^^^
+   |
+   = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
+   = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
+
+warning: method chain has 2 distinct calls, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     items.iter().eq(other.iter())
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
+   = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
+
+warning: method chain has 1 distinct call, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     items.iter().eq(other.iter())
+   |                     ^^^^^^^^^^^^
+   |
+   = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
+   = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
+
+warning: method chain has 2 distinct calls, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | /     std::process::Command::new("ls")
+LL | |         .arg("-l")
+LL | |         .arg("-a")
+LL | |         .arg("-h")
+LL | |         .arg("/")
+LL | |         .status()
+   | |_________________^
+   |
+   = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
+   = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
+
+warning: method chain has 1 distinct call, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     println!("{}", items.len());
+   |                    ^^^^^^^^^^^
+   |
+   = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
+   = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
+
+warning: N warnings emitted
