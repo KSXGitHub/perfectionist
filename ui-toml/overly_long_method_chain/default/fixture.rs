@@ -146,4 +146,29 @@ fn head_over_a_macro_receiver(items: &[u32]) -> u32 {
         .unwrap_or(0)
 }
 
+// Bad: four calls, two of them carrying a closure of their own, so they
+// count double under the default `closure_weight` — six in all.
+fn multiline_closures(rows: &[Vec<u32>]) -> Vec<u32> {
+    rows.iter()
+        .filter(|row| {
+            let total: u32 = row.iter().sum();
+            total > 10
+        })
+        .map(|row| {
+            let doubled = row.len() * 2;
+            u32::try_from(doubled).unwrap_or_default()
+        })
+        .collect()
+}
+
+// Good: five calls whose closures each read as a word.
+fn oneline_closures(names: &[String]) -> Vec<String> {
+    names
+        .iter()
+        .filter(|name| !name.is_empty())
+        .map(|name| name.to_owned())
+        .take(3)
+        .collect()
+}
+
 fn main() {}
