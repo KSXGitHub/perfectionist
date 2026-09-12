@@ -16,15 +16,61 @@ warning: named item cherry-picked from a prelude module
   --> $DIR/named_prelude_imports.rs:LL:CC
    |
 LL |     use crate::prelude::{A, helper};
-   |                          ^
-   |
-   = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
+   |     ---------------------^---------- help: import each item from its canonical module: `use crate::thing::{A, helper};`
 
 warning: named item cherry-picked from a prelude module
   --> $DIR/named_prelude_imports.rs:LL:CC
    |
 LL |     use crate::prelude::{A, helper};
    |                             ^^^^^^
+   |
+   = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
+
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports.rs:LL:CC
+   |
+LL |     use crate::prelude::{A as First, B as Second};
+   |     ---------------------^------------------------ help: import each item from its canonical module: `use crate::thing::{A as First, B as Second};`
+
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports.rs:LL:CC
+   |
+LL |     use crate::prelude::{A as First, B as Second};
+   |                                      ^
+   |
+   = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
+
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports.rs:LL:CC
+   |
+LL |     use crate::prelude::{helper};
+   |     ---------------------^^^^^^-- help: import each item from its canonical module: `use crate::thing::helper;`
+
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports.rs:LL:CC
+   |
+LL |     use crate::prelude::{A, *};
+   |     ---------------------^----- help: import each item from its canonical module: `use crate::{thing::A, prelude::*};`
+
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports.rs:LL:CC
+   |
+LL |     use crate::prelude::{self, A};
+   |                                ^
+   |
+   = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
+
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports.rs:LL:CC
+   |
+LL |     pub use crate::prelude::{A, helper};
+   |     -------------------------^---------- help: import each item from its canonical module: `pub use crate::thing::{A, helper};`
+
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports.rs:LL:CC
+   |
+LL |     pub use crate::prelude::{A, helper};
+   |                                 ^^^^^^
    |
    = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
 
@@ -39,7 +85,45 @@ LL |     use crate::multi::prelude::Dual;
 warning: named item cherry-picked from a prelude module
   --> $DIR/named_prelude_imports.rs:LL:CC
    |
+LL |     use crate::multi::prelude::{Dual};
+   |                                 ^^^^
+   |
+   = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
+
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports.rs:LL:CC
+   |
 LL |     use crate::kw_prelude::prelude::Thing;
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: import the item from its canonical module: `crate::r#type::Thing`
+
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports.rs:LL:CC
+   |
+LL |     use crate::mixed::prelude::{A, C};
+   |     ----------------------------^----- help: import each item from its canonical module: `use crate::{thing::A, other::C};`
+
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports.rs:LL:CC
+   |
+LL |     use crate::mixed::prelude::{A, C};
+   |                                    ^
+   |
+   = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
+
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports.rs:LL:CC
+   |
+LL |     cherry_pick!(A, helper);
+   |                  ^
+   |
+   = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
+
+warning: named item cherry-picked from a prelude module
+  --> $DIR/named_prelude_imports.rs:LL:CC
+   |
+LL |     cherry_pick!(A, helper);
+   |                     ^^^^^^
+   |
+   = help: import this item from its canonical module, or glob-import the prelude with `use ...::prelude::*;`
 
 warning: N warnings emitted

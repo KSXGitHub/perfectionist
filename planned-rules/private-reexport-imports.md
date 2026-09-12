@@ -248,16 +248,18 @@ import.
 
 ## Interaction with sibling rules
 
-- [`named-prelude-imports`](./named-prelude-imports.md) is the closest
-  relative and the source of the shared machinery: both say "import the
-  item from where it actually lives," and both carry a canonical-module
-  autofix resolved from the item's `DefId`. The two never overlap on a
-  single import — `named_prelude_imports` fires on a `prelude` segment
-  in the *written* path, this rule on a private *re-export binding* the
-  path resolves through, and a prelude is a `pub`-glob module, not a
-  private import. Implement this rule's autofix by factoring the
-  canonical-path resolution out of `named_prelude_imports` into a
-  shared crate-internal helper rather than duplicating it.
+- `perfectionist::named_prelude_imports`
+  ([`src/rules/named_prelude_imports.rs`](../src/rules/named_prelude_imports.rs))
+  is the closest relative and the source of the shared machinery: both
+  say "import the item from where it actually lives," and both carry a
+  canonical-module autofix resolved from the item's `DefId`. The two
+  never overlap on a single import — `named_prelude_imports` fires on a
+  `prelude` segment in the *written* path, this rule on a private
+  *re-export binding* the path resolves through, and a prelude is a
+  `pub`-glob module, not a private import. Implement this rule's autofix
+  by factoring the canonical-path resolution out of
+  `named_prelude_imports` into a shared crate-internal helper rather
+  than duplicating it.
 - [`path-qualification-mismatch`](./path-qualification-mismatch.md) governs the orthogonal axis
   of *whether* to import at all (path vs. `use`); this rule governs
   *which source* an import names. They can both be active without
@@ -284,7 +286,7 @@ fills that gap.
 
 Active by default. The correct direction is unambiguous (import from the
 definition or a public re-export), matching
-[`named-prelude-imports`](./named-prelude-imports.md). The one
+`perfectionist::named_prelude_imports`. The one
 legitimate counter-pattern — a module that *intentionally* holds a
 shared private import for its descendants to reach through `super::` —
 is suppressed per import with

@@ -28,11 +28,12 @@ This is a stylistic preference, not a correctness issue. A
 crate author decided should always travel together as a glob.
 Cherry-picking individual items from a prelude defeats that
 intent and usually means the importer should reach into the
-prelude's source module instead. A standalone import is rewritten
-to the item's canonical module; a brace-list leaf
-(`use foo::prelude::{A, B};`) — or a name that resolves through
-several modules at once — is flagged with a `help` instead, since
-a single `use` can't always reproduce it.
+prelude's source module instead.
+
+One rewrite covers the whole `use`: a statement with several
+cherry-picks carries it once, and a `help` on the rest. Where
+the rewrite cannot be shown to preserve what the `use` binds,
+only the `help` is offered.
 
 ## Example
 

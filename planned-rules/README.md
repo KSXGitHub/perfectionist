@@ -18,12 +18,6 @@ pattern that several rules call out by reference — live in
 ## Index
 
 ### Imports
-- [`named-prelude-imports.md`](./named-prelude-imports.md) — dual of
-  `perfectionist::wildcard_imports`. Forbid named imports from a
-  `prelude` module (`use foo::prelude::Item;`); allow the glob form
-  (`use foo::prelude::*;`). Implemented and active by default; the file
-  stays only because the brace-list-leaf autofix is still pending (see
-  its Status section).
 - [`private-reexport-imports.md`](./private-reexport-imports.md) — flag
   a named `use` that reaches its item through a *private* re-export (a
   non-`pub` `use` in another module reached via ancestor privilege,
