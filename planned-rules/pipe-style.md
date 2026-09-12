@@ -647,3 +647,54 @@ Active by default. All four sub-checks
 (`pipe_at_chain_boundary`, `chain_wrapped_in_call`,
 `borrow_wrapped_in_call`, and `call_at_pipe_chain_head`) run when
 the rule is active.
+
+## Interaction with sibling rules
+
+`perfectionist::overly_long_method_chain`
+([`src/rules/overly_long_method_chain.rs`](../src/rules/overly_long_method_chain.rs))
+caps the distinct method calls on a chain's spine. This rule
+pushes code onto that spine, so the two pull in opposite
+directions and an implementer has to know which gives way.
+
+Every rewrite the wrap-call directions ask for adds one call to
+the count that rule takes:
+
+- `chain_wrapped_in_call` turns `f(chain)` into `chain.pipe(f)`.
+- `borrow_wrapped_in_call` turns `f(&mut expr)` into
+  `expr.pipe_mut(f)`.
+- `call_at_pipe_chain_head` turns `g(x).unwrap().pipe_mut(f)`
+  into `x.pipe(g).unwrap().pipe_mut(f)`.
+
+`pipe_at_chain_boundary` is the one direction that shortens a
+chain, since removing a pipe removes a call.
+
+The sharper conflict is between the remedies rather than the
+counts. `overly_long_method_chain` suggests moving part of an
+over-long chain into a function, and the natural way to apply
+that function to a chain prefix is `f(prefix)` — which
+`chain_wrapped_in_call` forbids. Writing it as
+`prefix.pipe(f)` instead puts the call back on the spine and
+restores the count the extraction was meant to reduce. Under both
+rules only the other remedy stands: bind the prefix to a `let`
+named for what it holds, then start a new chain from that
+binding. That satisfies this rule as well, because
+`chain_wrapped_in_call` triggers on a *chain* argument and a
+local binding is not one — so the extracted function can be
+applied as a plain `f(prefix)`, with no pipe wanted at that
+boundary at all.
+
+What keeps the two from colliding constantly is the run collapse.
+`overly_long_method_chain` counts a run of one method name once,
+so `x.pipe(a).pipe(b).pipe(c)` counts 1, not 3, and a chain that
+pipes uniformly is nearly free under that limit. A chain that
+mixes the variants is not: `pipe`, `pipe_mut` and `pipe_ref` are
+three names, so they collapse only with themselves. The worked
+refactor quoted at the top of this file,
+`SOURCE.pipe(Querier::new).pipe_mut(run_assertions)`, is already
+two.
+
+An implementer who finds the two rules arguing on real code
+should treat that as evidence about the default `max_calls`
+rather than about this rule's directions: a codebase that pipes
+is one where the chain is the unit of composition, and its
+threshold belongs higher.
