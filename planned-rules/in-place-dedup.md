@@ -202,7 +202,7 @@ fn unique_in_order(sorted: &[Id]) -> Vec<Id> {
 }
 ```
 
-### A `vec!` literal — also flagged
+### A `vec!` literal: also flagged
 
 **Avoid:**
 
@@ -212,13 +212,13 @@ xs.dedup();
 ```
 
 **Prefer:** the source is a literal, not a collect, but the fold is the
-same (and needs no turbofish — `vec![…]` already has a concrete type) —
+same (and needs no turbofish since `vec![…]` already has a concrete type).
 
 ```rust
 let xs = vec![1, 1, 2, 3, 3].into_deduped();
 ```
 
-### Deduped, then pushed — still flagged
+### Deduped, then pushed: still flagged
 
 **Avoid:**
 
@@ -229,14 +229,14 @@ ids.push(Id::sentinel());
 ```
 
 **Prefer:** the dedup folds in; the `mut` and the `push` stay, so
-`unused_mut` does *not* fire here —
+`unused_mut` does *not* fire here.
 
 ```rust
 let mut ids = rows.iter().map(Row::id).collect::<Vec<_>>().into_deduped();
 ids.push(Id::sentinel());
 ```
 
-### Not flagged — a statement intervenes
+### Not flagged: a statement intervenes
 
 ```rust
 // Something runs between the binding and the dedup, so adjacency fails
@@ -246,7 +246,7 @@ log::debug!("collected {} ids", ids.len());
 ids.dedup();
 ```
 
-### Not flagged — the binding does not own the `Vec`
+### Not flagged: the binding does not own the `Vec`
 
 ```rust
 // `v` is a `&mut Vec<_>`, not an owned `Vec`. `into_deduped` consumes the

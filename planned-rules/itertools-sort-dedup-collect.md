@@ -178,14 +178,14 @@ let entries: Vec<Entry> = stream.sorted_by_key(|e| e.priority).collect();
 let entries = stream.collect::<Vec<_>>().into_sorted_by_key(|e| e.priority);
 ```
 
-### Not flagged — `unique`, not `dedup`
+### Not flagged: `unique`, not `dedup`
 
 ```rust
 // `unique` removes non-consecutive duplicates; no `into_deduped` equivalent.
 let ids: Vec<Id> = rows.iter().map(Row::id).unique().collect();
 ```
 
-### Not flagged — not collected into a `Vec`
+### Not flagged: not collected into a `Vec`
 
 ```rust
 // Lazy use of the adaptor, never collected into a Vec.

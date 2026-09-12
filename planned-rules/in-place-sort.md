@@ -219,7 +219,7 @@ fn sorted_names(people: &[Person]) -> Vec<Name> {
 }
 ```
 
-### An array or a `vec!` literal — also flagged
+### An array or a `vec!` literal: also flagged
 
 **Avoid:**
 
@@ -232,14 +232,14 @@ ys.sort();
 ```
 
 **Prefer:** neither source is a collect, and both already have a concrete
-type, so no turbofish is needed —
+type, so no turbofish is needed.
 
 ```rust
 let xs = vec![3, 1, 2].into_sorted();
 let ys = [3, 1, 2].into_sorted();
 ```
 
-### A `&mut [T]` slice — flagged, though there was no `mut`
+### A `&mut [T]` slice: flagged, though there was no `mut`
 
 **Avoid:** uncommon, but in scope — the mutability is in the reference, so
 the binding is not `mut` and there is nothing for `unused_mut` to remove;
@@ -261,7 +261,7 @@ fn normalize(buf: &mut [i32]) -> &mut [i32] {
 }
 ```
 
-### Sorted, then pushed — still flagged
+### Sorted, then pushed: still flagged
 
 **Avoid:**
 
@@ -272,14 +272,14 @@ names.push(Name::sentinel());
 ```
 
 **Prefer:** the sort folds in; the `mut` and the `push` stay, so
-`unused_mut` does *not* fire here —
+`unused_mut` does *not* fire here.
 
 ```rust
 let mut names = people.iter().map(Person::name).collect::<Vec<_>>().into_sorted();
 names.push(Name::sentinel());
 ```
 
-### Not flagged — a statement intervenes
+### Not flagged: a statement intervenes
 
 ```rust
 // Something runs between the binding and the sort, so adjacency fails and
@@ -289,7 +289,7 @@ log::debug!("collected {} names", names.len());
 names.sort();
 ```
 
-### Not flagged — not a `let`-bound value
+### Not flagged: not a `let`-bound value
 
 ```rust
 // `data` is a parameter, not a `let` binding immediately preceding the
