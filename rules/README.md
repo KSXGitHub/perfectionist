@@ -146,6 +146,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   function body binds more distinct local names than the configured maximum
 
+- [`too_many_struct_fields`](./too_many_struct_fields.md) (default: `active`).
+
+  struct has more fields than the configured maximum
+
 - [`uncombined_self_import`](./uncombined_self_import.md) (default: `inactive`).
 
   a module import and an adjacent item import from it can be combined through `self`
