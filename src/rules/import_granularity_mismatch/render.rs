@@ -3,13 +3,13 @@
 //! `use ` and the trailing `;` for one statement; the caller prepends
 //! the shared visibility / attributes and joins the statements.
 
-use super::config::Style;
+use super::config::{SelfMerge, Style};
 use super::model::{Leaf, LeafItem, self_has_splittable_sibling};
 use std::collections::BTreeMap;
 
 pub(super) fn render(style: Style, leaves: &[Leaf]) -> Vec<String> {
     match style {
-        Style::Crate => render_crate(leaves, false),
+        Style::Crate => render_crate(leaves, SelfMerge::Split),
         Style::Module => render_module(leaves),
         Style::Item => render_item(leaves),
     }
@@ -26,7 +26,7 @@ pub(super) fn render(style: Style, leaves: &[Leaf]) -> Vec<String> {
 /// whether a value or macro is re-exported under the module's name (see
 /// <https://github.com/KSXGitHub/perfectionist/issues/186>).
 pub(super) fn render_crate_self(leaves: &[Leaf]) -> Vec<String> {
-    render_crate(leaves, true)
+    render_crate(leaves, SelfMerge::Fold)
 }
 
 /// The alternative `crate` shape that splits a module-only `self` sharing
@@ -62,7 +62,7 @@ pub(super) fn render_crate_split(leaves: &[Leaf]) -> Vec<String> {
             }
         })
         .collect();
-    render_crate(&lowered, false)
+    render_crate(&lowered, SelfMerge::Split)
 }
 
 fn join(segments: &[String]) -> String {
@@ -220,7 +220,8 @@ fn node_entries(node: &Node, synthesize_self: bool) -> Vec<String> {
     entries
 }
 
-fn render_crate(leaves: &[Leaf], synthesize_self: bool) -> Vec<String> {
+fn render_crate(leaves: &[Leaf], self_merge: SelfMerge) -> Vec<String> {
+    let synthesize_self = matches!(self_merge, SelfMerge::Fold);
     // Everything goes into one trie keyed by path segment; a bare
     // `use foo;` lands as a named item at the root and renders as `foo`,
     // while `use foo::Bar;` descends into the `foo` child. Under

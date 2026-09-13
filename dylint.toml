@@ -57,3 +57,8 @@ max_depth = 5
 # are split.
 ["perfectionist::overly_long_file"]
 max_lines = 839
+
+# The same ratchet for `overly_complex_condition`: the widest existing
+# condition has six operators; lower the ceiling as conditions are named.
+["perfectionist::overly_complex_condition"]
+max_operators = 6
