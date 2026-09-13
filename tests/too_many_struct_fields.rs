@@ -13,7 +13,7 @@
 //! `DYLINT_TOML` env var for the duration of the UI run, which a
 //! project test's `cargo dylint` would inherit -- where it replaces
 //! the fixture project's own `dylint.toml` rather than adding to it,
-//! linting the fixture under the UI fixture's config. `_utils` strips
+//! linting the fixture under the UI fixture's config. [`_utils`] strips
 //! that variable, and the rest of dylint's resolution environment,
 //! from the subprocess, so a UI run cannot reach a fixture and the
 //! two need no serialisation.
