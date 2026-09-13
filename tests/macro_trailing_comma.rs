@@ -11,7 +11,7 @@
 //! parallel test harness.
 
 use std::collections::BTreeMap;
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::macro_trailing_comma";
 
@@ -40,7 +40,7 @@ fn dylint_toml(config: RuleConfig) -> String {
 fn run(src_base: &str, config: RuleConfig) {
     // A poisoned mutex from a previous panic doesn't make this lock
     // unsafe — recover the inner guard and proceed.
-    let _serial = SERIAL.lock().unwrap_or_else(|err| err.into_inner());
+    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
     let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
         .dylint_toml(dylint_toml(config))

@@ -40,6 +40,7 @@ alloc_instead_of_core = "warn"
 clone_on_ref_ptr = "warn"
 cloned_instead_of_copied = "warn"
 mod_module_files = "warn"
+redundant_closure_for_method_calls = "warn"
 std_instead_of_core = "warn"
 
 [dependencies]
