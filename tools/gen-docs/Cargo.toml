@@ -15,7 +15,7 @@ workspace = true
 [dependencies]
 cargo_toml = "0.22.3"
 clap = { version = "4.6.1", features = ["derive"] }
-command-extra = "1.0.0"
+command-extra = "1.2.0"
 maud = "0.27.0"
 pipe-trait = "0.4.0"
 proc-macro2 = "1.0.95"
