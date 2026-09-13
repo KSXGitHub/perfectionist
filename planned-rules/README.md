@@ -160,6 +160,17 @@ pattern that several rules call out by reference — live in
   counts each `$name:expr` capture's `$name` references in the
   expansion. Curly-brace invocations are out of scope.
 
+### Collections
+- [`temporary-dedup-set.md`](./temporary-dedup-set.md) — flag a
+  `HashSet` / `BTreeSet` that is built from a walk and immediately
+  walked back into a sequence (`names.into_iter()
+  .collect::<HashSet<_>>().into_iter().collect()`, and the same round
+  trip with the set bound to a `let`). The set is never read as a set,
+  so `collect` + `sort` + `dedup` replaces it with one allocation and
+  a reproducible order. Silent when the element is not `Ord` (there is
+  no fix), when the set is read as a set, and when deduplication
+  preserves the input order. Active by default.
+
 ### Lazy initialization
 - [`manual-lazy-init.md`](./manual-lazy-init.md) — flag a `Once*` cell
   whose entire usage is a fixed, non-capturing `get_or_init` (i.e. a
