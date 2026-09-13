@@ -23,7 +23,7 @@ pub mod _utils;
 
 use _utils::{cargo_manifest_dir, run_project_with_config, shared_target_dir};
 use std::collections::BTreeMap;
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 use text_block_macros::text_block_fnl;
 
 static SERIAL: Mutex<()> = Mutex::new(());
@@ -46,7 +46,7 @@ fn dylint_toml(config: RuleConfig) -> String {
 
 #[test]
 fn zero_threshold_reports_every_field_count() {
-    let _serial = SERIAL.lock().unwrap_or_else(|err| err.into_inner());
+    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
     let fixtures = _utils::copy_fixtures_with_directives(
         env!("CARGO_MANIFEST_DIR"),
         "ui-toml/too_many_struct_fields/zero_threshold",
@@ -85,7 +85,7 @@ const TARGET_SOURCES: &[(&str, &str)] = &[
 /// Run the fixture and return its stderr, asserting that `cargo dylint`
 /// itself succeeded.
 fn run(package_name: &str, sources: &[(&str, &str)], config: &str) -> String {
-    let _serial = SERIAL.lock().unwrap_or_else(|err| err.into_inner());
+    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
     let (_temp, stderr, success) = run_project_with_config(
         package_name,
         cargo_manifest_dir(),

@@ -269,5 +269,5 @@ fn union_span(spans: impl IntoIterator<Item = Span>) -> Span {
     let first = spans
         .next()
         .expect("caller guarantees a non-empty iterator");
-    spans.fold(first, |union, span| union.to(span))
+    spans.fold(first, Span::to)
 }
