@@ -1,5 +1,5 @@
 use crate::code_lines::count_code_lines;
-use crate::common::DefaultState;
+use crate::common::{DefaultState, plural};
 use crate::measured_fn::measured_fn;
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_help;
@@ -135,7 +135,7 @@ impl<'tcx> LateLintPass<'tcx> for OverlyLongFunction {
         let max = self.config.max_lines;
         let name = function.name;
         let kind = function.kind_label;
-        let noun = if count == 1 { "line" } else { "lines" };
+        let noun = plural(count, "line", "lines");
         let message =
             format!("{kind} `{name}` has {count} {noun} of code, above the limit of {max}");
         span_lint_and_help(

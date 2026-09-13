@@ -1,4 +1,4 @@
-use crate::common::DefaultState;
+use crate::common::{DefaultState, plural};
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
@@ -196,7 +196,7 @@ impl<'tcx> LateLintPass<'tcx> for TooManyStructFields {
         }
         let max = self.config.max_fields;
         let name = ident.name;
-        let noun = if count == 1 { "field" } else { "fields" };
+        let noun = plural(count, "field", "fields");
         let message = format!("struct `{name}` has {count} {noun}, above the limit of {max}");
         let span = cx.tcx.def_span(item.owner_id.def_id);
         span_lint_and_then(cx, TOO_MANY_STRUCT_FIELDS, span, message, |diag| {

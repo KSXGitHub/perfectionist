@@ -1,4 +1,4 @@
-use crate::common::{DefaultState, span_is_macro_generated};
+use crate::common::{DefaultState, plural, span_is_macro_generated};
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
@@ -179,7 +179,7 @@ impl<'tcx> LateLintPass<'tcx> for OverlyLongMethodChain {
             return;
         }
         let max = self.config.max_calls;
-        let noun = if count == 1 { "call" } else { "calls" };
+        let noun = plural(count, "call", "calls");
         let message = format!("method chain has {count} distinct {noun}, above the limit of {max}");
         span_lint_and_then(cx, OVERLY_LONG_METHOD_CHAIN, expr.span, message, |diag| {
             diag.help(NAMING_HELP);

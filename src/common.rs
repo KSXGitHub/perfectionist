@@ -380,3 +380,14 @@ pub(crate) fn span_is_macro_generated(span: Span) -> bool {
     span.macro_backtrace()
         .any(|expansion| matches!(expansion.kind, ExpnKind::Macro(..)))
 }
+
+/// The singular or plural form of `noun`, chosen by `count`.
+///
+/// Every size rule ends its message with a counted noun, and each was
+/// spelling the choice out where it emits. Both forms are passed
+/// explicitly rather than derived by appending an `s`: the nouns these
+/// rules count are all regular today, and a helper that assumed so
+/// would have to be unpicked the first time one is not.
+pub(crate) fn plural(count: usize, singular: &'static str, plural: &'static str) -> &'static str {
+    if count == 1 { singular } else { plural }
+}
