@@ -436,7 +436,7 @@ impl BareIdentifierReference {
                 continue;
             }
             let target_private = target
-                .and_then(|def_id| def_id.as_local())
+                .and_then(DefId::as_local)
                 .is_some_and(|local| !effective_visibilities.is_reachable(local));
             if documented_public && target_private {
                 continue;
