@@ -242,8 +242,8 @@ first-class sink — *not* merely as an incidental match of the
 bound-based detection. Its builder methods, which mirror std's
 `Command` setters, are recognized by default:
 
-- `with_arg`, `with_args`, `with_env`, `with_envs`, `without_env`,
-  `without_envs` — the `AsRef<OsStr>` family.
+- `with_arg`, `with_args`, `with_env`, `without_env` — the
+  `AsRef<OsStr>` family.
 - `with_current_dir` — the `AsRef<Path>` family.
 
 Two things make the explicit recognition worth stating rather than
