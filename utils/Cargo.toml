@@ -12,6 +12,9 @@ path = "src/lib.rs"
 name = "warmup"
 path = "cli/warmup.rs"
 
+[lints]
+workspace = true
+
 [dependencies]
 build-fs-tree = "0.8.1"
 cargo_toml = "0.22.3"

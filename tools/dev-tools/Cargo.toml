@@ -9,6 +9,9 @@ publish = false
 name = "dev-tools"
 path = "src/main.rs"
 
+[lints]
+workspace = true
+
 [dependencies]
 cargo_toml = "0.22.3"
 clap = { version = "4.6.1", features = ["derive"] }
