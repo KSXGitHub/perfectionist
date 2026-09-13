@@ -6,7 +6,7 @@ use rustc_ast::tokenstream::TokenTree;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Span;
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 
 mod config;
 mod late;
@@ -190,6 +190,6 @@ fn check_argument(argument: &[TokenTree], ctx: PurityContext<'_>) {
 fn queue(span: Span) {
     let mut guard = PENDING_VIOLATIONS
         .lock()
-        .unwrap_or_else(|err| err.into_inner());
+        .unwrap_or_else(PoisonError::into_inner);
     guard.push(span);
 }

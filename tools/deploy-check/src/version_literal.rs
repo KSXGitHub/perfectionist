@@ -29,6 +29,6 @@ pub(crate) fn is_version_literal(input: &str) -> bool {
 /// Take a non-empty run of ASCII digits from the front of `input`,
 /// returning `(digits, rest)`.
 fn take_digits(input: &str) -> Option<(&str, &str)> {
-    let end = input.bytes().take_while(|b| b.is_ascii_digit()).count();
+    let end = input.bytes().take_while(u8::is_ascii_digit).count();
     (end > 0).then(|| input.split_at(end))
 }
