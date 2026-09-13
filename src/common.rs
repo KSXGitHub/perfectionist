@@ -380,3 +380,10 @@ pub(crate) fn span_is_macro_generated(span: Span) -> bool {
     span.macro_backtrace()
         .any(|expansion| matches!(expansion.kind, ExpnKind::Macro(..)))
 }
+
+/// Both forms are passed rather than derived by appending an `s`:
+/// assuming that would have to be unpicked the first time one of these
+/// nouns is irregular.
+pub(crate) fn plural(count: usize, singular: &'static str, plural: &'static str) -> &'static str {
+    if count == 1 { singular } else { plural }
+}
