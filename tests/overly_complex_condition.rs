@@ -32,7 +32,7 @@ fn dylint_toml(config: RuleConfig) -> String {
 
 #[test]
 fn zero_threshold_reports_every_operator_count() {
-    let fixtures = _utils::copy_fixtures_with_directive(
+    let fixtures = _utils::copy_fixtures_with_directives(
         env!("CARGO_MANIFEST_DIR"),
         "ui-toml/overly_complex_condition/zero_threshold",
     );
