@@ -1,4 +1,5 @@
-use super::{CACHE_DIR_ENV, DOWNLOADS, cache_dir, ensure_cached, install_into};
+use super::{DOWNLOADS, cache_dir_from, ensure_cached, install_into};
+use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
 /// A scratch directory under the system temp dir, removed on drop, so the
@@ -38,21 +39,19 @@ fn downloads_list_ships_the_font_and_its_license() {
 }
 
 #[test]
-fn cache_dir_defaults_under_root_but_honours_env() {
-    // SAFETY: single-threaded mutation of one process-wide var, restored
-    // before returning so sibling tests are unaffected.
-    let previous = std::env::var_os(CACHE_DIR_ENV);
-    unsafe { std::env::remove_var(CACHE_DIR_ENV) };
+fn cache_dir_defaults_under_root() {
     assert_eq!(
-        cache_dir(Path::new("/repo")),
+        cache_dir_from(Path::new("/repo"), None),
         Path::new("/repo/.cache/fonts"),
     );
-    unsafe { std::env::set_var(CACHE_DIR_ENV, "/elsewhere/fonts") };
-    assert_eq!(cache_dir(Path::new("/repo")), Path::new("/elsewhere/fonts"));
-    match previous {
-        Some(value) => unsafe { std::env::set_var(CACHE_DIR_ENV, value) },
-        None => unsafe { std::env::remove_var(CACHE_DIR_ENV) },
-    }
+}
+
+#[test]
+fn cache_dir_honours_a_configured_directory() {
+    assert_eq!(
+        cache_dir_from(Path::new("/repo"), Some(OsString::from("/elsewhere/fonts"))),
+        Path::new("/elsewhere/fonts"),
+    );
 }
 
 #[test]
