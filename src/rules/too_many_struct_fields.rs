@@ -1,7 +1,7 @@
 use crate::common::DefaultState;
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
-use clippy_utils::diagnostics::span_lint_and_help;
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_hir::{Item, ItemKind, VariantData};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -104,6 +104,23 @@ const CONFIG_KEY: &str = "perfectionist::too_many_struct_fields";
 /// A struct whose constructor still fits in one look.
 const DEFAULT_MAX_FIELDS: usize = 10;
 
+/// What to do. "Related" on its own is not a criterion a reader can
+/// apply, so the help says what the group's name has to be about, and
+/// rules out the name a mechanical split reaches for -- one that says
+/// where the field list was cut rather than what the group is.
+const NAMING_HELP: &str = "group the fields that belong together into a struct named for what \
+                           the group is, not for where the field list was cut";
+
+/// How to tell the fix did not work, in the shape `overly_long_file`
+/// and `excessive_nesting` use. The payoff this rule claims is that a
+/// function needing only one group can take only that group, so the
+/// absence of such a function is what says the grouping bought
+/// nothing. It is checkable without judgement: look for a signature
+/// taking the new type.
+const CUT_HELP: &str = "if no function ends up taking the new struct on its own, the fields \
+                        moved rather than the concerns separated: every access gained a hop \
+                        and nothing gained a name";
+
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
@@ -181,13 +198,10 @@ impl<'tcx> LateLintPass<'tcx> for TooManyStructFields {
         let name = ident.name;
         let noun = if count == 1 { "field" } else { "fields" };
         let message = format!("struct `{name}` has {count} {noun}, above the limit of {max}");
-        span_lint_and_help(
-            cx,
-            TOO_MANY_STRUCT_FIELDS,
-            cx.tcx.def_span(item.owner_id.def_id),
-            message,
-            None,
-            "group related fields into a struct of their own, or split the type by the concerns its fields serve",
-        );
+        let span = cx.tcx.def_span(item.owner_id.def_id);
+        span_lint_and_then(cx, TOO_MANY_STRUCT_FIELDS, span, message, |diag| {
+            diag.help(NAMING_HELP);
+            diag.help(CUT_HELP);
+        });
     }
 }
