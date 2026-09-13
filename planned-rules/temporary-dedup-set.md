@@ -192,53 +192,21 @@ Below ~200 items the round trip is the *slower* option outright —
 the vector sorts in place. Against `sort_unstable` + `dedup` the set
 does not lead anywhere below a thousand items, and its whole advantage
 narrows to roughly 10³–10⁵ mostly-distinct string-like elements, where
-it peaks near 1.5×. The `BTreeSet` column is 1.12×–1.50× in every row
-of both tables, which is the most consistent result any of them holds.
-
-## What it finds in a consumer's workspace
-
-pnpm's Rust workspace — 109 crates, with a `dylint.toml` that already
-pins this plugin — carries three instances of the shape, against 29
-sites that already write `sort` + `dedup`:
-
-- `cli/src/cli_args/approve_builds.rs`, `fn sort_unique`: a `HashSet`
-  round trip whose result is then sorted anyway, so the set buys
-  nothing whatsoever. The doc comment above it names the JavaScript
-  function it was ported from — `sortUniqueStrings`, "a `Set` then
-  `lexCompare`" — which is where the shape comes from:
-  `[...new Set(xs)].sort()` is the right idiom in a language whose
-  `Set` keeps insertion order and whose arrays have no `dedup`.
-- `install-coordinator/src/mutation.rs`: a `BTreeSet` round trip with
-  a `map` between the walk and a `collect::<Result<Vec<_>>>()`.
-- `cli/src/cargo_deps/lockfile.rs`: a `BTreeSet` round trip landing in
-  a `Vec<GitSource>`.
-
-The same workspace holds every near miss the trigger has to reject,
-which is the more useful half of the sample: a `BTreeSet` filled by a
-helper through `&mut` and then drained, a set built empty and filled
-by a `for` loop, a set read with `remove` while a worklist drains,
-`assert_eq!` over two sets to compare ignoring order, and
-`deleted.iter().collect::<HashSet<_>>().len() == deleted.len()` as a
-duplicate check. Each fails a different clause: the build is not a
-`collect`, the set is read as a set, the landing is not a sequence.
-
-The data those three sites deduplicate is small — package names
-awaiting build approval, metadata paths, git sources. That is the
-normal scale for this kind of code: across pnpm's own workspace a
-package declares a median of 1 and a p90 of 17 direct dependencies,
-its lockfile carries 218 workspace importers and 1700 packages, and
-the largest single manifest declares 110. Every one of those numbers
-sits in the range where the vector form is also the faster one.
+it peaks near 1.5×. The `BTreeSet` column stays between 1.12× and
+1.50× in every row of the two name tables, which is the most
+consistent result any of the three holds.
 
 ## When the set is the right tool
 
-The rule stays silent on all of these; the last two are the cases for
-`#[allow(perfectionist::temporary_dedup_set, reason = "...")]`.
+Where a bullet below reaches for
+`#[allow(perfectionist::temporary_dedup_set, reason = "...")]`, the
+rule does fire and the suppression is the answer; the rest it never
+reaches at all.
 
 - **The element is not `Ord`.** `Hash + Eq` without an ordering is
   common — an enum that derives neither `PartialOrd` nor `Ord`, a
-  struct containing a `HashMap`. Neither sort compiles for it, so
-  there is no fix to suggest and the rule does not fire. This gate is
+  struct containing a `HashMap`. `sort_unstable` does not compile for
+  it, so there is no fix to suggest and the rule does not fire. This gate is
   a trait-resolution check, not a heuristic.
 - **The set is read as a set.** A `contains` call, a `len`, an
   `insert` after the fact, a return, a store into a field, a borrow
@@ -260,8 +228,8 @@ The rule stays silent on all of these; the last two are the cases for
   where the set leads `sort_unstable` + `dedup` at all, and it leads
   by about 1.5×. Below it the set is the slower option; above it the
   vector takes the lead back. The honest remedy even inside the band
-  is usually not `sort` but to stop discarding the set: keep it, name
-  it, and let the code that consumes it say it wants a set. Where a
+  is usually not to sort at all but to stop discarding the set: keep
+  it, name it, and let the code that consumes it say it wants a set. Where a
   vector really is what the caller needs, `#[allow]` with the
   measurement as the reason — a measurement, because the lead
   disappears the moment anything downstream wants a deterministic
@@ -278,7 +246,7 @@ The rule stays silent on all of these; the last two are the cases for
 container types, the `Ord` bound, and whether the walk lands in a
 sequence.
 
-A **set round trip** is three parts, all of which must hold:
+A **set round trip** has these parts, all of which must hold:
 
 1. **The build.** A `collect::<S>()` (or `S::from_iter(..)`) whose
    receiver implements `Iterator`, where `S` is `HashSet<T, _>` or
@@ -303,7 +271,7 @@ A **set round trip** is three parts, all of which must hold:
 Plus one gate: **`T: Ord`**, resolved against the element type. Without
 it the suggestion does not compile, so the rule must not fire.
 
-Two discovery loci, one per form in [Statement](#statement):
+One discovery locus per form in [Statement](#statement):
 
 - **Chained.** Build, walk, and landing in one expression. Everything
   needed is on the chain's spine.
@@ -351,8 +319,7 @@ let names: Vec<String> = names.into_iter().map(str::to_owned).collect();
 ```rust
 // The set is read as a set.
 let known: HashSet<&str> = manifest.dependencies.keys().copied().collect();
-let (known_deps, unknown): (Vec<_>, Vec<_>) =
-    requested.into_iter().partition(|name| known.contains(name));
+requested.retain(|name| known.contains(name));
 
 // The set arrives; this is a conversion, not a round trip.
 fn sorted_names(names: HashSet<String>) -> Vec<String> {
@@ -370,6 +337,146 @@ for name in names.into_iter().collect::<HashSet<_>>() {
     eprintln!("{name}");
 }
 ```
+
+## Examples from a consumer's workspace
+
+pnpm's Rust workspace — 109 crates, with a `dylint.toml` that already
+pins this plugin — carries three round trips, against 29
+`dedup` call sites that already write the vector form (27 of them
+directly after a sort). Quoted at
+[`f607801`](https://github.com/pnpm/pnpm/commit/f60780170c962d938082562d26fdbd4689c26a85),
+so each stays a citation rather than a copy that drifts.
+
+### The round trip that sorts afterwards anyway
+
+```rust
+/// Deduplicate and sort `names` by code unit, matching pnpm's
+/// `sortUniqueStrings` (a `Set` then `lexCompare`).
+fn sort_unique(names: Vec<String>) -> Vec<String> {
+    let mut unique: Vec<String> = names
+        .into_iter()
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect();
+    unique.sort();
+    unique
+}
+```
+
+The set contributes nothing here at all: the arbitrary order it
+produced is overwritten on the next line, and the duplicates it
+dropped are the ones `dedup` drops. The doc comment names the
+JavaScript function the code was ported from, which is where the shape
+comes from — `[...new Set(xs)].sort()` is the right idiom in a
+language whose `Set` keeps insertion order and whose arrays have no
+`dedup`. The whole function is:
+
+```rust
+fn sort_unique(mut names: Vec<String>) -> Vec<String> {
+    names.sort_unstable();
+    names.dedup();
+    names
+}
+```
+
+### A set between a `map` and a fallible landing
+
+```rust
+let snapshots = paths
+    .into_iter()
+    .collect::<BTreeSet<_>>()
+    .into_iter()
+    .map(MetadataFile::capture)
+    .collect::<Result<Vec<_>>>()?;
+```
+
+`paths` is the function's own `Vec<PathBuf>` parameter, so the rewrite
+takes it `mut` and deduplicates it where it stands, before the map
+that was reading out of the set:
+
+```rust
+paths.sort_unstable();
+paths.dedup();
+let snapshots =
+    paths.into_iter().map(MetadataFile::capture).collect::<Result<Vec<_>>>()?;
+```
+
+### A set whose whole job is the `Vec` it becomes
+
+```rust
+/// The git sources the locked packages come from, deduplicated so the
+/// managed Cargo configuration declares each one once.
+pub(super) fn git_sources(&self) -> Vec<GitSource> {
+    self.git
+        .iter()
+        .map(|package| GitSource::clone(&package.source))
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
+}
+```
+
+The rewrite collects the `Vec` the signature already promises, then
+sorts and dedups it. `GitSource` is `Ord` because the `BTreeSet`
+required it — which is true of every `BTreeSet` instance, so the
+element gate can only ever exclude a `HashSet` one.
+
+### Left alone in the same workspace
+
+These are the more useful half of the sample: each fails a different
+clause of the trigger, and a rule that reports any of them is wrong.
+
+```rust
+// Built by a helper, then filled through `&mut`: the build is not a
+// `collect`, and the set is used twice.
+let mut out: BTreeSet<String> = collect_own_files(pkg_dir, manifest, options.workspace_dir)?;
+collect_bundled_files(pkg_dir, manifest, &mut out)?;
+Ok(out.into_iter().collect())
+
+// Built empty and filled by a loop: the build is not a `collect`.
+let mut rel_dirs: HashSet<&str> = HashSet::new();
+for entry in cas_paths.keys() {
+    // ...
+    rel_dirs.insert(rel);
+}
+
+// Read as a set — `absorb_compatible` removes from it — before the
+// walk that looks like the anti-pattern.
+let mut unresolved: HashSet<DepPath> = dep_paths.iter().cloned().collect();
+while let Some(largest) = current.pop() {
+    absorb_compatible(graph, &largest, &mut current, &mut dep_paths_map, &mut unresolved);
+    current.sort_by(dep_count_sorter);
+}
+if !unresolved.is_empty() {
+    let mut leftover: Vec<DepPath> = unresolved.into_iter().collect();
+    leftover.sort();
+    remaining_duplicates.push(leftover);
+}
+
+// The landing is a comparison: two sets compared to ignore order.
+assert_eq!(
+    carried.all_peer_dep_names.iter().collect::<BTreeSet<_>>(),
+    from_scratch.all_peer_dep_names.iter().collect::<BTreeSet<_>>(),
+);
+
+// The landing is a length: a duplicate check, not a sequence.
+deleted.iter().collect::<HashSet<_>>().len() == deleted.len()
+```
+
+### The scale this code runs at
+
+The data the three sites deduplicate is small — package names awaiting
+build approval, metadata paths, git sources. That is the normal scale
+for this kind of code: across pnpm's own workspace a package declares
+a median of 1 and a p90 of 17 direct dependencies, its lockfile
+carries 218 workspace importers and 1700 packages, and the largest
+single manifest declares 110. Every one of those numbers sits in the
+range where the vector form is also the faster one.
+
+Everything in this section is contributor-facing. A shipped doc — the
+`declare_tool_lint!` rustdoc and the catalogue generated from it — may
+not name the project a rule was distilled from; see
+[`CLAUDE.md`](../CLAUDE.md#shipped-docs-address-the-consumer-not-the-contributor).
 
 ## Configuration
 
@@ -394,8 +501,8 @@ extra_set_types = ["::hashbrown::HashSet"]
 exempt_tests = false
 ```
 
-The *form* of the suggestion — the three statements, or the
-`into_sorted().into_deduped()` chain from
+The *form* of the suggestion — the statements, or the
+`into_sorted_unstable().into_deduped()` chain from
 [Statement](#statement) — is a `style` knob whose values are
 `statements` (the std-only form, the default) and `chained` (which
 requires the consumer to depend on both crates). Ship it with the
@@ -439,6 +546,10 @@ already made for its own pending rewrite.
   comparison count put it at 0.95× of `sort_unstable` — and an element
   that expensive belongs in the `#[allow]` case above, not in a
   different suggestion.
+- **Test-code exemption.** `exempt_tests` reaches the shared helpers
+  per
+  [Recognising test-exclusive code](./IMPLEMENTATION_CONVENTIONS.md#recognising-test-exclusive-code),
+  rather than matching `cfg(test)` itself.
 - **Dropping a needless clone.** Where the walk is `iter().cloned()`
   or `iter().copied()`, the rewrite drops it: the set was about to be
   dropped, so the elements can be moved. Say so in the diagnostic
@@ -451,8 +562,9 @@ already made for its own pending rewrite.
 
 ### Difficulty
 
-**Medium.** The chained form is a spine walk plus three type checks
-and a trait-bound query, all of which the late pass has to hand. The
+**Medium.** The chained form is a spine walk plus the container-type
+checks and a trait-bound query, all of which the late pass has to
+hand. The
 bound form adds a body-local use scan, and that scan is where a wrong
 implementation false-positives: a `contains` call, a borrow that
 escapes into a closure, or a second walk all have to disqualify the
@@ -462,8 +574,8 @@ uses have fixtures.
 
 ## Default state
 
-Active by default. The shape is narrow, the `Ord` gate removes the one
-case with no fix, and the remaining exceptions are performance
+Active by default. The trigger is narrow, the `Ord` gate removes the
+one case with no fix, and the remaining exceptions are performance
 trade-offs a crate states once with `#[allow]` and a reason. A crate
 that deduplicates large string collections whose order nothing reads
 — where the measurement favours the set — is the crate that turns the
@@ -475,7 +587,8 @@ rule off in `[perfectionist].disable`.
   `Vec`, `VecDeque`, `LinkedList`, and `BinaryHeap` only — dropping a
   set's `collect` would change which elements survive, so it stays out
   of scope there. This rule keeps the deduplication and changes how it
-  is spelled, which is why it can cover the types Clippy's cannot.
+  is spelled, which is why it can cover the types Clippy's lint
+  cannot.
 - **`clippy::stable_sort_primitive`** wants `sort_unstable` wherever
   stability cannot matter, which is what this rule's suggestion emits,
   so the two never disagree. `clippy::derive_ord_xor_partial_ord` and

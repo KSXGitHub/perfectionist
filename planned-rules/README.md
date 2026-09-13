@@ -166,8 +166,8 @@ pattern that several rules call out by reference — live in
   walked back into a sequence (`names.into_iter()
   .collect::<HashSet<_>>().into_iter().collect()`, and the same round
   trip with the set bound to a `let`). The set is never read as a set,
-  so `collect` + `sort` + `dedup` replaces it with one allocation and
-  a reproducible order. Silent when the element is not `Ord` (there is
+  so `collect` + `sort_unstable` + `dedup` replaces it with one
+  allocation and a reproducible order. Silent when the element is not `Ord` (there is
   no fix), when the set is read as a set, and when deduplication
   preserves the input order. Active by default.
 
