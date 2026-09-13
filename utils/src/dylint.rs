@@ -5,20 +5,6 @@ use pipe_trait::Pipe;
 use std::path::Path;
 use std::process::Command;
 
-/// The environment variables that steer dylint's configuration and
-/// library resolution, stripped from every fixture subprocess this
-/// module spawns.
-///
-/// `dylint_testing` sets them process-globally for its own UI runs, so
-/// a test binary that pairs UI tests with fixture subprocesses leaks
-/// the UI run's resolution into the subprocess: `DYLINT_TOML` replaces
-/// the fixture project's own `dylint.toml` rather than adding to it,
-/// and `DYLINT_LIBRARY_PATH` adds the UI run's build directory to the
-/// set `--all` loads, linting the fixture under a second copy of the
-/// plugin. A fixture's own `dylint.toml` declares both its library
-/// set and its per-rule tables, so nothing here is worth inheriting.
-const DYLINT_RESOLUTION_ENV: &[&str] = &["DYLINT_LIBRARY_PATH", "DYLINT_LIBS", "DYLINT_TOML"];
-
 /// Run `cargo dylint --all` inside `project_dir`, with
 /// `CARGO_TARGET_DIR` pointed at `shared_target_dir` so the build
 /// artefacts are reused across invocations.
@@ -48,7 +34,6 @@ pub fn run_dylint_fix(project_dir: &Path, shared_target_dir: &Path) -> (String, 
         .with_arg("--fix")
         .with_arg("--all")
         .with_current_dir(project_dir)
-        .without_envs(DYLINT_RESOLUTION_ENV)
         .with_env("CARGO_TARGET_DIR", shared_target_dir)
         .with_arg("--")
         .with_arg("--lib")
@@ -70,7 +55,6 @@ fn run_dylint_inner(
         .with_arg("dylint")
         .with_arg("--all")
         .with_current_dir(project_dir)
-        .without_envs(DYLINT_RESOLUTION_ENV)
         .with_env("CARGO_TARGET_DIR", shared_target_dir)
         .with_args(match all_targets {
             true => ["--", "--all-targets"].as_slice(),
