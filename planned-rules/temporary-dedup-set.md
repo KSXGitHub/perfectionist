@@ -110,37 +110,6 @@ is twice as slow, 0.34× is three times as fast. The element-type
 table further down uses `sort_unstable` + `dedup` as its baseline
 instead, and says so.
 
-### How these were measured
-
-Dependency-free single-file programs, `rustc -O --edition 2021
--C target-cpu=native`, rustc 1.99.0-nightly, x86-64. Reproducing them
-needs only this description; they are scratch files and are not
-committed.
-
-- **Subjects.** The five forms in the tables, each taking the source
-  vector by value and returning the deduplicated one, so the output's
-  allocation and drop are inside the timed region and the input's
-  clone is outside it. `black_box` wraps the input and the result.
-- **Timing.** One call per measurement above ~100k elements, best of
-  five to nine. Below that a call is nanoseconds, so a batch of
-  pre-cloned inputs is timed as a whole and divided, best of seven to
-  nine batches.
-- **Allocation.** A counting `GlobalAlloc` tracks live bytes and a
-  high-water mark; the figure quoted is the peak above the live bytes
-  at the moment the call started, so the input vector is excluded and
-  the set, the scratch buffer and the output are not.
-- **Workloads.** `total` items drawn with a xorshift from `distinct`
-  values and shuffled, so the duplicate ratio is a parameter rather
-  than an accident. Names come from two pools: the 4.44M-name npm
-  registry list, and the 1000 most-downloaded crates.io names.
-- **Element types.** Nine, chosen to separate what the comparison
-  reads from what the value carries: `u32` / `u64` / `u128`; `[u8; 32]`
-  as a digest; a newtype over `u64` with the std comparison derives
-  and a `From` impl; a two-field struct and a three-variant enum, both
-  derived; a struct whose hand-written `Eq` / `Ord` / `Hash` forward
-  to one `u64` key while a 24-byte payload rides along; and a newtype
-  over `String`.
-
 | Workload (input → unique)                  | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
 |--------------------------------------------|-----------|--------------------|------------|------------------|---------------------------|
 | 1M `u64`, all distinct                     | 2.22×     | 3.17×              | 1.34×      | 1.00× (27 ms)    | 0.72×                     |
@@ -187,7 +156,7 @@ The findings that shape the rule:
    microseconds.** Deduplicating 1000 npm names — a lockfile's worth —
    took 32 µs through the set against 51 µs for the vector and 41 µs
    for `sort_unstable` + `dedup`. The set's advantage is asymptotic,
-   so the inputs at which it is worth an `#[allow]` are much larger
+   so the inputs at which it is worth an `#[expect]` are much larger
    than a manifest.
 5. **The set is not the lighter container it looks like.**
    Deduplicating 1M values with 100 distinct ones, the set added
@@ -268,12 +237,45 @@ The `BTreeSet` column ran from 1.26× to 2.79× of the suggestion
 across every element type and size here — slower in every row, which
 is what the earlier tables found too.
 
+### How these were measured
+
+Dependency-free single-file programs, `rustc -O --edition 2021
+-C target-cpu=native`, rustc 1.99.0-nightly, x86-64. Reproducing them
+needs only this description; they are scratch files and are not
+committed.
+
+- **Subjects.** The five forms in the tables, each taking the source
+  vector by value and returning the deduplicated one, so the output's
+  allocation and drop are inside the timed region and the input's
+  clone is outside it. `black_box` wraps the input and the result.
+- **Timing.** One call per measurement above ~100k elements, best of
+  five to nine. Below that a call is nanoseconds, so a batch of
+  pre-cloned inputs is timed as a whole and divided, best of seven to
+  nine batches.
+- **Allocation.** A counting `GlobalAlloc` tracks live bytes and a
+  high-water mark; the figure quoted is the peak above the live bytes
+  at the moment the call started, so the input vector is excluded and
+  the set, the scratch buffer and the output are not.
+- **Workloads.** `total` items drawn with a xorshift from `distinct`
+  values and shuffled, so the duplicate ratio is a parameter rather
+  than an accident. Names come from two pools: the 4.44M-name npm
+  registry list, and the 1000 most-downloaded crates.io names.
+- **Element types.** Nine, chosen to separate what the comparison
+  reads from what the value carries: `u32` / `u64` / `u128`; `[u8; 32]`
+  as a digest; a newtype over `u64` with the std comparison derives
+  and a `From` impl; a two-field struct and a three-variant enum, both
+  derived; a struct whose hand-written `Eq` / `Ord` / `Hash` forward
+  to one `u64` key while a 24-byte payload rides along; and a newtype
+  over `String`.
+
 ## When the set is the right tool
 
 Where a bullet below reaches for
-`#[allow(perfectionist::temporary_dedup_set, reason = "...")]`, the
-rule does fire and the suppression is the answer; the rest it never
-reaches at all.
+`#[expect(perfectionist::temporary_dedup_set)]`, the rule does fire and
+the suppression is the answer; the rest it never reaches at all.
+`#[expect]` rather than `#[allow]` throughout, because
+`perfectionist::allow_attributes` resolves an `#[allow]` of a
+deterministically-firing lint into one.
 
 - **The element is not `Ord`.** `Hash + Eq` without an ordering is
   common — an enum that derives neither `PartialOrd` nor `Ord`, a
@@ -304,14 +306,14 @@ reaches at all.
   round trip measured slower at every size, by four to six times on
   ten elements. The honest remedy even inside the band
   is usually not to sort at all but to stop discarding the set: keep
-  it, name it, and let the code that consumes it say it wants a set. Where a
-  vector really is what the caller needs, `#[allow]` with the
-  measurement as the reason — a measurement, because the lead
+  it, name it, and let the code that consumes it say it wants a set.
+  Where a vector really is what the caller needs, `#[expect]` it on the
+  strength of a measurement — a measurement, because the lead
   disappears the moment anything downstream wants a deterministic
   order.
 - **The source is lazy and duplicates dominate.** Deduplicating a
   streamed million lines down to a few hundred holds a few hundred in
-  a set against a million in a vector. `#[allow]` it, and note that
+  a set against a million in a vector. `#[expect]` it, and note that
   the advantage disappears the moment the source is a `Vec` or any
   other sized iterator.
 
@@ -615,7 +617,7 @@ already made for its own pending rewrite.
   whose comparison is drastically more expensive than its hash — 4 KiB
   strings sharing a 4100-byte prefix, where the stable sort's lower
   comparison count put it at 0.95× of `sort_unstable` — and an element
-  that expensive belongs in the `#[allow]` case above, not in a
+  that expensive belongs in the `#[expect]` case above, not in a
   different suggestion.
 - **Test-code exemption.** `exempt_tests` reaches the shared helpers
   per
@@ -672,7 +674,7 @@ uses have fixtures.
 
 Active by default. The trigger is narrow, the `Ord` gate removes the
 one case with no fix, and the remaining exceptions are performance
-trade-offs a crate states once with `#[allow]` and a reason. A crate
+trade-offs a crate states once with `#[expect]`. A crate
 that deduplicates large string collections whose order nothing reads
 — where the measurement favours the set — is the crate that turns the
 rule off in `[perfectionist].disable`.
