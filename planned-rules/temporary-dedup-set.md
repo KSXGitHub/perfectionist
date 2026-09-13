@@ -73,8 +73,9 @@ order that varies per run for a sorted one.
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. The round trip
-computes the right set of values, and on a large enough input whose
-resulting order nothing reads it is the faster of the two — see
+computes the right set of values, and on a large enough input of
+pointer-chasing elements whose resulting order nothing reads it is the
+faster of the two — see
 [When the set is the right tool](#when-the-set-is-the-right-tool),
 which is the part of this file that decides whether the rule is worth
 enabling in a given crate. At the sizes most code runs it, though, the
@@ -134,9 +135,10 @@ The findings that shape the rule:
    `clippy::derived_hash_with_manual_eq` police that contract; this
    rule assumes it, and says so rather than re-deriving it.
 2. **The `HashSet` round trip wins on elements that are expensive to
-   compare, and only while its order goes unused.** Rust's `String`
-   carries no small-string optimisation, so sorting chases a pointer
-   per comparison where hashing touches each string once. Hence
+   compare — which is fewer types than it sounds — and only while its
+   order goes unused.** Rust's `String` carries no small-string
+   optimisation, so sorting chases a pointer per comparison where
+   hashing touches each string once. Hence
    0.22×–0.34× on these synthetic strings — and 1.32×–1.54× for the
    same code once a `sort` is appended to make the output
    deterministic, which is the comparison to make as soon as anything
@@ -193,12 +195,48 @@ package's dependencies, a workspace's members, a command's arguments:
 
 Below ~200 items the round trip is the *slower* option outright —
 1.2×–1.6× — because it pays an allocation and a hash per element where
-the vector sorts in place. Against `sort_unstable` + `dedup` the set
-does not lead anywhere below a thousand items, and its whole advantage
-narrows to roughly 10³–10⁵ mostly-distinct string-like elements, where
-it peaks near 1.5×. The `BTreeSet` column stays between 1.12× and
-1.50× in every row of the two name tables, which is the most
-consistent result any of the three holds.
+the vector sorts in place.
+
+Those tables are all `String`, though, and a string is the element
+that flatters the set most: every comparison follows a pointer. Across
+element types, each cell below is the round trip divided by the
+`sort_unstable` + `dedup` the rule suggests, so above 1.00× the
+flagged code is the slower one:
+
+| Element (size)                    |    10 |   200 | 1 000 | 100 000 |
+|-----------------------------------|-------|-------|-------|---------|
+| `u32` (4 B)                       | 4.76× | 3.04× | 2.71× | 1.32×   |
+| `u64` (8 B)                       | 5.58× | 3.12× | 2.64× | 1.51×   |
+| `u128` (16 B)                     | 6.53× | 3.31× | 2.82× | 1.85×   |
+| `Id(u64)` newtype (8 B)           | 5.27× | 2.92× | 2.51× | 1.33×   |
+| `struct Pair`, derived (8 B)      | 4.55× | 2.40× | 2.10× | 1.12×   |
+| `enum Kind`, derived (16 B)       | 4.14× | 2.28× | 2.20× | 1.05×   |
+| `struct Keyed`, forwarding (32 B) | 4.35× | 2.17× | 1.72× | 0.95×   |
+| `[u8; 32]` digest (32 B)          | 3.12× | 1.37× | 0.97× | 0.63×   |
+| `Name(String)` newtype (24 B)     | 1.65× | 1.23× | 0.99× | 0.68×   |
+
+Read down the first column: on ten elements the round trip costs four
+to six times what the suggestion costs, for every element but a
+string. Read along the rows: for the primitives, the newtype over one,
+the derived struct and the derived enum it never becomes the faster
+option at any size measured — 1.05× to 1.85× even at a hundred
+thousand. The set's advantage belongs to elements whose comparison is
+far dearer than their hash — one reached through a pointer (`String`,
+and a newtype over one) or wide inline bytes (a 32-byte digest) — and
+even there it arrives only past ~1000 elements.
+
+A wrapper costs nothing either way: `Id(u64)` — the shape a
+`derive_more::From` / `Display` newtype has, since the comparison
+traits are always the std derives — tracks raw `u64` to within noise
+at every size, as `Name(String)` tracks `String`. Hand-written
+`Eq` / `Ord` that forward to one key field (`Keyed`, with a payload
+riding along) behave like the primitive they forward to, not like the
+32 bytes they carry. The element that decides this is the one the
+comparison actually reads.
+
+The `BTreeSet` column ran from 1.26× to 2.79× of the suggestion
+across every element type and size here — slower in every row, which
+is what the earlier tables found too.
 
 ## When the set is the right tool
 
@@ -227,11 +265,14 @@ reaches at all.
   an arbitrary order and never builds a sequence; there is nothing to
   sort and nothing to dedup, so the set is doing a job no vector does
   more cheaply.
-- **Thousands of string-like elements whose order is genuinely
-  unused.** That band — roughly 10³ to 10⁵ mostly-distinct items — is
-  where the set leads `sort_unstable` + `dedup` at all, and it leads
-  by about 1.5×. Below it the set is the slower option; above it the
-  vector takes the lead back. The honest remedy even inside the band
+- **Thousands of pointer-chasing elements whose order is genuinely
+  unused.** The set leads only where a comparison costs far more than
+  a hash — a `String` or `PathBuf`, a newtype over one, a wide digest
+  — and only from about 10³ elements up, by about 1.5×. For a
+  primitive, a newtype over one, a derived struct or enum, or an impl
+  that forwards to one key field, there is no such band at all: the
+  round trip measured slower at every size, by four to six times on
+  ten elements. The honest remedy even inside the band
   is usually not to sort at all but to stop discarding the set: keep
   it, name it, and let the code that consumes it say it wants a set. Where a
   vector really is what the caller needs, `#[allow]` with the
