@@ -1,13 +1,6 @@
 [workspace]
 members = ["tools/*", "utils"]
 
-[workspace.lints.clippy]
-# Every member inherits this table via `[lints] workspace = true`.
-# `perfectionist` itself cannot: Cargo rejects a package that sets
-# `lints.workspace = true` alongside its own `[lints]` tables, so the
-# entry below is repeated under `[lints.clippy]`.
-redundant_closure_for_method_calls = "warn"
-
 [package]
 name = "perfectionist"
 description = "Additional linting rules for Rust projects"

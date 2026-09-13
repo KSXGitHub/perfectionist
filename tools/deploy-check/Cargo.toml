@@ -9,9 +9,6 @@ publish = false
 name = "deploy-check"
 path = "src/main.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 clap = { version = "4.6.1", features = ["derive"] }
 command-extra = "1.0.0"
