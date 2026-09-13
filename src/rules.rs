@@ -33,6 +33,7 @@ pub mod single_letter_let_binding;
 pub mod single_letter_static_item;
 pub mod thiserror_usage;
 pub mod too_many_local_bindings;
+pub mod too_many_struct_fields;
 pub mod uncombined_self_import;
 pub mod unicode_ellipsis_in_comments;
 pub mod unicode_ellipsis_in_docs;
