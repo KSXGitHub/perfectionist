@@ -39,5 +39,4 @@ LL |     fn display_name(&self) -> String {
    |
    = help: return a borrow (`&str`, `&Path`, `&[T]`, `Option<&T>`, `&T`) and let a caller that needs ownership copy at the call site
 
-warning: 5 warnings emitted
-
+warning: N warnings emitted
