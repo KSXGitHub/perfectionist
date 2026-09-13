@@ -29,7 +29,10 @@ declare_tool_lint! {
     /// macro does count, even though the `let` around it came from the
     /// expansion. A nested function is counted on its own, not as part
     /// of the function that contains it. A function that is itself
-    /// produced by a macro is not counted.
+    /// produced by a macro is not counted. A binding behind a `cfg`
+    /// that is off is not there to count, so a body with feature-gated
+    /// bindings can be flagged under one feature set and silent under
+    /// another.
     ///
     /// Test code is counted like any other code; set `exempt_tests`
     /// to leave it alone.

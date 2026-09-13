@@ -35,7 +35,9 @@ declare_tool_lint! {
     /// a `for` or `while` loop counts once, and the body of an
     /// `async fn` or `async` block is not a level of its own. A function produced
     /// by a macro is not measured, and a nested function is measured on
-    /// its own.
+    /// its own. A construct behind a `cfg` that is off is not there to
+    /// count, so a body whose deepest nesting is feature-gated can be
+    /// flagged under one feature set and silent under another.
     ///
     /// Test code is measured like any other code; set
     /// `exempt_tests` to leave it alone.

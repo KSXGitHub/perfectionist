@@ -13,7 +13,10 @@ declare_tool_lint! {
     /// with more than `max_fields`.
     ///
     /// A struct produced by a macro expansion is not measured. Enum
-    /// variants and unions are not measured.
+    /// variants and unions are not measured. A field behind a `cfg`
+    /// that is off is not there to count, so a struct with
+    /// feature-gated fields can be flagged under one feature set and
+    /// silent under another.
     ///
     /// Test code is measured like any other code; set
     /// `exempt_tests` to leave it alone.

@@ -44,7 +44,9 @@ declare_tool_lint! {
     /// inside a macro's arguments still counts. A function that is
     /// itself produced by a macro is not measured. Nested functions are
     /// measured on their own, not as part of the function that contains
-    /// them.
+    /// them. Code behind a `cfg` that is off is not there to score, so
+    /// a body whose branching is feature-gated can be flagged under one
+    /// feature set and silent under another.
     ///
     /// Test code is measured like any other code; set
     /// `exempt_tests` to leave it alone.
