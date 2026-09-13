@@ -94,8 +94,9 @@ Measured on x86-64 (rustc 1.99.0-nightly, `-O -C target-cpu=native`)
 with a throwaway single-file harness: generate a source vector, hand
 each subject its own clone of it five times, keep the best time and
 the peak allocation a counting global allocator saw above the input.
-Timings below are relative to `collect` + `sort` + `dedup`; lower is
-faster.
+Each cell below is that subject's time as a multiple of the
+`collect` + `sort` + `dedup` column, which is therefore 1.00×: 2.22×
+is twice as slow, 0.34× is three times as fast.
 
 | Workload (input → unique)                  | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
 |--------------------------------------------|-----------|--------------------|------------|------------------|---------------------------|
