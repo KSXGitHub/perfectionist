@@ -278,8 +278,13 @@ the suppression is the answer; the rest it never reaches at all.
 deterministically-firing lint into one.
 
 - **The element is not `Ord`.** `sort_unstable` does not compile for
-  it, so there is no fix to suggest and the rule does not fire; the
-  gate is a trait-resolution check, not a heuristic. What it excludes
+  it, so the rule does not fire; the gate is a trait-resolution check,
+  not a heuristic. What is missing is a fix the *rule* can write, not
+  a fix: `sort_unstable_by` with `dedup_by`, over whatever projection
+  the element's author would compare, does the same job by hand. The
+  rule stays out of it because choosing that projection is a judgement
+  about the type, and a wrong one silently changes which duplicates
+  survive. What it excludes
   is narrower than it sounds. std has almost nothing in this
   population — `Range`, `RangeInclusive`, `Discriminant`, `Layout`,
   `ThreadId`, `FileType`, while `io::ErrorKind` and `TypeId` are both
@@ -632,6 +637,25 @@ already made for its own pending rewrite.
   per
   [Recognising test-exclusive code](./IMPLEMENTATION_CONVENTIONS.md#recognising-test-exclusive-code),
   rather than matching `cfg(test)` itself.
+- **The `_by` family is help text, not autofix.** `sort_unstable` and
+  `dedup` are the one pair that reproduces a set's semantics knowing
+  nothing about the element beyond `T: Ord`: the sort orders by the
+  element's own `Ord`, which is what a `BTreeSet` used, and `dedup`
+  removes by `PartialEq`, which is what `Eq` gave a `HashSet`. Every
+  `_by` / `_by_key` variant needs a comparator or a key the rule would
+  have to invent, and an invented key changes *which* duplicates
+  survive unless it is injective with respect to `Eq` — something the
+  rule cannot check. So the suggestion stays the plain pair, and the
+  diagnostic names the family for the reader applying it by hand:
+  `sort_by` / `sort_unstable_by` with `dedup_by` where the element has
+  no `Ord` but a field-wise order its author knows; `sort_by_key` with
+  `dedup_by_key` where a cheap injective key exists;
+  `sort_by_cached_key` where the key is expensive to compute, which is
+  std's own advice and the difference between one key per element and
+  one per comparison. The `into-sorted` and `into-deduped` families
+  mirror std method for method, so the chained `style` has the same
+  options under the same rule: the autofix is `into_sorted_unstable`
+  and `into_deduped`, the rest is prose.
 - **Dropping a needless clone.** Where the walk is `iter().cloned()`
   or `iter().copied()`, the rewrite drops it: the set was about to be
   dropped, so the elements can be moved. Say so in the diagnostic
