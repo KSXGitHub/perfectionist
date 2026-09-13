@@ -1,5 +1,5 @@
 use crate::code_lines::count_code_lines;
-use crate::common::DefaultState;
+use crate::common::{DefaultState, plural};
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_help;
@@ -120,7 +120,8 @@ impl<'tcx> LateLintPass<'tcx> for OverlyLongFile {
         }
         let max = self.config.max_lines;
         let name = cx.sess().source_map().filename_for_diagnostics(&file.name);
-        let message = format!("file `{name}` has {count} lines of code, above the limit of {max}");
+        let noun = plural(count, "line", "lines");
+        let message = format!("file `{name}` has {count} {noun} of code, above the limit of {max}");
         span_lint_and_help(
             cx,
             OVERLY_LONG_FILE,
