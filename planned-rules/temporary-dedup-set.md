@@ -106,7 +106,7 @@ is twice as slow, 0.34× is three times as fast.
 | 500k `String` (216 B, 200 B shared prefix) | 0.23×     | 1.33×              | 1.02×      | 1.00× (339 ms)   | 0.84×                     |
 | 200k `String` (4 KiB, shared prefix)       | 0.22×     | 1.32×              | 1.02×      | 1.00× (1070 ms)  | 1.05×                     |
 
-Three findings shape the rule:
+The findings that shape the rule:
 
 1. **The `BTreeSet` round trip never won.** It ran between 0.98× and
    1.34× the vector's time across every workload — never faster
@@ -115,13 +115,30 @@ Three findings shape the rule:
    vector. There is no workload in which to prefer it, which is why
    the `BTreeSet` branch is the machine-applicable one.
 2. **The `HashSet` round trip wins on elements that are expensive to
-   compare, and only while its order goes unused.** Sorting
-   `Vec<String>` chases a pointer per comparison; hashing touches each
-   string once. Hence 0.22×–0.34× for strings — and 1.32×–1.54× for
-   the same code once a `sort` is appended to make the output
-   deterministic. For `u64`, where a comparison is a register
+   compare, and only while its order goes unused.** Rust's `String`
+   carries no small-string optimisation, so sorting chases a pointer
+   per comparison where hashing touches each string once. Hence
+   0.22×–0.34× on these synthetic strings — and 1.32×–1.54× for the
+   same code once a `sort` is appended to make the output
+   deterministic, which is the comparison to make as soon as anything
+   observes the order. For `u64`, where a comparison is a register
    instruction, the round trip is ~2× *slower*.
-3. **The set is not the lighter container it looks like.**
+3. **The synthetic strings above overstate it; real names are
+   cheaper to sort.** Repeating the measurement on package names —
+   4.44M npm names (mean 20 B, median 18 B) and the 1000
+   most-downloaded crates.io names (mean 10.4 B, median 10 B) — puts
+   the round trip at 0.61×–0.67× up to 100k items and 0.86× at a
+   million: a real lead, but not the 0.22× of a synthetic 4 KiB
+   string. `sort_unstable` + `dedup` closes most of what is left
+   (0.80×–0.87×) and wins outright at a million (0.65×), while staying
+   deterministic.
+4. **At the size real code deduplicates names, the choice is
+   microseconds.** Deduplicating 1000 npm names — a lockfile's worth —
+   took 32 µs through the set against 51 µs for the vector and 41 µs
+   for `sort_unstable` + `dedup`. The set's advantage is asymptotic,
+   so the inputs at which it is worth an `#[allow]` are much larger
+   than a manifest.
+5. **The set is not the lighter container it looks like.**
    Deduplicating 1M values with 100 distinct ones, the set added
    18 MiB on top of the 8 MiB input vector, because
    `HashSet::from_iter` reserves on the iterator's size hint: the
@@ -130,6 +147,21 @@ Three findings shape the rule:
    when the source has no usable size hint — the same workload behind
    a `filter` peaked at a few KiB for the set against the vector's
    8 MiB.
+
+Names, at the lengths and sizes they actually occur in — npm names
+sampled from the full registry list, crate names from the download
+ranking, `total` items drawn from `distinct` of them:
+
+| Pool (mean length)   | total → distinct | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
+|----------------------|------------------|-----------|--------------------|------------|------------------|---------------------------|
+| npm names (20 B)     | 1k → 1k          | 0.62×     | 1.35×              | 1.23×      | 1.00× (51 µs)    | 0.80×                     |
+| npm names (20 B)     | 10k → 10k        | 0.61×     | 1.16×              | 1.18×      | 1.00× (834 µs)   | 0.87×                     |
+| npm names (20 B)     | 100k → 100k      | 0.63×     | 1.21×              | 1.18×      | 1.00× (12.8 ms)  | 0.82×                     |
+| npm names (20 B)     | 1M → 100k        | 0.86×     | 0.84×              | 1.26×      | 1.00× (348 ms)   | 0.65×                     |
+| crate names (10.4 B) | 1k → 1k          | 0.67×     | 1.44×              | 1.21×      | 1.00× (46 µs)    | 0.87×                     |
+
+The `BTreeSet` column is 1.18×–1.26× in every row of that table,
+which is the most consistent result either table holds.
 
 ## When the set is the right tool
 
@@ -156,11 +188,15 @@ The rule stays silent on all of these; the last two are the cases for
   an arbitrary order and never builds a sequence; there is nothing to
   sort and nothing to dedup, so the set is doing a job no vector does
   more cheaply.
-- **Comparison is expensive and the order is genuinely unused.** The
-  string rows above. The honest remedy here is usually not `sort` but
-  to stop discarding the set: keep it, name it, and let the code that
-  consumes it say it wants a set. Where a vector really is what the
-  caller needs, `#[allow]` with the measurement as the reason.
+- **Comparison is expensive, the order is genuinely unused, and the
+  input is large.** The string rows above, at sizes where 0.6× is
+  milliseconds rather than microseconds. The honest remedy here is
+  usually not `sort` but to stop discarding the set: keep it, name it,
+  and let the code that consumes it say it wants a set. Where a vector
+  really is what the caller needs, `#[allow]` with the measurement as
+  the reason — a measurement, because on real data the lead is
+  0.6×–0.9× and it disappears the moment anything downstream wants a
+  deterministic order.
 - **The source is lazy and duplicates dominate.** Deduplicating a
   streamed million lines down to a few hundred holds a few hundred in
   a set against a million in a vector. `#[allow]` it, and note that
@@ -316,11 +352,15 @@ already made for its own pending rewrite.
   element type is a primitive — equal primitives are
   indistinguishable, it was the fastest subject on the `u64` rows
   above, it allocates nothing where the stable sort allocates scratch,
-  and
-  `clippy::stable_sort_primitive` would otherwise flag the suggestion
-  the moment the consumer applied it. For everything else suggest the
-  stable `sort`, which keeps the first of each group of equal elements
-  — the element a set keeps too.
+  and `clippy::stable_sort_primitive` would otherwise flag the
+  suggestion the moment the consumer applied it. For everything else
+  suggest the stable `sort`, which keeps the first of each group of
+  equal elements — the element a set keeps too. `sort_unstable`
+  measured 0.80×–0.87× of the stable sort on the name workloads as
+  well, and is equally correct wherever equal elements are
+  indistinguishable, but telling that from a type takes more than "is
+  it a primitive": widen this in its own change, with the equality
+  impls actually inspected.
 - **Dropping a needless clone.** Where the walk is `iter().cloned()`
   or `iter().copied()`, the rewrite drops it: the set was about to be
   dropped, so the elements can be moved. Say so in the diagnostic
@@ -347,9 +387,9 @@ uses have fixtures.
 Active by default. The shape is narrow, the `Ord` gate removes the one
 case with no fix, and the remaining exceptions are performance
 trade-offs a crate states once with `#[allow]` and a reason. A crate
-whose hot paths are full of the string workload above — where the
-measurement favours the set by 3–4× as long as the order stays unused
-— is the crate that turns the rule off in `[perfectionist].disable`.
+that deduplicates large string collections whose order nothing reads
+— where the measurement favours the set — is the crate that turns the
+rule off in `[perfectionist].disable`.
 
 ## Interaction with clippy and sibling rules
 
