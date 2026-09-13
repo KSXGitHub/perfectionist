@@ -78,8 +78,9 @@ pointer-chasing elements whose resulting order nothing reads it is the
 faster of the two — see
 [When the set is the right tool](#when-the-set-is-the-right-tool),
 which is the part of this file that decides whether the rule is worth
-enabling in a given crate. At the sizes most code runs it, though, the
-preference costs nothing: the vector form is also the quicker one.
+enabling in a given crate. For most element types, though, the
+preference is free at every size measured: the vector form is also the
+quicker one.
 
 The project prefers the vector because:
 
@@ -103,13 +104,42 @@ The project prefers the vector because:
 
 ## What the measurements show
 
-Measured on x86-64 (rustc 1.99.0-nightly, `-O -C target-cpu=native`)
-with a throwaway single-file harness: generate a source vector, hand
-each subject its own clone of it five times, keep the best time and
-the peak allocation a counting global allocator saw above the input.
 Each cell below is that subject's time as a multiple of the
 `collect` + `sort` + `dedup` column, which is therefore 1.00×: 2.22×
-is twice as slow, 0.34× is three times as fast.
+is twice as slow, 0.34× is three times as fast. The element-type
+table further down uses `sort_unstable` + `dedup` as its baseline
+instead, and says so.
+
+### How these were measured
+
+Dependency-free single-file programs, `rustc -O --edition 2021
+-C target-cpu=native`, rustc 1.99.0-nightly, x86-64. Reproducing them
+needs only this description; they are scratch files and are not
+committed.
+
+- **Subjects.** The five forms in the tables, each taking the source
+  vector by value and returning the deduplicated one, so the output's
+  allocation and drop are inside the timed region and the input's
+  clone is outside it. `black_box` wraps the input and the result.
+- **Timing.** One call per measurement above ~100k elements, best of
+  five to nine. Below that a call is nanoseconds, so a batch of
+  pre-cloned inputs is timed as a whole and divided, best of seven to
+  nine batches.
+- **Allocation.** A counting `GlobalAlloc` tracks live bytes and a
+  high-water mark; the figure quoted is the peak above the live bytes
+  at the moment the call started, so the input vector is excluded and
+  the set, the scratch buffer and the output are not.
+- **Workloads.** `total` items drawn with a xorshift from `distinct`
+  values and shuffled, so the duplicate ratio is a parameter rather
+  than an accident. Names come from two pools: the 4.44M-name npm
+  registry list, and the 1000 most-downloaded crates.io names.
+- **Element types.** Nine, chosen to separate what the comparison
+  reads from what the value carries: `u32` / `u64` / `u128`; `[u8; 32]`
+  as a digest; a newtype over `u64` with the std comparison derives
+  and a `From` impl; a two-field struct and a three-variant enum, both
+  derived; a struct whose hand-written `Eq` / `Ord` / `Hash` forward
+  to one `u64` key while a 24-byte payload rides along; and a newtype
+  over `String`.
 
 | Workload (input → unique)                  | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
 |--------------------------------------------|-----------|--------------------|------------|------------------|---------------------------|
@@ -595,11 +625,36 @@ already made for its own pending rewrite.
   or `iter().copied()`, the rewrite drops it: the set was about to be
   dropped, so the elements can be moved. Say so in the diagnostic
   rather than silently changing the chain.
-- **Applicability.** `MachineApplicable` for the `BTreeSet` branch,
-  whose output is unchanged. `MaybeIncorrect` for the `HashSet`
-  branch, which replaces an arbitrary order with a sorted one — the
-  right call even though nothing may depend on the arbitrary order,
-  because the rewrite is observable.
+- **Applicability, and what gates it.** Both branches produce the same
+  multiset under the trait contracts the rule already assumes, so
+  neither is ever *wrong*; what differs is how much room the
+  measurement leaves for a human to disagree.
+
+  `MachineApplicable` for the `BTreeSet` branch. Its output is the
+  vector the rewrite produces, element for element and order for
+  order, and it measured slower than the suggestion in every row of
+  every table (1.26×–2.79× on the element-type sweep).
+
+  `MachineApplicable` for the `HashSet` branch too, but only where
+  the element makes the answer decisive: **no indirection, and a
+  layout of at most 16 bytes** (`cx.layout_of`, with a reference, a
+  raw pointer or a heap-owning field disqualifying). That is the set
+  of elements the sweep found no size at which the round trip wins —
+  4.1×–6.5× slower on ten elements, still 1.05×–1.85× slower on a
+  hundred thousand — and it covers the primitives, the newtypes over
+  them, and the derived structs and enums. A `HashSet`'s iteration
+  order is unspecified, so no correct program can depend on the order
+  being replaced, which is what makes the rewrite safe to apply
+  unattended here.
+
+  `MaybeIncorrect` for every other `HashSet` element — a `String`, a
+  `PathBuf`, a newtype over one, a 32-byte digest. The enum name
+  undersells it: the suggestion is valid Rust and correct, but past
+  ~1000 elements it can cost about 1.5×, and a trade-off is a call for
+  a human rather than for `cargo fix`. The 16-byte line is deliberately
+  conservative at one edge: a wide struct whose comparison forwards to
+  one small key behaves like that key, not like its own size, and is
+  held back anyway because a `cmp` impl can read whatever it likes.
 
 ### Difficulty
 
