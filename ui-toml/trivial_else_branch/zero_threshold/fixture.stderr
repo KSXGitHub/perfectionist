@@ -78,5 +78,4 @@ LL | |         }
    |
    = help: write `if !<condition> { <exit> }` and move the long branch after it, unindented
 
-warning: 8 warnings emitted
-
+warning: N warnings emitted

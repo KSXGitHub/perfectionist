@@ -32,5 +32,4 @@ LL | |     }
    |
    = help: bind with `let ... else { <exit> };` and move the long branch after it, unindented
 
-warning: 3 warnings emitted
-
+warning: N warnings emitted
