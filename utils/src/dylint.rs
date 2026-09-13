@@ -43,7 +43,7 @@ const UI_HARNESS_VARS: &[&str] = &["DYLINT_LIBRARY_PATH", "DYLINT_LIBS", "DYLINT
 fn cargo_command(project_dir: &Path, shared_target_dir: &Path) -> Command {
     UI_HARNESS_VARS
         .iter()
-        .fold("cargo".pipe(Command::new), |mut command, key| {
+        .fold(Command::new("cargo"), |mut command, key| {
             command.env_remove(key);
             command
         })
