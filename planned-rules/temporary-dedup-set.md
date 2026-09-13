@@ -277,11 +277,20 @@ the suppression is the answer; the rest it never reaches at all.
 `perfectionist::allow_attributes` resolves an `#[allow]` of a
 deterministically-firing lint into one.
 
-- **The element is not `Ord`.** `Hash + Eq` without an ordering is
-  common — an enum that derives neither `PartialOrd` nor `Ord`, a
-  struct containing a `HashMap`. `sort_unstable` does not compile for
-  it, so there is no fix to suggest and the rule does not fire. This gate is
-  a trait-resolution check, not a heuristic.
+- **The element is not `Ord`.** `sort_unstable` does not compile for
+  it, so there is no fix to suggest and the rule does not fire; the
+  gate is a trait-resolution check, not a heuristic. What it excludes
+  is narrower than it sounds. std has almost nothing in this
+  population — `Range`, `RangeInclusive`, `Discriminant`, `Layout`,
+  `ThreadId`, `FileType`, while `io::ErrorKind` and `TypeId` are both
+  `Ord` — so the gate is about domain types. pnpm's workspace has 27
+  of those, and they are tag enums whose order would be declaration
+  order, composite lookup keys, and cache keys: types reached with
+  `contains`, not collected into vectors. None of the round trips in
+  that workspace has one as its element, which is not a coincidence —
+  a type gets `Ord` when somebody needed to order it, and the code
+  that wants a deterministic list is the code that would have added
+  the derive.
 - **The set is read as a set.** A `contains` call, a `len`, an
   `insert` after the fact, a return, a store into a field, a borrow
   that outlives the expression — any of these and the value is not
