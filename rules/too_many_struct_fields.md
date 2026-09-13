@@ -9,8 +9,8 @@
 
 ## What it does
 
-Counts the fields of every struct — named or tuple — and flags a
-struct with more than `max_fields`.
+Counts the fields of every named or tuple struct and flags any
+with more than `max_fields`.
 
 A struct produced by a macro expansion is not measured. Enum
 variants and unions are not measured.
@@ -25,14 +25,15 @@ struct with many fields is a function with that many parameters
 in disguise: every constructor names them all, every reader of
 the type holds them all, and a change to one is a change to a
 type that everything depends on. Past a handful the fields fall
-into groups — the paths, the credentials, the retry policy — and
-each group is a smaller struct with a name of its own, which the
-functions that only need that group can then take instead.
+into groups, and each group is a smaller struct with a name of
+its own, which the functions that only need that group can then
+take instead.
 
-Where a struct genuinely has to hold this many fields — one
-deserialised straight from a configuration file, say — write
+Some structs cannot be regrouped, because their shape is fixed
+from outside: one that mirrors a configuration file or a wire
+format has the fields the format has. Write
 `#[expect(perfectionist::too_many_struct_fields, reason = "...")]`
-at the site, with a reason that says which.
+at the site, and name the format in the reason.
 
 ## Interaction with Clippy
 
@@ -92,10 +93,6 @@ struct RetryPolicy {
     max_timeout: Duration,
 }
 ```
-
-Every field is still there; four of them shed a `retry_` prefix
-that the type now carries. `base_url` and `timeout` answer to no
-group, so they stay where they were.
 
 ## Configuration
 
