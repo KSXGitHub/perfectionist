@@ -5,7 +5,6 @@
 //! [`UI_HARNESS_VARS`].
 
 use command_extra::CommandExtra;
-use pipe_trait::Pipe;
 use std::path::Path;
 use std::process::Command;
 
