@@ -31,5 +31,4 @@ LL |     fn step(&mut self, reset: bool) {
    |
    = help: split the function into one per case and move what the cases share into a helper
 
-warning: 4 warnings emitted
-
+warning: N warnings emitted
