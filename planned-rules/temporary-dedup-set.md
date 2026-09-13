@@ -25,9 +25,16 @@ let mut unique: Vec<String> = deduplicated.into_iter().collect();
 
 // Prefer:
 let mut unique: Vec<String> = names.into_iter().collect();
-unique.sort();
+unique.sort_unstable();
 unique.dedup();
 ```
+
+`sort_unstable` rather than `sort` because the round trip being
+replaced has no input order to preserve: a `HashSet` hands back an
+arbitrary one, and a `BTreeSet` has already collapsed equal elements.
+Stability would guarantee something about an order the flagged code
+never had — see the implementation notes for the measurements and the
+one element type that argues the other way.
 
 The functional form says the same thing in one expression, through
 [`into-sorted`](https://docs.rs/into-sorted) and
@@ -37,36 +44,37 @@ a sort:
 
 ```rust
 use into_deduped::IntoDeduped;
-use into_sorted::IntoSorted;
+use into_sorted::IntoSortedUnstable;
 
 let unique = names
     .into_iter()
     .collect::<Vec<String>>()
-    .into_sorted()
+    .into_sorted_unstable()
     .into_deduped();
 ```
 
 Both std set types round-trip this way, and the rule treats them
 uniformly:
 
-| Anti-pattern                            | What the set contributes              | What replaces it |
-|-----------------------------------------|---------------------------------------|------------------|
-| `.collect::<HashSet<_>>().into_iter()`  | deduplication, and an arbitrary order | `sort` + `dedup` |
-| `.collect::<BTreeSet<_>>().into_iter()` | deduplication, and a sorted order     | `sort` + `dedup` |
+| Anti-pattern                            | What the set contributes              | What replaces it          |
+|-----------------------------------------|---------------------------------------|---------------------------|
+| `.collect::<HashSet<_>>().into_iter()`  | deduplication, and an arbitrary order | `sort_unstable` + `dedup` |
+| `.collect::<BTreeSet<_>>().into_iter()` | deduplication, and a sorted order     | `sort_unstable` + `dedup` |
 
 The `BTreeSet` row is the stronger case: the vector it produces is
-already the vector `sort` + `dedup` produces, so the rewrite changes
-nothing a caller can observe. The `HashSet` row trades an order that
-varies per run for a sorted one.
+already the vector `sort_unstable` + `dedup` produces, so the rewrite
+changes nothing a caller can observe. The `HashSet` row trades an
+order that varies per run for a sorted one.
 
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. The round trip
-computes the right set of values, and where the resulting order is
-never observed it is a legitimate way to spend memory on speed — see
+computes the right set of values, and on a large enough input whose
+resulting order nothing reads it is the faster of the two — see
 [When the set is the right tool](#when-the-set-is-the-right-tool),
 which is the part of this file that decides whether the rule is worth
-enabling in a given crate.
+enabling in a given crate. At the sizes most code runs it, though, the
+preference costs nothing: the vector form is also the quicker one.
 
 The project prefers the vector because:
 
@@ -80,8 +88,8 @@ The project prefers the vector because:
   it is a free source of variation.
 - **The value is stated once.** The flagged code builds a container
   whose element type is repeated in a turbofish, then throws it away.
-  `sort` and `dedup` name the two things being asked for, on the
-  vector the code wanted in the first place.
+  `sort_unstable` and `dedup` name the two things being asked for, on
+  the vector the code wanted in the first place.
 - **One allocation instead of two.** The vector is sorted in place and
   truncated; the set is a second table that is filled, walked, and
   dropped. Where a set is built from a sized iterator it also reserves
@@ -113,7 +121,14 @@ The findings that shape the rule:
    outside measurement noise — allocated more (9.7 MiB against
    7.6 MiB on the 1M-`u64` case), and produced the identical sorted
    vector. There is no workload in which to prefer it, which is why
-   the `BTreeSet` branch is the machine-applicable one.
+   the `BTreeSet` branch is the machine-applicable one. "Identical"
+   rests on `Ord` agreeing with `Eq`, which the `Ord` trait requires:
+   a `BTreeSet` decides duplicates by `cmp`, `dedup` decides them by
+   `==`, so a type whose `cmp` returns `Equal` for values that are not
+   `==` would keep more elements after the rewrite than before.
+   `clippy::derive_ord_xor_partial_ord` and
+   `clippy::derived_hash_with_manual_eq` police that contract; this
+   rule assumes it, and says so rather than re-deriving it.
 2. **The `HashSet` round trip wins on elements that are expensive to
    compare, and only while its order goes unused.** Rust's `String`
    carries no small-string optimisation, so sorting chases a pointer
@@ -160,8 +175,60 @@ ranking, `total` items drawn from `distinct` of them:
 | npm names (20 B)     | 1M → 100k        | 0.86×     | 0.84×              | 1.26×      | 1.00× (348 ms)   | 0.65×                     |
 | crate names (10.4 B) | 1k → 1k          | 0.67×     | 1.44×              | 1.21×      | 1.00× (46 µs)    | 0.87×                     |
 
-The `BTreeSet` column is 1.18×–1.26× in every row of that table,
-which is the most consistent result either table holds.
+And at the sizes most code deduplicates a name list at all — a
+package's dependencies, a workspace's members, a command's arguments:
+
+| total → distinct | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
+|------------------|-----------|--------------------|------------|------------------|---------------------------|
+| 10 → 10          | 1.63×     | 1.93×              | 1.23×      | 1.00× (0.34 µs)  | 1.00×                     |
+| 25 → 25          | 1.19×     | 1.63×              | 1.22×      | 1.00× (1.07 µs)  | 0.98×                     |
+| 50 → 50          | 1.25×     | 1.63×              | 1.17×      | 1.00× (2.04 µs)  | 0.82×                     |
+| 100 → 100        | 1.30×     | 1.94×              | 1.50×      | 1.00× (3.74 µs)  | 0.90×                     |
+| 200 → 200        | 0.90×     | 1.37×              | 1.16×      | 1.00× (10.4 µs)  | 0.75×                     |
+| 1000 → 1000      | 0.73×     | 1.28×              | 1.12×      | 1.00× (66.8 µs)  | 0.73×                     |
+
+Below ~200 items the round trip is the *slower* option outright —
+1.2×–1.6× — because it pays an allocation and a hash per element where
+the vector sorts in place. Against `sort_unstable` + `dedup` the set
+does not lead anywhere below a thousand items, and its whole advantage
+narrows to roughly 10³–10⁵ mostly-distinct string-like elements, where
+it peaks near 1.5×. The `BTreeSet` column is 1.12×–1.50× in every row
+of both tables, which is the most consistent result any of them holds.
+
+## What it finds in a consumer's workspace
+
+pnpm's Rust workspace — 109 crates, with a `dylint.toml` that already
+pins this plugin — carries three instances of the shape, against 29
+sites that already write `sort` + `dedup`:
+
+- `cli/src/cli_args/approve_builds.rs`, `fn sort_unique`: a `HashSet`
+  round trip whose result is then sorted anyway, so the set buys
+  nothing whatsoever. The doc comment above it names the JavaScript
+  function it was ported from — `sortUniqueStrings`, "a `Set` then
+  `lexCompare`" — which is where the shape comes from:
+  `[...new Set(xs)].sort()` is the right idiom in a language whose
+  `Set` keeps insertion order and whose arrays have no `dedup`.
+- `install-coordinator/src/mutation.rs`: a `BTreeSet` round trip with
+  a `map` between the walk and a `collect::<Result<Vec<_>>>()`.
+- `cli/src/cargo_deps/lockfile.rs`: a `BTreeSet` round trip landing in
+  a `Vec<GitSource>`.
+
+The same workspace holds every near miss the trigger has to reject,
+which is the more useful half of the sample: a `BTreeSet` filled by a
+helper through `&mut` and then drained, a set built empty and filled
+by a `for` loop, a set read with `remove` while a worklist drains,
+`assert_eq!` over two sets to compare ignoring order, and
+`deleted.iter().collect::<HashSet<_>>().len() == deleted.len()` as a
+duplicate check. Each fails a different clause: the build is not a
+`collect`, the set is read as a set, the landing is not a sequence.
+
+The data those three sites deduplicate is small — package names
+awaiting build approval, metadata paths, git sources. That is the
+normal scale for this kind of code: across pnpm's own workspace a
+package declares a median of 1 and a p90 of 17 direct dependencies,
+its lockfile carries 218 workspace importers and 1700 packages, and
+the largest single manifest declares 110. Every one of those numbers
+sits in the range where the vector form is also the faster one.
 
 ## When the set is the right tool
 
@@ -170,7 +237,7 @@ The rule stays silent on all of these; the last two are the cases for
 
 - **The element is not `Ord`.** `Hash + Eq` without an ordering is
   common — an enum that derives neither `PartialOrd` nor `Ord`, a
-  struct containing a `HashMap`. `sort` does not compile for it, so
+  struct containing a `HashMap`. Neither sort compiles for it, so
   there is no fix to suggest and the rule does not fire. This gate is
   a trait-resolution check, not a heuristic.
 - **The set is read as a set.** A `contains` call, a `len`, an
@@ -179,7 +246,7 @@ The rule stays silent on all of these; the last two are the cases for
   temporary, whatever else happens to it.
 - **Deduplication preserves the input order.** The
   `seen.insert(item)`-in-a-`retain` idiom, `itertools::unique()`, and
-  `indexmap::IndexSet` all keep first-occurrence order, which `sort`
+  `indexmap::IndexSet` all keep first-occurrence order, which sorting
   destroys. They are not this shape — the set is consumed by `insert`
   calls, or the container is order-preserving — and `IndexSet` is not
   in the recognised set-type list for exactly this reason.
@@ -188,15 +255,17 @@ The rule stays silent on all of these; the last two are the cases for
   an arbitrary order and never builds a sequence; there is nothing to
   sort and nothing to dedup, so the set is doing a job no vector does
   more cheaply.
-- **Comparison is expensive, the order is genuinely unused, and the
-  input is large.** The string rows above, at sizes where 0.6× is
-  milliseconds rather than microseconds. The honest remedy here is
-  usually not `sort` but to stop discarding the set: keep it, name it,
-  and let the code that consumes it say it wants a set. Where a vector
-  really is what the caller needs, `#[allow]` with the measurement as
-  the reason — a measurement, because on real data the lead is
-  0.6×–0.9× and it disappears the moment anything downstream wants a
-  deterministic order.
+- **Thousands of string-like elements whose order is genuinely
+  unused.** That band — roughly 10³ to 10⁵ mostly-distinct items — is
+  where the set leads `sort_unstable` + `dedup` at all, and it leads
+  by about 1.5×. Below it the set is the slower option; above it the
+  vector takes the lead back. The honest remedy even inside the band
+  is usually not `sort` but to stop discarding the set: keep it, name
+  it, and let the code that consumes it say it wants a set. Where a
+  vector really is what the caller needs, `#[allow]` with the
+  measurement as the reason — a measurement, because the lead
+  disappears the moment anything downstream wants a deterministic
+  order.
 - **The source is lazy and duplicates dominate.** Deduplicating a
   streamed million lines down to a few hundred holds a few hundred in
   a set against a million in a vector. `#[allow]` it, and note that
@@ -224,7 +293,12 @@ A **set round trip** is three parts, all of which must hold:
    `iter()`, `iter().cloned()`, `iter().copied()`, or `drain(..)`, and
    is used for nothing else.
 3. **The landing.** The walk, after any number of adapters, is
-   collected into a sequence: `Vec<U>`, `VecDeque<U>`, or `Box<[U]>`.
+   collected into a sequence: `Vec<U>`, `VecDeque<U>`, or `Box<[U]>`,
+   including the fallible forms a `collect` produces from an iterator
+   of `Result` / `Option` (`Result<Vec<U>, E>`). Landing in a map or a
+   set is not this shape: `keys().chain(...).collect::<BTreeSet<_>>()
+   .into_iter().filter_map(...).collect::<BTreeMap<_, _>>()` ends
+   somewhere a sort cannot replace.
 
 Plus one gate: **`T: Ord`**, resolved against the element type. Without
 it the suggestion does not compile, so the rule must not fire.
@@ -263,11 +337,11 @@ let names: Vec<String> = sorted.into_iter().map(str::to_owned).collect();
 
 ```rust
 let mut unique: Vec<String> = names.into_iter().collect();
-unique.sort();
+unique.sort_unstable();
 unique.dedup();
 
 let mut names: Vec<&str> = entries.iter().map(Entry::name).collect();
-names.sort();
+names.sort_unstable();
 names.dedup();
 let names: Vec<String> = names.into_iter().map(str::to_owned).collect();
 ```
@@ -283,7 +357,7 @@ let (known_deps, unknown): (Vec<_>, Vec<_>) =
 // The set arrives; this is a conversion, not a round trip.
 fn sorted_names(names: HashSet<String>) -> Vec<String> {
     let mut names: Vec<String> = names.into_iter().collect();
-    names.sort();
+    names.sort_unstable();
     names
 }
 
@@ -332,35 +406,39 @@ already made for its own pending rewrite.
 ## Implementation notes
 
 - **Shared predicate with the sibling.** The "is this a round trip
-  through a set that `sort` + `dedup` replaces?" test is needed by
-  `perfectionist::collection_round_trip` too, to decide when to stand
-  down (see below). Factor it into a crate-internal module rather than
-  duplicating the type checks in both rules, per
+  through a set that `sort_unstable` + `dedup` replaces?" test is
+  needed by `perfectionist::collection_round_trip` too, to decide when
+  to stand down (see below). Factor it into a crate-internal module
+  rather than duplicating the type checks in both rules, per
   [`CLAUDE.md`](../CLAUDE.md#one-rule-per-file-one-config-per-rule).
 - **Autofix, chained form.** Fire the machine-applicable rewrite only
   where the round trip is a `let` initializer, which is where it
   occurs in practice: replace the initializer with the collect that
-  produced the set's input, then insert `sort` and `dedup` statements
-  after it, adding `mut` to the binding if it lacks one. In any other
-  expression position the rewrite needs a block, so emit the help text
-  without a suggestion.
+  produced the set's input, then insert `sort_unstable` and `dedup`
+  statements after it, adding `mut` to the binding if it lacks one. In
+  any other expression position the rewrite needs a block, so emit the
+  help text without a suggestion.
 - **Autofix, bound form.** Delete the `let` that builds the set,
   re-point the second binding's initializer at the first's, and append
   the two statements. The use scan has already proved the name is dead
   after the walk.
-- **`sort` or `sort_unstable`.** Suggest `sort_unstable` when the
-  element type is a primitive — equal primitives are
-  indistinguishable, it was the fastest subject on the `u64` rows
-  above, it allocates nothing where the stable sort allocates scratch,
-  and `clippy::stable_sort_primitive` would otherwise flag the
-  suggestion the moment the consumer applied it. For everything else
-  suggest the stable `sort`, which keeps the first of each group of
-  equal elements — the element a set keeps too. `sort_unstable`
-  measured 0.80×–0.87× of the stable sort on the name workloads as
-  well, and is equally correct wherever equal elements are
-  indistinguishable, but telling that from a type takes more than "is
-  it a primitive": widen this in its own change, with the equality
-  impls actually inspected.
+- **Suggest `sort_unstable`, not `sort`.** Stability decides one
+  thing: the relative order of elements that compare `Equal`. This
+  rewrite has none to preserve — the value it replaces came out of a
+  `HashSet`, whose order is arbitrary, or out of a `BTreeSet`, which
+  had already collapsed `Equal` elements to one. So the stable sort
+  guarantees something about an input order that the flagged code
+  never had, and charges for it: `sort_unstable` measured faster in
+  every row of every table above, including already-sorted input
+  (0.55× at a thousand names, 0.96× at a hundred thousand), and
+  allocates nothing where the stable sort allocates scratch. It also
+  makes `clippy::stable_sort_primitive` a non-issue, since that lint
+  asks for exactly this. The one measured exception is an element
+  whose comparison is drastically more expensive than its hash — 4 KiB
+  strings sharing a 4100-byte prefix, where the stable sort's lower
+  comparison count put it at 0.95× of `sort_unstable` — and an element
+  that expensive belongs in the `#[allow]` case above, not in a
+  different suggestion.
 - **Dropping a needless clone.** Where the walk is `iter().cloned()`
   or `iter().copied()`, the rewrite drops it: the set was about to be
   dropped, so the elements can be moved. Say so in the diagnostic
@@ -398,9 +476,11 @@ rule off in `[perfectionist].disable`.
   set's `collect` would change which elements survive, so it stays out
   of scope there. This rule keeps the deduplication and changes how it
   is spelled, which is why it can cover the types Clippy's cannot.
-- **`clippy::stable_sort_primitive`** decides the `sort` /
-  `sort_unstable` choice in the suggestion; see the implementation
-  notes.
+- **`clippy::stable_sort_primitive`** wants `sort_unstable` wherever
+  stability cannot matter, which is what this rule's suggestion emits,
+  so the two never disagree. `clippy::derive_ord_xor_partial_ord` and
+  `clippy::derived_hash_with_manual_eq` police the `Ord`/`Eq`
+  agreement that the `BTreeSet` branch's rewrite assumes.
 - **`perfectionist::collection_round_trip`
   ([`KSXGitHub/perfectionist#443`](https://github.com/KSXGitHub/perfectionist/pull/443))
   stands down where this rule fires.** It flags the chained form of
@@ -408,10 +488,10 @@ rule off in `[perfectionist].disable`.
   which, for a set, produces the bound form this rule flags. Left
   alone, the two rules hand the code back and forth and report one
   expression twice. The precedence falls out of the trigger: this rule
-  fires only where `sort` + `dedup` is available, so the sibling stays
-  silent on exactly those expressions and keeps the ones where naming
-  the intermediate *is* the fix — a round trip through a `Vec`, or
-  through a set whose element is not `Ord`.
+  fires only where `sort_unstable` + `dedup` is available, so the
+  sibling stays silent on exactly those expressions and keeps the ones
+  where naming the intermediate *is* the fix — a round trip through a
+  `Vec`, or through a set whose element is not `Ord`.
 - **`perfectionist::overly_long_method_chain`** measures length; this
   measures shape. A two-line round trip is short and still flagged
   here; a nine-call chain with no round trip is flagged there and not
