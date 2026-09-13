@@ -5,7 +5,7 @@ use rustc_ast::token::TokenKind;
 use rustc_ast::tokenstream::TokenTree;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 
 mod config;
 mod emit;
@@ -174,6 +174,6 @@ fn check_invocation(lint_context: &EarlyContext<'_>, mac_call: &MacCall) {
 fn queue(violation: PendingViolation) {
     let mut guard = PENDING_VIOLATIONS
         .lock()
-        .unwrap_or_else(|err| err.into_inner());
+        .unwrap_or_else(PoisonError::into_inner);
     guard.push(violation);
 }

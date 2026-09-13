@@ -7,7 +7,7 @@ use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use std::collections::BTreeSet;
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 
 mod early;
 mod emit;
@@ -221,7 +221,7 @@ static VISITED_LITERALS: Mutex<BTreeSet<(u32, u32)>> = Mutex::new(BTreeSet::new(
 fn queue(violation: PendingViolation) {
     let mut guard = PENDING_VIOLATIONS
         .lock()
-        .unwrap_or_else(|err| err.into_inner());
+        .unwrap_or_else(PoisonError::into_inner);
     guard.push(violation);
 }
 
@@ -267,7 +267,7 @@ impl<'tcx> LateLintPass<'tcx> for AvoidableStringEscapes {
         // range against a duplicate queued candidate.
         if !VISITED_LITERALS
             .lock()
-            .unwrap_or_else(|err| err.into_inner())
+            .unwrap_or_else(PoisonError::into_inner)
             .insert((literal.span.lo().0, literal.span.hi().0))
         {
             return;
@@ -324,13 +324,13 @@ impl<'tcx> LateLintPass<'tcx> for AvoidableStringEscapes {
         let pending: Vec<PendingViolation> = {
             let mut guard = PENDING_VIOLATIONS
                 .lock()
-                .unwrap_or_else(|err| err.into_inner());
+                .unwrap_or_else(PoisonError::into_inner);
             core::mem::take(&mut *guard)
         };
         let visited: BTreeSet<(u32, u32)> = {
             let mut guard = VISITED_LITERALS
                 .lock()
-                .unwrap_or_else(|err| err.into_inner());
+                .unwrap_or_else(PoisonError::into_inner);
             core::mem::take(&mut *guard)
         };
         let mut emitted: BTreeSet<(u32, u32)> = BTreeSet::new();
