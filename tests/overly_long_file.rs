@@ -46,6 +46,24 @@ fn zero_threshold_reports_the_file_count() {
         .run();
 }
 
+/// The one file shape that reaches a count of 1, which is where the
+/// noun has to be singular. A fixture needs no attribute preamble
+/// unless it names a `perfectionist::` path, so `fn main() {}` alone
+/// is a whole one-line file.
+#[test]
+fn a_file_of_one_line_reads_as_one_line() {
+    let fixtures = _utils::copy_fixtures_with_directives(
+        env!("CARGO_MANIFEST_DIR"),
+        "ui-toml/overly_long_file/one_line",
+    );
+    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+        .dylint_toml(dylint_toml(RuleConfig {
+            max_lines: Some(0),
+            ..RuleConfig::default()
+        }))
+        .run();
+}
+
 #[test]
 fn a_file_at_the_limit_is_not_flagged() {
     let fixtures = _utils::copy_fixtures_with_directives(

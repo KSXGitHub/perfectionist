@@ -1,4 +1,4 @@
-use crate::common::DefaultState;
+use crate::common::{DefaultState, plural};
 use crate::measured_fn::measured_fn;
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_help;
@@ -163,7 +163,7 @@ impl<'tcx> LateLintPass<'tcx> for TooManyLocalBindings {
         let max = self.config.max_bindings;
         let name = function.name;
         let item = function.kind_label;
-        let noun = if count == 1 { "name" } else { "names" };
+        let noun = plural(count, "name", "names");
         let message = format!(
             "{item} `{name}` binds {count} distinct local {noun}, above the limit of {max}",
         );
