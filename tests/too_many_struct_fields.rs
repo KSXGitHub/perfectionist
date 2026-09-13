@@ -7,12 +7,26 @@
 //! `#[cfg(test)]` code to exist, so it is covered by a minimal Cargo
 //! project run through `cargo dylint --all -- --all-targets`, the way
 //! `tests/needless_borrowed_parameters.rs` does it.
+//!
+//! Those two kinds of test cannot run at the same time.
+//! `Test::dylint_toml` works by setting the process-global
+//! `DYLINT_TOML` env var for the duration of the UI run, and the
+//! `cargo dylint` a project test spawns inherits it -- where it
+//! replaces the fixture project's own `dylint.toml` rather than adding
+//! to it, so a project test caught inside that window is linted under
+//! the UI fixture's config and asserts against the wrong diagnostics.
+//! `dylint_testing` holds a mutex of its own, but only around the UI
+//! path, so it does not serialise a UI run against a subprocess. The
+//! `#[test]`s here take a shared [`Mutex`] to do that.
 
 pub mod _utils;
 
 use _utils::{cargo_manifest_dir, run_project_with_config, shared_target_dir};
 use std::collections::BTreeMap;
+use std::sync::Mutex;
 use text_block_macros::text_block_fnl;
+
+static SERIAL: Mutex<()> = Mutex::new(());
 
 const LINT_NAME: &str = "perfectionist::too_many_struct_fields";
 
@@ -32,6 +46,7 @@ fn dylint_toml(config: RuleConfig) -> String {
 
 #[test]
 fn zero_threshold_reports_every_field_count() {
+    let _serial = SERIAL.lock().unwrap_or_else(|err| err.into_inner());
     let fixtures = _utils::copy_fixtures_with_directives(
         env!("CARGO_MANIFEST_DIR"),
         "ui-toml/too_many_struct_fields/zero_threshold",
@@ -70,6 +85,7 @@ const TARGET_SOURCES: &[(&str, &str)] = &[
 /// Run the fixture and return its stderr, asserting that `cargo dylint`
 /// itself succeeded.
 fn run(package_name: &str, sources: &[(&str, &str)], config: &str) -> String {
+    let _serial = SERIAL.lock().unwrap_or_else(|err| err.into_inner());
     let (_temp, stderr, success) = run_project_with_config(
         package_name,
         cargo_manifest_dir(),
