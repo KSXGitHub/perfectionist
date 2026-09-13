@@ -98,6 +98,9 @@ Defaults to `5`.
 - _Optional_
 
 Whether test code is left alone: chains inside a `#[cfg(test)]`
-module, a `#[test]` function, or an integration-test or
-benchmark target. Defaults to `false`, so a test is held to the
-same limit as the code it exercises.
+module, a `#[test]` function, or a crate rooted in `tests/` or
+`benches/`, where Cargo puts an integration test or a benchmark.
+The directory is what decides, so a `[[test]]` or `[[bench]]`
+whose `path` roots it elsewhere is not covered, and a `[[bin]]`
+whose `path` roots it in one of them is. Defaults to `false`, so
+a test is held to the same limit as the code it exercises.

@@ -6,6 +6,18 @@
 //! "production code" needs to tell those apart from the library or
 //! binary, and the only evidence available inside the compiler is the
 //! crate name Cargo passed and where the crate root sits on disk.
+//!
+//! What that evidence decides is the directory a target's root sits
+//! in, not the manifest table that declared it. A target given an
+//! explicit `path` breaks the two apart in both directions: a
+//! `[[test]]` rooted at `src/it.rs` reads as the package's own code,
+//! and a `[[bin]]` rooted at `tests/main.rs` reads as an integration
+//! test, so a rule with an `exempt_tests` knob flags the first and
+//! silently exempts the second. Nothing the compiler is handed
+//! settles it, so the directory reading stands and every doc
+//! describing this classification describes it in terms of
+//! directories; see "What the target classification actually reads"
+//! in `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
 
 use rustc_hir::def_id::LOCAL_CRATE;
 use rustc_lint::{LateContext, LintContext};

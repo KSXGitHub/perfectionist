@@ -31,10 +31,14 @@ file is not re-flagged as inline test code in a production file.
 Only the library or binary crate is checked. Integration tests
 (`tests/`), benchmarks (`benches/`), and examples (`examples/`)
 are separate targets, not the library or binary whose unit-test
-footprint this rule governs; for those compiled under `cfg(test)`
-their top-level `#[test]` functions *are* the target rather than
-unit tests misplaced in a production file, so they are left
-untouched.
+footprint this rule governs; for those compiled under
+`cfg(test)` their top-level `#[test]` functions *are* the target
+rather than unit tests misplaced in a production file, so they
+are left untouched. Which crate is which is read from the
+directory its root sits in, so a target that `Cargo.toml` roots
+elsewhere with an explicit `path` is taken for whatever that
+path names: a `[[bin]]` rooted at `tests/main.rs` is skipped,
+and a `[[test]]` rooted at `src/it.rs` is checked.
 
 ## Why restrict this?
 

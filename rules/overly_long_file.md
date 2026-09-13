@@ -20,9 +20,8 @@ the lines a block comment spans are free. An inline
 of its own.
 
 A file of test code — a `mod tests;` behind `#[cfg(test)]`, or
-any file of an integration-test or benchmark target — is
-measured like any other; set `exempt_tests` to leave it
-alone.
+any file of a crate rooted in `tests/` or `benches/` — is
+measured like any other; set `exempt_tests` to leave it alone.
 
 ## Why restrict this?
 
@@ -63,6 +62,9 @@ Defaults to `500`.
 - _Optional_
 
 Whether files of test code are left alone: a module behind
-`#[cfg(test)]`, and every file of an integration-test or
-benchmark target. Defaults to `false`, so a test file is held
-to the same limit as the code it exercises.
+`#[cfg(test)]`, and every file of a crate rooted in `tests/` or
+`benches/`, where Cargo puts an integration test or a benchmark.
+The directory is what decides, so a `[[test]]` or `[[bench]]`
+whose `path` roots it elsewhere is not covered, and a `[[bin]]`
+whose `path` roots it in one of them is. Defaults to `false`, so
+a test file is held to the same limit as the code it exercises.

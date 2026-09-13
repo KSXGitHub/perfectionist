@@ -104,8 +104,12 @@ merge with the built-ins, so this knob always wins.
 
 Whether test code is exempt: anything gated to test builds by
 `#[cfg(test)]` (or a compound predicate implying it), anything
-inside a `#[test]` function, and every `tests/` or `benches/`
-crate. An `examples/` crate is not covered. Defaults to `true`.
+inside a `#[test]` function, and every crate rooted in `tests/`
+or `benches/`, where Cargo puts an integration test or a
+benchmark. An `examples/` crate is not covered. The directory is
+what decides, so a `[[test]]` or `[[bench]]` whose `path` roots
+it elsewhere is not covered either, and a `[[bin]]` whose `path`
+roots it in one of them is exempt. Defaults to `true`.
 
 ### Field: `exempt_build_scripts`
 

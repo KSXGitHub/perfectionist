@@ -124,6 +124,31 @@ fn a_target_declared_under_src_is_still_a_separate_target() {
 }
 
 #[test]
+fn a_custom_target_path_is_read_by_the_directory_it_names() {
+    // The classification reads the directory, not the manifest table
+    // that declared the target, so an explicit `path` that leaves the
+    // usual directory is read as whatever the new one names — the
+    // limitation the module docs describe.
+    for (path, expected) in [
+        // `[[test]] path = "src/it.rs"`, which Cargo builds as an
+        // integration test.
+        ("src/it.rs", CargoTarget::LibOrBin),
+        // `[[bench]] path = "src/bench.rs"`, likewise a benchmark.
+        ("src/bench.rs", CargoTarget::LibOrBin),
+        // `[[bin]] path = "tests/main.rs"`, a shipped binary.
+        ("tests/main.rs", CargoTarget::IntegrationTest),
+        // `[[bin]] path = "benches/cli.rs"`, likewise shipped.
+        ("benches/cli.rs", CargoTarget::Benchmark),
+    ] {
+        assert_eq!(
+            library_crate(path),
+            expected,
+            "`{path}` should classify as `{expected:?}`",
+        );
+    }
+}
+
+#[test]
 fn a_target_named_after_another_target_directory_uses_the_right_one() {
     // Both components name a target directory, so only their order
     // says which is Cargo's and which is the target's own name.

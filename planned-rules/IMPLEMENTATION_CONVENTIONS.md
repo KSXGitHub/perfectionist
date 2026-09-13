@@ -327,6 +327,35 @@ crates it names are built without `cfg(test)`. Both need a late pass:
 the `CfgTrace` predicate rustc leaves after configuration needs
 `TyCtxt`.
 
+### What the target classification actually reads
+
+`crate_target` reads the crate root's path, so what decides is the
+directory a target's root sits in, not the manifest table that
+declared it. Cargo's default layouts keep the two in agreement; an
+explicit `path` breaks them apart in both directions:
+
+| `Cargo.toml` entry                      | Classified as     |
+|-----------------------------------------|-------------------|
+| `[[test]]` with `path = "src/it.rs"`    | `LibOrBin`        |
+| `[[bin]]` with `path = "tests/main.rs"` | `IntegrationTest` |
+
+So a rule with an `exempt_tests` knob flags the first and silently
+exempts the second — the worse direction, since a lint that quietly
+stops covering shipped code gives no sign that it has. Nothing inside
+the compiler settles this: Cargo's target table never reaches rustc,
+and neither `CARGO_CRATE_NAME`, `CARGO_BIN_NAME`, nor the `--test`
+flag (which a unit-test build also carries) tells a `[[test]]` from a
+`[[bin]]`. Reading the package manifest would, at the cost of a
+manifest read per crate and a decision about what to do when the
+manifest is absent or unreadable; custom target paths are rare enough
+that the directory reading stands
+(<https://github.com/KSXGitHub/perfectionist/issues/440>).
+
+What follows for a doc: describe the check in terms of directories —
+"a crate rooted in `tests/` or `benches/`" — rather than as "an
+integration-test or benchmark target", which promises a manifest
+reading the check does not do.
+
 ### What "implies `test`" means
 
 `cfg_predicate_implies_test` asks whether a predicate holds *only*
