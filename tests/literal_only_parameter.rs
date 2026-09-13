@@ -63,3 +63,27 @@ fn exempt_tests_leaves_test_code_alone() {
     assert_flagged(&stderr, "private");
     assert_not_flagged(&stderr, "cfg_test_helper");
 }
+
+#[test]
+fn calls_before_declarations_are_counted() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_lop_forward_calls",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[(
+            "src/lib.rs",
+            include_str!("fixtures/literal_only_parameter/forward_calls.rs"),
+        )],
+        "",
+    );
+    assert!(success, "{stderr}");
+    assert_flagged(&stderr, "literal_bool");
+    for function in [
+        "computed_bool",
+        "computed_option",
+        "computed_method",
+        "escaped",
+    ] {
+        assert_not_flagged(&stderr, function);
+    }
+}

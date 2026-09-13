@@ -5,7 +5,7 @@ use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::is_lang_item_or_ctor;
 use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Res};
-use rustc_hir::def_id::LocalDefId;
+use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_hir::intravisit::FnKind;
 use rustc_hir::{Expr, ExprKind, HirId, LangItem};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
@@ -146,17 +146,13 @@ struct Candidate {
     name: Symbol,
     hir_id: HirId,
     parameters: Vec<Parameter>,
-    /// One entry per call site, each the arguments aligned to the
-    /// body's parameters.
-    calls: Vec<Vec<Argument>>,
-    /// The function was named without being called, so callers we
-    /// cannot see may pass anything.
-    used_as_value: bool,
 }
 
 pub struct LiteralOnlyParameter {
     config: Config,
     candidates: HashMap<LocalDefId, Candidate>,
+    calls: HashMap<LocalDefId, Vec<Vec<Argument>>>,
+    used_as_value: HashSet<LocalDefId>,
     /// Callee expressions of calls already recorded, so the path
     /// expression a call goes through is not also taken for a use as
     /// a value.
@@ -177,6 +173,8 @@ impl Register for rule::LiteralOnlyParameter {
             Box::new(LiteralOnlyParameter {
                 config: dylint_linting::config_or_default(CONFIG_KEY),
                 candidates: HashMap::new(),
+                calls: HashMap::new(),
+                used_as_value: HashSet::new(),
                 callees: HashSet::new(),
             })
         }));
@@ -243,8 +241,6 @@ impl<'tcx> LateLintPass<'tcx> for LiteralOnlyParameter {
                 name: ident.name,
                 hir_id: cx.tcx.local_def_id_to_hir_id(def_id),
                 parameters,
-                calls: Vec::new(),
-                used_as_value: false,
             },
         );
     }
@@ -259,26 +255,24 @@ impl<'tcx> LateLintPass<'tcx> for LiteralOnlyParameter {
                     return;
                 };
                 self.callees.insert(callee.hir_id);
-                self.record_call(cx, def_id, None, args);
+                self.record_call(cx, def_id, args.iter());
             }
             ExprKind::MethodCall(_, receiver, args, _) => {
                 let Some(def_id) = cx
                     .typeck_results()
                     .type_dependent_def_id(expr.hir_id)
-                    .and_then(|id| id.as_local())
+                    .and_then(DefId::as_local)
                 else {
                     return;
                 };
-                self.record_call(cx, def_id, Some(receiver), args);
+                self.record_call(cx, def_id, core::iter::once(receiver).chain(args));
             }
             ExprKind::Path(qpath) => {
                 if self.callees.contains(&expr.hir_id) {
                     return;
                 }
-                if let Some(def_id) = local_fn(cx.qpath_res(&qpath, expr.hir_id))
-                    && let Some(candidate) = self.candidates.get_mut(&def_id)
-                {
-                    candidate.used_as_value = true;
+                if let Some(def_id) = local_fn(cx.qpath_res(&qpath, expr.hir_id)) {
+                    self.used_as_value.insert(def_id);
                 }
             }
             _ => {}
@@ -288,13 +282,16 @@ impl<'tcx> LateLintPass<'tcx> for LiteralOnlyParameter {
     fn check_crate_post(&mut self, cx: &LateContext<'tcx>) {
         let mut candidates: Vec<_> = self.candidates.drain().collect();
         candidates.sort_by_key(|(_, candidate)| candidate.parameters[0].span);
-        for (_, candidate) in candidates {
-            if candidate.used_as_value || candidate.calls.is_empty() {
+        for (def_id, candidate) in candidates {
+            let Some(calls) = self.calls.remove(&def_id) else {
+                continue;
+            };
+            if self.used_as_value.contains(&def_id) || calls.is_empty() {
                 continue;
             }
             for parameter in &candidate.parameters {
                 let mut tally: BTreeMap<Argument, usize> = BTreeMap::new();
-                for call in &candidate.calls {
+                for call in &calls {
                     let argument = call
                         .get(parameter.index)
                         .copied()
@@ -313,22 +310,14 @@ impl<'tcx> LateLintPass<'tcx> for LiteralOnlyParameter {
 impl LiteralOnlyParameter {
     /// Record one call of `def_id`, aligning `args` to the body's
     /// parameters: a method call's receiver is parameter zero.
-    fn record_call(
+    fn record_call<'tcx>(
         &mut self,
         cx: &LateContext<'_>,
         def_id: LocalDefId,
-        receiver: Option<&Expr<'_>>,
-        args: &[Expr<'_>],
+        args: impl Iterator<Item = &'tcx Expr<'tcx>>,
     ) {
-        let Some(candidate) = self.candidates.get_mut(&def_id) else {
-            return;
-        };
-        let arguments = receiver
-            .into_iter()
-            .chain(args)
-            .map(|arg| classify(cx, arg))
-            .collect();
-        candidate.calls.push(arguments);
+        let arguments = args.map(|arg| classify(cx, arg)).collect();
+        self.calls.entry(def_id).or_default().push(arguments);
     }
 }
 
