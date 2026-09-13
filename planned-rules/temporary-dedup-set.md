@@ -652,7 +652,13 @@ already made for its own pending rewrite.
   `dedup_by_key` where a cheap injective key exists;
   `sort_by_cached_key` where the key is expensive to compute, which is
   std's own advice and the difference between one key per element and
-  one per comparison. The `into-sorted` and `into-deduped` families
+  one per comparison. Which of those two a reader can reach for is
+  decided by the signature, and worth saying in the note: a
+  `sort_by_key` key may not borrow from the element — `K` is fixed
+  independently of each `&T`, so `|k| (k.scope.as_deref(),
+  k.bare.as_str())` does not compile, one field or several. A
+  projection of `Copy` fields is fine there; a projection of borrowed
+  ones goes through `sort_by`, or pays for owned keys. The `into-sorted` and `into-deduped` families
   mirror std method for method, so the chained `style` has the same
   options under the same rule: the autofix is `into_sorted_unstable`
   and `into_deduped`, the rest is prose.
