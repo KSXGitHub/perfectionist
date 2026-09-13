@@ -7,12 +7,6 @@
 
 #![allow(dead_code, reason = "ui fixture")]
 
-#![feature(register_tool)]
-#![register_tool(perfectionist)]
-#![allow(
-    perfectionist::too_many_struct_fields,
-    reason = "one clap struct carries every help shape under test"
-)]
 extern crate clap;
 
 use std::path::PathBuf;
@@ -51,6 +45,17 @@ struct Cli {
     /// ```
     code_block: PathBuf,
 
+    #[command(flatten)]
+    doc_forms: DocCommentForms,
+}
+
+// The cases about the form a doc comment takes rather than the markdown
+// inside it. A plain comment, not a doc comment: a doc comment here
+// would become the group's clap `about` and be scanned as one more
+// case. Flattened into the parser above and scanned the same way,
+// since Args is one of the derives the rule recognises.
+#[derive(clap::Args)]
+struct DocCommentForms {
     /// Path to the package manifest.
     plain_prose: PathBuf,
 
