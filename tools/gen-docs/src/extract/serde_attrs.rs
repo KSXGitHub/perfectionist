@@ -118,9 +118,7 @@ pub(crate) fn pascal_to_snake(name: &str) -> String {
     for (index, &char) in chars.iter().enumerate() {
         if char.is_ascii_uppercase() {
             let prev_lower = index > 0 && chars[index - 1].is_ascii_lowercase();
-            let next_lower = chars
-                .get(index + 1)
-                .is_some_and(|next| next.is_ascii_lowercase());
+            let next_lower = chars.get(index + 1).is_some_and(char::is_ascii_lowercase);
             if index > 0 && (prev_lower || next_lower) {
                 out.push('_');
             }

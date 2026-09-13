@@ -1,6 +1,20 @@
 [workspace]
 members = ["tools/*", "utils"]
 
+[workspace.lints.rust]
+# `dylint_lib` is set by the dylint driver when it loads this library;
+# declare it so a plain `cargo check` doesn't warn about the
+# `cfg(dylint_lib = "perfectionist")` gates in `src/lib.rs`.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(dylint_lib, values("perfectionist"))'] }
+
+[workspace.lints.clippy]
+alloc_instead_of_core = "warn"
+clone_on_ref_ptr = "warn"
+cloned_instead_of_copied = "warn"
+mod_module_files = "warn"
+redundant_closure_for_method_calls = "warn"
+std_instead_of_core = "warn"
+
 [package]
 name = "perfectionist"
 description = "Additional linting rules for Rust projects"
@@ -29,18 +43,8 @@ include = [
 [lib]
 crate-type = ["cdylib"]
 
-[lints.rust]
-# `dylint_lib` is set by the dylint driver when it loads this library;
-# declare it so a plain `cargo check` doesn't warn about the
-# `cfg(dylint_lib = "perfectionist")` gates in `src/lib.rs`.
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(dylint_lib, values("perfectionist"))'] }
-
-[lints.clippy]
-alloc_instead_of_core = "warn"
-clone_on_ref_ptr = "warn"
-cloned_instead_of_copied = "warn"
-mod_module_files = "warn"
-std_instead_of_core = "warn"
+[lints]
+workspace = true
 
 [dependencies]
 clippy_utils = "=0.1.99"
@@ -50,7 +54,7 @@ unicode-width = "0.2.2"
 
 [dev-dependencies]
 _utils = { path = "utils" }
-command-extra = "1.0.0"
+command-extra = "1.2.0"
 dylint_testing = "6.0.4"
 pipe-trait = "0.4.0"
 text-block-macros = "0.2.0"

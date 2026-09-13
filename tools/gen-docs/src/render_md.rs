@@ -32,7 +32,7 @@ use crate::model::{
     ConfigDoc, ConfigField, EnumVariant, NAMESPACE, Optionality, Rule, StructField, TypeDoc,
     TypeKind,
 };
-use std::fmt::Write as _;
+use core::fmt::Write as _;
 
 /// Per-rule markdown filename. Mirrors the source layout
 /// (`src/rules/<name>.rs`) so a reader can find one from the other

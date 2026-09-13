@@ -62,7 +62,7 @@ pub(super) fn split_top_level_arguments(stream: &TokenStream) -> Option<Vec<Vec<
         .collect();
     // A comma opens a new group, so a trailing comma leaves an empty
     // last group that is not an argument the rule can check.
-    if arguments.last().is_some_and(|argument| argument.is_empty()) {
+    if arguments.last().is_some_and(Vec::is_empty) {
         arguments.pop();
     }
     Some(arguments)
