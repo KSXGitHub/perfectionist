@@ -209,9 +209,9 @@ fn settings_panel() -> Markup {
             fieldset.settings-section {
                 legend { "Theme" }
                 div.theme-options {
-                    (theme_option("light", "color-scheme-light", "Light", false))
-                    (theme_option("dark", "color-scheme-dark", "Dark", false))
-                    (theme_option("system", "color-scheme-system", "System", true))
+                    (theme_option("light", "color-scheme-light", "Light"))
+                    (theme_option("dark", "color-scheme-dark", "Dark"))
+                    (theme_option("system", "color-scheme-system", "System"))
                 }
             }
             (config_controls())
@@ -272,7 +272,7 @@ fn theme_icon_prefetch_template() -> Markup {
 /// chosen one. The label must therefore stay the input's immediate next
 /// sibling. The icon is an empty span the stylesheet fills via a CSS
 /// mask referencing one of [`THEME_ICONS`].
-fn theme_option(value: &str, id: &str, label: &str, checked: bool) -> Markup {
+fn theme_option(value: &str, id: &str, label: &str) -> Markup {
     let option_class = format!("theme-option theme-option-{value}");
     html! {
         input.theme-radio
@@ -280,7 +280,7 @@ fn theme_option(value: &str, id: &str, label: &str, checked: bool) -> Markup {
             name="color-scheme"
             id=(id)
             value=(value)
-            checked[checked];
+            checked[value == "system"];
         label class=(option_class) for=(id) {
             span.theme-icon aria-hidden="true" {}
             span.theme-label { (label) }
