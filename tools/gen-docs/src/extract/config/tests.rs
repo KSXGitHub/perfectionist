@@ -1,7 +1,7 @@
 use super::{EMPTY_CONFIG_DOC, extract_config};
 use crate::extract::shared::SharedTypes;
 use crate::model::Optionality;
-use std::fmt::Write as _;
+use core::fmt::Write as _;
 use std::path::Path;
 
 #[test]

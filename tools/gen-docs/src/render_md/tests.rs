@@ -200,7 +200,7 @@ fn rule_md_struct_type_fields_carry_a_type_bullet() {
 fn index_md_renders_bullet_list() {
     let mut rule = fake_rule();
     rule.short_desc = "uses | inside".to_owned();
-    let index = render_index_md(std::slice::from_ref(&rule));
+    let index = render_index_md(core::slice::from_ref(&rule));
     // Each entry spans two lines: the link/state line, then a
     // blank line, then the indented short-description
     // continuation paragraph.

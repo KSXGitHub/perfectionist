@@ -250,11 +250,12 @@ external state, or judgement calls that a static lint cannot evaluate:
   `clippy::mod_module_files`, a `restriction` lint (allow-by-default)
   that warns on every `mod.rs` file (requiring the self-named `foo.rs`
   form instead). Enable `mod_module_files = "warn"` under
-  `[lints.clippy]`; this crate does so in its own `Cargo.toml`. (The
-  lint names are counter-intuitive — each is named for what it *warns
-  about*, not what it enforces. The *opposite* lint,
-  `clippy::self_named_module_files`, warns on self-named files and so
-  requires the contradictory `mod.rs` layout — never enable both.)
+  `[lints.clippy]`; this workspace does so for every member under
+  `[workspace.lints.clippy]`. (The lint names are counter-intuitive —
+  each is named for what it *warns about*, not what it enforces. The
+  *opposite* lint, `clippy::self_named_module_files`, warns on
+  self-named files and so requires the contradictory `mod.rs` layout —
+  never enable both.)
 - **Doc comments referencing items more private than the documented item**
   (pacquet *Documentation comments*) — already covered by rustdoc's
   built-in `rustdoc::private_intra_doc_links` lint (default `warn`).
