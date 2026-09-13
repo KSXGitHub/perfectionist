@@ -3,8 +3,12 @@
 **Source:** review discussion on
 [`KSXGitHub/perfectionist#443`](https://github.com/KSXGitHub/perfectionist/pull/443#discussion_r4000812599),
 which named the anti-pattern — a *temporary set for deduplication* —
-while arguing about a sibling rule's example, and gave both of the
-preferred forms below.
+and gave both of the preferred forms below. That pull request proposed
+a general round-trip rule whose suggested fix was to *name* the
+intermediate collection; it was closed in favour of this file, because
+naming a deduplicating set leaves the second form below, which is no
+better than the first. There is no general round-trip rule to defer
+to, and this one claims only the set case.
 
 ## Statement
 
@@ -253,10 +257,10 @@ A **set round trip** has these parts, all of which must hold:
    `BTreeSet<T>` — any hasher, so an alias that only swaps it
    (`rustc_hash::FxHashSet`) is covered without configuration — or a
    type named in `extra_set_types`. A set that merely *arrives* (a
-   parameter, a field, a function's return) is not a build: converting
-   one container to another goes one way, and the sibling
-   `perfectionist::collection_round_trip` makes the same distinction
-   for the same reason.
+   parameter, a field, a function's return) is not a build: the
+   duplicates were dropped by whoever built it, so the walk is a
+   one-way conversion between containers and there is nothing for
+   `sort_unstable` + `dedup` to replace.
 2. **The walk.** The set is consumed exactly once, by `into_iter()`,
    `iter()`, `iter().cloned()`, `iter().copied()`, or `drain(..)`, and
    is used for nothing else.
@@ -496,8 +500,10 @@ extra_set_types = ["::hashbrown::HashSet"]
 
 # Whether test code is left alone: a chain inside a `#[cfg(test)]`
 # module, a `#[test]` function, or an integration-test or benchmark
-# target. Defaults to `false`, matching the sibling round-trip rule,
-# so a test is held to the same shape as the code it exercises.
+# target. Defaults to `false`, so a test is held to the same shape as
+# the code it exercises — a test fixture is read as an example of how
+# the project writes Rust, and the sizes it runs at are the sizes
+# where the vector form is also the faster one.
 exempt_tests = false
 ```
 
@@ -512,12 +518,6 @@ already made for its own pending rewrite.
 
 ## Implementation notes
 
-- **Shared predicate with the sibling.** The "is this a round trip
-  through a set that `sort_unstable` + `dedup` replaces?" test is
-  needed by `perfectionist::collection_round_trip` too, to decide when
-  to stand down (see below). Factor it into a crate-internal module
-  rather than duplicating the type checks in both rules, per
-  [`CLAUDE.md`](../CLAUDE.md#one-rule-per-file-one-config-per-rule).
 - **Autofix, chained form.** Fire the machine-applicable rewrite only
   where the round trip is a `let` initializer, which is where it
   occurs in practice: replace the initializer with the collect that
@@ -594,21 +594,15 @@ rule off in `[perfectionist].disable`.
   so the two never disagree. `clippy::derive_ord_xor_partial_ord` and
   `clippy::derived_hash_with_manual_eq` police the `Ord`/`Eq`
   agreement that the `BTreeSet` branch's rewrite assumes.
-- **`perfectionist::collection_round_trip`
-  ([`KSXGitHub/perfectionist#443`](https://github.com/KSXGitHub/perfectionist/pull/443))
-  stands down where this rule fires.** It flags the chained form of
-  *any* collection round trip and suggests naming the intermediate —
-  which, for a set, produces the bound form this rule flags. Left
-  alone, the two rules hand the code back and forth and report one
-  expression twice. The precedence falls out of the trigger: this rule
-  fires only where `sort_unstable` + `dedup` is available, so the
-  sibling stays silent on exactly those expressions and keeps the ones
-  where naming the intermediate *is* the fix — a round trip through a
-  `Vec`, or through a set whose element is not `Ord`.
 - **`perfectionist::overly_long_method_chain`** measures length; this
   measures shape. A two-line round trip is short and still flagged
   here; a nine-call chain with no round trip is flagged there and not
   here.
+- **No general round-trip rule stands behind this one.** A round trip
+  through a `Vec`, or through a set whose element is not `Ord`, is
+  reported by nothing: the rule that would have covered those was
+  closed (see the source above), so an element that fails the `Ord`
+  gate is simply left alone rather than handed on.
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing
