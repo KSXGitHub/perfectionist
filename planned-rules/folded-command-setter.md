@@ -63,11 +63,11 @@ A call to `Iterator::fold` where all of the following hold:
      single method call and does nothing else.
 3. That setter has a plural counterpart in the `pairs` table below.
 
-| singular | plural | closure shape |
-|---|---|---|
-| `with_arg` | `with_args` | `\|acc, item\| acc.with_arg(item)` |
-| `without_env` | `without_envs` | `\|acc, item\| acc.without_env(item)` |
-| `with_env` | `with_envs` | `\|acc, (key, value)\| acc.with_env(key, value)` |
+| singular      | plural         | closure shape                                    |
+|---------------|----------------|--------------------------------------------------|
+| `with_arg`    | `with_args`    | `\|acc, item\| acc.with_arg(item)`               |
+| `without_env` | `without_envs` | `\|acc, item\| acc.without_env(item)`            |
+| `with_env`    | `with_envs`    | `\|acc, (key, value)\| acc.with_env(key, value)` |
 
 The `with_env` row is the awkward one and also the most valuable. Its
 item is a tuple, so the closure destructures, and there is no path

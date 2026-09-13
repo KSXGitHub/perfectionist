@@ -65,18 +65,18 @@ expression.
 A method call on a receiver whose type is `std::process::Command` —
 owned, not a reference — naming one of the setters below.
 
-| std setter | `CommandExtra` form |
-|---|---|
-| `arg` | `with_arg` |
-| `args` | `with_args` |
-| `env` | `with_env` |
-| `envs` | `with_envs` |
-| `env_remove` | `without_env` |
-| `env_clear` | `with_no_env` |
-| `current_dir` | `with_current_dir` |
-| `stdin` | `with_stdin` |
-| `stdout` | `with_stdout` |
-| `stderr` | `with_stderr` |
+| std setter    | `CommandExtra` form |
+|---------------|---------------------|
+| `arg`         | `with_arg`          |
+| `args`        | `with_args`         |
+| `env`         | `with_env`          |
+| `envs`        | `with_envs`         |
+| `env_remove`  | `without_env`       |
+| `env_clear`   | `with_no_env`       |
+| `current_dir` | `with_current_dir`  |
+| `stdin`       | `with_stdin`        |
+| `stdout`      | `with_stdout`       |
+| `stderr`      | `with_stderr`       |
 
 `Command::new` is not a setter and is not flagged. Neither are the
 spawning methods (`spawn`, `output`, `status`), which have no
