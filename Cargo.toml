@@ -50,7 +50,7 @@ unicode-width = "0.2.2"
 
 [dev-dependencies]
 _utils = { path = "utils" }
-command-extra = "1.0.0"
+command-extra = "1.2.0"
 dylint_testing = "6.0.4"
 pipe-trait = "0.4.0"
 text-block-macros = "0.2.0"

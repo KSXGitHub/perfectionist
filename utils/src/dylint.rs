@@ -5,6 +5,7 @@
 //! [`UI_HARNESS_VARS`].
 
 use command_extra::CommandExtra;
+use pipe_trait::Pipe;
 use std::path::Path;
 use std::process::Command;
 
@@ -40,9 +41,9 @@ const UI_HARNESS_VARS: &[&str] = &["DYLINT_LIBRARY_PATH", "DYLINT_LIBS", "DYLINT
 /// A `cargo` command rooted at `project_dir`, pointed at
 /// `shared_target_dir`, and with [`UI_HARNESS_VARS`] cleared.
 fn cargo_command(project_dir: &Path, shared_target_dir: &Path) -> Command {
-    UI_HARNESS_VARS
-        .iter()
-        .fold(Command::new("cargo"), CommandExtra::without_env)
+    "cargo"
+        .pipe(Command::new)
+        .without_envs(UI_HARNESS_VARS)
         .with_current_dir(project_dir)
         .with_env("CARGO_TARGET_DIR", shared_target_dir)
 }
