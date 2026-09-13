@@ -55,5 +55,4 @@ LL |     } else if second && third || first {
    |
    = help: bind the condition, or the part of it that names a concept, to a `let`
 
-warning: 7 warnings emitted
-
+warning: N warnings emitted
