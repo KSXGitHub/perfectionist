@@ -17,6 +17,7 @@
 
 use command_extra::CommandExtra;
 use pipe_trait::Pipe;
+use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -48,7 +49,16 @@ pub(crate) const CACHE_DIR_ENV: &str = "GEN_DOCS_FONT_CACHE_DIR";
 /// survives `cargo clean` (unlike anything under `target/`) so the warm
 /// cache persists across builds.
 pub(crate) fn cache_dir(root: &Path) -> PathBuf {
-    match std::env::var_os(CACHE_DIR_ENV) {
+    cache_dir_from(root, std::env::var_os(CACHE_DIR_ENV))
+}
+
+/// [`cache_dir`] with the [`CACHE_DIR_ENV`] lookup already done, so the
+/// choice it makes is testable without mutating the process
+/// environment. A test that set the var instead would race every
+/// sibling test that reads one -- `std::env::temp_dir`, which several of
+/// them call -- which is why `std::env::set_var` is `unsafe`.
+fn cache_dir_from(root: &Path, configured: Option<OsString>) -> PathBuf {
+    match configured {
         Some(dir) => PathBuf::from(dir),
         None => root.join(".cache").join("fonts"),
     }

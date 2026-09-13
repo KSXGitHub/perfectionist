@@ -27,8 +27,8 @@ fn fake_rule(name: &str) -> Rule {
 /// binary, so two tests that happen to share a `label` don't
 /// share a directory).
 fn tempdir(label: &str) -> PathBuf {
-    static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-    let seq = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    static COUNTER: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+    let seq = COUNTER.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
     let base = std::env::temp_dir().join(format!(
         "perfectionist-gen-docs-{label}-{}-{seq}",
         std::process::id(),

@@ -11,6 +11,7 @@ use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_hir as hir;
 use rustc_lint::{LateContext, LateLintPass};
 use rustc_span::Span;
+use std::sync::PoisonError;
 
 pub(super) struct ImpureMacroArgumentsLate;
 
@@ -19,7 +20,7 @@ impl<'tcx> LateLintPass<'tcx> for ImpureMacroArgumentsLate {
         let pending: Vec<Span> = {
             let mut guard = PENDING_VIOLATIONS
                 .lock()
-                .unwrap_or_else(|err| err.into_inner());
+                .unwrap_or_else(PoisonError::into_inner);
             core::mem::take(&mut *guard)
         };
         if pending.is_empty() {

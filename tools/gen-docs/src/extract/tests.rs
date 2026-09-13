@@ -10,8 +10,8 @@ use std::path::PathBuf;
 /// `check_md.rs`'s test module; kept local so the two test
 /// modules stay self-contained.
 fn tempdir(label: &str) -> PathBuf {
-    static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-    let seq = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    static COUNTER: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+    let seq = COUNTER.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
     let base = std::env::temp_dir().join(format!(
         "perfectionist-gen-docs-extract-{label}-{}-{seq}",
         std::process::id(),

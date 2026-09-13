@@ -9,6 +9,7 @@ use super::emit::emit_fold;
 use super::queue::PendingViolation;
 use crate::enclosing_hir::find_enclosing_hir_ids;
 use rustc_lint::{LateContext, LateLintPass};
+use std::sync::PoisonError;
 
 pub(super) struct OverlyLongPrintMacroLate;
 
@@ -17,7 +18,7 @@ impl<'tcx> LateLintPass<'tcx> for OverlyLongPrintMacroLate {
         let pending: Vec<PendingViolation> = {
             let mut guard = PENDING_VIOLATIONS
                 .lock()
-                .unwrap_or_else(|err| err.into_inner());
+                .unwrap_or_else(PoisonError::into_inner);
             core::mem::take(&mut *guard)
         };
         if pending.is_empty() {

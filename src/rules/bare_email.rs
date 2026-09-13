@@ -417,7 +417,7 @@ fn take_domain(input: &str) -> Option<usize> {
     if tld_bytes.len() < 2 {
         return None;
     }
-    if !tld_bytes.iter().all(|byte| byte.is_ascii_alphabetic()) {
+    if !tld_bytes.iter().all(u8::is_ascii_alphabetic) {
         return None;
     }
     if index < bytes.len() {
