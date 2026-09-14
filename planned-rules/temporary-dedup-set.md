@@ -233,9 +233,6 @@ comparison actually reads.
 Where a bullet below reaches for
 `#[expect(perfectionist::temporary_dedup_set)]`, the rule does fire and
 the suppression is the answer; the rest it never reaches at all.
-`#[expect]` rather than `#[allow]` throughout, because
-`perfectionist::allow_attributes` resolves an `#[allow]` of a
-deterministically-firing lint into one.
 
 - **The element is not `Ord`.** `sort_unstable` does not compile for
   it, so the rule has no suggestion to make and, by default, says
