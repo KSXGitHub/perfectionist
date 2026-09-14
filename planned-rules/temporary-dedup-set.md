@@ -235,11 +235,11 @@ Where a bullet below reaches for
 the suppression is the answer; the rest it never reaches at all.
 
 - **The element is not `Ord`.** `sort_unstable` does not compile for
-  it, so the rule has no suggestion to make and, by default, says
-  nothing; the gate is a trait-resolution check, not a heuristic. What
-  is missing is a fix the *rule* can write rather than a fix at all —
-  the section below has the one a reader writes by hand, and the
-  setting that decides whether the rule mentions the shape anyway.
+  it, so the rule has no suggestion to make; the gate is a
+  trait-resolution check, not a heuristic. What is missing is a fix
+  the *rule* can write rather than a fix at all — the section below
+  has the one a reader writes by hand, and the setting that decides
+  which of these the rule mentions anyway.
 - **The set is read as a set.** A `contains` call, a `len`, an
   `insert` after the fact, a return, a store into a field, a borrow
   that outlives the expression — any of these and the value is not
@@ -448,17 +448,18 @@ slightly-off sentence in a note, not a broken rewrite.
 
 #### When no view is found
 
-Silence is then the default answer, not the only one.
-`unorderable_elements` picks:
+What the rule does then is `unorderable_elements`:
 
-- `silent` — say nothing. The default: a report here can carry no
-  suggestion, and an active-by-default rule should not spend the
-  reader's attention on one.
-- `local` — report where the element is defined in the crate being
-  linted, which is where deriving `Ord` or exposing a view is a change
-  the reader can actually make. The first setting to reach for.
+- `local` — the default. Report where the element is defined in the
+  crate being linted, which is where deriving `Ord` or exposing a view
+  is a change the reader can actually make. A report without a
+  suggestion is worth its space exactly when the reader owns the type
+  that withheld the order.
+- `silent` — say nothing, for a project that would rather not hear
+  about a round trip it has no one-line answer for.
 - `all` — report foreign elements too, where the answer is an upstream
-  change, a wrapper, or keeping the set.
+  change, a wrapper, or keeping the set. Off by default because none
+  of those is a change the reader can make today.
 
 Either reporting mode states the shape and stops: the rule has found a
 round trip it cannot finish the sentence about, and says so rather
@@ -497,9 +498,9 @@ A **set round trip** has these parts, all of which must hold:
    .into_iter().filter_map(...).collect::<BTreeMap<_, _>>()` ends
    somewhere a sort cannot replace.
 
-Plus one gate: **`T: Ord`**, resolved against the element type. Without
-it the suggestion does not compile, so the rule emits none — and, on
-the default `unorderable_elements`, nothing at all; see
+Plus one gate: **`T: Ord`**, resolved against the element type.
+Without it the suggestion does not compile, so the rule emits none —
+and whether it says anything at all is `unorderable_elements`; see
 [When the element is not `Ord`](#when-the-element-is-not-ord).
 
 One discovery locus per form in [Statement](#statement):
@@ -726,11 +727,13 @@ not name the project a rule was distilled from; see
 extra_set_types = ["::hashbrown::HashSet"]
 
 # What to do where the element has no `Ord` and no view the rule can
-# find (see "When the element is not `Ord`"). `silent` says nothing;
-# `local` reports where the element is defined in the crate being
-# linted; `all` reports foreign elements too. Defaults to `silent`,
-# because neither reporting mode can carry a suggestion.
-unorderable_elements = "silent"
+# find (see "When the element is not `Ord`"). `local` reports where
+# the element is defined in the crate being linted; `silent` says
+# nothing; `all` reports foreign elements too. Defaults to `local`:
+# such a report carries no suggestion, which is worth its space where
+# the reader owns the type that withheld the order and not much
+# elsewhere.
+unorderable_elements = "local"
 
 # Whether test code is left alone: a chain inside a `#[cfg(test)]`
 # module, a `#[test]` function, or an integration-test or benchmark
@@ -865,9 +868,10 @@ it at all.
 ## Default state
 
 Active by default. The trigger is narrow, the `Ord` gate holds back
-every site the rule cannot finish a sentence about, and the exceptions
-that remain are performance trade-offs a crate states once with
-`#[expect]`. A crate that deduplicates large string collections whose
+every suggestion the rule cannot make — reporting the shape without
+one only where the reader owns the type, per `unorderable_elements` —
+and the exceptions that remain are performance trade-offs a crate
+states once with `#[expect]`. A crate that deduplicates large string collections whose
 order nothing reads — where the measurement favours the set — is the
 crate that turns the rule off in `[perfectionist].disable`.
 
