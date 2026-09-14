@@ -38,7 +38,7 @@ fn let_chain(input: Option<u8>, ready: bool) {
 }
 
 // Not flagged: every `&&` has a `let` beside it, and the trailing
-// guard is a single clause rather than a group.
+// guard is one clause on its own rather than a part to name.
 fn let_chain_all_lets(
     first: Option<u8>,
     second: Result<u8, ()>,
@@ -62,7 +62,7 @@ fn let_chain_trailing_group(input: Option<u8>, first: bool, second: bool) {
     }
 }
 
-// Bad: 1 operator — the same, with the group leading the chain.
+// Bad: 1 operator — the same, with the part leading the chain.
 fn let_chain_leading_group(input: Option<u8>, first: bool, second: bool) {
     if first && second && let Some(_value) = input {
         work();
@@ -118,7 +118,7 @@ fn else_if(first: bool, second: bool, third: bool) {
 
 // Bad: 1 operator — a `while let` condition, the one head the rustdoc
 // names that nothing else here reaches. The `&&` beside the `let` is
-// not counted, so the head needs a group after it to be flagged at all.
+// not counted, so the head needs two ordinary clauses to be flagged.
 fn while_let(mut items: impl Iterator<Item = u8>, ready: bool, more: bool) {
     while let Some(_item) = items.next()
         && ready

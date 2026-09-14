@@ -37,12 +37,12 @@ declare_tool_lint! {
     /// puts a debugger-visible value on it, and turns the `if` back into
     /// a sentence. SonarSource ships this rule with the same limit.
     ///
-    /// Which clauses are bound matters. A group that leads the
-    /// condition runs whenever the `if` is reached, so a `let` moves it
-    /// without changing when it runs. A group that follows another
-    /// clause did not run when that earlier clause was false, and a
-    /// `let` would make it run every time; bind a closure or a function
-    /// there instead, and call it in the condition.
+    /// Which part is bound matters. A part that leads the condition
+    /// runs whenever the `if` is reached, so a `let` moves it without
+    /// changing when it runs. A part that follows another clause runs
+    /// only when that clause holds, and a `let` would run it every
+    /// time; bind a closure or a function there instead, and call it
+    /// in the condition.
     ///
     /// ### Example
     ///
@@ -59,7 +59,8 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// **Prefer:**
+    /// **Prefer:** the part leads the condition, so a `let` runs it
+    /// exactly when the `if` would have
     ///
     /// ```rust,ignore
     /// let is_visible_file =
@@ -72,12 +73,8 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// The group led the condition there, so the `let` runs it exactly
-    /// when the `if` did. A group that follows another clause needs the
-    /// lazy form, and a group that reads a binding the chain introduces
-    /// takes it as a parameter:
-    ///
-    /// **Avoid:**
+    /// **Avoid:** a part that follows another clause, and reads a
+    /// binding the chain introduces
     ///
     /// ```rust,ignore
     /// if let Some(entry) = next_entry()
@@ -91,7 +88,8 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// **Prefer:**
+    /// **Prefer:** a closure, so the part stays unevaluated until the
+    /// condition reaches it, taking the binding as a parameter
     ///
     /// ```rust,ignore
     /// let is_visible_file =
@@ -124,13 +122,14 @@ const NAMING_HELP: &str = "bind the condition, or the part of it that names a co
                            `let` named for the predicate it decides, not for the clauses it \
                            joins";
 
-/// The one way the fix above changes behaviour. A `let` runs its
-/// initialiser where it stands, so a group lifted from anywhere but
-/// the front of the condition runs even when an earlier clause would
-/// have stopped it -- which a `let` chain forces, since no `let`
-/// statement can sit between two clauses of the chain.
+/// When the fix above is the wrong one, in the shape
+/// `too_many_struct_fields` and `excessive_nesting` use for their
+/// second help. A `let` chain forces the case, since no `let`
+/// statement can sit between two clauses of a chain, but it is not
+/// confined to one: any part that does not lead its condition is
+/// reached only when the clauses before it hold.
 const LAZINESS_HELP: &str = "where that part follows another clause, bind a closure or a \
-                             function instead, so its operands stay unevaluated until the \
+                             function instead, so its clauses stay unevaluated until the \
                              condition reaches them";
 
 /// Why the count can be lower than the `&&` a reader counts in the
@@ -277,7 +276,7 @@ fn is_let(expr: &Expr<'_>) -> bool {
 /// The condition is flattened into the clauses its top-level `&&`s
 /// join, which is the only place a `let` may appear. Each gap between
 /// two clauses is one `&&` the author wrote, and it counts unless a
-/// `let` sits on either side of it: a group of ordinary clauses
+/// `let` sits on either side of it: a run of ordinary clauses
 /// collapses into one named clause, taking its `&&`s with it, whereas
 /// an `&&` next to a `let` is what makes the chain a chain. The
 /// operators *inside* each clause -- a `||`, a parenthesised `&&` --

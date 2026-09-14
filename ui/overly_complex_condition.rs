@@ -66,8 +66,8 @@ enum EnumName {
 }
 
 // Not flagged: every `&&` here has a `let` beside it, so none is
-// counted. A chain of bindings has no group of ordinary clauses to
-// lift out, and the trailing guard is a single clause.
+// counted. A chain of bindings has no run of ordinary clauses to
+// lift out, and the trailing guard is one clause on its own.
 fn all_lets(
     first: Option<u8>,
     second: Result<u8, ()>,
@@ -88,7 +88,7 @@ fn all_lets(
 }
 
 // Bad: 4 operators. The `&&` beside the `let` is not counted, and the
-// five ordinary clauses after it are a group that a closure could name.
+// five ordinary clauses after it are a part that a closure could name.
 fn a_group_after_the_let(
     input: Option<u8>,
     first: bool,

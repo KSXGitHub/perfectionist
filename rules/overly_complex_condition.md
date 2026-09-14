@@ -36,12 +36,12 @@ names a concept, to a `let` gives it the name the author had,
 puts a debugger-visible value on it, and turns the `if` back into
 a sentence. SonarSource ships this rule with the same limit.
 
-Which clauses are bound matters. A group that leads the
-condition runs whenever the `if` is reached, so a `let` moves it
-without changing when it runs. A group that follows another
-clause did not run when that earlier clause was false, and a
-`let` would make it run every time; bind a closure or a function
-there instead, and call it in the condition.
+Which part is bound matters. A part that leads the condition
+runs whenever the `if` is reached, so a `let` moves it without
+changing when it runs. A part that follows another clause runs
+only when that clause holds, and a `let` would run it every
+time; bind a closure or a function there instead, and call it
+in the condition.
 
 ## Example
 
@@ -58,7 +58,8 @@ if entry.is_file()
 }
 ```
 
-**Prefer:**
+**Prefer:** the part leads the condition, so a `let` runs it
+exactly when the `if` would have
 
 ```rust,ignore
 let is_visible_file =
@@ -71,12 +72,8 @@ if is_visible_file
 }
 ```
 
-The group led the condition there, so the `let` runs it exactly
-when the `if` did. A group that follows another clause needs the
-lazy form, and a group that reads a binding the chain introduces
-takes it as a parameter:
-
-**Avoid:**
+**Avoid:** a part that follows another clause, and reads a
+binding the chain introduces
 
 ```rust,ignore
 if let Some(entry) = next_entry()
@@ -90,7 +87,8 @@ if let Some(entry) = next_entry()
 }
 ```
 
-**Prefer:**
+**Prefer:** a closure, so the part stays unevaluated until the
+condition reaches it, taking the binding as a parameter
 
 ```rust,ignore
 let is_visible_file =
