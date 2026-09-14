@@ -278,8 +278,8 @@ the suppression is the answer; the rest it never reaches at all.
 deterministically-firing lint into one.
 
 - **The element is not `Ord`.** `sort_unstable` does not compile for
-  it, so the rule does not fire; the gate is a trait-resolution check,
-  not a heuristic. What is missing is a fix the *rule* can write, not
+  it, so the rule emits no suggestion and, by default, nothing at all;
+  the gate is a trait-resolution check, not a heuristic. What is missing is a fix the *rule* can write, not
   a fix at all — see
   [When the element is not `Ord`](#when-the-element-is-not-ord) for
   the one a reader writes by hand. What it excludes
@@ -400,6 +400,61 @@ depends on how many elements there are, which the rule cannot see.
 Across pnpm's 109 crates nothing is in this case: the closest are a
 type opaque only to its parent module, and one whose fields are
 private but whose `Display` renders them.
+
+#### Finding a view, cheaply
+
+Naming a projection in the help text means finding one, and the search
+has to stay proportional to the element type rather than to the crate.
+It runs once per type, memoised on its `DefId`, and never leaves that
+type's own API:
+
+- **The fields, where they are visible at the violation.** Every field
+  accessible from the module being linted — private within the same
+  module, `pub(crate)` within the crate, `pub` from anywhere — with
+  each field's type either `Ord` or recursively in this same state,
+  under a small depth cap. A visible enum is always here: its variants
+  are its API, so `match` orders it.
+- **A fixed list of view traits**, each a single impl query, each
+  therefore covering a `derive_more` spelling as readily as a
+  hand-written one: `Deref`, `AsRef<T>` and `Borrow<T>` with an `Ord`
+  target, and `Display` for an order that genuinely is a rendered
+  form.
+- **Inherent methods matching a name pattern** — `as_*`, `get_*`,
+  `to_*`, `id`, `key`, `name`, or a method named for a field — taking
+  `&self` and returning something `Ord`. Read from the type's own
+  inherent impls, which is a bounded query rather than a search.
+
+What it will not do is walk free functions, trait methods at large, or
+anything else that grows with the crate instead of the type: a key can
+be any `fn(&T) -> K` anywhere in the program, and finding *the* one is
+not a lint's job. A view that is found is named, never applied —
+whether it is the order the author means stays a judgement, with
+sorting versions by their rendered form as the standing
+counter-example — so a wrong guess from a name pattern costs a
+slightly-off sentence in a note, not a broken rewrite.
+
+#### When no view is found
+
+Silence is then the default answer, not the only one.
+`unorderable_elements` picks:
+
+- `silent` — say nothing. The default: a report here can carry no
+  suggestion, and an active-by-default rule should not spend the
+  reader's attention on one.
+- `local` — report where the element is defined in the crate being
+  linted, which is where deriving `Ord` or exposing a view is a change
+  the reader can actually make. The first setting to reach for.
+- `all` — report foreign elements too, where the answer is an upstream
+  change, a wrapper, or keeping the set.
+
+Either reporting mode states the shape and stops: the rule has found a
+round trip it cannot finish the sentence about, and says so rather
+than inventing an order.
+
+One enum rather than two booleans, deliberately. The three values are
+nested scopes, not independent switches — reporting a foreign element
+while staying silent about one defined next to the violation is a
+combination nobody wants, and a pair of booleans would spell it.
 
 ## What to lint
 
@@ -654,6 +709,13 @@ not name the project a rule was distilled from; see
 # (`indexmap::IndexSet`) must not be listed — its round trip keeps
 # first-occurrence order, which the suggestion would destroy.
 extra_set_types = ["::hashbrown::HashSet"]
+
+# What to do where the element has no `Ord` and no view the rule can
+# find (see "When the element is not `Ord`"). `silent` says nothing;
+# `local` reports where the element is defined in the crate being
+# linted; `all` reports foreign elements too. Defaults to `silent`,
+# because neither reporting mode can carry a suggestion.
+unorderable_elements = "silent"
 
 # Whether test code is left alone: a chain inside a `#[cfg(test)]`
 # module, a `#[test]` function, or an integration-test or benchmark
