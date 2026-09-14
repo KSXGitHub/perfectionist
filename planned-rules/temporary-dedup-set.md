@@ -1001,6 +1001,43 @@ already made for its own pending rewrite.
 The two autofix notes below apply to the tiers that carry a
 suggestion; the third emits help text only.
 
+- **Cheap ordering, required by every suggestion.** The rewrite trades
+  the set's hashes for the difference between sorting every element
+  and sorting the ones that survived, plus an equality check per
+  adjacent pair that a `HashSet` never made and a `BTreeSet` never
+  made either. The trade is sound while a comparison costs roughly
+  what the set's own work on the same value costs, which holds when
+  both walk the same fields, and fails where `cmp` does work the set
+  did not — normalising, parsing, rendering, allocating. A
+  hand-written `Ord` that formats each element before comparing turns
+  the suggestion into a regression the reader never asked for.
+
+  So a suggestion is offered only where the element's `Ord` and
+  `PartialEq` are each one of:
+
+  - **Derived.** `#[derive(Ord)]` and `#[derive(PartialEq)]` emit
+    impls carrying `#[automatically_derived]`, which the pass can read
+    off the impl, and their bodies compare the fields in declaration
+    order and nothing else. Every field's type has to qualify by this
+    same rule, under a depth cap.
+  - **A std type whose ordering is a structural comparison of the data
+    it holds** — the integers, `char`, `bool`, `String`, `str`,
+    `PathBuf`, `Path`, `OsString`, `OsStr`, and `Vec<T>`, `[T; N]`,
+    `Option<T>`, `Box<T>`, `Reverse<T>` and tuples over types that
+    qualify. These need naming rather than deriving, since
+    `impl Ord for String` is std's own hand-written code — and
+    `String` is the element the sorted-shape tier exists for.
+
+  Anything else drops to help text: a hand-written impl in the linted
+  crate, or one in a dependency. This deliberately declines to read
+  local bodies where it could, which
+  [Cheap, defined](#cheap-defined) does for a view. That search names
+  a candidate in a note, where a wrong guess costs a sentence; this
+  one applies an edit unattended, so it skews toward *expensive*
+  harder. It is also the second reason the `sort_by` family is out of
+  the sorted-shape tier: its closure is an ordering the pass cannot
+  see through at all.
+
 - **Autofix, chained form.** Fire the machine-applicable rewrite only
   where the round trip is a `let` initializer, which is where it
   occurs in practice: replace the initializer with the collect that
@@ -1069,7 +1106,9 @@ suggestion; the third emits help text only.
 - **What the diagnostic offers, and what gates it.** Naming the
   anti-pattern and writing its fix are separate questions, and the
   rule answers the second where either the measurement or the
-  surrounding code settles it; prose everywhere else.
+  surrounding code settles it; prose everywhere else. Every suggestion
+  below additionally requires the cheap-ordering condition in the
+  bullet after this one.
 
   A code suggestion, `MachineApplicable`, for the `BTreeSet` branch.
   Its output is the vector the rewrite produces, element for element
