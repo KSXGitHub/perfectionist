@@ -126,8 +126,11 @@ Hold the length and move the *difference* to the front. At 4 KiB the
 round trip falls from 0.23× to parity: every comparison had been
 walking 4100 shared bytes and now stops at the first, while the set
 still hashes all 4116 of every element. At 216 B the same swap barely
-registers, 0.29× to 0.24×, because a comparison that short is already
-dominated by the dereference in front of it.
+registers, 0.29× to 0.24×, because at half a million elements the
+dereference in front of that comparison is a cache miss into 108 MB,
+and 200 sequential bytes behind a cache miss are free. The isolation
+rows below show the same 200-odd bytes costing 16% once the collection
+is small enough that nothing misses.
 
 Now hold the prefixes distinct and move the length. From 16 B to
 216 B the round trip goes the other way, 0.69× to 0.24×, because the
@@ -138,10 +141,11 @@ So length cuts both ways and the scale decides which: it costs the
 sort cache misses across a larger heap, and it costs the set a hash
 proportional to every byte. Below a few hundred bytes the first
 dominates and the set pulls ahead; by 4 KiB the second has caught up.
-A shared prefix only ever costs the sort, and only once it is long
-enough to outrun that dereference. (The 4 KiB workloads hold 800 MB
-and vary by about a tenth run to run; their figures are medians of
-three.)
+A shared prefix only ever costs the sort. Both of those are
+half-a-million-element conclusions, and the real pools below run at a
+thousand, where the heap fits in cache and the length half inverts.
+(The 4 KiB workloads hold 800 MB and vary by about a tenth run to
+run; their figures are medians of three.)
 
 The findings that shape the rule:
 
@@ -175,9 +179,9 @@ The findings that shape the rule:
    package names, the crates.io download ranking, pnpm's lockfile keys
    and its repository's file paths — puts a thousand-item round trip
    at 0.73×–0.80×, and a million npm names at 1.09×: a real lead, but
-   not the 0.23× of a synthetic 4 KiB string. The band barely moves
-   across mean lengths of 10 B to 57 B and shared prefixes of 37% to
-   72%, which the tables below take up.
+   not the 0.23× of a synthetic 4 KiB string. None of the four carries
+   enough shared prefix to reproduce what the synthetic rows isolate,
+   which the tables below take up.
 4. **At the size real code deduplicates names, the choice is
    microseconds.** A thousand npm names — a lockfile's worth — took
    31 µs through the set against 41 µs for the suggestion. The set's
@@ -199,40 +203,70 @@ are a sample of the npm registry's name list, the crates.io download
 ranking, every `name@version(peers)` key in pnpm's own lockfile, and
 every file path in its repository; `total` items are drawn from
 `distinct` of them.
-The shared prefix is how many bytes of an entry its neighbour in
-sorted order already carries — what a comparison walks before it can
-decide; the benchmark rows below quote it as a fraction of the mean
-length:
 
-| Pool                  | entries | mean length | shared prefix (mean / median / p90) |
-|-----------------------|---------|-------------|-------------------------------------|
-| crates.io top names   | 1 000   | 10.4 B      | 4.3 / 3 / 9                         |
-| npm package names     | 200 000 | 20.0 B      | 7.3 / 5 / 14                        |
-| pnpm lockfile keys    | 2 181   | 26.4 B      | 11.0 / 9 / 23                       |
-| pnpm repo file paths  | 7 252   | 57.4 B      | 41.3 / 39 / 62                      |
+Two shared-prefix figures come with them, because only one is what a
+sort pays:
 
-| Pool (mean length, shared prefix) | total → distinct | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
-|-----------------------------------|------------------|-----------|--------------------|------------|------------------|---------------------------|
-| npm names (20 B, 37%)             | 1k → 1k          | 0.77×     | 1.67×              | 1.42×      | 1.15×            | 1.00× (41 µs)             |
-| npm names (20 B, 37%)             | 10k → 10k        | 0.69×     | 1.32×              | 1.32×      | 1.16×            | 1.00× (726 µs)            |
-| npm names (20 B, 37%)             | 100k → 100k      | 0.68×     | 1.39×              | 1.45×      | 1.22×            | 1.00× (10.3 ms)           |
-| npm names (20 B, 37%)             | 1M → 100k        | 1.09×     | 1.24×              | 2.07×      | 1.58×            | 1.00× (217 ms)            |
-| crate names (10.4 B, 42%)         | 1k → 1k          | 0.73×     | 1.65×              | 1.39×      | 1.13×            | 1.00× (41 µs)             |
-| lockfile keys (26 B, 42%)         | 1k → 1k          | 0.80×     | 1.45×              | 1.41×      | 1.17×            | 1.00× (66 µs)             |
-| lockfile keys (26 B, 42%)         | 10k → 1k         | 0.75×     | 0.84×              | 1.37×      | 1.18×            | 1.00× (932 µs)            |
-| file paths (57 B, 72%)            | 1k → 1k          | 0.80×     | 1.43×              | 1.36×      | 1.15×            | 1.00× (79 µs)             |
-| file paths (57 B, 72%)            | 10k → 1k         | 0.76×     | 0.83×              | 1.27×      | 1.11×            | 1.00× (1.2 ms)            |
+| Pool                  | entries | mean length | prefix: neighbour | prefix: random pair |
+|-----------------------|---------|-------------|-------------------|---------------------|
+| crates.io top names   | 1 000   | 10.4 B      | 4.3 B             | 0.09 B              |
+| npm package names     | 300 000 | 20.0 B      | 7.8 B             | 0.18 B              |
+| pnpm lockfile keys    | 2 181   | 26.4 B      | 11.0 B            | 0.48 B              |
+| pnpm repo file paths  | 7 252   | 57.4 B      | 41.3 B            | 10.30 B             |
 
-At a thousand items the four real pools — spanning 10 B to 57 B of
-mean length and 37% to 72% shared prefix — land between 0.73× and
-0.80×. The synthetic rows above span 0.23× to 0.97×, ten times the
-spread, because each is built to isolate one variable, and neither
-extreme occurs alone in a real pool. Entries that are long are long
-because they share a prefix: a file path's 57 bytes are 41 bytes of
-directory. So the effect that favours the set and the effect that
-favours the sort arrive together and largely cancel, and what is left
-is the dereference, which every pool pays alike. The synthetic
-extremes bracket real data rather than describe it.
+The neighbour figure is how much an entry shares with the one beside
+it in sorted order, and it is the one that comes to hand: pnpm's paths
+share 41 of their 57 bytes, so a comparison sounds expensive. But a
+comparison sort spends most of its comparisons on pairs that are far
+apart, and shared prefixes in real data are local — one directory, one
+`@types/` scope. Drawn at random from the same pool, two paths share
+10 bytes and two package names under half of one. The neighbour figure
+overstates what the sort walks by 40× to 80×, so everything below
+quotes the random-pair figure.
+
+| Pool (mean length)   | total → distinct | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
+|----------------------|------------------|-----------|--------------------|------------|------------------|---------------------------|
+| npm names (20 B)     | 1k → 1k          | 0.77×     | 1.67×              | 1.42×      | 1.15×            | 1.00× (41 µs)             |
+| npm names (20 B)     | 10k → 10k        | 0.69×     | 1.32×              | 1.32×      | 1.16×            | 1.00× (726 µs)            |
+| npm names (20 B)     | 100k → 100k      | 0.68×     | 1.39×              | 1.45×      | 1.22×            | 1.00× (10.3 ms)           |
+| npm names (20 B)     | 1M → 100k        | 1.09×     | 1.24×              | 2.07×      | 1.58×            | 1.00× (217 ms)            |
+| crate names (10.4 B) | 1k → 1k          | 0.73×     | 1.65×              | 1.39×      | 1.13×            | 1.00× (41 µs)             |
+| lockfile keys (26 B) | 1k → 1k          | 0.80×     | 1.45×              | 1.41×      | 1.17×            | 1.00× (66 µs)             |
+| lockfile keys (26 B) | 10k → 1k         | 0.75×     | 0.84×              | 1.37×      | 1.18×            | 1.00× (932 µs)            |
+| file paths (57 B)    | 1k → 1k          | 0.80×     | 1.43×              | 1.36×      | 1.15×            | 1.00× (79 µs)             |
+| file paths (57 B)    | 10k → 1k         | 0.76×     | 0.83×              | 1.27×      | 1.11×            | 1.00× (1.2 ms)            |
+
+At a thousand items the four pools land between 0.73× and 0.80×
+against the 0.23×–0.97× the synthetic rows span. To find out why the
+band is so flat, hold a thousand `String`s and move one variable at a
+time — absolute times here, because the question is which side of the
+comparison moves:
+
+| 1 000 × `String` | random-pair prefix | `HashSet` | `sort_unstable` + `dedup` | ratio |
+|------------------|--------------------|-----------|---------------------------|-------|
+| 20 B             | 0.03 B             | 39.7 µs   | 63.8 µs                   | 0.62× |
+| 20 B             | 16.03 B            | 39.8 µs   | 63.4 µs                   | 0.63× |
+| 57 B             | 0.03 B             | 51.1 µs   | 62.6 µs                   | 0.82× |
+| 57 B             | 41.03 B            | 51.5 µs   | 72.4 µs                   | 0.71× |
+
+The two bill different parties. A shared prefix never touches the set
+— 39.8 µs against 39.7, 51.5 against 51.1, because a hash reads every
+byte wherever two entries diverge — and taxes the sort, but only once
+there is enough of it: 16 bytes cost nothing (63.4 µs against 63.8),
+41 bytes cost 16% (72.4 against 62.6). Content length does the
+reverse. At this size it leaves the sort alone — 62.6 µs on 57-byte
+entries against 63.8 on 20-byte ones, since comparisons still decide
+in the first byte or two and a thousand entries stay in cache — and
+taxes the set 29%, 39.7 µs to 51.1, because the hash reads all of it.
+
+That accounts for the real pools. They carry length, which costs the
+set, and no random-pair prefix to hand back, so the round trip's lead
+narrows as they lengthen: 0.73× at 10 B to 0.80× at 57 B. pnpm's file
+paths are the one pool with a prefix worth anything, and 10 bytes of
+it puts them at 0.80×, between the 0.82× of none and the 0.71× of 41.
+The 500k rows above invert the length half — past cache the sort's
+pointer chase outgrows the hash — so neither table carries to the
+other's scale.
 
 The rows where duplicates dominate narrow the comparison that matters.
 Appending the `sort` roughly doubles the round trip while every
@@ -291,17 +325,18 @@ bytes for a `String` whatever it holds. The pools' figure is
 `str::len`, the heap bytes behind that pointer. The applicability gate
 reads the first and never the second.
 
-Nor does it need to, because the length is not what the work scales
-with. `str` orders as `as_bytes().cmp(..)`, lexicographically, so a
-comparison stops at the first differing byte — and two random package
-names differ almost immediately, which makes each comparison a few
-bytes of memcmp behind one dereference into a random heap location.
-The dereference is the cost, not the bytes: across the four real pools
-a thousand-item round trip moves only from 0.73× to 0.80× while the
-mean entry grows from 10.4 B to 57 B. Length only asserts itself where
-prefixes are *shared* and the comparison has to walk them, which is
-what the 216 B and 4 KiB rows are built to show — 0.29× and 0.23×,
-against 0.69× for distinct 16-byte strings.
+Nor does it need to, because the content length is not what a
+comparison scales with. `str` orders as `as_bytes().cmp(..)`,
+lexicographically, so a comparison stops at the first differing byte,
+and two entries drawn at random from any of the name pools share under
+half a byte. What is left is one dereference into a random heap
+location, and at a thousand elements that dereference lands in cache —
+which is why the sort takes the same 63 µs on 20-byte and 57-byte
+entries. Content length bills the set instead, through the hash. The
+sort only starts paying for bytes where a prefix is shared across
+distant pairs (41 bytes of it cost it 16%) or where the heap outgrows
+cache, which is what the 216 B and 4 KiB rows are built to show —
+0.29× and 0.23×, against 0.69× for distinct 16-byte strings.
 
 Equality behaves differently again, and it is the set's tool rather
 than the sort's. `HashSet` confirms a hash match with `==`, and slice
