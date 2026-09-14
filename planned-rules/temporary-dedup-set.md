@@ -603,7 +603,11 @@ fn sort_unique(names: Vec<String>) -> Vec<String> {
 
 The set contributes nothing here at all: the arbitrary order it
 produced is overwritten on the next line, and the duplicates it
-dropped are the ones `dedup` drops. The doc comment names the
+dropped are the ones `dedup` drops. The vector, by contrast, is
+wanted: all three callers need a sequence — two write it to a manifest
+and one hands it to `MultiSelect::items(&choices)`, whose displayed
+order a user reads — which is what makes the sort load-bearing and the
+set the only thing here that is not. The doc comment names the
 JavaScript function the code was ported from, which is where the shape
 comes from — `[...new Set(xs)].sort()` is the right idiom in a
 language whose `Set` keeps insertion order and whose arrays have no
@@ -796,6 +800,23 @@ already made for its own pending rewrite.
   [When the element is not `Ord`](#when-the-element-is-not-ord) is
   where that route, and the spellings of it that do not compile, are
   written down.
+- **Ask whether the vector earns its place.** The rewrite assumes the
+  sequence at the end was wanted. That assumption is checkable against
+  the landing binding's own uses — the scan the bound form already
+  performs — and it decides which of two fixes is right. Where every
+  use of the landing vector is a walk and nothing reads the order, the
+  better fix deletes the *vector*: the set was fine and the `collect`
+  after it is the waste. Where the order is read — an index, a slice
+  handed to an API, a rendered list, a serialised field — the sequence
+  is load-bearing and the suggestion stands as written.
+
+  Two things keep this a note rather than a second autofix. Walking a
+  `HashSet` is the nondeterminism this rule exists to remove, so
+  "keep the set" is right only where nothing downstream observes the
+  order, which is the judgement the `#[expect]` cases above already
+  ask for. And a landing vector that escapes its body — returned,
+  stored in a field — has its uses at call sites the pass cannot see,
+  so the sort is the suggestion that travels.
 - **Dropping a needless clone.** Where the walk is `iter().cloned()`
   or `iter().copied()`, the rewrite drops it: the set was about to be
   dropped, so the elements can be moved. Say so in the diagnostic
