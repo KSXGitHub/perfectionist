@@ -734,14 +734,6 @@ extra_set_types = ["::hashbrown::HashSet"]
 # the reader owns the type that withheld the order and not much
 # elsewhere.
 unorderable_elements = "local"
-
-# Whether test code is left alone: a chain inside a `#[cfg(test)]`
-# module, a `#[test]` function, or an integration-test or benchmark
-# target. Defaults to `false`, so a test is held to the same shape as
-# the code it exercises — a test fixture is read as an example of how
-# the project writes Rust, and the sizes it runs at are the sizes
-# where the vector form is also the faster one.
-exempt_tests = false
 ```
 
 The *form* of the suggestion — the statements, or the
@@ -835,10 +827,6 @@ already made for its own pending rewrite.
   than like its own size, and is held back anyway, because a `cmp`
   impl can read whatever it likes.
 
-- **Test-code exemption.** `exempt_tests` reaches the shared helpers
-  per [Recognising test-exclusive
-  code](./IMPLEMENTATION_CONVENTIONS.md#recognising-test-exclusive-code)
-  rather than matching `cfg(test)` itself.
 
 ### Difficulty
 
