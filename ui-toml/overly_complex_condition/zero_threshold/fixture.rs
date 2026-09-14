@@ -1,5 +1,5 @@
 // edition:2024
-#![feature(register_tool)]
+#![feature(register_tool, postfix_match)]
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
@@ -169,6 +169,29 @@ macro_rules! both {
 // on the condition never sees it.
 fn user_head_macro_inside(first: bool, second: bool, third: bool) {
     if first && both!(second, third) {
+        work();
+    }
+}
+
+// Bad: 1 operator — a postfix `match` is as author-written as any
+// other, so its arm bodies are not part of the condition either.
+fn nested_postfix_match(first: bool, second: bool, third: bool, value: u8) {
+    if first
+        && value.match {
+            0 => second && third,
+            _ => false,
+        }
+    {
+        work();
+    }
+}
+
+// Bad: 2 operators — the `&&` the author wrote in the head, and the
+// one they wrote inside the macro's arguments. An argument keeps its
+// call-site span, so it is the author's however the macro uses it; the
+// expansion's own `&&` is still not counted.
+fn macro_argument_operators(first: bool, second: bool, third: bool, fourth: bool) {
+    if first && both!(second && third, fourth) {
         work();
     }
 }

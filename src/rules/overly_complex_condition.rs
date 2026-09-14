@@ -304,7 +304,13 @@ struct OperatorCounter {
 
 impl<'tcx> Visitor<'tcx> for OperatorCounter {
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
+        // The node is the macro's, but an argument expression keeps its
+        // call-site span, so the subtree can still hold operators the
+        // author wrote. Step over this node without counting it rather
+        // than pruning what hangs below it, as
+        // `excessive_cognitive_complexity` does.
         if span_is_macro_generated(expr.span) {
+            intravisit::walk_expr(self, expr);
             return;
         }
         match expr.kind {
@@ -315,10 +321,11 @@ impl<'tcx> Visitor<'tcx> for OperatorCounter {
             // and `check_arm` reach separately -- without this, the
             // `&&` in `if a && (if b && c { d } else { e })` is counted
             // once here and again there. Only an author-written
-            // `match` stops the walk: `?` and `.await` also lower to
-            // one, and stepping over those would skip the expression
-            // they wrap.
-            ExprKind::If(..) | ExprKind::Match(_, _, MatchSource::Normal) => {}
+            // `match`, postfix or not, stops the walk: `?` and `.await`
+            // also lower to one, and stepping over those would skip the
+            // expression they wrap.
+            ExprKind::If(..)
+            | ExprKind::Match(_, _, MatchSource::Normal | MatchSource::Postfix) => {}
             ExprKind::Binary(op, ..) if matches!(op.node, BinOpKind::And | BinOpKind::Or) => {
                 self.count += 1;
                 intravisit::walk_expr(self, expr);
