@@ -168,13 +168,13 @@ Names, at the lengths and sizes they actually occur in — npm names
 sampled from the full registry list, crate names from the download
 ranking, `total` items drawn from `distinct` of them:
 
-| Pool (mean length)   | total → distinct | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
-|----------------------|------------------|-----------|--------------------|------------|------------------|---------------------------|
-| npm names (20 B)     | 1k → 1k          | 0.77×     | 1.67×              | 1.42×      | 1.15×            | 1.00× (41 µs)             |
-| npm names (20 B)     | 10k → 10k        | 0.69×     | 1.32×              | 1.32×      | 1.16×            | 1.00× (726 µs)            |
-| npm names (20 B)     | 100k → 100k      | 0.68×     | 1.39×              | 1.45×      | 1.22×            | 1.00× (10.3 ms)           |
-| npm names (20 B)     | 1M → 100k        | 1.09×     | 1.24×              | 2.07×      | 1.58×            | 1.00× (217 ms)            |
-| crate names (10.4 B) | 1k → 1k          | 0.73×     | 1.65×              | 1.39×      | 1.13×            | 1.00× (41 µs)             |
+| Pool (mean name length) | total → distinct | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
+|-------------------------|------------------|-----------|--------------------|------------|------------------|---------------------------|
+| npm names (20 B)        | 1k → 1k          | 0.77×     | 1.67×              | 1.42×      | 1.15×            | 1.00× (41 µs)             |
+| npm names (20 B)        | 10k → 10k        | 0.69×     | 1.32×              | 1.32×      | 1.16×            | 1.00× (726 µs)            |
+| npm names (20 B)        | 100k → 100k      | 0.68×     | 1.39×              | 1.45×      | 1.22×            | 1.00× (10.3 ms)           |
+| npm names (20 B)        | 1M → 100k        | 1.09×     | 1.24×              | 2.07×      | 1.58×            | 1.00× (217 ms)            |
+| crate names (10.4 B)    | 1k → 1k          | 0.73×     | 1.65×              | 1.39×      | 1.13×            | 1.00× (41 µs)             |
 
 And at the sizes most code deduplicates a name list at all — a
 package's dependencies, a workspace's members, a command's arguments:
@@ -196,7 +196,7 @@ Those tables are all `String`, though, and a string is the element
 that flatters the set most: every comparison follows a pointer. Across
 element types:
 
-| Element (size)                    |    10 |   200 | 1 000 | 100 000 |
+| Element (`size_of`)               |    10 |   200 | 1 000 | 100 000 |
 |-----------------------------------|-------|-------|-------|---------|
 | `u32` (4 B)                       | 5.59× | 3.18× | 2.54× | 1.40×   |
 | `u64` (8 B)                       | 7.72× | 3.26× | 2.66× | 1.51×   |
@@ -218,6 +218,15 @@ comparison is far dearer than their hash — one reached through a
 pointer (`String`, and a newtype over one) or wide inline bytes (a
 32-byte digest) — and even there it arrives only past a thousand
 elements.
+
+Those two figures are different measurements, and only one of them
+moves the result. `size_of` is the inline width the applicability gate
+reads; the pools' mean is the heap content behind a pointer, which the
+gate never looks at. Nor does it need to: doubling the content from
+crate names to npm names, 10.4 B to 20 B, moved the round trip from
+0.73× to 0.77× at a thousand items. What separates the families is the
+indirection, not the length — and length only asserts itself in the
+hundreds of bytes, where the 216 B and 4 KiB rows sit.
 
 A wrapper costs nothing either way: `Id(u64)` — the shape a
 `derive_more::From` / `Display` newtype has, since the comparison
@@ -723,8 +732,18 @@ build approval, metadata paths, git sources. That is the normal scale
 for this kind of code: across pnpm's own workspace a package declares
 a median of 1 and a p90 of 17 direct dependencies, its lockfile
 carries 218 workspace importers and 1700 packages, and the largest
-single manifest declares 110. Every one of those numbers sits in the
-range where the vector form is also the faster one.
+single manifest declares 110.
+
+That matters more than it looks, because the band where the round trip
+wins needs *two* conditions and this consumer has only one of them.
+Its element type is the one that favours the set: an npm package name
+averages 20 bytes of text and a `String` compares through a pointer,
+which is the whole of what the string rows measure. But the band also
+needs about a thousand items, and every site the rule fires on here
+handles tens. At those sizes the round trip is 1.2× to 2.2× slower, so
+the advice and the faster code coincide — by size, not by type. A
+crate that deduplicated the whole 1700-package lockfile would land at
+roughly 0.8× instead, and would owe itself the `#[expect]`.
 
 Everything in this section is contributor-facing. A shipped doc — the
 `declare_tool_lint!` rustdoc and the catalogue generated from it — may
