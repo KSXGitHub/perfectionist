@@ -33,12 +33,13 @@ unique.sort_unstable();
 unique.dedup();
 ```
 
-`sort_unstable` rather than `sort` because the round trip being
-replaced has no input order to preserve: a `HashSet` hands back an
+`sort_unstable` rather than `sort`, where the rule introduces the sort
+at all, because the round trip being replaced has no input order to
+preserve: a `HashSet` hands back an
 arbitrary one, and a `BTreeSet` has already collapsed equal elements.
 Stability would guarantee something about an order the flagged code
 never had — see the implementation notes for the measurements and the
-one element type that argues the other way.
+two cases that argue the other way.
 
 The functional form says the same thing in one expression, through
 [`into-sorted`](https://docs.rs/into-sorted) and
@@ -68,7 +69,10 @@ uniformly:
 The `BTreeSet` row is the stronger case: the vector it produces is
 already the vector `sort_unstable` + `dedup` produces, so the rewrite
 changes nothing a caller can observe. The `HashSet` row trades an
-order that varies per run for a sorted one.
+order that varies per run for a sorted one. Either row reuses a sort
+the code already wrote where one follows the landing, rather than
+introducing its own; the implementation notes have the scan that
+decides.
 
 ## Why restrict this?
 
@@ -146,8 +150,8 @@ still hashes all 4116 of every element. At 216 B the same swap barely
 registers, 0.29× to 0.24×, because at half a million elements the
 dereference in front of that comparison is a cache miss into 108 MB,
 and 200 sequential bytes behind a cache miss are free. The isolation
-rows below show the same 200-odd bytes costing 16% once the collection
-is small enough that nothing misses.
+rows below show a 41-byte prefix costing 16% once the collection is
+small enough that nothing misses.
 
 Now hold the prefixes distinct and move the length. From 16 B to
 216 B the round trip goes the other way, 0.69× to 0.24×, because the
@@ -158,9 +162,10 @@ So length cuts both ways and the scale decides which: it costs the
 sort cache misses across a larger heap, and it costs the set a hash
 proportional to every byte. Below a few hundred bytes the first
 dominates and the set pulls ahead; by 4 KiB the second has caught up.
-A shared prefix only ever costs the sort. Both of those are
-half-a-million-element conclusions, and the real pools below run at a
-thousand, where the heap fits in cache and the length half inverts.
+A shared prefix only ever costs the sort. The length half of that is a
+half-a-million-element conclusion: the real pools below run at a
+thousand, where the heap fits in cache and it inverts. The prefix half
+holds at either scale.
 (The 4 KiB workloads hold 800 MB and vary by about a tenth run to
 run; their figures are medians of three.)
 
@@ -171,12 +176,12 @@ The findings that shape the rule:
    below — never faster than the suggestion in any row of any table —
    allocated more (9.7 MiB against nothing on the 1M-`u64` case), and
    produced the identical sorted vector. There is no workload in which
-   to prefer it, which is why the `BTreeSet` branch is the
-   machine-applicable one. "Identical" rests on `Ord` agreeing with
+   to prefer it. "Identical" rests on `Ord` agreeing with
    `Eq`, which the `Ord` trait requires: a `BTreeSet` decides
    duplicates by `cmp`, `dedup` decides them by `==`, so a type whose
    `cmp` returns `Equal` for values that are not `==` would keep more
-   elements after the rewrite than before.
+   elements after the rewrite than before. It is also why the
+   `BTreeSet` branch carries a suggestion whatever its element.
    `clippy::derive_ord_xor_partial_ord` and
    `clippy::derived_hash_with_manual_eq` police that contract; this
    rule assumes it, and says so rather than re-deriving it.
@@ -238,8 +243,8 @@ comparison sort spends most of its comparisons on pairs that are far
 apart, and shared prefixes in real data are local — one directory, one
 `@types/` scope. Drawn at random from the same pool, two paths share
 10 bytes and two package names under half of one. The neighbour figure
-overstates what the sort walks by 40× to 80×, so everything below
-quotes the random-pair figure.
+overstates what the sort walks by 4× on the paths and by 23× to 48× on
+the other three, so everything below quotes the random-pair figure.
 
 | Pool (mean length)   | total → distinct | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
 |----------------------|------------------|-----------|--------------------|------------|------------------|---------------------------|
@@ -254,7 +259,7 @@ quotes the random-pair figure.
 | file paths (57 B)    | 10k → 1k         | 0.76×     | 0.83×              | 1.27×      | 1.11×            | 1.00× (1.2 ms)            |
 
 At a thousand items the four pools land between 0.73× and 0.80×
-against the 0.23×–0.97× the synthetic rows span. To find out why the
+against the 0.23×–0.97× the synthetic string rows span. To find out why the
 band is so flat, hold a thousand `String`s and move one variable at a
 time — absolute times here, because the question is which side of the
 comparison moves:
@@ -277,27 +282,35 @@ in the first byte or two and a thousand entries stay in cache — and
 taxes the set 29%, 39.7 µs to 51.1, because the hash reads all of it.
 
 That accounts for the real pools. They carry length, which costs the
-set, and no random-pair prefix to hand back, so the round trip's lead
-narrows as they lengthen: 0.73× at 10 B to 0.80× at 57 B. pnpm's file
-paths are the one pool with a prefix worth anything, and 10 bytes of
-it puts them at 0.80×, between the 0.82× of none and the 0.71× of 41.
+set, and too little random-pair prefix to hand any of it back, so the
+round trip's lead narrows as they lengthen: 0.73× at 10 B to 0.80× at
+57 B. pnpm's file paths are the one pool with a prefix worth anything,
+and 10 bytes of it puts them at 0.80×, between the 0.82× of none and
+the 0.71× of 41.
 The 500k rows above invert the length half — past cache the sort's
 pointer chase outgrows the hash — so neither table carries to the
 other's scale.
+
+The rows where duplicates dominate narrow the comparison that matters.
+Appending the `sort` roughly doubles the round trip while every
+element is distinct, because it sorts everything the set held; at ten
+duplicates per entry it adds a tenth, because it sorts only what
+survived. A round trip whose order is observed is dearest exactly when
+it dedupes least.
 
 One thing every pool still confounds: a `String`'s bytes live behind a
 pointer, so both its width and its indirection are candidates for the
 set's lead. Hold the content at twenty distinct bytes and move only
 where those bytes live.
 
-| 20 B values, all distinct | element    | `sort_unstable` + `dedup` | `HashSet` round trip | ratio |
-|---------------------------|------------|---------------------------|----------------------|-------|
-| 1 000                     | `[u8; 20]` | 48.6 µs                   | 29.0 µs              | 0.60× |
-| 1 000                     | `String`   | 49.9 µs                   | 27.9 µs              | 0.56× |
-| 100 000                   | `[u8; 20]` | 8.2 ms                    | 3.9 ms               | 0.48× |
-| 100 000                   | `String`   | 10.0 ms                   | 4.6 ms               | 0.46× |
-| 1 000 000                 | `[u8; 20]` | 97.0 ms                   | 140.4 ms             | 1.45× |
-| 1 000 000                 | `String`   | 338.1 ms                  | 155.5 ms             | 0.46× |
+| 20 B values, all distinct | element    | `HashSet` round trip | `sort_unstable` + `dedup` | ratio |
+|---------------------------|------------|----------------------|---------------------------|-------|
+| 1 000                     | `[u8; 20]` | 29.0 µs              | 48.6 µs                   | 0.60× |
+| 1 000                     | `String`   | 27.9 µs              | 49.9 µs                   | 0.56× |
+| 100 000                   | `[u8; 20]` | 3.9 ms               | 8.2 ms                    | 0.48× |
+| 100 000                   | `String`   | 4.6 ms               | 10.0 ms                   | 0.46× |
+| 1 000 000                 | `[u8; 20]` | 140.4 ms             | 97.0 ms                   | 1.45× |
+| 1 000 000                 | `String`   | 155.5 ms             | 338.1 ms                  | 0.46× |
 
 At a thousand elements the pointer costs the sort 3%: the two sorts
 are the same sort. Nothing at that scale is explained by chasing it,
@@ -315,14 +328,7 @@ So the two mechanisms trade places. Below cache the sort pays for the
 bytes it walks and the indirection is free; past cache it pays for the
 indirection and the bytes are free. Only the second regime makes the
 round trip defensible, which is why the applicability gate turns on
-indirection and not on length.
-
-The rows where duplicates dominate narrow the comparison that matters.
-Appending the `sort` roughly doubles the round trip while every
-element is distinct, because it sorts everything the set held; at ten
-duplicates per entry it adds a tenth, because it sorts only what
-survived. A round trip whose order is observed is dearest exactly when
-it dedupes least.
+indirection and not on content length.
 
 And at the sizes most code deduplicates a name list at all — a
 package's dependencies, a workspace's members, a command's arguments:
@@ -385,8 +391,9 @@ comparison costs 3% at this size, as the inline rows show. Content
 length bills the set instead, through the hash. The
 sort only starts paying for bytes where a prefix is shared across
 distant pairs (41 bytes of it cost it 16%) or where the heap outgrows
-cache, which is what the 216 B and 4 KiB rows are built to show —
-0.29× and 0.23×, against 0.69× for distinct 16-byte strings.
+cache, which is what the distinct-prefix rows are built to show —
+0.24× at 216 B against 0.69× at 16 B, the sort losing ground to a
+larger heap and nothing else.
 
 Equality behaves differently again, and it is the set's tool rather
 than the sort's. `HashSet` confirms a hash match with `==`, and slice
@@ -435,10 +442,11 @@ the suppression is the answer; the rest it never reaches at all.
   costs far more than a hash — a `String` or `PathBuf`, a newtype over
   one, a wide digest — and only from about 10³ elements up, where it
   runs at 0.63×–0.81× of the suggestion. For a primitive, a newtype
-  over one, a derived
-  struct or enum, or an impl that forwards to one key field, there is
-  no such band at all: the round trip measured slower at every size,
-  by five to nine times on ten elements. The honest remedy even inside
+  over one, or a derived struct or enum, there is no such band at all:
+  the round trip measured slower at every size, by five to nine times
+  on ten elements. An impl that forwards to one small key field
+  reaches the edge of one and no further — 0.92× at a hundred
+  thousand, 1.81× and worse below it. The honest remedy even inside
   the band is usually not to sort at all but to stop discarding the
   set: keep it, name it, and let the code that consumes it say it
   wants a set.
@@ -1115,7 +1123,7 @@ suggestion; the third emits help text only.
 - **What the diagnostic offers, and what gates it.** Naming the
   anti-pattern and writing its fix are separate questions, and the
   rule answers the second where either the measurement or the
-  surrounding code settles it; prose everywhere else. Every suggestion
+  surrounding code settles it; help text everywhere else. Every suggestion
   below additionally requires the cheap-ordering condition in the
   bullet after this one.
 
@@ -1242,6 +1250,12 @@ of its own.
   where a wrong implementation false-positives: a `contains` call, a
   borrow escaping into a closure, or a second walk each have to
   disqualify the set.
+- **The forward scan and the cheap-ordering check** decide together
+  whether a suggestion is written at all. One reads the statement
+  after the landing; the other reads the element's `Ord` and
+  `PartialEq` impls for a derive or a listed std type. Neither is
+  large, and both gate every branch, so they come before the layer
+  below rather than after it.
 - **The applicability gate** needs `cx.layout_of` and an indirection
   walk over the element to decide which `HashSet` rewrites may be
   applied unattended.
@@ -1251,17 +1265,22 @@ of its own.
   methods — memoised per type, and worth writing behind its own tests
   before any of it reaches a diagnostic.
 
-A conservative first cut ships the chained form with the plain pair
-and `unorderable_elements` absent, which is a rule with no search in
-it at all.
+A conservative first cut ships the chained form with
+`unorderable_elements` absent, and suggesting at all means carrying
+the forward scan and the cheap-ordering check with it — without the
+first a suggestion is the double sort, without the second a
+pessimisation. No view search, which is the layer that costs the
+most.
 
 ## Default state
 
-Active by default. The trigger is narrow, the `Ord` gate holds back
-every suggestion the rule cannot make — reporting the shape without
-one only where the reader owns the type, per `unorderable_elements` —
-and the exceptions that remain are performance trade-offs a crate
-states once with `#[expect]`. A crate that deduplicates large string
+Active by default. The trigger is narrow, and four gates hold back
+every suggestion the rule cannot stand behind: the `Ord` bound, the
+forward scan, the cheap-ordering check and the element gate. Where it
+is the missing `Ord` that withheld one, the shape is reported without
+a suggestion only when the reader owns the type, per
+`unorderable_elements`. The exceptions that remain are performance
+trade-offs a crate states once with `#[expect]`. A crate that deduplicates large string
 collections whose order nothing reads — where the measurement favours
 the set — is the crate that turns the rule off in
 `[perfectionist].disable`.
@@ -1275,8 +1294,10 @@ the set — is the crate that turns the rule off in
   is spelled, which is why it can cover the types Clippy's lint
   cannot.
 - **`clippy::stable_sort_primitive`** wants `sort_unstable` wherever
-  stability cannot matter, which is what this rule's suggestion emits,
-  so the two never disagree. `clippy::derive_ord_xor_partial_ord` and
+  stability cannot matter, which is what this rule introduces, so it
+  never adds a violation of that lint. Where the forward scan found a
+  `sort()` the suggestion re-emits it, and clippy's opinion of that
+  call is the one it already held before the rewrite. `clippy::derive_ord_xor_partial_ord` and
   `clippy::derived_hash_with_manual_eq` police the `Ord`/`Eq`
   agreement that the `BTreeSet` branch's rewrite assumes.
 - **`perfectionist::overly_long_method_chain`** measures length; this
