@@ -82,6 +82,14 @@ enabling in a given crate. For most element types, though, the
 preference is free at every size measured: the vector form is also the
 quicker one.
 
+The case against the shape is not the clock, and the two are worth
+keeping apart. A set that exists for one expression asks for
+deduplication by building a container whose whole contract — members,
+no order — is thrown away on the next line; where that is the wrong
+tool it is the wrong tool whether or not the rewrite would run
+faster. What the measurements decide is what the rule may *suggest*,
+not what it may flag.
+
 The project prefers the vector because:
 
 - **The vector's order is reproducible; the set's is not.** A
@@ -417,7 +425,8 @@ the suppression is the answer; the rest it never reaches at all.
   order is genuinely unused.** The set leads only where a comparison
   costs far more than a hash — a `String` or `PathBuf`, a newtype over
   one, a wide digest — and only from about 10³ elements up, where it
-  runs at 0.63×–0.81× of the suggestion. For a primitive, a newtype over one, a derived
+  runs at 0.63×–0.81× of the suggestion. For a primitive, a newtype
+  over one, a derived
   struct or enum, or an impl that forwards to one key field, there is
   no such band at all: the round trip measured slower at every size,
   by five to nine times on ten elements. The honest remedy even inside
@@ -946,6 +955,9 @@ already made for its own pending rewrite.
 
 ## Implementation notes
 
+The two autofix notes below apply to the tiers that carry a
+suggestion; the third emits help text only.
+
 - **Autofix, chained form.** Fire the machine-applicable rewrite only
   where the round trip is a `let` initializer, which is where it
   occurs in practice: replace the initializer with the collect that
@@ -1010,18 +1022,19 @@ already made for its own pending rewrite.
   or `iter().copied()`, the rewrite drops it: the set was about to be
   dropped, so the elements can be moved. Say so in the diagnostic
   rather than silently changing the chain.
-- **Applicability, and what gates it.** Both branches produce the same
-  multiset under the trait contracts the rule already assumes, so
-  neither is ever *wrong*; what differs is how much room the
-  measurement leaves for a human to disagree.
+- **What the diagnostic offers, and what gates it.** Naming the
+  anti-pattern and writing its fix are separate questions, and the
+  rule answers the second only where the measurement answers it.
+  A code suggestion where the winner is clear at every size and every
+  duplicate ratio; prose everywhere else.
 
-  `MachineApplicable` for the `BTreeSet` branch. Its output is the
-  vector the rewrite produces, element for element and order for
-  order, and it measured slower than the suggestion in every row of
+  A code suggestion, `MachineApplicable`, for the `BTreeSet` branch.
+  Its output is the vector the rewrite produces, element for element
+  and order for order, and it measured slower than the suggestion in every row of
   every table (1.34×–3.85× on the element-type sweep).
 
-  `MachineApplicable` for the `HashSet` branch too, but only where
-  the element makes the answer decisive: **no indirection, and a
+  A code suggestion, `MachineApplicable`, for the `HashSet` branch
+  too, but only where the element makes the answer decisive: **no indirection, and a
   layout of at most 16 bytes** (`cx.layout_of`, with a reference, a
   raw pointer or a heap-owning field disqualifying). Both clauses
   carry weight, and each catches what the other misses. Size alone
@@ -1038,16 +1051,33 @@ already made for its own pending rewrite.
   being replaced, which is what makes the rewrite safe to apply
   unattended here.
 
-  `MaybeIncorrect` for every other `HashSet` element — a `String`, a
-  `PathBuf`, a newtype over one, a 32-byte digest. The enum name
-  undersells it: the suggestion is valid Rust and correct, but past
-  a thousand elements the rewrite runs at 1.2×–1.6× of the round trip
-  it replaces, and a trade-off is a call for a human rather than for
-  `cargo fix`. The 16-byte line is
-  deliberately conservative at one edge: a wide struct whose
-  comparison forwards to one small key behaves like that key rather
-  than like its own size, and is held back anyway, because a `cmp`
-  impl can read whatever it likes.
+  **No code suggestion for every other `HashSet` element** — a
+  `String`, a `PathBuf`, a newtype over one, a 32-byte digest.
+  `sort_unstable` + `dedup` compiles there and is correct there, so
+  this is not `MaybeIncorrect`; it is that the rewrite is not reliably
+  an improvement, and a lint that emits one anyway is guessing with
+  the reader's code. With the order unused the round trip measured
+  0.68×–0.80× on every real pool, so the rewrite is a pessimisation as
+  often as not. Even where a `sort` follows the landing — the one
+  shape in which the set demonstrably contributes nothing, its order
+  overwritten and its deduplication repeated — the answer still turns
+  on the duplicate ratio the pass cannot see: the same code measured
+  1.67× at a thousand distinct entries and 0.83× at ten duplicates
+  each. The 16-byte line is deliberately conservative at one edge: a
+  wide struct whose comparison forwards to one small key behaves like
+  that key rather than like its own size, and is held back anyway,
+  because a `cmp` impl can read whatever it likes.
+
+  What the diagnostic carries instead is the shape and the three ways
+  out, for a reader who has the context the pass lacks. Keep the set,
+  where nothing downstream needs a sequence — the remedy
+  [When the set is the right tool](#when-the-set-is-the-right-tool)
+  reaches for first. Sort, where the order is load-bearing, and put
+  the sort where its cost is visible. Or `#[expect]` it, where the
+  order is genuinely unused and the input is large enough for the
+  round trip to pay. Any of the three is a line's work for someone who
+  knows which applies, and none of them is a guess `cargo fix` could
+  make.
 
 
 ### Difficulty
