@@ -129,62 +129,54 @@ The project prefers the vector because:
 ## What the measurements show
 
 Every cell is that subject's time as a multiple of `sort_unstable` +
-`dedup`, the pair the rule suggests, so 1.00× is the code the rule
-would have written and anything above it is slower than that.
+`dedup`, the pair the rule suggests, so 1.0× is the code the rule
+would have written and anything above it is slower than that. The
+ratios repeat to about a tenth below a thousand elements and a third
+above it, so they are quoted to two figures and read as bands: what
+holds up across runs is the orderings and the crossings, never a
+third digit.
 
-| Workload (input → unique)                  | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
-|--------------------------------------------|-----------|--------------------|------------|------------------|---------------------------|
-| 1M `u64`, all distinct                     | 2.87×     | 4.35×              | 1.83×      | 1.39×            | 1.00× (18.7 ms)           |
-| 1M `u64`, 1% distinct                      | 2.92×     | 2.94×              | 1.31×      | 1.31×            | 1.00× (11.1 ms)           |
-| 500k `String` (16 B), all distinct         | 0.69×     | 2.54×              | 1.94×      | 1.65×            | 1.00× (77 ms)             |
-| 500k `String` (216 B, 200 B shared prefix) | 0.29×     | 1.71×              | 1.30×      | 1.28×            | 1.00× (308 ms)            |
-| 200k `String` (4 KiB, shared prefix)       | 0.23×     | 1.20×              | 1.00×      | 0.98×            | 1.00× (1034 ms)           |
-| 500k `String` (216 B, distinct prefix)     | 0.24×     | 2.04×              | 1.42×      | 1.42×            | 1.00× (331 ms)            |
-| 200k `String` (4 KiB, distinct prefix)     | 0.97×     | 2.43×              | 1.18×      | 1.13×            | 1.00× (278 ms)            |
+| Workload (input → unique)              | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort_unstable` + `dedup` |
+|----------------------------------------|-----------|--------------------|------------|---------------------------|
+| 1M `u64`, all distinct                 | 2.4×      | 3.6×               | 1.7×       | 1.0× (18 ms)              |
+| 1M `u64`, 1% distinct                  | 2.0×      | 2.1×               | 1.2×       | 1.0× (12 ms)              |
+| 500k `String` (16 B)                   | 0.65×     | 2.4×               | 1.5×       | 1.0× (75 ms)              |
+| 500k `String` (216 B, shared prefix)   | 0.35×     | 1.5×               | 1.0×       | 1.0× (285 ms)             |
+| 500k `String` (216 B, distinct prefix) | 0.68×     | 2.4×               | 1.8×       | 1.0× (123 ms)             |
+| 200k `String` (4 KiB, shared prefix)   | 0.24×     | 1.3×               | 0.88×      | 1.0× (1151 ms)            |
+| 200k `String` (4 KiB, distinct prefix) | 5.0×      | 6.3×               | 1.2×       | 1.0× (54 ms)              |
 
-The two distinct-prefix rows separate two variables the others
-confound, and the separation is worth reading carefully, because each
-variable pushes a different way.
+These are extremes, built to bracket the variables rather than to
+describe anything a crate holds. What they establish is that the
+round trip's lead is not a property of strings: it belongs to a
+comparison that has to walk a long shared prefix, and it reverses
+completely — 0.24× to 5.0× at the same 4 KiB length — once the
+entries differ in their first bytes. Appending the `sort` that any
+observed order needs takes every row above 1.0× except the one where
+`sort_unstable` is itself the wrong sort.
 
-Hold the length and move the *difference* to the front. At 4 KiB the
-round trip falls from 0.23× to parity: every comparison had been
-walking 4100 shared bytes and now stops at the first, while the set
-still hashes all 4116 of every element. At 216 B the same swap barely
-registers, 0.29× to 0.24×, because at half a million elements the
-dereference in front of that comparison is a cache miss into 108 MB,
-and 200 sequential bytes behind a cache miss are free. The isolation
-rows below show a 41-byte prefix costing 16% once the collection is
-small enough that nothing misses.
-
-Now hold the prefixes distinct and move the length. From 16 B to
-216 B the round trip goes the other way, 0.69× to 0.24×, because the
-sort's pointer chase now ranges over 108 MB of heap where it ranged
-over 8, while hashing still streams.
-
-So length cuts both ways and the scale decides which: it costs the
-sort cache misses across a larger heap, and it costs the set a hash
-proportional to every byte. Below a few hundred bytes the first
-dominates and the set pulls ahead; by 4 KiB the second has caught up.
-A shared prefix only ever costs the sort. The length half of that is a
-half-a-million-element conclusion: the real pools below run at a
-thousand, where the heap fits in cache and it inverts. The prefix half
-holds at either scale.
-(The 4 KiB workloads hold 800 MB and vary by about a tenth run to
-run; their figures are medians of three.)
+That shared-prefix 4 KiB row is also the one place in any table here
+where the `BTreeSet` round trip is not the slower option: 0.88×,
+because comparisons that dear reward a stable sort's lower comparison
+count, and `sort_unstable` is the wrong tool for that input in the
+first place. Every other row, every real pool and every element in the
+sweep below put it above 1.0×.
 
 The findings that shape the rule:
 
-1. **The `BTreeSet` round trip never won.** It ran between 1.00× and
-   1.94× here and between 1.32× and 3.79× across the element sweep
-   below — never faster than the suggestion in any row of any table —
-   allocated more (9.7 MiB against nothing on the 1M-`u64` case), and
-   produced the identical sorted vector. There is no workload in which
-   to prefer it. "Identical" rests on `Ord` agreeing with
+1. **The `BTreeSet` round trip produces the identical vector.** That
+   is what makes its rewrite safe to apply unattended, and it holds
+   whatever the element and whatever the timings do: same elements,
+   same order, one container fewer. It is also slower nearly
+   everywhere — 1.2× to 1.8× across the synthetic rows, 1.3× to 3.8×
+   across the element sweep, above 1.0× on every real pool — with the
+   single 4 KiB shared-prefix exception above. "Identical" rests on `Ord` agreeing with
    `Eq`, which the `Ord` trait requires: a `BTreeSet` decides
    duplicates by `cmp`, `dedup` decides them by `==`, so a type whose
    `cmp` returns `Equal` for values that are not `==` would keep more
-   elements after the rewrite than before. It is also why the
-   `BTreeSet` branch carries a suggestion whatever its element.
+   elements after the rewrite than before. It is that identity, not
+   the timings, that lets the `BTreeSet` branch carry a suggestion
+   whatever its element.
    `clippy::derive_ord_xor_partial_ord` and
    `clippy::derived_hash_with_manual_eq` police that contract; this
    rule assumes it, and says so rather than re-deriving it.
@@ -192,19 +184,19 @@ The findings that shape the rule:
    compare — which is fewer types than it sounds, and not simply the
    long ones — and only while its order goes unused.** The set spends
    one hash per element where the sort spends log n comparisons, so it
-   leads once a comparison stops being far cheaper than a hash. Hence
-   0.23×–0.69× on the string rows where the set leads, and 0.97× on
-   the 4 KiB row whose prefixes diverge — against 1.20×–2.54× for the
-   same code once a `sort` is appended to make the output
-   deterministic, which is the comparison to make as soon as anything
-   observes the order. For `u64`, where a comparison is a register
-   instruction, the round trip is ~2.9× slower.
+   leads once a comparison stops being far cheaper than a hash — which
+   on the rows above means a long shared prefix to walk, not a long
+   string. Against the same code with a `sort` appended to make the
+   output deterministic, which is the comparison to make as soon as
+   anything observes the order, every row runs 1.3× or worse. For
+   `u64`, where a comparison is a register instruction, the round trip
+   is ~2× slower.
 3. **The synthetic strings above overstate it; real pools are cheaper
    to sort.** Repeating the measurement on four real pools — npm
    package names, the crates.io download ranking, pnpm's lockfile keys
    and its repository's file paths — puts a thousand-item round trip
    at 0.73×–0.80×, and a million npm names at 1.09×: a real lead, but
-   not the 0.23× of a synthetic 4 KiB string. None of the four carries
+   not the 0.24× of a synthetic 4 KiB string. None of the four carries
    enough shared prefix to reproduce what the synthetic rows isolate,
    which the tables below take up.
 4. **At the size real code deduplicates names, the choice is
@@ -232,12 +224,12 @@ every file path in its repository; `total` items are drawn from
 Two shared-prefix figures come with them, because only one is what a
 sort pays:
 
-| Pool                  | entries | mean length | prefix: neighbour | prefix: random pair |
-|-----------------------|---------|-------------|-------------------|---------------------|
-| crates.io top names   | 1 000   | 10.4 B      | 4.3 B             | 0.09 B              |
-| npm package names     | 300 000 | 20.0 B      | 7.8 B             | 0.18 B              |
-| pnpm lockfile keys    | 2 181   | 26.4 B      | 11.0 B            | 0.48 B              |
-| pnpm repo file paths  | 7 252   | 57.4 B      | 41.3 B            | 10.30 B             |
+| Pool                 | entries | mean length | prefix: neighbour | prefix: random pair |
+|----------------------|---------|-------------|-------------------|---------------------|
+| crates.io top names  | 1 000   | 10.4 B      | 4.3 B             | 0.09 B              |
+| npm package names    | 300 000 | 20.0 B      | 7.8 B             | 0.18 B              |
+| pnpm lockfile keys   | 2 181   | 26.4 B      | 11.0 B            | 0.48 B              |
+| pnpm repo file paths | 7 252   | 57.4 B      | 41.3 B            | 10.30 B             |
 
 The neighbour figure is how much an entry shares with the one beside
 it in sorted order, and it is the one that comes to hand: pnpm's paths
@@ -251,18 +243,18 @@ the other three, so everything below quotes the random-pair figure.
 
 | Pool (mean length)   | total → distinct | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
 |----------------------|------------------|-----------|--------------------|------------|------------------|---------------------------|
-| npm names (20 B)     | 1k → 1k          | 0.77×     | 1.67×              | 1.42×      | 1.15×            | 1.00× (41 µs)             |
-| npm names (20 B)     | 10k → 10k        | 0.69×     | 1.32×              | 1.32×      | 1.16×            | 1.00× (726 µs)            |
-| npm names (20 B)     | 100k → 100k      | 0.68×     | 1.39×              | 1.45×      | 1.22×            | 1.00× (10.3 ms)           |
-| npm names (20 B)     | 1M → 100k        | 1.09×     | 1.24×              | 2.07×      | 1.58×            | 1.00× (217 ms)            |
-| crate names (10.4 B) | 1k → 1k          | 0.73×     | 1.65×              | 1.39×      | 1.13×            | 1.00× (41 µs)             |
-| lockfile keys (26 B) | 1k → 1k          | 0.80×     | 1.45×              | 1.41×      | 1.17×            | 1.00× (66 µs)             |
-| lockfile keys (26 B) | 10k → 1k         | 0.75×     | 0.84×              | 1.37×      | 1.18×            | 1.00× (932 µs)            |
-| file paths (57 B)    | 1k → 1k          | 0.80×     | 1.43×              | 1.36×      | 1.15×            | 1.00× (79 µs)             |
-| file paths (57 B)    | 10k → 1k         | 0.76×     | 0.83×              | 1.27×      | 1.11×            | 1.00× (1.2 ms)            |
+| npm names (20 B)     | 1k → 1k          | 0.77×     | 1.7×               | 1.4×       | 1.1×             | 1.0× (41 µs)              |
+| npm names (20 B)     | 10k → 10k        | 0.69×     | 1.3×               | 1.3×       | 1.2×             | 1.0× (726 µs)             |
+| npm names (20 B)     | 100k → 100k      | 0.68×     | 1.4×               | 1.4×       | 1.2×             | 1.0× (10.3 ms)            |
+| npm names (20 B)     | 1M → 100k        | 1.1×      | 1.2×               | 2.1×       | 1.6×             | 1.0× (217 ms)             |
+| crate names (10.4 B) | 1k → 1k          | 0.73×     | 1.6×               | 1.4×       | 1.1×             | 1.0× (41 µs)              |
+| lockfile keys (26 B) | 1k → 1k          | 0.8×      | 1.4×               | 1.4×       | 1.2×             | 1.0× (66 µs)              |
+| lockfile keys (26 B) | 10k → 1k         | 0.75×     | 0.84×              | 1.4×       | 1.2×             | 1.0× (932 µs)             |
+| file paths (57 B)    | 1k → 1k          | 0.8×      | 1.4×               | 1.4×       | 1.1×             | 1.0× (79 µs)              |
+| file paths (57 B)    | 10k → 1k         | 0.76×     | 0.83×              | 1.3×       | 1.1×             | 1.0× (1.2 ms)             |
 
 At a thousand items the four pools land between 0.73× and 0.80×
-against the 0.23×–0.97× the synthetic string rows span. To find out why the
+against the 0.24×–5.0× the synthetic string rows span. To find out why the
 band is so flat, hold a thousand `String`s and move one variable at a
 time — absolute times here, because the question is which side of the
 comparison moves:
@@ -308,11 +300,11 @@ where those bytes live.
 
 | 20 B values, all distinct | element    | `HashSet` round trip | `sort_unstable` + `dedup` | ratio |
 |---------------------------|------------|----------------------|---------------------------|-------|
-| 1 000                     | `[u8; 20]` | 29.0 µs              | 48.6 µs                   | 0.60× |
+| 1 000                     | `[u8; 20]` | 29.0 µs              | 48.6 µs                   | 0.6×  |
 | 1 000                     | `String`   | 27.9 µs              | 49.9 µs                   | 0.56× |
 | 100 000                   | `[u8; 20]` | 3.9 ms               | 8.2 ms                    | 0.48× |
 | 100 000                   | `String`   | 4.6 ms               | 10.0 ms                   | 0.46× |
-| 1 000 000                 | `[u8; 20]` | 140.4 ms             | 97.0 ms                   | 1.45× |
+| 1 000 000                 | `[u8; 20]` | 140.4 ms             | 97.0 ms                   | 1.4×  |
 | 1 000 000                 | `String`   | 155.5 ms             | 338.1 ms                  | 0.46× |
 
 At a thousand elements the pointer costs the sort 3%: the two sorts
@@ -338,12 +330,12 @@ package's dependencies, a workspace's members, a command's arguments:
 
 | total → distinct | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
 |------------------|-----------|--------------------|------------|------------------|---------------------------|
-| 10 → 10          | 2.21×     | 2.87×              | 1.63×      | 0.93×            | 1.00× (0.18 µs)           |
-| 25 → 25          | 1.35×     | 2.16×              | 1.48×      | 0.99×            | 1.00× (0.63 µs)           |
-| 50 → 50          | 1.26×     | 1.98×              | 1.57×      | 1.30×            | 1.00× (1.38 µs)           |
-| 100 → 100        | 1.19×     | 2.08×              | 1.48×      | 1.09×            | 1.00× (2.87 µs)           |
-| 200 → 200        | 0.98×     | 1.80×              | 1.46×      | 1.24×            | 1.00× (6.67 µs)           |
-| 1000 → 1000      | 0.79×     | 1.68×              | 1.41×      | 1.22×            | 1.00× (43.1 µs)           |
+| 10 → 10          | 2.2×      | 2.9×               | 1.6×       | 0.93×            | 1.0× (0.18 µs)            |
+| 25 → 25          | 1.4×      | 2.2×               | 1.5×       | 0.99×            | 1.0× (0.63 µs)            |
+| 50 → 50          | 1.3×      | 2.0×               | 1.6×       | 1.3×             | 1.0× (1.38 µs)            |
+| 100 → 100        | 1.2×      | 2.1×               | 1.5×       | 1.1×             | 1.0× (2.87 µs)            |
+| 200 → 200        | 0.98×     | 1.8×               | 1.5×       | 1.2×             | 1.0× (6.67 µs)            |
+| 1000 → 1000      | 0.79×     | 1.7×               | 1.4×       | 1.2×             | 1.0× (43.1 µs)            |
 
 Below about two hundred items the round trip is the slower option
 outright — 1.2× to 2.2× — because it pays an allocation and a hash per
@@ -353,17 +345,17 @@ Those tables are all `String`, though, and a string is the element
 that flatters the set most: every comparison follows a pointer. Across
 element types:
 
-| Element (`size_of`)               |    10 |   200 | 1 000 | 100 000 |
-|-----------------------------------|-------|-------|-------|---------|
-| `u32` (4 B)                       | 4.43× | 2.45× | 1.66× | 1.27×   |
-| `u64` (8 B)                       | 7.33× | 2.72× | 2.24× | 1.34×   |
-| `u128` (16 B)                     | 8.06× | 3.62× | 2.76× | 2.23×   |
-| `Id(u64)` newtype (8 B)           | 6.33× | 2.59× | 2.19× | 1.20×   |
-| `struct Pair`, derived (8 B)      | 5.00× | 2.19× | 1.98× | 1.02×   |
-| `enum Kind`, derived (16 B)       | 4.49× | 1.82× | 1.86× | 1.03×   |
-| `struct Keyed`, forwarding (32 B) | 4.39× | 1.94× | 1.57× | 0.96×   |
-| `[u8; 32]` digest (32 B)          | 3.20× | 1.29× | 1.08× | 0.74×   |
-| `Name(String)` newtype (24 B)     | 1.97× | 0.98× | 0.78× | 0.59×   |
+| Element (`size_of`)               | 10   | 200   | 1 000 | 100 000 |
+|-----------------------------------|------|-------|-------|---------|
+| `u32` (4 B)                       | 4.4× | 2.5×  | 1.7×  | 1.3×    |
+| `u64` (8 B)                       | 7.3× | 2.7×  | 2.2×  | 1.3×    |
+| `u128` (16 B)                     | 8.1× | 3.6×  | 2.8×  | 2.2×    |
+| `Id(u64)` newtype (8 B)           | 6.3× | 2.6×  | 2.2×  | 1.2×    |
+| `struct Pair`, derived (8 B)      | 5.0× | 2.2×  | 2.0×  | 1.0×    |
+| `enum Kind`, derived (16 B)       | 4.5× | 1.8×  | 1.9×  | 1.0×    |
+| `struct Keyed`, forwarding (32 B) | 4.4× | 1.9×  | 1.6×  | 0.96×   |
+| `[u8; 32]` digest (32 B)          | 3.2× | 1.3×  | 1.1×  | 0.74×   |
+| `Name(String)` newtype (24 B)     | 2.0× | 0.98× | 0.78× | 0.59×   |
 
 Read down the first column: on ten elements the round trip costs four
 to eight times what the suggestion costs, for every element but a
@@ -382,23 +374,23 @@ second digit here: a repeat run moved individual cells by a tenth
 below a thousand elements and by up to a third at a hundred
 thousand.
 
-| Element (`size_of`)               |    10 |   200 | 1 000 | 100 000 |
-|-----------------------------------|-------|-------|-------|---------|
-| `u32` (4 B)                       | 2.97× | 1.96× | 1.37× | 1.60×   |
-| `u64` (8 B)                       | 3.79× | 1.99× | 1.75× | 1.38×   |
-| `u128` (16 B)                     | 2.74× | 1.87× | 1.67× | 1.58×   |
-| `Id(u64)` newtype (8 B)           | 3.47× | 1.82× | 1.76× | 1.32×   |
-| `struct Pair`, derived (8 B)      | 3.67× | 2.07× | 1.92× | 1.48×   |
-| `enum Kind`, derived (16 B)       | 3.30× | 2.02× | 2.27× | 1.77×   |
-| `struct Keyed`, forwarding (32 B) | 2.89× | 1.96× | 1.73× | 1.85×   |
-| `[u8; 32]` digest (32 B)          | 1.89× | 1.44× | 1.43× | 1.37×   |
-| `Name(String)` newtype (24 B)     | 1.75× | 1.47× | 1.39× | 1.42×   |
+| Element (`size_of`)               | 10   | 200  | 1 000 | 100 000 |
+|-----------------------------------|------|------|-------|---------|
+| `u32` (4 B)                       | 3.0× | 2.0× | 1.4×  | 1.6×    |
+| `u64` (8 B)                       | 3.8× | 2.0× | 1.8×  | 1.4×    |
+| `u128` (16 B)                     | 2.7× | 1.9× | 1.7×  | 1.6×    |
+| `Id(u64)` newtype (8 B)           | 3.5× | 1.8× | 1.8×  | 1.3×    |
+| `struct Pair`, derived (8 B)      | 3.7× | 2.1× | 1.9×  | 1.5×    |
+| `enum Kind`, derived (16 B)       | 3.3× | 2.0× | 2.3×  | 1.8×    |
+| `struct Keyed`, forwarding (32 B) | 2.9× | 2.0× | 1.7×  | 1.9×    |
+| `[u8; 32]` digest (32 B)          | 1.9× | 1.4× | 1.4×  | 1.4×    |
+| `Name(String)` newtype (24 B)     | 1.8× | 1.5× | 1.4×  | 1.4×    |
 
-No cell is under 1.00×, and the column that comes closest is the one
-where the `HashSet` round trip is furthest ahead: at a hundred
-thousand `Name(String)`, the set runs at 0.63× and the tree at 1.42×.
-Sorting is what the tree is for, and it is still the slower way to
-reach a sorted vector.
+No cell is under 1.0×, and the tree is furthest behind exactly where
+the `HashSet` round trip is furthest ahead: at a hundred thousand
+`Name(String)` the set runs at 0.59× and the tree at 1.4×. Sorting is
+what the tree is for, and it is still the slower way to reach a sorted
+vector.
 
 Two different measurements wear the same unit in these tables, and
 only one of them moves the result. The element table's figure is
@@ -1105,15 +1097,11 @@ suggestion; the third emits help text only.
   the two are a wash (0.93×–1.09×), and it allocates a scratch buffer
   where `sort_unstable` allocates nothing. It also makes
   `clippy::stable_sort_primitive` a non-issue, since that lint asks
-  for exactly this. Two measured cases go the other way and neither
-  changes the suggestion: an element whose comparison dwarfs its hash
-  (4 KiB strings sharing a 4100-byte prefix, where the stable sort's
-  lower comparison count put it at 0.98× of `sort_unstable`) belongs
-  in the `#[expect]`
-  case above rather than in a second suggestion, and input that is
-  *already sorted* lets the stable sort's run detection pay for itself
-  (`sort_unstable` at 1.01×–1.04× there) — a vector arriving sorted at
-  a deduplication is not the case this rule is looking at.
+  for exactly this. The one measured case that goes the other way is
+  the 4 KiB shared-prefix row above, where comparisons dear enough to
+  reward a lower comparison count put the stable sort ahead; that
+  input belongs in the `#[expect]` case rather than in a second
+  suggestion.
 - **The comparator family is help text, not autofix.**
   `sort_unstable` and `dedup` are the one pair that reproduces a set's
   semantics knowing nothing about the element beyond `T: Ord`: the
