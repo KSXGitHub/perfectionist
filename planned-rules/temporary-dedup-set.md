@@ -384,6 +384,23 @@ diagnosing: which fields, in which order, and whether `None` sorts
 first are judgements about the type, and a wrong guess still compiles
 while changing the output.
 
+A narrower case sits inside this one: an element whose internals are
+unreachable too — private fields, no accessor, no `Deref`, no
+`Display` — leaving no comparator to write at all. Little of it
+survives contact with the language. A public enum is never in it,
+since its variants are its API and `match` orders it. Privacy is
+relative, so only a *downstream* crate can be stuck; the crate that
+defines the type can always derive. And determinism was never the same
+thing as ordering: deduplicating in place preserves the input's order,
+which is deterministic whenever the input was, and needs only the
+`PartialEq` the set already required. The remedy there is to stop
+scrambling rather than to sort — and the rule is silent for a third
+reason, that this rewrite is quadratic and whether that trade is right
+depends on how many elements there are, which the rule cannot see.
+Across pnpm's 109 crates nothing is in this case: the closest are a
+type opaque only to its parent module, and one whose fields are
+private but whose `Display` renders them.
+
 ## What to lint
 
 `LateLintPass`. Type resolution decides every part of the trigger: the
