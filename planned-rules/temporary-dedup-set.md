@@ -74,7 +74,7 @@ order that varies per run for a sorted one.
 
 This is a stylistic preference, not a correctness issue. The round trip
 computes the right set of values, and on a large enough input of
-pointer-chasing elements whose resulting order nothing reads it is the
+heap-backed elements whose resulting order nothing reads it is the
 faster of the two — see
 [When the set is the right tool](#when-the-set-is-the-right-tool),
 which is the part of this file that decides whether the rule is worth
@@ -165,9 +165,9 @@ The findings that shape the rule:
    rule assumes it, and says so rather than re-deriving it.
 2. **The `HashSet` round trip wins on elements that are expensive to
    compare — which is fewer types than it sounds, and not simply the
-   long ones — and only while its order goes unused.** Rust's `String`
-   carries no small-string optimisation, so sorting chases a pointer
-   per comparison where hashing touches each string once. Hence
+   long ones — and only while its order goes unused.** The set spends
+   one hash per element where the sort spends log n comparisons, so it
+   leads once a comparison stops being far cheaper than a hash. Hence
    0.23×–0.69× on the string rows where the set leads, and 0.97× on
    the 4 KiB row whose prefixes diverge — against 1.20×–2.54× for the
    same code once a `sort` is appended to make the output
@@ -268,6 +268,38 @@ The 500k rows above invert the length half — past cache the sort's
 pointer chase outgrows the hash — so neither table carries to the
 other's scale.
 
+One thing every pool still confounds: a `String`'s bytes live behind a
+pointer, so both its width and its indirection are candidates for the
+set's lead. Hold the content at twenty distinct bytes and move only
+where those bytes live.
+
+| 20 B values, all distinct | element    | `sort_unstable` + `dedup` | `HashSet` round trip | ratio |
+|---------------------------|------------|---------------------------|----------------------|-------|
+| 1 000                     | `[u8; 20]` | 48.6 µs                   | 29.0 µs              | 0.60× |
+| 1 000                     | `String`   | 49.9 µs                   | 27.9 µs              | 0.56× |
+| 100 000                   | `[u8; 20]` | 8.2 ms                    | 3.9 ms               | 0.48× |
+| 100 000                   | `String`   | 10.0 ms                   | 4.6 ms               | 0.46× |
+| 1 000 000                 | `[u8; 20]` | 97.0 ms                   | 140.4 ms             | 1.45× |
+| 1 000 000                 | `String`   | 338.1 ms                  | 155.5 ms             | 0.46× |
+
+At a thousand elements the pointer costs the sort 3%: the two sorts
+are the same sort. Nothing at that scale is explained by chasing it,
+and the only thing that moves the sort there is bytes it actually
+walks, which is the shared prefix above. At a million the pointer is
+the whole story — the same sort over the same twenty bytes takes 97 ms
+inline and 338 ms behind a pointer, because each comparison has become
+a miss into a heap no cache holds — and it is indirection rather than
+width that decides the outcome: inline, the round trip *loses* at a
+million (1.45×); behind a pointer it wins by exactly the margin it won
+by at a hundred thousand (0.46×). A shared prefix there is noise,
+97.8 ms against 97.0.
+
+So the two mechanisms trade places. Below cache the sort pays for the
+bytes it walks and the indirection is free; past cache it pays for the
+indirection and the bytes are free. Only the second regime makes the
+round trip defensible, which is why the applicability gate turns on
+indirection and not on length.
+
 The rows where duplicates dominate narrow the comparison that matters.
 Appending the `sort` roughly doubles the round trip while every
 element is distinct, because it sorts everything the set held; at ten
@@ -329,10 +361,11 @@ Nor does it need to, because the content length is not what a
 comparison scales with. `str` orders as `as_bytes().cmp(..)`,
 lexicographically, so a comparison stops at the first differing byte,
 and two entries drawn at random from any of the name pools share under
-half a byte. What is left is one dereference into a random heap
-location, and at a thousand elements that dereference lands in cache —
-which is why the sort takes the same 63 µs on 20-byte and 57-byte
-entries. Content length bills the set instead, through the hash. The
+half a byte, so the bytes past that point are never read — which is
+why the sort takes the same 63 µs on 20-byte and 57-byte entries. What
+is left is the sort's own bookkeeping; the dereference behind each
+comparison costs 3% at this size, as the inline rows show. Content
+length bills the set instead, through the hash. The
 sort only starts paying for bytes where a prefix is shared across
 distant pairs (41 bytes of it cost it 16%) or where the heap outgrows
 cache, which is what the 216 B and 4 KiB rows are built to show —
@@ -380,7 +413,7 @@ the suppression is the answer; the rest it never reaches at all.
   an arbitrary order and never builds a sequence; there is nothing to
   sort and nothing to dedup, so the set is doing a job no vector does
   more cheaply.
-- **Thousands of pointer-chasing elements whose order is genuinely
+- **Thousands of wide or heap-backed elements whose order is genuinely
   unused.** The set leads only where a comparison costs far more than
   a hash — a `String` or `PathBuf`, a newtype over one, a wide digest
   — and only from about 10³ elements up, where it runs at 0.63×–0.81×
