@@ -73,9 +73,9 @@ order that varies per run for a sorted one.
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. The round trip
-computes the right set of values, and on a large enough input of
-heap-backed elements whose resulting order nothing reads it is the
-faster of the two — see
+computes the right set of values, and on a large enough input whose
+elements are expensive to compare and whose resulting order nothing
+reads, it is the faster of the two — see
 [When the set is the right tool](#when-the-set-is-the-right-tool),
 which is the part of this file that decides whether the rule is worth
 enabling in a given crate. For most element types, though, the
@@ -413,11 +413,11 @@ the suppression is the answer; the rest it never reaches at all.
   an arbitrary order and never builds a sequence; there is nothing to
   sort and nothing to dedup, so the set is doing a job no vector does
   more cheaply.
-- **Thousands of wide or heap-backed elements whose order is genuinely
-  unused.** The set leads only where a comparison costs far more than
-  a hash — a `String` or `PathBuf`, a newtype over one, a wide digest
-  — and only from about 10³ elements up, where it runs at 0.63×–0.81×
-  of the suggestion. For a primitive, a newtype over one, a derived
+- **Thousands of elements whose comparison reads many bytes, whose
+  order is genuinely unused.** The set leads only where a comparison
+  costs far more than a hash — a `String` or `PathBuf`, a newtype over
+  one, a wide digest — and only from about 10³ elements up, where it
+  runs at 0.63×–0.81× of the suggestion. For a primitive, a newtype over one, a derived
   struct or enum, or an impl that forwards to one key field, there is
   no such band at all: the round trip measured slower at every size,
   by five to nine times on ten elements. The honest remedy even inside
