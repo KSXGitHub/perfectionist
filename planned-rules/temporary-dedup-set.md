@@ -278,22 +278,11 @@ the suppression is the answer; the rest it never reaches at all.
 deterministically-firing lint into one.
 
 - **The element is not `Ord`.** `sort_unstable` does not compile for
-  it, so the rule emits no suggestion and, by default, nothing at all;
-  the gate is a trait-resolution check, not a heuristic. What is missing is a fix the *rule* can write, not
-  a fix at all — see
-  [When the element is not `Ord`](#when-the-element-is-not-ord) for
-  the one a reader writes by hand. What it excludes
-  is narrower than it sounds. std has almost nothing in this
-  population — `Range`, `RangeInclusive`, `Discriminant`, `Layout`,
-  `ThreadId`, `FileType`, while `io::ErrorKind` and `TypeId` are both
-  `Ord` — so the gate is about domain types. pnpm's workspace has 27
-  of those, and they are tag enums whose order would be declaration
-  order, composite lookup keys, and cache keys: types reached with
-  `contains`, not collected into vectors. None of the round trips in
-  that workspace has one as its element, which is not a coincidence —
-  a type gets `Ord` when somebody needed to order it, and the code
-  that wants a deterministic list is the code that would have added
-  the derive.
+  it, so the rule has no suggestion to make and, by default, says
+  nothing; the gate is a trait-resolution check, not a heuristic. What
+  is missing is a fix the *rule* can write rather than a fix at all —
+  the section below has the one a reader writes by hand, and the
+  setting that decides whether the rule mentions the shape anyway.
 - **The set is read as a set.** A `contains` call, a `len`, an
   `insert` after the fact, a return, a store into a field, a borrow
   that outlives the expression — any of these and the value is not
@@ -316,9 +305,9 @@ deterministically-firing lint into one.
   primitive, a newtype over one, a derived struct or enum, or an impl
   that forwards to one key field, there is no such band at all: the
   round trip measured slower at every size, by four to six times on
-  ten elements. The honest remedy even inside the band
-  is usually not to sort at all but to stop discarding the set: keep
-  it, name it, and let the code that consumes it say it wants a set.
+  ten elements. The honest remedy even inside the band is usually not
+  to sort at all but to stop discarding the set: keep it, name it, and
+  let the code that consumes it say it wants a set.
   Where a vector really is what the caller needs, `#[expect]` it on the
   strength of a measurement — a measurement, because the lead
   disappears the moment anything downstream wants a deterministic
@@ -331,9 +320,22 @@ deterministically-firing lint into one.
 
 ### When the element is not `Ord`
 
-The gate stops the rule, not the reader. An element that enters a
-`HashSet` carries `Eq + Hash` by construction, so the only piece
-missing is an order — and an order its author can state is enough:
+What the gate excludes is narrower than it sounds. std has almost
+nothing in this population — `Range`, `RangeInclusive`, `Discriminant`,
+`Layout`, `ThreadId`, `FileType`, while `io::ErrorKind` and `TypeId`
+are both `Ord` — so it is about domain types. pnpm's workspace has 27
+of those, and they are tag enums whose order would be declaration
+order, composite lookup keys, and cache keys: types reached with
+`contains`, not collected into vectors. None of the round trips in
+that workspace has one as its element, which is not a coincidence — a
+type gets `Ord` when somebody needed to order it, and the code that
+wants a deterministic list is the code that would have added the
+derive.
+
+Where one does turn up, the gate stops the rule, not the reader. An
+element that enters a `HashSet` carries `Eq + Hash` by construction,
+so the only piece missing is an order — and an order its author can
+state is enough:
 
 ```rust
 #[derive(PartialEq, Eq, Hash)]
@@ -539,7 +541,9 @@ A **set round trip** has these parts, all of which must hold:
    somewhere a sort cannot replace.
 
 Plus one gate: **`T: Ord`**, resolved against the element type. Without
-it the suggestion does not compile, so the rule must not fire.
+it the suggestion does not compile, so the rule emits none — and, on
+the default `unorderable_elements`, nothing at all; see
+[When the element is not `Ord`](#when-the-element-is-not-ord).
 
 One discovery locus per form in [Statement](#statement):
 
@@ -819,10 +823,6 @@ already made for its own pending rewrite.
   comparison count put it at 0.95× of `sort_unstable` — and an element
   that expensive belongs in the `#[expect]` case above, not in a
   different suggestion.
-- **Test-code exemption.** `exempt_tests` reaches the shared helpers
-  per
-  [Recognising test-exclusive code](./IMPLEMENTATION_CONVENTIONS.md#recognising-test-exclusive-code),
-  rather than matching `cfg(test)` itself.
 - **The comparator family is help text, not autofix.**
   `sort_unstable` and `dedup` are the one pair that reproduces a set's
   semantics knowing nothing about the element beyond `T: Ord`: the
@@ -865,31 +865,50 @@ already made for its own pending rewrite.
   `PathBuf`, a newtype over one, a 32-byte digest. The enum name
   undersells it: the suggestion is valid Rust and correct, but past
   ~1000 elements it can cost about 1.5×, and a trade-off is a call for
-  a human rather than for `cargo fix`. The 16-byte line is deliberately
-  conservative at one edge: a wide struct whose comparison forwards to
-  one small key behaves like that key, not like its own size, and is
-  held back anyway because a `cmp` impl can read whatever it likes.
+  a human rather than for `cargo fix`. The 16-byte line is
+  deliberately conservative at one edge: a wide struct whose
+  comparison forwards to one small key behaves like that key rather
+  than like its own size, and is held back anyway, because a `cmp`
+  impl can read whatever it likes.
+
+- **Test-code exemption.** `exempt_tests` reaches the shared helpers
+  per [Recognising test-exclusive
+  code](./IMPLEMENTATION_CONVENTIONS.md#recognising-test-exclusive-code)
+  rather than matching `cfg(test)` itself.
 
 ### Difficulty
 
-**Medium.** The chained form is a spine walk plus the container-type
-checks and a trait-bound query, all of which the late pass has to
-hand. The
-bound form adds a body-local use scan, and that scan is where a wrong
-implementation false-positives: a `contains` call, a borrow that
-escapes into a closure, or a second walk all have to disqualify the
-set. A conservative first cut ships the chained form alone, which
-needs no scan at all, and adds the bound form once the disqualifying
-uses have fixtures.
+**Hard, in layers that ship separately.** The trigger itself is not:
+the chained form is a spine walk plus the container-type checks and a
+trait-bound query, all of which a late pass has to hand, and that
+layer alone is a working rule. Each layer after it is a smaller rule
+of its own.
+
+- **The bound form** adds a body-local use scan, and that scan is
+  where a wrong implementation false-positives: a `contains` call, a
+  borrow escaping into a closure, or a second walk each have to
+  disqualify the set.
+- **The applicability gate** needs `cx.layout_of` and an indirection
+  walk over the element to decide which `HashSet` rewrites may be
+  applied unattended.
+- **The view search** is the largest: field visibility at the
+  violation, a fixed set of trait queries, a name-and-return-type pass
+  over inherent impls, and a body check for cheapness on local
+  methods — memoised per type, and worth writing behind its own tests
+  before any of it reaches a diagnostic.
+
+A conservative first cut ships the chained form with the plain pair
+and `unorderable_elements` absent, which is a rule with no search in
+it at all.
 
 ## Default state
 
-Active by default. The trigger is narrow, the `Ord` gate removes the
-one case with no fix, and the remaining exceptions are performance
-trade-offs a crate states once with `#[expect]`. A crate
-that deduplicates large string collections whose order nothing reads
-— where the measurement favours the set — is the crate that turns the
-rule off in `[perfectionist].disable`.
+Active by default. The trigger is narrow, the `Ord` gate holds back
+every site the rule cannot finish a sentence about, and the exceptions
+that remain are performance trade-offs a crate states once with
+`#[expect]`. A crate that deduplicates large string collections whose
+order nothing reads — where the measurement favours the set — is the
+crate that turns the rule off in `[perfectionist].disable`.
 
 ## Interaction with clippy and sibling rules
 
@@ -909,10 +928,11 @@ rule off in `[perfectionist].disable`.
   here; a nine-call chain with no round trip is flagged there and not
   here.
 - **No general round-trip rule stands behind this one.** A round trip
-  through a `Vec`, or through a set whose element is not `Ord`, is
-  reported by nothing: the rule that would have covered those was
-  closed (see the source above), so an element that fails the `Ord`
-  gate is simply left alone rather than handed on.
+  through a `Vec` is reported by nothing: the rule that would have
+  covered it was closed (see the source above). So a set round trip
+  whose element fails the `Ord` gate is this rule's to mention or to
+  leave, per `unorderable_elements`, rather than something it can hand
+  on.
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
   catalogue, in particular the lint-name namespacing
