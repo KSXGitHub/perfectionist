@@ -444,6 +444,40 @@ fallback for that reason: where the order genuinely is a rendered form
 — a `Display` impl, a normalised string — `sort_by_cached_key` builds
 it once per element, which is the cheapest that order can be had.
 
+#### Cheap, defined
+
+A return type bounds allocation at the boundary, not work: `fn
+checksum(&self) -> u64` hands back a `Copy` scalar and may have hashed
+a megabyte to get it, and `fn first_tag(&self) -> &str` hands back a
+reference it found by scanning. A comparator runs its view O(n log n)
+times, so a view that is linear in the value makes the suggestion
+quadratic — a regression introduced by the rule's own advice, in a
+rule whose case is partly performance.
+
+So a view is **cheap** only when evaluating it is O(1) and
+allocation-free: an expression rooted at the element, built from field
+accesses, derefs and borrows, plus `match` or `if let` whose arms are
+themselves that, plus calls to methods cheap by this same definition
+under a depth cap. A loop, an iterator chain, an index search, a call
+the rule cannot see through, or any allocation disqualifies it.
+
+Whether that can be checked at all depends on where the method lives,
+which is the same split the configuration already draws:
+
+- **Defined in the crate being linted** — the body is there to read,
+  so read it and apply the definition.
+- **Defined elsewhere** — `tcx.is_mir_available` usually says no, and
+  a signature is all there is. Then the naming convention carries the
+  weight it was written to carry: `as_*` is documented as the cheap
+  borrow, and this is a note rather than a rewrite, so trusting it
+  costs a reader one glance.
+
+Skew every uncertain call toward *expensive*. Declining a view that
+was in fact cheap loses a sentence in a note, and usually degrades to
+naming the fields instead, which is more explicit anyway; naming a
+linear one as a sort key hands the reader a quadratic sort. The
+asymmetry is not close.
+
 What it will not do is walk free functions, trait methods at large, or
 anything else that grows with the crate instead of the type: a key can
 be any `fn(&T) -> K` anywhere in the program, and finding *the* one is
