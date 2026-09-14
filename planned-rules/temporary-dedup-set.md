@@ -864,7 +864,13 @@ already made for its own pending rewrite.
   `MachineApplicable` for the `HashSet` branch too, but only where
   the element makes the answer decisive: **no indirection, and a
   layout of at most 16 bytes** (`cx.layout_of`, with a reference, a
-  raw pointer or a heap-owning field disqualifying). That is the set
+  raw pointer or a heap-owning field disqualifying). Both clauses
+  carry weight, and each catches what the other misses. Size alone
+  would admit `&str`, which is a 16-byte fat pointer and behaves like
+  the `String` it borrows from. Indirection alone would admit
+  `[u8; 32]`, which chases nothing and still came in at 0.65× on a
+  hundred thousand elements, because thirty-two inline bytes are
+  thirty-two bytes to compare. That is the set
   of elements the sweep found no size at which the round trip wins —
   5.4×–8.7× slower on ten elements, still 1.06×–1.79× slower on a
   hundred thousand — and it covers the primitives, the newtypes over
