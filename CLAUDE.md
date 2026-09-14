@@ -20,7 +20,9 @@ Read these first, in this order:
    estimated difficulty. Don't second-guess the design without
    first checking the rule file's existing examples and rationale
    — the design has usually been argued over already in the PR
-   that produced the planning file.
+   that produced the planning file. Weigh the design rather than
+   transcribe it, though; see
+   [A planning file is a proposal, not a specification](#a-planning-file-is-a-proposal-not-a-specification).
 2. **`planned-rules/README.md`** — the index of all rules, plus
    the
    [out-of-scope list](planned-rules/README.md#out-of-scope-cannot-be-linted-by-dylint)
@@ -60,6 +62,37 @@ measurement are examples, not the whole set — check whether the
 helper already exists in the codebase before writing a new one.
 Sibling-rule references in the planning files identify shared
 infrastructure.
+
+## A planning file is a proposal, not a specification
+
+A rule's planning file was written before anyone tried to
+implement it: nothing in it has been compiled, run, or checked
+against rustc. Read it as a proposal to evaluate, not a spec to
+fulfil.
+
+- **Its claims about reality may be wrong.** A planning file
+  asserts what a HIR node exposes, what a span covers, what
+  `clippy_utils` already provides, what survives macro expansion.
+  Verify each such claim empirically before you build on it —
+  write the fixture, dump the AST or HIR, read the upstream
+  source. Where a claim cannot be checked that way, leave it
+  unclaimed rather than restating it in a doc or a comment.
+- **It is often over-ambitious.** Config knobs nobody would ever
+  set, sub-checks no real code violates, autofix branches that
+  cost more than the rule they serve — all recur. Implement what
+  earns its complexity and leave the rest out, recording the
+  omission per
+  [When the implementation is partial](#when-the-implementation-is-partial).
+
+Where the empirical answer contradicts the planning file, the
+empirical answer wins: amend the file, or narrow the rule, rather
+than implement something you have shown to be wrong. Say in the PR
+what you dropped or changed and why, so the divergence reads as
+deliberate rather than as an oversight.
+
+What a planning file *is* authoritative about is the intent: the
+anti-pattern the lint fires on, and the upstream style guide its
+`## Statement` quotes.
 
 ## One rule per file, one `Config` per rule
 
