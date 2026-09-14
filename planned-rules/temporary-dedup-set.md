@@ -280,11 +280,9 @@ deterministically-firing lint into one.
 - **The element is not `Ord`.** `sort_unstable` does not compile for
   it, so the rule does not fire; the gate is a trait-resolution check,
   not a heuristic. What is missing is a fix the *rule* can write, not
-  a fix: `sort_unstable_by` with `dedup_by`, over whatever projection
-  the element's author would compare, does the same job by hand. The
-  rule stays out of it because choosing that projection is a judgement
-  about the type, and a wrong one silently changes which duplicates
-  survive. What it excludes
+  a fix at all — see
+  [When the element is not `Ord`](#when-the-element-is-not-ord) for
+  the one a reader writes by hand. What it excludes
   is narrower than it sounds. std has almost nothing in this
   population — `Range`, `RangeInclusive`, `Discriminant`, `Layout`,
   `ThreadId`, `FileType`, while `io::ErrorKind` and `TypeId` are both
@@ -330,6 +328,61 @@ deterministically-firing lint into one.
   a set against a million in a vector. `#[expect]` it, and note that
   the advantage disappears the moment the source is a `Vec` or any
   other sized iterator.
+
+### When the element is not `Ord`
+
+The gate stops the rule, not the reader. An element that enters a
+`HashSet` carries `Eq + Hash` by construction, so the only piece
+missing is an order — and an order its author can state is enough:
+
+```rust
+#[derive(PartialEq, Eq, Hash)]
+struct Key {
+    scope: Option<String>,
+    bare: String,
+}
+
+// What the rule cannot rewrite.
+let unique: Vec<Key> = keys.into_iter().collect::<HashSet<_>>().into_iter().collect();
+
+// The same elements, by hand.
+let mut unique: Vec<Key> = keys.into_iter().collect();
+unique.sort_unstable_by(|a, b| {
+    (a.scope.as_deref(), a.bare.as_str()).cmp(&(b.scope.as_deref(), b.bare.as_str()))
+});
+unique.dedup();
+```
+
+Each part of that shape is a place the obvious spelling fails:
+
+- **`dedup` stays plain.** `Eq` is guaranteed — the set required it —
+  so once the comparator has made equal elements adjacent, `dedup`
+  removes exactly what the set removed. `dedup_by` is for a projection
+  deliberately coarser than `==`, and its result is no longer the
+  set's.
+- **Not `sort_by_key`.** Its `K` is fixed independently of each `&T`,
+  so a key borrowed from the element does not compile — one field or
+  several, `|k| k.bare.as_str()` and `|k| (k.scope.as_deref(),
+  k.bare.as_str())` alike. The keys that do compile are `Copy`
+  projections, and a type whose ordering fields are all `Copy` would
+  have derived `Ord` rather than reaching for a projection at all. So
+  the advice is self-defeating exactly where it is needed: a
+  borrow-check error, or a clone per key — the allocation the rewrite
+  exists to remove. `sort_by` takes both elements and returns an
+  `Ordering`, so nothing borrowed escapes and the projection compiles.
+  `dedup_by_key` fails the same way, for the same reason.
+- **`sort_by_cached_key` for an order that really is a materialised
+  form** — a rendered name, a normalised string. It builds that form
+  once per element where `sort_by_key` rebuilds it once per
+  comparison.
+
+The chained `style` spells the same thing `into_sorted_unstable_by`
+with `into_deduped`.
+
+That comparator is also why the rule stays silent here rather than
+diagnosing: which fields, in which order, and whether `None` sorts
+first are judgements about the type, and a wrong guess still compiles
+while changing the output.
 
 ## What to lint
 
@@ -637,31 +690,18 @@ already made for its own pending rewrite.
   per
   [Recognising test-exclusive code](./IMPLEMENTATION_CONVENTIONS.md#recognising-test-exclusive-code),
   rather than matching `cfg(test)` itself.
-- **The `_by` family is help text, not autofix.** `sort_unstable` and
-  `dedup` are the one pair that reproduces a set's semantics knowing
-  nothing about the element beyond `T: Ord`: the sort orders by the
-  element's own `Ord`, which is what a `BTreeSet` used, and `dedup`
-  removes by `PartialEq`, which is what `Eq` gave a `HashSet`. Every
-  `_by` / `_by_key` variant needs a comparator or a key the rule would
-  have to invent, and an invented key changes *which* duplicates
-  survive unless it is injective with respect to `Eq` — something the
-  rule cannot check. So the suggestion stays the plain pair, and the
-  diagnostic names the family for the reader applying it by hand:
-  `sort_by` / `sort_unstable_by` with `dedup_by` where the element has
-  no `Ord` but a field-wise order its author knows; `sort_by_key` with
-  `dedup_by_key` where a cheap injective key exists;
-  `sort_by_cached_key` where the key is expensive to compute, which is
-  std's own advice and the difference between one key per element and
-  one per comparison. Which of those two a reader can reach for is
-  decided by the signature, and worth saying in the note: a
-  `sort_by_key` key may not borrow from the element — `K` is fixed
-  independently of each `&T`, so `|k| (k.scope.as_deref(),
-  k.bare.as_str())` does not compile, one field or several. A
-  projection of `Copy` fields is fine there; a projection of borrowed
-  ones goes through `sort_by`, or pays for owned keys. The `into-sorted` and `into-deduped` families
-  mirror std method for method, so the chained `style` has the same
-  options under the same rule: the autofix is `into_sorted_unstable`
-  and `into_deduped`, the rest is prose.
+- **The comparator family is help text, not autofix.**
+  `sort_unstable` and `dedup` are the one pair that reproduces a set's
+  semantics knowing nothing about the element beyond `T: Ord`: the
+  sort orders by the element's own `Ord`, which is what a `BTreeSet`
+  used, and `dedup` removes by `PartialEq`, which is what `Eq` gave a
+  `HashSet`. A comparator variant needs an order the rule would have
+  to invent, and an invented one changes *which* duplicates survive,
+  so the suggestion stays that pair and the diagnostic points the
+  reader at the by-hand route instead —
+  [When the element is not `Ord`](#when-the-element-is-not-ord) is
+  where that route, and the spellings of it that do not compile, are
+  written down.
 - **Dropping a needless clone.** Where the walk is `iter().cloned()`
   or `iter().copied()`, the rewrite drops it: the set was about to be
   dropped, so the elements can be moved. Say so in the diagnostic
