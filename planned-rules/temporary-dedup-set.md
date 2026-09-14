@@ -115,6 +115,22 @@ would have written and anything above it is slower than that.
 | 500k `String` (16 B), all distinct         | 0.69×     | 2.54×              | 1.94×      | 1.65×            | 1.00× (77 ms)             |
 | 500k `String` (216 B, 200 B shared prefix) | 0.29×     | 1.71×              | 1.30×      | 1.28×            | 1.00× (308 ms)            |
 | 200k `String` (4 KiB, shared prefix)       | 0.23×     | 1.20×              | 1.00×      | 0.98×            | 1.00× (1034 ms)           |
+| 500k `String` (216 B, distinct prefix)     | 0.24×     | 2.04×              | 1.42×      | 1.42×            | 1.00× (331 ms)            |
+| 200k `String` (4 KiB, distinct prefix)     | 0.97×     | 2.43×              | 1.18×      | 1.13×            | 1.00× (278 ms)            |
+
+The last two rows hold the length constant and move the *difference*
+to the front, and they are what says which variable matters. Sorting
+4 KiB strings that share 4100 bytes costs 1034 ms, because every
+comparison walks the prefix; sorting the same 4 KiB strings when they
+differ at byte 1 costs 278 ms, and the round trip's lead collapses
+from 0.23× to roughly parity — the set still hashes all 4116 bytes of
+every element while the sort now reads one. At 216 B the same swap
+changes almost nothing (0.28× to 0.24×), because a comparison there is
+already one dereference into a random heap location and a handful of
+bytes, and the dereference is the cost. So length favours the set only
+through a shared prefix, and only once that prefix is long enough to
+outweigh the pointer chase. (The 4 KiB workloads hold 800 MB and vary
+by about a tenth run to run; their figures are medians of three.)
 
 The findings that shape the rule:
 
@@ -133,11 +149,12 @@ The findings that shape the rule:
    `clippy::derived_hash_with_manual_eq` police that contract; this
    rule assumes it, and says so rather than re-deriving it.
 2. **The `HashSet` round trip wins on elements that are expensive to
-   compare — which is fewer types than it sounds — and only while its
-   order goes unused.** Rust's `String` carries no small-string
-   optimisation, so sorting chases a pointer per comparison where
-   hashing touches each string once. Hence 0.23×–0.69× on these
-   synthetic strings — and 1.20×–2.54× for the same code once a `sort`
+   compare — which is fewer types than it sounds, and not simply the
+   long ones — and only while its order goes unused.** Rust's `String`
+   carries no small-string optimisation, so sorting chases a pointer
+   per comparison where hashing touches each string once. Hence
+   0.23×–0.69× on the synthetic strings whose prefixes are shared, and
+   parity on the 4 KiB strings whose prefixes are not — and 1.20×–2.54× for the same code once a `sort`
    is appended to make the output deterministic, which is the
    comparison to make as soon as anything observes the order. For
    `u64`, where a comparison is a register instruction, the round trip
