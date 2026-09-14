@@ -104,32 +104,31 @@ The project prefers the vector because:
 
 ## What the measurements show
 
-Each cell below is that subject's time as a multiple of the
-`collect` + `sort` + `dedup` column, which is therefore 1.00×: 2.22×
-is twice as slow, 0.34× is three times as fast. The element-type
-table further down uses `sort_unstable` + `dedup` as its baseline
-instead, and says so.
+Every cell is that subject's time as a multiple of `sort_unstable` +
+`dedup`, the pair the rule suggests, so 1.00× is the code the rule
+would have written and anything above it is slower than that.
 
 | Workload (input → unique)                  | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
 |--------------------------------------------|-----------|--------------------|------------|------------------|---------------------------|
-| 1M `u64`, all distinct                     | 2.22×     | 3.17×              | 1.34×      | 1.00× (27 ms)    | 0.72×                     |
-| 1M `u64`, 1% distinct                      | 2.23×     | 2.07×              | 1.03×      | 1.00× (16 ms)    | 0.71×                     |
-| 500k `String` (16 B), all distinct         | 0.34×     | 1.54×              | 1.08×      | 1.00× (144 ms)   | 0.54×                     |
-| 500k `String` (216 B, 200 B shared prefix) | 0.23×     | 1.33×              | 1.02×      | 1.00× (339 ms)   | 0.84×                     |
-| 200k `String` (4 KiB, shared prefix)       | 0.22×     | 1.32×              | 1.02×      | 1.00× (1070 ms)  | 1.05×                     |
+| 1M `u64`, all distinct                     | 2.87×     | 4.35×              | 1.83×      | 1.39×            | 1.00× (18.7 ms)           |
+| 1M `u64`, 1% distinct                      | 2.92×     | 2.94×              | 1.31×      | 1.31×            | 1.00× (11.1 ms)           |
+| 500k `String` (16 B), all distinct         | 0.69×     | 2.54×              | 1.94×      | 1.65×            | 1.00× (77 ms)             |
+| 500k `String` (216 B, 200 B shared prefix) | 0.29×     | 1.71×              | 1.30×      | 1.28×            | 1.00× (308 ms)            |
+| 200k `String` (4 KiB, shared prefix)       | 0.23×     | 1.20×              | 1.00×      | 0.98×            | 1.00× (1034 ms)           |
 
 The findings that shape the rule:
 
-1. **The `BTreeSet` round trip never won.** It ran between 0.98× and
-   1.34× the vector's time across every workload — never faster
-   outside measurement noise — allocated more (9.7 MiB against
-   7.6 MiB on the 1M-`u64` case), and produced the identical sorted
-   vector. There is no workload in which to prefer it, which is why
-   the `BTreeSet` branch is the machine-applicable one. "Identical"
-   rests on `Ord` agreeing with `Eq`, which the `Ord` trait requires:
-   a `BTreeSet` decides duplicates by `cmp`, `dedup` decides them by
-   `==`, so a type whose `cmp` returns `Equal` for values that are not
-   `==` would keep more elements after the rewrite than before.
+1. **The `BTreeSet` round trip never won.** It ran between 1.00× and
+   1.94× here and between 1.34× and 3.85× across the element sweep
+   below — never faster than the suggestion in any row of any table —
+   allocated more (9.7 MiB against nothing on the 1M-`u64` case), and
+   produced the identical sorted vector. There is no workload in which
+   to prefer it, which is why the `BTreeSet` branch is the
+   machine-applicable one. "Identical" rests on `Ord` agreeing with
+   `Eq`, which the `Ord` trait requires: a `BTreeSet` decides
+   duplicates by `cmp`, `dedup` decides them by `==`, so a type whose
+   `cmp` returns `Equal` for values that are not `==` would keep more
+   elements after the rewrite than before.
    `clippy::derive_ord_xor_partial_ord` and
    `clippy::derived_hash_with_manual_eq` police that contract; this
    rule assumes it, and says so rather than re-deriving it.
@@ -137,27 +136,23 @@ The findings that shape the rule:
    compare — which is fewer types than it sounds — and only while its
    order goes unused.** Rust's `String` carries no small-string
    optimisation, so sorting chases a pointer per comparison where
-   hashing touches each string once. Hence
-   0.22×–0.34× on these synthetic strings — and 1.32×–1.54× for the
-   same code once a `sort` is appended to make the output
-   deterministic, which is the comparison to make as soon as anything
-   observes the order. For `u64`, where a comparison is a register
-   instruction, the round trip is ~2× *slower*.
-3. **The synthetic strings above overstate it; real names are
-   cheaper to sort.** Repeating the measurement on package names —
-   4.44M npm names (mean 20 B, median 18 B) and the 1000
-   most-downloaded crates.io names (mean 10.4 B, median 10 B) — puts
-   the round trip at 0.61×–0.67× up to 100k items and 0.86× at a
-   million: a real lead, but not the 0.22× of a synthetic 4 KiB
-   string. `sort_unstable` + `dedup` closes most of what is left
-   (0.80×–0.87×) and wins outright at a million (0.65×), while staying
-   deterministic.
+   hashing touches each string once. Hence 0.23×–0.69× on these
+   synthetic strings — and 1.20×–2.54× for the same code once a `sort`
+   is appended to make the output deterministic, which is the
+   comparison to make as soon as anything observes the order. For
+   `u64`, where a comparison is a register instruction, the round trip
+   is ~2.9× slower.
+3. **The synthetic strings above overstate it; real names are cheaper
+   to sort.** Repeating the measurement on package names — 4.44M npm
+   names (mean 20 B, median 18 B) and the 1000 most-downloaded
+   crates.io names (mean 10.4 B, median 10 B) — puts the round trip at
+   0.68×–0.77× up to a hundred thousand items and 1.09× at a million:
+   a real lead, but not the 0.23× of a synthetic 4 KiB string.
 4. **At the size real code deduplicates names, the choice is
-   microseconds.** Deduplicating 1000 npm names — a lockfile's worth —
-   took 32 µs through the set against 51 µs for the vector and 41 µs
-   for `sort_unstable` + `dedup`. The set's advantage is asymptotic,
-   so the inputs at which it is worth an `#[expect]` are much larger
-   than a manifest.
+   microseconds.** A thousand npm names — a lockfile's worth — took
+   31 µs through the set against 41 µs for the suggestion. The set's
+   advantage is asymptotic, so the inputs at which it is worth an
+   `#[expect]` are much larger than a manifest.
 5. **The set is not the lighter container it looks like.**
    Deduplicating 1M values with 100 distinct ones, the set added
    18 MiB on top of the 8 MiB input vector, because
@@ -166,7 +161,8 @@ The findings that shape the rule:
    result. The O(unique) footprint the set is reached for appears only
    when the source has no usable size hint — the same workload behind
    a `filter` peaked at a few KiB for the set against the vector's
-   8 MiB.
+   8 MiB. `sort_unstable` allocates nothing at all; the stable sort is
+   what needs the scratch buffer.
 
 Names, at the lengths and sizes they actually occur in — npm names
 sampled from the full registry list, crate names from the download
@@ -174,55 +170,54 @@ ranking, `total` items drawn from `distinct` of them:
 
 | Pool (mean length)   | total → distinct | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
 |----------------------|------------------|-----------|--------------------|------------|------------------|---------------------------|
-| npm names (20 B)     | 1k → 1k          | 0.62×     | 1.35×              | 1.23×      | 1.00× (51 µs)    | 0.80×                     |
-| npm names (20 B)     | 10k → 10k        | 0.61×     | 1.16×              | 1.18×      | 1.00× (834 µs)   | 0.87×                     |
-| npm names (20 B)     | 100k → 100k      | 0.63×     | 1.21×              | 1.18×      | 1.00× (12.8 ms)  | 0.82×                     |
-| npm names (20 B)     | 1M → 100k        | 0.86×     | 0.84×              | 1.26×      | 1.00× (348 ms)   | 0.65×                     |
-| crate names (10.4 B) | 1k → 1k          | 0.67×     | 1.44×              | 1.21×      | 1.00× (46 µs)    | 0.87×                     |
+| npm names (20 B)     | 1k → 1k          | 0.77×     | 1.67×              | 1.42×      | 1.15×            | 1.00× (41 µs)             |
+| npm names (20 B)     | 10k → 10k        | 0.69×     | 1.32×              | 1.32×      | 1.16×            | 1.00× (726 µs)            |
+| npm names (20 B)     | 100k → 100k      | 0.68×     | 1.39×              | 1.45×      | 1.22×            | 1.00× (10.3 ms)           |
+| npm names (20 B)     | 1M → 100k        | 1.09×     | 1.24×              | 2.07×      | 1.58×            | 1.00× (217 ms)            |
+| crate names (10.4 B) | 1k → 1k          | 0.73×     | 1.65×              | 1.39×      | 1.13×            | 1.00× (41 µs)             |
 
 And at the sizes most code deduplicates a name list at all — a
 package's dependencies, a workspace's members, a command's arguments:
 
 | total → distinct | `HashSet` | `HashSet` + `sort` | `BTreeSet` | `sort` + `dedup` | `sort_unstable` + `dedup` |
 |------------------|-----------|--------------------|------------|------------------|---------------------------|
-| 10 → 10          | 1.63×     | 1.93×              | 1.23×      | 1.00× (0.34 µs)  | 1.00×                     |
-| 25 → 25          | 1.19×     | 1.63×              | 1.22×      | 1.00× (1.07 µs)  | 0.98×                     |
-| 50 → 50          | 1.25×     | 1.63×              | 1.17×      | 1.00× (2.04 µs)  | 0.82×                     |
-| 100 → 100        | 1.30×     | 1.94×              | 1.50×      | 1.00× (3.74 µs)  | 0.90×                     |
-| 200 → 200        | 0.90×     | 1.37×              | 1.16×      | 1.00× (10.4 µs)  | 0.75×                     |
-| 1000 → 1000      | 0.73×     | 1.28×              | 1.12×      | 1.00× (66.8 µs)  | 0.73×                     |
+| 10 → 10          | 2.21×     | 2.87×              | 1.63×      | 0.93×            | 1.00× (0.18 µs)           |
+| 25 → 25          | 1.35×     | 2.16×              | 1.48×      | 0.99×            | 1.00× (0.63 µs)           |
+| 50 → 50          | 1.26×     | 1.98×              | 1.57×      | 1.30×            | 1.00× (1.38 µs)           |
+| 100 → 100        | 1.19×     | 2.08×              | 1.48×      | 1.09×            | 1.00× (2.87 µs)           |
+| 200 → 200        | 0.98×     | 1.80×              | 1.46×      | 1.24×            | 1.00× (6.67 µs)           |
+| 1000 → 1000      | 0.79×     | 1.68×              | 1.41×      | 1.22×            | 1.00× (43.1 µs)           |
 
-Below ~200 items the round trip is the *slower* option outright —
-1.2×–1.6× — because it pays an allocation and a hash per element where
-the vector sorts in place.
+Below about two hundred items the round trip is the slower option
+outright — 1.2× to 2.2× — because it pays an allocation and a hash per
+element where the vector sorts in place.
 
 Those tables are all `String`, though, and a string is the element
 that flatters the set most: every comparison follows a pointer. Across
-element types, each cell below is the round trip divided by the
-`sort_unstable` + `dedup` the rule suggests, so above 1.00× the
-flagged code is the slower one:
+element types:
 
 | Element (size)                    |    10 |   200 | 1 000 | 100 000 |
 |-----------------------------------|-------|-------|-------|---------|
-| `u32` (4 B)                       | 4.76× | 3.04× | 2.71× | 1.32×   |
-| `u64` (8 B)                       | 5.58× | 3.12× | 2.64× | 1.51×   |
-| `u128` (16 B)                     | 6.53× | 3.31× | 2.82× | 1.85×   |
-| `Id(u64)` newtype (8 B)           | 5.27× | 2.92× | 2.51× | 1.33×   |
-| `struct Pair`, derived (8 B)      | 4.55× | 2.40× | 2.10× | 1.12×   |
-| `enum Kind`, derived (16 B)       | 4.14× | 2.28× | 2.20× | 1.05×   |
-| `struct Keyed`, forwarding (32 B) | 4.35× | 2.17× | 1.72× | 0.95×   |
-| `[u8; 32]` digest (32 B)          | 3.12× | 1.37× | 0.97× | 0.63×   |
-| `Name(String)` newtype (24 B)     | 1.65× | 1.23× | 0.99× | 0.68×   |
+| `u32` (4 B)                       | 5.59× | 3.18× | 2.54× | 1.40×   |
+| `u64` (8 B)                       | 7.72× | 3.26× | 2.66× | 1.51×   |
+| `u128` (16 B)                     | 8.74× | 3.35× | 2.79× | 1.79×   |
+| `Id(u64)` newtype (8 B)           | 7.55× | 2.96× | 2.51× | 1.35×   |
+| `struct Pair`, derived (8 B)      | 6.04× | 2.40× | 2.11× | 1.11×   |
+| `enum Kind`, derived (16 B)       | 5.37× | 2.28× | 2.21× | 1.06×   |
+| `struct Keyed`, forwarding (32 B) | 5.37× | 2.20× | 1.81× | 0.92×   |
+| `[u8; 32]` digest (32 B)          | 3.31× | 1.28× | 1.00× | 0.65×   |
+| `Name(String)` newtype (24 B)     | 2.08× | 1.02× | 0.81× | 0.63×   |
 
-Read down the first column: on ten elements the round trip costs four
-to six times what the suggestion costs, for every element but a
-string. Read along the rows: for the primitives, the newtype over one,
-the derived struct and the derived enum it never becomes the faster
-option at any size measured — 1.05× to 1.85× even at a hundred
-thousand. The set's advantage belongs to elements whose comparison is
-far dearer than their hash — one reached through a pointer (`String`,
-and a newtype over one) or wide inline bytes (a 32-byte digest) — and
-even there it arrives only past ~1000 elements.
+Read down the first column: on ten elements the round trip costs five
+to nine times what the suggestion costs, for every element but a
+string or a digest. Read along the rows: for the primitives, the
+newtype over one, the derived struct and the derived enum it never
+becomes the faster option at any size measured — 1.06× to 1.79× even
+at a hundred thousand. The set's advantage belongs to elements whose
+comparison is far dearer than their hash — one reached through a
+pointer (`String`, and a newtype over one) or wide inline bytes (a
+32-byte digest) — and even there it arrives only past a thousand
+elements.
 
 A wrapper costs nothing either way: `Id(u64)` — the shape a
 `derive_more::From` / `Display` newtype has, since the comparison
@@ -232,41 +227,6 @@ at every size, as `Name(String)` tracks `String`. Hand-written
 riding along) behave like the primitive they forward to, not like the
 32 bytes they carry. The element that decides this is the one the
 comparison actually reads.
-
-The `BTreeSet` column ran from 1.26× to 2.79× of the suggestion
-across every element type and size here — slower in every row, which
-is what the earlier tables found too.
-
-### How these were measured
-
-Dependency-free single-file programs, `rustc -O --edition 2021
--C target-cpu=native`, rustc 1.99.0-nightly, x86-64. Reproducing them
-needs only this description; they are scratch files and are not
-committed.
-
-- **Subjects.** The five forms in the tables, each taking the source
-  vector by value and returning the deduplicated one, so the output's
-  allocation and drop are inside the timed region and the input's
-  clone is outside it. `black_box` wraps the input and the result.
-- **Timing.** One call per measurement above ~100k elements, best of
-  five to nine. Below that a call is nanoseconds, so a batch of
-  pre-cloned inputs is timed as a whole and divided, best of seven to
-  nine batches.
-- **Allocation.** A counting `GlobalAlloc` tracks live bytes and a
-  high-water mark; the figure quoted is the peak above the live bytes
-  at the moment the call started, so the input vector is excluded and
-  the set, the scratch buffer and the output are not.
-- **Workloads.** `total` items drawn with a xorshift from `distinct`
-  values and shuffled, so the duplicate ratio is a parameter rather
-  than an accident. Names come from two pools: the 4.44M-name npm
-  registry list, and the 1000 most-downloaded crates.io names.
-- **Element types.** Nine, chosen to separate what the comparison
-  reads from what the value carries: `u32` / `u64` / `u128`; `[u8; 32]`
-  as a digest; a newtype over `u64` with the std comparison derives
-  and a `From` impl; a two-field struct and a three-variant enum, both
-  derived; a struct whose hand-written `Eq` / `Ord` / `Hash` forward
-  to one `u64` key while a 24-byte payload rides along; and a newtype
-  over `String`.
 
 ## When the set is the right tool
 
@@ -301,11 +261,11 @@ deterministically-firing lint into one.
 - **Thousands of pointer-chasing elements whose order is genuinely
   unused.** The set leads only where a comparison costs far more than
   a hash — a `String` or `PathBuf`, a newtype over one, a wide digest
-  — and only from about 10³ elements up, by about 1.5×. For a
-  primitive, a newtype over one, a derived struct or enum, or an impl
-  that forwards to one key field, there is no such band at all: the
-  round trip measured slower at every size, by four to six times on
-  ten elements. The honest remedy even inside the band is usually not
+  — and only from about 10³ elements up, where it runs at 0.63×–0.81×
+  of the suggestion. For a primitive, a newtype over one, a derived
+  struct or enum, or an impl that forwards to one key field, there is
+  no such band at all: the round trip measured slower at every size,
+  by five to nine times on ten elements. The honest remedy even inside the band is usually not
   to sort at all but to stop discarding the set: keep it, name it, and
   let the code that consumes it say it wants a set.
   Where a vector really is what the caller needs, `#[expect]` it on the
@@ -812,17 +772,20 @@ already made for its own pending rewrite.
   `HashSet`, whose order is arbitrary, or out of a `BTreeSet`, which
   had already collapsed `Equal` elements to one. So the stable sort
   guarantees something about an input order that the flagged code
-  never had, and charges for it: `sort_unstable` measured faster in
-  every row of every table above, including already-sorted input
-  (0.55× at a thousand names, 0.96× at a hundred thousand), and
-  allocates nothing where the stable sort allocates scratch. It also
-  makes `clippy::stable_sort_primitive` a non-issue, since that lint
-  asks for exactly this. The one measured exception is an element
-  whose comparison is drastically more expensive than its hash — 4 KiB
-  strings sharing a 4100-byte prefix, where the stable sort's lower
-  comparison count put it at 0.95× of `sort_unstable` — and an element
-  that expensive belongs in the `#[expect]` case above, not in a
-  different suggestion.
+  never had, and charges for it: across the tables above the stable
+  sort was 1.03×–1.65× slower everywhere except at ten elements, where
+  the two are a wash (0.93×–1.09×), and it allocates a scratch buffer
+  where `sort_unstable` allocates nothing. It also makes
+  `clippy::stable_sort_primitive` a non-issue, since that lint asks
+  for exactly this. Two measured cases go the other way and neither
+  changes the suggestion: an element whose comparison dwarfs its hash
+  (4 KiB strings sharing a 4100-byte prefix, where the stable sort's
+  lower comparison count put it at 0.98× of `sort_unstable`) belongs
+  in the `#[expect]`
+  case above rather than in a second suggestion, and input that is
+  *already sorted* lets the stable sort's run detection pay for itself
+  (`sort_unstable` at 1.01×–1.04× there) — a vector arriving sorted at
+  a deduplication is not the case this rule is looking at.
 - **The comparator family is help text, not autofix.**
   `sort_unstable` and `dedup` are the one pair that reproduces a set's
   semantics knowing nothing about the element beyond `T: Ord`: the
@@ -847,14 +810,14 @@ already made for its own pending rewrite.
   `MachineApplicable` for the `BTreeSet` branch. Its output is the
   vector the rewrite produces, element for element and order for
   order, and it measured slower than the suggestion in every row of
-  every table (1.26×–2.79× on the element-type sweep).
+  every table (1.34×–3.85× on the element-type sweep).
 
   `MachineApplicable` for the `HashSet` branch too, but only where
   the element makes the answer decisive: **no indirection, and a
   layout of at most 16 bytes** (`cx.layout_of`, with a reference, a
   raw pointer or a heap-owning field disqualifying). That is the set
   of elements the sweep found no size at which the round trip wins —
-  4.1×–6.5× slower on ten elements, still 1.05×–1.85× slower on a
+  5.4×–8.7× slower on ten elements, still 1.06×–1.79× slower on a
   hundred thousand — and it covers the primitives, the newtypes over
   them, and the derived structs and enums. A `HashSet`'s iteration
   order is unspecified, so no correct program can depend on the order
@@ -864,8 +827,9 @@ already made for its own pending rewrite.
   `MaybeIncorrect` for every other `HashSet` element — a `String`, a
   `PathBuf`, a newtype over one, a 32-byte digest. The enum name
   undersells it: the suggestion is valid Rust and correct, but past
-  ~1000 elements it can cost about 1.5×, and a trade-off is a call for
-  a human rather than for `cargo fix`. The 16-byte line is
+  a thousand elements the rewrite runs at 1.2×–1.6× of the round trip
+  it replaces, and a trade-off is a call for a human rather than for
+  `cargo fix`. The 16-byte line is
   deliberately conservative at one edge: a wide struct whose
   comparison forwards to one small key behaves like that key rather
   than like its own size, and is held back anyway, because a `cmp`
