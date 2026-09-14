@@ -118,9 +118,9 @@ would have written and anything above it is slower than that.
 | 500k `String` (216 B, distinct prefix)     | 0.24×     | 2.04×              | 1.42×      | 1.42×            | 1.00× (331 ms)            |
 | 200k `String` (4 KiB, distinct prefix)     | 0.97×     | 2.43×              | 1.18×      | 1.13×            | 1.00× (278 ms)            |
 
-The last two rows separate two variables the others confound, and the
-separation is worth reading carefully, because each variable pushes a
-different way.
+The two distinct-prefix rows separate two variables the others
+confound, and the separation is worth reading carefully, because each
+variable pushes a different way.
 
 Hold the length and move the *difference* to the front. At 4 KiB the
 round trip falls from 0.23× to parity: every comparison had been
@@ -971,9 +971,10 @@ Active by default. The trigger is narrow, the `Ord` gate holds back
 every suggestion the rule cannot make — reporting the shape without
 one only where the reader owns the type, per `unorderable_elements` —
 and the exceptions that remain are performance trade-offs a crate
-states once with `#[expect]`. A crate that deduplicates large string collections whose
-order nothing reads — where the measurement favours the set — is the
-crate that turns the rule off in `[perfectionist].disable`.
+states once with `#[expect]`. A crate that deduplicates large string
+collections whose order nothing reads — where the measurement favours
+the set — is the crate that turns the rule off in
+`[perfectionist].disable`.
 
 ## Interaction with clippy and sibling rules
 
