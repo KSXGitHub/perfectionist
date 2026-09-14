@@ -607,7 +607,18 @@ dropped are the ones `dedup` drops. The vector, by contrast, is
 wanted: all three callers need a sequence — two write it to a manifest
 and one hands it to `MultiSelect::items(&choices)`, whose displayed
 order a user reads — which is what makes the sort load-bearing and the
-set the only thing here that is not. The doc comment names the
+set the only thing here that is not.
+
+Whether the work belongs in a helper at all is a separate question,
+and not one the rule answers. A normalisation hidden behind a name
+that does not mention it, or paid by callers that never read the
+order, is worth moving to the call sites that need it — the argument
+`perfectionist::needless_borrowed_parameters` makes about a signature
+that borrows and then clones. It does not apply to a function called
+`sort_unique` whose doc comment says it sorts and deduplicates: the
+cost is in the name, every caller needs both properties, and the rule
+rewrites what is inside the helper without taking a view on the helper
+itself. The doc comment names the
 JavaScript function the code was ported from, which is where the shape
 comes from — `[...new Set(xs)].sort()` is the right idiom in a
 language whose `Set` keeps insertion order and whose arrays have no
