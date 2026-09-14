@@ -61,4 +61,45 @@ fn from_a_macro(first: bool, second: bool, third: bool, fourth: bool, fifth: boo
     }
 }
 
+enum EnumName {
+    VariantName(u8),
+}
+
+// Not flagged: every `&&` here has a `let` beside it, so none is
+// counted. A chain of bindings has no group of ordinary clauses to
+// lift out, and the trailing guard is a single clause.
+fn all_lets(
+    first: Option<u8>,
+    second: Result<u8, ()>,
+    third: EnumName,
+    fourth: Option<u8>,
+    fifth: Result<u8, ()>,
+    ready: bool,
+) {
+    if let Some(_one) = first
+        && let Ok(_two) = second
+        && let EnumName::VariantName(_three) = third
+        && let Some(_four) = fourth
+        && let Err(_five) = fifth
+        && ready
+    {
+        work();
+    }
+}
+
+// Bad: 4 operators. The `&&` beside the `let` is not counted, and the
+// five ordinary clauses after it are a group that a closure could name.
+fn a_group_after_the_let(
+    input: Option<u8>,
+    first: bool,
+    second: bool,
+    third: bool,
+    fourth: bool,
+    fifth: bool,
+) {
+    if let Some(_value) = input && first && second && third && fourth && fifth {
+        work();
+    }
+}
+
 fn main() {}

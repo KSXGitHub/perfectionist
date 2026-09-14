@@ -4,7 +4,8 @@ warning: condition has 4 boolean operators, above the limit of 3
 LL |     if first && second && third && fourth && fifth {
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
    = note: `#[warn(perfectionist::overly_complex_condition)]` on by default
 
 warning: condition has 4 boolean operators, above the limit of 3
@@ -13,7 +14,8 @@ warning: condition has 4 boolean operators, above the limit of 3
 LL |     while first || second || third || fourth || fifth {
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
 
 warning: condition has 4 boolean operators, above the limit of 3
   --> $DIR/overly_complex_condition.rs:LL:CC
@@ -21,6 +23,17 @@ warning: condition has 4 boolean operators, above the limit of 3
 LL |         0 if first && second && third && fourth && fifth => work(),
    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
+
+warning: condition has 4 boolean operators, above the limit of 3
+  --> $DIR/overly_complex_condition.rs:LL:CC
+   |
+LL |     if let Some(_value) = input && first && second && third && fourth && fifth {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
+   = note: the `&&` that joins a `let` to the chain is not counted
 
 warning: N warnings emitted

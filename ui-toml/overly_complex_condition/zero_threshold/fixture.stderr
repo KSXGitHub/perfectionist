@@ -4,7 +4,8 @@ warning: condition has 1 boolean operator, above the limit of 0
 LL |     if first && second {
    |        ^^^^^^^^^^^^^^^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
    = note: `#[warn(perfectionist::overly_complex_condition)]` on by default
 
 warning: condition has 2 boolean operators, above the limit of 0
@@ -13,15 +14,28 @@ warning: condition has 2 boolean operators, above the limit of 0
 LL |     if first && second || third {
    |        ^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
 
 warning: condition has 1 boolean operator, above the limit of 0
   --> $DIR/fixture.rs:LL:CC
    |
-LL |     if let Some(_value) = input && ready {
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |     if let Some(_value) = input && first && second {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
+   = note: the `&&` that joins a `let` to the chain is not counted
+
+warning: condition has 1 boolean operator, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if first && second && let Some(_value) = input {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
+   = note: the `&&` that joins a `let` to the chain is not counted
 
 warning: condition has 1 boolean operator, above the limit of 0
   --> $DIR/fixture.rs:LL:CC
@@ -29,7 +43,8 @@ warning: condition has 1 boolean operator, above the limit of 0
 LL |     while count > 0 && ready {
    |           ^^^^^^^^^^^^^^^^^^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
 
 warning: condition has 1 boolean operator, above the limit of 0
   --> $DIR/fixture.rs:LL:CC
@@ -37,7 +52,8 @@ warning: condition has 1 boolean operator, above the limit of 0
 LL |         0 if first || second => work(),
    |              ^^^^^^^^^^^^^^^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
 
 warning: condition has 1 boolean operator, above the limit of 0
   --> $DIR/fixture.rs:LL:CC
@@ -45,7 +61,8 @@ warning: condition has 1 boolean operator, above the limit of 0
 LL |     if flag && items.iter().any(|item| *item || flag) {
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
 
 warning: condition has 2 boolean operators, above the limit of 0
   --> $DIR/fixture.rs:LL:CC
@@ -53,7 +70,8 @@ warning: condition has 2 boolean operators, above the limit of 0
 LL |     } else if second && third || first {
    |               ^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
 
 warning: condition has 1 boolean operator, above the limit of 0
   --> $DIR/fixture.rs:LL:CC
@@ -61,9 +79,12 @@ warning: condition has 1 boolean operator, above the limit of 0
 LL |       while let Some(_item) = items.next()
    |  ___________^
 LL | |         && ready
-   | |________________^
+LL | |         && more
+   | |_______________^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
+   = note: the `&&` that joins a `let` to the chain is not counted
 
 warning: condition has 1 boolean operator, above the limit of 0
   --> $DIR/fixture.rs:LL:CC
@@ -71,7 +92,8 @@ warning: condition has 1 boolean operator, above the limit of 0
 LL |     if first && (if second { third } else { fourth }) {
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
 
 warning: condition has 1 boolean operator, above the limit of 0
   --> $DIR/fixture.rs:LL:CC
@@ -79,7 +101,8 @@ warning: condition has 1 boolean operator, above the limit of 0
 LL |     if first && (if second && third { fourth } else { fifth }) {
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
 
 warning: condition has 1 boolean operator, above the limit of 0
   --> $DIR/fixture.rs:LL:CC
@@ -87,7 +110,8 @@ warning: condition has 1 boolean operator, above the limit of 0
 LL |     if first && (if second && third { fourth } else { fifth }) {
    |                     ^^^^^^^^^^^^^^^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
 
 warning: condition has 1 boolean operator, above the limit of 0
   --> $DIR/fixture.rs:LL:CC
@@ -99,7 +123,8 @@ LL | |         _ => false,
 LL | |     }) {
    | |______^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
 
 warning: condition has 1 boolean operator, above the limit of 0
   --> $DIR/fixture.rs:LL:CC
@@ -107,6 +132,7 @@ warning: condition has 1 boolean operator, above the limit of 0
 LL |     if first && both!(second, third) {
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: bind the condition, or the part of it that names a concept, to a `let`
+   = help: bind the condition, or the part of it that names a concept, to a `let` named for the predicate it decides, not for the clauses it joins
+   = help: where that part follows another clause, bind a closure or a function instead, so its operands stay unevaluated until the condition reaches them
 
 warning: N warnings emitted

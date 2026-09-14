@@ -29,9 +29,42 @@ fn mixed(first: bool, second: bool, third: bool) {
     }
 }
 
-// Bad: 1 operator — the `&&` of a `let` chain counts.
+// Not flagged: the one `&&` has a `let` beside it, so it is not
+// counted. It is what makes the chain a chain; no binding replaces it.
 fn let_chain(input: Option<u8>, ready: bool) {
     if let Some(_value) = input && ready {
+        work();
+    }
+}
+
+// Not flagged: every `&&` has a `let` beside it, and the trailing
+// guard is a single clause rather than a group.
+fn let_chain_all_lets(
+    first: Option<u8>,
+    second: Result<u8, ()>,
+    third: Option<u8>,
+    ready: bool,
+) {
+    if let Some(_one) = first
+        && let Ok(_two) = second
+        && let Some(_three) = third
+        && ready
+    {
+        work();
+    }
+}
+
+// Bad: 1 operator — the `&&` beside the `let` is not counted, the one
+// joining the two ordinary clauses after it is.
+fn let_chain_trailing_group(input: Option<u8>, first: bool, second: bool) {
+    if let Some(_value) = input && first && second {
+        work();
+    }
+}
+
+// Bad: 1 operator — the same, with the group leading the chain.
+fn let_chain_leading_group(input: Option<u8>, first: bool, second: bool) {
+    if first && second && let Some(_value) = input {
         work();
     }
 }
@@ -84,10 +117,12 @@ fn else_if(first: bool, second: bool, third: bool) {
 }
 
 // Bad: 1 operator — a `while let` condition, the one head the rustdoc
-// names that nothing else here reaches.
-fn while_let(mut items: impl Iterator<Item = u8>, ready: bool) {
+// names that nothing else here reaches. The `&&` beside the `let` is
+// not counted, so the head needs a group after it to be flagged at all.
+fn while_let(mut items: impl Iterator<Item = u8>, ready: bool, more: bool) {
     while let Some(_item) = items.next()
         && ready
+        && more
     {
         work();
     }

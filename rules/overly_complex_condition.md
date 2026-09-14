@@ -15,8 +15,9 @@ flags the condition when the count is above `max_operators`.
 
 Only the condition itself is counted, not the branches it
 selects, and a closure inside the condition is a scope of its
-own. The `&&` that joins the `let`s of a `let` chain counts like
-any other. A condition produced by a macro expansion is not
+own. An `&&` with a `let` on either side of it is not counted:
+that `&&` is what makes the chain a chain, and no binding can
+replace it. A condition produced by a macro expansion is not
 measured, though a condition written inside a macro's arguments
 is. The `let` that binds a boolean is not a condition, so naming
 the expression is what satisfies the rule.
@@ -35,11 +36,12 @@ names a concept, to a `let` gives it the name the author had,
 puts a debugger-visible value on it, and turns the `if` back into
 a sentence. SonarSource ships this rule with the same limit.
 
-A `let` chain is the shape that remedy does not reach: its
-`&&`s are what produce the bindings, so there is nothing to
-lift out. Write
-`#[expect(perfectionist::overly_complex_condition, reason = "...")]`
-at the site instead.
+Which clauses are bound matters. A group that leads the
+condition runs whenever the `if` is reached, so a `let` moves it
+without changing when it runs. A group that follows another
+clause did not run when that earlier clause was false, and a
+`let` would make it run every time; bind a closure or a function
+there instead, and call it in the condition.
 
 ## Example
 
@@ -63,6 +65,39 @@ let is_visible_file =
     entry.is_file() && !entry.is_hidden() && entry.len() > 0;
 if is_visible_file
     && entry.depth() < max_depth
+    && !ignored.contains(entry.path())
+{
+    copy(entry);
+}
+```
+
+The group led the condition there, so the `let` runs it exactly
+when the `if` did. A group that follows another clause needs the
+lazy form, and a group that reads a binding the chain introduces
+takes it as a parameter:
+
+**Avoid:**
+
+```rust,ignore
+if let Some(entry) = next_entry()
+    && entry.depth() < max_depth
+    && entry.is_file()
+    && !entry.is_hidden()
+    && entry.len() > 0
+    && !ignored.contains(entry.path())
+{
+    copy(entry);
+}
+```
+
+**Prefer:**
+
+```rust,ignore
+let is_visible_file =
+    |entry: &Entry| entry.is_file() && !entry.is_hidden() && entry.len() > 0;
+if let Some(entry) = next_entry()
+    && entry.depth() < max_depth
+    && is_visible_file(&entry)
     && !ignored.contains(entry.path())
 {
     copy(entry);

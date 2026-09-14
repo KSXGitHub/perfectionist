@@ -1,7 +1,7 @@
 use crate::common::{DefaultState, plural, span_is_macro_generated};
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
-use clippy_utils::diagnostics::span_lint_and_help;
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{Arm, BinOpKind, Expr, ExprKind, MatchSource};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
@@ -16,8 +16,9 @@ declare_tool_lint! {
     ///
     /// Only the condition itself is counted, not the branches it
     /// selects, and a closure inside the condition is a scope of its
-    /// own. The `&&` that joins the `let`s of a `let` chain counts like
-    /// any other. A condition produced by a macro expansion is not
+    /// own. An `&&` with a `let` on either side of it is not counted:
+    /// that `&&` is what makes the chain a chain, and no binding can
+    /// replace it. A condition produced by a macro expansion is not
     /// measured, though a condition written inside a macro's arguments
     /// is. The `let` that binds a boolean is not a condition, so naming
     /// the expression is what satisfies the rule.
@@ -36,11 +37,12 @@ declare_tool_lint! {
     /// puts a debugger-visible value on it, and turns the `if` back into
     /// a sentence. SonarSource ships this rule with the same limit.
     ///
-    /// A `let` chain is the shape that remedy does not reach: its
-    /// `&&`s are what produce the bindings, so there is nothing to
-    /// lift out. Write
-    /// `#[expect(perfectionist::overly_complex_condition, reason = "...")]`
-    /// at the site instead.
+    /// Which clauses are bound matters. A group that leads the
+    /// condition runs whenever the `if` is reached, so a `let` moves it
+    /// without changing when it runs. A group that follows another
+    /// clause did not run when that earlier clause was false, and a
+    /// `let` would make it run every time; bind a closure or a function
+    /// there instead, and call it in the condition.
     ///
     /// ### Example
     ///
@@ -69,6 +71,39 @@ declare_tool_lint! {
     ///     copy(entry);
     /// }
     /// ```
+    ///
+    /// The group led the condition there, so the `let` runs it exactly
+    /// when the `if` did. A group that follows another clause needs the
+    /// lazy form, and a group that reads a binding the chain introduces
+    /// takes it as a parameter:
+    ///
+    /// **Avoid:**
+    ///
+    /// ```rust,ignore
+    /// if let Some(entry) = next_entry()
+    ///     && entry.depth() < max_depth
+    ///     && entry.is_file()
+    ///     && !entry.is_hidden()
+    ///     && entry.len() > 0
+    ///     && !ignored.contains(entry.path())
+    /// {
+    ///     copy(entry);
+    /// }
+    /// ```
+    ///
+    /// **Prefer:**
+    ///
+    /// ```rust,ignore
+    /// let is_visible_file =
+    ///     |entry: &Entry| entry.is_file() && !entry.is_hidden() && entry.len() > 0;
+    /// if let Some(entry) = next_entry()
+    ///     && entry.depth() < max_depth
+    ///     && is_visible_file(&entry)
+    ///     && !ignored.contains(entry.path())
+    /// {
+    ///     copy(entry);
+    /// }
+    /// ```
     pub perfectionist::OVERLY_COMPLEX_CONDITION,
     Warn,
     "condition has more boolean operators than the configured maximum",
@@ -79,6 +114,29 @@ const CONFIG_KEY: &str = "perfectionist::overly_complex_condition";
 
 /// SonarSource's limit for the same rule.
 const DEFAULT_MAX_OPERATORS: usize = 3;
+
+/// What to do, and the constraint that decides whether it was done. The
+/// count alone is satisfied by binding the clauses under any name at
+/// all, so the help rules out the name a mechanical split reaches for
+/// -- one assembled from the clauses rather than drawn from what they
+/// together decide.
+const NAMING_HELP: &str = "bind the condition, or the part of it that names a concept, to a \
+                           `let` named for the predicate it decides, not for the clauses it \
+                           joins";
+
+/// The one way the fix above changes behaviour. A `let` runs its
+/// initialiser where it stands, so a group lifted from anywhere but
+/// the front of the condition runs even when an earlier clause would
+/// have stopped it -- which a `let` chain forces, since no `let`
+/// statement can sit between two clauses of the chain.
+const LAZINESS_HELP: &str = "where that part follows another clause, bind a closure or a \
+                             function instead, so its operands stay unevaluated until the \
+                             condition reaches them";
+
+/// Why the count can be lower than the `&&` a reader counts in the
+/// source. Emitted only for a condition that has a `let` in it, which
+/// is the only shape where the two differ.
+const UNCOUNTED_NOTE: &str = "the `&&` that joins a `let` to the chain is not counted";
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
@@ -152,7 +210,8 @@ impl OverlyComplexCondition {
         if span_is_macro_generated(condition.span) {
             return;
         }
-        let count = count_boolean_operators(condition);
+        let operators = count_boolean_operators(condition);
+        let count = operators.count;
         if count <= self.config.max_operators {
             return;
         }
@@ -164,28 +223,88 @@ impl OverlyComplexCondition {
         let max = self.config.max_operators;
         let noun = plural(count, "operator", "operators");
         let message = format!("condition has {count} boolean {noun}, above the limit of {max}");
-        span_lint_and_help(
+        span_lint_and_then(
             cx,
             OVERLY_COMPLEX_CONDITION,
             condition.span,
             message,
-            None,
-            "bind the condition, or the part of it that names a concept, to a `let`",
+            |diag| {
+                diag.help(NAMING_HELP);
+                diag.help(LAZINESS_HELP);
+                if operators.binds_a_pattern {
+                    diag.note(UNCOUNTED_NOTE);
+                }
+            },
         );
     }
 }
 
-/// The number of `&&` and `||` operators in `condition`, outside any
-/// nested body and outside macro expansions.
+/// What a condition's operators add up to.
+struct Operators {
+    /// The number of `&&` and `||` operators in the condition, outside
+    /// any nested body and outside macro expansions, and outside the
+    /// `&&`s that hold a `let` chain together.
+    count: usize,
+    /// Whether any clause of the chain is a `let`, which is what makes
+    /// the uncounted `&&`s worth a note on the diagnostic: the reader
+    /// can see more `&&` in the source than the count names.
+    binds_a_pattern: bool,
+}
+
+/// The `&&`-joined clauses of `expr`, left to right.
+///
+/// A macro expansion is one clause however it is shaped, because the
+/// `&&` inside it is not the author's: the chain ends where the
+/// expansion begins.
+fn and_chain_clauses<'tcx>(expr: &'tcx Expr<'tcx>, clauses: &mut Vec<&'tcx Expr<'tcx>>) {
+    if let ExprKind::Binary(op, lhs, rhs) = expr.kind
+        && op.node == BinOpKind::And
+        && !span_is_macro_generated(expr.span)
+    {
+        and_chain_clauses(lhs, clauses);
+        and_chain_clauses(rhs, clauses);
+    } else {
+        clauses.push(expr);
+    }
+}
+
+fn is_let(expr: &Expr<'_>) -> bool {
+    matches!(expr.kind, ExprKind::Let(..))
+}
+
+/// The operators of `condition` that a `let` binding could remove.
+///
+/// The condition is flattened into the clauses its top-level `&&`s
+/// join, which is the only place a `let` may appear. Each gap between
+/// two clauses is one `&&` the author wrote, and it counts unless a
+/// `let` sits on either side of it: a group of ordinary clauses
+/// collapses into one named clause, taking its `&&`s with it, whereas
+/// an `&&` next to a `let` is what makes the chain a chain. The
+/// operators *inside* each clause -- a `||`, a parenthesised `&&` --
+/// are counted the ordinary way, since no `let` can be nested there.
 ///
 /// [`OperatorCounter`] leaves `NestedFilter` at its `None` default, so
 /// `walk_expr` never descends into a closure body or a `const` block.
 /// That is what keeps a closure's operators out of the enclosing
 /// condition, not an arm of the match below.
-fn count_boolean_operators<'tcx>(condition: &'tcx Expr<'tcx>) -> usize {
-    let mut counter = OperatorCounter { count: 0 };
-    counter.visit_expr(condition);
-    counter.count
+fn count_boolean_operators<'tcx>(condition: &'tcx Expr<'tcx>) -> Operators {
+    let mut clauses = Vec::new();
+    and_chain_clauses(condition, &mut clauses);
+
+    let mut count = clauses
+        .windows(2)
+        .filter(|pair| !is_let(pair[0]) && !is_let(pair[1]))
+        .count();
+    for clause in &clauses {
+        let mut counter = OperatorCounter { count: 0 };
+        counter.visit_expr(clause);
+        count += counter.count;
+    }
+
+    Operators {
+        count,
+        binds_a_pattern: clauses.iter().copied().any(is_let),
+    }
 }
 
 struct OperatorCounter {
