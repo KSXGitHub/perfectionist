@@ -82,7 +82,16 @@ enabling in a given crate. For most element types, though, the
 preference is free at every size measured: the vector form is also the
 quicker one.
 
-The case against the shape is not the clock, and the two are worth
+The anti-pattern is the round trip, not the set. A `HashSet` used as
+a `HashSet` — membership tested, the value kept, passed on, returned —
+is the right container for what it does, and the rule never reaches
+it; "keep the set" is the first remedy the diagnostic offers, not a
+concession. What it flags is a set built only to be walked straight
+back into a linear sequence, which is the one shape in which both of
+the set's properties go unused: its membership test is never called
+and its order is discarded on arrival.
+
+The case against that shape is not the clock, and the two are worth
 keeping apart. A set that exists for one expression asks for
 deduplication by building a container whose whole contract — members,
 no order — is thrown away on the next line; where that is the wrong
@@ -668,10 +677,15 @@ A **set round trip** has these parts, all of which must hold:
    `iter()`, `iter().cloned()`, `iter().copied()`, or `drain(..)`, and
    is used for nothing else.
 3. **The landing.** The walk, after any number of adapters, is
-   collected into a sequence: `Vec<U>`, `VecDeque<U>`, or `Box<[U]>`,
-   including the fallible forms a `collect` produces from an iterator
-   of `Result` / `Option` (`Result<Vec<U>, E>`). Landing in a map or a
-   set is not this shape: `keys().chain(...).collect::<BTreeSet<_>>()
+   collected into a linear sequence: `Vec<U>`, `VecDeque<U>`,
+   `LinkedList<U>`, or `Box<[U]>`, including the fallible forms a
+   `collect` produces from an iterator of `Result` / `Option`
+   (`Result<Vec<U>, E>`). A `LinkedList` landing can only ever reach
+   the help-text tier, since std gives it no `sort` or `dedup` to
+   suggest. `BinaryHeap` is not this shape: it is a priority
+   structure whose order is its own, not a sequence whose order the
+   set discarded. Nor is a map or a set:
+   `keys().chain(...).collect::<BTreeSet<_>>()
    .into_iter().filter_map(...).collect::<BTreeMap<_, _>>()` ends
    somewhere a sort cannot replace.
 
