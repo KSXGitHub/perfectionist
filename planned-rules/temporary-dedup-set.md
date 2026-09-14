@@ -1012,8 +1012,9 @@ suggestion; the third emits help text only.
   re-point the second binding's initializer at the first's, and append
   the two statements. The use scan has already proved the name is dead
   after the walk.
-- **Suggest `sort_unstable`, not `sort`.** Stability decides one
-  thing: the relative order of elements that compare `Equal`. This
+- **Suggest `sort_unstable`, not `sort`.** This governs the sort the
+  rule *introduces*; where the code already sorts, the suggestion
+  keeps the call as written. Stability decides one thing: the relative order of elements that compare `Equal`. This
   rewrite has none to preserve — the value it replaces came out of a
   `HashSet`, whose order is arbitrary, or out of a `BTreeSet`, which
   had already collapsed `Equal` elements to one. So the stable sort
@@ -1067,9 +1068,8 @@ suggestion; the third emits help text only.
   rather than silently changing the chain.
 - **What the diagnostic offers, and what gates it.** Naming the
   anti-pattern and writing its fix are separate questions, and the
-  rule answers the second only where the measurement answers it.
-  A code suggestion where the winner is clear at every size and every
-  duplicate ratio; prose everywhere else.
+  rule answers the second where either the measurement or the
+  surrounding code settles it; prose everywhere else.
 
   A code suggestion, `MachineApplicable`, for the `BTreeSet` branch.
   Its output is the vector the rewrite produces, element for element
@@ -1094,6 +1094,35 @@ suggestion; the third emits help text only.
   being replaced, which is what makes the rewrite safe to apply
   unattended here.
 
+  A code suggestion, `MachineApplicable`, for any `HashSet` element
+  whatever — `String` included — **where the landing vector's next use
+  is `sort()` or `sort_unstable()`**, the `sort_unique` shape. Here the
+  surrounding code settles what the element could not: the set's order
+  is overwritten by the next statement, so the rewrite's output matches
+  the original element for element and order for order, and the set is
+  left contributing a deduplication that `dedup` repeats. Keep the sort
+  call the code already wrote and insert `dedup` after it rather than
+  re-spelling it — this rewrite deletes a container, and swapping
+  `sort` for `sort_unstable` is a separate opinion that the bullet
+  below makes on its own terms.
+
+  The follow-on sort has to order by the element's own `Ord` for this
+  to hold. `sort_by`, `sort_by_key`, `sort_unstable_by`,
+  `sort_unstable_by_key` and `sort_by_cached_key` order by something
+  narrower than `Eq`, and `dedup` after one of them removes a strict
+  subset of what the set removed: three `Item`s sharing a name, with
+  versions 1, 2 and 1, come out of the set as two and out of
+  `sort_by_key(|i| i.name)` + `dedup` as three, because the two equal
+  elements are never adjacent. Those land in the help-text tier with
+  the rest.
+
+  Nothing about this tier is a performance claim. Where duplicates
+  dominate the input the round trip plus its sort is the faster of the
+  two — 0.83× at ten duplicates per entry against 1.67× at none — and
+  the suggestion is offered anyway, because it preserves the meaning
+  exactly while deleting a hash table, which is what
+  `MachineApplicable` asks and all that it asks.
+
   **No code suggestion for every other `HashSet` element** — a
   `String`, a `PathBuf`, a newtype over one, a 32-byte digest.
   `sort_unstable` + `dedup` compiles there and is correct there, so
@@ -1101,12 +1130,8 @@ suggestion; the third emits help text only.
   an improvement, and a lint that emits one anyway is guessing with
   the reader's code. With the order unused the round trip measured
   0.68×–0.80× on every real pool, so the rewrite is a pessimisation as
-  often as not. Even where a `sort` follows the landing — the one
-  shape in which the set demonstrably contributes nothing, its order
-  overwritten and its deduplication repeated — the answer still turns
-  on the duplicate ratio the pass cannot see: the same code measured
-  1.67× at a thousand distinct entries and 0.83× at ten duplicates
-  each. The 16-byte line is deliberately conservative at one edge: a
+  often as not, and nothing in the surrounding code says the order was
+  unwanted. The 16-byte line is deliberately conservative at one edge: a
   wide struct whose comparison forwards to one small key behaves like
   that key rather than like its own size, and is held back anyway,
   because a `cmp` impl can read whatever it likes.
@@ -1122,6 +1147,24 @@ suggestion; the third emits help text only.
   knows which applies, and none of them is a guess `cargo fix` could
   make.
 
+
+### Why the sorted shape is not its own rule
+
+`sort_unique` is the same anti-pattern with more evidence, not a
+different one, and the three tests this repository applies to a split
+all come out that way. Its trigger is a strict subset: the same build,
+the same walk, the same landing, plus one more condition on what
+happens next. Its configuration is the same configuration — a second
+rule would read `extra_set_types` and `unorderable_elements` to decide
+the identical questions. And its diagnostic is the same sentence; only
+the suggestion attached to it differs.
+
+Splitting would also cost the reader twice: two lints firing on one
+expression, so a crate that wanted the shape would have to name both
+in `#[expect]`, and two names for one violation, the second of which
+could only be the first with a clause bolted on. What varies here is
+how much the rule can prove, which is what an applicability tier is
+for.
 
 ### Difficulty
 
