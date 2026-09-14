@@ -1041,7 +1041,7 @@ suggestion; the third emits help text only.
 - **Autofix, chained form.** Fire the machine-applicable rewrite only
   where the round trip is a `let` initializer, which is where it
   occurs in practice: replace the initializer with the collect that
-  produced the set's input, then insert `sort_unstable` and `dedup`
+  produced the set's input, then insert the sort and `dedup`
   statements after it, adding `mut` to the binding if it lacks one. In
   any other expression position the rewrite needs a block, so emit the
   help text without a suggestion.
@@ -1049,6 +1049,15 @@ suggestion; the third emits help text only.
   re-point the second binding's initializer at the first's, and append
   the two statements. The use scan has already proved the name is dead
   after the walk.
+- **Where the scan found a sort, the span swallows it.** The replaced
+  region then runs from the round trip through the whole sort
+  statement, and the replacement re-emits that statement between the
+  collect and the `dedup`. Ending the span at the round trip and
+  inserting a sort of the rule's own would leave the author's still
+  standing underneath it, which is the one output this rewrite must
+  never produce. Copy the call from the source text rather than
+  reconstructing it, so a turbofish, a fully-qualified path or a
+  receiver spelled `Vec::sort` survives the rewrite intact.
 - **Suggest `sort_unstable`, not `sort`.** This governs the sort the
   rule *introduces*; where the code already sorts, the suggestion
   keeps the call as written. Stability decides one thing: the relative order of elements that compare `Equal`. This
@@ -1110,6 +1119,15 @@ suggestion; the third emits help text only.
   below additionally requires the cheap-ordering condition in the
   bullet after this one.
 
+  **Look forward before writing any of them.** Where the landing
+  vector's next use is itself a sort, a rewrite that inserts its own
+  leaves the code sorting twice — silly on its face, and the kind of
+  output that makes a reader stop trusting `cargo fix`. So the
+  forward scan runs first, on every branch and every element, and its
+  answer decides both which sort the suggestion carries and how far
+  the replaced span reaches. The scan is the use-scan the bound form
+  already performs, read one step further.
+
   A code suggestion, `MachineApplicable`, for the `BTreeSet` branch.
   Its output is the vector the rewrite produces, element for element
   and order for order, and it measured slower than the suggestion in every row of
@@ -1133,27 +1151,34 @@ suggestion; the third emits help text only.
   being replaced, which is what makes the rewrite safe to apply
   unattended here.
 
-  A code suggestion, `MachineApplicable`, for any `HashSet` element
-  whatever — `String` included — **where the landing vector's next use
-  is `sort()` or `sort_unstable()`**, the `sort_unique` shape. Here the
-  surrounding code settles what the element could not: the set's order
-  is overwritten by the next statement, so the rewrite's output matches
-  the original element for element and order for order, and the set is
-  left contributing a deduplication that `dedup` repeats. Keep the sort
-  call the code already wrote and insert `dedup` after it rather than
-  re-spelling it — this rewrite deletes a container, and swapping
-  `sort` for `sort_unstable` is a separate opinion that the bullet
-  below makes on its own terms.
+  Both of those describe the case where **the forward scan finds no
+  sort**, and the suggestion introduces `sort_unstable` of its own.
+  The rule never introduces a comparator form — no `sort_unstable_by`,
+  no `sort_unstable_by_key` — because a comparator needs an order it
+  would have to invent, which is the point the bullet above makes.
 
-  The follow-on sort has to order by the element's own `Ord` for this
-  to hold. `sort_by`, `sort_by_key`, `sort_unstable_by`,
-  `sort_unstable_by_key` and `sort_by_cached_key` order by something
-  narrower than `Eq`, and `dedup` after one of them removes a strict
-  subset of what the set removed: three `Item`s sharing a name, with
+  **Where the scan finds `sort()` or `sort_unstable()`, that call is
+  the suggestion**, and the replaced span runs from the round trip
+  through the sort statement, so the rewrite reuses the author's call
+  rather than adding a second one: collect, then their sort verbatim,
+  then `dedup`. This branch takes any element, `String` included — the
+  `sort_unique` shape — because here the surrounding code settles what
+  the element could not. The set's order is overwritten by the next
+  statement, so the rewrite's output matches the original element for
+  element and order for order, and the set is left contributing a
+  deduplication that `dedup` repeats.
+
+  **Where the scan finds any other sort-family call, there is no
+  suggestion**, whatever the element. `sort_by`, `sort_by_key`,
+  `sort_unstable_by`, `sort_unstable_by_key` and `sort_by_cached_key`
+  order by something narrower than `Eq`, so they cannot be the
+  suggestion's sort: `dedup` after one of them removes a strict subset
+  of what the set removed — three `Item`s sharing a name, with
   versions 1, 2 and 1, come out of the set as two and out of
-  `sort_by_key(|i| i.name)` + `dedup` as three, because the two equal
-  elements are never adjacent. Those land in the help-text tier with
-  the rest.
+  `sort_by_key(|i| i.name)` + `dedup` as three, the equal pair never
+  having become adjacent. Nor can the rule sort by `Ord` first and
+  leave theirs standing, which is the double sort again with an extra
+  step. Help text, and the reader decides.
 
   Nothing about this tier is a performance claim. Where duplicates
   dominate the input the round trip plus its sort is the faster of the
