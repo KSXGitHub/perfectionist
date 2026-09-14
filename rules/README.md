@@ -42,6 +42,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   markdown construct in a clap-derived doc comment leaks into `--help` output
 
+- [`cloning_getter`](./cloning_getter.md) (default: `active`).
+
+  getter returns an owned copy of a field where a borrow would serve
+
 - [`core_instead_of_std`](./core_instead_of_std.md) (default: `inactive`).
 
   item named through `core` or `alloc` instead of `std`
@@ -89,6 +93,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`needless_borrowed_parameters`](./needless_borrowed_parameters.md) (default: `active`).
 
   borrowed parameter is only used to produce its owned form
+
+- [`overly_complex_condition`](./overly_complex_condition.md) (default: `active`).
+
+  condition has more boolean operators than the configured maximum
 
 - [`overly_long_file`](./overly_long_file.md) (default: `active`).
 
@@ -149,6 +157,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`too_many_struct_fields`](./too_many_struct_fields.md) (default: `active`).
 
   struct has more fields than the configured maximum
+
+- [`trivial_else_branch`](./trivial_else_branch.md) (default: `active`).
+
+  `else` branch only leaves; invert the condition into a guard clause
 
 - [`uncombined_self_import`](./uncombined_self_import.md) (default: `inactive`).
 
