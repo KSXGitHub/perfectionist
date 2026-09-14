@@ -14,9 +14,12 @@ to, and this one claims only the set case.
 
 A set built from a walk and immediately walked back into a sequence is
 a deduplicator that costs a whole container. The set is never read as a
-set — nothing tests membership in it, nothing keeps it — so the only
-thing it contributes is "duplicates are gone", which a vector does with
-two method calls and no second allocation.
+set — nothing tests membership in it, nothing keeps it — so what it
+leaves behind is a deduplication, which a vector does in two method
+calls, and an order, which the code either discards or sorts away.
+Whether the container also buys speed depends on the element and the
+size, and the measurements below say where it does. What it never buys
+is a property the caller uses, and that is the case against it.
 
 ```rust
 // Avoid: the set exists for the length of one expression.
@@ -172,7 +175,7 @@ run; their figures are medians of three.)
 The findings that shape the rule:
 
 1. **The `BTreeSet` round trip never won.** It ran between 1.00× and
-   1.94× here and between 1.34× and 3.85× across the element sweep
+   1.94× here and between 1.32× and 3.79× across the element sweep
    below — never faster than the suggestion in any row of any table —
    allocated more (9.7 MiB against nothing on the 1M-`u64` case), and
    produced the identical sorted vector. There is no workload in which
@@ -372,6 +375,31 @@ comparison is far dearer than their hash — one reached through a
 pointer (`String`, and a newtype over one) or wide inline bytes (a
 32-byte digest) — and even there it arrives only past a thousand
 elements.
+
+The `BTreeSet` round trip over the same elements, which is what
+finding 1 rests on. These cells come from a later run of the same
+harness than the table above, so read them against each other rather
+than against it — and read the crossings rather than the second digit
+either way: a repeat run moved individual cells by a tenth below a
+thousand elements and by up to a third at a hundred thousand.
+
+| Element (`size_of`)               |    10 |   200 | 1 000 | 100 000 |
+|-----------------------------------|-------|-------|-------|---------|
+| `u32` (4 B)                       | 2.97× | 1.96× | 1.37× | 1.60×   |
+| `u64` (8 B)                       | 3.79× | 1.99× | 1.75× | 1.38×   |
+| `u128` (16 B)                     | 2.74× | 1.87× | 1.67× | 1.58×   |
+| `Id(u64)` newtype (8 B)           | 3.47× | 1.82× | 1.76× | 1.32×   |
+| `struct Pair`, derived (8 B)      | 3.67× | 2.07× | 1.92× | 1.48×   |
+| `enum Kind`, derived (16 B)       | 3.30× | 2.02× | 2.27× | 1.77×   |
+| `struct Keyed`, forwarding (32 B) | 2.89× | 1.96× | 1.73× | 1.85×   |
+| `[u8; 32]` digest (32 B)          | 1.89× | 1.44× | 1.43× | 1.37×   |
+| `Name(String)` newtype (24 B)     | 1.75× | 1.47× | 1.39× | 1.42×   |
+
+No cell is under 1.00×, and the column that comes closest is the one
+where the `HashSet` round trip is furthest ahead: at a hundred
+thousand `Name(String)`, the set runs at 0.63× and the tree at 1.42×.
+Sorting is what the tree is for, and it is still the slower way to
+reach a sorted vector.
 
 Two different measurements wear the same unit in these tables, and
 only one of them moves the result. The element table's figure is
