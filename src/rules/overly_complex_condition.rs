@@ -1,9 +1,9 @@
-use crate::common::{DefaultState, span_is_macro_generated};
+use crate::common::{DefaultState, plural, span_is_macro_generated};
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_help;
 use rustc_hir::intravisit::{self, Visitor};
-use rustc_hir::{Arm, BinOpKind, Expr, ExprKind};
+use rustc_hir::{Arm, BinOpKind, Expr, ExprKind, MatchSource};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
@@ -29,7 +29,7 @@ declare_tool_lint! {
     /// ### Why restrict this?
     ///
     /// This is a stylistic preference, not a correctness issue. A
-    /// condition of four or more clauses is a predicate the author had
+    /// condition of that many clauses is a predicate the author had
     /// in mind but did not write down; the reader has to reconstruct it
     /// from the clauses, and a later editor has to work out which
     /// clause to change. Binding the predicate, or the part of it that
@@ -37,12 +37,23 @@ declare_tool_lint! {
     /// puts a debugger-visible value on it, and turns the `if` back into
     /// a sentence. SonarSource ships this rule with the same limit.
     ///
+    /// A `let` chain is the shape that remedy does not reach: its
+    /// `&&`s are what produce the bindings, so there is nothing to
+    /// lift out. Write
+    /// `#[expect(perfectionist::overly_complex_condition, reason = "...")]`
+    /// at the site instead.
+    ///
     /// ### Example
     ///
     /// **Avoid:**
     ///
     /// ```rust,ignore
-    /// if entry.is_file() && !entry.is_hidden() && entry.len() > 0 && !ignored.contains(entry.path()) {
+    /// if entry.is_file()
+    ///     && !entry.is_hidden()
+    ///     && entry.len() > 0
+    ///     && entry.depth() < max_depth
+    ///     && !ignored.contains(entry.path())
+    /// {
     ///     copy(entry);
     /// }
     /// ```
@@ -50,8 +61,12 @@ declare_tool_lint! {
     /// **Prefer:**
     ///
     /// ```rust,ignore
-    /// let is_visible_file = entry.is_file() && !entry.is_hidden() && entry.len() > 0;
-    /// if is_visible_file && !ignored.contains(entry.path()) {
+    /// let is_visible_file =
+    ///     entry.is_file() && !entry.is_hidden() && entry.len() > 0;
+    /// if is_visible_file
+    ///     && entry.depth() < max_depth
+    ///     && !ignored.contains(entry.path())
+    /// {
     ///     copy(entry);
     /// }
     /// ```
@@ -128,6 +143,13 @@ impl<'tcx> LateLintPass<'tcx> for OverlyComplexCondition {
 
 impl OverlyComplexCondition {
     fn check_condition<'tcx>(&self, cx: &LateContext<'tcx>, condition: &'tcx Expr<'tcx>) {
+        // No `hir_in_external_macro` guard. The diagnostic span is the
+        // whole condition rather than a token inside it, which is the
+        // case the conventions call already covered: a composite span
+        // carries the expansion's context, so
+        // `report_in_external_macro: false` filters another crate's
+        // expansion, and `span_is_macro_generated` below stops a
+        // `macro_rules!` in this one, which that flag does not reach.
         if span_is_macro_generated(condition.span) {
             return;
         }
@@ -141,7 +163,7 @@ impl OverlyComplexCondition {
             return;
         }
         let max = self.config.max_operators;
-        let noun = if count == 1 { "operator" } else { "operators" };
+        let noun = plural(count, "operator", "operators");
         let message = format!("condition has {count} boolean {noun}, above the limit of {max}");
         span_lint_and_help(
             cx,
@@ -155,7 +177,12 @@ impl OverlyComplexCondition {
 }
 
 /// The number of `&&` and `||` operators in `condition`, outside any
-/// closure and outside macro expansions.
+/// nested body and outside macro expansions.
+///
+/// [`OperatorCounter`] leaves `NestedFilter` at its `None` default, so
+/// `walk_expr` never descends into a closure body or a `const` block.
+/// That is what keeps a closure's operators out of the enclosing
+/// condition, not an arm of the match below.
 fn count_boolean_operators<'tcx>(condition: &'tcx Expr<'tcx>) -> usize {
     let mut counter = OperatorCounter { count: 0 };
     counter.visit_expr(condition);
@@ -172,7 +199,17 @@ impl<'tcx> Visitor<'tcx> for OperatorCounter {
             return;
         }
         match expr.kind {
-            ExprKind::Closure(_) => {}
+            // A nested `if` or `match` written inside a condition is
+            // not part of it. Its branches are code the outer
+            // condition selects between rather than tests, and its own
+            // head is a condition in its own right, which `check_expr`
+            // and `check_arm` reach separately -- without this, the
+            // `&&` in `if a && (if b && c { d } else { e })` is counted
+            // once here and again there. Only an author-written
+            // `match` stops the walk: `?` and `.await` also lower to
+            // one, and stepping over those would skip the expression
+            // they wrap.
+            ExprKind::If(..) | ExprKind::Match(_, _, MatchSource::Normal) => {}
             ExprKind::Binary(op, ..) if matches!(op.node, BinOpKind::And | BinOpKind::Or) => {
                 self.count += 1;
                 intravisit::walk_expr(self, expr);

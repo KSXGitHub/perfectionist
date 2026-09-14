@@ -55,4 +55,50 @@ LL |     } else if second && third || first {
    |
    = help: bind the condition, or the part of it that names a concept, to a `let`
 
+warning: condition has 1 boolean operator, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |       while let Some(_item) = items.next()
+   |  ___________^
+LL | |         && ready
+   | |________________^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let`
+
+warning: condition has 1 boolean operator, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if first && (if second { third } else { fourth }) {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let`
+
+warning: condition has 1 boolean operator, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if first && (if second && third { fourth } else { fifth }) {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let`
+
+warning: condition has 1 boolean operator, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if first && (if second && third { fourth } else { fifth }) {
+   |                     ^^^^^^^^^^^^^^^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let`
+
+warning: condition has 1 boolean operator, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |       if first && (match value {
+   |  ________^
+LL | |         0 => second && third,
+LL | |         _ => false,
+LL | |     }) {
+   | |______^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let`
+
 warning: N warnings emitted

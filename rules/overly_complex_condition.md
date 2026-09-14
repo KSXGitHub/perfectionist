@@ -28,7 +28,7 @@ Test code is measured like any other code; set
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. A
-condition of four or more clauses is a predicate the author had
+condition of that many clauses is a predicate the author had
 in mind but did not write down; the reader has to reconstruct it
 from the clauses, and a later editor has to work out which
 clause to change. Binding the predicate, or the part of it that
@@ -36,12 +36,23 @@ names a concept, to a `let` gives it the name the author had,
 puts a debugger-visible value on it, and turns the `if` back into
 a sentence. SonarSource ships this rule with the same limit.
 
+A `let` chain is the shape that remedy does not reach: its
+`&&`s are what produce the bindings, so there is nothing to
+lift out. Write
+`#[expect(perfectionist::overly_complex_condition, reason = "...")]`
+at the site instead.
+
 ## Example
 
 **Avoid:**
 
 ```rust,ignore
-if entry.is_file() && !entry.is_hidden() && entry.len() > 0 && !ignored.contains(entry.path()) {
+if entry.is_file()
+    && !entry.is_hidden()
+    && entry.len() > 0
+    && entry.depth() < max_depth
+    && !ignored.contains(entry.path())
+{
     copy(entry);
 }
 ```
@@ -49,8 +60,12 @@ if entry.is_file() && !entry.is_hidden() && entry.len() > 0 && !ignored.contains
 **Prefer:**
 
 ```rust,ignore
-let is_visible_file = entry.is_file() && !entry.is_hidden() && entry.len() > 0;
-if is_visible_file && !ignored.contains(entry.path()) {
+let is_visible_file =
+    entry.is_file() && !entry.is_hidden() && entry.len() > 0;
+if is_visible_file
+    && entry.depth() < max_depth
+    && !ignored.contains(entry.path())
+{
     copy(entry);
 }
 ```

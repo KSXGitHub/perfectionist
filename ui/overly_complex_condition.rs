@@ -5,7 +5,7 @@
 
 fn work() {}
 
-// Bad: four operators, one above the default limit.
+// Bad: 4 operators, one above the default limit of 3.
 fn four_operators(first: bool, second: bool, third: bool, fourth: bool, fifth: bool) {
     if first && second && third && fourth && fifth {
         work();
@@ -20,14 +20,16 @@ fn named_half(first: bool, second: bool, third: bool, fourth: bool, fifth: bool)
     }
 }
 
-// Good: exactly three is not above the limit.
+// Not flagged: 3 operators is exactly the limit, and a condition is
+// flagged only above the limit, never at it.
 fn three_operators(first: bool, second: bool, third: bool, fourth: bool) {
     if first && second && third && fourth {
         work();
     }
 }
 
-// Bad: a `while` condition and a match guard are conditions too.
+// Bad: 4 operators each — a `while` condition and a match guard are
+// conditions too.
 fn other_heads(first: bool, second: bool, third: bool, fourth: bool, fifth: bool, value: u8) {
     while first || second || third || fourth || fifth {
         work();
@@ -38,14 +40,15 @@ fn other_heads(first: bool, second: bool, third: bool, fourth: bool, fifth: bool
     }
 }
 
-// Good: a closure inside the condition is a scope of its own.
+// Not flagged: 1 operator. A closure inside the condition is a scope
+// of its own, so the 3 inside it belong to the closure.
 fn closure_inside(items: &[bool], flag: bool) {
     if flag && items.iter().any(|item| *item && flag && !flag && flag) {
         work();
     }
 }
 
-// Good: the operators come from a macro expansion.
+// Not flagged: the operators come from a macro expansion.
 macro_rules! all_of {
     ($first:expr, $second:expr, $third:expr, $fourth:expr, $fifth:expr) => {
         $first && $second && $third && $fourth && $fifth
