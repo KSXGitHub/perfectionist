@@ -371,10 +371,10 @@ Each part of that shape is a place the obvious spelling fails:
   exists to remove. `sort_by` takes both elements and returns an
   `Ordering`, so nothing borrowed escapes and the projection compiles.
   `dedup_by_key` fails the same way, for the same reason.
-- **`sort_by_cached_key` for an order that really is a materialised
-  form** — a rendered name, a normalised string. It builds that form
-  once per element where `sort_by_key` rebuilds it once per
-  comparison.
+- **`sort_by_cached_key` only for an order that really is a
+  materialised form**, and only as a fallback — see
+  [Finding a view, cheaply](#finding-a-view-cheaply) for why a
+  suggestion that allocates is a last resort rather than a choice.
 
 The chained `style` spells the same thing `into_sorted_unstable_by`
 with `into_deduped`.
@@ -417,12 +417,32 @@ type's own API:
 - **A fixed list of view traits**, each a single impl query, each
   therefore covering a `derive_more` spelling as readily as a
   hand-written one: `Deref`, `AsRef<T>` and `Borrow<T>` with an `Ord`
-  target, and `Display` for an order that genuinely is a rendered
-  form.
-- **Inherent methods matching a name pattern** — `as_*`, `get_*`,
-  `to_*`, `id`, `key`, `name`, or a method named for a field — taking
-  `&self` and returning something `Ord`. Read from the type's own
-  inherent impls, which is a bounded query rather than a search.
+  target. All three hand back a reference.
+- **Inherent methods that return one**, found through their own type's
+  inherent impls — a bounded query, not a search. A name pattern
+  (`as_*`, `get_*`, `id`, `key`, `name`, a method named for a field)
+  narrows which methods to look at; what admits one is its **return
+  type**: a reference, or a `Copy` scalar. `to_*` is absent from that
+  list on purpose — under Rust's own naming convention `as_` is the
+  free borrow and `to_` is the expensive, usually owned conversion —
+  and the type check is what enforces it, since a name is only a hint.
+
+**No suggested view may allocate.** The rewrite exists to delete an
+allocation, so proposing `to_string`, `to_owned`, `clone` or a
+`collect` to obtain a sort key gives back what it came for — and worse
+than the original, since `sort_by_key` would rebuild that key once per
+*comparison*. This costs nothing to honour: a comparator takes two
+references and returns an `Ordering`, so an ordering never needs to
+own anything. That is also the whole answer to whether `Rc::clone` and
+`Arc::clone` deserve a pass for being refcount bumps rather than
+allocations — they do not need one, because no comparator has to clone
+at all. An `Rc<T>` element compares through `&*rc`, and if the `T`
+inside is not `Ord` the clone would not have helped anyway.
+
+The one route that does allocate is the fallback, and it is the
+fallback for that reason: where the order genuinely is a rendered form
+— a `Display` impl, a normalised string — `sort_by_cached_key` builds
+it once per element, which is the cheapest that order can be had.
 
 What it will not do is walk free functions, trait methods at large, or
 anything else that grows with the crate instead of the type: a key can
