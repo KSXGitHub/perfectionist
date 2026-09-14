@@ -118,19 +118,30 @@ would have written and anything above it is slower than that.
 | 500k `String` (216 B, distinct prefix)     | 0.24×     | 2.04×              | 1.42×      | 1.42×            | 1.00× (331 ms)            |
 | 200k `String` (4 KiB, distinct prefix)     | 0.97×     | 2.43×              | 1.18×      | 1.13×            | 1.00× (278 ms)            |
 
-The last two rows hold the length constant and move the *difference*
-to the front, and they are what says which variable matters. Sorting
-4 KiB strings that share 4100 bytes costs 1034 ms, because every
-comparison walks the prefix; sorting the same 4 KiB strings when they
-differ at byte 1 costs 278 ms, and the round trip's lead collapses
-from 0.23× to roughly parity — the set still hashes all 4116 bytes of
-every element while the sort now reads one. At 216 B the same swap
-changes almost nothing (0.28× to 0.24×), because a comparison there is
-already one dereference into a random heap location and a handful of
-bytes, and the dereference is the cost. So length favours the set only
-through a shared prefix, and only once that prefix is long enough to
-outweigh the pointer chase. (The 4 KiB workloads hold 800 MB and vary
-by about a tenth run to run; their figures are medians of three.)
+The last two rows separate two variables the others confound, and the
+separation is worth reading carefully, because each variable pushes a
+different way.
+
+Hold the length and move the *difference* to the front. At 4 KiB the
+round trip falls from 0.23× to parity: every comparison had been
+walking 4100 shared bytes and now stops at the first, while the set
+still hashes all 4116 of every element. At 216 B the same swap barely
+registers, 0.29× to 0.24×, because a comparison that short is already
+dominated by the dereference in front of it.
+
+Now hold the prefixes distinct and move the length. From 16 B to
+216 B the round trip goes the other way, 0.69× to 0.24×, because the
+sort's pointer chase now ranges over 108 MB of heap where it ranged
+over 8, while hashing still streams.
+
+So length cuts both ways and the scale decides which: it costs the
+sort cache misses across a larger heap, and it costs the set a hash
+proportional to every byte. Below a few hundred bytes the first
+dominates and the set pulls ahead; by 4 KiB the second has caught up.
+A shared prefix only ever costs the sort, and only once it is long
+enough to outrun that dereference. (The 4 KiB workloads hold 800 MB
+and vary by about a tenth run to run; their figures are medians of
+three.)
 
 The findings that shape the rule:
 
@@ -153,12 +164,12 @@ The findings that shape the rule:
    long ones — and only while its order goes unused.** Rust's `String`
    carries no small-string optimisation, so sorting chases a pointer
    per comparison where hashing touches each string once. Hence
-   0.23×–0.69× on the synthetic strings whose prefixes are shared, and
-   parity on the 4 KiB strings whose prefixes are not — and 1.20×–2.54× for the same code once a `sort`
-   is appended to make the output deterministic, which is the
-   comparison to make as soon as anything observes the order. For
-   `u64`, where a comparison is a register instruction, the round trip
-   is ~2.9× slower.
+   0.23×–0.69× on the string rows where the set leads, and 0.97× on
+   the 4 KiB row whose prefixes diverge — against 1.20×–2.54× for the
+   same code once a `sort` is appended to make the output
+   deterministic, which is the comparison to make as soon as anything
+   observes the order. For `u64`, where a comparison is a register
+   instruction, the round trip is ~2.9× slower.
 3. **The synthetic strings above overstate it; real names are cheaper
    to sort.** Repeating the measurement on package names — 4.44M npm
    names and the 1000 most-downloaded crates.io names, short enough
@@ -305,9 +316,10 @@ the suppression is the answer; the rest it never reaches at all.
   of the suggestion. For a primitive, a newtype over one, a derived
   struct or enum, or an impl that forwards to one key field, there is
   no such band at all: the round trip measured slower at every size,
-  by five to nine times on ten elements. The honest remedy even inside the band is usually not
-  to sort at all but to stop discarding the set: keep it, name it, and
-  let the code that consumes it say it wants a set.
+  by five to nine times on ten elements. The honest remedy even inside
+  the band is usually not to sort at all but to stop discarding the
+  set: keep it, name it, and let the code that consumes it say it
+  wants a set.
   Where a vector really is what the caller needs, `#[expect]` it on the
   strength of a measurement — a measurement, because the lead
   disappears the moment anything downstream wants a deterministic
@@ -451,6 +463,9 @@ The one route that does allocate is the fallback, and it is the
 fallback for that reason: where the order genuinely is a rendered form
 — a `Display` impl, a normalised string — `sort_by_cached_key` builds
 it once per element, which is the cheapest that order can be had.
+`sort_by_key` is the one to avoid there: its body is
+`stable_sort(self, |a, b| f(a).lt(&f(b)))`, so the key is built twice
+for every comparison, where the cached form stores one per element.
 
 #### Cheap, defined
 
