@@ -355,33 +355,32 @@ element types:
 
 | Element (`size_of`)               |    10 |   200 | 1 000 | 100 000 |
 |-----------------------------------|-------|-------|-------|---------|
-| `u32` (4 B)                       | 5.59× | 3.18× | 2.54× | 1.40×   |
-| `u64` (8 B)                       | 7.72× | 3.26× | 2.66× | 1.51×   |
-| `u128` (16 B)                     | 8.74× | 3.35× | 2.79× | 1.79×   |
-| `Id(u64)` newtype (8 B)           | 7.55× | 2.96× | 2.51× | 1.35×   |
-| `struct Pair`, derived (8 B)      | 6.04× | 2.40× | 2.11× | 1.11×   |
-| `enum Kind`, derived (16 B)       | 5.37× | 2.28× | 2.21× | 1.06×   |
-| `struct Keyed`, forwarding (32 B) | 5.37× | 2.20× | 1.81× | 0.92×   |
-| `[u8; 32]` digest (32 B)          | 3.31× | 1.28× | 1.00× | 0.65×   |
-| `Name(String)` newtype (24 B)     | 2.08× | 1.02× | 0.81× | 0.63×   |
+| `u32` (4 B)                       | 4.43× | 2.45× | 1.66× | 1.27×   |
+| `u64` (8 B)                       | 7.33× | 2.72× | 2.24× | 1.34×   |
+| `u128` (16 B)                     | 8.06× | 3.62× | 2.76× | 2.23×   |
+| `Id(u64)` newtype (8 B)           | 6.33× | 2.59× | 2.19× | 1.20×   |
+| `struct Pair`, derived (8 B)      | 5.00× | 2.19× | 1.98× | 1.02×   |
+| `enum Kind`, derived (16 B)       | 4.49× | 1.82× | 1.86× | 1.03×   |
+| `struct Keyed`, forwarding (32 B) | 4.39× | 1.94× | 1.57× | 0.96×   |
+| `[u8; 32]` digest (32 B)          | 3.20× | 1.29× | 1.08× | 0.74×   |
+| `Name(String)` newtype (24 B)     | 1.97× | 0.98× | 0.78× | 0.59×   |
 
-Read down the first column: on ten elements the round trip costs five
-to nine times what the suggestion costs, for every element but a
+Read down the first column: on ten elements the round trip costs four
+to eight times what the suggestion costs, for every element but a
 string or a digest. Read along the rows: for the primitives, the
 newtype over one, the derived struct and the derived enum it never
-becomes the faster option at any size measured — 1.06× to 1.79× even
+becomes the faster option at any size measured — 1.02× to 2.23× even
 at a hundred thousand. The set's advantage belongs to elements whose
 comparison is far dearer than their hash — one reached through a
 pointer (`String`, and a newtype over one) or wide inline bytes (a
-32-byte digest) — and even there it arrives only past a thousand
-elements.
+32-byte digest) — and even there it arrives late: around two hundred
+elements for the string, past a thousand for the digest.
 
-The `BTreeSet` round trip over the same elements, which is what
-finding 1 rests on. These cells come from a later run of the same
-harness than the table above, so read them against each other rather
-than against it — and read the crossings rather than the second digit
-either way: a repeat run moved individual cells by a tenth below a
-thousand elements and by up to a third at a hundred thousand.
+The `BTreeSet` round trip over the same elements and the same run,
+which is what finding 1 rests on. Read the crossings rather than the
+second digit here: a repeat run moved individual cells by a tenth
+below a thousand elements and by up to a third at a hundred
+thousand.
 
 | Element (`size_of`)               |    10 |   200 | 1 000 | 100 000 |
 |-----------------------------------|-------|-------|-------|---------|
@@ -468,13 +467,13 @@ the suppression is the answer; the rest it never reaches at all.
 - **Thousands of elements whose comparison reads many bytes, whose
   order is genuinely unused.** The set leads only where a comparison
   costs far more than a hash — a `String` or `PathBuf`, a newtype over
-  one, a wide digest — and only from about 10³ elements up, where it
-  runs at 0.63×–0.81× of the suggestion. For a primitive, a newtype
+  one, a wide digest — and only from a couple of hundred elements up,
+  where it runs at 0.59×–0.98× of the suggestion. For a primitive, a newtype
   over one, or a derived struct or enum, there is no such band at all:
   the round trip measured slower at every size, by five to nine times
   on ten elements. An impl that forwards to one small key field
-  reaches the edge of one and no further — 0.92× at a hundred
-  thousand, 1.81× and worse below it. The honest remedy even inside
+  reaches the edge of one and no further — 0.96× at a hundred
+  thousand, 1.57× and worse below it. The honest remedy even inside
   the band is usually not to sort at all but to stop discarding the
   set: keep it, name it, and let the code that consumes it say it
   wants a set.
@@ -1176,11 +1175,11 @@ suggestion; the third emits help text only.
   carry weight, and each catches what the other misses. Size alone
   would admit `&str`, which is a 16-byte fat pointer and behaves like
   the `String` it borrows from. Indirection alone would admit
-  `[u8; 32]`, which chases nothing and still came in at 0.65× on a
+  `[u8; 32]`, which chases nothing and still came in at 0.74× on a
   hundred thousand elements, because thirty-two inline bytes are
   thirty-two bytes to compare. That is the set
   of elements the sweep found no size at which the round trip wins —
-  5.4×–8.7× slower on ten elements, still 1.06×–1.79× slower on a
+  4.4×–8.1× slower on ten elements, still 1.02×–2.23× slower on a
   hundred thousand — and it covers the primitives, the newtypes over
   them, and the derived structs and enums. A `HashSet`'s iteration
   order is unspecified, so no correct program can depend on the order
