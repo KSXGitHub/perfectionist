@@ -387,11 +387,10 @@ type's own API:
 - **Inherent methods that return one**, found through their own type's
   inherent impls — a bounded query, not a search. A name pattern
   (`as_*`, `get_*`, `id`, `key`, `name`, a method named for a field)
-  narrows which methods to look at; what admits one is its **return
-  type**: a reference, or a `Copy` scalar. `to_*` is absent from that
-  list on purpose — under Rust's own naming convention `as_` is the
-  free borrow and `to_` is the expensive, usually owned conversion —
-  and the type check is what enforces it, since a name is only a hint.
+  narrows which methods to look at, and nothing more than that: what
+  admits one is
+  [the cheapness test](#cheap-defined), which reads what the method
+  does rather than what it is called.
 
 **No suggested view may allocate.** The rewrite exists to delete an
 allocation, so proposing `to_string`, `to_owned`, `clone` or a
