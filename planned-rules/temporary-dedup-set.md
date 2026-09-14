@@ -20,15 +20,15 @@ two method calls and no second allocation.
 
 ```rust
 // Avoid: the set exists for the length of one expression.
-let mut unique: Vec<String> =
-    names.into_iter().collect::<HashSet<_>>().into_iter().collect();
+let mut unique: Vec<PackageId> =
+    ids.into_iter().collect::<HashSet<_>>().into_iter().collect();
 
 // Avoid: the same round trip with the set named.
-let deduplicated: HashSet<String> = names.into_iter().collect();
-let mut unique: Vec<String> = deduplicated.into_iter().collect();
+let deduplicated: HashSet<PackageId> = ids.into_iter().collect();
+let mut unique: Vec<PackageId> = deduplicated.into_iter().collect();
 
 // Prefer:
-let mut unique: Vec<String> = names.into_iter().collect();
+let mut unique: Vec<PackageId> = ids.into_iter().collect();
 unique.sort_unstable();
 unique.dedup();
 ```
@@ -50,9 +50,9 @@ a sort:
 use into_deduped::IntoDeduped;
 use into_sorted::IntoSortedUnstable;
 
-let unique = names
+let unique = ids
     .into_iter()
-    .collect::<Vec<String>>()
+    .collect::<Vec<PackageId>>()
     .into_sorted_unstable()
     .into_deduped();
 ```
@@ -693,26 +693,32 @@ the consumer cannot edit the expansion.
 
 ```rust
 // Chained.
-let mut unique: Vec<String> =
-    names.into_iter().collect::<HashSet<_>>().into_iter().collect();
+let mut unique: Vec<PackageId> =
+    ids.into_iter().collect::<HashSet<_>>().into_iter().collect();
 
 // Bound, and the adapters do not change the shape.
-let sorted: BTreeSet<&str> = entries.iter().map(Entry::name).collect();
-let names: Vec<String> = sorted.into_iter().map(str::to_owned).collect();
+let sorted: BTreeSet<Platform> = targets.iter().map(Target::platform).collect();
+let tier_one: Vec<Platform> = sorted.into_iter().filter(Platform::is_tier_one).collect();
 ```
 
 **Prefer:**
 
 ```rust
-let mut unique: Vec<String> = names.into_iter().collect();
+let mut unique: Vec<PackageId> = ids.into_iter().collect();
 unique.sort_unstable();
 unique.dedup();
 
-let mut names: Vec<&str> = entries.iter().map(Entry::name).collect();
-names.sort_unstable();
-names.dedup();
-let names: Vec<String> = names.into_iter().map(str::to_owned).collect();
+let mut platforms: Vec<Platform> = targets.iter().map(Target::platform).collect();
+platforms.sort_unstable();
+platforms.dedup();
+let tier_one: Vec<Platform> = platforms.into_iter().filter(Platform::is_tier_one).collect();
 ```
+
+Both are elements the rule rewrites unattended: a newtype over a
+primitive and a derived enum each clear the applicability gate's two
+clauses, and the element sweep found no size at which the round trip
+beats the suggestion for either shape — 7.6× and 5.4× slower on ten
+elements, still 1.35× and 1.06× at a hundred thousand.
 
 **Left alone:**
 
