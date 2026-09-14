@@ -144,8 +144,9 @@ The findings that shape the rule:
    is ~2.9× slower.
 3. **The synthetic strings above overstate it; real names are cheaper
    to sort.** Repeating the measurement on package names — 4.44M npm
-   names (mean 20 B, median 18 B) and the 1000 most-downloaded
-   crates.io names (mean 10.4 B, median 10 B) — puts the round trip at
+   names and the 1000 most-downloaded crates.io names, short enough
+   (`str::len` medians of 18 and 10) that their prefixes diverge in
+   the first byte or two — puts the round trip at
    0.68×–0.77× up to a hundred thousand items and 1.09× at a million:
    a real lead, but not the 0.23× of a synthetic 4 KiB string.
 4. **At the size real code deduplicates names, the choice is
@@ -219,14 +220,30 @@ pointer (`String`, and a newtype over one) or wide inline bytes (a
 32-byte digest) — and even there it arrives only past a thousand
 elements.
 
-Those two figures are different measurements, and only one of them
-moves the result. `size_of` is the inline width the applicability gate
-reads; the pools' mean is the heap content behind a pointer, which the
-gate never looks at. Nor does it need to: doubling the content from
-crate names to npm names, 10.4 B to 20 B, moved the round trip from
-0.73× to 0.77× at a thousand items. What separates the families is the
-indirection, not the length — and length only asserts itself in the
-hundreds of bytes, where the 216 B and 4 KiB rows sit.
+Two different measurements wear the same unit in these tables, and
+only one of them moves the result. The element table's figure is
+`size_of` — the inline width of a value as it sits in the vector, 24
+bytes for a `String` whatever it holds. The pools' figure is
+`str::len`, the heap bytes behind that pointer. The applicability gate
+reads the first and never the second.
+
+Nor does it need to, because the length is not what the work scales
+with. `str` orders as `as_bytes().cmp(..)`, lexicographically, so a
+comparison stops at the first differing byte — and two random package
+names differ almost immediately, which makes each comparison a few
+bytes of memcmp behind one dereference into a random heap location.
+The dereference is the cost, not the bytes: doubling the content from
+crate names to npm names, 10.4 B to 20 B, moved a thousand-item round
+trip from 0.73× to 0.77×. Length only asserts itself where prefixes
+are *shared* and the comparison has to walk them, which is what the
+216 B and 4 KiB rows are built to show — 0.29× and 0.23×, against
+0.69× for distinct 16-byte strings.
+
+Equality behaves differently again, and it is the set's tool rather
+than the sort's. `HashSet` confirms a hash match with `==`, and slice
+equality checks the two lengths before it touches a byte, so a
+candidate of the wrong length is rejected outright. `dedup` uses `==`
+too, once per adjacent pair. Only the sort uses `cmp`.
 
 A wrapper costs nothing either way: `Id(u64)` — the shape a
 `derive_more::From` / `Display` newtype has, since the comparison
