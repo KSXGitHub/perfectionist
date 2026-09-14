@@ -772,11 +772,15 @@ for name in names.into_iter().collect::<HashSet<_>>() {
 pnpm's Rust workspace — 109 crates, with a `dylint.toml` that already
 pins this plugin — carries three round trips, against 29
 `dedup` call sites that already write the vector form (27 of them
-directly after a sort). Quoted at
-[`f607801`](https://github.com/pnpm/pnpm/commit/f60780170c962d938082562d26fdbd4689c26a85),
-so each stays a citation rather than a copy that drifts.
+directly after a sort). Everything below is quoted at
+[`f607801`](https://github.com/pnpm/pnpm/commit/f60780170c962d938082562d26fdbd4689c26a85), each round
+trip linked to its lines at that revision and the left-alone samples
+taken from the same tree, so each stays a citation rather than a copy
+that drifts.
 
 ### The round trip that sorts afterwards anyway
+
+[`crates/cli/src/cli_args/approve_builds.rs`, L314–L324](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/crates/cli/src/cli_args/approve_builds.rs#L314-L324):
 
 ```rust
 /// Deduplicate and sort `names` by code unit, matching pnpm's
@@ -794,11 +798,32 @@ fn sort_unique(names: Vec<String>) -> Vec<String> {
 
 The set contributes nothing here at all: the arbitrary order it
 produced is overwritten on the next line, and the duplicates it
-dropped are the ones `dedup` drops. The vector, by contrast, is
-wanted: all three callers need a sequence — two write it to a manifest
-and one hands it to `MultiSelect::items(&choices)`, whose displayed
-order a user reads — which is what makes the sort load-bearing and the
-set the only thing here that is not.
+dropped are the ones `dedup` drops. Five lines hold the whole of it,
+so nothing about the shape needs tracing across a call graph.
+
+The vector, by contrast, is wanted, and the three callers are what
+establish it. Two of them write the result to a manifest
+([L129–L133](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/crates/cli/src/cli_args/approve_builds.rs#L129-L133)):
+
+```rust
+let build_packages: Vec<String> = if !packages.is_empty() {
+    sort_unique(approved.clone())
+} else if all {
+    sort_unique(pending.to_owned())
+} else {
+```
+
+and the third hands it to a prompt whose displayed order a user reads
+([L247–L248](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/crates/cli/src/cli_args/approve_builds.rs#L247-L248)):
+
+```rust
+let choices = sort_unique(automatically_ignored_builds.to_vec());
+match MultiSelect::new()
+```
+
+None of the three sorts, because the helper already did — which is
+what makes the sort load-bearing and the set the only thing here that
+is not.
 
 Whether the work belongs in a helper at all is a separate question,
 and not one the rule answers. A normalisation hidden behind a name
@@ -825,6 +850,8 @@ fn sort_unique(mut names: Vec<String>) -> Vec<String> {
 
 ### A set between a `map` and a fallible landing
 
+[`crates/install-coordinator/src/mutation.rs`, L41–L46](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/crates/install-coordinator/src/mutation.rs#L41-L46):
+
 ```rust
 let snapshots = paths
     .into_iter()
@@ -846,6 +873,8 @@ let snapshots =
 ```
 
 ### A set whose whole job is the `Vec` it becomes
+
+[`crates/cli/src/cargo_deps/lockfile.rs`, L26–L35](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/crates/cli/src/cargo_deps/lockfile.rs#L26-L35):
 
 ```rust
 /// The git sources the locked packages come from, deduplicated so the
