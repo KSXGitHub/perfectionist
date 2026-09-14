@@ -101,4 +101,12 @@ LL | |     }) {
    |
    = help: bind the condition, or the part of it that names a concept, to a `let`
 
+warning: condition has 1 boolean operator, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     if first && both!(second, third) {
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: bind the condition, or the part of it that names a concept, to a `let`
+
 warning: N warnings emitted

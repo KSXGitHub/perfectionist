@@ -12,8 +12,7 @@ declare_tool_lint! {
     ///
     /// Counts the boolean operators (`&&`, `||`) in the condition of an
     /// `if`, `if let`, `while`, `while let`, or match-arm guard, and
-    /// flags the condition when the count is above `max_operators`
-    /// (default `3`).
+    /// flags the condition when the count is above `max_operators`.
     ///
     /// Only the condition itself is counted, not the branches it
     /// selects, and a closure inside the condition is a scope of its

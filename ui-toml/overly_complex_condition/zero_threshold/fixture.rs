@@ -122,4 +122,20 @@ fn nested_match(first: bool, second: bool, third: bool, value: u8) {
     }
 }
 
+macro_rules! both {
+    ($first:expr, $second:expr) => {
+        $first && $second
+    };
+}
+
+// Bad: 1 operator, not 2 — the author wrote the head, so the condition
+// is measured, but the `&&` inside the expansion is not the author's
+// and does not count. Only the guard in the walk keeps it out; the one
+// on the condition never sees it.
+fn user_head_macro_inside(first: bool, second: bool, third: bool) {
+    if first && both!(second, third) {
+        work();
+    }
+}
+
 fn main() {}
