@@ -55,26 +55,35 @@ silently builds the wrong command. The plural has no such surface.
 A call to `Iterator::fold` where all of the following hold:
 
 1. The initial-value argument's type is `std::process::Command`.
-2. The folding argument is a singular `CommandExtra` setter, in one of
-   two spellings:
-   - a **path** — `CommandExtra::without_env`, `Self::without_env`;
-   - a **forwarding closure** — `|acc, item| acc.without_env(item)`,
-     which passes both of its parameters, in order, unmodified, to a
-     single method call and does nothing else.
+2. The folding argument *resolves* to a singular `CommandExtra`
+   setter. Resolution is the trigger, not spelling: one method has many
+   written forms, and all of them fold. Both of these count:
+   - a **path** — `CommandExtra::without_env`, `Command::without_env`,
+     `<Command as CommandExtra>::without_env`, `Self::without_env`, or
+     any of those reached through a renamed import;
+   - a **forwarding closure** — one whose body is a single call to that
+     setter, passing the closure's parameters in order, unmodified, and
+     doing nothing else. A tuple parameter destructured in the pattern
+     still forwards, so long as its bindings are passed in the order
+     they were bound; the `with_env` row below needs that. The call may
+     be written as a method call
+     (`|acc, item| acc.without_env(item)`) or as an associated-function
+     call on any of the paths above
+     (`|acc, item| CommandExtra::without_env(acc, item)`).
 3. That setter has a plural counterpart in the `pairs` table below.
 
-| singular      | plural         | closure shape                                    |
+| singular      | plural         | example closure                                  |
 |---------------|----------------|--------------------------------------------------|
 | `with_arg`    | `with_args`    | `\|acc, item\| acc.with_arg(item)`               |
 | `without_env` | `without_envs` | `\|acc, item\| acc.without_env(item)`            |
 | `with_env`    | `with_envs`    | `\|acc, (key, value)\| acc.with_env(key, value)` |
 
 The `with_env` row is the awkward one and also the most valuable. Its
-item is a tuple, so the closure destructures, and there is no path
-spelling at all: `Self::with_env` takes three arguments where `fold`
-supplies two, so the arity does not match and the compiler rejects it.
-A closure is therefore mandatory for that pair, which makes it the
-shape most likely to be written by hand and left alone.
+item is a tuple, so the closure destructures, and no path spelling
+works in any of its forms: `with_env` takes three arguments where
+`fold` supplies two, so the arity does not match and the compiler
+rejects the path. A closure is therefore mandatory for that pair, which
+makes it the shape most likely to be written by hand and left alone.
 
 ### Exemptions
 
@@ -113,21 +122,33 @@ pairs = [
 ## Implementation notes
 
 A `LateLintPass` over expressions, matching a method call that
-resolves to `core::iter::Iterator::fold`. Three parts need care, in
-rising order of difficulty.
+resolves to `core::iter::Iterator::fold`. The parts that need care, in
+rising order of difficulty:
 
 **Resolving the accumulator.** `cx.typeck_results()` on the
 initial-value argument, compared against `std::process::Command` by
 `DefId`. Cheap, and it is what stops the rule firing on unrelated
 folds.
 
-**Matching the folder.** The path spelling is a `DefId` comparison
-against the singular's method. The closure spelling needs the body
-walked: one expression, a method call, whose receiver is the closure's
-first parameter and whose argument list is exactly the remaining
-parameters in order. Anything else fails the match. This is the same
-shape of check `clippy::redundant_closure_for_method_calls` performs,
-and its implementation is worth reading first.
+**Matching the folder.** Resolve the folding argument's callee to a
+`DefId` and compare that against the singular's method. Comparing the
+resolved item rather than the written path is what makes the spellings
+listed above fall out for free: `Command::without_env`,
+`<Command as CommandExtra>::without_env` and a renamed import all
+resolve to the one method, so none of them needs a case of its own. For
+a bare path that comparison is the whole check.
+
+A closure needs its body walked first: one expression, a call, whose
+callee is that method and whose arguments are exactly the closure's
+parameters — or, where one of them is a destructured tuple, its
+bindings — in order. The method-call and associated-function spellings
+differ only in where HIR puts the receiver — `ExprKind::MethodCall`
+keeps it out of the argument list, `ExprKind::Call` has it as the first
+argument — so normalise to receiver-then-arguments and compare once
+rather than matching each syntax separately. Anything else fails the
+match. This is the same shape of check
+`clippy::redundant_closure_for_method_calls` performs, and its
+implementation is worth reading first.
 
 **Building the suggestion.** The fix is not a token swap. The
 iterator being folded is the *receiver* of `.fold(...)`, and it has to
@@ -154,15 +175,15 @@ follow-up that can lean on the closure matcher once it exists.
 
 ### Difficulty
 
-**Medium.** The trigger is local to one expression, so this is
-nowhere near the whole-crate reasoning
+**Medium.** The trigger is local to one expression, so this is nowhere
+near the whole-crate reasoning
 [`manual-lazy-init.md`](./manual-lazy-init.md) needs. What raises it
-above easy is that two of the three parts are structural rather than
-nominal: recognising a forwarding closure means pattern-matching a
-body rather than comparing a name, and the suggestion rearranges two
-sub-expressions instead of renaming one. The conservative subset above
-is genuinely easy, and it is a real subset rather than a token
-gesture.
+above easy is that the folder match and the suggestion are structural
+rather than nominal: recognising a forwarding closure means
+pattern-matching a body rather than comparing a name, and the suggestion
+rearranges two sub-expressions instead of renaming one. The conservative
+subset above is genuinely easy, and it is a real subset rather than a
+token gesture.
 
 ### Default state
 
