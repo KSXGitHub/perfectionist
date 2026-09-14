@@ -65,34 +65,30 @@ infrastructure.
 
 ## A planning file is a proposal, not a specification
 
-A rule's planning file was written before anyone tried to
-implement it: nothing in it has been compiled, run, or checked
-against rustc. Read it as a proposal to evaluate, not a spec to
-fulfil.
+Nothing in a planning file has been compiled or run. Read it as a
+proposal to evaluate, not a specification to fulfil.
 
 - **Its claims about reality may be wrong.** A planning file
   asserts what a HIR node exposes, what a span covers, what
-  `clippy_utils` already provides, what survives macro expansion.
-  Verify each such claim empirically before you build on it —
+  `clippy_utils` already provides — examples, not the whole set.
+  Verify each such claim empirically before you build on it:
   write the fixture, dump the AST or HIR, read the upstream
-  source. Where a claim cannot be checked that way, leave it
-  unclaimed rather than restating it in a doc or a comment.
-- **It is often over-ambitious.** Config knobs nobody would ever
-  set, sub-checks no real code violates, autofix branches that
-  cost more than the rule they serve — all recur. Implement what
-  earns its complexity and leave the rest out, recording the
-  omission per
+  source. Where a claim cannot be verified that way, leave it
+  unclaimed rather than restate it in a doc or a comment.
+- **It is often over-ambitious.** Among the shapes that recur:
+  config knobs nobody would ever set, sub-checks no real code
+  violates, autofix branches that cost more than the rule they
+  serve. Implement what earns its complexity and leave the rest
+  out, recording the omission per
   [When the implementation is partial](#when-the-implementation-is-partial).
 
 Where the empirical answer contradicts the planning file, the
-empirical answer wins: amend the file, or narrow the rule, rather
-than implement something you have shown to be wrong. Say in the PR
-what you dropped or changed and why, so the divergence reads as
-deliberate rather than as an oversight.
+empirical answer wins: never implement something you have shown
+to be wrong. Say in the PR what you dropped or changed and why,
+so the divergence reads as deliberate rather than as an oversight.
 
-What a planning file *is* authoritative about is the intent: the
-anti-pattern the lint fires on, and the upstream style guide its
-`## Statement` quotes.
+What a planning file *is* authoritative about is the intent: its
+`## Statement`, and the anti-pattern the lint fires on.
 
 ## One rule per file, one `Config` per rule
 
