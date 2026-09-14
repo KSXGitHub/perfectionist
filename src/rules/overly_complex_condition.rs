@@ -16,12 +16,11 @@ declare_tool_lint! {
     ///
     /// Only the condition itself is counted, not the branches it
     /// selects, and a closure inside the condition is a scope of its
-    /// own. An `&&` with a `let` on either side of it is not counted:
-    /// that `&&` is what makes the chain a chain, and no binding can
-    /// replace it. A condition produced by a macro expansion is not
-    /// measured, though a condition written inside a macro's arguments
-    /// is. The `let` that binds a boolean is not a condition, so naming
-    /// the expression is what satisfies the rule.
+    /// own. An `&&` with a `let` on either side of it is not counted,
+    /// since no binding can replace it. A condition produced by a macro
+    /// expansion is not measured, though a condition written inside a
+    /// macro's arguments is. The `let` that binds a boolean is not a
+    /// condition, so naming the expression is what satisfies the rule.
     ///
     /// Test code is measured like any other code; set
     /// `exempt_tests` to leave it alone.
@@ -36,13 +35,6 @@ declare_tool_lint! {
     /// names a concept, to a `let` gives it the name the author had,
     /// puts a debugger-visible value on it, and turns the `if` back into
     /// a sentence. SonarSource ships this rule with the same limit.
-    ///
-    /// Which part is bound matters. A part that leads the condition
-    /// runs whenever the `if` is reached, so a `let` moves it without
-    /// changing when it runs. A part that follows another clause runs
-    /// only when that clause holds, and a `let` would run it every
-    /// time; bind a closure or a function there instead, and call it
-    /// in the condition.
     ///
     /// ### Example
     ///
@@ -59,8 +51,8 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// **Prefer:** the part leads the condition, so a `let` runs it
-    /// exactly when the `if` would have
+    /// **Prefer:** a leading part, which a `let` runs exactly when the
+    /// `if` would have
     ///
     /// ```rust,ignore
     /// let is_visible_file =
@@ -73,8 +65,8 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// **Avoid:** a part that follows another clause, and reads a
-    /// binding the chain introduces
+    /// **Avoid:** a part that follows a clause and reads a binding from
+    /// the chain
     ///
     /// ```rust,ignore
     /// if let Some(entry) = next_entry()
@@ -88,8 +80,8 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// **Prefer:** a closure, so the part stays unevaluated until the
-    /// condition reaches it, taking the binding as a parameter
+    /// **Prefer:** a closure, which stays unevaluated until the
+    /// condition reaches it
     ///
     /// ```rust,ignore
     /// let is_visible_file =
