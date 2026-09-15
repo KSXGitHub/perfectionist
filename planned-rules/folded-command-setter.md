@@ -108,7 +108,7 @@ A call to `Iterator::fold` where all of the following hold:
 Condition 4 is a value gate rather than a correctness one. The rewrite
 stays valid for any receiver, because the receiver only moves; it stops
 being an *improvement* once what moves is long or carries logic of its
-own. These are equivalent, and must not fire:
+own. These are equivalent, but *must not* fire:
 
 ```text
     A.iter().map(mapper).fold(B, f)   ->   B.plural(A.iter().map(mapper))
