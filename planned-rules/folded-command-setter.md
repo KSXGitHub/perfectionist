@@ -28,9 +28,31 @@ UI_HARNESS_VARS
 Command::new("cargo").without_envs(UI_HARNESS_VARS)
 ```
 
-The plural is not a convenience wrapper the caller could take or
-leave. Upstream implements it as exactly this fold, so the hand-rolled
-version duplicates library code that already exists, one level up.
+Both blocks are reduced to the call that changed; the real call site
+chains two further setters and spells its receiver differently.
+
+Every pair reads the same way. Arguments are the pair most likely to be
+met in the wild, and a closure is how the fold is most likely to be
+written:
+
+**Avoid:**
+
+```rust
+flags.iter().fold(Command::new("ls"), |c, f| c.with_arg(f))
+```
+
+**Prefer:**
+
+```rust
+Command::new("ls").with_args(flags)
+```
+
+The plural is not a convenience wrapper the caller could take or leave.
+Upstream defines `with_args` as
+`args.into_iter().fold(self, Self::with_arg)`, so the hand-rolled
+version is not merely equivalent to the plural — it is the plural's
+body, inlined at the call site, one level up from where the library
+already wrote it.
 
 ## Why restrict this?
 
@@ -55,9 +77,10 @@ silently builds the wrong command. The plural has no such surface.
 A call to `Iterator::fold` where all of the following hold:
 
 1. The initial-value argument's type is `std::process::Command`.
-2. The folding argument *resolves* to a singular `CommandExtra`
-   setter. Resolution is the trigger, not spelling: one method has many
-   written forms, and all of them fold. Both of these count:
+2. The folder — `fold`'s second argument — *resolves* to a singular
+   `CommandExtra` setter. Resolution is the trigger, not spelling: one
+   method has many spellings, and all of them fold. The ones to expect,
+   which are not an exhaustive set:
    - a **path** — `CommandExtra::without_env`, `Command::without_env`,
      `<Command as CommandExtra>::without_env`, `Self::without_env`, or
      any of those reached through a renamed import;
@@ -69,7 +92,13 @@ A call to `Iterator::fold` where all of the following hold:
      be written as a method call
      (`|acc, item| acc.without_env(item)`) or as an associated-function
      call on any of the paths above
-     (`|acc, item| CommandExtra::without_env(acc, item)`).
+     (`|acc, item| CommandExtra::without_env(acc, item)`);
+   - a **path bound to a local** — `let f = CommandExtra::without_env;`
+     and then `.fold(command, f)`. It compiles and folds exactly like
+     the bare path, but the folder resolves to the local rather than to
+     the setter, so catching it means following the binding's
+     initialiser. A first implementation may skip that, as a known gap
+     rather than because the predicate excludes it.
 3. That setter has a plural counterpart in the `pairs` table below.
 
 | singular      | plural         | example closure                                  |
@@ -80,25 +109,26 @@ A call to `Iterator::fold` where all of the following hold:
 
 The `with_env` row is the awkward one and also the most valuable. Its
 item is a tuple, so the closure destructures, and no path spelling
-works in any of its forms: `with_env` takes three arguments where
-`fold` supplies two, so the arity does not match and the compiler
-rejects the path. A closure is therefore mandatory for that pair, which
-makes it the shape most likely to be written by hand and left alone.
+works: `with_env` takes three arguments where `fold` supplies two, so
+the arity does not match and the compiler rejects every one of them. A
+closure is therefore mandatory for that pair, which makes it the shape
+most likely to be written by hand and left alone.
 
 ### Exemptions
 
-- **A folding closure that does anything else.** An extra statement, a
-  `?`, a conditional, arguments passed out of order, an item used
-  twice. The plural is only equivalent to a closure that forwards and
-  nothing more; anything else must not fire.
+- **A closure that does anything else.** An extra statement, a `?`, a
+  conditional, arguments passed out of order, an item used twice. The
+  plural is only equivalent to a closure that forwards and nothing more;
+  anything else must not fire.
+
 - **A singular with no plural.** `with_no_env`, `with_stdin`,
-  `with_stdout` and `with_stderr` take no per-item value and have no
-  plural form, so a fold over them is a different mistake and outside
-  this rule.
-- **An accumulator that is not a `Command`.** The `pairs` table names
-  `CommandExtra` methods, so this follows from the method resolving,
-  but the type check is worth making explicit rather than inferring it
-  from the name.
+  `with_stdout` and `with_stderr` have no plural counterpart — each
+  sets one thing that a later call replaces rather than extends — so a
+  fold over them is a different mistake and outside this rule.
+- **An accumulator that is not a `Command`.** Resolving the setter
+  already implies this, so it costs the trigger nothing; it is spelled
+  out because an implementation that matches setter *names* instead of
+  resolving them would lose it silently.
 - **Macro-synthesised calls**, per
   [Suppressing proc-macro-synthesised violations](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations).
 
@@ -130,10 +160,10 @@ initial-value argument, compared against `std::process::Command` by
 `DefId`. Cheap, and it is what stops the rule firing on unrelated
 folds.
 
-**Matching the folder.** Resolve the folding argument's callee to a
-`DefId` and compare that against the singular's method. Comparing the
-resolved item rather than the written path is what makes the spellings
-listed above fall out for free: `Command::without_env`,
+**Matching the folder.** Resolve the folder's callee to a `DefId` and
+compare that against the singular's method. Comparing the resolved item
+rather than the written path is what makes the spellings listed above
+fall out for free: `Command::without_env`,
 `<Command as CommandExtra>::without_env` and a renamed import all
 resolve to the one method, so none of them needs a case of its own. For
 a bare path that comparison is the whole check.
@@ -204,7 +234,7 @@ fires on code that one considers already correct. The fold above uses
 sibling has nothing to say about it, which is the argument for these
 being two rules rather than sub-checks of one.
 
-They meet on a single shape:
+They meet on this shape:
 
 ```rust
 items.iter().fold(command, |mut c, a| { c.arg(a); c })
@@ -220,4 +250,4 @@ statement from the other side.
 caps the calls on a chain's spine, and this rule shortens a spine
 rather than lengthening it — replacing `.iter().fold(...)` with one
 plural call removes two. The two therefore pull the same way, unlike
-`pipe_style`, which pulls against it.
+`perfectionist::pipe_style`, which pulls against it.

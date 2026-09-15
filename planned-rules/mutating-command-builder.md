@@ -125,7 +125,7 @@ resolution is a name match against that table once the receiver type
 matches — no trait resolution needed, because these are inherent
 methods on `Command`.
 
-The suggestion is not always a rename. Two shapes to distinguish:
+The suggestion is not always a rename. The shapes to distinguish:
 
 1. **The call is already an expression whose value is used** — a
    chain, or a tail expression. Renaming the method is the whole fix,
@@ -146,27 +146,28 @@ binding whose every use is a setter call.
 ### Difficulty
 
 **Medium.** The trigger is local to one expression and needs no
-cross-function reasoning, which keeps it well inside what the
-existing late passes do. The two parts that need care are the
-owned-versus-borrowed receiver check, where a false positive is
-unfixable rather than cosmetic, and the statement-shaped case above,
-where the honest answer is to suggest less than the rule would like.
+cross-function reasoning, which keeps it well inside what the existing
+late passes do. The parts that need care are the owned-versus-borrowed
+receiver check, where a false positive is unfixable rather than
+cosmetic, and the statement-shaped case above, where the honest answer
+is to suggest less than the rule would like.
 
 ### Default state
 
-Active by default, gated on the dependency.
+Active by default.
 
-The gate is what makes active-by-default defensible: the lint cannot
-fire in a crate that has not already chosen `command-extra`, so it
-never pushes a third-party dependency on anyone. Where the crate has
-chosen it, the project's position is that the choice should be
-followed consistently rather than per call site.
+`require_command_extra_dependency` is a trigger condition rather than a
+third state, and it is what makes active-by-default defensible: at its
+default the lint cannot fire in a crate that has not already chosen
+`command-extra`, so it never pushes a third-party dependency on anyone.
+Where the crate has chosen it, the project's position is that the choice
+should be followed consistently rather than per call site.
 
 ## Interaction with sibling rules
 
 `folded_command_setter` ([`folded-command-setter.md`](./folded-command-setter.md))
 flags a *fold* over a singular `CommandExtra` setter where the plural
-exists. The two overlap on one shape:
+exists. The two overlap on this shape:
 
 ```rust
 items.iter().fold(command, |mut c, a| { c.arg(a); c })
