@@ -30,7 +30,7 @@ from the clauses, and a later editor has to work out which
 clause to change. Binding the predicate, or the part of it that
 names a concept, to a `let` gives it the name the author had,
 puts a debugger-visible value on it, and turns the `if` back into
-a sentence. SonarSource ships this rule with the same limit.
+a sentence.
 
 ## Example
 

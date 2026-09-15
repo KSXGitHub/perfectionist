@@ -33,7 +33,7 @@ declare_tool_lint! {
     /// clause to change. Binding the predicate, or the part of it that
     /// names a concept, to a `let` gives it the name the author had,
     /// puts a debugger-visible value on it, and turns the `if` back into
-    /// a sentence. SonarSource ships this rule with the same limit.
+    /// a sentence.
     ///
     /// ### Example
     ///
@@ -235,7 +235,7 @@ struct Operators {
 /// The operators of `condition` that a `let` binding could remove.
 ///
 /// The condition is flattened into the clauses its top-level `&&`s
-/// join. Each gap between two clauses is one `&&` the author wrote,
+/// join. Each join between two clauses is one `&&` the author wrote,
 /// and it counts unless a
 /// `let` sits on either side of it: a run of ordinary clauses
 /// collapses into one named clause, taking its `&&`s with it, whereas
