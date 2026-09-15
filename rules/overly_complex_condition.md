@@ -21,9 +21,6 @@ expansion is not measured, though a condition written inside a
 macro's arguments is. The `let` that binds a boolean is not a
 condition, so naming the expression is what satisfies the rule.
 
-Test code is measured like any other code; set
-`exempt_tests` to leave it alone.
-
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. A
@@ -33,7 +30,7 @@ from the clauses, and a later editor has to work out which
 clause to change. Binding the predicate, or the part of it that
 names a concept, to a `let` gives it the name the author had,
 puts a debugger-visible value on it, and turns the `if` back into
-a sentence. SonarSource ships this rule with the same limit.
+a sentence.
 
 ## Example
 
@@ -105,13 +102,3 @@ Configure via `dylint.toml` under `["perfectionist::overly_complex_condition"]`.
 
 The most `&&` and `||` operators a condition may have without
 being flagged. Defaults to `3`.
-
-### Field: `exempt_tests`
-
-- _Type:_ `boolean`
-- _Optional_
-
-Whether test code is left alone: conditions inside a
-`#[cfg(test)]` module, a `#[test]` function, or an
-integration-test or benchmark target. Defaults to `false`, so a
-test is held to the same limit as the code it exercises.

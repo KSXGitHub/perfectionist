@@ -170,6 +170,46 @@ fn nested_match_scrutinee(first: bool, second: bool, third: bool) {
     }
 }
 
+macro_rules! make_if {
+    ($condition:expr) => {
+        if $condition { true } else { false }
+    };
+}
+
+macro_rules! branchy {
+    ($condition:expr, $then:expr, $els:expr) => {
+        if $condition { $then } else { $els }
+    };
+}
+
+// Bad: 3 operators, and no note — the `&&`s are inside the `let`'s
+// initialiser, so the chain is one clause with no join to leave out.
+fn let_initialiser(first: bool, second: bool, third: bool, fourth: bool) {
+    if let true = (first && second && third && fourth) {
+        work();
+    }
+}
+
+// Bad: 1 operator, and a second diagnostic for the expansion's own
+// head. A macro can expand to an `if` around the author's argument;
+// that `if` still selects between branches and its head is still
+// reached on its own, so stepping into it would count `second && third`
+// twice.
+fn macro_expands_to_if(first: bool, second: bool, third: bool) {
+    if first && make_if!(second && third) {
+        work();
+    }
+}
+
+// Bad: 1 operator — the author wrote the operators in the arguments the
+// macro puts in its branches, and a branch is never part of a
+// condition.
+fn macro_branches(first: bool, second: bool, third: bool, fourth: bool, fifth: bool) {
+    if first && branchy!(second, third && fourth, fifth && first) {
+        work();
+    }
+}
+
 macro_rules! both {
     ($first:expr, $second:expr) => {
         $first && $second
