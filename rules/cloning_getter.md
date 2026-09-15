@@ -23,6 +23,10 @@ it by value is the borrowed form's equal — and so is a call that
 renders the field rather than copying it, such as `to_string` on
 a numeric field, where no borrow of the field is a `String`.
 
+A method named `to_*` is left alone: that prefix is how a Rust
+API announces a costly conversion, so the copy is already part of
+what the name promises.
+
 A method of a trait impl is left alone, since the trait fixes
 its signature, and so is a method produced by a macro.
 

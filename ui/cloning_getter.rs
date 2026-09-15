@@ -24,6 +24,7 @@ struct Person {
     age: u32,
     scores: [u8; 4],
     badge: Badge,
+    token: String,
 }
 
 impl Person {
@@ -98,6 +99,17 @@ impl Person {
     // so there is no borrowed form to ask for.
     fn badge(&self) -> String {
         self.badge.to_string()
+    }
+
+    // Good: `to_*` announces a costly conversion, so the copy is what
+    // the name already promises.
+    fn to_first_name(&self) -> String {
+        self.first_name.clone()
+    }
+
+    // Bad: `to` without the underscore is not the conversion prefix.
+    fn token(&self) -> String {
+        self.token.clone()
     }
 
     // Good: not a getter — it takes an argument, even though the body

@@ -30,6 +30,10 @@ declare_tool_lint! {
     /// renders the field rather than copying it, such as `to_string` on
     /// a numeric field, where no borrow of the field is a `String`.
     ///
+    /// A method named `to_*` is left alone: that prefix is how a Rust
+    /// API announces a costly conversion, so the copy is already part of
+    /// what the name promises.
+    ///
     /// A method of a trait impl is left alone, since the trait fixes
     /// its signature, and so is a method produced by a macro.
     ///
@@ -162,6 +166,14 @@ impl<'tcx> LateLintPass<'tcx> for CloningGetter {
         let FnKind::Method(ident, _) = kind else {
             return;
         };
+        // `to_*` is the API guidelines' name for a deliberately costly
+        // conversion, so the prefix already tells a caller the copy is
+        // there. Asking such a method to return a borrow would contradict
+        // the convention this rule's own list of copying methods is drawn
+        // from -- `to_owned`, `to_string`, `to_vec` are that convention.
+        if ident.name.as_str().starts_with("to_") {
+            return;
+        }
         if !matches!(decl.implicit_self(), ImplicitSelfKind::RefImm) || decl.inputs.len() != 1 {
             return;
         }
