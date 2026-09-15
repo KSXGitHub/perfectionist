@@ -102,8 +102,9 @@ A call to `Iterator::fold` where all of the following hold:
 3. That setter has a plural counterpart in the table below.
 4. The `fold` receiver is a **simple iterator expression**: a place
    expression — `VARS`, `self.vars`, `cfg.env_names` — followed by any
-   number of argument-less method calls, as in `list.iter()`,
-   `list.into_iter()` or `self.vars.iter().copied()`.
+   number of argument-less method calls. The methods are not a fixed
+   list: `list.iter()`, `list.into_iter()`, `self.vars.iter().copied()`
+   and `xs.into_iter().rev()` all qualify, as would one of your own.
 
 Condition 4 is a value gate rather than a correctness one. The rewrite
 stays valid for any receiver, because the receiver only moves; it stops
@@ -122,6 +123,12 @@ removed one — the opposite of what this rule is for. An argument is
 where the logic hides, which is why the condition turns on
 argument-less calls rather than on a list of adapter names that would
 need extending as the iterator API grows.
+
+Unlike condition 2, this one is deliberately syntactic: what it
+measures is how much text the suggestion relocates, which is a property
+of the written form rather than of what anything resolves to. That
+leaves a known gap — `Vec::into_iter(list).fold(B, f)` is the same
+shape written as an associated-function call, and does not match.
 
 | singular      | plural         | example closure                                  |
 |---------------|----------------|--------------------------------------------------|
@@ -216,17 +223,23 @@ so the receiver and `B` both move. Condition 4 keeps the receiver
 short, so those are the whole shape rather than instances of a wider
 one; `B` is unconstrained and may be a multi-line expression.
 
-The rows differ in whether the adapter survives, and the difference is
-not cosmetic. `into_iter` is *erased*, always: the plural calls
-`into_iter` itself, so `B.plural(list)` has the same item type and the
-same ownership as the fold it replaces. Erasing `iter` is sound only
-where the receiver is already a reference — `UI_HARNESS_VARS` is a
-`&'static` slice, which is why the fixed call site reads
+The rows differ in whether the call survives, and the difference is not
+cosmetic. Where the receiver is exactly `list.into_iter()`, the call is
+*erased*: the plural calls `into_iter` itself, so `B.plural(list)` has
+the same item type and the same ownership as the fold it replaces.
+Where it is exactly `list.iter()`, erasing is sound only if the
+receiver is already a reference — `UI_HARNESS_VARS` is a `&'static`
+slice, which is why the fixed call site reads
 `without_envs(UI_HARNESS_VARS)`. On an owned collection that same
 erasure moves what the fold merely borrowed, and the code around it
-stops compiling. So erase `into_iter` unconditionally and `iter` only
-behind that check; keeping `iter` is always safe, and a first
-implementation may do that.
+stops compiling.
+
+Everything else survives verbatim, `iter` and `into_iter` included once
+another call follows them. `list.into_iter().rev()` has to stay whole:
+`Vec` has no `rev` to erase down to, and dropping the `rev` would
+reverse the arguments. So erase only a lone `into_iter`, and a lone
+`iter` behind the reference check. Keeping either is always safe, and a
+first implementation may do that.
 
 A conservative first implementation: **path folders only, and only
 the pairs whose item is a single value.** That covers what this
