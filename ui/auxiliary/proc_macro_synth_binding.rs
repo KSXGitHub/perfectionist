@@ -458,6 +458,86 @@ pub fn synth_owned_param(input: TokenStream) -> TokenStream {
     wrap_const_block(body)
 }
 
+/// `#[derive(SynthCloningGetter)]` + `#[synth_cloning_getter]` →
+/// `const _: () = { struct _Synth { s: String } impl _Synth {
+/// fn _synth(&self) -> String { self.s.clone() } } };` where the
+/// generated `impl` and every token of the method inside it inherit
+/// the user-span of `synth_cloning_getter`, the way a `getset`-style
+/// derive spans an accessor over the field it accesses. `cloning_getter`
+/// reports at the method's `def_span`, so that user span defeats
+/// `Span::from_expansion` and `report_in_external_macro: false`, and
+/// stamping the `impl` too leaves a parent-item span check nothing to
+/// find; this exercises the rule's `is_from_proc_macro` guard.
+#[proc_macro_derive(SynthCloningGetter, attributes(synth_cloning_getter))]
+pub fn synth_cloning_getter(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_cloning_getter")
+        .expect("`#[derive(SynthCloningGetter)]` requires a `#[synth_cloning_getter]`");
+    let call_site = Span::call_site();
+    let at_sig = |mut tree: TokenTree| {
+        tree.set_span(attr_span);
+        tree
+    };
+
+    // `struct _Synth { s: String }` — entirely at the call site.
+    let mut field = TokenStream::new();
+    field.extend([
+        TokenTree::Ident(Ident::new("s", call_site)),
+        TokenTree::Punct(Punct::new(':', Spacing::Alone)),
+        TokenTree::Ident(Ident::new("String", call_site)),
+    ]);
+    let mut body = TokenStream::new();
+    body.extend([
+        TokenTree::Ident(Ident::new("struct", call_site)),
+        TokenTree::Ident(Ident::new("_Synth", call_site)),
+        TokenTree::Group(Group::new(Delimiter::Brace, field)),
+    ]);
+
+    // `self.s.clone()` — stamped like the signature, the way
+    // `quote_spanned!(field.span() => ...)` stamps a whole accessor.
+    let mut fn_body = TokenStream::new();
+    fn_body.extend([
+        at_sig(TokenTree::Ident(Ident::new("self", attr_span))),
+        at_sig(TokenTree::Punct(Punct::new('.', Spacing::Alone))),
+        at_sig(TokenTree::Ident(Ident::new("s", attr_span))),
+        at_sig(TokenTree::Punct(Punct::new('.', Spacing::Alone))),
+        at_sig(TokenTree::Ident(Ident::new("clone", attr_span))),
+        at_sig(TokenTree::Group(Group::new(
+            Delimiter::Parenthesis,
+            TokenStream::new(),
+        ))),
+    ]);
+
+    // `fn _synth(&self) -> String` — every signature token user-spanned.
+    let mut receiver = TokenStream::new();
+    receiver.extend([
+        at_sig(TokenTree::Punct(Punct::new('&', Spacing::Alone))),
+        at_sig(TokenTree::Ident(Ident::new("self", attr_span))),
+    ]);
+    let mut method = TokenStream::new();
+    method.extend([
+        at_sig(TokenTree::Ident(Ident::new("fn", attr_span))),
+        at_sig(TokenTree::Ident(Ident::new("_synth", attr_span))),
+        at_sig(TokenTree::Group(Group::new(
+            Delimiter::Parenthesis,
+            receiver,
+        ))),
+        at_sig(TokenTree::Punct(Punct::new('-', Spacing::Joint))),
+        at_sig(TokenTree::Punct(Punct::new('>', Spacing::Alone))),
+        at_sig(TokenTree::Ident(Ident::new("String", attr_span))),
+        at_sig(TokenTree::Group(Group::new(Delimiter::Brace, fn_body))),
+    ]);
+
+    // `impl _Synth { ... }` — stamped as well, so that every span the
+    // rule could consult, the method's and its parent item's alike, reads
+    // as user-written. A span-based guard has nothing left to go on.
+    body.extend([
+        at_sig(TokenTree::Ident(Ident::new("impl", attr_span))),
+        at_sig(TokenTree::Ident(Ident::new("_Synth", attr_span))),
+        at_sig(TokenTree::Group(Group::new(Delimiter::Brace, method))),
+    ]);
+    wrap_const_block(body)
+}
+
 fn wrap_const_block(body: TokenStream) -> TokenStream {
     let call_site = Span::call_site();
     let mut out = TokenStream::new();

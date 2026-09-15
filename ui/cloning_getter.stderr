@@ -1,0 +1,56 @@
+warning: getter `first_name` returns an owned copy of `self.first_name`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn first_name(&self) -> String {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: return `&str` and let a caller that needs ownership copy at the call site
+   = help: if every call site copies the borrow straight back, the copy moved rather than went away: the callers did want ownership, and the owned return was right
+   = note: `#[warn(perfectionist::cloning_getter)]` on by default
+
+warning: getter `middle_name` returns an owned copy of `self.middle_name`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn middle_name(&self) -> Option<String> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: return `Option<&str>` and let a caller that needs ownership copy at the call site
+   = help: if every call site copies the borrow straight back, the copy moved rather than went away: the callers did want ownership, and the owned return was right
+
+warning: getter `home` returns an owned copy of `self.home`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn home(&self) -> PathBuf {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: return `&Path` and let a caller that needs ownership copy at the call site
+   = help: if every call site copies the borrow straight back, the copy moved rather than went away: the callers did want ownership, and the owned return was right
+
+warning: getter `tags` returns an owned copy of `self.tags`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn tags(&self) -> Vec<String> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: return `&[String]` and let a caller that needs ownership copy at the call site
+   = help: if every call site copies the borrow straight back, the copy moved rather than went away: the callers did want ownership, and the owned return was right
+
+warning: getter `display_name` returns an owned copy of `self.first_name`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn display_name(&self) -> String {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: return `&str` and let a caller that needs ownership copy at the call site
+   = help: if every call site copies the borrow straight back, the copy moved rather than went away: the callers did want ownership, and the owned return was right
+
+warning: getter `token` returns an owned copy of `self.token`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn token(&self) -> String {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: return `&str` and let a caller that needs ownership copy at the call site
+   = help: if every call site copies the borrow straight back, the copy moved rather than went away: the callers did want ownership, and the owned return was right
+
+warning: N warnings emitted

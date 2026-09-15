@@ -42,6 +42,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   markdown construct in a clap-derived doc comment leaks into `--help` output
 
+- [`cloning_getter`](./cloning_getter.md) (default: `active`).
+
+  getter returns an owned copy of a field where a borrow would serve
+
 - [`core_instead_of_std`](./core_instead_of_std.md) (default: `inactive`).
 
   item named through `core` or `alloc` instead of `std`
