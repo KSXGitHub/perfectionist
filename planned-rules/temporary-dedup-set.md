@@ -770,10 +770,45 @@ clauses, and the element sweep found no size at which the round trip
 beats the suggestion for either shape — 6.3× and 4.5× slower on ten
 elements, still 1.2× and 1.0× at a hundred thousand.
 
-Those two introduce a sort of their own, because nothing followed the
-landing. Where something does, the element stops deciding anything and
-the author's call becomes the suggestion's. Both spellings of pnpm's
-`sort_unique` are that shape:
+**Avoid:**
+
+```rust
+pub(super) fn git_sources(&self) -> Vec<GitSource> {
+    self.git
+        .iter()
+        .map(|package| GitSource::clone(&package.source))
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
+}
+```
+
+**Prefer:**
+
+```rust
+pub(super) fn git_sources(&self) -> Vec<GitSource> {
+    let mut sources: Vec<GitSource> = self.git
+        .iter()
+        .map(|package| GitSource::clone(&package.source))
+        .collect();
+    sources.sort_unstable();
+    sources.dedup();
+    sources
+}
+```
+
+This one is machine-applicable for a different reason than the two
+above. `GitSource` is four heap-owning fields wide, so it clears
+neither clause of the element gate; what carries the suggestion is the
+`BTreeSet` branch, whose rewrite yields the vector the round trip
+already yielded, element for element and order for order. Its derived
+`Ord` and `PartialEq` satisfy the cheap-ordering condition, and
+nothing about the element had to.
+
+Those three introduce a sort of their own, because nothing followed
+the landing. Where something does, the element stops deciding anything
+and the author's call becomes the suggestion's. Both spellings of
+pnpm's `sort_unique` are that shape:
 
 **Avoid:**
 
@@ -856,12 +891,12 @@ taken from the same tree, so each stays a citation rather than a copy
 that drifts.
 
 All three have since been rewritten by hand, ahead of the rule, in
-[`pnpm/pnpm#14915`](https://github.com/pnpm/pnpm/pull/14915) — open at
-the time of writing, which is why the snippets below stay pinned. The
-evidence survives the fix: the shape occurred in a real workspace, and
-was worth removing from it. What that pull request wrote is also the
-nearest thing to a check on this design, and it agrees where it
-counts. `sort_unique` keeps the `sort()` already there and appends
+[`pnpm/pnpm#14915`](https://github.com/pnpm/pnpm/pull/14915), open at
+the time of writing. That changes nothing above — a citation pinned to
+a revision is a claim about that revision, which is why it was pinned
+— and it is recorded here because the pull request is the nearest
+thing to an outside check on this design, not because the evidence
+needed rescuing. It agrees where it counts. `sort_unique` keeps the `sort()` already there and appends
 `dedup` rather than re-spelling it `sort_unstable` — the sorted-shape
 tier's rule, reached independently. `capture_blocking` sorts and dedups
 its parameter in place before the `map` that had been reading out of
