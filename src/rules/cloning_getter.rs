@@ -1,14 +1,15 @@
 use crate::common::DefaultState;
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
-use clippy_utils::diagnostics::span_lint_and_help;
+use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::ty::is_copy;
 use rustc_hir as hir;
 use rustc_hir::def_id::LocalDefId;
 use rustc_hir::intravisit::FnKind;
 use rustc_hir::{Expr, ExprKind, ImplicitSelfKind, QPath};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
-use rustc_middle::ty::{AssocContainer, TypeckResults};
+use rustc_middle::ty::print::ForceTrimmedGuard;
+use rustc_middle::ty::{self, AssocContainer, Ty, TypeckResults};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Span, Symbol, kw};
 
@@ -88,6 +89,14 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::cloning_getter";
 
+/// How to tell the fix did not work, in the shape the sibling rules
+/// use. The payoff this rule claims is that most callers
+/// only read the value, so a call site that copies the borrow straight
+/// back is what says the borrow bought nothing.
+const COPY_BACK_HELP: &str = "if every call site copies the borrow straight back, the copy moved \
+                              rather than went away: the callers did want ownership, and the owned \
+                              return was right";
+
 /// The methods that turn a borrowed field into its owned form.
 const COPYING_METHODS: &[&str] = &[
     "clone",
@@ -164,20 +173,25 @@ impl<'tcx> LateLintPass<'tcx> for CloningGetter {
             return;
         }
         let typeck = cx.tcx.typeck(def_id);
-        let Some(field) = self.copied_field(cx, typeck, body.value) else {
+        let Some((field, field_ty)) = self.copied_field(cx, typeck, body.value) else {
             return;
         };
         if self.config.exempt_tests && item_in_test_code(cx, def_id) {
             return;
         }
         let getter = ident.name;
-        span_lint_and_help(
+        span_lint_and_then(
             cx,
             CLONING_GETTER,
             def_span,
             format!("getter `{getter}` returns an owned copy of `self.{field}`"),
-            None,
-            "return a borrow (`&str`, `&Path`, `&[T]`, `Option<&T>`, `&T`) and let a caller that needs ownership copy at the call site",
+            |diag| {
+                diag.help(format!(
+                    "return `{}` and let a caller that needs ownership copy at the call site",
+                    borrowed_form(cx, field_ty),
+                ));
+                diag.help(COPY_BACK_HELP);
+            },
         );
     }
 }
@@ -191,7 +205,7 @@ impl CloningGetter {
         cx: &LateContext<'tcx>,
         typeck: &TypeckResults<'tcx>,
         body: &'tcx Expr<'tcx>,
-    ) -> Option<Symbol> {
+    ) -> Option<(Symbol, Ty<'tcx>)> {
         let expr = unwrap_block(body);
         let ExprKind::MethodCall(segment, receiver, [], _) = expr.kind else {
             return None;
@@ -224,8 +238,47 @@ impl CloningGetter {
         if is_copy(cx, field_ty) {
             return None;
         }
-        Some(field.name)
+        Some((field.name, field_ty))
     }
+}
+
+/// The borrowed form a caller could take in place of the field's owned
+/// type: `&str` for a `String`, `&Path` for a `PathBuf`, `&OsStr` for an
+/// `OsString`, `&[T]` for a `Vec<T>`, the inner type's own borrowed form
+/// under an `Option`, and `&T` for anything else.
+fn borrowed_form<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> String {
+    // Print paths trimmed to their final segment, so the help reads
+    // `&[String]` rather than `&[std::string::String]`. The guard is what
+    // `with_forced_trimmed_paths!` expands to, held here for the whole
+    // function rather than wrapped around each `format!`.
+    let _trimmed = ForceTrimmedGuard::new();
+    let ty::Adt(adt, args) = ty.kind() else {
+        return format!("&{ty}");
+    };
+    let did = adt.did();
+    // `String` is a lang item (`#[lang = "String"]`), not a diagnostic
+    // item, so it needs its own lookup; the rest carry a
+    // `rustc_diagnostic_item`.
+    if Some(did) == cx.tcx.lang_items().string() {
+        return "&str".to_owned();
+    }
+    let is = |name: &str| cx.tcx.is_diagnostic_item(Symbol::intern(name), did);
+    if is("PathBuf") {
+        return "&Path".to_owned();
+    }
+    if is("OsString") {
+        return "&OsStr".to_owned();
+    }
+    let Some(inner) = args.types().next() else {
+        return format!("&{ty}");
+    };
+    if is("Vec") {
+        return format!("&[{inner}]");
+    }
+    if is("Option") {
+        return format!("Option<{}>", borrowed_form(cx, inner));
+    }
+    format!("&{ty}")
 }
 
 /// The expression a body of nested `{ }` blocks with no statements
