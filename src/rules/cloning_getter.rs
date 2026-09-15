@@ -2,12 +2,13 @@ use crate::common::DefaultState;
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_help;
+use clippy_utils::ty::is_copy;
 use rustc_hir as hir;
 use rustc_hir::def_id::LocalDefId;
 use rustc_hir::intravisit::FnKind;
 use rustc_hir::{Expr, ExprKind, ImplicitSelfKind, QPath};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
-use rustc_middle::ty::AssocContainer;
+use rustc_middle::ty::{AssocContainer, TypeckResults};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Span, Symbol, kw};
 
@@ -18,8 +19,15 @@ declare_tool_lint! {
     /// body is one field of `self` copied out through `clone`,
     /// `to_owned`, `to_string`, `to_vec`, `to_path_buf`, or
     /// `to_os_string` — and asks for the borrowed form instead: `&str`
-    /// for a `String` field, `&Path` for a `PathBuf`, `&[T]` for a
-    /// `Vec<T>`, `Option<&T>` for an `Option<T>`, `&T` otherwise.
+    /// for a `String` field, `&Path` for a `PathBuf`, `&OsStr` for an
+    /// `OsString`, `&[T]` for a `Vec<T>`, `Option<&T>` for an
+    /// `Option<T>`, `&T` otherwise.
+    ///
+    /// The call has to reproduce the field's own type for a borrow to
+    /// serve in its place. So a `Copy` field is left alone — returning
+    /// it by value is the borrowed form's equal — and so is a call that
+    /// renders the field rather than copying it, such as `to_string` on
+    /// a numeric field, where no borrow of the field is a `String`.
     ///
     /// A method of a trait impl is left alone, since the trait fixes
     /// its signature, and so is a method produced by a macro.
@@ -41,10 +49,9 @@ declare_tool_lint! {
     ///
     /// ### Interaction with Clippy
     ///
-    /// `clippy::clone_on_copy` catches a `.clone()` on a `Copy` field,
-    /// which this rule does not flag: returning a `u32` by value is the
-    /// borrowed form's equal. No Clippy lint looks at what a getter
-    /// returns.
+    /// `clippy::clone_on_copy` is what catches the `.clone()` on a
+    /// `Copy` field that this rule leaves alone. No Clippy lint looks at
+    /// what a getter returns.
     ///
     /// ### Example
     ///
@@ -153,7 +160,8 @@ impl<'tcx> LateLintPass<'tcx> for CloningGetter {
         {
             return;
         }
-        let Some(field) = self.copied_field(body.value) else {
+        let typeck = cx.tcx.typeck(def_id);
+        let Some(field) = self.copied_field(cx, typeck, body.value) else {
             return;
         };
         if self.config.exempt_tests && item_in_test_code(cx, def_id) {
@@ -173,8 +181,14 @@ impl<'tcx> LateLintPass<'tcx> for CloningGetter {
 
 impl CloningGetter {
     /// The field the body copies out, when the body is exactly
-    /// `self.<field>.<copying method>()`, possibly wrapped in a block.
-    fn copied_field(&self, body: &Expr<'_>) -> Option<Symbol> {
+    /// `self.<field>.<copying method>()`, possibly wrapped in a block,
+    /// and a borrow of that field could have served in the copy's place.
+    fn copied_field<'tcx>(
+        &self,
+        cx: &LateContext<'tcx>,
+        typeck: &TypeckResults<'tcx>,
+        body: &'tcx Expr<'tcx>,
+    ) -> Option<Symbol> {
         let expr = unwrap_block(body);
         let ExprKind::MethodCall(segment, receiver, [], _) = expr.kind else {
             return None;
@@ -191,7 +205,23 @@ impl CloningGetter {
         let [segment] = path.segments else {
             return None;
         };
-        (segment.ident.name == kw::SelfLower).then_some(field.name)
+        if segment.ident.name != kw::SelfLower {
+            return None;
+        }
+        let field_ty = typeck.expr_ty(receiver);
+        // The call has to reproduce the field's own type for a borrow of
+        // the field to serve in its place. `self.count.to_string()`
+        // renders a `u32`, and no borrow of `self.count` is a `String`.
+        if typeck.expr_ty(expr) != field_ty {
+            return None;
+        }
+        // A `Copy` field returned by value is the borrowed form's equal.
+        // A shared reference is itself `Copy`, so this also leaves alone a
+        // field that is already a borrow, where the call copies nothing.
+        if is_copy(cx, field_ty) {
+            return None;
+        }
+        Some(field.name)
     }
 }
 
