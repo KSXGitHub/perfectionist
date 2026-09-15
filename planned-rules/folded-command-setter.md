@@ -101,10 +101,11 @@ A call to `Iterator::fold` where all of the following hold:
      rather than because the predicate excludes it.
 3. That setter has a plural counterpart in the table below.
 4. The `fold` receiver is a **simple iterator expression**: a place
-   expression — `VARS`, `self.vars`, `cfg.env_names` — followed by any
-   number of argument-less method calls. The methods are not a fixed
-   list: `list.iter()`, `list.into_iter()`, `self.vars.iter().copied()`
-   and `xs.into_iter().rev()` all qualify, as would one of your own.
+   expression — `VARS`, `self.vars`, `cfg.env_names` — followed by at
+   most one argument-less method call. The method is not drawn from a
+   fixed list: `list.iter()`, `list.into_iter()`, `self.vars.iter()`
+   and a bare iterator binding all qualify, as would a method of your
+   own.
 
 Condition 4 is a value gate rather than a correctness one. The rewrite
 stays valid for any receiver, because the receiver only moves; it stops
@@ -114,15 +115,20 @@ own. These are equivalent, but *must not* fire:
 ```text
     list.iter().map(mapper).fold(B, f)   ->  B.plural(list.iter().map(mapper))
     list.iter().filter(pred).fold(B, f)  ->  B.plural(list.iter().filter(pred))
+    list.into_iter().rev().fold(B, f)    ->  B.plural(list.into_iter().rev())
     COMPLEX_EXPRESSION.fold(B, f)        ->  B.plural(COMPLEX_EXPRESSION)
 ```
 
-The reader still has to work out what `mapper` yields, and the
-suggestion has relocated a chain into argument position rather than
-removed one — the opposite of what this rule is for. An argument is
-where the logic hides, which is why the condition turns on
-argument-less calls rather than on a list of adapter names that would
-need extending as the iterator API grows.
+Each has relocated a chain into argument position rather than removed
+one — the opposite of what this rule is for. The condition bars them
+two ways, and neither is a list of adapter names that would need
+extending as the iterator API grows:
+
+- **No arguments**, because an argument is where the logic hides. The
+  reader would still have to work out what `mapper` yields.
+- **At most one call**, because a second is more text moving. `rev`
+  carries no logic and is still barred: `list.into_iter().rev()` is
+  simply longer than the rule is willing to relocate.
 
 Unlike condition 2, this one is deliberately syntactic: what it
 measures is how much text the suggestion relocates, which is a property
@@ -223,23 +229,23 @@ so the receiver and `B` both move. Condition 4 keeps the receiver
 short, so those are the whole shape rather than instances of a wider
 one; `B` is unconstrained and may be a multi-line expression.
 
-The rows differ in whether the call survives, and the difference is not
-cosmetic. Where the receiver is exactly `list.into_iter()`, the call is
-*erased*: the plural calls `into_iter` itself, so `B.plural(list)` has
-the same item type and the same ownership as the fold it replaces.
-Where it is exactly `list.iter()`, erasing is sound only if the
-receiver is already a reference — `UI_HARNESS_VARS` is a `&'static`
-slice, which is why the fixed call site reads
-`without_envs(UI_HARNESS_VARS)`. On an owned collection that same
-erasure moves what the fold merely borrowed, and the code around it
-stops compiling.
+The rows differ in whether the call survives. Condition 4 allows at
+most one, so the whole story is four cases:
 
-Everything else survives verbatim, `iter` and `into_iter` included once
-another call follows them. `list.into_iter().rev()` has to stay whole:
-`Vec` has no `rev` to erase down to, and dropping the `rev` would
-reverse the arguments. So erase only a lone `into_iter`, and a lone
-`iter` behind the reference check. Keeping either is always safe, and a
-first implementation may do that.
+- **`list`** (no call) — nothing to erase. `B.plural(list)`.
+- **`list.into_iter()`** — *erased*. The plural calls `into_iter`
+  itself, so `B.plural(list)` has the same item type and the same
+  ownership as the fold it replaces.
+- **`list.iter()`** — erased only if `list` is already a reference.
+  `UI_HARNESS_VARS` is a `&'static` slice, which is why the fixed call
+  site reads `without_envs(UI_HARNESS_VARS)`. On an owned collection
+  the same erasure moves what the fold merely borrowed, and the code
+  around it stops compiling.
+- **any other method** — survives verbatim.
+  `B.plural(list.some_method())`.
+
+Keeping the call is always safe, and a first implementation may do that
+throughout.
 
 A conservative first implementation: **path folders only, and only
 the pairs whose item is a single value.** That covers what this
@@ -271,10 +277,10 @@ Trigger and autofix therefore part ways:
 
 - **Fire** on every receiver condition 4 admits. The diagnostic is
   right whatever the order.
-- **Machine-applicable** only where every call in the receiver resolves
-  into `core` or `std` — a `DefId` origin check, not a roster and not
-  effect analysis. It is a proxy for purity, and a deliberately
-  conservative one.
+- **Machine-applicable** only where the receiver's call resolves into
+  `core` or `std` — a `DefId` origin check, not a roster and not effect
+  analysis. It is a proxy for purity, and a deliberately conservative
+  one.
 - **Advice only** otherwise, the same answer
   `mutating_command_builder` gives its statement-shaped case.
 
@@ -286,11 +292,11 @@ Fixtures worth writing:
   autofix keeps `plural(list.iter())`, since erasing would move what
   the fold only borrowed.
 - `list.into_iter()` — fires; autofix erases to `plural(list)`.
-- `list.into_iter().rev()` — fires; autofix keeps the chain whole and
-  erases nothing.
 - `queue.drain_all()`, an argument-less method of the linted crate —
-  fires; advice only, no autofix.
-- `list.iter().map(mapper)` — silent, per condition 4.
+  fires; advice only, no autofix. One call, so condition 4 admits it:
+  narrowing to one call does not remove the impurity case.
+- `list.into_iter().rev()` — silent; two calls, per condition 4.
+- `list.iter().map(mapper)` — silent; the call takes an argument.
 - `Vec::into_iter(list)` — silent; the known syntactic gap, not a
   regression.
 
