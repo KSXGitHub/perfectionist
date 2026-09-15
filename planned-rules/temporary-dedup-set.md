@@ -195,7 +195,7 @@ The findings that shape the rule:
    to sort.** Repeating the measurement on four real pools — npm
    package names, the crates.io download ranking, pnpm's lockfile keys
    and its repository's file paths — puts a thousand-item round trip
-   at 0.73×–0.80×, and a million npm names at 1.09×: a real lead, but
+   at 0.73×–0.80×, and a million npm names at 1.1×: a real lead, but
    not the 0.24× of a synthetic 4 KiB string. None of the four carries
    enough shared prefix to reproduce what the synthetic rows isolate,
    which the tables below take up.
@@ -248,9 +248,9 @@ the other three, so everything below quotes the random-pair figure.
 | npm names (20 B)     | 100k → 100k      | 0.68×     | 1.4×               | 1.4×       | 1.2×             | 1.0× (10.3 ms)            |
 | npm names (20 B)     | 1M → 100k        | 1.1×      | 1.2×               | 2.1×       | 1.6×             | 1.0× (217 ms)             |
 | crate names (10.4 B) | 1k → 1k          | 0.73×     | 1.6×               | 1.4×       | 1.1×             | 1.0× (41 µs)              |
-| lockfile keys (26 B) | 1k → 1k          | 0.8×      | 1.4×               | 1.4×       | 1.2×             | 1.0× (66 µs)              |
+| lockfile keys (26 B) | 1k → 1k          | 0.80×     | 1.4×               | 1.4×       | 1.2×             | 1.0× (66 µs)              |
 | lockfile keys (26 B) | 10k → 1k         | 0.75×     | 0.84×              | 1.4×       | 1.2×             | 1.0× (932 µs)             |
-| file paths (57 B)    | 1k → 1k          | 0.8×      | 1.4×               | 1.4×       | 1.1×             | 1.0× (79 µs)              |
+| file paths (57 B)    | 1k → 1k          | 0.80×     | 1.4×               | 1.4×       | 1.1×             | 1.0× (79 µs)              |
 | file paths (57 B)    | 10k → 1k         | 0.76×     | 0.83×              | 1.3×       | 1.1×             | 1.0× (1.2 ms)             |
 
 At a thousand items the four pools land between 0.73× and 0.80×
@@ -300,7 +300,7 @@ where those bytes live.
 
 | 20 B values, all distinct | element    | `HashSet` round trip | `sort_unstable` + `dedup` | ratio |
 |---------------------------|------------|----------------------|---------------------------|-------|
-| 1 000                     | `[u8; 20]` | 29.0 µs              | 48.6 µs                   | 0.6×  |
+| 1 000                     | `[u8; 20]` | 29.0 µs              | 48.6 µs                   | 0.60× |
 | 1 000                     | `String`   | 27.9 µs              | 49.9 µs                   | 0.56× |
 | 100 000                   | `[u8; 20]` | 3.9 ms               | 8.2 ms                    | 0.48× |
 | 100 000                   | `String`   | 4.6 ms               | 10.0 ms                   | 0.46× |
@@ -315,7 +315,7 @@ the whole story — the same sort over the same twenty bytes takes 97 ms
 inline and 338 ms behind a pointer, because each comparison has become
 a miss into a heap no cache holds — and it is indirection rather than
 width that decides the outcome: inline, the round trip *loses* at a
-million (1.45×); behind a pointer it wins by exactly the margin it won
+million (1.4×); behind a pointer it wins by exactly the margin it won
 by at a hundred thousand (0.46×). A shared prefix there is noise,
 97.8 ms against 97.0.
 
@@ -361,7 +361,7 @@ Read down the first column: on ten elements the round trip costs four
 to eight times what the suggestion costs, for every element but a
 string or a digest. Read along the rows: for the primitives, the
 newtype over one, the derived struct and the derived enum it never
-becomes the faster option at any size measured — 1.02× to 2.23× even
+becomes the faster option at any size measured — 1.0× to 2.2× even
 at a hundred thousand. The set's advantage belongs to elements whose
 comparison is far dearer than their hash — one reached through a
 pointer (`String`, and a newtype over one) or wide inline bytes (a
@@ -462,10 +462,10 @@ the suppression is the answer; the rest it never reaches at all.
   one, a wide digest — and only from a couple of hundred elements up,
   where it runs at 0.59×–0.98× of the suggestion. For a primitive, a newtype
   over one, or a derived struct or enum, there is no such band at all:
-  the round trip measured slower at every size, by five to nine times
+  the round trip measured slower at every size, by four to eight times
   on ten elements. An impl that forwards to one small key field
   reaches the edge of one and no further — 0.96× at a hundred
-  thousand, 1.57× and worse below it. The honest remedy even inside
+  thousand, 1.6× and worse below it. The honest remedy even inside
   the band is usually not to sort at all but to stop discarding the
   set: keep it, name it, and let the code that consumes it say it
   wants a set.
@@ -1066,7 +1066,7 @@ needs about a thousand items, and every site the rule fires on here
 handles tens. At those sizes the round trip is 1.2× to 2.2× slower, so
 the advice and the faster code coincide — by size, not by type. A
 crate that deduplicated the whole 1700-package lockfile would land at
-roughly 0.8× instead, and would owe itself the `#[expect]`.
+roughly 0.80× instead, and would owe itself the `#[expect]`.
 
 Everything in this section is contributor-facing. A shipped doc — the
 `declare_tool_lint!` rustdoc and the catalogue generated from it — may
@@ -1242,10 +1242,11 @@ suggestion; the third emits help text only.
   the replaced span reaches. The scan is the use-scan the bound form
   already performs, read one step further.
 
-  A code suggestion, `MachineApplicable`, for the `BTreeSet` branch.
-  Its output is the vector the rewrite produces, element for element
-  and order for order, and it measured slower than the suggestion in every row of
-  every table (1.34×–3.85× on the element-type sweep).
+  A code suggestion, `MachineApplicable`, for the `BTreeSet` branch,
+  on the identity finding 1 records: its output is the vector the
+  rewrite produces, element for element and order for order. The
+  timings are beside the point here, which is what lets this branch
+  suggest whatever the element.
 
   A code suggestion, `MachineApplicable`, for the `HashSet` branch
   too, but only where the element makes the answer decisive: **no indirection, and a
@@ -1258,7 +1259,7 @@ suggestion; the third emits help text only.
   hundred thousand elements, because thirty-two inline bytes are
   thirty-two bytes to compare. That is the set
   of elements the sweep found no size at which the round trip wins —
-  4.4×–8.1× slower on ten elements, still 1.02×–2.23× slower on a
+  4.4×–8.1× slower on ten elements, still 1.0×–2.2× slower on a
   hundred thousand — and it covers the primitives, the newtypes over
   them, and the derived structs and enums. A `HashSet`'s iteration
   order is unspecified, so no correct program can depend on the order
@@ -1296,7 +1297,7 @@ suggestion; the third emits help text only.
 
   Nothing about this tier is a performance claim. Where duplicates
   dominate the input the round trip plus its sort is the faster of the
-  two — 0.83× at ten duplicates per entry against 1.67× at none — and
+  two — 0.83× at ten duplicates per entry against 1.7× at none — and
   the suggestion is offered anyway, because it preserves the meaning
   exactly while deleting a hash table, which is what
   `MachineApplicable` asks and all that it asks.
