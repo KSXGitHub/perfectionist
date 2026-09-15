@@ -53,8 +53,7 @@ declare_tool_lint! {
     /// well, when the new function can be named for what it does rather
     /// than where it came from and needs few of the enclosing locals; one
     /// that takes most of them as parameters has moved the nesting into
-    /// an argument list rather than removed it. The limit of three is the
-    /// one SonarSource ships.
+    /// an argument list rather than removed it.
     ///
     /// ### Interaction with Clippy
     ///
