@@ -38,6 +38,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   bare URL in comment or doc comment; wrap in `<...>` or use a labelled markdown link
 
+- [`borrowing_to_conversion`](./borrowing_to_conversion.md) (default: `active`).
+
+  `to_*` method returns a reference where its prefix promises an owned value
+
 - [`clap_help_markdown`](./clap_help_markdown.md) (default: `active`).
 
   markdown construct in a clap-derived doc comment leaks into `--help` output
