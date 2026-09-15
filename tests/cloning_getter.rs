@@ -42,21 +42,21 @@ fn assert_not_flagged(stderr: &str, getter: &str) {
 }
 
 #[test]
-fn test_code_is_measured_by_default() {
+fn test_code_is_left_alone_by_default() {
     let stderr = run("fixture_cg_default", "");
     assert_flagged(&stderr, "name");
-    assert_flagged(&stderr, "label");
+    assert_not_flagged(&stderr, "label");
 }
 
 #[test]
-fn exempt_tests_leaves_test_code_alone() {
+fn exempt_tests_off_measures_test_code() {
     let stderr = run(
-        "fixture_cg_test_exception",
+        "fixture_cg_test_measured",
         text_block_fnl! {
             r#"["perfectionist::cloning_getter"]"#
-            "exempt_tests = true"
+            "exempt_tests = false"
         },
     );
     assert_flagged(&stderr, "name");
-    assert_not_flagged(&stderr, "label");
+    assert_flagged(&stderr, "label");
 }

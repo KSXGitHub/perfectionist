@@ -33,8 +33,8 @@ declare_tool_lint! {
     /// A method of a trait impl is left alone, since the trait fixes
     /// its signature, and so is a method produced by a macro.
     ///
-    /// Test code is measured like any other code; set
-    /// `exempt_tests` to leave it alone.
+    /// Test code is left alone; set `exempt_tests` to `false` to
+    /// measure it like any other code.
     ///
     /// ### Why restrict this?
     ///
@@ -107,13 +107,19 @@ const COPYING_METHODS: &[&str] = &[
     "to_os_string",
 ];
 
-#[derive(Debug, Default, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
     /// Whether test code is left alone: getters inside a `#[cfg(test)]`
     /// module or an integration-test or benchmark target. Defaults to
-    /// `false`.
+    /// `true`.
     exempt_tests: bool,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self { exempt_tests: true }
+    }
 }
 
 pub struct CloningGetter {
