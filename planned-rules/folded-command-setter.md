@@ -102,8 +102,8 @@ A call to `Iterator::fold` where all of the following hold:
 3. That setter has a plural counterpart in the table below.
 4. The `fold` receiver is a **simple iterator expression**: a place
    expression — `VARS`, `self.vars`, `cfg.env_names` — followed by any
-   number of argument-less method calls, as in `VARS.iter()` or
-   `self.vars.iter().copied()`.
+   number of argument-less method calls, as in `list.iter()`,
+   `list.into_iter()` or `self.vars.iter().copied()`.
 
 Condition 4 is a value gate rather than a correctness one. The rewrite
 stays valid for any receiver, because the receiver only moves; it stops
@@ -111,9 +111,9 @@ being an *improvement* once what moves is long or carries logic of its
 own. These are equivalent, but *must not* fire:
 
 ```text
-    A.iter().map(mapper).fold(B, f)   ->   B.plural(A.iter().map(mapper))
-    A.iter().filter(pred).fold(B, f)  ->   B.plural(A.iter().filter(pred))
-    COMPLEX_EXPRESSION.fold(B, f)     ->   B.plural(COMPLEX_EXPRESSION)
+    list.iter().map(mapper).fold(B, f)   ->  B.plural(list.iter().map(mapper))
+    list.iter().filter(pred).fold(B, f)  ->  B.plural(list.iter().filter(pred))
+    COMPLEX_EXPRESSION.fold(B, f)        ->  B.plural(COMPLEX_EXPRESSION)
 ```
 
 The reader still has to work out what `mapper` yields, and the
@@ -208,18 +208,25 @@ iterator being folded is the *receiver* of `.fold(...)`, and it has to
 become the argument of the plural:
 
 ```text
-    A.iter().fold(B, f)   ->   B.plural(A.iter())
+    list.iter().fold(B, f)       ->  B.plural(list.iter())
+    list.into_iter().fold(B, f)  ->  B.plural(list)
 ```
 
-so `A` and `B` both move. Condition 4 keeps `A` short, so that diagram
-is the whole shape rather than an instance of a wider one; `B` is
-unconstrained and may be a multi-line expression. Where `A` is
-`<slice>.iter()` the suggestion can often drop the `.iter()` as well,
-because the plural takes `IntoIterator` and a reference to a slice
-already satisfies it — that is what made the fixed call site read
-`without_envs(UI_HARNESS_VARS)` rather than
-`without_envs(UI_HARNESS_VARS.iter())`. Dropping it is an improvement,
-not a requirement, and a first implementation may keep the `.iter()`.
+so the receiver and `B` both move. Condition 4 keeps the receiver
+short, so those are the whole shape rather than instances of a wider
+one; `B` is unconstrained and may be a multi-line expression.
+
+The rows differ in whether the adapter survives, and the difference is
+not cosmetic. `into_iter` is *erased*, always: the plural calls
+`into_iter` itself, so `B.plural(list)` has the same item type and the
+same ownership as the fold it replaces. Erasing `iter` is sound only
+where the receiver is already a reference — `UI_HARNESS_VARS` is a
+`&'static` slice, which is why the fixed call site reads
+`without_envs(UI_HARNESS_VARS)`. On an owned collection that same
+erasure moves what the fold merely borrowed, and the code around it
+stops compiling. So erase `into_iter` unconditionally and `iter` only
+behind that check; keeping `iter` is always safe, and a first
+implementation may do that.
 
 A conservative first implementation: **path folders only, and only
 the pairs whose item is a single value.** That covers what this
