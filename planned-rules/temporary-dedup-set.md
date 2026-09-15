@@ -890,32 +890,6 @@ trip linked to its lines at that revision and the left-alone samples
 taken from the same tree, so each stays a citation rather than a copy
 that drifts.
 
-All three have since been rewritten by hand, ahead of the rule, in
-[`pnpm/pnpm#14915`](https://github.com/pnpm/pnpm/pull/14915), open at
-the time of writing. That changes nothing above — a citation pinned to
-a revision is a claim about that revision, which is why it was pinned
-— and it is recorded here because the pull request is the nearest
-thing to an outside check on this design, not because the evidence
-needed rescuing. It agrees where it counts. `sort_unique` keeps the `sort()` already there and appends
-`dedup` rather than re-spelling it `sort_unstable` — the sorted-shape
-tier's rule, reached independently. `capture_blocking` sorts and dedups
-its parameter in place before the `map` that had been reading out of
-the set, taking it `mut` to do so, which is the rewrite proposed for it
-below. Its measurements corroborate the direction from another machine
-and harness: against the `HashSet` + `sort` it replaces, the new
-`sort_unique` runs 2.8× to 1.5× faster from four names to two hundred
-and fifty-six, and 1.1× faster at four thousand.
-
-Two of its results cut the other way, and both are worth keeping. It
-introduced `sort()` where nothing followed the landing and this rule
-would introduce `sort_unstable`, so the two differ over an order that
-neither of them needs. And it recorded a 0.94× regression on one
-`git_sources` configuration past thirty packages — a `BTreeSet` round
-trip beating `sort` + `dedup` on real data, which is the case the
-synthetic tables found only at 4 KiB, and one more reason the
-`BTreeSet` branch's suggestion rests on producing the identical vector
-rather than on a stopwatch.
-
 ### The round trip that sorts afterwards anyway
 
 [`pnpm/crates/cli/src/cli_args/approve_builds.rs`, L314–L324](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/pnpm/crates/cli/src/cli_args/approve_builds.rs#L314-L324):
