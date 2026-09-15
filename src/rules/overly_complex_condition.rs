@@ -301,9 +301,15 @@ impl<'tcx> Visitor<'tcx> for OperatorCounter {
             // head is a condition in its own right, which `check_expr`
             // and `check_arm` reach separately -- without this, the
             // `&&` in `if a && (if b && c { d } else { e })` is counted
-            // once here and again there.
+            // once here and again there. A `match` scrutinee is the
+            // exception: the condition does evaluate it, and no other
+            // pass reaches it the way `check_expr` reaches a nested
+            // `if` head, so it is walked rather than skipped with the
+            // arms.
             ExprKind::If(..) => {}
-            ExprKind::Match(_, _, source) if is_author_written_match(source) => {}
+            ExprKind::Match(scrutinee, _, source) if is_author_written_match(source) => {
+                self.visit_expr(scrutinee);
+            }
             ExprKind::Binary(op, ..) if matches!(op.node, BinOpKind::And | BinOpKind::Or) => {
                 self.count += 1;
                 intravisit::walk_expr(self, expr);

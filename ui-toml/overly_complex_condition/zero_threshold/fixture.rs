@@ -157,6 +157,19 @@ fn nested_match(first: bool, second: bool, third: bool, value: u8) {
     }
 }
 
+// Bad: 2 operators — the `&&` in the head, and the one in the nested
+// `match`'s scrutinee. The arms are code the condition selects
+// between; the scrutinee is a test it evaluates, and nothing else
+// reaches it.
+fn nested_match_scrutinee(first: bool, second: bool, third: bool) {
+    if first && (match second && third {
+        true => false,
+        false => true,
+    }) {
+        work();
+    }
+}
+
 macro_rules! both {
     ($first:expr, $second:expr) => {
         $first && $second
