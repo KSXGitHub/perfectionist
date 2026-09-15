@@ -767,8 +767,58 @@ let tier_one: Vec<Platform> = platforms.into_iter().filter(Platform::is_tier_one
 Both are elements the rule rewrites unattended: a newtype over a
 primitive and a derived enum each clear the applicability gate's two
 clauses, and the element sweep found no size at which the round trip
-beats the suggestion for either shape — 7.6× and 5.4× slower on ten
-elements, still 1.35× and 1.06× at a hundred thousand.
+beats the suggestion for either shape — 6.3× and 4.5× slower on ten
+elements, still 1.2× and 1.0× at a hundred thousand.
+
+Those two introduce a sort of their own, because nothing followed the
+landing. Where something does, the element stops deciding anything and
+the author's call becomes the suggestion's. Both spellings of pnpm's
+`sort_unique` are that shape:
+
+**Avoid:**
+
+```rust
+fn sort_unique(names: Vec<String>) -> Vec<String> {
+    let mut unique: Vec<String> = names
+        .into_iter()
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect();
+    unique.sort();
+    unique
+}
+```
+
+```rust
+fn sort_unique(names: Vec<String>) -> Vec<String> {
+    names
+        .into_iter()
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>()
+        .into_sorted()
+}
+```
+
+**Prefer:**
+
+```rust
+fn sort_unique(mut names: Vec<String>) -> Vec<String> {
+    names.sort();
+    names.dedup();
+    names
+}
+```
+
+```rust
+fn sort_unique(names: Vec<String>) -> Vec<String> {
+    names.into_sorted().into_deduped()
+}
+```
+
+`sort`, not `sort_unstable`: the call is the author's and the rewrite's
+business is the set. The chained pair reads `IntoSorted` where the
+introduced form reads `IntoSortedUnstable`, for the same reason.
 
 **Left alone:**
 
