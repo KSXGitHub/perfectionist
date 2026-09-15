@@ -14,11 +14,11 @@
 //! or `while` loop, a `?`, an `.await`, or an `async` body adds nothing
 //! beyond the construct the author wrote.
 
-use crate::common::span_is_macro_generated;
-use rustc_hir::intravisit::{self, Visitor};
-use rustc_hir::{
-    Arm, BinOpKind, Block, Body, ClosureKind, Expr, ExprKind, LetStmt, LoopSource, MatchSource,
+use crate::common::{
+    and_chain_clauses, expr_is_let, is_author_written_match, span_is_macro_generated,
 };
+use rustc_hir::intravisit::{self, Visitor};
+use rustc_hir::{Arm, Block, Body, ClosureKind, Expr, ExprKind, LetStmt, LoopSource, MatchSource};
 use rustc_middle::hir::nested_filter;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;
@@ -56,19 +56,6 @@ impl Construct {
             Construct::LetElse => "`let ... else`",
             Construct::Block => "block",
         }
-    }
-}
-
-/// Whether an `if` condition binds a pattern: a bare `if let`, or a let
-/// chain with a `let` anywhere in it. A chain is `&&`-nested `Binary`,
-/// not a single `Let`, so matching only the latter misses it.
-fn binds_a_pattern(cond: &Expr<'_>) -> bool {
-    match cond.kind {
-        ExprKind::Let(..) => true,
-        ExprKind::Binary(op, lhs, rhs) if op.node == BinOpKind::And => {
-            binds_a_pattern(lhs) || binds_a_pattern(rhs)
-        }
-        _ => false,
     }
 }
 
@@ -177,7 +164,7 @@ impl<'tcx> Walker<'tcx> {
             visit_branches(self);
         } else {
             let construct = Construct::If {
-                binds: binds_a_pattern(cond),
+                binds: and_chain_clauses(cond).into_iter().any(expr_is_let),
                 has_else: els.is_some(),
             };
             self.enter(construct, expr.span, visit_branches);
@@ -200,7 +187,7 @@ impl<'tcx> Walker<'tcx> {
                 walker.visit_body_expr(arm.body);
             }
         };
-        if matches!(source, MatchSource::Normal | MatchSource::Postfix) {
+        if is_author_written_match(source) {
             self.enter(Construct::Match, expr.span, visit_arms);
         } else {
             visit_arms(self);

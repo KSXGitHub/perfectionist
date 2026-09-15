@@ -11,46 +11,82 @@
 
 Counts the boolean operators (`&&`, `||`) in the condition of an
 `if`, `if let`, `while`, `while let`, or match-arm guard, and
-flags the condition when the count is above `max_operators`
-(default `3`).
+flags the condition when the count is above `max_operators`.
 
 Only the condition itself is counted, not the branches it
 selects, and a closure inside the condition is a scope of its
-own. The `&&` that joins the `let`s of a `let` chain counts like
-any other. A condition produced by a macro expansion is not
-measured, though a condition written inside a macro's arguments
-is. The `let` that binds a boolean is not a condition, so naming
-the expression is what satisfies the rule.
-
-Test code is measured like any other code; set
-`exempt_tests` to leave it alone.
+own. An `&&` with a `let` on either side of it is not counted,
+since no binding can replace it. A condition produced by a macro
+expansion is not measured, though a condition written inside a
+macro's arguments is. The `let` that binds a boolean is not a
+condition, so naming the expression is what satisfies the rule.
 
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. A
-condition of four or more clauses is a predicate the author had
+condition of that many clauses is a predicate the author had
 in mind but did not write down; the reader has to reconstruct it
 from the clauses, and a later editor has to work out which
 clause to change. Binding the predicate, or the part of it that
 names a concept, to a `let` gives it the name the author had,
 puts a debugger-visible value on it, and turns the `if` back into
-a sentence. SonarSource ships this rule with the same limit.
+a sentence.
 
 ## Example
 
 **Avoid:**
 
 ```rust,ignore
-if entry.is_file() && !entry.is_hidden() && entry.len() > 0 && !ignored.contains(entry.path()) {
+if entry.is_file()
+    && !entry.is_hidden()
+    && entry.len() > 0
+    && entry.depth() < max_depth
+    && !ignored.contains(entry.path())
+{
     copy(entry);
 }
 ```
 
-**Prefer:**
+**Prefer:** a leading part, which a `let` runs exactly when the
+`if` would have
 
 ```rust,ignore
-let is_visible_file = entry.is_file() && !entry.is_hidden() && entry.len() > 0;
-if is_visible_file && !ignored.contains(entry.path()) {
+let is_visible_file =
+    entry.is_file() && !entry.is_hidden() && entry.len() > 0;
+if is_visible_file
+    && entry.depth() < max_depth
+    && !ignored.contains(entry.path())
+{
+    copy(entry);
+}
+```
+
+**Avoid:** a part that follows a clause and reads a binding from
+the chain
+
+```rust,ignore
+if let Some(entry) = next_entry()
+    && entry.depth() < max_depth
+    && entry.is_file()
+    && !entry.is_hidden()
+    && entry.len() > 0
+    && !ignored.contains(entry.path())
+{
+    copy(entry);
+}
+```
+
+**Prefer:** a closure, which stays unevaluated until the
+condition reaches it
+
+```rust,ignore
+let is_visible_file =
+    |entry: &Entry| entry.is_file() && !entry.is_hidden() && entry.len() > 0;
+if let Some(entry) = next_entry()
+    && entry.depth() < max_depth
+    && is_visible_file(&entry)
+    && !ignored.contains(entry.path())
+{
     copy(entry);
 }
 ```
@@ -66,13 +102,3 @@ Configure via `dylint.toml` under `["perfectionist::overly_complex_condition"]`.
 
 The most `&&` and `||` operators a condition may have without
 being flagged. Defaults to `3`.
-
-### Field: `exempt_tests`
-
-- _Type:_ `boolean`
-- _Optional_
-
-Whether test code is left alone: conditions inside a
-`#[cfg(test)]` module, a `#[test]` function, or an
-integration-test or benchmark target. Defaults to `false`, so a
-test is held to the same limit as the code it exercises.

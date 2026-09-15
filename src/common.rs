@@ -381,6 +381,49 @@ pub(crate) fn span_is_macro_generated(span: Span) -> bool {
         .any(|expansion| matches!(expansion.kind, ExpnKind::Macro(..)))
 }
 
+/// Whether `expr` is the `let` of an `if let` or of a `let` chain.
+pub(crate) fn expr_is_let(expr: &hir::Expr<'_>) -> bool {
+    matches!(expr.kind, hir::ExprKind::Let(..))
+}
+
+/// The clauses a condition's top-level `&&`s join, left to right.
+///
+/// The grammar admits a `let` only on that spine, rejecting both a
+/// parenthesised `let` and a `let` under `||`, so this is where a rule
+/// looks to tell an `if let` or a `let` chain from a plain condition,
+/// and to see which clauses a `let` sits between.
+///
+/// A macro expansion is one clause however it is shaped, because the
+/// `&&` inside it is not the author's: the chain ends where the
+/// expansion begins.
+pub(crate) fn and_chain_clauses<'tcx>(
+    condition: &'tcx hir::Expr<'tcx>,
+) -> Vec<&'tcx hir::Expr<'tcx>> {
+    fn collect<'tcx>(expr: &'tcx hir::Expr<'tcx>, clauses: &mut Vec<&'tcx hir::Expr<'tcx>>) {
+        if let hir::ExprKind::Binary(op, lhs, rhs) = expr.kind
+            && op.node == hir::BinOpKind::And
+            && !span_is_macro_generated(expr.span)
+        {
+            collect(lhs, clauses);
+            collect(rhs, clauses);
+        } else {
+            clauses.push(expr);
+        }
+    }
+    let mut clauses = Vec::new();
+    collect(condition, &mut clauses);
+    clauses
+}
+
+/// Whether `source` is a `match` the author wrote rather than one a
+/// desugaring produced. `?`, `.await` and `for` all lower to a
+/// `match`, so a rule that steps over every `match` would skip the
+/// expression they wrap; the postfix form is as author-written as the
+/// prefix one.
+pub(crate) fn is_author_written_match(source: hir::MatchSource) -> bool {
+    matches!(source, hir::MatchSource::Normal | hir::MatchSource::Postfix)
+}
+
 /// Both forms are passed rather than derived by appending an `s`:
 /// assuming that would have to be unpicked the first time one of these
 /// nouns is irregular.

@@ -2,17 +2,17 @@
 //!
 //! The default-config sweep lives in `ui/overly_complex_condition.rs`
 //! and is picked up by `tests/ui.rs`. The `max_operators` knob is
-//! covered by a UI fixture under `ui-toml/overly_complex_condition/` run
-//! with a per-rule `dylint.toml`; `exempt_tests` needs
-//! `#[cfg(test)]` code to exist, so it is covered by a minimal Cargo
-//! project run through `cargo dylint --all -- --all-targets`, the way
+//! covered by a UI fixture under `ui-toml/overly_complex_condition/`
+//! run with a per-rule `dylint.toml`. Holding test code to the same
+//! limit as the code it exercises needs `#[cfg(test)]` code and real
+//! Cargo targets to exist, so it is covered by a minimal Cargo project
+//! run through `cargo dylint --all -- --all-targets`, the way
 //! `tests/needless_borrowed_parameters.rs` does it.
 
 pub mod _utils;
 
 use _utils::{cargo_manifest_dir, run_project_with_config, shared_target_dir};
 use std::collections::BTreeMap;
-use text_block_macros::text_block_fnl;
 
 const LINT_NAME: &str = "perfectionist::overly_complex_condition";
 
@@ -50,52 +50,56 @@ fn zero_threshold_reports_every_operator_count() {
 const LIB_WITH_TEST_MODULE: &str =
     include_str!("fixtures/overly_complex_condition/lib_with_test_module.rs");
 
+const LIB_SOURCES: &[(&str, &str)] = &[("src/lib.rs", LIB_WITH_TEST_MODULE)];
+
+/// The same over-limit condition in an integration test and in a
+/// benchmark. Neither carries a `#[cfg(test)]` gate nor a `#[test]`
+/// function, so nothing but the Cargo target they sit in marks them as
+/// test code.
+const TARGET_SOURCES: &[(&str, &str)] = &[
+    ("src/lib.rs", "pub fn nothing() {}\n"),
+    (
+        "tests/it.rs",
+        include_str!("fixtures/overly_complex_condition/target_condition.rs"),
+    ),
+    (
+        "benches/bench.rs",
+        include_str!("fixtures/overly_complex_condition/target_condition.rs"),
+    ),
+];
+
 /// Run the fixture and return its stderr, asserting that `cargo dylint`
 /// itself succeeded.
-fn run(package_name: &str, config: &str) -> String {
+fn run(package_name: &str, sources: &[(&str, &str)], config: &str) -> String {
     let (_temp, stderr, success) = run_project_with_config(
         package_name,
         cargo_manifest_dir(),
         &shared_target_dir(),
-        &[("src/lib.rs", LIB_WITH_TEST_MODULE)],
+        sources,
         config,
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     stderr
 }
 
-fn assert_flagged(stderr: &str, function: &str) {
+fn assert_flagged(stderr: &str, location: &str) {
     assert!(
-        stderr.contains(function),
-        "expected `{function}` to be flagged; stderr was:\n{stderr}",
-    );
-}
-
-fn assert_not_flagged(stderr: &str, function: &str) {
-    assert!(
-        !stderr.contains(function),
-        "expected `{function}` to be exempt; stderr was:\n{stderr}",
+        stderr.contains(location),
+        "expected `{location}` to be flagged; stderr was:\n{stderr}",
     );
 }
 
 #[test]
 fn test_code_is_measured_by_default() {
-    let stderr = run("fixture_occ_default", "");
+    let stderr = run("fixture_occ_default", LIB_SOURCES, "");
     assert_flagged(&stderr, "src/lib.rs:2:8");
     assert_flagged(&stderr, "src/lib.rs:8:12");
     assert_flagged(&stderr, "src/lib.rs:14:12");
 }
 
 #[test]
-fn exempt_tests_leaves_test_code_alone() {
-    let stderr = run(
-        "fixture_occ_test_exception",
-        text_block_fnl! {
-            r#"["perfectionist::overly_complex_condition"]"#
-            "exempt_tests = true"
-        },
-    );
-    assert_flagged(&stderr, "src/lib.rs:2:8");
-    assert_not_flagged(&stderr, "src/lib.rs:8:12");
-    assert_not_flagged(&stderr, "src/lib.rs:14:12");
+fn a_test_target_is_measured_by_default() {
+    let stderr = run("fixture_occ_target_default", TARGET_SOURCES, "");
+    assert_flagged(&stderr, "tests/it.rs:6:8");
+    assert_flagged(&stderr, "benches/bench.rs:6:8");
 }
