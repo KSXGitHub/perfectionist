@@ -138,13 +138,22 @@ most likely to be written by hand and left alone.
 
 ### Exemptions
 
-- **A closure that does anything but forward.** The plural is
-  equivalent only to a closure that passes its parameters through
-  untouched, so anything computed on the way must not fire. The one to
-  expect is a transformed argument —
-  `|c, a| c.with_arg(format!("--{a}"))` reads like forwarding and is
-  not — alongside an extra statement, a `?`, a conditional, arguments
-  passed out of order, and an item used twice.
+The rule fires only where the rewrite *deletes* something — the fold,
+the closure, the `.iter()`. Where the rewrite would merely move
+something somewhere else, it must stay quiet. Condition 4 above is that
+principle applied to the receiver; the first exemption below is the
+same principle applied to the folder.
+
+- **A closure the rewrite would not remove.** The point of the plural
+  is that the closure disappears: `|c, a| c.with_arg(a)` becomes
+  nothing at all, because `with_args` *is* that fold. A closure that
+  computes on the way survives instead —
+  `|c, a| c.with_arg(format!("--{a}"))` rewrites to
+  `with_args(items.iter().map(|a| format!("--{a}")))`, which is the
+  same lambda moved one call to the left, plus a `map` that was not
+  there before. So the closure must forward its parameters untouched,
+  and anything else — an extra statement, a `?`, a conditional,
+  arguments passed out of order, an item used twice — must not fire.
 
 - **A singular with no plural.** `with_no_env`, `with_stdin`,
   `with_stdout` and `with_stderr` have no plural counterpart — each
@@ -260,16 +269,23 @@ fires on code that one considers already correct. The fold above uses
 sibling has nothing to say about it, which is the argument for these
 being two rules rather than sub-checks of one.
 
-They meet on this shape:
+They do not overlap; they compose. Given a fold over the *std* setter:
 
 ```rust
 items.iter().fold(command, |mut c, a| { c.arg(a); c })
 ```
 
-a fold over the *std* setter. This rule's suggestion subsumes the
-sibling's, so the sibling should stand down inside a fold this rule
-already flags. See that file's own interaction section for the same
-statement from the other side.
+this rule is silent. The folder resolves to `Command::arg` rather than
+a `CommandExtra` setter, and the body is a block rather than a
+forwarding call, so condition 2 and the first exemption exclude it
+twice over. The sibling is the rule that speaks here, on the `c.arg(a)`
+inside. Once its advice is taken and the closure collapses to
+`|c, a| c.with_arg(a)`, this rule fires on the result and suggests the
+plural.
+
+So neither rule stands down for the other: doing so would leave this
+shape flagged by nobody. See that file's own interaction section for
+the same statement from the other side.
 
 `perfectionist::overly_long_method_chain`
 ([`src/rules/overly_long_method_chain.rs`](../src/rules/overly_long_method_chain.rs))

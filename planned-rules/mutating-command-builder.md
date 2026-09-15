@@ -167,17 +167,22 @@ should be followed consistently rather than per call site.
 
 `folded_command_setter` ([`folded-command-setter.md`](./folded-command-setter.md))
 flags a *fold* over a singular `CommandExtra` setter where the plural
-exists. The two overlap on this shape:
+exists. The two compose rather than overlap:
 
 ```rust
 items.iter().fold(command, |mut c, a| { c.arg(a); c })
 ```
 
-Here this rule sees `c.arg(a)` and the sibling sees the fold. The
-sibling's suggestion (`command.with_args(items.iter())`) subsumes
-this one's, so this rule should stand down inside a fold the sibling
-already flags. Firing both would produce two diagnostics for one
-defect and invite a fix that satisfies neither cleanly.
+Only this rule fires here. The sibling's trigger needs a `CommandExtra`
+setter and a closure that forwards, and this shape has neither — the
+folder is `Command::arg`, and the body is a block. This rule sees the
+`c.arg(a)` inside and advises the by-value form; taking that advice
+collapses the closure to `|c, a| c.with_arg(a)`, and the sibling then
+fires on *that* and suggests `command.with_args(items)`.
+
+So this rule must not stand down inside a fold. It is the only rule
+that reaches the `c.arg(a)`, and the sequence does not start until it
+has.
 
 `perfectionist::needless_utf8_conversion`
 ([`needless-utf8-conversion.md`](./needless-utf8-conversion.md))
