@@ -97,7 +97,7 @@ pattern that several rules call out by reference — live in
   the plural exists (`without_env` → `without_envs`), however the
   folder is spelled. Fires only where the rewrite deletes the fold
   rather than relocating it, so a transforming closure or an adapter
-  chain in the receiver stays quiet. No configuration.
+  chain in the receiver stays quiet.
 
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer

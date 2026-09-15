@@ -168,22 +168,9 @@ same principle applied to the folder.
 
 ## Configuration
 
-None, and the pairs are deliberately not a knob. The suggestion is
-sound only because upstream defines each plural as exactly the fold of
-its singular, as the statement above shows for `with_args`; all three
-pairs are that shape. A pair supplied for some other builder carries no
-such guarantee — its plural may dedupe, reorder or validate, and the
-lint cannot tell — so honouring one would turn a provably-safe rewrite
-into a guess. The set stays closed, and tracks `command-extra`.
-
-Nor is there anything else to tune. A single call site is silenced with
-`#[allow(perfectionist::folded_command_setter)]`, and the whole rule by
-listing it under `[perfectionist].disable`.
-
-A rule for builders in general — any type whose setters come in
-singular and plural pairs — is a different lint under a different name,
-and it needs a soundness story this one gets for free: either verify
-the plural's body, or trust an attribute on it.
+None. The suggestion is sound only because upstream defines each plural
+as exactly the fold of its singular; a pair named for some other builder
+could not promise that, so the set is fixed rather than tunable.
 
 ## Implementation notes
 
