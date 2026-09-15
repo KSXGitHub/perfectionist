@@ -247,6 +247,53 @@ repository actually wrote, needs no closure-body analysis, and leaves
 the `with_env` tuple case — the hardest and the most valuable — for a
 follow-up that can lean on the closure matcher once it exists.
 
+### Evaluation order
+
+The suggestion trades the receiver and the initial value, so it trades
+the order they run in:
+
+- `A.fold(B, f)` evaluates `A`, then `B`.
+- `B.plural(A)` evaluates `B`, then `A`.
+
+Unobservable while either side is pure — which covers every receiver
+reached through `iter` / `into_iter` on a std collection, this
+repository's own call site included. Observable once both have effects:
+
+```rust
+// `drain_all` takes only `&mut self`, so condition 4 admits it.
+queue.drain_all().fold(Command::new(next_program()), with_arg)
+
+// fold:      drain_all, then next_program
+// rewritten: next_program, then drain_all
+```
+
+Trigger and autofix therefore part ways:
+
+- **Fire** on every receiver condition 4 admits. The diagnostic is
+  right whatever the order.
+- **Machine-applicable** only where every call in the receiver resolves
+  into `core` or `std` — a `DefId` origin check, not a roster and not
+  effect analysis. It is a proxy for purity, and a deliberately
+  conservative one.
+- **Advice only** otherwise, the same answer
+  `mutating_command_builder` gives its statement-shaped case.
+
+Fixtures worth writing:
+
+- `list.iter()`, `list` a slice — fires; autofix erases to
+  `plural(list)`.
+- `list.iter()`, `list` an owned `Vec` still used afterwards — fires;
+  autofix keeps `plural(list.iter())`, since erasing would move what
+  the fold only borrowed.
+- `list.into_iter()` — fires; autofix erases to `plural(list)`.
+- `list.into_iter().rev()` — fires; autofix keeps the chain whole and
+  erases nothing.
+- `queue.drain_all()`, an argument-less method of the linted crate —
+  fires; advice only, no autofix.
+- `list.iter().map(mapper)` — silent, per condition 4.
+- `Vec::into_iter(list)` — silent; the known syntactic gap, not a
+  regression.
+
 ### Difficulty
 
 **Medium.** The trigger is local to one expression, so this is nowhere
