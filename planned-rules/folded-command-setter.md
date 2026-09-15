@@ -261,28 +261,49 @@ the order they run in:
 - `A.fold(B, f)` evaluates `A`, then `B`.
 - `B.plural(A)` evaluates `B`, then `A`.
 
-Unobservable while either side is pure — which covers every receiver
-reached through `iter` / `into_iter` on a std collection, this
-repository's own call site included. Observable once both have effects:
+It takes *both* sides to make that observable. A mutating receiver on
+its own is not enough — against a plain binding the two forms cannot be
+told apart:
 
 ```rust
-// `drain_all` takes only `&mut self`, so condition 4 admits it.
-queue.drain_all().fold(Command::new(next_program()), with_arg)
-
-// fold:      drain_all, then next_program
-// rewritten: next_program, then drain_all
+// `drain_all` takes only `&mut self` and empties the queue, so
+// condition 4 admits it. `cmd` is a binding, so evaluating it does
+// nothing. Same command, same queue, either way round.
+args.drain_all().fold(cmd, CommandExtra::with_arg)
+cmd.with_args(args.drain_all())
 ```
 
-Trigger and autofix therefore part ways:
+The difference needs an initial value that observes what the receiver
+changes:
+
+```rust
+args.drain_all()
+    .fold(Command::new(format!("ls{}", args.0.len())), with_arg)
+// drains first, so `len()` sees 0    ->  program "ls0"
+
+Command::new(format!("ls{}", args.0.len())).with_args(args.drain_all())
+// `len()` first, sees 2, then drains ->  program "ls2"
+```
+
+Trigger and autofix part ways:
 
 - **Fire** on every receiver condition 4 admits. The diagnostic is
   right whatever the order.
-- **Machine-applicable** only where the receiver's call resolves into
-  `core` or `std` — a `DefId` origin check, not a roster and not effect
-  analysis. It is a proxy for purity, and a deliberately conservative
-  one.
+- **Machine-applicable** where the receiver's call resolves into `core`
+  or `std` — a `DefId` origin check, not a roster and not effect
+  analysis. It passes every receiver reached through `iter` /
+  `into_iter` on a std collection, this repository's own call site
+  included.
 - **Advice only** otherwise, the same answer
   `mutating_command_builder` gives its statement-shaped case.
+
+That gate is over-conservative on purpose, and the cost is worth
+naming rather than discovering: it declines a fix for the first example
+above, which is provably safe. One side is cheap to classify and two
+are not, and mutation reordered is the kind of wrong that does not
+announce itself. A later implementation may widen it to *either* side
+pure, counting an initial value as pure when it is a place expression,
+a literal, or a `core` / `std` call over those.
 
 Fixtures worth writing:
 
@@ -292,9 +313,11 @@ Fixtures worth writing:
   autofix keeps `plural(list.iter())`, since erasing would move what
   the fold only borrowed.
 - `list.into_iter()` — fires; autofix erases to `plural(list)`.
-- `queue.drain_all()`, an argument-less method of the linted crate —
-  fires; advice only, no autofix. One call, so condition 4 admits it:
-  narrowing to one call does not remove the impurity case.
+- `queue.drain_all()` with a plain binding as the initial value —
+  fires; advice only. Pins the over-conservatism deliberately: the
+  rewrite is safe here and the gate declines it anyway.
+- `queue.drain_all()` with an initial value that reads the queue —
+  fires; advice only, and this one stays advice under any gate.
 - `list.into_iter().rev()` — silent; two calls, per condition 4.
 - `list.iter().map(mapper)` — silent; the call takes an argument.
 - `Vec::into_iter(list)` — silent; the known syntactic gap, not a
