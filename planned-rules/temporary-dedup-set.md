@@ -954,7 +954,7 @@ language whose `Set` keeps insertion order and whose arrays have no
 
 ```rust
 fn sort_unique(mut names: Vec<String>) -> Vec<String> {
-    names.sort_unstable();
+    names.sort();
     names.dedup();
     names
 }
@@ -1177,16 +1177,22 @@ suggestion; the third emits help text only.
   `HashSet`, whose order is arbitrary, or out of a `BTreeSet`, which
   had already collapsed `Equal` elements to one. So the stable sort
   guarantees something about an input order that the flagged code
-  never had, and charges for it: across the tables above the stable
-  sort was 1.03×–1.65× slower everywhere except at ten elements, where
-  the two are a wash (0.93×–1.09×), and it allocates a scratch buffer
-  where `sort_unstable` allocates nothing. It also makes
-  `clippy::stable_sort_primitive` a non-issue, since that lint asks
-  for exactly this. The one measured case that goes the other way is
-  the 4 KiB shared-prefix row above, where comparisons dear enough to
-  reward a lower comparison count put the stable sort ahead; that
-  input belongs in the `#[expect]` case rather than in a second
-  suggestion.
+  never had, and it allocates a scratch buffer where `sort_unstable`
+  allocates nothing.
+
+  It is the better default, not the better choice everywhere.
+  `slice::sort` also merges runs it finds already in order, which is a
+  property of the algorithm rather than of stability, and the
+  suggestion's own argument says nothing about it. Measured over
+  10 000 elements, `sort_unstable` leads on every arbitrarily-ordered
+  input — shuffled, randomly swapped, many short runs — and loses
+  where the input arrives as a few long ordered stretches, by 1.2× at
+  32 runs and 4.7× at two. That shape is not rare next to a
+  deduplication: a vector built by concatenating per-source blocks is
+  exactly it. A crate that measures its own input and prefers `sort`
+  is not flagged for it — the rule reads set round trips, not sort
+  flavours — so the default costs such a crate nothing beyond
+  declining the suggestion.
 - **The comparator family is help text, not autofix.**
   `sort_unstable` and `dedup` are the one pair that reproduces a set's
   semantics knowing nothing about the element beyond `T: Ord`: the
@@ -1397,7 +1403,10 @@ the set — is the crate that turns the rule off in
   stability cannot matter, which is what this rule introduces, so it
   never adds a violation of that lint. Where the forward scan found a
   `sort()` the suggestion re-emits it, and clippy's opinion of that
-  call is the one it already held before the rewrite. `clippy::derive_ord_xor_partial_ord` and
+  call is the one it already held before the rewrite. That lint is
+  `pedantic` and off by default, and its own note says an unstable
+  sort *typically* performs faster — the same hedge this rule's
+  default carries. `clippy::derive_ord_xor_partial_ord` and
   `clippy::derived_hash_with_manual_eq` police the `Ord`/`Eq`
   agreement that the `BTreeSet` branch's rewrite assumes.
 - **`perfectionist::overly_long_method_chain`** measures length; this
