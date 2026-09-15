@@ -1,9 +1,12 @@
-use crate::common::{DefaultState, plural, span_is_macro_generated};
+use crate::common::{
+    DefaultState, and_chain_clauses, expr_is_let, is_author_written_match, plural,
+    span_is_macro_generated,
+};
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_hir::intravisit::{self, Visitor};
-use rustc_hir::{Arm, BinOpKind, Expr, ExprKind, MatchSource};
+use rustc_hir::{Arm, BinOpKind, Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
@@ -242,32 +245,11 @@ struct Operators {
     binds_a_pattern: bool,
 }
 
-/// The `&&`-joined clauses of `expr`, left to right.
-///
-/// A macro expansion is one clause however it is shaped, because the
-/// `&&` inside it is not the author's: the chain ends where the
-/// expansion begins.
-fn and_chain_clauses<'tcx>(expr: &'tcx Expr<'tcx>, clauses: &mut Vec<&'tcx Expr<'tcx>>) {
-    if let ExprKind::Binary(op, lhs, rhs) = expr.kind
-        && op.node == BinOpKind::And
-        && !span_is_macro_generated(expr.span)
-    {
-        and_chain_clauses(lhs, clauses);
-        and_chain_clauses(rhs, clauses);
-    } else {
-        clauses.push(expr);
-    }
-}
-
-fn is_let(expr: &Expr<'_>) -> bool {
-    matches!(expr.kind, ExprKind::Let(..))
-}
-
 /// The operators of `condition` that a `let` binding could remove.
 ///
 /// The condition is flattened into the clauses its top-level `&&`s
-/// join, which is the only place a `let` may appear. Each gap between
-/// two clauses is one `&&` the author wrote, and it counts unless a
+/// join. Each gap between two clauses is one `&&` the author wrote,
+/// and it counts unless a
 /// `let` sits on either side of it: a run of ordinary clauses
 /// collapses into one named clause, taking its `&&`s with it, whereas
 /// an `&&` next to a `let` is what makes the chain a chain. The
@@ -279,12 +261,11 @@ fn is_let(expr: &Expr<'_>) -> bool {
 /// That is what keeps a closure's operators out of the enclosing
 /// condition, not an arm of the match below.
 fn count_boolean_operators<'tcx>(condition: &'tcx Expr<'tcx>) -> Operators {
-    let mut clauses = Vec::new();
-    and_chain_clauses(condition, &mut clauses);
+    let clauses = and_chain_clauses(condition);
 
     let mut count = clauses
         .windows(2)
-        .filter(|pair| !is_let(pair[0]) && !is_let(pair[1]))
+        .filter(|pair| !expr_is_let(pair[0]) && !expr_is_let(pair[1]))
         .count();
     for clause in &clauses {
         let mut counter = OperatorCounter { count: 0 };
@@ -294,7 +275,7 @@ fn count_boolean_operators<'tcx>(condition: &'tcx Expr<'tcx>) -> Operators {
 
     Operators {
         count,
-        binds_a_pattern: clauses.iter().copied().any(is_let),
+        binds_a_pattern: clauses.iter().copied().any(expr_is_let),
     }
 }
 
@@ -320,12 +301,9 @@ impl<'tcx> Visitor<'tcx> for OperatorCounter {
             // head is a condition in its own right, which `check_expr`
             // and `check_arm` reach separately -- without this, the
             // `&&` in `if a && (if b && c { d } else { e })` is counted
-            // once here and again there. Only an author-written
-            // `match`, postfix or not, stops the walk: `?` and `.await`
-            // also lower to one, and stepping over those would skip the
-            // expression they wrap.
-            ExprKind::If(..)
-            | ExprKind::Match(_, _, MatchSource::Normal | MatchSource::Postfix) => {}
+            // once here and again there.
+            ExprKind::If(..) => {}
+            ExprKind::Match(_, _, source) if is_author_written_match(source) => {}
             ExprKind::Binary(op, ..) if matches!(op.node, BinOpKind::And | BinOpKind::Or) => {
                 self.count += 1;
                 intravisit::walk_expr(self, expr);
