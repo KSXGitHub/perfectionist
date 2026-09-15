@@ -14,7 +14,7 @@
 //! or `while` loop, a `?`, an `.await`, or an `async` body adds nothing
 //! beyond the construct the author wrote.
 
-use crate::common::span_is_macro_generated;
+use crate::common::{is_author_written_match, span_is_macro_generated};
 use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{
     Arm, BinOpKind, Block, Body, ClosureKind, Expr, ExprKind, LetStmt, LoopSource, MatchSource,
@@ -200,7 +200,7 @@ impl<'tcx> Walker<'tcx> {
                 walker.visit_body_expr(arm.body);
             }
         };
-        if matches!(source, MatchSource::Normal | MatchSource::Postfix) {
+        if is_author_written_match(source) {
             self.enter(Construct::Match, expr.span, visit_arms);
         } else {
             visit_arms(self);
