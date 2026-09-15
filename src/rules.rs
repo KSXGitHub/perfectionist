@@ -19,6 +19,7 @@ pub mod lint_attribute_trailing_comment;
 pub mod macro_trailing_comma;
 pub mod named_prelude_imports;
 pub mod needless_borrowed_parameters;
+pub mod overly_complex_condition;
 pub mod overly_long_file;
 pub mod overly_long_function;
 pub mod overly_long_method_chain;
