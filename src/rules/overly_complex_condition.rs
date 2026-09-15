@@ -3,7 +3,6 @@ use crate::common::{
     span_is_macro_generated,
 };
 use crate::rule_index::{Register, rule};
-use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_hir::intravisit::{self, Visitor};
 use rustc_hir::{Arm, BinOpKind, Expr, ExprKind};
@@ -24,9 +23,6 @@ declare_tool_lint! {
     /// expansion is not measured, though a condition written inside a
     /// macro's arguments is. The `let` that binds a boolean is not a
     /// condition, so naming the expression is what satisfies the rule.
-    ///
-    /// Test code is measured like any other code; set
-    /// `exempt_tests` to leave it alone.
     ///
     /// ### Why restrict this?
     ///
@@ -138,18 +134,12 @@ struct Config {
     /// The most `&&` and `||` operators a condition may have without
     /// being flagged. Defaults to `3`.
     max_operators: usize,
-    /// Whether test code is left alone: conditions inside a
-    /// `#[cfg(test)]` module, a `#[test]` function, or an
-    /// integration-test or benchmark target. Defaults to `false`, so a
-    /// test is held to the same limit as the code it exercises.
-    exempt_tests: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             max_operators: DEFAULT_MAX_OPERATORS,
-            exempt_tests: false,
         }
     }
 }
@@ -209,11 +199,6 @@ impl OverlyComplexCondition {
         if count <= self.config.max_operators {
             return;
         }
-        if self.config.exempt_tests
-            && item_in_test_code(cx, cx.tcx.hir_enclosing_body_owner(condition.hir_id))
-        {
-            return;
-        }
         let max = self.config.max_operators;
         let noun = plural(count, "operator", "operators");
         let message = format!("condition has {count} boolean {noun}, above the limit of {max}");
@@ -225,7 +210,7 @@ impl OverlyComplexCondition {
             |diag| {
                 diag.help(NAMING_HELP);
                 diag.help(LAZINESS_HELP);
-                if operators.binds_a_pattern {
+                if operators.omits_a_join {
                     diag.note(UNCOUNTED_NOTE);
                 }
             },
@@ -239,10 +224,12 @@ struct Operators {
     /// any nested body and outside macro expansions, and outside the
     /// `&&`s that hold a `let` chain together.
     count: usize,
-    /// Whether any clause of the chain is a `let`, which is what makes
-    /// the uncounted `&&`s worth a note on the diagnostic: the reader
-    /// can see more `&&` in the source than the count names.
-    binds_a_pattern: bool,
+    /// Whether a join between two clauses went uncounted, which is
+    /// what makes the note worth emitting: the reader can then see more
+    /// `&&` in the source than the count names. A `let` elsewhere in
+    /// the condition -- in a `let`'s own initialiser, say -- omits
+    /// nothing, so it earns no note.
+    omits_a_join: bool,
 }
 
 /// The operators of `condition` that a `let` binding could remove.
@@ -263,10 +250,11 @@ struct Operators {
 fn count_boolean_operators<'tcx>(condition: &'tcx Expr<'tcx>) -> Operators {
     let clauses = and_chain_clauses(condition);
 
-    let mut count = clauses
+    let counted_joins = clauses
         .windows(2)
         .filter(|pair| !expr_is_let(pair[0]) && !expr_is_let(pair[1]))
         .count();
+    let mut count = counted_joins;
     for clause in &clauses {
         let mut counter = OperatorCounter { count: 0 };
         counter.visit_expr(clause);
@@ -275,7 +263,7 @@ fn count_boolean_operators<'tcx>(condition: &'tcx Expr<'tcx>) -> Operators {
 
     Operators {
         count,
-        binds_a_pattern: clauses.iter().copied().any(expr_is_let),
+        omits_a_join: counted_joins < clauses.len().saturating_sub(1),
     }
 }
 
@@ -285,6 +273,30 @@ struct OperatorCounter {
 
 impl<'tcx> Visitor<'tcx> for OperatorCounter {
     fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
+        // A nested `if` or `match` is not part of the condition it sits
+        // in. Its branches are code that condition selects between
+        // rather than tests, and its own head is a condition in its own
+        // right, which `check_expr` and `check_arm` reach separately --
+        // without this, the `&&` in `if a && (if b && c { d } else { e })`
+        // is counted once here and again there. A `match` scrutinee is
+        // the exception: the condition does evaluate it, and no other
+        // pass reaches it the way `check_expr` reaches a nested `if`
+        // head, so it is walked rather than skipped with the arms.
+        //
+        // This is decided before the node's provenance, because a macro
+        // can expand to either construct around the author's arguments:
+        // in `if first && make_if!(second && third)` the generated `if`
+        // still selects between branches, and its head is still reached
+        // on its own, so stepping into it would count `second && third`
+        // twice.
+        match expr.kind {
+            ExprKind::If(..) => return,
+            ExprKind::Match(scrutinee, _, source) if is_author_written_match(source) => {
+                self.visit_expr(scrutinee);
+                return;
+            }
+            _ => {}
+        }
         // The node is the macro's, but an argument expression keeps its
         // call-site span, so the subtree can still hold operators the
         // author wrote. Step over this node without counting it rather
@@ -295,21 +307,6 @@ impl<'tcx> Visitor<'tcx> for OperatorCounter {
             return;
         }
         match expr.kind {
-            // A nested `if` or `match` written inside a condition is
-            // not part of it. Its branches are code the outer
-            // condition selects between rather than tests, and its own
-            // head is a condition in its own right, which `check_expr`
-            // and `check_arm` reach separately -- without this, the
-            // `&&` in `if a && (if b && c { d } else { e })` is counted
-            // once here and again there. A `match` scrutinee is the
-            // exception: the condition does evaluate it, and no other
-            // pass reaches it the way `check_expr` reaches a nested
-            // `if` head, so it is walked rather than skipped with the
-            // arms.
-            ExprKind::If(..) => {}
-            ExprKind::Match(scrutinee, _, source) if is_author_written_match(source) => {
-                self.visit_expr(scrutinee);
-            }
             ExprKind::Binary(op, ..) if matches!(op.node, BinOpKind::And | BinOpKind::Or) => {
                 self.count += 1;
                 intravisit::walk_expr(self, expr);
