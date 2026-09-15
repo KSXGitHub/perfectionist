@@ -807,7 +807,7 @@ that drifts.
 
 ### The round trip that sorts afterwards anyway
 
-[`crates/cli/src/cli_args/approve_builds.rs`, L314–L324](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/crates/cli/src/cli_args/approve_builds.rs#L314-L324):
+[`pnpm/crates/cli/src/cli_args/approve_builds.rs`, L314–L324](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/pnpm/crates/cli/src/cli_args/approve_builds.rs#L314-L324):
 
 ```rust
 /// Deduplicate and sort `names` by code unit, matching pnpm's
@@ -830,7 +830,7 @@ so nothing about the shape needs tracing across a call graph.
 
 The vector, by contrast, is wanted, and the three callers are what
 establish it. Two of them write the result to a manifest
-([L129–L133](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/crates/cli/src/cli_args/approve_builds.rs#L129-L133)):
+([L129–L133](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/pnpm/crates/cli/src/cli_args/approve_builds.rs#L129-L133)):
 
 ```rust
 let build_packages: Vec<String> = if !packages.is_empty() {
@@ -841,7 +841,7 @@ let build_packages: Vec<String> = if !packages.is_empty() {
 ```
 
 and the third hands it to a prompt whose displayed order a user reads
-([L247–L248](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/crates/cli/src/cli_args/approve_builds.rs#L247-L248)):
+([L247–L248](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/pnpm/crates/cli/src/cli_args/approve_builds.rs#L247-L248)):
 
 ```rust
 let choices = sort_unique(automatically_ignored_builds.to_vec());
@@ -877,7 +877,7 @@ fn sort_unique(mut names: Vec<String>) -> Vec<String> {
 
 ### A set between a `map` and a fallible landing
 
-[`crates/install-coordinator/src/mutation.rs`, L41–L46](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/crates/install-coordinator/src/mutation.rs#L41-L46):
+[`pnpm/crates/install-coordinator/src/mutation.rs`, L41–L46](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/pnpm/crates/install-coordinator/src/mutation.rs#L41-L46):
 
 ```rust
 let snapshots = paths
@@ -901,7 +901,7 @@ let snapshots =
 
 ### A set whose whole job is the `Vec` it becomes
 
-[`crates/cli/src/cargo_deps/lockfile.rs`, L26–L35](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/crates/cli/src/cargo_deps/lockfile.rs#L26-L35):
+[`pnpm/crates/cli/src/cargo_deps/lockfile.rs`, L26–L35](https://github.com/pnpm/pnpm/blob/f60780170c962d938082562d26fdbd4689c26a85/pnpm/crates/cli/src/cargo_deps/lockfile.rs#L26-L35):
 
 ```rust
 /// The git sources the locked packages come from, deduplicated so the
