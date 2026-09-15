@@ -1,17 +1,15 @@
 use crate::common::DefaultState;
+use crate::field_copy::{COPYING_METHODS, FieldCopy, borrowed_form, field_copy, has_field};
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
-use clippy_utils::ty::is_copy;
 use rustc_hir as hir;
 use rustc_hir::def_id::LocalDefId;
 use rustc_hir::intravisit::FnKind;
-use rustc_hir::{Expr, ExprKind, ImplicitSelfKind, QPath};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
-use rustc_middle::ty::print::ForceTrimmedGuard;
-use rustc_middle::ty::{self, AssocContainer, Ty, TypeckResults};
+use rustc_middle::ty::Ty;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::{Span, Symbol, kw};
+use rustc_span::{Span, Symbol};
 
 declare_tool_lint! {
     /// ### What it does
@@ -30,9 +28,20 @@ declare_tool_lint! {
     /// renders the field rather than copying it, such as `to_string` on
     /// a numeric field, where no borrow of the field is a `String`.
     ///
-    /// A method named `to_*` is left alone: that prefix is how a Rust
-    /// API announces a costly conversion, so the copy is already part of
-    /// what the name promises.
+    /// What counts as a getter is decided by the first of these that
+    /// applies:
+    ///
+    /// 1. `to_*`, `into_*` and `as_*` are conversions, never getters.
+    ///    The first two announce that they cost something, so the copy is
+    ///    part of what the name promises; `as_*` promises the opposite,
+    ///    and `perfectionist::cloning_as_conversion` measures it.
+    /// 2. `get_*` is a getter.
+    /// 3. A method named for a field of `self` is a getter.
+    /// 4. Any other name is a getter only where `measure_any_method_name`
+    ///    says so.
+    ///
+    /// Every clause also requires the `&self` receiver and no other
+    /// parameter.
     ///
     /// A method of a trait impl is left alone, since the trait fixes
     /// its signature, and so is a method produced by a macro.
@@ -101,19 +110,13 @@ const COPY_BACK_HELP: &str = "if every call site copies the borrow straight back
                               rather than went away: the callers did want ownership, and the owned \
                               return was right";
 
-/// The methods that turn a borrowed field into its owned form.
-const COPYING_METHODS: &[&str] = &[
-    "clone",
-    "to_owned",
-    "to_string",
-    "to_vec",
-    "to_path_buf",
-    "to_os_string",
-];
-
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
+    /// Whether a method whose name neither starts with `get_` nor names a
+    /// field of `self` is still treated as a getter. With this off, such a
+    /// method is left alone however its body reads. Defaults to `false`.
+    measure_any_method_name: bool,
     /// Whether test code is left alone: getters inside a `#[cfg(test)]`
     /// module or an integration-test or benchmark target. Defaults to
     /// `true`.
@@ -122,7 +125,10 @@ struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Self { exempt_tests: true }
+        Self {
+            measure_any_method_name: false,
+            exempt_tests: true,
+        }
     }
 }
 
@@ -163,46 +169,27 @@ impl<'tcx> LateLintPass<'tcx> for CloningGetter {
         _span: Span,
         def_id: LocalDefId,
     ) {
-        let FnKind::Method(ident, _) = kind else {
+        let Some(FieldCopy {
+            method,
+            field,
+            field_ty,
+            self_ty,
+            def_span,
+        }) = field_copy(cx, kind, decl, body, def_id, &self.copying_methods)
+        else {
             return;
         };
-        // `to_*` is the API guidelines' name for a deliberately costly
-        // conversion, so the prefix already tells a caller the copy is
-        // there. Asking such a method to return a borrow would contradict
-        // the convention this rule's own list of copying methods is drawn
-        // from -- `to_owned`, `to_string`, `to_vec` are that convention.
-        if ident.name.as_str().starts_with("to_") {
+        if !self.is_getter(method, self_ty) {
             return;
         }
-        if !matches!(decl.implicit_self(), ImplicitSelfKind::RefImm) || decl.inputs.len() != 1 {
-            return;
-        }
-        let def_span = cx.tcx.def_span(def_id);
-        let hir_id = cx.tcx.local_def_id_to_hir_id(def_id);
-        if def_span.from_expansion()
-            || clippy_utils::is_from_proc_macro(cx, &(&kind, body, hir_id, def_span))
-        {
-            return;
-        }
-        // A trait fixes the signature of its methods.
-        if let Some(assoc) = cx.tcx.opt_associated_item(def_id.to_def_id())
-            && !matches!(assoc.container, AssocContainer::InherentImpl)
-        {
-            return;
-        }
-        let typeck = cx.tcx.typeck(def_id);
-        let Some((field, field_ty)) = self.copied_field(cx, typeck, body.value) else {
-            return;
-        };
         if self.config.exempt_tests && item_in_test_code(cx, def_id) {
             return;
         }
-        let getter = ident.name;
         span_lint_and_then(
             cx,
             CLONING_GETTER,
             def_span,
-            format!("getter `{getter}` returns an owned copy of `self.{field}`"),
+            format!("getter `{method}` returns an owned copy of `self.{field}`"),
             |diag| {
                 diag.help(format!(
                     "return `{}` and let a caller that needs ownership copy at the call site",
@@ -215,98 +202,32 @@ impl<'tcx> LateLintPass<'tcx> for CloningGetter {
 }
 
 impl CloningGetter {
-    /// The field the body copies out, when the body is exactly
-    /// `self.<field>.<copying method>()`, possibly wrapped in a block,
-    /// and a borrow of that field could have served in the copy's place.
-    fn copied_field<'tcx>(
-        &self,
-        cx: &LateContext<'tcx>,
-        typeck: &TypeckResults<'tcx>,
-        body: &'tcx Expr<'tcx>,
-    ) -> Option<(Symbol, Ty<'tcx>)> {
-        let expr = unwrap_block(body);
-        let ExprKind::MethodCall(segment, receiver, [], _) = expr.kind else {
-            return None;
-        };
-        if !self.copying_methods.contains(&segment.ident.name) {
-            return None;
+    /// Whether `method` on `self_ty` is a getter, by the definition this
+    /// rule measures. The clauses are tried in order, and the first that
+    /// applies decides:
+    ///
+    /// 1. `to_*`, `into_*` and `as_*` are conversions, never getters.
+    ///    `to_*` and `into_*` announce that they cost something, and
+    ///    `as_*` promises the opposite; `perfectionist::cloning_as_conversion`
+    ///    measures the last of the three.
+    /// 2. `get_*` is a getter.
+    /// 3. A method named for a field of `self` is a getter.
+    /// 4. Any other name is a getter only where `measure_any_method_name`
+    ///    says so.
+    ///
+    /// Every clause also requires the single `&self` receiver, which the
+    /// caller has already established.
+    fn is_getter(&self, method: Symbol, self_ty: Ty<'_>) -> bool {
+        let name = method.as_str();
+        if name.starts_with("to_") || name.starts_with("into_") || name.starts_with("as_") {
+            return false;
         }
-        let ExprKind::Field(base, field) = receiver.kind else {
-            return None;
-        };
-        let ExprKind::Path(QPath::Resolved(None, path)) = base.kind else {
-            return None;
-        };
-        let [segment] = path.segments else {
-            return None;
-        };
-        if segment.ident.name != kw::SelfLower {
-            return None;
+        if name.starts_with("get_") {
+            return true;
         }
-        let field_ty = typeck.expr_ty(receiver);
-        // The call has to reproduce the field's own type for a borrow of
-        // the field to serve in its place. `self.count.to_string()`
-        // renders a `u32`, and no borrow of `self.count` is a `String`.
-        if typeck.expr_ty(expr) != field_ty {
-            return None;
+        if has_field(self_ty, method) {
+            return true;
         }
-        // A `Copy` field returned by value is the borrowed form's equal.
-        // A shared reference is itself `Copy`, so this also leaves alone a
-        // field that is already a borrow, where the call copies nothing.
-        if is_copy(cx, field_ty) {
-            return None;
-        }
-        Some((field.name, field_ty))
+        self.config.measure_any_method_name
     }
-}
-
-/// The borrowed form a caller could take in place of the field's owned
-/// type: `&str` for a `String`, `&Path` for a `PathBuf`, `&OsStr` for an
-/// `OsString`, `&[T]` for a `Vec<T>`, the inner type's own borrowed form
-/// under an `Option`, and `&T` for anything else.
-fn borrowed_form<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> String {
-    // Print paths trimmed to their final segment, so the help reads
-    // `&[String]` rather than `&[std::string::String]`. The guard is what
-    // `with_forced_trimmed_paths!` expands to, held here for the whole
-    // function rather than wrapped around each `format!`.
-    let _trimmed = ForceTrimmedGuard::new();
-    let ty::Adt(adt, args) = ty.kind() else {
-        return format!("&{ty}");
-    };
-    let did = adt.did();
-    // `String` is a lang item (`#[lang = "String"]`), not a diagnostic
-    // item, so it needs its own lookup; the rest carry a
-    // `rustc_diagnostic_item`.
-    if Some(did) == cx.tcx.lang_items().string() {
-        return "&str".to_owned();
-    }
-    let is = |name: &str| cx.tcx.is_diagnostic_item(Symbol::intern(name), did);
-    if is("PathBuf") {
-        return "&Path".to_owned();
-    }
-    if is("OsString") {
-        return "&OsStr".to_owned();
-    }
-    let Some(inner) = args.types().next() else {
-        return format!("&{ty}");
-    };
-    if is("Vec") {
-        return format!("&[{inner}]");
-    }
-    if is("Option") {
-        return format!("Option<{}>", borrowed_form(cx, inner));
-    }
-    format!("&{ty}")
-}
-
-/// The expression a body of nested `{ }` blocks with no statements
-/// comes down to.
-fn unwrap_block<'a>(mut expr: &'a Expr<'a>) -> &'a Expr<'a> {
-    while let ExprKind::Block(block, None) = expr.kind
-        && block.stmts.is_empty()
-        && let Some(inner) = block.expr
-    {
-        expr = inner;
-    }
-    expr
 }

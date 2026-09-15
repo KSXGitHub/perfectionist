@@ -105,6 +105,7 @@ rule_index! {
     bare_issue_reference => BareIssueReference,
     bare_url => BareUrl,
     clap_help_markdown => ClapHelpMarkdown,
+    cloning_as_conversion => CloningAsConversion,
     cloning_getter => CloningGetter,
     core_instead_of_std => CoreInsteadOfStd,
     excessive_cognitive_complexity => ExcessiveCognitiveComplexity,
