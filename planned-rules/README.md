@@ -94,9 +94,10 @@ pattern that several rules call out by reference — live in
   (`require_command_extra_dependency = false` opts in).
 - [`folded-command-setter.md`](./folded-command-setter.md) — flag a
   `fold` of a singular `CommandExtra` setter over an iterator where
-  the plural exists (`without_env` → `without_envs`), whether the
-  folder is a method path or a forwarding closure. The recognised
-  singular/plural pairs are configurable.
+  the plural exists (`without_env` → `without_envs`), however the
+  folder is spelled. Fires only where the rewrite deletes the fold
+  rather than relocating it, so a transforming closure or an adapter
+  chain in the receiver stays quiet. No configuration.
 
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
