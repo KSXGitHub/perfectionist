@@ -100,6 +100,28 @@ A call to `Iterator::fold` where all of the following hold:
      initialiser. A first implementation may skip that, as a known gap
      rather than because the predicate excludes it.
 3. That setter has a plural counterpart in the `pairs` table below.
+4. The `fold` receiver is a **simple iterator expression**: a place
+   expression — `VARS`, `self.vars`, `cfg.env_names` — followed by any
+   number of argument-less method calls, as in `VARS.iter()` or
+   `self.vars.iter().copied()`.
+
+Condition 4 is a value gate rather than a correctness one. The rewrite
+stays valid for any receiver, because the receiver only moves; it stops
+being an *improvement* once what moves is long or carries logic of its
+own. These are equivalent, and must not fire:
+
+```text
+    A.iter().map(mapper).fold(B, f)   ->   B.plural(A.iter().map(mapper))
+    A.iter().filter(pred).fold(B, f)  ->   B.plural(A.iter().filter(pred))
+    COMPLEX_EXPRESSION.fold(B, f)     ->   B.plural(COMPLEX_EXPRESSION)
+```
+
+The reader still has to work out what `mapper` yields, and the
+suggestion has relocated a chain into argument position rather than
+removed one — the opposite of what this rule is for. An argument is
+where the logic hides, which is why the condition turns on
+argument-less calls rather than on a list of adapter names that would
+need extending as the iterator API grows.
 
 | singular      | plural         | example closure                                  |
 |---------------|----------------|--------------------------------------------------|
@@ -116,10 +138,13 @@ most likely to be written by hand and left alone.
 
 ### Exemptions
 
-- **A closure that does anything else.** An extra statement, a `?`, a
-  conditional, arguments passed out of order, an item used twice. The
-  plural is only equivalent to a closure that forwards and nothing more;
-  anything else must not fire.
+- **A closure that does anything but forward.** The plural is
+  equivalent only to a closure that passes its parameters through
+  untouched, so anything computed on the way must not fire. The one to
+  expect is a transformed argument —
+  `|c, a| c.with_arg(format!("--{a}"))` reads like forwarding and is
+  not — alongside an extra statement, a `?`, a conditional, arguments
+  passed out of order, and an item used twice.
 
 - **A singular with no plural.** `with_no_env`, `with_stdin`,
   `with_stdout` and `with_stderr` have no plural counterpart — each
@@ -188,14 +213,15 @@ become the argument of the plural:
     A.iter().fold(B, f)   ->   B.plural(A.iter())
 ```
 
-so `A` and `B` both move, and either may be a multi-line expression.
-Where `A` is `<slice>.iter()` the suggestion can often drop the
-`.iter()` as well, because the plural takes `IntoIterator` and a
-reference to a slice already satisfies it — that is what made the
-fixed call site read `without_envs(UI_HARNESS_VARS)` rather than
-`without_envs(UI_HARNESS_VARS.iter())`. Dropping it is an
-improvement, not a requirement, and a first implementation may keep
-the `.iter()`.
+so `A` and `B` both move. Condition 4 keeps `A` short, so that diagram
+is the whole shape rather than an instance of a wider one; `B` is
+unconstrained and may be a multi-line expression. Where `A` is
+`<slice>.iter()` the suggestion can often drop the `.iter()` as well,
+because the plural takes `IntoIterator` and a reference to a slice
+already satisfies it — that is what made the fixed call site read
+`without_envs(UI_HARNESS_VARS)` rather than
+`without_envs(UI_HARNESS_VARS.iter())`. Dropping it is an improvement,
+not a requirement, and a first implementation may keep the `.iter()`.
 
 A conservative first implementation: **path folders only, and only
 the pairs whose item is a single value.** That covers what this
