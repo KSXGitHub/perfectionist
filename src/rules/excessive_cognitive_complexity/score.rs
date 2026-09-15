@@ -22,10 +22,12 @@
 //! that a `for` or `while` loop lowers to are not branches the reader
 //! sees, so they add nothing beyond the loop's own increment.
 
-use crate::common::{is_author_written_match, span_is_macro_generated};
+use crate::common::span_is_macro_generated;
 use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_hir::intravisit::{self, Visitor};
-use rustc_hir::{Arm, BinOpKind, Block, Body, ClosureKind, Expr, ExprKind, LetStmt, LoopSource};
+use rustc_hir::{
+    Arm, BinOpKind, Block, Body, ClosureKind, Expr, ExprKind, LetStmt, LoopSource, MatchSource,
+};
 use rustc_lint::LateContext;
 use rustc_middle::hir::nested_filter;
 use rustc_middle::ty::{TyCtxt, TypeckResults};
@@ -220,7 +222,7 @@ impl<'tcx> Visitor<'tcx> for Scorer<'tcx> {
         }
         match expr.kind {
             ExprKind::If(cond, then, els) => self.visit_if(expr, cond, then, els),
-            ExprKind::Match(scrutinee, arms, source) if is_author_written_match(source) => {
+            ExprKind::Match(scrutinee, arms, MatchSource::Normal | MatchSource::Postfix) => {
                 self.visit_match(scrutinee, arms);
             }
             ExprKind::Loop(block, _, source, _) => self.visit_loop(expr, block, source),
