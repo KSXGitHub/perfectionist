@@ -151,7 +151,10 @@ impl<'tcx> LateLintPass<'tcx> for CloningGetter {
             return;
         }
         let def_span = cx.tcx.def_span(def_id);
-        if def_span.from_expansion() {
+        let hir_id = cx.tcx.local_def_id_to_hir_id(def_id);
+        if def_span.from_expansion()
+            || clippy_utils::is_from_proc_macro(cx, &(&kind, body, hir_id, def_span))
+        {
             return;
         }
         // A trait fixes the signature of its methods.
