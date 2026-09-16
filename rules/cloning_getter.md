@@ -30,9 +30,12 @@ applies:
    The first two announce that they cost something, so the copy is
    part of what the name promises; `as_*` promises the opposite,
    and `perfectionist::cloning_as_conversion` measures it.
-2. `get_*` is a getter.
-3. A method named for a field of `self` is a getter.
-4. Any other name is a getter only where `measure_any_method_name`
+2. A name carrying an exempt prefix -- `clone_*` and `cloned_*`
+   by default, configurable -- is never a getter either: the name
+   already tells a caller the copy is there.
+3. `get_*` is a getter.
+4. A method named for a field of `self` is a getter.
+5. Any other name is a getter only where `measure_unmatched_names`
    says so.
 
 Every clause also requires the `&self` receiver and no other
@@ -94,14 +97,39 @@ impl Person {
 
 Configure via `dylint.toml` under `["perfectionist::cloning_getter"]`. Every field is optional; the per-field prose below states the default.
 
-### Field: `measure_any_method_name`
+### Field: `extra_exempt_prefixes`
+
+- _Type:_ `[identifier-prefix string]`
+- _Optional_
+
+Additional name prefixes that keep a method out of the rule,
+whatever its body does and whatever `measure_unmatched_names`
+says. Merged with the built-in defaults (`["clone_", "cloned_"]`);
+empty by default. Each entry ends in `_` and is not one of the
+conversion prefixes `as_`, `into_`, `to_`, which the rule exempts
+whatever this says; anything else is rejected at config-parse
+time.
+
+### Field: `ignore_exempt_prefixes`
+
+- _Type:_ `[identifier-prefix string]`
+- _Optional_
+
+Prefixes to drop from the exempt set, even if they appear in the
+built-in defaults or in `extra_exempt_prefixes`. Empty by default;
+checked after the merge, so this knob always wins. Each entry is
+shaped as `extra_exempt_prefixes` requires.
+
+### Field: `measure_unmatched_names`
 
 - _Type:_ `boolean`
 - _Optional_
 
-Whether a method whose name neither starts with `get_` nor names a
-field of `self` is still treated as a getter. With this off, such a
-method is left alone however its body reads. Defaults to `false`.
+Whether a method whose name neither starts with `get_` nor matches
+a field of `self` is still treated as a getter. With this off, such
+a method is left alone however its body reads. A conversion prefix
+-- `to_*`, `into_*`, `as_*` -- and an exempt prefix are never
+getters whatever this says. Defaults to `false`.
 
 ### Field: `exempt_tests`
 

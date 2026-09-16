@@ -3,7 +3,7 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
-// Run with `measure_any_method_name = true`, so clause 4 of the getter
+// Run with `measure_unmatched_names = true`, so clause 4 of the getter
 // definition admits a method whose name neither starts with `get_` nor
 // names a field. Clauses 1 to 3 still take precedence over it.
 
