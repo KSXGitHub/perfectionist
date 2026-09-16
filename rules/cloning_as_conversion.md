@@ -27,9 +27,6 @@ Only a method taking `&self` and nothing else is measured. A
 method of a trait impl is left alone, since the trait fixes its
 signature, and so is one produced by a macro.
 
-Test code is left alone; set `exempt_tests` to `false` to
-measure it like any other code.
-
 ## Why is this bad?
 
 The Rust API Guidelines give `as_`, `to_` and `into_` distinct
@@ -67,7 +64,8 @@ impl Person {
 }
 ```
 
-**Prefer:**
+**Prefer:** the copy dropped, so the call is as free as the name
+says
 
 ```rust,ignore
 impl Person {
@@ -77,7 +75,8 @@ impl Person {
 }
 ```
 
-Or keep the copy and rename it, so the cost is in the name:
+**Prefer:** or the copy kept and the prefix dropped, so the name
+admits what it costs
 
 ```rust,ignore
 impl Person {
@@ -89,13 +88,4 @@ impl Person {
 
 ## Configuration
 
-Configure via `dylint.toml` under `["perfectionist::cloning_as_conversion"]`. Every field is optional; the per-field prose below states the default.
-
-### Field: `exempt_tests`
-
-- _Type:_ `boolean`
-- _Optional_
-
-Whether test code is left alone: methods inside a `#[cfg(test)]`
-module or an integration-test or benchmark target. Defaults to
-`true`.
+None.
