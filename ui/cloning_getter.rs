@@ -126,8 +126,8 @@ impl Person {
         self.first_name.clone()
     }
 
-    // Good: the default list's `!cloned_*` and `!clone_*` entries say
-    // outright that these are not getters.
+    // Good: no entry of the default list covers these, and they name no
+    // field, so nothing calls them getters.
     fn cloned_first_name(&self) -> String {
         self.first_name.clone()
     }
@@ -136,17 +136,15 @@ impl Person {
         self.first_name.clone()
     }
 
-    // Good: the same two entries decide a name before the field match
-    // does, so a getter named for a field that carries the prefix is
-    // left alone as well.
-    fn clone_url(&self) -> String {
-        self.clone_url.clone()
-    }
-
-    // Good: no entry matches it and it names no field, so nothing
-    // calls it a getter.
     fn unrelated(&self) -> String {
         self.first_name.clone()
+    }
+
+    // Bad: named for a field, which no configuration talks the rule out
+    // of. The name says it copies, but so does the field it is named
+    // after.
+    fn clone_url(&self) -> String {
+        self.clone_url.clone()
     }
 
     // Bad: `to` without the underscore is not the conversion prefix.
