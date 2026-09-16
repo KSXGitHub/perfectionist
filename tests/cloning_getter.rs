@@ -46,8 +46,11 @@ fn a_later_pattern_overrides_an_earlier_one() {
 }
 
 #[test]
-fn a_leading_negation_leaves_only_what_follows_it() {
-    run_patterns("ui-toml/cloning_getter/only_the_named", &["!*", "get_*"]);
+fn a_field_named_getter_is_out_of_the_list_s_reach() {
+    run_patterns(
+        "ui-toml/cloning_getter/field_names_are_not_overridable",
+        &["!*"],
+    );
 }
 
 /// A library with a cloning getter in production code and another in a

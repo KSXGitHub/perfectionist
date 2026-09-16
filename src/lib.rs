@@ -28,7 +28,7 @@ mod derive_list;
 mod enclosing_hir;
 mod field_copy;
 mod format_template;
-mod getter_name_pattern;
+mod getter_name_patterns;
 mod literal_scan;
 mod macro_path;
 mod macro_template;

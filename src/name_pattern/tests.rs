@@ -137,8 +137,10 @@ fn the_last_entry_covering_a_name_is_the_one_that_decides() {
 
 #[test]
 fn a_name_no_entry_covers_is_left_undecided() {
-    // `None` is not `false`: it is the caller's fallthrough that
-    // decides, which for `cloning_getter` is the field match.
+    // `None` is not `false`: the caller decides what an uncovered
+    // name means. `cloning_getter` reads it as "not a getter", having
+    // already answered for its field-named methods before consulting
+    // the list at all.
     assert_eq!(list(&["get_*"], "first_name"), None);
     assert_eq!(list(&[], "first_name"), None);
 }
@@ -202,9 +204,10 @@ fn an_entry_a_later_one_wholly_covers_can_never_decide() {
 
 #[test]
 fn an_empty_list_is_not_the_same_as_a_list_that_covers_nothing() {
-    // The distinction a reader is most likely to trip on: `[]` leaves
-    // every name to the caller's fallthrough, while `["!*"]` answers
-    // for every name and so never reaches it.
+    // `[]` leaves every name to the caller's fallthrough, while
+    // `["!*"]` answers for every name and so never reaches it. A
+    // caller whose fallthrough is `false` cannot tell the two apart;
+    // one whose fallthrough is a predicate can.
     assert_eq!(list(&[], "name"), None);
     assert_eq!(list(&["!*"], "name"), Some(false));
 }
