@@ -1,7 +1,6 @@
 use crate::common::DefaultState;
 use crate::field_copy::{Eligible, eligible_method};
 use crate::rule_index::{Register, rule};
-use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_hir as hir;
 use rustc_hir::def_id::LocalDefId;
@@ -20,9 +19,6 @@ declare_tool_lint! {
     ///
     /// A method of a trait impl is left alone, since the trait fixes its
     /// signature, and so is a method produced by a macro.
-    ///
-    /// Test code is left alone; set `exempt_tests` to `false` to
-    /// measure it like any other code.
     ///
     /// ### Why is this bad?
     ///
@@ -75,8 +71,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-const CONFIG_KEY: &str = "perfectionist::borrowing_to_conversion";
-
 /// The second of the two remedies. A violation is a method that both
 /// borrows *and* carries the `to_` prefix, so dropping either half
 /// resolves it: the first help drops the prefix, this one drops the
@@ -84,24 +78,16 @@ const CONFIG_KEY: &str = "perfectionist::borrowing_to_conversion";
 const OWNED_HELP: &str = "or stop it borrowing: return the owned value the name promises, where a \
                           caller really does need one of its own";
 
-#[derive(Debug, serde::Deserialize)]
+const CONFIG_KEY: &str = "perfectionist::borrowing_to_conversion";
+
+/// The rule has no configuration knobs. Not dead code: the read
+/// below rejects a mistyped key in the rule's `dylint.toml` table,
+/// and gen-docs needs the struct for `Configuration: none.`
+#[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
-struct Config {
-    /// Whether test code is left alone: methods inside a `#[cfg(test)]`
-    /// module or an integration-test or benchmark target. Defaults to
-    /// `true`.
-    exempt_tests: bool,
-}
+struct Config {}
 
-impl Default for Config {
-    fn default() -> Self {
-        Self { exempt_tests: true }
-    }
-}
-
-pub struct BorrowingToConversion {
-    config: Config,
-}
+pub struct BorrowingToConversion {}
 
 impl_lint_pass!(BorrowingToConversion => [BORROWING_TO_CONVERSION]);
 
@@ -114,9 +100,8 @@ impl Register for rule::BorrowingToConversion {
 
     fn register_pass(lint_store: &mut LintStore) {
         lint_store.register_late_lint_pass(Box::new(|_| {
-            Box::new(BorrowingToConversion {
-                config: dylint_linting::config_or_default(CONFIG_KEY),
-            })
+            let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+            Box::new(BorrowingToConversion {})
         }));
     }
 }
@@ -145,9 +130,6 @@ impl<'tcx> LateLintPass<'tcx> for BorrowingToConversion {
             .skip_binder()
             .output();
         if !returns_a_borrow(cx, output) {
-            return;
-        }
-        if self.config.exempt_tests && item_in_test_code(cx, def_id) {
             return;
         }
         let suggested = method.as_str().replacen("to_", "as_", 1);
