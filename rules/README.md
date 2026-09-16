@@ -42,6 +42,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   markdown construct in a clap-derived doc comment leaks into `--help` output
 
+- [`cloning_as_conversion`](./cloning_as_conversion.md) (default: `active`).
+
+  `as_*` method copies a field where its prefix promises a free borrow
+
 - [`cloning_getter`](./cloning_getter.md) (default: `active`).
 
   getter returns an owned copy of a field where a borrow would serve

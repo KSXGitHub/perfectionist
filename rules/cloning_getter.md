@@ -27,8 +27,9 @@ What counts as a getter is decided by the first of these that
 applies:
 
 1. `to_*`, `into_*` and `as_*` are conversions, never getters.
-   Each prefix carries its own promise about cost and ownership,
-   so the copy is the name's business rather than this rule's.
+   The first two announce that they cost something, so the copy is
+   part of what the name promises; `as_*` promises the opposite,
+   and `perfectionist::cloning_as_conversion` measures it.
 2. `get_*` is a getter.
 3. A method named for a field of `self` is a getter.
 4. Any other name is a getter only where `measure_any_method_name`
