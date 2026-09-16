@@ -165,3 +165,46 @@ fn a_leading_bang_flips_the_verdict_and_not_the_scope() {
         assert_eq!(single("!clone_*", name), None, "{name}");
     }
 }
+
+#[test]
+fn a_longer_prefix_carves_an_exception_out_of_a_shorter_one() {
+    // The shorter prefix covers everything the longer one does, so
+    // putting the longer one after it takes those names back.
+    assert_eq!(list(&["foo_*", "!foo_bar_*"], "foo_x"), Some(true));
+    assert_eq!(list(&["foo_*", "!foo_bar_*"], "foo_bar_x"), Some(false));
+    // And the same the other way round.
+    assert_eq!(list(&["!foo_*", "foo_bar_*"], "foo_x"), Some(false));
+    assert_eq!(list(&["!foo_*", "foo_bar_*"], "foo_bar_x"), Some(true));
+}
+
+#[test]
+fn an_exception_nests_as_deep_as_the_list_does() {
+    let patterns = ["foo_*", "!foo_0_*", "!foo_1_*", "foo_0_exception_*"];
+    assert_eq!(list(&patterns, "foo_x"), Some(true));
+    assert_eq!(list(&patterns, "foo_bar_x"), Some(true));
+    assert_eq!(list(&patterns, "foo_0_x"), Some(false));
+    assert_eq!(list(&patterns, "foo_1_x"), Some(false));
+    // Covered by `foo_*`, `!foo_0_*` and `foo_0_exception_*`; the last
+    // of those is what decides.
+    assert_eq!(list(&patterns, "foo_0_exception_x"), Some(true));
+}
+
+#[test]
+fn an_entry_a_later_one_wholly_covers_can_never_decide() {
+    // Two entries over the same names: the first can never be reached,
+    // so the pair means whatever the second one means. Nothing rejects
+    // such an entry today.
+    assert_eq!(list(&["foo_*", "!foo_*"], "foo_x"), Some(false));
+    assert_eq!(list(&["!foo_*"], "foo_x"), Some(false));
+    assert_eq!(list(&["!foo_*", "foo_*"], "foo_x"), Some(true));
+    assert_eq!(list(&["foo_*"], "foo_x"), Some(true));
+}
+
+#[test]
+fn an_empty_list_is_not_the_same_as_a_list_that_covers_nothing() {
+    // The distinction a reader is most likely to trip on: `[]` leaves
+    // every name to the caller's fallthrough, while `["!*"]` answers
+    // for every name and so never reaches it.
+    assert_eq!(list(&[], "name"), None);
+    assert_eq!(list(&["!*"], "name"), Some(false));
+}
