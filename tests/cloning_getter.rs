@@ -22,6 +22,10 @@ const LINT_NAME: &str = "perfectionist::cloning_getter";
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     measure_unmatched_names: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    extra_exempt_prefixes: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ignore_exempt_prefixes: Option<Vec<String>>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -38,6 +42,22 @@ fn unmatched_names_admits_an_unrelated_name() {
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
         .dylint_toml(dylint_toml(RuleConfig {
             measure_unmatched_names: Some(true),
+            ..RuleConfig::default()
+        }))
+        .run();
+}
+
+#[test]
+fn the_exempt_prefix_roster_is_configurable() {
+    let fixtures = _utils::copy_fixtures_with_directives(
+        env!("CARGO_MANIFEST_DIR"),
+        "ui-toml/cloning_getter/exempt_prefixes",
+    );
+    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+        .dylint_toml(dylint_toml(RuleConfig {
+            measure_unmatched_names: Some(true),
+            extra_exempt_prefixes: Some(vec!["copy_".to_owned()]),
+            ignore_exempt_prefixes: Some(vec!["cloned_".to_owned()]),
         }))
         .run();
 }
