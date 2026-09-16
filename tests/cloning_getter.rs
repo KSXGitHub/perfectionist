@@ -1,12 +1,11 @@
 //! Integration tests for `cloning_getter`'s configuration.
 //!
-//! `measure_unmatched_names` is covered by a UI fixture under
-//! `ui-toml/cloning_getter/` run with a per-rule `dylint.toml`.
-//! `exempt_tests`
-//! which needs `#[cfg(test)]` code to exist and so runs a minimal Cargo
-//! project through `cargo dylint --all -- --all-targets`, the way
-//! `tests/needless_borrowed_parameters.rs` does it. The default-config
-//! sweep lives in `ui/cloning_getter.rs`.
+//! `getter_name_patterns` is covered by UI fixtures under
+//! `ui-toml/cloning_getter/`, each run with a per-rule `dylint.toml`.
+//! `exempt_tests` needs `#[cfg(test)]` code to exist, so it runs a
+//! minimal Cargo project through `cargo dylint --all -- --all-targets`,
+//! the way `tests/needless_borrowed_parameters.rs` does it. The
+//! default-config sweep lives in `ui/cloning_getter.rs`.
 
 pub mod _utils;
 
@@ -18,48 +17,37 @@ const LINT_NAME: &str = "perfectionist::cloning_getter";
 
 /// Serialisation shim for the rule's `dylint.toml` configuration, which
 /// the test crate cannot build from the lint's own private `Config`.
-#[derive(Default, serde::Serialize)]
+#[derive(serde::Serialize)]
 struct RuleConfig {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    measure_unmatched_names: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    extra_exempt_prefixes: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    ignore_exempt_prefixes: Option<Vec<String>>,
+    getter_name_patterns: Vec<String>,
 }
 
-fn dylint_toml(config: RuleConfig) -> String {
+fn dylint_toml(patterns: &[&str]) -> String {
+    let config = RuleConfig {
+        getter_name_patterns: patterns.iter().copied().map(str::to_owned).collect(),
+    };
     let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
     toml::to_string(&table).expect("serialise rule config as dylint.toml")
 }
 
-#[test]
-fn unmatched_names_admits_an_unrelated_name() {
-    let fixtures = _utils::copy_fixtures_with_directives(
-        env!("CARGO_MANIFEST_DIR"),
-        "ui-toml/cloning_getter/unmatched_names",
-    );
+fn run_patterns(fixture_dir: &str, patterns: &[&str]) {
+    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), fixture_dir);
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
-        .dylint_toml(dylint_toml(RuleConfig {
-            measure_unmatched_names: Some(true),
-            ..RuleConfig::default()
-        }))
+        .dylint_toml(dylint_toml(patterns))
         .run();
 }
 
 #[test]
-fn the_exempt_prefix_roster_is_configurable() {
-    let fixtures = _utils::copy_fixtures_with_directives(
-        env!("CARGO_MANIFEST_DIR"),
-        "ui-toml/cloning_getter/exempt_prefixes",
+fn a_later_pattern_overrides_an_earlier_one() {
+    run_patterns(
+        "ui-toml/cloning_getter/measured_by_pattern",
+        &["*", "!clone_*"],
     );
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
-        .dylint_toml(dylint_toml(RuleConfig {
-            measure_unmatched_names: Some(true),
-            extra_exempt_prefixes: Some(vec!["copy_".to_owned()]),
-            ignore_exempt_prefixes: Some(vec!["cloned_".to_owned()]),
-        }))
-        .run();
+}
+
+#[test]
+fn a_leading_negation_leaves_only_what_follows_it() {
+    run_patterns("ui-toml/cloning_getter/only_the_named", &["!*", "get_*"]);
 }
 
 /// A library with a cloning getter in production code and another in a
