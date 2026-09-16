@@ -4,8 +4,8 @@ warning: `into_name` copies `self.name`, but `into_` promises to consume it
 LL |     fn into_name(&self) -> String {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: take `self` by value and move the field out, so the caller gets a value of their own and the original ends where the name says it does
-   = help: or return `&str` and rename it `as_*`, if the caller only needs to read it
+   = help: either stop it borrowing: take `self` by value and move the field out, so the caller gets a value of their own and the original ends where the name says it does
+   = help: or stop it being an `into_*`: return `&str` and rename it `as_*`, if the caller only needs to read it
    = note: `#[warn(perfectionist::non_consuming_into_conversion)]` on by default
 
 warning: `into_name_ref` returns a borrow of `self`, but `into_` promises to consume it
@@ -14,7 +14,8 @@ warning: `into_name_ref` returns a borrow of `self`, but `into_` promises to con
 LL |     fn into_name_ref(&self) -> &str {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: take `self` by value and move the field out, so the caller gets a value of their own and the original ends where the name says it does
+   = help: either stop it borrowing: take `self` by value and move the field out, so the caller gets a value of their own and the original ends where the name says it does
+   = help: or stop it being an `into_*`: rename it `as_*`, the prefix for a conversion that hands back a borrow
 
 warning: `into_owned_ref` returns a borrow of `self`, but `into_` promises to consume it
   --> $DIR/non_consuming_into_conversion.rs:LL:CC
@@ -22,6 +23,7 @@ warning: `into_owned_ref` returns a borrow of `self`, but `into_` promises to co
 LL |     fn into_owned_ref(&self) -> &str {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: take `self` by value and move the field out, so the caller gets a value of their own and the original ends where the name says it does
+   = help: either stop it borrowing: take `self` by value and move the field out, so the caller gets a value of their own and the original ends where the name says it does
+   = help: or stop it being an `into_*`: rename it `as_*`, the prefix for a conversion that hands back a borrow
 
 warning: N warnings emitted

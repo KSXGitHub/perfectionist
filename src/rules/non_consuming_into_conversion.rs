@@ -93,10 +93,19 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::non_consuming_into_conversion";
 
-/// The fix both halves share: take `self` by value and move the field
-/// out, which is what the prefix said would happen.
-const CONSUME_HELP: &str = "take `self` by value and move the field out, so the caller gets a \
-                            value of their own and the original ends where the name says it does";
+/// The first of the two remedies, shared by both halves. A violation is
+/// a method that fails to consume *and* carries the `into_` prefix, so
+/// dropping either half resolves it: this one drops the failure to
+/// consume, the second drops the prefix.
+const CONSUME_HELP: &str = "either stop it borrowing: take `self` by value and move the field \
+                            out, so the caller gets a value of their own and the original ends \
+                            where the name says it does";
+
+/// The second remedy for the borrowing half: the return type may be
+/// right and the prefix wrong, and `as_*` is the prefix for handing back
+/// a borrow that costs nothing.
+const RENAME_HELP: &str = "or stop it being an `into_*`: rename it `as_*`, the prefix for a \
+                           conversion that hands back a borrow";
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
@@ -176,6 +185,7 @@ impl<'tcx> LateLintPass<'tcx> for NonConsumingIntoConversion {
                 ),
                 |diag| {
                     diag.help(CONSUME_HELP);
+                    diag.help(RENAME_HELP);
                 },
             );
             return;
@@ -194,7 +204,8 @@ impl<'tcx> LateLintPass<'tcx> for NonConsumingIntoConversion {
             |diag| {
                 diag.help(CONSUME_HELP);
                 diag.help(format!(
-                    "or return `{}` and rename it `as_*`, if the caller only needs to read it",
+                    "or stop it being an `into_*`: return `{}` and rename it `as_*`, if the \
+                     caller only needs to read it",
                     borrowed_form(cx, field_ty),
                 ));
             },

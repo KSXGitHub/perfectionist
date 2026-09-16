@@ -92,11 +92,12 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::cloning_as_conversion";
 
-/// The second fix, which the getter rule has no equivalent of: `as_*`
-/// carries a promise about cost, and renaming keeps the copy while
-/// making it honest.
-const RENAME_HELP: &str = "or keep the copy and name it `to_*`, the prefix for a conversion that \
-                           costs something, so the call site shows what it pays";
+/// The second of the two remedies. A violation is a method that both
+/// copies *and* carries the `as_` prefix, so dropping either half
+/// resolves it: the first help drops the copy, this one drops the
+/// prefix, keeping the copy and making the name admit it.
+const RENAME_HELP: &str = "or stop it being an `as_*`: rename it `to_*`, the prefix for a \
+                           conversion that costs something, so the call site shows what it pays";
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
@@ -173,7 +174,8 @@ impl<'tcx> LateLintPass<'tcx> for CloningAsConversion {
             format!("`{method}` copies `self.{field}`, but `as_` promises a free conversion"),
             |diag| {
                 diag.help(format!(
-                    "return `{}`, which costs nothing and is what the name promises",
+                    "either stop it copying: return `{}`, which costs nothing and is what the \
+                     name promises",
                     borrowed_form(cx, field_ty),
                 ));
                 diag.help(RENAME_HELP);

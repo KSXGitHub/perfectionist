@@ -4,8 +4,8 @@ warning: `as_name` copies `self.name`, but `as_` promises a free conversion
 LL |     fn as_name(&self) -> String {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: return `&str`, which costs nothing and is what the name promises
-   = help: or keep the copy and name it `to_*`, the prefix for a conversion that costs something, so the call site shows what it pays
+   = help: either stop it copying: return `&str`, which costs nothing and is what the name promises
+   = help: or stop it being an `as_*`: rename it `to_*`, the prefix for a conversion that costs something, so the call site shows what it pays
    = note: `#[warn(perfectionist::cloning_as_conversion)]` on by default
 
 warning: `as_home` copies `self.home`, but `as_` promises a free conversion
@@ -14,8 +14,8 @@ warning: `as_home` copies `self.home`, but `as_` promises a free conversion
 LL |     fn as_home(&self) -> PathBuf {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: return `&Path`, which costs nothing and is what the name promises
-   = help: or keep the copy and name it `to_*`, the prefix for a conversion that costs something, so the call site shows what it pays
+   = help: either stop it copying: return `&Path`, which costs nothing and is what the name promises
+   = help: or stop it being an `as_*`: rename it `to_*`, the prefix for a conversion that costs something, so the call site shows what it pays
 
 warning: `as_tags` copies `self.tags`, but `as_` promises a free conversion
   --> $DIR/cloning_as_conversion.rs:LL:CC
@@ -23,7 +23,7 @@ warning: `as_tags` copies `self.tags`, but `as_` promises a free conversion
 LL |     fn as_tags(&self) -> Vec<String> {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: return `&[String]`, which costs nothing and is what the name promises
-   = help: or keep the copy and name it `to_*`, the prefix for a conversion that costs something, so the call site shows what it pays
+   = help: either stop it copying: return `&[String]`, which costs nothing and is what the name promises
+   = help: or stop it being an `as_*`: rename it `to_*`, the prefix for a conversion that costs something, so the call site shows what it pays
 
 warning: N warnings emitted
