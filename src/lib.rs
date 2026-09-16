@@ -35,6 +35,7 @@ mod macro_template;
 mod markdown;
 mod measured_fn;
 mod module_reparse;
+mod name_pattern;
 mod rule_index;
 mod rules;
 mod test_code;
