@@ -36,7 +36,7 @@ declare_tool_lint! {
     ///    so the copy is the name's business rather than this rule's.
     /// 2. `get_*` is a getter.
     /// 3. A method named for a field of `self` is a getter.
-    /// 4. Any other name is a getter only where `measure_any_method_name`
+    /// 4. Any other name is a getter only where `measure_unmatched_names`
     ///    says so.
     ///
     /// Every clause also requires the `&self` receiver and no other
@@ -120,10 +120,12 @@ const RENAME_HELP: &str = "or stop it being a getter: rename it `to_*`, the pref
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Whether a method whose name neither starts with `get_` nor names a
-    /// field of `self` is still treated as a getter. With this off, such a
-    /// method is left alone however its body reads. Defaults to `false`.
-    measure_any_method_name: bool,
+    /// Whether a method whose name neither starts with `get_` nor matches
+    /// a field of `self` is still treated as a getter. With this off, such
+    /// a method is left alone however its body reads. A conversion prefix
+    /// -- `to_*`, `into_*`, `as_*` -- is never a getter whatever this
+    /// says. Defaults to `false`.
+    measure_unmatched_names: bool,
     /// Whether test code is left alone: getters inside a `#[cfg(test)]`
     /// module or an integration-test or benchmark target. Defaults to
     /// `true`.
@@ -133,7 +135,7 @@ struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            measure_any_method_name: false,
+            measure_unmatched_names: false,
             exempt_tests: true,
         }
     }
@@ -220,7 +222,7 @@ impl CloningGetter {
     ///    measures the last of the three.
     /// 2. `get_*` is a getter.
     /// 3. A method named for a field of `self` is a getter.
-    /// 4. Any other name is a getter only where `measure_any_method_name`
+    /// 4. Any other name is a getter only where `measure_unmatched_names`
     ///    says so.
     ///
     /// Every clause also requires the single `&self` receiver, which the
@@ -236,6 +238,6 @@ impl CloningGetter {
         if has_field(self_ty, method) {
             return true;
         }
-        self.config.measure_any_method_name
+        self.config.measure_unmatched_names
     }
 }
