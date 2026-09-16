@@ -1,6 +1,7 @@
 use crate::common::DefaultState;
 use crate::field_copy::{COPYING_METHODS, FieldCopy, borrowed_form, field_copy, has_field};
 use crate::getter_name_pattern::{CONVERSION_PREFIXES, GetterNamePattern};
+use crate::name_pattern::verdict;
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
@@ -261,8 +262,8 @@ impl CloningGetter {
     ///    which is the API guidelines' to define rather than a
     ///    consumer's, so no pattern reaches these names.
     /// 2. The last `getter_name_patterns` entry matching the name says
-    ///    whether it is a getter. Scanning from the back is what makes
-    ///    a later entry override an earlier one.
+    ///    whether it is a getter. `crate::name_pattern::verdict` does
+    ///    the scan, and documents why it runs backwards.
     /// 3. A name no entry matches is a getter when it names a field of
     ///    `self`. This is the clause the list is written against: an
     ///    entry is how a consumer says a name is a getter the field
@@ -279,15 +280,7 @@ impl CloningGetter {
         {
             return false;
         }
-        if let Some(pattern) = self
-            .config
-            .getter_name_patterns
-            .iter()
-            .rev()
-            .find(|pattern| pattern.matches(name))
-        {
-            return pattern.selects();
-        }
-        has_field(self_ty, method)
+        verdict(&self.config.getter_name_patterns, name)
+            .unwrap_or_else(|| has_field(self_ty, method))
     }
 }
