@@ -1,4 +1,5 @@
-use crate::common::DefaultState;
+use crate::common::{DefaultState, resolve_string_set};
+use crate::exempt_prefix::ExemptPrefix;
 use crate::field_copy::{COPYING_METHODS, FieldCopy, borrowed_form, field_copy, has_field};
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
@@ -10,6 +11,7 @@ use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_middle::ty::Ty;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Span, Symbol};
+use std::collections::BTreeSet;
 
 declare_tool_lint! {
     /// ### What it does
@@ -35,9 +37,12 @@ declare_tool_lint! {
     ///    The first two announce that they cost something, so the copy is
     ///    part of what the name promises; `as_*` promises the opposite,
     ///    and `perfectionist::cloning_as_conversion` measures it.
-    /// 2. `get_*` is a getter.
-    /// 3. A method named for a field of `self` is a getter.
-    /// 4. Any other name is a getter only where `measure_unmatched_names`
+    /// 2. A name carrying an exempt prefix -- `clone_*` and `cloned_*`
+    ///    by default, configurable -- is never a getter either: the name
+    ///    already tells a caller the copy is there.
+    /// 3. `get_*` is a getter.
+    /// 4. A method named for a field of `self` is a getter.
+    /// 5. Any other name is a getter only where `measure_unmatched_names`
     ///    says so.
     ///
     /// Every clause also requires the `&self` receiver and no other
@@ -102,6 +107,12 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::cloning_getter";
 
+/// Name prefixes that keep a method out of the rule whatever its body
+/// does, because the name already tells a caller the copy is there.
+/// Unlike the conversion prefixes, which the API guidelines define,
+/// these are a convention a project chooses, so they are configurable.
+const DEFAULT_EXEMPT_PREFIXES: &[&str] = &["clone_", "cloned_"];
+
 /// The second of the two remedies. A violation is a method that both
 /// clones *and* is a getter, so dropping either half resolves it: the
 /// first help drops the clone, this one drops the getter.
@@ -122,11 +133,24 @@ const RENAME_HELP: &str = "or stop it being a getter: rename it `to_*`, the pref
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
+    /// Additional name prefixes that keep a method out of the rule,
+    /// whatever its body does and whatever `measure_unmatched_names`
+    /// says. Merged with the built-in defaults (`["clone_", "cloned_"]`);
+    /// empty by default. Each entry ends in `_` and is not one of the
+    /// conversion prefixes `as_`, `into_`, `to_`, which the rule exempts
+    /// whatever this says; anything else is rejected at config-parse
+    /// time.
+    extra_exempt_prefixes: Vec<ExemptPrefix>,
+    /// Prefixes to drop from the exempt set, even if they appear in the
+    /// built-in defaults or in `extra_exempt_prefixes`. Empty by default;
+    /// checked after the merge, so this knob always wins. Each entry is
+    /// shaped as `extra_exempt_prefixes` requires.
+    ignore_exempt_prefixes: Vec<ExemptPrefix>,
     /// Whether a method whose name neither starts with `get_` nor matches
     /// a field of `self` is still treated as a getter. With this off, such
     /// a method is left alone however its body reads. A conversion prefix
-    /// -- `to_*`, `into_*`, `as_*` -- is never a getter whatever this
-    /// says. Defaults to `false`.
+    /// -- `to_*`, `into_*`, `as_*` -- and an exempt prefix are never
+    /// getters whatever this says. Defaults to `false`.
     measure_unmatched_names: bool,
     /// Whether test code is left alone: getters inside a `#[cfg(test)]`
     /// module or an integration-test or benchmark target. Defaults to
@@ -137,6 +161,8 @@ struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            extra_exempt_prefixes: Vec::new(),
+            ignore_exempt_prefixes: Vec::new(),
             measure_unmatched_names: false,
             exempt_tests: true,
         }
@@ -145,6 +171,7 @@ impl Default for Config {
 
 pub struct CloningGetter {
     config: Config,
+    exempt_prefixes: BTreeSet<String>,
     copying_methods: Vec<Symbol>,
 }
 
@@ -159,8 +186,25 @@ impl Register for rule::CloningGetter {
 
     fn register_pass(lint_store: &mut LintStore) {
         lint_store.register_late_lint_pass(Box::new(|_| {
+            let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+            let exempt_prefixes = resolve_string_set(
+                DEFAULT_EXEMPT_PREFIXES,
+                config
+                    .extra_exempt_prefixes
+                    .iter()
+                    .cloned()
+                    .map(String::from)
+                    .collect(),
+                config
+                    .ignore_exempt_prefixes
+                    .iter()
+                    .cloned()
+                    .map(String::from)
+                    .collect(),
+            );
             Box::new(CloningGetter {
-                config: dylint_linting::config_or_default(CONFIG_KEY),
+                config,
+                exempt_prefixes,
                 copying_methods: COPYING_METHODS
                     .iter()
                     .map(|name| Symbol::intern(name))
@@ -219,12 +263,15 @@ impl CloningGetter {
     /// applies decides:
     ///
     /// 1. `to_*`, `into_*` and `as_*` are conversions, never getters.
-    ///    `to_*` and `into_*` announce that they cost something, and
-    ///    `as_*` promises the opposite; `perfectionist::cloning_as_conversion`
-    ///    measures the last of the three.
-    /// 2. `get_*` is a getter.
-    /// 3. A method named for a field of `self` is a getter.
-    /// 4. Any other name is a getter only where `measure_unmatched_names`
+    ///    Each prefix carries its own promise about cost and ownership.
+    /// 2. A name carrying an exempt prefix is never a getter either. The
+    ///    default roster is `clone_` and `cloned_`, which say outright
+    ///    that the method copies; unlike clause 1's prefixes, which the
+    ///    API guidelines define, this one is a project's own convention
+    ///    and so is configurable.
+    /// 3. `get_*` is a getter.
+    /// 4. A method named for a field of `self` is a getter.
+    /// 5. Any other name is a getter only where `measure_unmatched_names`
     ///    says so.
     ///
     /// Every clause also requires the single `&self` receiver, which the
@@ -232,6 +279,13 @@ impl CloningGetter {
     fn is_getter(&self, method: Symbol, self_ty: Ty<'_>) -> bool {
         let name = method.as_str();
         if name.starts_with("to_") || name.starts_with("into_") || name.starts_with("as_") {
+            return false;
+        }
+        if self
+            .exempt_prefixes
+            .iter()
+            .any(|prefix| name.starts_with(prefix.as_str()))
+        {
             return false;
         }
         if name.starts_with("get_") {
