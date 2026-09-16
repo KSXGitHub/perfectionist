@@ -108,11 +108,13 @@ impl Person {
     }
 
     // Good: `into_*` likewise announces that it costs something.
+    #[expect(perfectionist::non_consuming_into_conversion, reason = "exercises cloning_getter")]
     fn into_first_name(&self) -> String {
         self.first_name.clone()
     }
 
     // Good: `as_*` promises the opposite, and has its own rule.
+    #[expect(perfectionist::cloning_as_conversion, reason = "exercises cloning_getter")]
     fn as_first_name(&self) -> String {
         self.first_name.clone()
     }

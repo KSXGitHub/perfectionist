@@ -1,11 +1,10 @@
 //! Recognising a method whose whole body copies one field of `self`.
 //!
-//! Two rules share this shape and differ only in what they conclude
-//! from the method's name. `cloning_getter` reads it as a getter that
-//! should have handed back a borrow; `cloning_as_conversion` reads it
-//! as an `as_*` conversion that its own prefix promised would be free.
-//! Keeping the recognition here means the two agree on what counts,
-//! so a method cannot fall between them or be reported by both.
+//! What a method's name then makes of that shape is the caller's
+//! business: `cloning_getter` reads it as a getter that should have
+//! handed back a borrow. Keeping the recognition in one place means
+//! every rule that consults it agrees on what counts, so a method
+//! cannot fall between two of them or be reported by both.
 //!
 //! The recognised shape is narrow on purpose: an inherent method
 //! taking `&self` and nothing else, whose body -- once statement-free

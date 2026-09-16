@@ -34,12 +34,13 @@ impl Person {
         self.age.clone()
     }
 
-    // Good: not the `into_` prefix.
+    // Not flagged: not the `into_` prefix.
     fn internal_name(&self) -> String {
         self.name.clone()
     }
 
-    // Good: `into` without the underscore is not the prefix either.
+    // Not flagged: `into` without the underscore is not the prefix,
+    // which pins the boundary.
     fn intonation(&self) -> String {
         self.name.clone()
     }
