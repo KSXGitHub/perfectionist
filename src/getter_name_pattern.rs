@@ -2,8 +2,8 @@
 //! [`NamePattern`] that may not name a conversion prefix.
 //!
 //! The rule answers for `as_*`, `to_*` and `into_*` in a clause above
-//! its pattern list, so an entry naming one of them -- or any longer
-//! prefix under one, such as `as_ref_*` -- covers only names that
+//! its pattern list, so an entry naming one of them — or any longer
+//! prefix under one, such as `as_ref_*` — covers only names that
 //! clause has already decided, and could not change an outcome
 //! whatever verdict it carried. Rejecting it at config-parse time says
 //! so; accepting it would leave a consumer with a knob that silently

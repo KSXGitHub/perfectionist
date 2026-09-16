@@ -14,7 +14,7 @@ declare_tool_lint! {
     /// ### What it does
     ///
     /// Flags an inherent `to_*` method taking `&self` that returns a
-    /// reference -- `&T`, or an `Option<&T>` -- and asks for the `as_*`
+    /// reference — `&T`, or an `Option<&T>` — and asks for the `as_*`
     /// prefix instead.
     ///
     /// A method of a trait impl is left alone, since the trait fixes its
@@ -33,7 +33,7 @@ declare_tool_lint! {
     /// ### Interaction with Clippy
     ///
     /// `clippy::wrong_self_convention` checks these same prefixes against
-    /// the method's *receiver* -- whether `to_*` takes `&self`. It does
+    /// the method's *receiver* — whether `to_*` takes `&self`. It does
     /// not look at the return type, so a `to_*` that takes `&self` and
     /// returns a borrow satisfies it.
     ///
