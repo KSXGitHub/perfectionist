@@ -1,4 +1,5 @@
 use super::GetterNamePattern;
+use crate::name_pattern::verdict;
 
 fn parse(pattern: &str) -> Result<GetterNamePattern, String> {
     GetterNamePattern::try_from(pattern.to_owned())
@@ -12,10 +13,11 @@ fn rejection(pattern: &str) -> String {
 
 #[test]
 fn a_well_formed_pattern_comes_through_the_wrapper() {
-    let pattern = parse("get_*").expect("`get_*` should parse");
-    assert!(pattern.matches("get_name"));
-    assert!(pattern.selects());
-    assert!(!pattern.matches("name"));
+    // The wrapper adds the ban and nothing else, so a list of these
+    // resolves through the same scan a bare `NamePattern` list does.
+    let patterns = [parse("get_*").expect("`get_*` should parse")];
+    assert_eq!(verdict(&patterns, "get_name"), Some(true));
+    assert_eq!(verdict(&patterns, "name"), None);
 }
 
 #[test]

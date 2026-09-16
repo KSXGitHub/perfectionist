@@ -211,5 +211,39 @@ impl ScopeError {
     }
 }
 
+/// A type that resolves to one [`NamePattern`]: the pattern itself, or
+/// a rule's own newtype over it. [`verdict`] is generic over this so a
+/// rule resolves its list without re-implementing the scan.
+pub(crate) trait AsNamePattern {
+    fn as_name_pattern(&self) -> &NamePattern;
+}
+
+impl AsNamePattern for NamePattern {
+    fn as_name_pattern(&self) -> &NamePattern {
+        self
+    }
+}
+
+/// The verdict `patterns` carries for `name`: what the last entry
+/// covering the name says, or `None` where no entry covers it and the
+/// caller's own fallthrough decides.
+///
+/// Scanning from the back is the list's whole semantics — a later
+/// entry overrides an earlier one — so it lives here rather than at
+/// each call site, where a forward scan would read the same and mean
+/// first-match-wins.
+///
+/// An entry's `!` is not part of what it covers: `clone_*` and
+/// `!clone_*` cover the same names and differ only in the answer they
+/// give for them, so both take their turn at the same point in the
+/// scan.
+pub(crate) fn verdict<Pattern: AsNamePattern>(patterns: &[Pattern], name: &str) -> Option<bool> {
+    patterns
+        .iter()
+        .rev()
+        .find(|pattern| pattern.as_name_pattern().matches(name))
+        .map(|pattern| pattern.as_name_pattern().selects())
+}
+
 #[cfg(test)]
 mod tests;
