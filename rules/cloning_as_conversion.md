@@ -16,10 +16,16 @@ for the borrowed form instead: `&str` for a `String` field,
 `&Path` for a `PathBuf`, `&OsStr` for an `OsString`, `&[T]` for a
 `Vec<T>`, `Option<&T>` for an `Option<T>`, `&T` otherwise.
 
-A method returning a `Copy` value is left alone, and so is one
-that moves a field out rather than copying it: both are free, and
-free is what the prefix promises. So is a method of a trait impl,
-since the trait fixes its signature, and one produced by a macro.
+The call has to reproduce the field's own type for a borrow to
+serve in its place. So a `Copy` field is left alone -- handing one
+back by value costs nothing, which is what the prefix promises --
+and so is a call that renders the field rather than copying it,
+such as `to_string` on a numeric field, where no borrow of the
+field is a `String`.
+
+Only a method taking `&self` and nothing else is measured. A
+method of a trait impl is left alone, since the trait fixes its
+signature, and so is one produced by a macro.
 
 Test code is left alone; set `exempt_tests` to `false` to
 measure it like any other code.
