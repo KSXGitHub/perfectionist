@@ -112,14 +112,18 @@ about the names left over. Each takes one of four forms:
 - `!prefix_*` — no other name starting with `prefix_` is a
   getter.
 
-The last entry that matches a name is the one that decides, so a
-later entry overrides an earlier one: `["*", "!clone_*"]`
-measures every other name but the `clone_*` ones. A name no
-entry matches at all is not a getter.
+The first entry is `*` or `!*`, which says what every other name
+means before the rest of the list narrows it; a list that opened
+with a prefix would leave the names it does not mention resting
+on a baseline the reader has to know, so one is rejected. The
+last entry that matches a name is then the one that decides, so
+a later entry overrides an earlier one: `["*", "!clone_*"]`
+measures every other name but the `clone_*` ones, and
+`["!*", "get_*"]` measures the `get_*` ones and nothing else.
 
-Defaults to `["get_*"]`: a `get_*` method is a getter whatever
-it is named after, and no other name is, leaving the
-field-named ones to the rule itself.
+Defaults to `["!*", "get_*"]`: no name beyond the field-named
+ones is a getter, except a `get_*` one, which is whatever field
+it reads.
 
 `as_*`, `to_*` and `into_*` are conversions, which the rule
 never measures whatever this says. No entry may name one, or any

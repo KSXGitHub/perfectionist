@@ -1,7 +1,6 @@
 use crate::common::DefaultState;
 use crate::field_copy::{COPYING_METHODS, FieldCopy, borrowed_form, field_copy, has_field};
-use crate::getter_name_pattern::{CONVERSION_PREFIXES, GetterNamePattern};
-use crate::name_pattern::verdict;
+use crate::getter_name_patterns::{CONVERSION_PREFIXES, GetterNamePatterns};
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
@@ -106,17 +105,11 @@ declare_tool_lint! {
 const CONFIG_KEY: &str = "perfectionist::cloning_getter";
 
 /// The patterns in force when the knob is unset, in the spelling a
-/// consumer writes them in. `get_*` is the one name shape that says
-/// "getter" on its own, whatever field it reads; every other name is
-/// left to the field convention, which the list cannot reach.
-///
-/// A `!clone_*` / `!cloned_*` pair used to sit here, to keep the rule
-/// off a name that says outright that it copies. It bought nothing
-/// once the field convention stopped being overridable: such a name
-/// either matches a field, where clause 2 decides it and no entry is
-/// consulted, or does not, where no entry covers it and it is already
-/// not a getter.
-const DEFAULT_GETTER_NAME_PATTERNS: &[&str] = &["get_*"];
+/// consumer writes them in. The `!*` is the baseline every list states
+/// for itself: no name beyond the ones the rule settles is a getter.
+/// `get_*` is the one it takes back, being the name shape that says
+/// "getter" on its own whatever field it reads.
+const DEFAULT_GETTER_NAME_PATTERNS: &[&str] = &["!*", "get_*"];
 
 /// The second of the two remedies. A violation is a method that both
 /// clones *and* is a getter, so dropping either half resolves it: the
@@ -149,21 +142,25 @@ struct Config {
     /// - `!prefix_*` — no other name starting with `prefix_` is a
     ///   getter.
     ///
-    /// The last entry that matches a name is the one that decides, so a
-    /// later entry overrides an earlier one: `["*", "!clone_*"]`
-    /// measures every other name but the `clone_*` ones. A name no
-    /// entry matches at all is not a getter.
+    /// The first entry is `*` or `!*`, which says what every other name
+    /// means before the rest of the list narrows it; a list that opened
+    /// with a prefix would leave the names it does not mention resting
+    /// on a baseline the reader has to know, so one is rejected. The
+    /// last entry that matches a name is then the one that decides, so
+    /// a later entry overrides an earlier one: `["*", "!clone_*"]`
+    /// measures every other name but the `clone_*` ones, and
+    /// `["!*", "get_*"]` measures the `get_*` ones and nothing else.
     ///
-    /// Defaults to `["get_*"]`: a `get_*` method is a getter whatever
-    /// it is named after, and no other name is, leaving the
-    /// field-named ones to the rule itself.
+    /// Defaults to `["!*", "get_*"]`: no name beyond the field-named
+    /// ones is a getter, except a `get_*` one, which is whatever field
+    /// it reads.
     ///
     /// `as_*`, `to_*` and `into_*` are conversions, which the rule
     /// never measures whatever this says. No entry may name one, or any
     /// longer prefix under one; such an entry could not change an
     /// outcome, and is rejected at config-parse time rather than
     /// silently doing nothing.
-    getter_name_patterns: Vec<GetterNamePattern>,
+    getter_name_patterns: GetterNamePatterns,
     /// Whether test code is left alone: getters inside a `#[cfg(test)]`
     /// module or an integration-test or benchmark target. Defaults to
     /// `true`.
@@ -173,13 +170,14 @@ struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            getter_name_patterns: DEFAULT_GETTER_NAME_PATTERNS
-                .iter()
-                .map(|pattern| {
-                    GetterNamePattern::try_from((*pattern).to_owned())
-                        .expect("a built-in default pattern is well-formed")
-                })
-                .collect(),
+            getter_name_patterns: GetterNamePatterns::try_from(
+                DEFAULT_GETTER_NAME_PATTERNS
+                    .iter()
+                    .copied()
+                    .map(str::to_owned)
+                    .collect::<Vec<String>>(),
+            )
+            .expect("the built-in default list is well-formed"),
             exempt_tests: true,
         }
     }
@@ -285,6 +283,6 @@ impl CloningGetter {
         if has_field(self_ty, method) {
             return true;
         }
-        verdict(&self.config.getter_name_patterns, name).unwrap_or(false)
+        self.config.getter_name_patterns.says_getter(name)
     }
 }
