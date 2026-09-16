@@ -13,7 +13,7 @@
 //! lives in a newtype here rather than in [`crate::name_pattern`]: a
 //! list belonging to some other rule has no reason to carry it.
 
-use crate::name_pattern::NamePattern;
+use crate::name_pattern::{AsNamePattern, NamePattern};
 
 /// TOML-flavoured type label for [`GetterNamePattern`], surfaced by
 /// `tools/gen-docs` in the per-rule field-type column. Sourced here —
@@ -43,16 +43,9 @@ pub(crate) const CONVERSION_PREFIXES: &[&str] = &["as_", "into_", "to_"];
 #[serde(try_from = "String")]
 pub(crate) struct GetterNamePattern(NamePattern);
 
-impl GetterNamePattern {
-    /// Whether this pattern has anything to say about `name`.
-    pub(crate) fn matches(&self, name: &str) -> bool {
-        self.0.matches(name)
-    }
-
-    /// The verdict this pattern carries for a name it matches: whether
-    /// that name is a getter.
-    pub(crate) fn selects(&self) -> bool {
-        self.0.selects()
+impl AsNamePattern for GetterNamePattern {
+    fn as_name_pattern(&self) -> &NamePattern {
+        &self.0
     }
 }
 
