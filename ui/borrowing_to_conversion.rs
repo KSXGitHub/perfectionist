@@ -49,23 +49,27 @@ impl Person {
         self.age
     }
 
-    // Good: `as_*` is the right prefix for a free conversion.
+    // Not flagged: not the `to_` prefix. `as_*` is the right prefix
+    // for a free conversion, but that is not this rule's business.
     fn as_name(&self) -> &str {
         &self.name
     }
 
-    // Good: not the `to_` prefix.
+    // Not flagged: not the `to_` prefix, though `to` without the
+    // underscore is close enough to pin the boundary.
     fn token(&self) -> &str {
         &self.name
     }
 
-    // Good: takes an argument, so it is not a conversion of `self`.
+    // Not flagged: takes an argument, so it is not a conversion of
+    // `self`. The return type is the shape this rule fires on, so this
+    // pins that the arity requirement is what excludes it.
     fn to_name_or(&self, fallback: &str) -> &str {
         &self.name
     }
 }
 
-// Good: a trait fixes the signature.
+// Not flagged: a trait fixes the signature, so the impl cannot change it.
 trait ToName {
     fn to_name(&self) -> &str;
 }
