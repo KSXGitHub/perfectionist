@@ -1,6 +1,6 @@
 //! Integration tests for `cloning_getter`'s configuration.
 //!
-//! `measure_any_method_name` is covered by a UI fixture under
+//! `measure_unmatched_names` is covered by a UI fixture under
 //! `ui-toml/cloning_getter/` run with a per-rule `dylint.toml`.
 //! `exempt_tests`
 //! which needs `#[cfg(test)]` code to exist and so runs a minimal Cargo
@@ -21,7 +21,11 @@ const LINT_NAME: &str = "perfectionist::cloning_getter";
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    measure_any_method_name: Option<bool>,
+    measure_unmatched_names: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    extra_exempt_prefixes: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ignore_exempt_prefixes: Option<Vec<String>>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -30,14 +34,30 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 #[test]
-fn any_method_name_admits_an_unrelated_name() {
+fn unmatched_names_admits_an_unrelated_name() {
     let fixtures = _utils::copy_fixtures_with_directives(
         env!("CARGO_MANIFEST_DIR"),
-        "ui-toml/cloning_getter/any_method_name",
+        "ui-toml/cloning_getter/unmatched_names",
     );
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
         .dylint_toml(dylint_toml(RuleConfig {
-            measure_any_method_name: Some(true),
+            measure_unmatched_names: Some(true),
+            ..RuleConfig::default()
+        }))
+        .run();
+}
+
+#[test]
+fn the_exempt_prefix_roster_is_configurable() {
+    let fixtures = _utils::copy_fixtures_with_directives(
+        env!("CARGO_MANIFEST_DIR"),
+        "ui-toml/cloning_getter/exempt_prefixes",
+    );
+    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+        .dylint_toml(dylint_toml(RuleConfig {
+            measure_unmatched_names: Some(true),
+            extra_exempt_prefixes: Some(vec!["copy_".to_owned()]),
+            ignore_exempt_prefixes: Some(vec!["cloned_".to_owned()]),
         }))
         .run();
 }
