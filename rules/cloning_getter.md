@@ -98,22 +98,26 @@ Configure via `dylint.toml` under `["perfectionist::cloning_getter"]`. Every fie
 
 ### Field: `extra_exempt_prefixes`
 
-- _Type:_ `[string]`
+- _Type:_ `[identifier-prefix string]`
 - _Optional_
 
 Additional name prefixes that keep a method out of the rule,
 whatever its body does and whatever `measure_unmatched_names`
 says. Merged with the built-in defaults (`["clone_", "cloned_"]`);
-empty by default.
+empty by default. Each entry ends in `_` and is not one of the
+conversion prefixes `as_`, `into_`, `to_`, which the rule exempts
+whatever this says; anything else is rejected at config-parse
+time.
 
 ### Field: `ignore_exempt_prefixes`
 
-- _Type:_ `[string]`
+- _Type:_ `[identifier-prefix string]`
 - _Optional_
 
 Prefixes to drop from the exempt set, even if they appear in the
 built-in defaults or in `extra_exempt_prefixes`. Empty by default;
-checked after the merge, so this knob always wins.
+checked after the merge, so this knob always wins. Each entry is
+shaped as `extra_exempt_prefixes` requires.
 
 ### Field: `measure_unmatched_names`
 

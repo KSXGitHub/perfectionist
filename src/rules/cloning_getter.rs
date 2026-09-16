@@ -1,4 +1,5 @@
 use crate::common::{DefaultState, resolve_string_set};
+use crate::exempt_prefix::ExemptPrefix;
 use crate::field_copy::{COPYING_METHODS, FieldCopy, borrowed_form, field_copy, has_field};
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
@@ -133,12 +134,16 @@ struct Config {
     /// Additional name prefixes that keep a method out of the rule,
     /// whatever its body does and whatever `measure_unmatched_names`
     /// says. Merged with the built-in defaults (`["clone_", "cloned_"]`);
-    /// empty by default.
-    extra_exempt_prefixes: Vec<String>,
+    /// empty by default. Each entry ends in `_` and is not one of the
+    /// conversion prefixes `as_`, `into_`, `to_`, which the rule exempts
+    /// whatever this says; anything else is rejected at config-parse
+    /// time.
+    extra_exempt_prefixes: Vec<ExemptPrefix>,
     /// Prefixes to drop from the exempt set, even if they appear in the
     /// built-in defaults or in `extra_exempt_prefixes`. Empty by default;
-    /// checked after the merge, so this knob always wins.
-    ignore_exempt_prefixes: Vec<String>,
+    /// checked after the merge, so this knob always wins. Each entry is
+    /// shaped as `extra_exempt_prefixes` requires.
+    ignore_exempt_prefixes: Vec<ExemptPrefix>,
     /// Whether a method whose name neither starts with `get_` nor matches
     /// a field of `self` is still treated as a getter. With this off, such
     /// a method is left alone however its body reads. A conversion prefix
@@ -182,8 +187,18 @@ impl Register for rule::CloningGetter {
             let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
             let exempt_prefixes = resolve_string_set(
                 DEFAULT_EXEMPT_PREFIXES,
-                config.extra_exempt_prefixes.clone(),
-                config.ignore_exempt_prefixes.clone(),
+                config
+                    .extra_exempt_prefixes
+                    .iter()
+                    .cloned()
+                    .map(String::from)
+                    .collect(),
+                config
+                    .ignore_exempt_prefixes
+                    .iter()
+                    .cloned()
+                    .map(String::from)
+                    .collect(),
             );
             Box::new(CloningGetter {
                 config,

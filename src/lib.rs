@@ -26,6 +26,7 @@ mod comment_walk;
 mod common;
 mod derive_list;
 mod enclosing_hir;
+mod exempt_prefix;
 mod field_copy;
 mod format_template;
 mod literal_scan;
