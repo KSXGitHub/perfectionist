@@ -1,6 +1,6 @@
-use crate::common::{DefaultState, resolve_string_set};
-use crate::exempt_prefix::ExemptPrefix;
+use crate::common::DefaultState;
 use crate::field_copy::{COPYING_METHODS, FieldCopy, borrowed_form, field_copy, has_field};
+use crate::getter_name_pattern::{CONVERSION_PREFIXES, GetterNamePattern};
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
@@ -11,7 +11,6 @@ use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_middle::ty::Ty;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Span, Symbol};
-use std::collections::BTreeSet;
 
 declare_tool_lint! {
     /// ### What it does
@@ -37,13 +36,10 @@ declare_tool_lint! {
     ///    The first two announce that they cost something, so the copy is
     ///    part of what the name promises; `as_*` promises the opposite,
     ///    and `perfectionist::cloning_as_conversion` measures it.
-    /// 2. A name carrying an exempt prefix -- `clone_*` and `cloned_*`
-    ///    by default, configurable -- is never a getter either: the name
-    ///    already tells a caller the copy is there.
-    /// 3. `get_*` is a getter.
-    /// 4. A method named for a field of `self` is a getter.
-    /// 5. Any other name is a getter only where `measure_unmatched_names`
-    ///    says so.
+    /// 2. The last `getter_name_patterns` entry that matches the name
+    ///    says whether the name is a getter.
+    /// 3. A name no entry matches is a getter when it names a field of
+    ///    `self`.
     ///
     /// Every clause also requires the `&self` receiver and no other
     /// parameter.
@@ -107,11 +103,14 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::cloning_getter";
 
-/// Name prefixes that keep a method out of the rule whatever its body
-/// does, because the name already tells a caller the copy is there.
-/// Unlike the conversion prefixes, which the API guidelines define,
-/// these are a convention a project chooses, so they are configurable.
-const DEFAULT_EXEMPT_PREFIXES: &[&str] = &["clone_", "cloned_"];
+/// The patterns in force when the knob is unset, in the spelling a
+/// consumer writes them in. `get_*` is the one name shape that says
+/// "getter" on its own; the two negations keep the rule off a name
+/// that already says it copies, which the field match would otherwise
+/// read as a getter where a field carries the same prefix. Their
+/// order is the list's own idiom in miniature: a later entry overrides
+/// an earlier one, so the negations have to follow what they narrow.
+const DEFAULT_GETTER_NAME_PATTERNS: &[&str] = &["get_*", "!clone_*", "!cloned_*"];
 
 /// The second of the two remedies. A violation is a method that both
 /// clones *and* is a getter, so dropping either half resolves it: the
@@ -133,25 +132,31 @@ const RENAME_HELP: &str = "or stop it being a getter: rename it `to_*`, the pref
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Additional name prefixes that keep a method out of the rule,
-    /// whatever its body does and whatever `measure_unmatched_names`
-    /// says. Merged with the built-in defaults (`["clone_", "cloned_"]`);
-    /// empty by default. Each entry ends in `_` and is not one of the
-    /// conversion prefixes `as_`, `into_`, `to_`, which the rule exempts
-    /// whatever this says; anything else is rejected at config-parse
-    /// time.
-    extra_exempt_prefixes: Vec<ExemptPrefix>,
-    /// Prefixes to drop from the exempt set, even if they appear in the
-    /// built-in defaults or in `extra_exempt_prefixes`. Empty by default;
-    /// checked after the merge, so this knob always wins. Each entry is
-    /// shaped as `extra_exempt_prefixes` requires.
-    ignore_exempt_prefixes: Vec<ExemptPrefix>,
-    /// Whether a method whose name neither starts with `get_` nor matches
-    /// a field of `self` is still treated as a getter. With this off, such
-    /// a method is left alone however its body reads. A conversion prefix
-    /// -- `to_*`, `into_*`, `as_*` -- and an exempt prefix are never
-    /// getters whatever this says. Defaults to `false`.
-    measure_unmatched_names: bool,
+    /// Which method names are getters by name alone, as an ordered
+    /// list of patterns. Each entry takes one of four forms:
+    ///
+    /// - `*` -- every name is a getter.
+    /// - `prefix_*` -- every name starting with `prefix_` is a getter.
+    /// - `!*` -- no name is a getter.
+    /// - `!prefix_*` -- no name starting with `prefix_` is a getter.
+    ///
+    /// The last entry that matches a name is the one that decides, the
+    /// way a later `.gitignore` line overrides an earlier one. So
+    /// `["*", "!clone_*"]` measures every name but the `clone_*` ones,
+    /// and `["!*", "get_*"]` measures the `get_*` ones and nothing
+    /// else.
+    ///
+    /// A name no entry matches at all is a getter when it names a field
+    /// of `self`, so the list decides only the names it mentions and
+    /// leaves the rest to that. Defaults to
+    /// `["get_*", "!clone_*", "!cloned_*"]`.
+    ///
+    /// `as_*`, `to_*` and `into_*` are conversions, which the rule
+    /// never measures whatever this says. No entry may name one, or any
+    /// longer prefix under one; such an entry could not change an
+    /// outcome, and is rejected at config-parse time rather than
+    /// silently doing nothing.
+    getter_name_patterns: Vec<GetterNamePattern>,
     /// Whether test code is left alone: getters inside a `#[cfg(test)]`
     /// module or an integration-test or benchmark target. Defaults to
     /// `true`.
@@ -161,9 +166,13 @@ struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            extra_exempt_prefixes: Vec::new(),
-            ignore_exempt_prefixes: Vec::new(),
-            measure_unmatched_names: false,
+            getter_name_patterns: DEFAULT_GETTER_NAME_PATTERNS
+                .iter()
+                .map(|pattern| {
+                    GetterNamePattern::try_from((*pattern).to_owned())
+                        .expect("a built-in default pattern is well-formed")
+                })
+                .collect(),
             exempt_tests: true,
         }
     }
@@ -171,7 +180,6 @@ impl Default for Config {
 
 pub struct CloningGetter {
     config: Config,
-    exempt_prefixes: BTreeSet<String>,
     copying_methods: Vec<Symbol>,
 }
 
@@ -186,25 +194,8 @@ impl Register for rule::CloningGetter {
 
     fn register_pass(lint_store: &mut LintStore) {
         lint_store.register_late_lint_pass(Box::new(|_| {
-            let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-            let exempt_prefixes = resolve_string_set(
-                DEFAULT_EXEMPT_PREFIXES,
-                config
-                    .extra_exempt_prefixes
-                    .iter()
-                    .cloned()
-                    .map(String::from)
-                    .collect(),
-                config
-                    .ignore_exempt_prefixes
-                    .iter()
-                    .cloned()
-                    .map(String::from)
-                    .collect(),
-            );
             Box::new(CloningGetter {
-                config,
-                exempt_prefixes,
+                config: dylint_linting::config_or_default(CONFIG_KEY),
                 copying_methods: COPYING_METHODS
                     .iter()
                     .map(|name| Symbol::intern(name))
@@ -263,37 +254,37 @@ impl CloningGetter {
     /// applies decides:
     ///
     /// 1. `to_*`, `into_*` and `as_*` are conversions, never getters.
-    ///    Each prefix carries its own promise about cost and ownership.
-    /// 2. A name carrying an exempt prefix is never a getter either. The
-    ///    default roster is `clone_` and `cloned_`, which say outright
-    ///    that the method copies; unlike clause 1's prefixes, which the
-    ///    API guidelines define, this one is a project's own convention
-    ///    and so is configurable.
-    /// 3. `get_*` is a getter.
-    /// 4. A method named for a field of `self` is a getter.
-    /// 5. Any other name is a getter only where `measure_unmatched_names`
-    ///    says so.
+    ///    Each prefix carries its own promise about cost and ownership,
+    ///    which is the API guidelines' to define rather than a
+    ///    consumer's, so no pattern reaches these names.
+    /// 2. The last `getter_name_patterns` entry matching the name says
+    ///    whether it is a getter. Scanning from the back is what makes
+    ///    a later entry override an earlier one.
+    /// 3. A name no entry matches is a getter when it names a field of
+    ///    `self`. This is the clause the list is written against: an
+    ///    entry is how a consumer says a name is a getter the field
+    ///    match would have missed, or is not one the field match would
+    ///    have caught.
     ///
     /// Every clause also requires the single `&self` receiver, which the
     /// caller has already established.
     fn is_getter(&self, method: Symbol, self_ty: Ty<'_>) -> bool {
         let name = method.as_str();
-        if name.starts_with("to_") || name.starts_with("into_") || name.starts_with("as_") {
-            return false;
-        }
-        if self
-            .exempt_prefixes
+        if CONVERSION_PREFIXES
             .iter()
-            .any(|prefix| name.starts_with(prefix.as_str()))
+            .any(|conversion| name.starts_with(conversion))
         {
             return false;
         }
-        if name.starts_with("get_") {
-            return true;
+        if let Some(pattern) = self
+            .config
+            .getter_name_patterns
+            .iter()
+            .rev()
+            .find(|pattern| pattern.matches(name))
+        {
+            return pattern.selects();
         }
-        if has_field(self_ty, method) {
-            return true;
-        }
-        self.config.measure_unmatched_names
+        has_field(self_ty, method)
     }
 }
