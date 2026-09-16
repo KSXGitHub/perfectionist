@@ -1,11 +1,10 @@
 //! Recognising a method whose whole body copies one field of `self`.
 //!
-//! Two rules share this shape and differ only in what they conclude
-//! from the method's name. `cloning_getter` reads it as a getter that
-//! should have handed back a borrow; `cloning_as_conversion` reads it
-//! as an `as_*` conversion that its own prefix promised would be free.
-//! Keeping the recognition here means the two agree on what counts,
-//! so a method cannot fall between them or be reported by both.
+//! What a method's name then makes of that shape is the caller's
+//! business: `cloning_getter` reads it as a getter that should have
+//! handed back a borrow. Keeping the recognition in one place means
+//! every rule that consults it agrees on what counts, so a method
+//! cannot fall between two of them or be reported by both.
 //!
 //! The recognised shape is narrow on purpose: an inherent method
 //! taking `&self` and nothing else, whose body -- once statement-free
@@ -35,6 +34,54 @@ pub(crate) const COPYING_METHODS: &[&str] = &[
     "to_os_string",
 ];
 
+/// A method this family of rules may measure: an inherent method taking
+/// `&self` and nothing else, written by hand rather than by a macro.
+pub(crate) struct Eligible {
+    /// The method's own name, for the diagnostic.
+    pub(crate) method: Symbol,
+    /// The method's signature, without its body.
+    pub(crate) def_span: Span,
+}
+
+/// Whether this method is one the family may measure at all, separately
+/// from what its body or its return type says. A trait impl is excluded
+/// because the trait fixes the signature, and a macro-written method
+/// because no reader can change it.
+pub(crate) fn eligible_method<'tcx>(
+    cx: &LateContext<'tcx>,
+    kind: FnKind<'tcx>,
+    decl: &'tcx hir::FnDecl<'tcx>,
+    body: &'tcx hir::Body<'tcx>,
+    def_id: LocalDefId,
+) -> Option<Eligible> {
+    let FnKind::Method(ident, _) = kind else {
+        return None;
+    };
+    if !matches!(decl.implicit_self(), ImplicitSelfKind::RefImm) || decl.inputs.len() != 1 {
+        return None;
+    }
+    let def_span = cx.tcx.def_span(def_id);
+    let hir_id = cx.tcx.local_def_id_to_hir_id(def_id);
+    // A proc-macro derive can span a generated method over the field it
+    // reads, so the span alone cannot tell the two apart.
+    if def_span.from_expansion()
+        || hir_in_external_macro(cx, hir_id, def_span)
+        || clippy_utils::is_from_proc_macro(cx, &(&kind, body, hir_id, def_span))
+    {
+        return None;
+    }
+    // A trait fixes the signature of its methods.
+    if let Some(assoc) = cx.tcx.opt_associated_item(def_id.to_def_id())
+        && !matches!(assoc.container, AssocContainer::InherentImpl)
+    {
+        return None;
+    }
+    Some(Eligible {
+        method: ident.name,
+        def_span,
+    })
+}
+
 /// A field a method copies out, and the span to report it at.
 pub(crate) struct FieldCopy<'tcx> {
     /// The method's own name, for the diagnostic.
@@ -59,28 +106,7 @@ pub(crate) fn field_copy<'tcx>(
     def_id: LocalDefId,
     copying_methods: &[Symbol],
 ) -> Option<FieldCopy<'tcx>> {
-    let FnKind::Method(ident, _) = kind else {
-        return None;
-    };
-    if !matches!(decl.implicit_self(), ImplicitSelfKind::RefImm) || decl.inputs.len() != 1 {
-        return None;
-    }
-    let def_span = cx.tcx.def_span(def_id);
-    let hir_id = cx.tcx.local_def_id_to_hir_id(def_id);
-    // A proc-macro derive can span a generated method over the field it
-    // reads, so the span alone cannot tell the two apart.
-    if def_span.from_expansion()
-        || hir_in_external_macro(cx, hir_id, def_span)
-        || clippy_utils::is_from_proc_macro(cx, &(&kind, body, hir_id, def_span))
-    {
-        return None;
-    }
-    // A trait fixes the signature of its methods.
-    if let Some(assoc) = cx.tcx.opt_associated_item(def_id.to_def_id())
-        && !matches!(assoc.container, AssocContainer::InherentImpl)
-    {
-        return None;
-    }
+    let Eligible { method, def_span } = eligible_method(cx, kind, decl, body, def_id)?;
     let typeck = cx.tcx.typeck(def_id);
     let expr = unwrap_block(body.value);
     let ExprKind::MethodCall(segment, receiver, [], _) = expr.kind else {
@@ -116,7 +142,7 @@ pub(crate) fn field_copy<'tcx>(
         return None;
     }
     Some(FieldCopy {
-        method: ident.name,
+        method,
         field: field.name,
         field_ty,
         self_ty,

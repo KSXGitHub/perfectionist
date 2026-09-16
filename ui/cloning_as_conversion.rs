@@ -48,34 +48,39 @@ impl Person {
         self.age.clone()
     }
 
-    // Good: moving a field out is free — nothing is copied.
+    // Not flagged: takes `self` by value, so the receiver excludes it
+    // before the body is read. An `as_*` that consumes is its own
+    // mistake, but not this rule's.
     fn as_owned_name(self) -> String {
         self.name
     }
 
-    // Good: `to_*` is the prefix for a conversion that costs something,
-    // so the copy is what the name already promises.
+    // Not flagged: not the `as_` prefix. `to_*` announces a conversion
+    // that costs something, so the copy is what that name promises.
     fn to_name(&self) -> String {
         self.name.clone()
     }
 
-    // Good: not the `as_` prefix — `cloning_getter` measures this one.
+    // Not flagged: not the `as_` prefix, though `as` without the
+    // underscore is close enough to pin the boundary.
     fn ascii_name(&self) -> String {
         self.name.clone()
     }
 
-    // Good: takes an argument, so it is not a conversion of `self`.
+    // Not flagged: takes an argument, so it is not a conversion of
+    // `self`. The body is the shape this rule fires on, so this pins
+    // that the arity requirement is what excludes it.
     fn as_name_or(&self, fallback: &str) -> String {
         self.name.clone()
     }
 
-    // Good: `&mut self` is not the `as_` receiver shape this measures.
+    // Not flagged: `&mut self` is not the receiver this measures.
     fn as_taken_name(&mut self) -> String {
         self.name.clone()
     }
 }
 
-// Good: a trait fixes the signature.
+// Not flagged: a trait fixes the signature, so the impl cannot change it.
 trait AsName {
     fn as_name(&self) -> String;
 }

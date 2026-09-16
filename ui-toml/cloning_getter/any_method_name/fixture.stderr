@@ -35,14 +35,4 @@ LL |     fn get_anything(&self) -> String {
    = help: either stop it cloning: return `&str`, and let a caller that needs ownership copy at the call site
    = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
 
-warning: `as_first_name` copies `self.first_name`, but `as_` promises a free conversion
-  --> $DIR/fixture.rs:LL:CC
-   |
-LL |     fn as_first_name(&self) -> String {
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = help: either stop it copying: return `&str`, which costs nothing and is what the name promises
-   = help: or stop it being an `as_*`: rename it `to_*`, the prefix for a conversion that costs something, so the call site shows what it pays
-   = note: `#[warn(perfectionist::cloning_as_conversion)]` on by default
-
 warning: N warnings emitted

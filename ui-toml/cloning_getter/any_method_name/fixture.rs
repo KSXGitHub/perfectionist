@@ -40,6 +40,7 @@ impl Person {
         self.first_name.clone()
     }
 
+    #[expect(perfectionist::cloning_as_conversion, reason = "exercises cloning_getter")]
     fn as_first_name(&self) -> String {
         self.first_name.clone()
     }
