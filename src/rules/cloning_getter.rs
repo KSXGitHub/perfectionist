@@ -102,13 +102,22 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::cloning_getter";
 
-/// How to tell the fix did not work, in the shape the sibling rules
-/// use. The payoff this rule claims is that most callers
-/// only read the value, so a call site that copies the borrow straight
-/// back is what says the borrow bought nothing.
-const COPY_BACK_HELP: &str = "if every call site copies the borrow straight back, the copy moved \
-                              rather than went away: the callers did want ownership, and the owned \
-                              return was right";
+/// The second of the two remedies. A violation is a method that both
+/// clones *and* is a getter, so dropping either half resolves it: the
+/// first help drops the clone, this one drops the getter.
+///
+/// `to_*` is the rename that does it without trading one complaint for
+/// another. The other two prefixes leave getter-hood behind as well,
+/// but each carries a promise the copy would then break, and a rule to
+/// match: `perfectionist::cloning_as_conversion` for `as_*`, which says
+/// the call is free.
+///
+/// It carries the test for choosing it, in the shape the sibling rules
+/// use: a call site that copies the borrow straight back is what says
+/// the callers wanted the owned value all along.
+const RENAME_HELP: &str = "or stop it being a getter: rename it `to_*`, the prefix for a \
+                           conversion that costs something, which is the right shape when every \
+                           call site would copy the borrow straight back";
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
@@ -192,10 +201,11 @@ impl<'tcx> LateLintPass<'tcx> for CloningGetter {
             format!("getter `{method}` returns an owned copy of `self.{field}`"),
             |diag| {
                 diag.help(format!(
-                    "return `{}` and let a caller that needs ownership copy at the call site",
+                    "either stop it cloning: return `{}`, and let a caller that needs ownership \
+                     copy at the call site",
                     borrowed_form(cx, field_ty),
                 ));
-                diag.help(COPY_BACK_HELP);
+                diag.help(RENAME_HELP);
             },
         );
     }

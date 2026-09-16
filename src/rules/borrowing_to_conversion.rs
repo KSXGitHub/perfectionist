@@ -77,10 +77,12 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::borrowing_to_conversion";
 
-/// The second reading of the same signature: the name may be right and
-/// the return type wrong, which is the other way to make them agree.
-const OWNED_HELP: &str = "or return the owned value the name promises, where a caller really does \
-                          need one of its own";
+/// The second of the two remedies. A violation is a method that both
+/// borrows *and* carries the `to_` prefix, so dropping either half
+/// resolves it: the first help drops the prefix, this one drops the
+/// borrow, keeping the name and making the return type match it.
+const OWNED_HELP: &str = "or stop it borrowing: return the owned value the name promises, where a \
+                          caller really does need one of its own";
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
@@ -156,7 +158,8 @@ impl<'tcx> LateLintPass<'tcx> for BorrowingToConversion {
             format!("`{method}` returns a borrow, but `to_` promises an owned value"),
             |diag| {
                 diag.help(format!(
-                    "rename it `{suggested}`, the prefix for a conversion that costs nothing",
+                    "either stop it being a `to_*`: rename it `{suggested}`, the prefix for a \
+                     conversion that costs nothing",
                 ));
                 diag.help(OWNED_HELP);
             },

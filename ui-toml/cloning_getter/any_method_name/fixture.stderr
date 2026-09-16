@@ -4,8 +4,8 @@ warning: getter `unrelated` returns an owned copy of `self.first_name`
 LL |     fn unrelated(&self) -> String {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: return `&str` and let a caller that needs ownership copy at the call site
-   = help: if every call site copies the borrow straight back, the copy moved rather than went away: the callers did want ownership, and the owned return was right
+   = help: either stop it cloning: return `&str`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
    = note: `#[warn(perfectionist::cloning_getter)]` on by default
 
 warning: getter `cloned_first_name` returns an owned copy of `self.first_name`
@@ -14,8 +14,8 @@ warning: getter `cloned_first_name` returns an owned copy of `self.first_name`
 LL |     fn cloned_first_name(&self) -> String {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: return `&str` and let a caller that needs ownership copy at the call site
-   = help: if every call site copies the borrow straight back, the copy moved rather than went away: the callers did want ownership, and the owned return was right
+   = help: either stop it cloning: return `&str`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
 
 warning: getter `first_name` returns an owned copy of `self.first_name`
   --> $DIR/fixture.rs:LL:CC
@@ -23,8 +23,8 @@ warning: getter `first_name` returns an owned copy of `self.first_name`
 LL |     fn first_name(&self) -> String {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: return `&str` and let a caller that needs ownership copy at the call site
-   = help: if every call site copies the borrow straight back, the copy moved rather than went away: the callers did want ownership, and the owned return was right
+   = help: either stop it cloning: return `&str`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
 
 warning: getter `get_anything` returns an owned copy of `self.first_name`
   --> $DIR/fixture.rs:LL:CC
@@ -32,8 +32,8 @@ warning: getter `get_anything` returns an owned copy of `self.first_name`
 LL |     fn get_anything(&self) -> String {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: return `&str` and let a caller that needs ownership copy at the call site
-   = help: if every call site copies the borrow straight back, the copy moved rather than went away: the callers did want ownership, and the owned return was right
+   = help: either stop it cloning: return `&str`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
 
 warning: `as_first_name` copies `self.first_name`, but `as_` promises a free conversion
   --> $DIR/fixture.rs:LL:CC
@@ -41,8 +41,8 @@ warning: `as_first_name` copies `self.first_name`, but `as_` promises a free con
 LL |     fn as_first_name(&self) -> String {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: return `&str`, which costs nothing and is what the name promises
-   = help: or keep the copy and name it `to_*`, the prefix for a conversion that costs something, so the call site shows what it pays
+   = help: either stop it copying: return `&str`, which costs nothing and is what the name promises
+   = help: or stop it being an `as_*`: rename it `to_*`, the prefix for a conversion that costs something, so the call site shows what it pays
    = note: `#[warn(perfectionist::cloning_as_conversion)]` on by default
 
 warning: N warnings emitted
