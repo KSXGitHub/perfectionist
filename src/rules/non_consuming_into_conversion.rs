@@ -26,7 +26,7 @@ declare_tool_lint! {
     /// and so is one returning a `Copy` value: both hand the caller
     /// something of their own, which is what the prefix promises. A
     /// return type carrying a lifetime the *type* already has --
-    /// `&'a str` out of a `struct Person<'a>` -- is left alone too, since
+    /// `&'a str` out of a `struct Person<'a>` — is left alone too, since
     /// that borrow outlives the receiver and does not come from it. So is
     /// a method of a trait impl, since the trait fixes its signature, and
     /// one produced by a macro.
@@ -40,7 +40,7 @@ declare_tool_lint! {
     /// rather than copies. An `into_*` that borrows `self` does neither.
     /// It either pays for a copy the name says was a move, or returns
     /// something still tied to a value the caller was told had been
-    /// consumed -- so the original is still alive, and the result cannot
+    /// consumed — so the original is still alive, and the result cannot
     /// outlive it.
     ///
     /// ### Interaction with Clippy
@@ -201,7 +201,7 @@ impl<'tcx> LateLintPass<'tcx> for NonConsumingIntoConversion {
 /// for a `&self` method is the borrow of the receiver.
 ///
 /// The distinction that matters is where the lifetime comes from. A
-/// method's own lifetimes -- the elided one behind `&self` included --
+/// method's own lifetimes — the elided one behind `&self` included --
 /// are bound by the signature's binder, so they appear as `ReBound` once
 /// it is stripped. A lifetime the *type* carries, as in
 /// `struct Person<'a>`, is a parameter of the impl, so it survives

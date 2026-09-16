@@ -19,7 +19,7 @@ A method that moves out of `self` taken by value is left alone,
 and so is one returning a `Copy` value: both hand the caller
 something of their own, which is what the prefix promises. A
 return type carrying a lifetime the *type* already has --
-`&'a str` out of a `struct Person<'a>` -- is left alone too, since
+`&'a str` out of a `struct Person<'a>` — is left alone too, since
 that borrow outlives the receiver and does not come from it. So is
 a method of a trait impl, since the trait fixes its signature, and
 one produced by a macro.
@@ -33,7 +33,7 @@ the end of the original's life, and as a conversion that moves
 rather than copies. An `into_*` that borrows `self` does neither.
 It either pays for a copy the name says was a move, or returns
 something still tied to a value the caller was told had been
-consumed -- so the original is still alive, and the result cannot
+consumed — so the original is still alive, and the result cannot
 outlive it.
 
 ## Interaction with Clippy
