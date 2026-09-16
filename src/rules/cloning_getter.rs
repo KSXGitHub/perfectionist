@@ -36,10 +36,12 @@ declare_tool_lint! {
     /// 1. `to_*`, `into_*` and `as_*` are conversions, never getters.
     ///    Each prefix carries its own promise about cost and ownership,
     ///    so the copy is the name's business rather than this rule's.
-    /// 2. The last `getter_name_patterns` entry that matches the name
-    ///    says whether the name is a getter.
-    /// 3. A name no entry matches is a getter when it names a field of
-    ///    `self`.
+    /// 2. A method named for a field of `self` is a getter. This is
+    ///    Rust's own convention for a getter's name, so no
+    ///    configuration overrides it.
+    /// 3. Any other name is a getter where the last
+    ///    `getter_name_patterns` entry matching it says so, and is not
+    ///    one where no entry matches it at all.
     ///
     /// Every clause also requires the `&self` receiver and no other
     /// parameter.
@@ -105,12 +107,16 @@ const CONFIG_KEY: &str = "perfectionist::cloning_getter";
 
 /// The patterns in force when the knob is unset, in the spelling a
 /// consumer writes them in. `get_*` is the one name shape that says
-/// "getter" on its own; the two negations keep the rule off a name
-/// that already says it copies, which the field match would otherwise
-/// read as a getter where a field carries the same prefix. Their
-/// order is the list's own idiom in miniature: a later entry overrides
-/// an earlier one, so the negations have to follow what they narrow.
-const DEFAULT_GETTER_NAME_PATTERNS: &[&str] = &["get_*", "!clone_*", "!cloned_*"];
+/// "getter" on its own, whatever field it reads; every other name is
+/// left to the field convention, which the list cannot reach.
+///
+/// A `!clone_*` / `!cloned_*` pair used to sit here, to keep the rule
+/// off a name that says outright that it copies. It bought nothing
+/// once the field convention stopped being overridable: such a name
+/// either matches a field, where clause 2 decides it and no entry is
+/// consulted, or does not, where no entry covers it and it is already
+/// not a getter.
+const DEFAULT_GETTER_NAME_PATTERNS: &[&str] = &["get_*"];
 
 /// The second of the two remedies. A violation is a method that both
 /// clones *and* is a getter, so dropping either half resolves it: the
@@ -131,27 +137,26 @@ const RENAME_HELP: &str = "or stop it being a getter: rename it `to_*`, the pref
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Which method names are getters by name alone, as an ordered
-    /// list of patterns. Each entry takes one of four forms:
+    /// Which further method names are getters, beyond the ones the
+    /// rule settles on its own. A method named for a field of `self` is
+    /// a getter whatever this says, so every entry here speaks only
+    /// about the names left over. Each takes one of four forms:
     ///
-    /// - `*` — every name is a getter.
-    /// - `prefix_*` — every name starting with `prefix_` is a getter.
-    /// - `!*` — no name is a getter.
-    /// - `!prefix_*` — no name starting with `prefix_` is a getter.
+    /// - `*` — every other name is a getter.
+    /// - `prefix_*` — every other name starting with `prefix_` is a
+    ///   getter.
+    /// - `!*` — no other name is a getter.
+    /// - `!prefix_*` — no other name starting with `prefix_` is a
+    ///   getter.
     ///
     /// The last entry that matches a name is the one that decides, so a
     /// later entry overrides an earlier one: `["*", "!clone_*"]`
-    /// measures every name but the `clone_*` ones, and
-    /// `["!*", "get_*"]` measures the `get_*` ones and nothing else.
+    /// measures every other name but the `clone_*` ones. A name no
+    /// entry matches at all is not a getter.
     ///
-    /// A name no entry matches at all is a getter when it names a field
-    /// of `self`, so the list decides only the names it mentions and
-    /// leaves the rest to that.
-    ///
-    /// Defaults to `["get_*", "!clone_*", "!cloned_*"]`, which reads:
-    /// a `get_*` method is a getter whatever it is named after; a
-    /// `clone_*` or `cloned_*` one is not, even where it names a field;
-    /// and every other name is a getter exactly when it names a field.
+    /// Defaults to `["get_*"]`: a `get_*` method is a getter whatever
+    /// it is named after, and no other name is, leaving the
+    /// field-named ones to the rule itself.
     ///
     /// `as_*`, `to_*` and `into_*` are conversions, which the rule
     /// never measures whatever this says. No entry may name one, or any
@@ -259,14 +264,13 @@ impl CloningGetter {
     ///    Each prefix carries its own promise about cost and ownership,
     ///    which is the API guidelines' to define rather than a
     ///    consumer's, so no pattern reaches these names.
-    /// 2. The last `getter_name_patterns` entry matching the name says
-    ///    whether it is a getter. `crate::name_pattern::verdict` does
-    ///    the scan, and documents why it runs backwards.
-    /// 3. A name no entry matches is a getter when it names a field of
-    ///    `self`. This is the clause the list is written against: an
-    ///    entry is how a consumer says a name is a getter the field
-    ///    match would have missed, or is not one the field match would
-    ///    have caught.
+    /// 2. A method named for a field of `self` is a getter, and the
+    ///    list never reaches it. Naming a method after the field it
+    ///    returns is Rust's own convention, so this is the rule's
+    ///    definition rather than a default a consumer talks out of.
+    /// 3. Every other name is the list's to decide:
+    ///    `crate::name_pattern::verdict` reads it back to front, and a
+    ///    name no entry covers is not a getter.
     ///
     /// Every clause also requires the single `&self` receiver, which the
     /// caller has already established.
@@ -278,7 +282,9 @@ impl CloningGetter {
         {
             return false;
         }
-        verdict(&self.config.getter_name_patterns, name)
-            .unwrap_or_else(|| has_field(self_ty, method))
+        if has_field(self_ty, method) {
+            return true;
+        }
+        verdict(&self.config.getter_name_patterns, name).unwrap_or(false)
     }
 }

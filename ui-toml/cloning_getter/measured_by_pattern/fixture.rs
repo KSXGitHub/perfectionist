@@ -29,8 +29,8 @@ impl Person {
         self.first_name.clone()
     }
 
-    // Bad: `*` covers a field-named getter too, which the field match
-    // would have caught anyway.
+    // Bad: named for a field, so the rule decides it before the list
+    // is consulted at all.
     fn first_name(&self) -> String {
         self.first_name.clone()
     }
