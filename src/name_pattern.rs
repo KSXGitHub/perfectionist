@@ -13,8 +13,8 @@
 //! means.
 //!
 //! The language carries no policy: every well-formed entry parses. A
-//! rule that has to forbid some of them -- because a clause of its own
-//! already answers for those names, say -- wraps [`NamePattern`] in a
+//! rule that has to forbid some of them — because a clause of its own
+//! already answers for those names, say — wraps [`NamePattern`] in a
 //! newtype and rejects them there, reading the parsed value through
 //! [`NamePattern::prefix`]. `crate::getter_name_pattern` is the worked
 //! example.
