@@ -32,7 +32,7 @@ applies:
    and `perfectionist::cloning_as_conversion` measures it.
 2. `get_*` is a getter.
 3. A method named for a field of `self` is a getter.
-4. Any other name is a getter only where `measure_any_method_name`
+4. Any other name is a getter only where `measure_unmatched_names`
    says so.
 
 Every clause also requires the `&self` receiver and no other
@@ -94,14 +94,16 @@ impl Person {
 
 Configure via `dylint.toml` under `["perfectionist::cloning_getter"]`. Every field is optional; the per-field prose below states the default.
 
-### Field: `measure_any_method_name`
+### Field: `measure_unmatched_names`
 
 - _Type:_ `boolean`
 - _Optional_
 
-Whether a method whose name neither starts with `get_` nor names a
-field of `self` is still treated as a getter. With this off, such a
-method is left alone however its body reads. Defaults to `false`.
+Whether a method whose name neither starts with `get_` nor matches
+a field of `self` is still treated as a getter. With this off, such
+a method is left alone however its body reads. A conversion prefix
+-- `to_*`, `into_*`, `as_*` -- is never a getter whatever this
+says. Defaults to `false`.
 
 ### Field: `exempt_tests`
 
