@@ -16,13 +16,16 @@ for the borrowed form instead: `&str` for a `String` field,
 `&Path` for a `PathBuf`, `&OsStr` for an `OsString`, `&[T]` for a
 `Vec<T>`, `Option<&T>` for an `Option<T>`, `&T` otherwise.
 
-A method returning a `Copy` value is left alone, and so is one
-that moves a field out rather than copying it: both are free, and
-free is what the prefix promises. So is a method of a trait impl,
-since the trait fixes its signature, and one produced by a macro.
+The call has to reproduce the field's own type for a borrow to
+serve in its place. So a `Copy` field is left alone -- handing one
+back by value costs nothing, which is what the prefix promises --
+and so is a call that renders the field rather than copying it,
+such as `to_string` on a numeric field, where no borrow of the
+field is a `String`.
 
-Test code is left alone; set `exempt_tests` to `false` to
-measure it like any other code.
+Only a method taking `&self` and nothing else is measured. A
+method of a trait impl is left alone, since the trait fixes its
+signature, and so is one produced by a macro.
 
 ## Why is this bad?
 
@@ -61,7 +64,8 @@ impl Person {
 }
 ```
 
-**Prefer:**
+**Prefer:** the copy dropped, so the call is as free as the name
+says
 
 ```rust,ignore
 impl Person {
@@ -71,7 +75,8 @@ impl Person {
 }
 ```
 
-Or keep the copy and rename it, so the cost is in the name:
+**Prefer:** or the copy kept and the prefix dropped, so the name
+admits what it costs
 
 ```rust,ignore
 impl Person {
@@ -83,13 +88,4 @@ impl Person {
 
 ## Configuration
 
-Configure via `dylint.toml` under `["perfectionist::cloning_as_conversion"]`. Every field is optional; the per-field prose below states the default.
-
-### Field: `exempt_tests`
-
-- _Type:_ `boolean`
-- _Optional_
-
-Whether test code is left alone: methods inside a `#[cfg(test)]`
-module or an integration-test or benchmark target. Defaults to
-`true`.
+None.

@@ -1,7 +1,6 @@
 use crate::common::DefaultState;
 use crate::field_copy::{COPYING_METHODS, FieldCopy, borrowed_form, field_copy};
 use crate::rule_index::{Register, rule};
-use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_hir as hir;
 use rustc_hir::def_id::LocalDefId;
@@ -20,13 +19,16 @@ declare_tool_lint! {
     /// `&Path` for a `PathBuf`, `&OsStr` for an `OsString`, `&[T]` for a
     /// `Vec<T>`, `Option<&T>` for an `Option<T>`, `&T` otherwise.
     ///
-    /// A method returning a `Copy` value is left alone, and so is one
-    /// that moves a field out rather than copying it: both are free, and
-    /// free is what the prefix promises. So is a method of a trait impl,
-    /// since the trait fixes its signature, and one produced by a macro.
+    /// The call has to reproduce the field's own type for a borrow to
+    /// serve in its place. So a `Copy` field is left alone -- handing one
+    /// back by value costs nothing, which is what the prefix promises --
+    /// and so is a call that renders the field rather than copying it,
+    /// such as `to_string` on a numeric field, where no borrow of the
+    /// field is a `String`.
     ///
-    /// Test code is left alone; set `exempt_tests` to `false` to
-    /// measure it like any other code.
+    /// Only a method taking `&self` and nothing else is measured. A
+    /// method of a trait impl is left alone, since the trait fixes its
+    /// signature, and so is one produced by a macro.
     ///
     /// ### Why is this bad?
     ///
@@ -65,7 +67,8 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// **Prefer:**
+    /// **Prefer:** the copy dropped, so the call is as free as the name
+    /// says
     ///
     /// ```rust,ignore
     /// impl Person {
@@ -75,7 +78,8 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// Or keep the copy and rename it, so the cost is in the name:
+    /// **Prefer:** or the copy kept and the prefix dropped, so the name
+    /// admits what it costs
     ///
     /// ```rust,ignore
     /// impl Person {
@@ -90,8 +94,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-const CONFIG_KEY: &str = "perfectionist::cloning_as_conversion";
-
 /// The second of the two remedies. A violation is a method that both
 /// copies *and* carries the `as_` prefix, so dropping either half
 /// resolves it: the first help drops the copy, this one drops the
@@ -99,23 +101,16 @@ const CONFIG_KEY: &str = "perfectionist::cloning_as_conversion";
 const RENAME_HELP: &str = "or stop it being an `as_*`: rename it `to_*`, the prefix for a \
                            conversion that costs something, so the call site shows what it pays";
 
-#[derive(Debug, serde::Deserialize)]
-#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
-struct Config {
-    /// Whether test code is left alone: methods inside a `#[cfg(test)]`
-    /// module or an integration-test or benchmark target. Defaults to
-    /// `true`.
-    exempt_tests: bool,
-}
+const CONFIG_KEY: &str = "perfectionist::cloning_as_conversion";
 
-impl Default for Config {
-    fn default() -> Self {
-        Self { exempt_tests: true }
-    }
-}
+/// The rule has no configuration knobs. Not dead code: the read
+/// below rejects a mistyped key in the rule's `dylint.toml` table,
+/// and gen-docs needs the struct for `Configuration: none.`
+#[derive(Debug, Default, serde::Deserialize)]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
+struct Config {}
 
 pub struct CloningAsConversion {
-    config: Config,
     copying_methods: Vec<Symbol>,
 }
 
@@ -130,8 +125,8 @@ impl Register for rule::CloningAsConversion {
 
     fn register_pass(lint_store: &mut LintStore) {
         lint_store.register_late_lint_pass(Box::new(|_| {
+            let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
             Box::new(CloningAsConversion {
-                config: dylint_linting::config_or_default(CONFIG_KEY),
                 copying_methods: COPYING_METHODS
                     .iter()
                     .map(|name| Symbol::intern(name))
@@ -162,9 +157,6 @@ impl<'tcx> LateLintPass<'tcx> for CloningAsConversion {
             return;
         };
         if !method.as_str().starts_with("as_") {
-            return;
-        }
-        if self.config.exempt_tests && item_in_test_code(cx, def_id) {
             return;
         }
         span_lint_and_then(

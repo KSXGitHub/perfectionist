@@ -24,9 +24,6 @@ that borrow outlives the receiver and does not come from it. So is
 a method of a trait impl, since the trait fixes its signature, and
 one produced by a macro.
 
-Test code is left alone; set `exempt_tests` to `false` to
-measure it like any other code.
-
 ## Why is this bad?
 
 The Rust API Guidelines give `as_`, `to_` and `into_` distinct
@@ -80,13 +77,4 @@ impl Person {
 
 ## Configuration
 
-Configure via `dylint.toml` under `["perfectionist::non_consuming_into_conversion"]`. Every field is optional; the per-field prose below states the default.
-
-### Field: `exempt_tests`
-
-- _Type:_ `boolean`
-- _Optional_
-
-Whether test code is left alone: methods inside a `#[cfg(test)]`
-module or an integration-test or benchmark target. Defaults to
-`true`.
+None.

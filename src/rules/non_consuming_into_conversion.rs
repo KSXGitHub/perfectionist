@@ -3,7 +3,6 @@ use crate::field_copy::{
     COPYING_METHODS, Eligible, FieldCopy, borrowed_form, eligible_method, field_copy,
 };
 use crate::rule_index::{Register, rule};
-use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
 use core::ops::ControlFlow;
 use rustc_hir as hir;
@@ -31,9 +30,6 @@ declare_tool_lint! {
     /// that borrow outlives the receiver and does not come from it. So is
     /// a method of a trait impl, since the trait fixes its signature, and
     /// one produced by a macro.
-    ///
-    /// Test code is left alone; set `exempt_tests` to `false` to
-    /// measure it like any other code.
     ///
     /// ### Why is this bad?
     ///
@@ -91,8 +87,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-const CONFIG_KEY: &str = "perfectionist::non_consuming_into_conversion";
-
 /// The first of the two remedies, shared by both halves. A violation is
 /// a method that fails to consume *and* carries the `into_` prefix, so
 /// dropping either half resolves it: this one drops the failure to
@@ -107,23 +101,16 @@ const CONSUME_HELP: &str = "either stop it borrowing: take `self` by value and m
 const RENAME_HELP: &str = "or stop it being an `into_*`: rename it `as_*`, the prefix for a \
                            conversion that hands back a borrow";
 
-#[derive(Debug, serde::Deserialize)]
-#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
-struct Config {
-    /// Whether test code is left alone: methods inside a `#[cfg(test)]`
-    /// module or an integration-test or benchmark target. Defaults to
-    /// `true`.
-    exempt_tests: bool,
-}
+const CONFIG_KEY: &str = "perfectionist::non_consuming_into_conversion";
 
-impl Default for Config {
-    fn default() -> Self {
-        Self { exempt_tests: true }
-    }
-}
+/// The rule has no configuration knobs. Not dead code: the read
+/// below rejects a mistyped key in the rule's `dylint.toml` table,
+/// and gen-docs needs the struct for `Configuration: none.`
+#[derive(Debug, Default, serde::Deserialize)]
+#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
+struct Config {}
 
 pub struct NonConsumingIntoConversion {
-    config: Config,
     copying_methods: Vec<Symbol>,
 }
 
@@ -138,8 +125,8 @@ impl Register for rule::NonConsumingIntoConversion {
 
     fn register_pass(lint_store: &mut LintStore) {
         lint_store.register_late_lint_pass(Box::new(|_| {
+            let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
             Box::new(NonConsumingIntoConversion {
-                config: dylint_linting::config_or_default(CONFIG_KEY),
                 copying_methods: COPYING_METHODS
                     .iter()
                     .map(|name| Symbol::intern(name))
@@ -164,9 +151,6 @@ impl<'tcx> LateLintPass<'tcx> for NonConsumingIntoConversion {
             return;
         };
         if !method.as_str().starts_with("into_") {
-            return;
-        }
-        if self.config.exempt_tests && item_in_test_code(cx, def_id) {
             return;
         }
         let output = cx
