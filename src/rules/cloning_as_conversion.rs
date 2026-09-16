@@ -20,7 +20,7 @@ declare_tool_lint! {
     /// `Vec<T>`, `Option<&T>` for an `Option<T>`, `&T` otherwise.
     ///
     /// The call has to reproduce the field's own type for a borrow to
-    /// serve in its place. So a `Copy` field is left alone -- handing one
+    /// serve in its place. So a `Copy` field is left alone — handing one
     /// back by value costs nothing, which is what the prefix promises --
     /// and so is a call that renders the field rather than copying it,
     /// such as `to_string` on a numeric field, where no borrow of the
@@ -42,7 +42,7 @@ declare_tool_lint! {
     /// ### Interaction with Clippy
     ///
     /// `clippy::wrong_self_convention` checks the same three prefixes
-    /// against the method's *receiver* -- whether `as_*` takes `&self`.
+    /// against the method's *receiver* — whether `as_*` takes `&self`.
     /// It does not look at the return type or at what the body costs, so
     /// an `as_*` that takes `&self` and then allocates satisfies it.
     ///

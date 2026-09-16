@@ -7,8 +7,8 @@
 //! cannot fall between two of them or be reported by both.
 //!
 //! The recognised shape is narrow on purpose: an inherent method
-//! taking `&self` and nothing else, whose body -- once statement-free
-//! blocks are unwrapped -- is exactly `self.<field>.<copying method>()`
+//! taking `&self` and nothing else, whose body — once statement-free
+//! blocks are unwrapped — is exactly `self.<field>.<copying method>()`
 //! producing the field's own type. A call that renders the field
 //! (`to_string` on a number) or that returns a `Copy` value is not a
 //! copy a borrow could have replaced, so it is not recognised here.
