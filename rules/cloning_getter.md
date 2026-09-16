@@ -30,10 +30,12 @@ applies:
    The first two announce that they cost something, so the copy is
    part of what the name promises; `as_*` promises the opposite,
    and `perfectionist::cloning_as_conversion` measures it.
-2. The last `getter_name_patterns` entry that matches the name
-   says whether the name is a getter.
-3. A name no entry matches is a getter when it names a field of
-   `self`.
+2. A method named for a field of `self` is a getter. This is
+   Rust's own convention for a getter's name, so no
+   configuration overrides it.
+3. Any other name is a getter where the last
+   `getter_name_patterns` entry matching it says so, and is not
+   one where no entry matches it at all.
 
 Every clause also requires the `&self` receiver and no other
 parameter.
@@ -99,27 +101,30 @@ Configure via `dylint.toml` under `["perfectionist::cloning_getter"]`. Every fie
 - _Type:_ `[name-pattern string]`
 - _Optional_
 
-Which method names are getters by name alone, as an ordered
-list of patterns. Each entry takes one of four forms:
+Which further method names are getters, beyond the ones the
+rule settles on its own. A method named for a field of `self` is
+a getter whatever this says, so every entry here speaks only
+about the names left over. Each takes one of four forms:
 
-- `*` — every name is a getter.
-- `prefix_*` — every name starting with `prefix_` is a getter.
-- `!*` — no name is a getter.
-- `!prefix_*` — no name starting with `prefix_` is a getter.
+- `*` — every other name is a getter.
+- `prefix_*` — every other name starting with `prefix_` is a
+  getter.
+- `!*` — no other name is a getter.
+- `!prefix_*` — no other name starting with `prefix_` is a
+  getter.
 
-The last entry that matches a name is the one that decides, so a
-later entry overrides an earlier one: `["*", "!clone_*"]`
-measures every name but the `clone_*` ones, and
+The first entry is `*` or `!*`, which says what every other name
+means before the rest of the list narrows it; a list that opened
+with a prefix would leave the names it does not mention resting
+on a baseline the reader has to know, so one is rejected. The
+last entry that matches a name is then the one that decides, so
+a later entry overrides an earlier one: `["*", "!clone_*"]`
+measures every other name but the `clone_*` ones, and
 `["!*", "get_*"]` measures the `get_*` ones and nothing else.
 
-A name no entry matches at all is a getter when it names a field
-of `self`, so the list decides only the names it mentions and
-leaves the rest to that.
-
-Defaults to `["get_*", "!clone_*", "!cloned_*"]`, which reads:
-a `get_*` method is a getter whatever it is named after; a
-`clone_*` or `cloned_*` one is not, even where it names a field;
-and every other name is a getter exactly when it names a field.
+Defaults to `["!*", "get_*"]`: no name beyond the field-named
+ones is a getter, except a `get_*` one, which is whatever field
+it reads.
 
 `as_*`, `to_*` and `into_*` are conversions, which the rule
 never measures whatever this says. No entry may name one, or any

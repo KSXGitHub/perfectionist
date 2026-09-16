@@ -16,7 +16,7 @@
 //! rule that has to forbid some of them — because a clause of its own
 //! already answers for those names, say — wraps [`NamePattern`] in a
 //! newtype and rejects them there, reading the parsed value through
-//! [`NamePattern::prefix`]. `crate::getter_name_pattern` is the worked
+//! [`NamePattern::prefix`]. `crate::getter_name_patterns` is the worked
 //! example.
 //!
 //! Parsing at config-parse time rather than at match time puts the
@@ -78,8 +78,8 @@ impl NamePattern {
     }
 
     /// The prefix this pattern covers, or `None` where it covers every
-    /// name. A newtype wrapping this one reads it to apply a policy the
-    /// language itself does not carry, rather than re-deriving the
+    /// name. A newtype over a list of these reads it to apply a policy
+    /// the language itself does not carry, rather than re-deriving the
     /// prefix from the string the consumer wrote.
     pub(crate) fn prefix(&self) -> Option<&str> {
         match &self.scope {
@@ -211,19 +211,6 @@ impl ScopeError {
     }
 }
 
-/// A type that resolves to one [`NamePattern`]: the pattern itself, or
-/// a rule's own newtype over it. [`verdict`] is generic over this so a
-/// rule resolves its list without re-implementing the scan.
-pub(crate) trait AsNamePattern {
-    fn as_name_pattern(&self) -> &NamePattern;
-}
-
-impl AsNamePattern for NamePattern {
-    fn as_name_pattern(&self) -> &NamePattern {
-        self
-    }
-}
-
 /// The verdict `patterns` carries for `name`: what the last entry
 /// covering the name says, or `None` where no entry covers it and the
 /// caller's own fallthrough decides.
@@ -237,12 +224,12 @@ impl AsNamePattern for NamePattern {
 /// `!clone_*` cover the same names and differ only in the answer they
 /// give for them, so both take their turn at the same point in the
 /// scan.
-pub(crate) fn verdict<Pattern: AsNamePattern>(patterns: &[Pattern], name: &str) -> Option<bool> {
+pub(crate) fn verdict(patterns: &[NamePattern], name: &str) -> Option<bool> {
     patterns
         .iter()
         .rev()
-        .find(|pattern| pattern.as_name_pattern().matches(name))
-        .map(|pattern| pattern.as_name_pattern().selects())
+        .find(|pattern| pattern.matches(name))
+        .map(NamePattern::selects)
 }
 
 #[cfg(test)]

@@ -1,7 +1,6 @@
 use crate::common::DefaultState;
 use crate::field_copy::{COPYING_METHODS, FieldCopy, borrowed_form, field_copy, has_field};
-use crate::getter_name_pattern::{CONVERSION_PREFIXES, GetterNamePattern};
-use crate::name_pattern::verdict;
+use crate::getter_name_patterns::{CONVERSION_PREFIXES, GetterNamePatterns};
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
 use clippy_utils::diagnostics::span_lint_and_then;
@@ -37,10 +36,12 @@ declare_tool_lint! {
     ///    The first two announce that they cost something, so the copy is
     ///    part of what the name promises; `as_*` promises the opposite,
     ///    and `perfectionist::cloning_as_conversion` measures it.
-    /// 2. The last `getter_name_patterns` entry that matches the name
-    ///    says whether the name is a getter.
-    /// 3. A name no entry matches is a getter when it names a field of
-    ///    `self`.
+    /// 2. A method named for a field of `self` is a getter. This is
+    ///    Rust's own convention for a getter's name, so no
+    ///    configuration overrides it.
+    /// 3. Any other name is a getter where the last
+    ///    `getter_name_patterns` entry matching it says so, and is not
+    ///    one where no entry matches it at all.
     ///
     /// Every clause also requires the `&self` receiver and no other
     /// parameter.
@@ -105,13 +106,11 @@ declare_tool_lint! {
 const CONFIG_KEY: &str = "perfectionist::cloning_getter";
 
 /// The patterns in force when the knob is unset, in the spelling a
-/// consumer writes them in. `get_*` is the one name shape that says
-/// "getter" on its own; the two negations keep the rule off a name
-/// that already says it copies, which the field match would otherwise
-/// read as a getter where a field carries the same prefix. Their
-/// order is the list's own idiom in miniature: a later entry overrides
-/// an earlier one, so the negations have to follow what they narrow.
-const DEFAULT_GETTER_NAME_PATTERNS: &[&str] = &["get_*", "!clone_*", "!cloned_*"];
+/// consumer writes them in. The `!*` is the baseline every list states
+/// for itself: no name beyond the ones the rule settles is a getter.
+/// `get_*` is the one it takes back, being the name shape that says
+/// "getter" on its own whatever field it reads.
+const DEFAULT_GETTER_NAME_PATTERNS: &[&str] = &["!*", "get_*"];
 
 /// The second of the two remedies. A violation is a method that both
 /// clones *and* is a getter, so dropping either half resolves it: the
@@ -133,34 +132,37 @@ const RENAME_HELP: &str = "or stop it being a getter: rename it `to_*`, the pref
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Which method names are getters by name alone, as an ordered
-    /// list of patterns. Each entry takes one of four forms:
+    /// Which further method names are getters, beyond the ones the
+    /// rule settles on its own. A method named for a field of `self` is
+    /// a getter whatever this says, so every entry here speaks only
+    /// about the names left over. Each takes one of four forms:
     ///
-    /// - `*` — every name is a getter.
-    /// - `prefix_*` — every name starting with `prefix_` is a getter.
-    /// - `!*` — no name is a getter.
-    /// - `!prefix_*` — no name starting with `prefix_` is a getter.
+    /// - `*` — every other name is a getter.
+    /// - `prefix_*` — every other name starting with `prefix_` is a
+    ///   getter.
+    /// - `!*` — no other name is a getter.
+    /// - `!prefix_*` — no other name starting with `prefix_` is a
+    ///   getter.
     ///
-    /// The last entry that matches a name is the one that decides, so a
-    /// later entry overrides an earlier one: `["*", "!clone_*"]`
-    /// measures every name but the `clone_*` ones, and
+    /// The first entry is `*` or `!*`, which says what every other name
+    /// means before the rest of the list narrows it; a list that opened
+    /// with a prefix would leave the names it does not mention resting
+    /// on a baseline the reader has to know, so one is rejected. The
+    /// last entry that matches a name is then the one that decides, so
+    /// a later entry overrides an earlier one: `["*", "!clone_*"]`
+    /// measures every other name but the `clone_*` ones, and
     /// `["!*", "get_*"]` measures the `get_*` ones and nothing else.
     ///
-    /// A name no entry matches at all is a getter when it names a field
-    /// of `self`, so the list decides only the names it mentions and
-    /// leaves the rest to that.
-    ///
-    /// Defaults to `["get_*", "!clone_*", "!cloned_*"]`, which reads:
-    /// a `get_*` method is a getter whatever it is named after; a
-    /// `clone_*` or `cloned_*` one is not, even where it names a field;
-    /// and every other name is a getter exactly when it names a field.
+    /// Defaults to `["!*", "get_*"]`: no name beyond the field-named
+    /// ones is a getter, except a `get_*` one, which is whatever field
+    /// it reads.
     ///
     /// `as_*`, `to_*` and `into_*` are conversions, which the rule
     /// never measures whatever this says. No entry may name one, or any
     /// longer prefix under one; such an entry could not change an
     /// outcome, and is rejected at config-parse time rather than
     /// silently doing nothing.
-    getter_name_patterns: Vec<GetterNamePattern>,
+    getter_name_patterns: GetterNamePatterns,
     /// Whether test code is left alone: getters inside a `#[cfg(test)]`
     /// module or an integration-test or benchmark target. Defaults to
     /// `true`.
@@ -170,13 +172,14 @@ struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            getter_name_patterns: DEFAULT_GETTER_NAME_PATTERNS
-                .iter()
-                .map(|pattern| {
-                    GetterNamePattern::try_from((*pattern).to_owned())
-                        .expect("a built-in default pattern is well-formed")
-                })
-                .collect(),
+            getter_name_patterns: GetterNamePatterns::try_from(
+                DEFAULT_GETTER_NAME_PATTERNS
+                    .iter()
+                    .copied()
+                    .map(str::to_owned)
+                    .collect::<Vec<String>>(),
+            )
+            .expect("the built-in default list is well-formed"),
             exempt_tests: true,
         }
     }
@@ -261,14 +264,13 @@ impl CloningGetter {
     ///    Each prefix carries its own promise about cost and ownership,
     ///    which is the API guidelines' to define rather than a
     ///    consumer's, so no pattern reaches these names.
-    /// 2. The last `getter_name_patterns` entry matching the name says
-    ///    whether it is a getter. `crate::name_pattern::verdict` does
-    ///    the scan, and documents why it runs backwards.
-    /// 3. A name no entry matches is a getter when it names a field of
-    ///    `self`. This is the clause the list is written against: an
-    ///    entry is how a consumer says a name is a getter the field
-    ///    match would have missed, or is not one the field match would
-    ///    have caught.
+    /// 2. A method named for a field of `self` is a getter, and the
+    ///    list never reaches it. Naming a method after the field it
+    ///    returns is Rust's own convention, so this is the rule's
+    ///    definition rather than a default a consumer talks out of.
+    /// 3. Every other name is the list's to decide:
+    ///    `crate::name_pattern::verdict` reads it back to front, and a
+    ///    name no entry covers is not a getter.
     ///
     /// Every clause also requires the single `&self` receiver, which the
     /// caller has already established.
@@ -280,7 +282,9 @@ impl CloningGetter {
         {
             return false;
         }
-        verdict(&self.config.getter_name_patterns, name)
-            .unwrap_or_else(|| has_field(self_ty, method))
+        if has_field(self_ty, method) {
+            return true;
+        }
+        self.config.getter_name_patterns.says_getter(name)
     }
 }
