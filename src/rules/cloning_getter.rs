@@ -133,21 +133,24 @@ struct Config {
     /// Which method names are getters by name alone, as an ordered
     /// list of patterns. Each entry takes one of four forms:
     ///
-    /// - `*` -- every name is a getter.
-    /// - `prefix_*` -- every name starting with `prefix_` is a getter.
-    /// - `!*` -- no name is a getter.
-    /// - `!prefix_*` -- no name starting with `prefix_` is a getter.
+    /// - `*` — every name is a getter.
+    /// - `prefix_*` — every name starting with `prefix_` is a getter.
+    /// - `!*` — no name is a getter.
+    /// - `!prefix_*` — no name starting with `prefix_` is a getter.
     ///
-    /// The last entry that matches a name is the one that decides, the
-    /// way a later `.gitignore` line overrides an earlier one. So
-    /// `["*", "!clone_*"]` measures every name but the `clone_*` ones,
-    /// and `["!*", "get_*"]` measures the `get_*` ones and nothing
-    /// else.
+    /// The last entry that matches a name is the one that decides, so a
+    /// later entry overrides an earlier one: `["*", "!clone_*"]`
+    /// measures every name but the `clone_*` ones, and
+    /// `["!*", "get_*"]` measures the `get_*` ones and nothing else.
     ///
     /// A name no entry matches at all is a getter when it names a field
     /// of `self`, so the list decides only the names it mentions and
-    /// leaves the rest to that. Defaults to
-    /// `["get_*", "!clone_*", "!cloned_*"]`.
+    /// leaves the rest to that.
+    ///
+    /// Defaults to `["get_*", "!clone_*", "!cloned_*"]`, which reads:
+    /// a `get_*` method is a getter whatever it is named after; a
+    /// `clone_*` or `cloned_*` one is not, even where it names a field;
+    /// and every other name is a getter exactly when it names a field.
     ///
     /// `as_*`, `to_*` and `into_*` are conversions, which the rule
     /// never measures whatever this says. No entry may name one, or any
