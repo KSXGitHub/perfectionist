@@ -23,9 +23,19 @@ it by value is the borrowed form's equal — and so is a call that
 renders the field rather than copying it, such as `to_string` on
 a numeric field, where no borrow of the field is a `String`.
 
-A method named `to_*` is left alone: that prefix is how a Rust
-API announces a costly conversion, so the copy is already part of
-what the name promises.
+What counts as a getter is decided by the first of these that
+applies:
+
+1. `to_*`, `into_*` and `as_*` are conversions, never getters.
+   Each prefix carries its own promise about cost and ownership,
+   so the copy is the name's business rather than this rule's.
+2. `get_*` is a getter.
+3. A method named for a field of `self` is a getter.
+4. Any other name is a getter only where `measure_any_method_name`
+   says so.
+
+Every clause also requires the `&self` receiver and no other
+parameter.
 
 A method of a trait impl is left alone, since the trait fixes
 its signature, and so is a method produced by a macro.
@@ -82,6 +92,15 @@ impl Person {
 ## Configuration
 
 Configure via `dylint.toml` under `["perfectionist::cloning_getter"]`. Every field is optional; the per-field prose below states the default.
+
+### Field: `measure_any_method_name`
+
+- _Type:_ `boolean`
+- _Optional_
+
+Whether a method whose name neither starts with `get_` nor names a
+field of `self` is still treated as a getter. With this off, such a
+method is left alone however its body reads. Defaults to `false`.
 
 ### Field: `exempt_tests`
 

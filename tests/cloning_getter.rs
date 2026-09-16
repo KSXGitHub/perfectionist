@@ -1,4 +1,8 @@
-//! Integration tests for `cloning_getter`'s `exempt_tests`,
+//! Integration tests for `cloning_getter`'s configuration.
+//!
+//! `measure_any_method_name` is covered by a UI fixture under
+//! `ui-toml/cloning_getter/` run with a per-rule `dylint.toml`.
+//! `exempt_tests`
 //! which needs `#[cfg(test)]` code to exist and so runs a minimal Cargo
 //! project through `cargo dylint --all -- --all-targets`, the way
 //! `tests/needless_borrowed_parameters.rs` does it. The default-config
@@ -7,7 +11,36 @@
 pub mod _utils;
 
 use _utils::{cargo_manifest_dir, run_project_with_config, shared_target_dir};
+use std::collections::BTreeMap;
 use text_block_macros::text_block_fnl;
+
+const LINT_NAME: &str = "perfectionist::cloning_getter";
+
+/// Serialisation shim for the rule's `dylint.toml` configuration, which
+/// the test crate cannot build from the lint's own private `Config`.
+#[derive(Default, serde::Serialize)]
+struct RuleConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    measure_any_method_name: Option<bool>,
+}
+
+fn dylint_toml(config: RuleConfig) -> String {
+    let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
+    toml::to_string(&table).expect("serialise rule config as dylint.toml")
+}
+
+#[test]
+fn any_method_name_admits_an_unrelated_name() {
+    let fixtures = _utils::copy_fixtures_with_directives(
+        env!("CARGO_MANIFEST_DIR"),
+        "ui-toml/cloning_getter/any_method_name",
+    );
+    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+        .dylint_toml(dylint_toml(RuleConfig {
+            measure_any_method_name: Some(true),
+        }))
+        .run();
+}
 
 /// A library with a cloning getter in production code and another in a
 /// `#[cfg(test)]` module.

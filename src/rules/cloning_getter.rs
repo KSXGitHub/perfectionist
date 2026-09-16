@@ -30,9 +30,19 @@ declare_tool_lint! {
     /// renders the field rather than copying it, such as `to_string` on
     /// a numeric field, where no borrow of the field is a `String`.
     ///
-    /// A method named `to_*` is left alone: that prefix is how a Rust
-    /// API announces a costly conversion, so the copy is already part of
-    /// what the name promises.
+    /// What counts as a getter is decided by the first of these that
+    /// applies:
+    ///
+    /// 1. `to_*`, `into_*` and `as_*` are conversions, never getters.
+    ///    Each prefix carries its own promise about cost and ownership,
+    ///    so the copy is the name's business rather than this rule's.
+    /// 2. `get_*` is a getter.
+    /// 3. A method named for a field of `self` is a getter.
+    /// 4. Any other name is a getter only where `measure_any_method_name`
+    ///    says so.
+    ///
+    /// Every clause also requires the `&self` receiver and no other
+    /// parameter.
     ///
     /// A method of a trait impl is left alone, since the trait fixes
     /// its signature, and so is a method produced by a macro.
@@ -93,13 +103,21 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::cloning_getter";
 
-/// How to tell the fix did not work, in the shape the sibling rules
-/// use. The payoff this rule claims is that most callers
-/// only read the value, so a call site that copies the borrow straight
-/// back is what says the borrow bought nothing.
-const COPY_BACK_HELP: &str = "if every call site copies the borrow straight back, the copy moved \
-                              rather than went away: the callers did want ownership, and the owned \
-                              return was right";
+/// The second of the two remedies. A violation is a method that both
+/// clones *and* is a getter, so dropping either half resolves it: the
+/// first help drops the clone, this one drops the getter.
+///
+/// `to_*` is the rename that does it without trading one complaint for
+/// another. The other two prefixes leave getter-hood behind as well,
+/// but each carries a promise the copy would then break: `as_*` says
+/// the call is free, and `into_*` says it consumes.
+///
+/// It carries the test for choosing it, in the shape the sibling rules
+/// use: a call site that copies the borrow straight back is what says
+/// the callers wanted the owned value all along.
+const RENAME_HELP: &str = "or stop it being a getter: rename it `to_*`, the prefix for a \
+                           conversion that costs something, which is the right shape when every \
+                           call site would copy the borrow straight back";
 
 /// The methods that turn a borrowed field into its owned form.
 const COPYING_METHODS: &[&str] = &[
@@ -114,6 +132,10 @@ const COPYING_METHODS: &[&str] = &[
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
+    /// Whether a method whose name neither starts with `get_` nor names a
+    /// field of `self` is still treated as a getter. With this off, such a
+    /// method is left alone however its body reads. Defaults to `false`.
+    measure_any_method_name: bool,
     /// Whether test code is left alone: getters inside a `#[cfg(test)]`
     /// module or an integration-test or benchmark target. Defaults to
     /// `true`.
@@ -122,7 +144,10 @@ struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Self { exempt_tests: true }
+        Self {
+            measure_any_method_name: false,
+            exempt_tests: true,
+        }
     }
 }
 
@@ -166,14 +191,6 @@ impl<'tcx> LateLintPass<'tcx> for CloningGetter {
         let FnKind::Method(ident, _) = kind else {
             return;
         };
-        // `to_*` is the API guidelines' name for a deliberately costly
-        // conversion, so the prefix already tells a caller the copy is
-        // there. Asking such a method to return a borrow would contradict
-        // the convention this rule's own list of copying methods is drawn
-        // from -- `to_owned`, `to_string`, `to_vec` are that convention.
-        if ident.name.as_str().starts_with("to_") {
-            return;
-        }
         if !matches!(decl.implicit_self(), ImplicitSelfKind::RefImm) || decl.inputs.len() != 1 {
             return;
         }
@@ -191,9 +208,12 @@ impl<'tcx> LateLintPass<'tcx> for CloningGetter {
             return;
         }
         let typeck = cx.tcx.typeck(def_id);
-        let Some((field, field_ty)) = self.copied_field(cx, typeck, body.value) else {
+        let Some((field, field_ty, self_ty)) = self.copied_field(cx, typeck, body.value) else {
             return;
         };
+        if !self.is_getter(ident.name, self_ty) {
+            return;
+        }
         if self.config.exempt_tests && item_in_test_code(cx, def_id) {
             return;
         }
@@ -205,10 +225,11 @@ impl<'tcx> LateLintPass<'tcx> for CloningGetter {
             format!("getter `{getter}` returns an owned copy of `self.{field}`"),
             |diag| {
                 diag.help(format!(
-                    "return `{}` and let a caller that needs ownership copy at the call site",
+                    "either stop it cloning: return `{}`, and let a caller that needs ownership \
+                     copy at the call site",
                     borrowed_form(cx, field_ty),
                 ));
-                diag.help(COPY_BACK_HELP);
+                diag.help(RENAME_HELP);
             },
         );
     }
@@ -223,7 +244,7 @@ impl CloningGetter {
         cx: &LateContext<'tcx>,
         typeck: &TypeckResults<'tcx>,
         body: &'tcx Expr<'tcx>,
-    ) -> Option<(Symbol, Ty<'tcx>)> {
+    ) -> Option<(Symbol, Ty<'tcx>, Ty<'tcx>)> {
         let expr = unwrap_block(body);
         let ExprKind::MethodCall(segment, receiver, [], _) = expr.kind else {
             return None;
@@ -243,6 +264,7 @@ impl CloningGetter {
         if segment.ident.name != kw::SelfLower {
             return None;
         }
+        let self_ty = typeck.expr_ty(base);
         let field_ty = typeck.expr_ty(receiver);
         // The call has to reproduce the field's own type for a borrow of
         // the field to serve in its place. `self.count.to_string()`
@@ -256,8 +278,18 @@ impl CloningGetter {
         if is_copy(cx, field_ty) {
             return None;
         }
-        Some((field.name, field_ty))
+        Some((field.name, field_ty, self_ty))
     }
+}
+
+/// Whether `name` is the name of a field of `self_ty`. A tuple struct's
+/// fields are named `0`, `1`, ..., which no method can be called, so such
+/// a type simply never matches.
+fn has_field<'tcx>(self_ty: Ty<'tcx>, name: Symbol) -> bool {
+    let ty::Adt(adt, _) = self_ty.peel_refs().kind() else {
+        return false;
+    };
+    adt.all_fields().any(|field| field.name == name)
 }
 
 /// The borrowed form a caller could take in place of the field's owned
@@ -309,4 +341,32 @@ fn unwrap_block<'a>(mut expr: &'a Expr<'a>) -> &'a Expr<'a> {
         expr = inner;
     }
     expr
+}
+
+impl CloningGetter {
+    /// Whether `method` on `self_ty` is a getter, by the definition this
+    /// rule measures. The clauses are tried in order, and the first that
+    /// applies decides:
+    ///
+    /// 1. `to_*`, `into_*` and `as_*` are conversions, never getters.
+    /// 2. `get_*` is a getter.
+    /// 3. A method named for a field of `self` is a getter.
+    /// 4. Any other name is a getter only where `measure_any_method_name`
+    ///    says so.
+    ///
+    /// Every clause also requires the single `&self` receiver, which the
+    /// caller has already established.
+    fn is_getter(&self, method: Symbol, self_ty: Ty<'_>) -> bool {
+        let name = method.as_str();
+        if name.starts_with("to_") || name.starts_with("into_") || name.starts_with("as_") {
+            return false;
+        }
+        if name.starts_with("get_") {
+            return true;
+        }
+        if has_field(self_ty, method) {
+            return true;
+        }
+        self.config.measure_any_method_name
+    }
 }

@@ -107,6 +107,35 @@ impl Person {
         self.first_name.clone()
     }
 
+    // Good: `into_*` likewise announces that it costs something.
+    fn into_first_name(&self) -> String {
+        self.first_name.clone()
+    }
+
+    // Good: `as_*` promises the opposite, and has its own rule.
+    fn as_first_name(&self) -> String {
+        self.first_name.clone()
+    }
+
+    // Bad: `get_*` is a getter whatever it is named after.
+    fn get_anything(&self) -> String {
+        self.first_name.clone()
+    }
+
+    // Good: names neither `get_*` nor a field, so it is a getter only
+    // where `measure_any_method_name` says so.
+    fn cloned_first_name(&self) -> String {
+        self.first_name.clone()
+    }
+
+    fn clone_first_name(&self) -> String {
+        self.first_name.clone()
+    }
+
+    fn unrelated(&self) -> String {
+        self.first_name.clone()
+    }
+
     // Bad: `to` without the underscore is not the conversion prefix.
     fn token(&self) -> String {
         self.token.clone()
