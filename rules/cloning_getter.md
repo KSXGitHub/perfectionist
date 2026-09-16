@@ -29,13 +29,10 @@ applies:
 1. `to_*`, `into_*` and `as_*` are conversions, never getters.
    Each prefix carries its own promise about cost and ownership,
    so the copy is the name's business rather than this rule's.
-2. A name carrying an exempt prefix -- `clone_*` and `cloned_*`
-   by default, configurable -- is never a getter either: the name
-   already tells a caller the copy is there.
-3. `get_*` is a getter.
-4. A method named for a field of `self` is a getter.
-5. Any other name is a getter only where `measure_unmatched_names`
-   says so.
+2. The last `getter_name_patterns` entry that matches the name
+   says whether the name is a getter.
+3. A name no entry matches is a getter when it names a field of
+   `self`.
 
 Every clause also requires the `&self` receiver and no other
 parameter.
@@ -96,39 +93,35 @@ impl Person {
 
 Configure via `dylint.toml` under `["perfectionist::cloning_getter"]`. Every field is optional; the per-field prose below states the default.
 
-### Field: `extra_exempt_prefixes`
+### Field: `getter_name_patterns`
 
-- _Type:_ `[identifier-prefix string]`
+- _Type:_ `[name-pattern string]`
 - _Optional_
 
-Additional name prefixes that keep a method out of the rule,
-whatever its body does and whatever `measure_unmatched_names`
-says. Merged with the built-in defaults (`["clone_", "cloned_"]`);
-empty by default. Each entry ends in `_` and is not one of the
-conversion prefixes `as_`, `into_`, `to_`, which the rule exempts
-whatever this says; anything else is rejected at config-parse
-time.
+Which method names are getters by name alone, as an ordered
+list of patterns. Each entry takes one of four forms:
 
-### Field: `ignore_exempt_prefixes`
+- `*` -- every name is a getter.
+- `prefix_*` -- every name starting with `prefix_` is a getter.
+- `!*` -- no name is a getter.
+- `!prefix_*` -- no name starting with `prefix_` is a getter.
 
-- _Type:_ `[identifier-prefix string]`
-- _Optional_
+The last entry that matches a name is the one that decides, the
+way a later `.gitignore` line overrides an earlier one. So
+`["*", "!clone_*"]` measures every name but the `clone_*` ones,
+and `["!*", "get_*"]` measures the `get_*` ones and nothing
+else.
 
-Prefixes to drop from the exempt set, even if they appear in the
-built-in defaults or in `extra_exempt_prefixes`. Empty by default;
-checked after the merge, so this knob always wins. Each entry is
-shaped as `extra_exempt_prefixes` requires.
+A name no entry matches at all is a getter when it names a field
+of `self`, so the list decides only the names it mentions and
+leaves the rest to that. Defaults to
+`["get_*", "!clone_*", "!cloned_*"]`.
 
-### Field: `measure_unmatched_names`
-
-- _Type:_ `boolean`
-- _Optional_
-
-Whether a method whose name neither starts with `get_` nor matches
-a field of `self` is still treated as a getter. With this off, such
-a method is left alone however its body reads. A conversion prefix
--- `to_*`, `into_*`, `as_*` -- and an exempt prefix are never
-getters whatever this says. Defaults to `false`.
+`as_*`, `to_*` and `into_*` are conversions, which the rule
+never measures whatever this says. No entry may name one, or any
+longer prefix under one; such an entry could not change an
+outcome, and is rejected at config-parse time rather than
+silently doing nothing.
 
 ### Field: `exempt_tests`
 

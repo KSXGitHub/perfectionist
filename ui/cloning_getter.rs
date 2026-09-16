@@ -25,6 +25,7 @@ struct Person {
     scores: [u8; 4],
     badge: Badge,
     token: String,
+    clone_url: String,
 }
 
 impl Person {
@@ -117,13 +118,14 @@ impl Person {
         self.first_name.clone()
     }
 
-    // Bad: `get_*` is a getter whatever it is named after.
+    // Bad: `get_*` is the one name shape the default list calls a
+    // getter outright, whatever it is named after.
     fn get_anything(&self) -> String {
         self.first_name.clone()
     }
 
-    // Good: names neither `get_*` nor a field, so it is a getter only
-    // where `measure_any_method_name` says so.
+    // Good: the default list's `!cloned_*` and `!clone_*` entries say
+    // outright that these are not getters.
     fn cloned_first_name(&self) -> String {
         self.first_name.clone()
     }
@@ -132,6 +134,15 @@ impl Person {
         self.first_name.clone()
     }
 
+    // Good: the same two entries decide a name before the field match
+    // does, so a getter named for a field that carries the prefix is
+    // left alone as well.
+    fn clone_url(&self) -> String {
+        self.clone_url.clone()
+    }
+
+    // Good: no entry matches it and it names no field, so nothing
+    // calls it a getter.
     fn unrelated(&self) -> String {
         self.first_name.clone()
     }
