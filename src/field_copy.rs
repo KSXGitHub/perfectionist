@@ -10,8 +10,9 @@
 //! taking `&self` and nothing else, whose body — once statement-free
 //! blocks are unwrapped — is exactly `self.<field>.<copying method>()`
 //! producing the field's own type. A call that renders the field
-//! (`to_string` on a number) or that returns a `Copy` value is not a
-//! copy a borrow could have replaced, so it is not recognised here.
+//! (`to_string` on a number), one that returns a `Copy` value, and one
+//! that clones a refcounted handle are none of them a copy a borrow
+//! could have replaced, so none is recognised here.
 
 use crate::common::hir_in_external_macro;
 use clippy_utils::ty::is_copy;
@@ -141,6 +142,17 @@ pub(crate) fn field_copy<'tcx>(
     if is_copy(cx, field_ty) {
         return None;
     }
+    // Cloning an `Rc` or an `Arc` bumps a refcount rather than copying
+    // what the handle points at, so the borrowed form saves nothing,
+    // and `&Rc<T>` does not serve in its place: a caller that keeps the
+    // handle has to own one. Measuring it would also make the rule
+    // depend on spelling, since the same clone written
+    // `Rc::clone(&self.field)` -- the form `clippy::clone_on_ref_ptr`
+    // asks for -- is a call rather than a method call and never reaches
+    // this far.
+    if is_refcounted_handle(cx, field_ty) {
+        return None;
+    }
     Some(FieldCopy {
         method,
         field: field.name,
@@ -160,10 +172,23 @@ pub(crate) fn has_field<'tcx>(self_ty: Ty<'tcx>, name: Symbol) -> bool {
     adt.all_fields().any(|field| field.name == name)
 }
 
+/// Whether `ty` is an `Rc` or an `Arc`, whose `clone` copies a
+/// refcount rather than the value behind it.
+fn is_refcounted_handle<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> bool {
+    let ty::Adt(adt, _) = ty.kind() else {
+        return false;
+    };
+    let did = adt.did();
+    ["Rc", "Arc"]
+        .iter()
+        .any(|name| cx.tcx.is_diagnostic_item(Symbol::intern(name), did))
+}
+
 /// The borrowed form a caller could take in place of the field's owned
 /// type: `&str` for a `String`, `&Path` for a `PathBuf`, `&OsStr` for an
-/// `OsString`, `&[T]` for a `Vec<T>`, the inner type's own borrowed form
-/// under an `Option`, and `&T` for anything else.
+/// `OsString`, `&CStr` for a `CString`, `&[T]` for a `Vec<T>`, the inner
+/// type's own borrowed form under an `Option` or a `Box`, and `&T` for
+/// anything else.
 pub(crate) fn borrowed_form<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> String {
     // Print paths trimmed to their final segment, so the help reads
     // `&[String]` rather than `&[std::string::String]`. The guard is what
@@ -187,6 +212,11 @@ pub(crate) fn borrowed_form<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> Strin
     if is("OsString") {
         return "&OsStr".to_owned();
     }
+    // `CString` carries `cstring_type`; `needless_borrowed_parameters`
+    // maps the same pair in the other direction.
+    if is("cstring_type") {
+        return "&CStr".to_owned();
+    }
     let Some(inner) = args.types().next() else {
         return format!("&{ty}");
     };
@@ -195,6 +225,14 @@ pub(crate) fn borrowed_form<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> Strin
     }
     if is("Option") {
         return format!("Option<{}>", borrowed_form(cx, inner));
+    }
+    // A `Box<T>` is owned storage for one `T`, so what a caller borrows
+    // is the `T`: `&str` for a `Box<str>`, `&[T]` for a `Box<[T]>`.
+    // `&Box<T>` would name the field's representation, which is the
+    // habit this rule exists to break, and trips `clippy::borrowed_box`
+    // besides.
+    if Some(did) == cx.tcx.lang_items().owned_box() {
+        return borrowed_form(cx, inner);
     }
     format!("&{ty}")
 }
