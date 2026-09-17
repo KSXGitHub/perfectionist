@@ -147,13 +147,13 @@ struct Config {
     /// with a prefix would leave the names it does not mention resting
     /// on a baseline the reader has to know, so one is rejected. The
     /// last entry that matches a name is then the one that decides, so
-    /// a later entry overrides an earlier one: `["*", "!clone_*"]`
-    /// measures every other name but the `clone_*` ones, and
-    /// `["!*", "get_*"]` measures the `get_*` ones and nothing else.
+    /// a later entry overrides an earlier one:
     ///
-    /// Defaults to `["!*", "get_*"]`: no name beyond the field-named
-    /// ones is a getter, except a `get_*` one, which is whatever field
-    /// it reads.
+    /// - `["*", "!clone_*", "!cloned_*"]` measures every other name,
+    ///   except one whose own prefix says it copies.
+    /// - `["!*", "get_*"]` measures the `get_*` names and no other.
+    ///
+    /// Defaults to `["!*", "get_*"]`.
     ///
     /// `as_*`, `to_*` and `into_*` are conversions, which the rule
     /// never measures whatever this says. No entry may name one, or any

@@ -105,3 +105,21 @@ fn a_malformed_entry_is_reported_as_malformed() {
     let error = rejection(&["!*", "to_owned"]);
     assert!(error.contains("closed by `*`"), "{error}");
 }
+
+#[test]
+fn the_documented_examples_mean_what_they_say() {
+    // `["*", "!clone_*", "!cloned_*"]` measures every other name,
+    // except one whose own prefix says it copies.
+    let broad = parse(&["*", "!clone_*", "!cloned_*"]).expect("should parse");
+    assert!(broad.says_getter("unrelated"));
+    assert!(broad.says_getter("get_thing"));
+    assert!(!broad.says_getter("clone_url"));
+    assert!(!broad.says_getter("cloned_at"));
+
+    // `["!*", "get_*"]` measures the `get_*` names and no other.
+    let narrow = parse(&["!*", "get_*"]).expect("should parse");
+    assert!(narrow.says_getter("get_thing"));
+    assert!(!narrow.says_getter("unrelated"));
+    assert!(!narrow.says_getter("clone_url"));
+    assert!(!narrow.says_getter("cloned_at"));
+}
