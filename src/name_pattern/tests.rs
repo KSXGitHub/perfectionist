@@ -1,7 +1,7 @@
 use super::{NamePattern, verdict};
 
 fn parse(pattern: &str) -> Result<NamePattern, String> {
-    NamePattern::try_from(pattern.to_owned())
+    NamePattern::parse(pattern)
 }
 
 /// The verdict a one-entry list carries for `name`, or `None` where
@@ -120,7 +120,7 @@ fn a_prefix_must_be_spelled_the_way_a_method_name_could_be() {
 fn the_language_itself_carries_no_policy() {
     // A rule that has to forbid some entry does it in a newtype of its
     // own; every well-formed pattern parses here, conversion prefixes
-    // included. `crate::getter_name_pattern` is where those are
+    // included. `crate::getter_name_patterns` is where those are
     // rejected.
     for pattern in ["as_*", "to_*", "into_*", "!as_ref_*"] {
         assert!(parse(pattern).is_ok(), "{pattern:?} should parse");

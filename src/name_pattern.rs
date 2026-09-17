@@ -39,11 +39,9 @@ pub(crate) const TOML_LABEL: &str = "name-pattern string";
 /// One entry of a rule's name-pattern list: a set of names, and the
 /// verdict the entry carries for a name in it.
 ///
-/// Deserialises from a TOML string in one of four forms — `*`,
-/// `prefix_*`, `!*`, `!prefix_*` — and rejects anything else at
-/// config-parse time.
-#[derive(Debug, serde::Deserialize)]
-#[serde(try_from = "String")]
+/// Parsed from one of four written forms — `*`, `prefix_*`, `!*`,
+/// `!prefix_*` — with anything else rejected at config-parse time.
+#[derive(Debug)]
 pub(crate) struct NamePattern {
     /// Whether the leading `!` was present, which flips the entry's
     /// verdict.
@@ -89,12 +87,18 @@ impl NamePattern {
     }
 }
 
-impl TryFrom<String> for NamePattern {
-    type Error = String;
-
-    fn try_from(pattern: String) -> Result<Self, Self::Error> {
-        let (negated, rest) = take_negation(&pattern);
-        let scope = take_scope(rest).map_err(|error| error.message(&pattern))?;
+impl NamePattern {
+    /// Parse one written pattern, or say why it is not one.
+    ///
+    /// This is the only way to build a [`NamePattern`], and it is
+    /// deliberately not a `Deserialize` impl: a rule's list carries
+    /// policy of its own, so it deserialises the written strings and
+    /// calls this per entry. A `Vec<NamePattern>` field that serde
+    /// could fill directly would be a way to reach the grammar while
+    /// skipping whatever the rule meant to enforce on top of it.
+    pub(crate) fn parse(pattern: &str) -> Result<Self, String> {
+        let (negated, rest) = take_negation(pattern);
+        let scope = take_scope(rest).map_err(|error| error.message(pattern))?;
         Ok(NamePattern { negated, scope })
     }
 }

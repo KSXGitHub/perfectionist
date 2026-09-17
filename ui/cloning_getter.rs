@@ -3,11 +3,15 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
+use std::ffi::{CString, OsString};
 use std::fmt;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
+use std::sync::Arc;
 
 // A field type that renders as a `String` but is not one, and is not
 // `Copy` either.
+#[derive(Clone)]
 struct Badge(String);
 
 impl fmt::Display for Badge {
@@ -26,6 +30,7 @@ struct Person {
     badge: Badge,
     token: String,
     clone_url: String,
+    generated: String,
 }
 
 impl Person {
@@ -49,7 +54,13 @@ impl Person {
         self.tags.to_vec()
     }
 
-    // Bad: `to_string` on a `String` field.
+    // Bad: `to_string` on a `String` field is the field copied out.
+    fn token(&self) -> String {
+        self.token.to_string()
+    }
+
+    // Good: copies a field, but names none and is not `get_*`, so the
+    // default list never calls it a getter.
     fn display_name(&self) -> String {
         self.first_name.to_string()
     }
@@ -123,7 +134,7 @@ impl Person {
     // Bad: `get_*` is the one name shape the default list calls a
     // getter outright, whatever it is named after.
     fn get_anything(&self) -> String {
-        self.first_name.clone()
+        self.first_name.to_owned()
     }
 
     // Good: no entry of the default list covers these, and they name no
@@ -147,11 +158,6 @@ impl Person {
         self.clone_url.clone()
     }
 
-    // Bad: `to` without the underscore is not the conversion prefix.
-    fn token(&self) -> String {
-        self.token.clone()
-    }
-
     // Good: not a getter — it takes an argument, even though the body
     // copies a field and nothing else.
     fn first_name_or(&self, _fallback: &str) -> String {
@@ -166,6 +172,52 @@ impl Person {
     // Good: `&mut self` is a mutator, not a getter.
     fn take_name(&mut self) -> String {
         self.first_name.clone()
+    }
+}
+
+struct Config;
+
+struct Holder {
+    label: OsString,
+    cpath: CString,
+    boxed: Box<str>,
+    badge: Badge,
+    handle: Arc<Config>,
+    counted: Rc<Config>,
+}
+
+impl Holder {
+    // Bad: `to_os_string`, whose borrowed form is `&OsStr`.
+    fn label(&self) -> OsString {
+        self.label.to_os_string()
+    }
+
+    // Bad: a `CString` borrows as `&CStr`.
+    fn cpath(&self) -> CString {
+        self.cpath.clone()
+    }
+
+    // Bad: a `Box<T>` is owned storage for one `T`, so what a caller
+    // borrows is the `T` -- `&str`, never `&Box<str>`.
+    fn boxed(&self) -> Box<str> {
+        self.boxed.clone()
+    }
+
+    // Bad: a type with no borrowed form of its own falls back to `&T`.
+    fn badge(&self) -> Badge {
+        self.badge.clone()
+    }
+
+    // Good: cloning an `Arc` bumps a refcount rather than copying what
+    // it points at, and a caller that keeps the handle needs to own
+    // one, so `&Arc<Config>` would not serve.
+    fn handle(&self) -> Arc<Config> {
+        self.handle.clone()
+    }
+
+    // Good: an `Rc` for the same reason.
+    fn counted(&self) -> Rc<Config> {
+        self.counted.clone()
     }
 }
 
@@ -193,7 +245,11 @@ impl Named for Person {
     }
 }
 
-// Good: a method a macro expands to is not measured.
+// Good: a method a macro expands to is not measured. The generated
+// method is named for the field it returns, so the field-match clause
+// would admit the name and only `Span::from_expansion` stops the
+// diagnostic; a method named anything else would leave this passing
+// whether the guard were there or not.
 macro_rules! getter {
     ($name:ident, $field:ident) => {
         impl Person {
@@ -204,6 +260,6 @@ macro_rules! getter {
     };
 }
 
-getter!(generated_name, first_name);
+getter!(generated, generated);
 
 fn main() {}
