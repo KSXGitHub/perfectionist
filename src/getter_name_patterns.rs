@@ -92,7 +92,7 @@ impl TryFrom<Vec<String>> for GetterNamePatterns {
 fn parse_entry(entry: String) -> Result<NamePattern, String> {
     // The grammar first, so an entry that is both ill-formed and
     // conversion-shaped is reported for its shape.
-    let pattern = NamePattern::try_from(entry.clone())?;
+    let pattern = NamePattern::parse(&entry)?;
     if let Some(prefix) = pattern.prefix()
         && let Some(conversion) = CONVERSION_PREFIXES
             .iter()

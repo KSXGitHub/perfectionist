@@ -1,7 +1,7 @@
 // aux-build:proc_macro_synth_binding.rs
 
 // Regression test: `cloning_getter` must not fire on a
-// `fn _synth(&self) -> String { self.s.clone() }` synthesised by a
+// `fn s(&self) -> String { self.s.clone() }` synthesised by a
 // proc-macro derive whose expansion stamps the user's span on the whole
 // generated `impl`, the way an accessor derive spans a generated getter
 // over the field it reads. The rule reports at the method's `def_span`,
@@ -10,7 +10,11 @@
 // `hir_in_external_macro` guard the sibling late passes use has nothing
 // to find either. The text-based `is_from_proc_macro` is what holds
 // here. The `SynthCloningGetter` derive imported below builds that span
-// shape on a minimal `#[synth_cloning_getter]` attribute.
+// shape on a minimal `#[synth_cloning_getter]` attribute. The
+// synthesised method is named for the field it reads, so the rule's
+// field-match clause admits the name and the guard is the only thing
+// left stopping the diagnostic -- without that, the fixture would pass
+// whether the guard were there or not.
 
 #![allow(dead_code, unused, reason = "ui fixture")]
 

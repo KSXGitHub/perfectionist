@@ -35,6 +35,15 @@ LL |     fn tags(&self) -> Vec<String> {
    = help: either stop it cloning: return `&[String]`, and let a caller that needs ownership copy at the call site
    = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
 
+warning: getter `token` returns an owned copy of `self.token`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn token(&self) -> String {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `&str`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+
 warning: getter `get_anything` returns an owned copy of `self.first_name`
   --> $DIR/cloning_getter.rs:LL:CC
    |
@@ -53,13 +62,40 @@ LL |     fn clone_url(&self) -> String {
    = help: either stop it cloning: return `&str`, and let a caller that needs ownership copy at the call site
    = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
 
-warning: getter `token` returns an owned copy of `self.token`
+warning: getter `label` returns an owned copy of `self.label`
   --> $DIR/cloning_getter.rs:LL:CC
    |
-LL |     fn token(&self) -> String {
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |     fn label(&self) -> OsString {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `&OsStr`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+
+warning: getter `cpath` returns an owned copy of `self.cpath`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn cpath(&self) -> CString {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `&CStr`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+
+warning: getter `boxed` returns an owned copy of `self.boxed`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn boxed(&self) -> Box<str> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: either stop it cloning: return `&str`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+
+warning: getter `badge` returns an owned copy of `self.badge`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn badge(&self) -> Badge {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `&Badge`, and let a caller that needs ownership copy at the call site
    = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
 
 warning: N warnings emitted

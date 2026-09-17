@@ -20,14 +20,20 @@ declare_tool_lint! {
     /// `to_owned`, `to_string`, `to_vec`, `to_path_buf`, or
     /// `to_os_string` — and asks for the borrowed form instead: `&str`
     /// for a `String` field, `&Path` for a `PathBuf`, `&OsStr` for an
-    /// `OsString`, `&[T]` for a `Vec<T>`, `Option<&T>` for an
-    /// `Option<T>`, `&T` otherwise.
+    /// `OsString`, `&CStr` for a `CString`, `&[T]` for a `Vec<T>`,
+    /// whatever the inner type borrows as under an `Option` or a `Box`,
+    /// and `&T` otherwise.
     ///
     /// The call has to reproduce the field's own type for a borrow to
     /// serve in its place. So a `Copy` field is left alone — returning
     /// it by value is the borrowed form's equal — and so is a call that
     /// renders the field rather than copying it, such as `to_string` on
     /// a numeric field, where no borrow of the field is a `String`.
+    ///
+    /// An `Rc` or an `Arc` field is left alone too: cloning one bumps a
+    /// refcount rather than copying what it points at, so a borrow
+    /// saves nothing, and a caller that keeps the handle has to own
+    /// one.
     ///
     /// What counts as a getter is decided by the first of these that
     /// applies:
@@ -39,8 +45,9 @@ declare_tool_lint! {
     ///    Rust's own convention for a getter's name, so no
     ///    configuration overrides it.
     /// 3. Any other name is a getter where the last
-    ///    `getter_name_patterns` entry matching it says so, and is not
-    ///    one where no entry matches it at all.
+    ///    `getter_name_patterns` entry matching it says so. There is
+    ///    always such an entry: every list's first one covers every
+    ///    name.
     ///
     /// Every clause also requires the `&self` receiver and no other
     /// parameter.

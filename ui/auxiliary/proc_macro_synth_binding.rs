@@ -460,7 +460,7 @@ pub fn synth_owned_param(input: TokenStream) -> TokenStream {
 
 /// `#[derive(SynthCloningGetter)]` + `#[synth_cloning_getter]` →
 /// `const _: () = { struct _Synth { s: String } impl _Synth {
-/// fn _synth(&self) -> String { self.s.clone() } } };` where the
+/// fn s(&self) -> String { self.s.clone() } } };` where the
 /// generated `impl` and every token of the method inside it inherit
 /// the user-span of `synth_cloning_getter`, the way a `getset`-style
 /// derive spans an accessor over the field it accesses. `cloning_getter`
@@ -507,7 +507,11 @@ pub fn synth_cloning_getter(input: TokenStream) -> TokenStream {
         ))),
     ]);
 
-    // `fn _synth(&self) -> String` — every signature token user-spanned.
+    // `fn s(&self) -> String` — every signature token user-spanned. The
+    // method is named for the field it reads, so `cloning_getter`'s
+    // field-match clause admits it and only the proc-macro guard stops
+    // the diagnostic; a method named anything else would leave the
+    // fixture passing with the guard removed.
     let mut receiver = TokenStream::new();
     receiver.extend([
         at_sig(TokenTree::Punct(Punct::new('&', Spacing::Alone))),
@@ -516,7 +520,7 @@ pub fn synth_cloning_getter(input: TokenStream) -> TokenStream {
     let mut method = TokenStream::new();
     method.extend([
         at_sig(TokenTree::Ident(Ident::new("fn", attr_span))),
-        at_sig(TokenTree::Ident(Ident::new("_synth", attr_span))),
+        at_sig(TokenTree::Ident(Ident::new("s", attr_span))),
         at_sig(TokenTree::Group(Group::new(
             Delimiter::Parenthesis,
             receiver,
