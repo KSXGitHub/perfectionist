@@ -39,9 +39,8 @@ declare_tool_lint! {
     /// applies:
     ///
     /// 1. `to_*`, `into_*` and `as_*` are conversions, never getters.
-    ///    The first two announce that they cost something, so the copy is
-    ///    part of what the name promises; `as_*` promises the opposite,
-    ///    and `perfectionist::cloning_as_conversion` measures it.
+    ///    Each prefix carries its own promise about cost and ownership,
+    ///    so the copy is the name's business rather than this rule's.
     /// 2. A method named for a field of `self` is a getter. This is
     ///    Rust's own convention for a getter's name, so no
     ///    configuration overrides it.
@@ -125,9 +124,8 @@ const DEFAULT_GETTER_NAME_PATTERNS: &[&str] = &["!*", "get_*"];
 ///
 /// `to_*` is the rename that does it without trading one complaint for
 /// another. The other two prefixes leave getter-hood behind as well,
-/// but each carries a promise the copy would then break, and a rule to
-/// match: `perfectionist::cloning_as_conversion` for `as_*`, which says
-/// the call is free.
+/// but each carries a promise the copy would then break: `as_*` says
+/// the call is free, and `into_*` says it consumes.
 ///
 /// It carries the test for choosing it, in the shape the sibling rules
 /// use: a call site that copies the borrow straight back is what says

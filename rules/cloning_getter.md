@@ -33,9 +33,8 @@ What counts as a getter is decided by the first of these that
 applies:
 
 1. `to_*`, `into_*` and `as_*` are conversions, never getters.
-   The first two announce that they cost something, so the copy is
-   part of what the name promises; `as_*` promises the opposite,
-   and `perfectionist::cloning_as_conversion` measures it.
+   Each prefix carries its own promise about cost and ownership,
+   so the copy is the name's business rather than this rule's.
 2. A method named for a field of `self` is a getter. This is
    Rust's own convention for a getter's name, so no
    configuration overrides it.
