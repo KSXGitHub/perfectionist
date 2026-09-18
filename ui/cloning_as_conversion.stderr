@@ -1,0 +1,56 @@
+warning: `as_name` copies `self.name`, but `as_` promises a free conversion
+  --> $DIR/cloning_as_conversion.rs:LL:CC
+   |
+LL |     fn as_name(&self) -> String {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it copying: return `&str`, which is free and is what the name promises
+   = help: or stop it being an `as_*`: rename it `to_name`, the prefix for a conversion that costs something, so the call site shows what it pays
+   = note: `#[warn(perfectionist::cloning_as_conversion)]` on by default
+
+warning: `as_home` copies `self.home`, but `as_` promises a free conversion
+  --> $DIR/cloning_as_conversion.rs:LL:CC
+   |
+LL |     fn as_home(&self) -> PathBuf {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it copying: return `&Path`, which is free and is what the name promises
+   = help: or stop it being an `as_*`: rename it `to_home`, the prefix for a conversion that costs something, so the call site shows what it pays
+
+warning: `as_tags` copies `self.tags`, but `as_` promises a free conversion
+  --> $DIR/cloning_as_conversion.rs:LL:CC
+   |
+LL |     fn as_tags(&self) -> Vec<String> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it copying: return `&[String]`, which is free and is what the name promises
+   = help: or stop it being an `as_*`: rename it `to_tags`, the prefix for a conversion that costs something, so the call site shows what it pays
+
+warning: `as_label` copies `self.label`, but `as_` promises a free conversion
+  --> $DIR/cloning_as_conversion.rs:LL:CC
+   |
+LL |     fn as_label(&self) -> Box<str> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it copying: return `&str`, which is free and is what the name promises
+   = help: or stop it being an `as_*`: rename it `to_label`, the prefix for a conversion that costs something, so the call site shows what it pays
+
+warning: `as_middle` copies `self.middle`, but `as_` promises a free conversion
+  --> $DIR/cloning_as_conversion.rs:LL:CC
+   |
+LL |     fn as_middle(&self) -> Option<String> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it copying: return `Option<&str>`, which is free and is what the name promises
+   = help: or stop it being an `as_*`: rename it `to_middle`, the prefix for a conversion that costs something, so the call site shows what it pays
+
+warning: `as_cpath` copies `self.cpath`, but `as_` promises a free conversion
+  --> $DIR/cloning_as_conversion.rs:LL:CC
+   |
+LL |     fn as_cpath(&self) -> CString {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it copying: return `&CStr`, which is free and is what the name promises
+   = help: or stop it being an `as_*`: rename it `to_cpath`, the prefix for a conversion that costs something, so the call site shows what it pays
+
+warning: N warnings emitted
