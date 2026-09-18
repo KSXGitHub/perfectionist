@@ -60,7 +60,12 @@ fn ui_harness_dependencies(manifest: &toml::Table) -> Vec<String> {
         .flatten()
         .filter_map(|(cfg, target)| Some((cfg, target.as_table()?)));
     for (cfg, target) in target_tables {
-        collect(target, &format!("target.{cfg}."), workspace, &mut offenders);
+        collect(
+            target,
+            &format!("target.'{cfg}'."),
+            workspace,
+            &mut offenders,
+        );
     }
     offenders
 }
@@ -111,42 +116,42 @@ fn resolves_to_ui_harness(name: &str, spec: &toml::Value, workspace: Option<&tom
 fn every_dependency_form_that_reaches_the_harness_is_found() {
     let cases = [
         (
-            "under its own key",
+            "[dev-dependencies] dylint_testing",
             text_block_fnl! {
                 "[dev-dependencies]"
                 r#"dylint_testing = "6.0.4""#
             },
         ),
         (
-            "renamed through `package`",
+            "[dev-dependencies] ui_harness",
             text_block_fnl! {
                 "[dev-dependencies]"
                 r#"ui_harness = { package = "dylint_testing", version = "6.0.4" }"#
             },
         ),
         (
-            "in a target table",
+            "[target.'cfg(unix)'.dev-dependencies] ui_harness",
             text_block_fnl! {
                 "[target.'cfg(unix)'.dev-dependencies]"
                 r#"ui_harness = { package = "dylint_testing", version = "6.0.4" }"#
             },
         ),
         (
-            "as a normal dependency",
+            "[dependencies] dylint_testing",
             text_block_fnl! {
                 "[dependencies]"
                 r#"dylint_testing = "6.0.4""#
             },
         ),
         (
-            "as a build dependency",
+            "[build-dependencies] dylint_testing",
             text_block_fnl! {
                 "[build-dependencies]"
                 r#"dylint_testing = "6.0.4""#
             },
         ),
         (
-            "inherited from the workspace",
+            "[dev-dependencies] ui_harness",
             text_block_fnl! {
                 "[workspace.dependencies]"
                 r#"ui_harness = { package = "dylint_testing", version = "6.0.4" }"#
@@ -155,10 +160,11 @@ fn every_dependency_form_that_reaches_the_harness_is_found() {
             },
         ),
     ];
-    for (form, manifest) in cases {
-        assert!(
-            !ui_harness_dependencies(&parse(manifest)).is_empty(),
-            "a dependency {form} went unnoticed:\n{manifest}",
+    for (expected, manifest) in cases {
+        assert_eq!(
+            ui_harness_dependencies(&parse(manifest)),
+            vec![expected.to_owned()],
+            "this manifest was not read as `{expected}`:\n{manifest}",
         );
     }
 }
@@ -166,6 +172,12 @@ fn every_dependency_form_that_reaches_the_harness_is_found() {
 /// The complement: a manifest that names other crates, in every table
 /// walked above, must produce nothing. Without this the test above
 /// would pass just as happily on a function that always reports a hit.
+///
+/// The `[workspace.dependencies]` entry names the harness on purpose.
+/// That table is a catalogue rather than a dependency list — nothing
+/// reaches a member's extern prelude until the member opts in with
+/// `workspace = true` — so an entry no member claims must not be
+/// reported.
 #[test]
 fn a_manifest_without_the_harness_reports_nothing() {
     let manifest = text_block_fnl! {
@@ -179,10 +191,53 @@ fn a_manifest_without_the_harness_reports_nothing() {
         "[target.'cfg(unix)'.dev-dependencies]"
         r#"libc = "0.2""#
         "[workspace.dependencies]"
-        r#"shared = { package = "some_other_crate", version = "1" }"#
+        r#"unclaimed = { package = "dylint_testing", version = "6.0.4" }"#
     };
     assert_eq!(
         ui_harness_dependencies(&parse(manifest)),
         Vec::<String>::new(),
     );
+}
+
+/// The harness and the lint-library crate are two halves of one
+/// dylint release and have to move together: `tools/dev-tools` pins
+/// the `cargo-dylint` it installs to the `dylint_linting` requirement
+/// in *this* manifest, and that driver then loads a library the
+/// harness built. Before the harness moved to `_utils` the two
+/// requirements sat a few lines apart here, where a bump to one
+/// without the other was visible in review; now they are in separate
+/// files and nothing but this says they agree.
+#[test]
+fn the_harness_and_the_lint_library_agree_on_a_version() {
+    let linting = requirement(Path::new(env!("CARGO_MANIFEST_DIR")), "dylint_linting");
+    let testing = requirement(
+        &Path::new(env!("CARGO_MANIFEST_DIR")).join("utils"),
+        UI_HARNESS,
+    );
+    assert_eq!(
+        linting, testing,
+        "`dylint_linting` ({linting}) and `{UI_HARNESS}` ({testing}) must request the same \
+         version: `tools/dev-tools` installs `cargo-dylint` at the former, and its driver has \
+         to load a library the latter built.",
+    );
+}
+
+/// The version requirement `package_dir`'s manifest states for
+/// `dependency`, from whichever dependency table carries it.
+fn requirement(package_dir: &Path, dependency: &str) -> String {
+    let text = fs::read_to_string(package_dir.join("Cargo.toml")).expect("read a Cargo.toml");
+    let manifest: toml::Table = parse(&text);
+    DEPENDENCY_TABLES
+        .iter()
+        .filter_map(|table| manifest.get(*table)?.as_table()?.get(dependency))
+        .map(|spec| match spec {
+            toml::Value::String(version) => version.clone(),
+            spec => spec
+                .get("version")
+                .and_then(toml::Value::as_str)
+                .unwrap_or_default()
+                .to_owned(),
+        })
+        .next()
+        .unwrap_or_else(|| panic!("{dependency} is not a dependency of {package_dir:?}"))
 }
