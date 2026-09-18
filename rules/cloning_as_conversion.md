@@ -13,15 +13,20 @@ Flags an inherent `as_*` method taking `&self` whose whole body
 copies one field of `self` out through `clone`, `to_owned`,
 `to_string`, `to_vec`, `to_path_buf`, or `to_os_string`, and asks
 for the borrowed form instead: `&str` for a `String` field,
-`&Path` for a `PathBuf`, `&OsStr` for an `OsString`, `&[T]` for a
-`Vec<T>`, `Option<&T>` for an `Option<T>`, `&T` otherwise.
+`&Path` for a `PathBuf`, `&OsStr` for an `OsString`, `&CStr` for a
+`CString`, `&[T]` for a `Vec<T>`, whatever the inner type borrows
+as under an `Option` or a `Box`, and `&T` otherwise.
 
 The call has to reproduce the field's own type for a borrow to
 serve in its place. So a `Copy` field is left alone — handing one
-back by value costs nothing, which is what the prefix promises --
-and so is a call that renders the field rather than copying it,
-such as `to_string` on a numeric field, where no borrow of the
-field is a `String`.
+back by value is free, which is what the prefix promises — and so
+is a call that renders the field rather than copying it, such as
+`to_string` on a numeric field, where no borrow of the field is a
+`String`.
+
+An `Rc` or an `Arc` field is left alone too: cloning one bumps a
+refcount rather than copying what it points at, so a borrow saves
+nothing, and a caller that keeps the handle has to own one.
 
 Only a method taking `&self` and nothing else is measured. A
 method of a trait impl is left alone, since the trait fixes its
@@ -31,9 +36,9 @@ signature, and so is one produced by a macro.
 
 The Rust API Guidelines give `as_`, `to_` and `into_` distinct
 meanings, and `as_` is the free one: a borrowed value viewed as
-another borrowed form, costing nothing. A caller reads `as_name()`
-as free and may put it in a loop, so an `as_*` that allocates
-makes the name a promise the method does not keep. The reader has
+another borrowed form, free. A caller reads `as_name()` as free
+and may put it in a loop, so an `as_*` that allocates makes the
+name a promise the method does not keep. The reader has
 no way to see the cost at the call site.
 
 ## Interaction with Clippy
@@ -45,12 +50,17 @@ an `as_*` that takes `&self` and then allocates satisfies it.
 
 ## Interaction with sibling rules
 
-`perfectionist::cloning_getter` measures the same body shape on
-methods that are not named `as_*` or `to_*`. The two partition
-the shape by name, so a method is measured by exactly one of
-them. A `to_*` method is measured by neither: that prefix
-announces a costly conversion, so its copy is what the name
-already promises.
+`perfectionist::cloning_getter` measures the same body shape, but
+only on a name it reads as a getter, and it never reads one as a
+getter where the name starts with `as_`, `to_` or `into_`. So no
+method is measured by both.
+
+Some are measured by neither. `to_*` and `into_*` announce a
+conversion that costs something, so a copy is what those names
+already promise. A name that is none of the three and that the
+getter rule does not read as a getter — one naming no field, with
+nothing in `getter_name_patterns` admitting it — is left alone by
+both as well.
 
 ## Example
 
