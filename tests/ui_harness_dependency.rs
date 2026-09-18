@@ -11,6 +11,7 @@
 
 use std::fs;
 use std::path::Path;
+use text_block_macros::text_block_fnl;
 
 /// The UI harness, which reaches its driver through a process-global
 /// environment variable. `_utils` depends on it and wraps that access
@@ -107,35 +108,47 @@ fn every_dependency_form_that_reaches_the_harness_is_found() {
     let cases = [
         (
             "under its own key",
-            r#"[dev-dependencies]
-dylint_testing = "6.0.4""#,
+            text_block_fnl! {
+                "[dev-dependencies]"
+                r#"dylint_testing = "6.0.4""#
+            },
         ),
         (
             "renamed through `package`",
-            r#"[dev-dependencies]
-ui_harness = { package = "dylint_testing", version = "6.0.4" }"#,
+            text_block_fnl! {
+                "[dev-dependencies]"
+                r#"ui_harness = { package = "dylint_testing", version = "6.0.4" }"#
+            },
         ),
         (
             "in a target table",
-            r#"[target.'cfg(unix)'.dev-dependencies]
-ui_harness = { package = "dylint_testing", version = "6.0.4" }"#,
+            text_block_fnl! {
+                "[target.'cfg(unix)'.dev-dependencies]"
+                r#"ui_harness = { package = "dylint_testing", version = "6.0.4" }"#
+            },
         ),
         (
             "as a normal dependency",
-            r#"[dependencies]
-dylint_testing = "6.0.4""#,
+            text_block_fnl! {
+                "[dependencies]"
+                r#"dylint_testing = "6.0.4""#
+            },
         ),
         (
             "as a build dependency",
-            r#"[build-dependencies]
-dylint_testing = "6.0.4""#,
+            text_block_fnl! {
+                "[build-dependencies]"
+                r#"dylint_testing = "6.0.4""#
+            },
         ),
         (
             "inherited from the workspace",
-            r#"[workspace.dependencies]
-ui_harness = { package = "dylint_testing", version = "6.0.4" }
-[dev-dependencies]
-ui_harness = { workspace = true }"#,
+            text_block_fnl! {
+                "[workspace.dependencies]"
+                r#"ui_harness = { package = "dylint_testing", version = "6.0.4" }"#
+                "[dev-dependencies]"
+                "ui_harness = { workspace = true }"
+            },
         ),
     ];
     for (form, manifest) in cases {
@@ -151,17 +164,19 @@ ui_harness = { workspace = true }"#,
 /// would pass just as happily on a function that always reports a hit.
 #[test]
 fn a_manifest_without_the_harness_reports_nothing() {
-    let manifest = r#"[dependencies]
-serde = "1.0.228"
-[dev-dependencies]
-_utils = { path = "utils" }
-toml = "1.1.2"
-[build-dependencies]
-cc = "1"
-[target.'cfg(unix)'.dev-dependencies]
-libc = "0.2"
-[workspace.dependencies]
-shared = { package = "some_other_crate", version = "1" }"#;
+    let manifest = text_block_fnl! {
+        "[dependencies]"
+        r#"serde = "1.0.228""#
+        "[dev-dependencies]"
+        r#"_utils = { path = "utils" }"#
+        r#"toml = "1.1.2""#
+        "[build-dependencies]"
+        r#"cc = "1""#
+        "[target.'cfg(unix)'.dev-dependencies]"
+        r#"libc = "0.2""#
+        "[workspace.dependencies]"
+        r#"shared = { package = "some_other_crate", version = "1" }"#
+    };
     assert_eq!(
         ui_harness_dependencies(&parse(manifest)),
         Vec::<String>::new(),
