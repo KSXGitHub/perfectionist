@@ -72,7 +72,7 @@ impl ConfiguredUiTest {
     }
 
     /// Run the fixtures, then delete the copy and release the lock.
-    pub fn run(mut self) {
+    pub(crate) fn run(mut self) {
         self.test.run();
     }
 }
@@ -220,9 +220,19 @@ where
     SrcBase: AsRef<str>,
     DylintToml: AsRef<str>,
 {
+    /// Build the test and run it.
+    ///
+    /// This is the only way out of the builder: a built
+    /// [`ConfiguredUiTest`] holds [`SERIAL`] and offers nothing to do
+    /// but run, so handing one out would only widen the window the
+    /// lock is held for.
+    pub fn run(self) {
+        self.build().run();
+    }
+
     /// Copy the fixture tree, take [`SERIAL`], and describe the run to
     /// the harness. Everything the builder deferred happens here.
-    pub fn build(self) -> ConfiguredUiTest {
+    fn build(self) -> ConfiguredUiTest {
         // The copy lands in a `TempDir` of its own and shares nothing,
         // so it stays outside the critical section.
         let fixtures =

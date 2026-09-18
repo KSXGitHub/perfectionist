@@ -36,7 +36,6 @@ fn run_patterns(fixture_dir: &str, patterns: &[&str]) {
         .manifest_dir(env!("CARGO_MANIFEST_DIR"))
         .src_base(fixture_dir)
         .dylint_toml(dylint_toml(patterns))
-        .build()
         .run();
 }
 

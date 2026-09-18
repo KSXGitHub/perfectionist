@@ -37,7 +37,6 @@ fn zero_threshold_reports_every_line_count() {
         .manifest_dir(env!("CARGO_MANIFEST_DIR"))
         .src_base("ui-toml/overly_long_function/zero_threshold")
         .dylint_toml(dylint_toml(RuleConfig { max_lines: Some(0) }))
-        .build()
         .run();
 }
 

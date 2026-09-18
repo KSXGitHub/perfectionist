@@ -39,7 +39,6 @@ fn zero_threshold_reports_every_construct_score() {
         .dylint_toml(dylint_toml(RuleConfig {
             max_complexity: Some(0),
         }))
-        .build()
         .run();
 }
 

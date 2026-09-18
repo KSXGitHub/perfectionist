@@ -21,6 +21,5 @@ fn folds_adjacent_module_and_item_imports() {
             r#"enable = ["uncombined_self_import"]"#
             r#"disable = ["import_granularity_mismatch"]"#
         })
-        .build()
         .run();
 }

@@ -39,7 +39,6 @@ fn zero_threshold_reports_every_binding_shape() {
         .dylint_toml(dylint_toml(RuleConfig {
             max_bindings: Some(0),
         }))
-        .build()
         .run();
 }
 

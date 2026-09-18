@@ -39,7 +39,6 @@ fn run(src_base: &str, config: RuleConfig) {
         // prelude and every fixture would need an `extern crate` line
         // this rule's audience does not write.
         .rustc_flags(["--edition=2021"])
-        .build()
         .run();
 }
 

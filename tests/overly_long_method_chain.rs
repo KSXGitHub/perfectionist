@@ -66,7 +66,6 @@ fn run_ui(src_base: &str, config: RuleConfig) {
         .manifest_dir(env!("CARGO_MANIFEST_DIR"))
         .src_base(src_base)
         .dylint_toml(dylint_toml(config))
-        .build()
         .run();
 }
 

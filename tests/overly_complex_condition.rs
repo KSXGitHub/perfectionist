@@ -39,7 +39,6 @@ fn zero_threshold_reports_every_operator_count() {
         .dylint_toml(dylint_toml(RuleConfig {
             max_operators: Some(0),
         }))
-        .build()
         .run();
 }
 

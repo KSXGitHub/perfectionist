@@ -37,7 +37,6 @@ fn zero_threshold_reports_every_depth() {
         .manifest_dir(env!("CARGO_MANIFEST_DIR"))
         .src_base("ui-toml/excessive_nesting/zero_threshold")
         .dylint_toml(dylint_toml(RuleConfig { max_depth: Some(0) }))
-        .build()
         .run();
 }
 

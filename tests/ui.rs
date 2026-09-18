@@ -8,6 +8,5 @@ fn ui() {
         .manifest_dir(env!("CARGO_MANIFEST_DIR"))
         .src_base("ui")
         .dylint_toml("")
-        .build()
         .run();
 }

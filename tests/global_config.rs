@@ -12,7 +12,6 @@ fn run(src_base: &str, dylint_toml_contents: &str) {
         .manifest_dir(env!("CARGO_MANIFEST_DIR"))
         .src_base(src_base)
         .dylint_toml(dylint_toml_contents)
-        .build()
         .run();
 }
 

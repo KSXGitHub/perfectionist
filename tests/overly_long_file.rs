@@ -42,7 +42,6 @@ fn zero_threshold_reports_the_file_count() {
             max_lines: Some(0),
             ..RuleConfig::default()
         }))
-        .build()
         .run();
 }
 
@@ -60,7 +59,6 @@ fn a_file_of_one_line_reads_as_one_line() {
             max_lines: Some(0),
             ..RuleConfig::default()
         }))
-        .build()
         .run();
 }
 
@@ -74,7 +72,6 @@ fn a_file_at_the_limit_is_not_flagged() {
             max_lines: Some(5),
             ..RuleConfig::default()
         }))
-        .build()
         .run();
 }
 
