@@ -9,17 +9,19 @@
 
 ## What it does
 
-Flags an inherent `to_*` method taking `&self` that returns a
-reference — `&T`, or an `Option<&T>` — and asks for the `as_*`
-prefix instead.
+Flags an inherent `to_*` method taking `&self` and nothing else
+that returns a reference — `&T`, or an `Option<&T>` — and asks for
+the `as_*` prefix instead. A `to_*` with another parameter is
+converting something more than `self`, so the prefix is not
+speaking about the receiver alone and the rule leaves it be.
 
 A method of a trait impl is left alone, since the trait fixes its
 signature, and so is a method produced by a macro.
 
-## Why is this bad?
+## Why restrict this?
 
-The Rust API Guidelines give `as_`, `to_` and `into_` distinct
-meanings. `to_` is the costly one, borrowed to owned, and `as_` is
+This is a stylistic preference, not a correctness issue. The Rust
+API Guidelines give `as_`, `to_` and `into_` distinct meanings. `to_` is the costly one, borrowed to owned, and `as_` is
 the free one, borrowed to borrowed. A `to_*` that hands back a
 reference has done the free conversion under the costly name, so a
 caller who could have used it freely avoids it, and one reading

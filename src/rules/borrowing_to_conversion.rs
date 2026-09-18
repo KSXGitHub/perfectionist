@@ -8,22 +8,24 @@ use rustc_hir::intravisit::FnKind;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_middle::ty::{self, Ty};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::{Span, Symbol};
+use rustc_span::{Span, sym};
 
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Flags an inherent `to_*` method taking `&self` that returns a
-    /// reference — `&T`, or an `Option<&T>` — and asks for the `as_*`
-    /// prefix instead.
+    /// Flags an inherent `to_*` method taking `&self` and nothing else
+    /// that returns a reference — `&T`, or an `Option<&T>` — and asks for
+    /// the `as_*` prefix instead. A `to_*` with another parameter is
+    /// converting something more than `self`, so the prefix is not
+    /// speaking about the receiver alone and the rule leaves it be.
     ///
     /// A method of a trait impl is left alone, since the trait fixes its
     /// signature, and so is a method produced by a macro.
     ///
-    /// ### Why is this bad?
+    /// ### Why restrict this?
     ///
-    /// The Rust API Guidelines give `as_`, `to_` and `into_` distinct
-    /// meanings. `to_` is the costly one, borrowed to owned, and `as_` is
+    /// This is a stylistic preference, not a correctness issue. The Rust
+    /// API Guidelines give `as_`, `to_` and `into_` distinct meanings. `to_` is the costly one, borrowed to owned, and `as_` is
     /// the free one, borrowed to borrowed. A `to_*` that hands back a
     /// reference has done the free conversion under the costly name, so a
     /// caller who could have used it freely avoids it, and one reading
@@ -78,6 +80,10 @@ declare_tool_lint! {
 const OWNED_HELP: &str = "or stop it borrowing: return the owned value the name promises, where a \
                           caller really does need one of its own";
 
+/// The prefix this rule measures, and the one `cloning_getter` refuses
+/// to read as a getter.
+const TO_PREFIX: &str = "to_";
+
 const CONFIG_KEY: &str = "perfectionist::borrowing_to_conversion";
 
 /// The rule has no configuration knobs. Not dead code: the read
@@ -87,7 +93,7 @@ const CONFIG_KEY: &str = "perfectionist::borrowing_to_conversion";
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}
 
-pub struct BorrowingToConversion {}
+pub struct BorrowingToConversion;
 
 impl_lint_pass!(BorrowingToConversion => [BORROWING_TO_CONVERSION]);
 
@@ -101,7 +107,7 @@ impl Register for rule::BorrowingToConversion {
     fn register_pass(lint_store: &mut LintStore) {
         lint_store.register_late_lint_pass(Box::new(|_| {
             let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-            Box::new(BorrowingToConversion {})
+            Box::new(BorrowingToConversion)
         }));
     }
 }
@@ -116,13 +122,20 @@ impl<'tcx> LateLintPass<'tcx> for BorrowingToConversion {
         _span: Span,
         def_id: LocalDefId,
     ) {
+        // The name decides this rule on its own, and costs a string
+        // comparison; `eligible_method` re-lexes the method's source text
+        // to rule out a proc macro. Ask the cheap question first, so only
+        // a `to_*` method pays for the expensive one.
+        let FnKind::Method(ident, _) = kind else {
+            return;
+        };
+        if !ident.name.as_str().starts_with(TO_PREFIX) {
+            return;
+        }
         let Some(Eligible { method, def_span }) = eligible_method(cx, kind, decl, body, def_id)
         else {
             return;
         };
-        if !method.as_str().starts_with("to_") {
-            return;
-        }
         let output = cx
             .tcx
             .fn_sig(def_id)
@@ -159,10 +172,7 @@ fn returns_a_borrow<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> bool {
     let ty::Adt(adt, args) = ty.kind() else {
         return false;
     };
-    if !cx
-        .tcx
-        .is_diagnostic_item(Symbol::intern("Option"), adt.did())
-    {
+    if !cx.tcx.is_diagnostic_item(sym::Option, adt.did()) {
         return false;
     }
     args.types().next().is_some_and(Ty::is_ref)
