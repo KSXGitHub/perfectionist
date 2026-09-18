@@ -1,0 +1,38 @@
+warning: `to_name` returns a borrow, but `to_` promises an owned value
+  --> $DIR/borrowing_to_conversion.rs:LL:CC
+   |
+LL |     fn to_name(&self) -> &str {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it being a `to_*`: rename it `as_name`, the prefix for a conversion that costs nothing
+   = help: or stop it borrowing: return the owned value the name promises, where a caller really does need one of its own
+   = note: `#[warn(perfectionist::borrowing_to_conversion)]` on by default
+
+warning: `to_home` returns a borrow, but `to_` promises an owned value
+  --> $DIR/borrowing_to_conversion.rs:LL:CC
+   |
+LL |     fn to_home(&self) -> &Path {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it being a `to_*`: rename it `as_home`, the prefix for a conversion that costs nothing
+   = help: or stop it borrowing: return the owned value the name promises, where a caller really does need one of its own
+
+warning: `to_tags` returns a borrow, but `to_` promises an owned value
+  --> $DIR/borrowing_to_conversion.rs:LL:CC
+   |
+LL |     fn to_tags(&self) -> &[String] {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it being a `to_*`: rename it `as_tags`, the prefix for a conversion that costs nothing
+   = help: or stop it borrowing: return the owned value the name promises, where a caller really does need one of its own
+
+warning: `to_nickname` returns a borrow, but `to_` promises an owned value
+  --> $DIR/borrowing_to_conversion.rs:LL:CC
+   |
+LL |     fn to_nickname(&self) -> Option<&str> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it being a `to_*`: rename it `as_nickname`, the prefix for a conversion that costs nothing
+   = help: or stop it borrowing: return the owned value the name promises, where a caller really does need one of its own
+
+warning: N warnings emitted
