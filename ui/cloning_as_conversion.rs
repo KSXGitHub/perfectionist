@@ -3,7 +3,9 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
+use std::ffi::CString;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
 struct Person {
     name: String,
@@ -11,6 +13,9 @@ struct Person {
     tags: Vec<String>,
     age: u32,
     label: Box<str>,
+    middle: Option<String>,
+    cpath: CString,
+    shared: Rc<String>,
 }
 
 impl Person {
@@ -29,6 +34,22 @@ impl Person {
         self.tags.to_vec()
     }
 
+    // Bad: a `Box<T>` is owned storage for one `T`, so what a caller
+    // borrows is the `T` -- `&str`, never `&Box<str>`.
+    fn as_label(&self) -> Box<str> {
+        self.label.clone()
+    }
+
+    // Bad: the borrowed form under an `Option` is the inner type's own.
+    fn as_middle(&self) -> Option<String> {
+        self.middle.clone()
+    }
+
+    // Bad: a `CString` borrows as `&CStr`.
+    fn as_cpath(&self) -> CString {
+        self.cpath.clone()
+    }
+
     // Good: the borrowed forms cost nothing, which is what `as_` says.
     fn as_name_ref(&self) -> &str {
         &self.name
@@ -38,21 +59,38 @@ impl Person {
         &self.home
     }
 
-    // Good: a `Copy` field returned by value is free.
+    // Good: handing a field back without copying it is not the shape
+    // this rule reads at all -- there is no call to be free or costly.
     fn as_age(&self) -> u32 {
         self.age
     }
 
-    // Good: cloning a `Copy` field still returns it by value.
+    // Good: this is the `Copy` case. The body *is* the shape, and only
+    // the field being `Copy` keeps it quiet, so removing that exemption
+    // is what this pins.
     fn as_cloned_age(&self) -> u32 {
         self.age.clone()
     }
 
+    // Good: `to_string` renders a `u32` rather than copying the field,
+    // so no borrow of `self.age` is a `String` and there is no borrowed
+    // form to ask for.
+    fn as_age_label(&self) -> String {
+        self.age.to_string()
+    }
+
+    // Good: cloning an `Rc` bumps a refcount rather than copying what it
+    // points at, and a caller that keeps the handle has to own one.
+    fn as_shared(&self) -> Rc<String> {
+        self.shared.clone()
+    }
+
     // Not flagged: takes `self` by value, so the receiver excludes it
-    // before the body is read. An `as_*` that consumes is its own
-    // mistake, but not this rule's.
+    // before the body is read. The body is the shape this rule fires
+    // on, so this pins that the receiver is what excludes it. An `as_*`
+    // that consumes is its own mistake, but not this rule's.
     fn as_owned_name(self) -> String {
-        self.name
+        self.name.clone()
     }
 
     // Not flagged: not the `as_` prefix. `to_*` announces a conversion
