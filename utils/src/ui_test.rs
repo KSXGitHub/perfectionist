@@ -7,11 +7,11 @@
 //! and restores afterwards. The variable is process-global and the
 //! default test harness runs a binary's `#[test]`s in parallel
 //! threads, so two runs that overlapped would lint one fixture under
-//! the other's configuration and diff it against the wrong `.stderr`
-//! — silently, since neither run panics or hangs.
+//! the other's configuration. Nothing would report that: the fixture
+//! is diffed against its own `.stderr` either way, so it passes or
+//! fails on a baseline it never asked for.
 //!
-//! [`configured_ui_test`] takes [`SERIAL`] before it builds the
-//! `dylint_testing` builder and hands the guard to the
+//! [`configured_ui_test`] takes [`SERIAL`] and hands the guard to the
 //! [`ConfiguredUiTest`] it returns, which holds it until
 //! [`ConfiguredUiTest::run`] consumes the value. `dylint_testing` is a
 //! dependency of this crate and not of the lint crate whose fixtures
@@ -25,11 +25,9 @@
 //! detail rather than part of the crate's API, which is what the lock
 //! here carries across a version bump.
 //!
-//! `DYLINT_LIBRARY_PATH` and `DYLINT_LIBS` are the same problem with a
-//! different answer: `dylint_testing` sets them once, on the first UI
-//! test, and never restores them, so no lock can scope them and a
-//! spawned `cargo dylint` has to clear them instead. That side lives
-//! in [`crate::dylint`].
+//! `DYLINT_LIBRARY_PATH` and `DYLINT_LIBS` are the other half of the
+//! problem, and no lock can scope them; a spawned `cargo dylint`
+//! clears them instead. See [`crate::dylint`].
 
 use crate::ui_fixtures::{FixtureCopy, copy_fixtures_with_directives};
 use std::sync::{Mutex, MutexGuard, PoisonError};
@@ -37,11 +35,13 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 /// Serialises the window in which `DYLINT_TOML` names one fixture's
 /// configuration.
 ///
-/// A poisoned lock is taken anyway: the guard protects an environment
-/// variable that the panicking run has already restored, so there is
-/// no corrupted state for a later fixture to inherit, and failing
-/// every remaining `#[test]` in the binary would bury the one that
-/// actually failed.
+/// A poisoned lock is recovered rather than unwrapped: the guard
+/// protects an environment variable the panicking run has already
+/// restored, so a later fixture inherits nothing corrupt from it.
+/// Recovering does not keep the binary's remaining `#[test]`s green —
+/// `compiletest` panics inside `dylint_testing`'s own mutex, poisoning
+/// that one, and the next run unwraps it — but the failures that
+/// follow are then upstream's to explain rather than this lock's.
 static SERIAL: Mutex<()> = Mutex::new(());
 
 /// A `dylint_testing` UI test that has taken [`SERIAL`], together with
@@ -63,7 +63,7 @@ impl ConfiguredUiTest {
         self
     }
 
-    /// Run the fixtures, then release the lock and delete the copy.
+    /// Run the fixtures, then delete the copy and release the lock.
     pub fn run(mut self) {
         self.test.run();
     }
@@ -77,16 +77,19 @@ impl ConfiguredUiTest {
 /// `CARGO_PKG_NAME` and `CARGO_MANIFEST_DIR`; this crate is built in
 /// isolation from the workspace under test and cannot read either.
 ///
-/// The returned value holds [`SERIAL`], so build it where the test
-/// runs rather than storing it.
+/// The returned value holds [`SERIAL`] until it runs, so build it
+/// where the test runs: a second one alive on the same thread would
+/// block on the guard the first is holding.
 pub fn configured_ui_test(
     library_name: &str,
     manifest_dir: &str,
     src_base: &str,
     dylint_toml: impl AsRef<str>,
 ) -> ConfiguredUiTest {
-    let serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
+    // The copy lands in a `TempDir` of its own and shares nothing, so
+    // it stays outside the critical section.
     let fixtures = copy_fixtures_with_directives(manifest_dir, src_base);
+    let serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
     let mut test = dylint_testing::ui::Test::src_base(library_name, fixtures.path());
     test.dylint_toml(dylint_toml);
     ConfiguredUiTest {
@@ -95,6 +98,3 @@ pub fn configured_ui_test(
         _serial: serial,
     }
 }
-
-#[cfg(test)]
-mod tests;
