@@ -5,17 +5,20 @@
 [`pnpm/pnpm#15076`](https://github.com/pnpm/pnpm/pull/15076) — that the
 implemented `perfectionist::needless_borrowed_parameters`
 ([`src/rules/needless_borrowed_parameters.rs`](../src/rules/needless_borrowed_parameters.rs))
-cannot reach. How many rules the proposal becomes was left to the
-implementer; [Decomposition](#decomposition) records what was decided
-and why.
+cannot reach. Between them those two changes fix four callees, and
+[Motivating cases](#motivating-cases) works from their merged diffs
+rather than from a description of them. How many rules the proposal
+becomes was left to the implementer;
+[Decomposition](#decomposition) records what was decided and why.
 
 ## Statement
 
-A function takes a parameter by shared reference and clones it into
-something that outlives the call, while every call site already owns
-the value and drops it immediately afterwards. Every call pays for a
-clone nobody needed: the caller built the value, lent it, the callee
-cloned it, and the caller dropped the original.
+A function takes a parameter by shared reference and, on some path,
+has to produce an owned copy of it — because something it calls wants
+the value, not a loan. Every call site already owns such a value and
+drops it. Every call therefore pays for a copy nobody needed: the
+caller built the value, lent it, the callee duplicated it, and the
+caller dropped the original.
 
 Taking the parameter by value moves the caller's value straight in.
 
@@ -57,15 +60,15 @@ So by-value saves exactly one clone for an owning caller and is
 neutral for a borrowing one, which is the same trade the sibling rule
 already documents. Borrowing uses inside the callee cost nothing
 either way, since a value you own can always be borrowed from, so a
-body that mixes borrows with one escaping clone is exactly the shape
-this rule is for.
+body that mixes borrows with one clone is exactly the shape this rule
+is for.
 
 ### Why clause 4 is load-bearing
 
 That trade holds only while the clone is unconditional. When the
 callee clones on some paths and not others, a caller holding a borrow
 pays for a clone the callee might never have made. In
-[`parse_specifier`](#package-specifier-parsing), such a caller would
+[`parse_specifier`](#the-package-specifier-chain), such a caller would
 clone for *every* selector, including the purl ones the borrowed
 signature never cloned.
 
@@ -80,69 +83,138 @@ catch.
 
 ## Motivating cases
 
-Both were found by auditing pnpm against the sibling rule, and each
-has a fix in the pull request cited with it.
+Four callees across two crates. They are worth reading together,
+because no two of them are the same shape, and the spread is what
+sets the rule's scope.
 
-### Package-specifier parsing
+| Callee | Why an owned copy is needed | What the call sites look like |
+| --- | --- | --- |
+| `VerdictCache::record` | the copy is consumed by `Value::Object`, then dropped — it never outlives the call | every site passes `&<temporary>` |
+| `TaskRunState::record_passed` | the copy is inserted into a set, under an `if` | an owned local, reused afterwards in two tests |
+| `parse_specifier` | the copy is returned, from a `let … else` branch | forwarded from `parse` |
+| `PackageSpecifierPlan::parse` | **nothing in its body copies anything** | a field behind `&mut`, overwritten two lines later |
 
-[`pnpm/pnpm#15001`](https://github.com/pnpm/pnpm/pull/15001), condensed:
+### A copy that never leaves the body
+
+`VerdictCache::record`, from
+[`pnpm/pnpm#15076`](https://github.com/pnpm/pnpm/pull/15076):
+
+```rust
+pub(crate) fn record(&self, hash: &str, policy: &Map<String, Value>) {
+    let policy_json = Value::Object(policy.clone()).to_string();
+    // …
+}
+```
+
+The clone does not escape: `Value::Object` consumes it, `to_string`
+reads it, and the `Value` dies in that statement. It is still a clone
+the caller paid for, because `Value::Object` takes a `Map` **by
+value** and a borrowed parameter cannot supply one. The fix is
+`policy: Map<String, Value>` and `Value::Object(policy)`.
+
+So the test in [clause 2](#what-to-lint) is not whether the copy
+*escapes* but whether it is *consumed*. Escaping is one way to be
+consumed, and this case is why the wider test is the right one: every
+call site here already passes `&<temporary>`, so this is the cheapest
+finding of the four, and an escape-only rule would miss it.
+
+### A copy whose removal restructures the body
+
+`TaskRunState::record_passed`, from the same pull request:
+
+```rust
+pub fn record_passed(&self, key: &TaskKey, …) -> miette::Result<()> {
+    // …
+    if !writer.completed.insert(key.clone()) {   // speculative insert
+        return Ok(());
+    }
+    // … write the journal …
+    writer.completed.remove(key);                // rollback on failure
+}
+```
+
+Taking `key` by value leaves only one `insert`, so the speculative
+insert with a rollback had to become a `contains` check with the
+insert moved to the success path. That is a behaviour-preserving
+restructure of the control flow, and the lint must not attempt it;
+see [Suggested fix](#suggested-fix).
+
+Two of its call sites are tests that reuse the key, and the change
+gave them a `.clone()` each. Paying a clone in a test to remove one
+from a recursive run is the trade this rule exists to make, and it is
+why [clause 4](#what-to-lint) asks only about production call sites.
+
+`TaskKey` owns a `PathBuf` and a `String`, so the clone was two
+allocations per task recorded.
+
+This callee is also the reason the crate boundary is tested by
+*effective visibility*: `record_passed` is written `pub`, but its
+module is declared `mod cli_args;` without `pub`, so nothing outside
+the crate can call it. A rule keyed on the `pub` keyword would have
+skipped it. See [The visibility bound](#the-visibility-bound).
+
+### The package-specifier chain
+
+[`pnpm/pnpm#15001`](https://github.com/pnpm/pnpm/pull/15001) is three
+frames, and no single frame explains it.
 
 ```rust
 fn parse_specifier(request: &AddRequest) -> Result<ParsedSpecifier> {
     let specifier = request.selector();          // borrowing use
     // …
     let Some(body) = purl::strip_scheme(specifier) else {
-        return Ok(ParsedSpecifier::Node(request.clone()));   // clone escapes
+        return Ok(ParsedSpecifier::Node(request.clone()));   // copy returned
     };
     parse_purl(&Purl::parse(body, source)?, source)
 }
 ```
 
-The chain is three frames deep, and the middle one is why clause 4 is
-not a per-call-site check. `parse_specifier`'s caller took
-`&[AddRequest]` and lent each element onward, so it *holds a borrow*
-until its own parameter is taken by value; the frame above it owns a
-`Vec<AddRequest>` and overwrites it on the next line, so
-`std::mem::take` hands it over at no cost. Fixing the innermost frame
-alone was therefore not enough — see
-[Propagating along a chain](#propagating-along-a-chain).
+The innermost frame is the ordinary shape: a conditional clone that
+is returned, beside a borrowing use.
 
-That middle frame is in this rule's reach because clause 1 puts no
-restriction on the pointee: `&[AddRequest]` is a borrowed parameter
-whose owned counterpart is `Vec<AddRequest>`. The pull request went
-one step further and made it `impl IntoIterator<Item = AddRequest>`,
-which is a weakening this rule does not suggest; see
-[Out of scope](#out-of-scope).
-
-The pull request reports that `pnpm add lodash@4 react@18
-express@4.18.2`, measured with a counting allocator, fell from four
-allocations to one.
-
-### Recording a completed task
-
-[`pnpm/pnpm#15076`](https://github.com/pnpm/pnpm/pull/15076),
-condensed:
+The middle frame is the interesting one. It read:
 
 ```rust
-pub fn record_passed(&self, key: &TaskKey, …) -> miette::Result<()> {
+pub(crate) fn parse(package_names: &[AddRequest]) -> Result<Self> {
     // …
-    if !writer.completed.insert(key.clone()) {   // clone escapes into the set
-        return Ok(());
+    for package_name in package_names {
+        match parse_specifier(package_name)? { /* … */ }
     }
     // …
-    writer.completed.remove(key);                // second use: rollback
 }
 ```
 
-Both call sites read:
+**Nothing in that body copies anything.** It iterates a borrowed
+slice and hands each `&AddRequest` to `parse_specifier`. It is in
+this rule's reach only because its callee's parameter must be owned,
+which makes the *elements* of `package_names` values it must own —
+so the obligation arrives through the call graph, not from a clone
+in view. That is [clause 2](#what-to-lint)'s second limb, and it is
+why the summary carries a projection and not just a flag per
+parameter; see
+[What the summary computes](#what-the-summary-computes).
+
+The outermost frame supplies the owned value:
 
 ```rust
-let key = TaskKey { project: node.project.clone(), task_name: node.task_name.clone() };
-task_run_state.record_passed(&key, node, workspace_root);   // never read again
+fn route_package_specifiers(args: &mut AddArgs) -> miette::Result<…> {
+    let plan = PackageSpecifierPlan::parse(std::mem::take(&mut args.package_names))?;
+    check_specifier_combination(args, &plan)?;
+    args.package_names = plan.node_packages;    // overwritten, not read
+}
 ```
 
-`TaskKey` owns a `PathBuf` and a `String`, so the clone is two
-allocations for every task a recursive run records.
+It owns the `Vec<AddRequest>`, but through a `&mut` parameter, so it
+cannot move out of it — `std::mem::take` is the only rewrite
+available, not a stylistic choice. What makes the value free to give
+away is that the field is **written before it is next read**, which
+is the liveness question clause 4 actually asks.
+
+The pull request reports that `pnpm add lodash@4 react@18
+express@4.18.2`, measured with a counting allocator, fell from four
+allocations to one. It also took the middle frame one step further
+than this rule would, to `impl IntoIterator<Item = AddRequest>`; see
+[Out of scope](#out-of-scope).
 
 ## Decomposition
 
@@ -168,17 +240,19 @@ Same trigger question, same diagnostic, same configuration — splitting
 these out would produce rules that always ship and always configure
 together:
 
-- **Any `Clone` pointee**, not only user-defined ADTs. `&Vec<T>`,
-  `&String`, `&PathBuf` and `&[T]` differ from `&TaskKey` only in
-  needing the borrowed-to-owned type mapping the sibling rule already
-  carries. Restricting the pointee would have dropped the
-  [package-specifier](#package-specifier-parsing) middle frame for no
-  reason.
-- **`Item = &T` → `Item = T`** on a parameter that is *already* a
-  generic iterator bound. That signature is rare next to the
-  reference-typed shape, so it is staged last rather than given its
-  own rule — it asks the same question about the same parameter and
-  would answer it with the same summary.
+- **Any `Clone` pointee**, sized or not. Three of the four cases take
+  an ADT (`&Map<String, Value>`, `&TaskKey`, `&AddRequest`) and the
+  fourth a slice (`&[AddRequest]`), whose fix is `Vec<AddRequest>`.
+  The unsized pointees need the borrowed-to-owned type mapping the
+  sibling rule already carries, and nothing else.
+- **A copy consumed without escaping.** `VerdictCache::record` differs
+  from the others only in where its copy dies. Excluding it would have
+  dropped the one case a first implementation can reach with no
+  interprocedural work at all.
+- **Ownership demanded through a projection** — the elements of a
+  borrowed slice, and the `impl IntoIterator<Item = &T>` spelling of
+  the same thing. The package-specifier chain needs it, and it is one
+  more axis on the same summary rather than a second analysis.
 
 ### Kept as its own rule
 
@@ -202,13 +276,13 @@ what a reader and a project get from the split:
 
 ### Not made a rule at all
 
-The caller-side half of the fix — a local passed by reference and then
-overwritten with no intervening read, which can become a
+The caller-side half of the fix — a place passed by reference and then
+overwritten with no intervening read, which becomes a
 `std::mem::take` — is ordinary local liveness and could stand alone.
-It does not, because on its own it is not actionable: the suggestion
-only becomes valid once the callee takes the parameter by value, which
-is this rule's conclusion. A lint that fires where the reader cannot
-act is noise, so this lands as a note on the suggestion instead. See
+It does not, because on its own it is not actionable: the rewrite only
+becomes valid once the callee takes the parameter by value, which is
+this rule's conclusion. A lint that fires where the reader cannot act
+is noise, so this lands as part of the suggestion instead. See
 [Suggested fix](#suggested-fix).
 
 ### Precedence over the sibling rule
@@ -229,8 +303,7 @@ finding. A project that wants neither disables both.
 ## Why the sibling rule does not cover these
 
 `perfectionist::needless_borrowed_parameters` applies the gates below,
-and both cases fail the first two — which is what makes this a
-systematic gap rather than a near-miss.
+and every case fails at least the first two.
 
 | Gate | `parse_specifier` | `record_passed` |
 | --- | --- | --- |
@@ -241,10 +314,10 @@ systematic gap rather than a near-miss.
 The first gate is about reach rather than soundness: it confines the
 sibling rule to the standard library's borrowed/owned pairs, and every
 user-defined `Clone` type — which is what a real codebase clones —
-falls outside it. This rule drops that restriction, per
-[Folded into this rule](#folded-into-this-rule). The second gate
-confines the sibling to parameters with no borrowing use at all, while
-both cases here borrow *and* clone.
+falls outside it. The second confines the sibling to parameters with
+no borrowing use at all, while both cases here borrow *and* clone.
+`PackageSpecifierPlan::parse` fails even earlier, since it performs no
+conversion for any gate to inspect.
 
 The third gate is the [forced boundary](#the-one-forced-boundary), and
 it is the subject of
@@ -290,61 +363,77 @@ which is the correct direction.
 Flag a parameter `p` when all of:
 
 1. Its written type is `&T` with an elided lifetime, `T: Clone`, and
-   `T` is not `Copy`. `T` may be sized (`TaskKey`, `Vec<Foo>`,
-   `String`) or unsized (`str`, `[Foo]`, `Path`); the suggestion names
-   its owned counterpart, which is `T` itself when sized and
+   `T` is not `Copy`. `T` may be sized (`TaskKey`, `Map<String,
+   Value>`) or unsized (`str`, `[AddRequest]`, `Path`); the suggestion
+   names its owned counterpart, which is `T` itself when sized and
    `String` / `Vec<Foo>` / `PathBuf` / `OsString` / `CString` when not.
    Skip `Rc` and `Arc`: cloning one bumps a refcount rather than
    copying the pointee, so owning it saves nothing and a caller that
    keeps its handle needs one of its own. This is the reasoning
    [`src/rules/cloning_getter.rs`](../src/rules/cloning_getter.rs)
    already applies to a ref-counted field.
-2. Some reachable path clones `p` and the clone **escapes**: returned,
-   stored in a value that is returned, inserted or pushed into a
-   collection that outlives the call, or stored in `self`.
+2. Some reachable path needs an owned `T`, in either of two ways:
+   1. the body copies `p` and **consumes** the copy — moves it into a
+      returned value, a field of `self`, a collection, or any call
+      that takes it by value; or
+   2. the body passes a borrow of `p`, or of a place projected from
+      `p`, to a callee whose corresponding parameter the summary says
+      must be owned.
 3. Every other use of `p` is a borrow. Borrowing uses do not
    disqualify.
-4. The callee has at least one call site in the crate, and **every**
-   one of them passes a value it owns and does not read afterwards.
+4. The callee has at least one production call site in the crate, and
+   **every** production call site passes a place it owns and does not
+   read again — either because the place goes out of scope, or because
+   it is overwritten first.
 5. The sibling rule's predicate does not already hold, per
    [Precedence](#precedence-over-the-sibling-rule).
 
-The staged extension is clause 1's second shape: a parameter written
-as a generic iterator bound whose element is borrowed
-(`impl IntoIterator<Item = &T>` and its `where`-clause spellings),
-where clauses 2 to 5 are asked of the element binding rather than of
-the parameter. Nothing else changes, which is why it is a stage rather
-than a rule.
+### Why clause 2 asks about consumption, not escape
 
-### Why clause 2 excludes a clone that stays local
+The proposal asked whether the copy *escapes* the call. That is the
+wrong line, and `VerdictCache::record` is on the wrong side of it:
+its copy dies inside the statement that makes it, yet the caller still
+paid for it, because `Value::Object` takes its argument by value and a
+borrowed parameter has none to give.
 
-A clone the callee drops before returning is a different defect with a
-different fix: delete the clone and use the borrow. Changing the
-signature for it would move work onto the callers to fix something the
-callee could fix alone. The one shape that resists this reading — a
-local clone that is *mutated* rather than merely read, where ownership
-really is needed — is a candidate for a later widening of clause 2,
-not for the first implementation.
+The line that matters is whether anything **takes the copy by value**.
+A copy that is only ever *borrowed from* afterwards is a different
+defect with a local fix — delete the copy and use the original
+borrow — and belongs to
+[clippy](#interaction-with-clippy-and-sibling-rules) rather than here.
 
-### Why clause 4 asks for two things
+### Why clause 4 asks about production call sites
 
 The "owns the value" half is the soundness condition: a caller holding
-a borrow would have to clone, and for a conditional clone that can be a
-net loss.
+a borrow would have to clone, and for a conditional clone that can be
+a net loss.
 
-The "does not read afterwards" half is not needed for soundness. A
-caller that keeps reading its value writes `f(x.clone())` and pays
-exactly what the callee used to pay — a wash, not a loss. Requiring
-the drop is what makes every flagged site a strict improvement rather
-than a rearrangement, and that is the only reason it is there.
+"Does not read again" is the liveness half, and it is deliberately
+about a **place** rather than a variable. `record_passed`'s callers
+pass a local that simply dies; in
+[`route_package_specifiers`](#the-package-specifier-chain) the place
+is a field behind a `&mut` parameter, assigned two statements later.
+Both are free to give away, and only the first is a variable going out
+of scope. It is not needed for soundness — a caller that reads its
+value again writes `f(x.clone())` and pays exactly what the callee
+used to pay, a wash rather than a loss — but requiring it is what
+makes every flagged site a strict improvement.
+
+**Production** is the third word doing work. Under the default
+exemptions a test call site does not veto the rule; it just acquires a
+`.clone()` when the fix lands, which is what happened to two of
+`record_passed`'s tests. This is the same trade the exemptions
+already make in the other direction — a test never collects on the
+clone the owned signature saves — so `exempt_tests` and
+`exempt_build_scripts` govern both halves at once, and setting either
+to `false` makes those call sites count like any other.
 
 ### Exemptions
 
 Test code and build scripts, by default, for the reason the sibling
 rule gives: neither collects on the clone the owned signature saves,
-and a test's call sites are exactly the ones holding borrows, so the
-trade is a straight loss there. Recognised by `crate::test_code` and
-`crate::cargo_target`, per
+and a test's call sites are exactly the ones holding borrows.
+Recognised by `crate::test_code` and `crate::cargo_target`, per
 [Recognising test-exclusive code](./IMPLEMENTATION_CONVENTIONS.md#recognising-test-exclusive-code).
 
 Exempt unconditionally, because the signature is not free to change:
@@ -357,16 +446,43 @@ Exempt unconditionally, because the signature is not free to change:
 - A parameter with an explicit named lifetime, which may tie it to
   another parameter or the return type.
 - An item reachable from outside the crate, whose call sites clause 4
-  cannot see. See
-  [The visibility bound](#the-visibility-bound).
+  cannot see. See [The visibility bound](#the-visibility-bound).
 
 Proc-macro-synthesised nodes, per
 [Suppressing proc-macro-synthesised violations](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations).
 
 ## Examples
 
-**Avoid:** the clone escapes into the map, and the caller's `key` dies
-on the next line.
+**Avoid:** the copy is consumed by an API that takes it by value, and
+dies in the same statement. Every call site builds its argument in
+place.
+
+```rust
+fn record(&self, policy: &Map<String, Value>) {
+    let json = Value::Object(policy.clone()).to_string();
+    self.write(json);
+}
+
+fn caller(&self) {
+    self.record(&merge_policies(&self.verifiers));
+}
+```
+
+**Prefer:**
+
+```rust
+fn record(&self, policy: Map<String, Value>) {
+    let json = Value::Object(policy).to_string();
+    self.write(json);
+}
+
+fn caller(&self) {
+    self.record(merge_policies(&self.verifiers));
+}
+```
+
+**Avoid:** the copy escapes into a collection, under a condition, and
+the caller's place is overwritten rather than read.
 
 ```rust
 fn remember(&mut self, key: &Key, value: u32) {
@@ -375,13 +491,14 @@ fn remember(&mut self, key: &Key, value: u32) {
     }
 }
 
-fn caller(&mut self) {
-    let key = Key::new("a", "b");
-    self.remember(&key, 1);
+fn caller(args: &mut Args) {
+    store.remember(&args.key, 1);
+    args.key = Key::default();
 }
 ```
 
-**Prefer:**
+**Prefer:** the caller cannot move out of a place behind `&mut`, so
+the rewrite is `std::mem::take`.
 
 ```rust
 fn remember(&mut self, key: Key, value: u32) {
@@ -390,28 +507,24 @@ fn remember(&mut self, key: Key, value: u32) {
     }
 }
 
-fn caller(&mut self) {
-    self.remember(Key::new("a", "b"), 1);
+fn caller(args: &mut Args) {
+    store.remember(std::mem::take(&mut args.key), 1);
+    args.key = Key::default();
 }
 ```
 
-**Avoid:** the pointee is a slice, so its owned counterpart is a
-`Vec`. Clause 1 does not care that the parameter is unsized, and the
-borrowing use in the guard is what carries this past the sibling rule
-— without it, one unconditional `to_vec()` would be the sibling's
-finding and clause 5 would keep this rule quiet.
+**Not flagged:** the copy is only borrowed from, so the fix is to drop
+the copy rather than to change the signature.
 
 ```rust
-fn plan(requests: &[Request]) -> Plan {
-    if requests.is_empty() {              // borrowing use
-        return Plan::EMPTY;
-    }
-    Plan { requests: requests.to_vec() }  // clone escapes
+fn describe(&self, key: &Key) -> usize {
+    let owned = key.clone();
+    owned.name().len()
 }
 ```
 
-**Not flagged:** a caller reuses `key` after the call, so the owned
-signature would force it to clone anyway — the very shape clause 4
+**Not flagged:** a caller reads `key` again after the call, so the
+owned signature would force it to clone anyway — the shape clause 4
 exists to rule out.
 
 ```rust
@@ -419,16 +532,6 @@ fn caller(&mut self) {
     let key = Key::new("a", "b");
     self.remember(&key, 1);
     self.log(&key);
-}
-```
-
-**Not flagged:** the clone never leaves the body, so the fix is to
-drop the clone rather than to change the signature.
-
-```rust
-fn describe(&self, key: &Key) -> usize {
-    let owned = key.clone();
-    owned.name().len()
 }
 ```
 
@@ -452,34 +555,47 @@ fn store(name: &str, registry: &mut HashMap<String, u32>) {
 
 ## Suggested fix
 
-Change the parameter to `p: T`, drop the now-redundant clone, and drop
-the `&` at every call site. A caller whose variable is dead after the
-call but still in scope reaches for `std::mem::take`, which needs
-`T: Default` — the note that stands in for the caller-side rule this
-deliberately is not, per
-[Not made a rule at all](#not-made-a-rule-at-all).
+Change the parameter to `p: T` and drop the `&` at every call site. A
+caller whose place is behind a reference cannot move out of it and
+needs `std::mem::take`, which requires `T: Default`; where the place
+is a local going out of scope, a plain move does.
 
-A structured suggestion is worth emitting only for the narrow case
-where every call site passes `&<temporary>` and the fix really is
-"delete the `&`". Anything wider is a multi-file rewrite whose caller
-side the lint cannot render reliably, so it should emit the
-diagnostic, a note listing the call sites it checked, and no
-suggestion. `Applicability::MaybeIncorrect` in either event: removing
-the clone changes the expression's type at the use site, which may
-cascade into inference changes the lint cannot verify.
+The callee side is **not** a mechanical edit, and the diagnostic
+should not pretend otherwise. Deleting the copy works when the copy
+had one consumer. When the borrowed signature was what allowed two —
+`record_passed` inserted a clone speculatively and removed the
+original on failure — an owned parameter admits only one, and the
+body has to be restructured to suit. That restructure is the author's
+judgement about behaviour, not a rewrite the lint can author.
+
+So a structured suggestion is worth emitting only where every call
+site passes `&<temporary>` and the fix really is "delete the `&`".
+Anything wider should emit the diagnostic, a note listing the call
+sites it checked and how many are tests, and no suggestion.
+`Applicability::MaybeIncorrect` in either event.
+
+One more condition the lint should check before suggesting: a borrow
+derived from the parameter must not be live at the point the owned
+value is moved. `parse_specifier` gets away with
+`let specifier = request.selector();` before
+`ParsedSpecifier::Node(request)` only because nothing on that path
+reads `specifier` afterwards, so the borrow has ended. Move the value
+while such a borrow is still live and the result does not compile.
 
 ## Configuration
 
 ```toml
 ["perfectionist::cloned_borrowed_parameter"]
 # Whether test code / a build script is exempt. Both default to
-# `true`; see "Exemptions" above.
+# `true`, and each governs two things: whether such a body is flagged,
+# and whether a call site there can veto clause 4. See "Why clause 4
+# asks about production call sites" above.
 exempt_tests = true
 exempt_build_scripts = true
 ```
 
-The same two knobs the sibling rule has, with the same meaning, so a
-project that has taken a position on one rule has taken it on both.
+The same two knobs the sibling rule has, so a project that has taken a
+position on one rule has taken it on both.
 
 The knobs the proposal suggested are deliberately absent, because each
 would exist only to turn soundness off:
@@ -510,11 +626,16 @@ lattice answers the weakening question described under
 [Notes on cross-rule dependencies](../CLAUDE.md#notes-on-cross-rule-dependencies),
 and let the rules consume it.
 
-### What it computes
+### What the summary computes
 
-One summary per function: for each parameter, whether anything in the
-crate obliges it to stay borrowed. A rule reads a summary; it does not
-walk callees itself.
+One entry per function, and within it one answer per parameter **and
+per projection of that parameter the body hands out**. A flag per
+parameter is not enough: `PackageSpecifierPlan::parse` never needs its
+`package_names` argument itself, only owned *elements* of it, and a
+domain that cannot say so has nothing to propagate from
+`parse_specifier` back up the chain. Slice and iterator elements are
+the projection the motivating cases need; fields are the obvious next
+one. A rule reads a summary. It does not walk callees itself.
 
 ### Propagating along a chain
 
@@ -522,9 +643,9 @@ Clause 4 reads as a per-call-site check, and for a leaf it is one. It
 becomes a fixpoint because of forwarding: when `f(p: &T)` passes `p`
 along to `g(&T)`, `f` is a caller that *holds a borrow* today and
 would become an owning caller the moment its own parameter is taken by
-value. The
-[package-specifier chain](#package-specifier-parsing) is exactly this
-shape, which is why fixing its innermost frame alone was not enough.
+value. The [package-specifier chain](#the-package-specifier-chain) is
+exactly this shape, which is why fixing its innermost frame alone was
+not enough.
 
 So the property is a **greatest fixpoint**: start every eligible
 parameter optimistic, retract on a call site that provably cannot give
@@ -550,24 +671,27 @@ is on *reporting*, which is the next section.
 
 A `LateLintPass` sees one crate, so the fixpoint stops at the crate
 boundary, and a rule built on it can only fire where that boundary
-contains every call site. Both motivating cases sit well inside it.
+contains every call site.
 
 The boundary to test is **effective visibility**, not the `pub`
-keyword: what matters is whether an item is reachable from outside the
-crate, and `rustc_middle`'s `effective_visibilities` query is the
-thing that answers it. Verify what that query returns for a binary
-crate before relying on it — a `pub` item in a `bin` target has no
-out-of-crate callers, and whether the query says so is a claim to
-check against the compiler rather than to assume.
+keyword. `TaskRunState::record_passed` is the case that settles it: it
+is written `pub`, and it is unreachable from outside its crate anyway,
+because the module holding it is declared `mod cli_args;` with no
+`pub`. A `pub`-keyword test would have skipped a real finding.
+`rustc_middle`'s `effective_visibilities` query is the thing that
+answers the question properly — verify what it returns for a binary
+crate before relying on it, since a `pub` item in a `bin` target has
+no out-of-crate callers either, and whether the query says so is a
+claim to check against the compiler rather than to assume.
 
 ## Implementation notes
 
-Everything outside clause 4 is the `LateLintPass` machinery the
-sibling rule already has: `check_fn`, typeck results, param-binding
-resolution, an HIR visitor over the uses, the test/build-script
-exemption, config plumbing. The borrowed-to-owned type mapping clause
-1 needs for an unsized pointee is that rule's too, and belongs in a
-shared helper rather than a second copy.
+Everything outside clauses 2.2 and 4 is the `LateLintPass` machinery
+the sibling rule already has: `check_fn`, typeck results,
+param-binding resolution, an HIR visitor over the uses, the
+test/build-script exemption, config plumbing. The borrowed-to-owned
+type mapping clause 1 needs for an unsized pointee is that rule's too,
+and belongs in a shared helper rather than a second copy.
 
 A chain shapes the diagnostic as well as the analysis: the frames have
 to change together, so a report on one frame should name the others
@@ -582,8 +706,8 @@ thing that makes [`manual-lazy-init.md`](./manual-lazy-init.md) hard —
 and here it is not local to one *pair* of bodies either, because of
 forwarding.
 
-The second is calibration. Escaping clones are common and frequently
-correct:
+The second is calibration. Copies that are consumed are common and
+frequently correct:
 
 ```rust
 fn insert(&mut self, k: &Key) { self.map.insert(k.clone(), v) }
@@ -594,28 +718,27 @@ push people toward a signature that forces every caller to clone
 anyway. Clause 4 is what rules that out, which is precisely why it
 cannot be dropped to make the rule cheaper.
 
-A conservative first implementation, staged so that each stage ships
-on its own:
+A conservative implementation, staged so that each stage ships on its
+own and each is answerable by a case above:
 
-1. **No fixpoint.** Fire only where the callee is not externally
-   reachable, has at least one call site, and *every* call site
-   passes `&<temporary>` — an argument `&e` whose `e` the caller
-   constructs in the argument position and therefore drops at the end
-   of the statement. An owned temporary is provably dead after the
-   call, so this stage needs no liveness analysis and no summaries.
-   Restrict clause 2 to a clone that is a direct sub-expression of the
-   returned value or a direct argument of a call, rather than one
-   traced through locals.
-2. **Liveness.** Extend the call-site check to `&local` where `local`
-   is not read after the call. This is what the
-   [`record_passed`](#recording-a-completed-task) call sites need, and
-   the reassign-after-call shape that `std::mem::take` serves falls
-   out of the same analysis.
-3. **Summaries.** Stand up the `ownership_summary` module so a
-   forwarded parameter converges, which is what the
-   [package-specifier chain](#package-specifier-parsing) needs.
-4. **Iterator bounds.** Add clause 1's second shape, per
-   [What to lint](#what-to-lint).
+1. **No summaries, no liveness.** Clause 2.1 only, with the copy a
+   direct argument of a by-value call or a direct sub-expression of
+   the returned value; callee not externally reachable; every
+   production call site passes `&<temporary>`, which is provably dead
+   after the call. Catches `VerdictCache::record`.
+2. **Place liveness.** Extend the call-site check to `&place` — a
+   local, or a projection behind a `&mut` — that the caller does not
+   read again. Catches `record_passed`, and the outer frame of the
+   package-specifier chain.
+3. **Summaries.** Stand up the `ownership_summary` module and clause
+   2.2, so a forwarded parameter converges. Catches
+   `parse_specifier`.
+4. **Projections.** Carry per-projection answers in the summary, so
+   ownership demanded of an element reaches the parameter that yields
+   it. Catches `PackageSpecifierPlan::parse` and closes the chain.
+
+Stage 1 is worth shipping by itself: it needs none of the
+interprocedural machinery and still finds a real allocation.
 
 ## Out of scope
 
@@ -627,30 +750,30 @@ instead of moving a single value, so the cost model above does not
 apply to it.
 
 **Weakening a slice parameter to an owned iterator bound** —
-`&[T]` → `impl IntoIterator<Item = T>`, the step
-[`pnpm/pnpm#15001`](https://github.com/pnpm/pnpm/pull/15001) took on
-top of the ownership change — is a separate question that was
-discussed alongside the proposal and has not been filed. It runs the
-same worklist over a different lattice, which is why
-[the summary](#shared-infrastructure-the-ownership-summary) is
+`&[T]` → `impl IntoIterator<Item = T>`, which is what
+[`pnpm/pnpm#15001`](https://github.com/pnpm/pnpm/pull/15001) actually
+wrote where this rule would have suggested `Vec<T>` — is a separate
+question that was discussed alongside the proposal and has not been
+filed. It runs the same worklist over a different lattice, which is
+why [the summary](#shared-infrastructure-the-ownership-summary) is
 factored out rather than written into this rule. This rule suggests
-the owned pointee (`Vec<T>`) and stops there.
+the owned pointee and stops there.
 
 ## Default state
 
 Active by default. The trigger is fully verified rather than
-heuristic: clause 4 establishes that no call site regresses, so there
-is no class of caller the rule quietly trades against, and no neutral
-baseline configuration to omit. The reach that *would* be presumptuous
-— an item whose callers live outside the crate — is excluded by
-[the visibility bound](#the-visibility-bound) rather than by leaving
-the rule off.
+heuristic: clause 4 establishes that no production call site
+regresses, so there is no class of caller the rule quietly trades
+against, and no neutral baseline configuration to omit. The reach that
+*would* be presumptuous — an item whose callers live outside the crate
+— is excluded by [the visibility bound](#the-visibility-bound) rather
+than by leaving the rule off.
 
 ## Interaction with clippy and sibling rules
 
-None of these clippy lints fires on either motivating case, and the
-lint group each sits in is noted so a reader can tell whether their
-project runs it at all.
+None of these clippy lints fires on any of the motivating cases, and
+the lint group each sits in is noted so a reader can tell whether
+their project runs it at all.
 
 - **`clippy::needless_pass_by_value`** (`pedantic`) covers the
   *opposite* direction: a by-value parameter that is never consumed.
@@ -660,11 +783,14 @@ project runs it at all.
   why neither this rule nor its sibling does.
 - **`clippy::redundant_clone`** (`nursery`) flags a clone of an
   **owned** value that is **dropped without further use**. Here the
-  receiver is a borrow and the clone escapes, so it misses on both
-  halves.
+  receiver is a borrow, so it misses on the first half whatever the
+  copy goes on to do.
 - **`clippy::unnecessary_to_owned`** (`perf`) fires where the owned
-  value is only borrowed again afterwards; here it is genuinely
-  stored.
+  value is only **borrowed** again afterwards. That is the exact
+  complement of [clause 2.1](#what-to-lint), which requires the copy
+  to be taken **by value** — so the two partition the space rather
+  than overlap, and a copy neither lint claims is one the borrow
+  checker already forced.
 - **`clippy::ptr_arg`** (`style`) rewrites a `&Vec<T>` / `&String` /
   `&PathBuf` parameter to `&[T]` / `&str` / `&Path`. Since clause 1
   admits those pointees, both lints can speak about one parameter —
