@@ -44,8 +44,7 @@ declare_tool_lint! {
     /// The preference is sharper where a publicly-reachable item names
     /// a *private* one: the name is one its reader cannot look up, and
     /// it can be renamed at will, being no part of the API it appears
-    /// in. A link does not answer either objection, which is why that
-    /// case is reported with no suggestion to make one.
+    /// in. A link does not answer either objection.
     ///
     /// ### Example
     ///
