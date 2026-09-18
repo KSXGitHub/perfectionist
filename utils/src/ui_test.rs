@@ -2,28 +2,28 @@
 //! supplies, holding the process-global state that carries it for
 //! exactly one run.
 //!
-//! `dylint_testing` configures its driver through `DYLINT_TOML`, an
-//! environment variable it sets for the duration of one fixture run
-//! and restores afterwards. The variable is process-global and the
-//! default test harness runs a binary's `#[test]`s in parallel
-//! threads, so two runs that overlapped would lint one fixture under
-//! the other's configuration. Nothing would report that: the fixture
-//! is diffed against its own `.stderr` either way, so it passes or
-//! fails on a baseline it never asked for.
+//! `dylint_testing` configures its driver through `DYLINT_TOML`, a
+//! process-global environment variable it sets for the duration of
+//! one fixture run and restores afterwards. Two runs must not overlap
+//! on it: the second fixture would be linted under the first's
+//! configuration while still being diffed against its own `.stderr`,
+//! and so judged on a baseline it never asked for.
 //!
-//! [`configured_ui_test`] takes [`SERIAL`] and hands the guard to the
-//! [`ConfiguredUiTest`] it returns, which holds it until
-//! [`ConfiguredUiTest::run`] consumes the value. `dylint_testing` is a
-//! dependency of this crate and not of the lint crate whose fixtures
-//! it runs, so a test binary cannot name the builder to reach around
-//! the lock — the overlap is a compile error rather than a convention
-//! every new test file has to be told about.
+//! The version of `dylint_testing` this crate pins already prevents
+//! that by itself, taking a private static mutex as the first
+//! statement of the function that sets the variable and holding it
+//! until the driver has run. Nothing in the crate's API promises it,
+//! though, so a version bump could drop it with nothing here
+//! noticing.
 //!
-//! The version of `dylint_testing` this crate pins serialises its own
-//! fixture runs on a private static of the same shape, so the overlap
-//! is already unreachable there. That static is an implementation
-//! detail rather than part of the crate's API, which is what the lock
-//! here carries across a version bump.
+//! [`configured_ui_test`] therefore takes a lock of this crate's own,
+//! [`SERIAL`], and hands the guard to the [`ConfiguredUiTest`] it
+//! returns, which holds it until [`ConfiguredUiTest::run`] consumes
+//! the value. `dylint_testing` is a dependency of this crate and not
+//! of the lint crate whose fixtures it runs, so a test binary cannot
+//! name the builder to reach around the lock: the guarantee is this
+//! repository's own rather than borrowed, and it holds by compilation
+//! rather than by every new test file being told about it.
 //!
 //! `DYLINT_LIBRARY_PATH` and `DYLINT_LIBS` are the other half of the
 //! problem, and no lock can scope them; a spawned `cargo dylint`
