@@ -66,7 +66,7 @@ warning: `PrivateHelper` resolves to a private item, which this publicly-reachab
 LL | /// A `pub` function that mentions the private `PrivateHelper` is
    |                                                ^^^^^^^^^^^^^^^
    |
-   = help: describe what it does instead of naming it, or make `PrivateHelper` publicly reachable if the doc has to point at it; linking it would make `rustdoc::private_intra_doc_links` fire under a plain `cargo doc`
+   = help: linking it would be no better: a reader of the public API cannot reach `PrivateHelper` in either form. Describe what it does, or make it publicly reachable if the doc has to point at it
 
 warning: `PrivateHelper` resolves in scope; consider writing it as an intra-doc link
   --> $DIR/bare_identifier_reference.rs:LL:CC

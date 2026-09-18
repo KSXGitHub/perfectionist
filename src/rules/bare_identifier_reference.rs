@@ -622,10 +622,9 @@ fn emit(
                 }
                 Resolution::PrivateUnderPublicDoc => {
                     diag.help(format!(
-                        "describe what it does instead of naming it, or make `{ident}` \
-                         publicly reachable if the doc has to point at it; linking it \
-                         would make `rustdoc::private_intra_doc_links` fire under a \
-                         plain `cargo doc`",
+                        "linking it would be no better: a reader of the public API \
+                         cannot reach `{ident}` in either form. Describe what it does, \
+                         or make it publicly reachable if the doc has to point at it",
                     ));
                 }
                 Resolution::Ambiguous(prefix) => {
