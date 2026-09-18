@@ -1,0 +1,101 @@
+warning: getter `first_name` returns an owned copy of `self.first_name`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn first_name(&self) -> String {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `&str`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+   = note: `#[warn(perfectionist::cloning_getter)]` on by default
+
+warning: getter `middle_name` returns an owned copy of `self.middle_name`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn middle_name(&self) -> Option<String> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `Option<&str>`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+
+warning: getter `home` returns an owned copy of `self.home`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn home(&self) -> PathBuf {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `&Path`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+
+warning: getter `tags` returns an owned copy of `self.tags`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn tags(&self) -> Vec<String> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `&[String]`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+
+warning: getter `token` returns an owned copy of `self.token`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn token(&self) -> String {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `&str`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+
+warning: getter `get_anything` returns an owned copy of `self.first_name`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn get_anything(&self) -> String {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `&str`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+
+warning: getter `clone_url` returns an owned copy of `self.clone_url`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn clone_url(&self) -> String {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `&str`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+
+warning: getter `label` returns an owned copy of `self.label`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn label(&self) -> OsString {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `&OsStr`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+
+warning: getter `cpath` returns an owned copy of `self.cpath`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn cpath(&self) -> CString {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `&CStr`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+
+warning: getter `boxed` returns an owned copy of `self.boxed`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn boxed(&self) -> Box<str> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `&str`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+
+warning: getter `badge` returns an owned copy of `self.badge`
+  --> $DIR/cloning_getter.rs:LL:CC
+   |
+LL |     fn badge(&self) -> Badge {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it cloning: return `&Badge`, and let a caller that needs ownership copy at the call site
+   = help: or stop it being a getter: rename it `to_*`, the prefix for a conversion that costs something, which is the right shape when every call site would copy the borrow straight back
+
+warning: N warnings emitted
