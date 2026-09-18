@@ -32,10 +32,11 @@ Only a method taking `&self` and nothing else is measured. A
 method of a trait impl is left alone, since the trait fixes its
 signature, and so is one produced by a macro.
 
-## Why is this bad?
+## Why restrict this?
 
-The Rust API Guidelines give `as_`, `to_` and `into_` distinct
-meanings, and `as_` is the free one: a borrowed value viewed as
+This is a stylistic preference, not a correctness issue. The Rust
+API Guidelines give `as_`, `to_` and `into_` distinct meanings,
+and `as_` is the free one: a borrowed value viewed as
 another borrowed form, free. A caller reads `as_name()` as free
 and may put it in a loop, so an `as_*` that allocates makes the
 name a promise the method does not keep. The reader has

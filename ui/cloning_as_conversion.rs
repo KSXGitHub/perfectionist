@@ -72,6 +72,13 @@ impl Person {
         self.age.clone()
     }
 
+    // Good: `to_string` renders a `u32` rather than copying the field,
+    // so no borrow of `self.age` is a `String` and there is no borrowed
+    // form to ask for.
+    fn as_age_label(&self) -> String {
+        self.age.to_string()
+    }
+
     // Good: cloning an `Rc` bumps a refcount rather than copying what it
     // points at, and a caller that keeps the handle has to own one.
     fn as_shared(&self) -> Rc<String> {

@@ -35,10 +35,11 @@ declare_tool_lint! {
     /// method of a trait impl is left alone, since the trait fixes its
     /// signature, and so is one produced by a macro.
     ///
-    /// ### Why is this bad?
+    /// ### Why restrict this?
     ///
-    /// The Rust API Guidelines give `as_`, `to_` and `into_` distinct
-    /// meanings, and `as_` is the free one: a borrowed value viewed as
+    /// This is a stylistic preference, not a correctness issue. The Rust
+    /// API Guidelines give `as_`, `to_` and `into_` distinct meanings,
+    /// and `as_` is the free one: a borrowed value viewed as
     /// another borrowed form, free. A caller reads `as_name()` as free
     /// and may put it in a loop, so an `as_*` that allocates makes the
     /// name a promise the method does not keep. The reader has
@@ -103,13 +104,6 @@ declare_tool_lint! {
     "`as_*` method copies a field where its prefix promises a free borrow",
     report_in_external_macro: false
 }
-
-/// The second of the two remedies. A violation is a method that both
-/// copies *and* carries the `as_` prefix, so dropping either half
-/// resolves it: the first help drops the copy, this one drops the
-/// prefix, keeping the copy and making the name admit it.
-const RENAME_HELP: &str = "or stop it being an `as_*`: rename it `to_*`, the prefix for a \
-                           conversion that costs something, so the call site shows what it pays";
 
 /// The prefix this rule measures. `cloning_getter` reads the same
 /// string out of `crate::getter_name_patterns::CONVERSION_PREFIXES` to
@@ -194,7 +188,11 @@ impl<'tcx> LateLintPass<'tcx> for CloningAsConversion {
                      promises",
                     borrowed_form(cx, field_ty),
                 ));
-                diag.help(RENAME_HELP);
+                diag.help(format!(
+                    "or stop it being an `as_*`: rename it `{}`, the prefix for a conversion \
+                     that costs something, so the call site shows what it pays",
+                    method.as_str().replacen(AS_PREFIX, "to_", 1),
+                ));
             },
         );
     }
