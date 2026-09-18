@@ -19,10 +19,11 @@ use text_block_macros::text_block_fnl;
 /// test binary could name the builder and skip the lock.
 const UI_HARNESS: &str = "dylint_testing";
 
-/// The manifest tables whose entries put a crate in this package's
-/// extern prelude, and so would make [`UI_HARNESS`] nameable from
-/// `tests/`. Cargo accepts each of them at the manifest root and
-/// again under a `[target.<cfg>]` table, and both are walked.
+/// The manifest tables this package must not list [`UI_HARNESS`] in.
+/// `dependencies` and `dev-dependencies` put a crate in the extern
+/// prelude of `tests/`; `build-dependencies` reaches only `build.rs`,
+/// and is walked because the harness belongs to `_utils` whatever the
+/// table. Cargo accepts each at the root and under `[target.<cfg>]`.
 const DEPENDENCY_TABLES: &[&str] = &["dependencies", "dev-dependencies", "build-dependencies"];
 
 #[test]
@@ -108,10 +109,10 @@ fn resolves_to_ui_harness(name: &str, spec: &toml::Value, workspace: Option<&tom
     name == UI_HARNESS
 }
 
-/// The forms Cargo accepts, each of which makes the harness nameable
-/// from an integration test. A green run of the test above exercises
-/// none of them, since the manifest it reads holds no such entry, so
-/// they are pinned here against a manifest written for the purpose.
+/// The forms Cargo accepts for a dependency on the harness. A green
+/// run of the test above exercises none of them, since the manifest
+/// it reads holds no such entry, so they are pinned here against a
+/// manifest written for the purpose.
 #[test]
 fn every_dependency_form_that_reaches_the_harness_is_found() {
     let cases = [
