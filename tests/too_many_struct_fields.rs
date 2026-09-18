@@ -32,15 +32,15 @@ fn dylint_toml(config: RuleConfig) -> String {
 
 #[test]
 fn zero_threshold_reports_every_field_count() {
-    _utils::configured_ui_test(
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_MANIFEST_DIR"),
-        "ui-toml/too_many_struct_fields/zero_threshold",
-        dylint_toml(RuleConfig {
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base("ui-toml/too_many_struct_fields/zero_threshold")
+        .dylint_toml(dylint_toml(RuleConfig {
             max_fields: Some(0),
-        }),
-    )
-    .run();
+        }))
+        .build()
+        .run();
 }
 
 /// A library whose production struct, `#[cfg(test)]` fixture struct, and

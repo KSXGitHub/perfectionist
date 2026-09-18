@@ -32,15 +32,15 @@ fn dylint_toml(config: RuleConfig) -> String {
 
 #[test]
 fn zero_threshold_reports_every_construct_score() {
-    _utils::configured_ui_test(
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_MANIFEST_DIR"),
-        "ui-toml/excessive_cognitive_complexity/zero_threshold",
-        dylint_toml(RuleConfig {
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base("ui-toml/excessive_cognitive_complexity/zero_threshold")
+        .dylint_toml(dylint_toml(RuleConfig {
             max_complexity: Some(0),
-        }),
-    )
-    .run();
+        }))
+        .build()
+        .run();
 }
 
 /// A library whose production function, `#[cfg(test)]` helper, and

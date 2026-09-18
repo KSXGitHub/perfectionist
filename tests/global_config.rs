@@ -7,13 +7,13 @@
 use text_block_macros::text_block_fnl;
 
 fn run(src_base: &str, dylint_toml_contents: &str) {
-    _utils::configured_ui_test(
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_MANIFEST_DIR"),
-        src_base,
-        dylint_toml_contents,
-    )
-    .run();
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
+        .dylint_toml(dylint_toml_contents)
+        .build()
+        .run();
 }
 
 /// `disable = ["<rule>"]` skips the rule's `register_pass` call, so

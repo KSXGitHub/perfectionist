@@ -1,6 +1,6 @@
 //! Run a compiletest UI fixture under a `dylint.toml` the test
 //! supplies, holding the process-global state that carries it for
-//! exactly one run.
+//! exactly one run. [`ConfiguredUiTest::builder`] is the way in.
 //!
 //! `dylint_testing` configures its driver through `DYLINT_TOML`, a
 //! process-global environment variable it sets for the duration of
@@ -16,11 +16,12 @@
 //! though, so a version bump could drop it with nothing here
 //! noticing.
 //!
-//! [`configured_ui_test`] therefore takes a lock of this crate's own,
-//! [`SERIAL`], and hands the guard to the [`ConfiguredUiTest`] it
-//! returns, which holds it until [`ConfiguredUiTest::run`] consumes
-//! the value. `dylint_testing` is a dependency of this crate and not
-//! of the lint crate whose fixtures it runs, so a test binary cannot
+//! [`ConfiguredUiTestBuilder::build`] therefore takes a lock of this
+//! crate's own, [`SERIAL`], and hands the guard to the
+//! [`ConfiguredUiTest`] it returns, which holds it until
+//! [`ConfiguredUiTest::run`] consumes the value. `dylint_testing` is
+//! a dependency of this crate and not of the lint crate whose
+//! fixtures it runs, so a test binary cannot
 //! name the builder to reach around the lock: the guarantee is this
 //! repository's own rather than borrowed, and it holds by compilation
 //! rather than by every new test file being told about it.
@@ -57,10 +58,17 @@ pub struct ConfiguredUiTest {
 }
 
 impl ConfiguredUiTest {
-    /// Pass flags to the compiler that lints the fixtures.
-    pub fn rustc_flags(mut self, rustc_flags: impl IntoIterator<Item = impl AsRef<str>>) -> Self {
-        self.test.rustc_flags(rustc_flags);
-        self
+    /// Start describing a UI test. Every parameter is set by name on
+    /// the returned builder, which becomes buildable once none is
+    /// missing.
+    pub fn builder() -> ConfiguredUiTestBuilder<(), (), (), ()> {
+        ConfiguredUiTestBuilder {
+            library_name: (),
+            manifest_dir: (),
+            src_base: (),
+            dylint_toml: (),
+            rustc_flags: Vec::new(),
+        }
     }
 
     /// Run the fixtures, then delete the copy and release the lock.
@@ -69,32 +77,165 @@ impl ConfiguredUiTest {
     }
 }
 
-/// Prepare the fixture tree at `<manifest_dir>/<src_base>` — copied
-/// and rewritten by [`copy_fixtures_with_directives`] — as a UI test
-/// of the dylint library `library_name`, configured by `dylint_toml`.
+/// The parameters of a [`ConfiguredUiTest`], collected before any of
+/// them is used: nothing here touches the fixture tree or the lock
+/// until [`ConfiguredUiTestBuilder::build`] is called.
 ///
-/// `library_name` and `manifest_dir` are the calling test binary's
-/// `CARGO_PKG_NAME` and `CARGO_MANIFEST_DIR`; this crate is built in
-/// isolation from the workspace under test and cannot read either.
-///
-/// The returned value holds [`SERIAL`] until it runs, so build it
-/// where the test runs: a second one alive on the same thread would
-/// block on the guard the first is holding.
-pub fn configured_ui_test(
-    library_name: &str,
-    manifest_dir: &str,
-    src_base: &str,
-    dylint_toml: impl AsRef<str>,
-) -> ConfiguredUiTest {
-    // The copy lands in a `TempDir` of its own and shares nothing, so
-    // it stays outside the critical section.
-    let fixtures = copy_fixtures_with_directives(manifest_dir, src_base);
-    let serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let mut test = dylint_testing::ui::Test::src_base(library_name, fixtures.path());
-    test.dylint_toml(dylint_toml);
-    ConfiguredUiTest {
-        test,
-        _fixtures: fixtures,
-        _serial: serial,
+/// Each type parameter is the slot of the setter that fills it, `()`
+/// until then. `build` is bounded on all four carrying a string, and
+/// `()` carries none, so a builder missing a parameter has no `build`
+/// to call and the omission is a compile error rather than a panic on
+/// a half-described test.
+#[must_use = "a `ConfiguredUiTestBuilder` describes a test until it is `build`-ed"]
+pub struct ConfiguredUiTestBuilder<LibraryName, ManifestDir, SrcBase, DylintToml> {
+    library_name: LibraryName,
+    manifest_dir: ManifestDir,
+    src_base: SrcBase,
+    dylint_toml: DylintToml,
+    rustc_flags: Vec<String>,
+}
+
+impl<ManifestDir, SrcBase, DylintToml>
+    ConfiguredUiTestBuilder<(), ManifestDir, SrcBase, DylintToml>
+{
+    /// The dylint library to load: the calling test binary's
+    /// `CARGO_PKG_NAME`, which this crate cannot read for itself.
+    pub fn library_name<LibraryName: AsRef<str>>(
+        self,
+        library_name: LibraryName,
+    ) -> ConfiguredUiTestBuilder<LibraryName, ManifestDir, SrcBase, DylintToml> {
+        let Self {
+            manifest_dir,
+            src_base,
+            dylint_toml,
+            rustc_flags,
+            ..
+        } = self;
+        ConfiguredUiTestBuilder {
+            library_name,
+            manifest_dir,
+            src_base,
+            dylint_toml,
+            rustc_flags,
+        }
+    }
+}
+
+impl<LibraryName, SrcBase, DylintToml>
+    ConfiguredUiTestBuilder<LibraryName, (), SrcBase, DylintToml>
+{
+    /// The directory the fixture path is relative to: the calling test
+    /// binary's `CARGO_MANIFEST_DIR`, which this crate cannot read for
+    /// itself. It has to be absolute.
+    pub fn manifest_dir<ManifestDir: AsRef<str>>(
+        self,
+        manifest_dir: ManifestDir,
+    ) -> ConfiguredUiTestBuilder<LibraryName, ManifestDir, SrcBase, DylintToml> {
+        let Self {
+            library_name,
+            src_base,
+            dylint_toml,
+            rustc_flags,
+            ..
+        } = self;
+        ConfiguredUiTestBuilder {
+            library_name,
+            manifest_dir,
+            src_base,
+            dylint_toml,
+            rustc_flags,
+        }
+    }
+}
+
+impl<LibraryName, ManifestDir, DylintToml>
+    ConfiguredUiTestBuilder<LibraryName, ManifestDir, (), DylintToml>
+{
+    /// The fixture tree to lint, relative to the manifest directory.
+    pub fn src_base<SrcBase: AsRef<str>>(
+        self,
+        src_base: SrcBase,
+    ) -> ConfiguredUiTestBuilder<LibraryName, ManifestDir, SrcBase, DylintToml> {
+        let Self {
+            library_name,
+            manifest_dir,
+            dylint_toml,
+            rustc_flags,
+            ..
+        } = self;
+        ConfiguredUiTestBuilder {
+            library_name,
+            manifest_dir,
+            src_base,
+            dylint_toml,
+            rustc_flags,
+        }
+    }
+}
+
+impl<LibraryName, ManifestDir, SrcBase>
+    ConfiguredUiTestBuilder<LibraryName, ManifestDir, SrcBase, ()>
+{
+    /// The `dylint.toml` the fixtures are linted under. Pass an empty
+    /// string to pin them to the default configuration rather than let
+    /// the harness fall back to the linted crate's own file.
+    pub fn dylint_toml<DylintToml: AsRef<str>>(
+        self,
+        dylint_toml: DylintToml,
+    ) -> ConfiguredUiTestBuilder<LibraryName, ManifestDir, SrcBase, DylintToml> {
+        let Self {
+            library_name,
+            manifest_dir,
+            src_base,
+            rustc_flags,
+            ..
+        } = self;
+        ConfiguredUiTestBuilder {
+            library_name,
+            manifest_dir,
+            src_base,
+            dylint_toml,
+            rustc_flags,
+        }
+    }
+}
+
+impl<LibraryName, ManifestDir, SrcBase, DylintToml>
+    ConfiguredUiTestBuilder<LibraryName, ManifestDir, SrcBase, DylintToml>
+{
+    /// Pass flags to the compiler that lints the fixtures. Optional,
+    /// so it is settable at any point and defaults to none.
+    pub fn rustc_flags(mut self, rustc_flags: impl IntoIterator<Item = impl AsRef<str>>) -> Self {
+        self.rustc_flags
+            .extend(rustc_flags.into_iter().map(|flag| flag.as_ref().to_owned()));
+        self
+    }
+}
+
+impl<LibraryName, ManifestDir, SrcBase, DylintToml>
+    ConfiguredUiTestBuilder<LibraryName, ManifestDir, SrcBase, DylintToml>
+where
+    LibraryName: AsRef<str>,
+    ManifestDir: AsRef<str>,
+    SrcBase: AsRef<str>,
+    DylintToml: AsRef<str>,
+{
+    /// Copy the fixture tree, take [`SERIAL`], and describe the run to
+    /// the harness. Everything the builder deferred happens here.
+    pub fn build(self) -> ConfiguredUiTest {
+        // The copy lands in a `TempDir` of its own and shares nothing,
+        // so it stays outside the critical section.
+        let fixtures =
+            copy_fixtures_with_directives(self.manifest_dir.as_ref(), self.src_base.as_ref());
+        let serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut test =
+            dylint_testing::ui::Test::src_base(self.library_name.as_ref(), fixtures.path());
+        test.dylint_toml(self.dylint_toml);
+        test.rustc_flags(self.rustc_flags);
+        ConfiguredUiTest {
+            test,
+            _fixtures: fixtures,
+            _serial: serial,
+        }
     }
 }

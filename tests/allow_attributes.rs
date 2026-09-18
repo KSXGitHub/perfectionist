@@ -34,13 +34,13 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, contents: &str) {
-    _utils::configured_ui_test(
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_MANIFEST_DIR"),
-        src_base,
-        contents,
-    )
-    .run();
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
+        .dylint_toml(contents)
+        .build()
+        .run();
 }
 
 /// `apply_to_outer_scopes = true` makes crate-level `#![allow(...)]` and

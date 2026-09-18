@@ -61,13 +61,13 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run_ui(src_base: &str, config: RuleConfig) {
-    _utils::configured_ui_test(
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_MANIFEST_DIR"),
-        src_base,
-        dylint_toml(config),
-    )
-    .run();
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
+        .dylint_toml(dylint_toml(config))
+        .build()
+        .run();
 }
 
 #[test]

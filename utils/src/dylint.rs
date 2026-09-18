@@ -13,7 +13,7 @@ use std::process::Command;
 /// *this* process, and which a spawned `cargo dylint` must not inherit.
 ///
 /// A test binary that holds both a UI run built by
-/// [`crate::configured_ui_test`] and a fixture project run through
+/// [`crate::ConfiguredUiTest`] and a fixture project run through
 /// [`run_dylint`] would otherwise lint the fixture under the UI
 /// test's environment: the UI harness reaches its driver by setting
 /// process-global variables, and a subprocess inherits them.

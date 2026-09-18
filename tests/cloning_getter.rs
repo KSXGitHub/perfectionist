@@ -31,13 +31,13 @@ fn dylint_toml(patterns: &[&str]) -> String {
 }
 
 fn run_patterns(fixture_dir: &str, patterns: &[&str]) {
-    _utils::configured_ui_test(
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_MANIFEST_DIR"),
-        fixture_dir,
-        dylint_toml(patterns),
-    )
-    .run();
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(fixture_dir)
+        .dylint_toml(dylint_toml(patterns))
+        .build()
+        .run();
 }
 
 #[test]

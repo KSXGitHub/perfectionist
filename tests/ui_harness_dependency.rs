@@ -42,7 +42,7 @@ fn the_lint_crate_does_not_depend_on_the_ui_harness() {
     assert!(
         offenders.is_empty(),
         "this package depends on `{UI_HARNESS}`: {offenders:?}\n\
-         The dependency belongs to `_utils`, whose `configured_ui_test` holds the lock that \
+         The dependency belongs to `_utils`, whose `ConfiguredUiTest` holds the lock that \
          keeps one fixture's `DYLINT_TOML` out of another fixture's run. While it is absent \
          here, an integration test that names the harness does not compile.",
     );

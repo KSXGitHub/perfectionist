@@ -34,16 +34,16 @@ fn dylint_toml(config: RuleConfig) -> String {
 
 #[test]
 fn zero_threshold_reports_the_file_count() {
-    _utils::configured_ui_test(
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_MANIFEST_DIR"),
-        "ui-toml/overly_long_file/zero_threshold",
-        dylint_toml(RuleConfig {
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base("ui-toml/overly_long_file/zero_threshold")
+        .dylint_toml(dylint_toml(RuleConfig {
             max_lines: Some(0),
             ..RuleConfig::default()
-        }),
-    )
-    .run();
+        }))
+        .build()
+        .run();
 }
 
 /// The one file shape that reaches a count of 1, which is where the
@@ -52,30 +52,30 @@ fn zero_threshold_reports_the_file_count() {
 /// is a whole one-line file.
 #[test]
 fn a_file_of_one_line_reads_as_one_line() {
-    _utils::configured_ui_test(
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_MANIFEST_DIR"),
-        "ui-toml/overly_long_file/one_line",
-        dylint_toml(RuleConfig {
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base("ui-toml/overly_long_file/one_line")
+        .dylint_toml(dylint_toml(RuleConfig {
             max_lines: Some(0),
             ..RuleConfig::default()
-        }),
-    )
-    .run();
+        }))
+        .build()
+        .run();
 }
 
 #[test]
 fn a_file_at_the_limit_is_not_flagged() {
-    _utils::configured_ui_test(
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_MANIFEST_DIR"),
-        "ui-toml/overly_long_file/at_the_limit",
-        dylint_toml(RuleConfig {
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base("ui-toml/overly_long_file/at_the_limit")
+        .dylint_toml(dylint_toml(RuleConfig {
             max_lines: Some(5),
             ..RuleConfig::default()
-        }),
-    )
-    .run();
+        }))
+        .build()
+        .run();
 }
 
 /// A crate whose root is 4 lines, and whose `big.rs` module,

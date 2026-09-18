@@ -18,7 +18,7 @@ pub use manifest::{
 };
 pub use project::{build_project, build_project_with_config};
 pub use tempfile::TempDir;
-pub use ui_test::{ConfiguredUiTest, configured_ui_test};
+pub use ui_test::{ConfiguredUiTest, ConfiguredUiTestBuilder};
 
 use std::path::Path;
 

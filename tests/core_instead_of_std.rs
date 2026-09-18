@@ -29,18 +29,18 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    _utils::configured_ui_test(
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_MANIFEST_DIR"),
-        src_base,
-        dylint_toml(config),
-    )
-    // The harness compiles a fixture in the 2015 edition by default,
-    // where `core` and `alloc` are not in the extern prelude and every
-    // fixture would need an `extern crate` line this rule's audience
-    // does not write.
-    .rustc_flags(["--edition=2021"])
-    .run();
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
+        .dylint_toml(dylint_toml(config))
+        // The harness compiles a fixture in the 2015 edition by
+        // default, where `core` and `alloc` are not in the extern
+        // prelude and every fixture would need an `extern crate` line
+        // this rule's audience does not write.
+        .rustc_flags(["--edition=2021"])
+        .build()
+        .run();
 }
 
 #[test]
