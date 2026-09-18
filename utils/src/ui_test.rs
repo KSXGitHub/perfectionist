@@ -43,21 +43,18 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 /// follow are then upstream's to explain rather than this lock's.
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/// A `dylint_testing` UI test that holds the lock, together with the
-/// throwaway fixture copy it runs against. Both are released once it
-/// has run.
+/// A `dylint_testing` UI test, described and ready to run.
 pub struct ConfiguredUiTest {
     test: dylint_testing::ui::Test,
-    /// Held only for its `Drop`, which removes the copy from disk.
+    /// Held only for its `Drop`, which removes the fixture copy from
+    /// disk.
     _fixtures: FixtureCopy,
     /// Held only for its `Drop`, which releases [`SERIAL`].
     _serial: MutexGuard<'static, ()>,
 }
 
 impl ConfiguredUiTest {
-    /// Start describing a UI test. Every parameter is set by name on
-    /// the returned builder, which becomes runnable once none is
-    /// missing.
+    /// Start describing a UI test.
     pub fn builder() -> ConfiguredUiTestBuilder<(), (), (), ()> {
         ConfiguredUiTestBuilder {
             library_name: (),
@@ -68,7 +65,6 @@ impl ConfiguredUiTest {
         }
     }
 
-    /// Run the fixtures, then delete the copy and release the lock.
     pub(crate) fn run(mut self) {
         self.test.run();
     }
@@ -79,10 +75,9 @@ impl ConfiguredUiTest {
 /// until [`ConfiguredUiTestBuilder::run`] is called.
 ///
 /// Each type parameter is the slot of the setter that fills it, `()`
-/// until then. `run` is bounded on all four carrying a string, and
-/// `()` carries none, so a builder missing a parameter has no `run`
-/// to call and the omission is a compile error rather than a panic on
-/// a half-described test.
+/// until then, so a builder missing a setter has no `run` to call and
+/// the omission is a compile error rather than a panic on a
+/// half-described test.
 #[must_use = "a `ConfiguredUiTestBuilder` describes a test until it is `run`"]
 pub struct ConfiguredUiTestBuilder<LibraryName, ManifestDir, SrcBase, DylintToml> {
     library_name: LibraryName,
@@ -96,7 +91,7 @@ impl<ManifestDir, SrcBase, DylintToml>
     ConfiguredUiTestBuilder<(), ManifestDir, SrcBase, DylintToml>
 {
     /// The dylint library to load: the calling test binary's
-    /// `CARGO_PKG_NAME`, which this crate cannot read for itself.
+    /// `CARGO_PKG_NAME`.
     pub fn library_name<LibraryName: AsRef<str>>(
         self,
         library_name: LibraryName,
@@ -121,9 +116,8 @@ impl<ManifestDir, SrcBase, DylintToml>
 impl<LibraryName, SrcBase, DylintToml>
     ConfiguredUiTestBuilder<LibraryName, (), SrcBase, DylintToml>
 {
-    /// The directory the fixture path is relative to: the calling test
-    /// binary's `CARGO_MANIFEST_DIR`, which this crate cannot read for
-    /// itself. It has to be absolute.
+    /// The directory the fixture tree is relative to: the calling test
+    /// binary's `CARGO_MANIFEST_DIR`. It has to be absolute.
     pub fn manifest_dir<ManifestDir: AsRef<str>>(
         self,
         manifest_dir: ManifestDir,
@@ -201,7 +195,7 @@ impl<LibraryName, ManifestDir, SrcBase, DylintToml>
     ConfiguredUiTestBuilder<LibraryName, ManifestDir, SrcBase, DylintToml>
 {
     /// Pass flags to the compiler that lints the fixtures. Optional,
-    /// so it is settable at any point and defaults to none.
+    /// so it sits outside the typestate; repeated calls accumulate.
     pub fn rustc_flags(mut self, rustc_flags: impl IntoIterator<Item = impl AsRef<str>>) -> Self {
         self.rustc_flags
             .extend(rustc_flags.into_iter().map(|flag| flag.as_ref().to_owned()));
@@ -227,8 +221,7 @@ where
         self.build().run();
     }
 
-    /// Copy the fixture tree, take [`SERIAL`], and describe the run to
-    /// the harness. Everything the builder deferred happens here.
+    /// Everything the builder deferred happens here.
     fn build(self) -> ConfiguredUiTest {
         // The copy lands in a `TempDir` of its own and shares nothing,
         // so it stays outside the critical section.
