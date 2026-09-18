@@ -53,12 +53,14 @@ fn ui_harness_dependencies(manifest: &toml::Table) -> Vec<String> {
         .and_then(toml::Value::as_table);
     let mut offenders = Vec::new();
     collect(manifest, "", workspace, &mut offenders);
-    if let Some(targets) = manifest.get("target").and_then(toml::Value::as_table) {
-        for (cfg, target) in targets {
-            if let Some(target) = target.as_table() {
-                collect(target, &format!("target.{cfg}."), workspace, &mut offenders);
-            }
-        }
+    let target_tables = manifest
+        .get("target")
+        .and_then(toml::Value::as_table)
+        .into_iter()
+        .flatten()
+        .filter_map(|(cfg, target)| Some((cfg, target.as_table()?)));
+    for (cfg, target) in target_tables {
+        collect(target, &format!("target.{cfg}."), workspace, &mut offenders);
     }
     offenders
 }
