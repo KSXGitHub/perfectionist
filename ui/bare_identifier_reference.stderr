@@ -60,6 +60,14 @@ LL | /// A module and a function both answer to `overlap`, which therefore
    = help: `overlap` resolves in more than one namespace; only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, write a disambiguated intra-doc link such as `[`overlap`](type@overlap)`
    = help: if `overlap` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`overlap`][overlap-ext]` with a `[overlap-ext]: <url>` definition
 
+warning: `PrivateHelper` resolves to a private item, which this publicly-reachable doc should not name
+  --> $DIR/bare_identifier_reference.rs:LL:CC
+   |
+LL | /// A `pub` function that mentions the private `PrivateHelper` is
+   |                                                ^^^^^^^^^^^^^^^
+   |
+   = help: describe what it does instead of naming it, or make `PrivateHelper` publicly reachable if the doc has to point at it; linking it would make `rustdoc::private_intra_doc_links` fire under a plain `cargo doc`
+
 warning: `PrivateHelper` resolves in scope; consider writing it as an intra-doc link
   --> $DIR/bare_identifier_reference.rs:LL:CC
    |

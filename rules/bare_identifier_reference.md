@@ -18,10 +18,11 @@ the enclosing module's scope are flagged; a backticked word that
 names nothing in scope is left alone.
 
 A publicly-reachable item that mentions a *private* (not
-publicly-reachable) item is also left alone: turning that mention
-into a link would make rustdoc's `rustdoc::private_intra_doc_links`
-fire under a plain `cargo doc`, and a public item leaning on a
-private one is a separate concern from this rule's.
+publicly-reachable) item is reported too, but with no link
+offered: turning that mention into a link is what rustdoc's
+`rustdoc::private_intra_doc_links` fires on, so the reference
+itself is what has to go. Describe what the item does, or make
+it reachable if the doc has to point at it.
 
 ## Why restrict this?
 

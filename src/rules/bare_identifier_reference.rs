@@ -28,10 +28,11 @@ declare_tool_lint! {
     /// names nothing in scope is left alone.
     ///
     /// A publicly-reachable item that mentions a *private* (not
-    /// publicly-reachable) item is also left alone: turning that mention
-    /// into a link would make rustdoc's `rustdoc::private_intra_doc_links`
-    /// fire under a plain `cargo doc`, and a public item leaning on a
-    /// private one is a separate concern from this rule's.
+    /// publicly-reachable) item is reported too, but with no link
+    /// offered: turning that mention into a link is what rustdoc's
+    /// `rustdoc::private_intra_doc_links` fires on, so the reference
+    /// itself is what has to go. Describe what the item does, or make
+    /// it reachable if the doc has to point at it.
     ///
     /// ### Why restrict this?
     ///
@@ -312,6 +313,12 @@ enum Resolution {
     /// link, so the rule emits a help note rather than an autofix,
     /// carrying the disambiguator prefix to suggest.
     Ambiguous(DisambiguatorPrefix),
+    /// The only thing the name resolves to is a private item, and the
+    /// doc naming it is publicly reachable. Linking is the wrong fix
+    /// here — it is what `rustdoc::private_intra_doc_links` fires on —
+    /// so the rule reports the reference itself and offers no
+    /// suggestion.
+    PrivateUnderPublicDoc,
 }
 
 /// The rustdoc disambiguator prefix the ambiguity help suggests. Chosen
@@ -366,11 +373,11 @@ impl BareIdentifierReference {
     /// - **Eligibility** (is the rule willing to point a link at this?)
     ///   applies the rule's own filters: the `reference_scope` policy
     ///   (see [`ReferenceScope`]) drops a target that lives farther out
-    ///   than the project allows, and the public-references-private
-    ///   exemption drops a private target a `pub` item shouldn't link to
-    ///   (turning `` `Priv` `` into `` [`Priv`] `` would make rustdoc's
-    ///   `rustdoc::private_intra_doc_links` fire under a plain
-    ///   `cargo doc`; that is a separate rule's concern).
+    ///   than the project allows, and a private target a `pub` item
+    ///   shouldn't link to is not eligible either — but it is still
+    ///   reported, as [`Resolution::PrivateUnderPublicDoc`], because
+    ///   turning `` `Priv` `` into `` [`Priv`] `` is what rustdoc's
+    ///   `rustdoc::private_intra_doc_links` fires on.
     ///
     /// Returns `None` when no in-scope child is eligible (the backticks
     /// are deliberate prose, not an unlinked reference).
@@ -390,6 +397,7 @@ impl BareIdentifierReference {
         let mut namespaces = [false; 3];
         let mut eligible_namespaces = [false; 3];
         let mut has_eligible_target = false;
+        let mut private_under_public_doc = false;
         for child in cx.tcx.module_children_local(scope) {
             if child.ident.name != name {
                 continue;
@@ -439,6 +447,11 @@ impl BareIdentifierReference {
                 .and_then(DefId::as_local)
                 .is_some_and(|local| !effective_visibilities.is_reachable(local));
             if documented_public && target_private {
+                // Not eligible for a link, but not nothing either: a
+                // publicly-reachable doc naming a private item is its
+                // own defect, reported below when nothing else in scope
+                // carries the name.
+                private_under_public_doc = true;
                 continue;
             }
             has_eligible_target = true;
@@ -447,7 +460,7 @@ impl BareIdentifierReference {
             }
         }
         if !has_eligible_target {
-            return None;
+            return private_under_public_doc.then_some(Resolution::PrivateUnderPublicDoc);
         }
         let distinct = namespaces.iter().filter(|present| **present).count();
         Some(if distinct > 1 {
@@ -583,7 +596,13 @@ fn emit(
         BARE_IDENTIFIER_REFERENCE,
         hir_id,
         span,
-        format!("`{ident}` resolves in scope; consider writing it as an intra-doc link"),
+        match resolution {
+            Resolution::PrivateUnderPublicDoc => format!(
+                "`{ident}` resolves to a private item, which this publicly-reachable \
+                 doc should not name",
+            ),
+            _ => format!("`{ident}` resolves in scope; consider writing it as an intra-doc link"),
+        },
         |diag| {
             match resolution {
                 Resolution::Unique => {
@@ -601,6 +620,14 @@ fn emit(
                         Applicability::MaybeIncorrect,
                     );
                 }
+                Resolution::PrivateUnderPublicDoc => {
+                    diag.help(format!(
+                        "describe what it does instead of naming it, or make `{ident}` \
+                         publicly reachable if the doc has to point at it; linking it \
+                         would make `rustdoc::private_intra_doc_links` fire under a \
+                         plain `cargo doc`",
+                    ));
+                }
                 Resolution::Ambiguous(prefix) => {
                     let prefix = prefix.as_str();
                     diag.help(format!(
@@ -616,12 +643,14 @@ fn emit(
             // link would then resolve to the wrong target while still
             // compiling. Point authors at an explicit reference link to the
             // real source for that case.
-            diag.help(format!(
-                "if `{ident}` instead names a foreign or upstream symbol that the doc \
-                 only mentions by name, do not link it to the local item; write an \
-                 explicit reference link to the real source, such as \
-                 `[`{ident}`][{ident}-ext]` with a `[{ident}-ext]: <url>` definition",
-            ));
+            if !matches!(resolution, Resolution::PrivateUnderPublicDoc) {
+                diag.help(format!(
+                    "if `{ident}` instead names a foreign or upstream symbol that the doc \
+                     only mentions by name, do not link it to the local item; write an \
+                     explicit reference link to the real source, such as \
+                     `[`{ident}`][{ident}-ext]` with a `[{ident}-ext]: <url>` definition",
+                ));
+            }
         },
     );
 }
