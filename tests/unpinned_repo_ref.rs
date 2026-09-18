@@ -2,19 +2,11 @@
 //! default-config sweep lives in `ui/unpinned_repo_ref.rs` (picked up
 //! by `tests/ui.rs`); the tests here each point at their own
 //! one-fixture directory under `ui-toml/unpinned_repo_ref/` and pass a
-//! per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
-//!
-//! `Test::dylint_toml` sets the process-global `DYLINT_TOML` env var for
-//! the duration of `run_tests`, so the `#[test]`s here serialise on a
-//! shared [`Mutex`] to avoid clobbering each other under the parallel
-//! harness.
+//! per-rule `dylint.toml` to `_utils::configured_ui_test`.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::unpinned_repo_ref";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Serialisation shim for the rule's `dylint.toml` configuration,
 /// which the test crate cannot build from the lint's own private
@@ -50,11 +42,13 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
-        .dylint_toml(dylint_toml(config))
-        .run();
+    _utils::configured_ui_test(
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_MANIFEST_DIR"),
+        src_base,
+        dylint_toml(config),
+    )
+    .run();
 }
 
 /// An explicit `hosts = []` replaces the built-in host table with an

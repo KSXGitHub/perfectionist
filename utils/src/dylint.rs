@@ -12,11 +12,11 @@ use std::process::Command;
 /// The dylint-specific environment variables `dylint_testing` sets in
 /// *this* process, and which a spawned `cargo dylint` must not inherit.
 ///
-/// A test binary that holds both a UI run configured through
-/// `Test::dylint_toml` and a fixture project run through [`run_dylint`]
-/// would otherwise lint the fixture under the UI test's environment:
-/// the UI harness reaches its driver by setting process-global
-/// variables, and a subprocess inherits them.
+/// A test binary that holds both a UI run built by
+/// [`crate::configured_ui_test`] and a fixture project run through
+/// [`run_dylint`] would otherwise lint the fixture under the UI
+/// test's environment: the UI harness reaches its driver by setting
+/// process-global variables, and a subprocess inherits them.
 ///
 /// * `DYLINT_TOML` *replaces* the fixture project's own `dylint.toml`
 ///   rather than adding to it, so the fixture is linted under the UI
@@ -35,7 +35,7 @@ use std::process::Command;
 /// each other. Serialising them on a mutex does not: `dylint_testing`
 /// scopes only `DYLINT_TOML` to one UI run, and sets the other two once,
 /// on the first UI test, without ever restoring them — so they are still
-/// set long after any lock is released.
+/// set long after the lock [`crate::ui_test`] takes has been released.
 const UI_HARNESS_VARS: &[&str] = &["DYLINT_LIBRARY_PATH", "DYLINT_LIBS", "DYLINT_TOML"];
 
 /// A `cargo` command rooted at `project_dir`, pointed at

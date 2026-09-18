@@ -2,19 +2,10 @@
 //! sweep lives in `ui/bare_identifier_reference.rs` and is picked up by
 //! `tests/ui.rs`; the test here points at a fixture directory under
 //! `ui-toml/bare_identifier_reference/` and passes a per-rule `dylint.toml`.
-//!
-//! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
-//! the duration of `run_tests`. The env var is process-global, so the
-//! `#[test]`s in this binary serialise themselves on a shared [`Mutex`]
-//! to avoid clobbering each other under the default parallel test
-//! harness.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::bare_identifier_reference";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Serialisation shim for the rule's `dylint.toml` configuration,
 /// which the test crate cannot build from the lint's own private
@@ -41,11 +32,13 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, contents: &str) {
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
-        .dylint_toml(contents)
-        .run();
+    _utils::configured_ui_test(
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_MANIFEST_DIR"),
+        src_base,
+        contents,
+    )
+    .run();
 }
 
 /// An identifier listed under `skip_idents` is left alone even when it

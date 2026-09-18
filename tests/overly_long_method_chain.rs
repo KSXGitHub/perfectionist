@@ -61,10 +61,13 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run_ui(src_base: &str, config: RuleConfig) {
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
-        .dylint_toml(dylint_toml(config))
-        .run();
+    _utils::configured_ui_test(
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_MANIFEST_DIR"),
+        src_base,
+        dylint_toml(config),
+    )
+    .run();
 }
 
 #[test]

@@ -4,19 +4,10 @@
 //! `ui-toml/import_grouping_mismatch/` and passes a `dylint.toml` that both
 //! enables the rule and selects a style. The bare-`multi_block` sweep
 //! lives in `ui-toml/import_grouping_mismatch/multi_block/` and has its own test below.
-//!
-//! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
-//! the duration of `run_tests`. The env var is process-global, so the
-//! `#[test]`s in this binary serialise themselves on a shared [`Mutex`]
-//! to avoid clobbering each other under the default parallel test
-//! harness.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::import_grouping_mismatch";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Serialisation shim for the rule's `dylint.toml` configuration,
 /// which the test crate cannot build from the lint's own private
@@ -57,13 +48,13 @@ fn dylint_toml(mut config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    // A poisoned mutex from a previous panic doesn't make this lock
-    // unsafe — recover the inner guard and proceed.
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
-        .dylint_toml(dylint_toml(config))
-        .run();
+    _utils::configured_ui_test(
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_MANIFEST_DIR"),
+        src_base,
+        dylint_toml(config),
+    )
+    .run();
 }
 
 #[test]

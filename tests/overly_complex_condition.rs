@@ -32,15 +32,15 @@ fn dylint_toml(config: RuleConfig) -> String {
 
 #[test]
 fn zero_threshold_reports_every_operator_count() {
-    let fixtures = _utils::copy_fixtures_with_directives(
+    _utils::configured_ui_test(
+        env!("CARGO_PKG_NAME"),
         env!("CARGO_MANIFEST_DIR"),
         "ui-toml/overly_complex_condition/zero_threshold",
-    );
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
-        .dylint_toml(dylint_toml(RuleConfig {
+        dylint_toml(RuleConfig {
             max_operators: Some(0),
-        }))
-        .run();
+        }),
+    )
+    .run();
 }
 
 /// A library whose production function, `#[cfg(test)]` helper, and

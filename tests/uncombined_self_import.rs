@@ -12,15 +12,15 @@ use text_block_macros::text_block_fnl;
 
 #[test]
 fn folds_adjacent_module_and_item_imports() {
-    let fixtures = _utils::copy_fixtures_with_directives(
+    _utils::configured_ui_test(
+        env!("CARGO_PKG_NAME"),
         env!("CARGO_MANIFEST_DIR"),
         "ui-toml/uncombined_self_import",
-    );
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
-        .dylint_toml(text_block_fnl! {
+        text_block_fnl! {
             "[perfectionist]"
             r#"enable = ["uncombined_self_import"]"#
             r#"disable = ["import_granularity_mismatch"]"#
-        })
-        .run();
+        },
+    )
+    .run();
 }

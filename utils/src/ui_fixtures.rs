@@ -58,7 +58,7 @@ const NORMALIZE_STDERR_DIRECTIVES: &[&str] = &[
 /// names each test after the fixture's repository-relative path.
 ///
 /// Hold it until the test has run: dropping it deletes the copy.
-pub struct FixtureCopy {
+pub(crate) struct FixtureCopy {
     /// Held only for its `Drop`, which removes the copy from disk.
     _temp: TempDir,
     /// The directory to hand to `dylint_testing::ui::Test::src_base`.
@@ -71,7 +71,7 @@ impl FixtureCopy {
     /// [`copy_fixtures_with_directives`], not the temp dir and not the
     /// fixture directory itself, so that the components in between end
     /// up in compiletest's test names.
-    pub fn path(&self) -> &Path {
+    pub(crate) fn path(&self) -> &Path {
         &self.src_base
     }
 }
@@ -79,15 +79,15 @@ impl FixtureCopy {
 /// Copy the fixture directory `<manifest_dir>/<relative>` into a fresh
 /// [`TempDir`] — reproducing `relative` inside it — and prepend
 /// [`NORMALIZE_STDERR_DIRECTIVES`] to every `.rs` that has a sibling
-/// `.stderr`. Pass the returned guard's [`FixtureCopy::path`] to
-/// `dylint_testing::ui::Test::src_base`, and hold the guard until the
-/// test has run so the copy outlives the assertions.
+/// `.stderr`. The returned guard's [`FixtureCopy::path`] is the
+/// `src_base` the UI harness reads, and the guard has to outlive the
+/// run, which is why [`crate::ui_test`] holds it alongside the test.
 ///
 /// Only `.rs` files paired with a `.stderr` are touched, so `auxiliary/`
 /// crates and `include!`-ed sources are copied verbatim — the injected
 /// directives on the paired fixture already rewrite that fixture's whole
 /// output, wherever a span originates.
-pub fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) -> FixtureCopy {
+pub(crate) fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) -> FixtureCopy {
     let relative = Path::new(relative);
     let temp = TempDir::new().expect("create fixture copy dir");
     let destination = temp.path().join(relative);
