@@ -233,19 +233,31 @@ The rows differ in whether the call survives. Condition 4 allows at
 most one, so the whole story is four cases:
 
 - **`list`** (no call) — nothing to erase. `B.plural(list)`.
-- **`list.into_iter()`** — *erased*. The plural calls `into_iter`
-  itself, so `B.plural(list)` has the same item type and the same
-  ownership as the fold it replaces.
-- **`list.iter()`** — erased only if `list` is already a reference.
-  `UI_HARNESS_VARS` is a `&'static` slice, which is why the fixed call
-  site reads `without_envs(UI_HARNESS_VARS)`. On an owned collection
-  the same erasure moves what the fold merely borrowed, and the code
-  around it stops compiling.
+- **`list.into_iter()`** — erased when the call resolves to
+  `IntoIterator::into_iter`, which is the very function `B.plural`
+  calls, so the two agree by construction. Compare the `DefId`, not
+  the name: an *inherent* `into_iter` shadows the trait in method
+  resolution and need not agree with it.
+- **`list.iter()`** — erased when both hold:
+  - The call resolves into `core` / `std` / `alloc`. There is no
+    `Iterator::iter` to compare against — every `iter` is an inherent
+    method of its own type, and `Vec`'s is `<[T]>::iter` reached
+    through `Deref` — so the only guarantee available is std's
+    convention that `&C: IntoIterator` agrees with `C::iter()`. A
+    local `iter` promises nothing.
+  - `list` is already a reference. On an owned collection the erasure
+    moves what the fold merely borrowed, and the code around it stops
+    compiling.
+
+  `UI_HARNESS_VARS` is a `&'static` slice whose `iter` is std's, which
+  is why the fixed call site reads `without_envs(UI_HARNESS_VARS)`.
 - **any other method** — survives verbatim.
   `B.plural(list.some_method())`.
 
-Keeping the call is always safe, and a first implementation may do that
-throughout.
+Erasing past those checks fails silently rather than loudly: a local
+`iter` or `into_iter` that disagrees with the trait still compiles, and
+reorders or drops arguments. Keeping the call is always safe, and a
+first implementation may do that throughout.
 
 A conservative first implementation: **path folders only, and only
 the pairs whose item is a single value.** That covers what this
@@ -313,6 +325,11 @@ Fixtures worth writing:
   autofix keeps `plural(list.iter())`, since erasing would move what
   the fold only borrowed.
 - `list.into_iter()` — fires; autofix erases to `plural(list)`.
+- `weird.iter()`, an inherent `iter` of the linted crate disagreeing
+  with its own `IntoIterator` impl — fires; autofix keeps
+  `plural(weird.iter())`. Erasing would silently reorder.
+- `shadow.into_iter()`, an inherent `into_iter` shadowing the trait —
+  fires; autofix keeps `plural(shadow.into_iter())`.
 - `queue.drain_all()` with a plain binding as the initial value —
   fires; advice only. Pins the over-conservatism deliberately: the
   rewrite is safe here and the gate declines it anyway.
