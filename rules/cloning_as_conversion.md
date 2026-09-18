@@ -56,9 +56,11 @@ only on a name it reads as a getter, and it never reads one as a
 getter where the name starts with `as_`, `to_` or `into_`. So no
 method is measured by both.
 
-Some are measured by neither. `to_*` and `into_*` announce a
-conversion that costs something, so a copy is what those names
-already promise. A name that is none of the three and that the
+`to_*` announces a conversion that costs something, so a copy is
+what that name already promises and neither rule measures it.
+`into_*` promises more than cost — it promises to consume — so
+`perfectionist::non_consuming_into_conversion` measures a copy
+under that name. A name that is none of the three and that the
 getter rule does not read as a getter — one naming no field, with
 nothing in `getter_name_patterns` admitting it — is left alone by
 both as well.

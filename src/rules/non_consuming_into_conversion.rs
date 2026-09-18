@@ -4,12 +4,11 @@ use crate::field_copy::{
 };
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
-use core::ops::ControlFlow;
 use rustc_hir as hir;
 use rustc_hir::def_id::LocalDefId;
 use rustc_hir::intravisit::FnKind;
 use rustc_lint::{LateContext, LateLintPass, LintStore};
-use rustc_middle::ty::{Ty, TypeVisitable, TypeVisitor};
+use rustc_middle::ty::{Ty, TypeVisitableExt};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{Span, Symbol};
 
@@ -17,21 +16,29 @@ declare_tool_lint! {
     /// ### What it does
     ///
     /// Flags an inherent `into_*` method that does not consume what it
-    /// converts: one taking `&self` whose whole body copies a field out
-    /// through `clone`, `to_owned`, `to_string`, `to_vec`, `to_path_buf`
-    /// or `to_os_string`, and one taking `&self` whose return type
+    /// converts: one taking `&self` and nothing else, either whose whole
+    /// body copies a field out through `clone`, `to_owned`, `to_string`,
+    /// `to_vec`, `to_path_buf` or `to_os_string`, or whose return type
     /// borrows from that receiver.
     ///
-    /// A method that moves out of `self` taken by value is left alone,
-    /// and so is one returning a `Copy` value: both hand the caller
-    /// something of their own, which is what the prefix promises. A
-    /// return type carrying a lifetime the *type* already has --
-    /// `&'a str` out of a `struct Person<'a>` — is left alone too, since
-    /// that borrow outlives the receiver and does not come from it. So is
-    /// a method of a trait impl, since the trait fixes its signature, and
-    /// one produced by a macro.
+    /// A method that moves out of `self` taken by value is left alone —
+    /// it hands the caller something of their own, which is what the
+    /// prefix promises — and so is one with a second parameter, which is
+    /// converting more than `self`. A return type carrying a lifetime the
+    /// *type* already has — `&'a str` out of a `struct Person<'a>` — is
+    /// left alone too, since that borrow outlives the receiver and does
+    /// not come from it. So is a method of a trait impl, since the trait
+    /// fixes its signature, and one produced by a macro.
     ///
-    /// ### Why is this bad?
+    /// A `Copy` field is out of reach of the copying half, since copying
+    /// one out is not a cost a move would have saved. It is not an
+    /// exemption for the rule as a whole: a `Copy` return type that
+    /// borrows the receiver, `&str` among them, is still a borrow the
+    /// prefix said had been consumed.
+    ///
+    /// ### Why restrict this?
+    ///
+    /// This is a stylistic preference, not a correctness issue.
     ///
     /// The Rust API Guidelines give `as_`, `to_` and `into_` distinct
     /// meanings, and `into_` is the consuming one: it takes the value and
@@ -101,6 +108,10 @@ const CONSUME_HELP: &str = "either stop it borrowing: take `self` by value and m
 const RENAME_HELP: &str = "or stop it being an `into_*`: rename it `as_*`, the prefix for a \
                            conversion that hands back a borrow";
 
+/// The prefix this rule measures, and one `cloning_getter` refuses to
+/// read as a getter.
+const INTO_PREFIX: &str = "into_";
+
 const CONFIG_KEY: &str = "perfectionist::non_consuming_into_conversion";
 
 /// The rule has no configuration knobs. Not dead code: the read
@@ -146,13 +157,20 @@ impl<'tcx> LateLintPass<'tcx> for NonConsumingIntoConversion {
         _span: Span,
         def_id: LocalDefId,
     ) {
+        // The name decides this rule on its own, and costs a string
+        // comparison; `eligible_method` re-lexes the method's source text
+        // to rule out a proc macro. Ask the cheap question first, so only
+        // an `into_*` method pays for the expensive one.
+        let FnKind::Method(ident, _) = kind else {
+            return;
+        };
+        if !ident.name.as_str().starts_with(INTO_PREFIX) {
+            return;
+        }
         let Some(Eligible { method, def_span }) = eligible_method(cx, kind, decl, body, def_id)
         else {
             return;
         };
-        if !method.as_str().starts_with("into_") {
-            return;
-        }
         let output = cx
             .tcx
             .fn_sig(def_id)
@@ -201,24 +219,20 @@ impl<'tcx> LateLintPass<'tcx> for NonConsumingIntoConversion {
 /// for a `&self` method is the borrow of the receiver.
 ///
 /// The distinction that matters is where the lifetime comes from. A
-/// method's own lifetimes — the elided one behind `&self` included --
-/// are bound by the signature's binder, so they appear as `ReBound` once
-/// it is stripped. A lifetime the *type* carries, as in
-/// `struct Person<'a>`, is a parameter of the impl, so it survives
-/// `instantiate_identity` as `ReEarlyParam` and is not one of these. That
+/// method's own lifetimes — the elided one behind `&self` included — are
+/// bound by the signature's binder, so once `skip_binder` strips it they
+/// are exactly the regions left escaping. A lifetime the *type* carries,
+/// as in `struct Person<'a>`, is a parameter of the impl, so it survives
+/// `instantiate_identity` as `ReEarlyParam` and does not escape. That
 /// second kind outlives the receiver, so returning it consumes nothing
 /// the caller still holds.
+///
+/// Asking rustc whether a bound var escapes is what keeps a *nested*
+/// binder out of the answer. A `Box<dyn Fn(&str) -> usize>` owns
+/// everything it holds, but the `&str` in its signature is bound by that
+/// `for<'x>`, so a visitor looking for any `ReBound` region reports it as
+/// a borrow of the receiver. Escaping bound vars are precisely the ones
+/// the stripped binder held.
 fn borrows_from_receiver<'tcx>(ty: Ty<'tcx>) -> bool {
-    struct Finder;
-    impl<'tcx> TypeVisitor<rustc_middle::ty::TyCtxt<'tcx>> for Finder {
-        type Result = ControlFlow<()>;
-
-        fn visit_region(&mut self, region: rustc_middle::ty::Region<'tcx>) -> Self::Result {
-            if matches!(region.kind(), rustc_middle::ty::ReBound(..)) {
-                return ControlFlow::Break(());
-            }
-            ControlFlow::Continue(())
-        }
-    }
-    ty.visit_with(&mut Finder).is_break()
+    ty.has_escaping_bound_vars()
 }

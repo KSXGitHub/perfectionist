@@ -10,21 +10,29 @@
 ## What it does
 
 Flags an inherent `into_*` method that does not consume what it
-converts: one taking `&self` whose whole body copies a field out
-through `clone`, `to_owned`, `to_string`, `to_vec`, `to_path_buf`
-or `to_os_string`, and one taking `&self` whose return type
+converts: one taking `&self` and nothing else, either whose whole
+body copies a field out through `clone`, `to_owned`, `to_string`,
+`to_vec`, `to_path_buf` or `to_os_string`, or whose return type
 borrows from that receiver.
 
-A method that moves out of `self` taken by value is left alone,
-and so is one returning a `Copy` value: both hand the caller
-something of their own, which is what the prefix promises. A
-return type carrying a lifetime the *type* already has --
-`&'a str` out of a `struct Person<'a>` — is left alone too, since
-that borrow outlives the receiver and does not come from it. So is
-a method of a trait impl, since the trait fixes its signature, and
-one produced by a macro.
+A method that moves out of `self` taken by value is left alone —
+it hands the caller something of their own, which is what the
+prefix promises — and so is one with a second parameter, which is
+converting more than `self`. A return type carrying a lifetime the
+*type* already has — `&'a str` out of a `struct Person<'a>` — is
+left alone too, since that borrow outlives the receiver and does
+not come from it. So is a method of a trait impl, since the trait
+fixes its signature, and one produced by a macro.
 
-## Why is this bad?
+A `Copy` field is out of reach of the copying half, since copying
+one out is not a cost a move would have saved. It is not an
+exemption for the rule as a whole: a `Copy` return type that
+borrows the receiver, `&str` among them, is still a borrow the
+prefix said had been consumed.
+
+## Why restrict this?
+
+This is a stylistic preference, not a correctness issue.
 
 The Rust API Guidelines give `as_`, `to_` and `into_` distinct
 meanings, and `into_` is the consuming one: it takes the value and

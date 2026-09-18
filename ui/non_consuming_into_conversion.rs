@@ -71,4 +71,27 @@ impl<'a> Borrowed<'a> {
     }
 }
 
+struct Owning {
+    name: String,
+}
+
+impl Owning {
+    // Good: a boxed closure owns everything it holds. The `&str` in its
+    // signature is bound by the closure's own `for<'x>`, not by this
+    // method's binder, so it is not a borrow of the receiver.
+    fn into_callback(&self) -> Box<dyn Fn(&str) -> usize> {
+        Box::new(str::len)
+    }
+
+    // Good: a function pointer, for the same reason.
+    fn into_fn_ptr(&self) -> fn(&str) -> usize {
+        str::len
+    }
+
+    // Good: and one nested inside an owned collection.
+    fn into_fns(&self) -> Vec<fn(&u8) -> u8> {
+        Vec::new()
+    }
+}
+
 fn main() {}
