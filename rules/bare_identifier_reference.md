@@ -17,12 +17,9 @@ Only bare single identifiers whose name resolves to an item in
 the enclosing module's scope are flagged; a backticked word that
 names nothing in scope is left alone.
 
-A publicly-reachable item that mentions a *private* (not
-publicly-reachable) item is reported too, but with no link
-offered: turning that mention into a link is what rustdoc's
-`rustdoc::private_intra_doc_links` fires on, so the reference
-itself is what has to go. Describe what the item does, or make
-it reachable if the doc has to point at it.
+A publicly-reachable item that mentions a *private* one is
+reported too, with no link offered: a reader of the public API
+cannot reach it in either form.
 
 ## Why restrict this?
 
