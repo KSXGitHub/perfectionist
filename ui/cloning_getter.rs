@@ -125,7 +125,10 @@ impl Person {
     }
 
     // Good: `as_*` promises the opposite, and has its own rule.
-    #[expect(perfectionist::cloning_as_conversion, reason = "exercises cloning_getter")]
+    #[expect(
+        perfectionist::cloning_as_conversion,
+        reason = "an `as_*` that copies belongs to that rule; this one pins clause 1"
+    )]
     fn as_first_name(&self) -> String {
         self.first_name.clone()
     }
