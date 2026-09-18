@@ -5,8 +5,9 @@
 [`pnpm/pnpm#15076`](https://github.com/pnpm/pnpm/pull/15076) — that the
 implemented `perfectionist::needless_borrowed_parameters`
 ([`src/rules/needless_borrowed_parameters.rs`](../src/rules/needless_borrowed_parameters.rs))
-cannot reach. This is that rule's sibling, not a loosening of it; see
-[Why a sibling and not a config knob](#why-a-sibling-and-not-a-config-knob).
+cannot reach. How many rules the proposal becomes was left to the
+implementer; [Decomposition](#decomposition) records what was decided
+and why.
 
 ## Statement
 
@@ -22,12 +23,13 @@ Taking the parameter by value moves the caller's value straight in.
 
 The proposal
 ([`KSXGitHub/perfectionist#471`](https://github.com/KSXGitHub/perfectionist/issues/471))
-called this rule `copied_lent_parameter` and invited a better name.
-That one has two problems. *Lent* is not the word Rust uses for the
-callee's side of a shared reference — the language, the compiler's
-diagnostics, and the sibling rule all say **borrowed**. And *copied*
-reads as the `Copy` trait, which the trigger explicitly excludes:
-[clause 1](#what-to-lint) requires `Clone` and **not** `Copy`.
+called this rule `copied_lent_parameter` and said the name was a
+placeholder. That one has two problems. *Lent* is not the word Rust
+uses for the callee's side of a shared reference — the language, the
+compiler's diagnostics, and the sibling rule all say **borrowed**. And
+*copied* reads as the `Copy` trait, which the trigger explicitly
+excludes: [clause 1](#what-to-lint) requires `Clone` and **not**
+`Copy`.
 
 `cloned_borrowed_parameter` fixes both while keeping the shape
 [Naming a lint after the anti-pattern](./IMPLEMENTATION_CONVENTIONS.md#naming-a-lint-after-the-anti-pattern)
@@ -96,15 +98,25 @@ fn parse_specifier(request: &AddRequest) -> Result<ParsedSpecifier> {
 }
 ```
 
-The sole production caller owns a `Vec<AddRequest>` and overwrites it
-on the next line, so `std::mem::take` hands it over at no cost. The
-pull request reports that `pnpm add lodash@4 react@18 express@4.18.2`,
-measured with a counting allocator, fell from four allocations to one.
-
-The chain is three frames deep — the argument-handling caller, the
-plan's `parse`, and `parse_specifier` — and the middle frame is what
-makes this rule's analysis more than a per-call-site check; see
+The chain is three frames deep, and the middle one is why clause 4 is
+not a per-call-site check. `parse_specifier`'s caller took
+`&[AddRequest]` and lent each element onward, so it *holds a borrow*
+until its own parameter is taken by value; the frame above it owns a
+`Vec<AddRequest>` and overwrites it on the next line, so
+`std::mem::take` hands it over at no cost. Fixing the innermost frame
+alone was therefore not enough — see
 [Propagating along a chain](#propagating-along-a-chain).
+
+That middle frame is in this rule's reach because clause 1 puts no
+restriction on the pointee: `&[AddRequest]` is a borrowed parameter
+whose owned counterpart is `Vec<AddRequest>`. The pull request went
+one step further and made it `impl IntoIterator<Item = AddRequest>`,
+which is a weakening this rule does not suggest; see
+[Out of scope](#out-of-scope).
+
+The pull request reports that `pnpm add lodash@4 react@18
+express@4.18.2`, measured with a counting allocator, fell from four
+allocations to one.
 
 ### Recording a completed task
 
@@ -132,6 +144,88 @@ task_run_state.record_passed(&key, node, workspace_root);   // never read again
 `TaskKey` owns a `PathBuf` and a `String`, so the clone is two
 allocations for every task a recursive run records.
 
+## Decomposition
+
+The proposal describes one rule;
+[the clarification on it](https://github.com/KSXGitHub/perfectionist/issues/471#issuecomment-5735751449)
+leaves the count open and separates what is load-bearing from what is
+packaging. This section records which way each choice went, so a
+later reader can tell a forced decision from a judgement call.
+
+### The one forced boundary
+
+An unconditional conversion satisfies the cost theorem from the
+callee's body alone; a conditional one does not, and needs every call
+site proven owning. That changes what the analysis must *compute*, and
+no packaging makes it go away. Its one hard consequence: whatever else
+happens, the unconditional case must keep a path that never runs the
+interprocedural pass, so a project can have the cheap check without
+paying for the expensive one.
+
+### Folded into this rule
+
+Same trigger question, same diagnostic, same configuration — splitting
+these out would produce rules that always ship and always configure
+together:
+
+- **Any `Clone` pointee**, not only user-defined ADTs. `&Vec<T>`,
+  `&String`, `&PathBuf` and `&[T]` differ from `&TaskKey` only in
+  needing the borrowed-to-owned type mapping the sibling rule already
+  carries. Restricting the pointee would have dropped the
+  [package-specifier](#package-specifier-parsing) middle frame for no
+  reason.
+- **`Item = &T` → `Item = T`** on a parameter that is *already* a
+  generic iterator bound. That signature is rare next to the
+  reference-typed shape, so it is staged last rather than given its
+  own rule — it asks the same question about the same parameter and
+  would answer it with the same summary.
+
+### Kept as its own rule
+
+`perfectionist::needless_borrowed_parameters` stays separate. The
+forced boundary above does not by itself require a second lint name —
+one rule with an internal mode would satisfy it — so the case rests on
+what a reader and a project get from the split:
+
+- **Adoption.** The cheap check and the interprocedural one have
+  different appetites. A project that will not pay for a whole-crate
+  pass can keep the callee-local rule and disable this one, which is a
+  `[perfectionist].disable` entry rather than a knob nested inside
+  another rule's config.
+- **Blast radius.** If the interprocedural half turns out noisy,
+  switching it off must not cost the half that is already shipping and
+  quiet.
+- **Diagnostics.** The sibling points at one parameter and suggests a
+  signature. This rule has to name the call sites it proved, and a
+  chain's frames have to move together, so its diagnostic is a
+  different shape rather than a longer version of the same one.
+
+### Not made a rule at all
+
+The caller-side half of the fix — a local passed by reference and then
+overwritten with no intervening read, which can become a
+`std::mem::take` — is ordinary local liveness and could stand alone.
+It does not, because on its own it is not actionable: the suggestion
+only becomes valid once the callee takes the parameter by value, which
+is this rule's conclusion. A lint that fires where the reader cannot
+act is noise, so this lands as a note on the suggestion instead. See
+[Suggested fix](#suggested-fix).
+
+### Precedence over the sibling rule
+
+A parameter can satisfy both triggers: one unconditional clone of a
+`&str` into a returned `String`, where every caller owns and drops, is
+the sibling's finding and this one's at once. Reported twice, it is
+one problem wearing two names.
+
+So this rule stays silent wherever the sibling's predicate holds —
+**whether or not the sibling is enabled**. Deferring to the predicate
+rather than to the enablement keeps the decision callee-local; firing
+here when the sibling is switched off would make one rule's output
+depend on another rule's configuration, and would hand a project that
+declined the cheap check the expensive rule's version of the very same
+finding. A project that wants neither disables both.
+
 ## Why the sibling rule does not cover these
 
 `perfectionist::needless_borrowed_parameters` applies the gates below,
@@ -144,14 +238,16 @@ systematic gap rather than a near-miss.
 | The parameter is referenced exactly once, and that use is the conversion | `.selector()` **and** `.clone()` | `.clone()` **and** `remove(key)` |
 | The conversion is unconditional | passes, though the clone is conditional — see below | fails: inside an `if` condition |
 
-The first gate is the wider of the two: it confines the sibling rule
-to the standard library's borrowed/owned pairs, and every
+The first gate is about reach rather than soundness: it confines the
+sibling rule to the standard library's borrowed/owned pairs, and every
 user-defined `Clone` type — which is what a real codebase clones —
-falls outside it. The second confines it to parameters with no
-borrowing use at all, while both cases here borrow *and* clone.
+falls outside it. This rule drops that restriction, per
+[Folded into this rule](#folded-into-this-rule). The second gate
+confines the sibling to parameters with no borrowing use at all, while
+both cases here borrow *and* clone.
 
-The third gate is where the two rules genuinely disagree rather than
-merely differ in reach, and it is the subject of
+The third gate is the [forced boundary](#the-one-forced-boundary), and
+it is the subject of
 [Why clause 4 is load-bearing](#why-clause-4-is-load-bearing).
 
 That row carries a caveat, because the proposal got it backwards and
@@ -184,35 +280,23 @@ pub fn in_if(flag: bool, name: &str) -> Option<String> {
 
 So the gate is narrower than its stated intent, which is the sibling
 rule's own defect to fix rather than this rule's to work around. It
-matters here only as a warning: this rule inherits neither the check
-nor its gap, since clause 4 replaces the unconditionality argument
-outright.
-
-## Why a sibling and not a config knob
-
-The two rules sit at different points on one trade-off curve, with
-different soundness arguments:
-
-- **`needless_borrowed_parameters`** requires an unconditional
-  conversion, so the change is never worse and **no caller analysis is
-  needed**. Cheap, callee-local, sound on its own.
-- **`cloned_borrowed_parameter`** permits conditional clones, so the
-  change *can* be worse, so it must prove that **every call site owns
-  the value and drops it**. That proof reaches outside the callee.
-
-Neither subsumes the other. Relaxing the third gate on the existing
-rule would silently void its soundness argument, and the call-site
-check is the price of the conditional cases — which is where both real
-findings live.
+does bear on [Precedence](#precedence-over-the-sibling-rule) — the
+predicate this rule defers to is the one the sibling actually has, not
+the one it means to have — so fixing it there widens this rule here,
+which is the correct direction.
 
 ## What to lint
 
-Flag a parameter `p: &T` when all of:
+Flag a parameter `p` when all of:
 
-1. `T: Clone` and `T` is not `Copy`. Skip `Rc` and `Arc`: cloning one
-   bumps a refcount rather than copying the pointee, so owning it
-   saves nothing and a caller that keeps its handle needs one of its
-   own. This is the reasoning
+1. Its written type is `&T` with an elided lifetime, `T: Clone`, and
+   `T` is not `Copy`. `T` may be sized (`TaskKey`, `Vec<Foo>`,
+   `String`) or unsized (`str`, `[Foo]`, `Path`); the suggestion names
+   its owned counterpart, which is `T` itself when sized and
+   `String` / `Vec<Foo>` / `PathBuf` / `OsString` / `CString` when not.
+   Skip `Rc` and `Arc`: cloning one bumps a refcount rather than
+   copying the pointee, so owning it saves nothing and a caller that
+   keeps its handle needs one of its own. This is the reasoning
    [`src/rules/cloning_getter.rs`](../src/rules/cloning_getter.rs)
    already applies to a ref-counted field.
 2. Some reachable path clones `p` and the clone **escapes**: returned,
@@ -222,6 +306,15 @@ Flag a parameter `p: &T` when all of:
    disqualify.
 4. The callee has at least one call site in the crate, and **every**
    one of them passes a value it owns and does not read afterwards.
+5. The sibling rule's predicate does not already hold, per
+   [Precedence](#precedence-over-the-sibling-rule).
+
+The staged extension is clause 1's second shape: a parameter written
+as a generic iterator bound whose element is borrowed
+(`impl IntoIterator<Item = &T>` and its `where`-clause spellings),
+where clauses 2 to 5 are asked of the element binding rather than of
+the parameter. Nothing else changes, which is why it is a stage rather
+than a rule.
 
 ### Why clause 2 excludes a clone that stays local
 
@@ -264,7 +357,8 @@ Exempt unconditionally, because the signature is not free to change:
 - A parameter with an explicit named lifetime, which may tie it to
   another parameter or the return type.
 - An item reachable from outside the crate, whose call sites clause 4
-  cannot see. See [Scope](#scope).
+  cannot see. See
+  [The visibility bound](#the-visibility-bound).
 
 Proc-macro-synthesised nodes, per
 [Suppressing proc-macro-synthesised violations](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations).
@@ -301,6 +395,21 @@ fn caller(&mut self) {
 }
 ```
 
+**Avoid:** the pointee is a slice, so its owned counterpart is a
+`Vec`. Clause 1 does not care that the parameter is unsized, and the
+borrowing use in the guard is what carries this past the sibling rule
+— without it, one unconditional `to_vec()` would be the sibling's
+finding and clause 5 would keep this rule quiet.
+
+```rust
+fn plan(requests: &[Request]) -> Plan {
+    if requests.is_empty() {              // borrowing use
+        return Plan::EMPTY;
+    }
+    Plan { requests: requests.to_vec() }  // clone escapes
+}
+```
+
 **Not flagged:** a caller reuses `key` after the call, so the owned
 signature would force it to clone anyway — the very shape clause 4
 exists to rule out.
@@ -332,13 +441,23 @@ fn register(&mut self, handle: &Arc<Session>) {
 }
 ```
 
+**Not flagged:** one unconditional clone, no other use — the sibling
+rule's finding, so clause 5 keeps this rule quiet.
+
+```rust
+fn store(name: &str, registry: &mut HashMap<String, u32>) {
+    registry.insert(name.to_owned(), 0);
+}
+```
+
 ## Suggested fix
 
 Change the parameter to `p: T`, drop the now-redundant clone, and drop
 the `&` at every call site. A caller whose variable is dead after the
 call but still in scope reaches for `std::mem::take`, which needs
-`T: Default` — so that rewrite is a note for the reader, not something
-the lint should emit as a suggestion.
+`T: Default` — the note that stands in for the caller-side rule this
+deliberately is not, per
+[Not made a rule at all](#not-made-a-rule-at-all).
 
 A structured suggestion is worth emitting only for the narrow case
 where every call site passes `&<temporary>` and the fix really is
@@ -368,7 +487,8 @@ would exist only to turn soundness off:
 - **An opt-in for `pub` items.** A crate-local pass cannot see an
   externally reachable item's call sites, so clause 4 is unprovable
   there; a knob that enabled it anyway would let the rule fire on
-  evidence it does not have. See [Scope](#scope).
+  evidence it does not have. See
+  [The visibility bound](#the-visibility-bound).
 - **A dynamic-edge mode.** Where a call's callee is not statically
   known — a trait method reached through a generic or a `dyn`
   receiver, a closure, a `fn` pointer — there is no edge for the
@@ -378,14 +498,23 @@ would exist only to turn soundness off:
   itself reached that way is already out of reach under
   [Exemptions](#exemptions).
 
-## Implementation notes
+## Shared infrastructure: the ownership summary
 
-The escape and use classification is the same `LateLintPass`
-machinery the sibling rule already has: `check_fn`, typeck results,
-param-binding resolution, an HIR visitor over the uses, the
-test/build-script exemption, config plumbing.
+Clause 4 is not this rule's private machinery, and building it inside
+whichever rule lands first would be a mistake. It is a worklist over
+the crate's call graph answering one question per parameter — must
+this be taken by value? — and the same worklist over a different
+lattice answers the weakening question described under
+[Out of scope](#out-of-scope). Factor it into a crate-internal
+`ownership_summary` module, per
+[Notes on cross-rule dependencies](../CLAUDE.md#notes-on-cross-rule-dependencies),
+and let the rules consume it.
 
-Clause 4 is the new work.
+### What it computes
+
+One summary per function: for each parameter, whether anything in the
+crate obliges it to stay borrowed. A rule reads a summary; it does not
+walk callees itself.
 
 ### Propagating along a chain
 
@@ -405,29 +534,23 @@ edges rather than by its paths.
 
 The shape to avoid is recursive descent into callees, which expands
 the *call tree*: a function reachable by *n* paths is re-analysed *n*
-times. Memoised per-function summaries — one entry per parameter,
-"does this need owning?" — avoid that, and recursion needs no special
-case, since a greatest fixpoint converges downward through a cycle on
-its own.
+times. Memoised per-function summaries avoid that, and recursion needs
+no special case, since a greatest fixpoint converges downward through
+a cycle on its own.
 
 **A depth limit would be the wrong bound.** With memoised summaries
 nothing is descended into twice, so a limit buys no time on an
 already-linear analysis while making the findings depend on call-graph
 shape: extracting a helper would push a fact past the limit and
 silently change what the rule reports. Non-determinism under
-refactoring is a poor property for a lint. The bound that belongs
-here is on *reporting* — fire only where every call site is
-visible — which is what [Scope](#scope) already imposes.
+refactoring is a poor property for a lint. The bound that belongs here
+is on *reporting*, which is the next section.
 
-A chain also shapes the diagnostic: the frames have to change
-together, so a report on one frame should name the others rather than
-read as an isolated finding.
-
-### Scope
+### The visibility bound
 
 A `LateLintPass` sees one crate, so the fixpoint stops at the crate
-boundary, and the rule can only fire where that boundary contains
-every call site. Both motivating cases sit well inside it.
+boundary, and a rule built on it can only fire where that boundary
+contains every call site. Both motivating cases sit well inside it.
 
 The boundary to test is **effective visibility**, not the `pub`
 keyword: what matters is whether an item is reachable from outside the
@@ -436,6 +559,19 @@ thing that answers it. Verify what that query returns for a binary
 crate before relying on it — a `pub` item in a `bin` target has no
 out-of-crate callers, and whether the query says so is a claim to
 check against the compiler rather than to assume.
+
+## Implementation notes
+
+Everything outside clause 4 is the `LateLintPass` machinery the
+sibling rule already has: `check_fn`, typeck results, param-binding
+resolution, an HIR visitor over the uses, the test/build-script
+exemption, config plumbing. The borrowed-to-owned type mapping clause
+1 needs for an unsized pointee is that rule's too, and belongs in a
+shared helper rather than a second copy.
+
+A chain shapes the diagnostic as well as the analysis: the frames have
+to change together, so a report on one frame should name the others
+rather than read as an isolated finding.
 
 ### Difficulty
 
@@ -475,18 +611,30 @@ on its own:
    [`record_passed`](#recording-a-completed-task) call sites need, and
    the reassign-after-call shape that `std::mem::take` serves falls
    out of the same analysis.
-3. **Summaries.** Add the per-function fixpoint so a forwarded
-   parameter converges, which is what the
+3. **Summaries.** Stand up the `ownership_summary` module so a
+   forwarded parameter converges, which is what the
    [package-specifier chain](#package-specifier-parsing) needs.
+4. **Iterator bounds.** Add clause 1's second shape, per
+   [What to lint](#what-to-lint).
 
 ## Out of scope
 
-`Vec<&T>` → `Vec<T>` is a different transformation and must not be
+**`Vec<&T>` → `Vec<T>`** is a different transformation and must not be
 flagged here. It changes the element type rather than the parameter's
 ownership, so a caller holding a `Vec<&T>` has to build a fresh vector
 — *n* clones. That strengthens the caller's obligation *n*-fold
 instead of moving a single value, so the cost model above does not
 apply to it.
+
+**Weakening a slice parameter to an owned iterator bound** —
+`&[T]` → `impl IntoIterator<Item = T>`, the step
+[`pnpm/pnpm#15001`](https://github.com/pnpm/pnpm/pull/15001) took on
+top of the ownership change — is a separate question that was
+discussed alongside the proposal and has not been filed. It runs the
+same worklist over a different lattice, which is why
+[the summary](#shared-infrastructure-the-ownership-summary) is
+factored out rather than written into this rule. This rule suggests
+the owned pointee (`Vec<T>`) and stops there.
 
 ## Default state
 
@@ -495,7 +643,8 @@ heuristic: clause 4 establishes that no call site regresses, so there
 is no class of caller the rule quietly trades against, and no neutral
 baseline configuration to omit. The reach that *would* be presumptuous
 — an item whose callers live outside the crate — is excluded by
-[Scope](#scope) rather than by leaving the rule off.
+[the visibility bound](#the-visibility-bound) rather than by leaving
+the rule off.
 
 ## Interaction with clippy and sibling rules
 
@@ -516,14 +665,17 @@ project runs it at all.
 - **`clippy::unnecessary_to_owned`** (`perf`) fires where the owned
   value is only borrowed again afterwards; here it is genuinely
   stored.
-- **`clippy::ptr_arg`** (`style`) rewrites `&Vec<T>` / `&String` /
-  `&PathBuf` to `&[T]` / `&str` / `&Path`. Orthogonal: it changes
-  which borrowed type the parameter takes, not whether it is borrowed.
+- **`clippy::ptr_arg`** (`style`) rewrites a `&Vec<T>` / `&String` /
+  `&PathBuf` parameter to `&[T]` / `&str` / `&Path`. Since clause 1
+  admits those pointees, both lints can speak about one parameter —
+  but they do not conflict, because this rule's fix removes the
+  reference altogether and `ptr_arg` only flags references. Taking
+  `Vec<T>` by value satisfies both at once, and `ptr_arg`'s
+  suggestion, applied first, leaves `&[T]` still in this rule's reach.
 - **`perfectionist::needless_borrowed_parameters`** is the sibling
   this rule was carved out of; the two are configured alike and their
-  triggers are disjoint, since that rule requires the parameter's only
-  use to be an unconditional conversion and this one requires a
-  borrowing use or a conditional clone.
+  triggers are made disjoint by clause 5, per
+  [Precedence](#precedence-over-the-sibling-rule).
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
