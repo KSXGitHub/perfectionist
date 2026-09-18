@@ -88,10 +88,26 @@ impl FixtureCopy {
 /// directives on the paired fixture already rewrite that fixture's whole
 /// output, wherever a span originates.
 pub(crate) fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) -> FixtureCopy {
+    let manifest_dir = Path::new(manifest_dir);
     let relative = Path::new(relative);
+    // `Path::join` discards its base when handed an absolute path, so an
+    // absolute `relative` would resolve both the copy's source and its
+    // destination outside the `TempDir` — onto the manifest directory
+    // itself, where `copy_dir` would `fs::copy` every file onto itself
+    // and truncate it. Requiring each argument to be the shape the other
+    // is not also rejects the two being passed the wrong way round,
+    // which is how that path is actually reached.
+    assert!(
+        manifest_dir.is_absolute(),
+        "the manifest dir must be absolute, got {manifest_dir:?}",
+    );
+    assert!(
+        relative.is_relative(),
+        "the fixture path must be relative to the manifest dir, got {relative:?}",
+    );
     let temp = TempDir::new().expect("create fixture copy dir");
     let destination = temp.path().join(relative);
-    copy_dir(&Path::new(manifest_dir).join(relative), &destination);
+    copy_dir(&manifest_dir.join(relative), &destination);
     inject_directives(&destination);
     // compiletest recurses from `src_base`, and the copy holds nothing
     // but `relative`, so starting at the first component still collects
