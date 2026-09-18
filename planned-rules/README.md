@@ -84,6 +84,16 @@ pattern that several rules call out by reference — live in
   `chain.pipe_mut(f)`), and flags a unary call heading a chain that
   pipes (suggests `x.pipe(g)`). All four checks default to enforce.
 
+### Option and boolean expressions
+- [`some-bool-comparison.md`](./some-bool-comparison.md) — flag an
+  `Option<bool>` compared with `==` or `!=` against a `Some` of a
+  boolean literal, which collapses three states with an operator and
+  never says what `None` means. Suggest the `unwrap_or` form that
+  does: `opt == Some(true)` → `opt.unwrap_or(false)`, and the three
+  other operator-and-literal pairs likewise. Complements
+  `clippy::bool_comparison`, which covers only plain `bool`. Active
+  by default, no configuration.
+
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
   `#[cfg_attr(..., ignore = "...")]` over `#[cfg(...)]` on `#[test]`s, and
