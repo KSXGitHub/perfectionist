@@ -82,6 +82,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   trailing comment on a lint-level attribute should be lifted into a `reason = "..."` field
 
+- [`literal_only_parameter`](./literal_only_parameter.md) (default: `active`).
+
+  `bool` or `Option` parameter that every call site passes as a literal
+
 - [`macro_trailing_comma`](./macro_trailing_comma.md) (default: `active`).
 
   macro invocation does not follow rustfmt's vertical trailing-comma policy
@@ -157,6 +161,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`too_many_struct_fields`](./too_many_struct_fields.md) (default: `active`).
 
   struct has more fields than the configured maximum
+
+- [`trivial_else_branch`](./trivial_else_branch.md) (default: `active`).
+
+  `else` branch only leaves; invert the condition into a guard clause
 
 - [`uncombined_self_import`](./uncombined_self_import.md) (default: `inactive`).
 

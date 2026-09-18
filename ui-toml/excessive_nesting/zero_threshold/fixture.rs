@@ -2,6 +2,10 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
+#![allow(
+    perfectionist::literal_only_parameter,
+    reason = "the nested function is called once, with a literal, to be measured"
+)]
 
 // With `max_depth = 0` every function that nests at all is flagged and
 // the diagnostic states its depth, which pins what counts as a level.
