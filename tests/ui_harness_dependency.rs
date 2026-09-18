@@ -91,9 +91,11 @@ fn resolves_to_ui_harness(name: &str, spec: &toml::Value, workspace: Option<&tom
     if let Some(package) = spec.get("package").and_then(toml::Value::as_str) {
         return package == UI_HARNESS;
     }
-    if spec.get("workspace").and_then(toml::Value::as_bool) == Some(true)
-        && let Some(inherited) = workspace.and_then(|dependencies| dependencies.get(name))
-    {
+    let inherits = spec
+        .get("workspace")
+        .and_then(toml::Value::as_bool)
+        .unwrap_or(false);
+    if inherits && let Some(inherited) = workspace.and_then(|entries| entries.get(name)) {
         return resolves_to_ui_harness(name, inherited, None);
     }
     name == UI_HARNESS
