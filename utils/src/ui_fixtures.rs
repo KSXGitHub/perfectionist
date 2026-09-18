@@ -18,7 +18,7 @@
 
 use crate::TempDir;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 /// The compiletest header directives that rewrite a fixture's actual
 /// output before it is diffed, applied in the order given. Each is a
@@ -79,7 +79,7 @@ impl FixtureCopy {
 /// Copy the fixture directory `<manifest_dir>/<relative>` into a fresh
 /// [`TempDir`] — reproducing `relative` inside it — and prepend
 /// [`NORMALIZE_STDERR_DIRECTIVES`] to every `.rs` that has a sibling
-/// `.stderr`. The returned guard's [`FixtureCopy::path`] is the
+/// `.stderr`. The returned guard's `FixtureCopy::path` is the
 /// `src_base` the UI harness reads, and the guard has to outlive the
 /// run, which is why [`crate::ui_test`] holds it alongside the test.
 ///
@@ -90,20 +90,24 @@ impl FixtureCopy {
 pub(crate) fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) -> FixtureCopy {
     let manifest_dir = Path::new(manifest_dir);
     let relative = Path::new(relative);
-    // `Path::join` discards its base when handed an absolute path, so an
-    // absolute `relative` would resolve both the copy's source and its
-    // destination outside the `TempDir` — onto the manifest directory
-    // itself, where `copy_dir` would `fs::copy` every file onto itself
-    // and truncate it. Requiring each argument to be the shape the other
-    // is not also rejects the two being passed the wrong way round,
-    // which is how that path is actually reached.
+    // `Path::join` discards its base when handed an absolute path, and
+    // walks out of it when handed `..`. Either way the copy's source and
+    // its destination resolve outside the `TempDir`: onto the manifest
+    // directory itself, where `copy_dir` would `fs::copy` every file
+    // onto itself and truncate it, or onto whatever `..` reaches. So
+    // every component of the fixture path has to be an ordinary name,
+    // which also rejects the two arguments being passed the wrong way
+    // round — how that path is actually reached, `CARGO_MANIFEST_DIR`
+    // being absolute.
     assert!(
         manifest_dir.is_absolute(),
         "the manifest dir must be absolute, got {manifest_dir:?}",
     );
     assert!(
-        relative.is_relative(),
-        "the fixture path must be relative to the manifest dir, got {relative:?}",
+        relative
+            .components()
+            .all(|component| matches!(component, Component::Normal(_))),
+        "every component of the fixture path must be an ordinary name, got {relative:?}",
     );
     let temp = TempDir::new().expect("create fixture copy dir");
     let destination = temp.path().join(relative);
@@ -157,3 +161,6 @@ fn inject_directives(dir: &Path) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;
