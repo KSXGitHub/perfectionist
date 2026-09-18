@@ -16,13 +16,11 @@
 //! though, so a version bump could drop it with nothing here
 //! noticing.
 //!
-//! `ConfiguredUiTestBuilder::build` therefore takes a lock of this
-//! crate's own, `SERIAL`, and hands the guard to the
-//! [`ConfiguredUiTest`] it returns, which holds it until
-//! `ConfiguredUiTest::run` consumes the value. `dylint_testing` is
-//! a dependency of this crate and not of the lint crate whose
-//! fixtures it runs, so a test binary cannot
-//! name the builder to reach around the lock: the guarantee is this
+//! [`ConfiguredUiTestBuilder::run`] therefore takes a lock of this
+//! crate's own and holds it across the fixture run it wraps.
+//! `dylint_testing` is a dependency of this crate and not of the lint
+//! crate whose fixtures it runs, so a test binary cannot name the
+//! builder to reach around that lock: the guarantee is this
 //! repository's own rather than borrowed, and it holds by compilation
 //! rather than by every new test file being told about it.
 //!
@@ -45,9 +43,9 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 /// follow are then upstream's to explain rather than this lock's.
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/// A `dylint_testing` UI test that has taken `SERIAL`, together with
-/// the throwaway fixture copy it runs against. Both are released once
-/// it has run.
+/// A `dylint_testing` UI test that holds the lock, together with the
+/// throwaway fixture copy it runs against. Both are released once it
+/// has run.
 pub struct ConfiguredUiTest {
     test: dylint_testing::ui::Test,
     /// Held only for its `Drop`, which removes the copy from disk.
@@ -222,9 +220,9 @@ where
     /// Build the test and run it.
     ///
     /// This is the only way out of the builder: a built
-    /// [`ConfiguredUiTest`] holds `SERIAL` and offers nothing to do
-    /// but run, so handing one out would only widen the window the
-    /// lock is held for.
+    /// [`ConfiguredUiTest`] holds the lock and offers nothing to do
+    /// but run, so handing one out could only widen the window it is
+    /// held for.
     pub fn run(self) {
         self.build().run();
     }
