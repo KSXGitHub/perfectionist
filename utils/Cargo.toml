@@ -20,6 +20,7 @@ build-fs-tree = "0.8.1"
 cargo_toml = "0.22.3"
 clap = { version = "4.6.1", features = ["derive"] }
 command-extra = "1.2.0"
+dylint_testing = "6.0.4"
 pipe-trait = "0.4.0"
 serde = { version = "1.0.228", features = ["derive"] }
 tempfile = "3.27.0"
