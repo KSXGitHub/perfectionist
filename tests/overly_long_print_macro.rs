@@ -2,7 +2,7 @@
 //! default-config sweep lives in `ui/overly_long_print_macro.rs` and is
 //! picked up by `tests/ui.rs`; these tests each point at their own
 //! one-fixture directory under `ui-toml/overly_long_print_macro/` and pass a
-//! per-rule `dylint.toml` to `_utils::configured_ui_test`.
+//! per-rule `dylint.toml` to `_utils::ConfiguredUiTest`.
 
 use std::collections::BTreeMap;
 

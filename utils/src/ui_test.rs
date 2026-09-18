@@ -16,10 +16,10 @@
 //! though, so a version bump could drop it with nothing here
 //! noticing.
 //!
-//! [`ConfiguredUiTestBuilder::build`] therefore takes a lock of this
-//! crate's own, [`SERIAL`], and hands the guard to the
+//! `ConfiguredUiTestBuilder::build` therefore takes a lock of this
+//! crate's own, `SERIAL`, and hands the guard to the
 //! [`ConfiguredUiTest`] it returns, which holds it until
-//! [`ConfiguredUiTest::run`] consumes the value. `dylint_testing` is
+//! `ConfiguredUiTest::run` consumes the value. `dylint_testing` is
 //! a dependency of this crate and not of the lint crate whose
 //! fixtures it runs, so a test binary cannot
 //! name the builder to reach around the lock: the guarantee is this
@@ -45,10 +45,9 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 /// follow are then upstream's to explain rather than this lock's.
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/// A `dylint_testing` UI test that has taken [`SERIAL`], together with
-/// the throwaway fixture copy it runs against. Both are released when
-/// [`ConfiguredUiTest::run`] consumes the value.
-#[must_use = "a `ConfiguredUiTest` lints nothing until it is `run`"]
+/// A `dylint_testing` UI test that has taken `SERIAL`, together with
+/// the throwaway fixture copy it runs against. Both are released once
+/// it has run.
 pub struct ConfiguredUiTest {
     test: dylint_testing::ui::Test,
     /// Held only for its `Drop`, which removes the copy from disk.
@@ -59,7 +58,7 @@ pub struct ConfiguredUiTest {
 
 impl ConfiguredUiTest {
     /// Start describing a UI test. Every parameter is set by name on
-    /// the returned builder, which becomes buildable once none is
+    /// the returned builder, which becomes runnable once none is
     /// missing.
     pub fn builder() -> ConfiguredUiTestBuilder<(), (), (), ()> {
         ConfiguredUiTestBuilder {
@@ -79,14 +78,14 @@ impl ConfiguredUiTest {
 
 /// The parameters of a [`ConfiguredUiTest`], collected before any of
 /// them is used: nothing here touches the fixture tree or the lock
-/// until [`ConfiguredUiTestBuilder::build`] is called.
+/// until [`ConfiguredUiTestBuilder::run`] is called.
 ///
 /// Each type parameter is the slot of the setter that fills it, `()`
-/// until then. `build` is bounded on all four carrying a string, and
-/// `()` carries none, so a builder missing a parameter has no `build`
+/// until then. `run` is bounded on all four carrying a string, and
+/// `()` carries none, so a builder missing a parameter has no `run`
 /// to call and the omission is a compile error rather than a panic on
 /// a half-described test.
-#[must_use = "a `ConfiguredUiTestBuilder` describes a test until it is `build`-ed"]
+#[must_use = "a `ConfiguredUiTestBuilder` describes a test until it is `run`"]
 pub struct ConfiguredUiTestBuilder<LibraryName, ManifestDir, SrcBase, DylintToml> {
     library_name: LibraryName,
     manifest_dir: ManifestDir,
@@ -223,7 +222,7 @@ where
     /// Build the test and run it.
     ///
     /// This is the only way out of the builder: a built
-    /// [`ConfiguredUiTest`] holds [`SERIAL`] and offers nothing to do
+    /// [`ConfiguredUiTest`] holds `SERIAL` and offers nothing to do
     /// but run, so handing one out would only widen the window the
     /// lock is held for.
     pub fn run(self) {

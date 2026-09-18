@@ -6,7 +6,7 @@
 //! `ui/allow_attributes_without_reason.rs` and is picked up by
 //! `tests/ui.rs`; these tests each point at their own one-fixture
 //! directory under `ui-toml/allow_attributes_without_reason/` and
-//! pass a per-rule `dylint.toml` to `_utils::configured_ui_test`.
+//! pass a per-rule `dylint.toml` to `_utils::ConfiguredUiTest`.
 
 use core::num::NonZeroUsize;
 use pipe_trait::Pipe;

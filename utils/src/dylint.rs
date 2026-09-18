@@ -1,8 +1,8 @@
 //! Shell out to `cargo dylint` and capture its output.
 //!
-//! Every command here is built by [`cargo_command`], which clears the
+//! Every command here is built by `cargo_command`, which clears the
 //! variables the in-process UI harness leaves set — see
-//! [`UI_HARNESS_VARS`].
+//! `UI_HARNESS_VARS`.
 
 use command_extra::CommandExtra;
 use pipe_trait::Pipe;

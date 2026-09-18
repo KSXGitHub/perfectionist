@@ -2,7 +2,7 @@
 //! default-config sweep lives in `ui/impure_macro_arguments.rs` and is
 //! picked up by `tests/ui.rs`; these tests each point at their own
 //! one-fixture directory under `ui-toml/impure_macro_arguments/` and
-//! pass a per-rule `dylint.toml` to `_utils::configured_ui_test`.
+//! pass a per-rule `dylint.toml` to `_utils::ConfiguredUiTest`.
 //!
 //! Mirrors the structure of `tests/macro_trailing_comma.rs` — same
 //! `dylint.toml` synthesis, same one-fixture-per-knob layout.

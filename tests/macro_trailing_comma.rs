@@ -2,7 +2,7 @@
 //! default-config sweep lives in `ui/macro_trailing_comma.rs` and is
 //! picked up by `tests/ui.rs`; these tests each point at their own
 //! one-fixture directory under `ui-toml/macro_trailing_comma/` and
-//! pass a per-rule `dylint.toml` to `_utils::configured_ui_test`.
+//! pass a per-rule `dylint.toml` to `_utils::ConfiguredUiTest`.
 
 use std::collections::BTreeMap;
 

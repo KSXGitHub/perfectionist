@@ -2,7 +2,7 @@
 //! sweep lives in `ui/bare_url.rs` and is picked up by `tests/ui.rs`;
 //! the configured tests here each point at their own one-fixture
 //! directory under `ui-toml/bare_url/` and pass a per-rule
-//! `dylint.toml` to `_utils::configured_ui_test`.
+//! `dylint.toml` to `_utils::ConfiguredUiTest`.
 
 use std::collections::BTreeMap;
 

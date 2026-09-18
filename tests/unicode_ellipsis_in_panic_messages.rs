@@ -3,7 +3,7 @@
 //! `ui/unicode_ellipsis_in_panic_messages.rs` and is picked up by
 //! `tests/ui.rs`; this test points at a fixture directory under
 //! `ui-toml/unicode_ellipsis_in_panic_messages/` and passes a
-//! per-rule `dylint.toml` to `_utils::configured_ui_test`.
+//! per-rule `dylint.toml` to `_utils::ConfiguredUiTest`.
 
 use std::collections::BTreeMap;
 

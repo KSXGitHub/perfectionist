@@ -2,7 +2,7 @@
 //! rule is off by default, so it has no default-config sweep under
 //! `ui/` for `tests/ui.rs` to pick up; these tests each point at their
 //! own one-fixture directory under `ui-toml/exhaustive_error_enums/`
-//! and pass a per-rule `dylint.toml` to `_utils::configured_ui_test`.
+//! and pass a per-rule `dylint.toml` to `_utils::ConfiguredUiTest`.
 
 use std::collections::BTreeMap;
 

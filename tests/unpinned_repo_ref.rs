@@ -2,7 +2,7 @@
 //! default-config sweep lives in `ui/unpinned_repo_ref.rs` (picked up
 //! by `tests/ui.rs`); the tests here each point at their own
 //! one-fixture directory under `ui-toml/unpinned_repo_ref/` and pass a
-//! per-rule `dylint.toml` to `_utils::configured_ui_test`.
+//! per-rule `dylint.toml` to `_utils::ConfiguredUiTest`.
 
 use std::collections::BTreeMap;
 

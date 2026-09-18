@@ -3,7 +3,7 @@
 //! `ui/import_granularity_mismatch.rs` and is picked up by `tests/ui.rs`; these
 //! tests each point at their own one-fixture directory under
 //! `ui-toml/import_granularity_mismatch/` and pass a per-rule `dylint.toml` to
-//! `_utils::configured_ui_test`.
+//! `_utils::ConfiguredUiTest`.
 
 use std::collections::BTreeMap;
 

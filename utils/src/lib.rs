@@ -1,8 +1,8 @@
 //! Test-support building blocks for perfectionist's integration
 //! tests. These helpers materialise fixtures in a fresh temp dir —
 //! either a minimal Cargo project to shell out to `cargo dylint`
-//! against, or a throwaway copy of a compiletest UI tree (see
-//! [`ui_test`]). Path inputs are taken as parameters rather than
+//! against, or a throwaway copy of a compiletest UI tree, which
+//! [`ui_test`] runs. Path inputs are taken as parameters rather than
 //! discovered, because this crate is built in isolation from any test
 //! workspace and has no access to the caller's `CARGO_TARGET_DIR` or
 //! `CARGO_MANIFEST_DIR`.
