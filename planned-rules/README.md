@@ -45,6 +45,18 @@ pattern that several rules call out by reference — live in
   `clippy::ptr_arg` and `clippy::needless_pass_by_value` to cover the
   full owned-vs-borrowed trade-off from the pacquet guide.
 
+### Moves and ownership
+- [`default-assignment-after-take.md`](./default-assignment-after-take.md)
+  — flag a statement that assigns a default to a place whose
+  immediately preceding statement already defaulted it with
+  `std::mem::take`. Fallout from a specific refactor rather than a
+  general tidiness rule: wrapping an argument in `mem::take` leaves
+  the caller's old reset behind, and nothing in the diff says the
+  reset stopped mattering. Cheap and decidable, but the file carries
+  an unanswered question — `Default::default()` need not be a
+  constant — and no field evidence yet, so read it before
+  implementing.
+
 ### OS strings, paths, and bytes
 - [`needless-utf8-conversion.md`](./needless-utf8-conversion.md)
   — flag a fidelity-destroying UTF-8 conversion of a value whose
