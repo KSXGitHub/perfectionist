@@ -52,9 +52,9 @@ pattern that several rules call out by reference — live in
   `std::mem::take`. Fallout from a specific refactor rather than a
   general tidiness rule: wrapping an argument in `mem::take` leaves
   the caller's old reset behind, and nothing in the diff says the
-  reset stopped mattering. Cheap and decidable, but the file carries
-  an unanswered question — `Default::default()` need not be a
-  constant — and no field evidence yet, so read it before
+  reset stopped mattering. Fires only where the type's `Default` is
+  known to be pure, since deleting the second call changes behaviour
+  for one that is not. No field evidence yet, so read the file before
   implementing.
 
 ### OS strings, paths, and bytes

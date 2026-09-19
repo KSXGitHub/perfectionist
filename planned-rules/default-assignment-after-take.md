@@ -8,10 +8,8 @@ what produces the shape, so the two travel together; see
 [Where the shape comes from](#where-the-shape-comes-from).
 
 > [!IMPORTANT]
-> This file is a proposal with an unanswered question and no
-> field evidence. Read
-> [The decision this file is waiting on](#the-decision-this-file-is-waiting-on)
-> and [Evidence](#evidence) before implementing anything.
+> This is a proposal with no field evidence behind it. Read
+> [Evidence](#evidence) before implementing anything.
 
 ## Statement
 
@@ -143,13 +141,17 @@ let jobs = std::mem::take(&mut self.queue);
 self.staged = Vec::new();
 ```
 
-## The decision this file is waiting on
+## An effectful `Default` is out of scope
 
-**`Default::default()` is not required to be a constant, and the rule's
-suggestion assumes it is.** `mem::take` calls it once to fill the hole;
-the assignment calls it again. For a type whose `Default` observes or
-mutates something, those two calls produce different values, and
-deleting the assignment changes behaviour:
+`std::mem::take(dest)` is defined as `replace(dest, T::default())`, so
+it calls `Default::default()` exactly once. The assignment after it
+calls it a second time, and deleting that assignment takes the count
+from two to one. That is the whole of what this rule's suggestion
+changes.
+
+For a `Default` that yields a constant, the two calls are
+indistinguishable and the second write is dead. For one that observes
+or mutates something, they are not:
 
 ```rust
 static NEXT: AtomicU32 = AtomicU32::new(0);
@@ -161,28 +163,45 @@ impl Default for Ticket {
 }
 ```
 
-Run against that type, `mem::take(&mut t)` leaves `Ticket(0)` and the
-following `t = Ticket::default()` leaves `Ticket(1)`. A derived
-`Default` has no such behaviour, and the same program leaves
-`Key("")` either way.
+`mem::take(&mut t)` leaves `Ticket(0)`, and the `t = Ticket::default()`
+after it leaves `Ticket(1)`. A derived `Default` has no such
+behaviour, and the same program leaves `Key("")` either way.
 
-Three ways to settle it, for whoever picks this up:
+**So the rule fires only where the `Default` is known to be pure, and
+stays silent otherwise.** Silence is right twice over: the suggestion
+would be wrong, and the defect in such code is the effectful `Default`
+itself rather than the assignment that follows it — a different
+anti-pattern, for a different rule.
 
-- **Fire anyway, `MaybeIncorrect`.** Clippy's
-  `mem_replace_with_default` ships at `style` on the same assumption —
-  it suggests `mem::take` where you wrote `mem::replace(&mut x,
-  T::default())`, which is the same substitution of one
-  `Default::default()` call for another. Cheapest, and consistent with
-  the ecosystem.
-- **Require a constant `Default`.** Fire only where the impl is
-  derived, or where its body is provably free of effects. Sound, and
-  more work than the rest of the rule put together.
-- **Drop the rule.** A redundant write nobody has been bitten by may
-  not be worth a lint.
+### Knowing that a `Default` is pure
 
-The first is the proposal. It is recorded here rather than decided
-because the other two are defensible and the choice changes what the
-lint may claim.
+Three-valued, and only the first fires:
+
+- **Known pure** — a standard-library type whose default is trivial
+  (`Vec`, `String`, `Option`, the integers, …), or a
+  `#[derive(Default)]` impl every one of whose field types is itself
+  known pure, checked transitively with a cycle guard.
+- **Known effectful** — what a rule about effectful `Default` impls
+  would need. This rule does not.
+- **Unknown** — everything else, including a hand-written impl that
+  happens to be pure.
+
+Under-firing on a hand-written but pure `Default` is the accepted
+cost. There is no predicate in `clippy_utils` to borrow for this: its
+`eager_or_lazy` module classifies a call it cannot resolve as
+*expensive*, which is the right default for the lints it serves and
+useless as a purity test here.
+
+### Why Clippy's `mem::take` rewrite is not a precedent
+
+`clippy::mem_replace_with_default` rewrites
+`mem::replace(&mut x, T::default())` to `mem::take(&mut x)`, is
+warn-by-default, and fires whatever `T`'s `Default` does. It is not a
+precedent for firing here regardless of purity, because the two
+rewrites are not alike. Clippy substitutes one `Default::default()`
+call for one other — `mem::take` *is* that `replace` — so the count
+is unchanged and nothing about purity is assumed. This rule's
+suggestion removes a call. Only the second needs the condition above.
 
 ## Evidence
 
@@ -200,21 +219,29 @@ holding until the pattern turns up in a real diff.
 
 ## Implementation notes
 
-`LateLintPass::check_block`, walking consecutive statement pairs. The
-two hard parts are already solved by `clippy_utils`:
-`is_default_equivalent` for the right-hand side, and `SpanlessEq` for
-comparing the assigned place with the one the `take` borrows.
+`LateLintPass::check_block`, walking consecutive statement pairs. Two
+of the three pieces come from `clippy_utils`: `is_default_equivalent`
+for the right-hand side, and `SpanlessEq` for comparing the assigned
+place with the one the `take` borrows.
+
+The third is the purity classification under
+[Knowing that a `Default` is pure](#knowing-that-a-default-is-pure),
+which has nothing to borrow and is where the work is. It belongs in a
+crate-internal module rather than inside the rule, since a rule about
+effectful `Default` impls would want the same classification read the
+other way round.
 
 The suggestion is to delete the statement, which is a span removal
-rather than a rewrite. Applicability follows from
-[the open question](#the-decision-this-file-is-waiting-on).
+rather than a rewrite, and `MachineApplicable` once purity is
+established.
 
 ### Difficulty
 
-**Easy**, and deliberately so. The trigger is two adjacent statements
-in one block, with no configuration, no cross-body analysis, and no
-parsing. If it grows past that, the growth is the answer to the open
-question rather than to the rule.
+**Easy for the trigger, medium for the guard.** Two adjacent
+statements in one block, no configuration, no cross-body analysis and
+no parsing — but the purity classification is a recursive walk over
+field types with a cycle guard, and getting its conservatism right is
+most of the rule.
 
 ## Configuration
 
@@ -222,17 +249,19 @@ None. There is no direction to choose and no threshold to set.
 
 ## Default state
 
-Active by default, if the rule ships at all. The trigger is syntactic
-and narrow, and nothing about it varies per project. Should the open
-question be settled the second way — a constant `Default` required —
-that stays true; only the trigger narrows.
+Active by default. The trigger is syntactic and narrow, the purity
+guard keeps it off every case where the suggestion would be wrong, and
+nothing about either varies per project.
 
 ## Interaction with clippy and sibling rules
 
-- **`clippy::mem_replace_with_default`** (`style`) rewrites
-  `mem::replace(&mut x, T::default())` to `mem::take`. It is upstream
-  of this rule rather than overlapping it: it produces the `take` this
-  rule then reads. See
+- **`clippy::mem_replace_with_default`** (`style`, warn by default)
+  rewrites `mem::replace(&mut x, T::default())` to `mem::take`. It is
+  upstream of this rule rather than overlapping it: it produces the
+  `take` this rule then reads. Its rewrite is safe whatever `T`'s
+  `Default` does, for the reason under
+  [Why Clippy's `mem::take` rewrite is not a precedent](#why-clippys-memtake-rewrite-is-not-a-precedent).
+  See also
   [Why `mem::replace` is not covered](#why-memreplace-is-not-covered).
 - **`clippy::field_reassign_with_default`** (`style`) flags
   `let mut x = T::default(); x.field = …;` and asks for a struct
@@ -244,6 +273,14 @@ that stays true; only the trigger narrows.
   it to the compiler. It does not fire when the place is a field
   reached through a reference, because the write is observable by the
   caller — which is the case this rule is for.
+- **A rule about effectful `Default` impls** would be this one's
+  complement, reading the same classification the other way round: a
+  `Default` that observes or mutates something is a hazard wherever it
+  is reached for a placeholder, which is `mem::take`,
+  `unwrap_or_default` and `..Default::default()` alike. No such rule
+  is filed. Where one exists, this rule's silence on
+  [the effectful case](#an-effectful-default-is-out-of-scope) becomes
+  a deferral to it rather than a gap.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
