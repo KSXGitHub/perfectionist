@@ -4,7 +4,7 @@ use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::res::MaybeDef;
 use rustc_errors::Applicability;
 use rustc_hir::def::{DefKind, Res};
-use rustc_hir::{Expr, ExprKind, ItemKind, Node, QPath};
+use rustc_hir::{Expr, ExprKind, Item, ItemKind, Node, PathSegment, QPath};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_middle::ty::adjustment::Adjust;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -15,9 +15,15 @@ declare_tool_lint! {
     ///
     /// Flags a `std::process::Command` setter called on an *owned*
     /// command — `arg`, `args`, `env`, `envs`, `env_remove`,
-    /// `env_clear`, `current_dir`, `stdin`, `stdout`, `stderr` — and
-    /// names the `command_extra::CommandExtra` counterpart that takes
-    /// `self` instead of `&mut self`.
+    /// `env_clear`, `current_dir` — and names the
+    /// `command_extra::CommandExtra` counterpart that takes `self`
+    /// instead of `&mut self`.
+    ///
+    /// `stdin`, `stdout` and `stderr` are left alone even though
+    /// `CommandExtra` names all three: std takes anything
+    /// `Into<Stdio>` there while the by-value form takes a concrete
+    /// `Stdio`, so a `File` or a `ChildStdout` argument has no
+    /// counterpart to rename to.
     ///
     /// A receiver the by-value form could not take ownership of is left
     /// alone: `CommandExtra` takes `self`, so neither a `&mut Command`
@@ -72,20 +78,21 @@ declare_tool_lint! {
     /// ### When the fix is applied automatically
     ///
     /// The suggested rename is applied by `cargo dylint --fix` only
-    /// where it is certain to compile, which takes two things.
+    /// where it is certain to compile, which takes all of the
+    /// following.
     ///
     /// The trait has to already be in scope. `CommandExtra`'s methods
     /// are trait methods, so a rename in a module without the `use` is
     /// `no method named with_arg found` — and the module the import
     /// would belong in is not always the one the call is in.
     ///
-    /// The call's value has to be another method call's receiver, or
-    /// the call the whole chain ends in. The by-value form returns
-    /// `Command` where the original returned `&mut Command`: a value
-    /// consumed as `&mut Command`, an argument to
-    /// `fn configure(&mut Command)` say, stops compiling on the rename
-    /// alone, and a call in statement position moves the binding the
-    /// following statements still read.
+    /// The receiver has to be a value the expression produced rather
+    /// than a place the caller still owns, and the call's value has to
+    /// feed another method call's receiver. The by-value form consumes
+    /// its receiver and returns `Command` where the original returned
+    /// `&mut Command`, so renaming a setter on a binding moves that
+    /// binding, and renaming one whose value is consumed as
+    /// `&mut Command` changes the type the context asked for.
     ///
     /// Everywhere else the rename is offered but left for the author to
     /// apply and finish. In statement position finishing it means
@@ -220,7 +227,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
             return;
         }
         let std_form = path_segment.ident.name;
-        let applicability = match rename_alone_compiles(cx, expr) {
+        let applicability = match rename_alone_compiles(cx, expr, receiver, path_segment) {
             true => Applicability::MachineApplicable,
             false => Applicability::MaybeIncorrect,
         };
@@ -248,17 +255,30 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
 /// Whether renaming the method is the whole fix, so the suggestion can
 /// be applied without reading the rest of the body.
 ///
-/// Two things have to hold, and each fails loudly on its own:
+/// Each condition fails loudly on its own:
 ///
 /// * `CommandExtra` is already in scope, since its methods are trait
 ///   methods and a rename without the import is `E0599`.
-/// * The call's value feeds another method call's receiver. The
-///   by-value form returns `Command` where the original returned
-///   `&mut Command`, so a value consumed as `&mut Command` is `E0308`
-///   and a call in statement position moves a binding later statements
-///   read, which is `E0382`.
-fn rename_alone_compiles(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
-    command_extra_is_imported(cx, call) && feeds_a_method_receiver(cx, call)
+/// * The receiver is a value the expression produced. The by-value form
+///   consumes its receiver, so renaming a setter called on a binding or
+///   a field moves a place the surrounding code still reads, which is
+///   `E0382` -- and for a binding a closure captured, `E0507`.
+/// * The call's value feeds another method call's receiver, the one
+///   position that takes an owned `Command` where the original yielded
+///   a `&mut Command`. Anywhere else the changed type is `E0308`.
+fn rename_alone_compiles(
+    cx: &LateContext<'_>,
+    call: &Expr<'_>,
+    receiver: &Expr<'_>,
+    path_segment: &PathSegment<'_>,
+) -> bool {
+    // An explicit turbofish survives a rename into a method of
+    // different generic arity: `args` takes two type parameters where
+    // `with_args` takes one, so the rewrite is `E0107`.
+    path_segment.args.is_none()
+        && command_extra_is_imported(cx, call)
+        && produces_a_temporary(receiver)
+        && feeds_a_method_receiver(cx, call)
 }
 
 /// Whether the innermost module around `call` imports `CommandExtra`.
@@ -272,18 +292,28 @@ fn command_extra_is_imported(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
     let module = cx.tcx.parent_module(call.hir_id);
     let wanted_crate = Symbol::intern(COMMAND_EXTRA_CRATE);
     let wanted_trait = Symbol::intern(COMMAND_EXTRA_TRAIT);
-    cx.tcx
-        .hir_module_items(module)
-        .free_items()
-        .filter_map(|item_id| match cx.tcx.hir_item(item_id).kind {
+    // The module's *direct* children. `hir_module_items` would also
+    // reach items nested in bodies, and a `use` inside one function
+    // does not bring the trait into scope for that function's siblings.
+    let items = match cx.tcx.hir_node_by_def_id(module.to_local_def_id()) {
+        Node::Crate(contents) => contents.item_ids,
+        Node::Item(Item {
+            kind: ItemKind::Mod(_, contents),
+            ..
+        }) => contents.item_ids,
+        _ => return false,
+    };
+    items
+        .iter()
+        .filter_map(|item_id| match cx.tcx.hir_item(*item_id).kind {
             ItemKind::Use(path, _) => Some(path),
             _ => None,
         })
-        .flat_map(|path| path.res.iter().copied().collect::<Vec<_>>())
+        .flat_map(|path| path.res.iter())
         .any(|res| match res {
             Some(Res::Def(DefKind::Trait, def_id)) => {
                 cx.tcx.crate_name(def_id.krate) == wanted_crate
-                    && cx.tcx.item_name(def_id) == wanted_trait
+                    && cx.tcx.item_name(*def_id) == wanted_trait
             }
             _ => false,
         })
@@ -327,20 +357,42 @@ fn receiver_can_be_consumed(cx: &LateContext<'_>, receiver: &Expr<'_>) -> bool {
         }
         // A value this expression produced, which is a temporary
         // nobody else holds a claim on.
-        ExprKind::Call(..)
-        | ExprKind::MethodCall(..)
-        | ExprKind::Struct(..)
-        | ExprKind::Block(..)
-        | ExprKind::If(..)
-        | ExprKind::Match(..) => true,
-        _ => false,
+        _ => produces_a_temporary(receiver),
     }
+}
+
+/// Whether `receiver` is a value the expression produced rather than a
+/// place the surrounding code still holds.
+///
+/// Consuming a temporary takes nothing away from anyone. Consuming a
+/// binding or a field moves it, which is `E0382` where later code reads
+/// it and `E0507` where a closure captured it -- so the rename is only
+/// applied automatically on a temporary, even though the *diagnostic* is
+/// right on a binding too.
+fn produces_a_temporary(receiver: &Expr<'_>) -> bool {
+    matches!(
+        receiver.kind,
+        ExprKind::Call(..)
+            | ExprKind::MethodCall(..)
+            | ExprKind::Struct(..)
+            | ExprKind::Block(..)
+            | ExprKind::If(..)
+            | ExprKind::Match(..),
+    )
 }
 
 /// The `command_extra::CommandExtra` counterpart of a
 /// `std::process::Command` setter, or `None` for any other method --
 /// `Command::new`, which is not a setter, and the spawning methods,
 /// which have no counterpart and take `&mut self` legitimately.
+///
+/// `stdin`, `stdout` and `stderr` are absent although `CommandExtra`
+/// names all three. Theirs are the one pair that is not
+/// signature-equivalent: std takes anything `Into<Stdio>` while the
+/// by-value form takes a concrete `Stdio`, so the rename is `E0308` for
+/// the `File` and `ChildStdout` arguments that are the common idiom.
+/// Separating the safe arguments would mean recognising `Stdio`, which
+/// carries no `rustc_diagnostic_item`.
 fn by_value_form(std_form: Symbol) -> Option<&'static str> {
     Some(match std_form.as_str() {
         "arg" => "with_arg",
@@ -350,9 +402,6 @@ fn by_value_form(std_form: Symbol) -> Option<&'static str> {
         "env_remove" => "without_env",
         "env_clear" => "with_no_env",
         "current_dir" => "with_current_dir",
-        "stdin" => "with_stdin",
-        "stdout" => "with_stdout",
-        "stderr" => "with_stderr",
         _ => return None,
     })
 }

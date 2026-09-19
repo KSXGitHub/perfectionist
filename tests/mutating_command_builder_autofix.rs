@@ -6,16 +6,10 @@
 //! identically, and only the first is applied. So the fixture goes
 //! through the real fixer and is judged on what it did to the source.
 //!
-//! The rename is sound only where two things hold, and each fails
-//! loudly on its own:
-//!
-//! - `CommandExtra` is in scope in the *calling module*. Its methods
-//!   are trait methods, so a rename without the import is `E0599`, and
-//!   a parent module's `use` does not reach a child.
-//! - The call's value feeds another method call's receiver. The
-//!   by-value form returns `Command` where the original returned
-//!   `&mut Command`, so a call in statement position moves a binding
-//!   the following statements still read, which is `E0382`.
+//! What makes a rename sound is stated once, on
+//! `rename_alone_compiles` in `src/rules/mutating_command_builder.rs`.
+//! This file pins it, one fixture module per condition, rather than
+//! restating it.
 //!
 //! `cargo fix` applies a crate's `MachineApplicable` suggestions,
 //! recompiles, and on any new error throws the whole file's fixes away
@@ -27,32 +21,24 @@
 pub mod _utils;
 
 use _utils::{
-    TempDir, build_project_with_config, cargo_manifest_dir, run_dylint_fix, shared_target_dir,
+    TempDir, build_project_with_config, cargo_manifest_dir, fixture_cargo_toml, run_dylint_fix,
+    shared_target_dir,
 };
 use std::fs;
 use text_block_macros::text_block_fnl;
 
-/// The fixture needs the real `command-extra`, which the generated
-/// manifest does not carry. Passing `Cargo.toml` as a source overwrites
-/// it, since [`build_project_with_config`] inserts the sources after
-/// its own entries.
-const CARGO_TOML: &str = text_block_fnl! {
-    "[package]"
-    r#"name = "mutating_command_builder_autofix""#
-    r#"version = "0.0.0""#
-    r#"edition = "2024""#
-    ""
-    "[lib]"
-    r#"path = "src/lib.rs""#
-    ""
-    "[dependencies]"
-    r#"command-extra = "1.2.0""#
-    ""
-    "# Declare an empty workspace so cargo doesn't walk up the"
-    "# filesystem and try to enroll the fixture into the perfectionist"
-    "# workspace it happens to be nested inside."
-    "[workspace]"
-};
+/// The generated manifest with `command-extra` appended, which the
+/// fixture needs and [`fixture_cargo_toml`] does not carry. Passing
+/// `Cargo.toml` as a source overwrites the generated copy, since
+/// [`build_project_with_config`] inserts the sources after its own
+/// entries — appending to that copy rather than restating it keeps the
+/// package, lib and workspace stanzas in one place.
+fn cargo_toml() -> String {
+    format!(
+        "{}\n[dependencies]\ncommand-extra = \"1.2.0\"\n",
+        fixture_cargo_toml("mutating_command_builder_autofix"),
+    )
+}
 
 /// Each call carries a distinct argument so an assertion can name one
 /// shape without matching another.
@@ -77,6 +63,46 @@ const SOURCE: &str = text_block_fnl! {
     "    }"
     "}"
     ""
+    "mod chain_on_a_local {"
+    "    use command_extra::CommandExtra;"
+    "    use std::process::Command;"
+    ""
+    "    // The rule's headline shape: a chain over a `mut` binding the"
+    "    // following code still reads."
+    "    pub fn lister() -> Command {"
+    r#"        let mut command = Command::new("ls");"#
+    r#"        command.current_dir("/").arg("chain-on-a-local");"#
+    "        command"
+    "    }"
+    "}"
+    ""
+    "mod captured_by_a_closure {"
+    "    use command_extra::CommandExtra;"
+    "    use std::process::Command;"
+    ""
+    "    pub fn run() {"
+    r#"        let mut command = Command::new("ls");"#
+    r#"        let mut go = || { let _ = command.arg("captured").status(); };"#
+    "        go();"
+    "        go();"
+    "    }"
+    "}"
+    ""
+    "mod import_inside_a_body {"
+    "    use std::process::Command;"
+    ""
+    "    // The module's only import of the trait is body-local, so it"
+    "    // does not bring it into scope for the sibling below."
+    "    pub fn imports_it_locally() {"
+    "        use command_extra::CommandExtra;"
+    r#"        let _ = Command::new("ls").with_arg("body-local");"#
+    "    }"
+    ""
+    "    pub fn sibling() {"
+    r#"        let _ = Command::new("ls").arg("body-local-sibling").status();"#
+    "    }"
+    "}"
+    ""
     "// Not fixable: this module has no `use command_extra::CommandExtra`,"
     "// so a rename would be `no method named with_arg found`. The crate"
     "// is loaded -- the module above imports it -- so the dependency gate"
@@ -98,7 +124,7 @@ fn fix() -> (TempDir, String, String) {
         temp.path(),
         "mutating_command_builder_autofix",
         cargo_manifest_dir(),
-        &[("Cargo.toml", CARGO_TOML), ("src/lib.rs", SOURCE)],
+        &[("Cargo.toml", &cargo_toml()), ("src/lib.rs", SOURCE)],
         "",
     );
     let (stderr, success) = run_dylint_fix(temp.path(), &shared_target_dir());
@@ -131,6 +157,9 @@ fn only_the_sound_rename_is_applied() {
 
     for untouched in [
         r#"command.arg("statement-in-scope");"#,
+        r#"command.current_dir("/").arg("chain-on-a-local");"#,
+        r#"command.arg("captured")"#,
+        r#".arg("body-local-sibling")"#,
         r#".arg("receiver-out-of-scope")"#,
     ] {
         assert!(

@@ -78,39 +78,6 @@ help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self
 LL |     command.with_current_dir(dir);
    |             +++++
 
-warning: `Command::stdin` takes `&mut self`, so it cannot yield the command
-  --> $DIR/mutating_command_builder.rs:LL:CC
-   |
-LL |     command.stdin(Stdio::null());
-   |             ^^^^^
-   |
-help: use `CommandExtra::with_stdin`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   |
-LL |     command.with_stdin(Stdio::null());
-   |             +++++
-
-warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
-  --> $DIR/mutating_command_builder.rs:LL:CC
-   |
-LL |     command.stdout(Stdio::null());
-   |             ^^^^^^
-   |
-help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   |
-LL |     command.with_stdout(Stdio::null());
-   |             +++++
-
-warning: `Command::stderr` takes `&mut self`, so it cannot yield the command
-  --> $DIR/mutating_command_builder.rs:LL:CC
-   |
-LL |     command.stderr(Stdio::null());
-   |             ^^^^^^
-   |
-help: use `CommandExtra::with_stderr`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   |
-LL |     command.with_stderr(Stdio::null());
-   |             +++++
-
 warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
    |

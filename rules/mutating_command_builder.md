@@ -11,9 +11,15 @@
 
 Flags a `std::process::Command` setter called on an *owned*
 command — `arg`, `args`, `env`, `envs`, `env_remove`,
-`env_clear`, `current_dir`, `stdin`, `stdout`, `stderr` — and
-names the `command_extra::CommandExtra` counterpart that takes
-`self` instead of `&mut self`.
+`env_clear`, `current_dir` — and names the
+`command_extra::CommandExtra` counterpart that takes `self`
+instead of `&mut self`.
+
+`stdin`, `stdout` and `stderr` are left alone even though
+`CommandExtra` names all three: std takes anything
+`Into<Stdio>` there while the by-value form takes a concrete
+`Stdio`, so a `File` or a `ChildStdout` argument has no
+counterpart to rename to.
 
 A receiver the by-value form could not take ownership of is left
 alone: `CommandExtra` takes `self`, so neither a `&mut Command`
@@ -68,20 +74,21 @@ fn lister(dir: &Path) -> Command {
 ## When the fix is applied automatically
 
 The suggested rename is applied by `cargo dylint --fix` only
-where it is certain to compile, which takes two things.
+where it is certain to compile, which takes all of the
+following.
 
 The trait has to already be in scope. `CommandExtra`'s methods
 are trait methods, so a rename in a module without the `use` is
 `no method named with_arg found` — and the module the import
 would belong in is not always the one the call is in.
 
-The call's value has to be another method call's receiver, or
-the call the whole chain ends in. The by-value form returns
-`Command` where the original returned `&mut Command`: a value
-consumed as `&mut Command`, an argument to
-`fn configure(&mut Command)` say, stops compiling on the rename
-alone, and a call in statement position moves the binding the
-following statements still read.
+The receiver has to be a value the expression produced rather
+than a place the caller still owns, and the call's value has to
+feed another method call's receiver. The by-value form consumes
+its receiver and returns `Command` where the original returned
+`&mut Command`, so renaming a setter on a binding moves that
+binding, and renaming one whose value is consumed as
+`&mut Command` changes the type the context asked for.
 
 Everywhere else the rename is offered but left for the author to
 apply and finish. In statement position finishing it means
