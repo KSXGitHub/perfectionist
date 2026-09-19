@@ -300,6 +300,27 @@ only re-parsing in a late pass gives. So if you reach for a
 pre-expansion pass and match `ModKind` to walk module bodies, stop —
 that is the trap.
 
+## Interprocedural analyses share one summary pass
+
+A rule that decides whether a **parameter should be taken by value**
+cannot always decide it from the callee's body. Once the conversion is
+conditional, the answer depends on every call site — and a caller that
+holds a borrowed parameter of its own stops being an obstacle only
+when *its* signature changes too, so the question propagates along the
+call graph. That is a worklist to a fixpoint, not a per-rule walk, and
+the rules that ask it are not all filed yet.
+
+Build it once, as a crate-internal `ownership_summary` module, and let
+each rule read a summary rather than walk callees itself. The
+contract — what a summary holds, why the fixpoint starts optimistic
+and runs downward, why a configurable depth limit is the wrong bound,
+and where the crate boundary stops the whole thing — is specified
+under
+[Shared infrastructure](./cloned-borrowed-parameter.md#shared-infrastructure-the-ownership-summary)
+in the first rule to consume it. Every rule that imports
+`crate::ownership_summary` is bound by it; do not re-derive the walk
+inside a rule.
+
 ## Recognising test-exclusive code
 
 A rule whose rationale is about production code — a cost paid at

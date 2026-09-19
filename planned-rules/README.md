@@ -44,6 +44,21 @@ pattern that several rules call out by reference — live in
   collects on the copy the owned signature saves. Pairs with
   `clippy::ptr_arg` and `clippy::needless_pass_by_value` to cover the
   full owned-vs-borrowed trade-off from the pacquet guide.
+- [`cloned-borrowed-parameter.md`](./cloned-borrowed-parameter.md) —
+  the sibling for the cases
+  `perfectionist::needless_borrowed_parameters` does not reach: a `&T`
+  parameter of any `Clone` pointee, sized or not, where some path
+  needs an owned `T` — a copy something takes by value, or ownership
+  a callee demands of the parameter or of an element of it — beside
+  borrowing uses and under a condition. Permitting a conditional copy
+  costs the callee-local soundness argument, so the rule buys it back
+  by proving that every production call site in the crate passes a
+  place it owns and does not read again. That proof is also what
+  confines the rule to items whose callers are all visible, and it is
+  not configurable away; it stays silent wherever the sibling's own
+  predicate holds, so one parameter is never reported twice. Test code
+  and build scripts are exempt by default, as in the sibling. Active
+  by default.
 
 ### OS strings, paths, and bytes
 - [`needless-utf8-conversion.md`](./needless-utf8-conversion.md)
