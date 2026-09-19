@@ -2,8 +2,9 @@ use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::res::MaybeDef;
-use rustc_hir::def::Res;
-use rustc_hir::{Expr, ExprKind, QPath};
+use rustc_errors::Applicability;
+use rustc_hir::def::{DefKind, Res};
+use rustc_hir::{Expr, ExprKind, ItemKind, Node, QPath};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_middle::ty::adjustment::Adjust;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -68,17 +69,29 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// ### No automatic fix
+    /// ### When the fix is applied automatically
     ///
-    /// The diagnostic is advice rather than a rewrite, because
-    /// renaming the method in place is not always a valid fix. The
-    /// by-value form returns `Command` where the original returned
-    /// `&mut Command`, so a call whose value is consumed as
-    /// `&mut Command` — an argument to `fn configure(&mut Command)`,
-    /// say — stops compiling when only its name changes. Where the
-    /// call is a statement on a `mut` binding, the fix is to collapse
-    /// the binding into a single chained expression, which depends on
-    /// what else the body does with it. Both are the author's to make.
+    /// The suggested rename is applied by `cargo dylint --fix` only
+    /// where it is certain to compile, which takes two things.
+    ///
+    /// The trait has to already be in scope. `CommandExtra`'s methods
+    /// are trait methods, so a rename in a module without the `use` is
+    /// `no method named with_arg found` — and the module the import
+    /// would belong in is not always the one the call is in.
+    ///
+    /// The call's value has to be another method call's receiver, or
+    /// the call the whole chain ends in. The by-value form returns
+    /// `Command` where the original returned `&mut Command`: a value
+    /// consumed as `&mut Command`, an argument to
+    /// `fn configure(&mut Command)` say, stops compiling on the rename
+    /// alone, and a call in statement position moves the binding the
+    /// following statements still read.
+    ///
+    /// Everywhere else the rename is offered but left for the author to
+    /// apply and finish. In statement position finishing it means
+    /// either `command = command.with_arg(x)` or, better, collapsing
+    /// the binding into one chained expression — which depends on what
+    /// else the body does with it.
     pub perfectionist::MUTATING_COMMAND_BUILDER,
     Warn,
     "a `std::process::Command` setter taking `&mut self` where `command-extra`'s by-value form exists",
@@ -95,6 +108,10 @@ const COMMAND_EXTRA_CRATE: &str = "command_extra";
 /// the pre-interned `rustc_span::sym` constants, so it is interned on
 /// use, as `needless_borrowed_parameters` does for the same reason.
 const COMMAND_DIAGNOSTIC_ITEM: &str = "Command";
+
+/// The trait whose by-value setters the diagnostic names. A rename is
+/// only applied automatically where this is already imported.
+const COMMAND_EXTRA_TRAIT: &str = "CommandExtra";
 
 /// The user-facing configuration shape, deserialised from the
 /// `["perfectionist::mutating_command_builder"]` table of
@@ -203,6 +220,10 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
             return;
         }
         let std_form = path_segment.ident.name;
+        let applicability = match rename_alone_compiles(cx, expr) {
+            true => Applicability::MachineApplicable,
+            false => Applicability::MaybeIncorrect,
+        };
         span_lint_hir_and_then(
             cx,
             MUTATING_COMMAND_BUILDER,
@@ -210,13 +231,75 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
             path_segment.ident.span,
             format!("`Command::{std_form}` takes `&mut self`, so it cannot yield the command"),
             |diagnostic| {
-                diagnostic.help(format!(
-                    "use `CommandExtra::{by_value_form}`, which takes `self` and returns `Self`, \
-                     keeping the whole construction in expression position",
-                ));
+                diagnostic.span_suggestion(
+                    path_segment.ident.span,
+                    format!(
+                        "use `CommandExtra::{by_value_form}`, which takes `self` and returns \
+                         `Self`, keeping the whole construction in expression position",
+                    ),
+                    by_value_form,
+                    applicability,
+                );
             },
         );
     }
+}
+
+/// Whether renaming the method is the whole fix, so the suggestion can
+/// be applied without reading the rest of the body.
+///
+/// Two things have to hold, and each fails loudly on its own:
+///
+/// * `CommandExtra` is already in scope, since its methods are trait
+///   methods and a rename without the import is `E0599`.
+/// * The call's value feeds another method call's receiver. The
+///   by-value form returns `Command` where the original returned
+///   `&mut Command`, so a value consumed as `&mut Command` is `E0308`
+///   and a call in statement position moves a binding later statements
+///   read, which is `E0382`.
+fn rename_alone_compiles(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
+    command_extra_is_imported(cx, call) && feeds_a_method_receiver(cx, call)
+}
+
+/// Whether the innermost module around `call` imports `CommandExtra`.
+///
+/// Scoped to that module because a trait has to be in scope where the
+/// method is called, and a parent module's `use` does not reach a
+/// child. A trait reached some other way -- a glob, a project prelude --
+/// reads here as absent, which costs the suggestion its automatic
+/// application rather than its correctness.
+fn command_extra_is_imported(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
+    let module = cx.tcx.parent_module(call.hir_id);
+    let wanted_crate = Symbol::intern(COMMAND_EXTRA_CRATE);
+    let wanted_trait = Symbol::intern(COMMAND_EXTRA_TRAIT);
+    cx.tcx
+        .hir_module_items(module)
+        .free_items()
+        .filter_map(|item_id| match cx.tcx.hir_item(item_id).kind {
+            ItemKind::Use(path, _) => Some(path),
+            _ => None,
+        })
+        .flat_map(|path| path.res.iter().copied().collect::<Vec<_>>())
+        .any(|res| match res {
+            Some(Res::Def(DefKind::Trait, def_id)) => {
+                cx.tcx.crate_name(def_id.krate) == wanted_crate
+                    && cx.tcx.item_name(def_id) == wanted_trait
+            }
+            _ => false,
+        })
+}
+
+/// Whether `call`'s value is the receiver of another method call, the
+/// one position that takes an owned `Command` where the original
+/// yielded a `&mut Command`.
+fn feeds_a_method_receiver(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
+    matches!(
+        cx.tcx.parent_hir_node(call.hir_id),
+        Node::Expr(Expr {
+            kind: ExprKind::MethodCall(_, receiver, ..),
+            ..
+        }) if receiver.hir_id == call.hir_id,
+    )
 }
 
 /// Whether the by-value form could take ownership of `receiver`.

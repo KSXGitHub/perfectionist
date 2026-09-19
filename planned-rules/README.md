@@ -85,15 +85,6 @@ pattern that several rules call out by reference — live in
   pipes (suggests `x.pipe(g)`). All four checks default to enforce.
 
 ### Command builder
-- [`mutating-command-builder.md`](./mutating-command-builder.md) — when
-  a `std::process::Command` is owned, prefer `command-extra`'s
-  by-value setters (`with_arg`, `without_env`, …) over std's
-  `&mut self` ones, so the whole construction stays an expression.
-  Exempts a receiver the by-value form could not take ownership of —
-  a `&mut Command`, or a field behind a reference — and stays silent
-  in a crate that has not loaded the crate
-  (`require_command_extra_dependency = false` opts in). Implemented
-  apart from the autofix; the diagnostic is advice.
 - [`folded-command-setter.md`](./folded-command-setter.md) — flag a
   `fold` of a singular `CommandExtra` setter over an iterator where
   the plural exists (`without_env` → `without_envs`), however the

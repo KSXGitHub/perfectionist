@@ -4,8 +4,11 @@ warning: `Command::arg` takes `&mut self`, so it cannot yield the command
 LL |     command.arg("-l");
    |             ^^^
    |
-   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = note: `#[warn(perfectionist::mutating_command_builder)]` on by default
+help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL |     command.with_arg("-l");
+   |             +++++
 
 warning: `Command::env_clear` takes `&mut self`, so it cannot yield the command
   --> $DIR/fixture.rs:LL:CC
@@ -13,6 +16,10 @@ warning: `Command::env_clear` takes `&mut self`, so it cannot yield the command
 LL |     command.env_clear();
    |             ^^^^^^^^^
    |
-   = help: use `CommandExtra::with_no_env`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+help: use `CommandExtra::with_no_env`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL -     command.env_clear();
+LL +     command.with_no_env();
+   |
 
 warning: N warnings emitted

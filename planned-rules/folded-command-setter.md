@@ -307,7 +307,8 @@ Trigger and autofix part ways:
   `into_iter` on a std collection, this repository's own call site
   included.
 - **Advice only** otherwise, the same answer
-  `mutating_command_builder` gives its statement-shaped case.
+  `perfectionist::mutating_command_builder` gives its
+  statement-shaped case.
 
 That gate is over-conservative on purpose, and the cost is worth
 naming rather than discovering: it declines a fix for the first example
@@ -362,8 +363,8 @@ calls them.
 
 ## Interaction with sibling rules
 
-`mutating_command_builder`
-([`mutating-command-builder.md`](./mutating-command-builder.md))
+`perfectionist::mutating_command_builder`
+([`src/rules/mutating_command_builder.rs`](../src/rules/mutating_command_builder.rs))
 flags std's `&mut self` setters where the by-value form exists. The
 two rules are orthogonal in the direction that matters: this rule
 fires on code that one considers already correct. The fold above uses

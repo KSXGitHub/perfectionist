@@ -56,9 +56,10 @@ fn chained() {
     Command::new("ls").arg("a").arg("b").status().ok();
 }
 
-// Good: a borrowed receiver cannot adopt `CommandExtra`, whose methods
-// take `self`. This is the exemption that matters — firing here would
-// emit a diagnostic with no valid fix.
+// Not flagged: a borrowed receiver cannot adopt `CommandExtra`, whose
+// methods take `self`. This is the exemption that matters — firing here
+// would emit a diagnostic with no valid fix. Exempt rather than
+// preferred: the rule has nothing better to offer, not an endorsement.
 fn configure(command: &mut Command) {
     command.arg("-l");
     command.env("LANG", "C");
@@ -69,10 +70,10 @@ struct Builder {
 }
 
 impl Builder {
-    // Good: `self.command` has type `Command` with no reference in
-    // sight, but it sits behind `&mut self`, so the by-value form
-    // cannot take it -- `E0507: cannot move out of `self.command`
-    // which is behind a mutable reference`. The type alone does not
+    // Not flagged: `self.command` has type `Command` with no
+    // reference in sight, but it sits behind `&mut self`, so the
+    // by-value form cannot take it — E0507, cannot move out of a
+    // place behind a mutable reference. The type alone does not
     // separate this case from the one below.
     fn extend(&mut self) {
         self.command.arg("-l");
@@ -83,14 +84,23 @@ impl Builder {
         self.command.arg("-l");
         self.command
     }
+
+    // Good: the counterpart of the above. Taking the advice collapses
+    // the two statements into one expression and drops the `mut`, since
+    // the field is moved rather than mutated. The signature returns
+    // `Command`, which is what `with_arg` hands back.
+    fn into_extended_by_value(self) -> Command {
+        self.command.with_arg("-l")
+    }
 }
 
-// Good: reached through a `Box`, so not the caller's to move out of.
+// Not flagged: reached through a `Box`, so not the caller's to move
+// out of.
 fn boxed(command: &mut Box<Command>) {
     command.arg("-l");
 }
 
-// Good: a closure parameter is a borrow like any other.
+// Not flagged: a closure parameter is a borrow like any other.
 fn through_closure(command: &mut Command) {
     let mut add = |pending: &mut Command| {
         pending.arg("-l");
@@ -98,15 +108,15 @@ fn through_closure(command: &mut Command) {
     add(command);
 }
 
-// Good: `Command::new` is not a setter, and the spawning methods have
-// no by-value counterpart — they take `&mut self` legitimately.
+// Not flagged: `Command::new` is not a setter, and the spawning methods
+// have no by-value counterpart — they take `&mut self` legitimately.
 fn spawning() {
     Command::new("ls").status().ok();
     Command::new("ls").output().ok();
     Command::new("ls").spawn().ok();
 }
 
-// Good: a method of the same name on an unrelated type.
+// Not flagged: a method of the same name on an unrelated type.
 struct NotACommand;
 
 impl NotACommand {
@@ -120,7 +130,8 @@ fn same_name_elsewhere() {
     other.current_dir(Path::new("."));
 }
 
-// Good: the by-value form on an owned command is the preferred shape.
+// Good: the by-value form on an owned command is the shape the rule
+// prefers, and the only kind of silence here that is an endorsement.
 fn already_by_value(dir: &Path) -> Command {
     Command::new("ls")
         .with_arg("-l")

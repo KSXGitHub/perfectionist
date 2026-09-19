@@ -65,17 +65,29 @@ fn lister(dir: &Path) -> Command {
 }
 ```
 
-## No automatic fix
+## When the fix is applied automatically
 
-The diagnostic is advice rather than a rewrite, because
-renaming the method in place is not always a valid fix. The
-by-value form returns `Command` where the original returned
-`&mut Command`, so a call whose value is consumed as
-`&mut Command` — an argument to `fn configure(&mut Command)`,
-say — stops compiling when only its name changes. Where the
-call is a statement on a `mut` binding, the fix is to collapse
-the binding into a single chained expression, which depends on
-what else the body does with it. Both are the author's to make.
+The suggested rename is applied by `cargo dylint --fix` only
+where it is certain to compile, which takes two things.
+
+The trait has to already be in scope. `CommandExtra`'s methods
+are trait methods, so a rename in a module without the `use` is
+`no method named with_arg found` — and the module the import
+would belong in is not always the one the call is in.
+
+The call's value has to be another method call's receiver, or
+the call the whole chain ends in. The by-value form returns
+`Command` where the original returned `&mut Command`: a value
+consumed as `&mut Command`, an argument to
+`fn configure(&mut Command)` say, stops compiling on the rename
+alone, and a call in statement position moves the binding the
+following statements still read.
+
+Everywhere else the rename is offered but left for the author to
+apply and finish. In statement position finishing it means
+either `command = command.with_arg(x)` or, better, collapsing
+the binding into one chained expression — which depends on what
+else the body does with it.
 
 ## Configuration
 
