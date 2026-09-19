@@ -70,7 +70,8 @@ callee clones on some paths and not others, a caller holding a borrow
 pays for a clone the callee might never have made. In
 [`parse_specifier`](#the-package-specifier-chain), such a caller would
 clone for *every* selector, including the purl ones the borrowed
-signature never cloned.
+signature never cloned — measured at
+[three allocations where there were none](#half-the-chain-is-worse-than-none-of-it).
 
 This is why the sibling rule's unconditional gate is not conservatism
 for its own sake: it is the precondition that lets that rule stay
@@ -87,12 +88,16 @@ Four callees across two crates. They are worth reading together,
 because no two of them are the same shape, and the spread is what
 sets the rule's scope.
 
-| Callee | Why an owned copy is needed | What the call sites look like |
-| --- | --- | --- |
-| `VerdictCache::record` | the copy is consumed by `Value::Object`, then dropped — it never outlives the call | every site passes `&<temporary>` |
-| `TaskRunState::record_passed` | the copy is inserted into a set, under an `if` | an owned local, reused afterwards in two tests |
-| `parse_specifier` | the copy is returned, from a `let … else` branch | forwarded from `parse` |
-| `PackageSpecifierPlan::parse` | **nothing in its body copies anything** | a field behind `&mut`, overwritten two lines later |
+| Callee                        | Why an owned copy is needed                        | What the call sites look like                  |
+| ----------------------------- | -------------------------------------------------- | ---------------------------------------------- |
+| `VerdictCache::record`        | consumed by `Value::Object`, then dropped          | every site passes `&<temporary>`               |
+| `TaskRunState::record_passed` | inserted into a set, on every call that gets there | an owned local, reused afterwards in two tests |
+| `parse_specifier`             | returned, from a `let … else` branch               | forwarded from `parse`                         |
+| `PackageSpecifierPlan::parse` | **nothing in its body copies anything**            | a field behind `&mut`, overwritten later       |
+
+Only `parse_specifier` copies on *some* paths. The other two that copy
+at all do so on every call that reaches the copy, which matters for
+[what keeps the sibling rule quiet](#why-the-sibling-rule-does-not-cover-these).
 
 ### A copy that never leaves the body
 
@@ -124,14 +129,27 @@ finding of the four, and an escape-only rule would miss it.
 
 ```rust
 pub fn record_passed(&self, key: &TaskKey, …) -> miette::Result<()> {
-    // …
-    if !writer.completed.insert(key.clone()) {   // speculative insert
-        return Ok(());
+    let mut writer = self.writer.lock().expect("…");
+    if writer.file.is_none() {
+        return Ok(());                  // journalling is off, nothing to record
     }
-    // … write the journal …
-    writer.completed.remove(key);                // rollback on failure
+    if !writer.completed.insert(key.clone()) {   // speculative insert
+        return Ok(());                  // already recorded
+    }
+    // … build the record, serialize it, write one journal line …
+    if let Err(error) = result {
+        // … if the journal has become unavailable, give up quietly …
+        writer.completed.remove(key);   // second use: roll the insert back
+        return Err(error).into_diagnostic().wrap_err_with(|| /* … */);
+    }
+    Ok(())
 }
 ```
+
+The clone is **not** conditional. It sits in an `if` *condition*, so
+every call that gets past the journalling check pays for it. What the
+`if` decides is whether the set keeps the clone, not whether the clone
+happens.
 
 Taking `key` by value leaves only one `insert`, so the speculative
 insert with a rollback had to become a `contains` check with the
@@ -215,6 +233,40 @@ express@4.18.2`, measured with a counting allocator, fell from four
 allocations to one. It also took the middle frame one step further
 than this rule would, to `impl IntoIterator<Item = AddRequest>`; see
 [Out of scope](#out-of-scope).
+
+### Half the chain is worse than none of it
+
+Changing `parse_specifier` alone is not a smaller improvement. It is a
+regression, and the shape says why: with `parse` still holding
+`&[AddRequest]`, the only way to call a by-value callee is
+`parse_specifier(n.clone())`, so every element is copied — including
+the purl ones the borrowed signature never copied at all.
+
+Reduced to a three-selector workload under a counting allocator, with
+the container built outside the measured region so only the copies
+show:
+
+| Variant                                      | all purl | all npm |
+| -------------------------------------------- | -------- | ------- |
+| as written (borrowed, inner copy)            | 0        | 3       |
+| this rule applied to `parse_specifier` alone | 3        | 3       |
+| both frames, `Vec<AddRequest>`               | 0        | 0       |
+| both frames, `impl IntoIterator`             | 0        | 0       |
+
+Two things follow. The first is that
+[clause 4](#what-to-lint) has to be what stops the middle row from
+ever being suggested, and it is: `parse` passes an element of a slice
+it only borrows, so it owns nothing, and `parse_specifier` fails
+clause 4 until `parse`'s own parameter is owned. The frames become
+eligible together or not at all, which is what
+[An ineligible frame retracts](#an-ineligible-frame-retracts) makes
+explicit.
+
+The second is that the owned pointee is the whole win. `Vec<T>` and
+`impl IntoIterator<Item = T>` measure identically, so the iterator
+bound the pull request chose is a convenience for its callers rather
+than the load-bearing part of the change. This rule suggesting `Vec<T>`
+gives up nothing.
 
 ## Decomposition
 
@@ -305,19 +357,42 @@ finding. A project that wants neither disables both.
 `perfectionist::needless_borrowed_parameters` applies the gates below,
 and every case fails at least the first two.
 
-| Gate | `parse_specifier` | `record_passed` |
-| --- | --- | --- |
-| The pointee has a recognised owned counterpart: `str`, a slice, or the `Path` / `OsStr` / `cstr_type` diagnostic items | `AddRequest` is a plain ADT → no counterpart | `TaskKey` is a plain ADT → no counterpart |
-| The parameter is referenced exactly once, and that use is the conversion | `.selector()` **and** `.clone()` | `.clone()` **and** `remove(key)` |
-| The conversion is unconditional | passes, though the clone is conditional — see below | fails: inside an `if` condition |
+| Gate                                                        | `parse_specifier`                    | `record_passed`              |
+| ----------------------------------------------------------- | ------------------------------------ | ---------------------------- |
+| Pointee has a recognised owned counterpart                  | no: `AddRequest` is a plain ADT      | no: `TaskKey` is a plain ADT |
+| Parameter used exactly once, and that use is the conversion | no: also `.selector()`               | no: also `remove(key)`       |
+| Conversion is unconditional                                 | no expression says so, but see below | no: an `if` is in the way    |
 
-The first gate is about reach rather than soundness: it confines the
-sibling rule to the standard library's borrowed/owned pairs, and every
-user-defined `Clone` type — which is what a real codebase clones —
-falls outside it. The second confines the sibling to parameters with
-no borrowing use at all, while both cases here borrow *and* clone.
+The recognised counterparts are `str`, a slice, and the `Path` /
+`OsStr` / `cstr_type` diagnostic items, so the first gate is about
+reach rather than soundness: it confines the sibling rule to the
+standard library's borrowed/owned pairs, and every user-defined
+`Clone` type — which is what a real codebase clones — falls outside
+it. **That gate alone settles both columns**, and it is why the
+sibling stays quiet even though neither clone is conditional. The
+second gate confines the sibling to parameters with no borrowing use
+at all, while both cases here borrow *and* clone.
 `PackageSpecifierPlan::parse` fails even earlier, since it performs no
 conversion for any gate to inspect.
+
+The third gate is a syntactic test, not a semantic one, and the two
+come apart. Its check asks whether an `if`, `match`, loop, closure or
+short-circuiting operator **expression** sits between the conversion
+and the enclosing item — so an `if` *condition*, which always runs,
+disqualifies just as an arm does. The sibling's own documentation says
+as much. Run over a fixture with a recognised pointee, a single use,
+and the conversion in an `if` condition, it stays silent:
+
+```rust
+// `needless_borrowed_parameters` does not fire here, although
+// `to_owned` runs on every call.
+pub fn in_if_condition(name: &str, set: &mut HashSet<String>) -> bool {
+    set.insert(name.to_owned())
+}
+```
+
+So "fails the unconditional gate" never means "the clone is
+conditional". Only `parse_specifier`'s is.
 
 The third gate is the [forced boundary](#the-one-forced-boundary), and
 it is the subject of
@@ -481,8 +556,10 @@ fn caller(&self) {
 }
 ```
 
-**Avoid:** the copy escapes into a collection, under a condition, and
-the caller's place is overwritten rather than read.
+**Avoid:** the first copy is made on every call and the second under a
+condition, and the caller's place is overwritten rather than read
+again. `Key` is the project's own type, so clause 5 does not apply —
+the sibling rule's first gate does not recognise the pointee.
 
 ```rust
 fn remember(&mut self, key: &Key, value: u32) {
@@ -491,14 +568,14 @@ fn remember(&mut self, key: &Key, value: u32) {
     }
 }
 
-fn caller(args: &mut Args) {
+fn caller(args: &mut Args, next: Key) {
     store.remember(&args.key, 1);
-    args.key = Key::default();
+    args.key = next;                  // overwritten, never read again
 }
 ```
 
-**Prefer:** the caller cannot move out of a place behind `&mut`, so
-the rewrite is `std::mem::take`.
+**Prefer:** one copy instead of two, and the caller cannot move out of
+a place behind `&mut`, so the rewrite is `std::mem::take`.
 
 ```rust
 fn remember(&mut self, key: Key, value: u32) {
@@ -507,9 +584,9 @@ fn remember(&mut self, key: Key, value: u32) {
     }
 }
 
-fn caller(args: &mut Args) {
+fn caller(args: &mut Args, next: Key) {
     store.remember(std::mem::take(&mut args.key), 1);
-    args.key = Key::default();
+    args.key = next;
 }
 ```
 
@@ -558,7 +635,19 @@ fn store(name: &str, registry: &mut HashMap<String, u32>) {
 Change the parameter to `p: T` and drop the `&` at every call site. A
 caller whose place is behind a reference cannot move out of it and
 needs `std::mem::take`, which requires `T: Default`; where the place
-is a local going out of scope, a plain move does.
+is a local going out of scope, a plain move does. A caller that
+already has the replacement value in hand wants
+`std::mem::replace(&mut place, next)` rather than a `take` followed by
+an assignment, which would write the place twice.
+
+This caller-side half is where the two rules visibly differ. The
+sibling makes no caller-side claim at all: its suggestion rewrites the
+signature and the body and leaves every call site alone, under the
+help text *take the owned type by value and let callers convert at the
+call site*. It can say that because its trade is neutral for the worst
+caller. This rule's whole justification is a claim about callers, so
+the call sites are part of the finding rather than someone else's
+problem.
 
 The callee side is **not** a mechanical edit, and the diagnostic
 should not pretend otherwise. Deleting the copy works when the copy
@@ -666,6 +755,34 @@ shape: extracting a helper would push a fact past the limit and
 silently change what the rule reports. Non-determinism under
 refactoring is a poor property for a lint. The bound that belongs here
 is on *reporting*, which is the next section.
+
+### An ineligible frame retracts
+
+A frame this rule may not touch — reachable from outside the crate,
+signature fixed by a trait, used as a `fn` pointer, carrying a named
+lifetime, macro-generated, or exempt test code — must **retract in the
+summary**, not merely go unreported. The distinction is the difference
+between a correct rule and a harmful one.
+
+Take the package-specifier chain and suppose `parse` were reachable
+from outside the crate. Its parameter can then never be owned. If that
+only meant "do not report `parse`", the fixpoint would still be
+carrying the optimistic assumption that `parse` becomes an owning
+caller, would conclude that `parse_specifier` is eligible, and would
+report it alone — which is
+[the row that costs three allocations](#half-the-chain-is-worse-than-none-of-it).
+Retraction propagates instead: `parse` cannot be owned, so the element
+it lends cannot be owned, so `parse_specifier`'s parameter retracts
+too, and the chain goes quiet as a whole.
+
+The same holds for the dynamic edges under
+[Configuration](#configuration). Retraction is the single mechanism;
+"ineligible" is just another reason to retract.
+
+It follows that the finding is the **chain**, not the frame. A report
+should name every frame it expects to move and say that they move
+together, because a reader who applies a strict subset makes the code
+worse.
 
 ### The visibility bound
 
