@@ -103,6 +103,38 @@ const SOURCE: &str = text_block_fnl! {
     "    }"
     "}"
     ""
+    "mod other_applicability_gates {"
+    "    use command_extra::CommandExtra;"
+    "    use std::process::Command;"
+    ""
+    "    // A blanket impl instantiates `Self` to the receiver's type, so"
+    "    // it sees `&mut Command` now and `Command` after a rename."
+    "    pub trait Piped { fn piped<R>(self, f: impl FnOnce(Self) -> R) -> R where Self: Sized { f(self) } }"
+    "    impl<T> Piped for T {}"
+    ""
+    "    pub fn blanket_impl_parent() {"
+    r#"        Command::new("ls").arg("blanket-parent").piped(|c: &mut Command| { let _ = c.status(); });"#
+    "    }"
+    ""
+    "    // A turbofish survives into a method of different generic arity."
+    "    pub fn turbofish() {"
+    r#"        let _ = Command::new("ls").args::<[&str; 1], &str>(["turbofish"]).status();"#
+    "    }"
+    ""
+    "    // The value is a function argument, not a method receiver, so"
+    "    // the changed type is what the context rejects."
+    "    pub fn not_a_receiver() {"
+    r#"        configure(Command::new("ls").arg("not-a-receiver"));"#
+    "    }"
+    "    fn configure(_c: &mut Command) {}"
+    ""
+    "    // A rename inside a macro body is written to the definition."
+    r#"    macro_rules! add { ($c:expr) => { $c.arg("macro-body") }; }"#
+    "    pub fn from_a_macro() {"
+    r#"        let _ = add!(Command::new("ls")).status();"#
+    "    }"
+    "}"
+    ""
     "// Not fixable: this module has no `use command_extra::CommandExtra`,"
     "// so a rename would be `no method named with_arg found`. The crate"
     "// is loaded -- the module above imports it -- so the dependency gate"
@@ -159,6 +191,10 @@ fn only_the_sound_rename_is_applied() {
         r#"command.arg("statement-in-scope");"#,
         r#"command.current_dir("/").arg("chain-on-a-local");"#,
         r#"command.arg("captured")"#,
+        r#".arg("blanket-parent")"#,
+        r#".args::<[&str; 1], &str>(["turbofish"])"#,
+        r#".arg("not-a-receiver")"#,
+        r#"$c.arg("macro-body")"#,
         r#".arg("body-local-sibling")"#,
         r#".arg("receiver-out-of-scope")"#,
     ] {

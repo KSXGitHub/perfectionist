@@ -103,12 +103,12 @@ LL |     Command::new("ls").with_arg("a").arg("b").status().ok();
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
    |
-LL |         self.command.arg("-l");
+LL |         self.command.arg("owned-field");
    |                      ^^^
    |
 help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    |
-LL |         self.command.with_arg("-l");
+LL |         self.command.with_arg("owned-field");
    |                      +++++
 
 warning: N warnings emitted

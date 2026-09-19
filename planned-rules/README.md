@@ -85,6 +85,11 @@ pattern that several rules call out by reference — live in
   pipes (suggests `x.pipe(g)`). All four checks default to enforce.
 
 ### Command builder
+- [`mutating-command-builder.md`](./mutating-command-builder.md) — when
+  a `std::process::Command` is owned, prefer `command-extra`'s by-value
+  setters over std's `&mut self` ones, so the whole construction stays
+  an expression. Implemented apart from the three stdio setters, whose
+  pair is not signature-equivalent.
 - [`folded-command-setter.md`](./folded-command-setter.md) — flag a
   `fold` of a singular `CommandExtra` setter over an iterator where
   the plural exists (`without_env` → `without_envs`), however the

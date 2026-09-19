@@ -84,12 +84,12 @@ impl Builder {
     // place behind a mutable reference. The type alone does not
     // separate this case from the one below.
     fn extend(&mut self) {
-        self.command.arg("-l");
+        self.command.arg("borrowed-field");
     }
 
     // Bad: the same field, movable here because `self` is owned.
     fn into_extended(mut self) -> Command {
-        self.command.arg("-l");
+        self.command.arg("owned-field");
         self.command
     }
 
@@ -106,6 +106,34 @@ impl Builder {
 // out of.
 fn boxed(command: &mut Box<Command>) {
     command.arg("-l");
+}
+
+// Not flagged: moving a field out of a value that implements `Drop` is
+// `E0509`, so there is no way for the author to finish the fix.
+struct Dropper {
+    command: Command,
+}
+
+impl Drop for Dropper {
+    fn drop(&mut self) {}
+}
+
+impl Dropper {
+    fn use_it(mut self) {
+        self.command.arg("drop-field");
+    }
+}
+
+// Not flagged: the binding belongs to the enclosing body, so the
+// closure only borrows it. Moving out of an upvar is `E0507`, and
+// taking it by value would turn this `FnMut` into an `FnOnce`.
+fn captured_upvar() {
+    let mut command = Command::new("ls");
+    let mut go = || {
+        command.arg("captured-upvar");
+    };
+    go();
+    go();
 }
 
 // Not flagged: a closure parameter is a borrow like any other.

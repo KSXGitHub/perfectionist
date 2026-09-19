@@ -6,18 +6,16 @@
 //! `command_extra` and expects silence. Only the knob's `false` value
 //! needs a `dylint.toml`, so only that case lives here.
 //!
-//! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
-//! the duration of `run_tests`. The env var is process-global, so the
-//! `#[test]`s in this binary serialise themselves on a shared [`Mutex`]
-//! to avoid clobbering each other under the default parallel test
-//! harness.
+//! No lock here, unlike the sibling config tests: this binary holds one
+//! `#[test]`, and `dylint_testing`'s own `run_tests` takes a
+//! process-global mutex before it sets `DYLINT_TOML`. A second lock
+//! around a single caller would guard nothing. A future test added
+//! beside this one does not change that, though it would make the
+//! sibling files' reasoning worth re-reading.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::mutating_command_builder";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Serialisation shim for the rule's `dylint.toml` configuration, which
 /// the test crate cannot build from the lint's own private `Config`.
@@ -32,9 +30,6 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    // A poisoned mutex from a previous panic doesn't make this lock
-    // unsafe — recover the inner guard and proceed.
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
     let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
     dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
         .dylint_toml(dylint_toml(config))

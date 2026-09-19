@@ -196,6 +196,11 @@ impl Register for rule::MutatingCommandBuilder {
 
 impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &Expr<'tcx>) {
+        // First, because after the first call it is one bool read,
+        // where everything below it walks types or places.
+        if !self.suggestion_is_available(cx) {
+            return;
+        }
         let ExprKind::MethodCall(path_segment, receiver, _, _) = expr.kind else {
             return;
         };
@@ -221,9 +226,6 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         // false` does not cover a derive that stamps a synthesised
         // call with a user-source span.
         if hir_in_external_macro(cx, expr.hir_id, path_segment.ident.span) {
-            return;
-        }
-        if !self.suggestion_is_available(cx) {
             return;
         }
         let std_form = path_segment.ident.name;
@@ -276,6 +278,10 @@ fn rename_alone_compiles(
     // different generic arity: `args` takes two type parameters where
     // `with_args` takes one, so the rewrite is `E0107`.
     path_segment.args.is_none()
+        // A rename inside a `macro_rules!` body is decided by one
+        // expansion and written to the definition, so it lands on every
+        // other call site too.
+        && !path_segment.ident.span.from_expansion()
         && command_extra_is_imported(cx, call)
         && produces_a_temporary(receiver)
         && feeds_a_method_receiver(cx, call)
@@ -323,13 +329,31 @@ fn command_extra_is_imported(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
 /// one position that takes an owned `Command` where the original
 /// yielded a `&mut Command`.
 fn feeds_a_method_receiver(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
-    matches!(
-        cx.tcx.parent_hir_node(call.hir_id),
-        Node::Expr(Expr {
-            kind: ExprKind::MethodCall(_, receiver, ..),
-            ..
-        }) if receiver.hir_id == call.hir_id,
-    )
+    let Node::Expr(parent) = cx.tcx.parent_hir_node(call.hir_id) else {
+        return false;
+    };
+    let ExprKind::MethodCall(_, parent_receiver, ..) = parent.kind else {
+        return false;
+    };
+    if parent_receiver.hir_id != call.hir_id {
+        return false;
+    }
+    // And the parent has to be one of `Command`'s own methods, which
+    // autoref reaches from an owned receiver just as well as from a
+    // borrowed one. A blanket `impl<T> Trait for T` instead
+    // instantiates `Self` to the receiver's type, so it sees
+    // `&mut Command` before the rename and `Command` after -- a
+    // different instantiation, and `E0631` where a closure's argument
+    // type was inferred from it.
+    cx.typeck_results()
+        .type_dependent_def_id(parent.hir_id)
+        .and_then(|parent_method| cx.tcx.impl_of_assoc(parent_method))
+        .is_some_and(|impl_did| {
+            cx.tcx
+                .type_of(impl_did)
+                .skip_binder()
+                .is_diag_item(cx, Symbol::intern(COMMAND_DIAGNOSTIC_ITEM))
+        })
 }
 
 /// Whether the by-value form could take ownership of `receiver`.
@@ -343,16 +367,33 @@ fn feeds_a_method_receiver(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
 /// missed diagnostic rather than an unfixable one.
 fn receiver_can_be_consumed(cx: &LateContext<'_>, receiver: &Expr<'_>) -> bool {
     match receiver.kind {
-        // A local binding, `self` taken by value among them.
-        ExprKind::Path(QPath::Resolved(None, path)) => matches!(path.res, Res::Local(_)),
+        // A local binding, `self` taken by value among them -- but not
+        // one belonging to an enclosing body, which is an upvar the
+        // closure only borrows. Moving out of that is `E0507`, and
+        // making the closure take it by value turns an `FnMut` into an
+        // `FnOnce`.
+        ExprKind::Path(QPath::Resolved(None, path)) => match path.res {
+            Res::Local(local) => {
+                cx.tcx.hir_enclosing_body_owner(local)
+                    == cx.tcx.hir_enclosing_body_owner(receiver.hir_id)
+            }
+            _ => false,
+        },
         // A field of something the caller owns, so long as reaching it
         // does not pass through a reference -- which is what an
-        // autoderef adjustment on the base records.
+        // autoderef adjustment on the base records -- and so long as
+        // the base does not implement `Drop`, since moving a field out
+        // of such a value is `E0509` with no way to finish the fix.
         ExprKind::Field(base, _) => {
             !cx.typeck_results()
                 .expr_adjustments(base)
                 .iter()
                 .any(|adjustment| matches!(adjustment.kind, Adjust::Deref(_)))
+                && !cx
+                    .typeck_results()
+                    .expr_ty(base)
+                    .ty_adt_def()
+                    .is_some_and(|adt| adt.has_dtor(cx.tcx))
                 && receiver_can_be_consumed(cx, base)
         }
         // A value this expression produced, which is a temporary
@@ -370,15 +411,7 @@ fn receiver_can_be_consumed(cx: &LateContext<'_>, receiver: &Expr<'_>) -> bool {
 /// applied automatically on a temporary, even though the *diagnostic* is
 /// right on a binding too.
 fn produces_a_temporary(receiver: &Expr<'_>) -> bool {
-    matches!(
-        receiver.kind,
-        ExprKind::Call(..)
-            | ExprKind::MethodCall(..)
-            | ExprKind::Struct(..)
-            | ExprKind::Block(..)
-            | ExprKind::If(..)
-            | ExprKind::Match(..),
-    )
+    !receiver.is_syntactic_place_expr()
 }
 
 /// The `command_extra::CommandExtra` counterpart of a
