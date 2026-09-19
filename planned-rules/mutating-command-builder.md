@@ -8,6 +8,41 @@ review thread on
 upstream style guide prescribes this; the policy is the one this
 project already follows everywhere it builds a subprocess.
 
+## Status
+
+Implemented in
+[`src/rules/mutating_command_builder.rs`](../src/rules/mutating_command_builder.rs),
+apart from the autofix. Implemented: the trigger over all ten setters,
+both exemptions, `require_command_extra_dependency`, and the
+proc-macro guard with a mutation-checked fixture.
+
+Not implemented:
+
+- **The machine-applicable autofix.** The diagnostic is advice, for
+  every shape. Renaming the method changes the expression's type from
+  `&mut Command` to `Command`, which the surrounding context does not
+  always accept: `configure(Command::new("ls").arg("x"))` against a
+  `fn configure(_: &mut Command)` compiles before the rename and fails
+  with `E0308` after it. A rename is safe only where the value is
+  another method call's receiver or is discarded, and telling those
+  apart needs parent-expression analysis the rule does not do.
+
+Two things below do not survive the implementation:
+
+- **The prescribed receiver check does not implement the exemption
+  above it.** The exemption names a field reached through `&mut self`,
+  and correctly; the type comparison the implementation notes prescribe
+  does not catch it. Such a field has type `Command`, with no reference
+  to reject, and calling the by-value form on it is `E0507` — cannot
+  move out of a place behind a mutable reference. The implementation
+  walks the receiver's place expression instead, accepting only a local
+  binding, a temporary, or a field of one of those reached without a
+  deref.
+- **Shape 1 is the wrong conservative subset.** The `Avoid` example
+  below is shape 2 — a statement over a `mut` binding — so a
+  shape-1-only first pass would have missed the case the rule exists
+  for. Both shapes fire, and neither carries a rewrite.
+
 ## Statement
 
 `std::process::Command`'s setters take `&mut self` and return
@@ -119,17 +154,20 @@ require_command_extra_dependency = true
 
 A `LateLintPass` over expressions. For each method call, ask
 `cx.typeck_results()` for the receiver's type and compare it against
-`std::process::Command` by `DefId`, requiring the type itself rather
-than a reference to it. The setter set is a fixed table, so
-resolution is a name match against that table once the receiver type
-matches — no trait resolution needed, because these are inherent
-methods on `Command`.
+`std::process::Command` by `DefId`. Requiring the type itself rather
+than a reference to it is necessary but not sufficient — see the
+place-expression walk in the Status section above. The setter set is a
+fixed table, so resolution is a name match against that table once the
+receiver type matches — no trait resolution needed, because these are
+inherent methods on `Command`.
 
 The suggestion is not always a rename. The shapes to distinguish:
 
 1. **The call is already an expression whose value is used** — a
-   chain, or a tail expression. Renaming the method is the whole fix,
-   and the autofix can be machine-applicable.
+   chain, or a tail expression. Renaming the method is the whole fix
+   wherever the context accepts a `Command` in place of the
+   `&mut Command` the original yielded, which is not everywhere; the
+   Status section has the counter-example.
 2. **The call is a statement on a `mut` binding** (`command.arg(x);`).
    The by-value form needs `command = command.with_arg(x);`, or the
    binding collapsing into a single chained expression. The second is
@@ -137,11 +175,9 @@ The suggestion is not always a rename. The shapes to distinguish:
    depends on what else the body does with the binding. Emit advice
    here rather than a machine-applicable suggestion.
 
-A conservative first implementation covers only shape 1 and leaves
-shape 2 to a follow-up. That still catches the case this rule exists
-for — a chain that has to be spilled into a binding because std's
-setters return a borrow — because the spill is visible as a `mut`
-binding whose every use is a setter call.
+Both shapes are implemented, as advice. Covering only shape 1 would
+have left the case this rule exists for unflagged: a chain spilled
+into a binding because std's setters return a borrow *is* shape 2.
 
 ### Difficulty
 

@@ -1,0 +1,106 @@
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     command.arg("-l");
+   |             ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = note: `#[warn(perfectionist::mutating_command_builder)]` on by default
+
+warning: `Command::args` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     command.args(["-a", "-h"]);
+   |             ^^^^
+   |
+   = help: use `CommandExtra::with_args`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
+warning: `Command::env` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     command.env("LANG", "C");
+   |             ^^^
+   |
+   = help: use `CommandExtra::with_env`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
+warning: `Command::envs` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     command.envs([("LANG", "C")]);
+   |             ^^^^
+   |
+   = help: use `CommandExtra::with_envs`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
+warning: `Command::env_remove` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     command.env_remove("LANG");
+   |             ^^^^^^^^^^
+   |
+   = help: use `CommandExtra::without_env`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
+warning: `Command::env_clear` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     command.env_clear();
+   |             ^^^^^^^^^
+   |
+   = help: use `CommandExtra::with_no_env`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
+warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     command.current_dir(dir);
+   |             ^^^^^^^^^^^
+   |
+   = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
+warning: `Command::stdin` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     command.stdin(Stdio::null());
+   |             ^^^^^
+   |
+   = help: use `CommandExtra::with_stdin`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
+warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     command.stdout(Stdio::null());
+   |             ^^^^^^
+   |
+   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
+warning: `Command::stderr` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     command.stderr(Stdio::null());
+   |             ^^^^^^
+   |
+   = help: use `CommandExtra::with_stderr`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
+warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     command.current_dir(dir).args(["-l", "-a"]).env("LANG", "C");
+   |             ^^^^^^^^^^^
+   |
+   = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     Command::new("ls").arg("a").arg("b").status().ok();
+   |                        ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |         self.command.arg("-l");
+   |                      ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
+warning: N warnings emitted

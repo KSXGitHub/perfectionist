@@ -1,0 +1,18 @@
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     command.arg("-l");
+   |             ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = note: `#[warn(perfectionist::mutating_command_builder)]` on by default
+
+warning: `Command::env_clear` takes `&mut self`, so it cannot yield the command
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     command.env_clear();
+   |             ^^^^^^^^^
+   |
+   = help: use `CommandExtra::with_no_env`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
+warning: N warnings emitted
