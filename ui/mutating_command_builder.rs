@@ -32,7 +32,9 @@ fn every_setter(dir: &Path) {
 // Bad, both ways round. std takes anything `Into<Stdio>` where the
 // by-value form takes a concrete `Stdio`, so an argument that is
 // already a `Stdio` renames straight across, and one that is merely
-// convertible needs `.into()` — which the diagnostic says.
+// convertible needs `.into()` — which the diagnostic says. The
+// convertible one is also where the `.into()` advice meets the receiver
+// line, the pair having no other home.
 fn stdio_setters(file: std::fs::File) {
     let mut command = Command::new("ls");
     command.stdin(Stdio::null());
@@ -56,8 +58,9 @@ fn argument_position(dir: &Path) {
 }
 
 // Bad, with both reasons, and the later read is what makes the receiver
-// line's condition hold: `command` is moved by the rename and read after
-// it, and the value goes to `configure`, which wanted the `&mut Command`.
+// line's condition hold: `command` is moved by the rename and read
+// afterwards, and the value goes to `configure`, which wanted the
+// `&mut Command`.
 // Neither option the receiver line names is enough on its own here --
 // both are `E0308` until the call site takes the borrow -- which is why
 // that line says the change "also has to" rather than that it finishes
@@ -103,10 +106,10 @@ fn turbofished() {
 
 // Three lines can join the advice -- the generic-arguments one, the
 // receiver one and the position one -- and the combinations are what a
-// reader actually meets, since a line that re-opens what another has
-// settled is only visible side by side. Between these and the fixtures
-// above, every combination of the three appears under each form of the
-// advice.
+// reader actually meets. Between these and the fixtures above, every
+// combination of the three appears under each form of the advice,
+// because a line that re-opens what another has settled is only visible
+// side by side.
 
 // Bad: an argument needing `.into()`, and a position that wanted the
 // borrow. Advice plus the position line, and no receiver line.
