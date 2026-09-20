@@ -427,5 +427,4 @@ mod defers_and_moves {
     }
 }
 
-
 fn main() {}

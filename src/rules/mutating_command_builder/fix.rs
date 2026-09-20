@@ -247,9 +247,9 @@ fn link<'tcx>(
 /// an error; exactly one compiles and silently calls something else.
 ///
 /// `in_scope_traits` is the set the method probe itself consults, so
-/// no trait is weighed that resolution would not weigh. Two things it
-/// deliberately does not ask, both because the safe answer is the one
-/// that declines:
+/// no trait is weighed that resolution would not weigh. It deliberately
+/// does not ask these, each because the safe answer is the one that
+/// declines:
 ///
 /// - Whether `Command` implements the trait. Answering means naming
 ///   the trait's other generic arguments, and where `Command` does not

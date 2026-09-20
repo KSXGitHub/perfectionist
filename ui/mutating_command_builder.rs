@@ -220,7 +220,7 @@ struct Builder {
 impl Builder {
     // Not flagged: `self.command` has type `Command` with no
     // reference in sight, but it sits behind `&mut self`, so the
-    // by-value form cannot take it — E0507, cannot move out of a
+    // by-value form cannot take it — `E0507`, cannot move out of a
     // place behind a mutable reference. The type alone does not
     // separate this case from the one below.
     fn extend(&mut self) {

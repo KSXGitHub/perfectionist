@@ -5,8 +5,8 @@
 //! reader is given: the whole rewrite, where `fix` built one; the bare
 //! rename, where that is all there is to show; and prose naming the
 //! part the rename does not cover, wherever it knows which part that
-//! is. "This is not just a rename" is not something a
-//! reader can act on.
+//! is. "This is not just a rename" is not something a reader can act
+//! on.
 
 use super::MUTATING_COMMAND_BUILDER;
 use super::fix::Rewrite;
@@ -22,7 +22,7 @@ const GENERIC_ARGUMENTS: &str = "the call names its generic arguments, which are
                                  so check them against the counterpart's when you rename";
 
 /// Where a flagged call's value lands, in the terms the diagnostic
-/// needs. The distinction the middle one draws is that a rendered
+/// needs. The distinction `MovesALaterCall` draws is that a rendered
 /// rename edits one method segment: where a later call takes this
 /// one's value, that call is then written against a receiver the
 /// rename has just made owned, and a by-value method of its name in
@@ -202,25 +202,23 @@ fn prose(diagnostic: &mut Diag<'_, ()>, lines: &Lines, advice: String) {
     }
     if !receiver_is_a_temporary {
         diagnostic.help(
-            "the receiver outlives this call, so where later code reads \
-                         it, the change also has to reassign it or collapse the \
-                         statements into one chained expression",
+            "the receiver outlives this call, so where later code reads it, \
+             the change also has to reassign it or collapse the statements \
+             into one chained expression",
         );
     }
     if landing == Landing::Unknown {
-        // One line for both of the reasons a position
-        // does not take the value -- it is not a
-        // position that does, or a macro wrote it --
-        // since two lines read as competing answers where
-        // a macro uses one written expression twice,
-        // both uses carrying the same span. It claims
-        // neither that the change reaches further nor
-        // that the rename settles it: over a discarded
-        // value the rename is the whole change, and
-        // beside the lines above it is not.
+        // One line for both reasons a position does not take the
+        // value -- it is not such a position, or a macro wrote it --
+        // since two lines read as competing answers where a macro uses
+        // one written expression twice, both uses carrying the same
+        // span. It claims neither that the change reaches further nor
+        // that the rename settles it: over a discarded value the
+        // rename is the whole change, and beside the lines above it is
+        // not.
         diagnostic.help(
             "whether the change reaches further depends on what the \
-                         surrounding code does with this call's value",
+             surrounding code does with this call's value",
         );
     }
     if let Some(remedy) = remedy {

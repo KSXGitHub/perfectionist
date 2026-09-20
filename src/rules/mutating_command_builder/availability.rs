@@ -3,7 +3,7 @@
 //!
 //! No single answer is the whole of it. Whether the crate under lint
 //! declares the dependency, and whether the workspace around it does,
-//! are the two the `command_extra_dependency` knob chooses between;
+//! are what the `command_extra_dependency` knob chooses between;
 //! whether the trait is imported at the call picks which remedy the
 //! diagnostic names -- but an import is also evidence of a dependency
 //! the declared set cannot see, so the caller reads it for both.

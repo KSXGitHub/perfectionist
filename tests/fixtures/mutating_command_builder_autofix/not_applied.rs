@@ -5,11 +5,11 @@
 // What that test asserts is again the rule's decision rather than the
 // compiler's: it requires this file back byte-identical, and requires
 // the rule to have fired on every shape in it, so silence cannot pass
-// for restraint. Some of these would compile if they were rewritten
-// anyway -- `trait_out_of_scope` names a method that does not exist
-// yet, and `macro_argument`'s rewrite has no type to infer -- so a file
-// that comes back unchanged did so because nothing was offered, not
-// because `cargo fix` reverted it.
+// for restraint. Most of these would compile if they were rewritten
+// anyway, so a file that comes back unchanged did so because nothing
+// was offered, not because `cargo fix` reverted it. The exceptions are
+// `trait_out_of_scope`, which names a method that does not exist yet,
+// and `macro_argument`, whose rewrite has no type to infer.
 //
 // `shadowed_trailing_call` and `ordered_drop` are the ones that would
 // compile *and* be wrong, so nothing but the rule's own decision is

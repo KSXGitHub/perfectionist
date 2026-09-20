@@ -113,7 +113,7 @@ impl MutatingCommandBuilder {
     /// trait has to import it, and the import resolves to the real
     /// crate even where the declared set cannot see the dependency. It
     /// is asked last because answering it walks the module's items,
-    /// where the other two answers are memoised.
+    /// where the other answers are memoised.
     fn suggestion_is_available(&mut self, cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
         match self.command_extra_dependency {
             RequiredDeclaration::Unchecked => return true,
@@ -200,8 +200,6 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         if !self.suggestion_is_available(cx, expr) {
             return;
         }
-        // The position has to be written where the call is; `landing`
-        // says why a macro-supplied one is declined.
         let landing = landing(cx, expr);
         let conversion = setter::argument_conversion(cx, expr, arguments);
         let names_generic_arguments = path_segment
