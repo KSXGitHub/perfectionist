@@ -22,8 +22,9 @@ declaring it; `command_extra_dependency` sets how far the lint
 looks for that declaration.
 
 A fix is applied where the whole change is known: a chain is
-rewritten at once, never in part. Where some part of it is not,
-the diagnostic says which part.
+rewritten at once, never in part. Elsewhere the diagnostic
+describes the change, and may show the rename without applying
+it.
 
 ## Why restrict this?
 

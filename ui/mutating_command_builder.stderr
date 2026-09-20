@@ -77,7 +77,7 @@ warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
 LL |     command.stdout(file);
    |             ^^^^^^
    |
-   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the concrete type where this setter is generic over a conversion into it, so convert the argument with `.into()`
    = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::stderr` takes `&mut self`, so it cannot yield the command
@@ -127,7 +127,7 @@ warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
 LL |     Command::new("ls").stdout(file).status().ok();
    |                        ^^^^^^
    |
-help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the concrete type where this setter is generic over a conversion into it, so convert the argument with `.into()`
    |
 LL |     Command::new("ls").with_stdout(file.into()).status().ok();
    |                        +++++           +++++++
@@ -168,7 +168,7 @@ warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
 LL |     configure(Command::new("ls").stdout(file));
    |                                  ^^^^^^
    |
-help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the concrete type where this setter is generic over a conversion into it, so convert the argument with `.into()`
    |
 LL |     configure(&mut Command::new("ls").with_stdout(file.into()));
    |               ++++                    +++++           +++++++
@@ -179,7 +179,7 @@ warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
 LL |     Command::new("ls").stdout::<std::fs::File>(file);
    |                        ^^^^^^
    |
-   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the concrete type where this setter is generic over a conversion into it, so convert the argument with `.into()`
    = help: the call names its generic arguments, which are this setter's, so check them against the counterpart's when you rename
 
 warning: `Command::args` takes `&mut self`, so it cannot yield the command
@@ -208,7 +208,7 @@ warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
 LL |     configure(command.stdout(file));
    |                       ^^^^^^
    |
-   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the concrete type where this setter is generic over a conversion into it, so convert the argument with `.into()`
    = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
    = help: whether the change reaches further depends on what the surrounding code does with this call's value
 
@@ -218,7 +218,7 @@ warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
 LL |     command.stdout::<std::fs::File>(file);
    |             ^^^^^^
    |
-   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the concrete type where this setter is generic over a conversion into it, so convert the argument with `.into()`
    = help: the call names its generic arguments, which are this setter's, so check them against the counterpart's when you rename
    = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
@@ -228,7 +228,7 @@ warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
 LL |     configure(Command::new("ls").stdout::<std::fs::File>(file));
    |                                  ^^^^^^
    |
-   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the concrete type where this setter is generic over a conversion into it, so convert the argument with `.into()`
    = help: the call names its generic arguments, which are this setter's, so check them against the counterpart's when you rename
    = help: whether the change reaches further depends on what the surrounding code does with this call's value
 
@@ -249,7 +249,7 @@ warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
 LL |     configure(command.stdout::<std::fs::File>(file));
    |                       ^^^^^^
    |
-   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the concrete type where this setter is generic over a conversion into it, so convert the argument with `.into()`
    = help: the call names its generic arguments, which are this setter's, so check them against the counterpart's when you rename
    = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
    = help: whether the change reaches further depends on what the surrounding code does with this call's value

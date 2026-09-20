@@ -17,7 +17,7 @@ use rustc_hir::HirId;
 use rustc_lint::LateContext;
 use rustc_span::{Span, Symbol};
 
-/// Said wherever a written turbofish outlives the rename.
+/// Said wherever written generic arguments outlive the rename.
 const GENERIC_ARGUMENTS: &str = "the call names its generic arguments, which are this setter's, \
                                  so check them against the counterpart's when you rename";
 
@@ -117,7 +117,8 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                 ),
                 Conversion::IntoNeeded => format!(
                     "use `CommandExtra::{by_value_form}`, which takes `self` and returns \
-                     `Self`; it takes the argument by value, so convert it with `.into()`",
+                     `Self`; it takes the concrete type where this setter is generic over \
+                     a conversion into it, so convert the argument with `.into()`",
                 ),
             };
             match rewrite {

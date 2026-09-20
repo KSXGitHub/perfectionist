@@ -101,8 +101,9 @@ fn edits<'tcx>(cx: &LateContext<'tcx>, call: &'tcx Expr<'tcx>, inputs: &Inputs) 
         && leaves_a_sibling_behind(cx, receiver)
     {
         return Rewrite::Withhold(
-            "the command is a field of a temporary whose other fields have destructors, \
-             and the change would drop it before them rather than as part of them"
+            "the command is a field of a temporary that leaves behind something with a \
+             destructor, and the change would drop the command before it rather than as \
+             part of the temporary"
                 .to_owned(),
         );
     }
@@ -190,7 +191,8 @@ fn link<'tcx>(
     // becomes the statement's last temporary and drops first. Only a
     // value the call leaves behind is positioned to observe that.
     //
-    // Asked before the turbofish below, which also declines: a reader
+    // Asked before the generic-arguments check below, which also
+    // declines: a reader
     // renaming by hand reorders the destructors whether or not generic
     // arguments are written, so that line has to be reachable.
     if arguments
@@ -203,8 +205,8 @@ fn link<'tcx>(
              would drop it after the command rather than before it",
         ));
     }
-    // A written turbofish names the std setter's generic parameters,
-    // and the counterpart's do not correspond to them one for one --
+    // Written generic arguments name the std setter's parameters, and
+    // the counterpart's do not correspond to them one for one --
     // only `with_envs` takes the same set. Transferring them would be a
     // guess, and dropping them leans on inference, so neither is a
     // rewrite this can promise compiles.

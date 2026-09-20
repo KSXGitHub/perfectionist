@@ -9,11 +9,12 @@
 //!
 //! - A crate that has added `command-extra` to its manifest and not yet
 //!   named it is absent from the loaded set. That is the crate the
-//!   advice most applies to, and the lint used to be silent in it.
+//!   advice most applies to, and a gate keyed on the loaded set would
+//!   be silent in it.
 //! - A crate that reaches `command-extra` only through a dependency's
 //!   signature is present in the loaded set, but cannot name it. The
-//!   lint used to fire there and tell the author to write a `use` that
-//!   is `E0432`.
+//!   same gate would fire there and tell the author to write a `use`
+//!   that is `E0432`.
 //!
 //! And one the declared set cannot answer at all: Cargo keys `--extern`
 //! by the manifest key, so a dependency renamed there is not there under

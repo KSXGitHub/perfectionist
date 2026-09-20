@@ -16,7 +16,7 @@ warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
 LL |         Command::new("ls").stdout(piped!());
    |                            ^^^^^^
    |
-   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the concrete type where this setter is generic over a conversion into it, so convert the argument with `.into()`
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
@@ -107,7 +107,7 @@ warning: `Command::stdin` takes `&mut self`, so it cannot yield the command
 LL |         Command::new("ordered-drop-try").stdin(std::fs::File::open("/dev/null")?);
    |                                          ^^^^^
    |
-help: use `CommandExtra::with_stdin`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+help: use `CommandExtra::with_stdin`, which takes `self` and returns `Self`; it takes the concrete type where this setter is generic over a conversion into it, so convert the argument with `.into()`
    |
 LL |         Command::new("ordered-drop-try").with_stdin(std::fs::File::open("/dev/null")?.into());
    |                                          +++++                                       +++++++
@@ -129,7 +129,7 @@ LL |         bundle().command.arg("sibling-of-a-drop");
    |                          ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the command is a field of a temporary whose other fields have destructors, and the change would drop it before them rather than as part of them
+   = help: the command is a field of a temporary that leaves behind something with a destructor, and the change would drop the command before it rather than as part of the temporary
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
@@ -138,7 +138,7 @@ LL |         pair().1.arg("tuple-sibling");
    |                  ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the command is a field of a temporary whose other fields have destructors, and the change would drop it before them rather than as part of them
+   = help: the command is a field of a temporary that leaves behind something with a destructor, and the change would drop the command before it rather than as part of the temporary
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
