@@ -97,11 +97,11 @@ impl<ManifestDir, SrcBase, DylintToml>
         library_name: LibraryName,
     ) -> ConfiguredUiTestBuilder<LibraryName, ManifestDir, SrcBase, DylintToml> {
         let Self {
+            library_name: _,
             manifest_dir,
             src_base,
             dylint_toml,
             rustc_flags,
-            ..
         } = self;
         ConfiguredUiTestBuilder {
             library_name,
@@ -124,10 +124,10 @@ impl<LibraryName, SrcBase, DylintToml>
     ) -> ConfiguredUiTestBuilder<LibraryName, ManifestDir, SrcBase, DylintToml> {
         let Self {
             library_name,
+            manifest_dir: _,
             src_base,
             dylint_toml,
             rustc_flags,
-            ..
         } = self;
         ConfiguredUiTestBuilder {
             library_name,
@@ -150,9 +150,9 @@ impl<LibraryName, ManifestDir, DylintToml>
         let Self {
             library_name,
             manifest_dir,
+            src_base: _,
             dylint_toml,
             rustc_flags,
-            ..
         } = self;
         ConfiguredUiTestBuilder {
             library_name,
@@ -178,8 +178,8 @@ impl<LibraryName, ManifestDir, SrcBase>
             library_name,
             manifest_dir,
             src_base,
+            dylint_toml: _,
             rustc_flags,
-            ..
         } = self;
         ConfiguredUiTestBuilder {
             library_name,
