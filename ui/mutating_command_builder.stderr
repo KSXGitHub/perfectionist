@@ -127,7 +127,10 @@ warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
 LL |     Command::new("ls").stdout(file).status().ok();
    |                        ^^^^^^
    |
-   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+   |
+LL |     Command::new("ls").with_stdout(file.into()).status().ok();
+   |                        +++++           +++++++
 
 warning: `Command::env_clear` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -268,8 +271,8 @@ LL |     Command::new("ls").arg("a").arg("b").status().ok();
    |
 help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    |
-LL |     Command::new("ls").with_arg("a").arg("b").status().ok();
-   |                        +++++
+LL |     Command::new("ls").with_arg("a").with_arg("b").status().ok();
+   |                        +++++         +++++
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC

@@ -1,40 +1,14 @@
 // Shapes `mutating_command_builder` declines to hand the fixer, for
 // `tests/mutating_command_builder_autofix.rs`; `applied.rs` holds the
 // ones it rewrites. The test asserts this file comes back
-// byte-identical, and `silent_redirect` is what makes that assertion
-// able to fail: its rewrite would compile, so `cargo fix` would have no
-// error to revert on and an applied rewrite would survive on disk.
+// byte-identical.
+//
+// Three of the four would compile if they were rewritten anyway, so the
+// comparison can fail rather than passing because `cargo fix` reverted
+// the file: only `trait_out_of_scope` names a method that does not
+// exist yet.
 
 #![allow(dead_code, unused_imports, reason = "fixture")]
-
-// The value is a method receiver, where `&mut` would need parentheses
-// and read worse than the call it replaces. That the bare rename is
-// also unsound here is the reason it is only ever shown: renaming
-// `current_dir` makes the chain head owned, and a by-value trait method
-// is found before an inherent `&mut self` one, so `.arg` below would
-// stop calling `Command::arg` and start calling `Ext::arg`, compiling
-// all the while.
-pub mod silent_redirect {
-    use command_extra::CommandExtra;
-    use std::process::Command;
-
-    pub trait Ext {
-        fn arg(self, value: &str) -> Self;
-    }
-
-    impl Ext for Command {
-        fn arg(self, _value: &str) -> Self {
-            self
-        }
-    }
-
-    pub fn chain() {
-        let _ = Command::new("ls")
-            .current_dir("/silent-redirect")
-            .arg("redirect-tail")
-            .status();
-    }
-}
 
 // The receiver is a binding the next statement reads, so the rewrite
 // would need an edit at a span the rule was not given.

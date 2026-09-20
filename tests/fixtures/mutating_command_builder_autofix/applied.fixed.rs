@@ -45,3 +45,42 @@ pub fn make() -> Builder {
 pub fn field_of_a_temporary() {
     make().command.with_arg("field-of-a-temporary");
 }
+
+// Every link at once. Only the head is flagged -- each later one takes
+// the `&mut Command` the previous returned -- but renaming the head
+// alone would leave the rest calling std's against an owned receiver,
+// so they move together. The trailing `status` takes `&mut self` and
+// autorefs from the owned command, which is the form a person writes.
+pub fn whole_chain() {
+    let _ = Command::new("ls")
+        .with_arg("chain-head")
+        .with_arg("chain-tail")
+        .status();
+}
+
+// And this is why they move together. With `Ext::arg` in scope, a
+// rewrite that renamed only `current_dir` would leave `.arg` to be
+// found on the owned command as `Ext::arg` rather than `Command::arg`
+// -- compiling, and invisible in the diff. Renaming the whole chain
+// takes the name out of play.
+pub mod shadowed_next_link {
+    use command_extra::CommandExtra;
+    use std::process::Command;
+
+    pub trait Ext {
+        fn arg(self, value: &str) -> Self;
+    }
+
+    impl Ext for Command {
+        fn arg(self, _value: &str) -> Self {
+            self
+        }
+    }
+
+    pub fn run() {
+        let _ = Command::new("ls")
+            .with_current_dir("/shadowed-next-link")
+            .with_arg("shadowed-tail")
+            .status();
+    }
+}

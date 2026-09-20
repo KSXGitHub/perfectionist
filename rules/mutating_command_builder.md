@@ -73,30 +73,32 @@ fn lister(dir: &Path) -> Command {
 
 ## The automatic fix
 
-What `cargo dylint --fix` applies keeps the expression's type. A
-bare rename would not: the by-value form returns `Command` where
-the original returned `&mut Command`, which the context may
-reject, and which can redirect a *later* call in the same chain
-to an extension trait of the author's own — compiling, with
-nothing in the diff to show it. Prefixing `&mut ` restores the
-type, so the context and every following method resolve as they
-did. Where the counterpart takes by value what the setter took
-generically, the `.into()` is part of the same rewrite.
+A chain is rewritten whole or not at all, and that is what makes
+it safe. Only the head of a chain is flagged — each later call
+takes the `&mut Command` the previous returned — but renaming
+the head alone would leave the rest calling the standard
+library's setters against a receiver that is now owned, which is
+how a by-value method of your own comes to be found before the
+inherent one: compiling, with nothing in the diff to show it.
+Renaming every link takes that name out of play.
 
-It is applied where all of that is known: the receiver is a
+The chain's own value still has to land somewhere. A statement
+that discards it constrains nothing; anything that reads it gets
+a `&mut ` in front, which is the type the original had; and a
+trailing call takes the owned command by autoref, which is the
+form you would write by hand. Where the counterpart takes by
+value what the setter took generically, the `.into()` is part of
+the same rewrite.
+
+So it is applied where all of that is known: the receiver is a
 value the expression produced, `CommandExtra` is in scope, and
 no argument builds a value whose destructor would then run at a
-different point.
-
-It is not applied where the value is another method's receiver,
-since `&mut` would need parentheses there and
-`(&mut command).arg(..)` reads worse than the call it replaces,
-nor where the call names its generic arguments, since the
-counterpart's do not correspond to the setter's. There the
-rename is shown for the reader to finish. Over a binding or a
-field the surrounding code still reads, finishing it means
-reassigning that, or collapsing the statements that build the
-command into one chained expression.
+different point. It is not applied where a call names its
+generic arguments, since the counterpart's do not correspond to
+the setter's — there the rename is shown for you to finish. Over
+a binding or a field the surrounding code still reads, finishing
+it means reassigning that, or collapsing the statements that
+build the command into one chained expression.
 
 ## Configuration
 

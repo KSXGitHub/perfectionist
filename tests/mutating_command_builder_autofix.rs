@@ -15,13 +15,18 @@
 //! as they did before. What is left after that is checkable, and the
 //! lint's own rustdoc lists it.
 //!
+//! A chain moves whole or not at all, and `shadowed_next_link` is why.
+//! Renaming only the head would leave the rest calling std's setters
+//! against a receiver that is now owned, which is how a by-value method
+//! of the author's own comes to be found before the inherent one.
+//!
 //! Two fixtures, because the two directions fail differently.
 //! `applied.rs` is compared against `applied.fixed.rs`, so a rewrite
 //! that stops being applied, or starts being applied differently, fails
-//! here. `not_applied.rs` is compared against itself, and
-//! `silent_redirect` is what makes that comparison able to fail at all:
-//! its rewrite would compile, so `cargo fix` would have no error to
-//! revert on and an applied rewrite would survive on disk to be seen.
+//! here. `not_applied.rs` is compared against itself, and three of its
+//! four shapes would compile if they were rewritten anyway, so that
+//! comparison can fail rather than passing because `cargo fix` reverted
+//! the file.
 
 pub mod _utils;
 
@@ -123,7 +128,6 @@ fn the_fixer_declines_the_rest() {
     // And the rule fired on each shape, so the assertion above is not
     // passing because the fixture went quiet.
     for shape in [
-        "silent-redirect",
         "over-a-binding",
         "turbofish",
         "trait-out-of-scope",
