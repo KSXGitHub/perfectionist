@@ -9,6 +9,7 @@ mod availability;
 mod config;
 mod emit;
 mod fix;
+mod probe;
 mod receiver;
 mod setter;
 
@@ -278,7 +279,7 @@ fn landing(cx: &LateContext<'_>, call: &Expr<'_>) -> Landing {
             ExprKind::MethodCall(next, parent_receiver, ..)
                 if parent_receiver.hir_id == call.hir_id =>
             {
-                match fix::finds_a_trait_method(cx, parent, next.ident.name) {
+                match probe::finds_a_trait_method(cx, parent, next.ident.name) {
                     true => Landing::MovesALaterCall(next.ident.name),
                     false => Landing::TakesTheRename,
                 }
