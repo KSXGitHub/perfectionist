@@ -14,21 +14,29 @@
 //! further call takes it as a receiver, that call autorefs from the
 //! owned command, which is the form a person writes by hand.
 //!
-//! One thing that leaves: the trailing call's receiver is an owned
-//! `Command` where it was a `&mut Command`, so it resolves to the same
-//! method unless the author has an in-scope by-value method of that
-//! name for `Command`. `CommandExtra` declares none -- it is `with_*`
-//! and `without_*` throughout -- so reaching that needs deliberately
-//! shadowing one of `Command`'s own methods.
+//! The trailing call is the one name the rewrite cannot change, and its
+//! receiver becomes an owned `Command` where it was a `&mut Command`. A
+//! by-value method of that name in scope for `Command` is then found
+//! before the inherent one, compiling and calling something else, so
+//! the chain is declined wherever the traits in scope supply one.
+//!
+//! The names the rewrite does introduce are safe for a different
+//! reason. `CommandExtra` has to be imported before a rewrite is built
+//! at all, so a competing `with_*` in scope for `Command` leaves two
+//! applicable candidates and the renamed call is `E0034` -- an error
+//! the fixer reverts, rather than something that quietly resolves
+//! elsewhere.
 
 use super::setter::{self, Conversion};
 use clippy_utils::sugg::Sugg;
-use clippy_utils::ty::needs_ordered_drop;
+use clippy_utils::ty::{implements_trait, needs_ordered_drop};
 use clippy_utils::visitors::for_each_expr;
 use core::ops::ControlFlow;
 use rustc_hir::{Expr, ExprKind, Node, StmtKind};
 use rustc_lint::LateContext;
-use rustc_span::Span;
+use rustc_middle::ty::{AssocTag, Ty};
+use rustc_span::def_id::DefId;
+use rustc_span::{Span, Symbol};
 
 /// What the caller has already decided about the call.
 pub(super) struct Inputs {
@@ -72,8 +80,12 @@ pub(super) fn parts<'tcx>(
         }
         let Some(by_value_form) = setter::by_value_form(method.ident.name) else {
             // Not a setter, so it ends the chain and takes the owned
-            // command by autoref, as a hand-written call would.
-            return Some(parts);
+            // command by autoref, as a hand-written call would -- but
+            // only where nothing of that name is found by value first.
+            let receiver_ty = cx.typeck_results().expr_ty(tail).peel_refs();
+            let shadowed =
+                finds_a_by_value_trait_method(cx, parent, receiver_ty, method.ident.name);
+            return (!shadowed).then_some(parts);
         };
         // A later link resolving anywhere but to `Command`'s own setter
         // is already trait-mediated, and renaming it would move it.
@@ -151,6 +163,54 @@ fn link<'tcx>(
         ));
     }
     Some(edits)
+}
+
+/// Whether the trait methods in scope at `call` include one of this
+/// name taking `self` by value, applicable to `receiver`.
+///
+/// The chain's trailing call keeps its name while its receiver becomes
+/// an owned `Command`, which moves the method probe's first step from
+/// `&mut Command` to `Command`. `Command`'s own methods take `&mut self`
+/// or `&self`, so the autoref step still reaches them -- unless some
+/// candidate matches by value first, which beats an autoref one at the
+/// same step. Only a trait can supply such a candidate, since nobody
+/// outside the standard library can write an inherent impl for
+/// `Command`. Two of them would be `E0034` and stop the fixer with an
+/// error; exactly one compiles and silently calls something else.
+///
+/// `in_scope_traits` is the set the method probe itself consults, so
+/// the answer is neither wider nor narrower than resolution's.
+fn finds_a_by_value_trait_method<'tcx>(
+    cx: &LateContext<'tcx>,
+    call: &Expr<'_>,
+    receiver: Ty<'tcx>,
+    name: Symbol,
+) -> bool {
+    cx.tcx
+        .in_scope_traits(call.hir_id)
+        .unwrap_or_default()
+        .iter()
+        .any(|candidate| {
+            cx.tcx
+                .associated_items(candidate.def_id)
+                .filter_by_name_unhygienic(name)
+                .any(|item| item.tag() == AssocTag::Fn && takes_self_by_value(cx, item.def_id))
+                && implements_trait(cx, receiver, candidate.def_id, &[])
+        })
+}
+
+/// Whether the first parameter of `method` is `Self` itself rather than
+/// a reference to it. Read from the signature, so an `Arc<Self>` or a
+/// `Pin<&mut Self>` receiver answers the same as the reference does.
+fn takes_self_by_value(cx: &LateContext<'_>, method: DefId) -> bool {
+    cx.tcx
+        .fn_sig(method)
+        .instantiate_identity()
+        .skip_binder()
+        .inputs()
+        .first()
+        // `Self` is a trait's own first generic parameter.
+        .is_some_and(|first| first.is_param(0))
 }
 
 /// Where the call's value lands, in the terms the rewrite cares about.

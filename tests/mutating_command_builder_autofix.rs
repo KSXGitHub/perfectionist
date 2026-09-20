@@ -133,6 +133,7 @@ fn the_fixer_declines_the_rest() {
         "trait-out-of-scope",
         "ordered-drop",
         "macro-argument",
+        "shadowed-trailing-call",
     ] {
         assert!(
             stderr.contains(shape),

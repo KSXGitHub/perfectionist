@@ -10,6 +10,10 @@
 // yet, and `macro_argument`'s rewrite has no type to infer -- so a file
 // that comes back unchanged did so because nothing was offered, not
 // because `cargo fix` reverted it.
+//
+// `shadowed_trailing_call` is the one that would compile *and* be
+// wrong, which is why the applicability rather than the compiler has to
+// be what withholds it.
 
 #![allow(dead_code, unused_imports, reason = "fixture")]
 
@@ -96,3 +100,26 @@ pub mod macro_argument {
     }
 }
 
+// The chain's trailing call keeps its name while its receiver becomes
+// an owned `Command`, and `Ext::status` takes `self`, so it is found
+// before `Command::status` is reached by autoref. The rewrite would
+// compile and call something else.
+pub mod shadowed_trailing_call {
+    use command_extra::CommandExtra;
+    use std::io;
+    use std::process::{Command, ExitStatus};
+
+    pub trait Ext {
+        fn status(self) -> io::Result<ExitStatus>;
+    }
+
+    impl Ext for Command {
+        fn status(self) -> io::Result<ExitStatus> {
+            Err(io::Error::other("shadowed-trailing-call"))
+        }
+    }
+
+    pub fn run() -> io::Result<ExitStatus> {
+        Command::new("ls").arg("shadowed-trailing-call").status()
+    }
+}
