@@ -297,6 +297,17 @@ LL |     make_builder().command.with_arg("field-of-a-temporary");
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
    |
+LL |     make_builder().command.arg("runs-it").status().ok();
+   |                            ^^^
+   |
+help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL |     make_builder().command.with_arg("runs-it").status().ok();
+   |                            +++++
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
 LL |         command.arg("no-import-here");
    |                 ^^^
    |

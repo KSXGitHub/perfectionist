@@ -252,8 +252,21 @@ fn make_builder() -> Builder {
 // nothing else holds a claim on it and the rewrite is applied. Only the
 // base decides, since asking whether the receiver is a place answers
 // yes for any field, whatever its base.
+//
+// The call is also inert: the command it configures is dropped at the
+// semicolon without ever being run. The rule neither notices that nor
+// needs to, since it reads the shape of the call rather than what the
+// program does with it, and `field_of_a_temporary_that_runs` below is
+// the same shape spending its command.
 fn field_of_a_temporary() {
     make_builder().command.arg("field-of-a-temporary");
+}
+
+// Bad: that shape with the command actually spent. The chain is
+// rewritten whole, and `.status()` takes the owned command by autoref,
+// which is the form the author would have written by hand.
+fn field_of_a_temporary_that_runs() {
+    make_builder().command.arg("runs-it").status().ok();
 }
 
 // Not flagged: the receiver's type is `&mut Box<Command>`, which is not
@@ -408,6 +421,39 @@ fn same_name_elsewhere() {
     let mut other = NotACommand;
     other.arg("-l");
     other.current_dir(Path::new("."));
+}
+
+// Not flagged: a type of the author's own that is *also* called
+// `Command`, with setters spelled exactly as std's and returning the
+// same borrow. The rule asks for the `rustc_diagnostic_item` std's
+// `Command` carries, which no local type has, so matching the name and
+// the signatures buys nothing.
+mod shadowing_command {
+    use std::path::Path;
+
+    struct Command;
+
+    impl Command {
+        fn new(_program: &str) -> Self {
+            Command
+        }
+
+        fn arg(&mut self, _value: &str) -> &mut Self {
+            self
+        }
+
+        fn current_dir(&mut self, _dir: &Path) -> &mut Self {
+            self
+        }
+    }
+
+    fn same_name_same_shape() {
+        let mut command = Command::new("ls");
+        command.arg("-l");
+        Command::new("ls")
+            .arg("shadowing-command")
+            .current_dir(Path::new("."));
+    }
 }
 
 // Good: the by-value form on an owned command is the shape the rule
