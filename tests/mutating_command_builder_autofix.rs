@@ -51,7 +51,8 @@ fn cargo_toml(package: &str) -> String {
 /// The shapes whose rewrite does not compile. The fixer is asserted to
 /// hand them back byte-identical, so they live in a file rather than in
 /// a literal here: what the assertion compares is what a reader edits.
-const EVERY_SHAPE: &str = include_str!("fixtures/mutating_command_builder_autofix/every_shape.rs");
+const REWRITES_THAT_ERROR: &str =
+    include_str!("fixtures/mutating_command_builder_autofix/rewrites_that_error.rs");
 
 /// The shapes whose rewrite would compile, alone in their own crate for
 /// the reason their own header gives.
@@ -90,7 +91,7 @@ fn fix(package: &str, source: &str) -> (TempDir, String, String) {
 #[test]
 #[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
 fn the_fixer_rewrites_nothing() {
-    let (_temp, fixed, stderr) = fix("mutating_command_builder_autofix", EVERY_SHAPE);
+    let (_temp, fixed, stderr) = fix("mutating_command_builder_autofix", REWRITES_THAT_ERROR);
 
     // `cargo fix` prints this after applying a suggestion that does not
     // compile, having reverted the file. Nothing here should be applied
@@ -109,7 +110,7 @@ fn the_fixer_rewrites_nothing() {
     );
 
     assert_eq!(
-        fixed, EVERY_SHAPE,
+        fixed, REWRITES_THAT_ERROR,
         "the fixer rewrote the fixture; it should leave every shape alone",
     );
 

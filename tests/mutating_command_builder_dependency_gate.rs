@@ -19,10 +19,11 @@
 //! by the manifest key, so a dependency renamed there is not there under
 //! `command_extra`. An import of the trait is what carries that case.
 //!
-//! Both fixtures build their `command-extra` from a path dependency
-//! inside the temporary project, so nothing here touches the network.
-//! The stub only has to carry the crate *name*: the gate reads the
-//! dependency, and neither fixture calls a by-value setter.
+//! Every fixture here builds its `command-extra` from a path dependency
+//! inside the temporary project, so nothing touches the network. The
+//! stub carries the crate name, which is what the gate reads, and one
+//! by-value setter, which the renamed fixture calls to show the
+//! counterpart really is reachable there.
 
 pub mod _utils;
 

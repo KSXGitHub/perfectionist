@@ -1,10 +1,9 @@
-// Every shape of this rule's whose rewrite would compile, for
-// `tests/mutating_command_builder_autofix.rs`. They are alone in their
-// fixture crate on purpose: `cargo fix` reverts a whole crate whose
-// fixes error, so beside a shape that errors these rewrites would be
-// reverted too and the file would come back byte-identical for the wrong
-// reason. Here nothing errors, so what the fixer applied is still on
-// disk for the whole-file comparison to see.
+// The shapes whose rewrite would compile, for
+// `tests/mutating_command_builder_autofix.rs`; its sibling
+// `rewrites_that_error.rs` holds the ones whose rewrite does not. They
+// are alone in this crate on purpose, and that test's own docs say why:
+// merging the two files back together would make its whole-file
+// comparison unable to fail.
 
 #![allow(dead_code, unused_imports, reason = "fixture")]
 

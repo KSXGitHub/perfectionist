@@ -84,12 +84,12 @@ method taking `self` is found before an inherent `&mut self` one
 extension trait of the author's own, with no compile error to
 reveal it.
 
-So the diagnostic shows the rename only where it really is the
-whole change, and otherwise describes it in prose. Over a
-binding the surrounding code still reads, finishing the change
-means reassigning that binding or collapsing it into one chained
-expression, and which of those fits depends on what else the
-body does.
+So the diagnostic shows the rename where the change looks local
+and otherwise describes it in prose, and says which part of the
+change the rename does not cover. Over a binding the surrounding
+code still reads, finishing it means reassigning that binding or
+collapsing it into one chained expression, and which of those
+fits depends on what else the body does.
 
 ## Configuration
 

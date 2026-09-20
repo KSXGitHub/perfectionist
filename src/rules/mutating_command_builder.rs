@@ -93,12 +93,12 @@ declare_tool_lint! {
     /// extension trait of the author's own, with no compile error to
     /// reveal it.
     ///
-    /// So the diagnostic shows the rename only where it really is the
-    /// whole change, and otherwise describes it in prose. Over a
-    /// binding the surrounding code still reads, finishing the change
-    /// means reassigning that binding or collapsing it into one chained
-    /// expression, and which of those fits depends on what else the
-    /// body does.
+    /// So the diagnostic shows the rename where the change looks local
+    /// and otherwise describes it in prose, and says which part of the
+    /// change the rename does not cover. Over a binding the surrounding
+    /// code still reads, finishing it means reassigning that binding or
+    /// collapsing it into one chained expression, and which of those
+    /// fits depends on what else the body does.
     pub perfectionist::MUTATING_COMMAND_BUILDER,
     Warn,
     "a `std::process::Command` setter taking `&mut self` where `command-extra`'s by-value form exists",
@@ -127,11 +127,9 @@ impl MutatingCommandBuilder {
 
     /// Whether the `CommandExtra` counterpart is writable here.
     ///
-    /// An import of the trait counts on its own, and is the only
-    /// evidence there is in a crate that declares the dependency under
-    /// a manifest key renaming it: Cargo keys `--extern` by that key,
-    /// so `command_extra` is not a name the declared set holds, while
-    /// the import resolves to the trait and carries the real crate.
+    /// An import of the trait counts on its own: a crate that uses the
+    /// trait has to import it, and the import resolves to the real
+    /// crate even where the declared set cannot see the dependency.
     fn suggestion_is_available(&mut self, cx: &LateContext<'_>, trait_is_imported: bool) -> bool {
         !self.require_command_extra_dependency
             || trait_is_imported
@@ -314,7 +312,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
 /// may or may not accept the change, and which is likewise the
 /// typechecker's answer, so the diagnostic stays with prose there.
 fn accepts_an_owned_command(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
-    let (accepts, position) = match cx.tcx.parent_hir_node(call.hir_id) {
+    let (accepts, span) = match cx.tcx.parent_hir_node(call.hir_id) {
         Node::Expr(parent) => match parent.kind {
             ExprKind::MethodCall(_, parent_receiver, ..) => {
                 (parent_receiver.hir_id == call.hir_id, parent.span)
@@ -334,5 +332,5 @@ fn accepts_an_owned_command(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
     // other one may be exactly the borrow the original returned. A
     // macro using the expression once is withheld from too, which costs
     // a rendered rewrite rather than a wrong one.
-    accepts && !position.from_expansion()
+    accepts && !span.from_expansion()
 }

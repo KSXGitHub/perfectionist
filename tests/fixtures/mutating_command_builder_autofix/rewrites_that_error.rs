@@ -1,8 +1,8 @@
 // The shapes whose rewrite does not compile, for
-// `tests/mutating_command_builder_autofix.rs`, which is every shape the
-// rule fires on but the three in `rewrites_that_compile.rs`. Each call
-// carries a distinct argument so an assertion there can name one shape
-// without matching another.
+// `tests/mutating_command_builder_autofix.rs`; its sibling
+// `rewrites_that_compile.rs` holds the ones whose rewrite does. Each
+// call carries a distinct argument so an assertion there can name one
+// shape without matching another.
 
 #![allow(dead_code, unused_imports, unused_mut, reason = "fixture")]
 

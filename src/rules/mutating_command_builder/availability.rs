@@ -31,15 +31,15 @@ const TRAIT: &str = "CommandExtra";
 /// to. A crate reached only through another crate's signature is
 /// present there, though this crate cannot name it at all.
 ///
-/// Two sources, and which holds the answer depends on how the compiler
-/// was driven rather than on anything the author wrote. Cargo passes
+/// Where the answer lives depends on how the compiler was driven rather
+/// than on anything the author wrote. Cargo passes
 /// `--extern <manifest key>=...`, recorded whether or not the crate is
 /// ever named. A crate written with `extern crate command_extra;`
 /// records the item with the resolver instead, which is what the
 /// fixtures under `ui/` do.
 ///
-/// Two things this cannot see. Because Cargo keys `--extern` by the
-/// manifest key, a dependency renamed there
+/// It has blind spots. Because Cargo keys `--extern` by the manifest
+/// key, a dependency renamed there
 /// (`ce = { package = "command-extra" }`) is not found under
 /// `command_extra` -- the caller reads an import of the trait as proof
 /// instead, which covers every crate that actually uses it. And
