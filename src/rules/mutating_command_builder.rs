@@ -30,6 +30,10 @@ declare_tool_lint! {
     /// declaring it; `command_extra_dependency` sets how far the lint
     /// looks for that declaration.
     ///
+    /// A fix is applied where the whole change is known: a chain is
+    /// rewritten at once, never in part. Where some part of it is not,
+    /// the diagnostic says which part.
+    ///
     /// ### Why restrict this?
     ///
     /// This is a stylistic preference, not a correctness issue. Both
@@ -71,35 +75,6 @@ declare_tool_lint! {
     ///         .with_env("LANG", "C")
     /// }
     /// ```
-    ///
-    /// ### The automatic fix
-    ///
-    /// A chain is rewritten whole or not at all, and that is what makes
-    /// it safe. Only the head of a chain is flagged — each later call
-    /// takes the `&mut Command` the previous returned — but renaming
-    /// the head alone would leave the rest calling the standard
-    /// library's setters against a receiver that is now owned, which is
-    /// how a by-value method of your own comes to be found before the
-    /// inherent one: compiling, with nothing in the diff to show it.
-    /// Renaming every link takes that name out of play.
-    ///
-    /// The chain's own value still has to land somewhere. A statement
-    /// that discards it constrains nothing; anything that reads it gets
-    /// a `&mut ` in front, which is the type the original had; and a
-    /// trailing call takes the owned command by autoref, which is the
-    /// form you would write by hand. Where the counterpart takes by
-    /// value what the setter took generically, the `.into()` is part of
-    /// the same rewrite.
-    ///
-    /// So it is applied where all of that is known: the receiver is a
-    /// value the expression produced, `CommandExtra` is in scope, and
-    /// no argument builds a value whose destructor would then run at a
-    /// different point. It is not applied where a call names its
-    /// generic arguments, since the counterpart's do not correspond to
-    /// the setter's — there the rename is shown for you to finish. Over
-    /// a binding or a field the surrounding code still reads, finishing
-    /// it means reassigning that, or collapsing the statements that
-    /// build the command into one chained expression.
     pub perfectionist::MUTATING_COMMAND_BUILDER,
     Warn,
     "a `std::process::Command` setter taking `&mut self` where `command-extra`'s by-value form exists",
