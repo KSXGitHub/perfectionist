@@ -58,6 +58,21 @@ pattern that several rules call out by reference — live in
   Guidelines and with `clippy::new_without_default`. Rests on a
   denylist, which under-fires rather than over-fires, so it ships
   active with no autofix.
+- [`effectful-default-impl.md`](./effectful-default-impl.md) — the
+  definition-site counterpart: flag a hand-written `impl Default`
+  whose body is observationally effectful, since `Default` is the one
+  constructor the language reaches implicitly and an effect in it is
+  paid for at call sites that never name it. Contradicts
+  `clippy::new_without_default`, which is warn-by-default and asks a
+  type with an effectful `new` to grow exactly such an impl — stated
+  in full in the file, and a reason it is inactive by default.
+- [`effectful-new-constructor.md`](./effectful-new-constructor.md) —
+  its pair, about a name rather than a construct: a nullary
+  `fn new()` whose body is observationally effectful should be named
+  for what it does (`generate`, `open`, `connect`), which is the norm
+  the Rust forums converge on. Expense never triggers it —
+  `Regex::new` is pure — and a `new` taking arguments is out of
+  scope. The fix is a rename, so inactive by default.
 
 ### OS strings, paths, and bytes
 - [`needless-utf8-conversion.md`](./needless-utf8-conversion.md)
