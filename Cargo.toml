@@ -58,7 +58,6 @@ _utils = { path = "utils" }
 command-extra = "1.2.0"
 pipe-trait = "0.4.0"
 text-block-macros = "0.2.0"
-toml = "1.1.2"
 
 [package.metadata.rust-analyzer]
 rustc_private = true
