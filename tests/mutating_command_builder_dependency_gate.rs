@@ -195,3 +195,74 @@ fn a_renamed_dependency_fires_through_its_import() {
          counterpart compiles; stderr was:\n{stderr}",
     );
 }
+
+/// A workspace declares the dependency once and each member opts in, so
+/// "declared" has to mean the member's own `--extern`, not the
+/// workspace's table. Both values of the knob have a use here, and they
+/// are what separates a member that has opted in from one that has not.
+#[test]
+fn a_member_inherits_the_dependency_but_its_sibling_does_not() {
+    let member = |name: &str| {
+        format!(
+            "use std::process::Command;\n\npub fn build() {{\n    let mut command = \
+             Command::new(\"ls\");\n    command.arg(\"{name}\");\n}}\n",
+        )
+    };
+    let root = text_block_fnl! {
+        "[workspace]"
+        r#"members = ["inherits", "abstains", "command-extra"]"#
+        r#"resolver = "3""#
+        ""
+        "[workspace.dependencies]"
+        r#"command-extra = { path = "command-extra" }"#
+    };
+    let inheriting = text_block_fnl! {
+        "[package]"
+        r#"name = "inherits""#
+        r#"version = "0.0.0""#
+        r#"edition = "2024""#
+        ""
+        "[lib]"
+        r#"path = "src/lib.rs""#
+        ""
+        "[dependencies]"
+        "command-extra.workspace = true"
+    };
+    let abstaining = text_block_fnl! {
+        "[package]"
+        r#"name = "abstains""#
+        r#"version = "0.0.0""#
+        r#"edition = "2024""#
+        ""
+        "[lib]"
+        r#"path = "src/lib.rs""#
+    };
+    let (_temp, stderr, success) = run_project_with_config(
+        "workspace",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("Cargo.toml", &root),
+            ("inherits/Cargo.toml", &inheriting),
+            ("inherits/src/lib.rs", &member("inherits")),
+            ("abstains/Cargo.toml", &abstaining),
+            ("abstains/src/lib.rs", &member("abstains")),
+            ("command-extra/Cargo.toml", STUB_MANIFEST),
+            ("command-extra/src/lib.rs", STUB_SOURCE),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    // The echoed source line, rather than the member name, which cargo
+    // also prints as it builds each one.
+    assert!(
+        stderr.contains(r#"command.arg("inherits")"#),
+        "expected the member that inherits the dependency to be flagged; \
+         stderr was:\n{stderr}",
+    );
+    assert!(
+        !stderr.contains(r#"command.arg("abstains")"#),
+        "expected the member that does not inherit it to stay silent, since \
+         the counterpart is not writable there; stderr was:\n{stderr}",
+    );
+}

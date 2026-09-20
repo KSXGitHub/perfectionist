@@ -105,4 +105,7 @@ Whether to stay silent in a crate that does not depend on
 suggested method does not exist, so the diagnostic would name
 something the author cannot write. Set it to `false` in a
 workspace that adds the dependency per-crate and wants the
-lint to say where it is still missing.
+lint to say where it is still missing. A member that inherits it
+with `command-extra.workspace = true` counts as depending on it
+either way; one that has not inherited it yet is what the two
+values disagree about.
