@@ -5,11 +5,13 @@ converge on: a constructor that does something noteworthy should be
 named for what it does, not `new`.
 
 > [!IMPORTANT]
-> Like its pair
-> [`effectful_default_impl`](./effectful-default-impl.md), this rests
+> This rule is `Inactive by default` because its fix is a rename; see
+> [Default state](#default-state). Like its pair
+> [`effectful_default_impl`](./effectful-default-impl.md), it rests
 > on a heuristic that cannot be made sound, per
-> [the two polarities](./IMPLEMENTATION_CONVENTIONS.md#the-two-polarities),
-> and is `Inactive by default`.
+> [the two polarities](./IMPLEMENTATION_CONVENTIONS.md#the-two-polarities)
+> — which bounds what its rustdoc may claim, and is not itself why it
+> is withheld.
 
 ## Statement
 
@@ -174,10 +176,15 @@ repository or in the sources that prompted the surrounding work.
 
 ## Default state
 
-Inactive by default. The classification is a heuristic; the practice
-is legal and widespread; and the fix is a rename, which is a breaking
-change for anything published. A rule whose remedy costs a major
-version is one a project should choose deliberately.
+Inactive by default. The practice is legal and widespread, and the
+fix is a rename — a breaking change for anything published. A rule
+whose remedy costs a major version is one a project should choose
+deliberately.
+
+The classification being a heuristic is not among the reasons, for
+the reason its pair
+[sets out](./effectful-default-impl.md#default-state): a denylist
+under-fires, so it costs findings rather than trust.
 
 ## Interaction with clippy and sibling rules
 

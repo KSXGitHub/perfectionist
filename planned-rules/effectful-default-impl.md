@@ -7,10 +7,12 @@ written rather than where it is reached.
 > [!IMPORTANT]
 > This rule contradicts advice the ecosystem ships on by default; see
 > [What this rule is arguing with](#what-this-rule-is-arguing-with).
-> It also rests on a heuristic that cannot be made sound, per
-> [the two polarities](./IMPLEMENTATION_CONVENTIONS.md#the-two-polarities).
-> Both are reasons it is `Inactive by default`, and reasons to weigh
-> it against real findings before enabling it anywhere.
+> That is why it is `Inactive by default`, and a reason to weigh it
+> against real findings before enabling it anywhere. It also rests on
+> a heuristic that cannot be made sound, per
+> [the two polarities](./IMPLEMENTATION_CONVENTIONS.md#the-two-polarities)
+> — which bounds what its rustdoc may claim, but is not by itself a
+> reason to withhold it.
 
 ## Statement
 
@@ -231,14 +233,21 @@ should be weighed accordingly.
 
 ## Default state
 
-Inactive by default, for three reasons rather than the usual one: the
-classification is a heuristic, the practice is legal and sometimes
-intended, and the rule disagrees with a warn-by-default Clippy lint
-on the same types. The
+Inactive by default, because the rule disagrees with a
+warn-by-default Clippy lint on the same types and the practice it
+flags is legal and sometimes intended. The
 [activation model](./IMPLEMENTATION_CONVENTIONS.md#rule-activation-model)
 reserves `Inactive` for rules whose preferred configuration varies by
 project, and a rule that contradicts published guidance is squarely
 that.
+
+The classification being a heuristic is deliberately *not* among the
+reasons. What decides that question is which way the heuristic fails,
+and *known non-ORT* is a denylist: a type it does not recognise goes
+unflagged, so the unsoundness is silence rather than noise. It bounds
+what the rustdoc may claim; it does not argue for withholding the
+rule. `perfectionist::implicit_effectful_default` ships active on the
+same classification for exactly that reason.
 
 ## Interaction with clippy and sibling rules
 
@@ -253,8 +262,11 @@ that.
   hazard, opposite end: that rule asks the caller to name the
   placeholder, this one asks the author to name the constructor.
   Enabling both on one codebase reports the same effect twice, from
-  two directions, which may be what a project wants or may be noise —
-  a reason to adopt one first.
+  two directions, which may be what a project wants or may be noise.
+  The default states settle the order rather than leaving it to the
+  reader: that rule is active, this one is not, so a project meets
+  the call-site finding first and reaches for this rule only if it
+  wants the type itself changed.
 - **`perfectionist::effectful_new_constructor`** is this rule's pair;
   see [Precedence](#precedence-between-the-two).
 
