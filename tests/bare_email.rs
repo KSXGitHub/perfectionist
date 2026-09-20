@@ -2,11 +2,8 @@
 //! docs on `tests/bare_url.rs` for the shared pattern.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::bare_email";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
@@ -29,9 +26,10 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
         .dylint_toml(dylint_toml(config))
         .run();
 }
