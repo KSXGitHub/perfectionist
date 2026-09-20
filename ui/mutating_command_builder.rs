@@ -48,17 +48,19 @@ fn statement_position() {
     Command::new("ls").arg("statement-temporary");
 }
 
-// Bad, advice only: the receiver is a temporary too, but its value is a
-// call argument, and `configure` wants the `&mut Command` the std setter
-// returns.
+// Bad: the receiver is a temporary too, but its value is a call
+// argument, and `configure` wants the `&mut Command` the std setter
+// returns. Advice plus the position line.
 fn argument_position(dir: &Path) {
     configure(Command::new("ls").current_dir(dir));
 }
 
 // Bad, with both reasons: the receiver is a binding the next statement
 // still holds, and the value goes to `configure`, which wanted the
-// `&mut Command`. Collapsing the binding into one chained expression --
-// what the first help line offers -- is `E0308` on its own here.
+// `&mut Command`. Neither option the receiver line names is enough on
+// its own here -- both are `E0308` until the call site takes `&mut
+// command` -- which is why that line says the change "also has to"
+// rather than that it finishes there.
 fn both_reasons(dir: &Path) {
     let mut command = Command::new("ls");
     configure(command.current_dir(dir));
@@ -79,17 +81,17 @@ fn empty_turbofish() {
     Command::new("ls").env_clear::<>();
 }
 
-// Bad, advice only: `with_envs` happens to take the same three generic
-// parameters, so this turbofish would survive the rename -- but the
-// guard is one predicate over the whole table, and only the help line
-// has to avoid claiming the counterpart's set differs.
+// Bad: `with_envs` happens to take the same three generic parameters,
+// so this turbofish would survive the rename -- but the guard is one
+// predicate over the whole table, and the generics line below has to
+// avoid claiming the counterpart's set differs. Advice plus that line.
 fn turbofished_envs() {
     Command::new("ls").envs::<[(&str, &str); 1], &str, &str>([("LANG", "C")]);
 }
 
-// Bad, advice only: the turbofish is written against `args`' two
-// generic parameters and survives a rename of the segment alone, where
-// `with_args` takes one -- `E0107`.
+// Bad: the turbofish is written against `args`' two generic parameters
+// and survives a rename of the segment alone, where `with_args` takes
+// one -- `E0107`. Advice plus the generics line.
 fn turbofished() {
     Command::new("ls")
         .args::<[&str; 1], &str>(["-l"])
@@ -292,12 +294,21 @@ mod trait_not_imported {
         let mut command = Command::new("ls");
         command.arg("no-import-here");
     }
+
+    // Bad, and the rename is shown beside the remedy. The rename is a
+    // block of its own with a span, which rustc prints below every
+    // span-less line, so the remedy rides in the rename's own message
+    // rather than arriving above the advice it depends on.
+    fn rename_beside_the_remedy() {
+        Command::new("ls").arg("rename-plus-remedy");
+    }
 }
 
-// Bad, advice only: the statement that discards the value is written in
-// the macro body, and the expression in it is the caller's, so one span
-// serves both uses -- a rename shown for the discarded one would be
-// written over the borrow `configure` takes as well.
+// Bad: the statement that discards the value is written in the macro
+// body, and the expression in it is the caller's, so one span serves
+// both uses -- a rename shown for the discarded one would be written
+// over the borrow `configure` takes as well. Advice plus the position
+// line.
 macro_rules! discard_then_borrow {
     ($command:expr) => {{
         $command;
@@ -311,6 +322,20 @@ macro_rules! discard_then_borrow {
 )]
 fn macro_reuses_the_expression(dir: &Path) {
     discard_then_borrow!(Command::new("ls").current_dir(dir));
+}
+
+// Bad, with an argument needing `.into()` on a binding whose value then
+// wanted the borrow: the worst case of the three prose lines at once.
+fn conversion_and_receiver_and_position(file: std::fs::File) {
+    let mut command = Command::new("ls");
+    configure(command.stdout(file));
+}
+
+// Bad: an argument needing `.into()` and a turbofish. Advice plus the
+// generics line -- whose check is a quick one here, since a counterpart
+// taking the argument by value has no generic parameter to carry one.
+fn conversion_and_turbofish(file: std::fs::File) {
+    Command::new("ls").stdout::<std::fs::File>(file);
 }
 
 // Not flagged: an extension trait taking `self` is found at the

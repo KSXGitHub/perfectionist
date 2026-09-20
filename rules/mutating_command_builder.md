@@ -85,11 +85,12 @@ extension trait of the author's own, with no compile error to
 reveal it.
 
 So the diagnostic shows the rename where the change looks local
-and otherwise describes it in prose, and says which part of the
-change the rename does not cover. Over a binding the surrounding
-code still reads, finishing it means reassigning that binding or
-collapsing it into one chained expression, and which of those
-fits depends on what else the body does.
+and otherwise describes it in prose, naming the part the rename
+does not cover wherever it knows which part that is. Over a
+binding the surrounding code still reads, the change also has to
+reassign that binding or collapse it into one chained
+expression — and where the call's value was wanted as a borrow,
+neither of those is enough on its own either.
 
 ## Configuration
 

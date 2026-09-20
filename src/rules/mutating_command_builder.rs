@@ -93,11 +93,12 @@ declare_tool_lint! {
     /// reveal it.
     ///
     /// So the diagnostic shows the rename where the change looks local
-    /// and otherwise describes it in prose, and says which part of the
-    /// change the rename does not cover. Over a binding the surrounding
-    /// code still reads, finishing it means reassigning that binding or
-    /// collapsing it into one chained expression, and which of those
-    /// fits depends on what else the body does.
+    /// and otherwise describes it in prose, naming the part the rename
+    /// does not cover wherever it knows which part that is. Over a
+    /// binding the surrounding code still reads, the change also has to
+    /// reassign that binding or collapse it into one chained
+    /// expression — and where the call's value was wanted as a borrow,
+    /// neither of those is enough on its own either.
     pub perfectionist::MUTATING_COMMAND_BUILDER,
     Warn,
     "a `std::process::Command` setter taking `&mut self` where `command-extra`'s by-value form exists",
@@ -268,8 +269,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
 /// typechecker's answer, so the diagnostic stays with prose there.
 ///
 /// The span comes back with the answer because the caller has to know
-/// whether the position was written where the call is, and because
-/// which of the two reasons applies is what the reader is told.
+/// whether the position was written where the call is.
 fn accepting_position(cx: &LateContext<'_>, call: &Expr<'_>) -> Option<Span> {
     match cx.tcx.parent_hir_node(call.hir_id) {
         Node::Expr(parent) => match parent.kind {

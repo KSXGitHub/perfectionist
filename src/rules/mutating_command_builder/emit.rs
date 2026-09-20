@@ -3,8 +3,9 @@
 //! Everything the diagnostic reads about the call is decided before it
 //! gets here, so this module holds no analysis: it chooses between
 //! rendering the rename and describing the change, and where it
-//! describes, says which part of the change the rename does not cover.
-//! "This is not just a rename" is not something a reader can act on.
+//! describes, names the part of the change the rename does not cover
+//! wherever it knows which part that is. "This is not just a rename"
+//! is not something a reader can act on.
 
 use super::MUTATING_COMMAND_BUILDER;
 use super::setter::Conversion;
@@ -44,8 +45,11 @@ pub(super) struct Violation {
 }
 
 /// The lines come out in the order a reader works through them: which
-/// method to use, then what else the change takes, then how to reach
-/// the method at all.
+/// method to use, then what the rename does not cover, then how to
+/// reach the method at all. A rendered rename carries its own span, and
+/// rustc prints every span-less line above such a block, so where the
+/// rename is rendered the remedy has to travel inside its message to
+/// stay in that order.
 pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
     let Violation {
         hir_id,
@@ -83,6 +87,10 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
             };
             match show_the_rename {
                 true => {
+                    let advice = match remedy {
+                        Some(remedy) => format!("{advice}; {remedy}"),
+                        None => advice,
+                    };
                     diagnostic.span_suggestion(
                         method_span,
                         advice,
@@ -103,30 +111,31 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                     }
                     if !receiver_is_a_temporary {
                         diagnostic.help(
-                            "the receiver outlives this call, so finish the change by \
-                             reassigning it or by collapsing the binding into one chained \
+                            "the receiver outlives this call, so the change also has to \
+                             reassign it or collapse the binding into one chained \
                              expression",
                         );
                     }
                     if !position_takes_it {
                         // One line for both of the reasons a position
                         // does not take the value -- it is not one of
-                        // the two that do, or a macro wrote it -- and
-                        // worded so it holds for each and adds to the
-                        // lines above rather than re-opening what they
-                        // settled. Two lines here read as two competing
-                        // answers where a macro uses one written
-                        // expression twice, since both uses carry the
-                        // same span.
+                        // the two that do, or a macro wrote it -- since
+                        // two lines read as two competing answers where
+                        // a macro uses one written expression twice,
+                        // both uses carrying the same span. It claims
+                        // neither that the change reaches further nor
+                        // that the rename settles it: over a discarded
+                        // value the rename is the whole change, and
+                        // beside the lines above it is not.
                         diagnostic.help(
-                            "what else the change takes depends on what the surrounding \
-                             code does with this call's value",
+                            "whether the change reaches further depends on what the \
+                             surrounding code does with this call's value",
                         );
                     }
+                    if let Some(remedy) = remedy {
+                        diagnostic.help(remedy);
+                    }
                 }
-            }
-            if let Some(remedy) = remedy {
-                diagnostic.help(remedy);
             }
         },
     );

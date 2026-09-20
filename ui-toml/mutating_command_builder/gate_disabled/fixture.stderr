@@ -5,7 +5,7 @@ LL |     command.arg("-l");
    |             ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so finish the change by reassigning it or by collapsing the binding into one chained expression
+   = help: the receiver outlives this call, so the change also has to reassign it or collapse the binding into one chained expression
    = help: add `command-extra` to this crate's dependencies, then import `CommandExtra`
    = note: `#[warn(perfectionist::mutating_command_builder)]` on by default
 
@@ -16,7 +16,18 @@ LL |     command.env_clear();
    |             ^^^^^^^^^
    |
    = help: use `CommandExtra::with_no_env`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so finish the change by reassigning it or by collapsing the binding into one chained expression
+   = help: the receiver outlives this call, so the change also has to reassign it or collapse the binding into one chained expression
    = help: add `command-extra` to this crate's dependencies, then import `CommandExtra`
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     Command::new("ls").arg("-a");
+   |                        ^^^
+   |
+help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position; add `command-extra` to this crate's dependencies, then import `CommandExtra`
+   |
+LL |     Command::new("ls").with_arg("-a");
+   |                        +++++
 
 warning: N warnings emitted
