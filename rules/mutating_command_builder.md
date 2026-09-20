@@ -11,15 +11,15 @@
 
 Flags a `std::process::Command` setter called on an *owned*
 command — `arg`, `args`, `env`, `envs`, `env_remove`,
-`env_clear`, `current_dir` — and names the
-`command_extra::CommandExtra` counterpart that takes `self`
-instead of `&mut self`.
+`env_clear`, `current_dir`, `stdin`, `stdout`, `stderr` — and
+names the `command_extra::CommandExtra` counterpart that takes
+`self` instead of `&mut self`.
 
-`stdin`, `stdout` and `stderr` are left alone even though
-`CommandExtra` names all three: std takes anything
-`Into<Stdio>` there while the by-value form takes a concrete
-`Stdio`, so a `File` or a `ChildStdout` argument has no
-counterpart to rename to.
+The three stdio setters are generic over `Into<Stdio>` where
+their counterparts take a concrete `Stdio`. Where the argument
+is already a `Stdio` the counterpart takes it as it stands;
+where it is a `File` or a `ChildStdout`, the diagnostic says to
+convert it with `.into()`.
 
 A receiver the by-value form could not consume is left alone: `CommandExtra` takes `self`, so neither a `&mut Command`
 nor a field reached through a reference can adopt it, and the

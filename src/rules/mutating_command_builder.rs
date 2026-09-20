@@ -17,15 +17,15 @@ declare_tool_lint! {
     ///
     /// Flags a `std::process::Command` setter called on an *owned*
     /// command — `arg`, `args`, `env`, `envs`, `env_remove`,
-    /// `env_clear`, `current_dir` — and names the
-    /// `command_extra::CommandExtra` counterpart that takes `self`
-    /// instead of `&mut self`.
+    /// `env_clear`, `current_dir`, `stdin`, `stdout`, `stderr` — and
+    /// names the `command_extra::CommandExtra` counterpart that takes
+    /// `self` instead of `&mut self`.
     ///
-    /// `stdin`, `stdout` and `stderr` are left alone even though
-    /// `CommandExtra` names all three: std takes anything
-    /// `Into<Stdio>` there while the by-value form takes a concrete
-    /// `Stdio`, so a `File` or a `ChildStdout` argument has no
-    /// counterpart to rename to.
+    /// The three stdio setters are generic over `Into<Stdio>` where
+    /// their counterparts take a concrete `Stdio`. Where the argument
+    /// is already a `Stdio` the counterpart takes it as it stands;
+    /// where it is a `File` or a `ChildStdout`, the diagnostic says to
+    /// convert it with `.into()`.
     ///
     /// A receiver the by-value form could not consume is left alone: `CommandExtra` takes `self`, so neither a `&mut Command`
     /// nor a field reached through a reference can adopt it, and the
@@ -203,7 +203,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         if !self.suggestion_is_available(cx) {
             return;
         }
-        let ExprKind::MethodCall(path_segment, receiver, _, _) = expr.kind else {
+        let ExprKind::MethodCall(path_segment, receiver, arguments, _) = expr.kind else {
             return;
         };
         let Some(by_value_form) = by_value_form(path_segment.ident.name) else {
@@ -250,8 +250,12 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         // Show the rename only where it is the literal whole change:
         // the receiver is consumable without disturbing anyone, and the
         // context takes the owned `Command` the by-value form returns.
-        let rename_is_the_whole_change =
-            produces_a_temporary(receiver) && feeds_a_method_receiver(cx, expr);
+        let conversion = argument_conversion(cx, expr, arguments);
+        // A rename plus an `.into()` is not a rename, so it is never
+        // shown as one.
+        let rename_is_the_whole_change = conversion == Conversion::None
+            && produces_a_temporary(receiver)
+            && feeds_a_method_receiver(cx, expr);
         // Which remedy to name: the crate is absent from the manifest,
         // or present but not imported here. Only the gate knows the
         // first, and only with the gate turned off can it happen.
@@ -272,10 +276,16 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
             path_segment.ident.span,
             format!("`Command::{std_form}` takes `&mut self`, so it cannot yield the command"),
             |diagnostic| {
-                let advice = format!(
-                    "use `CommandExtra::{by_value_form}`, which takes `self` and returns `Self`, \
-                     keeping the whole construction in expression position",
-                );
+                let advice = match conversion {
+                    Conversion::None => format!(
+                        "use `CommandExtra::{by_value_form}`, which takes `self` and returns \
+                         `Self`, keeping the whole construction in expression position",
+                    ),
+                    Conversion::IntoNeeded => format!(
+                        "use `CommandExtra::{by_value_form}`, which takes `self` and returns \
+                         `Self`; it takes the argument by value, so convert it with `.into()`",
+                    ),
+                };
                 match rename_is_the_whole_change {
                     // The rename is the whole rewrite, so show it.
                     true => {
@@ -303,6 +313,64 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 }
             },
         );
+    }
+}
+
+/// Whether the by-value counterpart would take this call's argument as
+/// it stands.
+#[derive(PartialEq, Eq)]
+enum Conversion {
+    /// The argument's type is already the one the counterpart takes.
+    None,
+    /// The setter is generic over a conversion the counterpart does not
+    /// perform, so the argument needs `.into()`.
+    IntoNeeded,
+}
+
+/// Whether the argument needs converting for the by-value counterpart.
+///
+/// `Command::stdin`, `stdout` and `stderr` are generic over
+/// `Into<Stdio>` where `CommandExtra` takes a concrete `Stdio`. The
+/// target type comes from the setter's own bound rather than from a
+/// name: `Stdio` carries no `rustc_diagnostic_item`, and reading the
+/// predicate cannot fall out of step with the signature the way a
+/// spelled-out path could.
+///
+/// Suggesting `.into()` costs no inference. `stdout<T: Into<Stdio>>`
+/// infers `T` from the argument, so an argument that itself needs a
+/// target type is circular and ambiguous; the counterpart fixes the
+/// target at `Stdio`, so the conversion always has somewhere to land.
+/// Every argument the std setter accepts, the converted call accepts
+/// too -- and `stdout(f.into())`, which is `E0283`, becomes valid as
+/// `with_stdout(f.into())`.
+fn argument_conversion(
+    cx: &LateContext<'_>,
+    call: &Expr<'_>,
+    arguments: &[Expr<'_>],
+) -> Conversion {
+    let Some(method) = cx.typeck_results().type_dependent_def_id(call.hir_id) else {
+        return Conversion::None;
+    };
+    let Some(argument) = arguments.first() else {
+        return Conversion::None;
+    };
+    let argument_ty = cx.typeck_results().expr_ty(argument);
+    let into_target = cx
+        .tcx
+        .predicates_of(method)
+        .predicates
+        .iter()
+        .filter_map(|(clause, _)| clause.as_trait_clause())
+        .filter(|clause| {
+            cx.tcx
+                .is_diagnostic_item(Symbol::intern("Into"), clause.def_id())
+        })
+        .find_map(|clause| clause.skip_binder().trait_ref.args.types().nth(1));
+    // A setter whose argument already is the target needs nothing; one
+    // reaching it through the bound needs `.into()`.
+    match into_target {
+        Some(target) if argument_ty != target => Conversion::IntoNeeded,
+        _ => Conversion::None,
     }
 }
 
@@ -462,6 +530,9 @@ fn by_value_form(std_form: Symbol) -> Option<&'static str> {
         "env_remove" => "without_env",
         "env_clear" => "with_no_env",
         "current_dir" => "with_current_dir",
+        "stdin" => "with_stdin",
+        "stdout" => "with_stdout",
+        "stderr" => "with_stderr",
         _ => return None,
     })
 }

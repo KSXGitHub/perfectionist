@@ -12,17 +12,13 @@ project already follows everywhere it builds a subprocess.
 
 Implemented in
 [`src/rules/mutating_command_builder.rs`](../src/rules/mutating_command_builder.rs),
-apart from three of the setters in the table below.
-
-Not implemented: **`stdin`, `stdout` and `stderr`.** Theirs is the one
-pair in the table that is not signature-equivalent — std takes anything
-`Into<Stdio>` where `CommandExtra` takes a concrete `Stdio` — so the
-rename is `E0308` for the `File` and `ChildStdout` arguments that are
-the common idiom. Firing only on an argument already of type `Stdio`
-would cover the rest, and needs a way to recognise `Stdio`, which
-carries no `rustc_diagnostic_item`; this crate identifies types only by
-those. Deferred rather than retracted: the `Stdio`-argument case is
-worth linting and nothing else covers it.
+every setter in the table below included. The three stdio setters are
+generic over `Into<Stdio>` where their counterparts take a concrete
+`Stdio`, so the diagnostic says to convert the argument with `.into()`
+where it is not one already. The target type is read from the setter's
+own bound rather than matched by name, so no `rustc_diagnostic_item`
+for `Stdio` is needed — an earlier round dropped these three on the
+assumption that one was.
 
 These claims in this file did not survive the implementation:
 

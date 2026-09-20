@@ -29,15 +29,15 @@ fn every_setter(dir: &Path) {
     command.current_dir(dir);
 }
 
-// Not flagged: `CommandExtra` names all three, but std takes anything
-// `Into<Stdio>` where the by-value form takes a concrete `Stdio`, so a
-// `File` argument would have no counterpart to rename to and the pair
-// is not signature-equivalent.
+// Bad, both ways round. std takes anything `Into<Stdio>` where the
+// by-value form takes a concrete `Stdio`, so an argument that is
+// already a `Stdio` renames straight across, and one that is merely
+// convertible needs `.into()` — which the diagnostic says.
 fn stdio_setters(file: std::fs::File) {
     let mut command = Command::new("ls");
     command.stdin(Stdio::null());
     command.stdout(file);
-    command.stderr(Stdio::null());
+    command.stderr(Stdio::piped());
 }
 
 // Bad: the shape the rule exists for. The chain cannot be the tail

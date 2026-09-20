@@ -62,6 +62,33 @@ LL |     command.current_dir(dir);
    = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: the receiver outlives this call, so finish the change by reassigning it or by collapsing the binding into one chained expression
 
+warning: `Command::stdin` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     command.stdin(Stdio::null());
+   |             ^^^^^
+   |
+   = help: use `CommandExtra::with_stdin`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: the receiver outlives this call, so finish the change by reassigning it or by collapsing the binding into one chained expression
+
+warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     command.stdout(file);
+   |             ^^^^^^
+   |
+   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+   = help: the receiver outlives this call, so finish the change by reassigning it or by collapsing the binding into one chained expression
+
+warning: `Command::stderr` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     command.stderr(Stdio::piped());
+   |             ^^^^^^
+   |
+   = help: use `CommandExtra::with_stderr`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: the receiver outlives this call, so finish the change by reassigning it or by collapsing the binding into one chained expression
+
 warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
    |
