@@ -1,19 +1,18 @@
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
-use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::is_from_proc_macro;
-use rustc_errors::Applicability;
 use rustc_hir::{Expr, ExprKind, Node, StmtKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
+use rustc_span::Span;
 
 mod availability;
 mod config;
+mod emit;
 mod receiver;
 mod setter;
 
 use config::Config;
-use setter::Conversion;
 
 declare_tool_lint! {
     /// ### What it does
@@ -130,10 +129,12 @@ impl MutatingCommandBuilder {
     /// An import of the trait counts on its own: a crate that uses the
     /// trait has to import it, and the import resolves to the real
     /// crate even where the declared set cannot see the dependency.
-    fn suggestion_is_available(&mut self, cx: &LateContext<'_>, trait_is_imported: bool) -> bool {
+    /// It is asked second because answering it walks the module's
+    /// items, where the declared answer is memoised.
+    fn suggestion_is_available(&mut self, cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
         !self.require_command_extra_dependency
-            || trait_is_imported
             || self.command_extra_is_declared(cx)
+            || availability::trait_is_imported(cx, call)
     }
 
     /// [`availability::crate_is_declared`], answered once per
@@ -195,108 +196,52 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         {
             return;
         }
-        // Last of the gates rather than first, though it is the
-        // cheapest to re-ask: it reads whether the trait is imported,
-        // which needs the call, and every check above it has already
-        // narrowed the calls reaching here to `Command`'s own setters.
-        let trait_is_imported = availability::trait_is_imported(cx, expr);
-        if !self.suggestion_is_available(cx, trait_is_imported) {
+        // Last of the gates rather than first: it can need whether the
+        // trait is imported, and that needs the call, which every check
+        // above has already narrowed to `Command`'s own setters.
+        if !self.suggestion_is_available(cx, expr) {
             return;
         }
-        let std_form = path_segment.ident.name;
-        // Show the rename only where it is the literal whole change.
-        let conversion = setter::argument_conversion(cx, expr, arguments);
-        let receiver_is_a_temporary = receiver::produces_a_temporary(receiver);
-        let context_accepts = accepts_an_owned_command(cx, expr);
-        let rename_is_the_whole_change =
-            // A rename plus an `.into()` is not a rename.
-            conversion == Conversion::None
-            // A turbofish is written against the std setter's generic
-            // parameters and survives a rename of the segment alone.
-            // Every counterpart but `with_envs` takes fewer of them, so
-            // the renamed call is `E0107`.
-            && path_segment.args.is_none()
-            // The receiver is consumable without disturbing anyone,
-            && receiver_is_a_temporary
-            // and its value lands where the owned `Command` is accepted.
-            && context_accepts;
-        // Which remedy to name: the crate is absent from the manifest,
-        // or present but not imported here. Only the gate knows the
-        // first, and only with the gate turned off can it happen.
-        let remedy = match (self.command_extra_is_declared(cx), trait_is_imported) {
-            (_, true) => None,
-            (true, false) => Some("bring `command_extra::CommandExtra` into scope here"),
-            (false, false) => {
-                Some("add `command-extra` to this crate's dependencies, then import `CommandExtra`")
-            }
-        };
-        span_lint_hir_and_then(
+        emit::violation(
             cx,
-            MUTATING_COMMAND_BUILDER,
-            expr.hir_id,
-            path_segment.ident.span,
-            format!("`Command::{std_form}` takes `&mut self`, so it cannot yield the command"),
-            |diagnostic| {
-                let advice = match conversion {
-                    Conversion::None => format!(
-                        "use `CommandExtra::{by_value_form}`, which takes `self` and returns \
-                         `Self`, keeping the whole construction in expression position",
+            emit::Violation {
+                hir_id: expr.hir_id,
+                method_span: path_segment.ident.span,
+                std_form: path_segment.ident.name,
+                by_value_form,
+                conversion: setter::argument_conversion(cx, expr, arguments),
+                names_generic_arguments: path_segment.args.is_some(),
+                receiver_is_a_temporary: receiver::produces_a_temporary(receiver),
+                // The position has to be written where the call is. A
+                // macro taking an expression and using it twice gives
+                // both uses the caller's span, so a rename shown for the
+                // use in an accepting position would be written over the
+                // other use as well -- and that other one may be exactly
+                // the borrow the original returned.
+                position: accepting_position(cx, expr),
+                // Which remedy to name: the crate is absent from the
+                // manifest, or present but not imported here. Only the
+                // gate knows the first, and only with the gate turned
+                // off can it happen.
+                remedy: match (
+                    self.command_extra_is_declared(cx),
+                    availability::trait_is_imported(cx, expr),
+                ) {
+                    (_, true) => None,
+                    (true, false) => Some("bring `command_extra::CommandExtra` into scope here"),
+                    (false, false) => Some(
+                        "add `command-extra` to this crate's dependencies, then import \
+                         `CommandExtra`",
                     ),
-                    Conversion::IntoNeeded => format!(
-                        "use `CommandExtra::{by_value_form}`, which takes `self` and returns \
-                         `Self`; it takes the argument by value, so convert it with `.into()`",
-                    ),
-                };
-                match rename_is_the_whole_change {
-                    // The rename is the whole rewrite, so show it.
-                    true => {
-                        diagnostic.span_suggestion(
-                            path_segment.ident.span,
-                            advice,
-                            by_value_form,
-                            Applicability::MaybeIncorrect,
-                        );
-                    }
-                    // Something about the call reaches past the rename,
-                    // so showing one would show a rewrite that does not
-                    // compile. Say what that something is: "this is not
-                    // just a rename" is not a thing a reader can act on.
-                    // The argument needing `.into()` is the one reason
-                    // the advice above already carries.
-                    false => {
-                        diagnostic.help(advice);
-                        if path_segment.args.is_some() {
-                            diagnostic.help(
-                                "the call names its generic arguments, and the counterpart \
-                                 takes a different set, so adjust or drop them along with \
-                                 the rename",
-                            );
-                        }
-                        if !receiver_is_a_temporary {
-                            diagnostic.help(
-                                "the receiver outlives this call, so finish the change by \
-                                 reassigning it or by collapsing the binding into one chained \
-                                 expression",
-                            );
-                        } else if !context_accepts {
-                            diagnostic.help(
-                                "what else the change takes depends on what the surrounding \
-                                 code does with this call's value",
-                            );
-                        }
-                    }
-                }
-                if let Some(remedy) = remedy {
-                    diagnostic.help(remedy);
-                }
+                },
             },
         );
     }
 }
 
-/// Whether `call`'s value lands somewhere that accepts the owned
-/// `Command` the by-value form returns, where the original yielded a
-/// `&mut Command`.
+/// The span of the position `call`'s value lands in, where that
+/// position accepts the owned `Command` the by-value form returns and
+/// the original yielded a `&mut Command`.
 ///
 /// This decides how the diagnostic *reads*, not whether anything is
 /// applied: nothing is. Two positions qualify. A discarded statement
@@ -311,26 +256,22 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
 /// Every other position -- a `let`, a call argument, a struct field --
 /// may or may not accept the change, and which is likewise the
 /// typechecker's answer, so the diagnostic stays with prose there.
-fn accepts_an_owned_command(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
-    let (accepts, span) = match cx.tcx.parent_hir_node(call.hir_id) {
+///
+/// The span comes back with the answer because the caller has to know
+/// whether the position was written where the call is, and because
+/// which of the two reasons applies is what the reader is told.
+fn accepting_position(cx: &LateContext<'_>, call: &Expr<'_>) -> Option<Span> {
+    match cx.tcx.parent_hir_node(call.hir_id) {
         Node::Expr(parent) => match parent.kind {
             ExprKind::MethodCall(_, parent_receiver, ..) => {
-                (parent_receiver.hir_id == call.hir_id, parent.span)
+                (parent_receiver.hir_id == call.hir_id).then_some(parent.span)
             }
-            _ => return false,
+            _ => None,
         },
         Node::Stmt(statement) => match statement.kind {
-            StmtKind::Semi(_) => (true, statement.span),
-            _ => return false,
+            StmtKind::Semi(_) => Some(statement.span),
+            _ => None,
         },
-        _ => return false,
-    };
-    // The accepting position has to be written where the call is. A
-    // macro taking an expression and using it twice gives both uses the
-    // caller's span, so the rename shown for the use in an accepting
-    // position would be written over the other use as well -- and that
-    // other one may be exactly the borrow the original returned. A
-    // macro using the expression once is withheld from too, which costs
-    // a rendered rewrite rather than a wrong one.
-    accepts && !span.from_expansion()
+        _ => None,
+    }
 }

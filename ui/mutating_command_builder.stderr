@@ -109,6 +109,16 @@ LL |     configure(Command::new("ls").current_dir(dir));
    = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: what else the change takes depends on what the surrounding code does with this call's value
 
+warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     configure(command.current_dir(dir));
+   |                       ^^^^^^^^^^^
+   |
+   = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: the receiver outlives this call, so finish the change by reassigning it or by collapsing the binding into one chained expression
+   = help: what else the change takes depends on what the surrounding code does with this call's value
+
 warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
    |
@@ -117,6 +127,15 @@ LL |     Command::new("ls").stdout(file).status().ok();
    |
    = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
 
+warning: `Command::envs` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     Command::new("ls").envs::<[(&str, &str); 1], &str, &str>([("LANG", "C")]);
+   |                        ^^^^
+   |
+   = help: use `CommandExtra::with_envs`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: the call names its generic arguments, which are this setter's, so check them against the counterpart's when you rename
+
 warning: `Command::args` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
    |
@@ -124,7 +143,7 @@ LL |         .args::<[&str; 1], &str>(["-l"])
    |          ^^^^
    |
    = help: use `CommandExtra::with_args`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the call names its generic arguments, and the counterpart takes a different set, so adjust or drop them along with the rename
+   = help: the call names its generic arguments, which are this setter's, so check them against the counterpart's when you rename
 
 warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -175,6 +194,15 @@ LL |         command.arg("no-import-here");
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: the receiver outlives this call, so finish the change by reassigning it or by collapsing the binding into one chained expression
    = help: bring `command_extra::CommandExtra` into scope here
+
+warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     discard_then_borrow!(Command::new("ls").current_dir(dir));
+   |                                             ^^^^^^^^^^^
+   |
+   = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: the position taking this call's value is written in a macro, so a rename shown here would be written over every use the macro makes of the expression
 
 warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC

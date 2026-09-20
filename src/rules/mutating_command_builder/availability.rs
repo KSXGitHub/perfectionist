@@ -70,9 +70,18 @@ pub(super) fn crate_is_declared(cx: &LateContext<'_>) -> bool {
 ///
 /// Scoped to that module because a trait has to be in scope where the
 /// method is called, and a parent module's `use` does not reach a
-/// child. A trait reached some other way -- a glob, a project prelude --
-/// reads here as absent, which costs the reader a redundant "add the
-/// import" line rather than anything load-bearing.
+/// child. A trait reached some other way -- a glob, a project prelude,
+/// a `use` inside the body -- reads here as absent, which costs the
+/// reader a redundant "add the import" line rather than anything
+/// load-bearing.
+///
+/// The trait is identified by its own name and its crate's, so a crate
+/// of the author's own packaged as `command-extra` and exporting a
+/// trait called `CommandExtra` reads as the published one. Checking the
+/// trait's methods would close that here and nowhere else:
+/// [`crate_is_declared`] only ever sees a crate name, which is the
+/// point of it -- it answers before anything is loaded. A rule that
+/// names a crate cannot tell a crate that took the name.
 pub(super) fn trait_is_imported(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
     let module = cx.tcx.parent_module(call.hir_id);
     let wanted_crate = Symbol::intern(CRATE);
