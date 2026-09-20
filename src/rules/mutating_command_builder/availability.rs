@@ -1,8 +1,8 @@
 //! Whether the crate whose methods the diagnostic names is reachable
 //! from the code under lint.
 //!
-//! The answers drive different things. Whether the compiler loaded
-//! the crate decides whether the lint speaks at all, under the
+//! The answers drive different things. Whether the crate is a declared
+//! dependency decides whether the lint speaks at all, under the
 //! `require_command_extra_dependency` knob. Whether the trait is
 //! imported at the call decides only which remedy the diagnostic
 //! names.
@@ -20,13 +20,40 @@ const CRATE: &str = "command_extra";
 /// not imported, the diagnostic says to import it.
 const TRAIT: &str = "CommandExtra";
 
-/// Whether a crate named `command_extra` is among the loaded ones.
-pub(super) fn crate_is_loaded(cx: &LateContext<'_>) -> bool {
+/// Whether the crate under lint declares a dependency on
+/// `command_extra`.
+///
+/// Not whether the compiler *loaded* it, which is a different question
+/// with the wrong answer both ways round. `--extern` is lazy, so a
+/// declared dependency nothing has named yet is absent from
+/// `tcx.crates(())` -- and that is the crate the advice most applies
+/// to. A crate reached only through another crate's signature is
+/// present there, though this crate cannot name it, and the diagnostic
+/// would then offer an import that is `E0432`.
+///
+/// A crate this one can name arrived one of two ways, and which depends
+/// on how the compiler was driven rather than on anything the author
+/// wrote. Cargo passes `--extern command_extra=...`, recorded whether
+/// or not the crate is ever named. A crate written with
+/// `extern crate command_extra;` records the item instead, which is
+/// what the fixtures under `ui/` do.
+pub(super) fn crate_is_declared(cx: &LateContext<'_>) -> bool {
+    if cx
+        .tcx
+        .sess
+        .opts
+        .externs
+        .get(CRATE)
+        .is_some_and(|entry| entry.add_prelude)
+    {
+        return true;
+    }
     let wanted = Symbol::intern(CRATE);
     cx.tcx
-        .crates(())
-        .iter()
-        .any(|&krate| cx.tcx.crate_name(krate) == wanted)
+        .resolutions(())
+        .extern_crate_map
+        .items()
+        .any(|(_, krate)| cx.tcx.crate_name(*krate) == wanted)
 }
 
 /// Whether the innermost module around `call` imports `CommandExtra`.

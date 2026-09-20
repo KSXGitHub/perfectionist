@@ -11,7 +11,7 @@
 //
 // The crate is named `command_extra` deliberately, rather than
 // renamed on import the way `thiserror_stub` is: the rule's dependency
-// gate looks for a loaded crate under exactly that name.
+// gate looks for a declared dependency under exactly that name.
 
 use std::ffi::OsStr;
 use std::path::Path;

@@ -7,7 +7,7 @@
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 pub(super) struct Config {
-    /// Whether to stay silent in a crate that has not loaded
+    /// Whether to stay silent in a crate that does not depend on
     /// `command-extra`. Defaults to `true`: without the crate the
     /// suggested method does not exist, so the diagnostic would name
     /// something the author cannot write. Set it to `false` in a

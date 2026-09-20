@@ -227,7 +227,8 @@ fn through_a_macro() {
 }
 
 // Bad, with the remedy that says to import the trait: the crate is
-// loaded, since the root imports it, but this module does not, so
+// a declared dependency, and the root imports it, but this module does
+// not, so
 // writing the counterpart here would be `no method named with_arg
 // found` until the `use` arrives.
 mod trait_not_imported {

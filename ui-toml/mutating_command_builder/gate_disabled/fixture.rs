@@ -1,7 +1,7 @@
 // edition:2024
 //
 // `require_command_extra_dependency = false`. No `command_extra` is
-// loaded, so the diagnostic names a method this crate cannot yet call —
+// declared, so the diagnostic names a method this crate cannot yet call —
 // which is the point of turning the gate off: a workspace that adds the
 // dependency per-crate wants to be told where it is still missing.
 

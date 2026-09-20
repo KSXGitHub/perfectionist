@@ -25,7 +25,7 @@ A receiver the by-value form could not consume is left alone:
 `CommandExtra` takes `self`, so neither a `&mut Command` nor a
 field reached through a reference can adopt it, and the
 diagnostic would have no valid fix. By default the lint also
-stays silent in a crate that has not loaded `command-extra`,
+stays silent in a crate that does not depend on `command-extra`,
 since the method it names would not exist there; the
 `require_command_extra_dependency` knob turns that off.
 
@@ -100,7 +100,7 @@ Configure via `dylint.toml` under `["perfectionist::mutating_command_builder"]`.
 - _Type:_ `boolean`
 - _Optional_
 
-Whether to stay silent in a crate that has not loaded
+Whether to stay silent in a crate that does not depend on
 `command-extra`. Defaults to `true`: without the crate the
 suggested method does not exist, so the diagnostic would name
 something the author cannot write. Set it to `false` in a

@@ -96,9 +96,9 @@ mod other_applicability_gates {
 }
 
 // Not fixable: this module has no `use command_extra::CommandExtra`,
-// so a rename would be `no method named with_arg found`. The crate
-// is loaded -- the module above imports it -- so the dependency gate
-// passes and the diagnostic still fires.
+// so a rename would be `no method named with_arg found`. The crate is
+// a declared dependency of the fixture, so the gate passes and the
+// diagnostic still fires.
 mod trait_out_of_scope {
     use std::process::Command;
 

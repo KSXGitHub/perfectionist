@@ -1,10 +1,10 @@
 // edition:2024
 //
-// The dependency gate at its default. This fixture loads no
-// `command_extra`, so the by-value method the diagnostic would name
-// does not exist here and the rule stays silent — even though the call
-// below is one it fires on in `ui/mutating_command_builder.rs`, where
-// the crate is present.
+// The dependency gate at its default. This fixture declares no
+// dependency on `command_extra`, so the by-value method the diagnostic
+// would name does not exist here and the rule stays silent — even though
+// the call below is one it fires on in `ui/mutating_command_builder.rs`,
+// where the crate is present.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]

@@ -34,7 +34,7 @@ declare_tool_lint! {
     /// `CommandExtra` takes `self`, so neither a `&mut Command` nor a
     /// field reached through a reference can adopt it, and the
     /// diagnostic would have no valid fix. By default the lint also
-    /// stays silent in a crate that has not loaded `command-extra`,
+    /// stays silent in a crate that does not depend on `command-extra`,
     /// since the method it names would not exist there; the
     /// `require_command_extra_dependency` knob turns that off.
     ///
@@ -109,11 +109,11 @@ const CONFIG_KEY: &str = "perfectionist::mutating_command_builder";
 
 pub struct MutatingCommandBuilder {
     require_command_extra_dependency: bool,
-    /// Whether a crate named `command_extra` is among the ones the
-    /// compiler loaded, memoised on first use. Answering it walks
-    /// every loaded crate, and the answer cannot change within a
+    /// Whether this crate declares a dependency on `command_extra`,
+    /// memoised on first use. Answering it can walk every
+    /// `extern crate` item, and the answer cannot change within a
     /// compilation.
-    command_extra_loaded: Option<bool>,
+    command_extra_declared: Option<bool>,
 }
 
 impl MutatingCommandBuilder {
@@ -121,7 +121,7 @@ impl MutatingCommandBuilder {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
             require_command_extra_dependency: config.require_command_extra_dependency,
-            command_extra_loaded: None,
+            command_extra_declared: None,
         }
     }
 
@@ -129,15 +129,16 @@ impl MutatingCommandBuilder {
     fn suggestion_is_available(&mut self, cx: &LateContext<'_>) -> bool {
         // Answered either way, even with the gate off: the diagnostic
         // reads it to decide which remedy to name.
-        let loaded = self.command_extra_is_loaded(cx);
-        !self.require_command_extra_dependency || loaded
+        let declared = self.command_extra_is_declared(cx);
+        !self.require_command_extra_dependency || declared
     }
 
-    /// [`availability::crate_is_loaded`], answered once per compilation.
-    fn command_extra_is_loaded(&mut self, cx: &LateContext<'_>) -> bool {
+    /// [`availability::crate_is_declared`], answered once per
+    /// compilation.
+    fn command_extra_is_declared(&mut self, cx: &LateContext<'_>) -> bool {
         *self
-            .command_extra_loaded
-            .get_or_insert_with(|| availability::crate_is_loaded(cx))
+            .command_extra_declared
+            .get_or_insert_with(|| availability::crate_is_declared(cx))
     }
 }
 
@@ -145,11 +146,9 @@ impl_lint_pass!(MutatingCommandBuilder => [MUTATING_COMMAND_BUILDER]);
 
 impl Register for rule::MutatingCommandBuilder {
     /// The dependency gate is what keeps this defensible on by
-    /// default: at its default the lint stays quiet in a crate where
-    /// the compiler never loaded `command-extra`, so it does not press
-    /// a third-party dependency on a project that has not met it. A
-    /// crate reaching it only transitively is the gap in that -- the
-    /// gate asks what was loaded, not what was declared.
+    /// default: at its default the lint stays quiet in a crate that
+    /// does not depend on `command-extra`, so it does not press a
+    /// third-party dependency on a project that has not met it.
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {
@@ -218,7 +217,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         // or present but not imported here. Only the gate knows the
         // first, and only with the gate turned off can it happen.
         let remedy = match (
-            self.command_extra_is_loaded(cx),
+            self.command_extra_is_declared(cx),
             availability::trait_is_imported(cx, expr),
         ) {
             (_, true) => None,

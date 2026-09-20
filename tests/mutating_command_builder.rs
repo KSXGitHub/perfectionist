@@ -2,8 +2,8 @@
 //!
 //! The default-configuration sweep lives in
 //! `ui/mutating_command_builder.rs`, and the gate's default is covered
-//! by `ui/mutating_command_builder_no_dependency.rs`, which loads no
-//! `command_extra` and expects silence. Only the knob's `false` value
+//! by `ui/mutating_command_builder_no_dependency.rs`, which declares no
+//! dependency on `command_extra` and expects silence. Only the knob's `false` value
 //! needs a `dylint.toml`, so only that case lives here.
 //!
 //! No lock here, unlike the sibling config tests: this binary holds one
