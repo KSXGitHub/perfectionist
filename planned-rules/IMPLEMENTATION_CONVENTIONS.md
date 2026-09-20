@@ -302,25 +302,29 @@ that is the trap.
 
 ## `include!` targets are out of scope
 
-A lint owes nothing to the contents of an `include!` target: no
-analysis, no diagnostic, and no promise about a fix whose spans land
-inside one.
+A lint does not report a violation inside an `include!` target, and
+does not edit one. Their contents stay part of the crate for every
+other purpose — name resolution, types, the traits in scope at a call
+elsewhere — and could not be otherwise: by the time a pass runs, an
+included item is an ordinary item in the HIR.
 
-An `include!` target is a token fragment rather than a unit of source.
-It has no scope of its own — the imports, the `#[cfg]` gates and the
-surrounding items all come from whichever site included it — and one
-target can serve several sites, so a span inside it has no single
-meaning and an edit computed for one site rewrites the file for all of
-them. A generated target is a macro under another name, and the
-generator is where a change belongs; a hand-written one had `mod` and
-`use` available, which express the same thing with a scope attached.
+What a target is not is a unit of source. It has no scope of its own —
+the imports, the `#[cfg]` gates and the surrounding items all come
+from whichever site included it — and one target can serve several
+sites, so a span inside it has no single meaning and an edit computed
+for one site rewrites the file for all of them. A generated target is
+a macro under another name, and the generator is where a change
+belongs; a hand-written one had `mod` and `use` available, which
+express the same thing with a scope attached.
 
-An `include!` target's spans are **not** `from_expansion()`, so the
-guard that keeps a rule out of macro bodies does not keep it out of
-here. A source-layout rule gets the exclusion anyway by routing
-through `module_reparse`, whose file set is scoped to files backing a
-module in the HIR tree; a rule walking the HIR does not, and needs
-none.
+None of this is free. A source-layout rule gets it by routing through
+`module_reparse`, whose file set is scoped to files backing a module
+in the HIR tree. A rule walking the HIR gets nothing: an included item
+is an ordinary HIR item, and a target's spans are **not**
+`from_expansion()`, so the guard that keeps a rule out of macro bodies
+does not keep it out of here either. Closing that is unimplemented, so
+for now this section says what the catalogue intends rather than what
+it enforces.
 
 ## Recognising test-exclusive code
 
