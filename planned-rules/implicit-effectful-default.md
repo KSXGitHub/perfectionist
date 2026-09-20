@@ -149,23 +149,51 @@ rationale, not as this one wearing a different trigger.
 
 ## Examples
 
+What decides each case is the constructed type's `Default`, so the
+examples name their types and show the impl the verdicts turn on.
+`SessionId` is the type from [Statement](#statement) with the rest of
+its surface shown: its default mints a fresh identifier, which is a
+difference in the value itself and so known non-ORT. `Job` is an
+ordinary struct.
+
+```rust
+struct SessionId(Uuid);
+
+impl SessionId {
+    // The placeholder, for a session that has not started.
+    const NIL: SessionId = SessionId(Uuid::nil());
+    // The named constructor, for call sites that do want a new one.
+    fn issue() -> Self { SessionId(Uuid::new_v4()) }
+}
+
+impl Default for SessionId {
+    fn default() -> Self { SessionId::issue() }
+}
+```
+
 **Avoid:** the placeholder mints an identifier nobody asked for.
 
 ```rust
-let previous = std::mem::take(&mut self.session);
+fn rotate(session: &mut SessionId) -> SessionId {
+    std::mem::take(session)
+}
 ```
 
 **Prefer:** name the placeholder, so the cost is where the reader is.
 
 ```rust
-let previous = std::mem::replace(&mut self.session, SessionId::NIL);
+fn rotate(session: &mut SessionId) -> SessionId {
+    std::mem::replace(session, SessionId::NIL)
+}
 ```
 
 **Not flagged:** `Vec`'s default is ORT, so the placeholder costs
 nothing observable.
 
 ```rust
-let jobs = std::mem::take(&mut self.queue);
+fn drain_queue(queue: &mut Vec<Job>) -> Vec<Job> {
+    std::mem::take(queue)
+}
 ```
 
 **Not flagged:** `HashMap::default` mutates a thread-local seed on
@@ -174,34 +202,83 @@ an iteration order the contract declares arbitrary. See
 [the worked contrast](./IMPLEMENTATION_CONVENTIONS.md#observational-referential-transparency).
 
 ```rust
-let old = std::mem::take(&mut self.index);
+fn drain_index(
+    index: &mut HashMap<String, Job>,
+) -> HashMap<String, Job> {
+    std::mem::take(index)
+}
 ```
 
 **Not flagged by default:** the fallback tier, where the constructed
 value is the one the caller wanted.
 
 ```rust
-let id = self.ids.entry(key).or_default();
+fn slot(
+    ids: &mut HashMap<String, SessionId>,
+    key: String,
+) -> &mut SessionId {
+    ids.entry(key).or_default()
+}
 ```
 
-**Not flagged:** written at the call site, so clause 1 fails.
+**Not flagged:** written at the call site, so clause 1 fails. The
+effect still happens — the derive runs `SessionId::default()` once,
+measured — but it is reached through the derive rather than through
+this call, which is
+[a definition-site rule's job](#generic-code-and-derives-are-not-in-scope-either).
 
 ```rust
+#[derive(Default)]
+struct Config {
+    verbose: bool,
+    session: SessionId,
+}
+
 let config = Config { verbose: true, ..Default::default() };
 ```
 
 ## Suggested fix
 
+Neither tier gets an autofix, and the diagnostic suggests a *shape*
+rather than a value. The value is the author's to choose, and the
+two forms a lint could mechanically reach for are both ones clippy
+rewrites straight back.
+
 For the placeholder tier, name the placeholder:
 `mem::replace(&mut x, <explicit value>)` in place of
 `mem::take(&mut x)`, and the `Cell` / `RefCell` equivalents. That
 keeps the code's shape and puts the constructed value in the source
-where a reader can see it. The lint cannot choose the value, so the
-suggestion is a note rather than a rewrite.
+where a reader can see it.
 
-For the fallback tier the honest advice is to write the construction
-out — `unwrap_or_else(SessionId::default)` says the same thing
-visibly — or to accept it, which is why the tier is opt-in.
+For the fallback tier, name the constructor:
+`unwrap_or_else(SessionId::issue)` in place of `unwrap_or_default()`.
+
+### The named value must not be default-equivalent
+
+Otherwise clippy undoes the fix. Measured against clippy 1.94, where
+both lints are `style`, warn by default, and machine-applicable, so
+`cargo clippy --fix` applies them without asking:
+
+```rust
+mem::replace(x, SessionId::default())  // --fix → mem::take(x)
+o.unwrap_or_else(SessionId::default)   // --fix → unwrap_or_default()
+```
+
+Both results are what this rule flags. So a diagnostic phrased as
+"write the construction out" would leave the user between two
+warn-by-default lints, each undoing the other's fix. A named const
+or constructor is untouched by either — `mem::replace(x,
+SessionId::NIL)`, `mem::replace(x, SessionId::issue())` and
+`o.unwrap_or_else(SessionId::issue)` all pass clippy clean — and
+`Cell::replace` / `RefCell::replace` have no such lint at all.
+
+The lint does not go looking for that constructor. Whether the type
+spells it `new`, `create`, `issue` or `generate` is not something to
+guess at, and the help text asks for one generically instead. A type
+may have none, in which case the finding is about the type's design
+rather than the call: either give it one, or record the decision
+with
+`#[expect(perfectionist::implicit_effectful_default, reason = "…")]`.
 
 A third option belongs to the author rather than the call site: if
 the effect was never meant to be reachable this way, the type wants a
@@ -273,21 +350,33 @@ None yet, and the file should not pretend otherwise. The hazard is
 constructed rather than observed: no instance of an effectful
 `Default` reached through a placeholder constructor has been found in
 this repository or in the pnpm sources that prompted the
-surrounding work. Worth holding until one turns up, or shipping
-`Inactive by default` and seeing what a real codebase says.
+surrounding work. Worth holding until one turns up, or shipping and
+seeing what a real codebase says.
 
 ## Default state
 
-Inactive by default, which is the exception rather than this
-catalogue's norm and is earned twice over. The trigger rests on a
-heuristic that cannot be made sound, and the practice it flags is
-legal, deliberate on the type author's part, and sometimes exactly
-what the caller wanted. Both are reasons the
+Active by default. The
 [activation model](./IMPLEMENTATION_CONVENTIONS.md#rule-activation-model)
-names for withholding a rule from the default set.
+withholds a rule whose trigger is known to false-positive, and the
+classification being a heuristic is not that — what matters is which
+way it fails. *Known non-ORT* is a denylist, so a type it does not
+recognise is simply not flagged: the unsoundness is silence, not
+noise, and it costs findings rather than trust.
 
-`placeholder_constructors` is on once the rule is enabled;
-`fallback_constructors` is a second opt-in inside it.
+What remains is that the practice is legal, deliberate on the type
+author's part, and sometimes exactly what the caller wanted. That is
+a real cost, and it is what the tiers are for rather than a reason to
+withhold the rule. `placeholder_constructors` is on, because a value
+nobody reads is where an effect is unrequested outright.
+`fallback_constructors` is a second opt-in, because there the
+constructed value is the one the caller asked for.
+
+The denylist does have a false-positive shape, and it is worth naming
+so that calibration has something to aim at: a type that mirrors
+`RandomState` — reaching a counter or a clock to seed something its
+own contract declares arbitrary — is ORT and would be flagged. No
+autofix and an `#[expect]` with a `reason` is what that case costs,
+per [Suggested fix](#suggested-fix).
 
 ## Interaction with clippy and sibling rules
 
@@ -297,16 +386,22 @@ names for withholding a rule from the default set.
   reconcile — this rule does not object to the impl — but a reader
   who wants to know why effectful `Default` impls are common should
   start there.
-- **`clippy::unwrap_or_default`** (`style`) rewrites
-  `unwrap_or_else(Default::default)` and friends *to*
+- **`clippy::unwrap_or_default`** (`style`, warn by default)
+  rewrites `unwrap_or_else(Default::default)` and friends *to*
   `unwrap_or_default`, which moves code from visible to invisible
-  construction. Where this rule's fallback tier is enabled the two
-  disagree, and this rule's tier being opt-in is what keeps that
-  disagreement from being the default experience.
-- **`clippy::mem_replace_with_default`** (`style`) rewrites
-  `mem::replace(&mut x, T::default())` to `mem::take`, likewise
-  trading a written construction for an implied one. Same shape of
-  disagreement, same resolution.
+  construction. It reaches only the fallback tier, which is a second
+  opt-in, so the disagreement is not the default experience.
+- **`clippy::mem_replace_with_default`** (`style`, warn by default)
+  rewrites `mem::replace(&mut x, T::default())` to `mem::take`,
+  likewise trading a written construction for an implied one — and
+  it lands in the placeholder tier, which is **on**. So this one is
+  a live conflict rather than a deferred one: for a non-ORT `T`,
+  clippy turns code this rule accepts into code it flags, and
+  `cargo clippy --fix` does it silently. The two have a stable fixed
+  point only because neither lint touches a replacement that is not
+  default-equivalent, which is what
+  [Suggested fix](#the-named-value-must-not-be-default-equivalent)
+  requires the diagnostic to ask for.
 - **`perfectionist::default_assignment_after_take`** reads the same
   classification in the opposite direction: it deletes a
   `Default::default()` call and so needs types that are *known ORT*,

@@ -56,7 +56,8 @@ pattern that several rules call out by reference — live in
   is unrequested outright. Deliberately a use-site rule rather than
   one aimed at `impl Default`, which would argue with the API
   Guidelines and with `clippy::new_without_default`. Rests on a
-  denylist that cannot be made sound, so inactive by default.
+  denylist, which under-fires rather than over-fires, so it ships
+  active with no autofix.
 - [`effectful-default-impl.md`](./effectful-default-impl.md) — the
   definition-site counterpart: flag a hand-written `impl Default`
   whose body is observationally effectful, since `Default` is the one
