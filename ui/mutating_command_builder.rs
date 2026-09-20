@@ -102,8 +102,10 @@ impl Builder {
     }
 }
 
-// Not flagged: reached through a `Box`, so not the caller's to move
-// out of.
+// Not flagged: the receiver's type is `&mut Box<Command>`, which is not
+// `Command`, so this stops at the receiver-type check rather than at the
+// place walk. Kept because `Box` is the shape a reader expects to see
+// covered.
 fn boxed(command: &mut Box<Command>) {
     command.arg("-l");
 }
@@ -136,7 +138,10 @@ fn captured_upvar() {
     go();
 }
 
-// Not flagged: a closure parameter is a borrow like any other.
+// Not flagged: the parameter's type is `&mut Command`, so like
+// `configure` above this stops at the receiver-type check. The
+// captured-binding case, which does reach the place walk, is
+// `captured_upvar`.
 fn through_closure(command: &mut Command) {
     let mut add = |pending: &mut Command| {
         pending.arg("-l");
@@ -150,6 +155,28 @@ fn spawning() {
     Command::new("ls").status().ok();
     Command::new("ls").output().ok();
     Command::new("ls").spawn().ok();
+}
+
+// Not flagged: an extension trait taking `self` is found at the
+// by-value step of the autoderef chain, before `Command`'s own
+// `&mut self` setter, so this resolves to `Ext::arg` and renaming it
+// would replace a method of the author's own.
+mod extension_trait {
+    use std::process::Command;
+
+    trait Ext {
+        fn arg(self, value: &str) -> Self;
+    }
+
+    impl Ext for Command {
+        fn arg(self, _value: &str) -> Self {
+            self
+        }
+    }
+
+    fn via_extension_trait() {
+        let _: Command = Command::new("ls").arg("ext-trait");
+    }
 }
 
 // Not flagged: a method of the same name on an unrelated type.

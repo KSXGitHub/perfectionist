@@ -150,6 +150,15 @@ const SOURCE: &str = text_block_fnl! {
 
 /// Run the fixer over the fixture and hand back what it left on disk,
 /// plus its stderr.
+/// Sibling rules would rewrite the same lines on their own account,
+/// which would make "did the fixer touch this line?" answer the wrong
+/// question -- and any error one of them introduced would be blamed on
+/// this rule by the headline assertion below.
+const CONFIG: &str = text_block_fnl! {
+    "[perfectionist]"
+    r#"disable = ["bare_identifier_reference", "import_granularity_mismatch", "import_grouping_mismatch"]"#
+};
+
 fn fix() -> (TempDir, String, String) {
     let temp = TempDir::new().expect("failed to create temp dir");
     build_project_with_config(
@@ -157,7 +166,7 @@ fn fix() -> (TempDir, String, String) {
         "mutating_command_builder_autofix",
         cargo_manifest_dir(),
         &[("Cargo.toml", &cargo_toml()), ("src/lib.rs", SOURCE)],
-        "",
+        CONFIG,
     );
     let (stderr, success) = run_dylint_fix(temp.path(), &shared_target_dir());
     assert!(

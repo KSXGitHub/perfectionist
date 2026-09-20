@@ -1,6 +1,7 @@
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
+use clippy_utils::is_from_proc_macro;
 use clippy_utils::res::MaybeDef;
 use rustc_errors::Applicability;
 use rustc_hir::def::{DefKind, Res};
@@ -218,6 +219,14 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         {
             return;
         }
+        // The name and the receiver type do not identify the callee. A
+        // trait method taking `self` is found at the by-value step of
+        // the autoderef chain, *before* `Command`'s own `&mut self`
+        // setter, so an extension trait of the author's own with a
+        // colliding name wins resolution and must not be renamed.
+        if !resolves_to_an_inherent_command_method(cx, expr) {
+            return;
+        }
         if !receiver_can_be_consumed(cx, receiver) {
             return;
         }
@@ -225,7 +234,14 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         // than the call it belongs to, so `report_in_external_macro:
         // false` does not cover a derive that stamps a synthesised
         // call with a user-source span.
-        if hir_in_external_macro(cx, expr.hir_id, path_segment.ident.span) {
+        if hir_in_external_macro(cx, expr.hir_id, path_segment.ident.span)
+            // A derive that stamps its *whole* output with the driving
+            // attribute's span leaves the span-based guard nothing to
+            // find, including the enclosing item's `def_span`. Reading
+            // the source under the span catches that, as the sibling
+            // rules facing the same derive shape do.
+            || is_from_proc_macro(cx, expr)
+        {
             return;
         }
         let std_form = path_segment.ident.name;
@@ -265,9 +281,17 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
 ///   consumes its receiver, so renaming a setter called on a binding or
 ///   a field moves a place the surrounding code still reads, which is
 ///   `E0382` -- and for a binding a closure captured, `E0507`.
-/// * The call's value feeds another method call's receiver, the one
-///   position that takes an owned `Command` where the original yielded
-///   a `&mut Command`. Anywhere else the changed type is `E0308`.
+/// * The call's value feeds another method call's receiver, and that
+///   parent is one of `Command`'s own methods. Autoref reaches those
+///   from an owned receiver as readily as from a borrowed one, where a
+///   blanket impl instantiates `Self` to the receiver and changes
+///   meaning (`E0631`); any other position rejects the changed type
+///   outright (`E0308`).
+/// * There is no turbofish, which would survive into a method of
+///   different generic arity (`E0107`).
+/// * The span is not an expansion's, since a rename inside a
+///   `macro_rules!` body is written to the definition and lands on
+///   every other call site.
 fn rename_alone_compiles(
     cx: &LateContext<'_>,
     call: &Expr<'_>,
@@ -282,9 +306,29 @@ fn rename_alone_compiles(
         // expansion and written to the definition, so it lands on every
         // other call site too.
         && !path_segment.ident.span.from_expansion()
-        && command_extra_is_imported(cx, call)
         && produces_a_temporary(receiver)
         && feeds_a_method_receiver(cx, call)
+        // Last, because it is the only one that walks a module's items.
+        && command_extra_is_imported(cx, call)
+}
+
+/// Whether the call resolves to one of `Command`'s own inherent
+/// methods, rather than to a trait method that shares a setter's name.
+fn resolves_to_an_inherent_command_method(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
+    let Some(method) = cx.typeck_results().type_dependent_def_id(call.hir_id) else {
+        return false;
+    };
+    // A trait impl's self type is `Command` too, so the self type alone
+    // does not separate the inherent setter from an extension trait's.
+    if cx.tcx.trait_of_assoc(method).is_some() {
+        return false;
+    }
+    cx.tcx.impl_of_assoc(method).is_some_and(|impl_did| {
+        cx.tcx
+            .type_of(impl_did)
+            .skip_binder()
+            .is_diag_item(cx, Symbol::intern(COMMAND_DIAGNOSTIC_ITEM))
+    })
 }
 
 /// Whether the innermost module around `call` imports `CommandExtra`.
@@ -419,13 +463,8 @@ fn produces_a_temporary(receiver: &Expr<'_>) -> bool {
 /// `Command::new`, which is not a setter, and the spawning methods,
 /// which have no counterpart and take `&mut self` legitimately.
 ///
-/// `stdin`, `stdout` and `stderr` are absent although `CommandExtra`
-/// names all three. Theirs are the one pair that is not
-/// signature-equivalent: std takes anything `Into<Stdio>` while the
-/// by-value form takes a concrete `Stdio`, so the rename is `E0308` for
-/// the `File` and `ChildStdout` arguments that are the common idiom.
-/// Separating the safe arguments would mean recognising `Stdio`, which
-/// carries no `rustc_diagnostic_item`.
+/// `stdin`, `stdout` and `stderr` are absent for the reason this lint's
+/// own rustdoc gives.
 fn by_value_form(std_form: Symbol) -> Option<&'static str> {
     Some(match std_form.as_str() {
         "arg" => "with_arg",

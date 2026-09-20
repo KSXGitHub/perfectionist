@@ -548,12 +548,12 @@ pub fn synth_cloning_getter(input: TokenStream) -> TokenStream {
 /// whole setter call, the `arg` segment included, inherits the
 /// user-span of `synth_command_setter`.
 ///
-/// `mutating_command_builder` reports at the method segment alone, so
-/// that user span defeats `report_in_external_macro: false` and only
-/// the rule's `hir_in_external_macro` guard stops the diagnostic. The
-/// wrapping `fn` stays at the call site deliberately: the guard's
-/// second check reads the enclosing item's `def_span`, and that is the
-/// span this fixture leaves for it to find.
+/// The wrapping `fn` is stamped too, the way `SynthCloningGetter` stamps
+/// its `impl`, so every span the rule could consult reads as
+/// user-written and `hir_in_external_macro` -- which checks the node's
+/// span and the enclosing item's `def_span` -- has nothing to find. What
+/// stops the diagnostic is `is_from_proc_macro`, which reads the source
+/// text under the span instead.
 ///
 /// The synthesised call is one the rule fires on when hand-written --
 /// a std setter on an owned local -- so the fixture is not vacuous.
@@ -609,7 +609,19 @@ pub fn synth_command_setter(input: TokenStream) -> TokenStream {
         ))),
         at_attr(TokenTree::Punct(Punct::new(';', Spacing::Alone))),
     ]);
-    wrap_fn_block("_synth_command_setter", body)
+    // `wrap_fn_block` would leave the `fn` at the call site; stamp it
+    // so no span the rule reads betrays the expansion.
+    let mut out = TokenStream::new();
+    out.extend([
+        at_attr(TokenTree::Ident(Ident::new("fn", attr_span))),
+        at_attr(TokenTree::Ident(Ident::new("_synth_command_setter", attr_span))),
+        at_attr(TokenTree::Group(Group::new(
+            Delimiter::Parenthesis,
+            TokenStream::new(),
+        ))),
+        at_attr(TokenTree::Group(Group::new(Delimiter::Brace, body))),
+    ]);
+    out
 }
 
 fn wrap_const_block(body: TokenStream) -> TokenStream {
