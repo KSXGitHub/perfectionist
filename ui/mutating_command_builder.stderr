@@ -176,6 +176,15 @@ LL |     configure(&mut Command::new("ls").with_stdout(file.into()));
 warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
    |
+LL |     let _command = Command::new("ls").stdout(file);
+   |                                       ^^^^^^
+   |
+   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the concrete type this setter converts into, so convert the argument with `.into()`
+   = help: whether the change reaches further depends on what the surrounding code does with this call's value
+
+warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
 LL |     Command::new("ls").stdout::<std::fs::File>(file);
    |                        ^^^^^^
    |

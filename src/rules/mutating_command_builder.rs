@@ -216,12 +216,12 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 names_generic_arguments,
                 receiver_is_a_temporary,
                 landing,
-                // The first arm is reachable whenever the gate passed
-                // on something else -- the workspace's own table, or
-                // nothing at all. Scoping to the module lets a macro
-                // stamping one written call into two modules earn a
-                // diagnostic apiece, each naming what its module
-                // needs.
+                // `(false, false)` is reachable whenever the gate
+                // passed on something else -- the workspace's own
+                // table, or nothing at all. Scoping `trait_is_imported`
+                // to the module lets a macro stamping one written call
+                // into two modules earn a diagnostic apiece, each
+                // naming what its module needs.
                 remedy: match (self.command_extra_is_declared(cx), trait_is_imported) {
                     (_, true) => None,
                     (true, false) => Some("bring `command_extra::CommandExtra` into scope here"),

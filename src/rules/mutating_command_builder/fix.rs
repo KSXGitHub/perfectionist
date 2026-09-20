@@ -310,7 +310,7 @@ fn position(cx: &LateContext<'_>, call: &Expr<'_>) -> Option<Position> {
         // `&mut` binds looser than these, so the prefix would have to
         // carry parentheses -- and `(&mut command).field` reads worse
         // than the expression it replaces, which is the whole point of
-        // the rule. The diagnostic shows the bare rename there instead.
+        // the rule.
         Node::Expr(Expr {
             kind: ExprKind::Field(base, _) | ExprKind::Index(base, ..),
             ..

@@ -122,6 +122,12 @@ fn conversion_and_position(file: std::fs::File) {
     configure(Command::new("ls").stdout(file));
 }
 
+// Bad: the same pair where the value lands in a `let`, which declines
+// the rewrite, so both arrive as prose instead.
+fn conversion_and_position_as_prose(file: std::fs::File) {
+    let _command = Command::new("ls").stdout(file);
+}
+
 // Bad: an argument needing `.into()` and a turbofish. Advice plus the
 // generic-arguments line, whose check is a quick one here, since the
 // stdio counterparts take a concrete `Stdio` and so have no generic
