@@ -1,11 +1,12 @@
 //! Turning one flagged setter call into its diagnostic.
 //!
 //! Everything the diagnostic reads about the call is decided before it
-//! gets here, so this module holds no analysis: it chooses between
-//! rendering the rename and describing the change, and where it
-//! describes, names the part of the change the rename does not cover
-//! wherever it knows which part that is. "This is not just a rename"
-//! is not something a reader can act on.
+//! gets here, so this module holds no analysis. It picks between the
+//! three things a reader can be given: the whole rewrite, where `fix`
+//! built one; the bare rename, where that is all there is to show; and
+//! prose naming the part the rename does not cover, wherever it knows
+//! which part that is. "This is not just a rename" is not something a
+//! reader can act on.
 
 use super::MUTATING_COMMAND_BUILDER;
 use super::setter::Conversion;
@@ -42,6 +43,9 @@ pub(super) struct Violation {
     /// Which remedy to name, where the counterpart is not yet writable
     /// here, and `None` where it is.
     pub(super) remedy: Option<&'static str>,
+    /// The whole rewrite, where every part of it is known and compiles,
+    /// and `None` where any part is not.
+    pub(super) fix: Option<Vec<(Span, String)>>,
 }
 
 /// The lines come out in the order a reader works through them: which
@@ -61,6 +65,7 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
         receiver_is_a_temporary,
         position_takes_it,
         remedy,
+        fix,
     } = violation;
     // Rendering the rename is not a claim that it is the whole change:
     // an import may be needed alongside it, which `remedy` names.
@@ -85,6 +90,12 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                      `Self`; it takes the argument by value, so convert it with `.into()`",
                 ),
             };
+            // Every part known, so hand the fixer the whole edit
+            // rather than describing what it would take.
+            if let Some(fix) = fix {
+                diagnostic.multipart_suggestion(advice, fix, Applicability::MachineApplicable);
+                return;
+            }
             match show_the_rename {
                 true => {
                     let advice = match remedy {

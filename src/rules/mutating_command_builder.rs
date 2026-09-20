@@ -9,6 +9,7 @@ use rustc_span::Span;
 mod availability;
 mod config;
 mod emit;
+mod fix;
 mod receiver;
 mod setter;
 
@@ -79,27 +80,32 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// ### No automatic fix
+    /// ### The automatic fix
     ///
-    /// The suggested rename is never applied by `cargo dylint --fix`,
-    /// because whether it compiles cannot be decided without
-    /// re-typechecking. The by-value form returns `Command` where the
-    /// original returned `&mut Command`, and that changed type ripples:
-    /// it is rejected where the context wanted the borrow, it moves a
-    /// receiver the surrounding code still reads, and — since a trait
-    /// method taking `self` is found before an inherent `&mut self` one
-    /// — it can silently redirect a *later* call in the same chain to an
-    /// extension trait of the author's own, with no compile error to
-    /// reveal it.
+    /// What `cargo dylint --fix` applies keeps the expression's type. A
+    /// bare rename would not: the by-value form returns `Command` where
+    /// the original returned `&mut Command`, which the context may
+    /// reject, and which can redirect a *later* call in the same chain
+    /// to an extension trait of the author's own — compiling, with
+    /// nothing in the diff to show it. Prefixing `&mut ` restores the
+    /// type, so the context and every following method resolve as they
+    /// did. Where the counterpart takes by value what the setter took
+    /// generically, the `.into()` is part of the same rewrite.
     ///
-    /// So the diagnostic shows the rename where the change looks local
-    /// and otherwise describes it in prose, naming the part the rename
-    /// does not cover wherever it knows which part that is. Over a
-    /// binding or a field the surrounding code still reads, the change
-    /// also has to reassign it, or collapse the statements that build
-    /// the command into one chained expression — and where the call's
-    /// value was wanted as a borrow, neither of those is enough on its
-    /// own either.
+    /// It is applied where all of that is known: the receiver is a
+    /// value the expression produced, `CommandExtra` is in scope, and
+    /// no argument builds a value whose destructor would then run at a
+    /// different point.
+    ///
+    /// It is not applied where the value is another method's receiver,
+    /// since `&mut` would need parentheses there and
+    /// `(&mut command).arg(..)` reads worse than the call it replaces,
+    /// nor where the call names its generic arguments, since the
+    /// counterpart's do not correspond to the setter's. There the
+    /// rename is shown for the reader to finish. Over a binding or a
+    /// field the surrounding code still reads, finishing it means
+    /// reassigning that, or collapsing the statements that build the
+    /// command into one chained expression.
     pub perfectionist::MUTATING_COMMAND_BUILDER,
     Warn,
     "a `std::process::Command` setter taking `&mut self` where `command-extra`'s by-value form exists",
@@ -167,7 +173,7 @@ impl Register for rule::MutatingCommandBuilder {
 }
 
 impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
-    fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &Expr<'tcx>) {
+    fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
         let ExprKind::MethodCall(path_segment, receiver, arguments, _) = expr.kind else {
             return;
         };
@@ -204,6 +210,12 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         if !self.suggestion_is_available(cx, expr) {
             return;
         }
+        let conversion = setter::argument_conversion(cx, expr, arguments);
+        let names_generic_arguments = path_segment
+            .args
+            .is_some_and(|arguments| !arguments.args.is_empty());
+        let receiver_is_a_temporary = receiver::produces_a_temporary(receiver);
+        let trait_is_imported = availability::trait_is_imported(cx, expr);
         emit::violation(
             cx,
             emit::Violation {
@@ -211,11 +223,9 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 method_span: path_segment.ident.span,
                 std_form: path_segment.ident.name,
                 by_value_form,
-                conversion: setter::argument_conversion(cx, expr, arguments),
-                names_generic_arguments: path_segment
-                    .args
-                    .is_some_and(|arguments| !arguments.args.is_empty()),
-                receiver_is_a_temporary: receiver::produces_a_temporary(receiver),
+                conversion,
+                names_generic_arguments,
+                receiver_is_a_temporary,
                 // The position has to be written where the call is. A
                 // macro taking an expression and using it twice gives
                 // both uses the caller's span, so a rename shown for the
@@ -235,10 +245,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 // stamping one written call into two modules can still
                 // earn a diagnostic apiece -- each naming what its own
                 // module needs.
-                remedy: match (
-                    self.command_extra_is_declared(cx),
-                    availability::trait_is_imported(cx, expr),
-                ) {
+                remedy: match (self.command_extra_is_declared(cx), trait_is_imported) {
                     (_, true) => None,
                     (true, false) => Some("bring `command_extra::CommandExtra` into scope here"),
                     (false, false) => Some(
@@ -246,6 +253,17 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                          `CommandExtra`",
                     ),
                 },
+                fix: fix::parts(
+                    cx,
+                    expr,
+                    &fix::Inputs {
+                        by_value_form,
+                        conversion,
+                        receiver_is_a_temporary,
+                        trait_is_imported,
+                        names_generic_arguments,
+                    },
+                ),
             },
         );
     }

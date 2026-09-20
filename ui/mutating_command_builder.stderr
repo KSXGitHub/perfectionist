@@ -106,8 +106,10 @@ warning: `Command::current_dir` takes `&mut self`, so it cannot yield the comman
 LL |     configure(Command::new("ls").current_dir(dir));
    |                                  ^^^^^^^^^^^
    |
-   = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: whether the change reaches further depends on what the surrounding code does with this call's value
+help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL |     configure(&mut Command::new("ls").with_current_dir(dir));
+   |               ++++                    +++++
 
 warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -163,8 +165,10 @@ warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
 LL |     configure(Command::new("ls").stdout(file));
    |                                  ^^^^^^
    |
-   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
-   = help: whether the change reaches further depends on what the surrounding code does with this call's value
+help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+   |
+LL |     configure(&mut Command::new("ls").with_stdout(file.into()));
+   |               ++++                    +++++           +++++++
 
 warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC

@@ -82,7 +82,7 @@ pub(super) fn resolves_to_an_inherent_command_method(
 
 /// Whether the by-value counterpart would take this call's argument as
 /// it stands.
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Conversion {
     /// The argument's type is already the one the counterpart takes.
     None,

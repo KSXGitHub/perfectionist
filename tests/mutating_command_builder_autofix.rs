@@ -1,30 +1,27 @@
-//! End-to-end proof that `mutating_command_builder` never has
-//! `cargo dylint --fix` rewrite anything.
+//! End-to-end proof of which rewrites `mutating_command_builder` hands
+//! the fixer, and which it declines.
 //!
 //! Applicability is the one property a `.stderr` cannot show: a
-//! suggestion shown as a concrete rewrite looks the same whether or
-//! not the fixer will apply it. This rule offers none that it will,
-//! because whether the rename compiles cannot be decided without
-//! re-typechecking — the reasoning is on the lint's own rustdoc.
+//! suggestion shown as a concrete rewrite looks the same whether or not
+//! the fixer will apply it. So the fixtures are run through the real
+//! fixer and judged on what it did to the source.
 //!
-//! Four rounds of review each found a fresh way the `&mut Command` ->
-//! `Command` change ripples, the last of them silent: a by-value
-//! extension-trait method is found before an inherent `&mut self` one,
-//! so renaming one link of a chain can redirect the next link to the
-//! author's own method with nothing failing to compile. `cargo fix`
-//! reverts a file whose fixes error; it cannot revert one whose fixes
-//! merely change behaviour.
+//! What makes a rewrite applicable here is that it preserves the
+//! expression's type. The rename alone turns `&mut Command` into
+//! `Command`, which the context may reject, and which can redirect a
+//! later call in the same chain to an extension trait of the author's
+//! own -- compiling, and invisible in the diff. Prefixing `&mut `
+//! restores the type, so the context and every following method resolve
+//! as they did before. What is left after that is checkable, and the
+//! lint's own rustdoc lists it.
 //!
-//! So the fixture collects every shape the rule fires on and asserts the
-//! source came back untouched. Which assertion does that work is worth
-//! knowing, and is why there are two fixture crates rather than one.
-//! `cargo fix` reverts a whole crate whose fixes error, so in a crate
-//! holding any shape whose rewrite errors the file comes back
-//! byte-identical whatever the applicability was -- there the assertion
-//! that bites is the check for `errors present after applying fixes`.
-//! Only where nothing errors does the fixer's work survive on disk for a
-//! whole-file comparison to see anything, so the shapes whose rewrite
-//! compiles get a crate to themselves.
+//! Two fixtures, because the two directions fail differently.
+//! `applied.rs` is compared against `applied.fixed.rs`, so a rewrite
+//! that stops being applied, or starts being applied differently, fails
+//! here. `not_applied.rs` is compared against itself, and
+//! `silent_redirect` is what makes that comparison able to fail at all:
+//! its rewrite would compile, so `cargo fix` would have no error to
+//! revert on and an applied rewrite would survive on disk to be seen.
 
 pub mod _utils;
 
@@ -48,16 +45,17 @@ fn cargo_toml(package: &str) -> String {
     )
 }
 
-/// The shapes whose rewrite does not compile. The fixer is asserted to
-/// hand them back byte-identical, so they live in a file rather than in
-/// a literal here: what the assertion compares is what a reader edits.
-const REWRITES_THAT_ERROR: &str =
-    include_str!("fixtures/mutating_command_builder_autofix/rewrites_that_error.rs");
+/// The shapes the fixer is asserted to rewrite, and what it must turn
+/// them into. They live in files rather than in literals here: what the
+/// assertion compares is what a reader edits.
+const APPLIED: &str = include_str!("fixtures/mutating_command_builder_autofix/applied.rs");
 
-/// The shapes whose rewrite would compile, alone in their own crate for
-/// the reason their own header gives.
-const REWRITES_THAT_COMPILE: &str =
-    include_str!("fixtures/mutating_command_builder_autofix/rewrites_that_compile.rs");
+const APPLIED_FIXED: &str =
+    include_str!("fixtures/mutating_command_builder_autofix/applied.fixed.rs");
+
+/// The shapes the rule declines to hand over, for each of the reasons
+/// it declines.
+const NOT_APPLIED: &str = include_str!("fixtures/mutating_command_builder_autofix/not_applied.rs");
 
 /// Sibling rules would rewrite the same lines on their own account,
 /// which would make "did the fixer touch this line?" answer the wrong
@@ -90,79 +88,46 @@ fn fix(package: &str, source: &str) -> (TempDir, String, String) {
 
 #[test]
 #[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
-fn the_fixer_rewrites_nothing() {
-    let (_temp, fixed, stderr) = fix("mutating_command_builder_autofix", REWRITES_THAT_ERROR);
+fn the_fixer_applies_the_whole_rewrite() {
+    let (_temp, fixed, stderr) = fix("mutating_command_builder_applied", APPLIED);
 
     // `cargo fix` prints this after applying a suggestion that does not
-    // compile, having reverted the file. Nothing here should be applied
-    // in the first place, so it should never appear.
+    // compile, having reverted the file. A rewrite this rule hands over
+    // is one it has established compiles, so it should never appear.
     assert!(
         !stderr.contains("errors present after applying fixes"),
         "the autofix produced code that does not compile; stderr was:\n{stderr}",
     );
 
-    // A setter inside a `macro_rules!` body is reported at the macro
-    // definition, once per invocation, and any rewrite would land on
-    // every call site. The rule stays out of expansions entirely.
-    assert!(
-        !stderr.contains("macro-body"),
-        "expected no diagnostic inside the macro body; stderr was:\n{stderr}",
-    );
-
     assert_eq!(
-        fixed, REWRITES_THAT_ERROR,
-        "the fixer rewrote the fixture; it should leave every shape alone",
+        fixed, APPLIED_FIXED,
+        "the fixer did not turn the fixture into its `.fixed` counterpart",
     );
-
-    // And the rule fired on every shape, so the assertion above is not
-    // passing because the fixture went quiet. The distinct arguments are
-    // what let one shape be named without matching another.
-    for shape in [
-        "receiver-in-scope",
-        "statement-in-scope",
-        "chain-on-a-local",
-        "blanket-parent",
-        "turbofish",
-        "not-a-receiver",
-        "body-local-sibling",
-        "receiver-out-of-scope",
-    ] {
-        assert!(
-            stderr.contains(shape),
-            "expected the rule to fire on `{shape}`; stderr was:\n{stderr}",
-        );
-    }
 }
 
-/// The assertion the whole-file comparison exists for, on the shapes
-/// where it is the only thing standing.
 #[test]
 #[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
-fn rewrites_that_would_compile_are_still_not_applied() {
-    let (_temp, fixed, stderr) = fix(
-        "mutating_command_builder_rewrites_that_compile",
-        REWRITES_THAT_COMPILE,
-    );
+fn the_fixer_declines_the_rest() {
+    let (_temp, fixed, stderr) = fix("mutating_command_builder_not_applied", NOT_APPLIED);
 
-    // Nothing in this crate errors under the rename, so the fixer has
-    // nothing to revert and whatever it applied is still on disk.
     assert!(
         !stderr.contains("errors present after applying fixes"),
-        "the fixture was expected to compile either way; stderr was:\n{stderr}",
+        "nothing here should have been applied, let alone reverted; stderr was:\n{stderr}",
     );
+
     assert_eq!(
-        fixed, REWRITES_THAT_COMPILE,
-        "the fixer applied a rename whose result compiles, so nothing \
-         reverted it -- and one of these redirects the next link of a \
-         chain to the author's own method",
+        fixed, NOT_APPLIED,
+        "the fixer rewrote a shape the rule declined to hand it",
     );
 
     // And the rule fired on each shape, so the assertion above is not
     // passing because the fixture went quiet.
     for shape in [
         "silent-redirect",
-        "statement-temporary",
-        "field-of-a-temporary",
+        "over-a-binding",
+        "turbofish",
+        "trait-out-of-scope",
+        "ordered-drop",
     ] {
         assert!(
             stderr.contains(shape),
