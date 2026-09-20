@@ -24,19 +24,10 @@ declare_tool_lint! {
     /// names the `command_extra::CommandExtra` counterpart that takes
     /// `self` instead of `&mut self`.
     ///
-    /// The three stdio setters are generic over `Into<Stdio>` where
-    /// their counterparts take a concrete `Stdio`. Where the argument
-    /// is already a `Stdio` the counterpart takes it as it stands;
-    /// where it is a `File` or a `ChildStdout`, the diagnostic says to
-    /// convert it with `.into()`.
-    ///
-    /// A receiver the by-value form could not consume is left alone:
-    /// `CommandExtra` takes `self`, so neither a `&mut Command` nor a
-    /// field reached through a reference can adopt it, and the
-    /// diagnostic would have no valid fix. By default the lint also
-    /// stays silent in a crate that does not depend on `command-extra`,
-    /// since the method it names would not exist there; the
-    /// `require_command_extra_dependency` knob turns that off.
+    /// A receiver it could not take ownership of — a `&mut Command`, or
+    /// a field reached through one — is left alone. So is a crate that
+    /// does not depend on `command-extra`, unless
+    /// `require_command_extra_dependency` says otherwise.
     ///
     /// ### Why restrict this?
     ///
