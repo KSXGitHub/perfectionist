@@ -23,8 +23,8 @@
 //! byte-identical whatever the applicability was -- there the assertion
 //! that bites is the check for `errors present after applying fixes`.
 //! Only where nothing errors does the fixer's work survive on disk for a
-//! whole-file comparison to see anything, so the silent shape gets a
-//! crate to itself.
+//! whole-file comparison to see anything, so the shapes whose rewrite
+//! compiles get a crate to themselves.
 
 pub mod _utils;
 
@@ -48,15 +48,15 @@ fn cargo_toml(package: &str) -> String {
     )
 }
 
-/// Every shape the rule fires on. The fixer is asserted to hand it back
-/// byte-identical, so it lives in a file rather than in a literal here:
-/// what the assertion compares is what a reader edits.
+/// The shapes whose rewrite does not compile. The fixer is asserted to
+/// hand them back byte-identical, so they live in a file rather than in
+/// a literal here: what the assertion compares is what a reader edits.
 const EVERY_SHAPE: &str = include_str!("fixtures/mutating_command_builder_autofix/every_shape.rs");
 
-/// The one shape whose rewrite would compile, alone in its own crate for
-/// the reason its own header gives.
-const SILENT_REDIRECT: &str =
-    include_str!("fixtures/mutating_command_builder_autofix/silent_redirect.rs");
+/// The shapes whose rewrite would compile, alone in their own crate for
+/// the reason their own header gives.
+const REWRITES_THAT_COMPILE: &str =
+    include_str!("fixtures/mutating_command_builder_autofix/rewrites_that_compile.rs");
 
 /// Sibling rules would rewrite the same lines on their own account,
 /// which would make "did the fixer touch this line?" answer the wrong
@@ -133,12 +133,15 @@ fn the_fixer_rewrites_nothing() {
     }
 }
 
-/// The assertion the whole-file comparison exists for, on the one shape
+/// The assertion the whole-file comparison exists for, on the shapes
 /// where it is the only thing standing.
 #[test]
 #[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
-fn a_rewrite_that_would_compile_is_still_not_applied() {
-    let (_temp, fixed, stderr) = fix("mutating_command_builder_silent_redirect", SILENT_REDIRECT);
+fn rewrites_that_would_compile_are_still_not_applied() {
+    let (_temp, fixed, stderr) = fix(
+        "mutating_command_builder_rewrites_that_compile",
+        REWRITES_THAT_COMPILE,
+    );
 
     // Nothing in this crate errors under the rename, so the fixer has
     // nothing to revert and whatever it applied is still on disk.
@@ -146,15 +149,23 @@ fn a_rewrite_that_would_compile_is_still_not_applied() {
         !stderr.contains("errors present after applying fixes"),
         "the fixture was expected to compile either way; stderr was:\n{stderr}",
     );
-    assert!(
-        stderr.contains("silent-redirect"),
-        "expected the rule to fire on the chain head; stderr was:\n{stderr}",
+    assert_eq!(
+        fixed, REWRITES_THAT_COMPILE,
+        "the fixer applied a rename whose result compiles, so nothing \
+         reverted it -- and one of these redirects the next link of a \
+         chain to the author's own method",
     );
 
-    assert_eq!(
-        fixed, SILENT_REDIRECT,
-        "the fixer applied the rename, which redirects the next link of \
-         the chain to the author's own method with nothing failing to \
-         compile",
-    );
+    // And the rule fired on each shape, so the assertion above is not
+    // passing because the fixture went quiet.
+    for shape in [
+        "silent-redirect",
+        "statement-temporary",
+        "field-of-a-temporary",
+    ] {
+        assert!(
+            stderr.contains(shape),
+            "expected the rule to fire on `{shape}`; stderr was:\n{stderr}",
+        );
+    }
 }

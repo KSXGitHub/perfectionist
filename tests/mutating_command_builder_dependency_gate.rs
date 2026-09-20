@@ -15,6 +15,10 @@
 //!   lint used to fire there and tell the author to write a `use` that
 //!   is `E0432`.
 //!
+//! And one the declared set cannot answer at all: Cargo keys `--extern`
+//! by the manifest key, so a dependency renamed there is not there under
+//! `command_extra`. An import of the trait is what carries that case.
+//!
 //! Both fixtures build their `command-extra` from a path dependency
 //! inside the temporary project, so nothing here touches the network.
 //! The stub only has to carry the crate *name*: the gate reads the
@@ -149,5 +153,44 @@ fn a_transitively_reached_crate_stays_silent() {
         "expected silence in a crate that cannot name `command_extra`, \
          since the import the diagnostic would ask for is `E0432`; \
          stderr was:\n{stderr}",
+    );
+}
+
+#[test]
+fn a_renamed_dependency_fires_through_its_import() {
+    let source = text_block_fnl! {
+        "use ce::CommandExtra;"
+        "use std::process::Command;"
+        ""
+        "pub fn the_counterpart_is_reachable() -> Command {"
+        r#"    Command::new("ls").with_arg("by-value-compiles-here")"#
+        "}"
+        ""
+        "pub fn should_be_flagged() {"
+        r#"    let mut command = Command::new("ls");"#
+        r#"    command.arg("renamed-dependency");"#
+        "}"
+    };
+    let (_temp, stderr, success) = run_project_with_config(
+        "gate",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            (
+                "Cargo.toml",
+                &fixture_manifest(r#"ce = { package = "command-extra", path = "command-extra" }"#),
+            ),
+            ("src/lib.rs", source),
+            ("command-extra/Cargo.toml", STUB_MANIFEST),
+            ("command-extra/src/lib.rs", STUB_SOURCE),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        stderr.contains(LINT),
+        "expected a `{LINT}` warning in a crate whose manifest renames \
+         the dependency, since the trait is imported there and the \
+         counterpart compiles; stderr was:\n{stderr}",
     );
 }

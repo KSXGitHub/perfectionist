@@ -1,11 +1,12 @@
 //! Whether the crate whose methods the diagnostic names is reachable
 //! from the code under lint.
 //!
-//! The answers drive different things. Whether the crate is a declared
-//! dependency decides whether the lint speaks at all, under the
-//! `require_command_extra_dependency` knob. Whether the trait is
-//! imported at the call decides only which remedy the diagnostic
-//! names.
+//! Neither answer is the whole of it on its own. Whether the crate is a
+//! declared dependency is what the `require_command_extra_dependency`
+//! knob gates on, and whether the trait is imported at the call picks
+//! which remedy the diagnostic names -- but an import is also evidence
+//! of a dependency the declared set cannot see, so the caller reads it
+//! for both.
 
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{Expr, Item, ItemKind, Node};
@@ -20,7 +21,7 @@ const CRATE: &str = "command_extra";
 /// not imported, the diagnostic says to import it.
 const TRAIT: &str = "CommandExtra";
 
-/// Whether the crate under lint declares a dependency on
+/// Whether the crate under lint declares a dependency named
 /// `command_extra`.
 ///
 /// Not whether the compiler *loaded* it, which is a different question
@@ -28,15 +29,24 @@ const TRAIT: &str = "CommandExtra";
 /// declared dependency nothing has named yet is absent from
 /// `tcx.crates(())` -- and that is the crate the advice most applies
 /// to. A crate reached only through another crate's signature is
-/// present there, though this crate cannot name it, and the diagnostic
-/// would then offer an import that is `E0432`.
+/// present there, though this crate cannot name it at all.
 ///
-/// A crate this one can name arrived one of two ways, and which depends
-/// on how the compiler was driven rather than on anything the author
-/// wrote. Cargo passes `--extern command_extra=...`, recorded whether
-/// or not the crate is ever named. A crate written with
-/// `extern crate command_extra;` records the item instead, which is
-/// what the fixtures under `ui/` do.
+/// Two sources, and which holds the answer depends on how the compiler
+/// was driven rather than on anything the author wrote. Cargo passes
+/// `--extern <manifest key>=...`, recorded whether or not the crate is
+/// ever named. A crate written with `extern crate command_extra;`
+/// records the item with the resolver instead, which is what the
+/// fixtures under `ui/` do.
+///
+/// Two things this cannot see. Because Cargo keys `--extern` by the
+/// manifest key, a dependency renamed there
+/// (`ce = { package = "command-extra" }`) is not found under
+/// `command_extra` -- the caller reads an import of the trait as proof
+/// instead, which covers every crate that actually uses it. And
+/// `--extern` carries dev-dependencies when the unit being compiled is
+/// a test one, so in a crate that depends on `command-extra` only for
+/// its tests, `cargo dylint -- --all-targets` opens the gate over the
+/// library's own code, where the advice cannot be followed.
 pub(super) fn crate_is_declared(cx: &LateContext<'_>) -> bool {
     if cx
         .tcx

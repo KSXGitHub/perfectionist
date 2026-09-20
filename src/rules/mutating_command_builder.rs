@@ -3,7 +3,7 @@ use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::is_from_proc_macro;
 use rustc_errors::Applicability;
-use rustc_hir::{Expr, ExprKind, Node, Stmt, StmtKind};
+use rustc_hir::{Expr, ExprKind, Node, StmtKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
@@ -126,11 +126,16 @@ impl MutatingCommandBuilder {
     }
 
     /// Whether the `CommandExtra` counterpart is writable here.
-    fn suggestion_is_available(&mut self, cx: &LateContext<'_>) -> bool {
-        // Answered either way, even with the gate off: the diagnostic
-        // reads it to decide which remedy to name.
-        let declared = self.command_extra_is_declared(cx);
-        !self.require_command_extra_dependency || declared
+    ///
+    /// An import of the trait counts on its own, and is the only
+    /// evidence there is in a crate that declares the dependency under
+    /// a manifest key renaming it: Cargo keys `--extern` by that key,
+    /// so `command_extra` is not a name the declared set holds, while
+    /// the import resolves to the trait and carries the real crate.
+    fn suggestion_is_available(&mut self, cx: &LateContext<'_>, trait_is_imported: bool) -> bool {
+        !self.require_command_extra_dependency
+            || trait_is_imported
+            || self.command_extra_is_declared(cx)
     }
 
     /// [`availability::crate_is_declared`], answered once per
@@ -162,11 +167,6 @@ impl Register for rule::MutatingCommandBuilder {
 
 impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &Expr<'tcx>) {
-        // First, because after the first call it is one bool read,
-        // where everything below it walks types or places.
-        if !self.suggestion_is_available(cx) {
-            return;
-        }
         let ExprKind::MethodCall(path_segment, receiver, arguments, _) = expr.kind else {
             return;
         };
@@ -197,10 +197,19 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         {
             return;
         }
+        // Last of the gates rather than first, though it is the
+        // cheapest to re-ask: it reads whether the trait is imported,
+        // which needs the call, and every check above it has already
+        // narrowed the calls reaching here to `Command`'s own setters.
+        let trait_is_imported = availability::trait_is_imported(cx, expr);
+        if !self.suggestion_is_available(cx, trait_is_imported) {
+            return;
+        }
         let std_form = path_segment.ident.name;
         // Show the rename only where it is the literal whole change.
         let conversion = setter::argument_conversion(cx, expr, arguments);
         let receiver_is_a_temporary = receiver::produces_a_temporary(receiver);
+        let context_accepts = accepts_an_owned_command(cx, expr);
         let rename_is_the_whole_change =
             // A rename plus an `.into()` is not a rename.
             conversion == Conversion::None
@@ -212,14 +221,11 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
             // The receiver is consumable without disturbing anyone,
             && receiver_is_a_temporary
             // and its value lands where the owned `Command` is accepted.
-            && accepts_an_owned_command(cx, expr);
+            && context_accepts;
         // Which remedy to name: the crate is absent from the manifest,
         // or present but not imported here. Only the gate knows the
         // first, and only with the gate turned off can it happen.
-        let remedy = match (
-            self.command_extra_is_declared(cx),
-            availability::trait_is_imported(cx, expr),
-        ) {
+        let remedy = match (self.command_extra_is_declared(cx), trait_is_imported) {
             (_, true) => None,
             (true, false) => Some("bring `command_extra::CommandExtra` into scope here"),
             (false, false) => {
@@ -255,20 +261,29 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                     }
                     // Something about the call reaches past the rename,
                     // so showing one would show a rewrite that does not
-                    // compile. Where that something is the receiver --
-                    // a place the surrounding code still holds, which
-                    // the rename would move -- say what finishing it
-                    // takes. The other reasons are the argument needing
-                    // `.into()`, which the advice above already names,
-                    // and a context that wanted the borrow, which is
-                    // the author's own code to read.
+                    // compile. Say what that something is: "this is not
+                    // just a rename" is not a thing a reader can act on.
+                    // The argument needing `.into()` is the one reason
+                    // the advice above already carries.
                     false => {
                         diagnostic.help(advice);
+                        if path_segment.args.is_some() {
+                            diagnostic.help(
+                                "the call names its generic arguments, and the counterpart \
+                                 takes a different set, so adjust or drop them along with \
+                                 the rename",
+                            );
+                        }
                         if !receiver_is_a_temporary {
                             diagnostic.help(
                                 "the receiver outlives this call, so finish the change by \
                                  reassigning it or by collapsing the binding into one chained \
                                  expression",
+                            );
+                        } else if !context_accepts {
+                            diagnostic.help(
+                                "what else the change takes depends on what the surrounding \
+                                 code does with this call's value",
                             );
                         }
                     }
@@ -299,15 +314,25 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
 /// may or may not accept the change, and which is likewise the
 /// typechecker's answer, so the diagnostic stays with prose there.
 fn accepts_an_owned_command(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
-    match cx.tcx.parent_hir_node(call.hir_id) {
-        Node::Expr(Expr {
-            kind: ExprKind::MethodCall(_, parent_receiver, ..),
-            ..
-        }) => parent_receiver.hir_id == call.hir_id,
-        Node::Stmt(Stmt {
-            kind: StmtKind::Semi(_),
-            ..
-        }) => true,
-        _ => false,
-    }
+    let (accepts, position) = match cx.tcx.parent_hir_node(call.hir_id) {
+        Node::Expr(parent) => match parent.kind {
+            ExprKind::MethodCall(_, parent_receiver, ..) => {
+                (parent_receiver.hir_id == call.hir_id, parent.span)
+            }
+            _ => return false,
+        },
+        Node::Stmt(statement) => match statement.kind {
+            StmtKind::Semi(_) => (true, statement.span),
+            _ => return false,
+        },
+        _ => return false,
+    };
+    // The accepting position has to be written where the call is. A
+    // macro taking an expression and using it twice gives both uses the
+    // caller's span, so the rename shown for the use in an accepting
+    // position would be written over the other use as well -- and that
+    // other one may be exactly the borrow the original returned. A
+    // macro using the expression once is withheld from too, which costs
+    // a rendered rewrite rather than a wrong one.
+    accepts && !position.from_expansion()
 }

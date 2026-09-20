@@ -240,6 +240,25 @@ mod trait_not_imported {
     }
 }
 
+// Bad, advice only: the statement that discards the value is written in
+// the macro body, and the expression in it is the caller's, so one span
+// serves both uses -- a rename shown for the discarded one would be
+// written over the borrow `configure` takes as well.
+macro_rules! discard_then_borrow {
+    ($command:expr) => {{
+        $command;
+        configure($command);
+    }};
+}
+
+#[expect(
+    perfectionist::impure_macro_arguments,
+    reason = "the argument has to be a temporary for the receiver check to reach the position check"
+)]
+fn macro_reuses_the_expression(dir: &Path) {
+    discard_then_borrow!(Command::new("ls").current_dir(dir));
+}
+
 // Not flagged: an extension trait taking `self` is found at the
 // by-value step of the autoderef chain, before `Command`'s own
 // `&mut self` setter, so this resolves to `Ext::arg` and renaming it

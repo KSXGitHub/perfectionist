@@ -1,7 +1,8 @@
-// Every shape `mutating_command_builder` fires on, for
-// `tests/mutating_command_builder_autofix.rs`. Each call carries a
-// distinct argument so an assertion there can name one shape without
-// matching another.
+// The shapes whose rewrite does not compile, for
+// `tests/mutating_command_builder_autofix.rs`, which is every shape the
+// rule fires on but the three in `rewrites_that_compile.rs`. Each call
+// carries a distinct argument so an assertion there can name one shape
+// without matching another.
 
 #![allow(dead_code, unused_imports, unused_mut, reason = "fixture")]
 
@@ -16,7 +17,7 @@ mod trait_in_scope {
 
     // Not fixable: a bare rename moves `command`, which the next
     // statement still reads.
-    pub fn statement_position() {
+    pub fn statement_over_a_binding() {
         let mut command = Command::new("ls");
         command.arg("statement-in-scope");
         let _ = command.status();
