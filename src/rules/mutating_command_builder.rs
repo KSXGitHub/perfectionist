@@ -210,15 +210,20 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 std_form: path_segment.ident.name,
                 by_value_form,
                 conversion: setter::argument_conversion(cx, expr, arguments),
-                names_generic_arguments: path_segment.args.is_some(),
+                names_generic_arguments: path_segment
+                    .args
+                    .is_some_and(|arguments| !arguments.args.is_empty()),
                 receiver_is_a_temporary: receiver::produces_a_temporary(receiver),
                 // The position has to be written where the call is. A
                 // macro taking an expression and using it twice gives
                 // both uses the caller's span, so a rename shown for the
                 // use in an accepting position would be written over the
                 // other use as well -- and that other one may be exactly
-                // the borrow the original returned.
-                position: accepting_position(cx, expr),
+                // the borrow the original returned. A macro using the
+                // expression once is withheld from too, which costs a
+                // rendered rewrite rather than a wrong one.
+                position_takes_it: accepting_position(cx, expr)
+                    .is_some_and(|span| !span.from_expansion()),
                 // Which remedy to name: the crate is absent from the
                 // manifest, or present but not imported here. Only the
                 // gate knows the first, and only with the gate turned

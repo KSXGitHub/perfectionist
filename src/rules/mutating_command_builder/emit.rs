@@ -35,11 +35,9 @@ pub(super) struct Violation {
     /// Whether the receiver is a value the expression produced rather
     /// than a place the surrounding code still holds.
     pub(super) receiver_is_a_temporary: bool,
-    /// The span of the position the call's value lands in, where that
-    /// position takes an owned `Command`. `None` where no position
-    /// does; a span that is `from_expansion` where a macro wrote the
-    /// position rather than the author.
-    pub(super) position: Option<Span>,
+    /// Whether the call's value lands in a position that takes an owned
+    /// `Command` *and* that position is written where the call is.
+    pub(super) position_takes_it: bool,
     /// Which remedy to name, where the counterpart is not yet writable
     /// here, and `None` where it is.
     pub(super) remedy: Option<&'static str>,
@@ -54,16 +52,15 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
         conversion,
         names_generic_arguments,
         receiver_is_a_temporary,
-        position,
+        position_takes_it,
         remedy,
     } = violation;
-    let position_is_written_here = position.is_some_and(|span| !span.from_expansion());
     // Rendering the rename is not a claim that it is the whole change:
     // an import may be needed alongside it, which `remedy` names.
     let show_the_rename = conversion == Conversion::None
         && !names_generic_arguments
         && receiver_is_a_temporary
-        && position_is_written_here;
+        && position_takes_it;
     span_lint_hir_and_then(
         cx,
         MUTATING_COMMAND_BUILDER,
@@ -108,20 +105,18 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                              expression",
                         );
                     }
-                    if !position_is_written_here {
-                        diagnostic.help(match position {
-                            // The position does take the owned command;
-                            // a macro wrote it.
-                            Some(_) => {
-                                "the position taking this call's value is written in a macro, \
-                                 so a rename shown here would be written over every use the \
-                                 macro makes of the expression"
-                            }
-                            None => {
-                                "what else the change takes depends on what the surrounding \
-                                 code does with this call's value"
-                            }
-                        });
+                    if !position_takes_it {
+                        // One line for both of the reasons a position
+                        // does not take the value -- it is not one of
+                        // the two that do, or a macro wrote it -- and
+                        // worded so it holds for each. Two lines here
+                        // read as two competing answers where a macro
+                        // uses one written expression twice, since both
+                        // uses carry the same span.
+                        diagnostic.help(
+                            "whether the rename is enough here depends on what the \
+                             surrounding code does with this call's value",
+                        );
                     }
                 }
             }

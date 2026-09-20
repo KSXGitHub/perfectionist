@@ -71,9 +71,11 @@ pub(super) fn crate_is_declared(cx: &LateContext<'_>) -> bool {
 /// Scoped to that module because a trait has to be in scope where the
 /// method is called, and a parent module's `use` does not reach a
 /// child. A trait reached some other way -- a glob, a project prelude,
-/// a `use` inside the body -- reads here as absent, which costs the
-/// reader a redundant "add the import" line rather than anything
-/// load-bearing.
+/// a `use` inside the body -- reads here as absent. What that costs
+/// depends on the caller: usually a redundant "add the import" line,
+/// but where this answer is the only evidence of the dependency -- as
+/// it is under a manifest key that renames the crate -- the lint stays
+/// silent instead.
 ///
 /// The trait is identified by its own name and its crate's, so a crate
 /// of the author's own packaged as `command-extra` and exporting a

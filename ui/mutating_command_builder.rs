@@ -72,6 +72,13 @@ fn stdio_on_a_temporary(file: std::fs::File) {
     Command::new("ls").stdout(file).status().ok();
 }
 
+// Bad, and the rename is shown: an empty `::<>` names no generic
+// argument, so the counterpart cannot disagree about one. The token
+// alone is not what withholds the rename.
+fn empty_turbofish() {
+    Command::new("ls").env_clear::<>();
+}
+
 // Bad, advice only: `with_envs` happens to take the same three generic
 // parameters, so this turbofish would survive the rename -- but the
 // guard is one predicate over the whole table, and only the help line

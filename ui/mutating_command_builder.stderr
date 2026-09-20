@@ -107,7 +107,7 @@ LL |     configure(Command::new("ls").current_dir(dir));
    |                                  ^^^^^^^^^^^
    |
    = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: what else the change takes depends on what the surrounding code does with this call's value
+   = help: whether the rename is enough here depends on what the surrounding code does with this call's value
 
 warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -117,7 +117,7 @@ LL |     configure(command.current_dir(dir));
    |
    = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: the receiver outlives this call, so finish the change by reassigning it or by collapsing the binding into one chained expression
-   = help: what else the change takes depends on what the surrounding code does with this call's value
+   = help: whether the rename is enough here depends on what the surrounding code does with this call's value
 
 warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -126,6 +126,18 @@ LL |     Command::new("ls").stdout(file).status().ok();
    |                        ^^^^^^
    |
    = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+
+warning: `Command::env_clear` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     Command::new("ls").env_clear::<>();
+   |                        ^^^^^^^^^
+   |
+help: use `CommandExtra::with_no_env`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL -     Command::new("ls").env_clear::<>();
+LL +     Command::new("ls").with_no_env::<>();
+   |
 
 warning: `Command::envs` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -202,15 +214,6 @@ LL |     discard_then_borrow!(Command::new("ls").current_dir(dir));
    |                                             ^^^^^^^^^^^
    |
    = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the position taking this call's value is written in a macro, so a rename shown here would be written over every use the macro makes of the expression
-
-warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
-  --> $DIR/mutating_command_builder.rs:LL:CC
-   |
-LL |     discard_then_borrow!(Command::new("ls").current_dir(dir));
-   |                                             ^^^^^^^^^^^
-   |
-   = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: what else the change takes depends on what the surrounding code does with this call's value
+   = help: whether the rename is enough here depends on what the surrounding code does with this call's value
 
 warning: N warnings emitted
