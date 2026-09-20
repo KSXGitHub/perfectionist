@@ -1,12 +1,10 @@
 //! Turning one flagged setter call into its diagnostic.
 //!
 //! Everything the diagnostic reads about the call is decided before it
-//! gets here, so this module holds no analysis. It picks what the
-//! reader is given: the whole rewrite, where `fix` built one; the bare
-//! rename, where that is all there is to show; and prose naming the
-//! part the rename does not cover, wherever it knows which part that
-//! is. "This is not just a rename" is not something a reader can act
-//! on.
+//! gets here, so this module holds no analysis. What it picks is how
+//! much of the change to show, and it names the part the rename does
+//! not cover wherever it knows which part that is: "this is not just a
+//! rename" is not something a reader can act on.
 
 use super::MUTATING_COMMAND_BUILDER;
 use super::fix::Rewrite;
@@ -47,28 +45,24 @@ pub(super) struct Violation {
     /// The node the diagnostic hangs off, so that an `#[allow(...)]`
     /// written around the call still applies to it.
     pub(super) hir_id: HirId,
-    /// The method segment alone, which is the span a rename replaces
-    /// and narrower than the call it belongs to.
+    /// The method segment alone, which is the span a rename replaces.
     pub(super) method_span: Span,
     /// The setter as written.
     pub(super) std_form: Symbol,
     /// The `CommandExtra` method to name in its place.
     pub(super) by_value_form: &'static str,
-    /// Whether the counterpart would take the argument as it stands.
+    /// Whether the argument needs `.into()`.
     pub(super) conversion: Conversion,
-    /// Whether the call names its generic arguments. They are the std
-    /// setter's, and they survive a rename of the segment alone.
+    /// Whether the call names its generic arguments.
     pub(super) names_generic_arguments: bool,
-    /// Whether the receiver is a value the expression produced rather
-    /// than a place the surrounding code still holds.
+    /// Whether the receiver is a temporary.
     pub(super) receiver_is_a_temporary: bool,
     /// Where the call's value lands.
     pub(super) landing: Landing,
     /// Which remedy to name, where the counterpart is not yet writable
     /// here, and `None` where it is.
     pub(super) remedy: Option<&'static str>,
-    /// What the rule has to offer: the whole rewrite, a reason the
-    /// rename must not even be rendered, or neither.
+    /// What the rule has to offer.
     pub(super) rewrite: Rewrite,
 }
 
@@ -162,9 +156,8 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                         Applicability::MaybeIncorrect,
                     );
                 }
-                // Each thing the change reaches past earns a line, and
-                // the argument needing `.into()` is the one the advice
-                // above already carries.
+                // The argument needing `.into()` is the line the
+                // advice above already carries.
                 false => prose(diagnostic, &violation_lines, advice),
             }
         },

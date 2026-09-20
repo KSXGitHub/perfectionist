@@ -110,10 +110,8 @@ impl MutatingCommandBuilder {
     /// to be named, at the reach `command_extra_dependency` asks for.
     ///
     /// An import of the trait counts on its own: a crate that uses the
-    /// trait has to import it, and the import resolves to the real
-    /// crate even where the declared set cannot see the dependency. It
-    /// is asked last because answering it walks the module's items,
-    /// where the other answers are memoised.
+    /// trait has to import it. It is asked last because answering it
+    /// walks the module's items, where the other answers are memoised.
     fn suggestion_is_available(&mut self, cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
         match self.command_extra_dependency {
             RequiredDeclaration::Unchecked => return true,
@@ -218,14 +216,12 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 names_generic_arguments,
                 receiver_is_a_temporary,
                 landing,
-                // Which remedy to name: `command-extra` is absent from
-                // this crate's own manifest, or present there but not
-                // imported here. The first is reachable whenever the
-                // gate passed on something else -- the workspace's own
-                // table, or nothing at all. Scoped to the module, so a macro
-                // stamping one written call into two modules can still
-                // earn a diagnostic apiece -- each naming what its own
-                // module needs.
+                // The first arm is reachable whenever the gate passed
+                // on something else -- the workspace's own table, or
+                // nothing at all. Scoping to the module lets a macro
+                // stamping one written call into two modules earn a
+                // diagnostic apiece, each naming what its module
+                // needs.
                 remedy: match (self.command_extra_is_declared(cx), trait_is_imported) {
                     (_, true) => None,
                     (true, false) => Some("bring `command_extra::CommandExtra` into scope here"),

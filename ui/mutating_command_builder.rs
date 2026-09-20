@@ -249,9 +249,7 @@ fn make_builder() -> Builder {
 }
 
 // Bad: the receiver is a field of a value this expression produced, so
-// nothing else holds a claim on it and the rewrite is applied. Only the
-// base decides, since asking whether the receiver is a place answers
-// yes for any field, whatever its base.
+// nothing else holds a claim on it and the rewrite is applied.
 //
 // The call is also inert: the command it configures is dropped at the
 // semicolon without ever being run. The rule neither notices that nor
@@ -325,8 +323,8 @@ fn spawning() {
 }
 
 // Not flagged: moving out of an index is never allowed, whatever the
-// base. `Index` hands back a borrow (`E0507`), and an array index moves
-// out of a non-copy array (`E0508`).
+// base, for the reason `src/rules/mutating_command_builder/receiver.rs`
+// gives.
 fn indexed(mut commands: Vec<Command>) {
     commands[0].arg("indexed-vec");
     [Command::new("ls")][0].arg("indexed-array");

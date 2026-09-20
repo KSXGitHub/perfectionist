@@ -3,13 +3,11 @@
 // ones it rewrites.
 //
 // What that test asserts is again the rule's decision rather than the
-// compiler's: it requires this file back byte-identical, and requires
-// the rule to have fired on every shape in it, so silence cannot pass
-// for restraint. Most of these would compile if they were rewritten
-// anyway, so a file that comes back unchanged did so because nothing
-// was offered, not because `cargo fix` reverted it. The exceptions are
-// `trait_out_of_scope`, which names a method that does not exist yet,
-// and `macro_argument`, whose rewrite has no type to infer.
+// compiler's, and it says why a file that comes back unchanged proves
+// anything. The exceptions to its argument are `trait_out_of_scope`,
+// which names a method that does not exist yet, and `macro_argument`,
+// whose rewrite has no type to infer: neither would compile if it were
+// rewritten.
 //
 // `shadowed_trailing_call` and `ordered_drop` are the ones that would
 // compile *and* be wrong, so nothing but the rule's own decision is
@@ -50,9 +48,9 @@ pub mod trait_out_of_scope {
     }
 }
 
-// The argument builds a value whose destructor runs at a point the
-// rewrite would move: the owned command is created after the argument,
-// so it would drop before `Noisy` rather than after it.
+// The argument builds a value whose destructor the rewrite would
+// reorder, as `ui/mutating_command_builder_rewrite.rs`'s `ordered_drop`
+// shows.
 pub mod ordered_drop {
     use command_extra::CommandExtra;
     use std::ffi::OsStr;
@@ -100,10 +98,10 @@ pub mod macro_argument {
     }
 }
 
-// The chain's trailing call keeps its name while its receiver becomes
-// an owned `Command`, and `Ext::status` takes `self`, so it is found
-// before `Command::status` is reached by autoref. The rewrite would
-// compile and call something else.
+// The chain's trailing call would resolve to `Ext::status` once its
+// receiver became owned, as
+// `ui/mutating_command_builder_rewrite.rs`'s `shadowed_trailing_call`
+// shows. The rewrite would compile and call something else.
 pub mod shadowed_trailing_call {
     use command_extra::CommandExtra;
     use std::io;

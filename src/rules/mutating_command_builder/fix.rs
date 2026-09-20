@@ -8,17 +8,12 @@
 //! inherent one, compiling, with nothing in the diff to show it.
 //! Renaming every link takes that name out of play.
 //!
-//! The chain's own value still has to land somewhere. Where a statement
-//! discards it, nothing constrains it. Where something reads it,
-//! prefixing `&mut ` gives back the type the original had. Where a
-//! further call takes it as a receiver, that call autorefs from the
-//! owned command, which is the form a person writes by hand.
+//! The chain's own value still has to land somewhere, which
+//! [`Position`] answers.
 //!
-//! The trailing call is the one name the rewrite cannot change, and its
-//! receiver becomes an owned `Command` where it was a `&mut Command`.
-//! That moves what the method probe finds, so the chain is declined
-//! wherever the traits in scope supply a candidate of that name.
-//! [`finds_a_trait_method`] derives why.
+//! The trailing call is the one name the rewrite cannot change, so the
+//! chain is declined wherever the traits in scope supply a candidate of
+//! that name. [`finds_a_trait_method`] derives why.
 //!
 //! The names the rewrite does introduce are safe for a different
 //! reason. `CommandExtra` has to be imported before a rewrite is built
@@ -79,14 +74,12 @@ pub(super) fn rewrite<'tcx>(
 /// The edits themselves, asked without regard to whether the
 /// counterpart can be written here yet.
 fn edits<'tcx>(cx: &LateContext<'tcx>, call: &'tcx Expr<'tcx>, inputs: &Inputs) -> Rewrite {
-    // The counterpart has to exist where the call is written, and
-    // moving the receiver takes nothing away from anyone only where
+    // Moving the receiver takes nothing away from anyone only where
     // nobody else holds it.
+    //
     // Whether the counterpart is writable here is asked last, by the
     // caller: an import does not make a reordering safe, so a hazard
-    // found below has to survive it. Sending the reader to fetch an
-    // import and then handing them a rename the rule would have
-    // refused is the worst of both.
+    // found below has to survive it.
     if !inputs.receiver_is_a_temporary {
         return Rewrite::Defer;
     }

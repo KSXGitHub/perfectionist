@@ -92,11 +92,9 @@ pub mod shadowed_next_link {
     }
 }
 
-// A macro invocation wrapping the head alone. `$expression:expr` keeps
-// the caller's spans, so the chain is rewritten as usual, but its span
-// now starts to the left of the flagged call: the `&mut ` belongs in
-// front of the invocation, where written inside it the tail would then
-// be called on a `Command` where `configure` wants the borrow.
+// A macro invocation wrapping the head alone, so the `&mut ` goes in
+// front of the invocation rather than the flagged call. The same shape
+// is in `ui/mutating_command_builder_rewrite.rs`.
 pub mod macro_wrapped_head {
     use command_extra::CommandExtra;
     use std::process::Command;
