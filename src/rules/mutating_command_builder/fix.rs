@@ -39,7 +39,7 @@ use clippy_utils::sugg::Sugg;
 use clippy_utils::ty::needs_ordered_drop;
 use clippy_utils::visitors::for_each_expr;
 use core::ops::ControlFlow;
-use rustc_hir::{Expr, ExprKind, Node, StmtKind, UnOp};
+use rustc_hir::{Expr, ExprKind, MatchSource, Node, StmtKind, UnOp};
 use rustc_lint::LateContext;
 use rustc_middle::ty;
 use rustc_middle::ty::adjustment::Adjust;
@@ -185,18 +185,14 @@ fn link<'tcx>(
     let ExprKind::MethodCall(method, _, arguments, _) = call.kind else {
         return Rewrite::Defer;
     };
-    // A written turbofish names the std setter's generic parameters,
-    // and the counterpart's do not correspond to them one for one --
-    // only `with_envs` takes the same set. Transferring them would be a
-    // guess, and dropping them leans on inference, so neither is a
-    // rewrite this can promise compiles.
-    if names_generic_arguments {
-        return Rewrite::Defer;
-    }
     // The owned command is created after the arguments are evaluated,
     // where the borrow it replaces was created before them, so it
     // becomes the statement's last temporary and drops first. Only a
     // value the call leaves behind is positioned to observe that.
+    //
+    // Asked before the turbofish below, which also declines: a reader
+    // renaming by hand reorders the destructors whether or not generic
+    // arguments are written, so that line has to be reachable.
     if arguments
         .iter()
         .any(|argument| creates_an_ordered_drop(cx, argument))
@@ -206,6 +202,14 @@ fn link<'tcx>(
             "`{name}`'s argument leaves behind a value with a destructor, and the change \
              would drop it after the command rather than before it",
         ));
+    }
+    // A written turbofish names the std setter's generic parameters,
+    // and the counterpart's do not correspond to them one for one --
+    // only `with_envs` takes the same set. Transferring them would be a
+    // guess, and dropping them leans on inference, so neither is a
+    // rewrite this can promise compiles.
+    if names_generic_arguments {
+        return Rewrite::Defer;
     }
     if call.span.from_expansion() || method.ident.span.from_expansion() {
         return Rewrite::Defer;
@@ -254,9 +258,13 @@ fn link<'tcx>(
 ///   pin them -- `Into` and `TryInto` are the everyday cases -- the
 ///   answer comes back "no" for want of an inference.
 /// - What the method's receiver is. `self` and `&self` both reach the
-///   owned command ahead of the inherent setter, `&mut self` ties with
-///   it and loses, and an arbitrary self type reaches none of this. The
-///   distinction buys a rewrite only in a shape nobody writes.
+///   owned command ahead of the inherent setter, and `&mut self` ties
+///   with it and loses. Declining on the receiver shape alone would be
+///   unsound, though, because an inherent `&self` method loses to a
+///   trait `&mut self` one before the change and wins after. The sound
+///   refinement is narrower -- no inherent method of the name, and
+///   every candidate taking `&mut self` -- and what it would buy is
+///   `CommandExt::exec` and its neighbours, which this costs today.
 ///
 /// `is_method` is what keeps an associated function out, since its
 /// `has_self` is exactly the set `value.name()` can reach: a
@@ -372,13 +380,23 @@ fn outlives_the_call<'tcx>(
         };
         match parent.kind {
             ExprKind::Field(base, field) if base.hir_id == carried.hir_id => {
-                return leaves_a_droppable_sibling(cx, base, field);
+                if leaves_a_droppable_sibling(cx, base, field) {
+                    return true;
+                }
+                // Nothing else in the base has a destructor, so what
+                // becomes of this field is the whole of the question --
+                // and that is the next one up. Answering it here would
+                // stop at one level, where a projection can go on.
             }
             ExprKind::Index(base, ..) | ExprKind::Unary(UnOp::Deref, base)
                 if base.hir_id == carried.hir_id =>
             {
                 return true;
             }
+            // `?` moves its payload out of the branch it builds, so
+            // the value is handed over as surely as an argument is.
+            ExprKind::Match(scrutinee, _, MatchSource::TryDesugar(_))
+                if scrutinee.hir_id == carried.hir_id => {}
             ExprKind::Call(_, arguments)
                 if arguments
                     .iter()
@@ -410,21 +428,28 @@ fn is_borrowed<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
 }
 
 /// Whether reading `field` out of `base` leaves anything behind whose
-/// destructor runs at the end of the statement.
+/// destructor runs at the end of the statement, counting only what the
+/// projection does not carry away.
 ///
-/// A base the walk cannot take apart answers `true`, since a guard
-/// that cannot tell should decline.
+/// A destructor on the base's own type is the case to watch: it sits on
+/// no field, so a scan of the siblings finds nothing -- and a type that
+/// has one cannot be taken apart at all, so the field is copied or
+/// borrowed and the whole base stays. A base the walk cannot take apart
+/// answers `true` as well, since a guard that cannot tell should
+/// decline.
 fn leaves_a_droppable_sibling<'tcx>(
     cx: &LateContext<'tcx>,
     base: &'tcx Expr<'tcx>,
     field: Ident,
 ) -> bool {
-    match cx.typeck_results().expr_ty(base).kind() {
+    let base_ty = cx.typeck_results().expr_ty(base);
+    match base_ty.kind() {
         ty::Adt(adt, args) if adt.is_struct() => {
-            adt.non_enum_variant().fields.iter().any(|sibling| {
-                sibling.name != field.name
-                    && needs_ordered_drop(cx, sibling.ty(cx.tcx, args).skip_norm_wip())
-            })
+            (adt.has_dtor(cx.tcx) && needs_ordered_drop(cx, base_ty))
+                || adt.non_enum_variant().fields.iter().any(|sibling| {
+                    sibling.name != field.name
+                        && needs_ordered_drop(cx, sibling.ty(cx.tcx, args).skip_norm_wip())
+                })
         }
         // A tuple names its fields by position and carries their types
         // directly rather than through an `AdtDef`.
