@@ -84,6 +84,21 @@ pattern that several rules call out by reference — live in
   `chain.pipe_mut(f)`), and flags a unary call heading a chain that
   pipes (suggests `x.pipe(g)`). All four checks default to enforce.
 
+### Command builder
+- [`mutating-command-builder.md`](./mutating-command-builder.md) — when
+  a `std::process::Command` is owned, prefer `command-extra`'s
+  by-value setters (`with_arg`, `without_env`, …) over std's
+  `&mut self` ones, so the whole construction stays an expression.
+  Exempts a `&mut Command` receiver, which cannot use them, and stays
+  silent in a crate without the dependency
+  (`require_command_extra_dependency = false` opts in).
+- [`folded-command-setter.md`](./folded-command-setter.md) — flag a
+  `fold` of a singular `CommandExtra` setter over an iterator where
+  the plural exists (`without_env` → `without_envs`), however the
+  folder is spelled. Fires only where the rewrite deletes the fold
+  rather than relocating it, so a transforming closure or an adapter
+  chain in the receiver stays quiet.
+
 ### Option and boolean expressions
 - [`some-bool-comparison.md`](./some-bool-comparison.md) — flag an
   `Option<bool>` compared with `==` or `!=` against a `Some` of a
