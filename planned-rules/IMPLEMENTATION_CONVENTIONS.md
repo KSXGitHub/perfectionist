@@ -302,37 +302,25 @@ that is the trap.
 
 ## `include!` targets are out of scope
 
-A lint owes nothing to the contents of a file reached by `include!`.
-It need not analyse them, need not fire in them, and need not promise
-that a fix whose spans land inside one is right. Where a rule happens
-to work there, fine; where it does not, that is not a defect to file.
+A lint owes nothing to the contents of an `include!` target: no
+analysis, no diagnostic, and no promise about a fix whose spans land
+inside one.
 
-The reason is that an `include!` target is not a unit of source in the
-sense the rest of this catalogue assumes. It is a token fragment with
-no scope of its own: what is in scope at a call inside it — the
-imports, the `#[cfg]` gates, the surrounding items — is supplied by
-whichever site included it. One file can be included from several such
-sites, so a span inside it has no single meaning, and an edit computed
-for one site rewrites the file for all of them.
+An `include!` target is a token fragment rather than a unit of source.
+It has no scope of its own — the imports, the `#[cfg]` gates and the
+surrounding items all come from whichever site included it — and one
+target can serve several sites, so a span inside it has no single
+meaning and an edit computed for one site rewrites the file for all of
+them. A generated target is a macro under another name, and the
+generator is where a change belongs; a hand-written one had `mod` and
+`use` available, which express the same thing with a scope attached.
 
-Two uses are worth separating, and the policy covers both:
-
-- **A generated file.** This is most of what `include!` is for, and it
-  is functionally a macro: the tokens come from something the author
-  does not edit, so rewriting them is wrong for the same reason
-  rewriting a `macro_rules!` body is. The generator is where a change
-  belongs.
-- **A hand-written file that could have been a module.** `mod` and
-  `use` express that directly, so reaching for `include!` instead
-  gives up the properties a module has. Out of scope by decision
-  rather than by capability.
-
-One trap worth naming: an `include!`d span is **not**
-`from_expansion()`, so the guard that keeps a rule out of macro bodies
-does not keep it out of here. A source-layout rule gets the exclusion
-for free by routing through `module_reparse`, whose file set is scoped
-to files that back a module in the HIR tree. A rule that walks the HIR
-does not get it — and, under this policy, does not need it.
+An `include!` target's spans are **not** `from_expansion()`, so the
+guard that keeps a rule out of macro bodies does not keep it out of
+here. A source-layout rule gets the exclusion anyway by routing
+through `module_reparse`, whose file set is scoped to files backing a
+module in the HIR tree; a rule walking the HIR does not, and needs
+none.
 
 ## Recognising test-exclusive code
 
