@@ -242,10 +242,10 @@ fn a_member_inherits_the_dependency_but_its_sibling_does_not() {
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
-            ("Cargo.toml", &root),
-            ("inherits/Cargo.toml", &inheriting),
+            ("Cargo.toml", root),
+            ("inherits/Cargo.toml", inheriting),
             ("inherits/src/lib.rs", &member("inherits")),
-            ("abstains/Cargo.toml", &abstaining),
+            ("abstains/Cargo.toml", abstaining),
             ("abstains/src/lib.rs", &member("abstains")),
             ("command-extra/Cargo.toml", STUB_MANIFEST),
             ("command-extra/src/lib.rs", STUB_SOURCE),
