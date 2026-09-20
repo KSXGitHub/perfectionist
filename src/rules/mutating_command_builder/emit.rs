@@ -109,13 +109,15 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                         // One line for both of the reasons a position
                         // does not take the value -- it is not one of
                         // the two that do, or a macro wrote it -- and
-                        // worded so it holds for each. Two lines here
-                        // read as two competing answers where a macro
-                        // uses one written expression twice, since both
-                        // uses carry the same span.
+                        // worded so it holds for each and adds to the
+                        // lines above rather than re-opening what they
+                        // settled. Two lines here read as two competing
+                        // answers where a macro uses one written
+                        // expression twice, since both uses carry the
+                        // same span.
                         diagnostic.help(
-                            "whether the rename is enough here depends on what the \
-                             surrounding code does with this call's value",
+                            "what else the change takes depends on what the surrounding \
+                             code does with this call's value",
                         );
                     }
                 }

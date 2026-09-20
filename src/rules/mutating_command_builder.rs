@@ -219,15 +219,20 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 // both uses the caller's span, so a rename shown for the
                 // use in an accepting position would be written over the
                 // other use as well -- and that other one may be exactly
-                // the borrow the original returned. A macro using the
-                // expression once is withheld from too, which costs a
-                // rendered rewrite rather than a wrong one.
+                // the borrow the original returned. So a position the
+                // macro's own body supplies is declined however many
+                // times the macro uses the expression, which costs a
+                // rendered rewrite rather than a wrong one; a position
+                // among the caller's own tokens is not.
                 position_takes_it: accepting_position(cx, expr)
                     .is_some_and(|span| !span.from_expansion()),
                 // Which remedy to name: the crate is absent from the
                 // manifest, or present but not imported here. Only the
                 // gate knows the first, and only with the gate turned
-                // off can it happen.
+                // off can it happen. Scoped to the module, so a macro
+                // stamping one written call into two modules can still
+                // earn a diagnostic apiece -- each naming what its own
+                // module needs.
                 remedy: match (
                     self.command_extra_is_declared(cx),
                     availability::trait_is_imported(cx, expr),

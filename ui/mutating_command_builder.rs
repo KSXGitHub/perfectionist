@@ -97,6 +97,36 @@ fn turbofished() {
         .ok();
 }
 
+// The help lines are independent, so the combinations are what the
+// reader actually meets. Each of these four pairs or triples them, and
+// they are here to be read together as prose: a line that re-opens what
+// another has settled is only visible side by side.
+
+// Bad: an argument needing `.into()`, and a position that wanted the
+// borrow. Advice plus the position line, and no receiver line.
+fn conversion_and_position(file: std::fs::File) {
+    configure(Command::new("ls").stdout(file));
+}
+
+// Bad: a turbofish over a binding. Advice plus the generic-arguments
+// line plus the receiver line.
+fn turbofish_and_receiver() {
+    let mut command = Command::new("ls");
+    command.args::<[&str; 1], &str>(["-l"]);
+}
+
+// Bad: a turbofish on a temporary whose value wanted the borrow. Advice
+// plus the generic-arguments line plus the position line.
+fn turbofish_and_position() {
+    configure(Command::new("ls").args::<[&str; 1], &str>(["-l"]));
+}
+
+// Bad: all three at once.
+fn turbofish_and_receiver_and_position() {
+    let mut command = Command::new("ls");
+    configure(command.args::<[&str; 1], &str>(["-l"]));
+}
+
 // Bad: the shape the rule exists for. The chain cannot be the tail
 // expression, so the settings spill into a statement over a `mut`
 // binding that exists only until they are done.
