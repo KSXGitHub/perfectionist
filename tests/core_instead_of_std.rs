@@ -4,19 +4,10 @@
 //! `ui/core_instead_of_std.rs` for `tests/ui.rs` to pick up. Each test
 //! points at its own one-fixture directory under
 //! `ui-toml/core_instead_of_std/`.
-//!
-//! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
-//! the duration of `run_tests`. The env var is process-global, so the
-//! `#[test]`s in this binary serialise themselves on a shared [`Mutex`]
-//! to avoid clobbering each other under the default parallel test
-//! harness.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::core_instead_of_std";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Serialisation shim for the rule's `dylint.toml` configuration,
 /// which the test crate cannot build from the lint's own private
@@ -38,17 +29,16 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    // A poisoned mutex from a previous panic doesn't make this lock
-    // unsafe — recover the inner guard and proceed.
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
+        .dylint_toml(dylint_toml(config))
         // The harness compiles a fixture in the 2015 edition by
         // default, where `core` and `alloc` are not in the extern
         // prelude and every fixture would need an `extern crate` line
         // this rule's audience does not write.
         .rustc_flags(["--edition=2021"])
-        .dylint_toml(dylint_toml(config))
         .run();
 }
 
