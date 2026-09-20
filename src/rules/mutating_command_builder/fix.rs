@@ -16,15 +16,16 @@
 //!
 //! The trailing call is the one name the rewrite cannot change, and its
 //! receiver becomes an owned `Command` where it was a `&mut Command`.
-//! That moves the method probe's first step. Against a `&mut Command`,
-//! `Command::status(&mut self)` matches at step 0 *by value*, because
-//! the step type is already the `&mut Command` its receiver wants.
-//! Against a `Command` it does not match by value at all, and is
-//! reached an adjustment later by autoref -- so anything matching by
-//! value at that step is found ahead of it. Only a trait can supply
-//! that, since nobody outside the standard library can write an
-//! inherent impl for `Command`, and the chain is declined wherever the
-//! traits in scope do supply one.
+//! That moves the method probe's first step, and not by a little.
+//! Against a `&mut Command`, `Command::status(&mut self)` matches at
+//! step 0 *by value*, because the step type already is the
+//! `&mut Command` its receiver wants -- the first pick the probe tries,
+//! which nothing can get ahead of. Against a `Command` it matches
+//! nothing until the `&mut` autoref, the *last* of the three picks at
+//! that step, so a candidate taking `self` or `&self` is found first.
+//! Only a trait can supply one, since nobody outside the standard
+//! library writes an inherent impl for `Command`, and the chain is
+//! declined wherever the traits in scope do supply one.
 //!
 //! The names the rewrite does introduce are safe for a different
 //! reason. `CommandExtra` has to be imported before a rewrite is built
@@ -38,10 +39,10 @@ use clippy_utils::sugg::Sugg;
 use clippy_utils::ty::needs_ordered_drop;
 use clippy_utils::visitors::for_each_expr;
 use core::ops::ControlFlow;
-use rustc_hir::{Expr, ExprKind, Node, StmtKind};
+use rustc_hir::{Expr, ExprKind, Node, StmtKind, UnOp};
 use rustc_lint::LateContext;
+use rustc_middle::ty;
 use rustc_middle::ty::adjustment::Adjust;
-use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 
 /// What the caller has already decided about the call.
@@ -79,6 +80,15 @@ pub(super) fn rewrite<'tcx>(
     if !inputs.trait_is_imported || !inputs.receiver_is_a_temporary {
         return Rewrite::Defer;
     }
+    if let ExprKind::MethodCall(_, receiver, ..) = call.kind
+        && leaves_a_sibling_behind(cx, receiver)
+    {
+        return Rewrite::Withhold(
+            "the command is a field of a temporary whose other fields have destructors, \
+             and the change would drop it before them rather than as part of them"
+                .to_owned(),
+        );
+    }
     let mut parts = match link(
         cx,
         call,
@@ -103,16 +113,16 @@ pub(super) fn rewrite<'tcx>(
         let Some(by_value_form) = setter::by_value_form(method.ident.name) else {
             // Not a setter, so it ends the chain and takes the owned
             // command by autoref, as a hand-written call would -- but
-            // only where nothing of that name is found by value first.
+            // only where nothing else of that name is found first.
             let name = method.ident.name;
-            if finds_a_by_value_trait_method(cx, parent, name) {
+            if finds_a_trait_method(cx, parent, name) {
                 return Rewrite::Withhold(format!(
-                    // `a by-value` rather than `a`/`an` before the
-                    // name, which would need the article to agree with
-                    // a method name the rule does not choose.
-                    "`{name}` ends the chain, and a by-value `{name}` is in scope, so the \
-                     owned command this change produces may resolve it differently from \
-                     the borrow it replaces",
+                    // `another` rather than `a`/`an` before the name,
+                    // which would need the article to agree with a
+                    // method name the rule does not choose.
+                    "`{name}` ends the chain, and another `{name}` is in scope as a trait \
+                     method, so the owned command this change produces may resolve it \
+                     differently from the borrow it replaces",
                 ));
             }
             return Rewrite::Apply(parts);
@@ -206,7 +216,7 @@ fn link<'tcx>(
 }
 
 /// Whether the trait methods in scope at `call` include one of this
-/// name taking `self` by value.
+/// name.
 ///
 /// The chain's trailing call keeps its name while its receiver becomes
 /// an owned `Command`, which moves the method probe's first step from
@@ -218,20 +228,25 @@ fn link<'tcx>(
 /// `Command`. Two of them would be `E0034` and stop the fixer with an
 /// error; exactly one compiles and silently calls something else.
 ///
-/// `in_scope_traits` is the set the method probe itself consults, so no
-/// trait is weighed that resolution would not weigh. Whether `Command`
-/// actually implements the trait is deliberately not asked: answering
-/// it means naming the trait's other generic arguments, and where
-/// `Command` does not pin them -- `Into` and `TryInto` are the everyday
-/// cases, and two impls for `Command` are another -- the answer comes
-/// back "no" for want of an inference, which is the wrong way to be
-/// wrong. A trait whose method could never apply here costs a declined
-/// rewrite instead.
-pub(super) fn finds_a_by_value_trait_method(
-    cx: &LateContext<'_>,
-    call: &Expr<'_>,
-    name: Symbol,
-) -> bool {
+/// `in_scope_traits` is the set the method probe itself consults, so
+/// no trait is weighed that resolution would not weigh. Two things it
+/// deliberately does not ask, both because the safe answer is the one
+/// that declines:
+///
+/// - Whether `Command` implements the trait. Answering means naming
+///   the trait's other generic arguments, and where `Command` does not
+///   pin them -- `Into` and `TryInto` are the everyday cases -- the
+///   answer comes back "no" for want of an inference.
+/// - What the method's receiver is. `self` and `&self` both reach the
+///   owned command ahead of the inherent setter, `&mut self` ties with
+///   it and loses, and an arbitrary self type reaches none of this. The
+///   distinction buys a rewrite only in a shape nobody writes.
+///
+/// `is_method` is what keeps an associated function out, since its
+/// `has_self` is exactly the set `value.name()` can reach: a
+/// `fn status(this: Self)` is excluded and an arbitrary self type is
+/// not.
+pub(super) fn finds_a_trait_method(cx: &LateContext<'_>, call: &Expr<'_>, name: Symbol) -> bool {
     cx.tcx
         .in_scope_traits(call.hir_id)
         .unwrap_or_default()
@@ -240,25 +255,8 @@ pub(super) fn finds_a_by_value_trait_method(
             cx.tcx
                 .associated_items(candidate.def_id)
                 .filter_by_name_unhygienic(name)
-                .any(|item| item.is_method() && takes_self_by_value(cx, item.def_id))
+                .any(rustc_middle::ty::AssocItem::is_method)
         })
-}
-
-/// Whether the receiver of `method` is `Self` itself rather than a
-/// reference to it. Read from the signature, so an `Arc<Self>` or a
-/// `Pin<&mut Self>` receiver answers the same as the reference does.
-///
-/// Only asked of an item that has a receiver: an associated function
-/// taking `this: Self` is never what `value.name()` resolves to.
-fn takes_self_by_value(cx: &LateContext<'_>, method: DefId) -> bool {
-    cx.tcx
-        .fn_sig(method)
-        .instantiate_identity()
-        .skip_binder()
-        .inputs()
-        .first()
-        // `Self` is a trait's own first generic parameter.
-        .is_some_and(|first| first.is_param(0))
 }
 
 /// Where the call's value lands, in the terms the rewrite cares about.
@@ -313,7 +311,7 @@ fn creates_an_ordered_drop<'tcx>(cx: &LateContext<'tcx>, argument: &'tcx Expr<'t
     for_each_expr(cx.tcx, argument, |expr| {
         // A place is not a new temporary: it is moved or borrowed, and
         // either way the rewrite does not change when it is dropped.
-        match outlives_the_call(cx, expr)
+        match outlives_the_call(cx, argument, expr)
             && !expr.is_syntactic_place_expr()
             && needs_ordered_drop(cx, cx.typeck_results().expr_ty(expr))
         {
@@ -327,14 +325,46 @@ fn creates_an_ordered_drop<'tcx>(cx: &LateContext<'tcx>, argument: &'tcx Expr<'t
 /// Whether the value `expr` produces is still alive once the call it
 /// belongs to has returned.
 ///
-/// A setter takes its argument by value, so what the argument evaluates
-/// to is moved into the call and dropped inside it: `stdin(Stdio::null())`
-/// leaves nothing behind, whatever `Stdio`'s destructor does. What does
-/// stay is a value something took a *reference* to, since the reference
-/// is what was passed and the value it points at has to outlive the
-/// statement. Borrows the author wrote and borrows the compiler
-/// inserted for a receiver count alike.
-fn outlives_the_call<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
+/// A setter takes its argument by value, so a value handed over whole
+/// is moved into the call and dropped inside it: `stdin(Stdio::null())`
+/// leaves nothing behind, whatever `Stdio`'s destructor does. Two
+/// things keep a value out of that hand-over, and each leaves it for
+/// the statement to drop:
+///
+/// - Something took a *reference* to it, so the reference is what was
+///   passed. Borrows the author wrote and borrows the compiler inserted
+///   for a receiver count alike.
+/// - Something read a *part* of it -- a field or an element -- so only
+///   that part was moved and the rest of the temporary stays behind.
+///
+/// So the walk climbs from `expr` towards the argument it belongs to,
+/// and anything but a straight hand-over on the way means the value
+/// outlives the call.
+fn outlives_the_call<'tcx>(
+    cx: &LateContext<'tcx>,
+    argument: &'tcx Expr<'tcx>,
+    expr: &'tcx Expr<'tcx>,
+) -> bool {
+    let mut carried = expr;
+    loop {
+        if is_borrowed(cx, carried) {
+            return true;
+        }
+        if carried.hir_id == argument.hir_id {
+            return false;
+        }
+        let Node::Expr(parent) = cx.tcx.parent_hir_node(carried.hir_id) else {
+            return false;
+        };
+        if reads_a_part_of(parent, carried) {
+            return true;
+        }
+        carried = parent;
+    }
+}
+
+/// Whether a reference to `expr` is taken, written or inserted.
+fn is_borrowed<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
     matches!(
         cx.tcx.parent_hir_node(expr.hir_id),
         Node::Expr(Expr {
@@ -346,4 +376,40 @@ fn outlives_the_call<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bo
         .expr_adjustments(expr)
         .iter()
         .any(|adjustment| matches!(adjustment.kind, Adjust::Borrow(_)))
+}
+
+/// Whether `parent` projects out of `expr` rather than taking it whole.
+fn reads_a_part_of(parent: &Expr<'_>, expr: &Expr<'_>) -> bool {
+    match parent.kind {
+        ExprKind::Field(base, _) | ExprKind::Index(base, ..) => base.hir_id == expr.hir_id,
+        ExprKind::Unary(UnOp::Deref, base) => base.hir_id == expr.hir_id,
+        _ => false,
+    }
+}
+
+/// Whether consuming `receiver` leaves part of a temporary behind for
+/// the statement to drop.
+///
+/// Moving a field out of a temporary leaves its other fields to be
+/// dropped at the end of the statement, where the owned command the
+/// rewrite produces is created later still and so drops first. A
+/// temporary with nothing else to drop is unaffected, which is the
+/// ordinary `make().command`.
+fn leaves_a_sibling_behind<'tcx>(cx: &LateContext<'tcx>, receiver: &'tcx Expr<'tcx>) -> bool {
+    let mut carried = receiver;
+    while let ExprKind::Field(base, field) = carried.kind {
+        let ty::Adt(adt, args) = cx.typeck_results().expr_ty(base).kind() else {
+            return false;
+        };
+        if adt.is_struct()
+            && adt.non_enum_variant().fields.iter().any(|sibling| {
+                sibling.name != field.name
+                    && needs_ordered_drop(cx, sibling.ty(cx.tcx, args).skip_norm_wip())
+            })
+        {
+            return true;
+        }
+        carried = base;
+    }
+    false
 }

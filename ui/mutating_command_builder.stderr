@@ -361,7 +361,16 @@ LL |         Command::new("ls").arg("shadowed-trailing-call").status()
    |                            ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: `status` ends the chain, and a by-value `status` is in scope, so the owned command this change produces may resolve it differently from the borrow it replaces
+   = help: `status` ends the chain, and another `status` is in scope as a trait method, so the owned command this change produces may resolve it differently from the borrow it replaces
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |         Command::new("ls").arg("shadowed-by-a-borrow").status()
+   |                            ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `status` ends the chain, and another `status` is in scope as a trait method, so the owned command this change produces may resolve it differently from the borrow it replaces
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -370,7 +379,7 @@ LL |         Command::new("ls").arg("conversion-tail").into()
    |                            ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: `into` ends the chain, and a by-value `into` is in scope, so the owned command this change produces may resolve it differently from the borrow it replaces
+   = help: `into` ends the chain, and another `into` is in scope as a trait method, so the owned command this change produces may resolve it differently from the borrow it replaces
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -380,6 +389,24 @@ LL |         Command::new("ordered-drop").arg(&Noisy);
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: `arg`'s argument leaves behind a value with a destructor, and the change would drop it after the command rather than before it
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |         Command::new("ordered-drop-field").arg(holder().name);
+   |                                            ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `arg`'s argument leaves behind a value with a destructor, and the change would drop it after the command rather than before it
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |         bundle().command.arg("sibling-of-a-drop");
+   |                          ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: the command is a field of a temporary whose other fields have destructors, and the change would drop it before them rather than as part of them
 
 warning: `Command::stdin` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC

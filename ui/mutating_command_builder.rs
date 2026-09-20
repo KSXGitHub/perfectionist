@@ -481,6 +481,31 @@ mod shadowed_trailing_call {
     }
 }
 
+// Bad, and no rewrite, for the same reason with a `&self` receiver.
+// The `&` autoref is tried before the `&mut` one, so this reaches the
+// owned command ahead of `Command::status` just as a `self` receiver
+// does -- and a blanket impl means nothing has to be written about
+// `Command` at all.
+mod shadowed_by_a_borrow {
+    use command_extra::CommandExtra;
+    use std::io;
+    use std::process::{Command, ExitStatus};
+
+    trait Logged {
+        fn status(&self) -> io::Result<ExitStatus>;
+    }
+
+    impl<Anything: ?Sized> Logged for Anything {
+        fn status(&self) -> io::Result<ExitStatus> {
+            Err(io::Error::other("shadowed-by-a-borrow"))
+        }
+    }
+
+    fn run() -> io::Result<ExitStatus> {
+        Command::new("ls").arg("shadowed-by-a-borrow").status()
+    }
+}
+
 // Bad, and the same, for the everyday case of it: `Into::into` takes
 // `self` and is in the prelude, so which `From` impl runs is decided by
 // the receiver's type.
@@ -529,8 +554,60 @@ mod ordered_drop {
         }
     }
 
+    struct Holder {
+        noisy: Noisy,
+        name: String,
+    }
+
+    fn holder() -> Holder {
+        Holder {
+            noisy: Noisy,
+            name: String::from("held"),
+        }
+    }
+
     fn run() {
         Command::new("ordered-drop").arg(&Noisy);
+    }
+
+    // Bad, and no rewrite either: `name` is moved out and the rest of
+    // the temporary stays for the statement to drop. Reading a part of
+    // a value is not the same as handing the value over, so the
+    // argument leaves something behind even though nothing borrowed it.
+    fn field_of_a_temporary_argument() {
+        Command::new("ordered-drop-field").arg(holder().name);
+    }
+}
+
+// Bad, and no rewrite: the command is a field of a temporary whose
+// other field has a destructor. Moving the command out leaves that
+// field for the statement to drop, and the owned command the change
+// produces is created later, so it drops first. `field_of_a_temporary`
+// above is the same shape with nothing else to drop.
+mod sibling_of_a_drop {
+    use command_extra::CommandExtra;
+    use std::process::Command;
+
+    struct Noisy;
+
+    impl Drop for Noisy {
+        fn drop(&mut self) {}
+    }
+
+    struct Bundle {
+        noisy: Noisy,
+        command: Command,
+    }
+
+    fn bundle() -> Bundle {
+        Bundle {
+            noisy: Noisy,
+            command: Command::new("ls"),
+        }
+    }
+
+    fn run() {
+        bundle().command.arg("sibling-of-a-drop");
     }
 }
 

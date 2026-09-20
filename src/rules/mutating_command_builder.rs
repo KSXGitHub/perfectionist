@@ -299,7 +299,7 @@ fn landing(cx: &LateContext<'_>, call: &Expr<'_>) -> Landing {
             ExprKind::MethodCall(next, parent_receiver, ..)
                 if parent_receiver.hir_id == call.hir_id =>
             {
-                match fix::finds_a_by_value_trait_method(cx, parent, next.ident.name) {
+                match fix::finds_a_trait_method(cx, parent, next.ident.name) {
                     true => Landing::MovesALaterCall,
                     false => Landing::TakesTheRename,
                 }
