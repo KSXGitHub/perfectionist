@@ -20,11 +20,11 @@
 //! against a receiver that is now owned, which is how a by-value method
 //! of the author's own comes to be found before the inherent one.
 //!
-//! Two fixtures, because the two directions fail differently.
+//! The fixtures split by direction, because the two fail differently.
 //! `applied.rs` is compared against `applied.fixed.rs`, so a rewrite
 //! that stops being applied, or starts being applied differently, fails
-//! here. `not_applied.rs` is compared against itself, and three of its
-//! four shapes would compile if they were rewritten anyway, so that
+//! here. `not_applied.rs` is compared against itself, and most of its
+//! shapes would compile if they were rewritten anyway, so that
 //! comparison can fail rather than passing because `cargo fix` reverted
 //! the file.
 

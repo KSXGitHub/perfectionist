@@ -1,8 +1,17 @@
 // Shapes `mutating_command_builder` hands the fixer, for
-// `tests/mutating_command_builder_autofix.rs`. This file and
-// `applied.fixed.rs` differ by exactly the rewrite the fixer applies,
-// and the test compares them byte for byte; `not_applied.rs` holds the
-// shapes the rule declines to hand over at all.
+// `tests/mutating_command_builder_autofix.rs`. This header is shared
+// between the pair: `applied.rs` holds the shapes as written and
+// `applied.fixed.rs` as the fixer leaves them, and the test compares
+// the fixer's output against the latter byte for byte, so the two files
+// have to differ by exactly the rewrite and by nothing else -- this
+// header included.
+//
+// What that test asserts is the rule's own decision, not the
+// compiler's. A suggestion rendered as a concrete rewrite reads the
+// same whether the rule marked it `MachineApplicable` or
+// `MaybeIncorrect`, and running the fixer is the only thing that
+// separates the two. `not_applied.rs` holds the shapes the rule
+// declines to hand over at all.
 //
 // Each call carries a distinct argument so an assertion can name one
 // shape without matching another.

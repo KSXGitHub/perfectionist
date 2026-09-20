@@ -1,12 +1,14 @@
 // Shapes `mutating_command_builder` declines to hand the fixer, for
 // `tests/mutating_command_builder_autofix.rs`; `applied.rs` holds the
-// ones it rewrites. The test asserts this file comes back
-// byte-identical.
+// ones it rewrites.
 //
-// Three of the four would compile if they were rewritten anyway, so the
-// comparison can fail rather than passing because `cargo fix` reverted
-// the file: only `trait_out_of_scope` names a method that does not
-// exist yet.
+// What that test asserts is again the rule's decision rather than the
+// compiler's: it requires this file back byte-identical, and requires
+// the rule to have fired on every shape in it, so silence cannot pass
+// for restraint. Most of these would compile if they were rewritten
+// anyway -- only `trait_out_of_scope` names a method that does not
+// exist yet -- so a file that comes back unchanged did so because
+// nothing was offered, not because `cargo fix` reverted it.
 
 #![allow(dead_code, unused_imports, reason = "fixture")]
 
