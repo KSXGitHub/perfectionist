@@ -74,9 +74,6 @@ pub(super) fn rewrite<'tcx>(
 /// The edits themselves, asked without regard to whether the
 /// counterpart can be written here yet.
 fn edits<'tcx>(cx: &LateContext<'tcx>, call: &'tcx Expr<'tcx>, inputs: &Inputs) -> Rewrite {
-    // Moving the receiver takes nothing away from anyone only where
-    // nobody else holds it.
-    //
     // Whether the counterpart is writable here is asked last, by the
     // caller: an import does not make a reordering safe, so a hazard
     // found below has to survive it.

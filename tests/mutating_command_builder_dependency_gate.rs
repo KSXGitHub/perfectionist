@@ -8,9 +8,8 @@
 //! rather than with `--extern`:
 //!
 //! - A crate that has added `command-extra` to its manifest and not yet
-//!   named it is absent from the loaded set. That is the crate the
-//!   advice most applies to, and a gate keyed on the loaded set would
-//!   be silent in it.
+//!   named it is absent from the loaded set, so a gate keyed on that
+//!   set would be silent in it.
 //! - A crate that reaches `command-extra` only through a dependency's
 //!   signature is present in the loaded set, but cannot name it. The
 //!   same gate would fire there and tell the author to write a `use`

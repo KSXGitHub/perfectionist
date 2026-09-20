@@ -100,7 +100,7 @@ fn turbofished_envs() {
 
 // Bad: the turbofish is written against `args`' two generic parameters
 // and survives a rename of the segment alone, where `with_args` takes
-// one, which is `E0107`. Advice plus the generics line.
+// one, which is `E0107`.
 fn turbofished() {
     Command::new("ls")
         .args::<[&str; 1], &str>(["-l"])
@@ -222,11 +222,10 @@ struct Builder {
 }
 
 impl Builder {
-    // Not flagged: `self.command` has type `Command` with no
-    // reference in sight, but it sits behind `&mut self`, so the
-    // by-value form cannot take it — `E0507`, cannot move out of a
-    // place behind a mutable reference. The type alone does not
-    // separate this case from the one below.
+    // Not flagged: the field sits behind `&mut self`, so the by-value
+    // form cannot take it — `E0507`, cannot move out of a place behind
+    // a mutable reference. The type alone does not separate this case
+    // from the one below.
     fn extend(&mut self) {
         self.command.arg("borrowed-field");
     }
@@ -390,8 +389,7 @@ mod trait_not_imported {
 // Bad: the statement that discards the value is written in the macro
 // body, and the expression in it is the caller's, so one span serves
 // both uses, and a rename shown for the discarded one would be written
-// over the borrow `configure` takes as well. Advice plus the position
-// line.
+// over the borrow `configure` takes as well.
 macro_rules! discard_then_borrow {
     ($command:expr) => {{
         $command;

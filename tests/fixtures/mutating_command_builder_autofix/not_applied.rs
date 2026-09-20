@@ -99,9 +99,8 @@ pub mod macro_argument {
 }
 
 // The chain's trailing call would resolve to `Ext::status` once its
-// receiver became owned, as
-// `ui/mutating_command_builder_rewrite.rs`'s `shadowed_trailing_call`
-// shows. The rewrite would compile and call something else.
+// receiver became owned; `ui/mutating_command_builder_rewrite.rs` has
+// the same shape.
 pub mod shadowed_trailing_call {
     use command_extra::CommandExtra;
     use std::io;

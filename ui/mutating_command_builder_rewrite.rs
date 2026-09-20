@@ -26,11 +26,10 @@ fn configure(command: &mut Command) {
 }
 
 // Bad: a macro invocation wrapping the head alone. `$expression:expr`
-// keeps the caller's spans, so the chain is rewritten as usual, but its
-// span now starts to the left of the flagged call. The `&mut ` goes in
-// front of the invocation; written inside it, it would borrow only the
-// part the macro was handed, and the tail would then be called on a
-// `Command` where `configure` wants the borrow.
+// keeps the caller's spans, so the chain is rewritten as usual, but the
+// `&mut ` goes in front of the invocation -- written inside it, the
+// tail would be called on a `Command` where `configure` wants the
+// borrow.
 macro_rules! passthrough {
     ($expression:expr) => {
         $expression
@@ -172,7 +171,7 @@ mod conversion_tail {
 
 // Bad, and no rewrite either, for the other reason there is: an
 // argument's own destructor is positioned to observe the reordering
-// `src/rules/mutating_command_builder/fix.rs` derives at this guard.
+// `creates_an_ordered_drop` guards against.
 mod ordered_drop {
     use command_extra::CommandExtra;
     use std::ffi::OsStr;
@@ -371,11 +370,9 @@ fn moved_argument() {
 }
 
 // Bad, and no rename is rendered: the chain's value lands in a `let`,
-// so the whole rewrite is declined, and renaming the head alone would
-// leave `.arg` written against a receiver that rename has just made
-// owned, where `Ext::arg` is found before `Command`'s own. A rendered
-// rename is a concrete edit, so it is shown only where it moves nothing
-// else.
+// so the whole rewrite is declined, and `.arg` is the later call
+// `Landing::MovesALaterCall` marks. A rendered rename is a concrete
+// edit, so it is shown only where it moves nothing else.
 mod partial_rename_would_move_a_call {
     use command_extra::CommandExtra;
     use std::process::Command;

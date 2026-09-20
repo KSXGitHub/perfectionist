@@ -65,11 +65,9 @@ pub fn whole_chain() {
         .status();
 }
 
-// And this is why they move together. With `Ext::arg` in scope, a
-// rewrite that renamed only `current_dir` would leave `.arg` to be
-// found on the owned command as `Ext::arg` rather than `Command::arg`
-// -- compiling, and invisible in the diff. Renaming the whole chain
-// takes the name out of play.
+// And this is why they move together: with `Ext::arg` in scope,
+// renaming only `current_dir` would leave `.arg` found as `Ext::arg`
+// on the owned command.
 pub mod shadowed_next_link {
     use command_extra::CommandExtra;
     use std::process::Command;
