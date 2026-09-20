@@ -29,12 +29,12 @@ fn every_setter(dir: &Path) {
     command.current_dir(dir);
 }
 
-// Bad, both ways round. std takes anything `Into<Stdio>` where the
-// by-value form takes a concrete `Stdio`, so an argument that is
-// already a `Stdio` renames straight across, and one that is merely
-// convertible needs `.into()` — which the diagnostic says. The
-// convertible one is also where the `.into()` advice meets the receiver
-// line, the pair having no other home.
+// Bad: the stdio setters, both ways round. std takes anything
+// `Into<Stdio>` where the by-value form takes a concrete `Stdio`, so an
+// argument that is already a `Stdio` renames straight across, and one
+// that is merely convertible needs `.into()` — which the diagnostic
+// says. The convertible one is also where the `.into()` advice meets
+// the receiver line, the pair having no other home.
 fn stdio_setters(file: std::fs::File) {
     let mut command = Command::new("ls");
     command.stdin(Stdio::null());
@@ -42,52 +42,55 @@ fn stdio_setters(file: std::fs::File) {
     command.stderr(Stdio::piped());
 }
 
-// Bad, and the rename is shown: a discarded statement value constrains
-// nothing, so turning the `&mut Command` into a `Command` is the whole
-// change here. No "receiver outlives this call" line either -- the
-// receiver is a temporary, and there is no binding to reassign.
+// Bad: a discarded statement value constrains nothing, so turning the
+// `&mut Command` into a `Command` is the whole change here and the
+// rewrite is applied. No "receiver outlives this call" line either,
+// since the receiver is a temporary and there is no binding to
+// reassign.
 fn statement_position() {
     Command::new("ls").arg("statement-temporary");
 }
 
 // Bad: the receiver is a temporary too, but its value is a call
 // argument, and `configure` wants the `&mut Command` the std setter
-// returns. Advice plus the position line.
+// returns. The rewrite puts that borrow back with a `&mut ` in front of
+// the chain, so the argument keeps the type it had.
 fn argument_position(dir: &Path) {
     configure(Command::new("ls").current_dir(dir));
 }
 
-// Bad, with both reasons, and the later read is what makes the receiver
-// line's condition hold: `command` is moved by the rename and read
-// afterwards, and the value goes to `configure`, which wanted the
+// Bad: both reasons at once, and the later read is what makes the
+// receiver line's condition hold. `command` is moved by the rename and
+// read afterwards, and the value goes to `configure`, which wanted the
 // `&mut Command`.
-// Neither option the receiver line names is enough on its own here --
-// both are `E0308` until the call site takes the borrow -- which is why
-// that line says the change "also has to" rather than that it finishes
-// there.
+// Neither option the receiver line names is enough on its own here,
+// since both are `E0308` until the call site takes the borrow, which is
+// why that line says the change "also has to" rather than that it
+// finishes there.
 fn both_reasons(dir: &Path) {
     let mut command = Command::new("ls");
     configure(command.current_dir(dir));
     command.status().ok();
 }
 
-// Bad, advice only, and the receiver is not the reason: a temporary
-// feeding a method receiver, which on its own earns the rename. What
-// withholds it is the `.into()` the counterpart's argument needs, since
-// a rename plus a conversion is not a rename.
+// Bad: a temporary feeding a method receiver, where the counterpart's
+// argument needs the `.into()` the std setter did for itself. The
+// conversion is part of the same rewrite, and the trailing `.status()`
+// takes the owned command by autoref, so nothing after the chain has to
+// move.
 fn stdio_on_a_temporary(file: std::fs::File) {
     Command::new("ls").stdout(file).status().ok();
 }
 
-// Bad, and the rename is shown: an empty `::<>` names no generic
-// argument, so the counterpart cannot disagree about one. The token
-// alone is not what withholds the rename.
+// Bad: an empty `::<>` names no generic argument, so the counterpart
+// cannot disagree about one and the rewrite is applied. The token alone
+// is not what withholds it.
 fn empty_turbofish() {
     Command::new("ls").env_clear::<>();
 }
 
 // Bad: `with_envs` happens to take the same three generic parameters,
-// so this turbofish would survive the rename -- but the guard is one
+// so this turbofish would survive the rename; the guard, though, is one
 // predicate over the whole table, and the generics line below has to
 // avoid claiming the counterpart's set differs. Advice plus that line.
 fn turbofished_envs() {
@@ -96,7 +99,7 @@ fn turbofished_envs() {
 
 // Bad: the turbofish is written against `args`' two generic parameters
 // and survives a rename of the segment alone, where `with_args` takes
-// one -- `E0107`. Advice plus the generics line.
+// one, which is `E0107`. Advice plus the generics line.
 fn turbofished() {
     Command::new("ls")
         .args::<[&str; 1], &str>(["-l"])
@@ -104,21 +107,22 @@ fn turbofished() {
         .ok();
 }
 
-// Three lines can join the advice -- the generic-arguments one, the
-// receiver one and the position one -- and the combinations are what a
-// reader actually meets. Between these and the fixtures above, every
-// combination of the three appears under each form of the advice,
-// because a line that re-opens what another has settled is only visible
-// side by side.
+// The generic-arguments line, the receiver line and the position line
+// can each join the advice, and the combinations are what a reader
+// actually meets. Between these and the fixtures above, every
+// combination of them appears under each form of the advice, because a
+// line that re-opens what another has settled is only visible side by
+// side.
 
 // Bad: an argument needing `.into()`, and a position that wanted the
-// borrow. Advice plus the position line, and no receiver line.
+// borrow. Both belong to the one rewrite, which is where the `&mut `
+// and the `.into()` appear together.
 fn conversion_and_position(file: std::fs::File) {
     configure(Command::new("ls").stdout(file));
 }
 
 // Bad: an argument needing `.into()` and a turbofish. Advice plus the
-// generic-arguments line -- whose check is a quick one here, since the
+// generic-arguments line, whose check is a quick one here, since the
 // stdio counterparts take a concrete `Stdio` and so have no generic
 // parameter at all.
 fn conversion_and_turbofish(file: std::fs::File) {
@@ -188,17 +192,22 @@ fn lister_by_value(dir: &Path) -> Command {
         .with_env("LANG", "C")
 }
 
-// Bad once, at the head of the chain: `Command::new(..)` is owned, so
-// `.arg("a")` fires. The calls after it receive the `&mut Command` the
-// previous one returned and are exempt.
+// Bad: once, at the head of the chain. `Command::new(..)` is owned, so
+// `.arg("a")` fires; the calls after it receive the `&mut Command` the
+// previous one returned and are exempt. The rewrite renames every link
+// all the same, since renaming the head alone would leave the rest
+// calling std setters on a receiver that is now owned.
 fn chained() {
     Command::new("ls").arg("a").arg("b").status().ok();
 }
 
-// Not flagged: a borrowed receiver cannot adopt `CommandExtra`, whose
-// methods take `self`. This is the exemption that matters — firing here
-// would emit a diagnostic with no valid fix. Exempt rather than
-// preferred: the rule has nothing better to offer, not an endorsement.
+// Not flagged: `CommandExtra`'s methods take `self`, and a borrowed
+// receiver has none to give. `std::mem::take` cannot buy one either,
+// since `Command` has no `Default`; `std::mem::replace` can, at the
+// cost of a placeholder command and a write-back around the settings,
+// which is more code than the borrowed form it would replace. Exempt
+// rather than preferred: the rule has nothing better to offer, not an
+// endorsement.
 fn configure(command: &mut Command) {
     command.arg("-l");
     command.env("LANG", "C");
@@ -239,10 +248,10 @@ fn make_builder() -> Builder {
     }
 }
 
-// Bad, and the rename is shown: the receiver is a field of a value this
-// expression produced, so nothing else holds a claim on it. Only the
-// base decides -- asking whether the receiver is a place answers yes for
-// any field, whatever its base.
+// Bad: the receiver is a field of a value this expression produced, so
+// nothing else holds a claim on it and the rewrite is applied. Only the
+// base decides, since asking whether the receiver is a place answers
+// yes for any field, whatever its base.
 fn field_of_a_temporary() {
     make_builder().command.arg("field-of-a-temporary");
 }
@@ -303,8 +312,8 @@ fn spawning() {
 }
 
 // Not flagged: moving out of an index is never allowed, whatever the
-// base -- `Index` hands back a borrow (`E0507`), and an array index
-// moves out of a non-copy array (`E0508`).
+// base. `Index` hands back a borrow (`E0507`), and an array index moves
+// out of a non-copy array (`E0508`).
 fn indexed(mut commands: Vec<Command>) {
     commands[0].arg("indexed-vec");
     [Command::new("ls")][0].arg("indexed-array");
@@ -324,8 +333,8 @@ fn through_a_macro() {
     add_arg!(command).status().ok();
 }
 
-// Bad, with the remedy that says to import the trait: the crate is
-// a declared dependency, and the root imports it, but this module does
+// Bad: with the remedy that says to import the trait. The crate is a
+// declared dependency, and the root imports it, but this module does
 // not, so writing the counterpart here would be `no method named
 // with_arg found` until the `use` arrives.
 mod trait_not_imported {
@@ -336,7 +345,7 @@ mod trait_not_imported {
         command.arg("no-import-here");
     }
 
-    // Bad, and the rename is shown beside the remedy. The rename is a
+    // Bad: the rename is shown beside the remedy. The rename is a
     // block of its own with a span, which rustc prints below every
     // span-less line, so the remedy rides in the rename's own message
     // rather than arriving above the advice it depends on.
@@ -347,7 +356,7 @@ mod trait_not_imported {
 
 // Bad: the statement that discards the value is written in the macro
 // body, and the expression in it is the caller's, so one span serves
-// both uses -- a rename shown for the discarded one would be written
+// both uses, and a rename shown for the discarded one would be written
 // over the borrow `configure` takes as well. Advice plus the position
 // line.
 macro_rules! discard_then_borrow {

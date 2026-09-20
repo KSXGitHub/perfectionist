@@ -288,15 +288,16 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
 /// position accepts the owned `Command` the by-value form returns and
 /// the original yielded a `&mut Command`.
 ///
-/// This decides how the diagnostic *reads*, not whether anything is
-/// applied: nothing is. Two positions qualify. A discarded statement
-/// value constrains nothing, so the change is sound there outright. A
-/// method receiver usually accepts it, because autoref supplies the
-/// borrow the next method wants -- but not always: a method found on
-/// `&mut Command` itself, or a bound only `&mut Command` satisfies
-/// (`.into()` being the everyday one), is lost once the receiver
-/// becomes a `Command`. Separating those needs the typechecker, which
-/// is why the rename is only ever shown and never applied.
+/// This decides how the diagnostic *reads* wherever no rewrite was
+/// built, which is the only case it is consulted in. A discarded
+/// statement value constrains nothing, so the change is sound there
+/// outright. A method receiver usually accepts it, because autoref
+/// supplies the borrow the next method wants -- but not always: a
+/// method found on `&mut Command` itself, or a bound only
+/// `&mut Command` satisfies (`.into()` being the everyday one), is lost
+/// once the receiver becomes a `Command`. Separating those needs the
+/// typechecker, which is why a rename rendered on this answer alone is
+/// `MaybeIncorrect`.
 ///
 /// Every other position -- a `let`, a call argument, a struct field --
 /// may or may not accept the change, and which is likewise the

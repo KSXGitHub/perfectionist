@@ -1,11 +1,11 @@
 //! Turning one flagged setter call into its diagnostic.
 //!
 //! Everything the diagnostic reads about the call is decided before it
-//! gets here, so this module holds no analysis. It picks between the
-//! three things a reader can be given: the whole rewrite, where `fix`
-//! built one; the bare rename, where that is all there is to show; and
-//! prose naming the part the rename does not cover, wherever it knows
-//! which part that is. "This is not just a rename" is not something a
+//! gets here, so this module holds no analysis. It picks what the
+//! reader is given: the whole rewrite, where `fix` built one; the bare
+//! rename, where that is all there is to show; and prose naming the
+//! part the rename does not cover, wherever it knows which part that
+//! is. "This is not just a rename" is not something a
 //! reader can act on.
 
 use super::MUTATING_COMMAND_BUILDER;
@@ -129,9 +129,9 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                     }
                     if !position_takes_it {
                         // One line for both of the reasons a position
-                        // does not take the value -- it is not one of
-                        // the two that do, or a macro wrote it -- since
-                        // two lines read as two competing answers where
+                        // does not take the value -- it is not a
+                        // position that does, or a macro wrote it --
+                        // since two lines read as competing answers where
                         // a macro uses one written expression twice,
                         // both uses carrying the same span. It claims
                         // neither that the change reaches further nor
