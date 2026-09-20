@@ -43,7 +43,7 @@ use rustc_hir::{Expr, ExprKind, Node, StmtKind, UnOp};
 use rustc_lint::LateContext;
 use rustc_middle::ty;
 use rustc_middle::ty::adjustment::Adjust;
-use rustc_span::{Span, Symbol};
+use rustc_span::{Ident, Span, Symbol};
 
 /// What the caller has already decided about the call.
 pub(super) struct Inputs {
@@ -74,10 +74,27 @@ pub(super) fn rewrite<'tcx>(
     call: &'tcx Expr<'tcx>,
     inputs: &Inputs,
 ) -> Rewrite {
+    match edits(cx, call, inputs) {
+        Rewrite::Apply(parts) if inputs.trait_is_imported => Rewrite::Apply(parts),
+        // Nothing to apply until the trait is in scope, but the rename
+        // is still worth showing, and the remedy says what is missing.
+        Rewrite::Apply(_) => Rewrite::Defer,
+        declined => declined,
+    }
+}
+
+/// The edits themselves, asked without regard to whether the
+/// counterpart can be written here yet.
+fn edits<'tcx>(cx: &LateContext<'tcx>, call: &'tcx Expr<'tcx>, inputs: &Inputs) -> Rewrite {
     // The counterpart has to exist where the call is written, and
     // moving the receiver takes nothing away from anyone only where
     // nobody else holds it.
-    if !inputs.trait_is_imported || !inputs.receiver_is_a_temporary {
+    // Whether the counterpart is writable here is asked last, by the
+    // caller: an import does not make a reordering safe, so a hazard
+    // found below has to survive it. Sending the reader to fetch an
+    // import and then handing them a rename the rule would have
+    // refused is the worst of both.
+    if !inputs.receiver_is_a_temporary {
         return Rewrite::Defer;
     }
     if let ExprKind::MethodCall(_, receiver, ..) = call.kind
@@ -117,12 +134,11 @@ pub(super) fn rewrite<'tcx>(
             let name = method.ident.name;
             if finds_a_trait_method(cx, parent, name) {
                 return Rewrite::Withhold(format!(
-                    // `another` rather than `a`/`an` before the name,
-                    // which would need the article to agree with a
-                    // method name the rule does not choose.
-                    "`{name}` ends the chain, and another `{name}` is in scope as a trait \
-                     method, so the owned command this change produces may resolve it \
-                     differently from the borrow it replaces",
+                    // No article before the name, which would have to
+                    // agree with a method the rule does not choose.
+                    "`{name}` ends the chain, and `{name}` is declared by a trait in scope, \
+                     so the owned command this change produces may resolve it differently \
+                     from the borrow it replaces",
                 ));
             }
             return Rewrite::Apply(parts);
@@ -327,19 +343,17 @@ fn creates_an_ordered_drop<'tcx>(cx: &LateContext<'tcx>, argument: &'tcx Expr<'t
 ///
 /// A setter takes its argument by value, so a value handed over whole
 /// is moved into the call and dropped inside it: `stdin(Stdio::null())`
-/// leaves nothing behind, whatever `Stdio`'s destructor does. Two
-/// things keep a value out of that hand-over, and each leaves it for
-/// the statement to drop:
+/// leaves nothing behind, whatever `Stdio`'s destructor does. The walk
+/// climbs from `expr` towards the argument it belongs to, and the
+/// default at each step is that the value stays: only a hand-over --
+/// being passed to a call, or being the receiver of one that takes it
+/// by value -- carries it further. A parent the walk does not
+/// recognise leaves the value behind, which is the safe way round for
+/// a guard whose job is to decline.
 ///
-/// - Something took a *reference* to it, so the reference is what was
-///   passed. Borrows the author wrote and borrows the compiler inserted
-///   for a receiver count alike.
-/// - Something read a *part* of it -- a field or an element -- so only
-///   that part was moved and the rest of the temporary stays behind.
-///
-/// So the walk climbs from `expr` towards the argument it belongs to,
-/// and anything but a straight hand-over on the way means the value
-/// outlives the call.
+/// Reading a *part* of a value is the case worth naming, because it
+/// looks like a hand-over and is not: only the part moves, and what is
+/// left of the temporary is dropped at the end of the statement.
 fn outlives_the_call<'tcx>(
     cx: &LateContext<'tcx>,
     argument: &'tcx Expr<'tcx>,
@@ -354,10 +368,27 @@ fn outlives_the_call<'tcx>(
             return false;
         }
         let Node::Expr(parent) = cx.tcx.parent_hir_node(carried.hir_id) else {
-            return false;
-        };
-        if reads_a_part_of(parent, carried) {
             return true;
+        };
+        match parent.kind {
+            ExprKind::Field(base, field) if base.hir_id == carried.hir_id => {
+                return leaves_a_droppable_sibling(cx, base, field);
+            }
+            ExprKind::Index(base, ..) | ExprKind::Unary(UnOp::Deref, base)
+                if base.hir_id == carried.hir_id =>
+            {
+                return true;
+            }
+            ExprKind::Call(_, arguments)
+                if arguments
+                    .iter()
+                    .any(|passed| passed.hir_id == carried.hir_id) => {}
+            ExprKind::MethodCall(_, receiver, arguments, _)
+                if receiver.hir_id == carried.hir_id
+                    || arguments
+                        .iter()
+                        .any(|passed| passed.hir_id == carried.hir_id) => {}
+            _ => return true,
         }
         carried = parent;
     }
@@ -378,12 +409,33 @@ fn is_borrowed<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
         .any(|adjustment| matches!(adjustment.kind, Adjust::Borrow(_)))
 }
 
-/// Whether `parent` projects out of `expr` rather than taking it whole.
-fn reads_a_part_of(parent: &Expr<'_>, expr: &Expr<'_>) -> bool {
-    match parent.kind {
-        ExprKind::Field(base, _) | ExprKind::Index(base, ..) => base.hir_id == expr.hir_id,
-        ExprKind::Unary(UnOp::Deref, base) => base.hir_id == expr.hir_id,
-        _ => false,
+/// Whether reading `field` out of `base` leaves anything behind whose
+/// destructor runs at the end of the statement.
+///
+/// A base the walk cannot take apart answers `true`, since a guard
+/// that cannot tell should decline.
+fn leaves_a_droppable_sibling<'tcx>(
+    cx: &LateContext<'tcx>,
+    base: &'tcx Expr<'tcx>,
+    field: Ident,
+) -> bool {
+    match cx.typeck_results().expr_ty(base).kind() {
+        ty::Adt(adt, args) if adt.is_struct() => {
+            adt.non_enum_variant().fields.iter().any(|sibling| {
+                sibling.name != field.name
+                    && needs_ordered_drop(cx, sibling.ty(cx.tcx, args).skip_norm_wip())
+            })
+        }
+        // A tuple names its fields by position and carries their types
+        // directly rather than through an `AdtDef`.
+        ty::Tuple(elements) => {
+            let taken = field.name.as_str().parse::<usize>().ok();
+            elements
+                .iter()
+                .enumerate()
+                .any(|(index, element)| Some(index) != taken && needs_ordered_drop(cx, element))
+        }
+        _ => true,
     }
 }
 
@@ -398,15 +450,7 @@ fn reads_a_part_of(parent: &Expr<'_>, expr: &Expr<'_>) -> bool {
 fn leaves_a_sibling_behind<'tcx>(cx: &LateContext<'tcx>, receiver: &'tcx Expr<'tcx>) -> bool {
     let mut carried = receiver;
     while let ExprKind::Field(base, field) = carried.kind {
-        let ty::Adt(adt, args) = cx.typeck_results().expr_ty(base).kind() else {
-            return false;
-        };
-        if adt.is_struct()
-            && adt.non_enum_variant().fields.iter().any(|sibling| {
-                sibling.name != field.name
-                    && needs_ordered_drop(cx, sibling.ty(cx.tcx, args).skip_norm_wip())
-            })
-        {
+        if leaves_a_droppable_sibling(cx, base, field) {
             return true;
         }
         carried = base;

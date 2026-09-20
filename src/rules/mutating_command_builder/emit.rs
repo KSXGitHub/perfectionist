@@ -12,10 +12,14 @@ use super::MUTATING_COMMAND_BUILDER;
 use super::fix::Rewrite;
 use super::setter::Conversion;
 use clippy_utils::diagnostics::span_lint_hir_and_then;
-use rustc_errors::Applicability;
+use rustc_errors::{Applicability, Diag};
 use rustc_hir::HirId;
 use rustc_lint::LateContext;
 use rustc_span::{Span, Symbol};
+
+/// Said wherever a written turbofish outlives the rename.
+const GENERIC_ARGUMENTS: &str = "the call names its generic arguments, which are this setter's, \
+                                 so check them against the counterpart's when you rename";
 
 /// Where a flagged call's value lands, in the terms the diagnostic
 /// needs. The distinction the middle one draws is that a rendered
@@ -23,14 +27,15 @@ use rustc_span::{Span, Symbol};
 /// one's value, that call is then written against a receiver the
 /// rename has just made owned, and a by-value method of its name in
 /// scope is found there ahead of `Command`'s own.
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub(super) enum Landing {
     /// A position that takes the owned command, where renaming this
     /// call alone leaves every other call calling what it called.
     TakesTheRename,
     /// A position that takes the owned command, but a later call in
-    /// the chain would resolve somewhere new.
-    MovesALaterCall,
+    /// the chain would resolve somewhere new. Carries that call's
+    /// name, which is the part a reader has to check.
+    MovesALaterCall(Symbol),
     /// Anywhere else -- a `let`, a call argument, a struct field --
     /// or a position a macro's own body supplied.
     Unknown,
@@ -86,6 +91,12 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
         remedy,
         rewrite,
     } = violation;
+    let violation_lines = Lines {
+        names_generic_arguments,
+        receiver_is_a_temporary,
+        landing,
+        remedy,
+    };
     // Rendering the rename is not a claim that it is the whole change:
     // an import may be needed alongside it, which `remedy` names.
     let show_the_rename = conversion == Conversion::None
@@ -126,7 +137,13 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                 // stands; what stopped it is said instead.
                 Rewrite::Withhold(reason) => {
                     diagnostic.help(advice);
+                    if names_generic_arguments {
+                        diagnostic.help(GENERIC_ARGUMENTS);
+                    }
                     diagnostic.help(reason);
+                    if let Some(remedy) = remedy {
+                        diagnostic.help(remedy);
+                    }
                     return;
                 }
                 Rewrite::Defer => {}
@@ -147,42 +164,64 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                 // Each thing the change reaches past earns a line, and
                 // the argument needing `.into()` is the one the advice
                 // above already carries.
-                false => {
-                    diagnostic.help(advice);
-                    if names_generic_arguments {
-                        diagnostic.help(
-                            "the call names its generic arguments, which are this setter's, \
-                             so check them against the counterpart's when you rename",
-                        );
-                    }
-                    if !receiver_is_a_temporary {
-                        diagnostic.help(
-                            "the receiver outlives this call, so where later code reads \
-                             it, the change also has to reassign it or collapse the \
-                             statements into one chained expression",
-                        );
-                    }
-                    if landing == Landing::Unknown {
-                        // One line for both of the reasons a position
-                        // does not take the value -- it is not a
-                        // position that does, or a macro wrote it --
-                        // since two lines read as competing answers where
-                        // a macro uses one written expression twice,
-                        // both uses carrying the same span. It claims
-                        // neither that the change reaches further nor
-                        // that the rename settles it: over a discarded
-                        // value the rename is the whole change, and
-                        // beside the lines above it is not.
-                        diagnostic.help(
-                            "whether the change reaches further depends on what the \
-                             surrounding code does with this call's value",
-                        );
-                    }
-                    if let Some(remedy) = remedy {
-                        diagnostic.help(remedy);
-                    }
-                }
+                false => prose(diagnostic, &violation_lines, advice),
             }
         },
     );
+}
+
+/// What the prose branch reads, gathered so the branch can be its own
+/// function rather than another screenful of the emitter.
+struct Lines {
+    names_generic_arguments: bool,
+    receiver_is_a_temporary: bool,
+    landing: Landing,
+    remedy: Option<&'static str>,
+}
+
+/// The lines for a change the rule can describe but not render: each
+/// thing the change reaches past earns one.
+fn prose(diagnostic: &mut Diag<'_, ()>, lines: &Lines, advice: String) {
+    let &Lines {
+        names_generic_arguments,
+        receiver_is_a_temporary,
+        landing,
+        remedy,
+    } = lines;
+    diagnostic.help(advice);
+    if names_generic_arguments {
+        diagnostic.help(GENERIC_ARGUMENTS);
+    }
+    if let Landing::MovesALaterCall(next) = landing {
+        diagnostic.help(format!(
+            "`{next}` takes this call's value, and `{next}` is declared by a \
+                         trait in scope, so renaming this call alone may move that one",
+        ));
+    }
+    if !receiver_is_a_temporary {
+        diagnostic.help(
+            "the receiver outlives this call, so where later code reads \
+                         it, the change also has to reassign it or collapse the \
+                         statements into one chained expression",
+        );
+    }
+    if landing == Landing::Unknown {
+        // One line for both of the reasons a position
+        // does not take the value -- it is not a
+        // position that does, or a macro wrote it --
+        // since two lines read as competing answers where
+        // a macro uses one written expression twice,
+        // both uses carrying the same span. It claims
+        // neither that the change reaches further nor
+        // that the rename settles it: over a discarded
+        // value the rename is the whole change, and
+        // beside the lines above it is not.
+        diagnostic.help(
+            "whether the change reaches further depends on what the \
+                         surrounding code does with this call's value",
+        );
+    }
+    if let Some(remedy) = remedy {
+        diagnostic.help(remedy);
+    }
 }

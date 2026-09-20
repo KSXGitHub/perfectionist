@@ -300,7 +300,7 @@ fn landing(cx: &LateContext<'_>, call: &Expr<'_>) -> Landing {
                 if parent_receiver.hir_id == call.hir_id =>
             {
                 match fix::finds_a_trait_method(cx, parent, next.ident.name) {
-                    true => Landing::MovesALaterCall,
+                    true => Landing::MovesALaterCall(next.ident.name),
                     false => Landing::TakesTheRename,
                 }
             }

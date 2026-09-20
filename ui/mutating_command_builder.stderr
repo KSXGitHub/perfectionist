@@ -318,6 +318,16 @@ LL |         command.arg("no-import-here");
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
    |
+LL |         Command::new("ls").arg(&Noisy);
+   |                            ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `arg`'s argument leaves behind a value with a destructor, and the change would drop it after the command rather than before it
+   = help: bring `command_extra::CommandExtra` into scope here
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
 LL |         Command::new("ls").arg("rename-plus-remedy");
    |                            ^^^
    |
@@ -361,7 +371,7 @@ LL |         Command::new("ls").arg("shadowed-trailing-call").status()
    |                            ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: `status` ends the chain, and another `status` is in scope as a trait method, so the owned command this change produces may resolve it differently from the borrow it replaces
+   = help: `status` ends the chain, and `status` is declared by a trait in scope, so the owned command this change produces may resolve it differently from the borrow it replaces
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -370,7 +380,7 @@ LL |         Command::new("ls").arg("shadowed-by-a-borrow").status()
    |                            ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: `status` ends the chain, and another `status` is in scope as a trait method, so the owned command this change produces may resolve it differently from the borrow it replaces
+   = help: `status` ends the chain, and `status` is declared by a trait in scope, so the owned command this change produces may resolve it differently from the borrow it replaces
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -379,7 +389,7 @@ LL |         Command::new("ls").arg("conversion-tail").into()
    |                            ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: `into` ends the chain, and another `into` is in scope as a trait method, so the owned command this change produces may resolve it differently from the borrow it replaces
+   = help: `into` ends the chain, and `into` is declared by a trait in scope, so the owned command this change produces may resolve it differently from the borrow it replaces
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -402,11 +412,51 @@ LL |         Command::new("ordered-drop-field").arg(holder().name);
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
    |
+LL |         Command::new("ordered-drop-match").arg(match Noisy {
+   |                                            ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `arg`'s argument leaves behind a value with a destructor, and the change would drop it after the command rather than before it
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |         Command::new("ordered-drop-taken").arg(tagged().noisy);
+   |                                            ^^^
+   |
+help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL |         Command::new("ordered-drop-taken").with_arg(tagged().noisy);
+   |                                            +++++
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
 LL |         bundle().command.arg("sibling-of-a-drop");
    |                          ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: the command is a field of a temporary whose other fields have destructors, and the change would drop it before them rather than as part of them
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |         pair().1.arg("tuple-sibling");
+   |                  ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: the command is a field of a temporary whose other fields have destructors, and the change would drop it before them rather than as part of them
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |         quiet_pair().1.arg("tuple-quiet");
+   |                        ^^^
+   |
+help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL |         quiet_pair().1.with_arg("tuple-quiet");
+   |                        +++++
 
 warning: `Command::stdin` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -426,5 +476,16 @@ LL |             .current_dir("/tmp")
    |              ^^^^^^^^^^^
    |
    = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `arg` takes this call's value, and `arg` is declared by a trait in scope, so renaming this call alone may move that one
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |         let _ = command.arg("defers-and-moves").status();
+   |                         ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `status` takes this call's value, and `status` is declared by a trait in scope, so renaming this call alone may move that one
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: N warnings emitted

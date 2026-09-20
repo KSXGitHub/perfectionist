@@ -358,6 +358,27 @@ mod trait_not_imported {
         command.arg("no-import-here");
     }
 
+    // Bad, and still no rewrite: an import does not make a reordering
+    // safe, so the hazard is asked before the counterpart's
+    // availability. Rendering the rename here and then telling the
+    // reader to fetch the import would hand them the edit the rule
+    // just refused.
+    fn a_hazard_outlives_a_missing_import() {
+        struct Noisy;
+
+        impl Drop for Noisy {
+            fn drop(&mut self) {}
+        }
+
+        impl AsRef<std::ffi::OsStr> for Noisy {
+            fn as_ref(&self) -> &std::ffi::OsStr {
+                std::ffi::OsStr::new("no-import-hazard")
+            }
+        }
+
+        Command::new("ls").arg(&Noisy);
+    }
+
     // Bad: the rename is shown beside the remedy. The rename is a
     // block of its own with a span, which rustc prints below every
     // span-less line, so the remedy rides in the rename's own message
@@ -577,6 +598,42 @@ mod ordered_drop {
     fn field_of_a_temporary_argument() {
         Command::new("ordered-drop-field").arg(holder().name);
     }
+
+    // Bad, and no rewrite: a scrutinee is not handed over either. The
+    // pattern binds nothing, so the temporary is still there for the
+    // statement to drop. Every parent the walk does not recognise as a
+    // hand-over answers this way, which is the safe way round.
+    fn scrutinee_argument() {
+        Command::new("ordered-drop-match").arg(match Noisy {
+            _ => "matched",
+        });
+    }
+
+    struct Tagged {
+        noisy: Noisy,
+        tag: String,
+    }
+
+    fn tagged() -> Tagged {
+        Tagged {
+            noisy: Noisy,
+            tag: String::from("tag"),
+        }
+    }
+
+    // Bad, and rewritten: the destructor-bearing field is the one moved
+    // into the call, so nothing left behind has one. The question is
+    // what the rest of the temporary holds, not what the whole of it
+    // held.
+    fn the_droppable_field_is_the_one_taken() {
+        Command::new("ordered-drop-taken").arg(tagged().noisy);
+    }
+
+    impl AsRef<OsStr> for Tagged {
+        fn as_ref(&self) -> &OsStr {
+            OsStr::new("tagged")
+        }
+    }
 }
 
 // Bad, and no rewrite: the command is a field of a temporary whose
@@ -608,6 +665,28 @@ mod sibling_of_a_drop {
 
     fn run() {
         bundle().command.arg("sibling-of-a-drop");
+    }
+
+    fn pair() -> (Noisy, Command) {
+        (Noisy, Command::new("ls"))
+    }
+
+    // Bad, and no rewrite, for the same shape spelled as a tuple. A
+    // tuple carries its field types directly rather than through an
+    // `AdtDef`, so asking only about structs answered no here.
+    fn tuple_sibling() {
+        pair().1.arg("tuple-sibling");
+    }
+
+    fn quiet_pair() -> (String, Command) {
+        (String::from("quiet"), Command::new("ls"))
+    }
+
+    // Bad, and rewritten: the tuple's other element has no destructor
+    // to reorder. The question a tuple gets is the same one a struct
+    // gets, not a refusal to look.
+    fn tuple_without_a_sibling_drop() {
+        quiet_pair().1.arg("tuple-quiet");
     }
 }
 
@@ -643,6 +722,32 @@ mod partial_rename_would_move_a_call {
         let _ = Command::new("ls")
             .current_dir("/tmp")
             .arg("partial-rename");
+    }
+}
+
+// Bad, over a binding, and the diagnostic has to say that `status`
+// would move as well. The rewrite is deferred for the receiver, so
+// nothing withholds a rename here -- but the reader following the
+// advice by hand walks into the same re-resolution, and only this line
+// warns them.
+mod defers_and_moves {
+    use command_extra::CommandExtra;
+    use std::io;
+    use std::process::{Command, ExitStatus};
+
+    trait Logged {
+        fn status(&self) -> io::Result<ExitStatus>;
+    }
+
+    impl<Anything: ?Sized> Logged for Anything {
+        fn status(&self) -> io::Result<ExitStatus> {
+            Err(io::Error::other("defers-and-moves"))
+        }
+    }
+
+    fn run() {
+        let mut command = Command::new("ls");
+        let _ = command.arg("defers-and-moves").status();
     }
 }
 
