@@ -1,5 +1,4 @@
-//! Configuration for `mutating_command_builder`: where `command-extra`
-//! has to be declared before the lint will name its methods.
+//! Configuration for `mutating_command_builder`.
 
 /// The user-facing configuration shape, deserialised from the
 /// `["perfectionist::mutating_command_builder"]` table of

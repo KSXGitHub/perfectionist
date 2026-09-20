@@ -18,9 +18,7 @@ fn without_the_crate() {
 }
 
 // The remedy beside a rendered rename, which is the other half of the
-// pair `ui/mutating_command_builder.rs` covers: the rename is a block
-// with a span, printed below every span-less line, so the remedy rides
-// in its message instead of arriving above the advice.
+// pair `ui/mutating_command_builder.rs` covers.
 fn rename_beside_the_remedy() {
     Command::new("ls").arg("-a");
 }

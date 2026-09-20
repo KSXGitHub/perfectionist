@@ -16,16 +16,9 @@
 //!
 //! The trailing call is the one name the rewrite cannot change, and its
 //! receiver becomes an owned `Command` where it was a `&mut Command`.
-//! That moves the method probe's first step, and not by a little.
-//! Against a `&mut Command`, `Command::status(&mut self)` matches at
-//! step 0 *by value*, because the step type already is the
-//! `&mut Command` its receiver wants -- the first pick the probe tries,
-//! which nothing can get ahead of. Against a `Command` it matches
-//! nothing until the `&mut` autoref, the *last* of the three picks at
-//! that step, so a candidate taking `self` or `&self` is found first.
-//! Only a trait can supply one, since nobody outside the standard
-//! library writes an inherent impl for `Command`, and the chain is
-//! declined wherever the traits in scope do supply one.
+//! That moves what the method probe finds, so the chain is declined
+//! wherever the traits in scope supply a candidate of that name.
+//! [`finds_a_trait_method`] derives why.
 //!
 //! The names the rewrite does introduce are safe for a different
 //! reason. `CommandExtra` has to be imported before a rewrite is built
@@ -242,13 +235,16 @@ fn link<'tcx>(
 ///
 /// The chain's trailing call keeps its name while its receiver becomes
 /// an owned `Command`, which moves the method probe's first step from
-/// `&mut Command` to `Command`. `Command`'s own methods take `&mut self`
-/// or `&self`, so the autoref step still reaches them -- unless some
-/// candidate matches by value first, which beats an autoref one at the
-/// same step. Only a trait can supply such a candidate, since nobody
-/// outside the standard library can write an inherent impl for
-/// `Command`. Two of them would be `E0034` and stop the fixer with an
-/// error; exactly one compiles and silently calls something else.
+/// `&mut Command` to `Command`. Against a `&mut Command`,
+/// `Command::status(&mut self)` matches at step 0 *by value*, because
+/// the step type already is the `&mut Command` its receiver wants --
+/// the first pick the probe tries, which nothing can get ahead of.
+/// Against a `Command` it matches nothing until the `&mut` autoref, the
+/// *last* of the three picks at that step, so a candidate taking `self`
+/// or `&self` is found first. Only a trait can supply such a candidate,
+/// since nobody outside the standard library can write an inherent impl
+/// for `Command`. Two of them would be `E0034` and stop the fixer with
+/// an error; exactly one compiles and silently calls something else.
 ///
 /// `in_scope_traits` is the set the method probe itself consults, so
 /// no trait is weighed that resolution would not weigh. Two things it

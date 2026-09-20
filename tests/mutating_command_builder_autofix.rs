@@ -15,10 +15,8 @@
 //! as they did before. What is left after that is checkable, and the
 //! lint's own rustdoc lists it.
 //!
-//! A chain moves whole or not at all, and `shadowed_next_link` is why.
-//! Renaming only the head would leave the rest calling std's setters
-//! against a receiver that is now owned, which is how a by-value method
-//! of the author's own comes to be found before the inherent one.
+//! A chain moves whole or not at all, and `shadowed_next_link` is why;
+//! `src/rules/mutating_command_builder/fix.rs` derives it.
 //!
 //! The fixtures split by direction, because the two fail differently.
 //! `applied.rs` is compared against `applied.fixed.rs`, so a rewrite

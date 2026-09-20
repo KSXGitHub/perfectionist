@@ -379,10 +379,9 @@ mod trait_not_imported {
         Command::new("ls").arg(&Noisy);
     }
 
-    // Bad: the rename is shown beside the remedy. The rename is a
-    // block of its own with a span, which rustc prints below every
-    // span-less line, so the remedy rides in the rename's own message
-    // rather than arriving above the advice it depends on.
+    // Bad: the rename is shown beside the remedy, which rides in the
+    // rename's own message. `src/rules/mutating_command_builder/emit.rs`
+    // says why it has to.
     fn rename_beside_the_remedy() {
         Command::new("ls").arg("rename-plus-remedy");
     }

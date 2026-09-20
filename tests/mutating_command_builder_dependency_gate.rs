@@ -266,10 +266,8 @@ fn flagged_line(member: &str) -> String {
     format!(r#"command.arg("{member}")"#)
 }
 
-/// At the default reach, a workspace that has settled on the crate has
-/// settled for its members, so the member that has not written
-/// `command-extra.workspace = true` yet is told along with the one that
-/// has: what it is missing is a line in a manifest.
+/// Both members are flagged at the default reach, including the one
+/// that has not written `command-extra.workspace = true`.
 #[test]
 fn the_default_reaches_the_workspace_table() {
     let stderr = run_the_workspace("");
@@ -282,8 +280,8 @@ fn the_default_reaches_the_workspace_table() {
     }
 }
 
-/// Narrowed to the crate, each member answers for itself, which is what
-/// a workspace whose members are deliberately not uniform wants.
+/// With the reach narrowed to `crate`, only the inheriting member is
+/// flagged.
 #[test]
 fn narrowing_to_the_crate_leaves_the_abstaining_member_alone() {
     let stderr = run_the_workspace(&format!(

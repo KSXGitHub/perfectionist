@@ -6,11 +6,10 @@
 // diagnostic says; this file is about whether the rewrite is offered
 // and how far it reaches.
 //
-// A `.stderr` cannot tell `MachineApplicable` from `MaybeIncorrect`,
-// so a rendered rewrite here means the edit is shown, not that the
-// fixer will apply it. What it does show, and what these shapes are
-// for, is whether an edit is offered at all and which spans it covers.
-// `tests/mutating_command_builder_autofix.rs` runs the real fixer.
+// A rendered rewrite here means the edit is offered, not that the fixer
+// will apply it; `tests/mutating_command_builder_autofix.rs` runs the
+// real fixer. What these shapes show is whether an edit is offered at
+// all and which spans it covers.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -176,7 +175,7 @@ mod conversion_tail {
 // command is created after the arguments where the borrow it replaces
 // was created before them, so it becomes the statement's last temporary
 // and drops first. Only an argument's own destructor is positioned to
-// see that.
+// observe that.
 mod ordered_drop {
     use command_extra::CommandExtra;
     use std::ffi::OsStr;

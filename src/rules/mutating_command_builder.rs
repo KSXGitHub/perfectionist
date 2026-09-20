@@ -200,15 +200,8 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         if !self.suggestion_is_available(cx, expr) {
             return;
         }
-        // The position has to be written where the call is. A macro
-        // taking an expression and using it twice gives both uses the
-        // caller's span, so a rename shown for the use in an accepting
-        // position would be written over the other use as well -- and
-        // that other one may be exactly the borrow the original
-        // returned. So a position the macro's own body supplies is
-        // declined however many times the macro uses the expression,
-        // which costs a rendered rewrite rather than a wrong one; a
-        // position among the caller's own tokens is not.
+        // The position has to be written where the call is; `landing`
+        // says why a macro-supplied one is declined.
         let landing = landing(cx, expr);
         let conversion = setter::argument_conversion(cx, expr, arguments);
         let names_generic_arguments = path_segment

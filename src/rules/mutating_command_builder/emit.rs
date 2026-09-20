@@ -196,7 +196,8 @@ fn prose(diagnostic: &mut Diag<'_, ()>, lines: &Lines, advice: String) {
     if let Landing::MovesALaterCall(next) = landing {
         diagnostic.help(format!(
             "`{next}` takes this call's value, and `{next}` is declared by a \
-                         trait in scope, so renaming this call alone may move that one",
+             trait in scope, so renaming this call alone may make that one \
+             resolve differently",
         ));
     }
     if !receiver_is_a_temporary {

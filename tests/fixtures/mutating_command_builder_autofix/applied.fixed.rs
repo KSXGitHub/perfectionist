@@ -7,11 +7,9 @@
 // header included.
 //
 // What that test asserts is the rule's own decision, not the
-// compiler's. A suggestion rendered as a concrete rewrite reads the
-// same whether the rule marked it `MachineApplicable` or
-// `MaybeIncorrect`, and running the fixer is the only thing that
-// separates the two. `not_applied.rs` holds the shapes the rule
-// declines to hand over at all.
+// compiler's, which is why it runs the fixer rather than reading a
+// `.stderr`. `not_applied.rs` holds the shapes the rule declines to
+// hand over at all.
 //
 // Each call carries a distinct argument so an assertion can name one
 // shape without matching another.
@@ -56,10 +54,10 @@ pub fn field_of_a_temporary() {
 }
 
 // Every link at once. Only the head is flagged -- each later one takes
-// the `&mut Command` the previous returned -- but renaming the head
-// alone would leave the rest calling std's against an owned receiver,
-// so they move together. The trailing `status` takes `&mut self` and
-// autorefs from the owned command, which is the form a person writes.
+// the `&mut Command` the previous returned -- but they move together,
+// for the reason `shadowed_next_link` shows. The trailing `status`
+// takes `&mut self` and autorefs from the owned command, which is the
+// form a person writes.
 pub fn whole_chain() {
     let _ = Command::new("ls")
         .with_arg("chain-head")

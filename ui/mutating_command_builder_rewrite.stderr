@@ -169,7 +169,7 @@ LL |             .current_dir("/tmp")
    |              ^^^^^^^^^^^
    |
    = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: `arg` takes this call's value, and `arg` is declared by a trait in scope, so renaming this call alone may move that one
+   = help: `arg` takes this call's value, and `arg` is declared by a trait in scope, so renaming this call alone may make that one resolve differently
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
@@ -178,7 +178,7 @@ LL |         let _ = command.arg("defers-and-moves").status();
    |                         ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: `status` takes this call's value, and `status` is declared by a trait in scope, so renaming this call alone may move that one
+   = help: `status` takes this call's value, and `status` is declared by a trait in scope, so renaming this call alone may make that one resolve differently
    = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: N warnings emitted
