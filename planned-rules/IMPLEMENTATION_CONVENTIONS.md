@@ -333,7 +333,7 @@ the `CfgTrace` predicate rustc leaves after configuration needs
 in a test build, and composes over the connectives:
 
 | Predicate         | Test-only? | Why                            |
-| ----------------- | ---------- | ------------------------------ |
+|-------------------|------------|--------------------------------|
 | `test`            | yes        | —                              |
 | `all(test, unix)` | yes        | one conjunct suffices          |
 | `any(test, unix)` | no         | `unix` can hold without `test` |
@@ -430,7 +430,7 @@ Three-valued, and the middle value is why one question does not
 answer the other:
 
 | Question                   | Needed by                            | Shape                                                   | Soundness             |
-| -------------------------- | ------------------------------------ | ------------------------------------------------------- | --------------------- |
+|----------------------------|--------------------------------------|---------------------------------------------------------|-----------------------|
 | Is this **known ORT**?     | a rule that *removes* a default call | allowlist plus `#[derive(Default)]` transitivity        | sound by construction |
 | Is this **known non-ORT**? | a rule that *flags* a default call   | denylist of sources that conventionally reach the value | heuristic only        |
 

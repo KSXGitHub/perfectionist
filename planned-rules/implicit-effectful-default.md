@@ -233,7 +233,7 @@ The recognised constructors, which are not configurable — a project
 that wants a different set wants a different rule:
 
 | Constructor                        | Tier        | Runs when             |
-| ---------------------------------- | ----------- | --------------------- |
+|------------------------------------|-------------|-----------------------|
 | `std::mem::take`                   | placeholder | always                |
 | `Cell::take`                       | placeholder | always                |
 | `RefCell::take`                    | placeholder | always                |
