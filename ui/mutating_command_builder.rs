@@ -534,6 +534,33 @@ mod ordered_drop {
     }
 }
 
+// Bad, and no rename is rendered: the chain's value lands in a `let`,
+// so the whole rewrite is declined, and renaming the head alone would
+// leave `.arg` written against a receiver that rename has just made
+// owned, where `Ext::arg` is found before `Command`'s own. A rendered
+// rename is a concrete edit, so it is shown only where it moves nothing
+// else.
+mod partial_rename_would_move_a_call {
+    use command_extra::CommandExtra;
+    use std::process::Command;
+
+    trait Ext {
+        fn arg(self, value: &str) -> &'static str;
+    }
+
+    impl Ext for Command {
+        fn arg(self, _value: &str) -> &'static str {
+            "ext"
+        }
+    }
+
+    fn run() {
+        let _ = Command::new("ls")
+            .current_dir("/tmp")
+            .arg("partial-rename");
+    }
+}
+
 // Not flagged: a method of the same name on an unrelated type.
 struct NotACommand;
 

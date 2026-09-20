@@ -381,4 +381,12 @@ LL |         Command::new("ordered-drop").arg(&Noisy);
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: an argument builds a value whose destructor would run at a different point: the owned command is created after the arguments, where the borrow it replaces was created before them
 
+warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |             .current_dir("/tmp")
+   |              ^^^^^^^^^^^
+   |
+   = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
 warning: N warnings emitted

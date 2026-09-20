@@ -222,7 +222,11 @@ fn link<'tcx>(
 /// back "no" for want of an inference, which is the wrong way to be
 /// wrong. A trait whose method could never apply here costs a declined
 /// rewrite instead.
-fn finds_a_by_value_trait_method(cx: &LateContext<'_>, call: &Expr<'_>, name: Symbol) -> bool {
+pub(super) fn finds_a_by_value_trait_method(
+    cx: &LateContext<'_>,
+    call: &Expr<'_>,
+    name: Symbol,
+) -> bool {
     cx.tcx
         .in_scope_traits(call.hir_id)
         .unwrap_or_default()

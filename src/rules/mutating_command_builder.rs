@@ -4,7 +4,6 @@ use clippy_utils::is_from_proc_macro;
 use rustc_hir::{Expr, ExprKind, Node, StmtKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::Span;
 
 mod availability;
 mod config;
@@ -14,6 +13,7 @@ mod receiver;
 mod setter;
 
 use config::{Config, RequiredDeclaration};
+use emit::Landing;
 
 declare_tool_lint! {
     /// ### What it does
@@ -199,6 +199,16 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         if !self.suggestion_is_available(cx, expr) {
             return;
         }
+        // The position has to be written where the call is. A macro
+        // taking an expression and using it twice gives both uses the
+        // caller's span, so a rename shown for the use in an accepting
+        // position would be written over the other use as well -- and
+        // that other one may be exactly the borrow the original
+        // returned. So a position the macro's own body supplies is
+        // declined however many times the macro uses the expression,
+        // which costs a rendered rewrite rather than a wrong one; a
+        // position among the caller's own tokens is not.
+        let landing = landing(cx, expr);
         let conversion = setter::argument_conversion(cx, expr, arguments);
         let names_generic_arguments = path_segment
             .args
@@ -215,18 +225,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 conversion,
                 names_generic_arguments,
                 receiver_is_a_temporary,
-                // The position has to be written where the call is. A
-                // macro taking an expression and using it twice gives
-                // both uses the caller's span, so a rename shown for the
-                // use in an accepting position would be written over the
-                // other use as well -- and that other one may be exactly
-                // the borrow the original returned. So a position the
-                // macro's own body supplies is declined however many
-                // times the macro uses the expression, which costs a
-                // rendered rewrite rather than a wrong one; a position
-                // among the caller's own tokens is not.
-                position_takes_it: accepting_position(cx, expr)
-                    .is_some_and(|span| !span.from_expansion()),
+                landing,
                 // Which remedy to name: `command-extra` is absent from
                 // this crate's own manifest, or present there but not
                 // imported here. The first is reachable whenever the
@@ -278,20 +277,39 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
 /// may or may not accept the change, and which is likewise the
 /// typechecker's answer, so the diagnostic stays with prose there.
 ///
+/// Which of the two it is matters as well as that it is one of them:
+/// a later call is written against a receiver a rename below it has
+/// made owned, so the caller has to ask what that call would resolve
+/// to.
+///
 /// The span comes back with the answer because the caller has to know
 /// whether the position was written where the call is.
-fn accepting_position(cx: &LateContext<'_>, call: &Expr<'_>) -> Option<Span> {
+fn landing(cx: &LateContext<'_>, call: &Expr<'_>) -> Landing {
+    // A macro taking an expression and using it twice gives both uses
+    // the caller's span, so a rename shown for the use in an accepting
+    // position would be written over the other use as well -- and that
+    // other one may be exactly the borrow the original returned. So a
+    // position the macro's own body supplies is declined however many
+    // times the macro uses the expression, which costs a rendered
+    // rewrite rather than a wrong one; a position among the caller's
+    // own tokens is not.
     match cx.tcx.parent_hir_node(call.hir_id) {
+        Node::Expr(parent) if parent.span.from_expansion() => Landing::Unknown,
         Node::Expr(parent) => match parent.kind {
-            ExprKind::MethodCall(_, parent_receiver, ..) => {
-                (parent_receiver.hir_id == call.hir_id).then_some(parent.span)
+            ExprKind::MethodCall(next, parent_receiver, ..)
+                if parent_receiver.hir_id == call.hir_id =>
+            {
+                match fix::finds_a_by_value_trait_method(cx, parent, next.ident.name) {
+                    true => Landing::MovesALaterCall,
+                    false => Landing::TakesTheRename,
+                }
             }
-            _ => None,
+            _ => Landing::Unknown,
         },
         Node::Stmt(statement) => match statement.kind {
-            StmtKind::Semi(_) => Some(statement.span),
-            _ => None,
+            StmtKind::Semi(_) if !statement.span.from_expansion() => Landing::TakesTheRename,
+            _ => Landing::Unknown,
         },
-        _ => None,
+        _ => Landing::Unknown,
     }
 }

@@ -17,6 +17,25 @@ use rustc_hir::HirId;
 use rustc_lint::LateContext;
 use rustc_span::{Span, Symbol};
 
+/// Where a flagged call's value lands, in the terms the diagnostic
+/// needs. The distinction the middle one draws is that a rendered
+/// rename edits one method segment: where a later call takes this
+/// one's value, that call is then written against a receiver the
+/// rename has just made owned, and a by-value method of its name in
+/// scope is found there ahead of `Command`'s own.
+#[derive(PartialEq, Eq)]
+pub(super) enum Landing {
+    /// A position that takes the owned command, where renaming this
+    /// call alone leaves every other call calling what it called.
+    TakesTheRename,
+    /// A position that takes the owned command, but a later call in
+    /// the chain would resolve somewhere new.
+    MovesALaterCall,
+    /// Anywhere else -- a `let`, a call argument, a struct field --
+    /// or a position a macro's own body supplied.
+    Unknown,
+}
+
 /// One flagged setter call, with every question about it already
 /// answered.
 pub(super) struct Violation {
@@ -38,9 +57,8 @@ pub(super) struct Violation {
     /// Whether the receiver is a value the expression produced rather
     /// than a place the surrounding code still holds.
     pub(super) receiver_is_a_temporary: bool,
-    /// Whether the call's value lands in a position that takes an owned
-    /// `Command` *and* that position is written where the call is.
-    pub(super) position_takes_it: bool,
+    /// Where the call's value lands.
+    pub(super) landing: Landing,
     /// Which remedy to name, where the counterpart is not yet writable
     /// here, and `None` where it is.
     pub(super) remedy: Option<&'static str>,
@@ -64,7 +82,7 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
         conversion,
         names_generic_arguments,
         receiver_is_a_temporary,
-        position_takes_it,
+        landing,
         remedy,
         rewrite,
     } = violation;
@@ -73,7 +91,7 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
     let show_the_rename = conversion == Conversion::None
         && !names_generic_arguments
         && receiver_is_a_temporary
-        && position_takes_it;
+        && landing == Landing::TakesTheRename;
     span_lint_hir_and_then(
         cx,
         MUTATING_COMMAND_BUILDER,
@@ -144,7 +162,7 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                              statements into one chained expression",
                         );
                     }
-                    if !position_takes_it {
+                    if landing == Landing::Unknown {
                         // One line for both of the reasons a position
                         // does not take the value -- it is not a
                         // position that does, or a macro wrote it --
