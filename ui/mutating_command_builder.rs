@@ -387,6 +387,52 @@ fn macro_reuses_the_expression(dir: &Path) {
     discard_then_borrow!(Command::new("ls").current_dir(dir));
 }
 
+// Bad: a macro invocation wrapping the head alone. `$expression:expr`
+// keeps the caller's spans, so the chain is rewritten as usual, but its
+// span now starts to the left of the flagged call. The `&mut ` goes in
+// front of the invocation; written inside it, it would borrow only the
+// part the macro was handed, and the tail would then be called on a
+// `Command` where `configure` wants the borrow.
+macro_rules! passthrough {
+    ($expression:expr) => {
+        $expression
+    };
+}
+
+#[expect(
+    perfectionist::impure_macro_arguments,
+    reason = "the macro has to wrap the chain's head for the prefix's anchor to matter"
+)]
+fn macro_wrapped_head() {
+    configure(passthrough!(Command::new("ls").arg("macro-head")).arg("macro-tail"));
+}
+
+// Bad: the argument was written in a macro's body, so the `.into()` the
+// counterpart needs would be appended there rather than here, to every
+// other expansion of it at once. Advice only, and no rewrite.
+mod macro_argument {
+    use command_extra::CommandExtra;
+    use std::process::{Command, Stdio};
+
+    struct Piped;
+
+    impl From<Piped> for Stdio {
+        fn from(_piped: Piped) -> Stdio {
+            Stdio::null()
+        }
+    }
+
+    macro_rules! piped {
+        () => {
+            Piped
+        };
+    }
+
+    fn the_conversion_would_land_in_the_macro() {
+        Command::new("ls").stdout(piped!());
+    }
+}
+
 // Not flagged: an extension trait taking `self` is found at the
 // by-value step of the autoderef chain, before `Command`'s own
 // `&mut self` setter, so this resolves to `Ext::arg` and renaming it

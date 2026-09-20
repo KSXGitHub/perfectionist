@@ -335,4 +335,23 @@ LL |     discard_then_borrow!(Command::new("ls").current_dir(dir));
    = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: whether the change reaches further depends on what the surrounding code does with this call's value
 
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     configure(passthrough!(Command::new("ls").arg("macro-head")).arg("macro-tail"));
+   |                                               ^^^
+   |
+help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL |     configure(&mut passthrough!(Command::new("ls").with_arg("macro-head")).with_arg("macro-tail"));
+   |               ++++                                 +++++                   +++++
+
+warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |         Command::new("ls").stdout(piped!());
+   |                            ^^^^^^
+   |
+   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+
 warning: N warnings emitted

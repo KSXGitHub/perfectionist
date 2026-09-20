@@ -68,7 +68,7 @@ const NOT_APPLIED: &str = include_str!("fixtures/mutating_command_builder_autofi
 /// this rule by the headline assertion below.
 const CONFIG: &str = text_block_fnl! {
     "[perfectionist]"
-    r#"disable = ["bare_identifier_reference", "import_granularity_mismatch", "import_grouping_mismatch"]"#
+    r#"disable = ["bare_identifier_reference", "impure_macro_arguments", "import_granularity_mismatch", "import_grouping_mismatch"]"#
 };
 
 /// Run the fixer over one fixture crate and hand back what it left on
@@ -132,6 +132,7 @@ fn the_fixer_declines_the_rest() {
         "turbofish",
         "trait-out-of-scope",
         "ordered-drop",
+        "macro-argument",
     ] {
         assert!(
             stderr.contains(shape),

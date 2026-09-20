@@ -5,10 +5,11 @@
 // What that test asserts is again the rule's decision rather than the
 // compiler's: it requires this file back byte-identical, and requires
 // the rule to have fired on every shape in it, so silence cannot pass
-// for restraint. Most of these would compile if they were rewritten
-// anyway -- only `trait_out_of_scope` names a method that does not
-// exist yet -- so a file that comes back unchanged did so because
-// nothing was offered, not because `cargo fix` reverted it.
+// for restraint. Some of these would compile if they were rewritten
+// anyway -- `trait_out_of_scope` names a method that does not exist
+// yet, and `macro_argument`'s rewrite has no type to infer -- so a file
+// that comes back unchanged did so because nothing was offered, not
+// because `cargo fix` reverted it.
 
 #![allow(dead_code, unused_imports, reason = "fixture")]
 
@@ -69,3 +70,29 @@ pub mod ordered_drop {
         Command::new("ordered-drop").arg(&Noisy);
     }
 }
+
+// The argument was written in a macro's body, so the `.into()` the
+// counterpart needs would be appended there rather than here.
+pub mod macro_argument {
+    use command_extra::CommandExtra;
+    use std::process::{Command, Stdio};
+
+    pub struct Piped;
+
+    impl From<Piped> for Stdio {
+        fn from(_piped: Piped) -> Stdio {
+            Stdio::null()
+        }
+    }
+
+    macro_rules! piped {
+        () => {
+            Piped
+        };
+    }
+
+    pub fn run() {
+        Command::new("macro-argument").stdout(piped!());
+    }
+}
+

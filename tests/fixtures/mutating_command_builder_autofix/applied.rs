@@ -93,3 +93,25 @@ pub mod shadowed_next_link {
             .status();
     }
 }
+
+// A macro invocation wrapping the head alone. `$expression:expr` keeps
+// the caller's spans, so the chain is rewritten as usual, but its span
+// now starts to the left of the flagged call: the `&mut ` belongs in
+// front of the invocation, where written inside it the tail would then
+// be called on a `Command` where `configure` wants the borrow.
+pub mod macro_wrapped_head {
+    use command_extra::CommandExtra;
+    use std::process::Command;
+
+    macro_rules! passthrough {
+        ($expression:expr) => {
+            $expression
+        };
+    }
+
+    fn configure(_command: &mut Command) {}
+
+    pub fn run() {
+        configure(passthrough!(Command::new("ls").arg("macro-head")).arg("macro-tail"));
+    }
+}

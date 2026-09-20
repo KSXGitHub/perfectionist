@@ -90,9 +90,13 @@ pub(super) fn parts<'tcx>(
         tail = parent;
     }
     // Nothing further calls it, so the chain's own value is what has to
-    // keep its type.
+    // keep its type. The prefix goes in front of the *tail*, not the
+    // flagged head: a chain's span usually starts at its head, but a
+    // macro invocation wrapping the head alone extends the tail's span
+    // to the left of it, and `&mut ` inside the invocation borrows only
+    // the part the macro was handed.
     if position(cx, tail)? == Position::TypeIsKept {
-        parts.push((call.span.shrink_to_lo(), "&mut ".to_owned()));
+        parts.push((tail.span.shrink_to_lo(), "&mut ".to_owned()));
     }
     Some(parts)
 }
@@ -133,6 +137,14 @@ fn link<'tcx>(
     let mut edits = vec![(method.ident.span, by_value_form.to_owned())];
     if conversion == Conversion::IntoNeeded {
         let argument = arguments.first()?;
+        // An argument a macro produced is written in the macro's body,
+        // so the conversion would be appended there: to every other
+        // expansion of it at once, and to a file the fixer may not
+        // even be rewriting. The call's own span says nothing about
+        // its arguments', so this is asked separately.
+        if argument.span.from_expansion() {
+            return None;
+        }
         edits.push((
             argument.span,
             format!("{}.into()", Sugg::hir(cx, argument, "..").maybe_paren()),
