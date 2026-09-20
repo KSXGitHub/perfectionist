@@ -15,10 +15,16 @@
 //! owned command, which is the form a person writes by hand.
 //!
 //! The trailing call is the one name the rewrite cannot change, and its
-//! receiver becomes an owned `Command` where it was a `&mut Command`. A
-//! by-value method of that name in scope for `Command` is then found
-//! before the inherent one, compiling and calling something else, so
-//! the chain is declined wherever the traits in scope supply one.
+//! receiver becomes an owned `Command` where it was a `&mut Command`.
+//! That moves the method probe's first step. Against a `&mut Command`,
+//! `Command::status(&mut self)` matches at step 0 *by value*, because
+//! the step type is already the `&mut Command` its receiver wants.
+//! Against a `Command` it does not match by value at all, and is
+//! reached an adjustment later by autoref -- so anything matching by
+//! value at that step is found ahead of it. Only a trait can supply
+//! that, since nobody outside the standard library can write an
+//! inherent impl for `Command`, and the chain is declined wherever the
+//! traits in scope do supply one.
 //!
 //! The names the rewrite does introduce are safe for a different
 //! reason. `CommandExtra` has to be imported before a rewrite is built
@@ -34,7 +40,7 @@ use clippy_utils::visitors::for_each_expr;
 use core::ops::ControlFlow;
 use rustc_hir::{Expr, ExprKind, Node, StmtKind};
 use rustc_lint::LateContext;
-use rustc_middle::ty::AssocTag;
+use rustc_middle::ty::adjustment::Adjust;
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 
@@ -105,7 +111,7 @@ pub(super) fn rewrite<'tcx>(
                     // name, which would need the article to agree with
                     // a method name the rule does not choose.
                     "`{name}` ends the chain, and a by-value `{name}` is in scope, so the \
-                     owned command this change produces would resolve it differently from \
+                     owned command this change produces may resolve it differently from \
                      the borrow it replaces",
                 ));
             }
@@ -163,18 +169,17 @@ fn link<'tcx>(
     }
     // The owned command is created after the arguments are evaluated,
     // where the borrow it replaces was created before them, so it
-    // becomes the statement's last temporary and drops first. Only an
-    // argument's own temporary is positioned to observe that.
+    // becomes the statement's last temporary and drops first. Only a
+    // value the call leaves behind is positioned to observe that.
     if arguments
         .iter()
         .any(|argument| creates_an_ordered_drop(cx, argument))
     {
-        return Rewrite::Withhold(
-            "an argument builds a value whose destructor would run at a different point: \
-             the owned command is created after the arguments, where the borrow it \
-             replaces was created before them"
-                .to_owned(),
-        );
+        let name = method.ident.name;
+        return Rewrite::Withhold(format!(
+            "`{name}`'s argument leaves behind a value with a destructor, and the change \
+             would drop it after the command rather than before it",
+        ));
     }
     if call.span.from_expansion() || method.ident.span.from_expansion() {
         return Rewrite::Defer;
@@ -235,13 +240,16 @@ pub(super) fn finds_a_by_value_trait_method(
             cx.tcx
                 .associated_items(candidate.def_id)
                 .filter_by_name_unhygienic(name)
-                .any(|item| item.tag() == AssocTag::Fn && takes_self_by_value(cx, item.def_id))
+                .any(|item| item.is_method() && takes_self_by_value(cx, item.def_id))
         })
 }
 
-/// Whether the first parameter of `method` is `Self` itself rather than
-/// a reference to it. Read from the signature, so an `Arc<Self>` or a
+/// Whether the receiver of `method` is `Self` itself rather than a
+/// reference to it. Read from the signature, so an `Arc<Self>` or a
 /// `Pin<&mut Self>` receiver answers the same as the reference does.
+///
+/// Only asked of an item that has a receiver: an associated function
+/// taking `this: Self` is never what `value.name()` resolves to.
 fn takes_self_by_value(cx: &LateContext<'_>, method: DefId) -> bool {
     cx.tcx
         .fn_sig(method)
@@ -266,6 +274,10 @@ enum Position {
 
 /// `None` where the rewrite cannot be written at this position, rather
 /// than where it would not compile.
+///
+/// Only ever asked about the chain's tail, and the walk that finds the
+/// tail has already followed every method call taking the value as its
+/// receiver -- so no parent here is one of those.
 fn position(cx: &LateContext<'_>, call: &Expr<'_>) -> Option<Position> {
     if call.span.from_expansion() {
         return None;
@@ -283,13 +295,9 @@ fn position(cx: &LateContext<'_>, call: &Expr<'_>) -> Option<Position> {
         // behaviour-preserving.
         Node::Expr(parent) if parent.span.from_expansion() => None,
         // `&mut` binds looser than these, so the prefix would have to
-        // carry parentheses -- and `(&mut command).arg(..)` reads worse
-        // than the call it replaces, which is the whole point of the
-        // rule. The diagnostic shows the bare rename there instead.
-        Node::Expr(Expr {
-            kind: ExprKind::MethodCall(_, receiver, ..),
-            ..
-        }) if receiver.hir_id == call.hir_id => None,
+        // carry parentheses -- and `(&mut command).field` reads worse
+        // than the expression it replaces, which is the whole point of
+        // the rule. The diagnostic shows the bare rename there instead.
         Node::Expr(Expr {
             kind: ExprKind::Field(base, _) | ExprKind::Index(base, ..),
             ..
@@ -299,13 +307,14 @@ fn position(cx: &LateContext<'_>, call: &Expr<'_>) -> Option<Position> {
     }
 }
 
-/// Whether evaluating `argument` builds a value whose destructor runs
-/// at a point the rewrite would move.
+/// Whether evaluating `argument` leaves behind a value whose destructor
+/// runs at a point the rewrite would move.
 fn creates_an_ordered_drop<'tcx>(cx: &LateContext<'tcx>, argument: &'tcx Expr<'tcx>) -> bool {
     for_each_expr(cx.tcx, argument, |expr| {
         // A place is not a new temporary: it is moved or borrowed, and
         // either way the rewrite does not change when it is dropped.
-        match !expr.is_syntactic_place_expr()
+        match outlives_the_call(cx, expr)
+            && !expr.is_syntactic_place_expr()
             && needs_ordered_drop(cx, cx.typeck_results().expr_ty(expr))
         {
             true => ControlFlow::Break(()),
@@ -313,4 +322,28 @@ fn creates_an_ordered_drop<'tcx>(cx: &LateContext<'tcx>, argument: &'tcx Expr<'t
         }
     })
     .is_some()
+}
+
+/// Whether the value `expr` produces is still alive once the call it
+/// belongs to has returned.
+///
+/// A setter takes its argument by value, so what the argument evaluates
+/// to is moved into the call and dropped inside it: `stdin(Stdio::null())`
+/// leaves nothing behind, whatever `Stdio`'s destructor does. What does
+/// stay is a value something took a *reference* to, since the reference
+/// is what was passed and the value it points at has to outlive the
+/// statement. Borrows the author wrote and borrows the compiler
+/// inserted for a receiver count alike.
+fn outlives_the_call<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
+    matches!(
+        cx.tcx.parent_hir_node(expr.hir_id),
+        Node::Expr(Expr {
+            kind: ExprKind::AddrOf(..),
+            ..
+        }),
+    ) || cx
+        .typeck_results()
+        .expr_adjustments(expr)
+        .iter()
+        .any(|adjustment| matches!(adjustment.kind, Adjust::Borrow(_)))
 }

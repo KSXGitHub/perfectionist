@@ -534,6 +534,14 @@ mod ordered_drop {
     }
 }
 
+// Bad, and applied: the argument is moved into the call, so nothing is
+// left behind whose destructor the change could reorder. Only a value
+// something took a reference to outlives the call, which is what
+// `ordered_drop` above has and this does not.
+fn moved_argument() {
+    Command::new("ls").stdin(Stdio::null());
+}
+
 // Bad, and no rename is rendered: the chain's value lands in a `let`,
 // so the whole rewrite is declined, and renaming the head alone would
 // leave `.arg` written against a receiver that rename has just made

@@ -361,7 +361,7 @@ LL |         Command::new("ls").arg("shadowed-trailing-call").status()
    |                            ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: `status` ends the chain, and a by-value `status` is in scope, so the owned command this change produces would resolve it differently from the borrow it replaces
+   = help: `status` ends the chain, and a by-value `status` is in scope, so the owned command this change produces may resolve it differently from the borrow it replaces
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -370,7 +370,7 @@ LL |         Command::new("ls").arg("conversion-tail").into()
    |                            ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: `into` ends the chain, and a by-value `into` is in scope, so the owned command this change produces would resolve it differently from the borrow it replaces
+   = help: `into` ends the chain, and a by-value `into` is in scope, so the owned command this change produces may resolve it differently from the borrow it replaces
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -379,7 +379,18 @@ LL |         Command::new("ordered-drop").arg(&Noisy);
    |                                      ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: an argument builds a value whose destructor would run at a different point: the owned command is created after the arguments, where the borrow it replaces was created before them
+   = help: `arg`'s argument leaves behind a value with a destructor, and the change would drop it after the command rather than before it
+
+warning: `Command::stdin` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     Command::new("ls").stdin(Stdio::null());
+   |                        ^^^^^
+   |
+help: use `CommandExtra::with_stdin`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL |     Command::new("ls").with_stdin(Stdio::null());
+   |                        +++++
 
 warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
