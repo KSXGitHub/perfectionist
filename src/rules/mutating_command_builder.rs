@@ -3,9 +3,10 @@ use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::is_from_proc_macro;
 use clippy_utils::res::MaybeDef;
+use clippy_utils::ty::has_drop;
 use rustc_errors::Applicability;
 use rustc_hir::def::{DefKind, Res};
-use rustc_hir::{Expr, ExprKind, Item, ItemKind, Node, PathSegment, QPath};
+use rustc_hir::{Expr, ExprKind, Item, ItemKind, Node, QPath};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_middle::ty::adjustment::Adjust;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -76,30 +77,25 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// ### When the fix is applied automatically
+    /// ### No automatic fix
     ///
-    /// The suggested rename is applied by `cargo dylint --fix` only
-    /// where it is certain to compile, which takes all of the
-    /// following.
+    /// The suggested rename is never applied by `cargo dylint --fix`,
+    /// because whether it compiles cannot be decided without
+    /// re-typechecking. The by-value form returns `Command` where the
+    /// original returned `&mut Command`, and that changed type ripples:
+    /// it is rejected where the context wanted the borrow, it moves a
+    /// receiver the surrounding code still reads, and — since a trait
+    /// method taking `self` is found before an inherent `&mut self` one
+    /// — it can silently redirect a *later* call in the same chain to an
+    /// extension trait of the author's own, with no compile error to
+    /// reveal it.
     ///
-    /// The trait has to already be in scope. `CommandExtra`'s methods
-    /// are trait methods, so a rename in a module without the `use` is
-    /// `no method named with_arg found` — and the module the import
-    /// would belong in is not always the one the call is in.
+    /// So the diagnostic shows the rename where the receiver is a value
+    /// the expression produced, and describes it where the receiver is a
+    /// place, since there the rename alone would not compile. Finishing
+    /// it there means reassigning the binding or collapsing it into one
+    /// chained expression, which depends on what else the body does.
     ///
-    /// The receiver has to be a value the expression produced rather
-    /// than a place the caller still owns, and the call's value has to
-    /// feed another method call's receiver. The by-value form consumes
-    /// its receiver and returns `Command` where the original returned
-    /// `&mut Command`, so renaming a setter on a binding moves that
-    /// binding, and renaming one whose value is consumed as
-    /// `&mut Command` changes the type the context asked for.
-    ///
-    /// Everywhere else the rename is offered but left for the author to
-    /// apply and finish. In statement position finishing it means
-    /// either `command = command.with_arg(x)` or, better, collapsing
-    /// the binding into one chained expression — which depends on what
-    /// else the body does with it.
     pub perfectionist::MUTATING_COMMAND_BUILDER,
     Warn,
     "a `std::process::Command` setter taking `&mut self` where `command-extra`'s by-value form exists",
@@ -245,10 +241,8 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
             return;
         }
         let std_form = path_segment.ident.name;
-        let applicability = match rename_alone_compiles(cx, expr, receiver, path_segment) {
-            true => Applicability::MachineApplicable,
-            false => Applicability::MaybeIncorrect,
-        };
+        let receiver_is_a_temporary = produces_a_temporary(receiver);
+        let trait_is_imported = command_extra_is_imported(cx, expr);
         span_lint_hir_and_then(
             cx,
             MUTATING_COMMAND_BUILDER,
@@ -256,60 +250,38 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
             path_segment.ident.span,
             format!("`Command::{std_form}` takes `&mut self`, so it cannot yield the command"),
             |diagnostic| {
-                diagnostic.span_suggestion(
-                    path_segment.ident.span,
-                    format!(
-                        "use `CommandExtra::{by_value_form}`, which takes `self` and returns \
-                         `Self`, keeping the whole construction in expression position",
-                    ),
-                    by_value_form,
-                    applicability,
+                let advice = format!(
+                    "use `CommandExtra::{by_value_form}`, which takes `self` and returns `Self`, \
+                     keeping the whole construction in expression position",
                 );
+                match receiver_is_a_temporary {
+                    // The rename is the whole rewrite, so show it.
+                    true => {
+                        diagnostic.span_suggestion(
+                            path_segment.ident.span,
+                            advice,
+                            by_value_form,
+                            Applicability::MaybeIncorrect,
+                        );
+                    }
+                    // The receiver is a place the surrounding code still
+                    // holds, so the rename alone moves it. Printing one
+                    // would show a rewrite that does not compile.
+                    false => {
+                        diagnostic.help(advice);
+                        diagnostic.help(
+                            "the receiver outlives this call, so finish the change by \
+                             reassigning it or by collapsing the binding into one chained \
+                             expression",
+                        );
+                    }
+                }
+                if !trait_is_imported {
+                    diagnostic.help("add `use command_extra::CommandExtra;` to this module");
+                }
             },
         );
     }
-}
-
-/// Whether renaming the method is the whole fix, so the suggestion can
-/// be applied without reading the rest of the body.
-///
-/// Each condition fails loudly on its own:
-///
-/// * `CommandExtra` is already in scope, since its methods are trait
-///   methods and a rename without the import is `E0599`.
-/// * The receiver is a value the expression produced. The by-value form
-///   consumes its receiver, so renaming a setter called on a binding or
-///   a field moves a place the surrounding code still reads, which is
-///   `E0382` -- and for a binding a closure captured, `E0507`.
-/// * The call's value feeds another method call's receiver, and that
-///   parent is one of `Command`'s own methods. Autoref reaches those
-///   from an owned receiver as readily as from a borrowed one, where a
-///   blanket impl instantiates `Self` to the receiver and changes
-///   meaning (`E0631`); any other position rejects the changed type
-///   outright (`E0308`).
-/// * There is no turbofish, which would survive into a method of
-///   different generic arity (`E0107`).
-/// * The span is not an expansion's, since a rename inside a
-///   `macro_rules!` body is written to the definition and lands on
-///   every other call site.
-fn rename_alone_compiles(
-    cx: &LateContext<'_>,
-    call: &Expr<'_>,
-    receiver: &Expr<'_>,
-    path_segment: &PathSegment<'_>,
-) -> bool {
-    // An explicit turbofish survives a rename into a method of
-    // different generic arity: `args` takes two type parameters where
-    // `with_args` takes one, so the rewrite is `E0107`.
-    path_segment.args.is_none()
-        // A rename inside a `macro_rules!` body is decided by one
-        // expansion and written to the definition, so it lands on every
-        // other call site too.
-        && !path_segment.ident.span.from_expansion()
-        && produces_a_temporary(receiver)
-        && feeds_a_method_receiver(cx, call)
-        // Last, because it is the only one that walks a module's items.
-        && command_extra_is_imported(cx, call)
 }
 
 /// Whether the call resolves to one of `Command`'s own inherent
@@ -369,37 +341,6 @@ fn command_extra_is_imported(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
         })
 }
 
-/// Whether `call`'s value is the receiver of another method call, the
-/// one position that takes an owned `Command` where the original
-/// yielded a `&mut Command`.
-fn feeds_a_method_receiver(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
-    let Node::Expr(parent) = cx.tcx.parent_hir_node(call.hir_id) else {
-        return false;
-    };
-    let ExprKind::MethodCall(_, parent_receiver, ..) = parent.kind else {
-        return false;
-    };
-    if parent_receiver.hir_id != call.hir_id {
-        return false;
-    }
-    // And the parent has to be one of `Command`'s own methods, which
-    // autoref reaches from an owned receiver just as well as from a
-    // borrowed one. A blanket `impl<T> Trait for T` instead
-    // instantiates `Self` to the receiver's type, so it sees
-    // `&mut Command` before the rename and `Command` after -- a
-    // different instantiation, and `E0631` where a closure's argument
-    // type was inferred from it.
-    cx.typeck_results()
-        .type_dependent_def_id(parent.hir_id)
-        .and_then(|parent_method| cx.tcx.impl_of_assoc(parent_method))
-        .is_some_and(|impl_did| {
-            cx.tcx
-                .type_of(impl_did)
-                .skip_binder()
-                .is_diag_item(cx, Symbol::intern(COMMAND_DIAGNOSTIC_ITEM))
-        })
-}
-
 /// Whether the by-value form could take ownership of `receiver`.
 ///
 /// The type alone does not answer this. A `Command` field reached
@@ -433,11 +374,7 @@ fn receiver_can_be_consumed(cx: &LateContext<'_>, receiver: &Expr<'_>) -> bool {
                 .expr_adjustments(base)
                 .iter()
                 .any(|adjustment| matches!(adjustment.kind, Adjust::Deref(_)))
-                && !cx
-                    .typeck_results()
-                    .expr_ty(base)
-                    .ty_adt_def()
-                    .is_some_and(|adt| adt.has_dtor(cx.tcx))
+                && !has_drop(cx, cx.typeck_results().expr_ty(base))
                 && receiver_can_be_consumed(cx, base)
         }
         // A value this expression produced, which is a temporary

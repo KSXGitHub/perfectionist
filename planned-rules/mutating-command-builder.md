@@ -24,7 +24,7 @@ carries no `rustc_diagnostic_item`; this crate identifies types only by
 those. Deferred rather than retracted: the `Stdio`-argument case is
 worth linting and nothing else covers it.
 
-Three claims in this file did not survive the implementation:
+These claims in this file did not survive the implementation:
 
 - **The prescribed receiver check does not implement its own
   exemption.** The exemption names a field reached through `&mut self`,
@@ -37,12 +37,23 @@ Three claims in this file did not survive the implementation:
   below is shape 2 — a statement over a `mut` binding — so a
   shape-1-only first pass would have missed the case the rule exists
   for. Both shapes fire.
-- **A rename is machine-applicable only under conditions this file does
-  not state.** `CommandExtra` has to be in scope in the calling module,
-  the receiver has to be a temporary rather than a place the caller
-  still holds, the parent has to be one of `Command`'s own methods, and
-  there must be no turbofish and no macro expansion. Each omission was
-  an unsound rewrite that `cargo fix` reverted the whole file over.
+- **No rename is machine-applicable at all.** This file prescribes one
+  for shape 1. Four rounds of review each found a fresh way the
+  `&mut Command` to `Command` change ripples — five compile errors and,
+  in the end, a silent one: a by-value extension-trait method is found
+  before an inherent `&mut self` one, so renaming one link of a chain
+  can redirect the next to the author's own method with nothing failing
+  to compile. Deciding soundness needs re-typechecking, so the rule
+  suggests and never applies.
+- **The dependency gate keys on "loaded", not "depends on".** The
+  `## Configuration` comment and the exemption below both say dependency
+  graph; what the rule can ask is whether the compiler loaded a crate
+  named `command_extra`, and `--extern` is lazy. So the lint is silent
+  in a crate that has added `command-extra` and not yet referenced it —
+  the crate the advice most applies to — and fires in one that only
+  reaches it transitively. Both were reproduced against the driver.
+  Fixing it needs the declared set, from the extern-crate map rather
+  than from `tcx.crates(())`.
 
 ## Statement
 

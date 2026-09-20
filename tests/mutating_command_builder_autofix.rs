@@ -1,22 +1,22 @@
-//! End-to-end proof of which of `mutating_command_builder`'s
-//! suggestions `cargo dylint --fix` is allowed to apply.
+//! End-to-end proof that `mutating_command_builder` never has
+//! `cargo dylint --fix` rewrite anything.
 //!
 //! Applicability is the one property a `.stderr` cannot show: a
-//! `MachineApplicable` rename and a `MaybeIncorrect` one render
-//! identically, and only the first is applied. So the fixture goes
-//! through the real fixer and is judged on what it did to the source.
+//! suggestion rendered as a concrete rewrite looks the same whether or
+//! not the fixer will apply it. This rule offers none that it will,
+//! because whether the rename compiles cannot be decided without
+//! re-typechecking — the reasoning is on the lint's own rustdoc.
 //!
-//! What makes a rename sound is stated once, on
-//! `rename_alone_compiles` in `src/rules/mutating_command_builder.rs`.
-//! This file pins it, one fixture module per condition, rather than
-//! restating it.
+//! Four rounds of review each found a fresh way the `&mut Command` ->
+//! `Command` change ripples, the last of them silent: a by-value
+//! extension-trait method is found before an inherent `&mut self` one,
+//! so renaming one link of a chain can redirect the next link to the
+//! author's own method with nothing failing to compile. `cargo fix`
+//! reverts a file whose fixes error; it cannot revert one whose fixes
+//! merely change behaviour.
 //!
-//! `cargo fix` applies a crate's `MachineApplicable` suggestions,
-//! recompiles, and on any new error throws the whole file's fixes away
-//! with `errors present after applying fixes`. One over-confident
-//! suggestion therefore costs every correct fix beside it, which is why
-//! the assertion that the fixer stayed away from the unsound shapes
-//! matters as much as the one that it rewrote the sound one.
+//! So the fixture collects every shape the rule fires on and asserts the
+//! source came back untouched.
 
 pub mod _utils;
 
@@ -178,38 +178,26 @@ fn fix() -> (TempDir, String, String) {
 }
 
 #[test]
-fn only_the_sound_rename_is_applied() {
+fn the_fixer_rewrites_nothing() {
     let (_temp, fixed, stderr) = fix();
 
-    // The headline assertion. `cargo fix` prints this after applying a
-    // suggestion that does not compile, having reverted the file — so
-    // its absence is what says every applied rewrite was sound.
+    // `cargo fix` prints this after applying a suggestion that does not
+    // compile, having reverted the file. Nothing here should be applied
+    // in the first place, so it should never appear.
     assert!(
         !stderr.contains("errors present after applying fixes"),
         "the autofix produced code that does not compile; stderr was:\n{stderr}",
     );
 
-    // A revert would leave every line untouched, which would pass the
-    // "left alone" assertions below for the wrong reason.
-    assert!(
-        fixed.contains(r#".with_arg("receiver-in-scope")"#),
-        "expected the fixer to rename the sound call; it left:\n{fixed}",
+    assert_eq!(
+        fixed, SOURCE,
+        "the fixer rewrote the fixture; it should leave every shape alone",
     );
 
-    for untouched in [
-        r#"command.arg("statement-in-scope");"#,
-        r#"command.current_dir("/").arg("chain-on-a-local");"#,
-        r#"command.arg("captured")"#,
-        r#".arg("blanket-parent")"#,
-        r#".args::<[&str; 1], &str>(["turbofish"])"#,
-        r#".arg("not-a-receiver")"#,
-        r#"$c.arg("macro-body")"#,
-        r#".arg("body-local-sibling")"#,
-        r#".arg("receiver-out-of-scope")"#,
-    ] {
-        assert!(
-            fixed.contains(untouched),
-            "expected `{untouched}` to be left alone; the fixer left:\n{fixed}",
-        );
-    }
+    // And the rule did fire, so the assertion above is not passing
+    // because nothing was flagged.
+    assert!(
+        stderr.contains("takes `&mut self`"),
+        "expected the rule to fire on the fixture; stderr was:\n{stderr}",
+    );
 }

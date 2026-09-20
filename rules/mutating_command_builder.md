@@ -71,30 +71,24 @@ fn lister(dir: &Path) -> Command {
 }
 ```
 
-## When the fix is applied automatically
+## No automatic fix
 
-The suggested rename is applied by `cargo dylint --fix` only
-where it is certain to compile, which takes all of the
-following.
+The suggested rename is never applied by `cargo dylint --fix`,
+because whether it compiles cannot be decided without
+re-typechecking. The by-value form returns `Command` where the
+original returned `&mut Command`, and that changed type ripples:
+it is rejected where the context wanted the borrow, it moves a
+receiver the surrounding code still reads, and — since a trait
+method taking `self` is found before an inherent `&mut self` one
+— it can silently redirect a *later* call in the same chain to an
+extension trait of the author's own, with no compile error to
+reveal it.
 
-The trait has to already be in scope. `CommandExtra`'s methods
-are trait methods, so a rename in a module without the `use` is
-`no method named with_arg found` — and the module the import
-would belong in is not always the one the call is in.
-
-The receiver has to be a value the expression produced rather
-than a place the caller still owns, and the call's value has to
-feed another method call's receiver. The by-value form consumes
-its receiver and returns `Command` where the original returned
-`&mut Command`, so renaming a setter on a binding moves that
-binding, and renaming one whose value is consumed as
-`&mut Command` changes the type the context asked for.
-
-Everywhere else the rename is offered but left for the author to
-apply and finish. In statement position finishing it means
-either `command = command.with_arg(x)` or, better, collapsing
-the binding into one chained expression — which depends on what
-else the body does with it.
+So the diagnostic shows the rename where the receiver is a value
+the expression produced, and describes it where the receiver is a
+place, since there the rename alone would not compile. Finishing
+it there means reassigning the binding or collapsing it into one
+chained expression, which depends on what else the body does.
 
 ## Configuration
 
