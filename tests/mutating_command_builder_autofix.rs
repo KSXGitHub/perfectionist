@@ -12,8 +12,7 @@
 //! later call in the same chain to an extension trait of the author's
 //! own -- compiling, and invisible in the diff. Prefixing `&mut `
 //! restores the type, so the context and every following method resolve
-//! as they did before. What is left after that is checkable, and the
-//! lint's own rustdoc lists it.
+//! as they did before. What is left after that is checkable.
 //!
 //! A chain moves whole or not at all, and `shadowed_next_link` is why;
 //! `src/rules/mutating_command_builder/fix.rs` derives it.

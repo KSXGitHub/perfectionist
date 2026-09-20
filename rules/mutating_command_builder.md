@@ -107,13 +107,14 @@ inherited it is left alone.
 
 - _Rust:_ `Workspace`
 
-That manifest, or the `[workspace.dependencies]` table of the
-workspace the crate belongs to, whether or not the crate has
-inherited the entry yet.
+The crate under lint's own manifest, or the
+`[workspace.dependencies]` table of the workspace it belongs to,
+whether or not the crate has inherited the entry yet.
 
 ##### Choice: `"unchecked"`
 
 - _Rust:_ `Unchecked`
 
-Neither: the lint speaks in every crate, including one where the
-method it names cannot be written until the dependency arrives.
+No declaration is required: the lint speaks in every crate,
+including one where the method it names cannot be written until
+the dependency arrives.

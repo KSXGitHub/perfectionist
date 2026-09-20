@@ -250,9 +250,8 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
     }
 }
 
-/// The span of the position `call`'s value lands in, where that
-/// position accepts the owned `Command` the by-value form returns and
-/// the original yielded a `&mut Command`.
+/// Where `call`'s value lands, as far as this can tell without the
+/// typechecker.
 ///
 /// This decides how the diagnostic *reads* wherever no rewrite was
 /// built, which is the only case it is consulted in. A discarded
@@ -268,14 +267,6 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
 /// Every other position -- a `let`, a call argument, a struct field --
 /// may or may not accept the change, and which is likewise the
 /// typechecker's answer, so the diagnostic stays with prose there.
-///
-/// Which of the two it is matters as well as that it is one of them:
-/// a later call is written against a receiver a rename below it has
-/// made owned, so the caller has to ask what that call would resolve
-/// to.
-///
-/// The span comes back with the answer because the caller has to know
-/// whether the position was written where the call is.
 fn landing(cx: &LateContext<'_>, call: &Expr<'_>) -> Landing {
     // A macro taking an expression and using it twice gives both uses
     // the caller's span, so a rename shown for the use in an accepting
