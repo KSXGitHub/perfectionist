@@ -402,6 +402,29 @@ time, cycles and heat; whether an allocation happened; addresses, and
 therefore pointer identity; and anything a type documents as
 arbitrary.
 
+Read those exclusions as a restriction on which **contexts** may
+distinguish two calls, not as a claim about what Rust hides.
+Allocation is observable by an ordinary program — a counting
+`#[global_allocator]` is how the measurements behind this section
+were taken — so excluding it is a choice, and a rule for a setting
+where allocation counts would have to unmake it. Pointer identity is
+not a further choice: `Rc::ptr_eq` on two separate `Rc::new(5)` is
+already `false`, so pointer identity *is* allocation identity, and
+the allocation exclusion carries it.
+
+Relativising to the contract also puts this outside **contextual
+equivalence** in Morris's sense, which quantifies over every context
+the language admits and reads no documentation. By that standard two
+`HashMap::default()`s are distinguishable in safe code: same inserts,
+and `.keys()` yields two different orders. What is meant here is
+coarser — equivalence with respect to the documented interface,
+quantifying only over contexts that rely on guarantees the type
+actually makes. That is the right notion for a linter, which polices
+contracts rather than implementations, but it has to be said: a
+reader who knows the theory otherwise reaches
+[the worked contrast](#the-worked-contrast) and concludes the
+definition is broken.
+
 ### The worked contrast
 
 `HashMap::default()` mutates thread-local state on every call, and is
