@@ -98,8 +98,8 @@ fn turbofished() {
 }
 
 // The help lines are independent, so the combinations are what the
-// reader actually meets. Each of these four pairs or triples them, and
-// they are here to be read together as prose: a line that re-opens what
+// reader actually meets. Each of these pairs or triples them, and they
+// are here to be read together as prose: a line that re-opens what
 // another has settled is only visible side by side.
 
 // Bad: an argument needing `.into()`, and a position that wanted the

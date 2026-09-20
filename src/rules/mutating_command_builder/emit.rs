@@ -43,6 +43,9 @@ pub(super) struct Violation {
     pub(super) remedy: Option<&'static str>,
 }
 
+/// The lines come out in the order a reader works through them: which
+/// method to use, then what else the change takes, then how to reach
+/// the method at all.
 pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
     let Violation {
         hir_id,
