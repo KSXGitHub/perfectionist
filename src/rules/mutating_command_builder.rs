@@ -273,7 +273,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
 /// applied: nothing is. A method receiver is the one position that
 /// takes the owned `Command` the by-value form returns where the
 /// original yielded a `&mut Command`, so it is the one position where
-/// printing the bare rename shows something that compiles.
+/// the bare rename compiles on its own.
 fn feeds_a_method_receiver(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
     matches!(
         cx.tcx.parent_hir_node(call.hir_id),

@@ -12,13 +12,9 @@ project already follows everywhere it builds a subprocess.
 
 Implemented in
 [`src/rules/mutating_command_builder.rs`](../src/rules/mutating_command_builder.rs),
-every setter in the table below included. The three stdio setters are
-generic over `Into<Stdio>` where their counterparts take a concrete
-`Stdio`, so the diagnostic says to convert the argument with `.into()`
-where it is not one already. The target type is read from the setter's
-own bound rather than matched by name, so no `rustc_diagnostic_item`
-for `Stdio` is needed — an earlier round dropped these three on the
-assumption that one was.
+every setter in the table below included. The file stays for the
+dependency gate, which is open work rather than a retraction; the rest
+of the list below is settled.
 
 These claims in this file did not survive the implementation:
 

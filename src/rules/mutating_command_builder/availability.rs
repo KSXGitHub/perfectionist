@@ -1,8 +1,8 @@
 //! Whether the crate whose methods the diagnostic names is reachable
 //! from the code under lint.
 //!
-//! Two questions, driving different things. Whether the compiler
-//! loaded the crate decides whether the lint speaks at all, under the
+//! The answers drive different things. Whether the compiler loaded
+//! the crate decides whether the lint speaks at all, under the
 //! `require_command_extra_dependency` knob. Whether the trait is
 //! imported at the call decides only which remedy the diagnostic
 //! names.

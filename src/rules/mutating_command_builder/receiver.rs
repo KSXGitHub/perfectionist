@@ -1,11 +1,11 @@
 //! Whether the by-value form could take the receiver the setter was
 //! called on.
 //!
-//! The receiver's *type* does not answer this, which is what makes the
-//! walk here worth its own module: a `Command` field reached through
-//! `&mut self` has type `Command` with no reference in sight, and
-//! moving out of it is `E0507`. So the place expression is walked
-//! instead, and only what the caller owns outright is accepted.
+//! The receiver's *type* does not answer this: a `Command` field
+//! reached through `&mut self` has type `Command` with no reference
+//! in sight, and moving out of it is `E0507`. So the place expression
+//! is walked instead, and only what the caller owns outright is
+//! accepted.
 
 use clippy_utils::ty::has_drop;
 use rustc_hir::def::Res;
@@ -58,7 +58,7 @@ pub(super) fn can_be_consumed(cx: &LateContext<'_>, receiver: &Expr<'_>) -> bool
 /// Consuming a temporary takes nothing away from anyone. Consuming a
 /// binding or a field moves it, which is `E0382` where later code reads
 /// it and `E0507` where a closure captured it -- so the rename is only
-/// rendered on a temporary, even though the *diagnostic* is right on a
+/// shown on a temporary, even though the *diagnostic* is right on a
 /// binding too.
 pub(super) fn produces_a_temporary(receiver: &Expr<'_>) -> bool {
     match receiver.kind {

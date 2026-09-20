@@ -3,22 +3,18 @@
 //! extension trait contributed, and what the by-value counterpart
 //! would take where the two signatures differ.
 //!
-//! The three checks are separate because the driver runs them cheapest
+//! The checks are separate because the driver runs them cheapest
 //! first: a name, then a type, then a resolution.
 
 use clippy_utils::res::MaybeDef;
 use rustc_hir::Expr;
 use rustc_lint::LateContext;
-use rustc_span::Symbol;
+use rustc_span::{Symbol, sym};
 
 /// `std::process::Command`'s `rustc_diagnostic_item` name. Not among
 /// the pre-interned `rustc_span::sym` constants, so it is interned on
 /// use, as `needless_borrowed_parameters` does for the same reason.
 const COMMAND_DIAGNOSTIC_ITEM: &str = "Command";
-
-/// `std::convert::Into`'s `rustc_diagnostic_item` name, interned on
-/// use for the same reason.
-const INTO_DIAGNOSTIC_ITEM: &str = "Into";
 
 /// The `command_extra::CommandExtra` counterpart of a
 /// `std::process::Command` setter, or `None` for any other method --
@@ -125,10 +121,7 @@ pub(super) fn argument_conversion(
         .predicates
         .iter()
         .filter_map(|(clause, _)| clause.as_trait_clause())
-        .filter(|clause| {
-            cx.tcx
-                .is_diagnostic_item(Symbol::intern(INTO_DIAGNOSTIC_ITEM), clause.def_id())
-        })
+        .filter(|clause| cx.tcx.is_diagnostic_item(sym::Into, clause.def_id()))
         .find_map(|clause| clause.skip_binder().trait_ref.args.types().nth(1));
     // A setter whose argument already is the target needs nothing; one
     // reaching it through the bound needs `.into()`.

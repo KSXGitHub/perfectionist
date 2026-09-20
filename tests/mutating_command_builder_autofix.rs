@@ -2,7 +2,7 @@
 //! `cargo dylint --fix` rewrite anything.
 //!
 //! Applicability is the one property a `.stderr` cannot show: a
-//! suggestion rendered as a concrete rewrite looks the same whether or
+//! suggestion shown as a concrete rewrite looks the same whether or
 //! not the fixer will apply it. This rule offers none that it will,
 //! because whether the rename compiles cannot be decided without
 //! re-typechecking — the reasoning is on the lint's own rustdoc.
