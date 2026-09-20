@@ -45,6 +45,13 @@ These claims in this file did not survive the implementation:
   can redirect the next to the author's own method with nothing failing
   to compile. Deciding soundness needs re-typechecking, so the rule
   suggests and never applies.
+- **A name match does not identify the callee.** The implementation
+  notes below say no trait resolution is needed because these are
+  inherent methods. A trait method taking `self` is found at the
+  by-value step of the autoderef chain, *before* `Command`'s own
+  `&mut self` setter, so an extension trait of the author's own with a
+  colliding name wins resolution. The pass resolves the callee and
+  requires `Command`'s own inherent method.
 - **The dependency gate keys on "loaded", not "depends on".** The
   `## Configuration` comment and the exemption below both say dependency
   graph; what the rule can ask is whether the compiler loaded a crate
@@ -169,9 +176,8 @@ A `LateLintPass` over expressions. For each method call, ask
 `std::process::Command` by `DefId`. Requiring the type itself rather
 than a reference to it is necessary but not sufficient — see the
 place-expression walk in the Status section above. The setter set is a
-fixed table, so resolution is a name match against that table once the
-receiver type matches — no trait resolution needed, because these are
-inherent methods on `Command`.
+fixed table, but a name match against it is not enough: see the
+resolution check in the Status section above.
 
 The suggestion is not always a rename. The shapes to distinguish:
 

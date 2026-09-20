@@ -95,7 +95,6 @@ declare_tool_lint! {
     /// place, since there the rename alone would not compile. Finishing
     /// it there means reassigning the binding or collapsing it into one
     /// chained expression, which depends on what else the body does.
-    ///
     pub perfectionist::MUTATING_COMMAND_BUILDER,
     Warn,
     "a `std::process::Command` setter taking `&mut self` where `command-extra`'s by-value form exists",
@@ -113,8 +112,8 @@ const COMMAND_EXTRA_CRATE: &str = "command_extra";
 /// use, as `needless_borrowed_parameters` does for the same reason.
 const COMMAND_DIAGNOSTIC_ITEM: &str = "Command";
 
-/// The trait whose by-value setters the diagnostic names. A rename is
-/// only applied automatically where this is already imported.
+/// The trait whose by-value setters the diagnostic names. Where it is
+/// not imported, the diagnostic says to import it.
 const COMMAND_EXTRA_TRAIT: &str = "CommandExtra";
 
 /// The user-facing configuration shape, deserialised from the
@@ -230,7 +229,8 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         // than the call it belongs to, so `report_in_external_macro:
         // false` does not cover a derive that stamps a synthesised
         // call with a user-source span.
-        if hir_in_external_macro(cx, expr.hir_id, path_segment.ident.span)
+        if path_segment.ident.span.from_expansion()
+            || hir_in_external_macro(cx, expr.hir_id, path_segment.ident.span)
             // A derive that stamps its *whole* output with the driving
             // attribute's span leaves the span-based guard nothing to
             // find, including the enclosing item's `def_span`. Reading
@@ -242,7 +242,19 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         }
         let std_form = path_segment.ident.name;
         let receiver_is_a_temporary = produces_a_temporary(receiver);
-        let trait_is_imported = command_extra_is_imported(cx, expr);
+        // Which remedy to name: the crate is absent from the manifest,
+        // or present but not imported here. Only the gate knows the
+        // first, and only with the gate turned off can it happen.
+        let remedy = match (
+            self.command_extra_loaded == Some(true) || self.require_command_extra_dependency,
+            command_extra_is_imported(cx, expr),
+        ) {
+            (_, true) => None,
+            (true, false) => Some("add `use command_extra::CommandExtra;` to this module"),
+            (false, false) => {
+                Some("add `command-extra` to this crate's dependencies, then import `CommandExtra`")
+            }
+        };
         span_lint_hir_and_then(
             cx,
             MUTATING_COMMAND_BUILDER,
@@ -276,8 +288,8 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                         );
                     }
                 }
-                if !trait_is_imported {
-                    diagnostic.help("add `use command_extra::CommandExtra;` to this module");
+                if let Some(remedy) = remedy {
+                    diagnostic.help(remedy);
                 }
             },
         );
@@ -308,8 +320,8 @@ fn resolves_to_an_inherent_command_method(cx: &LateContext<'_>, call: &Expr<'_>)
 /// Scoped to that module because a trait has to be in scope where the
 /// method is called, and a parent module's `use` does not reach a
 /// child. A trait reached some other way -- a glob, a project prelude --
-/// reads here as absent, which costs the suggestion its automatic
-/// application rather than its correctness.
+/// reads here as absent, which costs the reader a redundant "add the
+/// import" line rather than anything load-bearing.
 fn command_extra_is_imported(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
     let module = cx.tcx.parent_module(call.hir_id);
     let wanted_crate = Symbol::intern(COMMAND_EXTRA_CRATE);
@@ -392,7 +404,13 @@ fn receiver_can_be_consumed(cx: &LateContext<'_>, receiver: &Expr<'_>) -> bool {
 /// applied automatically on a temporary, even though the *diagnostic* is
 /// right on a binding too.
 fn produces_a_temporary(receiver: &Expr<'_>) -> bool {
-    !receiver.is_syntactic_place_expr()
+    match receiver.kind {
+        // `is_syntactic_place_expr` answers true for any field or index
+        // whatever its base, so recurse: a field of a temporary is a
+        // temporary, and only the base decides.
+        ExprKind::Field(base, _) | ExprKind::Index(base, _, _) => produces_a_temporary(base),
+        _ => !receiver.is_syntactic_place_expr(),
+    }
 }
 
 /// The `command_extra::CommandExtra` counterpart of a

@@ -148,8 +148,6 @@ const SOURCE: &str = text_block_fnl! {
     "}"
 };
 
-/// Run the fixer over the fixture and hand back what it left on disk,
-/// plus its stderr.
 /// Sibling rules would rewrite the same lines on their own account,
 /// which would make "did the fixer touch this line?" answer the wrong
 /// question -- and any error one of them introduced would be blamed on
@@ -159,6 +157,8 @@ const CONFIG: &str = text_block_fnl! {
     r#"disable = ["bare_identifier_reference", "import_granularity_mismatch", "import_grouping_mismatch"]"#
 };
 
+/// Run the fixer over the fixture and hand back what it left on disk,
+/// plus its stderr.
 fn fix() -> (TempDir, String, String) {
     let temp = TempDir::new().expect("failed to create temp dir");
     build_project_with_config(
@@ -189,15 +189,35 @@ fn the_fixer_rewrites_nothing() {
         "the autofix produced code that does not compile; stderr was:\n{stderr}",
     );
 
+    // A setter inside a `macro_rules!` body is reported at the macro
+    // definition, once per invocation, and any rewrite would land on
+    // every call site. The rule stays out of expansions entirely.
+    assert!(
+        !stderr.contains("macro-body"),
+        "expected no diagnostic inside the macro body; stderr was:\n{stderr}",
+    );
+
     assert_eq!(
         fixed, SOURCE,
         "the fixer rewrote the fixture; it should leave every shape alone",
     );
 
-    // And the rule did fire, so the assertion above is not passing
-    // because nothing was flagged.
-    assert!(
-        stderr.contains("takes `&mut self`"),
-        "expected the rule to fire on the fixture; stderr was:\n{stderr}",
-    );
+    // And the rule fired on every shape, so the assertion above is not
+    // passing because the fixture went quiet. The distinct arguments are
+    // what let one shape be named without matching another.
+    for shape in [
+        "receiver-in-scope",
+        "statement-in-scope",
+        "chain-on-a-local",
+        "blanket-parent",
+        "turbofish",
+        "not-a-receiver",
+        "body-local-sibling",
+        "receiver-out-of-scope",
+    ] {
+        assert!(
+            stderr.contains(shape),
+            "expected the rule to fire on `{shape}`; stderr was:\n{stderr}",
+        );
+    }
 }
