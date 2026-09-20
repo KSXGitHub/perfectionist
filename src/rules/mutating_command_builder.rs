@@ -268,7 +268,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                          `CommandExtra`",
                     ),
                 },
-                fix: fix::parts(
+                rewrite: fix::rewrite(
                     cx,
                     expr,
                     &fix::Inputs {

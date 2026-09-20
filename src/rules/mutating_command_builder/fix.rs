@@ -47,26 +47,42 @@ pub(super) struct Inputs {
     pub(super) names_generic_arguments: bool,
 }
 
-/// The spans to replace, where every part of the change is known and
-/// the result compiles. `None` where any part is not.
-pub(super) fn parts<'tcx>(
+/// What the rule has to offer for one flagged call.
+pub(super) enum Rewrite {
+    /// Every edit the change needs, for the fixer to apply.
+    Apply(Vec<(Span, String)>),
+    /// Nothing to apply, and the rename must not be rendered either:
+    /// on its own it changes what the code does. The message says what
+    /// would change, so the diagnostic can pass it on.
+    Withhold(String),
+    /// Nothing to apply, for a reason that leaves the rename worth
+    /// showing. Whether to show it is the diagnostic's own call.
+    Defer,
+}
+
+/// The edits for the whole chain `call` heads, where every part of the
+/// change is known.
+pub(super) fn rewrite<'tcx>(
     cx: &LateContext<'tcx>,
     call: &'tcx Expr<'tcx>,
     inputs: &Inputs,
-) -> Option<Vec<(Span, String)>> {
+) -> Rewrite {
     // The counterpart has to exist where the call is written, and
     // moving the receiver takes nothing away from anyone only where
     // nobody else holds it.
     if !inputs.trait_is_imported || !inputs.receiver_is_a_temporary {
-        return None;
+        return Rewrite::Defer;
     }
-    let mut parts = link(
+    let mut parts = match link(
         cx,
         call,
         inputs.by_value_form,
         inputs.conversion,
         inputs.names_generic_arguments,
-    )?;
+    ) {
+        Rewrite::Apply(edits) => edits,
+        declined => return declined,
+    };
     // Follow the setters this one feeds. Any of them that cannot be
     // rewritten takes the whole chain with it, because a half-rewritten
     // chain is the shape that resolves somewhere new.
@@ -82,23 +98,35 @@ pub(super) fn parts<'tcx>(
             // Not a setter, so it ends the chain and takes the owned
             // command by autoref, as a hand-written call would -- but
             // only where nothing of that name is found by value first.
+            let name = method.ident.name;
             let receiver_ty = cx.typeck_results().expr_ty(tail).peel_refs();
-            let shadowed =
-                finds_a_by_value_trait_method(cx, parent, receiver_ty, method.ident.name);
-            return (!shadowed).then_some(parts);
+            if finds_a_by_value_trait_method(cx, parent, receiver_ty, name) {
+                return Rewrite::Withhold(format!(
+                    // `a by-value` rather than `a`/`an` before the
+                    // name, which would need the article to agree with
+                    // a method name the rule does not choose.
+                    "`{name}` ends the chain, and a by-value `{name}` is in scope, so the \
+                     owned command this change produces would resolve it differently from \
+                     the borrow it replaces",
+                ));
+            }
+            return Rewrite::Apply(parts);
         };
         // A later link resolving anywhere but to `Command`'s own setter
         // is already trait-mediated, and renaming it would move it.
         if !setter::resolves_to_an_inherent_command_method(cx, parent) {
-            return None;
+            return Rewrite::Defer;
         }
-        parts.extend(link(
+        match link(
             cx,
             parent,
             by_value_form,
             setter::argument_conversion(cx, parent, arguments),
             method.args.is_some_and(|written| !written.args.is_empty()),
-        )?);
+        ) {
+            Rewrite::Apply(edits) => parts.extend(edits),
+            declined => return declined,
+        }
         tail = parent;
     }
     // Nothing further calls it, so the chain's own value is what has to
@@ -107,23 +135,24 @@ pub(super) fn parts<'tcx>(
     // macro invocation wrapping the head alone extends the tail's span
     // to the left of it, and `&mut ` inside the invocation borrows only
     // the part the macro was handed.
-    if position(cx, tail)? == Position::TypeIsKept {
-        parts.push((tail.span.shrink_to_lo(), "&mut ".to_owned()));
+    match position(cx, tail) {
+        Some(Position::TypeIsKept) => parts.push((tail.span.shrink_to_lo(), "&mut ".to_owned())),
+        Some(Position::Discarded) => {}
+        None => return Rewrite::Defer,
     }
-    Some(parts)
+    Rewrite::Apply(parts)
 }
 
-/// The edits one link of the chain needs, or `None` where it cannot be
-/// rewritten at all.
+/// The edits one link of the chain needs.
 fn link<'tcx>(
     cx: &LateContext<'tcx>,
     call: &'tcx Expr<'tcx>,
     by_value_form: &'static str,
     conversion: Conversion,
     names_generic_arguments: bool,
-) -> Option<Vec<(Span, String)>> {
+) -> Rewrite {
     let ExprKind::MethodCall(method, _, arguments, _) = call.kind else {
-        return None;
+        return Rewrite::Defer;
     };
     // A written turbofish names the std setter's generic parameters,
     // and the counterpart's do not correspond to them one for one --
@@ -131,7 +160,7 @@ fn link<'tcx>(
     // guess, and dropping them leans on inference, so neither is a
     // rewrite this can promise compiles.
     if names_generic_arguments {
-        return None;
+        return Rewrite::Defer;
     }
     // The owned command is created after the arguments are evaluated,
     // where the borrow it replaces was created before them, so it
@@ -141,32 +170,39 @@ fn link<'tcx>(
         .iter()
         .any(|argument| creates_an_ordered_drop(cx, argument))
     {
-        return None;
+        return Rewrite::Withhold(
+            "an argument builds a value whose destructor would run at a different point: \
+             the owned command is created after the arguments, where the borrow it \
+             replaces was created before them"
+                .to_owned(),
+        );
     }
     if call.span.from_expansion() || method.ident.span.from_expansion() {
-        return None;
+        return Rewrite::Defer;
     }
     let mut edits = vec![(method.ident.span, by_value_form.to_owned())];
     if conversion == Conversion::IntoNeeded {
-        let argument = arguments.first()?;
+        let Some(argument) = arguments.first() else {
+            return Rewrite::Defer;
+        };
         // An argument a macro produced is written in the macro's body,
         // so the conversion would be appended there: to every other
         // expansion of it at once, and to a file the fixer may not
         // even be rewriting. The call's own span says nothing about
         // its arguments', so this is asked separately.
         if argument.span.from_expansion() {
-            return None;
+            return Rewrite::Defer;
         }
         edits.push((
             argument.span,
             format!("{}.into()", Sugg::hir(cx, argument, "..").maybe_paren()),
         ));
     }
-    Some(edits)
+    Rewrite::Apply(edits)
 }
 
 /// Whether the trait methods in scope at `call` include one of this
-/// name taking `self` by value, applicable to `receiver`.
+/// name taking `self` by value.
 ///
 /// The chain's trailing call keeps its name while its receiver becomes
 /// an owned `Command`, which moves the method probe's first step from

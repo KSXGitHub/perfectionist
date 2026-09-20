@@ -11,9 +11,9 @@
 // that comes back unchanged did so because nothing was offered, not
 // because `cargo fix` reverted it.
 //
-// `shadowed_trailing_call` is the one that would compile *and* be
-// wrong, which is why the applicability rather than the compiler has to
-// be what withholds it.
+// `shadowed_trailing_call` and `ordered_drop` are the ones that would
+// compile *and* be wrong, so nothing but the rule's own decision is
+// positioned to withhold them.
 
 #![allow(dead_code, unused_imports, reason = "fixture")]
 

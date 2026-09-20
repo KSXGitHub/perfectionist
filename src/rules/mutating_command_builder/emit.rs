@@ -9,6 +9,7 @@
 //! reader can act on.
 
 use super::MUTATING_COMMAND_BUILDER;
+use super::fix::Rewrite;
 use super::setter::Conversion;
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use rustc_errors::Applicability;
@@ -43,9 +44,9 @@ pub(super) struct Violation {
     /// Which remedy to name, where the counterpart is not yet writable
     /// here, and `None` where it is.
     pub(super) remedy: Option<&'static str>,
-    /// The whole rewrite, where every part of it is known and compiles,
-    /// and `None` where any part is not.
-    pub(super) fix: Option<Vec<(Span, String)>>,
+    /// What the rule has to offer: the whole rewrite, a reason the
+    /// rename must not even be rendered, or neither.
+    pub(super) rewrite: Rewrite,
 }
 
 /// The lines come out in the order a reader works through them: which
@@ -65,7 +66,7 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
         receiver_is_a_temporary,
         position_takes_it,
         remedy,
-        fix,
+        rewrite,
     } = violation;
     // Rendering the rename is not a claim that it is the whole change:
     // an import may be needed alongside it, which `remedy` names.
@@ -90,11 +91,27 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                      `Self`; it takes the argument by value, so convert it with `.into()`",
                 ),
             };
-            // Every part known, so hand the fixer the whole edit
-            // rather than describing what it would take.
-            if let Some(fix) = fix {
-                diagnostic.multipart_suggestion(advice, fix, Applicability::MachineApplicable);
-                return;
+            match rewrite {
+                // Every part known, so hand the fixer the whole edit
+                // rather than describing what it would take.
+                Rewrite::Apply(edits) => {
+                    diagnostic.multipart_suggestion(
+                        advice,
+                        edits,
+                        Applicability::MachineApplicable,
+                    );
+                    return;
+                }
+                // The rename is the part that would change what the
+                // code does, so rendering it would put the hazard back
+                // in front of the reader as a line to copy. The advice
+                // stands; what stopped it is said instead.
+                Rewrite::Withhold(reason) => {
+                    diagnostic.help(advice);
+                    diagnostic.help(reason);
+                    return;
+                }
+                Rewrite::Defer => {}
             }
             match show_the_rename {
                 true => {

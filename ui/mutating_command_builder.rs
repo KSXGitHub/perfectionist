@@ -455,6 +455,59 @@ mod extension_trait {
     }
 }
 
+// Bad, and no rewrite is rendered: the chain's trailing call is the one
+// name the rewrite cannot change, and its receiver turns from a
+// `&mut Command` into a `Command`. `Ext::status` takes `self`, so it is
+// then found before `Command::status` is reached by autoref. Renaming
+// the head alone compiles and calls something else, so the diagnostic
+// says what would change rather than showing the line.
+mod shadowed_trailing_call {
+    use command_extra::CommandExtra;
+    use std::io;
+    use std::process::{Command, ExitStatus};
+
+    trait Ext {
+        fn status(self) -> io::Result<ExitStatus>;
+    }
+
+    impl Ext for Command {
+        fn status(self) -> io::Result<ExitStatus> {
+            Err(io::Error::other("shadowed-trailing-call"))
+        }
+    }
+
+    fn run() -> io::Result<ExitStatus> {
+        Command::new("ls").arg("shadowed-trailing-call").status()
+    }
+}
+
+// Bad, and no rewrite either, for the other reason there is: the owned
+// command is created after the arguments where the borrow it replaces
+// was created before them, so it becomes the statement's last temporary
+// and drops first. Only an argument's own destructor is positioned to
+// see that.
+mod ordered_drop {
+    use command_extra::CommandExtra;
+    use std::ffi::OsStr;
+    use std::process::Command;
+
+    struct Noisy;
+
+    impl Drop for Noisy {
+        fn drop(&mut self) {}
+    }
+
+    impl AsRef<OsStr> for Noisy {
+        fn as_ref(&self) -> &OsStr {
+            OsStr::new("ordered-drop")
+        }
+    }
+
+    fn run() {
+        Command::new("ordered-drop").arg(&Noisy);
+    }
+}
+
 // Not flagged: a method of the same name on an unrelated type.
 struct NotACommand;
 
