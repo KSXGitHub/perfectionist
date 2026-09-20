@@ -29,12 +29,12 @@
 
 use super::setter::{self, Conversion};
 use clippy_utils::sugg::Sugg;
-use clippy_utils::ty::{implements_trait, needs_ordered_drop};
+use clippy_utils::ty::needs_ordered_drop;
 use clippy_utils::visitors::for_each_expr;
 use core::ops::ControlFlow;
 use rustc_hir::{Expr, ExprKind, Node, StmtKind};
 use rustc_lint::LateContext;
-use rustc_middle::ty::{AssocTag, Ty};
+use rustc_middle::ty::AssocTag;
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 
@@ -99,8 +99,7 @@ pub(super) fn rewrite<'tcx>(
             // command by autoref, as a hand-written call would -- but
             // only where nothing of that name is found by value first.
             let name = method.ident.name;
-            let receiver_ty = cx.typeck_results().expr_ty(tail).peel_refs();
-            if finds_a_by_value_trait_method(cx, parent, receiver_ty, name) {
+            if finds_a_by_value_trait_method(cx, parent, name) {
                 return Rewrite::Withhold(format!(
                     // `a by-value` rather than `a`/`an` before the
                     // name, which would need the article to agree with
@@ -214,14 +213,16 @@ fn link<'tcx>(
 /// `Command`. Two of them would be `E0034` and stop the fixer with an
 /// error; exactly one compiles and silently calls something else.
 ///
-/// `in_scope_traits` is the set the method probe itself consults, so
-/// the answer is neither wider nor narrower than resolution's.
-fn finds_a_by_value_trait_method<'tcx>(
-    cx: &LateContext<'tcx>,
-    call: &Expr<'_>,
-    receiver: Ty<'tcx>,
-    name: Symbol,
-) -> bool {
+/// `in_scope_traits` is the set the method probe itself consults, so no
+/// trait is weighed that resolution would not weigh. Whether `Command`
+/// actually implements the trait is deliberately not asked: answering
+/// it means naming the trait's other generic arguments, and where
+/// `Command` does not pin them -- `Into` and `TryInto` are the everyday
+/// cases, and two impls for `Command` are another -- the answer comes
+/// back "no" for want of an inference, which is the wrong way to be
+/// wrong. A trait whose method could never apply here costs a declined
+/// rewrite instead.
+fn finds_a_by_value_trait_method(cx: &LateContext<'_>, call: &Expr<'_>, name: Symbol) -> bool {
     cx.tcx
         .in_scope_traits(call.hir_id)
         .unwrap_or_default()
@@ -231,7 +232,6 @@ fn finds_a_by_value_trait_method<'tcx>(
                 .associated_items(candidate.def_id)
                 .filter_by_name_unhygienic(name)
                 .any(|item| item.tag() == AssocTag::Fn && takes_self_by_value(cx, item.def_id))
-                && implements_trait(cx, receiver, candidate.def_id, &[])
         })
 }
 

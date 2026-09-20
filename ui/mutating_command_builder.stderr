@@ -366,6 +366,15 @@ LL |         Command::new("ls").arg("shadowed-trailing-call").status()
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
    |
+LL |         Command::new("ls").arg("conversion-tail").into()
+   |                            ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `into` ends the chain, and a by-value `into` is in scope, so the owned command this change produces would resolve it differently from the borrow it replaces
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
 LL |         Command::new("ordered-drop").arg(&Noisy);
    |                                      ^^^
    |

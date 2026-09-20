@@ -481,6 +481,32 @@ mod shadowed_trailing_call {
     }
 }
 
+// Bad, and the same, for the everyday case of it: `Into::into` takes
+// `self` and is in the prelude, so which `From` impl runs is decided by
+// the receiver's type.
+mod conversion_tail {
+    use command_extra::CommandExtra;
+    use std::process::Command;
+
+    struct Wrap;
+
+    impl From<&mut Command> for Wrap {
+        fn from(_command: &mut Command) -> Wrap {
+            Wrap
+        }
+    }
+
+    impl From<Command> for Wrap {
+        fn from(_command: Command) -> Wrap {
+            Wrap
+        }
+    }
+
+    fn run() -> Wrap {
+        Command::new("ls").arg("conversion-tail").into()
+    }
+}
+
 // Bad, and no rewrite either, for the other reason there is: the owned
 // command is created after the arguments where the borrow it replaces
 // was created before them, so it becomes the statement's last temporary
