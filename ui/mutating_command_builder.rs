@@ -58,9 +58,9 @@ fn argument_position(dir: &Path) {
 // Bad, with both reasons: the receiver is a binding the next statement
 // still holds, and the value goes to `configure`, which wanted the
 // `&mut Command`. Neither option the receiver line names is enough on
-// its own here -- both are `E0308` until the call site takes `&mut
-// command` -- which is why that line says the change "also has to"
-// rather than that it finishes there.
+// its own here -- both are `E0308` until the call site takes the borrow
+// -- which is why that line says the change "also has to" rather than
+// that it finishes there.
 fn both_reasons(dir: &Path) {
     let mut command = Command::new("ls");
     configure(command.current_dir(dir));
@@ -99,15 +99,32 @@ fn turbofished() {
         .ok();
 }
 
-// The help lines are independent, so the combinations are what the
-// reader actually meets. Each of these pairs or triples them, and they
-// are here to be read together as prose: a line that re-opens what
-// another has settled is only visible side by side.
+// Three lines can join the advice -- the generic-arguments one, the
+// receiver one and the position one -- and the combinations are what a
+// reader actually meets. Every one of them appears below, under each
+// form of the advice, because a line that re-opens what another has
+// settled is only visible side by side. The singles are covered by the
+// fixtures above; these are the rest.
 
 // Bad: an argument needing `.into()`, and a position that wanted the
 // borrow. Advice plus the position line, and no receiver line.
 fn conversion_and_position(file: std::fs::File) {
     configure(Command::new("ls").stdout(file));
+}
+
+// Bad: an argument needing `.into()` on a binding. Advice plus the
+// receiver line.
+fn conversion_and_receiver(file: std::fs::File) {
+    let mut command = Command::new("ls");
+    command.stdout(file);
+}
+
+// Bad: an argument needing `.into()` and a turbofish. Advice plus the
+// generic-arguments line -- whose check is a quick one here, since the
+// stdio counterparts take a concrete `Stdio` and so have no generic
+// parameter at all.
+fn conversion_and_turbofish(file: std::fs::File) {
+    Command::new("ls").stdout::<std::fs::File>(file);
 }
 
 // Bad: a turbofish over a binding. Advice plus the generic-arguments
@@ -123,10 +140,37 @@ fn turbofish_and_position() {
     configure(Command::new("ls").args::<[&str; 1], &str>(["-l"]));
 }
 
-// Bad: all three at once.
+// Bad: an argument needing `.into()` on a binding whose value then
+// wanted the borrow. Advice plus the receiver line plus the position
+// line.
+fn conversion_and_receiver_and_position(file: std::fs::File) {
+    let mut command = Command::new("ls");
+    configure(command.stdout(file));
+}
+
+// Bad: an argument needing `.into()`, a turbofish, and a binding.
+fn conversion_and_turbofish_and_receiver(file: std::fs::File) {
+    let mut command = Command::new("ls");
+    command.stdout::<std::fs::File>(file);
+}
+
+// Bad: an argument needing `.into()`, a turbofish, and a position that
+// wanted the borrow.
+fn conversion_and_turbofish_and_position(file: std::fs::File) {
+    configure(Command::new("ls").stdout::<std::fs::File>(file));
+}
+
+// Bad: all three lines beside the plain advice.
 fn turbofish_and_receiver_and_position() {
     let mut command = Command::new("ls");
     configure(command.args::<[&str; 1], &str>(["-l"]));
+}
+
+// Bad: all three beside the `.into()` advice, which is every line the
+// diagnostic can carry short of a remedy.
+fn conversion_and_turbofish_and_receiver_and_position(file: std::fs::File) {
+    let mut command = Command::new("ls");
+    configure(command.stdout::<std::fs::File>(file));
 }
 
 // Bad: the shape the rule exists for. The chain cannot be the tail
@@ -322,20 +366,6 @@ macro_rules! discard_then_borrow {
 )]
 fn macro_reuses_the_expression(dir: &Path) {
     discard_then_borrow!(Command::new("ls").current_dir(dir));
-}
-
-// Bad, with an argument needing `.into()` on a binding whose value then
-// wanted the borrow: the worst case of the three prose lines at once.
-fn conversion_and_receiver_and_position(file: std::fs::File) {
-    let mut command = Command::new("ls");
-    configure(command.stdout(file));
-}
-
-// Bad: an argument needing `.into()` and a turbofish. Advice plus the
-// generics line -- whose check is a quick one here, since a counterpart
-// taking the argument by value has no generic parameter to carry one.
-fn conversion_and_turbofish(file: std::fs::File) {
-    Command::new("ls").stdout::<std::fs::File>(file);
 }
 
 // Not flagged: an extension trait taking `self` is found at the

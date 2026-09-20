@@ -96,7 +96,7 @@ declare_tool_lint! {
     /// and otherwise describes it in prose, naming the part the rename
     /// does not cover wherever it knows which part that is. Over a
     /// binding the surrounding code still reads, the change also has to
-    /// reassign that binding or collapse it into one chained
+    /// reassign that binding or collapse the statements into one chained
     /// expression — and where the call's value was wanted as a borrow,
     /// neither of those is enough on its own either.
     pub perfectionist::MUTATING_COMMAND_BUILDER,
