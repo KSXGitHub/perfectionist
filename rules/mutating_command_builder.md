@@ -107,7 +107,7 @@ inherited it is left alone.
 
 - _Rust:_ `Workspace`
 
-The crate under lint's own manifest, or the
+The manifest of the crate under lint, or the
 `[workspace.dependencies]` table of the workspace it belongs to,
 whether or not the crate has inherited the entry yet.
 

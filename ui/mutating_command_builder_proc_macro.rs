@@ -8,7 +8,7 @@
 // span shape on a minimal `#[synth_command_setter]` attribute.
 //
 // `command_extra` is pulled in so the rule's dependency gate passes and
-// the guard is the only thing left that can keep the fixture quiet.
+// the guard is the only thing left that can keep the fixture silent.
 
 #![allow(dead_code, unused_variables, reason = "ui fixture")]
 

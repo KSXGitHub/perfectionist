@@ -7,7 +7,7 @@
 // macro's own. The setter's tokens are the caller's, so the guard on
 // the method segment's span does not see the expansion, and the source
 // under that span is the author's, so reading it does not either. What
-// keeps this quiet is the check on the enclosing item's `def_span`.
+// keeps this silent is the check on the enclosing item's `def_span`.
 //
 // `command_extra` is pulled in so the dependency gate passes and that
 // check is the only thing left that can keep the fixture silent.

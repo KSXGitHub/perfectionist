@@ -28,7 +28,7 @@ pub(super) enum RequiredDeclaration {
     /// `command-extra.workspace = true`. A sibling that has not
     /// inherited it is left alone.
     Crate,
-    /// The crate under lint's own manifest, or the
+    /// The manifest of the crate under lint, or the
     /// `[workspace.dependencies]` table of the workspace it belongs to,
     /// whether or not the crate has inherited the entry yet.
     #[default]

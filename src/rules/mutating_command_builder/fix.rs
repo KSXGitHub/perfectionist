@@ -101,8 +101,7 @@ fn edits<'tcx>(cx: &LateContext<'tcx>, call: &'tcx Expr<'tcx>, inputs: &Inputs) 
         declined => return declined,
     };
     // Follow the setters this one feeds. Any of them that cannot be
-    // rewritten takes the whole chain with it, because a half-rewritten
-    // chain is the shape that resolves somewhere new.
+    // rewritten takes the whole chain with it.
     let mut tail = call;
     while let Node::Expr(parent) = cx.tcx.parent_hir_node(tail.hir_id) {
         let ExprKind::MethodCall(method, receiver, arguments, _) = parent.kind else {
@@ -237,9 +236,9 @@ fn link<'tcx>(
 /// an error; exactly one compiles and silently calls something else.
 ///
 /// `in_scope_traits` is the set the method probe itself consults, so
-/// no trait is weighed that resolution would not weigh. It deliberately
-/// does not ask these, each because the safe answer is the one that
-/// declines:
+/// no trait is weighed that resolution would not weigh. The guard
+/// deliberately does not ask these, each because the safe answer is the
+/// one that declines:
 ///
 /// - Whether `Command` implements the trait. Answering means naming
 ///   the trait's other generic arguments, and where `Command` does not
