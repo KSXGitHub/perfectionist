@@ -181,7 +181,7 @@ Three-valued, and only the first fires:
   (`Vec`, `String`, `Option`, the integers, …), or a
   `#[derive(Default)]` impl every one of whose field types is itself
   known pure, checked transitively with a cycle guard.
-- **Known effectful** — what a rule about effectful `Default` impls
+- **Known effectful** — what a rule about an effectful `Default`
   would need. This rule does not.
 - **Unknown** — everything else, including a hand-written impl that
   happens to be pure.
@@ -228,7 +228,7 @@ The third is the purity classification under
 [Knowing that a `Default` is pure](#knowing-that-a-default-is-pure),
 which has nothing to borrow and is where the work is. It belongs in a
 crate-internal module rather than inside the rule, since a rule about
-effectful `Default` impls would want the same classification read the
+an effectful `Default` would want the same classification read the
 other way round.
 
 The suggestion is to delete the statement, which is a span removal
@@ -273,14 +273,17 @@ nothing about either varies per project.
   it to the compiler. It does not fire when the place is a field
   reached through a reference, because the write is observable by the
   caller — which is the case this rule is for.
-- **A rule about effectful `Default` impls** would be this one's
-  complement, reading the same classification the other way round: a
-  `Default` that observes or mutates something is a hazard wherever it
-  is reached for a placeholder, which is `mem::take`,
-  `unwrap_or_default` and `..Default::default()` alike. No such rule
-  is filed. Where one exists, this rule's silence on
+- **A rule about an effectful `Default`** would be this one's
+  complement, reading the same classification the other way round.
+  Two are filed separately, and they disagree about where the fault
+  lies. `perfectionist::implicit_effectful_default` blames the **use
+  site**: a call that constructs a default the programmer never wrote
+  — `mem::take`, `Cell::take`, `unwrap_or_default` — where the type's
+  `Default` is effectful. `perfectionist::effectful_default_impl`
+  blames the **definition site**, the `impl Default` itself. Either
+  way, this rule's silence on
   [the effectful case](#an-effectful-default-is-out-of-scope) becomes
-  a deferral to it rather than a gap.
+  a deferral rather than a gap.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
