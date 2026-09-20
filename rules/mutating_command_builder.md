@@ -17,8 +17,9 @@ names the `command_extra::CommandExtra` counterpart that takes
 
 A receiver it could not take ownership of — a `&mut Command`, or
 a field reached through one — is left alone. So is a crate that
-does not depend on `command-extra`, unless
-`require_command_extra_dependency` says otherwise.
+neither depends on `command-extra` nor belongs to a workspace
+declaring it; `command_extra_dependency` sets how far the lint
+looks for that declaration.
 
 ## Why restrict this?
 
@@ -95,17 +96,48 @@ build the command into one chained expression.
 
 Configure via `dylint.toml` under `["perfectionist::mutating_command_builder"]`. Every field is optional; the per-field prose below states the default.
 
-### Field: `require_command_extra_dependency`
+### Field: `command_extra_dependency`
 
-- _Type:_ `boolean`
+- _Type:_ `RequiredDeclaration`
 - _Optional_
 
-Whether to stay silent in a crate that does not depend on
-`command-extra`. Defaults to `true`: without the crate the
-suggested method does not exist, so the diagnostic would name
-something the author cannot write. Set it to `false` in a
-workspace that adds the dependency per-crate and wants the
-lint to say where it is still missing. A member that inherits it
-with `command-extra.workspace = true` counts as depending on it
-either way; one that has not inherited it yet is what the two
-values disagree about.
+How far to look for a declaration of `command-extra` before the
+lint will name its methods. Without the crate somewhere in
+reach, the diagnostic would name something the author cannot
+write. Defaults to `workspace`: a workspace that has settled on
+the crate has settled for its members, so a member that has not
+inherited it yet is told all the same — what it is missing is a
+line in a manifest. Narrow it to `crate` where the members are
+deliberately not uniform, or widen it to `unchecked` to hear
+from everywhere, including where the method named cannot be
+written yet.
+
+### Types
+
+#### Type: `RequiredDeclaration`
+
+Which manifest has to declare `command-extra`.
+
+##### Choice: `"crate"`
+
+- _Rust:_ `Crate`
+
+The manifest of the crate under lint, whether it names a version
+of its own or inherits the workspace's with
+`command-extra.workspace = true`. A sibling that has not
+inherited it is left alone.
+
+##### Choice: `"workspace"`
+
+- _Rust:_ `Workspace`
+
+That manifest, or the `[workspace.dependencies]` table of the
+workspace the crate belongs to, whether or not the crate has
+inherited the entry yet.
+
+##### Choice: `"unchecked"`
+
+- _Rust:_ `Unchecked`
+
+Neither: the lint speaks in every crate, including one where the
+method it names cannot be written until the dependency arrives.

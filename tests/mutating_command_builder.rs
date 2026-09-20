@@ -3,8 +3,12 @@
 //! The default-configuration sweep lives in
 //! `ui/mutating_command_builder.rs`, and the gate's default is covered
 //! by `ui/mutating_command_builder_no_dependency.rs`, which declares no
-//! dependency on `command_extra` and expects silence. Only the knob's `false` value
-//! needs a `dylint.toml`, so only that case lives here.
+//! dependency on `command_extra` and expects silence. Of the knob's
+//! other values, only `unchecked` changes what a fixture here sees:
+//! compiletest gives the driver no manifest of the fixture's own, so
+//! `crate` and `workspace` both find nothing and read alike. Telling
+//! those two apart takes a real Cargo build, which
+//! `tests/mutating_command_builder_dependency_gate.rs` does.
 //!
 //! No lock here, unlike the sibling config tests: this binary holds one
 //! `#[test]`, and `dylint_testing`'s own `run_tests` takes a
@@ -19,9 +23,10 @@ const LINT_NAME: &str = "perfectionist::mutating_command_builder";
 
 /// Serialisation shim for the rule's `dylint.toml` configuration, which
 /// the test crate cannot build from the lint's own private `Config`.
+/// The value is the enum variant as `dylint.toml` spells it.
 #[derive(serde::Serialize)]
 struct RuleConfig {
-    require_command_extra_dependency: bool,
+    command_extra_dependency: &'static str,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -37,11 +42,11 @@ fn run(src_base: &str, config: RuleConfig) {
 }
 
 #[test]
-fn the_gate_can_be_turned_off() {
+fn the_declaration_can_go_unchecked() {
     run(
-        "ui-toml/mutating_command_builder/gate_disabled",
+        "ui-toml/mutating_command_builder/unchecked",
         RuleConfig {
-            require_command_extra_dependency: false,
+            command_extra_dependency: "unchecked",
         },
     );
 }

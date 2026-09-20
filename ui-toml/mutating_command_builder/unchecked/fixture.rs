@@ -1,9 +1,9 @@
 // edition:2024
 //
-// `require_command_extra_dependency = false`. No `command_extra` is
-// declared, so the diagnostic names a method this crate cannot yet call —
-// which is the point of turning the gate off: a workspace that adds the
-// dependency per-crate wants to be told where it is still missing.
+// `command_extra_dependency = "unchecked"`. Nothing declares
+// `command_extra`, so the diagnostic names a method this crate cannot yet
+// call — which is the point of the value: a project deciding whether to
+// take the dependency at all wants to see what it would buy.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]

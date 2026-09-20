@@ -13,7 +13,7 @@ mod fix;
 mod receiver;
 mod setter;
 
-use config::Config;
+use config::{Config, RequiredDeclaration};
 
 declare_tool_lint! {
     /// ### What it does
@@ -26,8 +26,9 @@ declare_tool_lint! {
     ///
     /// A receiver it could not take ownership of — a `&mut Command`, or
     /// a field reached through one — is left alone. So is a crate that
-    /// does not depend on `command-extra`, unless
-    /// `require_command_extra_dependency` says otherwise.
+    /// neither depends on `command-extra` nor belongs to a workspace
+    /// declaring it; `command_extra_dependency` sets how far the lint
+    /// looks for that declaration.
     ///
     /// ### Why restrict this?
     ///
@@ -108,34 +109,46 @@ declare_tool_lint! {
 const CONFIG_KEY: &str = "perfectionist::mutating_command_builder";
 
 pub struct MutatingCommandBuilder {
-    require_command_extra_dependency: bool,
+    command_extra_dependency: RequiredDeclaration,
     /// Whether this crate declares a dependency on `command_extra`,
     /// memoised on first use. Answering it can walk every
     /// `extern crate` item, and the answer cannot change within a
     /// compilation.
     command_extra_declared: Option<bool>,
+    /// The same, for the surrounding workspace's own table, which is
+    /// read from a file on disk.
+    workspace_declared: Option<bool>,
 }
 
 impl MutatingCommandBuilder {
     fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
         Self {
-            require_command_extra_dependency: config.require_command_extra_dependency,
+            command_extra_dependency: config.command_extra_dependency,
             command_extra_declared: None,
+            workspace_declared: None,
         }
     }
 
-    /// Whether the `CommandExtra` counterpart is writable here.
+    /// Whether the `CommandExtra` counterpart is near enough to hand
+    /// to be named, at the reach `command_extra_dependency` asks for.
     ///
     /// An import of the trait counts on its own: a crate that uses the
     /// trait has to import it, and the import resolves to the real
-    /// crate even where the declared set cannot see the dependency.
-    /// It is asked second because answering it walks the module's
-    /// items, where the declared answer is memoised.
+    /// crate even where the declared set cannot see the dependency. It
+    /// is asked last because answering it walks the module's items,
+    /// where the other two answers are memoised.
     fn suggestion_is_available(&mut self, cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
-        !self.require_command_extra_dependency
-            || self.command_extra_is_declared(cx)
-            || availability::trait_is_imported(cx, call)
+        match self.command_extra_dependency {
+            RequiredDeclaration::Unchecked => return true,
+            RequiredDeclaration::Workspace => {
+                if self.workspace_declares_command_extra() {
+                    return true;
+                }
+            }
+            RequiredDeclaration::Crate => {}
+        }
+        self.command_extra_is_declared(cx) || availability::trait_is_imported(cx, call)
     }
 
     /// [`availability::crate_is_declared`], answered once per
@@ -145,15 +158,23 @@ impl MutatingCommandBuilder {
             .command_extra_declared
             .get_or_insert_with(|| availability::crate_is_declared(cx))
     }
+
+    /// [`availability::workspace_declares_the_package`], answered once
+    /// per compilation.
+    fn workspace_declares_command_extra(&mut self) -> bool {
+        *self
+            .workspace_declared
+            .get_or_insert_with(availability::workspace_declares_the_package)
+    }
 }
 
 impl_lint_pass!(MutatingCommandBuilder => [MUTATING_COMMAND_BUILDER]);
 
 impl Register for rule::MutatingCommandBuilder {
     /// The dependency gate is what keeps this defensible on by
-    /// default: at its default the lint stays quiet in a crate that
-    /// does not depend on `command-extra`, so it does not press a
-    /// third-party dependency on a project that has not met it.
+    /// default: at its default the lint stays quiet in a project that
+    /// has declared `command-extra` nowhere, so it does not press a
+    /// third-party dependency on one that has not met it.
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {
@@ -231,10 +252,11 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 // among the caller's own tokens is not.
                 position_takes_it: accepting_position(cx, expr)
                     .is_some_and(|span| !span.from_expansion()),
-                // Which remedy to name: the crate is absent from the
-                // manifest, or present but not imported here. Only the
-                // gate knows the first, and only with the gate turned
-                // off can it happen. Scoped to the module, so a macro
+                // Which remedy to name: `command-extra` is absent from
+                // this crate's own manifest, or present there but not
+                // imported here. The first is reachable whenever the
+                // gate passed on something else -- the workspace's own
+                // table, or nothing at all. Scoped to the module, so a macro
                 // stamping one written call into two modules can still
                 // earn a diagnostic apiece -- each naming what its own
                 // module needs.

@@ -1,17 +1,19 @@
 //! Whether the crate whose methods the diagnostic names is reachable
 //! from the code under lint.
 //!
-//! Neither answer is the whole of it on its own. Whether the crate is a
-//! declared dependency is what the `require_command_extra_dependency`
-//! knob gates on, and whether the trait is imported at the call picks
-//! which remedy the diagnostic names -- but an import is also evidence
-//! of a dependency the declared set cannot see, so the caller reads it
-//! for both.
+//! No single answer is the whole of it. Whether the crate under lint
+//! declares the dependency, and whether the workspace around it does,
+//! are the two the `command_extra_dependency` knob chooses between;
+//! whether the trait is imported at the call picks which remedy the
+//! diagnostic names -- but an import is also evidence of a dependency
+//! the declared set cannot see, so the caller reads it for both.
 
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{Expr, Item, ItemKind, Node};
 use rustc_lint::LateContext;
 use rustc_span::Symbol;
+use std::path::Path;
+use std::{env, fs};
 
 /// The crate name `command-extra` compiles under, as the compiler
 /// spells it rather than as Cargo does.
@@ -20,6 +22,10 @@ const CRATE: &str = "command_extra";
 /// The trait whose by-value setters the diagnostic names. Where it is
 /// not imported, the diagnostic says to import it.
 const TRAIT: &str = "CommandExtra";
+
+/// The package name `command-extra` is published under, as Cargo
+/// spells it rather than as the compiler does.
+const PACKAGE: &str = "command-extra";
 
 /// Whether the crate under lint declares a dependency named
 /// `command_extra`.
@@ -64,6 +70,49 @@ pub(super) fn crate_is_declared(cx: &LateContext<'_>) -> bool {
         .extern_crate_map
         .items()
         .any(|(_, krate)| cx.tcx.crate_name(*krate) == wanted)
+}
+
+/// Whether the workspace around the crate under lint declares
+/// `command-extra` in `[workspace.dependencies]`.
+///
+/// None of that table reaches rustc. Cargo resolves inheritance before
+/// it assembles the command line, so a dependency the member has not
+/// written `command-extra.workspace = true` for leaves no trace in the
+/// compiler's own state -- which is the case this answers, and the
+/// reason it is read from the file instead.
+///
+/// The walk starts at the directory Cargo names in
+/// `CARGO_MANIFEST_DIR` and climbs to the first `Cargo.toml` carrying
+/// a `[workspace]` table, which is how Cargo finds the root. It does
+/// not read `members` or `exclude`, so a package Cargo would consider
+/// excluded is still read as belonging to the workspace above it.
+///
+/// A compiler driven without Cargo is given no `CARGO_MANIFEST_DIR`,
+/// and answers `false` for want of a manifest to read.
+pub(super) fn workspace_declares_the_package() -> bool {
+    let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") else {
+        return false;
+    };
+    Path::new(&manifest_dir)
+        .ancestors()
+        .filter_map(|directory| fs::read_to_string(directory.join("Cargo.toml")).ok())
+        .filter_map(|text| text.parse::<toml::Table>().ok())
+        .find_map(|manifest| {
+            let workspace = manifest.get("workspace")?.as_table()?;
+            Some(names_the_package(workspace.get("dependencies")))
+        })
+        .unwrap_or(false)
+}
+
+/// Whether a dependency table holds `command-extra`, under that key or
+/// under another key that renames it with `package = "command-extra"`.
+fn names_the_package(dependencies: Option<&toml::Value>) -> bool {
+    let Some(dependencies) = dependencies.and_then(toml::Value::as_table) else {
+        return false;
+    };
+    dependencies.iter().any(|(key, entry)| {
+        key == PACKAGE || entry.get("package").and_then(toml::Value::as_str) == Some(PACKAGE)
+    })
 }
 
 /// Whether the innermost module around `call` imports `CommandExtra`.

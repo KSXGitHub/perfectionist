@@ -1,6 +1,6 @@
-//! The dependency gate asks what the crate under lint *declares*, not
-//! what the compiler loaded, and only a real Cargo build can tell the
-//! two apart.
+//! The dependency gate asks what is *declared* around the crate under
+//! lint, not what the compiler loaded, and only a real Cargo build can
+//! tell the two apart.
 //!
 //! `--extern` is lazy, so the two questions disagree in both directions
 //! and neither disagreement is reachable from a `ui/` fixture, where
@@ -18,6 +18,10 @@
 //! And one the declared set cannot answer at all: Cargo keys `--extern`
 //! by the manifest key, so a dependency renamed there is not there under
 //! `command_extra`. An import of the trait is what carries that case.
+//!
+//! A Cargo build is also the only place `command_extra_dependency`'s
+//! `crate` and `workspace` values differ, since the table one of them
+//! reads is a file Cargo resolves away before rustc sees anything.
 //!
 //! Every fixture here builds its `command-extra` from a path dependency
 //! inside the temporary project, so nothing touches the network. The
@@ -196,12 +200,11 @@ fn a_renamed_dependency_fires_through_its_import() {
     );
 }
 
-/// A workspace declares the dependency once and each member opts in, so
-/// "declared" has to mean the member's own `--extern`, not the
-/// workspace's table. Both values of the knob have a use here, and they
-/// are what separates a member that has opted in from one that has not.
-#[test]
-fn a_member_inherits_the_dependency_but_its_sibling_does_not() {
+/// A workspace that declares the dependency once, with one member
+/// inheriting it and one that has not. Returns the `cargo dylint`
+/// stderr, which is where the fixture's own argument strings come back
+/// to be matched on.
+fn run_the_workspace(dylint_config: &str) -> String {
     let member = |name: &str| {
         format!(
             "use std::process::Command;\n\npub fn build() {{\n    let mut command = \
@@ -250,18 +253,48 @@ fn a_member_inherits_the_dependency_but_its_sibling_does_not() {
             ("command-extra/Cargo.toml", STUB_MANIFEST),
             ("command-extra/src/lib.rs", STUB_SOURCE),
         ],
-        "",
+        dylint_config,
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
-    // The echoed source line, rather than the member name, which cargo
-    // also prints as it builds each one.
+    stderr
+}
+
+/// The echoed source line for a member, rather than the member name,
+/// which cargo also prints as it builds each one.
+fn flagged_line(member: &str) -> String {
+    format!(r#"command.arg("{member}")"#)
+}
+
+/// At the default reach, a workspace that has settled on the crate has
+/// settled for its members, so the member that has not written
+/// `command-extra.workspace = true` yet is told along with the one that
+/// has: what it is missing is a line in a manifest.
+#[test]
+fn the_default_reaches_the_workspace_table() {
+    let stderr = run_the_workspace("");
+    for member in ["inherits", "abstains"] {
+        assert!(
+            stderr.contains(&flagged_line(member)),
+            "expected `{member}` to be flagged under a workspace that \
+             declares the dependency; stderr was:\n{stderr}",
+        );
+    }
+}
+
+/// Narrowed to the crate, each member answers for itself, which is what
+/// a workspace whose members are deliberately not uniform wants.
+#[test]
+fn narrowing_to_the_crate_leaves_the_abstaining_member_alone() {
+    let stderr = run_the_workspace(&format!(
+        "[\"{LINT}\"]\ncommand_extra_dependency = \"crate\"\n",
+    ));
     assert!(
-        stderr.contains(r#"command.arg("inherits")"#),
+        stderr.contains(&flagged_line("inherits")),
         "expected the member that inherits the dependency to be flagged; \
          stderr was:\n{stderr}",
     );
     assert!(
-        !stderr.contains(r#"command.arg("abstains")"#),
+        !stderr.contains(&flagged_line("abstains")),
         "expected the member that does not inherit it to stay silent, since \
          the counterpart is not writable there; stderr was:\n{stderr}",
     );
