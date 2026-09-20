@@ -3,7 +3,7 @@ use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::is_from_proc_macro;
 use rustc_errors::Applicability;
-use rustc_hir::{Expr, ExprKind, Node};
+use rustc_hir::{Expr, ExprKind, Node, Stmt, StmtKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
@@ -93,11 +93,12 @@ declare_tool_lint! {
     /// extension trait of the author's own, with no compile error to
     /// reveal it.
     ///
-    /// So the diagnostic shows the rename where the receiver is a value
-    /// the expression produced, and describes it where the receiver is a
-    /// place, since there the rename alone would not compile. Finishing
-    /// it there means reassigning the binding or collapsing it into one
-    /// chained expression, which depends on what else the body does.
+    /// So the diagnostic shows the rename only where it really is the
+    /// whole change, and otherwise describes it in prose. Over a
+    /// binding the surrounding code still reads, finishing the change
+    /// means reassigning that binding or collapsing it into one chained
+    /// expression, and which of those fits depends on what else the
+    /// body does.
     pub perfectionist::MUTATING_COMMAND_BUILDER,
     Warn,
     "a `std::process::Command` setter taking `&mut self` where `command-extra`'s by-value form exists",
@@ -198,15 +199,21 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
             return;
         }
         let std_form = path_segment.ident.name;
-        // Show the rename only where it is the literal whole change:
-        // the receiver is consumable without disturbing anyone, and the
-        // context takes the owned `Command` the by-value form returns.
+        // Show the rename only where it is the literal whole change.
         let conversion = setter::argument_conversion(cx, expr, arguments);
-        // A rename plus an `.into()` is not a rename, so it is never
-        // shown as one.
-        let rename_is_the_whole_change = conversion == Conversion::None
-            && receiver::produces_a_temporary(receiver)
-            && feeds_a_method_receiver(cx, expr);
+        let receiver_is_a_temporary = receiver::produces_a_temporary(receiver);
+        let rename_is_the_whole_change =
+            // A rename plus an `.into()` is not a rename.
+            conversion == Conversion::None
+            // A turbofish is written against the std setter's generic
+            // parameters and survives a rename of the segment alone.
+            // Every counterpart but `with_envs` takes fewer of them, so
+            // the renamed call is `E0107`.
+            && path_segment.args.is_none()
+            // The receiver is consumable without disturbing anyone,
+            && receiver_is_a_temporary
+            // and its value lands where the owned `Command` is accepted.
+            && accepts_an_owned_command(cx, expr);
         // Which remedy to name: the crate is absent from the manifest,
         // or present but not imported here. Only the gate knows the
         // first, and only with the gate turned off can it happen.
@@ -247,16 +254,24 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                             Applicability::MaybeIncorrect,
                         );
                     }
-                    // The receiver is a place the surrounding code still
-                    // holds, so the rename alone moves it. Printing one
-                    // would show a rewrite that does not compile.
+                    // Something about the call reaches past the rename,
+                    // so showing one would show a rewrite that does not
+                    // compile. Where that something is the receiver --
+                    // a place the surrounding code still holds, which
+                    // the rename would move -- say what finishing it
+                    // takes. The other reasons are the argument needing
+                    // `.into()`, which the advice above already names,
+                    // and a context that wanted the borrow, which is
+                    // the author's own code to read.
                     false => {
                         diagnostic.help(advice);
-                        diagnostic.help(
-                            "the receiver outlives this call, so finish the change by \
-                             reassigning it or by collapsing the binding into one chained \
-                             expression",
-                        );
+                        if !receiver_is_a_temporary {
+                            diagnostic.help(
+                                "the receiver outlives this call, so finish the change by \
+                                 reassigning it or by collapsing the binding into one chained \
+                                 expression",
+                            );
+                        }
                     }
                 }
                 if let Some(remedy) = remedy {
@@ -267,19 +282,33 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
     }
 }
 
-/// Whether `call`'s value is the receiver of another method call.
+/// Whether `call`'s value lands somewhere that accepts the owned
+/// `Command` the by-value form returns, where the original yielded a
+/// `&mut Command`.
 ///
 /// This decides how the diagnostic *reads*, not whether anything is
-/// applied: nothing is. A method receiver is the one position that
-/// takes the owned `Command` the by-value form returns where the
-/// original yielded a `&mut Command`, so it is the one position where
-/// the bare rename compiles on its own.
-fn feeds_a_method_receiver(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
-    matches!(
-        cx.tcx.parent_hir_node(call.hir_id),
+/// applied: nothing is. Two positions qualify. A discarded statement
+/// value constrains nothing, so the change is sound there outright. A
+/// method receiver usually accepts it, because autoref supplies the
+/// borrow the next method wants -- but not always: a method found on
+/// `&mut Command` itself, or a bound only `&mut Command` satisfies
+/// (`.into()` being the everyday one), is lost once the receiver
+/// becomes a `Command`. Separating those needs the typechecker, which
+/// is why the rename is only ever shown and never applied.
+///
+/// Every other position -- a `let`, a call argument, a struct field --
+/// may or may not accept the change, and which is likewise the
+/// typechecker's answer, so the diagnostic stays with prose there.
+fn accepts_an_owned_command(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
+    match cx.tcx.parent_hir_node(call.hir_id) {
         Node::Expr(Expr {
             kind: ExprKind::MethodCall(_, parent_receiver, ..),
             ..
-        }) if parent_receiver.hir_id == call.hir_id,
-    )
+        }) => parent_receiver.hir_id == call.hir_id,
+        Node::Stmt(Stmt {
+            kind: StmtKind::Semi(_),
+            ..
+        }) => true,
+        _ => false,
+    }
 }

@@ -89,6 +89,41 @@ LL |     command.stderr(Stdio::piped());
    = help: use `CommandExtra::with_stderr`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: the receiver outlives this call, so finish the change by reassigning it or by collapsing the binding into one chained expression
 
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     Command::new("ls").arg("statement-temporary");
+   |                        ^^^
+   |
+help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL |     Command::new("ls").with_arg("statement-temporary");
+   |                        +++++
+
+warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     configure(Command::new("ls").current_dir(dir));
+   |                                  ^^^^^^^^^^^
+   |
+   = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
+warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     Command::new("ls").stdout(file).status().ok();
+   |                        ^^^^^^
+   |
+   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
+
+warning: `Command::args` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |         .args::<[&str; 1], &str>(["-l"])
+   |          ^^^^
+   |
+   = help: use `CommandExtra::with_args`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+
 warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
    |

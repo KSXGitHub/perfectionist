@@ -40,6 +40,39 @@ fn stdio_setters(file: std::fs::File) {
     command.stderr(Stdio::piped());
 }
 
+// Bad, and the rename is shown: a discarded statement value constrains
+// nothing, so turning the `&mut Command` into a `Command` is the whole
+// change here. No "receiver outlives this call" line either -- the
+// receiver is a temporary, and there is no binding to reassign.
+fn statement_position() {
+    Command::new("ls").arg("statement-temporary");
+}
+
+// Bad, advice only: the receiver is a temporary too, but its value is a
+// call argument, and `configure` wants the `&mut Command` the std setter
+// returns.
+fn argument_position(dir: &Path) {
+    configure(Command::new("ls").current_dir(dir));
+}
+
+// Bad, advice only, and the receiver is not the reason: a temporary
+// feeding a method receiver, which on its own earns the rename. What
+// withholds it is the `.into()` the counterpart's argument needs, since
+// a rename plus a conversion is not a rename.
+fn stdio_on_a_temporary(file: std::fs::File) {
+    Command::new("ls").stdout(file).status().ok();
+}
+
+// Bad, advice only: the turbofish is written against `args`' two
+// generic parameters and survives a rename of the segment alone, where
+// `with_args` takes one -- `E0107`.
+fn turbofished() {
+    Command::new("ls")
+        .args::<[&str; 1], &str>(["-l"])
+        .status()
+        .ok();
+}
+
 // Bad: the shape the rule exists for. The chain cannot be the tail
 // expression, so the settings spill into a statement over a `mut`
 // binding that exists only until they are done.
