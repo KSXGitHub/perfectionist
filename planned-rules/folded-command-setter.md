@@ -387,8 +387,7 @@ inside. Once its advice is taken and the closure collapses to
 plural.
 
 So neither rule stands down for the other: doing so would leave this
-shape flagged by nobody. See that file's own interaction section for
-the same statement from the other side.
+shape flagged by nobody.
 
 `perfectionist::overly_long_method_chain`
 ([`src/rules/overly_long_method_chain.rs`](../src/rules/overly_long_method_chain.rs))

@@ -5,7 +5,7 @@ LL |     command.arg("-l");
    |             ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
    = note: `#[warn(perfectionist::mutating_command_builder)]` on by default
 
 warning: `Command::args` takes `&mut self`, so it cannot yield the command
@@ -15,7 +15,7 @@ LL |     command.args(["-a", "-h"]);
    |             ^^^^
    |
    = help: use `CommandExtra::with_args`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::env` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -24,7 +24,7 @@ LL |     command.env("LANG", "C");
    |             ^^^
    |
    = help: use `CommandExtra::with_env`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::envs` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -33,7 +33,7 @@ LL |     command.envs([("LANG", "C")]);
    |             ^^^^
    |
    = help: use `CommandExtra::with_envs`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::env_remove` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -42,7 +42,7 @@ LL |     command.env_remove("LANG");
    |             ^^^^^^^^^^
    |
    = help: use `CommandExtra::without_env`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::env_clear` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -51,7 +51,7 @@ LL |     command.env_clear();
    |             ^^^^^^^^^
    |
    = help: use `CommandExtra::with_no_env`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -60,7 +60,7 @@ LL |     command.current_dir(dir);
    |             ^^^^^^^^^^^
    |
    = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::stdin` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -69,7 +69,7 @@ LL |     command.stdin(Stdio::null());
    |             ^^^^^
    |
    = help: use `CommandExtra::with_stdin`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -78,7 +78,7 @@ LL |     command.stdout(file);
    |             ^^^^^^
    |
    = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::stderr` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -87,7 +87,7 @@ LL |     command.stderr(Stdio::piped());
    |             ^^^^^^
    |
    = help: use `CommandExtra::with_stderr`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -116,7 +116,7 @@ LL |     configure(command.current_dir(dir));
    |                       ^^^^^^^^^^^
    |
    = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
    = help: whether the change reaches further depends on what the surrounding code does with this call's value
 
 warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
@@ -169,15 +169,6 @@ LL |     configure(Command::new("ls").stdout(file));
 warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
    |
-LL |     command.stdout(file);
-   |             ^^^^^^
-   |
-   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
-
-warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
-  --> $DIR/mutating_command_builder.rs:LL:CC
-   |
 LL |     Command::new("ls").stdout::<std::fs::File>(file);
    |                        ^^^^^^
    |
@@ -192,7 +183,7 @@ LL |     command.args::<[&str; 1], &str>(["-l"]);
    |
    = help: use `CommandExtra::with_args`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: the call names its generic arguments, which are this setter's, so check them against the counterpart's when you rename
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::args` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -211,7 +202,7 @@ LL |     configure(command.stdout(file));
    |                       ^^^^^^
    |
    = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
    = help: whether the change reaches further depends on what the surrounding code does with this call's value
 
 warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
@@ -222,7 +213,7 @@ LL |     command.stdout::<std::fs::File>(file);
    |
    = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
    = help: the call names its generic arguments, which are this setter's, so check them against the counterpart's when you rename
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -242,7 +233,7 @@ LL |     configure(command.args::<[&str; 1], &str>(["-l"]));
    |
    = help: use `CommandExtra::with_args`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: the call names its generic arguments, which are this setter's, so check them against the counterpart's when you rename
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
    = help: whether the change reaches further depends on what the surrounding code does with this call's value
 
 warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
@@ -253,7 +244,7 @@ LL |     configure(command.stdout::<std::fs::File>(file));
    |
    = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the argument by value, so convert it with `.into()`
    = help: the call names its generic arguments, which are this setter's, so check them against the counterpart's when you rename
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
    = help: whether the change reaches further depends on what the surrounding code does with this call's value
 
 warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
@@ -263,7 +254,7 @@ LL |     command.current_dir(dir).args(["-l", "-a"]).env("LANG", "C");
    |             ^^^^^^^^^^^
    |
    = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -283,7 +274,7 @@ LL |         self.command.arg("owned-field");
    |                      ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder.rs:LL:CC
@@ -303,7 +294,7 @@ LL |         command.arg("no-import-here");
    |                 ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it the change also has to reassign it or collapse the statements into one chained expression
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
    = help: bring `command_extra::CommandExtra` into scope here
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command

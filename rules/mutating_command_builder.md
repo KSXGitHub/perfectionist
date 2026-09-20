@@ -87,10 +87,11 @@ reveal it.
 So the diagnostic shows the rename where the change looks local
 and otherwise describes it in prose, naming the part the rename
 does not cover wherever it knows which part that is. Over a
-binding the surrounding code still reads, the change also has to
-reassign that binding or collapse the statements into one chained
-expression — and where the call's value was wanted as a borrow,
-neither of those is enough on its own either.
+binding or a field the surrounding code still reads, the change
+also has to reassign it, or collapse the statements that build
+the command into one chained expression — and where the call's
+value was wanted as a borrow, neither of those is enough on its
+own either.
 
 ## Configuration
 

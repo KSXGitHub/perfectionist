@@ -55,15 +55,17 @@ fn argument_position(dir: &Path) {
     configure(Command::new("ls").current_dir(dir));
 }
 
-// Bad, with both reasons: the receiver is a binding the next statement
-// still holds, and the value goes to `configure`, which wanted the
-// `&mut Command`. Neither option the receiver line names is enough on
-// its own here -- both are `E0308` until the call site takes the borrow
-// -- which is why that line says the change "also has to" rather than
-// that it finishes there.
+// Bad, with both reasons, and the later read is what makes the receiver
+// line's condition hold: `command` is moved by the rename and read after
+// it, and the value goes to `configure`, which wanted the `&mut Command`.
+// Neither option the receiver line names is enough on its own here --
+// both are `E0308` until the call site takes the borrow -- which is why
+// that line says the change "also has to" rather than that it finishes
+// there.
 fn both_reasons(dir: &Path) {
     let mut command = Command::new("ls");
     configure(command.current_dir(dir));
+    command.status().ok();
 }
 
 // Bad, advice only, and the receiver is not the reason: a temporary
@@ -101,22 +103,15 @@ fn turbofished() {
 
 // Three lines can join the advice -- the generic-arguments one, the
 // receiver one and the position one -- and the combinations are what a
-// reader actually meets. Every one of them appears below, under each
-// form of the advice, because a line that re-opens what another has
-// settled is only visible side by side. The singles are covered by the
-// fixtures above; these are the rest.
+// reader actually meets, since a line that re-opens what another has
+// settled is only visible side by side. Between these and the fixtures
+// above, every combination of the three appears under each form of the
+// advice.
 
 // Bad: an argument needing `.into()`, and a position that wanted the
 // borrow. Advice plus the position line, and no receiver line.
 fn conversion_and_position(file: std::fs::File) {
     configure(Command::new("ls").stdout(file));
-}
-
-// Bad: an argument needing `.into()` on a binding. Advice plus the
-// receiver line.
-fn conversion_and_receiver(file: std::fs::File) {
-    let mut command = Command::new("ls");
-    command.stdout(file);
 }
 
 // Bad: an argument needing `.into()` and a turbofish. Advice plus the
@@ -227,8 +222,8 @@ impl Builder {
     }
 
     // Good: the counterpart of the above. Taking the advice collapses
-    // the two statements into one expression and drops the `mut`, since
-    // the field is moved rather than mutated. The signature returns
+    // the statements into one chained expression and drops the `mut`,
+    // since the field is moved rather than mutated. The signature returns
     // `Command`, which is what `with_arg` hands back.
     fn into_extended_by_value(self) -> Command {
         self.command.with_arg("-l")
@@ -328,9 +323,8 @@ fn through_a_macro() {
 
 // Bad, with the remedy that says to import the trait: the crate is
 // a declared dependency, and the root imports it, but this module does
-// not, so
-// writing the counterpart here would be `no method named with_arg
-// found` until the `use` arrives.
+// not, so writing the counterpart here would be `no method named
+// with_arg found` until the `use` arrives.
 mod trait_not_imported {
     use std::process::Command;
 

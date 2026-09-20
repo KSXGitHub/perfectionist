@@ -112,7 +112,7 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                     if !receiver_is_a_temporary {
                         diagnostic.help(
                             "the receiver outlives this call, so where later code reads \
-                             it the change also has to reassign it or collapse the \
+                             it, the change also has to reassign it or collapse the \
                              statements into one chained expression",
                         );
                     }
