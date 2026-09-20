@@ -27,8 +27,7 @@ declare_tool_lint! {
     /// `Stdio`, so a `File` or a `ChildStdout` argument has no
     /// counterpart to rename to.
     ///
-    /// A receiver the by-value form could not take ownership of is left
-    /// alone: `CommandExtra` takes `self`, so neither a `&mut Command`
+    /// A receiver the by-value form could not consume is left alone: `CommandExtra` takes `self`, so neither a `&mut Command`
     /// nor a field reached through a reference can adopt it, and the
     /// diagnostic would have no valid fix. By default the lint also
     /// stays silent in a crate that has not loaded `command-extra`,
@@ -381,7 +380,7 @@ fn command_extra_is_imported(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
         })
 }
 
-/// Whether the by-value form could take ownership of `receiver`.
+/// Whether the by-value form could consume `receiver`.
 ///
 /// The type alone does not answer this. A `Command` field reached
 /// through `&mut self` has type `Command` with no reference in sight,

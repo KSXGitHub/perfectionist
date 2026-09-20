@@ -21,8 +21,7 @@ instead of `&mut self`.
 `Stdio`, so a `File` or a `ChildStdout` argument has no
 counterpart to rename to.
 
-A receiver the by-value form could not take ownership of is left
-alone: `CommandExtra` takes `self`, so neither a `&mut Command`
+A receiver the by-value form could not consume is left alone: `CommandExtra` takes `self`, so neither a `&mut Command`
 nor a field reached through a reference can adopt it, and the
 diagnostic would have no valid fix. By default the lint also
 stays silent in a crate that has not loaded `command-extra`,
