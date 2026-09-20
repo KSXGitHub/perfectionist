@@ -63,8 +63,12 @@ pub(super) fn resolves_to_an_inherent_command_method(
     let Some(method) = cx.typeck_results().type_dependent_def_id(call.hir_id) else {
         return false;
     };
-    // A trait impl's self type is `Command` too, so the self type alone
-    // does not separate the inherent setter from an extension trait's.
+    // Rejected here rather than left to the self-type check below. That
+    // check does answer the same today -- resolution records the
+    // trait's own declaration, whose `impl_of_assoc` is `None` -- but
+    // only because of which `DefId` resolution happens to record: a
+    // trait impl's self type is `Command` just as the inherent impl's
+    // is, so an impl-item `DefId` would pass it.
     if cx.tcx.trait_of_assoc(method).is_some() {
         return false;
     }

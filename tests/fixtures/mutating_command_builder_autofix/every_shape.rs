@@ -1,6 +1,7 @@
-// The source under test for `tests/mutating_command_builder_autofix.rs`.
-// Each call carries a distinct argument so an assertion there can name
-// one shape without matching another.
+// Every shape `mutating_command_builder` fires on, for
+// `tests/mutating_command_builder_autofix.rs`. Each call carries a
+// distinct argument so an assertion there can name one shape without
+// matching another.
 
 #![allow(dead_code, unused_imports, unused_mut, reason = "fixture")]
 
@@ -30,7 +31,7 @@ mod chain_on_a_local {
     // following code still reads.
     pub fn lister() -> Command {
         let mut command = Command::new("ls");
-        command.current_dir("/").arg("chain-on-a-local");
+        command.current_dir("/chain-on-a-local").arg("chain-tail");
         command
     }
 }

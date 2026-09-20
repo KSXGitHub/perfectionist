@@ -153,4 +153,25 @@ LL |         self.command.arg("owned-field");
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: the receiver outlives this call, so finish the change by reassigning it or by collapsing the binding into one chained expression
 
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |     make_builder().command.arg("field-of-a-temporary");
+   |                            ^^^
+   |
+help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL |     make_builder().command.with_arg("field-of-a-temporary");
+   |                            +++++
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder.rs:LL:CC
+   |
+LL |         command.arg("no-import-here");
+   |                 ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: the receiver outlives this call, so finish the change by reassigning it or by collapsing the binding into one chained expression
+   = help: bring `command_extra::CommandExtra` into scope here
+
 warning: N warnings emitted

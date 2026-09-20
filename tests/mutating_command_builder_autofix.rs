@@ -16,7 +16,15 @@
 //! merely change behaviour.
 //!
 //! So the fixture collects every shape the rule fires on and asserts the
-//! source came back untouched.
+//! source came back untouched. Which assertion does that work is worth
+//! knowing, and is why there are two fixture crates rather than one.
+//! `cargo fix` reverts a whole crate whose fixes error, so in a crate
+//! holding any shape whose rewrite errors the file comes back
+//! byte-identical whatever the applicability was -- there the assertion
+//! that bites is the check for `errors present after applying fixes`.
+//! Only where nothing errors does the fixer's work survive on disk for a
+//! whole-file comparison to see anything, so the silent shape gets a
+//! crate to itself.
 
 pub mod _utils;
 
@@ -28,22 +36,27 @@ use std::fs;
 use text_block_macros::text_block_fnl;
 
 /// The generated manifest with `command-extra` appended, which the
-/// fixture needs and [`fixture_cargo_toml`] does not carry. Passing
+/// fixtures need and [`fixture_cargo_toml`] does not carry. Passing
 /// `Cargo.toml` as a source overwrites the generated copy, since
 /// [`build_project_with_config`] inserts the sources after its own
 /// entries — appending to that copy rather than restating it keeps the
 /// package, lib and workspace stanzas in one place.
-fn cargo_toml() -> String {
+fn cargo_toml(package: &str) -> String {
     format!(
         "{}\n[dependencies]\ncommand-extra = \"1.2.0\"\n",
-        fixture_cargo_toml("mutating_command_builder_autofix"),
+        fixture_cargo_toml(package),
     )
 }
 
-/// The fixture crate's source. The fixer is asserted to hand it back
+/// Every shape the rule fires on. The fixer is asserted to hand it back
 /// byte-identical, so it lives in a file rather than in a literal here:
 /// what the assertion compares is what a reader edits.
-const SOURCE: &str = include_str!("fixtures/mutating_command_builder_autofix/lib.rs");
+const EVERY_SHAPE: &str = include_str!("fixtures/mutating_command_builder_autofix/every_shape.rs");
+
+/// The one shape whose rewrite would compile, alone in its own crate for
+/// the reason its own header gives.
+const SILENT_REDIRECT: &str =
+    include_str!("fixtures/mutating_command_builder_autofix/silent_redirect.rs");
 
 /// Sibling rules would rewrite the same lines on their own account,
 /// which would make "did the fixer touch this line?" answer the wrong
@@ -54,15 +67,15 @@ const CONFIG: &str = text_block_fnl! {
     r#"disable = ["bare_identifier_reference", "import_granularity_mismatch", "import_grouping_mismatch"]"#
 };
 
-/// Run the fixer over the fixture and hand back what it left on disk,
-/// plus its stderr.
-fn fix() -> (TempDir, String, String) {
+/// Run the fixer over one fixture crate and hand back what it left on
+/// disk, plus its stderr.
+fn fix(package: &str, source: &str) -> (TempDir, String, String) {
     let temp = TempDir::new().expect("failed to create temp dir");
     build_project_with_config(
         temp.path(),
-        "mutating_command_builder_autofix",
+        package,
         cargo_manifest_dir(),
-        &[("Cargo.toml", &cargo_toml()), ("src/lib.rs", SOURCE)],
+        &[("Cargo.toml", &cargo_toml(package)), ("src/lib.rs", source)],
         CONFIG,
     );
     let (stderr, success) = run_dylint_fix(temp.path(), &shared_target_dir());
@@ -77,7 +90,7 @@ fn fix() -> (TempDir, String, String) {
 #[test]
 #[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
 fn the_fixer_rewrites_nothing() {
-    let (_temp, fixed, stderr) = fix();
+    let (_temp, fixed, stderr) = fix("mutating_command_builder_autofix", EVERY_SHAPE);
 
     // `cargo fix` prints this after applying a suggestion that does not
     // compile, having reverted the file. Nothing here should be applied
@@ -96,7 +109,7 @@ fn the_fixer_rewrites_nothing() {
     );
 
     assert_eq!(
-        fixed, SOURCE,
+        fixed, EVERY_SHAPE,
         "the fixer rewrote the fixture; it should leave every shape alone",
     );
 
@@ -118,4 +131,30 @@ fn the_fixer_rewrites_nothing() {
             "expected the rule to fire on `{shape}`; stderr was:\n{stderr}",
         );
     }
+}
+
+/// The assertion the whole-file comparison exists for, on the one shape
+/// where it is the only thing standing.
+#[test]
+#[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
+fn a_rewrite_that_would_compile_is_still_not_applied() {
+    let (_temp, fixed, stderr) = fix("mutating_command_builder_silent_redirect", SILENT_REDIRECT);
+
+    // Nothing in this crate errors under the rename, so the fixer has
+    // nothing to revert and whatever it applied is still on disk.
+    assert!(
+        !stderr.contains("errors present after applying fixes"),
+        "the fixture was expected to compile either way; stderr was:\n{stderr}",
+    );
+    assert!(
+        stderr.contains("silent-redirect"),
+        "expected the rule to fire on the chain head; stderr was:\n{stderr}",
+    );
+
+    assert_eq!(
+        fixed, SILENT_REDIRECT,
+        "the fixer applied the rename, which redirects the next link of \
+         the chain to the author's own method with nothing failing to \
+         compile",
+    );
 }

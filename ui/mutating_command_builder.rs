@@ -135,6 +135,20 @@ impl Builder {
     }
 }
 
+fn make_builder() -> Builder {
+    Builder {
+        command: Command::new("ls"),
+    }
+}
+
+// Bad, and the rename is shown: the receiver is a field of a value this
+// expression produced, so nothing else holds a claim on it. Only the
+// base decides -- asking whether the receiver is a place answers yes for
+// any field, whatever its base.
+fn field_of_a_temporary() {
+    make_builder().command.arg("field-of-a-temporary");
+}
+
 // Not flagged: the receiver's type is `&mut Box<Command>`, which is not
 // `Command`, so this stops at the receiver-type check rather than at the
 // place walk. Kept because `Box` is the shape a reader expects to see
@@ -196,6 +210,33 @@ fn spawning() {
 fn indexed(mut commands: Vec<Command>) {
     commands[0].arg("indexed-vec");
     [Command::new("ls")][0].arg("indexed-array");
+}
+
+// Not flagged: the setter is written in a macro body, so the only span
+// the diagnostic could point at is a single token in the definition, and
+// one diagnostic would arrive per invocation.
+macro_rules! add_arg {
+    ($command:expr) => {
+        $command.arg("in-a-macro-body")
+    };
+}
+
+fn through_a_macro() {
+    let mut command = Command::new("ls");
+    add_arg!(command).status().ok();
+}
+
+// Bad, with the remedy that says to import the trait: the crate is
+// loaded, since the root imports it, but this module does not, so
+// writing the counterpart here would be `no method named with_arg
+// found` until the `use` arrives.
+mod trait_not_imported {
+    use std::process::Command;
+
+    fn without_the_import() {
+        let mut command = Command::new("ls");
+        command.arg("no-import-here");
+    }
 }
 
 // Not flagged: an extension trait taking `self` is found at the
