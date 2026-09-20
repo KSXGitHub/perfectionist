@@ -9,11 +9,6 @@
 //! `crate` and `workspace` both find nothing and read alike. Telling
 //! those two apart takes a real Cargo build, which
 //! `tests/mutating_command_builder_dependency_gate.rs` does.
-//!
-//! No lock here, unlike the sibling config tests: this binary holds one
-//! `#[test]`, and `dylint_testing`'s own `run_tests` takes a
-//! process-global mutex before it sets `DYLINT_TOML`. A second lock
-//! around a single caller would guard nothing.
 
 use std::collections::BTreeMap;
 
@@ -33,8 +28,10 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
         .dylint_toml(dylint_toml(config))
         .run();
 }
