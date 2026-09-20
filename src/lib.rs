@@ -20,6 +20,7 @@ dylint_linting::dylint_library!();
 mod abs_path;
 mod ascii_letter;
 mod attr_tokens;
+mod cargo_manifest;
 mod cargo_target;
 mod code_lines;
 mod comment_walk;

@@ -8,12 +8,11 @@
 //! diagnostic names -- but an import is also evidence of a dependency
 //! the declared set cannot see, so the caller reads it for both.
 
+use crate::cargo_manifest;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{Expr, Item, ItemKind, Node};
 use rustc_lint::LateContext;
 use rustc_span::Symbol;
-use std::path::Path;
-use std::{env, fs};
 
 /// The crate name `command-extra` compiles under, as the compiler
 /// spells it rather than as Cargo does.
@@ -79,29 +78,13 @@ pub(super) fn crate_is_declared(cx: &LateContext<'_>) -> bool {
 /// it assembles the command line, so a dependency the member has not
 /// written `command-extra.workspace = true` for leaves no trace in the
 /// compiler's own state -- which is the case this answers, and the
-/// reason it is read from the file instead.
-///
-/// The walk starts at the directory Cargo names in
-/// `CARGO_MANIFEST_DIR` and climbs to the first `Cargo.toml` carrying
-/// a `[workspace]` table, which is how Cargo finds the root. It does
-/// not read `members` or `exclude`, so a package Cargo would consider
-/// excluded is still read as belonging to the workspace above it.
-///
-/// A compiler driven without Cargo is given no `CARGO_MANIFEST_DIR`,
-/// and answers `false` for want of a manifest to read.
+/// reason [`crate::cargo_manifest`] reads the file. Where there is no
+/// workspace manifest to read, the answer is `false`.
 pub(super) fn workspace_declares_the_package() -> bool {
-    let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") else {
-        return false;
-    };
-    Path::new(&manifest_dir)
-        .ancestors()
-        .filter_map(|directory| fs::read_to_string(directory.join("Cargo.toml")).ok())
-        .filter_map(|text| text.parse::<toml::Table>().ok())
-        .find_map(|manifest| {
-            let workspace = manifest.get("workspace")?.as_table()?;
-            Some(names_the_package(workspace.get("dependencies")))
-        })
-        .unwrap_or(false)
+    cargo_manifest::workspace()
+        .and_then(|manifest| manifest.get("workspace"))
+        .and_then(toml::Value::as_table)
+        .is_some_and(|workspace| names_the_package(workspace.get("dependencies")))
 }
 
 /// Whether a dependency table holds `command-extra`, under that key or

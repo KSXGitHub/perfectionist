@@ -92,8 +92,9 @@ pub struct MutatingCommandBuilder {
     /// `extern crate` item, and the answer cannot change within a
     /// compilation.
     command_extra_declared: Option<bool>,
-    /// The same, for the surrounding workspace's own table, which is
-    /// read from a file on disk.
+    /// The same, for the surrounding workspace's own table.
+    /// [`crate::cargo_manifest`] reads and parses that file once per
+    /// process; this saves the scan over its dependency table.
     workspace_declared: Option<bool>,
 }
 
