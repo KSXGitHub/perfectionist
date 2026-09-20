@@ -2,15 +2,18 @@ use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_hir_and_then;
 use clippy_utils::is_from_proc_macro;
-use clippy_utils::res::MaybeDef;
-use clippy_utils::ty::has_drop;
 use rustc_errors::Applicability;
-use rustc_hir::def::{DefKind, Res};
-use rustc_hir::{Expr, ExprKind, Item, ItemKind, Node, QPath};
+use rustc_hir::{Expr, ExprKind, Node};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
-use rustc_middle::ty::adjustment::Adjust;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::Symbol;
+
+mod availability;
+mod config;
+mod receiver;
+mod setter;
+
+use config::Config;
+use setter::Conversion;
 
 declare_tool_lint! {
     /// ### What it does
@@ -27,8 +30,9 @@ declare_tool_lint! {
     /// where it is a `File` or a `ChildStdout`, the diagnostic says to
     /// convert it with `.into()`.
     ///
-    /// A receiver the by-value form could not consume is left alone: `CommandExtra` takes `self`, so neither a `&mut Command`
-    /// nor a field reached through a reference can adopt it, and the
+    /// A receiver the by-value form could not consume is left alone:
+    /// `CommandExtra` takes `self`, so neither a `&mut Command` nor a
+    /// field reached through a reference can adopt it, and the
     /// diagnostic would have no valid fix. By default the lint also
     /// stays silent in a crate that has not loaded `command-extra`,
     /// since the method it names would not exist there; the
@@ -102,42 +106,6 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::mutating_command_builder";
 
-/// The crate name `command-extra` compiles under, as the compiler
-/// spells it rather than as Cargo does.
-const COMMAND_EXTRA_CRATE: &str = "command_extra";
-
-/// `std::process::Command`'s `rustc_diagnostic_item` name. Not among
-/// the pre-interned `rustc_span::sym` constants, so it is interned on
-/// use, as `needless_borrowed_parameters` does for the same reason.
-const COMMAND_DIAGNOSTIC_ITEM: &str = "Command";
-
-/// The trait whose by-value setters the diagnostic names. Where it is
-/// not imported, the diagnostic says to import it.
-const COMMAND_EXTRA_TRAIT: &str = "CommandExtra";
-
-/// The user-facing configuration shape, deserialised from the
-/// `["perfectionist::mutating_command_builder"]` table of
-/// `dylint.toml`.
-#[derive(Debug, serde::Deserialize)]
-#[serde(default, deny_unknown_fields, rename_all = "snake_case")]
-struct Config {
-    /// Whether to stay silent in a crate that has not loaded
-    /// `command-extra`. Defaults to `true`: without the crate the
-    /// suggested method does not exist, so the diagnostic would name
-    /// something the author cannot write. Set it to `false` in a
-    /// workspace that adds the dependency per-crate and wants the
-    /// lint to say where it is still missing.
-    require_command_extra_dependency: bool,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            require_command_extra_dependency: true,
-        }
-    }
-}
-
 pub struct MutatingCommandBuilder {
     require_command_extra_dependency: bool,
     /// Whether a crate named `command_extra` is among the ones the
@@ -164,15 +132,11 @@ impl MutatingCommandBuilder {
         !self.require_command_extra_dependency || loaded
     }
 
-    /// Whether a crate named `command_extra` is among the loaded ones.
+    /// [`availability::crate_is_loaded`], answered once per compilation.
     fn command_extra_is_loaded(&mut self, cx: &LateContext<'_>) -> bool {
-        *self.command_extra_loaded.get_or_insert_with(|| {
-            let wanted = Symbol::intern(COMMAND_EXTRA_CRATE);
-            cx.tcx
-                .crates(())
-                .iter()
-                .any(|&krate| cx.tcx.crate_name(krate) == wanted)
-        })
+        *self
+            .command_extra_loaded
+            .get_or_insert_with(|| availability::crate_is_loaded(cx))
     }
 }
 
@@ -206,29 +170,16 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         let ExprKind::MethodCall(path_segment, receiver, arguments, _) = expr.kind else {
             return;
         };
-        let Some(by_value_form) = by_value_form(path_segment.ident.name) else {
+        let Some(by_value_form) = setter::by_value_form(path_segment.ident.name) else {
             return;
         };
-        // Unadjusted, so an autoref inserted for the `&mut self`
-        // signature does not hide an owned receiver -- and so a
-        // receiver that is genuinely a `&mut Command` keeps its
-        // reference and fails the check.
-        if !cx
-            .typeck_results()
-            .expr_ty(receiver)
-            .is_diag_item(cx, Symbol::intern(COMMAND_DIAGNOSTIC_ITEM))
-        {
+        if !setter::is_on_an_owned_command(cx, receiver) {
             return;
         }
-        // The name and the receiver type do not identify the callee. A
-        // trait method taking `self` is found at the by-value step of
-        // the autoderef chain, *before* `Command`'s own `&mut self`
-        // setter, so an extension trait of the author's own with a
-        // colliding name wins resolution and must not be renamed.
-        if !resolves_to_an_inherent_command_method(cx, expr) {
+        if !setter::resolves_to_an_inherent_command_method(cx, expr) {
             return;
         }
-        if !receiver_can_be_consumed(cx, receiver) {
+        if !receiver::can_be_consumed(cx, receiver) {
             return;
         }
         // The diagnostic span is the method segment alone, narrower
@@ -250,18 +201,18 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         // Show the rename only where it is the literal whole change:
         // the receiver is consumable without disturbing anyone, and the
         // context takes the owned `Command` the by-value form returns.
-        let conversion = argument_conversion(cx, expr, arguments);
+        let conversion = setter::argument_conversion(cx, expr, arguments);
         // A rename plus an `.into()` is not a rename, so it is never
         // shown as one.
         let rename_is_the_whole_change = conversion == Conversion::None
-            && produces_a_temporary(receiver)
+            && receiver::produces_a_temporary(receiver)
             && feeds_a_method_receiver(cx, expr);
         // Which remedy to name: the crate is absent from the manifest,
         // or present but not imported here. Only the gate knows the
         // first, and only with the gate turned off can it happen.
         let remedy = match (
             self.command_extra_is_loaded(cx),
-            command_extra_is_imported(cx, expr),
+            availability::trait_is_imported(cx, expr),
         ) {
             (_, true) => None,
             (true, false) => Some("bring `command_extra::CommandExtra` into scope here"),
@@ -316,64 +267,6 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
     }
 }
 
-/// Whether the by-value counterpart would take this call's argument as
-/// it stands.
-#[derive(PartialEq, Eq)]
-enum Conversion {
-    /// The argument's type is already the one the counterpart takes.
-    None,
-    /// The setter is generic over a conversion the counterpart does not
-    /// perform, so the argument needs `.into()`.
-    IntoNeeded,
-}
-
-/// Whether the argument needs converting for the by-value counterpart.
-///
-/// `Command::stdin`, `stdout` and `stderr` are generic over
-/// `Into<Stdio>` where `CommandExtra` takes a concrete `Stdio`. The
-/// target type comes from the setter's own bound rather than from a
-/// name: `Stdio` carries no `rustc_diagnostic_item`, and reading the
-/// predicate cannot fall out of step with the signature the way a
-/// spelled-out path could.
-///
-/// Suggesting `.into()` costs no inference. `stdout<T: Into<Stdio>>`
-/// infers `T` from the argument, so an argument that itself needs a
-/// target type is circular and ambiguous; the counterpart fixes the
-/// target at `Stdio`, so the conversion always has somewhere to land.
-/// Every argument the std setter accepts, the converted call accepts
-/// too -- and `stdout(f.into())`, which is `E0283`, becomes valid as
-/// `with_stdout(f.into())`.
-fn argument_conversion(
-    cx: &LateContext<'_>,
-    call: &Expr<'_>,
-    arguments: &[Expr<'_>],
-) -> Conversion {
-    let Some(method) = cx.typeck_results().type_dependent_def_id(call.hir_id) else {
-        return Conversion::None;
-    };
-    let Some(argument) = arguments.first() else {
-        return Conversion::None;
-    };
-    let argument_ty = cx.typeck_results().expr_ty(argument);
-    let into_target = cx
-        .tcx
-        .predicates_of(method)
-        .predicates
-        .iter()
-        .filter_map(|(clause, _)| clause.as_trait_clause())
-        .filter(|clause| {
-            cx.tcx
-                .is_diagnostic_item(Symbol::intern("Into"), clause.def_id())
-        })
-        .find_map(|clause| clause.skip_binder().trait_ref.args.types().nth(1));
-    // A setter whose argument already is the target needs nothing; one
-    // reaching it through the bound needs `.into()`.
-    match into_target {
-        Some(target) if argument_ty != target => Conversion::IntoNeeded,
-        _ => Conversion::None,
-    }
-}
-
 /// Whether `call`'s value is the receiver of another method call.
 ///
 /// This decides how the diagnostic *reads*, not whether anything is
@@ -389,150 +282,4 @@ fn feeds_a_method_receiver(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
             ..
         }) if parent_receiver.hir_id == call.hir_id,
     )
-}
-
-/// Whether the call resolves to one of `Command`'s own inherent
-/// methods, rather than to a trait method that shares a setter's name.
-fn resolves_to_an_inherent_command_method(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
-    let Some(method) = cx.typeck_results().type_dependent_def_id(call.hir_id) else {
-        return false;
-    };
-    // A trait impl's self type is `Command` too, so the self type alone
-    // does not separate the inherent setter from an extension trait's.
-    if cx.tcx.trait_of_assoc(method).is_some() {
-        return false;
-    }
-    cx.tcx.impl_of_assoc(method).is_some_and(|impl_did| {
-        cx.tcx
-            .type_of(impl_did)
-            .skip_binder()
-            .is_diag_item(cx, Symbol::intern(COMMAND_DIAGNOSTIC_ITEM))
-    })
-}
-
-/// Whether the innermost module around `call` imports `CommandExtra`.
-///
-/// Scoped to that module because a trait has to be in scope where the
-/// method is called, and a parent module's `use` does not reach a
-/// child. A trait reached some other way -- a glob, a project prelude --
-/// reads here as absent, which costs the reader a redundant "add the
-/// import" line rather than anything load-bearing.
-fn command_extra_is_imported(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
-    let module = cx.tcx.parent_module(call.hir_id);
-    let wanted_crate = Symbol::intern(COMMAND_EXTRA_CRATE);
-    let wanted_trait = Symbol::intern(COMMAND_EXTRA_TRAIT);
-    // The module's *direct* children. `hir_module_items` would also
-    // reach items nested in bodies, and a `use` inside one function
-    // does not bring the trait into scope for that function's siblings.
-    let items = match cx.tcx.hir_node_by_def_id(module.to_local_def_id()) {
-        Node::Crate(contents) => contents.item_ids,
-        Node::Item(Item {
-            kind: ItemKind::Mod(_, contents),
-            ..
-        }) => contents.item_ids,
-        _ => return false,
-    };
-    items
-        .iter()
-        .filter_map(|item_id| match cx.tcx.hir_item(*item_id).kind {
-            ItemKind::Use(path, _) => Some(path),
-            _ => None,
-        })
-        .flat_map(|path| path.res.iter())
-        .any(|res| match res {
-            Some(Res::Def(DefKind::Trait, def_id)) => {
-                cx.tcx.crate_name(def_id.krate) == wanted_crate
-                    && cx.tcx.item_name(*def_id) == wanted_trait
-            }
-            _ => false,
-        })
-}
-
-/// Whether the by-value form could consume `receiver`.
-///
-/// The type alone does not answer this. A `Command` field reached
-/// through `&mut self` has type `Command` with no reference in sight,
-/// and `self.command.with_arg(..)` on it is `E0507: cannot move out of
-/// `self.command` which is behind a mutable reference`. So walk the
-/// place expression and accept only what the caller owns outright.
-/// Anything unrecognised is treated as not consumable, which costs a
-/// missed diagnostic rather than an unfixable one.
-fn receiver_can_be_consumed(cx: &LateContext<'_>, receiver: &Expr<'_>) -> bool {
-    match receiver.kind {
-        // A local binding, `self` taken by value among them -- but not
-        // one belonging to an enclosing body, which is an upvar the
-        // closure only borrows. Moving out of that is `E0507`, and
-        // making the closure take it by value turns an `FnMut` into an
-        // `FnOnce`.
-        ExprKind::Path(QPath::Resolved(None, path)) => match path.res {
-            Res::Local(local) => {
-                cx.tcx.hir_enclosing_body_owner(local)
-                    == cx.tcx.hir_enclosing_body_owner(receiver.hir_id)
-            }
-            _ => false,
-        },
-        // Never an index, for the reason `produces_a_temporary` gives.
-        ExprKind::Index(..) => false,
-        // A field of something the caller owns, so long as reaching it
-        // does not pass through a reference -- which is what an
-        // autoderef adjustment on the base records -- and so long as
-        // the base does not implement `Drop`, since moving a field out
-        // of such a value is `E0509` with no way to finish the fix.
-        ExprKind::Field(base, _) => {
-            !cx.typeck_results()
-                .expr_adjustments(base)
-                .iter()
-                .any(|adjustment| matches!(adjustment.kind, Adjust::Deref(_)))
-                && !has_drop(cx, cx.typeck_results().expr_ty(base))
-                && receiver_can_be_consumed(cx, base)
-        }
-        // A value this expression produced, which is a temporary
-        // nobody else holds a claim on.
-        _ => produces_a_temporary(receiver),
-    }
-}
-
-/// Whether `receiver` is a value the expression produced rather than a
-/// place the surrounding code still holds.
-///
-/// Consuming a temporary takes nothing away from anyone. Consuming a
-/// binding or a field moves it, which is `E0382` where later code reads
-/// it and `E0507` where a closure captured it -- so the rename is only
-/// applied automatically on a temporary, even though the *diagnostic* is
-/// right on a binding too.
-fn produces_a_temporary(receiver: &Expr<'_>) -> bool {
-    match receiver.kind {
-        // `is_syntactic_place_expr` answers true for any field
-        // whatever its base, so recurse: a field of a temporary is a
-        // temporary, and only the base decides.
-        ExprKind::Field(base, _) => produces_a_temporary(base),
-        // An index is never consumable, whatever its base: `Index`
-        // hands back a borrow (`E0507`), and an array index moves out
-        // of a non-copy array (`E0508`).
-        ExprKind::Index(..) => false,
-        _ => !receiver.is_syntactic_place_expr(),
-    }
-}
-
-/// The `command_extra::CommandExtra` counterpart of a
-/// `std::process::Command` setter, or `None` for any other method --
-/// `Command::new`, which is not a setter, and the spawning methods,
-/// which have no counterpart and take `&mut self` legitimately.
-///
-/// `stdin`, `stdout` and `stderr` are absent for the reason this lint's
-/// own rustdoc gives.
-fn by_value_form(std_form: Symbol) -> Option<&'static str> {
-    Some(match std_form.as_str() {
-        "arg" => "with_arg",
-        "args" => "with_args",
-        "env" => "with_env",
-        "envs" => "with_envs",
-        "env_remove" => "without_env",
-        "env_clear" => "with_no_env",
-        "current_dir" => "with_current_dir",
-        "stdin" => "with_stdin",
-        "stdout" => "with_stdout",
-        "stderr" => "with_stderr",
-        _ => return None,
-    })
 }

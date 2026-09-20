@@ -21,8 +21,9 @@ is already a `Stdio` the counterpart takes it as it stands;
 where it is a `File` or a `ChildStdout`, the diagnostic says to
 convert it with `.into()`.
 
-A receiver the by-value form could not consume is left alone: `CommandExtra` takes `self`, so neither a `&mut Command`
-nor a field reached through a reference can adopt it, and the
+A receiver the by-value form could not consume is left alone:
+`CommandExtra` takes `self`, so neither a `&mut Command` nor a
+field reached through a reference can adopt it, and the
 diagnostic would have no valid fix. By default the lint also
 stays silent in a crate that has not loaded `command-extra`,
 since the method it names would not exist there; the
