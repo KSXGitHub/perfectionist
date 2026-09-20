@@ -2,18 +2,14 @@
 //! default-config sweep lives in `ui/impure_macro_arguments.rs` and is
 //! picked up by `tests/ui.rs`; these tests each point at their own
 //! one-fixture directory under `ui-toml/impure_macro_arguments/` and
-//! pass a per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
+//! pass a per-rule `dylint.toml` to `_utils::ConfiguredUiTest`.
 //!
 //! Mirrors the structure of `tests/macro_trailing_comma.rs` — same
-//! shared-[`Mutex`] serialisation, same `dylint.toml` synthesis, same
-//! one-fixture-per-knob layout.
+//! `dylint.toml` synthesis, same one-fixture-per-knob layout.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::impure_macro_arguments";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
@@ -41,9 +37,10 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
         .dylint_toml(dylint_toml(config))
         .run();
 }
