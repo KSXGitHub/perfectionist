@@ -178,9 +178,9 @@ fn link<'tcx>(
     // value the call leaves behind is positioned to observe that.
     //
     // Asked before the generic-arguments check below, which also
-    // declines: a reader
-    // renaming by hand reorders the destructors whether or not generic
-    // arguments are written, so that line has to be reachable.
+    // declines: a reader renaming by hand reorders the destructors
+    // whether or not generic arguments are written, so that line has
+    // to be reachable.
     if arguments
         .iter()
         .any(|argument| creates_an_ordered_drop(cx, argument))

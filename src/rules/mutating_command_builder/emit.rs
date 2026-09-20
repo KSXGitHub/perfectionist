@@ -111,8 +111,8 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                 ),
                 Conversion::IntoNeeded => format!(
                     "use `CommandExtra::{by_value_form}`, which takes `self` and returns \
-                     `Self`; it takes the concrete type where this setter is generic over \
-                     a conversion into it, so convert the argument with `.into()`",
+                     `Self`; it takes the concrete type this setter converts into, so \
+                     convert the argument with `.into()`",
                 ),
             };
             match rewrite {
@@ -164,8 +164,7 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
     );
 }
 
-/// What the prose branch reads, gathered so the branch can be its own
-/// function rather than another screenful of the emitter.
+/// What the prose branch reads.
 struct Lines {
     names_generic_arguments: bool,
     receiver_is_a_temporary: bool,

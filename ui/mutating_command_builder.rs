@@ -63,6 +63,7 @@ fn argument_position(dir: &Path) {
 // receiver line's condition hold. `command` is moved by the rename and
 // read afterwards, and the value goes to `configure`, which wanted the
 // `&mut Command`.
+//
 // Neither option the receiver line names is enough on its own here,
 // since both are `E0308` until the call site takes the borrow, which is
 // why that line says the change "also has to" rather than that it
@@ -91,8 +92,8 @@ fn empty_turbofish() {
 
 // Bad: `with_envs` happens to take the same three generic parameters,
 // so this turbofish would survive the rename; the guard, though, is one
-// predicate over the whole table, and the generics line below has to
-// avoid claiming the counterpart's set differs. Advice plus that line.
+// predicate over the whole table, and the generic-arguments line below
+// has to avoid claiming the counterpart's set differs.
 fn turbofished_envs() {
     Command::new("ls").envs::<[(&str, &str); 1], &str, &str>([("LANG", "C")]);
 }
@@ -129,22 +130,19 @@ fn conversion_and_turbofish(file: std::fs::File) {
     Command::new("ls").stdout::<std::fs::File>(file);
 }
 
-// Bad: a turbofish over a binding. Advice plus the generic-arguments
-// line plus the receiver line.
+// Bad: a turbofish over a binding.
 fn turbofish_and_receiver() {
     let mut command = Command::new("ls");
     command.args::<[&str; 1], &str>(["-l"]);
 }
 
-// Bad: a turbofish on a temporary whose value wanted the borrow. Advice
-// plus the generic-arguments line plus the position line.
+// Bad: a turbofish on a temporary whose value wanted the borrow.
 fn turbofish_and_position() {
     configure(Command::new("ls").args::<[&str; 1], &str>(["-l"]));
 }
 
 // Bad: an argument needing `.into()` on a binding whose value then
-// wanted the borrow. Advice plus the receiver line plus the position
-// line.
+// wanted the borrow.
 fn conversion_and_receiver_and_position(file: std::fs::File) {
     let mut command = Command::new("ls");
     configure(command.stdout(file));
@@ -251,11 +249,9 @@ fn make_builder() -> Builder {
 // Bad: the receiver is a field of a value this expression produced, so
 // nothing else holds a claim on it and the rewrite is applied.
 //
-// The call is also inert: the command it configures is dropped at the
-// semicolon without ever being run. The rule neither notices that nor
-// needs to, since it reads the shape of the call rather than what the
-// program does with it, and `field_of_a_temporary_that_runs` below is
-// the same shape spending its command.
+// The command is never run, which the rule neither notices nor needs
+// to: it reads the shape of the call. `field_of_a_temporary_that_runs`
+// below is the same shape spending its command.
 fn field_of_a_temporary() {
     make_builder().command.arg("field-of-a-temporary");
 }

@@ -16,7 +16,7 @@ warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
 LL |         Command::new("ls").stdout(piped!());
    |                            ^^^^^^
    |
-   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the concrete type where this setter is generic over a conversion into it, so convert the argument with `.into()`
+   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the concrete type this setter converts into, so convert the argument with `.into()`
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
@@ -107,7 +107,7 @@ warning: `Command::stdin` takes `&mut self`, so it cannot yield the command
 LL |         Command::new("ordered-drop-try").stdin(std::fs::File::open("/dev/null")?);
    |                                          ^^^^^
    |
-help: use `CommandExtra::with_stdin`, which takes `self` and returns `Self`; it takes the concrete type where this setter is generic over a conversion into it, so convert the argument with `.into()`
+help: use `CommandExtra::with_stdin`, which takes `self` and returns `Self`; it takes the concrete type this setter converts into, so convert the argument with `.into()`
    |
 LL |         Command::new("ordered-drop-try").with_stdin(std::fs::File::open("/dev/null")?.into());
    |                                          +++++                                       +++++++

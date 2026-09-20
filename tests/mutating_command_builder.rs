@@ -13,9 +13,7 @@
 //! No lock here, unlike the sibling config tests: this binary holds one
 //! `#[test]`, and `dylint_testing`'s own `run_tests` takes a
 //! process-global mutex before it sets `DYLINT_TOML`. A second lock
-//! around a single caller would guard nothing. A future test added
-//! beside this one does not change that, though it would make the
-//! sibling files' reasoning worth re-reading.
+//! around a single caller would guard nothing.
 
 use std::collections::BTreeMap;
 
