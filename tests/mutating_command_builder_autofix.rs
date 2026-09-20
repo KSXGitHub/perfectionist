@@ -178,6 +178,7 @@ fn fix() -> (TempDir, String, String) {
 }
 
 #[test]
+#[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
 fn the_fixer_rewrites_nothing() {
     let (_temp, fixed, stderr) = fix();
 

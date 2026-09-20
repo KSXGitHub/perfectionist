@@ -157,6 +157,14 @@ fn spawning() {
     Command::new("ls").spawn().ok();
 }
 
+// Not flagged: moving out of an index is never allowed, whatever the
+// base -- `Index` hands back a borrow (`E0507`), and an array index
+// moves out of a non-copy array (`E0508`).
+fn indexed(mut commands: Vec<Command>) {
+    commands[0].arg("indexed-vec");
+    [Command::new("ls")][0].arg("indexed-array");
+}
+
 // Not flagged: an extension trait taking `self` is found at the
 // by-value step of the autoderef chain, before `Command`'s own
 // `&mut self` setter, so this resolves to `Ext::arg` and renaming it

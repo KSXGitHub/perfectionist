@@ -159,9 +159,14 @@ impl MutatingCommandBuilder {
 
     /// Whether the `CommandExtra` counterpart is writable here.
     fn suggestion_is_available(&mut self, cx: &LateContext<'_>) -> bool {
-        if !self.require_command_extra_dependency {
-            return true;
-        }
+        // Answered either way, even with the gate off: the diagnostic
+        // reads it to decide which remedy to name.
+        let loaded = self.command_extra_is_loaded(cx);
+        !self.require_command_extra_dependency || loaded
+    }
+
+    /// Whether a crate named `command_extra` is among the loaded ones.
+    fn command_extra_is_loaded(&mut self, cx: &LateContext<'_>) -> bool {
         *self.command_extra_loaded.get_or_insert_with(|| {
             let wanted = Symbol::intern(COMMAND_EXTRA_CRATE);
             cx.tcx
@@ -176,9 +181,11 @@ impl_lint_pass!(MutatingCommandBuilder => [MUTATING_COMMAND_BUILDER]);
 
 impl Register for rule::MutatingCommandBuilder {
     /// The dependency gate is what keeps this defensible on by
-    /// default: at its default the lint cannot fire in a crate that
-    /// has not already reached for `command-extra`, so it never
-    /// pushes a third-party dependency on anyone.
+    /// default: at its default the lint stays quiet in a crate where
+    /// the compiler never loaded `command-extra`, so it does not press
+    /// a third-party dependency on a project that has not met it. A
+    /// crate reaching it only transitively is the gap in that -- the
+    /// gate asks what was loaded, not what was declared.
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {
@@ -241,16 +248,20 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
             return;
         }
         let std_form = path_segment.ident.name;
-        let receiver_is_a_temporary = produces_a_temporary(receiver);
+        // Show the rename only where it is the literal whole change:
+        // the receiver is consumable without disturbing anyone, and the
+        // context takes the owned `Command` the by-value form returns.
+        let rename_is_the_whole_change =
+            produces_a_temporary(receiver) && feeds_a_method_receiver(cx, expr);
         // Which remedy to name: the crate is absent from the manifest,
         // or present but not imported here. Only the gate knows the
         // first, and only with the gate turned off can it happen.
         let remedy = match (
-            self.command_extra_loaded == Some(true) || self.require_command_extra_dependency,
+            self.command_extra_is_loaded(cx),
             command_extra_is_imported(cx, expr),
         ) {
             (_, true) => None,
-            (true, false) => Some("add `use command_extra::CommandExtra;` to this module"),
+            (true, false) => Some("bring `command_extra::CommandExtra` into scope here"),
             (false, false) => {
                 Some("add `command-extra` to this crate's dependencies, then import `CommandExtra`")
             }
@@ -266,7 +277,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                     "use `CommandExtra::{by_value_form}`, which takes `self` and returns `Self`, \
                      keeping the whole construction in expression position",
                 );
-                match receiver_is_a_temporary {
+                match rename_is_the_whole_change {
                     // The rename is the whole rewrite, so show it.
                     true => {
                         diagnostic.span_suggestion(
@@ -294,6 +305,23 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
             },
         );
     }
+}
+
+/// Whether `call`'s value is the receiver of another method call.
+///
+/// This decides how the diagnostic *reads*, not whether anything is
+/// applied: nothing is. A method receiver is the one position that
+/// takes the owned `Command` the by-value form returns where the
+/// original yielded a `&mut Command`, so it is the one position where
+/// printing the bare rename shows something that compiles.
+fn feeds_a_method_receiver(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
+    matches!(
+        cx.tcx.parent_hir_node(call.hir_id),
+        Node::Expr(Expr {
+            kind: ExprKind::MethodCall(_, parent_receiver, ..),
+            ..
+        }) if parent_receiver.hir_id == call.hir_id,
+    )
 }
 
 /// Whether the call resolves to one of `Command`'s own inherent
@@ -376,6 +404,8 @@ fn receiver_can_be_consumed(cx: &LateContext<'_>, receiver: &Expr<'_>) -> bool {
             }
             _ => false,
         },
+        // Never an index, for the reason `produces_a_temporary` gives.
+        ExprKind::Index(..) => false,
         // A field of something the caller owns, so long as reaching it
         // does not pass through a reference -- which is what an
         // autoderef adjustment on the base records -- and so long as
@@ -405,10 +435,14 @@ fn receiver_can_be_consumed(cx: &LateContext<'_>, receiver: &Expr<'_>) -> bool {
 /// right on a binding too.
 fn produces_a_temporary(receiver: &Expr<'_>) -> bool {
     match receiver.kind {
-        // `is_syntactic_place_expr` answers true for any field or index
+        // `is_syntactic_place_expr` answers true for any field
         // whatever its base, so recurse: a field of a temporary is a
         // temporary, and only the base decides.
-        ExprKind::Field(base, _) | ExprKind::Index(base, _, _) => produces_a_temporary(base),
+        ExprKind::Field(base, _) => produces_a_temporary(base),
+        // An index is never consumable, whatever its base: `Index`
+        // hands back a borrow (`E0507`), and an array index moves out
+        // of a non-copy array (`E0508`).
+        ExprKind::Index(..) => false,
         _ => !receiver.is_syntactic_place_expr(),
     }
 }
