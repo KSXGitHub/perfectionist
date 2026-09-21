@@ -57,8 +57,10 @@ pattern that several rules call out by reference — live in
   confines the rule to items whose callers are all visible, and it is
   not configurable away; it stays silent wherever the sibling's own
   predicate holds, so one parameter is never reported twice. Test code
-  and build scripts are exempt by default, as in the sibling. Active
-  by default.
+  and build scripts are exempt by default, as in the sibling.
+  Inactive by default: a whole-crate analysis that errs permissively
+  yields a finding rather than silence, and acting on a wrong one
+  costs allocations and a signature change.
 
 ### OS strings, paths, and bytes
 - [`needless-utf8-conversion.md`](./needless-utf8-conversion.md)

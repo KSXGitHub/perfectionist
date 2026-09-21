@@ -878,13 +878,38 @@ the owned pointee and stops there.
 
 ## Default state
 
-Active by default. The trigger is fully verified rather than
-heuristic: clause 4 establishes that no production call site
-regresses, so there is no class of caller the rule quietly trades
-against, and no neutral baseline configuration to omit. The reach that
-*would* be presumptuous — an item whose callers live outside the crate
-— is excluded by [the visibility bound](#the-visibility-bound) rather
-than by leaving the rule off.
+Inactive by default, and what decides it is which way the analysis
+fails rather than whether it is exact.
+
+A rule resting on a denylist gets the opposite answer: a type it
+misclassifies simply goes unflagged, so being wrong costs findings
+rather than trust, and `perfectionist::implicit_effectful_default`
+ships active on exactly that kind of imperfection. Clause 4 is not
+like that. It is a whole-crate interprocedural summary, and getting
+it wrong in the permissive direction — a call site missed, a frame
+that should have [retracted](#an-ineligible-frame-retracts) and did
+not, a place the liveness half read as dead — yields no silence. It
+yields a *finding*, and acting on that finding is a measured
+pessimisation:
+[three allocations where there were none](#half-the-chain-is-worse-than-none-of-it).
+
+The tempting argument the other way is that the trigger is verified
+rather than heuristic, since clause 4 establishes that no production
+call site regresses. That holds of the *specification* and says
+nothing about the implementation. For a syntactic rule the two are close
+enough to conflate; for a greatest fixpoint over a crate they are
+not.
+
+The remedy compounds it. Every finding rewrites the callee's
+signature and each of its call sites, with no autofix — a larger and
+less reversible edit than a lint usually asks for, and one to opt
+into rather than to meet on a first run.
+
+Worth revisiting against real findings, and the
+[staged plan](#difficulty) makes that a graded question rather than a
+single one: stages 1 and 2 need none of the interprocedural
+machinery, so the reasoning above bears on them far more weakly than
+on stages 3 and 4.
 
 ## Interaction with clippy and sibling rules
 
