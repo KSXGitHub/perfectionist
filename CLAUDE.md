@@ -224,6 +224,14 @@ often it recurs.
 - Spell a value the way the code spells it. The diagnostic says
   `nests 1 level deep`, so the comment says `1 level`, not
   `one level`.
+- Count parameters as the function type counts them. `Result::ok` is
+  `fn ok(self) -> Option<T>`: a **unary function**, not a nullary
+  method. The Reference makes `self` its first parameter, and that is
+  exactly why `filter_map(Result::ok)` type-checks. Prefer that
+  reading. Where the method-position count is the one that matters,
+  give both, because rustc gives both: `this method takes 0 arguments`
+  at a call site, and `this function takes 1 argument` for the same
+  item named through a path.
 
 The
 [fact-duplication rule](#do-not-write-documentation-that-restates-the-code)
