@@ -84,6 +84,16 @@ pattern that several rules call out by reference — live in
   `chain.pipe_mut(f)`), and flags a unary call heading a chain that
   pipes (suggests `x.pipe(g)`). All four checks default to enforce.
 
+### Iterator adapters
+- [`fallible-call-in-filter-map.md`](./fallible-call-in-filter-map.md)
+  — flag a `filter_map` whose closure performs a fallible call and
+  then throws the error away with `.ok()`, so one adapter does both
+  the transformation and the discard; suggest
+  `map(f).filter_map(Result::ok)`. Contradicts
+  `perfectionist::overly_long_method_chain`, which counts the extra
+  stage against the chain's limit, so a project picks one. Inactive by
+  default.
+
 ### Command builder
 - [`mutating-command-builder.md`](./mutating-command-builder.md) — when
   a `std::process::Command` is owned, prefer `command-extra`'s
