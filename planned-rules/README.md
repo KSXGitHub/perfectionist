@@ -44,6 +44,38 @@ pattern that several rules call out by reference — live in
   collects on the copy the owned signature saves. Pairs with
   `clippy::ptr_arg` and `clippy::needless_pass_by_value` to cover the
   full owned-vs-borrowed trade-off from the pacquet guide.
+- [`cloned-borrowed-parameter.md`](./cloned-borrowed-parameter.md) —
+  the sibling for the cases
+  `perfectionist::needless_borrowed_parameters` does not reach: a `&T`
+  parameter of any `Clone` pointee, sized or not, where some path
+  needs an owned `T` — a copy something takes by value, or ownership
+  a callee demands of the parameter or of an element of it — beside
+  borrowing uses and under a condition. A provably cold path — an
+  error arm, a panic, a `#[cold]` callee — does not count as that
+  path, since converting for it taxes every caller on the common one.
+  Permitting a conditional copy costs the callee-local soundness
+  argument, so the rule buys it back by proving that every production
+  call site in the crate passes a place it owns and does not read
+  again. That proof is also what
+  confines the rule to items whose callers are all visible, and it is
+  not configurable away; it stays silent wherever the sibling's own
+  predicate holds, so one parameter is never reported twice. Test code
+  and build scripts are exempt by default, as in the sibling.
+  Inactive by default: a whole-crate analysis that errs permissively
+  yields a finding rather than silence, and acting on a wrong one
+  costs allocations and a signature change.
+- [`cloned-owned-argument.md`](./cloned-owned-argument.md) — the dual:
+  a `T` parameter no hot path in the body consumes, where a production
+  call site clones to feed it. Its call-site clause is existential
+  where the sibling's is universal, because `T` → `&T` can harm no
+  caller — an owner passes `&x` for free — so the rule needs evidence
+  that the change is worth making rather than proof that it is safe.
+  A refinement of `clippy::needless_pass_by_value`, which fires
+  without any caller paying; the clone is what makes the finding
+  evidential. Reaches the case that lint cannot: a body consuming only
+  on a cold path, where every caller clones on the common one. Exists
+  because the sibling's call-site proof is a snapshot that nothing
+  else renews. Active by default.
 
 ### OS strings, paths, and bytes
 - [`needless-utf8-conversion.md`](./needless-utf8-conversion.md)

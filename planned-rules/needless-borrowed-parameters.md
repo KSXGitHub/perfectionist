@@ -47,6 +47,10 @@ conservative single-use starting point described under
 - `&mut T` parameters.
 - The `type_pairs` knob for project-specific borrowed/owned newtypes;
   only the standard-library pairs are recognised today.
+- A `let … else` diverging block, which the unconditionality check
+  does not recognise as a branch, so a conversion inside one is
+  flagged although it runs on only some paths. Demonstrated in
+  [`cloned-borrowed-parameter.md`](./cloned-borrowed-parameter.md#why-the-sibling-rule-does-not-cover-these).
 - The `&String` / `&Vec<T>` / `&PathBuf` + `.clone()` direction, which
   overlaps `clippy::ptr_arg` and is not flagged.
 
@@ -289,6 +293,15 @@ Active by default.
   be taken by reference. Enable both clippy lints alongside
   `needless_borrowed_parameters` for full coverage of the pacquet
   guide's owned-vs-borrowed trade-off.
+
+## Interaction with sibling rules
+
+- [`cloned-borrowed-parameter.md`](./cloned-borrowed-parameter.md)
+  takes the same trade one step further, to a `&T` parameter of a
+  user-defined `Clone` type that is cloned on only some paths and
+  borrowed on others. It pays for the conditional case by checking
+  every call site in the crate, which this rule deliberately does not
+  do; the two triggers are disjoint.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this

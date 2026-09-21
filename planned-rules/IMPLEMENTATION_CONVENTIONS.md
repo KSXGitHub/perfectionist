@@ -326,6 +326,150 @@ does not keep it out of here either. Closing that is unimplemented, so
 for now this section says what the catalogue intends rather than what
 it enforces.
 
+## Interprocedural analyses share one summary pass
+
+A rule that decides whether a **parameter should be taken by value**
+cannot always decide it from the callee's body. Once the conversion is
+conditional, the answer depends on every call site — and a caller that
+holds a borrowed parameter of its own stops being an obstacle only
+when *its* signature changes too, so the question propagates along the
+call graph. That is a worklist to a fixpoint, not a per-rule walk, and
+the rules that ask it are not all filed yet.
+
+Build it once, as a crate-internal `ownership_summary` module, per
+[Notes on cross-rule dependencies](../CLAUDE.md#notes-on-cross-rule-dependencies),
+and let each rule read a summary rather than walk callees itself.
+Every rule that imports `crate::ownership_summary` is bound by the
+contract below; do not re-derive the walk inside a rule.
+
+### What the summary computes
+
+One entry per function, and within it one answer per parameter **and
+per projection of that parameter the body hands out**. A flag per
+parameter is not enough: `PackageSpecifierPlan::parse` never needs its
+`package_names` argument itself, only owned *elements* of it, and a
+domain that cannot say so has nothing to propagate from
+`parse_specifier` back up the chain. Slice and iterator elements are
+the projection the motivating cases need; fields are the obvious next
+one. A rule reads a summary. It does not walk callees itself.
+
+### Propagating along a chain
+
+The call-site question reads as a per-call-site check, and for a leaf
+it is one. It becomes a fixpoint because of forwarding: when
+`f(p: &T)` passes `p` along to `g(&T)`, `f` is a caller that *holds a
+borrow* today and would become an owning caller the moment its own
+parameter is taken by value. The
+[package-specifier chain](./cloned-borrowed-parameter.md#the-package-specifier-chain)
+is exactly this shape, which is why fixing its innermost frame alone
+was not enough.
+
+So the property is a **greatest fixpoint**: start every eligible
+parameter optimistic, retract on a call site that provably cannot give
+up ownership, and iterate until nothing changes. Each parameter
+retracts at most once, so the work is bounded by the call graph's
+edges rather than by its paths.
+
+The shape to avoid is recursive descent into callees, which expands
+the *call tree*: a function reachable by *n* paths is re-analysed *n*
+times. Memoised per-function summaries avoid that, and recursion needs
+no special case, since a greatest fixpoint converges downward through
+a cycle on its own.
+
+**A depth limit would be the wrong bound.** With memoised summaries
+nothing is descended into twice, so a limit buys no time on an
+already-linear analysis while making the findings depend on call-graph
+shape: extracting a helper would push a fact past the limit and
+silently change what the rule reports. Non-determinism under
+refactoring is a poor property for a lint. The bound that belongs here
+is on *reporting*, which is the next section.
+
+### An ineligible frame retracts
+
+A frame a consuming rule may not touch — reachable from outside the
+crate, signature fixed by a trait, used as a `fn` pointer, carrying a
+named lifetime, macro-generated, or exempt test code — must **retract
+in the summary**, not merely go unreported. The distinction is the
+difference between a correct rule and a harmful one.
+
+Take that chain and suppose `parse` were reachable
+from outside the crate. Its parameter can then never be owned. If that
+only meant "do not report `parse`", the fixpoint would still be
+carrying the optimistic assumption that `parse` becomes an owning
+caller, would conclude that `parse_specifier` is eligible, and would
+report it alone — which is
+[the row that costs three allocations](./cloned-borrowed-parameter.md#half-the-chain-is-worse-than-none-of-it).
+Retraction propagates instead: `parse` cannot be owned, so the element
+it lends cannot be owned, so `parse_specifier`'s parameter retracts
+too, and the chain goes quiet as a whole.
+
+The same holds for a **dynamic edge** — a trait method reached through
+a generic or a `dyn` receiver, a closure, a `fn` pointer — where there
+is no edge for the fixpoint to follow, so the parameters feeding it
+retract. Retraction is the single mechanism; "ineligible" is just
+another reason to retract.
+
+**Cold is another, and the hazard is identical.** A frame whose only
+need for ownership is on a
+[cold path](./cloned-borrowed-parameter.md#why-clause-2-excludes-cold-paths)
+must withdraw its demand in the
+summary rather than be dropped from the report. Suppose the outer
+frame of a chain needs ownership only on a cold path while the inner
+frame's need is hot: a late report filter drops the outer frame and
+still reports the inner one, which is the regression row again.
+Retraction avoids it — the outer frame withdraws, the element it lends
+can no longer be owned, and the inner frame retracts with it. Cold is
+never a reason to stay quiet about a frame; it is a reason for the
+frame to withdraw its demand and to let the withdrawal propagate.
+
+It follows that the finding is the **chain**, not the frame. A report
+should name every frame it expects to move and say that they move
+together, because a reader who applies a strict subset makes the code
+worse.
+
+### One notion of "needs owned", read by every consumer
+
+Rules read this summary from both directions.
+`perfectionist::cloned_borrowed_parameter` asks whether a borrowed
+parameter must become owned; `perfectionist::cloned_owned_argument`
+asks whether an owned one need not have been. They must resolve the
+question **identically**, and a rule that re-derives it inside itself
+can contradict another in a chain.
+
+The shape to watch: `f(p: &T)` forwards to `g(q: T)`. Reading one
+summary, if `g` never consumes `q` then `g`'s parameter is not owned,
+so `f` has no forwarding witness and only `g` is reported. Reading two,
+the first rule can report `f` on the ground that `g` needs ownership
+while the second reports `g` on the ground that it does not — advice
+that contradicts itself across two findings in one call chain. Neither
+rule can detect that alone, which is why the answer is a shared
+summary rather than a shared convention.
+
+It also buys the stronger property that dual rules must have: applying
+one's fix does not produce a finding for the other. A fix moves a
+parameter across the very predicate the summary answers, so as long as
+both read the same answer, the rule that fired can no longer fire and
+its dual cannot yet. Two separate answers put no such bound on the
+pair, and a disagreement between duals is a loop rather than a
+divergence.
+
+### The visibility bound
+
+A `LateLintPass` sees one crate, so the fixpoint stops at the crate
+boundary, and a rule built on it can only fire where that boundary
+contains every call site.
+
+The boundary to test is **effective visibility**, not the `pub`
+keyword. `TaskRunState::record_passed` is the case that settles it: it
+is written `pub`, and it is unreachable from outside its crate anyway,
+because the module holding it is declared `mod cli_args;` with no
+`pub`. A `pub`-keyword test would have skipped a real finding.
+`rustc_middle`'s `effective_visibilities` query is the thing that
+answers the question properly — verify what it returns for a binary
+crate before relying on it, since a `pub` item in a `bin` target has
+no out-of-crate callers either, and whether the query says so is a
+claim to check against the compiler rather than to assume.
+
 ## Recognising test-exclusive code
 
 A rule whose rationale is about production code — a cost paid at
