@@ -50,10 +50,13 @@ pattern that several rules call out by reference — live in
   parameter of any `Clone` pointee, sized or not, where some path
   needs an owned `T` — a copy something takes by value, or ownership
   a callee demands of the parameter or of an element of it — beside
-  borrowing uses and under a condition. Permitting a conditional copy
-  costs the callee-local soundness argument, so the rule buys it back
-  by proving that every production call site in the crate passes a
-  place it owns and does not read again. That proof is also what
+  borrowing uses and under a condition. A provably cold path — an
+  error arm, a panic, a `#[cold]` callee — does not count as that
+  path, since converting for it taxes every caller on the common one.
+  Permitting a conditional copy costs the callee-local soundness
+  argument, so the rule buys it back by proving that every production
+  call site in the crate passes a place it owns and does not read
+  again. That proof is also what
   confines the rule to items whose callers are all visible, and it is
   not configurable away; it stays silent wherever the sibling's own
   predicate holds, so one parameter is never reported twice. Test code

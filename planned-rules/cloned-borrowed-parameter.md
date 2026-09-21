@@ -447,7 +447,9 @@ Flag a parameter `p` when all of:
    keeps its handle needs one of its own. This is the reasoning
    [`src/rules/cloning_getter.rs`](../src/rules/cloning_getter.rs)
    already applies to a ref-counted field.
-2. Some reachable path needs an owned `T`, in either of two ways:
+2. Some reachable path — **not exclusively cold**, per
+   [Why clause 2 excludes cold paths](#why-clause-2-excludes-cold-paths)
+   — needs an owned `T`, in either of two ways:
    1. the body copies `p` and **consumes** the copy — moves it into a
       returned value, a field of `self`, a collection, or any call
       that takes it by value; or
@@ -476,6 +478,88 @@ A copy that is only ever *borrowed from* afterwards is a different
 defect with a local fix — delete the copy and use the original
 borrow — and belongs to
 [clippy](#interaction-with-clippy-and-sibling-rules) rather than here.
+
+### Why clause 2 excludes cold paths
+
+Being existential, clause 2 takes any qualifying path as a witness.
+That admits a shape neither the sibling's gate nor clause 4 can
+express: a copy reachable only through an error arm, a panic path or
+a `#[cold]` callee, where taking the parameter by value taxes every
+caller on the common path to save one allocation on a rare one.
+Clause 4 proves no *caller* regresses; it says nothing about whether
+the path needing ownership is one the program takes.
+
+Three levels are in play:
+
+| Level     | Question                                                           | Where it stands                                                                         |
+| --------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| Syntactic | does a conditional *expression* sit between the copy and the item? | [the sibling's third gate](#why-the-sibling-rule-does-not-cover-these), wrong both ways |
+| Semantic  | does the copy run on every path through the body?                  | what that gate means to ask; decidable by dominance                                     |
+| Frequency | of the paths that reach the copy, how often are they taken?        | this filter                                                                             |
+
+The rule already lives at the second and buys its guarantee with
+clause 4. This is a filter at the third, and it is **strictly** a
+narrowing: it removes witnesses and never adds them, so it cannot
+weaken clause 4's proof or admit a case clause 4 would reject. None
+of the four [motivating cases](#motivating-cases) is lost — the two
+that copy unconditionally have no guard at all before the copy,
+`parse_specifier`'s `let … else` block returns `Ok(…)`, and
+`PackageSpecifierPlan::parse` inherits its callee's heat through the
+projection.
+
+**Positive evidence only.** Absence of a cold signal means hot, not
+unknown. Treat an unproven path as cold and the filter degenerates
+into the unconditionality gate, losing `record_passed` — the case the
+rule exists to catch. Signals, in decreasing order of confidence:
+
+- the block's successors diverge — `panic!`, `process::exit`,
+  `abort`, any `!`-returning call
+- rustc's own cold marking on assert and bounds-check panic arms
+- the enclosing function, or a dominating call, is `#[cold]`
+- the block constructs or returns an `Err`, or is the arm `?` takes
+  when its operand is `Err`
+- the block is guarded by a predicate on an error type, such as
+  `is_state_unavailable_error(&error)` in `record_passed`
+
+`#[inline(never)]` is deliberately absent. `#[cold]` means "unlikely
+to be called", which is the property wanted; `#[inline(never)]` is
+about inlining and is reached for over code size, symbol stability,
+profiling and compiler workarounds. Reading it as cold costs findings
+on no evidence.
+
+There is no signal for the inverse, and that limit belongs in the rule
+rather than in an implementer's discovery. Nothing in the text of
+`if writer.file.is_none() { return Ok(()); }` says `file` is almost
+always `Some`; knowing it required knowing the journal lives under
+`node_modules`. Frequency is not a property of the source at all — it
+is a property of the source together with an input distribution —
+which is why this is a suppressor with positive-evidence semantics
+rather than a cost model.
+
+#### Two ways to implement it wrong
+
+Both collapse the rule, and both are the same slip: asking about the
+wrong paths.
+
+**Paths *to* the copy, not paths *from* it.** The question is whether
+the copy's own block is cold, decided by what dominates it. A filter
+asking instead what the copy can *reach* loses `record_passed`
+outright — its clone sits in an `if` condition near the top with an
+`Err` return below, so "can reach an `Err`" is true of the very case
+the rule is built on.
+
+**The `?` arm, not a block containing a `?`.** The cold path is the
+early return `?` takes when its operand is `Err`. A block that merely
+*contains* a `?` is not cold, and in idiomatic Rust that is nearly
+every block — reading it that way collapses the rule harder than the
+gate this filter improves on.
+
+**Not for the sibling rule.** Its third gate is *sound*:
+unconditionality is the literal precondition of the cost theorem, and
+what lets it stay callee-local. Heat is a heuristic, and swapping a
+proof for an estimate in a rule that is active by default would
+downgrade it from proving its claim to guessing it — as well as
+moving the predicate [clause 5](#what-to-lint) defers to.
 
 ### Why clause 4 asks about production call sites
 
@@ -703,6 +787,16 @@ would exist only to turn soundness off:
   itself reached that way is already out of reach under
   [Exemptions](#exemptions).
 
+One more is absent for a different reason. A switch for
+[the cold-path filter](#why-clause-2-excludes-cold-paths) would exist
+only to ask for findings whose fix pessimises: the filter fires on
+positive evidence of coldness, so turning it off adds copies the rule
+can prove are on rare paths, where taking the parameter by value taxes
+every caller on the common path and costs code size with it. Its
+errors are silences rather than bad findings, and no project would
+choose the other setting. It is a benefit filter rather than part of
+the soundness argument, which is what separates it from the two above.
+
 ## Shared infrastructure: the ownership summary
 
 Clause 4 is not this rule's private machinery, and building it inside
@@ -778,6 +872,17 @@ too, and the chain goes quiet as a whole.
 The same holds for the dynamic edges under
 [Configuration](#configuration). Retraction is the single mechanism;
 "ineligible" is just another reason to retract.
+
+**Cold is another, and the hazard is identical.** A frame whose only
+need for ownership is on a cold path must withdraw its demand in the
+summary rather than be dropped from the report. Suppose the outer
+frame of a chain needs ownership only on a cold path while the inner
+frame's need is hot: a late report filter drops the outer frame and
+still reports the inner one, which is the regression row again.
+Retraction avoids it — the outer frame withdraws, the element it lends
+can no longer be owned, and the inner frame retracts with it. Cold is
+never a reason to stay quiet about a frame; it is a reason for the
+frame to withdraw its demand and to let the withdrawal propagate.
 
 It follows that the finding is the **chain**, not the frame. A report
 should name every frame it expects to move and say that they move
@@ -856,6 +961,26 @@ own and each is answerable by a case above:
 
 Stage 1 is worth shipping by itself: it needs none of the
 interprocedural machinery and still finds a real allocation.
+
+**Heat is not a fifth stage.** The
+[cold-path filter](#why-clause-2-excludes-cold-paths) belongs in
+stage 1, whose shape — a copy as a direct argument of a by-value call
+— sits in an error arm as readily as anywhere else. Defer the filter
+and the rule reports cold-path findings before any of the machinery
+exists, forfeiting the strict-improvement claim at the first release.
+Carrying it there costs little: divergence, rustc's cold marks and
+`#[cold]` are all local, and dominance within one body is the only
+analysis they want.
+
+What *is* staged is where the filter lives. In stages 1 and 2 there is
+no summary, so nothing downstream consumes a frame's obligation and
+dropping the frame locally *is* retraction. Stage 3 ends that, and the
+filter has to **move into the summary in the same change that
+introduces the summary**. An implementer who adds heat as a late
+report filter early and leaves it there while building the summary
+reproduces exactly the regression
+[retraction](#an-ineligible-frame-retracts) exists to prevent. The
+migration is the hazard, not the introduction.
 
 ## Out of scope
 
