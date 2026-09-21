@@ -46,7 +46,10 @@ fn read_workspace() -> Option<toml::Table> {
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").ok()?;
     Path::new(&manifest_dir)
         .ancestors()
-        .filter_map(|directory| fs::read_to_string(directory.join("Cargo.toml")).ok())
-        .filter_map(|text| text.parse::<toml::Table>().ok())
+        .map(|ancestor| ancestor.join("Cargo.toml"))
+        .map(fs::read_to_string)
+        .filter_map(Result::ok)
+        .map(|text| text.parse::<toml::Table>())
+        .filter_map(Result::ok)
         .find(|manifest| manifest.get("workspace").is_some_and(toml::Value::is_table))
 }
