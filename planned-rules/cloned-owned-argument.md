@@ -271,6 +271,57 @@ clones, no rule fires and none should: taking `&T` would move the
 clone into the callee and pay it on every call instead. The caller's
 clone is not waste there, it is the cost of the value.
 
+### The pair must not ping-pong
+
+Applying either rule's fix must not produce a finding for the other.
+That is a correctness criterion for the pair, not a nicety: a loop
+between two lints is worse than either lint being absent, because a
+reader following both is told to undo the change they just made.
+
+**The sibling fires, its fix lands — does this rule?** No, and by
+construction rather than by luck. Its clause 2 is "some hot path needs
+an owned `T`", and its fix removes the copy so that path consumes the
+parameter itself. "The body consumes `p` on a hot path" is exactly the
+negation of clause 2 here. One predicate decides both, which is what
+[one summary](./IMPLEMENTATION_CONVENTIONS.md#one-notion-of-needs-owned-read-by-every-consumer)
+buys: two rules computing it separately could disagree, and a
+disagreement between duals is a loop.
+
+**This rule fires, its fix lands — does the sibling?** Not in the
+plain case. Clause 2 says no hot path consumed the parameter, so after
+the fix no hot path needs it owned and the sibling's clause 2 has no
+witness.
+
+The [cold case](#cold-consumption) is the one that would loop, and it
+is the real reason the sibling's cold-path filter is load-bearing. The
+fix there leaves `p.clone()` inside the cold arm — a copy of a
+borrowed parameter moved into a collection, which is the sibling's
+clause 2.1 read literally. Two things stop it:
+
+- **The filter**, because that copy is on a cold path and the
+  sibling's clause 2 requires a witness that is not exclusively cold.
+- **Its clause 4**, because the caller whose clone triggered this rule
+  now passes a borrow, so not every production call site owns what it
+  passes.
+
+Only the first survives indefinitely. That caller can stop cloning, or
+be deleted, and then clause 4 no longer objects — leaving the filter
+as the barrier that has to hold. So turning the filter off would not
+merely restore some pessimising findings; it would make the two rules
+undo each other's fixes, which is the strongest reason it is
+[not a knob](./cloned-borrowed-parameter.md#configuration).
+
+`perfectionist::needless_borrowed_parameters` is not part of the loop.
+After the plain fix the body performs no conversion for its gates to
+inspect, and after the cold fix the parameter is used twice — the cold
+clone and the hot borrow — where that rule requires exactly one use.
+The single window is a body whose *only* use is a cold clone, with a
+pointee its pair list recognises, written in a `let … else` block,
+which its
+[unconditionality defect](./needless-borrowed-parameters.md#status)
+fires on today. Fixing that defect closes the window; nothing here
+needs to work around it.
+
 ## Default state
 
 Active by default. Unlike the sibling, this rule's failure direction

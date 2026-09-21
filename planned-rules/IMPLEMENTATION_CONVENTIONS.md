@@ -445,6 +445,14 @@ that contradicts itself across two findings in one call chain. Neither
 rule can detect that alone, which is why the answer is a shared
 summary rather than a shared convention.
 
+It also buys the stronger property that dual rules must have: applying
+one's fix does not produce a finding for the other. A fix moves a
+parameter across the very predicate the summary answers, so as long as
+both read the same answer, the rule that fired can no longer fire and
+its dual cannot yet. Two separate answers put no such bound on the
+pair, and a disagreement between duals is a loop rather than a
+divergence.
+
 ### The visibility bound
 
 A `LateLintPass` sees one crate, so the fixpoint stops at the crate

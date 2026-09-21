@@ -554,6 +554,13 @@ early return `?` takes when its operand is `Err`. A block that merely
 every block — reading it that way collapses the rule harder than the
 gate this filter improves on.
 
+The filter also keeps this rule and
+[`cloned_owned_argument`](./cloned-owned-argument.md) from undoing
+each other: that rule's fix for a cold consumption leaves a clone in
+the cold arm, which is clause 2.1 read literally, and the filter is
+the barrier that holds once the caller it cited stops cloning. See
+[The pair must not ping-pong](./cloned-owned-argument.md#the-pair-must-not-ping-pong).
+
 **Not for the sibling rule.** Its third gate is *sound*:
 unconditionality is the literal precondition of the cost theorem, and
 what lets it stay callee-local. Heat is a heuristic, and swapping a
