@@ -169,7 +169,7 @@ This callee is also the reason the crate boundary is tested by
 *effective visibility*: `record_passed` is written `pub`, but its
 module is declared `mod cli_args;` without `pub`, so nothing outside
 the crate can call it. A rule keyed on the `pub` keyword would have
-skipped it. See [The visibility bound](#the-visibility-bound).
+skipped it. See [The visibility bound](./IMPLEMENTATION_CONVENTIONS.md#the-visibility-bound).
 
 ### The package-specifier chain
 
@@ -210,7 +210,7 @@ so the obligation arrives through the call graph, not from a clone
 in view. That is [clause 2](#what-to-lint)'s second limb, and it is
 why the summary carries a projection and not just a flag per
 parameter; see
-[What the summary computes](#what-the-summary-computes).
+[What the summary computes](./IMPLEMENTATION_CONVENTIONS.md#what-the-summary-computes).
 
 The outermost frame supplies the owned value:
 
@@ -259,7 +259,7 @@ ever being suggested, and it is: `parse` passes an element of a slice
 it only borrows, so it owns nothing, and `parse_specifier` fails
 clause 4 until `parse`'s own parameter is owned. The frames become
 eligible together or not at all, which is what
-[An ineligible frame retracts](#an-ineligible-frame-retracts) makes
+[An ineligible frame retracts](./IMPLEMENTATION_CONVENTIONS.md#an-ineligible-frame-retracts) makes
 explicit.
 
 The second is that the owned pointee is the whole win. `Vec<T>` and
@@ -587,6 +587,21 @@ clone the owned signature saves — so `exempt_tests` and
 `exempt_build_scripts` govern both halves at once, and setting either
 to `false` makes those call sites count like any other.
 
+#### Clause 4 is a snapshot
+
+It quantifies over the call sites that exist when the rule fires, and
+nothing renews that judgement. Once the fix lands the parameter is
+written `T`, so clause 1 no longer matches and this rule can never
+look at it again — a call site added later may hold a borrow and
+clone, and this rule will not see it.
+
+That is not a defect to fix here; a crate-local pass cannot know what
+a future commit does. It is a reason the catalogue needs the opposite
+direction, which
+[`cloned_owned_argument`](./cloned-owned-argument.md) supplies: it
+reads the same summary, asks whether the body still needs what the
+signature demands, and requires a caller to be visibly paying for it.
+
 ### Exemptions
 
 Test code and build scripts, by default, for the reason the sibling
@@ -605,7 +620,7 @@ Exempt unconditionally, because the signature is not free to change:
 - A parameter with an explicit named lifetime, which may tie it to
   another parameter or the return type.
 - An item reachable from outside the crate, whose call sites clause 4
-  cannot see. See [The visibility bound](#the-visibility-bound).
+  cannot see. See [The visibility bound](./IMPLEMENTATION_CONVENTIONS.md#the-visibility-bound).
 
 Proc-macro-synthesised nodes, per
 [Suppressing proc-macro-synthesised violations](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations).
@@ -777,7 +792,7 @@ would exist only to turn soundness off:
   externally reachable item's call sites, so clause 4 is unprovable
   there; a knob that enabled it anyway would let the rule fire on
   evidence it does not have. See
-  [The visibility bound](#the-visibility-bound).
+  [The visibility bound](./IMPLEMENTATION_CONVENTIONS.md#the-visibility-bound).
 - **A dynamic-edge mode.** Where a call's callee is not statically
   known — a trait method reached through a generic or a `dyn`
   receiver, a closure, a `fn` pointer — there is no edge for the
@@ -799,112 +814,23 @@ the soundness argument, which is what separates it from the two above.
 
 ## Shared infrastructure: the ownership summary
 
-Clause 4 is not this rule's private machinery, and building it inside
-whichever rule lands first would be a mistake. It is a worklist over
+Clause 4 is not this rule's private machinery. It is a worklist over
 the crate's call graph answering one question per parameter — must
-this be taken by value? — and the same worklist over a different
-lattice answers the weakening question described under
-[Out of scope](#out-of-scope). Factor it into a crate-internal
-`ownership_summary` module, per
-[Notes on cross-rule dependencies](../CLAUDE.md#notes-on-cross-rule-dependencies),
-and let the rules consume it.
+this be taken by value? — which `cloned_owned_argument` asks in the
+opposite direction and the weakening question under
+[Out of scope](#out-of-scope) asks over a different lattice. The
+contract is specified once, under
+[Interprocedural analyses share one summary pass](./IMPLEMENTATION_CONVENTIONS.md#interprocedural-analyses-share-one-summary-pass),
+and this rule reads a summary rather than walking callees itself.
 
-### What the summary computes
-
-One entry per function, and within it one answer per parameter **and
-per projection of that parameter the body hands out**. A flag per
-parameter is not enough: `PackageSpecifierPlan::parse` never needs its
-`package_names` argument itself, only owned *elements* of it, and a
-domain that cannot say so has nothing to propagate from
-`parse_specifier` back up the chain. Slice and iterator elements are
-the projection the motivating cases need; fields are the obvious next
-one. A rule reads a summary. It does not walk callees itself.
-
-### Propagating along a chain
-
-Clause 4 reads as a per-call-site check, and for a leaf it is one. It
-becomes a fixpoint because of forwarding: when `f(p: &T)` passes `p`
-along to `g(&T)`, `f` is a caller that *holds a borrow* today and
-would become an owning caller the moment its own parameter is taken by
-value. The [package-specifier chain](#the-package-specifier-chain) is
-exactly this shape, which is why fixing its innermost frame alone was
-not enough.
-
-So the property is a **greatest fixpoint**: start every eligible
-parameter optimistic, retract on a call site that provably cannot give
-up ownership, and iterate until nothing changes. Each parameter
-retracts at most once, so the work is bounded by the call graph's
-edges rather than by its paths.
-
-The shape to avoid is recursive descent into callees, which expands
-the *call tree*: a function reachable by *n* paths is re-analysed *n*
-times. Memoised per-function summaries avoid that, and recursion needs
-no special case, since a greatest fixpoint converges downward through
-a cycle on its own.
-
-**A depth limit would be the wrong bound.** With memoised summaries
-nothing is descended into twice, so a limit buys no time on an
-already-linear analysis while making the findings depend on call-graph
-shape: extracting a helper would push a fact past the limit and
-silently change what the rule reports. Non-determinism under
-refactoring is a poor property for a lint. The bound that belongs here
-is on *reporting*, which is the next section.
-
-### An ineligible frame retracts
-
-A frame this rule may not touch — reachable from outside the crate,
-signature fixed by a trait, used as a `fn` pointer, carrying a named
-lifetime, macro-generated, or exempt test code — must **retract in the
-summary**, not merely go unreported. The distinction is the difference
-between a correct rule and a harmful one.
-
-Take the package-specifier chain and suppose `parse` were reachable
-from outside the crate. Its parameter can then never be owned. If that
-only meant "do not report `parse`", the fixpoint would still be
-carrying the optimistic assumption that `parse` becomes an owning
-caller, would conclude that `parse_specifier` is eligible, and would
-report it alone — which is
-[the row that costs three allocations](#half-the-chain-is-worse-than-none-of-it).
-Retraction propagates instead: `parse` cannot be owned, so the element
-it lends cannot be owned, so `parse_specifier`'s parameter retracts
-too, and the chain goes quiet as a whole.
-
-The same holds for the dynamic edges under
-[Configuration](#configuration). Retraction is the single mechanism;
-"ineligible" is just another reason to retract.
-
-**Cold is another, and the hazard is identical.** A frame whose only
-need for ownership is on a cold path must withdraw its demand in the
-summary rather than be dropped from the report. Suppose the outer
-frame of a chain needs ownership only on a cold path while the inner
-frame's need is hot: a late report filter drops the outer frame and
-still reports the inner one, which is the regression row again.
-Retraction avoids it — the outer frame withdraws, the element it lends
-can no longer be owned, and the inner frame retracts with it. Cold is
-never a reason to stay quiet about a frame; it is a reason for the
-frame to withdraw its demand and to let the withdrawal propagate.
-
-It follows that the finding is the **chain**, not the frame. A report
-should name every frame it expects to move and say that they move
-together, because a reader who applies a strict subset makes the code
-worse.
-
-### The visibility bound
-
-A `LateLintPass` sees one crate, so the fixpoint stops at the crate
-boundary, and a rule built on it can only fire where that boundary
-contains every call site.
-
-The boundary to test is **effective visibility**, not the `pub`
-keyword. `TaskRunState::record_passed` is the case that settles it: it
-is written `pub`, and it is unreachable from outside its crate anyway,
-because the module holding it is declared `mod cli_args;` with no
-`pub`. A `pub`-keyword test would have skipped a real finding.
-`rustc_middle`'s `effective_visibilities` query is the thing that
-answers the question properly — verify what it returns for a binary
-crate before relying on it, since a `pub` item in a `bin` target has
-no out-of-crate callers either, and whether the query says so is a
-claim to check against the compiler rather than to assume.
+Three of its provisions are what the cases above turn on: the summary
+answers per **projection** as well as per parameter, because
+`PackageSpecifierPlan::parse` needs owned *elements* and nothing else;
+an ineligible or cold frame **retracts** rather than going unreported,
+which is what stops
+[half a chain being reported](#half-the-chain-is-worse-than-none-of-it);
+and the crate boundary is tested by effective visibility, which
+`record_passed` settles.
 
 ## Implementation notes
 
@@ -979,7 +905,7 @@ filter has to **move into the summary in the same change that
 introduces the summary**. An implementer who adds heat as a late
 report filter early and leaves it there while building the summary
 reproduces exactly the regression
-[retraction](#an-ineligible-frame-retracts) exists to prevent. The
+[retraction](./IMPLEMENTATION_CONVENTIONS.md#an-ineligible-frame-retracts) exists to prevent. The
 migration is the hazard, not the introduction.
 
 ## Out of scope
@@ -997,7 +923,7 @@ apply to it.
 wrote where this rule would have suggested `Vec<T>` — is a separate
 question that was discussed alongside the proposal and has not been
 filed. It runs the same worklist over a different lattice, which is
-why [the summary](#shared-infrastructure-the-ownership-summary) is
+why [the summary](./IMPLEMENTATION_CONVENTIONS.md#interprocedural-analyses-share-one-summary-pass) is
 factored out rather than written into this rule. This rule suggests
 the owned pointee and stops there.
 
@@ -1012,7 +938,7 @@ rather than trust, and `perfectionist::implicit_effectful_default`
 ships active on exactly that kind of imperfection. Clause 4 is not
 like that. It is a whole-crate interprocedural summary, and getting
 it wrong in the permissive direction — a call site missed, a frame
-that should have [retracted](#an-ineligible-frame-retracts) and did
+that should have [retracted](./IMPLEMENTATION_CONVENTIONS.md#an-ineligible-frame-retracts) and did
 not, a place the liveness half read as dead — yields no silence. It
 yields a *finding*, and acting on that finding is a measured
 pessimisation:

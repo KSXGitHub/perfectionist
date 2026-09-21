@@ -64,6 +64,18 @@ pattern that several rules call out by reference — live in
   Inactive by default: a whole-crate analysis that errs permissively
   yields a finding rather than silence, and acting on a wrong one
   costs allocations and a signature change.
+- [`cloned-owned-argument.md`](./cloned-owned-argument.md) — the dual:
+  a `T` parameter no hot path in the body consumes, where a production
+  call site clones to feed it. Its call-site clause is existential
+  where the sibling's is universal, because `T` → `&T` can harm no
+  caller — an owner passes `&x` for free — so the rule needs evidence
+  that the change is worth making rather than proof that it is safe.
+  A refinement of `clippy::needless_pass_by_value`, which fires
+  without any caller paying; the clone is what makes the finding
+  evidential. Reaches the case that lint cannot: a body consuming only
+  on a cold path, where every caller clones on the common one. Exists
+  because the sibling's call-site proof is a snapshot that nothing
+  else renews. Active by default.
 
 ### OS strings, paths, and bytes
 - [`needless-utf8-conversion.md`](./needless-utf8-conversion.md)
