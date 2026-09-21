@@ -6,25 +6,14 @@
 //! minimal Cargo project through `cargo dylint --all -- --all-targets`,
 //! the way `tests/needless_borrowed_parameters.rs` does it. The
 //! default-config sweep lives in `ui/cloning_getter.rs`.
-//!
-//! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
-//! the duration of `run_tests`. The env var is process-global, so the
-//! `#[test]`s that go through it serialise themselves on a shared
-//! [`Mutex`] to avoid clobbering each other under the default parallel
-//! test harness. The `exempt_tests` pair needs no such lock: it runs a
-//! fixture project through `cargo dylint`, and [`_utils`] clears the
-//! inherited variables for that subprocess.
 
 pub mod _utils;
 
 use _utils::{cargo_manifest_dir, run_project_with_config, shared_target_dir};
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 use text_block_macros::text_block_fnl;
 
 const LINT_NAME: &str = "perfectionist::cloning_getter";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Serialisation shim for the rule's `dylint.toml` configuration, which
 /// the test crate cannot build from the lint's own private `Config`.
@@ -42,9 +31,10 @@ fn dylint_toml(patterns: &[&str]) -> String {
 }
 
 fn run_patterns(fixture_dir: &str, patterns: &[&str]) {
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), fixture_dir);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(fixture_dir)
         .dylint_toml(dylint_toml(patterns))
         .run();
 }
