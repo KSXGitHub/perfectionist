@@ -55,7 +55,12 @@ this rule's.
 Flag a call to `Iterator::filter_map` whose closure body is exactly
 `<expr>.ok()`, where `.ok()` resolves to `Result::ok`.
 
-Suggest splitting it, preserving the closure verbatim minus the `.ok()`:
+Both branches of the suggestion end at `filter_map(Result::ok)`, which
+is the shape the rule is for. What differs is whether there is a
+transformation to lift out of the way first.
+
+**Where `<expr>` is more than the closure's parameter,** split the
+adapter, preserving the closure verbatim minus the `.ok()`:
 
 ```rust
 .filter_map(|binding| <expr>.ok())
@@ -63,10 +68,36 @@ Suggest splitting it, preserving the closure verbatim minus the `.ok()`:
 .map(|binding| <expr>).filter_map(Result::ok)
 ```
 
-The rewrite is mechanical and type-preserving, so it can be
+**Where `<expr>` is the parameter and nothing else,** there is no
+transformation to split off, so drop the closure rather than splitting
+it:
+
+```rust
+.filter_map(|result| result.ok())
+// becomes
+.filter_map(Result::ok)
+```
+
+Splitting that one would produce `map(|result| result)`, an identity
+stage, which is why it is a separate branch rather than the same
+rewrite applied blindly.
+
+Either rewrite is mechanical and type-preserving, so both can be
 `MachineApplicable`: `filter_map` and `map` are equally lazy, the item
 type after the pair is what it was before, and the closure moves
-unchanged.
+unchanged or disappears.
+
+### What Clippy already says
+
+Measured on Clippy 1.94, a default `cargo clippy` run says nothing
+about either branch.
+
+`clippy::redundant_closure_for_method_calls` makes the same suggestion
+as the second branch, but it is `pedantic` and therefore
+allow-by-default, so a project sees it only after opting in. A project
+that has will get both diagnostics on that line. Nothing in Clippy
+covers the first branch at any level, which is the branch this rule
+exists for.
 
 ### Exemptions
 
@@ -75,11 +106,6 @@ Do *not* flag:
 - A closure whose body is anything but `<expr>.ok()` — a block with
   statements, a `?`, a `match`. Only the single-expression form has a
   mechanical split.
-- A closure whose `<expr>` is just its own parameter, as in
-  `filter_map(|result| result.ok())`. The split would produce an
-  identity `map`, and the folded form is already the one thing this
-  rule wants: one adapter, one job. `clippy::redundant_closure`
-  reduces it to `filter_map(Result::ok)` independently.
 - `.ok()` that does not resolve to `Result::ok`. Other types define an
   inherent `ok`, and a method with the right name is not the method.
 - A closure produced by a macro expansion, where the suggestion would
@@ -99,25 +125,26 @@ nothing separable at its end: the only "split" available to it is
 applies to every call of it ever written. A widened trigger does not
 catch more of this anti-pattern; it stops describing one.
 
-Two properties of `Result::ok` are what the rewrite rests on, and both
-are worth stating because a future widening would have to re-establish
-them:
+`Result::ok` is `fn ok(self) -> Option<T>`, and the rewrite rests on
+both halves of that signature. Each is worth stating, because a future
+widening would have to re-establish it:
 
-- It is nullary, so the new adapter can name it as a path
-  (`filter_map(Result::ok)`) instead of needing a closure of its own.
-  A tail taking arguments would have to be re-wrapped, and the split
-  would buy nothing.
-- It takes `self`, so the lifted tail borrows nothing from the
-  closure's binding. That is what makes the suggestion compile, and it
-  is not a general property of tails: see the `E0515` below, where a
-  lifted `get` borrows from a value the adapter owns and drops.
+- **Its only parameter is the receiver.** So the path `Result::ok` is
+  already a function of one argument, which is the shape `filter_map`
+  wants: the new adapter names it and needs no closure at all. A tail
+  taking arguments besides the receiver would have to be re-wrapped in
+  one, and the split would buy nothing.
+- **That parameter is taken by value.** So the lifted tail consumes
+  the item rather than borrowing from it, which is what makes the
+  suggestion compile. It is not a general property of tails: see the
+  `E0515` below, where a lifted `get` borrows from a value the adapter
+  owns and drops.
 
 So the narrowness is structural rather than a judgement about which
 cases deserve flagging, and the case that looks like it needs an
 exemption on type grounds — `filter_map(|x| x.lookup())` for a
-`lookup` returning `Option` — needs none. It never matches: its
-`<expr>` is the bare binding, which the exemption above already covers
-for the reason that it would produce an identity `map`.
+`lookup` returning `Option` — needs none. It never matches, because
+`lookup` is not `Result::ok`.
 
 ## Interaction with sibling rules
 
@@ -152,9 +179,13 @@ The review that produced this file proposed three changes at once. The
 other two are recorded here so they are not re-proposed as sub-checks.
 
 **Making the closure point-free** is `clippy::redundant_closure`, which
-already covers it. It is also a consequence rather than a choice: the
-closure only becomes reducible once `.ok()` has moved out, so it
-follows this rule rather than standing beside it.
+already covers it — `style`, and warn-by-default, so a project gets it
+without opting in. (The near neighbour that fires on a *method* call
+rather than a function call, `redundant_closure_for_method_calls`, is
+`pedantic`; the two are not interchangeable, and the difference decides
+the second branch above.) It is also a consequence rather than a
+choice: the closure only becomes reducible once `.ok()` has moved out,
+so it follows this rule rather than standing beside it.
 
 **Lifting any nested call out of an adapter closure** — the general
 form, of which the `.ok()` case is one instance — should not become a
@@ -180,9 +211,9 @@ binding, which is the check that makes the general form hard and the
 
 ## Configuration
 
-None. The rule has one shape and one direction, so there is nothing to
-tune. Whether a project wants it at all is the `[perfectionist]`
-`enable` decision, not a knob.
+None. There is one trigger, and which of its two rewrites applies is
+decided by the code rather than by taste. Whether a project wants the
+rule at all is the `[perfectionist]` `enable` decision, not a knob.
 
 ## Implementation notes
 
