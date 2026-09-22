@@ -446,18 +446,22 @@ fn two_majors_stand_down_on_a_counterpart_only_one_declares() {
     );
 }
 
-/// The remedy a build script needs, which is not the one every other
+/// The table a build script needs, which is not the one every other
 /// target needs: Cargo compiles `build.rs` against
 /// `[build-dependencies]` alone, so a package that has `command-extra`
-/// under `[dependencies]` has not given its build script anything, and
-/// advice naming that table leaves the import `E0432`.
-const BUILD_SCRIPT_REMEDY: &str = "add `command-extra` to this crate's `[build-dependencies]`";
+/// under `[dependencies]` has not given its build script anything.
+const BUILD_SCRIPT_TABLE: &str = "`[build-dependencies]`";
 
-/// What every other target is told instead.
-const ORDINARY_REMEDY: &str = "add `command-extra` to this crate's dependencies";
+/// The form the remedy took before it named the condition instead of
+/// one table, which would leave a build script's import `E0432`.
+const UNCONDITIONAL_REMEDY: &str = "add `command-extra` to this crate's dependencies";
 
+/// The remedy names which table applies rather than picking one, so it
+/// is followable from a build script and from every other target with
+/// one string. Only the build script is checked here, because it is the
+/// target whose table the other advice got wrong.
 #[test]
-fn a_build_script_is_pointed_at_build_dependencies() {
+fn a_build_script_is_told_which_table_applies() {
     let root = text_block_fnl! {
         "[workspace]"
         r#"members = ["alpha", "command-extra"]"#
@@ -514,13 +518,14 @@ fn a_build_script_is_pointed_at_build_dependencies() {
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
     assert!(
-        stderr.contains(BUILD_SCRIPT_REMEDY),
-        "expected the build script to be pointed at `[build-dependencies]`; \
+        stderr.contains(BUILD_SCRIPT_TABLE),
+        "expected the remedy to name `[build-dependencies]` among the tables, \
+         since that is the only one a build script is compiled against; \
          stderr was:\n{stderr}",
     );
     assert!(
-        !stderr.contains(ORDINARY_REMEDY),
-        "expected no target in this workspace to be told to add the \
-         dependency to the table it already has it in; stderr was:\n{stderr}",
+        !stderr.contains(UNCONDITIONAL_REMEDY),
+        "expected no target to be told to add the dependency to the table it \
+         already has it in; stderr was:\n{stderr}",
     );
 }

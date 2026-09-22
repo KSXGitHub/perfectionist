@@ -1,4 +1,3 @@
-use crate::cargo_target::{CargoTarget, crate_target};
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::is_from_proc_macro;
@@ -306,20 +305,18 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 remedy: match (self.command_extra_is_declared(cx), trait_is_imported) {
                     (_, true) => None,
                     (true, false) => Some("bring `command_extra::CommandExtra` into scope here"),
-                    // Cargo compiles a build script against
-                    // `[build-dependencies]` alone, so naming the table
-                    // the other targets use would be advice that leaves
-                    // the import `E0432`.
-                    (false, false) => Some(match crate_target(cx) {
-                        CargoTarget::BuildScript => {
-                            "add `command-extra` to this crate's \
-                             `[build-dependencies]`, then import `CommandExtra`"
-                        }
-                        _ => {
-                            "add `command-extra` to this crate's dependencies, \
-                             then import `CommandExtra`"
-                        }
-                    }),
+                    // Which table depends on the Cargo target: a build
+                    // script is compiled against `[build-dependencies]`
+                    // alone, a test or a benchmark also against
+                    // `[dev-dependencies]`. Naming the condition rather
+                    // than resolving it keeps the advice right for
+                    // every target, including the `[target.*]` forms a
+                    // list would miss.
+                    (false, false) => Some(
+                        "add `command-extra` to the dependencies table this target is \
+                         compiled against (e.g. `[dependencies]`, `[dev-dependencies]`, \
+                         `[build-dependencies]`), then import `CommandExtra`",
+                    ),
                 },
                 rewrite: fix::rewrite(
                     cx,
