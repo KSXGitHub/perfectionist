@@ -1,0 +1,20 @@
+warning: `map` callback has 1 top-level statement, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     let _ = [1, 2].into_iter().map(|value| value + 1);
+   |                                    ^^^^^^^^^^^^^^^^^
+   |
+   = help: extract a named helper, or use an explicit loop for eager work when it preserves the required behavior and performance
+   = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behavior and short-circuit results
+   = note: `#[warn(perfectionist::multi_statement_iterator_closure)]` on by default
+
+warning: `for_each` callback has 1 top-level statement, above the limit of 0
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     [1, 2].into_iter().for_each(|value| { dbg!(value); });
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: extract a named helper, or use an explicit loop for eager work when it preserves the required behavior and performance
+   = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behavior and short-circuit results
+
+warning: N warnings emitted
