@@ -37,7 +37,7 @@ impl Person {
     }
 
     // Bad: a `Box<T>` is owned storage for one `T`, so what a caller
-    // borrows is the `T` -- `&str`, never `&Box<str>`.
+    // borrows is the `T` itself: `&str`, never `&Box<str>`.
     fn as_label(&self) -> Box<str> {
         self.label.clone()
     }
@@ -63,7 +63,8 @@ impl Person {
     }
 
     // Good: handing a field back without copying it is not the shape
-    // this rule reads at all -- there is no call to be free or costly.
+    // this rule reads at all, since there is no call to be free or
+    // costly.
     fn as_age(&self) -> u32 {
         self.age
     }
