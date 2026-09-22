@@ -374,16 +374,8 @@ fn run_two_majors(sources: &[(&str, &str)]) -> String {
     stderr
 }
 
-const TWO_MAJORS_SOURCE: &str = text_block_fnl! {
-    "use command_extra::CommandExtra;"
-    "use std::process::Command;"
-    ""
-    "pub fn reaches_both() {"
-    r#"    let _ = middle::touch(Command::new("ls"));"#
-    r#"    let mut command = Command::new("ls");"#
-    r#"    command.envs([("LANG", "C")]);"#
-    "}"
-};
+const TWO_MAJORS_SOURCE: &str =
+    include_str!("fixtures/mutating_command_builder_dependency_gate/two_majors_lib.rs");
 
 /// The control: one `CommandExtra`, which declares `with_envs`, so the
 /// counterpart check passes and `.envs` is flagged.
@@ -530,44 +522,11 @@ fn a_build_script_is_told_which_table_applies() {
     );
 }
 
-/// A library whose production code and inline tests both call a
-/// setter, plus a `tests/` target holding a plain helper alongside a
-/// `#[test]`. The helper is the shape that distinguishes the gate from
-/// the naive form: it is neither `#[test]` nor `cfg`-gated, so a check
-/// on test code alone would exempt it, although a dev-dependency
-/// reaches it perfectly well.
-const TWO_BUILD_LIB: &str = text_block_fnl! {
-    "use std::process::Command;"
-    ""
-    "pub fn production() {"
-    r#"    let mut command = Command::new("ls");"#
-    r#"    command.arg("production-code");"#
-    "}"
-    ""
-    "#[cfg(test)]"
-    "mod tests {"
-    "    use std::process::Command;"
-    "    #[test]"
-    "    fn inline() {"
-    r#"        let mut command = Command::new("ls");"#
-    r#"        command.arg("inline-test-code");"#
-    "    }"
-    "}"
-};
+const TWO_BUILD_LIB: &str =
+    include_str!("fixtures/mutating_command_builder_dependency_gate/two_builds_lib.rs");
 
-const TWO_BUILD_INTEGRATION: &str = text_block_fnl! {
-    "use std::process::Command;"
-    ""
-    "fn helper() {"
-    r#"    let mut command = Command::new("ls");"#
-    r#"    command.arg("integration-helper");"#
-    "}"
-    ""
-    "#[test]"
-    "fn body() {"
-    "    helper();"
-    "}"
-};
+const TWO_BUILD_INTEGRATION: &str =
+    include_str!("fixtures/mutating_command_builder_dependency_gate/two_builds_integration.rs");
 
 fn run_two_builds(dependency_table: &str) -> String {
     let (_temp, stderr, success) = run_project_with_config(
