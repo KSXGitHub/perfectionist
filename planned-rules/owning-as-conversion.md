@@ -23,7 +23,7 @@ file exists because the answer to the first two is "not that rule".
 > `borrowing_to_conversion` in
 > <https://github.com/KSXGitHub/perfectionist/pull/463>. Nothing here
 > should be implemented before the first of those lands, since the
-> subsumption argument below is the reason this is a separate rule at
+> overlap argument below is the reason this is a separate rule at
 > all.
 
 ## Statement
@@ -207,22 +207,42 @@ eligibility test on behalf of this family.
 
 ## Interaction with sibling rules
 
-### `perfectionist::cloning_as_conversion` — strict subsumption
+### `perfectionist::cloning_as_conversion` — a shared intersection
 
 This is the decision with the largest blast radius, because it is
 about a lint that has already shipped.
 
-**The triggers nest.** Read
-[`src/field_copy.rs`](../src/field_copy.rs): a `FieldCopy` is
-recognised only where the body's type equals the field's type, the
-field is not `Copy`, and the field is not a refcounted handle. The
-method's return type is therefore the field's own owned type, so every
-site `cloning_as_conversion` reports is also a site where
-`owns_allocation` holds. The converse fails at `as_age_label`. So
-this rule's trigger strictly contains the sibling's.
+**The triggers overlap, and how much depends on which owning predicate
+wins above.** The two decisions are not independent, which is the
+second reason they belong in one file rather than two PRs.
 
-Nested triggers mean two diagnostics on every `as_name` unless one
-rule stands down. The options:
+Read [`src/field_copy.rs`](../src/field_copy.rs): a `FieldCopy` is
+recognised only where the body's type equals the field's type, the
+field is not `Copy`, and the field is not a refcounted handle. So the
+sibling always reports a method returning an owned, non-`Copy`,
+non-refcounted type — but *owned* is not the same as *on a list of
+std types*:
+
+- Under the **broad** predicate, `owns_allocation` holds at every one
+  of those sites, so this rule's trigger strictly contains the
+  sibling's.
+- Under the **allowlist**, it does not. `fn as_widget(&self) -> Widget
+  { self.widget.clone() }`, for a `Widget` that derives `Clone` and is
+  on no std list, is reported by `cloning_as_conversion` and not by
+  this rule. Verified against the driver, not reasoned about: adding
+  exactly that method to `ui/cloning_as_conversion.rs` produces
+  ``warning: `as_widget` copies `self.widget`, but `as_` promises a
+  free conversion``, with help offering `&Widget`.
+
+So under the allowlist the two triggers **overlap without either
+containing the other**: `as_widget` is the sibling's alone,
+`as_age_label` is this rule's alone.
+
+**The intersection is the common case either way**, and that is what
+matters here. `fn as_name(&self) -> String { self.name.clone() }` is a
+field copy *and* returns an allowlisted type, so both rules fire on the
+single most ordinary shape in the catalogue unless one stands down.
+The options:
 
 1. **This rule stands down** where `field_copy` recognises the body.
 2. **Widen `cloning_as_conversion`** into a single rule with a
@@ -237,9 +257,9 @@ trigger. The two rules can say different things:
 | `cloning_as_conversion` | *change the return type* — `&str` for a `String` field, `&Path` for a `PathBuf`, because a borrow of the field would have served |
 | `owning_as_conversion` | *change the name* — there is no borrow to offer, because no borrow of a `u32` is a `String` |
 
-A rule that emits "change the return type" for one half of its trigger
-and "change the name" for the other half is two rules wearing one
-name. Keeping them apart also keeps each name honest under
+A rule that emits "change the return type" on the intersection and
+"change the name" outside it is two rules wearing one name. Keeping
+them apart also keeps each name honest under
 [Do not over-claim in the name](./IMPLEMENTATION_CONVENTIONS.md#do-not-over-claim-in-the-name).
 
 Option 2 additionally costs a rename of a released lint, which
@@ -266,10 +286,14 @@ concerned.
 ## Examples
 
 ```rust
+#[derive(Clone)]
+struct Widget(u8);
+
 struct Person {
     name: String,
     age: u32,
     shared: Rc<String>,
+    widget: Widget,
 }
 
 impl Person {
@@ -299,7 +323,11 @@ impl Person {
     // sometimes free, and it carries a lifetime, so the predicate
     // leaves it alone.
     fn as_display_name(&self) -> Cow<'_, str> {
-        if self.name.is_empty() { Cow::Borrowed("anonymous") } else { Cow::Borrowed(&self.name) }
+        if self.name.is_empty() {
+            Cow::Borrowed("anonymous")
+        } else {
+            Cow::Borrowed(&self.name)
+        }
     }
 
     // Not flagged: `Rc` is not on the allowlist, so cloning a handle
@@ -309,9 +337,18 @@ impl Person {
     }
 
     // Not flagged: reported by `cloning_as_conversion` instead, which
-    // can offer the borrowed form this rule cannot.
+    // can offer the borrowed form this rule cannot. Both triggers
+    // hold here; this is the intersection the stand-down exists for.
     fn as_owned_name(&self) -> String {
         self.name.clone()
+    }
+
+    // Not flagged, and not this rule's to reach even in principle:
+    // `Widget` is on no allowlist, so the signature says nothing
+    // about whether a caller pays. `cloning_as_conversion` reads the
+    // body, sees the clone, and reports it.
+    fn as_widget(&self) -> Widget {
+        self.widget.clone()
     }
 }
 ```
@@ -369,21 +406,26 @@ A `LateLintPass::check_fn`, reusing what the family already has:
   lang items — `field_copy::borrowed_form` has the same split and
   the comment explaining it.
 
-The rule must **not** call `field_copy::field_copy` to implement its
-stand-down exemption from behind. Running the sibling's recogniser
-inside this rule couples the two passes and makes the suppression
-invisible from the sibling's side. Take the same approach the rest of
-the catalogue takes to overlap: state the condition in this rule's own
-terms — the return type is a field's type and the body copies that
-field — or let both fire and settle it with the ordinary
-`#[expect(…)]`, whichever review prefers.
+The stand-down is `field_copy::field_copy` returning `Some`, called
+from this rule. That is what the helper is for, and its module
+docstring says so: keeping the recognition in one place is what makes
+"every rule that consults it agree on what counts, so a method cannot
+fall between two of them or be reported by both". Restating the
+sibling's condition in this rule's own terms would be a second copy of
+a predicate that already has one home, and the two would drift.
+
+It costs this rule the claim that it reads a signature and nothing
+else — `field_copy` walks the body — but only on methods that have
+already passed the name, receiver and return-type tests, which the
+corpus count puts at very nearly none.
 
 ### Difficulty
 
-**Low.** No body analysis, no cross-module state, no source
-re-parsing: the pass reads a signature. `owns_allocation` is the
-only part with a decision in it, and the decision is which list to
-write, not how to compute anything.
+**Low.** No cross-module state, no source re-parsing: the pass reads a
+signature, and reaches for the body only through a helper that is
+already written and already tested by the sibling. `owns_allocation`
+is the only part with a decision in it, and the decision is which list
+to write, not how to compute anything.
 
 The cost is in the design, not the code — which is why this file
 exists before any of it.
