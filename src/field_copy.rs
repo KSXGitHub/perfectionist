@@ -107,7 +107,23 @@ pub(crate) fn field_copy<'tcx>(
     def_id: LocalDefId,
     copying_methods: &[Symbol],
 ) -> Option<FieldCopy<'tcx>> {
-    let Eligible { method, def_span } = eligible_method(cx, kind, decl, body, def_id)?;
+    let eligible = eligible_method(cx, kind, decl, body, def_id)?;
+    field_copy_of(cx, &eligible, body, def_id, copying_methods)
+}
+
+/// The same recognition, for a caller that has already established
+/// eligibility and would otherwise pay for it twice. Deciding that
+/// costs a source re-lex to rule out a proc macro, so a rule reading
+/// both a method's body and its signature asks once and passes the
+/// answer here.
+pub(crate) fn field_copy_of<'tcx>(
+    cx: &LateContext<'tcx>,
+    eligible: &Eligible,
+    body: &'tcx hir::Body<'tcx>,
+    def_id: LocalDefId,
+    copying_methods: &[Symbol],
+) -> Option<FieldCopy<'tcx>> {
+    let &Eligible { method, def_span } = eligible;
     let typeck = cx.tcx.typeck(def_id);
     let expr = unwrap_block(body.value);
     let ExprKind::MethodCall(segment, receiver, [], _) = expr.kind else {

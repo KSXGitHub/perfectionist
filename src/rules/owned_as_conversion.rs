@@ -2,7 +2,7 @@ mod owned_ty;
 
 use crate::common::DefaultState;
 use crate::field_copy::{
-    COPYING_METHODS, Eligible, FieldCopy, borrowed_form, eligible_method, field_copy,
+    COPYING_METHODS, Eligible, FieldCopy, borrowed_form, eligible_method, field_copy_of,
 };
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
@@ -19,9 +19,9 @@ declare_tool_lint! {
     /// ### What it does
     ///
     /// Flags an inherent `as_*` method taking `&self` and nothing else
-    /// that hands the caller a value of their own, where the prefix
-    /// promised a borrow. Two shapes say so, and the second is what the
-    /// diagnostic can suggest a fix for:
+    /// that hands back an owned value, where the prefix promised a
+    /// borrow. These shapes say so, and which one holds decides what
+    /// the diagnostic can offer:
     ///
     /// 1. **The body copies one field of `self`** out through `clone`,
     ///    `to_owned`, `to_string`, `to_vec`, `to_path_buf`, or
@@ -31,24 +31,28 @@ declare_tool_lint! {
     ///    `OsString`, `&CStr` for a `CString`, `&[T]` for a `Vec<T>`,
     ///    whatever the inner type borrows as under an `Option` or a
     ///    `Box`, and `&T` otherwise.
-    /// 2. **The return type owns a heap allocation** — a `String`, a
-    ///    `Vec<T>`, a `PathBuf`, an `OsString`, a `CString`, a `Box<T>`,
-    ///    one of the standard maps, sets or queues, or any of those
-    ///    under an `Option` or a `Result`. Here there is nothing to
-    ///    borrow instead, because the value was built rather than
-    ///    copied, so renaming is the whole fix.
+    /// 2. **The return type is one that owns what it holds** — a
+    ///    `String`, a `Vec<T>`, a `PathBuf`, an `OsString`, a
+    ///    `CString`, a `Box<T>`, one of the standard maps, sets or
+    ///    queues, a tuple or array of any of those, or any of them
+    ///    under an `Option` or a `Result`. Nothing here says which
+    ///    value a borrow could have replaced, so the rule offers the
+    ///    rename alone.
     ///
-    /// What is reported is ownership, not allocation. Whether a body
-    /// allocates cannot be read off a signature, so the rule never
-    /// claims it: `as_key(&self) -> String` returning `String::new()`
-    /// allocates nothing and is still a value the caller must drop.
+    /// What is reported is ownership, not allocation: `as_key(&self)
+    /// -> String` returning `String::new()` allocates nothing and
+    /// still hands back an owned value.
     ///
-    /// A `Copy` return type is left alone throughout — handing one back
-    /// by value is free, which is what the prefix promises. So is a type
-    /// carrying a lifetime, `Cow<'_, str>` among them, since it is free
-    /// to borrow from the receiver, and so is an `Rc` or an `Arc` field:
-    /// cloning one bumps a refcount rather than copying what it points
-    /// at, and a caller keeping the handle has to own one.
+    /// A `Copy` return type is left alone — handing one back by value
+    /// is free, which is what the prefix promises — and so is a return
+    /// type outside the list above, `Cow<'_, str>` among them, which is
+    /// free to hand back a borrow. An `Rc` or an `Arc` field is left
+    /// alone too: cloning one bumps a refcount rather than copying what
+    /// it points at, and a caller keeping the handle has to own one.
+    ///
+    /// An `async fn` and a method returning `impl Trait` are both left
+    /// alone: what such a signature names is the opaque type, not the
+    /// value the caller ends up owning.
     ///
     /// A method of a trait impl is left alone, since the trait fixes its
     /// signature, and so is one produced by a macro.
@@ -58,10 +62,10 @@ declare_tool_lint! {
     /// This is a stylistic preference, not a correctness issue. The Rust
     /// API Guidelines give `as_`, `to_` and `into_` distinct meanings,
     /// and `as_` is the free one: a borrowed value viewed as another
-    /// borrowed form, free. A caller reads `as_name()` as free and may
-    /// put it in a loop, so an `as_*` that hands back something owned
-    /// makes the name a promise the method does not keep. The reader has
-    /// no way to see the cost at the call site.
+    /// borrowed form. A caller reads `as_name()` as free and may put it
+    /// in a loop, so an `as_*` that hands back an owned value makes the
+    /// name a promise the method does not keep. The reader has no way
+    /// to see the cost at the call site.
     ///
     /// ### Interaction with Clippy
     ///
@@ -78,8 +82,8 @@ declare_tool_lint! {
     /// method is measured by both.
     ///
     /// Some are measured by neither. `to_*` and `into_*` announce a
-    /// conversion that costs something, so handing back an owned value
-    /// is what those names already promise. A name that is none of the
+    /// conversion that costs something, so an owned value is what those
+    /// names already promise. A name that is none of the
     /// three and that the getter rule does not read as a getter — one
     /// naming no field, with nothing in `getter_name_patterns` admitting
     /// it — is left alone by both as well.
@@ -210,6 +214,11 @@ impl<'tcx> LateLintPass<'tcx> for OwnedAsConversion {
         if !ident.name.as_str().starts_with(AS_PREFIX) {
             return;
         }
+        // Establishing eligibility is what costs a source re-lex, so it
+        // is done once here and handed to both shapes below.
+        let Some(eligible) = eligible_method(cx, kind, decl, body, def_id) else {
+            return;
+        };
         // The field copy is the shape that can be answered with a
         // borrow, so it is tried first and reported on its own terms.
         // Consulting the shared recogniser rather than restating it is
@@ -221,7 +230,7 @@ impl<'tcx> LateLintPass<'tcx> for OwnedAsConversion {
             field_ty,
             def_span,
             ..
-        }) = field_copy(cx, kind, decl, body, def_id, &self.copying_methods)
+        }) = field_copy_of(cx, &eligible, body, def_id, &self.copying_methods)
         {
             span_lint_and_then(
                 cx,
@@ -242,10 +251,7 @@ impl<'tcx> LateLintPass<'tcx> for OwnedAsConversion {
             );
             return;
         }
-        let Some(Eligible { method, def_span }) = eligible_method(cx, kind, decl, body, def_id)
-        else {
-            return;
-        };
+        let Eligible { method, def_span } = eligible;
         // The signature's own late-bound regions have to go before the
         // type is asked anything. `skip_binder` would leave them
         // escaping, and `is_copy` panics rather than answering for a
@@ -270,10 +276,6 @@ impl<'tcx> LateLintPass<'tcx> for OwnedAsConversion {
             def_span,
             format!("`{method}` returns an owned `{output}`, but `as_` promises a free conversion"),
             |diag| {
-                diag.note(
-                    "the value is built rather than borrowed, so no borrow of `self` would serve \
-                     in its place",
-                );
                 diag.help(rename_help(method));
             },
         );

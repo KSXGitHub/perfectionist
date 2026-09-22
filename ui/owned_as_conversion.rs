@@ -4,7 +4,7 @@
 #![allow(dead_code, unused, reason = "ui fixture")]
 
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{HashMap, LinkedList};
 use std::ffi::CString;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -12,8 +12,13 @@ use std::rc::Rc;
 #[derive(Clone)]
 struct Widget(u8);
 
+struct Inner {
+    name: String,
+}
+
 struct Person {
     name: String,
+    inner: Inner,
     home: PathBuf,
     tags: Vec<String>,
     age: u32,
@@ -98,6 +103,32 @@ impl Person {
         Ok(self.name.clone())
     }
 
+    // Bad: a tuple is the caller's to drop as soon as one element is,
+    // so one owning element is enough.
+    fn as_pair(&self) -> (String, u32) {
+        (String::new(), self.age)
+    }
+
+    // Bad: an array of owning elements is owned the same way a tuple
+    // of them is.
+    fn as_pieces(&self) -> [String; 2] {
+        [String::new(), String::new()]
+    }
+
+    // Bad: a list is owned for the same reason its `Vec` and
+    // `VecDeque` siblings are.
+    fn as_queue(&self) -> LinkedList<u8> {
+        LinkedList::new()
+    }
+
+    // Bad: the body copies a field, but through a path the copying
+    // shape does not recognise, so only the return type is read and
+    // only the rename is offered. Pins which of the two shapes a
+    // nested field reaches.
+    fn as_inner_name(&self) -> String {
+        self.inner.name.clone()
+    }
+
     // Good: returning `&str` costs nothing, which is what `as_` says.
     fn as_name_ref(&self) -> &str {
         &self.name
@@ -115,10 +146,16 @@ impl Person {
     }
 
     // Good: `Cow` is the honest type for a conversion that is
-    // sometimes free, and the lifetime it carries is what tells the
-    // rule the value may be borrowed from the receiver.
+    // sometimes free, and it is on no list of owning types, so the
+    // signature never says the caller was handed anything of their own.
     fn as_display_name(&self) -> Cow<'_, str> {
         Cow::Borrowed(&self.name)
+    }
+
+    // Good: a borrow under a `Result` is still a borrow. The payload
+    // is what the wrapper recursion reads, and `&str` stops it.
+    fn as_checked(&self) -> Result<&str, String> {
+        Ok(&self.name)
     }
 
     // Good: handing a field back without copying it is not the shape
@@ -171,6 +208,27 @@ impl Person {
 
     // Not flagged: `&mut self` is not the receiver this measures.
     fn as_taken_name(&mut self) -> String {
+        self.name.clone()
+    }
+
+    // Not flagged: what an `async fn` signature names is the opaque
+    // future, not the `String` awaited out of it, so neither shape
+    // reaches the value the caller ends up owning.
+    async fn as_awaited_name(&self) -> String {
+        self.name.clone()
+    }
+
+    // Not flagged: an `impl Trait` return is opaque for the same
+    // reason. The body is not a field copy either, so this is the
+    // return type alone, and the return type is unreadable.
+    fn as_opaque_label(&self) -> impl AsRef<str> + use<'_> {
+        self.age.to_string()
+    }
+
+    // Not flagged: an explicitly typed receiver is `ImplicitSelfKind::None`
+    // however it is spelled, so the eligibility test does not see the
+    // `&self` this is equivalent to.
+    fn as_spelled_out(self: &Self) -> String {
         self.name.clone()
     }
 }

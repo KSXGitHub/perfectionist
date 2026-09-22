@@ -1,18 +1,22 @@
 //! Deciding, from a return type alone, whether a method hands the
 //! caller something of their own.
 //!
-//! The question the rule needs answered is *ownership*, not
-//! *allocation*. Whether a body allocates is not decidable from a
-//! signature — `String::new()` allocates nothing and `u32::to_string`
-//! allocates every time — so the predicate here never claims it. What
-//! it claims is that the caller was handed a value they must drop,
-//! where an `as_*` prefix promised them a view.
+//! The question is *ownership*, not *allocation*. Whether a body
+//! allocates is not decidable from a signature — `String::new()`
+//! allocates nothing and `u32::to_string` allocates every time — so
+//! the predicate here never claims it. What it claims is that the
+//! caller was handed a value they must drop, where an `as_*` prefix
+//! promised them a view.
 //!
-//! It is a deliberate under-approximation: every type it accepts owns
-//! a heap allocation, and a type it does not recognise is left alone
-//! rather than guessed at. A third-party owning type is therefore
-//! missed, which is the price of never reporting an owned-looking type
-//! that costs nothing.
+//! It is a deliberate under-approximation: a type counts as owned only
+//! where this module can name it, so a third-party owning type is
+//! missed rather than guessed at. That is also what leaves
+//! `Cow<'_, str>` and the other borrow-capable wrappers alone, since
+//! none of them is a type this module names.
+//!
+//! Only the outermost type is asked. A lifetime *inside* an owned
+//! container does not make the container less owned: a
+//! `Vec<Cow<'_, str>>` is still a `Vec` the caller drops.
 
 use clippy_utils::ty::is_copy;
 use rustc_lint::LateContext;
@@ -21,9 +25,14 @@ use rustc_span::Symbol;
 
 /// The `std` types that own a heap allocation whatever they are
 /// parameterised with, keyed by `rustc_diagnostic_item`.
+///
+/// `Rc` and `Arc` are deliberately absent. From a signature there is
+/// no telling a handle built here from one cloned out of a field, and
+/// the second is a refcount bump the rule exists not to report.
 const OWNING_TYPES: &[&str] = &[
     "Vec",
     "VecDeque",
+    "LinkedList",
     "PathBuf",
     "OsString",
     // `CString` carries `cstring_type`; `field_copy` maps the same pair
@@ -51,16 +60,14 @@ pub(super) fn owned_return<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> bool {
     if is_copy(cx, ty) {
         return false;
     }
-    let ty::Adt(adt, args) = ty.kind() else {
-        return false;
+    let (adt, args) = match ty.kind() {
+        // One owning element is enough to make the whole aggregate the
+        // caller's to drop.
+        ty::Tuple(elements) => return elements.iter().any(|element| owned_return(cx, element)),
+        ty::Array(element, _) => return owned_return(cx, *element),
+        ty::Adt(adt, args) => (adt, args),
+        _ => return false,
     };
-    // A type carrying a lifetime is free to borrow from the receiver,
-    // so the signature alone does not say the caller owns what they
-    // got. `Cow<'_, str>` is the shape this protects: it is the honest
-    // type for a conversion that is sometimes free.
-    if args.regions().next().is_some() {
-        return false;
-    }
     let did = adt.did();
     // `String` is a lang item (`#[lang = "String"]`) rather than a
     // diagnostic item, and so is `Box`.
