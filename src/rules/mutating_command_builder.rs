@@ -363,6 +363,15 @@ fn landing(cx: &LateContext<'_>, call: &Expr<'_>) -> Landing {
     // times the macro uses the expression, which costs a rendered
     // rewrite rather than a wrong one; a position among the caller's
     // own tokens is not.
+    // A call the macro's own body wrote arrives here carrying the
+    // caller's token for its method name, because that is what an
+    // `$ident` fragment holds. Renaming that token rewrites every other
+    // use of it in the body -- `stringify!($method)` among them, which
+    // compiles and changes what the command is run with. `fix` declines
+    // such a call outright, and the rendered rename has to as well.
+    if call.span.from_expansion() {
+        return Landing::Unknown;
+    }
     match cx.tcx.parent_hir_node(call.hir_id) {
         Node::Expr(parent) if parent.span.from_expansion() => Landing::Unknown,
         Node::Expr(parent) => match parent.kind {

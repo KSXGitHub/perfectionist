@@ -420,4 +420,20 @@ mod defers_and_moves {
     }
 }
 
+// Not flagged with a rename: a `$method:ident` fragment carries the
+// caller's token, so the call is the macro's and the method name the
+// author's. A rename rendered at that token would be written over
+// every other use of the fragment in the body -- here the
+// `stringify!` -- which compiles and changes the argument the command
+// is run with. The diagnostic stands; only the edit is withheld.
+macro_rules! name_and_pass {
+    ($method:ident) => {
+        Command::new("echo").$method(stringify!($method))
+    };
+}
+
+fn method_name_from_the_caller() {
+    let _ = name_and_pass!(arg).status();
+}
+
 fn main() {}
