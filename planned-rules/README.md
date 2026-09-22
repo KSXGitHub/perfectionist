@@ -105,7 +105,9 @@ pattern that several rules call out by reference — live in
   boolean literal, which collapses three states with an operator and
   never says what `None` means. Suggest the `unwrap_or` form that
   does: `opt == Some(true)` → `opt.unwrap_or(false)`, and the three
-  other operator-and-literal pairs likewise. Complements
+  other operator-and-literal pairs likewise. Covers the borrowed
+  payload too, as `HashMap::get` returns it: `map.get(k) ==
+  Some(&true)` → `map.get(k).copied().unwrap_or(false)`. Complements
   `clippy::bool_comparison`, which covers only plain `bool`. Active
   by default, no configuration.
 

@@ -31,6 +31,16 @@ the literal disagree:
 | `opt != Some(true)`   | absent or false       | `!opt.unwrap_or(false)`|
 | `opt == Some(false)`  | present and false     | `!opt.unwrap_or(true)` |
 
+The same shape occurs with the payload borrowed, which is what
+`HashMap::<_, bool>::get` and `Option::as_ref` hand back. It reads
+the same and hides the same answer, so it is the same rule; only the
+rewrite gains a `copied` to reach the `bool`:
+
+| Comparison                  | Prefer                                 |
+|-----------------------------|----------------------------------------|
+| `map.get(k) == Some(&true)` | `map.get(k).copied().unwrap_or(false)` |
+| `r == &Some(true)`          | `r.unwrap_or(false)`                   |
+
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. The
@@ -52,22 +62,28 @@ the same thing. The objection is to what the reader has to do:
 ## What to lint
 
 A binary `==` or `!=` where one operand is an expression of type
-`Option<bool>` and the other is `Some(<boolean literal>)`, in either
-order.
+`Option<bool>` or `Option<&bool>` and the other is a `Some` of a
+boolean literal, in either order, with either side possibly
+borrowed.
+
+Peel any outer `&` from each operand before testing it, so the
+borrowed spellings are recognised as the shape they are.
 
 1. Resolve the operand types through `cx.typeck_results()`. One side
-   must be `Option<bool>` after adjustment; a comparison between two
-   `Option<bool>` *expressions* is not in scope, because neither side
-   names a state to describe.
+   must be `Option<bool>` or `Option<&bool>` after adjustment; a
+   comparison between two such *expressions* is not in scope, because
+   neither side names a state to describe.
 2. The literal side must be a call to `Option::Some` — resolved
    through the path, not by the name `Some` — whose single argument
-   is a boolean literal. A `Some(flag)` carrying a variable is left
-   alone: there is no state to name and `unwrap_or` would not be an
-   improvement.
+   is a boolean literal, itself possibly borrowed. A `Some(flag)`
+   carrying a variable is left alone: there is no state to name and
+   `unwrap_or` would not be an improvement.
 3. Emit one suggestion, chosen by the table above:
    `unwrap_or(!literal)`, wrapped in `!` when the operator being `==`
-   disagrees with the literal. It is `MachineApplicable` — the
-   rewrite is total and value-preserving.
+   disagrees with the literal, with `copied()` inserted before the
+   `unwrap_or` when the option side's payload is `&bool`. It is `MachineApplicable` — the
+   rewrite is total and value-preserving, verified over every state
+   of both payloads.
 
 The rule does **not** fire on `matches!(opt, Some(true))`. That form
 already names the state it matches, which is what this rule is
@@ -125,6 +141,22 @@ if Some(true) == entry.enabled { /* ... */ }
 if entry.enabled.unwrap_or(false) { /* ... */ }
 ```
 
+### Borrowed payload
+
+**Avoid:**
+
+```rust
+if flags.get("verbose") == Some(&true) { /* ... */ }
+if settings.as_ref() != Some(&false) { /* ... */ }
+```
+
+**Prefer:**
+
+```rust
+if flags.get("verbose").copied().unwrap_or(false) { /* ... */ }
+if settings.as_ref().copied().unwrap_or(true) { /* ... */ }
+```
+
 ### Not flagged
 
 ```rust
@@ -160,20 +192,28 @@ disable = ["some_bool_comparison"]
 - **Pass kind.** `LateLintPass::check_expr` on `ExprKind::Binary`
   with `BinOpKind::Eq` or `BinOpKind::Ne`. Types are required, so
   this cannot be an early pass.
-- **Recognising the `Some`.** Match `ExprKind::Call` whose callee is
-  a path resolving to `Option::Some` — via `cx.qpath_res` and a
-  `LangItem`/diagnostic-item check rather than the textual name, so
-  a local `enum Mine { Some(bool) }` does not match. The argument is
-  `ExprKind::Lit` of `LitKind::Bool`.
-- **Recognising the option side.** `cx.typeck_results().expr_ty_adjusted`
-  must be `Option<bool>`; check the ADT is the `Option` diagnostic
-  item and its single generic argument is `bool`.
+- **Recognising the `Some`.** Peel `ExprKind::AddrOf`, then match
+  `ExprKind::Call` whose callee is a path resolving to `Option::Some`
+  — via `cx.qpath_res` and a `LangItem`/diagnostic-item check rather
+  than the textual name, so a local `enum Mine { Some(bool) }` does
+  not match. Peel `AddrOf` from the argument too; it is then
+  `ExprKind::Lit` of `LitKind::Bool`. The two peels are what admit
+  `Some(&true)` and `&Some(true)`.
+- **Recognising the option side.** Peel `AddrOf`, then
+  `cx.typeck_results().expr_ty_adjusted` must be `Option<bool>` or
+  `Option<&bool>`; check the ADT is the `Option` diagnostic item and
+  its single generic argument is `bool` or a reference to one. Carry
+  which of the two forward: the `&bool` payload is what adds
+  `copied()` to the suggestion.
 - **Suggestion span.** Replace the whole binary expression, taking
   the option side's snippet through
   `clippy_utils::source::snippet_with_applicability`. Parenthesise
   the option side when it is not already a place or call chain, so
   `!a && b == Some(true)` does not rewrite into something that
-  reassociates.
+  reassociates. A snippet led by `*` needs them too, for a different
+  reason: method call binds tighter than deref, so appending to `*p`
+  yields `*p.copied()`, which parses as `*(p.copied())` and fails to
+  compile with `E0614`.
 - **Macro suppression.** Bail when the binary expression's span is
   `from_expansion()`. That is what delivers the macro exemption
   above, and it is needed on top of `report_in_external_macro:
@@ -204,9 +244,10 @@ disable = ["some_bool_comparison"]
 
 ### Difficulty
 
-**Easy.** One expression shape, one type check, four fixed rewrites
-and no configuration. The only subtlety is parenthesising the option
-side in the suggestion.
+**Easy.** One expression shape, two payload forms, four fixed
+rewrites and no configuration. The subtleties are peeling the
+references off both operands before testing them, and parenthesising
+the option side in the suggestion.
 
 ## Default state
 
@@ -222,6 +263,6 @@ that disagrees turns it off in one line rather than configuring it.
   stops there: with `clippy::all`, `clippy::pedantic`,
   `clippy::nursery` and `clippy::restriction` all enabled, none of
   `opt == Some(true)`, `opt == Some(false)` or `opt != Some(true)`
-  produces a diagnostic. This rule is that lint's complement on
-  `Option<bool>` rather than a refinement of it, which is why it does
-  not borrow the name.
+  produces a diagnostic, nor does `map.get(k) == Some(&true)`. This
+  rule is that lint's complement on `Option<bool>` rather than a
+  refinement of it, which is why it does not borrow the name.
