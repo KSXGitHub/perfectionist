@@ -60,7 +60,7 @@ pub(crate) fn count_code_lines_excluding(source: &str, excluded_lines: &HashSet<
         filtered[line_start..].fill(b' ');
     }
 
-    count_code_lines(std::str::from_utf8(&filtered).expect("source was valid UTF-8"))
+    count_code_lines(core::str::from_utf8(&filtered).expect("source was valid UTF-8"))
 }
 
 #[cfg(test)]
