@@ -39,7 +39,7 @@ pattern that several rules call out by reference — live in
   inherent `async fn` whose name begins with `as_`. The prefix
   promises a free borrowed view; `async` says the operation may
   suspend, which nothing free does, so the name is a claim the reader
-  must disregard. Scoped to `as_`: `to_` promises cost, which
+  must learn to disregard. Scoped to `as_`: `to_` promises cost, which
   suspension is a kind of, and `into_` promises consumption, which is
   orthogonal. The fix is a rename to a verb, so there is no autofix.
   Nothing about the receiver, the body or the return type is read.

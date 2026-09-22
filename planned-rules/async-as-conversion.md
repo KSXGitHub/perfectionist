@@ -30,9 +30,9 @@ receiver already holds. `async` says the opposite about the same
 method: this operation may suspend, and nothing happens until an
 executor drives it to completion.
 
-A view of data you already hold cannot need suspending. So an
-`async fn as_*` names an action as if it were a free conversion,
-whatever it returns.
+A view of something the receiver already holds cannot need
+suspending. So an `async fn as_*` names an action as if it were a
+free conversion, whatever it returns.
 
 **Avoid:**
 
@@ -54,7 +54,7 @@ impl Session {
 }
 ```
 
-## Only `as_`, and why
+## Why only `as_`
 
 The obvious generalisation — every conversion prefix disagrees with
 `async` — is wrong, and the corpus below contains the counterexample
@@ -69,7 +69,7 @@ two promise something `async` says nothing about:
 - `into_` promises the conversion **consumes** the receiver. That is
   orthogonal to suspension entirely.
 
-`fs-err`'s wrapper is the case to keep in mind:
+`fs-err`'s wrapper is the counterexample:
 
 ```rust
 /// Destructures `File` into a [`fs_err::File`]. This function is async
@@ -152,7 +152,7 @@ and `owned_as_conversion` claims exactly the one it checks.
 `perfectionist::borrowed_to_conversion` and
 `perfectionist::unconsumed_into_conversion` hold the other two
 prefixes. Neither reads asyncness, and per
-[Only `as_`, and why](#only-as_-and-why) neither should.
+[Why only `as_`](#why-only-as_) neither should.
 
 ## Configuration
 
@@ -186,6 +186,6 @@ The smallest rule in the catalogue.
 
 ### Difficulty
 
-**Low.** No body analysis, no type analysis, no source re-parsing:
+**Easy.** No body analysis, no type analysis, no source re-parsing:
 two questions about a signature, both already answerable from helpers
 the crate has.
