@@ -73,6 +73,14 @@ The rule does **not** fire on `matches!(opt, Some(true))`. That form
 already names the state it matches, which is what this rule is
 asking for.
 
+Nor does it fire on a comparison a macro *generates*, such as
+`assert_eq!(opt, Some(true))` — only on one written in the source,
+which includes a macro argument. This is deliberate: the fix would
+replace `assert_eq!` with `assert!` and a comparison, discarding the
+operand values its failure message prints, and with
+`pretty_assertions::assert_eq!` the coloured diff too. An equality
+assertion also already names the state it expects.
+
 Nor does it need a `const` exemption. Neither shape is available in
 a `const fn` today: `PartialEq` is not yet a const trait, so the
 comparison this rule fires on cannot appear there in the first place.
@@ -166,13 +174,30 @@ disable = ["some_bool_comparison"]
   the option side when it is not already a place or call chain, so
   `!a && b == Some(true)` does not rewrite into something that
   reassociates.
-- **Proc-macro suppression.** The diagnostic's primary span is the
-  whole binary expression, wider than the synthesised spans the
-  [suppression convention](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations)
-  warns about, so `report_in_external_macro: false` should suffice.
-  Confirm that against a `ui/some_bool_comparison_proc_macro.rs`
-  fixture before relying on it, and record the outcome at the
-  span-selection site either way.
+- **Macro suppression.** Bail when the binary expression's span is
+  `from_expansion()`. That is what delivers the macro exemption
+  above, and it is needed on top of `report_in_external_macro:
+  false`, which covers only another crate's macro — a same-crate
+  `macro_rules!` building the comparison would otherwise be reported
+  at its definition site. A macro *argument* is not
+  `from_expansion()`, so `assert!(opt == Some(true))` still fires.
+  `clippy::bool_comparison` draws exactly these lines on the
+  corresponding `bool` shapes, including inside
+  `pretty_assertions::assert_eq!`. Still add a
+  `ui/some_bool_comparison_proc_macro.rs` fixture per the
+  [suppression convention](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations).
+- **Pin the exemption in the fixture.** The UI fixture carries a case
+  for each silent form — `assert_eq!(opt, Some(true))` for another
+  crate's macro, and a same-crate `macro_rules!` building the
+  comparison — each expecting no diagnostic and each commented with
+  why the silence is wanted rather than tolerated: the rewrite would
+  cost `assert_eq!` the operand values its failure message prints.
+  Uncommented, the cases read as an oversight and the next reader
+  closes the "gap". Neither needs a dependency, `assert_eq!` being
+  core's and the other local, so a `pretty_assertions` dev-dependency
+  would only re-cover the path core's macro already covers.
+  Mutation-check both: a case that still passes with the
+  `from_expansion()` bail removed pins nothing.
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for the cross-cutting conventions that apply to every rule here,
   in particular the `perfectionist::` lint-name namespacing.
