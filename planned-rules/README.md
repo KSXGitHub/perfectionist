@@ -44,6 +44,16 @@ pattern that several rules call out by reference — live in
   collects on the copy the owned signature saves. Pairs with
   `clippy::ptr_arg` and `clippy::needless_pass_by_value` to cover the
   full owned-vs-borrowed trade-off from the pacquet guide.
+- [`owning-as-conversion.md`](./owning-as-conversion.md) — flag an
+  inherent `as_*` method taking `&self` whose return type owns a heap
+  allocation (`String`, `Vec<T>`, `PathBuf`, `Box<T>`, and the rest of
+  a fixed list, seen through `Option` and `Result`), since the `as_`
+  prefix promises a borrowed view rather than a fresh allocation. The
+  fix is a rename to `to_*`, so there is no autofix. A return type
+  carrying a lifetime — `Cow<'_, str>`, a borrow wrapper — is exempt,
+  and so is a site `perfectionist::cloning_as_conversion` already
+  reports, which can offer the borrowed form this rule cannot. Active
+  by default.
 
 ### OS strings, paths, and bytes
 - [`needless-utf8-conversion.md`](./needless-utf8-conversion.md)
