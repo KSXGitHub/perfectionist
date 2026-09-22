@@ -297,3 +297,152 @@ fn narrowing_to_the_crate_leaves_the_abstaining_member_alone() {
          the counterpart is not writable there; stderr was:\n{stderr}",
     );
 }
+
+/// A newer `command-extra`, declaring a counterpart the older one
+/// below does not. Two semver-incompatible majors of one package is a
+/// resolution Cargo reaches whenever two dependencies disagree, and a
+/// `ui/` fixture cannot model it: compiletest builds aux crates into
+/// one directory, where the second would overwrite the first.
+const NEW_STUB_MANIFEST: &str = text_block_fnl! {
+    "[package]"
+    r#"name = "command-extra""#
+    r#"version = "2.0.0""#
+    r#"edition = "2024""#
+    ""
+    "[lib]"
+    r#"path = "src/lib.rs""#
+};
+
+const NEW_STUB_SOURCE: &str = text_block_fnl! {
+    "pub trait CommandExtra: Sized {"
+    "    fn with_arg(self, arg: &str) -> Self;"
+    "    fn with_envs(self, envs: [(&str, &str); 1]) -> Self;"
+    "}"
+    ""
+    "impl CommandExtra for std::process::Command {"
+    "    fn with_arg(self, _arg: &str) -> Self {"
+    "        self"
+    "    }"
+    ""
+    "    fn with_envs(self, _envs: [(&str, &str); 1]) -> Self {"
+    "        self"
+    "    }"
+    "}"
+};
+
+/// The older major, reached through `middle`. Its source is
+/// [`STUB_SOURCE`], which has no `with_envs`.
+const OLD_STUB_MANIFEST: &str = text_block_fnl! {
+    "[package]"
+    r#"name = "command-extra""#
+    r#"version = "1.0.0""#
+    r#"edition = "2024""#
+    ""
+    "[lib]"
+    r#"path = "src/lib.rs""#
+};
+
+/// `middle` against the *newer* major, so that the crate the fixture
+/// itself names is the older one. That arrangement is what makes the
+/// test below discriminating: the transitive crate is the one a lookup
+/// meets first, so picking rather than asking all of them picks the
+/// trait the code under lint does not resolve to.
+const MIDDLE_NEW_MANIFEST: &str = text_block_fnl! {
+    "[package]"
+    r#"name = "middle""#
+    r#"version = "0.0.0""#
+    r#"edition = "2024""#
+    ""
+    "[lib]"
+    r#"path = "src/lib.rs""#
+    ""
+    "[dependencies]"
+    r#"command-extra = { path = "../command-extra-new", version = "2.0.0" }"#
+};
+
+/// `.envs` against a graph carrying one `CommandExtra` that declares
+/// `with_envs` and one that does not.
+fn run_two_majors(sources: &[(&str, &str)]) -> String {
+    let (_temp, stderr, success) = run_project_with_config(
+        "gate",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        sources,
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    stderr
+}
+
+const TWO_MAJORS_SOURCE: &str = text_block_fnl! {
+    "use command_extra::CommandExtra;"
+    "use std::process::Command;"
+    ""
+    "pub fn reaches_both() {"
+    r#"    let _ = middle::touch(Command::new("ls"));"#
+    r#"    let mut command = Command::new("ls");"#
+    r#"    command.envs([("LANG", "C")]);"#
+    "}"
+};
+
+/// The trait the fixture below names is the one *without* `with_envs`,
+/// and it is reached through a dependency whose crate a lookup meets
+/// second. Naming `with_envs` there is `E0599`, so the silence this
+/// asserts is the answer rather than merely the safe side.
+
+/// The control: one `CommandExtra`, which declares `with_envs`, so the
+/// counterpart check passes and `.envs` is flagged.
+#[test]
+fn one_major_declaring_the_counterpart_fires() {
+    let source = text_block_fnl! {
+        "use command_extra::CommandExtra;"
+        "use std::process::Command;"
+        ""
+        "pub fn reaches_one() {"
+        r#"    let mut command = Command::new("ls");"#
+        r#"    command.envs([("LANG", "C")]);"#
+        "}"
+    };
+    let stderr = run_two_majors(&[
+        (
+            "Cargo.toml",
+            &fixture_manifest(
+                r#"command-extra = { path = "command-extra-new", version = "2.0.0" }"#,
+            ),
+        ),
+        ("src/lib.rs", source),
+        ("command-extra-new/Cargo.toml", NEW_STUB_MANIFEST),
+        ("command-extra-new/src/lib.rs", NEW_STUB_SOURCE),
+    ]);
+    assert!(
+        stderr.contains(LINT),
+        "expected `.envs` to be flagged where the one loaded \
+         `CommandExtra` declares `with_envs`; stderr was:\n{stderr}",
+    );
+}
+
+#[test]
+fn two_majors_stand_down_on_a_counterpart_only_one_declares() {
+    let stderr = run_two_majors(&[
+        (
+            "Cargo.toml",
+            &fixture_manifest(text_block_fnl! {
+                r#"command-extra = { path = "command-extra-old", version = "1.0.0" }"#
+                r#"middle = { path = "middle" }"#
+            }),
+        ),
+        ("src/lib.rs", TWO_MAJORS_SOURCE),
+        ("command-extra-old/Cargo.toml", OLD_STUB_MANIFEST),
+        ("command-extra-old/src/lib.rs", STUB_SOURCE),
+        ("command-extra-new/Cargo.toml", NEW_STUB_MANIFEST),
+        ("command-extra-new/src/lib.rs", NEW_STUB_SOURCE),
+        ("middle/Cargo.toml", MIDDLE_NEW_MANIFEST),
+        ("middle/src/lib.rs", MIDDLE_SOURCE),
+    ]);
+    assert!(
+        !stderr.contains(LINT),
+        "expected silence where the `CommandExtra` the crate under lint \
+         names has no `with_envs`, though another loaded one does; \
+         stderr was:\n{stderr}",
+    );
+}

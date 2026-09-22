@@ -76,13 +76,20 @@ pub(super) fn crate_is_declared(cx: &LateContext<'_>) -> bool {
         .any(|(_, krate)| cx.tcx.crate_name(*krate) == wanted)
 }
 
-/// The `CommandExtra` the compilation loaded, where it loaded it at
-/// all.
+/// Every `CommandExtra` the compilation loaded.
 ///
-/// `None` is not the absence of the dependency -- [`crate_is_declared`]
-/// says why a declared crate can be missing from `tcx.crates(())`. It
-/// says only that there is no trait here to ask anything of.
-pub(super) fn loaded_trait(cx: &LateContext<'_>) -> Option<DefId> {
+/// More than one is ordinary rather than exotic: two semver-
+/// incompatible majors of one package in a graph is a resolution Cargo
+/// reaches whenever two dependencies disagree, and both are loaded
+/// under the same crate name. Which of them a lookup meets first is
+/// `CrateNum` order, which this rule neither controls nor can read an
+/// intention into, so the caller asks all of them rather than picking.
+///
+/// Empty is not the absence of the dependency --
+/// [`crate_is_declared`] says why a declared crate can be missing from
+/// `tcx.crates(())`. It says only that there is no trait here to ask
+/// anything of.
+pub(super) fn loaded_traits(cx: &LateContext<'_>) -> Vec<DefId> {
     let wanted_crate = Symbol::intern(CRATE);
     let wanted_trait = Symbol::intern(TRAIT);
     cx.tcx
@@ -90,12 +97,13 @@ pub(super) fn loaded_trait(cx: &LateContext<'_>) -> Option<DefId> {
         .iter()
         .filter(|krate| cx.tcx.crate_name(**krate) == wanted_crate)
         .flat_map(|krate| cx.tcx.traits(*krate))
-        .find(|def_id| cx.tcx.item_name(**def_id) == wanted_trait)
+        .filter(|def_id| cx.tcx.item_name(**def_id) == wanted_trait)
         .copied()
+        .collect()
 }
 
-/// Whether `command_extra` -- a [`loaded_trait`] answer -- declares a
-/// method named `by_value_form`.
+/// Whether `command_extra` -- one [`loaded_traits`] answer -- declares
+/// a method named `by_value_form`.
 ///
 /// `CommandExtra` gained its by-value forms over several releases, so
 /// which of them exist is a property of the version resolved rather

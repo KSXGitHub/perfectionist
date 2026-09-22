@@ -101,10 +101,10 @@ pub struct MutatingCommandBuilder {
     /// [`crate::cargo_manifest`] reads and parses that file once per
     /// process; this saves the scan over its dependency table.
     workspace_declared: Option<bool>,
-    /// The `CommandExtra` the compilation loaded, memoised on first
-    /// use. Finding it walks the crate graph, and the answer cannot
-    /// change within a compilation.
-    command_extra_trait: Option<Option<DefId>>,
+    /// The `CommandExtra` traits the compilation loaded, memoised on
+    /// first use. Finding them walks the crate graph, and the answer
+    /// cannot change within a compilation.
+    command_extra_traits: Option<Vec<DefId>>,
 }
 
 impl MutatingCommandBuilder {
@@ -114,7 +114,7 @@ impl MutatingCommandBuilder {
             command_extra_dependency: config.command_extra_dependency,
             command_extra_declared: None,
             workspace_declared: None,
-            command_extra_trait: None,
+            command_extra_traits: None,
         }
     }
 
@@ -161,23 +161,25 @@ impl MutatingCommandBuilder {
         true
     }
 
-    /// Whether the counterpart the diagnostic would name is one the
+    /// Whether the counterpart the diagnostic would name is one every
     /// loaded `CommandExtra` has.
     ///
-    /// `true` where nothing loaded the trait, there being nothing to
-    /// ask. That is a crate not using it yet, which is free to resolve
-    /// a version that has the counterpart; one already using it is
-    /// held to the version it has.
+    /// Every one of them, because which a lookup would otherwise pick
+    /// is load order; a counterpart only some of them declare cannot
+    /// be named without knowing which the code under lint resolves to.
+    ///
+    /// `true` where nothing loaded the trait, which falls out of
+    /// asking an empty set rather than being cased for. That is a
+    /// crate not using it yet, still free to resolve a version that
+    /// has the counterpart; one already using it is held to the
+    /// version it has.
     fn counterpart_is_declared(&mut self, cx: &LateContext<'_>, by_value_form: &str) -> bool {
-        match *self
-            .command_extra_trait
-            .get_or_insert_with(|| availability::loaded_trait(cx))
-        {
-            Some(command_extra) => {
-                availability::declares_the_counterpart(cx, command_extra, by_value_form)
-            }
-            None => true,
-        }
+        self.command_extra_traits
+            .get_or_insert_with(|| availability::loaded_traits(cx))
+            .iter()
+            .all(|command_extra| {
+                availability::declares_the_counterpart(cx, *command_extra, by_value_form)
+            })
     }
 
     /// Whether the `CommandExtra` counterpart is near enough to hand
