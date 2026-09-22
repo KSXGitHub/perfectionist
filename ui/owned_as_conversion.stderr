@@ -68,7 +68,6 @@ warning: `as_age_label` returns an owned `String`, but `as_` promises a free con
 LL |     fn as_age_label(&self) -> String {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: the value is built rather than borrowed, so no borrow of `self` would serve in its place
    = help: rename it `to_age_label`, the prefix for a conversion that costs something, so the call site shows what it pays
 
 warning: `as_words` returns an owned `Vec<String>`, but `as_` promises a free conversion
@@ -77,7 +76,6 @@ warning: `as_words` returns an owned `Vec<String>`, but `as_` promises a free co
 LL |     fn as_words(&self) -> Vec<String> {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: the value is built rather than borrowed, so no borrow of `self` would serve in its place
    = help: rename it `to_words`, the prefix for a conversion that costs something, so the call site shows what it pays
 
 warning: `as_index` returns an owned `HashMap<String, u32>`, but `as_` promises a free conversion
@@ -86,7 +84,6 @@ warning: `as_index` returns an owned `HashMap<String, u32>`, but `as_` promises 
 LL |     fn as_index(&self) -> HashMap<String, u32> {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: the value is built rather than borrowed, so no borrow of `self` would serve in its place
    = help: rename it `to_index`, the prefix for a conversion that costs something, so the call site shows what it pays
 
 warning: `as_key` returns an owned `String`, but `as_` promises a free conversion
@@ -95,7 +92,6 @@ warning: `as_key` returns an owned `String`, but `as_` promises a free conversio
 LL |     fn as_key(&self) -> String {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: the value is built rather than borrowed, so no borrow of `self` would serve in its place
    = help: rename it `to_key`, the prefix for a conversion that costs something, so the call site shows what it pays
 
 warning: `as_parsed` returns an owned `Result<String, ()>`, but `as_` promises a free conversion
@@ -104,7 +100,38 @@ warning: `as_parsed` returns an owned `Result<String, ()>`, but `as_` promises a
 LL |     fn as_parsed(&self) -> Result<String, ()> {
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: the value is built rather than borrowed, so no borrow of `self` would serve in its place
    = help: rename it `to_parsed`, the prefix for a conversion that costs something, so the call site shows what it pays
+
+warning: `as_pair` returns an owned `(String, u32)`, but `as_` promises a free conversion
+  --> $DIR/owned_as_conversion.rs:LL:CC
+   |
+LL |     fn as_pair(&self) -> (String, u32) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: rename it `to_pair`, the prefix for a conversion that costs something, so the call site shows what it pays
+
+warning: `as_pieces` returns an owned `[String; 2]`, but `as_` promises a free conversion
+  --> $DIR/owned_as_conversion.rs:LL:CC
+   |
+LL |     fn as_pieces(&self) -> [String; 2] {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: rename it `to_pieces`, the prefix for a conversion that costs something, so the call site shows what it pays
+
+warning: `as_queue` returns an owned `LinkedList<u8>`, but `as_` promises a free conversion
+  --> $DIR/owned_as_conversion.rs:LL:CC
+   |
+LL |     fn as_queue(&self) -> LinkedList<u8> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: rename it `to_queue`, the prefix for a conversion that costs something, so the call site shows what it pays
+
+warning: `as_inner_name` returns an owned `String`, but `as_` promises a free conversion
+  --> $DIR/owned_as_conversion.rs:LL:CC
+   |
+LL |     fn as_inner_name(&self) -> String {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: rename it `to_inner_name`, the prefix for a conversion that costs something, so the call site shows what it pays
 
 warning: N warnings emitted

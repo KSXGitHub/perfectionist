@@ -24,10 +24,10 @@ diagnostic can suggest a fix for:
    `Box`, and `&T` otherwise.
 2. **The return type owns a heap allocation** — a `String`, a
    `Vec<T>`, a `PathBuf`, an `OsString`, a `CString`, a `Box<T>`,
-   one of the standard maps, sets or queues, or any of those
-   under an `Option` or a `Result`. Here there is nothing to
-   borrow instead, because the value was built rather than
-   copied, so renaming is the whole fix.
+   one of the standard maps, sets or queues, a tuple or array of
+   any of those, or any of them under an `Option` or a `Result`.
+   This shape is read off the signature alone, so the rule has
+   no borrow to name and offers the rename.
 
 What is reported is ownership, not allocation. Whether a body
 allocates cannot be read off a signature, so the rule never
@@ -36,10 +36,16 @@ allocates nothing and is still a value the caller must drop.
 
 A `Copy` return type is left alone throughout — handing one back
 by value is free, which is what the prefix promises. So is a type
-carrying a lifetime, `Cow<'_, str>` among them, since it is free
-to borrow from the receiver, and so is an `Rc` or an `Arc` field:
-cloning one bumps a refcount rather than copying what it points
-at, and a caller keeping the handle has to own one.
+the rule cannot name as owning, `Cow<'_, str>` among them, since
+nothing in the signature says the caller was handed anything of
+their own. So is an `Rc` or an `Arc` field: cloning one bumps a
+refcount rather than copying what it points at, and a caller
+keeping the handle has to own one.
+
+Only the written return type is read, so an `async fn` and a
+method returning `impl Trait` are both out of reach: what their
+signatures name is an opaque type rather than the value awaited
+out of it.
 
 A method of a trait impl is left alone, since the trait fixes its
 signature, and so is one produced by a macro.
