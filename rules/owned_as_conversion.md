@@ -30,23 +30,21 @@ the diagnostic can offer:
    value a borrow could have replaced, so the rule offers the
    rename alone.
 
-What is reported is ownership, not allocation: `as_key(&self)
--> String` returning `String::new()` allocates nothing and
-still hands back an owned value.
+Ownership is reported, not allocation: `String::new()`
+allocates nothing and is still an owned value.
 
-A `Copy` return type is left alone — handing one back by value
-is free, which is what the prefix promises — and so is a return
-type outside the list above, `Cow<'_, str>` among them, which is
-free to hand back a borrow. An `Rc` or an `Arc` field is left
-alone too: cloning one bumps a refcount rather than copying what
-it points at, and a caller keeping the handle has to own one.
+Left alone:
 
-An `async fn` and a method returning `impl Trait` are both left
-alone: what such a signature names is the opaque type, not the
-value the caller ends up owning.
-
-A method of a trait impl is left alone, since the trait fixes its
-signature, and so is one produced by a macro.
+- A `Copy` return type. Handing one back by value is free.
+- A return type outside the list above, `Cow<'_, str>` among
+  them. It is free to hand back a borrow.
+- An `Rc` or `Arc` field. Cloning one bumps a refcount, and a
+  caller keeping the handle has to own one.
+- An `async fn`, or a method returning `impl Trait`. The
+  signature names the opaque type, not the value the caller
+  ends up owning.
+- A trait impl's method. The trait fixes the signature.
+- A method produced by a macro.
 
 ## Why restrict this?
 
