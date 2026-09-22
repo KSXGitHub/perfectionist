@@ -19,11 +19,10 @@ A receiver it could not take ownership of — a `&mut Command`, or
 a field reached through one — is left alone. So is a crate that
 neither depends on `command-extra` nor belongs to a workspace
 declaring it; `command_extra_dependency` sets how far the lint
-looks for that declaration. In a crate already using the trait,
-a chain is left alone where the resolved version of
-`command-extra` has no counterpart for one of its setters — the
-by-value forms arrived over several releases, and a chain is
-ported whole or not at all.
+looks for that declaration. Where `command-extra` is in the
+build at all, a chain is left alone unless every setter in it
+has a counterpart there — the by-value forms arrived over
+several releases, and a chain is ported whole or not at all.
 
 A fix is applied where the whole change is known: a chain is
 rewritten at once, never in part. Elsewhere the diagnostic

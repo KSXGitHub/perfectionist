@@ -30,11 +30,10 @@ declare_tool_lint! {
     /// a field reached through one — is left alone. So is a crate that
     /// neither depends on `command-extra` nor belongs to a workspace
     /// declaring it; `command_extra_dependency` sets how far the lint
-    /// looks for that declaration. In a crate already using the trait,
-    /// a chain is left alone where the resolved version of
-    /// `command-extra` has no counterpart for one of its setters — the
-    /// by-value forms arrived over several releases, and a chain is
-    /// ported whole or not at all.
+    /// looks for that declaration. Where `command-extra` is in the
+    /// build at all, a chain is left alone unless every setter in it
+    /// has a counterpart there — the by-value forms arrived over
+    /// several releases, and a chain is ported whole or not at all.
     ///
     /// A fix is applied where the whole change is known: a chain is
     /// rewritten at once, never in part. Elsewhere the diagnostic
@@ -127,9 +126,8 @@ impl MutatingCommandBuilder {
     /// would leave it calling a std setter on a receiver the change
     /// has made owned. So the head stands down with it.
     ///
-    /// The walk ends where the rewrite's does -- at a call that is not
-    /// a setter, or not `Command`'s own -- because nothing past there
-    /// is renamed.
+    /// The walk ends where the rewrite's does, because nothing past
+    /// there is renamed.
     fn chain_counterparts_are_declared<'tcx>(
         &mut self,
         cx: &LateContext<'tcx>,
