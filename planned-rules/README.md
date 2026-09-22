@@ -99,6 +99,18 @@ pattern that several rules call out by reference — live in
   rather than relocating it, so a transforming closure or an adapter
   chain in the receiver stays quiet.
 
+### Option and boolean expressions
+- [`some-bool-comparison.md`](./some-bool-comparison.md) — flag an
+  `Option<bool>` compared with `==` or `!=` against a `Some` of a
+  boolean literal, which collapses three states with an operator and
+  never says what `None` means. Suggest the `unwrap_or` form that
+  does: `opt == Some(true)` → `opt.unwrap_or(false)`, and the three
+  other operator-and-literal pairs likewise. Covers the borrowed
+  payload too, as `HashMap::get` returns it: `map.get(k) ==
+  Some(&true)` → `map.get(k).copied().unwrap_or(false)`. Complements
+  `clippy::bool_comparison`, which covers only plain `bool`. Active
+  by default, no configuration.
+
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
   `#[cfg_attr(..., ignore = "...")]` over `#[cfg(...)]` on `#[test]`s, and
