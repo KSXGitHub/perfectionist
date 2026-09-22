@@ -52,11 +52,12 @@ impl Person {
         self.cpath.clone()
     }
 
-    // Good: the borrowed forms cost nothing, which is what `as_` says.
+    // Good: returning `&str` costs nothing, which is what `as_` says.
     fn as_name_ref(&self) -> &str {
         &self.name
     }
 
+    // Good: returning `&Path` costs nothing, which is what `as_` says.
     fn as_home_ref(&self) -> &Path {
         &self.home
     }
@@ -67,16 +68,18 @@ impl Person {
         self.age
     }
 
-    // Good: this is the `Copy` case. The body *is* the shape, and only
-    // the field being `Copy` keeps it quiet, so removing that exemption
-    // is what this pins.
+    // Not flagged: this is the `Copy` case. The body *is* the shape,
+    // and only the field being `Copy` keeps it quiet, so removing that
+    // exemption is what this pins. The clone itself is not a form to
+    // imitate; `clippy::clone_on_copy` is what reports it.
     fn as_cloned_age(&self) -> u32 {
         self.age.clone()
     }
 
-    // Good: `to_string` renders a `u32` rather than copying the field,
-    // so no borrow of `self.age` is a `String` and there is no borrowed
-    // form to ask for.
+    // Not flagged: `to_string` renders a `u32` rather than copying the
+    // field, so no borrow of `self.age` is a `String` and this rule has
+    // no borrowed form to ask for. It does allocate under a prefix that
+    // promises not to, which is a wider complaint than this rule makes.
     fn as_age_label(&self) -> String {
         self.age.to_string()
     }
