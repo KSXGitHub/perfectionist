@@ -120,6 +120,7 @@ impl Person {
     }
 
     // Good: `into_*` likewise announces that it costs something.
+    #[expect(perfectionist::unconsumed_into_conversion, reason = "exercises cloning_getter")]
     fn into_first_name(&self) -> String {
         self.first_name.clone()
     }

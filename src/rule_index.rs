@@ -137,6 +137,7 @@ rule_index! {
     too_many_local_bindings => TooManyLocalBindings,
     too_many_struct_fields => TooManyStructFields,
     uncombined_self_import => UncombinedSelfImport,
+    unconsumed_into_conversion => UnconsumedIntoConversion,
     unicode_ellipsis_in_comments => UnicodeEllipsisInComments,
     unicode_ellipsis_in_docs => UnicodeEllipsisInDocs,
     unicode_ellipsis_in_panic_messages => UnicodeEllipsisInPanicMessages,

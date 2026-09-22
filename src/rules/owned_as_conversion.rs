@@ -79,12 +79,14 @@ declare_tool_lint! {
     /// getter where the name starts with `as_`, `to_` or `into_`. So no
     /// method is measured by both.
     ///
-    /// Some are measured by neither. `to_*` and `into_*` announce a
-    /// conversion that costs something, so an owned value is what those
-    /// names already promise. A name that is none of the
-    /// three and that the getter rule does not read as a getter — one
-    /// naming no field, with nothing in `getter_name_patterns` admitting
-    /// it — is left alone by both as well.
+    /// `to_*` announces a conversion that costs something, so an owned
+    /// value is what that name already promises, and neither rule
+    /// measures it. `into_*` promises more than cost: it promises to
+    /// consume, so `perfectionist::unconsumed_into_conversion` measures
+    /// one that does not. A name that is none of the three and that the
+    /// getter rule does not read as a getter — one naming no field, with
+    /// nothing in `getter_name_patterns` admitting it — is left alone by
+    /// both as well.
     ///
     /// ### Example
     ///

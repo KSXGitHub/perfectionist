@@ -170,6 +170,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   a module import and an adjacent item import from it can be combined through `self`
 
+- [`unconsumed_into_conversion`](./unconsumed_into_conversion.md) (default: `active`).
+
+  `into_*` method borrows or copies where its prefix promises to consume
+
 - [`unicode_ellipsis_in_comments`](./unicode_ellipsis_in_comments.md) (default: `active`).
 
   U+2026 HORIZONTAL ELLIPSIS in non-doc comments; prefer `...`
