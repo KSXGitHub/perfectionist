@@ -19,7 +19,10 @@ A receiver it could not take ownership of — a `&mut Command`, or
 a field reached through one — is left alone. So is a crate that
 neither depends on `command-extra` nor belongs to a workspace
 declaring it; `command_extra_dependency` sets how far the lint
-looks for that declaration.
+looks for that declaration. In a crate already using the trait,
+a setter whose counterpart the resolved version of
+`command-extra` does not have is left alone too — the by-value
+forms arrived over several releases.
 
 A fix is applied where the whole change is known: a chain is
 rewritten at once, never in part. Elsewhere the diagnostic

@@ -7,9 +7,14 @@
 //! whether the trait is imported at the call picks which remedy the
 //! diagnostic names -- but an import is also evidence of a dependency
 //! the declared set cannot see, so the caller reads it for both.
+//!
+//! Reaching the crate is not the same as having the method. The
+//! by-value forms arrived over several releases, so where the trait
+//! was loaded it is asked for the one the diagnostic would name.
 
 use crate::cargo_manifest;
 use rustc_hir::def::{DefKind, Res};
+use rustc_hir::def_id::DefId;
 use rustc_hir::{Expr, Item, ItemKind, Node};
 use rustc_lint::LateContext;
 use rustc_span::Symbol;
@@ -69,6 +74,46 @@ pub(super) fn crate_is_declared(cx: &LateContext<'_>) -> bool {
         .extern_crate_map
         .items()
         .any(|(_, krate)| cx.tcx.crate_name(*krate) == wanted)
+}
+
+/// The `CommandExtra` the compilation loaded, where it loaded it at
+/// all.
+///
+/// `None` is not the absence of the dependency -- [`crate_is_declared`]
+/// says why a declared crate can be missing from `tcx.crates(())`. It
+/// says only that there is no trait here to ask anything of.
+pub(super) fn loaded_trait(cx: &LateContext<'_>) -> Option<DefId> {
+    let wanted_crate = Symbol::intern(CRATE);
+    let wanted_trait = Symbol::intern(TRAIT);
+    cx.tcx
+        .crates(())
+        .iter()
+        .filter(|krate| cx.tcx.crate_name(**krate) == wanted_crate)
+        .flat_map(|krate| cx.tcx.traits(*krate))
+        .find(|def_id| cx.tcx.item_name(**def_id) == wanted_trait)
+        .copied()
+}
+
+/// Whether `command_extra` -- a [`loaded_trait`] answer -- declares a
+/// method named `by_value_form`.
+///
+/// `CommandExtra` gained its by-value forms over several releases, so
+/// which of them exist is a property of the version resolved rather
+/// than of the trait. Asking the trait carries no version table to keep
+/// in step with the releases, and answers for a method dropped or
+/// renamed in some later one as well.
+///
+/// `is_method` excludes an associated item of the name that no call
+/// could reach, as [`super::probe`] does.
+pub(super) fn declares_the_counterpart(
+    cx: &LateContext<'_>,
+    command_extra: DefId,
+    by_value_form: &str,
+) -> bool {
+    cx.tcx
+        .associated_items(command_extra)
+        .filter_by_name_unhygienic(Symbol::intern(by_value_form))
+        .any(rustc_middle::ty::AssocItem::is_method)
 }
 
 /// Whether the workspace around the crate under lint declares

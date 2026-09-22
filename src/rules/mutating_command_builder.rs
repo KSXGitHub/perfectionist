@@ -1,6 +1,7 @@
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::is_from_proc_macro;
+use rustc_hir::def_id::DefId;
 use rustc_hir::{Expr, ExprKind, Node, StmtKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -29,7 +30,10 @@ declare_tool_lint! {
     /// a field reached through one — is left alone. So is a crate that
     /// neither depends on `command-extra` nor belongs to a workspace
     /// declaring it; `command_extra_dependency` sets how far the lint
-    /// looks for that declaration.
+    /// looks for that declaration. In a crate already using the trait,
+    /// a setter whose counterpart the resolved version of
+    /// `command-extra` does not have is left alone too — the by-value
+    /// forms arrived over several releases.
     ///
     /// A fix is applied where the whole change is known: a chain is
     /// rewritten at once, never in part. Elsewhere the diagnostic
@@ -96,6 +100,10 @@ pub struct MutatingCommandBuilder {
     /// [`crate::cargo_manifest`] reads and parses that file once per
     /// process; this saves the scan over its dependency table.
     workspace_declared: Option<bool>,
+    /// The `CommandExtra` the compilation loaded, memoised on first
+    /// use. Finding it walks the crate graph, and the answer cannot
+    /// change within a compilation.
+    command_extra_trait: Option<Option<DefId>>,
 }
 
 impl MutatingCommandBuilder {
@@ -105,6 +113,26 @@ impl MutatingCommandBuilder {
             command_extra_dependency: config.command_extra_dependency,
             command_extra_declared: None,
             workspace_declared: None,
+            command_extra_trait: None,
+        }
+    }
+
+    /// Whether the counterpart the diagnostic would name is one the
+    /// loaded `CommandExtra` has.
+    ///
+    /// `true` where nothing loaded the trait, there being nothing to
+    /// ask. That is a crate not using it yet, which is free to resolve
+    /// a version that has the counterpart; one already using it is
+    /// held to the version it has.
+    fn counterpart_is_declared(&mut self, cx: &LateContext<'_>, by_value_form: &str) -> bool {
+        match *self
+            .command_extra_trait
+            .get_or_insert_with(|| availability::loaded_trait(cx))
+        {
+            Some(command_extra) => {
+                availability::declares_the_counterpart(cx, command_extra, by_value_form)
+            }
+            None => true,
         }
     }
 
@@ -192,6 +220,12 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
             // rules facing the same derive shape do.
             || is_from_proc_macro(cx, expr)
         {
+            return;
+        }
+        // Naming a counterpart the resolved `command-extra` does not
+        // have gives advice that cannot be followed and a rewrite that
+        // does not compile.
+        if !self.counterpart_is_declared(cx, by_value_form) {
             return;
         }
         // Last of the gates rather than first: it can need whether the
