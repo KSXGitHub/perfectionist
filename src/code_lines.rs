@@ -2,6 +2,7 @@
 //! that cap the length of a function body or a file.
 
 use rustc_lexer::{FrontmatterAllowed, TokenKind, tokenize};
+use std::collections::HashSet;
 
 /// How many lines of `source` hold a token that is neither whitespace
 /// nor a comment.
@@ -35,6 +36,31 @@ pub(crate) fn count_code_lines(source: &str) -> usize {
         code_lines += 1;
     }
     code_lines
+}
+
+/// Count code lines after replacing selected lines with whitespace.
+pub(crate) fn count_code_lines_excluding(source: &str, excluded_lines: &HashSet<usize>) -> usize {
+    if excluded_lines.is_empty() {
+        return count_code_lines(source);
+    }
+
+    let mut filtered = source.as_bytes().to_vec();
+    let mut line = 0;
+    let mut line_start = 0;
+    for (index, byte) in source.bytes().enumerate() {
+        if byte == b'\n' {
+            if excluded_lines.contains(&line) {
+                filtered[line_start..index].fill(b' ');
+            }
+            line += 1;
+            line_start = index + 1;
+        }
+    }
+    if excluded_lines.contains(&line) {
+        filtered[line_start..].fill(b' ');
+    }
+
+    count_code_lines(std::str::from_utf8(&filtered).expect("source was valid UTF-8"))
 }
 
 #[cfg(test)]
