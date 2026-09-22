@@ -3,9 +3,14 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
+use std::borrow::Cow;
+use std::collections::HashMap;
 use std::ffi::CString;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+
+#[derive(Clone)]
+struct Widget(u8);
 
 struct Person {
     name: String,
@@ -16,10 +21,11 @@ struct Person {
     middle: Option<String>,
     cpath: CString,
     shared: Rc<String>,
+    widget: Widget,
 }
 
 impl Person {
-    // Bad: `as_` promises free, this allocates.
+    // Bad: `as_` promises free, this copies a field.
     fn as_name(&self) -> String {
         self.name.clone()
     }
@@ -52,6 +58,46 @@ impl Person {
         self.cpath.clone()
     }
 
+    // Bad: `Widget` is on no list of owning types, so the return type
+    // says nothing. The body does: it copies a field whose type is not
+    // `Copy`, and a borrow of that field would have served.
+    fn as_widget(&self) -> Widget {
+        self.widget.clone()
+    }
+
+    // Bad: `to_string` renders a `u32` rather than copying the field,
+    // so no borrow of `self.age` is a `String` and there is no borrowed
+    // form to ask for. The return type is owned all the same, and the
+    // rename is the whole fix.
+    fn as_age_label(&self) -> String {
+        self.age.to_string()
+    }
+
+    // Bad: the `Vec` is built rather than copied out, which the body
+    // shape cannot see and the return type can.
+    fn as_words(&self) -> Vec<String> {
+        self.name.split(' ').map(str::to_owned).collect()
+    }
+
+    // Bad: a map the caller must drop, under a prefix that promises a
+    // view.
+    fn as_index(&self) -> HashMap<String, u32> {
+        HashMap::new()
+    }
+
+    // Bad: `String::new` allocates nothing, so this pins that the rule
+    // reports ownership rather than allocation. The caller still
+    // receives a value of their own where a borrow was promised.
+    fn as_key(&self) -> String {
+        String::new()
+    }
+
+    // Bad: an owned value under a `Result` is still owned; the error
+    // type is the failure path rather than the conversion's product.
+    fn as_parsed(&self) -> Result<String, ()> {
+        Ok(self.name.clone())
+    }
+
     // Good: returning `&str` costs nothing, which is what `as_` says.
     fn as_name_ref(&self) -> &str {
         &self.name
@@ -60,6 +106,19 @@ impl Person {
     // Good: returning `&Path` costs nothing, which is what `as_` says.
     fn as_home_ref(&self) -> &Path {
         &self.home
+    }
+
+    // Good: a borrow under an `Option` is still a borrow, so the
+    // recursion into the payload has to reach the reference and stop.
+    fn as_middle_ref(&self) -> Option<&String> {
+        self.middle.as_ref()
+    }
+
+    // Good: `Cow` is the honest type for a conversion that is
+    // sometimes free, and the lifetime it carries is what tells the
+    // rule the value may be borrowed from the receiver.
+    fn as_display_name(&self) -> Cow<'_, str> {
+        Cow::Borrowed(&self.name)
     }
 
     // Good: handing a field back without copying it is not the shape
@@ -77,14 +136,6 @@ impl Person {
         self.age.clone()
     }
 
-    // Not flagged: `to_string` renders a `u32` rather than copying the
-    // field, so no borrow of `self.age` is a `String` and this rule has
-    // no borrowed form to ask for. It does allocate under a prefix that
-    // promises not to, which is a wider complaint than this rule makes.
-    fn as_age_label(&self) -> String {
-        self.age.to_string()
-    }
-
     // Good: cloning an `Rc` bumps a refcount rather than copying what it
     // points at, and a caller that keeps the handle has to own one.
     fn as_shared(&self) -> Rc<String> {
@@ -92,15 +143,15 @@ impl Person {
     }
 
     // Not flagged: takes `self` by value, so the receiver excludes it
-    // before the body is read. The body is the shape this rule fires
-    // on, so this pins that the receiver is what excludes it. An `as_*`
-    // that consumes is its own mistake, but not this rule's.
+    // before either shape is read. An `as_*` that consumes is its own
+    // mistake, but not this rule's.
     fn as_owned_name(self) -> String {
         self.name.clone()
     }
 
     // Not flagged: not the `as_` prefix. `to_*` announces a conversion
-    // that costs something, so the copy is what that name promises.
+    // that costs something, so the owned return is what that name
+    // promises.
     fn to_name(&self) -> String {
         self.name.clone()
     }
@@ -112,8 +163,8 @@ impl Person {
     }
 
     // Not flagged: takes an argument, so it is not a conversion of
-    // `self`. The body is the shape this rule fires on, so this pins
-    // that the arity requirement is what excludes it.
+    // `self`. Both shapes hold otherwise, so this pins that the arity
+    // requirement is what excludes it.
     fn as_name_or(&self, fallback: &str) -> String {
         self.name.clone()
     }
