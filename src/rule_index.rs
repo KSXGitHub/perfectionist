@@ -104,6 +104,7 @@ rule_index! {
     bare_identifier_reference => BareIdentifierReference,
     bare_issue_reference => BareIssueReference,
     bare_url => BareUrl,
+    borrowed_to_conversion => BorrowedToConversion,
     clap_help_markdown => ClapHelpMarkdown,
     cloning_getter => CloningGetter,
     core_instead_of_std => CoreInsteadOfStd,
