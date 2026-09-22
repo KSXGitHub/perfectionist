@@ -320,8 +320,7 @@ Trigger and autofix part ways:
   `into_iter` on a std collection, this repository's own call site
   included.
 - **Advice only** otherwise, the same answer
-  `perfectionist::mutating_command_builder` gives where the receiver is
-  a binding.
+  `mutating_command_builder` gives where the receiver is a binding.
 
 That gate is over-conservative on purpose, and the cost is worth
 naming rather than discovering: it declines a fix for the first example
