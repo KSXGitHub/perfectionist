@@ -15,9 +15,11 @@
 //! chain is declined wherever the traits in scope supply a candidate of
 //! that name. [`finds_a_trait_method`] derives why.
 //!
-//! The names the rewrite does introduce are safe for a different
-//! reason. `CommandExtra` has to be imported before a rewrite is built
-//! at all, so a competing `with_*` in scope for `Command` leaves two
+//! The names the rewrite does introduce are safe for two other
+//! reasons. That the trait declares them at all is settled before the
+//! rewrite is built, for every link of the chain rather than the head
+//! alone. And `CommandExtra` has to be imported before a rewrite is
+//! built, so a competing `with_*` in scope for `Command` leaves two
 //! applicable candidates and the renamed call is `E0034` -- an error
 //! the fixer reverts, rather than something that quietly resolves
 //! elsewhere.

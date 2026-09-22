@@ -31,9 +31,10 @@ declare_tool_lint! {
     /// neither depends on `command-extra` nor belongs to a workspace
     /// declaring it; `command_extra_dependency` sets how far the lint
     /// looks for that declaration. In a crate already using the trait,
-    /// a setter whose counterpart the resolved version of
-    /// `command-extra` does not have is left alone too — the by-value
-    /// forms arrived over several releases.
+    /// a chain is left alone where the resolved version of
+    /// `command-extra` has no counterpart for one of its setters — the
+    /// by-value forms arrived over several releases, and a chain is
+    /// ported whole or not at all.
     ///
     /// A fix is applied where the whole change is known: a chain is
     /// rewritten at once, never in part. Elsewhere the diagnostic
@@ -115,6 +116,49 @@ impl MutatingCommandBuilder {
             workspace_declared: None,
             command_extra_trait: None,
         }
+    }
+
+    /// Whether every counterpart the chain `call` heads would be
+    /// renamed to is one the loaded `CommandExtra` has.
+    ///
+    /// The whole chain or none of it, as [`fix`] rewrites it and for
+    /// the reason its module doc gives: a link short of a counterpart
+    /// cannot be ported at all, and renaming the others around it
+    /// would leave it calling a std setter on a receiver the change
+    /// has made owned. So the head stands down with it.
+    ///
+    /// The walk ends where the rewrite's does -- at a call that is not
+    /// a setter, or not `Command`'s own -- because nothing past there
+    /// is renamed.
+    fn chain_counterparts_are_declared<'tcx>(
+        &mut self,
+        cx: &LateContext<'tcx>,
+        call: &'tcx Expr<'tcx>,
+        by_value_form: &'static str,
+    ) -> bool {
+        if !self.counterpart_is_declared(cx, by_value_form) {
+            return false;
+        }
+        let mut tail = call;
+        while let Node::Expr(parent) = cx.tcx.parent_hir_node(tail.hir_id) {
+            let ExprKind::MethodCall(method, receiver, ..) = parent.kind else {
+                break;
+            };
+            if receiver.hir_id != tail.hir_id {
+                break;
+            }
+            let Some(by_value_form) = setter::by_value_form(method.ident.name) else {
+                break;
+            };
+            if !setter::resolves_to_an_inherent_command_method(cx, parent) {
+                break;
+            }
+            if !self.counterpart_is_declared(cx, by_value_form) {
+                return false;
+            }
+            tail = parent;
+        }
+        true
     }
 
     /// Whether the counterpart the diagnostic would name is one the
@@ -225,7 +269,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         // Naming a counterpart the resolved `command-extra` does not
         // have gives advice that cannot be followed and a rewrite that
         // does not compile.
-        if !self.counterpart_is_declared(cx, by_value_form) {
+        if !self.chain_counterparts_are_declared(cx, expr, by_value_form) {
             return;
         }
         // Last of the gates rather than first: it can need whether the

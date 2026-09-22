@@ -49,4 +49,19 @@ fn renamed_counterpart() {
     command.env_clear();
 }
 
+// Not flagged: the chain is ported whole, and `with_envs` is not here
+// to port `envs` to, so renaming `arg` around it would leave `envs`
+// calling a std setter on a receiver the change had made owned. The
+// head stands down with the link.
+fn absent_counterpart_later_in_the_chain() {
+    Command::new("ls").arg("-l").envs([("LANG", "C")]);
+}
+
+// Bad: the same shape with every counterpart present, which is what
+// keeps the silence above attributable to the missing method rather
+// than to the chain.
+fn chain_of_present_counterparts() {
+    Command::new("ls").arg("-l").env("LANG", "C");
+}
+
 fn main() {}
