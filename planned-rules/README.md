@@ -85,16 +85,16 @@ pattern that several rules call out by reference — live in
   pipes (suggests `x.pipe(g)`). All four checks default to enforce.
 
 ### Iterator adapters
-- [`chained-adapter-closure.md`](./chained-adapter-closure.md) — flag
-  a closure passed to an iterator adapter whose body chains two or
-  more operations, so one adapter does all of them; suggest one
-  adapter per operation, every one but the last a `map`. Covers the
-  adapters that take the item by value and never hand it back
-  (`map`, `filter_map`, `flat_map`, `map_while`, `find_map`,
-  `for_each`, `try_for_each`, `any`, `all`, `position`, `rposition`,
-  and the item side of `fold`, `try_fold` and `scan`); excludes
-  `filter`, `find` and the rest, where a leading `map` changes the
-  answer. A project picks between this and
+- [`splittable-adapter-closure.md`](./splittable-adapter-closure.md)
+  — flag a closure passed to an iterator adapter whose body can be
+  split, because it chains two or more operations and one adapter
+  does all of them; suggest one adapter per operation, every one but
+  the last a `map`. Covers the adapters that take the item by value
+  and never hand it back (`map`, `filter_map`, `flat_map`,
+  `map_while`, `find_map`, `for_each`, `try_for_each`, `any`, `all`,
+  `position`, `rposition`, and the item side of `fold`, `try_fold`
+  and `scan`); excludes `filter`, `find` and the rest, where a
+  leading `map` changes the answer. A project picks between this and
   `perfectionist::overly_long_method_chain`. Inactive by default.
 
 ### Command builder

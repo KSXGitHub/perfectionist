@@ -1,4 +1,4 @@
-# `chained_adapter_closure`
+# `splittable_adapter_closure`
 
 **Source:** project convention, from a maintainer's review suggestion
 on <https://github.com/KSXGitHub/perfectionist/pull/475>. The
