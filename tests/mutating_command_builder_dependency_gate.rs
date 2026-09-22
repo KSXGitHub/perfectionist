@@ -445,3 +445,82 @@ fn two_majors_stand_down_on_a_counterpart_only_one_declares() {
          stderr was:\n{stderr}",
     );
 }
+
+/// The remedy a build script needs, which is not the one every other
+/// target needs: Cargo compiles `build.rs` against
+/// `[build-dependencies]` alone, so a package that has `command-extra`
+/// under `[dependencies]` has not given its build script anything, and
+/// advice naming that table leaves the import `E0432`.
+const BUILD_SCRIPT_REMEDY: &str = "add `command-extra` to this crate's `[build-dependencies]`";
+
+/// What every other target is told instead.
+const ORDINARY_REMEDY: &str = "add `command-extra` to this crate's dependencies";
+
+#[test]
+fn a_build_script_is_pointed_at_build_dependencies() {
+    let root = text_block_fnl! {
+        "[workspace]"
+        r#"members = ["alpha", "command-extra"]"#
+        r#"resolver = "3""#
+        ""
+        "[workspace.dependencies]"
+        r#"command-extra = { path = "command-extra" }"#
+    };
+    let alpha = text_block_fnl! {
+        "[package]"
+        r#"name = "alpha""#
+        r#"version = "0.0.0""#
+        r#"edition = "2024""#
+        ""
+        "[lib]"
+        r#"path = "src/lib.rs""#
+        ""
+        "[dependencies]"
+        "command-extra.workspace = true"
+    };
+    let build_script = text_block_fnl! {
+        "use std::process::Command;"
+        ""
+        "fn main() {"
+        r#"    let mut command = Command::new("ls");"#
+        r#"    command.arg("alpha-build");"#
+        "}"
+    };
+    // The library reaches `command-extra` where the build script does
+    // not, so it earns the import remedy and the build script earns the
+    // manifest one. Having both in the run is what makes the assertions
+    // below tell the two apart rather than merely find one.
+    let library = text_block_fnl! {
+        "use std::process::Command;"
+        ""
+        "pub fn build() {"
+        r#"    let mut command = Command::new("ls");"#
+        r#"    command.arg("alpha-lib");"#
+        "}"
+    };
+    let (_temp, stderr, success) = run_project_with_config(
+        "build-script",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            ("Cargo.toml", root),
+            ("alpha/Cargo.toml", alpha),
+            ("alpha/build.rs", build_script),
+            ("alpha/src/lib.rs", library),
+            ("command-extra/Cargo.toml", STUB_MANIFEST),
+            ("command-extra/src/lib.rs", STUB_SOURCE),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        stderr.contains(BUILD_SCRIPT_REMEDY),
+        "expected the build script to be pointed at `[build-dependencies]`; \
+         stderr was:\n{stderr}",
+    );
+    assert!(
+        !stderr.contains(ORDINARY_REMEDY),
+        "expected no target in this workspace to be told to add the \
+         dependency to the table it already has it in; stderr was:\n{stderr}",
+    );
+}

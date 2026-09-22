@@ -23,10 +23,11 @@ pub(super) struct Config {
 #[derive(Debug, Default, Clone, Copy, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum RequiredDeclaration {
-    /// The manifest of the crate under lint, whether it names a version
-    /// of its own or inherits the workspace's with
-    /// `command-extra.workspace = true`. A sibling that has not
-    /// inherited it is left alone.
+    /// What Cargo gave the crate under lint to compile against,
+    /// whether the manifest names a version of its own or inherits the
+    /// workspace's with `command-extra.workspace = true`. A sibling
+    /// that has not inherited it is left alone, and so is a build
+    /// script, which is compiled against `[build-dependencies]` alone.
     Crate,
     /// The manifest of the crate under lint, or the
     /// `[workspace.dependencies]` table of the workspace it belongs to,

@@ -101,10 +101,11 @@ Which manifest has to declare `command-extra`.
 
 - _Rust:_ `Crate`
 
-The manifest of the crate under lint, whether it names a version
-of its own or inherits the workspace's with
-`command-extra.workspace = true`. A sibling that has not
-inherited it is left alone.
+What Cargo gave the crate under lint to compile against,
+whether the manifest names a version of its own or inherits the
+workspace's with `command-extra.workspace = true`. A sibling
+that has not inherited it is left alone, and so is a build
+script, which is compiled against `[build-dependencies]` alone.
 
 ##### Choice: `"workspace"`
 

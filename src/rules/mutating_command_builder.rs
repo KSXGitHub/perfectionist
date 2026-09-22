@@ -1,3 +1,4 @@
+use crate::cargo_target::{CargoTarget, crate_target};
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::is_from_proc_macro;
@@ -305,10 +306,20 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 remedy: match (self.command_extra_is_declared(cx), trait_is_imported) {
                     (_, true) => None,
                     (true, false) => Some("bring `command_extra::CommandExtra` into scope here"),
-                    (false, false) => Some(
-                        "add `command-extra` to this crate's dependencies, then import \
-                         `CommandExtra`",
-                    ),
+                    // Cargo compiles a build script against
+                    // `[build-dependencies]` alone, so naming the table
+                    // the other targets use would be advice that leaves
+                    // the import `E0432`.
+                    (false, false) => Some(match crate_target(cx) {
+                        CargoTarget::BuildScript => {
+                            "add `command-extra` to this crate's \
+                             `[build-dependencies]`, then import `CommandExtra`"
+                        }
+                        _ => {
+                            "add `command-extra` to this crate's dependencies, \
+                             then import `CommandExtra`"
+                        }
+                    }),
                 },
                 rewrite: fix::rewrite(
                     cx,
