@@ -399,6 +399,119 @@ gives up only on a contradiction spelled across branches
 `cfg` values instead would be exact, and is rejected — it would make
 the same source lint differently per platform.
 
+## Observational referential transparency
+
+A rule that **adds or removes a `Default::default()` call** has to
+know what a second call to it may do. `std::mem::take(dest)` is
+defined as `replace(dest, T::default())`, so any rule that deletes a
+following default-assignment turns two calls into one, and any rule
+that objects to an implicit construction is objecting to the one call
+being there at all. Both need the same predicate, and the strict
+reading of it — "does this touch any state?" — is useless. It flags
+allocation, and if allocation counts then so do cycles and heat.
+
+### The definition
+
+> An **observation** is a property of a value that a program may
+> legitimately depend on: one the type's documented contract
+> guarantees. Anything the contract leaves unspecified is not an
+> observation.
+>
+> `T::default()` is **observationally referentially transparent**
+> (ORT) iff, within one program run, any two calls produce values
+> indistinguishable under every observation, and leave no difference
+> in observable state.
+
+Making observation relative to the **contract** rather than to
+physical reality is the load-bearing part. It excludes wall-clock
+time, cycles and heat; whether an allocation happened; addresses, and
+therefore pointer identity; and anything a type documents as
+arbitrary.
+
+Read those exclusions as a restriction on which **contexts** may
+distinguish two calls, not as a claim about what Rust hides.
+Allocation is observable by an ordinary program — a counting
+`#[global_allocator]` is how the measurements behind this section
+were taken — so excluding it is a choice, and a rule for a setting
+where allocation counts would have to unmake it. Pointer identity is
+not a further choice: `Rc::ptr_eq` on two separate `Rc::new(5)` is
+already `false`, so pointer identity *is* allocation identity, and
+the allocation exclusion carries it.
+
+Relativising to the contract also puts this outside **contextual
+equivalence** in Morris's sense, which quantifies over every context
+the language admits and reads no documentation. By that standard two
+`HashMap::default()`s are distinguishable in safe code: same inserts,
+and `.keys()` yields two different orders. What is meant here is
+coarser — equivalence with respect to the documented interface,
+quantifying only over contexts that rely on guarantees the type
+actually makes. That is the right notion for a linter, which polices
+contracts rather than implementations, but it has to be said: a
+reader who knows the theory otherwise reaches
+[the worked contrast](#the-worked-contrast) and concludes the
+definition is broken.
+
+### The worked contrast
+
+`HashMap::default()` mutates thread-local state on every call, and is
+ORT. `RandomState::new` increments a cached seed deliberately — the
+comment in `library/std/src/hash/random.rs` cites the HashDoS attack
+— so two fresh maps hash the same key differently. That difference
+surfaces only through an iteration order the documentation calls
+"arbitrary", so no correct program may depend on it, and it is not an
+observation.
+
+```rust
+static NEXT: AtomicU32 = AtomicU32::new(0);
+impl Default for Ticket {
+    fn default() -> Self { Ticket(NEXT.fetch_add(1, Ordering::Relaxed)) }
+}
+```
+
+`Ticket` is not ORT: the difference is in the value itself, which the
+contract does guarantee. The pair is worth keeping in mind, because
+"the body touches a static" calls both of them effectful and is
+therefore the wrong test.
+
+### The two polarities
+
+Three-valued, and the middle value is why one question does not
+answer the other:
+
+| Question                   | Needed by                            | Shape                                                   | Soundness             |
+|----------------------------|--------------------------------------|---------------------------------------------------------|-----------------------|
+| Is this **known ORT**?     | a rule that *removes* a default call | allowlist plus `#[derive(Default)]` transitivity        | sound by construction |
+| Is this **known non-ORT**? | a rule that *flags* a default call   | denylist of sources that conventionally reach the value | heuristic only        |
+
+"Unknown" sits between them, and both rules are silent on it. The
+second cannot be made an analysis: the real question is whether an
+effect *reaches* an observation, which is semantic. A denylist — a
+clock, an RNG, a UUID, a counter on a static — is the honest best, and
+a rule built on it must say in its own rustdoc that it is a
+heuristic.
+
+Build the classification once, as a crate-internal module returning
+all three states, rather than inside whichever rule lands first.
+`clippy_utils` has nothing to lend: its `eager_or_lazy` answers a
+neighbouring question and classifies any call it cannot resolve as
+*expensive*, which is the right default there and collapses "unknown"
+into the wrong bucket here.
+
+### Testing a candidate, and why `==` is not the implementation
+
+Where `T: PartialEq`, running `T::default() == T::default()` is a
+cheap way to probe a type by hand. It is a **refutation, not a
+confirmation**, and it fails in both directions, so it belongs in a
+fixture rather than in the pass:
+
+- **False negative.** `Reading(f64::NAN)` is a compile-time constant,
+  plainly ORT, and `==` reports `false` because `NAN != NAN`. Any
+  non-reflexive `PartialEq` breaks it the same way.
+- **Blind spot.** A `Default` that bumps a program-readable counter
+  and returns a constant passes `==` while the program can still see
+  the difference. The proxy compares returned values only; the
+  definition's second clause is a channel it cannot reach.
+
 ## Naming a lint after the anti-pattern
 
 A lint's name is read in `#[allow(...)]`, `#[expect(...)]`,

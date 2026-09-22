@@ -45,6 +45,20 @@ pattern that several rules call out by reference — live in
   `clippy::ptr_arg` and `clippy::needless_pass_by_value` to cover the
   full owned-vs-borrowed trade-off from the pacquet guide.
 
+### Defaults
+- [`implicit-effectful-default.md`](./implicit-effectful-default.md)
+  — flag a call that constructs a `Default::default()` the programmer
+  never wrote — `mem::take`, `Cell::take`, `RefCell::take` and, behind
+  a second opt-in, `unwrap_or_default` / `or_default` /
+  `get_or_insert_default` — for a type whose `Default` is
+  observationally effectful. The placeholder constructors are the
+  strong case: the value they build is never read, so an effect there
+  is unrequested outright. Deliberately a use-site rule rather than
+  one aimed at `impl Default`, which would argue with the API
+  Guidelines and with `clippy::new_without_default`. Rests on a
+  denylist, which under-fires rather than over-fires, so it ships
+  active with no autofix.
+
 ### OS strings, paths, and bytes
 - [`needless-utf8-conversion.md`](./needless-utf8-conversion.md)
   — flag a fidelity-destroying UTF-8 conversion of a value whose
