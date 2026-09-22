@@ -24,12 +24,14 @@ impl Person {
         self.name.clone()
     }
 
-    // Bad: same, through `to_path_buf`.
+    // Bad: `to_path_buf` is a copying method too, and a `PathBuf`
+    // borrows as `&Path`.
     fn as_home(&self) -> PathBuf {
         self.home.to_path_buf()
     }
 
-    // Bad: same, through `to_vec`.
+    // Bad: `to_vec` is a copying method, and a `Vec<T>` borrows as
+    // `&[T]`.
     fn as_tags(&self) -> Vec<String> {
         self.tags.to_vec()
     }
@@ -99,8 +101,8 @@ impl Person {
         self.name.clone()
     }
 
-    // Not flagged: not the `as_` prefix, though `as` without the
-    // underscore is close enough to pin the boundary.
+    // Not flagged: `ascii_name` begins with `as` but not with `as_`,
+    // which is where the prefix test draws its line.
     fn ascii_name(&self) -> String {
         self.name.clone()
     }
