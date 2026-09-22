@@ -78,12 +78,12 @@ An adapter can take a leading `map` only where the item **enters the
 closure by value and never comes back out**. Each of these was checked
 by running both forms and comparing the results:
 
-| adapter | closure |
-|---|---|
-| `map`, `filter_map`, `flat_map`, `map_while` | `FnMut(Item) -> _` |
-| `find_map` | `FnMut(Item) -> Option<B>` |
-| `for_each`, `try_for_each` | `FnMut(Item) -> ()` / `-> R: Try` |
-| `any`, `all`, `position`, `rposition` | `FnMut(Item) -> bool` |
+| adapter                                      | closure                           |
+|----------------------------------------------|-----------------------------------|
+| `map`, `filter_map`, `flat_map`, `map_while` | `FnMut(Item) -> _`                |
+| `find_map`                                   | `FnMut(Item) -> Option<B>`        |
+| `for_each`, `try_for_each`                   | `FnMut(Item) -> ()` / `-> R: Try` |
+| `any`, `all`, `position`, `rposition`        | `FnMut(Item) -> bool`             |
 
 `fold`, `try_fold` and `scan` satisfy the same predicate with a
 **binary** closure: the item is the second parameter, the result is an
@@ -105,16 +105,16 @@ adapter, a leading `map` does not preserve the meaning. This is not a
 matter of taste: the two forms produce different answers. Over
 `1..=8`, with `double` and a `keep` predicate:
 
-| adapter | folded | split |
-|---|---|---|
-| `filter` | `[1, 2, 4, 5, 7, 8]` | `[2, 4, 8, 10, 14, 16]` |
-| `find` | `Some(1)` | `Some(2)` |
-| `take_while` | `[1, 2]` | `[2, 4]` |
+| adapter      | folded               | split                    |
+|--------------|----------------------|--------------------------|
+| `filter`     | `[1, 2, 4, 5, 7, 8]` | `[2, 4, 8, 10, 14, 16]`  |
+| `find`       | `Some(1)`            | `Some(2)`                |
+| `take_while` | `[1, 2]`             | `[2, 4]`                 |
 | `skip_while` | `[3, 4, 5, 6, 7, 8]` | `[6, 8, 10, 12, 14, 16]` |
-| `max_by_key` | `Some(3)` | `Some(6)` |
-| `min_by_key` | `Some(7)` | `Some(14)` |
-| `partition` | `[1, 2, 4, 5, 7, 8]` | `[2, 4, 8, 10, 14, 16]` |
-| `reduce` | `Some(71)` | `Some(72)` |
+| `max_by_key` | `Some(3)`            | `Some(6)`                |
+| `min_by_key` | `Some(7)`            | `Some(14)`               |
+| `partition`  | `[1, 2, 4, 5, 7, 8]` | `[2, 4, 8, 10, 14, 16]`  |
+| `reduce`     | `Some(71)`           | `Some(72)`               |
 
 `inspect` is excluded for the same reason without differing in its own
 output: it passes the item downstream unchanged, so a leading `map`
