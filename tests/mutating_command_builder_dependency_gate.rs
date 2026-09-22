@@ -385,11 +385,6 @@ const TWO_MAJORS_SOURCE: &str = text_block_fnl! {
     "}"
 };
 
-/// The trait the fixture below names is the one *without* `with_envs`,
-/// and it is reached through a dependency whose crate a lookup meets
-/// second. Naming `with_envs` there is `E0599`, so the silence this
-/// asserts is the answer rather than merely the safe side.
-
 /// The control: one `CommandExtra`, which declares `with_envs`, so the
 /// counterpart check passes and `.envs` is flagged.
 #[test]
@@ -421,6 +416,10 @@ fn one_major_declaring_the_counterpart_fires() {
     );
 }
 
+/// The trait the fixture names is the one *without* `with_envs`, and
+/// the one that has it is reached through `middle`. Naming `with_envs`
+/// here is `E0599`, so the silence is the answer rather than merely
+/// the safe side.
 #[test]
 fn two_majors_stand_down_on_a_counterpart_only_one_declares() {
     let stderr = run_two_majors(&[
