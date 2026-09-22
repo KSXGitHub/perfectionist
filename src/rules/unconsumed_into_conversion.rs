@@ -88,7 +88,7 @@ declare_tool_lint! {
     ///     }
     /// }
     /// ```
-    pub perfectionist::NON_CONSUMING_INTO_CONVERSION,
+    pub perfectionist::UNCONSUMED_INTO_CONVERSION,
     Warn,
     "`into_*` method borrows or copies where its prefix promises to consume",
     report_in_external_macro: false
@@ -112,7 +112,7 @@ const RENAME_HELP: &str = "or stop it being an `into_*`: rename it `as_*`, the p
 /// read as a getter.
 const INTO_PREFIX: &str = "into_";
 
-const CONFIG_KEY: &str = "perfectionist::non_consuming_into_conversion";
+const CONFIG_KEY: &str = "perfectionist::unconsumed_into_conversion";
 
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
@@ -121,23 +121,23 @@ const CONFIG_KEY: &str = "perfectionist::non_consuming_into_conversion";
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}
 
-pub struct NonConsumingIntoConversion {
+pub struct UnconsumedIntoConversion {
     copying_methods: Vec<Symbol>,
 }
 
-impl_lint_pass!(NonConsumingIntoConversion => [NON_CONSUMING_INTO_CONVERSION]);
+impl_lint_pass!(UnconsumedIntoConversion => [UNCONSUMED_INTO_CONVERSION]);
 
-impl Register for rule::NonConsumingIntoConversion {
+impl Register for rule::UnconsumedIntoConversion {
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {
-        lint_store.register_lints(&[NON_CONSUMING_INTO_CONVERSION]);
+        lint_store.register_lints(&[UNCONSUMED_INTO_CONVERSION]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
         lint_store.register_late_lint_pass(Box::new(|_| {
             let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-            Box::new(NonConsumingIntoConversion {
+            Box::new(UnconsumedIntoConversion {
                 copying_methods: COPYING_METHODS
                     .iter()
                     .map(|name| Symbol::intern(name))
@@ -147,7 +147,7 @@ impl Register for rule::NonConsumingIntoConversion {
     }
 }
 
-impl<'tcx> LateLintPass<'tcx> for NonConsumingIntoConversion {
+impl<'tcx> LateLintPass<'tcx> for UnconsumedIntoConversion {
     fn check_fn(
         &mut self,
         cx: &LateContext<'tcx>,
@@ -180,7 +180,7 @@ impl<'tcx> LateLintPass<'tcx> for NonConsumingIntoConversion {
         if borrows_from_receiver(output) {
             span_lint_and_then(
                 cx,
-                NON_CONSUMING_INTO_CONVERSION,
+                UNCONSUMED_INTO_CONVERSION,
                 def_span,
                 format!(
                     "`{method}` returns a borrow of `self`, but `into_` promises to consume it",
@@ -200,7 +200,7 @@ impl<'tcx> LateLintPass<'tcx> for NonConsumingIntoConversion {
         };
         span_lint_and_then(
             cx,
-            NON_CONSUMING_INTO_CONVERSION,
+            UNCONSUMED_INTO_CONVERSION,
             def_span,
             format!("`{method}` copies `self.{field}`, but `into_` promises to consume it"),
             |diag| {

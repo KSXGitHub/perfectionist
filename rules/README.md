@@ -98,10 +98,6 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   borrowed parameter is only used to produce its owned form
 
-- [`non_consuming_into_conversion`](./non_consuming_into_conversion.md) (default: `active`).
-
-  `into_*` method borrows or copies where its prefix promises to consume
-
 - [`overly_complex_condition`](./overly_complex_condition.md) (default: `active`).
 
   condition has more boolean operators than the configured maximum
@@ -173,6 +169,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`uncombined_self_import`](./uncombined_self_import.md) (default: `inactive`).
 
   a module import and an adjacent item import from it can be combined through `self`
+
+- [`unconsumed_into_conversion`](./unconsumed_into_conversion.md) (default: `active`).
+
+  `into_*` method borrows or copies where its prefix promises to consume
 
 - [`unicode_ellipsis_in_comments`](./unicode_ellipsis_in_comments.md) (default: `active`).
 

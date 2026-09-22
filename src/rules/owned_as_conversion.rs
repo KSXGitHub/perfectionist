@@ -81,7 +81,7 @@ declare_tool_lint! {
     /// back an owned value is what that name already promises, and
     /// neither rule measures it. `into_*` promises more than cost: it
     /// promises to consume, so
-    /// `perfectionist::non_consuming_into_conversion` measures one that
+    /// `perfectionist::unconsumed_into_conversion` measures one that
     /// does not. A name that is none of the three and that the getter
     /// rule does not read as a getter — one naming no field, with
     /// nothing in `getter_name_patterns` admitting it — is left alone by
