@@ -68,7 +68,7 @@ declare_tool_lint! {
     ///     }
     /// }
     /// ```
-    pub perfectionist::BORROWING_TO_CONVERSION,
+    pub perfectionist::BORROWED_TO_CONVERSION,
     Warn,
     "`to_*` method returns a reference where its prefix promises an owned value",
     report_in_external_macro: false
@@ -85,7 +85,7 @@ const OWNED_HELP: &str = "or stop it borrowing: return the owned value the name 
 /// to read as a getter.
 const TO_PREFIX: &str = "to_";
 
-const CONFIG_KEY: &str = "perfectionist::borrowing_to_conversion";
+const CONFIG_KEY: &str = "perfectionist::borrowed_to_conversion";
 
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
@@ -94,26 +94,26 @@ const CONFIG_KEY: &str = "perfectionist::borrowing_to_conversion";
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}
 
-pub struct BorrowingToConversion;
+pub struct BorrowedToConversion;
 
-impl_lint_pass!(BorrowingToConversion => [BORROWING_TO_CONVERSION]);
+impl_lint_pass!(BorrowedToConversion => [BORROWED_TO_CONVERSION]);
 
-impl Register for rule::BorrowingToConversion {
+impl Register for rule::BorrowedToConversion {
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {
-        lint_store.register_lints(&[BORROWING_TO_CONVERSION]);
+        lint_store.register_lints(&[BORROWED_TO_CONVERSION]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
         lint_store.register_late_lint_pass(Box::new(|_| {
             let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-            Box::new(BorrowingToConversion)
+            Box::new(BorrowedToConversion)
         }));
     }
 }
 
-impl<'tcx> LateLintPass<'tcx> for BorrowingToConversion {
+impl<'tcx> LateLintPass<'tcx> for BorrowedToConversion {
     fn check_fn(
         &mut self,
         cx: &LateContext<'tcx>,
@@ -149,7 +149,7 @@ impl<'tcx> LateLintPass<'tcx> for BorrowingToConversion {
         let suggested = method.as_str().replacen("to_", "as_", 1);
         span_lint_and_then(
             cx,
-            BORROWING_TO_CONVERSION,
+            BORROWED_TO_CONVERSION,
             def_span,
             format!("`{method}` returns a borrow, but `to_` promises an owned value"),
             |diag| {

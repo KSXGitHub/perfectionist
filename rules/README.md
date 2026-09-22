@@ -38,7 +38,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   bare URL in comment or doc comment; wrap in `<...>` or use a labelled markdown link
 
-- [`borrowing_to_conversion`](./borrowing_to_conversion.md) (default: `active`).
+- [`borrowed_to_conversion`](./borrowed_to_conversion.md) (default: `active`).
 
   `to_*` method returns a reference where its prefix promises an owned value
 

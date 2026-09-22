@@ -6,7 +6,7 @@ pub mod bare_email;
 pub mod bare_identifier_reference;
 pub mod bare_issue_reference;
 pub mod bare_url;
-pub mod borrowing_to_conversion;
+pub mod borrowed_to_conversion;
 pub mod clap_help_markdown;
 pub mod cloning_getter;
 pub mod core_instead_of_std;
