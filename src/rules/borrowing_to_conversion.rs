@@ -41,10 +41,11 @@ declare_tool_lint! {
     ///
     /// ### Interaction with sibling rules
     ///
-    /// `perfectionist::cloning_as_conversion` is this rule's mirror: it
-    /// flags an `as_*` that copies, where this flags a `to_*` that does
-    /// not. Between them the two prefixes keep their guideline meanings,
-    /// and each rule's fix is the other's prefix.
+    /// `perfectionist::owned_as_conversion` is this rule's mirror: it
+    /// flags an `as_*` that hands back an owned value, where this flags
+    /// a `to_*` that hands back a borrow. Between them the two prefixes
+    /// keep their guideline meanings, and each rule's fix is the
+    /// other's prefix.
     ///
     /// ### Example
     ///

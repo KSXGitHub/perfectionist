@@ -46,10 +46,6 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   markdown construct in a clap-derived doc comment leaks into `--help` output
 
-- [`cloning_as_conversion`](./cloning_as_conversion.md) (default: `active`).
-
-  `as_*` method copies a field where its prefix promises a free borrow
-
 - [`cloning_getter`](./cloning_getter.md) (default: `active`).
 
   getter returns an owned copy of a field where a borrow would serve
@@ -125,6 +121,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`overly_long_print_macro`](./overly_long_print_macro.md) (default: `active`).
 
   splittable print macro with an embedded-newline template exceeds the configured line width
+
+- [`owned_as_conversion`](./owned_as_conversion.md) (default: `active`).
+
+  `as_*` method hands back an owned value where its prefix promises a free borrow
 
 - [`redundant_derive_more_forward_template`](./redundant_derive_more_forward_template.md) (default: `active`).
 

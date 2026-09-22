@@ -59,7 +59,7 @@ declare_tool_lint! {
     ///
     /// ### Interaction with sibling rules
     ///
-    /// `perfectionist::cloning_as_conversion` and
+    /// `perfectionist::owned_as_conversion` and
     /// `perfectionist::borrowing_to_conversion` hold the other two
     /// prefixes to their guideline meanings. Between the three, each
     /// prefix keeps the cost and the ownership its name promises.
