@@ -141,24 +141,6 @@ fn a_target_named_after_another_target_directory_uses_the_right_one() {
 }
 
 #[test]
-fn a_library_named_like_a_build_script_stays_a_library() {
-    // `build-script-cfg` and `build_script_file_gen` are published
-    // packages, so the prefix is not reserved. Their own roots say
-    // what they are, and a build script has none of these.
-    for path in [
-        "src/lib.rs",
-        "src/main.rs",
-        "src/bin/build_script_helper.rs",
-    ] {
-        assert_eq!(
-            classify("build_script_cfg", Some(Path::new(path))),
-            CargoTarget::LibOrBin,
-            "`{path}` should classify as a library or binary",
-        );
-    }
-}
-
-#[test]
 fn a_test_crate_named_like_a_build_script_stays_an_integration_test() {
     // Cargo names an integration test after its file, so this crate
     // name carries the build-script prefix without being one. The

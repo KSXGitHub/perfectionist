@@ -89,13 +89,6 @@ fn classify(crate_name: &str, root: Option<&Path>) -> CargoTarget {
         Some("tests") => CargoTarget::IntegrationTest,
         Some("benches") => CargoTarget::Benchmark,
         Some("examples") => CargoTarget::Example,
-        // The package's own library or binary root settles it before
-        // the crate name is consulted at all. `build_script_` is
-        // Cargo's convention for what it calls a build script, not a
-        // name a library is forbidden -- `build_script_file_gen` and
-        // `build_script_cfg` are both published -- and a build script
-        // never roots at `src/lib.rs`, `src/main.rs` or `src/bin/`.
-        _ if root.is_some_and(is_package_source) => CargoTarget::LibOrBin,
         _ if crate_name.starts_with(BUILD_SCRIPT_CRATE_NAME_PREFIX) => CargoTarget::BuildScript,
         _ => CargoTarget::LibOrBin,
     }
