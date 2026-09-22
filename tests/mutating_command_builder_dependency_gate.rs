@@ -529,3 +529,109 @@ fn a_build_script_is_told_which_table_applies() {
          already has it in; stderr was:\n{stderr}",
     );
 }
+
+/// A library whose production code and inline tests both call a
+/// setter, plus a `tests/` target holding a plain helper alongside a
+/// `#[test]`. The helper is the shape that distinguishes the gate from
+/// the naive form: it is neither `#[test]` nor `cfg`-gated, so a check
+/// on test code alone would exempt it, although a dev-dependency
+/// reaches it perfectly well.
+const TWO_BUILD_LIB: &str = text_block_fnl! {
+    "use std::process::Command;"
+    ""
+    "pub fn production() {"
+    r#"    let mut command = Command::new("ls");"#
+    r#"    command.arg("production-code");"#
+    "}"
+    ""
+    "#[cfg(test)]"
+    "mod tests {"
+    "    use std::process::Command;"
+    "    #[test]"
+    "    fn inline() {"
+    r#"        let mut command = Command::new("ls");"#
+    r#"        command.arg("inline-test-code");"#
+    "    }"
+    "}"
+};
+
+const TWO_BUILD_INTEGRATION: &str = text_block_fnl! {
+    "use std::process::Command;"
+    ""
+    "fn helper() {"
+    r#"    let mut command = Command::new("ls");"#
+    r#"    command.arg("integration-helper");"#
+    "}"
+    ""
+    "#[test]"
+    "fn body() {"
+    "    helper();"
+    "}"
+};
+
+fn run_two_builds(dependency_table: &str) -> String {
+    let (_temp, stderr, success) = run_project_with_config(
+        "two-builds",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            (
+                "Cargo.toml",
+                &format!(
+                    "[package]\nname = \"probe\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n\
+                     [lib]\npath = \"src/lib.rs\"\n\n[workspace]\n\n{dependency_table}\n",
+                ),
+            ),
+            ("src/lib.rs", TWO_BUILD_LIB),
+            ("tests/it.rs", TWO_BUILD_INTEGRATION),
+            ("command-extra/Cargo.toml", STUB_MANIFEST),
+            ("command-extra/src/lib.rs", STUB_SOURCE),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    stderr
+}
+
+/// With the dependency reaching only the test build, the library's own
+/// code is left alone: the import the diagnostic would ask for belongs
+/// where the shipping build compiles it, and there is no
+/// `command_extra` there.
+#[test]
+fn a_test_only_dependency_leaves_the_library_alone() {
+    let stderr = run_two_builds(text_block_fnl! {
+        "[dev-dependencies]"
+        r#"command-extra = { path = "command-extra" }"#
+    });
+    assert!(
+        !stderr.contains(&flagged_line("production-code")),
+        "expected the library's own code to be left to its shipping build; \
+         stderr was:\n{stderr}",
+    );
+    assert!(
+        stderr.contains(&flagged_line("inline-test-code")),
+        "expected inline test code to be flagged, since the import lands \
+         where only the test build compiles it; stderr was:\n{stderr}",
+    );
+    assert!(
+        stderr.contains(&flagged_line("integration-helper")),
+        "expected a plain helper in `tests/` to be flagged: it has no \
+         shipping build to defer to; stderr was:\n{stderr}",
+    );
+}
+
+/// The shipping build still asks. Exempting the `--test` build costs
+/// nothing where the dependency reaches both.
+#[test]
+fn an_ordinary_dependency_still_flags_the_library() {
+    let stderr = run_two_builds(text_block_fnl! {
+        "[dependencies]"
+        r#"command-extra = { path = "command-extra" }"#
+    });
+    for call in ["production-code", "inline-test-code", "integration-helper"] {
+        assert!(
+            stderr.contains(&flagged_line(call)),
+            "expected `{call}` to be flagged; stderr was:\n{stderr}",
+        );
+    }
+}

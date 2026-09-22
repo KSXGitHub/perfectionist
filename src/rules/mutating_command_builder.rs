@@ -1,9 +1,11 @@
+use crate::cargo_target::crate_target;
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
+use crate::test_code::in_test_code;
 use clippy_utils::is_from_proc_macro;
 use rustc_hir::def_id::DefId;
 use rustc_hir::{Expr, ExprKind, Node, StmtKind};
-use rustc_lint::{LateContext, LateLintPass, LintStore};
+use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
 mod availability;
@@ -33,7 +35,9 @@ declare_tool_lint! {
     /// looks for that declaration. Where `command-extra` is in the
     /// build at all, a chain is left alone unless every setter in it
     /// has a counterpart there — the by-value forms arrived over
-    /// several releases, and a chain is ported whole or not at all.
+    /// several releases, and a chain is ported whole or not at all. In
+    /// a `--test` build of a library or binary only its test code is
+    /// flagged; the rest is judged by the build that ships it.
     ///
     /// A fix is applied where the whole change is known: a chain is
     /// rewritten at once, never in part. Elsewhere the diagnostic
@@ -266,6 +270,23 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         {
             return;
         }
+        // A library's own code is judged by the build that ships it.
+        // `--all-targets` compiles that code twice, and the `--test`
+        // build's dependencies are the wider set, so a dependency
+        // reaching only that build would earn advice to import it
+        // where the shipping build has nothing -- `E0432` the moment
+        // the advice is taken. The shipping build asks the same code
+        // itself wherever it can be asked, so nothing is lost.
+        //
+        // An integration test, a benchmark and an example have no
+        // shipping build to defer to, and their own helpers carry
+        // neither mark of test code, so they are asked as they stand.
+        if LintContext::sess(cx).opts.test
+            && !crate_target(cx).is_separate_target()
+            && !in_test_code(cx.tcx, expr.hir_id)
+        {
+            return;
+        }
         // Naming a counterpart the resolved `command-extra` does not
         // have gives advice that cannot be followed and a rewrite that
         // does not compile.
@@ -304,16 +325,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 // naming what its module needs.
                 remedy: match (self.command_extra_is_declared(cx), trait_is_imported) {
                     (_, true) => None,
-                    // The parenthetical is the only way this arm goes
-                    // wrong: the crate is on this unit's command line,
-                    // so the import fails only where another unit
-                    // compiling the same file lacks it -- which is the
-                    // library against its own test build, and nothing
-                    // else.
-                    (true, false) => Some(
-                        "bring `command_extra::CommandExtra` into scope here \
-                         (`[dev-dependencies]` does not reach the library's own build)",
-                    ),
+                    (true, false) => Some("bring `command_extra::CommandExtra` into scope here"),
                     // Which table depends on the Cargo target: a build
                     // script is compiled against `[build-dependencies]`
                     // alone, a test or a benchmark also against
