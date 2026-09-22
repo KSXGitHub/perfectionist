@@ -175,16 +175,9 @@ same principle applied to the folder.
 - **A plural the resolved `command-extra` does not have.** The pairs
   arrived over several releases — `without_envs` is 1.2.0 and later —
   so a crate can have the singular without its plural, which is the
-  very reason its author wrote the fold; naming the plural there
-  suggests code that does not compile. Ask the trait rather than
-  carrying a version table, which would need updating per release:
-  the folder resolves to the singular, so `trait_of_assoc` on it
-  reaches the `CommandExtra` the compilation loaded, and that trait's
-  associated items say which plurals are there. That also answers for
-  a plural dropped or renamed in some later release.
-  `perfectionist::mutating_command_builder` faces the same hazard and
-  gates on the same question, but has to find the trait in the crate
-  graph first; here the trigger has already resolved into it.
+  very reason its author wrote the fold. Naming a plural that release
+  does not have suggests code that will not compile, so the table
+  above is checked against the trait rather than taken on trust.
 - **An accumulator that is not a `Command`.** Resolving the setter
   already implies this, so it costs the trigger nothing; it is spelled
   out because an implementation that matches setter *names* instead of
@@ -228,6 +221,13 @@ rather than matching each syntax separately. Anything else fails the
 match. This is the same shape of check
 `clippy::redundant_closure_for_method_calls` performs, and its
 implementation is worth reading first.
+
+**Checking the plural exists.** `trait_of_assoc` on the folder's
+`DefId` reaches the `CommandExtra` that compilation loaded, whose
+associated items say which plurals that release has. Cheap — the
+folder has already resolved into the trait — and it carries no version
+table, so a plural dropped or renamed later is covered by the same
+question.
 
 **Building the suggestion.** The fix is not a token swap. The
 iterator being folded is the *receiver* of `.fold(...)`, and it has to
