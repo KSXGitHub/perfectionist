@@ -99,6 +99,22 @@ pattern that several rules call out by reference — live in
   rather than relocating it, so a transforming closure or an adapter
   chain in the receiver stays quiet.
 
+### Loops and iterators
+- [`loop-in-option-guard.md`](./loop-in-option-guard.md) — flag an
+  `if let Some(..)` with no `else` whose only statement is a `for`
+  over the binding, and suggest folding the absent case into the
+  iterator: `opt.into_iter().flatten()`. An `Option` is already an
+  iterator of at most one item, so the guard buys a level of
+  indentation and no decision. Active by default, no configuration.
+- [`option-guard-in-loop.md`](./option-guard-in-loop.md) — the
+  mirror image: flag a `for` whose entire body is an `if let
+  Some(..)` on something derived from the loop binding, and suggest
+  moving the selection into `filter_map`. Skips the degenerate case
+  where the element itself is the `Option`, which is
+  `clippy::manual_flatten`'s. Suggestion-only, since the rewrite
+  moves an expression into a closure. Active by default, no
+  configuration.
+
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
   `#[cfg_attr(..., ignore = "...")]` over `#[cfg(...)]` on `#[test]`s, and
