@@ -304,7 +304,16 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 // naming what its module needs.
                 remedy: match (self.command_extra_is_declared(cx), trait_is_imported) {
                     (_, true) => None,
-                    (true, false) => Some("bring `command_extra::CommandExtra` into scope here"),
+                    // The parenthetical is the only way this arm goes
+                    // wrong: the crate is on this unit's command line,
+                    // so the import fails only where another unit
+                    // compiling the same file lacks it -- which is the
+                    // library against its own test build, and nothing
+                    // else.
+                    (true, false) => Some(
+                        "bring `command_extra::CommandExtra` into scope here \
+                         (`[dev-dependencies]` does not reach the library's own build)",
+                    ),
                     // Which table depends on the Cargo target: a build
                     // script is compiled against `[build-dependencies]`
                     // alone, a test or a benchmark also against
