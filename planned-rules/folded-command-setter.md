@@ -172,6 +172,17 @@ same principle applied to the folder.
   `with_stdout` and `with_stderr` have no plural counterpart — each
   sets one thing that a later call replaces rather than extends — so a
   fold over them is a different mistake and outside this rule.
+- **A plural the resolved `command-extra` does not have.** The pairs
+  arrived over several releases — `without_envs` is 1.2.0 and later —
+  so a crate can have the singular without its plural, which is the
+  very reason its author wrote the fold; naming the plural there
+  suggests code that does not compile. Ask the trait rather than
+  carrying a version table: the folder resolves to the singular, so
+  `trait_of_assoc` on it reaches the `CommandExtra` the compilation
+  loaded, and that trait's associated items say which plurals are
+  there. `perfectionist::mutating_command_builder` gates on the same
+  question, in
+  [`availability.rs`](../src/rules/mutating_command_builder/availability.rs).
 - **An accumulator that is not a `Command`.** Resolving the setter
   already implies this, so it costs the trigger nothing; it is spelled
   out because an implementation that matches setter *names* instead of
