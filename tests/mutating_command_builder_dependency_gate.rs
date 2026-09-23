@@ -637,7 +637,7 @@ fn a_test_fn_in_a_production_module_is_told_where_the_dependency_must_live() {
         "expected the `#[test]` fn to be flagged; stderr was:\n{stderr}",
     );
     assert!(
-        stderr.contains("`[dev-dependencies]` does not reach the library's own build"),
+        stderr.contains("the dependency has to reach every build of this module"),
         "expected the remedy to say where the dependency has to live, since \
          the import it asks for lands in the library's own root; stderr \
          was:\n{stderr}",

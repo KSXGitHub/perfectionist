@@ -325,17 +325,15 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 // naming what its module needs.
                 remedy: match (self.command_extra_is_declared(cx), trait_is_imported) {
                     (_, true) => None,
-                    // The exemption below narrows this but does not
-                    // close it. It asks whether the *node* is test
-                    // code; the import lands in the node's *module*,
-                    // which is what `trait_is_imported` reads. The two
-                    // agree only where the `#[cfg(test)]` sits on a
-                    // `mod`, so a `#[test]` fn in a production module,
-                    // or a library file `#[path]`-included into an
-                    // integration test, still reaches this line.
+                    // The condition rather than a table, because
+                    // which table is right differs by target while the
+                    // hazard does not. The import lands in the node's
+                    // module, which the exemption below cannot speak
+                    // for: it reads the node, and the two agree only
+                    // where the `#[cfg(test)]` sits on a `mod`.
                     (true, false) => Some(
                         "bring `command_extra::CommandExtra` into scope here \
-                         (`[dev-dependencies]` does not reach the library's own build)",
+                         (the dependency has to reach every build of this module)",
                     ),
                     // Which table depends on the Cargo target: a build
                     // script is compiled against `[build-dependencies]`
