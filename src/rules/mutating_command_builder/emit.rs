@@ -143,9 +143,7 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                     // is withheld for. Withholding the edit is not
                     // withholding the warning -- except where the
                     // reason is that warning already.
-                    if !is_the_landing
-                        && let Landing::MovesALaterCall(next) = landing
-                    {
+                    if !is_the_landing && let Landing::MovesALaterCall(next) = landing {
                         diagnostic.help(moves_a_later_call(next));
                     }
                     diagnostic.help(reason);
