@@ -4,10 +4,10 @@
 
 ## Statement
 
-> Avoid mid-sentence breaks introduced by em dashes or long parenthetical
-> clauses. Em dashes are a reliable symptom of loose phrasing; when one
-> appears, restructure the surrounding sentence so each clause stands on
-> its own.
+Avoid mid-sentence breaks introduced by em dashes or long parenthetical
+clauses. Em dashes are a reliable symptom of loose phrasing; when one
+appears, restructure the surrounding sentence so each clause stands on
+its own.
 
 ## Why restrict this?
 

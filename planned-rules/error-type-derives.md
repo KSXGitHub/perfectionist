@@ -16,9 +16,9 @@ split is mechanical.
 
 ## Statement
 
-> Use `derive_more` for error types. Only derive the traits that are
-> actually used, and only derive `Error` on types that actually are
-> errors.
+Use `derive_more` for error types. Only derive the traits that are
+actually used, and only derive `Error` on types that actually are
+errors.
 
 Specifically:
 

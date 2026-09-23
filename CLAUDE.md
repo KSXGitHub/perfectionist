@@ -719,10 +719,12 @@ and reserving those two is what keeps them worth reading.
 relies on that. A `>` block in `planned-rules/` is one of the
 following, and only the aside may become an alert:
 
-- **A quotation.** Every `## Statement` section quotes the rule's
-  upstream style-guide source verbatim. Leave these alone, and do
-  not run a sweep that mechanically upgrades every `>` block to
-  an alert.
+- **A quotation** of something said elsewhere — an upstream style
+  guide, a review comment the file answers. The `**Source:**` line
+  names where it came from. Leave these alone, and do not run a sweep
+  that mechanically upgrades every `>` block to an alert. A
+  `## Statement` is *not* one of these: it states the rule in the
+  catalogue's own words, quoting nothing, however its source is cited.
 - **An aside** — a remark in the author's own voice, addressed to
   the reader. This is the one an alert improves; pick its type by
   the rules above.
