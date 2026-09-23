@@ -436,4 +436,40 @@ fn method_name_from_the_caller() {
     let _ = name_and_pass!(arg).status();
 }
 
+// Bad: the rewrite is withheld for the argument's destructor, and the
+// chain's next call is one a trait in scope also declares. The advice
+// still says to rename, so the hazard that rename walks into has to be
+// said as well -- withholding the edit is not withholding the warning.
+mod withheld_and_moves_a_later_call {
+    use command_extra::CommandExtra;
+    use std::ffi::OsStr;
+    use std::process::Command;
+
+    struct Noisy;
+
+    impl Drop for Noisy {
+        fn drop(&mut self) {}
+    }
+
+    impl AsRef<OsStr> for Noisy {
+        fn as_ref(&self) -> &OsStr {
+            OsStr::new("noisy")
+        }
+    }
+
+    trait Ext {
+        fn arg(self, value: &str) -> Command;
+    }
+
+    impl Ext for Command {
+        fn arg(self, _value: &str) -> Command {
+            self
+        }
+    }
+
+    fn withheld_for_the_destructor() {
+        let _ = Command::new("echo").env(&Noisy, "withheld-and-moves").arg("x");
+    }
+}
+
 fn main() {}

@@ -130,10 +130,23 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                 // code does, so rendering it would put the hazard back
                 // in front of the reader as a line to copy. The advice
                 // stands; what stopped it is said instead.
-                Rewrite::Withhold(reason) => {
+                Rewrite::Withhold {
+                    reason,
+                    is_the_landing,
+                } => {
                     diagnostic.help(advice);
                     if names_generic_arguments {
                         diagnostic.help(GENERIC_ARGUMENTS);
+                    }
+                    // The advice still says to rename, so the reader
+                    // walks into the re-resolution the rendered form
+                    // is withheld for. Withholding the edit is not
+                    // withholding the warning -- except where the
+                    // reason is that warning already.
+                    if !is_the_landing
+                        && let Landing::MovesALaterCall(next) = landing
+                    {
+                        diagnostic.help(moves_a_later_call(next));
                     }
                     diagnostic.help(reason);
                     if let Some(remedy) = remedy {
@@ -164,6 +177,17 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
     );
 }
 
+/// The hazard a hand-written rename walks into where the chain's next
+/// call is one a trait in scope also declares. Both branches that
+/// leave the reader to rename say it, so it is written once.
+fn moves_a_later_call(next: Symbol) -> String {
+    format!(
+        "`{next}` takes this call's value, and `{next}` is declared by a \
+         trait in scope, so renaming this call alone may make that one \
+         resolve differently",
+    )
+}
+
 /// What the prose branch reads.
 struct Lines {
     names_generic_arguments: bool,
@@ -186,11 +210,7 @@ fn prose(diagnostic: &mut Diag<'_, ()>, lines: &Lines, advice: String) {
         diagnostic.help(GENERIC_ARGUMENTS);
     }
     if let Landing::MovesALaterCall(next) = landing {
-        diagnostic.help(format!(
-            "`{next}` takes this call's value, and `{next}` is declared by a \
-             trait in scope, so renaming this call alone may make that one \
-             resolve differently",
-        ));
+        diagnostic.help(moves_a_later_call(next));
     }
     if !receiver_is_a_temporary {
         diagnostic.help(

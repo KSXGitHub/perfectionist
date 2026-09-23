@@ -52,7 +52,14 @@ pub(super) enum Rewrite {
     /// Nothing to apply, and the rename must not be rendered either:
     /// on its own it changes what the code does. The message says what
     /// would change, so the diagnostic can pass it on.
-    Withhold(String),
+    Withhold {
+        /// What stopped the rewrite.
+        reason: String,
+        /// Whether `reason` is the landing's own hazard -- the
+        /// trailing call re-resolving -- which the diagnostic states
+        /// itself and would otherwise state twice.
+        is_the_landing: bool,
+    },
     /// Nothing to apply, for a reason that leaves the rename worth
     /// showing. Whether to show it is the diagnostic's own call.
     Defer,
@@ -86,12 +93,13 @@ fn edits<'tcx>(cx: &LateContext<'tcx>, call: &'tcx Expr<'tcx>, inputs: &Inputs) 
     if let ExprKind::MethodCall(_, receiver, ..) = call.kind
         && leaves_a_sibling_behind(cx, receiver)
     {
-        return Rewrite::Withhold(
-            "the command is a field of a temporary that leaves behind something with a \
-             destructor, and the change would drop the command before it rather than as \
-             part of the temporary"
+        return Rewrite::Withhold {
+            reason: "the command is a field of a temporary that leaves behind something \
+                     with a destructor, and the change would drop the command before it \
+                     rather than as part of the temporary"
                 .to_owned(),
-        );
+            is_the_landing: false,
+        };
     }
     let mut parts = match link(
         cx,
@@ -119,13 +127,16 @@ fn edits<'tcx>(cx: &LateContext<'tcx>, call: &'tcx Expr<'tcx>, inputs: &Inputs) 
             // only where nothing else of that name is found first.
             let name = method.ident.name;
             if finds_a_trait_method(cx, parent, name) {
-                return Rewrite::Withhold(format!(
+                return Rewrite::Withhold {
                     // No article before the name, which would have to
                     // agree with a method the rule does not choose.
-                    "`{name}` ends the chain, and `{name}` is declared by a trait in scope, \
-                     so the owned command this change produces may resolve it differently \
-                     from the borrow it replaces",
-                ));
+                    reason: format!(
+                        "`{name}` ends the chain, and `{name}` is declared by a trait in \
+                         scope, so the owned command this change produces may resolve it \
+                         differently from the borrow it replaces",
+                    ),
+                    is_the_landing: true,
+                };
             }
             return Rewrite::Apply(parts);
         };
@@ -185,10 +196,13 @@ fn link<'tcx>(
         .any(|argument| creates_an_ordered_drop(cx, argument))
     {
         let name = method.ident.name;
-        return Rewrite::Withhold(format!(
-            "`{name}`'s argument leaves behind a value with a destructor, and the change \
-             would drop it after the command rather than before it",
-        ));
+        return Rewrite::Withhold {
+            reason: format!(
+                "`{name}`'s argument leaves behind a value with a destructor, and the \
+                 change would drop it after the command rather than before it",
+            ),
+            is_the_landing: false,
+        };
     }
     // Written generic arguments name the std setter's parameters, and
     // the counterpart's do not correspond to them one for one --

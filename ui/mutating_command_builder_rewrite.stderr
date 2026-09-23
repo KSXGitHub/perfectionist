@@ -190,4 +190,14 @@ LL |     let _ = name_and_pass!(arg).status();
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: whether the change reaches further depends on what the surrounding code does with this call's value
 
+warning: `Command::env` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         let _ = Command::new("echo").env(&Noisy, "withheld-and-moves").arg("x");
+   |                                      ^^^
+   |
+   = help: use `CommandExtra::with_env`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `arg` takes this call's value, and `arg` is declared by a trait in scope, so renaming this call alone may make that one resolve differently
+   = help: `env`'s argument leaves behind a value with a destructor, and the change would drop it after the command rather than before it
+
 warning: N warnings emitted
