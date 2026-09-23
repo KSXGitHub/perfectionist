@@ -594,3 +594,52 @@ fn an_ordinary_dependency_still_flags_the_library() {
         );
     }
 }
+
+const TEST_FN_IN_PRODUCTION_MODULE: &str = include_str!(
+    "fixtures/mutating_command_builder_dependency_gate/test_fn_in_production_module.rs"
+);
+
+/// The import remedy has to carry its own condition, because the
+/// exemption cannot close this. That gate asks whether the *node* is
+/// test code; the import lands in the node's *module*. A `#[test]` fn
+/// in the library's own root is test-exclusive as a node and
+/// production as a module, so the rule speaks and the `use` it asks
+/// for is `E0432` in the shipping build.
+#[test]
+fn a_test_fn_in_a_production_module_is_told_where_the_dependency_must_live() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "test-fn",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &[
+            (
+                "Cargo.toml",
+                &format!(
+                    "[package]\nname = \"probe\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n\
+                     [lib]\npath = \"src/lib.rs\"\n\n[workspace]\n\n\
+                     [dev-dependencies]\n{}\n",
+                    r#"command-extra = { path = "command-extra" }"#,
+                ),
+            ),
+            ("src/lib.rs", TEST_FN_IN_PRODUCTION_MODULE),
+            ("command-extra/Cargo.toml", STUB_MANIFEST),
+            ("command-extra/src/lib.rs", STUB_SOURCE),
+        ],
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert!(
+        !stderr.contains(&flagged_line("production-code")),
+        "expected the library's own code to stay exempt; stderr was:\n{stderr}",
+    );
+    assert!(
+        stderr.contains(&flagged_line("test-fn-in-production-module")),
+        "expected the `#[test]` fn to be flagged; stderr was:\n{stderr}",
+    );
+    assert!(
+        stderr.contains("`[dev-dependencies]` does not reach the library's own build"),
+        "expected the remedy to say where the dependency has to live, since \
+         the import it asks for lands in the library's own root; stderr \
+         was:\n{stderr}",
+    );
+}

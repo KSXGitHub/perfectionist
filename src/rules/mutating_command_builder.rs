@@ -35,9 +35,7 @@ declare_tool_lint! {
     /// looks for that declaration. Where `command-extra` is in the
     /// build at all, a chain is left alone unless every setter in it
     /// has a counterpart there — the by-value forms arrived over
-    /// several releases, and a chain is ported whole or not at all. In
-    /// a `--test` build of a library or binary only its test code is
-    /// flagged; the rest is judged by the build that ships it.
+    /// several releases, and a chain is ported whole or not at all.
     ///
     /// A fix is applied where the whole change is known: a chain is
     /// rewritten at once, never in part. Elsewhere the diagnostic
@@ -278,9 +276,11 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         // the advice is taken. The shipping build asks the same code
         // itself wherever it can be asked, so nothing is lost.
         //
-        // An integration test, a benchmark and an example have no
-        // shipping build to defer to, and their own helpers carry
-        // neither mark of test code, so they are asked as they stand.
+        // An integration test, a benchmark and an example are asked as
+        // they stand, their own helpers carrying neither mark of test
+        // code. A library file `#[path]`-included into one is compiled
+        // by the shipping build as well, so what covers that is the
+        // remedy's own condition rather than this.
         if LintContext::sess(cx).opts.test
             && !crate_target(cx).is_separate_target()
             && !in_test_code(cx.tcx, expr.hir_id)
@@ -325,7 +325,18 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 // naming what its module needs.
                 remedy: match (self.command_extra_is_declared(cx), trait_is_imported) {
                     (_, true) => None,
-                    (true, false) => Some("bring `command_extra::CommandExtra` into scope here"),
+                    // The exemption below narrows this but does not
+                    // close it. It asks whether the *node* is test
+                    // code; the import lands in the node's *module*,
+                    // which is what `trait_is_imported` reads. The two
+                    // agree only where the `#[cfg(test)]` sits on a
+                    // `mod`, so a `#[test]` fn in a production module,
+                    // or a library file `#[path]`-included into an
+                    // integration test, still reaches this line.
+                    (true, false) => Some(
+                        "bring `command_extra::CommandExtra` into scope here \
+                         (`[dev-dependencies]` does not reach the library's own build)",
+                    ),
                     // Which table depends on the Cargo target: a build
                     // script is compiled against `[build-dependencies]`
                     // alone, a test or a benchmark also against
