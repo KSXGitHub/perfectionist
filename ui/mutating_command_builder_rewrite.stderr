@@ -1,0 +1,203 @@
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |     configure(passthrough!(Command::new("ls").arg("macro-head")).arg("macro-tail"));
+   |                                               ^^^
+   |
+   = note: `#[warn(perfectionist::mutating_command_builder)]` on by default
+help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL |     configure(&mut passthrough!(Command::new("ls").with_arg("macro-head")).with_arg("macro-tail"));
+   |               ++++                                 +++++                   +++++
+
+warning: `Command::stdout` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         Command::new("ls").stdout(piped!());
+   |                            ^^^^^^
+   |
+   = help: use `CommandExtra::with_stdout`, which takes `self` and returns `Self`; it takes the concrete type this setter converts into, so convert the argument with `.into()`
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         Command::new("ls").arg("shadowed-trailing-call").status()
+   |                            ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `status` ends the chain, and `status` is declared by a trait in scope, so the owned command this change produces may resolve it differently from the borrow it replaces
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         Command::new("ls").arg("shadowed-by-a-borrow").status()
+   |                            ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `status` ends the chain, and `status` is declared by a trait in scope, so the owned command this change produces may resolve it differently from the borrow it replaces
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         Command::new("ls").arg("conversion-tail").into()
+   |                            ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `into` ends the chain, and `into` is declared by a trait in scope, so the owned command this change produces may resolve it differently from the borrow it replaces
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         Command::new("ordered-drop").arg(&Noisy);
+   |                                      ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `arg`'s argument leaves behind a value with a destructor, and the change would drop it after the command rather than before it
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         Command::new("ordered-drop-field").arg(holder().name);
+   |                                            ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `arg`'s argument leaves behind a value with a destructor, and the change would drop it after the command rather than before it
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         Command::new("ordered-drop-match").arg(match Noisy {
+   |                                            ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `arg`'s argument leaves behind a value with a destructor, and the change would drop it after the command rather than before it
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         Command::new("ordered-drop-taken").arg(tagged().noisy);
+   |                                            ^^^
+   |
+help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL |         Command::new("ordered-drop-taken").with_arg(tagged().noisy);
+   |                                            +++++
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         Command::new("ordered-drop-base").arg(Guard("--base").0);
+   |                                           ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `arg`'s argument leaves behind a value with a destructor, and the change would drop it after the command rather than before it
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         Command::new("ordered-drop-nested").arg(outer().inner.label);
+   |                                             ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `arg`'s argument leaves behind a value with a destructor, and the change would drop it after the command rather than before it
+
+warning: `Command::stdin` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         Command::new("ordered-drop-try").stdin(std::fs::File::open("/dev/null")?);
+   |                                          ^^^^^
+   |
+help: use `CommandExtra::with_stdin`, which takes `self` and returns `Self`; it takes the concrete type this setter converts into, so convert the argument with `.into()`
+   |
+LL |         Command::new("ordered-drop-try").with_stdin(std::fs::File::open("/dev/null")?.into());
+   |                                          +++++                                       +++++++
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         Command::new("ordered-drop-turbofish").arg::<&str>(&holder().name);
+   |                                                ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: the call names its generic arguments, which are this setter's, so check them against the counterpart's when you rename
+   = help: `arg`'s argument leaves behind a value with a destructor, and the change would drop it after the command rather than before it
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         bundle().command.arg("sibling-of-a-drop");
+   |                          ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: the command is a field of a temporary that leaves behind something with a destructor, and the change would drop the command before it rather than as part of the temporary
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         pair().1.arg("tuple-sibling");
+   |                  ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: the command is a field of a temporary that leaves behind something with a destructor, and the change would drop the command before it rather than as part of the temporary
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         quiet_pair().1.arg("tuple-quiet");
+   |                        ^^^
+   |
+help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL |         quiet_pair().1.with_arg("tuple-quiet");
+   |                        +++++
+
+warning: `Command::stdin` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |     Command::new("ls").stdin(Stdio::null());
+   |                        ^^^^^
+   |
+help: use `CommandExtra::with_stdin`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL |     Command::new("ls").with_stdin(Stdio::null());
+   |                        +++++
+
+warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |             .current_dir("/tmp")
+   |              ^^^^^^^^^^^
+   |
+   = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `arg` takes this call's value, and `arg` is declared by a trait in scope, so renaming this call alone may make that one resolve differently
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         let _ = command.arg("defers-and-moves").status();
+   |                         ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `status` takes this call's value, and `status` is declared by a trait in scope, so renaming this call alone may make that one resolve differently
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
+
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |     let _ = name_and_pass!(arg).status();
+   |                            ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: whether the change reaches further depends on what the surrounding code does with this call's value
+
+warning: `Command::env` takes `&mut self`, so it cannot yield the command
+  --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
+   |
+LL |         let _ = Command::new("echo").env(&Noisy, "withheld-and-moves").arg("x");
+   |                                      ^^^
+   |
+   = help: use `CommandExtra::with_env`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: `arg` takes this call's value, and `arg` is declared by a trait in scope, so renaming this call alone may make that one resolve differently
+   = help: `env`'s argument leaves behind a value with a destructor, and the change would drop it after the command rather than before it
+
+warning: N warnings emitted
