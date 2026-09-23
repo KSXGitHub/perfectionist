@@ -422,20 +422,23 @@ impl<'tcx> LateLintPass<'tcx> for BareIssueReference {
 impl BareIssueReference {
     fn scan_doc(&self, chunk: &CommentChunk<'_>, out: &mut Vec<(Span, IssueRefViolation)>) {
         let skips = scan_skip_regions(&chunk.rendered);
-        self.scan(chunk, &skips, true, out);
+        self.scan(chunk, &skips, out);
     }
 
     fn scan_plain(&self, chunk: &CommentChunk<'_>, out: &mut Vec<(Span, IssueRefViolation)>) {
-        self.scan(chunk, &[], false, out);
+        self.scan(chunk, &[], out);
     }
 
     fn scan(
         &self,
         chunk: &CommentChunk<'_>,
         skips: &[core::ops::Range<usize>],
-        is_doc: bool,
         out: &mut Vec<(Span, IssueRefViolation)>,
     ) {
+        let is_doc = matches!(
+            chunk.surface,
+            CommentSurface::DocBlock | CommentSurface::DocBlockBlock,
+        );
         let text = &chunk.rendered;
         let bytes = text.as_bytes();
         let mut index = 0;
