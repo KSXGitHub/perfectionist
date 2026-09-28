@@ -172,6 +172,12 @@ same principle applied to the folder.
   `with_stdout` and `with_stderr` have no plural counterpart — each
   sets one thing that a later call replaces rather than extends — so a
   fold over them is a different mistake and outside this rule.
+- **A plural the resolved `command-extra` does not have.** The pairs
+  arrived over several releases — `without_envs` is 1.2.0 and later —
+  so a crate can have the singular without its plural, which is the
+  very reason its author wrote the fold. Naming a plural that release
+  does not have suggests code that will not compile, so the table
+  above is checked against the trait rather than taken on trust.
 - **An accumulator that is not a `Command`.** Resolving the setter
   already implies this, so it costs the trigger nothing; it is spelled
   out because an implementation that matches setter *names* instead of
@@ -215,6 +221,13 @@ rather than matching each syntax separately. Anything else fails the
 match. This is the same shape of check
 `clippy::redundant_closure_for_method_calls` performs, and its
 implementation is worth reading first.
+
+**Checking the plural exists.** `trait_of_assoc` on the folder's
+`DefId` reaches the `CommandExtra` that compilation loaded, whose
+associated items say which plurals that release has. Cheap — the
+folder has already resolved into the trait — and it carries no version
+table, so a plural dropped or renamed later is covered by the same
+question.
 
 **Building the suggestion.** The fix is not a token swap. The
 iterator being folded is the *receiver* of `.fold(...)`, and it has to
@@ -307,7 +320,7 @@ Trigger and autofix part ways:
   `into_iter` on a std collection, this repository's own call site
   included.
 - **Advice only** otherwise, the same answer
-  `mutating_command_builder` gives its statement-shaped case.
+  `mutating_command_builder` gives where the receiver is a binding.
 
 That gate is over-conservative on purpose, and the cost is worth
 naming rather than discovering: it declines a fix for the first example
@@ -362,8 +375,8 @@ calls them.
 
 ## Interaction with sibling rules
 
-`mutating_command_builder`
-([`mutating-command-builder.md`](./mutating-command-builder.md))
+`perfectionist::mutating_command_builder`
+([`src/rules/mutating_command_builder.rs`](../src/rules/mutating_command_builder.rs))
 flags std's `&mut self` setters where the by-value form exists. The
 two rules are orthogonal in the direction that matters: this rule
 fires on code that one considers already correct. The fold above uses
@@ -386,8 +399,7 @@ inside. Once its advice is taken and the closure collapses to
 plural.
 
 So neither rule stands down for the other: doing so would leave this
-shape flagged by nobody. See that file's own interaction section for
-the same statement from the other side.
+shape flagged by nobody.
 
 `perfectionist::overly_long_method_chain`
 ([`src/rules/overly_long_method_chain.rs`](../src/rules/overly_long_method_chain.rs))
