@@ -224,6 +224,14 @@ often it recurs.
 - Spell a value the way the code spells it. The diagnostic says
   `nests 1 level deep`, so the comment says `1 level`, not
   `one level`.
+- Count parameters as the function type counts them. `Result::ok` is
+  `fn ok(self) -> Option<T>`: a **unary function**, not a nullary
+  method. The Reference makes `self` its first parameter, and that is
+  exactly why `filter_map(Result::ok)` type-checks. Prefer that
+  reading. Where the method-position count is the one that matters,
+  give both, because rustc gives both: `this method takes 0 arguments`
+  at a call site, and `this function takes 1 argument` for the same
+  item named through a path.
 
 The
 [fact-duplication rule](#do-not-write-documentation-that-restates-the-code)
@@ -708,13 +716,10 @@ and reserving those two is what keeps them worth reading.
 ### A blockquote is not always an alert
 
 `>` is also plain markdown for a quotation, and the catalogue
-relies on that. A `>` block in `planned-rules/` is one of the
-following, and only the aside may become an alert:
+relies on that. Do not run a sweep that mechanically upgrades
+every `>` block to an alert; read each one and leave it as it
+stands. These kinds are worth naming:
 
-- **A quotation.** Every `## Statement` section quotes the rule's
-  upstream style-guide source verbatim. Leave these alone, and do
-  not run a sweep that mechanically upgrades every `>` block to
-  an alert.
 - **An aside** — a remark in the author's own voice, addressed to
   the reader. This is the one an alert improves; pick its type by
   the rules above.

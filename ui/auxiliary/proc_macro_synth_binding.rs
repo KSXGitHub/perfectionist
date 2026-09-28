@@ -542,6 +542,88 @@ pub fn synth_cloning_getter(input: TokenStream) -> TokenStream {
     wrap_const_block(body)
 }
 
+/// `#[derive(SynthCommandSetter)]` + `#[synth_command_setter]` →
+/// `fn _synth_command_setter() { let mut command =`
+/// `std::process::Command::new("ls"); command.arg("-l"); }` where the
+/// whole setter call, the `arg` segment included, inherits the
+/// user-span of `synth_command_setter`.
+///
+/// The wrapping `fn` is stamped too, the way `SynthCloningGetter` stamps
+/// its `impl`, so every span the rule could consult reads as
+/// user-written and `hir_in_external_macro` -- which checks the node's
+/// span and the enclosing item's `def_span` -- has nothing to find. What
+/// stops the diagnostic is `is_from_proc_macro`, which reads the source
+/// text under the span instead.
+///
+/// The synthesised call is one the rule fires on when hand-written --
+/// a std setter on an owned local -- so the fixture is not vacuous.
+#[proc_macro_derive(SynthCommandSetter, attributes(synth_command_setter))]
+pub fn synth_command_setter(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_command_setter")
+        .expect("`#[derive(SynthCommandSetter)]` requires a `#[synth_command_setter]`");
+    let call_site = Span::call_site();
+    let at_attr = |mut tree: TokenTree| {
+        tree.set_span(attr_span);
+        tree
+    };
+    let path = |segments: &[&str], span: Span| {
+        let mut out = Vec::new();
+        for (index, segment) in segments.iter().enumerate() {
+            if index > 0 {
+                out.push(TokenTree::Punct(Punct::new(':', Spacing::Joint)));
+                out.push(TokenTree::Punct(Punct::new(':', Spacing::Alone)));
+            }
+            out.push(TokenTree::Ident(Ident::new(segment, span)));
+        }
+        out
+    };
+
+    // `let mut command = std::process::Command::new("ls");` — at the
+    // call site, so only the setter call below carries a user span.
+    let mut new_args = TokenStream::new();
+    new_args.extend([TokenTree::Literal(Literal::string("ls"))]);
+    let mut body = TokenStream::new();
+    body.extend([
+        TokenTree::Ident(Ident::new("let", call_site)),
+        TokenTree::Ident(Ident::new("mut", call_site)),
+        TokenTree::Ident(Ident::new("command", call_site)),
+        TokenTree::Punct(Punct::new('=', Spacing::Alone)),
+    ]);
+    body.extend(path(&["std", "process", "Command", "new"], call_site));
+    body.extend([
+        TokenTree::Group(Group::new(Delimiter::Parenthesis, new_args)),
+        TokenTree::Punct(Punct::new(';', Spacing::Alone)),
+    ]);
+
+    // `command.arg("-l");` — every token user-spanned, the way a derive
+    // spans a synthesised call over the attribute that drove it.
+    let mut arg_args = TokenStream::new();
+    arg_args.extend([TokenTree::Literal(Literal::string("-l"))]);
+    body.extend([
+        at_attr(TokenTree::Ident(Ident::new("command", attr_span))),
+        at_attr(TokenTree::Punct(Punct::new('.', Spacing::Alone))),
+        at_attr(TokenTree::Ident(Ident::new("arg", attr_span))),
+        at_attr(TokenTree::Group(Group::new(
+            Delimiter::Parenthesis,
+            arg_args,
+        ))),
+        at_attr(TokenTree::Punct(Punct::new(';', Spacing::Alone))),
+    ]);
+    // `wrap_fn_block` would leave the `fn` at the call site; stamp it
+    // so no span the rule reads betrays the expansion.
+    let mut out = TokenStream::new();
+    out.extend([
+        at_attr(TokenTree::Ident(Ident::new("fn", attr_span))),
+        at_attr(TokenTree::Ident(Ident::new("_synth_command_setter", attr_span))),
+        at_attr(TokenTree::Group(Group::new(
+            Delimiter::Parenthesis,
+            TokenStream::new(),
+        ))),
+        at_attr(TokenTree::Group(Group::new(Delimiter::Brace, body))),
+    ]);
+    out
+}
+
 fn wrap_const_block(body: TokenStream) -> TokenStream {
     let call_site = Span::call_site();
     let mut out = TokenStream::new();

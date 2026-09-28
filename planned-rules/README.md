@@ -35,6 +35,15 @@ pattern that several rules call out by reference — live in
   default; opt in and pick `unqualified` or `qualified`.
 
 ### Trait bounds and signatures
+- [`async-as-conversion.md`](./async-as-conversion.md) — flag an
+  inherent `async fn` whose name begins with `as_`. The prefix
+  promises a free borrowed view; `async` says the operation may
+  suspend, which nothing free does, so the name is a claim the reader
+  must learn to disregard. Scoped to `as_`: `to_` promises cost, which
+  suspension is a kind of, and `into_` promises consumption, which is
+  orthogonal. The fix is a rename to a verb, so there is no autofix.
+  Nothing about the receiver, the body or the return type is read.
+  Active by default.
 - [`excessive-inline-bounds.md`](./excessive-inline-bounds.md) — prefer `where` clauses
   over inline bounds when there are multiple constraints.
 - [`needless-borrowed-parameters.md`](./needless-borrowed-parameters.md) — when a
@@ -98,13 +107,6 @@ pattern that several rules call out by reference — live in
   `perfectionist::overly_long_method_chain`. Inactive by default.
 
 ### Command builder
-- [`mutating-command-builder.md`](./mutating-command-builder.md) — when
-  a `std::process::Command` is owned, prefer `command-extra`'s
-  by-value setters (`with_arg`, `without_env`, …) over std's
-  `&mut self` ones, so the whole construction stays an expression.
-  Exempts a `&mut Command` receiver, which cannot use them, and stays
-  silent in a crate without the dependency
-  (`require_command_extra_dependency = false` opts in).
 - [`folded-command-setter.md`](./folded-command-setter.md) — flag a
   `fold` of a singular `CommandExtra` setter over an iterator where
   the plural exists (`without_env` → `without_envs`), however the
