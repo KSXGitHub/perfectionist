@@ -748,11 +748,10 @@ folded=[0, 0]
 thread 'main' panicked: called `Result::unwrap()` on an `Err` value: ParseIntError
 ```
 
-Everything else this rule declines fails loudly, with an error named
-in [Exemptions](#exemptions). This does not, and neither do the other
-two passages that point back here. So a chain is split only where
-every node between it and the body root always evaluates the child the
-chain came from:
+A wrong suggestion from this rule is usually a compile error. This one
+is not: it compiles, and it behaves differently. So a chain is split
+only where every node between it and the body root always evaluates
+the child the chain came from:
 
 | the chain's parent                                                      | always evaluates it |
 |-------------------------------------------------------------------------|---------------------|
