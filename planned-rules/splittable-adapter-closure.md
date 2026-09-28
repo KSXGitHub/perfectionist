@@ -595,10 +595,45 @@ s.pipe_ref(|v| v.trim().len())
 s.pipe_ref(|v| v.trim()).pipe(str::len)
 ```
 
-Measured `2` either way, and `pipe_mut` `3` either way. The variants
-handing the closure a borrow — `pipe_ref`, `pipe_mut`, `pipe_as_ref`,
-`pipe_as_mut`, `pipe_deref`, `pipe_deref_mut`, `pipe_borrow`,
-`pipe_borrow_mut` — all take this form.
+Every method on the trait was run in both forms, the by-value one over
+a doubling and a formatting step, the rest over a trimming or sorting
+step and a length:
+
+| method            | receiver       | folded | split  |
+|-------------------|----------------|--------|--------|
+| `pipe`            | `Self`         | `"42"` | `"42"` |
+| `pipe_ref`        | `&Self`        | `2`    | `2`    |
+| `pipe_mut`        | `&mut Self`    | `3`    | `3`    |
+| `pipe_as_ref`     | `&Param`       | `2`    | `2`    |
+| `pipe_as_mut`     | `&mut Param`   | `3`    | `3`    |
+| `pipe_deref`      | `&Param`       | `2`    | `2`    |
+| `pipe_deref_mut`  | `&mut Param`   | `3`    | `3`    |
+| `pipe_borrow`     | `&Param`       | `2`    | `2`    |
+| `pipe_borrow_mut` | `&mut Param`   | `3`    | `3`    |
+
+The `_as_`, `_deref` and `_borrow` families differ from `pipe_ref` and
+`pipe_mut` only in which conversion reaches the closure — `AsRef`,
+`Deref`, `Borrow` and their mutable counterparts. That conversion
+happens once, at the head, and the steps above it neither see it nor
+care, so the split is the same in all of them.
+
+**Which variant heads the chain decides whether a lifted step may
+borrow.** `pipe` consumes the receiver, so a step returning a borrow
+of it is the `E0515` of
+[When a step can be lifted](#when-a-step-can-be-lifted):
+
+```rust
+String::from("  x  ").pipe(|v| v.trim()).pipe(str::len)
+```
+```
+error[E0515]: cannot return value referencing function parameter `v`
+```
+
+Every other variant hands the closure a borrow carrying the
+receiver's own lifetime, so the same lift compiles: `pipe_ref`,
+`pipe_deref` and `pipe_borrow` each gave `1` where `pipe` gave
+`E0515`. So the borrow test this rule applies everywhere is answered
+here by the head of the chain rather than by the step.
 
 Nothing in `Pipe` is excluded. It has one shape, and no sibling that
 hands the value back.
