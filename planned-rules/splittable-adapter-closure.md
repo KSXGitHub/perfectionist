@@ -53,7 +53,9 @@ That reduction is Clippy's to enforce, not this rule's; see
 ## What to lint
 
 Flag a closure passed to one of the adapters below whose body is a
-chain of **two or more** applications of the closure's parameter.
+chain of **two or more** applications of the closure's parameter,
+where the parameter occurs **exactly once** — at the bottom of the
+chain.
 
 Suggest one adapter per application. Every application but the last
 becomes a `map`; the last keeps the original adapter, because that is
@@ -71,6 +73,24 @@ A body with only **one** application is not this rule's: there is
 nothing to split, and `.map(|text| text.trim())` is already one
 adapter doing one thing. Reducing it to `.map(str::trim)` is
 `clippy::redundant_closure_for_method_calls`.
+
+A parameter used **twice** is not a chain, however chained the rest of
+the body reads. The split gives every step its own closure, so an
+occurrence outside the last step is left with no binding to name:
+
+```rust
+// Not this rule's: `a` occurs twice
+.map(|a| a.foo().bar().baz(a))
+// The split would be
+.map(|a| a.foo()).map(|x| x.bar()).map(|y| y.baz(a))
+```
+```
+error[E0425]: cannot find value `a` in this scope
+```
+
+`.map(|x| foo(bar(baz(x)), x))` is the same shape, with the second
+occurrence in an argument of the outermost call rather than of the
+last one.
 
 ### Which adapters
 
@@ -180,7 +200,7 @@ Do *not* flag:
 
 - A closure whose body is not a chain of applications of its
   parameter — a block with statements, a `match`, a `?`, an operator
-  expression, or a call that uses the parameter more than once.
+  expression, or any body where the parameter occurs more than once.
 - A step whose result borrows from the binding, per
   [When a step can be lifted](#when-a-step-can-be-lifted).
 - A closure produced by a macro expansion, where the suggestion would
@@ -230,9 +250,18 @@ result borrows from.
   sym::Iterator)`. The adapter set decides which argument holds the
   closure, and whether the item is its only parameter.
 - Walk the closure body as a chain: a `MethodCall` whose receiver is
-  the next link, or a `Call` whose sole argument is. The chain ends at
+  the next link and whose arguments do not mention the parameter, or
+  a `Call` whose sole argument is the next link. The chain ends at
   the closure's parameter; anything else ends the walk without a
   finding.
+- Require the parameter to occur **exactly once** in the body. The
+  clauses above maintain that where they hold, but the count states
+  the invariant directly and catches what they do not constrain — a
+  `Call`'s callee expression, for one.
+- "Sole argument" is deliberately conservative. `foo(baz(x), 1)` does
+  split, as `.map(baz).map(|v| foo(v, 1))`, but recognising it means
+  picking which argument is the chain, and picking wrong suggests code
+  that does not compile. A missed finding is the cheaper error.
 - Two or more links is the trigger. One link is
   `redundant_closure_for_method_calls`' business, not this rule's.
 - For each link but the last, decide liftability from the result type:
