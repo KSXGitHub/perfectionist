@@ -4,8 +4,8 @@
 
 ## Statement
 
-> Prefer `where` clauses over inline bounds when there are multiple
-> constraints.
+Prefer `where` clauses over inline bounds when there are multiple
+constraints.
 
 ## What to lint
 

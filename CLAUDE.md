@@ -716,13 +716,10 @@ and reserving those two is what keeps them worth reading.
 ### A blockquote is not always an alert
 
 `>` is also plain markdown for a quotation, and the catalogue
-relies on that. A `>` block in `planned-rules/` is one of the
-following, and only the aside may become an alert:
+relies on that. Do not run a sweep that mechanically upgrades
+every `>` block to an alert; read each one and leave it as it
+stands. These kinds are worth naming:
 
-- **A quotation.** Every `## Statement` section quotes the rule's
-  upstream style-guide source verbatim. Leave these alone, and do
-  not run a sweep that mechanically upgrades every `>` block to
-  an alert.
 - **An aside** — a remark in the author's own voice, addressed to
   the reader. This is the one an alert improves; pick its type by
   the rules above.
