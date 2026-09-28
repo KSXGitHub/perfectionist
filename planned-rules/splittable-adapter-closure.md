@@ -757,25 +757,38 @@ and their outputs compared:
 
 `perfectionist::overly_long_method_chain`
 ([`src/rules/overly_long_method_chain.rs`](../src/rules/overly_long_method_chain.rs))
-counts a chain's distinct calls against a limit. The two rules can
-both be satisfied, but the code that satisfies both is code the chain
-rule tells you not to write, so a project should pick one.
+counts a chain's distinct calls against a limit. The two rules narrow
+each other rather than contradict: code satisfying both is a smaller
+set than code satisfying either, and not an empty one.
 
 The cost falls on alternation rather than on length, because a run of
-the same method counts once. Measured against the default
-`max_calls` of 5, with five stages either way:
+the same method counts once. Measured against the default `max_calls`
+of 5, with five stages either way:
 
 - five consecutive `map`s: silent, counting three distinct calls.
 - `map` / `filter_map` / `map` / `filter_map` / `map`: **seven**
   distinct calls, flagged.
 
 So this rule is free where it produces a run and expensive where it
-interleaves adapter kinds. In the second case the chain rule's remedy
-is to name a stage — and its `CUT_HELP` declines a cut that can only
-be named for the steps it performs rather than for the value it
-yields. One step per adapter produces exactly those stages, so the
-joint style is one the chain rule identifies as wrong while this rule
-compels it.
+interleaves adapter kinds. Where it does cost, the chain rule's
+`NAMING_HELP` offers two remedies, and both leave this rule with
+nothing to fire on:
+
+- **Bind a stage to a `let`.** Two shorter chains, each still one step
+  per adapter. `CUT_HELP` declines a cut whose only available name
+  would describe the steps rather than the value, and names
+  `filtered`, `mapped` and `result` as what it means by that — a cut
+  after `.map(str::trim)` is called `trimmed`, which is the value.
+- **Move a run of stages into a function.** This rule fires on a
+  closure passed to an adapter, so `items.map(normalise)` is a path
+  and no trigger at all.
+
+The second is the one to take knowingly. It satisfies both triggers
+while putting the steps back inside a body, which is the arrangement
+this rule exists to open up: the pipeline gets shorter and its stages
+go somewhere else. Extraction earns its place where the extracted run
+has a name of its own, and costs something where it is reached for
+only to get under a limit.
 
 [`pipe_style`](./pipe-style.md) governs where a pipe may sit in a
 chain rather than what its closure holds, so the two triggers are
@@ -786,9 +799,9 @@ leaves a `.pipe(…)` followed by another.
 
 ## Configuration
 
-None. There is one trigger and one direction. Whether a project wants
-the rule at all is the `[perfectionist]` `enable` decision, not a
-knob.
+None. There is one direction, and the two triggers agree on it.
+Whether a project wants the rule at all is the `[perfectionist]`
+`disable` decision, not a knob.
 
 ## Implementation notes
 
@@ -863,15 +876,14 @@ subset rather than a token one.
 
 ## Default state
 
-Inactive by default. Enable in `[perfectionist].enable`.
+Active by default.
 
-The shape it flags is idiomatic: a closure chaining two calls appears
-throughout published Rust, so a rule firing on it by default would be
-arguing with most of its audience on first run. It also forces the
-choice described in
-[Interaction with sibling rules](#interaction-with-sibling-rules), and
-a rule that forces a choice should be one a project opts into rather
-than one it inherits.
+The activation model reserves `Inactive` for a trigger known to
+false-positive, an advisory sub-check behind a knob, or a direction
+that varies by project past what a baseline can pick. None of the
+three holds. The shape it flags is ordinary idiomatic Rust, which is a
+reason to expect plenty of diagnostics rather than a reason to ship
+the rule off: firing on what the rule names is not a false positive.
 
 ## Deferred: the unanchored chain
 
@@ -900,8 +912,9 @@ Before it is taken:
 - **Measure how often those shapes occur.** They are not measured
   here, and this rule's own rationale is that the shape it flags is
   already idiomatic, so a widening has to be worth arguing for.
-- **Decide what an upgrade does.** A project that enabled the rule
-  would get more findings from the same configuration. Either that is
+- **Decide what an upgrade does.** A project already running the rule
+  would get more findings from the same configuration, and since it
+  ships on, that is every consumer. Either that is
   accepted and said out loud, or the wider trigger arrives as a
   configuration value — which would be this rule's first, against a
   catalogue that prefers a rule with one direction over a knob.

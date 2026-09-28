@@ -108,9 +108,10 @@ pattern that several rules call out by reference — live in
   `scan`, `rfold` and `try_rfold`), rayon's parallel counterparts,
   itertools' additions, `Option`, `Result`, `Poll` and `ControlFlow`
   on every channel each has, and `pipe-trait`'s piping methods;
-  excludes `filter`, `find` and the rest, where a
-  leading `map` changes the answer. A project picks between this and
-  `perfectionist::overly_long_method_chain`. Inactive by default.
+  excludes `all`, `position` and the rest, where a
+  leading adapter changes the answer. Narrows what also satisfies
+  `perfectionist::overly_long_method_chain` without contradicting it.
+  Active by default.
 
 ### Command builder
 - [`folded-command-setter.md`](./folded-command-setter.md) — flag a
