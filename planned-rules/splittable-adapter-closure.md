@@ -585,7 +585,7 @@ formatting step: `"42"` either way.
 The rewrite differs from the iterator family in which end keeps the
 original method. There the leading steps become `map` and the adapter
 stays last, because its kind is what the pipeline depends on. Here
-every step becomes a `pipe`, and the receiver-taking variant is pinned
+every step becomes a `pipe`, and the receiver-taking method is pinned
 to the **head**, because it is the only one that touches the receiver:
 
 ```rust
@@ -617,7 +617,7 @@ The `_as_`, `_deref` and `_borrow` families differ from `pipe_ref` and
 happens once, at the head, and the steps above it neither see it nor
 care, so the split is the same in all of them.
 
-**Which variant heads the chain decides whether a lifted step may
+**Which method heads the chain decides whether a lifted step may
 borrow.** `pipe` consumes the receiver, so a step returning a borrow
 of it is the `E0515` of
 [When a step can be lifted](#when-a-step-can-be-lifted):
@@ -629,7 +629,7 @@ String::from("  x  ").pipe(|v| v.trim()).pipe(str::len)
 error[E0515]: cannot return value referencing function parameter `v`
 ```
 
-Every other variant hands the closure a borrow carrying the
+Every other method hands the closure a borrow carrying the
 receiver's own lifetime, so the same lift compiles: `pipe_ref`,
 `pipe_deref` and `pipe_borrow` each gave `1` where `pipe` gave
 `E0515`. So the borrow test this rule applies everywhere is answered
