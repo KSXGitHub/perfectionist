@@ -86,6 +86,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   macro invocation does not follow rustfmt's vertical trailing-comma policy
 
+- [`mutating_command_builder`](./mutating_command_builder.md) (default: `active`).
+
+  a `std::process::Command` setter taking `&mut self` where `command-extra`'s by-value form exists
+
 - [`named_prelude_imports`](./named_prelude_imports.md) (default: `active`).
 
   named item cherry-picked from a prelude module instead of glob-imported
