@@ -11,8 +11,8 @@ below is the catalogue's own rather than a quotation.
 ## Statement
 
 An iterator adapter should do one thing. A closure whose body chains
-several operations makes one adapter do all of them, and the stages
-that would have been visible in the pipeline are hidden inside it.
+several steps makes one adapter do all of them, and the stages that
+would have been visible in the pipeline are hidden inside it.
 
 **Avoid:**
 
@@ -53,13 +53,13 @@ That reduction is Clippy's to enforce, not this rule's; see
 ## What to lint
 
 Flag a closure passed to one of the adapters below whose body is a
-chain of **two or more** applications of the closure's parameter,
+chain of **two or more** steps applied to the closure's parameter,
 where the parameter occurs **exactly once** — at the bottom of the
 chain.
 
-Suggest one adapter per application. Every application but the last
-becomes a `map`; the last keeps the original adapter, because that is
-the one whose kind the pipeline depends on:
+Suggest one adapter per step. Every step but the last becomes a
+`map`; the last keeps the original adapter, because that is the one
+whose kind the pipeline depends on:
 
 ```rust
 .adapter(|binding| third(second(first(binding))))
@@ -69,7 +69,7 @@ the one whose kind the pipeline depends on:
 .adapter(third)
 ```
 
-A body with only **one** application is not this rule's: there is
+A body with only **one** step is not this rule's: there is
 nothing to split, and `.map(|text| text.trim())` is already one
 adapter doing one thing. Reducing it to `.map(str::trim)` is
 `clippy::redundant_closure_for_method_calls`.
@@ -182,14 +182,13 @@ and leaves the reduction to Clippy.
 ### What Clippy already says
 
 Measured on Clippy 1.94, at default levels Clippy says nothing about
-any of this. Two of its lints meet this rule at the edges:
+any of this. Its lints meet this rule at the edges:
 
 - `clippy::redundant_closure` (`style`, warn-by-default) reduces
   `|text| trim(text)` to `trim`, completing a split this rule made.
 - `clippy::redundant_closure_for_method_calls` (`pedantic`,
   allow-by-default) does the same for a method call, suggesting
-  `T0::bar` for `|value| value.bar()`. It is also what covers the
-  single-application closures this rule leaves alone.
+  `T0::bar` for `|value| value.bar()`.
 
 Nothing in Clippy splits a chained closure, which is the part this
 rule is for.
@@ -198,9 +197,11 @@ rule is for.
 
 Do *not* flag:
 
-- A closure whose body is not a chain of applications of its
-  parameter — a block with statements, a `match`, a `?`, an operator
-  expression, or any body where the parameter occurs more than once.
+- A closure whose body is not a chain of steps applied to its
+  parameter — a block with statements, a `match`, a `?`, or an
+  operator expression.
+- A body where the parameter occurs more than once, per
+  [What to lint](#what-to-lint).
 - A step whose result borrows from the binding, per
   [When a step can be lifted](#when-a-step-can-be-lifted).
 - A closure produced by a macro expansion, where the suggestion would
@@ -227,11 +228,11 @@ the same method counts once. Measured against the default
 
 So this rule is free where it produces a run and expensive where it
 interleaves adapter kinds. In the second case the chain rule's remedy
-is to name a stage — and its own help text says that if the only name
-that fits describes the steps rather than the value, the cut is in the
-wrong place. One-operation-per-adapter produces exactly those stages,
-so the joint style is one the chain rule identifies as wrong while
-this rule compels it.
+is to name a stage — and its `CUT_HELP` declines a cut that can only
+be named for the steps it performs rather than for the value it
+yields. One step per adapter produces exactly those stages, so the
+joint style is one the chain rule identifies as wrong while this rule
+compels it.
 
 ## Configuration
 
@@ -250,21 +251,19 @@ result borrows from.
   sym::Iterator)`. The adapter set decides which argument holds the
   closure, and whether the item is its only parameter.
 - Walk the closure body as a chain: a `MethodCall` whose receiver is
-  the next link and whose arguments do not mention the parameter, or
-  a `Call` whose sole argument is the next link. The chain ends at
+  the next step and whose arguments do not mention the parameter, or
+  a `Call` whose sole argument is the next step. The chain ends at
   the closure's parameter; anything else ends the walk without a
   finding.
-- Require the parameter to occur **exactly once** in the body. The
-  clauses above maintain that where they hold, but the count states
-  the invariant directly and catches what they do not constrain — a
-  `Call`'s callee expression, for one.
+- Count the parameter's occurrences directly rather than leaving it to
+  the walk: the clauses above do not constrain everything a body can
+  hold — a `Call`'s callee expression, for one.
 - "Sole argument" is deliberately conservative. `foo(baz(x), 1)` does
   split, as `.map(baz).map(|v| foo(v, 1))`, but recognising it means
   picking which argument is the chain, and picking wrong suggests code
   that does not compile. A missed finding is the cheaper error.
-- Two or more links is the trigger. One link is
-  `redundant_closure_for_method_calls`' business, not this rule's.
-- For each link but the last, decide liftability from the result type:
+- Two or more steps is the trigger; one step is not.
+- For each step but the last, decide liftability from the result type:
   decline where it carries a lifetime derived from the receiver.
   Taking the receiver by value is the easy sufficient condition.
 - Suppress proc-macro-synthesised nodes per
@@ -288,7 +287,8 @@ Inactive by default. Enable in `[perfectionist].enable`.
 
 The shape it flags is idiomatic: a closure chaining two calls appears
 throughout published Rust, so a rule firing on it by default would be
-arguing with most of its audience on first run. It also asks a project
-to choose between this and
-`perfectionist::overly_long_method_chain`, and a rule that forces that
-choice should be one a project opts into rather than one it inherits.
+arguing with most of its audience on first run. It also forces the
+choice described in
+[Interaction with sibling rules](#interaction-with-sibling-rules), and
+a rule that forces a choice should be one a project opts into rather
+than one it inherits.
