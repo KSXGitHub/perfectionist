@@ -139,6 +139,11 @@ stops:
 
 ### Which adapters
 
+**Adapter** here means any method that takes a closure and hands it a
+value. That is looser than the iterator sense — `for_each` and `fold`
+are consumers by that reckoning, and `pipe` adapts nothing at all —
+but the shape is what this rule is about, not the taxonomy.
+
 An adapter can take a leading `map` only where the item **enters the
 closure by value and never comes back out**. Each of these was checked
 by running both forms and comparing the results:
@@ -305,6 +310,47 @@ The hoisting condition carries over as it stands: a `map` runs per
 item where a branch does not, and that reasoning does not depend on
 which trait the adapter belongs to.
 
+### `pipe-trait`'s piping methods
+
+`pipe_trait::Pipe` is `impl<X> Pipe for X {}`, and `pipe` is defined
+as `f(self)`, so the split here is an identity rather than a
+measurement: `x.pipe(|v| g(f(v)))` and `x.pipe(f).pipe(g)` are both
+`g(f(x))`. Measured anyway, over `21` with a doubling and a
+formatting step: `"42"` either way.
+
+The rewrite differs from the iterator family in which end keeps the
+original method. There the leading steps become `map` and the adapter
+stays last, because its kind is what the pipeline depends on. Here
+every step becomes a `pipe`, and the receiver-taking variant is pinned
+to the **head**, because it is the only one that touches the receiver:
+
+```rust
+// Avoid
+s.pipe_ref(|v| v.trim().len())
+// Prefer
+s.pipe_ref(|v| v.trim()).pipe(str::len)
+```
+
+Measured `2` either way, and `pipe_mut` `3` either way. The variants
+handing the closure a borrow — `pipe_ref`, `pipe_mut`, `pipe_as_ref`,
+`pipe_as_mut`, `pipe_deref`, `pipe_deref_mut`, `pipe_borrow`,
+`pipe_borrow_mut` — all take this form.
+
+Nothing in `Pipe` is excluded. It has one shape, and no sibling that
+hands the value back.
+
+The hoisting condition holds here as everywhere, and `pipe` shows it
+most starkly, since a `pipe` runs once rather than once per item.
+Folded, the parse below never runs; split, it panics:
+
+```rust
+"zz".pipe(|t| if flag { t.parse::<i32>().unwrap() } else { 0 })
+```
+```
+folded=0
+thread 'main' panicked: called `Result::unwrap()` on an `Err` value: ParseIntError
+```
+
 ### When a step can be lifted
 
 Splitting is sound only where the lifted step does not hand back a
@@ -413,10 +459,10 @@ Do *not* flag:
   be written into the macro body.
 - A step whose result is not `Send`, under a rayon adapter, per
   [Rayon's parallel adapters](#rayons-parallel-adapters).
-- An adapter belonging to neither `Iterator` nor `ParallelIterator`.
-  `Option`, `Result`, `[T; N]`, `Poll`, `ControlFlow` and `Ref` each
-  have a `map` of their own, and the same reasoning would carry to
-  them; this rule does not reach them.
+- An adapter belonging to none of `Iterator`, `ParallelIterator` or
+  `Pipe`. `Option`, `Result`, `[T; N]`, `Poll`, `ControlFlow` and
+  `Ref` each have a `map` of their own, and the same reasoning would
+  carry to them; this rule does not reach them.
 
 These shapes are declined although they do split, because the rewrite
 they need is not the one this rule makes. Each was run in both forms
@@ -457,6 +503,13 @@ yields. One step per adapter produces exactly those stages, so the
 joint style is one the chain rule identifies as wrong while this rule
 compels it.
 
+[`pipe_style`](./pipe-style.md) governs where a pipe may sit in a
+chain rather than what its closure holds, so the two triggers are
+disjoint. Its `pipe_at_chain_boundary` sub-check forbids a
+`value.pipe(f)` that neither continues a method chain nor is continued
+by one — which the split satisfies by construction, since splitting
+leaves a `.pipe(…)` followed by another.
+
 ## Configuration
 
 None. There is one trigger and one direction. Whether a project wants
@@ -473,9 +526,10 @@ result borrows from.
   the adapters, gated by the trait it resolves to:
   `clippy_utils::is_trait_method(cx, expr, sym::Iterator)` for the
   sequential set, and a `DefPath` match for
-  `rayon::iter::ParallelIterator`, which carries no diagnostic item to
-  ask for instead. The adapter set decides which argument holds the
-  closure, and whether the item is its only parameter.
+  `rayon::iter::ParallelIterator` and `pipe_trait::Pipe`, neither of
+  which carries a diagnostic item to ask for instead. The adapter set
+  decides which argument holds the closure, and whether the item is
+  its only parameter.
 - Under a rayon adapter, require each lifted step's result to be
   `Send` as well, per
   [Rayon's parallel adapters](#rayons-parallel-adapters).

@@ -102,7 +102,8 @@ pattern that several rules call out by reference — live in
   hand it back (`map`, `filter_map`, `flat_map`,
   `map_while`, `find_map`, `for_each`, `try_for_each`, `any`, `all`,
   `position`, `rposition`, and the item side of `fold`, `try_fold`,
-  `scan`, `rfold` and `try_rfold`), and rayon's parallel counterparts;
+  `scan`, `rfold` and `try_rfold`), rayon's parallel counterparts, and
+  `pipe-trait`'s piping methods;
   excludes `filter`, `find` and the rest, where a
   leading `map` changes the answer. A project picks between this and
   `perfectionist::overly_long_method_chain`. Inactive by default.
