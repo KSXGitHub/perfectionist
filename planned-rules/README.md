@@ -95,10 +95,10 @@ pattern that several rules call out by reference — live in
 
 ### Iterator adapters
 - [`splittable-adapter-closure.md`](./splittable-adapter-closure.md)
-  — flag a closure passed to an iterator adapter whose body can be
-  split, because it chains two or more steps and one adapter does
-  all of them; suggest one adapter per step, every one but the last
-  a `map`. Covers the adapters that take the item by value and never
+  — flag a closure passed to an iterator adapter that chains two or
+  more steps onto its item, so one adapter does all of them; suggest
+  one adapter per step, lifting each into a leading `map`. Covers the
+  adapters that take the item by value and never
   hand it back (`map`, `filter_map`, `flat_map`,
   `map_while`, `find_map`, `for_each`, `try_for_each`, `any`, `all`,
   `position`, `rposition`, and the item side of `fold`, `try_fold`

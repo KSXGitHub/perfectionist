@@ -52,14 +52,33 @@ That reduction is Clippy's to enforce, not this rule's; see
 
 ## What to lint
 
-Flag a closure passed to one of the adapters below whose body is a
-chain of **two or more** steps applied to the closure's parameter,
-where the parameter occurs **exactly once** — at the bottom of the
-chain.
+Flag a closure passed to one of the adapters below where the chain
+rooted at its item parameter is **two or more** steps long.
 
-Suggest one adapter per step. Every step but the last becomes a
-`map`; the last keeps the original adapter, because that is the one
-whose kind the pipeline depends on:
+The chain starts at the item parameter and runs outwards: a method
+call whose receiver is the chain so far, or a call whose sole argument
+is it, naming no parameter of the closure in its other arguments. It
+stops at the first node that is neither.
+
+Where the chain may sit is constrained by the closure's shape:
+
+- **A unary closure** — every adapter in the table below — must have
+  the chain as its whole body. This is stricter than
+  safety requires. It holds this stage's scope, and
+  [Later stage: the unanchored chain](#later-stage-the-unanchored-chain)
+  is where it would be relaxed.
+- **A binary closure** — `fold`, `try_fold`, `scan` — has the
+  accumulator expression above the chain by construction, so the chain
+  is a sub-expression. It may be split only where every node between
+  it and the body root always evaluates its child, per
+  [When the chain may be hoisted](#when-the-chain-may-be-hoisted).
+
+Suggest one adapter per step. How many steps leave the closure differs
+with its shape, because the adapter has to be left holding a closure
+either way.
+
+A **unary** closure hands its last step to the original adapter, which
+is the one whose kind the pipeline depends on:
 
 ```rust
 .adapter(|binding| third(second(first(binding))))
@@ -69,14 +88,26 @@ whose kind the pipeline depends on:
 .adapter(third)
 ```
 
-A body with only **one** step is not this rule's: there is
-nothing to split, and `.map(|text| text.trim())` is already one
-adapter doing one thing. Reducing it to `.map(str::trim)` is
+A **binary** closure keeps the accumulator expression, so every step
+of the chain leaves and the chain's place in the body becomes the new
+item parameter:
+
+```rust
+.fold(init, |acc, item| combine(acc, second(first(item))))
+// becomes
+.map(|item| first(item))
+.map(second)
+.fold(init, |acc, mapped| combine(acc, mapped))
+```
+
+A chain of only **one** step is not this rule's: there is nothing to
+split, and `.map(|text| text.trim())` is already one adapter doing one
+thing. Reducing it to `.map(str::trim)` is
 `clippy::redundant_closure_for_method_calls`.
 
-A parameter used **twice** is not a chain, however chained the rest of
-the body reads. The split gives every step its own closure, so an
-occurrence outside the last step is left with no binding to name:
+The item parameter must occur **exactly once**, wherever in the body
+it appears. The split gives every step its own closure, so a second
+occurrence is left with no binding to name:
 
 ```rust
 // Not this rule's: `a` occurs twice
@@ -92,6 +123,20 @@ error[E0425]: cannot find value `a` in this scope
 occurrence in an argument of the outermost call rather than of the
 last one.
 
+A binary closure's accumulator is under no such rule, because it never
+leaves the closure. It may appear as often as it likes in what sits
+above the chain; what it may not do is appear *in* a step, which a
+leading `map` cannot reach. A step naming it is simply where the chain
+stops:
+
+```rust
+// The chain is `trim` and `len`. `wrapping_mul` names the
+// accumulator, so it is not a step, and the body keeps it.
+.fold(1, |acc, s| s.trim().len().wrapping_mul(acc))
+// becomes
+.map(str::trim).map(str::len).fold(1, |acc, n| n.wrapping_mul(acc))
+```
+
 ### Which adapters
 
 An adapter can take a leading `map` only where the item **enters the
@@ -105,18 +150,75 @@ by running both forms and comparing the results:
 | `for_each`, `try_for_each`                   | `FnMut(Item) -> ()` / `-> R: Try` |
 | `any`, `all`, `position`, `rposition`        | `FnMut(Item) -> bool`             |
 
-`fold`, `try_fold` and `scan` satisfy the same predicate with a
-**binary** closure: the item is the second parameter, the result is an
-accumulator rather than an item, and the item side splits the same
-way. They are in scope, and the trigger has to find the item parameter
-rather than assume the only one:
+The `&mut self` adapters — `try_fold`, `try_for_each`, `any`, `all`,
+`find_map`, `position`, `rposition` — leave the receiver positioned
+and usable once they return. The split moves that receiver into `map`,
+so code going on to use it stops compiling:
 
 ```rust
-// Avoid
-let total = lines.fold(0, |total, line| total + line.trim().len());
-// Prefer
-let total = lines.map(str::trim).map(str::len).fold(0, |total, len| total + len);
+let mut it = data.iter();
+let found = it.map(|s| s.trim()).map(str::len).any(|n| n > 1);
+let rest: Vec<&&str> = it.collect();
 ```
+```
+error[E0382]: use of moved value: `it`
+```
+
+Suggesting `(&mut it).map(…)` reborrows instead and keeps the receiver
+alive. Where the rule cannot tell, declining is the cheaper error.
+
+`fold`, `try_fold` and `scan` satisfy the same predicate with a
+**binary** closure, where the item is the second parameter and the
+first carries state across items: an accumulator taken by value for
+`fold` and `try_fold`, a `&mut` state for `scan`, whose closure
+returns `Option<B>` and mutates it in place. The item side splits the
+same way in all three, so the trigger has to find the item parameter
+rather than assume the only one.
+
+One worked example each, over the same input, with the chain `trim`
+then `len` in all three. Both forms of each were run and their outputs
+compared:
+
+```rust
+let data = ["  a  ", " bb ", "ccc", "dddd"];   // trimmed lengths 1, 2, 3, 4
+let cap = |acc: usize, n: usize| (acc + n <= 5).then_some(acc + n);
+```
+
+```rust
+// fold — Avoid
+let total = data.iter().fold(0, |total, s| total + s.trim().len());
+// fold — Prefer
+let total = data.iter().map(|s| s.trim()).map(str::len)
+    .fold(0, |total, n| total + n);
+// 10 either way
+```
+
+```rust
+// try_fold — Avoid
+let capped = data.iter().try_fold(0, |acc, s| cap(acc, s.trim().len()));
+// try_fold — Prefer
+let capped = data.iter().map(|s| s.trim()).map(str::len)
+    .try_fold(0, |acc, n| cap(acc, n));
+// `None` either way, breaking on the third item
+```
+
+```rust
+// scan — Avoid
+let running: Vec<_> = data.iter()
+    .scan(0, |sum, s| { *sum += s.trim().len(); Some(*sum) }).collect();
+// scan — Prefer
+let running: Vec<_> = data.iter().map(|s| s.trim()).map(str::len)
+    .scan(0, |sum, n| { *sum += n; Some(*sum) }).collect();
+// [1, 3, 6, 10] either way
+```
+
+`scan` shows that the chain need not be an operand of anything: here it
+sits inside a `+=` statement in a block, and what matters is only that
+the block always runs it.
+
+Short-circuiting does not change the count: `try_fold` breaking on the
+third item ran the lifted step three times in both forms, because
+`map` is lazy and one to one.
 
 ### Which adapters are excluded, and why
 
@@ -179,6 +281,48 @@ does not fit it:
 So the rule suggests a split, in a closure where a path will not do,
 and leaves the reduction to Clippy.
 
+### When the chain may be hoisted
+
+A lifted step runs once per item the adapter pulls. A step left in the
+closure runs once per item only where the closure always evaluates it,
+so a chain sitting in a conditionally-evaluated position changes
+behaviour when hoisted — and the change compiles:
+
+```rust
+// `flag` is false, and the strings do not parse
+.map(|s| if flag { s.trim().parse::<usize>().unwrap() } else { 0 })
+// hoisted
+.map(|s| s.trim()).map(|s| s.parse::<usize>().unwrap()).map(|n| if flag { n } else { 0 })
+```
+```
+folded=[0, 0]
+thread 'main' panicked: called `Result::unwrap()` on an `Err` value: ParseIntError
+```
+
+This is the only divergence in this rule that a compiler does not
+catch, so a chain is split only where every node between it and the
+body root always evaluates the child the chain came from:
+
+| the chain's parent                                                      | always evaluates it |
+|-------------------------------------------------------------------------|---------------------|
+| a binary operator other than `&&` / `\|\|`, or a unary one                | yes                 |
+| the right-hand side of an assignment, compound (`+=`) or plain           | yes                 |
+| a cast, a field, an index, a reference                                   | yes                 |
+| a tuple, array, struct or repeat expression                              | yes                 |
+| an argument or the callee of a call                                      | yes                 |
+| the scrutinee of a `match`, the condition of an `if`                     | yes                 |
+| a block's tail, or the initialiser of a `let` in it                      | yes                 |
+| the operand of a `break` or `return`                                     | yes                 |
+| an arm of a `match` or `if`, `?` among them, since it desugars to a `match` | no               |
+| the right operand of `&&` or `\|\|`                                       | no                  |
+| the body of a nested closure                                             | no                  |
+| the body of a loop                                                       | no                  |
+| anything else                                                            | treat as no         |
+
+The condition is sufficient rather than necessary: a pure step in a
+conditional position would hoist safely, and this declines it. Rust
+exposes no purity or no-panic test a lint could ask instead.
+
 ### What Clippy already says
 
 Measured on Clippy 1.94, at default levels Clippy says nothing about
@@ -197,18 +341,38 @@ rule is for.
 
 Do *not* flag:
 
-- A closure whose body is not a chain of steps applied to its
-  parameter — a block with statements, a `match`, a `?`, or an
-  operator expression.
-- A body where the parameter occurs more than once, per
+- A **unary** closure whose body is not the chain — a block with
+  statements, a `match`, a `?`, or an operator expression. This is the
+  anchor from [What to lint](#what-to-lint), which holds this stage's
+  scope rather than its soundness.
+- A chain whose position is not always evaluated, per
+  [When the chain may be hoisted](#when-the-chain-may-be-hoisted).
+- A body where the item parameter occurs more than once, per
   [What to lint](#what-to-lint).
 - A step whose result borrows from the binding, per
   [When a step can be lifted](#when-a-step-can-be-lifted).
+- A receiver used again after the adapter returns, per
+  [Which adapters](#which-adapters).
 - A closure produced by a macro expansion, where the suggestion would
   be written into the macro body.
 - An adapter that is not `Iterator`'s. `Option` and `Result` have
   `map` and `and_then` of their own, and this rule does not reach
   them.
+
+Two shapes are declined although they do split, because the rewrite
+they need is not the one this rule makes. Both were run in each form
+and agreed:
+
+- **A destructured item parameter.** `fold(0, |acc, (_k, v)| acc +
+  v.trim().len())` splits to `.map(|(_k, v)| v.trim()).map(str::len)`,
+  reproducing the pattern in the lifted `map`. The chain bottoms out
+  at a binding the pattern introduced rather than at the parameter, so
+  the walk stops before it starts.
+- **A `?` in the body.** `try_fold(0, |acc, s| Ok(acc +
+  s.trim().parse::<i32>()?))` splits to
+  `.map(str::trim).map(|s| s.parse::<i32>()).try_fold(0, |acc, r| Ok(acc + r?))`,
+  which changes the item type to `Result` and leaves the `?` behind.
+  That is a different rewrite from lifting a step.
 
 ## Interaction with sibling rules
 
@@ -250,22 +414,32 @@ result borrows from.
   the adapters, gated by `clippy_utils::is_trait_method(cx, expr,
   sym::Iterator)`. The adapter set decides which argument holds the
   closure, and whether the item is its only parameter.
-- Walk the closure body as a chain: a `MethodCall` whose receiver is
-  the next step and whose arguments do not mention the parameter, or
-  a `Call` whose sole argument is the next step. The chain ends at
-  the closure's parameter; anything else ends the walk without a
-  finding.
-- Count the parameter's occurrences directly rather than leaving it to
-  the walk: the clauses above do not constrain everything a body can
-  hold — a `Call`'s callee expression, for one.
+- Find the item parameter's occurrence in the body, then walk *up*
+  through `parent_hir_node`: a `MethodCall` whose receiver is the
+  chain so far and whose arguments name no parameter of the closure,
+  or a `Call` whose sole argument is it. Stop at the first parent that
+  is neither.
+- Count the item parameter's occurrences directly rather than leaving
+  it to the walk: the clauses above do not constrain everything a body
+  can hold — a `Call`'s callee expression, for one. The count has to
+  see inside nested closures, where a step's closure argument can name
+  the item or the accumulator.
 - "Sole argument" is deliberately conservative. `foo(baz(x), 1)` does
   split, as `.map(baz).map(|v| foo(v, 1))`, but recognising it means
   picking which argument is the chain, and picking wrong suggests code
   that does not compile. A missed finding is the cheaper error.
 - Two or more steps is the trigger; one step is not.
-- For each step but the last, decide liftability from the result type:
-  decline where it carries a lifetime derived from the receiver.
-  Taking the receiver by value is the easy sufficient condition.
+- Decide liftability from each step's result type: decline where it
+  carries a lifetime derived from the receiver. Taking the receiver by
+  value is the easy sufficient condition. A unary closure's last step
+  is exempt, since it stays with the adapter rather than moving into a
+  `map`.
+- Then check where the chain sits. For a binary closure, walk from its
+  top to the body root and require every node to always evaluate its
+  child, per
+  [When the chain may be hoisted](#when-the-chain-may-be-hoisted). For
+  a unary closure, require the chain's top to *be* the body root,
+  which satisfies that vacuously and holds this stage's scope.
 - Suppress proc-macro-synthesised nodes per
   [Suppressing proc-macro-synthesised violations](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations).
   The diagnostic span is the adapter's method segment, which a derive
@@ -274,12 +448,16 @@ result borrows from.
 
 ### Difficulty
 
-**Medium.** The walk and the adapter table are easy. What raises it is
-the liftability test: a borrow of the binding is what separates a
-suggestion that compiles from one that does not, and the conservative
-answer has to be the one that declines. A first implementation may
-restrict itself to steps taking the receiver by value and leave the
-rest unflagged, which is a real subset rather than a token one.
+**Medium.** The walk and the adapter table are easy. Two tests raise
+it. Liftability decides whether a suggestion *compiles*: a borrow of
+the binding is what separates one that does from one that does not,
+and the conservative answer has to be the one that declines. Position
+decides whether a suggestion is *correct*, and is the only place in
+this rule where being wrong produces a rewrite that compiles and
+behaves differently — which is why this stage exercises it on the
+three binary adapters alone. A first implementation may restrict
+itself to steps taking the receiver by value and leave the rest
+unflagged, which is a real subset rather than a token one.
 
 ## Default state
 
@@ -292,3 +470,41 @@ choice described in
 [Interaction with sibling rules](#interaction-with-sibling-rules), and
 a rule that forces a choice should be one a project opts into rather
 than one it inherits.
+
+## Later stage: the unanchored chain
+
+The anchor on unary closures is scope containment, not soundness: a
+chain that satisfies
+[When the chain may be hoisted](#when-the-chain-may-be-hoisted) is
+safe to split wherever it sits, and the binary adapters already rely
+on that. Dropping the anchor is one condition fewer in the trigger,
+and it would newly flag a unary closure with something above its
+chain:
+
+| above the chain      | example                                                     |
+|----------------------|-------------------------------------------------------------|
+| an operator          | `.map(\|x\| x.trim().len() + 1)`                              |
+| an argument          | `.map(\|x\| format!("{}", x.trim().to_uppercase()))`          |
+| a block's statements | `.map(\|x\| { let n = x.trim().len(); n * 2 })`               |
+| a `match` scrutinee  | `.map(\|x\| match x.trim().len() { 0 => None, n => Some(n) })` |
+
+A conditional position is not on that list. The hoisting condition
+excludes it for a unary closure exactly as it does for a binary one,
+so the widening adds findings without adding the one hazard a
+compiler does not catch.
+
+Two things should happen before it is taken:
+
+- **Measure how often those shapes occur.** They are not measured
+  here, and this rule's own rationale is that the shape it flags is
+  already idiomatic, so a widening has to be worth arguing for.
+- **Decide what an upgrade does.** A project that enabled the rule
+  would get more findings from the same configuration. Either that is
+  accepted and said out loud, or the wider trigger arrives as a
+  configuration value — which would be this rule's first, against a
+  catalogue that prefers a rule with one direction over a knob.
+
+The destructured item parameter that
+[Exemptions](#exemptions) declines is *not* part of this: that one is
+about where the chain bottoms out, and the anchor is about where it
+stops at the top.
