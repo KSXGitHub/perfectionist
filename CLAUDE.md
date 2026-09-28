@@ -717,17 +717,17 @@ and reserving those two is what keeps them worth reading.
 
 `>` is also plain markdown for a quotation, and the catalogue
 relies on that. Do not run a sweep that mechanically upgrades
-every `>` block to an alert. An alert is for an aside — a remark
-in the author's own voice, addressed to the reader — and its type
-follows the rules above; read any other `>` block and leave it as
-it stands.
+every `>` block to an alert; read each one and leave it as it
+stands. These kinds are worth naming:
 
-One kind is worth naming, because the obvious repair breaks it: a
-sketch of emitted diagnostic text, typically introduced by a line
-ending "should emit text along these lines:". It stays a
-blockquote, since the markup inside is part of the sketch, so a
-`text` fence would render the `**error:**` markers literally and
-lose what the block is showing.
+- **An aside** — a remark in the author's own voice, addressed to
+  the reader. This is the one an alert improves; pick its type by
+  the rules above.
+- **A sketch of emitted diagnostic text**, typically introduced
+  by a line ending "should emit text along these lines:". Leave
+  it as a blockquote: the markup inside is part of the sketch, so
+  a `text` fence would render the `**error:**` markers literally
+  and lose what the block is showing.
 
 ## Symlinks
 
