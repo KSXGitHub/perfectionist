@@ -159,7 +159,6 @@ does nothing else:
 | an `Option`, `Result` or `Poll` value           | `map`                        |
 | a `Result` or `Poll` error                      | `map_err`                    |
 | a `ControlFlow` break or continue               | `map_break` / `map_continue` |
-| an array element                                | `map`                        |
 | a `Pipe` receiver                               | `pipe`                       |
 
 An adapter is in scope where its item **enters the closure by value
@@ -364,12 +363,35 @@ channels, each its own lift target, each leaving the other alone —
 alike. `Poll` carries the value channel on `Poll<T>`, and both
 channels on `Poll<Result<T, E>>` and `Poll<Option<Result<T, E>>>`.
 
-`[T; N]::map` has no sibling to be excluded, and splitting it costs
-what the others do not. It is **eager**, so `arr.map(f).map(g)`
-materialises an intermediate `[U; N]` where a lazy `map` would have
-fused. Same result, same work, more storage — the only family in scope
-where the split is not free. `try_map` is `#[unstable]` and out of
-reach.
+`[T; N]::map` is **excluded**, and its measured row above is why the
+exclusion is needed rather than why it would be in scope. It is
+**eager**, so the split does not merely materialise an intermediate
+`[U; N]` — it runs every `f` before any `g`, where the folded form
+alternated them:
+
+```
+array folded  f1 g2 f2 g4 f3 g6
+array split   f1 f2 f3 g2 g4 g6
+iter  folded  f1 g2 f2 g4 f3 g6
+iter  split   f1 g2 f2 g4 f3 g6
+```
+
+Pure steps give the same answer either way, which is what the table's
+row shows. Impure ones do not, and the reordering compiles: it is the
+second divergence in this rule a compiler does not catch, alongside
+the one in
+[When the chain may be hoisted](#when-the-chain-may-be-hoisted), and
+it has the same shape — the split is safe exactly where the steps are
+pure, and purity is what no lint can ask for. Where every other family
+lifts into a lazy `map` that keeps `f` and `g` interleaved per item,
+an eager one cannot.
+
+So the condition is that **the lift target be lazy**, which excludes
+`[T; N]::map` and nothing else in scope. Admitting it needs a purity
+test instead;
+[Later stage: arrays behind a purity test](#later-stage-arrays-behind-a-purity-test)
+is where that sits. `try_map` is `#[unstable]` and out of reach either
+way.
 
 ### Rayon's parallel adapters
 
@@ -570,6 +592,9 @@ Do *not* flag:
   be written into the macro body.
 - A step whose result is not `Send`, under a rayon adapter, per
   [Rayon's parallel adapters](#rayons-parallel-adapters).
+- An adapter whose lift target is eager, which reorders the steps it
+  separates — `[T; N]::map`, per
+  [`Poll`, `ControlFlow` and `[T; N]`](#poll-controlflow-and-t-n).
 - An adapter whose item this rule has no lift target for. The families
   it does reach are the ones [Which adapters](#which-adapters) tables;
   `Ref`, `RefMut` and `Pin` have a `map` the same reasoning would carry
@@ -641,8 +666,7 @@ result borrows from.
   `pipe_trait::Pipe`, none of which carries a diagnostic item to ask
   for instead. `Option`, `Result`, `Poll` and `ControlFlow` carry
   inherent methods rather than trait ones, so those are the receiver's
-  own diagnostic item and the method name, and an array is
-  `ty::Array(..)` on the receiver.
+  own diagnostic item and the method name.
 - Key the adapter table by method **and argument position**: the
   position says which argument holds a closure, which channel its
   parameter comes from and so which adapter the lift targets, and
@@ -748,3 +772,31 @@ The destructured item parameter that
 [Exemptions](#exemptions) declines is *not* part of this: that one is
 about where the chain bottoms out, and the anchor is about where it
 stops at the top.
+
+## Later stage: arrays behind a purity test
+
+`[T; N]::map` is excluded for reordering the steps it separates, and
+reordering only matters where a step has an effect to reorder. A rule
+that could ask "is this step pure?" would admit arrays, and would also
+loosen
+[When the chain may be hoisted](#when-the-chain-may-be-hoisted), which
+declines a conditional position for the same unaskable reason.
+
+What the repository has is not that test. `impure_macro_arguments`
+carries a purity walker, but it reads `TokenTree`s in a pre-expansion
+pass and answers from a configured list of pure-getter names, where
+this rule is a late pass holding HIR and types. `clippy_utils` offers
+`eager_or_lazy::switch_to_eager_eval`, which is HIR-level but answers
+a different question — whether an expression is cheap *and* effect-free
+enough to move, which is a heuristic tuned for
+`unnecessary_lazy_evaluations` rather than a purity oracle. Borrowing
+either for this would be claiming an answer neither gives.
+
+So the stage is: build an HIR purity predicate, decide where it lives
+per
+[the crate-internal helper conventions](../CLAUDE.md#one-rule-per-file-one-config-per-rule),
+and settle what it may assume — whether a call to a `const fn` counts,
+whether a trait method may be judged from its signature, and what it
+does with a closure it cannot see through. Until then the conservative
+answer stands: the lift target must be lazy, and a conditional
+position is declined.
