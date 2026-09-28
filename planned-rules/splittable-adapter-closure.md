@@ -287,7 +287,7 @@ it returns one, so mapping first changes the result.
 
 ### Splitting a predicate
 
-A closure can hold two separable jobs without chaining anything. A
+A closure can hold separable jobs without chaining anything. A
 predicate that is a **conjunction** does one test and then another,
 and each test can have its own adapter:
 
@@ -303,8 +303,8 @@ needs a trigger of its own, because the item occurs once **per
 conjunct** — which the chain trigger forbids outright.
 
 What it lifts into is not `map` but the adapter that filters with the
-**same discipline**. Three disciplines turned up, and they decide
-everything:
+**same discipline**. These are the disciplines that turned up, and
+they decide everything:
 
 | discipline | what the adapter's answer depends on | adapters | lift target |
 |---|---|---|---|
@@ -327,7 +327,8 @@ Measured over `1..=8`, keeping the even multiples of three:
 | rayon `any`           | `true`    | `true`    |
 
 **Evaluation is preserved exactly**, which is not obvious and is why
-this split needs no condition where the hoisting one does: `&&` skips
+this split needs no condition where
+[the chain's](#when-the-chain-may-be-hoisted) does: `&&` skips
 its right operand precisely where the second adapter skips the item.
 The side-effect traces are identical:
 
@@ -352,7 +353,7 @@ The adapters with no discipline to match were measured too:
 | `skip_while`            | `[2, 3, 9]`     | `[]`          | neither target reproduces it                    |
 | `\|\|` rather than `&&` | `[2,3,4,6,8]`   | `[6]`         | a disjunction is not a conjunction              |
 
-Two of these the compiler refuses outright rather than answering
+Some of these the compiler refuses outright rather than answering
 wrongly: `rposition` wants an `ExactSizeIterator` and rayon's
 `position_any` an `IndexedParallelIterator`, and a `Filter` is
 neither.
