@@ -52,6 +52,14 @@ That reduction is Clippy's to enforce, not this rule's; see
 
 ## What to lint
 
+A closure can be doing more than one job in more than one way, so the
+rule has two triggers. A **chain** of steps on the item splits by
+lifting all but one into the item's `map`, and this section is about
+that. A **predicate** built from separable tests splits into
+successive filtering adapters instead, with its own trigger in
+[Splitting a predicate](#splitting-a-predicate) and its own rules,
+since the item there occurs once per test rather than once in all.
+
 Flag a closure passed to one of the adapters below where the chain
 rooted at its item parameter is **two or more** steps long.
 
@@ -249,7 +257,7 @@ error[E0382]: use of moved value: `it`
 Suggesting `(&mut it).map(…)` reborrows instead and keeps the receiver
 alive. Where the rule cannot tell, declining is the cheaper error.
 
-### Which adapters are excluded, and why
+### Which adapters take no leading `map`, and why
 
 Where the item is borrowed by the closure, or handed back by the
 adapter, a leading `map` does not preserve the meaning. This is not a
@@ -276,6 +284,131 @@ The list will go stale as the standard library grows; **the item
 enters by value and does not come back out** will not. `reduce` shows
 why the second half is needed: its closure takes items by value, but
 it returns one, so mapping first changes the result.
+
+### Splitting a predicate
+
+A closure can hold two separable jobs without chaining anything. A
+predicate that is a **conjunction** does one test and then another,
+and each test can have its own adapter:
+
+```rust
+// Avoid
+iter.filter(|x| foo(x) && bar(x))
+// Prefer
+iter.filter(foo).filter(bar)
+```
+
+This is the rule's own statement reached by a different route, and it
+needs a trigger of its own, because the item occurs once **per
+conjunct** — which the chain trigger forbids outright.
+
+What it lifts into is not `map` but the adapter that filters with the
+**same discipline**. Three disciplines turned up, and they decide
+everything:
+
+| discipline | what the adapter's answer depends on | adapters | lift target |
+|---|---|---|---|
+| **set** | which items satisfy the predicate, and nothing else | `filter`, `find`, `rfind`, `any`, `Option::filter`, `Option::is_some_and`, rayon `filter` / `find_first` / `any` | `filter` |
+| **prefix** | the leading run that satisfies it | `take_while`, `map_while` | `take_while` |
+| **neither** | the items a filter would drop, or where they sat | `all`, `Option::is_none_or`, `position`, `rposition`, `partition`, `skip_while` | none |
+
+Measured over `1..=8`, keeping the even multiples of three:
+
+| adapter               | folded    | split     |
+|-----------------------|-----------|-----------|
+| `filter`              | `[6]`     | `[6]`     |
+| `find`                | `Some(6)` | `Some(6)` |
+| `rfind`               | `Some(6)` | `Some(6)` |
+| `any`                 | `true`    | `true`    |
+| `Option::filter`      | `Some(6)` | `Some(6)` |
+| `Option::is_some_and` | `true`    | `true`    |
+| rayon `filter`        | `[6]`     | `[6]`     |
+| rayon `find_first`    | `Some(6)` | `Some(6)` |
+| rayon `any`           | `true`    | `true`    |
+
+**Evaluation is preserved exactly**, which is not obvious and is why
+this split needs no condition where the hoisting one does: `&&` skips
+its right operand precisely where the second adapter skips the item.
+The side-effect traces are identical:
+
+```
+folded  a1 a2 b2 a3 a4 b4 a5 a6 b6 a7 a8 b8
+split   a1 a2 b2 a3 a4 b4 a5 a6 b6 a7 a8 b8
+```
+
+Getting the discipline wrong is not a near miss. Over `[6, 3, 12]`,
+`take_while(|x| a(x) && b(x))` gives `[6]`; split into two
+`take_while`s it still gives `[6]`, and split into a `filter` it gives
+`[6, 12]`.
+
+The adapters with no discipline to match were measured too:
+
+| adapter                 | folded          | split         | why                                            |
+|-------------------------|-----------------|---------------|-------------------------------------------------|
+| `all`                   | `false`         | `true`        | an item failing the first conjunct turns vacuously fine |
+| `Option::is_none_or`    | `false`         | `true`        | the same vacuity                                |
+| `position`              | `Some(5)`       | `Some(2)`     | filtering renumbers                             |
+| `partition`             | `[6]` / `[1,2]` | `[6]` / `[2]` | the right half loses what the filter dropped    |
+| `skip_while`            | `[2, 3, 9]`     | `[]`          | neither target reproduces it                    |
+| `\|\|` rather than `&&` | `[2,3,4,6,8]`   | `[6]`         | a disjunction is not a conjunction              |
+
+Two of these the compiler refuses outright rather than answering
+wrongly: `rposition` wants an `ExactSizeIterator` and rayon's
+`position_any` an `IndexedParallelIterator`, and a `Filter` is
+neither.
+
+A family with no filtering adapter has no lift target and so no split.
+`Result` is the one in scope: `r.filter(..)` is `E0599`, so
+`is_ok_and` and `is_err_and` stay folded however they are written.
+
+### A guard and a value
+
+`filter_map` and its kin do not split on `&&`. Their closure returns
+an `Option`, and what splits is the chain of `Option` combinators
+inside it: each has an iterator adapter that does the same thing, and
+the split hands the work over.
+
+| inside the closure         | becomes      |
+|----------------------------|--------------|
+| `Option::and_then`         | `filter_map` |
+| `Option::map`              | `map`        |
+| `Option::filter`           | `filter`     |
+| `bool::then` / `then_some` | `filter`, with the value going on to `map` |
+
+```rust
+// Avoid
+iter.filter_map(|x| parse(x).and_then(validate))
+// Prefer
+iter.filter_map(parse).filter_map(validate)
+
+// Avoid
+iter.filter_map(|x| is_wanted(x).then(|| render(x)))
+// Prefer
+iter.filter(is_wanted).map(render)
+```
+
+Measured over `1..=8`: `and_then` gives `[61]` either way, `map`
+`[120, 140, 160, 180]`, `filter` `[60, 80]`, and `then_some`
+`[20, 40, 60, 80]`. `find_map` carries the same correspondence,
+`Some(61)` either way.
+
+**The lifted adapter has to share the discipline of the one it goes in
+front of.** `filter_map` is set-shaped, so it may precede another
+set-shaped adapter and not a prefix-shaped one. Over `[6, 3, 12]`, a
+`map_while` whose closure ends in `and_then` gives `[61]` folded and
+`[61, 121]` split, because the lifted `filter_map` drops the very item
+that would have stopped it. `map_while`'s own guard splits into a
+`take_while` instead:
+
+```rust
+// Avoid
+iter.map_while(|x| is_wanted(x).then(|| render(x)))
+// Prefer
+iter.take_while(is_wanted).map(render)
+```
+
+Over `[6, 3, 12]` that gives `[60]` folded, `[60]` through
+`take_while`, and `[60, 120]` through `filter`.
 
 ### `Option` and `Result`
 
@@ -594,6 +727,10 @@ Do *not* flag:
 - An adapter whose lift target is eager, which reorders the steps it
   separates — `[T; N]::map`, per
   [`Poll`, `ControlFlow` and `[T; N]`](#poll-controlflow-and-t-n).
+- A predicate whose adapter matches no filtering discipline, or whose
+  family has no filtering adapter at all, per
+  [Splitting a predicate](#splitting-a-predicate). A `||` is not a
+  conjunction, and does not split either.
 - An adapter whose item this rule has no lift target for. The families
   it does reach are the ones tabled in
   [Which adapters](#which-adapters); `Ref`, `RefMut` and `Pin` have a

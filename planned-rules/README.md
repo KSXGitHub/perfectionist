@@ -97,7 +97,10 @@ pattern that several rules call out by reference — live in
 - [`splittable-adapter-closure.md`](./splittable-adapter-closure.md)
   — flag a closure passed to an iterator adapter that chains two or
   more steps onto its item, so one adapter does all of them; suggest
-  one adapter per step, lifting each into a leading `map`. Covers the
+  one adapter per step, lifting each into a leading `map`. A predicate
+  built from separable tests splits the same way into successive
+  filtering adapters, `filter(foo).filter(bar)` for
+  `filter(|x| foo(x) && bar(x))`. Covers the
   adapters that take the item by value and never
   hand it back (`map`, `filter_map`, `flat_map`,
   `map_while`, `find_map`, `for_each`, `try_for_each`, `any`, `all`,
