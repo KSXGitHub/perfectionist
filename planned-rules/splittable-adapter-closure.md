@@ -64,8 +64,8 @@ Where the chain may sit is constrained by the closure's shape:
 
 - **A unary closure** — every adapter in the table below — must have
   the chain as its whole body. This is stricter than
-  safety requires. It holds this stage's scope, and
-  [Later stage: the unanchored chain](#later-stage-the-unanchored-chain)
+  safety requires. It holds the scope here, and
+  [Deferred: the unanchored chain](#deferred-the-unanchored-chain)
   is where it would be relaxed.
 - **A binary closure** — `fold`, `try_fold`, `scan` — has the
   accumulator expression above the chain by construction, so the chain
@@ -389,7 +389,7 @@ an eager one cannot.
 So the condition is that **the lift target be lazy**, which excludes
 `[T; N]::map` and nothing else in scope. Admitting it needs a purity
 test instead;
-[Later stage: arrays behind a purity test](#later-stage-arrays-behind-a-purity-test)
+[Deferred: arrays behind a purity test](#deferred-arrays-behind-a-purity-test)
 is where that sits. `try_map` is `#[unstable]` and out of reach either
 way.
 
@@ -412,8 +412,7 @@ folded against split:
 Rayon performs the lift itself: its default `any` is
 `self.map(predicate).find_any(bool::clone).is_some()`.
 
-Its exclusions mirror the sequential ones and were measured the same
-way — `filter` gives `[1, 2, 4, 5, 7, 8]` against
+Its exclusions mirror the sequential ones, measured the same way — `filter` gives `[1, 2, 4, 5, 7, 8]` against
 `[2, 4, 8, 10, 14, 16]`, `max_by_key` `Some(4)` against `Some(14)`,
 and `reduce` `306` against `612`.
 
@@ -596,13 +595,14 @@ Do *not* flag:
   separates — `[T; N]::map`, per
   [`Poll`, `ControlFlow` and `[T; N]`](#poll-controlflow-and-t-n).
 - An adapter whose item this rule has no lift target for. The families
-  it does reach are the ones [Which adapters](#which-adapters) tables;
-  `Ref`, `RefMut` and `Pin` have a `map` the same reasoning would carry
-  to, and this rule does not reach them.
+  it does reach are the ones tabled in
+  [Which adapters](#which-adapters); `Ref`, `RefMut` and `Pin` have a
+  `map` the same reasoning would carry to, and this rule does not
+  reach them.
 
 These shapes are declined although they do split, because the rewrite
-they need is not the one this rule makes. Each was run in both forms
-and agreed:
+they need is not the one this rule makes. Both forms of each were run
+and their outputs compared:
 
 - **A destructured item parameter.** `fold(0, |acc, (_k, v)| acc +
   v.trim().len())` splits to `.map(|(_k, v)| v.trim()).map(str::len)`,
@@ -715,8 +715,8 @@ position are what raise it. Liftability decides whether a suggestion
 from one that does not, and the conservative answer has to be the one
 that declines. Position decides whether a suggestion is *correct*, and
 is the only place in this rule where being wrong produces a rewrite
-that compiles and behaves differently — which is why this stage
-exercises it on the binary adapters alone. Rayon costs a little more
+that compiles and behaves differently — which is why it is
+exercised on the binary adapters alone here. Rayon costs a little more
 again: its trait has no diagnostic item, so it is matched by path, and
 a fixture for it needs a stub of the trait rather than the crate. A
 first implementation may restrict itself to `Iterator`, and to steps
@@ -735,7 +735,7 @@ choice described in
 a rule that forces a choice should be one a project opts into rather
 than one it inherits.
 
-## Later stage: the unanchored chain
+## Deferred: the unanchored chain
 
 The anchor on unary closures is scope containment, not soundness: a
 chain that satisfies
@@ -773,7 +773,7 @@ The destructured item parameter that
 about where the chain bottoms out, and the anchor is about where it
 stops at the top.
 
-## Later stage: arrays behind a purity test
+## Deferred: arrays behind a purity test
 
 `[T; N]::map` is excluded for reordering the steps it separates, and
 reordering only matters where a step has an effect to reorder. A rule
@@ -792,7 +792,7 @@ enough to move, which is a heuristic tuned for
 `unnecessary_lazy_evaluations` rather than a purity oracle. Borrowing
 either for this would be claiming an answer neither gives.
 
-So the stage is: build an HIR purity predicate, decide where it lives
+So the work is: build an HIR purity predicate, decide where it lives
 per
 [the crate-internal helper conventions](../CLAUDE.md#one-rule-per-file-one-config-per-rule),
 and settle what it may assume — whether a call to a `const fn` counts,
