@@ -155,8 +155,15 @@ by running both forms and comparing the results:
 first carries state across items: an accumulator taken by value for
 `fold` and `try_fold`, a `&mut` state for `scan`, whose closure
 returns `Option<B>` and mutates it in place. The item side splits the
-same way in all three, so the trigger has to find the item parameter
+same way in each, so the trigger has to find the item parameter
 rather than assume the only one.
+
+`DoubleEndedIterator` contributes `rfold` and `try_rfold`, the same
+shape worked from the other end. They lift into `Iterator::map`, since
+`Map<I, F>` is double-ended wherever `I` is: `rfold` over the input
+below gives `"ddddcccbba"` either way, and `try_rfold` under the same
+cap gives `None` either way. `rfind` is excluded for the reason `find`
+is.
 
 One worked example each, over the same input, with the chain `trim`
 then `len` in all three. Both forms of each were run and their outputs
@@ -247,6 +254,56 @@ The list will go stale as the standard library grows; **the item
 enters by value and does not come back out** will not. `reduce` shows
 why the second half is needed: its closure takes items by value, but
 it returns one, so mapping first changes the result.
+
+### Rayon's parallel adapters
+
+`rayon::iter::ParallelIterator` has the same shape and takes the same
+split, so this rule reaches it too. Measured over the same input,
+folded against split:
+
+| adapter          | folded         | split          |
+|------------------|----------------|----------------|
+| `map`            | `[1, 2, 3, 4]` | `[1, 2, 3, 4]` |
+| `filter_map`     | `[0, 1, 2, 3]` | `[0, 1, 2, 3]` |
+| `any` / `all`    | `true`         | `true`         |
+| `find_map_first` | `Some(0)`      | `Some(0)`      |
+| `position_any`   | `Some(2)`      | `Some(2)`      |
+| `fold`           | `10`           | `10`           |
+| `try_fold`       | `Some(10)`     | `Some(10)`     |
+
+Rayon performs the lift itself: its default `any` is
+`self.map(predicate).find_any(bool::clone).is_some()`.
+
+Its exclusions mirror the sequential ones and were measured the same
+way — `filter` gives `[1, 2, 4, 5, 7, 8]` against
+`[2, 4, 8, 10, 14, 16]`, `max_by_key` `Some(4)` against `Some(14)`,
+and `reduce` `306` against `612`.
+
+The differences from the sequential set:
+
+- **The names.** There is no `scan`, no `map_while` and no
+  `rposition`; there is `position_any`, and `find_map_any` /
+  `find_map_first` / `find_map_last` in place of `find_map`. `fold`
+  yields per-chunk accumulators rather than one value, and its item
+  side splits all the same.
+- **A lifted step's result must be `Send`.** `ParallelIterator::map`
+  requires it of the item it produces; the folded form does not,
+  because the value never leaves the closure:
+
+  ```rust
+  .map(|s| Rc::new(*s).len())               // compiles
+  .map(|s| Rc::new(*s)).map(|r| r.len())    // does not
+  ```
+  ```
+  error[E0277]: `Rc<&str>` cannot be sent between threads safely
+  ```
+
+- **The receiver is never lost.** Rayon's consumers take `self`, so
+  none of them carry the `&mut self` hazard above.
+
+The hoisting condition carries over as it stands: a `map` runs per
+item where a branch does not, and that reasoning does not depend on
+which trait the adapter belongs to.
 
 ### When a step can be lifted
 
@@ -354,9 +411,12 @@ Do *not* flag:
   [Which adapters](#which-adapters).
 - A closure produced by a macro expansion, where the suggestion would
   be written into the macro body.
-- An adapter that is not `Iterator`'s. `Option` and `Result` have
-  `map` and `and_then` of their own, and this rule does not reach
-  them.
+- A step whose result is not `Send`, under a rayon adapter, per
+  [Rayon's parallel adapters](#rayons-parallel-adapters).
+- An adapter belonging to neither `Iterator` nor `ParallelIterator`.
+  `Option`, `Result`, `[T; N]`, `Poll`, `ControlFlow` and `Ref` each
+  have a `map` of their own, and the same reasoning would carry to
+  them; this rule does not reach them.
 
 These shapes are declined although they do split, because the rewrite
 they need is not the one this rule makes. Each was run in both forms
@@ -410,9 +470,15 @@ be an `Iterator`, and the liftability of each step depends on what its
 result borrows from.
 
 - `check_expr` on `ExprKind::MethodCall` whose segment names one of
-  the adapters, gated by `clippy_utils::is_trait_method(cx, expr,
-  sym::Iterator)`. The adapter set decides which argument holds the
+  the adapters, gated by the trait it resolves to:
+  `clippy_utils::is_trait_method(cx, expr, sym::Iterator)` for the
+  sequential set, and a `DefPath` match for
+  `rayon::iter::ParallelIterator`, which carries no diagnostic item to
+  ask for instead. The adapter set decides which argument holds the
   closure, and whether the item is its only parameter.
+- Under a rayon adapter, require each lifted step's result to be
+  `Send` as well, per
+  [Rayon's parallel adapters](#rayons-parallel-adapters).
 - Find the item parameter's occurrence in the body, then walk *up*
   through `parent_hir_node`: a `MethodCall` whose receiver is the
   chain so far and whose arguments name no parameter of the closure,
@@ -453,10 +519,12 @@ from one that does not, and the conservative answer has to be the one
 that declines. Position decides whether a suggestion is *correct*, and
 is the only place in this rule where being wrong produces a rewrite
 that compiles and behaves differently — which is why this stage
-exercises it on the three binary adapters alone. A first
-implementation may restrict itself to steps taking the receiver by
-value and leave the rest unflagged, which is a real subset rather than
-a token one.
+exercises it on the binary adapters alone. Rayon costs a little more
+again: its trait has no diagnostic item, so it is matched by path, and
+a fixture for it needs a stub of the trait rather than the crate. A
+first implementation may restrict itself to `Iterator`, and to steps
+taking the receiver by value, and leave the rest unflagged — a real
+subset rather than a token one.
 
 ## Default state
 
