@@ -52,11 +52,11 @@ That reduction is Clippy's to enforce, not this rule's; see
 
 ## What to lint
 
-A closure can be doing more than one job in more than one way, so the
-rule has two triggers. A **chain** of steps on the item splits by
+A closure can be doing more than one job in more than one way, and the
+rule has a trigger per way. A **chain** of steps on the item splits by
 lifting all but one into the item's `map`, and this section is about
-that. A **predicate** built from separable tests splits into
-successive filtering adapters instead, with its own trigger in
+that. A **predicate** built from separable tests splits into successive
+filtering adapters instead, with its own trigger in
 [Splitting a predicate](#splitting-a-predicate) and its own rules,
 since the item there occurs once per test rather than once in all.
 
@@ -546,9 +546,10 @@ folded against split:
 Rayon performs the lift itself: its default `any` is
 `self.map(predicate).find_any(bool::clone).is_some()`.
 
-Its exclusions mirror the sequential ones, measured the same way — `filter` gives `[1, 2, 4, 5, 7, 8]` against
-`[2, 4, 8, 10, 14, 16]`, `max_by_key` `Some(4)` against `Some(14)`,
-and `reduce` `306` against `612`.
+Its exclusions mirror the sequential ones, measured the same way:
+`filter` gives `[1, 2, 4, 5, 7, 8]` against `[2, 4, 8, 10, 14, 16]`,
+`max_by_key` `Some(4)` against `Some(14)`, and `reduce` `306` against
+`612`.
 
 The differences from the sequential set:
 
@@ -771,19 +772,20 @@ of 5, with five stages either way:
 
 So this rule is free where it produces a run and expensive where it
 interleaves adapter kinds. Where it does cost, the chain rule's
-`NAMING_HELP` offers two remedies, and both leave this rule with
-nothing to fire on:
+`NAMING_HELP` offers remedies, and each leaves this rule with nothing
+to fire on:
 
 - **Bind a stage to a `let`.** Two shorter chains, each still one step
   per adapter. `CUT_HELP` declines a cut whose only available name
-  would describe the steps rather than the value, and names
-  `filtered`, `mapped` and `result` as what it means by that — a cut
-  after `.map(str::trim)` is called `trimmed`, which is the value.
+  would describe the steps rather than the value, and the names it
+  gives as examples are the ones taken from the adapter kind rather
+  than from what the stage produces. A cut after `.map(str::trim)` is
+  called `trimmed`, which is the value.
 - **Move a run of stages into a function.** This rule fires on a
   closure passed to an adapter, so `items.map(normalise)` is a path
   and no trigger at all.
 
-The second is the one to take knowingly. It satisfies both triggers
+Extraction is the one to take knowingly. It satisfies both triggers
 while putting the steps back inside a body, which is the arrangement
 this rule exists to open up: the pipeline gets shorter and its stages
 go somewhere else. Extraction earns its place where the extracted run
@@ -791,7 +793,7 @@ has a name of its own, and costs something where it is reached for
 only to get under a limit.
 
 [`pipe_style`](./pipe-style.md) governs where a pipe may sit in a
-chain rather than what its closure holds, so the two triggers are
+chain rather than what its closure holds, so their triggers are
 disjoint. Its `pipe_at_chain_boundary` sub-check forbids a
 `value.pipe(f)` that neither continues a method chain nor is continued
 by one — which the split satisfies by construction, since splitting
@@ -799,7 +801,7 @@ leaves a `.pipe(…)` followed by another.
 
 ## Configuration
 
-None. There is one direction, and the two triggers agree on it.
+None. There is one direction, and the triggers agree on it.
 Whether a project wants the rule at all is the `[perfectionist]`
 `disable` decision, not a knob.
 
@@ -878,12 +880,12 @@ subset rather than a token one.
 
 Active by default.
 
-The activation model reserves `Inactive` for a trigger known to
-false-positive, an advisory sub-check behind a knob, or a direction
-that varies by project past what a baseline can pick. None of the
-three holds. The shape it flags is ordinary idiomatic Rust, which is a
-reason to expect plenty of diagnostics rather than a reason to ship
-the rule off: firing on what the rule names is not a false positive.
+None of the grounds
+[the activation model](./IMPLEMENTATION_CONVENTIONS.md#rule-activation-model)
+reserves `Inactive` for holds here. The shape this rule flags is
+ordinary idiomatic Rust, which is a reason to expect plenty of
+diagnostics rather than a reason to ship the rule off: firing on what
+the rule names is not a false positive.
 
 ## Deferred: the unanchored chain
 
