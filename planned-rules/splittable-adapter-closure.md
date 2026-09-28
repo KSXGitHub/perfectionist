@@ -152,12 +152,15 @@ A type may hand out more than one kind of item — a `Result` gives
 has exactly one lift target, the adapter that maps that channel and
 does nothing else:
 
-| item                                     | lift target |
-|------------------------------------------|-------------|
-| an `Iterator` or `ParallelIterator` item | `map`       |
-| an `Option` or `Result` value            | `map`       |
-| a `Result` error                         | `map_err`   |
-| a `Pipe` receiver                        | `pipe`      |
+| item                                            | lift target                  |
+|-------------------------------------------------|------------------------------|
+| an `Iterator` or `ParallelIterator` item        | `map`                        |
+| the `Ok` inside a `Result` item, in `itertools` | `map_ok`                     |
+| an `Option`, `Result` or `Poll` value           | `map`                        |
+| a `Result` or `Poll` error                      | `map_err`                    |
+| a `ControlFlow` break or continue               | `map_break` / `map_continue` |
+| an array element                                | `map`                        |
+| a `Pipe` receiver                               | `pipe`                       |
 
 An adapter is in scope where its item **enters the closure by value
 and never comes back out**. Each of these was checked by running both
@@ -311,6 +314,62 @@ one into `map_err` and leaving the other gave `"14"` either way.
 A closure handed nothing — `Option::unwrap_or_else`,
 `Option::or_else`, `ok_or_else` — has no item to root a chain at, so
 this rule does not reach it.
+
+### `itertools`
+
+`Itertools` is a blanket extension of `Iterator`, so most of what it
+adds lifts into `Iterator::map` like the rest. Measured folded against
+split:
+
+| adapter         | folded                          | split                           |
+|-----------------|---------------------------------|---------------------------------|
+| `map_ok`        | `[Ok(1), Ok(2), Err(7), Ok(4)]` | `[Ok(1), Ok(2), Err(7), Ok(4)]` |
+| `filter_map_ok` | `[Ok(0), Ok(1), Err(7), Ok(3)]` | `[Ok(0), Ok(1), Err(7), Ok(3)]` |
+| `fold_ok`       | `Err(7)`                        | `Err(7)`                        |
+| `fold_while`    | `6`                             | `6`                             |
+| `counts_by`     | `[(1, 1), (2, 1), (3, 1), (4, 1)]` | `[(1, 1), (2, 1), (3, 1), (4, 1)]` |
+| `partition_map` | `[2, 4]` / `[1, 3]`             | `[2, 4]` / `[1, 3]`             |
+
+The `*_ok` family is why a lift target is worth naming per channel
+rather than per type. Their closure is handed the `Ok` *inside* a
+`Result` item, so it lifts into `map_ok` rather than `map` — a channel
+nested one level inside the iterator's own. `fold_ok` is binary over
+that same nested item; `fold_while` is binary over the iterator's.
+
+Excluded, measured the same way: `unique_by` gives `[2, 3]` folded
+against `[4]` split, `tree_reduce` `Some(16)` against `Some(32)`, and
+`sorted_by_key` `[4, 3, 2]` against `[8, 6, 4]`. They join `filter_ok`,
+`update`, `find_position`, `into_group_map_by`, `position_max_by_key`
+and `position_min_by_key`, each of which takes its item by reference
+and so fails the predicate's first half before the second is reached.
+
+### `Poll`, `ControlFlow` and `[T; N]`
+
+Small functors, each splitting on every channel it has. Measured
+folded against split:
+
+| adapter                     | folded             | split              |
+|-----------------------------|--------------------|--------------------|
+| `Poll::map`                 | `Ready("42")`      | `Ready("42")`      |
+| `Poll::map` on `Pending`    | `Pending`          | `Pending`          |
+| `Poll::map_ok`              | `Ready(Ok("42"))`  | `Ready(Ok("42"))`  |
+| `Poll::map_err`             | `Ready(Err("14"))` | `Ready(Err("14"))` |
+| `ControlFlow::map_break`    | `Break("42")`      | `Break("42")`      |
+| `ControlFlow::map_continue` | `Continue("14")`   | `Continue("14")`   |
+| `<[T; N]>::map`             | `["2", "4", "6"]`  | `["2", "4", "6"]`  |
+
+`ControlFlow` is `Result`'s shape without the error convention: two
+channels, each its own lift target, each leaving the other alone —
+`map_break` over a `Continue(7)` gives `Continue(7)` folded and split
+alike. `Poll` carries the value channel on `Poll<T>`, and both
+channels on `Poll<Result<T, E>>` and `Poll<Option<Result<T, E>>>`.
+
+`[T; N]::map` has no sibling to be excluded, and splitting it costs
+what the others do not. It is **eager**, so `arr.map(f).map(g)`
+materialises an intermediate `[U; N]` where a lazy `map` would have
+fused. Same result, same work, more storage — the only family in scope
+where the split is not free. `try_map` is `#[unstable]` and out of
+reach.
 
 ### Rayon's parallel adapters
 
@@ -511,10 +570,10 @@ Do *not* flag:
   be written into the macro body.
 - A step whose result is not `Send`, under a rayon adapter, per
   [Rayon's parallel adapters](#rayons-parallel-adapters).
-- An adapter belonging to none of `Iterator`, `ParallelIterator`,
-  `Option`, `Result` or `Pipe`. `[T; N]`, `Poll`, `ControlFlow` and
-  `Ref` each have a `map` of their own, and the same reasoning would
-  carry to them; this rule does not reach them.
+- An adapter whose item this rule has no lift target for. The families
+  it does reach are the ones [Which adapters](#which-adapters) tables;
+  `Ref`, `RefMut` and `Pin` have a `map` the same reasoning would carry
+  to, and this rule does not reach them.
 
 These shapes are declined although they do split, because the rewrite
 they need is not the one this rule makes. Each was run in both forms
@@ -578,10 +637,12 @@ result borrows from.
   the adapters, gated by the trait it resolves to:
   `clippy_utils::is_trait_method(cx, expr, sym::Iterator)` for the
   sequential set, and a `DefPath` match for
-  `rayon::iter::ParallelIterator` and `pipe_trait::Pipe`, neither of
-  which carries a diagnostic item to ask for instead. `Option`'s and
-  `Result`'s are inherent rather than trait methods, so those are the
-  receiver's own diagnostic item and the method name.
+  `itertools::Itertools`, `rayon::iter::ParallelIterator` and
+  `pipe_trait::Pipe`, none of which carries a diagnostic item to ask
+  for instead. `Option`, `Result`, `Poll` and `ControlFlow` carry
+  inherent methods rather than trait ones, so those are the receiver's
+  own diagnostic item and the method name, and an array is
+  `ty::Array(..)` on the receiver.
 - Key the adapter table by method **and argument position**: the
   position says which argument holds a closure, which channel its
   parameter comes from and so which adapter the lift targets, and
