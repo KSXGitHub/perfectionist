@@ -58,7 +58,7 @@ rooted at its item parameter is **two or more** steps long.
 The chain starts at the item parameter and runs outwards: a method
 call whose receiver is the chain so far, or a call whose sole argument
 is it, naming no parameter of the closure in its other arguments. It
-stops at the first node that is neither.
+stops at the first parent that is neither.
 
 Where the chain may sit is constrained by the closure's shape:
 
@@ -150,23 +150,6 @@ by running both forms and comparing the results:
 | `for_each`, `try_for_each`                   | `FnMut(Item) -> ()` / `-> R: Try` |
 | `any`, `all`, `position`, `rposition`        | `FnMut(Item) -> bool`             |
 
-The `&mut self` adapters — `try_fold`, `try_for_each`, `any`, `all`,
-`find_map`, `position`, `rposition` — leave the receiver positioned
-and usable once they return. The split moves that receiver into `map`,
-so code going on to use it stops compiling:
-
-```rust
-let mut it = data.iter();
-let found = it.map(|s| s.trim()).map(str::len).any(|n| n > 1);
-let rest: Vec<&&str> = it.collect();
-```
-```
-error[E0382]: use of moved value: `it`
-```
-
-Suggesting `(&mut it).map(…)` reborrows instead and keeps the receiver
-alive. Where the rule cannot tell, declining is the cheaper error.
-
 `fold`, `try_fold` and `scan` satisfy the same predicate with a
 **binary** closure, where the item is the second parameter and the
 first carries state across items: an accumulator taken by value for
@@ -219,6 +202,23 @@ the block always runs it.
 Short-circuiting does not change the count: `try_fold` breaking on the
 third item ran the lifted step three times in both forms, because
 `map` is lazy and one to one.
+
+The `&mut self` adapters — `try_fold`, `try_for_each`, `any`, `all`,
+`find_map`, `position`, `rposition` — leave the receiver positioned
+and usable once they return. The split moves that receiver into `map`,
+so code going on to use it stops compiling:
+
+```rust
+let mut it = data.iter();
+let found = it.map(|s| s.trim()).map(str::len).any(|n| n > 1);
+let rest: Vec<&&str> = it.collect();
+```
+```
+error[E0382]: use of moved value: `it`
+```
+
+Suggesting `(&mut it).map(…)` reborrows instead and keeps the receiver
+alive. Where the rule cannot tell, declining is the cheaper error.
 
 ### Which adapters are excluded, and why
 
@@ -342,9 +342,8 @@ rule is for.
 Do *not* flag:
 
 - A **unary** closure whose body is not the chain — a block with
-  statements, a `match`, a `?`, or an operator expression. This is the
-  anchor from [What to lint](#what-to-lint), which holds this stage's
-  scope rather than its soundness.
+  statements, a `match`, a `?`, or an operator expression — per the
+  anchor in [What to lint](#what-to-lint).
 - A chain whose position is not always evaluated, per
   [When the chain may be hoisted](#when-the-chain-may-be-hoisted).
 - A body where the item parameter occurs more than once, per
@@ -359,8 +358,8 @@ Do *not* flag:
   `map` and `and_then` of their own, and this rule does not reach
   them.
 
-Two shapes are declined although they do split, because the rewrite
-they need is not the one this rule makes. Both were run in each form
+These shapes are declined although they do split, because the rewrite
+they need is not the one this rule makes. Each was run in both forms
 and agreed:
 
 - **A destructured item parameter.** `fold(0, |acc, (_k, v)| acc +
@@ -434,12 +433,11 @@ result borrows from.
   value is the easy sufficient condition. A unary closure's last step
   is exempt, since it stays with the adapter rather than moving into a
   `map`.
-- Then check where the chain sits. For a binary closure, walk from its
-  top to the body root and require every node to always evaluate its
-  child, per
+- Then check where the chain sits, per
   [When the chain may be hoisted](#when-the-chain-may-be-hoisted). For
-  a unary closure, require the chain's top to *be* the body root,
-  which satisfies that vacuously and holds this stage's scope.
+  a binary closure that means walking from the chain's top to the body
+  root. For a unary closure, require the chain's top to *be* the body
+  root, which satisfies the condition vacuously.
 - Suppress proc-macro-synthesised nodes per
   [Suppressing proc-macro-synthesised violations](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations).
   The diagnostic span is the adapter's method segment, which a derive
@@ -448,16 +446,17 @@ result borrows from.
 
 ### Difficulty
 
-**Medium.** The walk and the adapter table are easy. Two tests raise
-it. Liftability decides whether a suggestion *compiles*: a borrow of
-the binding is what separates one that does from one that does not,
-and the conservative answer has to be the one that declines. Position
-decides whether a suggestion is *correct*, and is the only place in
-this rule where being wrong produces a rewrite that compiles and
-behaves differently — which is why this stage exercises it on the
-three binary adapters alone. A first implementation may restrict
-itself to steps taking the receiver by value and leave the rest
-unflagged, which is a real subset rather than a token one.
+**Medium.** The walk and the adapter table are easy. Liftability and
+position are what raise it. Liftability decides whether a suggestion
+*compiles*: a borrow of the binding is what separates one that does
+from one that does not, and the conservative answer has to be the one
+that declines. Position decides whether a suggestion is *correct*, and
+is the only place in this rule where being wrong produces a rewrite
+that compiles and behaves differently — which is why this stage
+exercises it on the three binary adapters alone. A first
+implementation may restrict itself to steps taking the receiver by
+value and leave the rest unflagged, which is a real subset rather than
+a token one.
 
 ## Default state
 
@@ -493,7 +492,7 @@ excludes it for a unary closure exactly as it does for a binary one,
 so the widening adds findings without adding the one hazard a
 compiler does not catch.
 
-Two things should happen before it is taken:
+Before it is taken:
 
 - **Measure how often those shapes occur.** They are not measured
   here, and this rule's own rationale is that the shape it flags is
