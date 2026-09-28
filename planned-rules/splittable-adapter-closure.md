@@ -511,11 +511,10 @@ iter  split   f1 g2 f2 g4 f3 g6
 ```
 
 Pure steps give the same answer either way, which is what the table's
-row shows. Impure ones do not, and the reordering compiles: it is the
-second divergence in this rule a compiler does not catch, alongside
-the one in
-[When the chain may be hoisted](#when-the-chain-may-be-hoisted), and
-it has the same shape — the split is safe exactly where the steps are
+row shows. Impure ones do not, and the reordering compiles, which is the
+quiet kind of divergence that
+[When the chain may be hoisted](#when-the-chain-may-be-hoisted)
+describes. It has the same shape — the split is safe exactly where the steps are
 pure, and purity is what no lint can ask for. Where every other family
 lifts into a lazy `map` that keeps `f` and `g` interleaved per item,
 an eager one cannot.
@@ -605,10 +604,10 @@ same output as every other or failed with `E0631`, never a different
 answer. Where more than one method fits, they agree, and which to
 suggest is a style question rather than a correctness one.
 
-`pipe_borrow` spans two rows because `Borrow` is reflexive —
+`pipe_borrow` spans more than one row because `Borrow` is reflexive —
 `impl<T> Borrow<T> for T` — so it can hand over `&Self` as readily as
-a `&Param`, and it was the only method to accept two of the three
-steps.
+a `&Param`, and it was the only method to accept more than one of
+the steps tried.
 
 So a body mixing them splits into a chain that mixes them, each step
 taking its argument the way the body did:
@@ -635,8 +634,10 @@ split, head kept as `pipe`    drop b / after
 split, head as `pipe_ref`     after / drop c
 ```
 
-It compiles, and nothing in the result changes, which makes it the
-third divergence here a compiler does not catch. Keeping the head a
+It compiles, and nothing in the result changes, which makes it
+another divergence of the quiet kind
+[When the chain may be hoisted](#when-the-chain-may-be-hoisted)
+describes. Keeping the head a
 `pipe` whose closure takes the reference inside costs one closure and
 preserves the drop point; every step after the head is past the
 receiver and free to name whichever method its argument wants.
@@ -747,9 +748,11 @@ folded=[0, 0]
 thread 'main' panicked: called `Result::unwrap()` on an `Err` value: ParseIntError
 ```
 
-This is the only divergence in this rule that a compiler does not
-catch, so a chain is split only where every node between it and the
-body root always evaluates the child the chain came from:
+Everything else this rule declines fails loudly, with an error named
+in [Exemptions](#exemptions). This does not, and neither do the other
+two passages that point back here. So a chain is split only where
+every node between it and the body root always evaluates the child the
+chain came from:
 
 | the chain's parent                                                      | always evaluates it |
 |-------------------------------------------------------------------------|---------------------|
