@@ -147,8 +147,10 @@ receiver. Both words are looser than their iterator senses —
 adapts nothing at all — but the shape is what this rule is about, not
 the taxonomy.
 
-Each kind of item has exactly one lift target, the adapter that maps
-that item and does nothing else:
+A type may hand out more than one kind of item — a `Result` gives
+`map` its value and `map_err` its error — and each such **channel**
+has exactly one lift target, the adapter that maps that channel and
+does nothing else:
 
 | item                                     | lift target |
 |------------------------------------------|-------------|
@@ -176,15 +178,8 @@ returns `Option<B>` and mutates it in place. The item side splits the
 same way in each, so the trigger has to find the item parameter
 rather than assume the only one.
 
-`DoubleEndedIterator` contributes `rfold` and `try_rfold`, the same
-shape worked from the other end. They lift into `Iterator::map`, since
-`Map<I, F>` is double-ended wherever `I` is: `rfold` over the input
-below gives `"ddddcccbba"` either way, and `try_rfold` under the same
-cap gives `None` either way. `rfind` is excluded for the reason `find`
-is.
-
 One worked example each, over the same input, with the chain `trim`
-then `len` in all three. Both forms of each were run and their outputs
+then `len` in each. Both forms of each were run and their outputs
 compared:
 
 ```rust
@@ -223,6 +218,13 @@ let running: Vec<_> = data.iter().map(|s| s.trim()).map(str::len)
 `scan` shows that the chain need not be an operand of anything: here it
 sits inside a `+=` statement in a block, and what matters is only that
 the block always runs it.
+
+`DoubleEndedIterator` contributes `rfold` and `try_rfold`, the same
+shape worked from the other end. They lift into `Iterator::map`, since
+`Map<I, F>` is double-ended wherever `I` is: over the same input,
+`rfold` gives `"ddddcccbba"` either way and `try_rfold` under the same
+cap gives `None` either way. `rfind` is excluded for the reason `find`
+is.
 
 Short-circuiting does not change the count: `try_fold` breaking on the
 third item ran the lifted step three times in both forms, because
@@ -354,11 +356,8 @@ The differences from the sequential set:
   ```
 
 - **The receiver is never lost.** Rayon's consumers take `self`, so
-  none of them carry the `&mut self` hazard above.
-
-The hoisting condition carries over as it stands: a `map` runs per
-item where a branch does not, and that reasoning does not depend on
-which trait the adapter belongs to.
+  none of them carry the `&mut self` hazard in
+  [Which adapters](#which-adapters).
 
 ### `pipe-trait`'s piping methods
 
@@ -389,9 +388,9 @@ handing the closure a borrow — `pipe_ref`, `pipe_mut`, `pipe_as_ref`,
 Nothing in `Pipe` is excluded. It has one shape, and no sibling that
 hands the value back.
 
-The hoisting condition holds here as everywhere, and `pipe` shows it
-most starkly, since a `pipe` runs once rather than once per item.
-Folded, the parse below never runs; split, it panics:
+`pipe` shows the hoisting condition most starkly, since a `pipe` runs
+once rather than once per item. Folded, the parse below never runs;
+split, it panics:
 
 ```rust
 "zz".pipe(|t| if flag { t.parse::<i32>().unwrap() } else { 0 })
@@ -475,6 +474,9 @@ body root always evaluates the child the chain came from:
 The condition is sufficient rather than necessary: a pure step in a
 conditional position would hoist safely, and this declines it. Rust
 exposes no purity or no-panic test a lint could ask instead.
+
+None of this depends on which adapter the closure was passed to, so
+the condition reads the same for every family in scope.
 
 ### What Clippy already says
 
