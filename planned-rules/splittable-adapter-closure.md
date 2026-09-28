@@ -589,14 +589,26 @@ there is no last step to keep: each one becomes a piping method, and
 **which method is decided by how the folded body reached its
 argument**.
 
-| the folded body passes | the step becomes      |
-|------------------------|-----------------------|
-| `x`                    | `pipe`                |
-| `&x`                   | `pipe_ref`            |
-| `&mut x`               | `pipe_mut`            |
-| `&*x`, or a `Deref` coercion | `pipe_deref`    |
-| `x.as_ref()`           | `pipe_as_ref`         |
-| `x.borrow()`           | `pipe_borrow`         |
+| the step's parameter                         | methods that carry it                |
+|----------------------------------------------|--------------------------------------|
+| `Self`, by value                             | `pipe`                               |
+| `&Self`                                      | `pipe_ref`, `pipe_borrow`            |
+| `&mut Self`                                  | `pipe_mut`, `pipe_borrow_mut`        |
+| `&Param`, for a `Param` the receiver converts to | `pipe_as_ref`, `pipe_deref`, `pipe_borrow` |
+| `&mut Param`                                 | `pipe_as_mut`, `pipe_deref_mut`, `pipe_borrow_mut` |
+
+The mapping is not one to one, and the rule has to choose. Every
+method was tried against a by-value, a by-reference and a
+by-`&str` step, on a receiver implementing `Deref<Target = str>`,
+`AsRef<str>` and `Borrow<str>` alike: each cell either produced the
+same output as every other or failed with `E0631`, never a different
+answer. Where more than one method fits, they agree, and which to
+suggest is a style question rather than a correctness one.
+
+`pipe_borrow` spans two rows because `Borrow` is reflexive —
+`impl<T> Borrow<T> for T` — so it can hand over `&Self` as readily as
+a `&Param`, and it was the only method to accept two of the three
+steps.
 
 So a body mixing them splits into a chain that mixes them, each step
 taking its argument the way the body did:
