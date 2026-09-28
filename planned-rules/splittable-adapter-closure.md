@@ -140,13 +140,26 @@ stops:
 ### Which adapters
 
 **Adapter** here means any method that takes a closure and hands it a
-value. That is looser than the iterator sense — `for_each` and `fold`
-are consumers by that reckoning, and `pipe` adapts nothing at all —
-but the shape is what this rule is about, not the taxonomy.
+value, and **item** means that value: an iterator's item, an
+`Option`'s or a `Result`'s value, a `Result`'s error, a `Pipe`'s
+receiver. Both words are looser than their iterator senses —
+`for_each` and `fold` are consumers by that reckoning, and `pipe`
+adapts nothing at all — but the shape is what this rule is about, not
+the taxonomy.
 
-An adapter can take a leading `map` only where the item **enters the
-closure by value and never comes back out**. Each of these was checked
-by running both forms and comparing the results:
+Each kind of item has exactly one lift target, the adapter that maps
+that item and does nothing else:
+
+| item                                     | lift target |
+|------------------------------------------|-------------|
+| an `Iterator` or `ParallelIterator` item | `map`       |
+| an `Option` or `Result` value            | `map`       |
+| a `Result` error                         | `map_err`   |
+| a `Pipe` receiver                        | `pipe`      |
+
+An adapter is in scope where its item **enters the closure by value
+and never comes back out**. Each of these was checked by running both
+forms and comparing the results:
 
 | adapter                                      | closure                           |
 |----------------------------------------------|-----------------------------------|
@@ -259,6 +272,43 @@ The list will go stale as the standard library grows; **the item
 enters by value and does not come back out** will not. `reduce` shows
 why the second half is needed: its closure takes items by value, but
 it returns one, so mapping first changes the result.
+
+### `Option` and `Result`
+
+Both hand the closure a value that does not come back out, so both
+split — with `map` as the lift target on the value channel and
+`map_err` on the error channel. Measured folded against split:
+
+| adapter                  | folded       | split        |
+|--------------------------|--------------|--------------|
+| `Option::map`            | `Some("42")` | `Some("42")` |
+| `Option::map` on `None`  | `None`       | `None`       |
+| `Option::and_then`       | `Some(42)`   | `Some(42)`   |
+| `Option::map_or`         | `43`         | `43`         |
+| `Option::map_or_else`    | `43`         | `43`         |
+| `Option::is_some_and`    | `true`       | `true`       |
+| `Result::map`            | `Ok("42")`   | `Ok("42")`   |
+| `Result::and_then`       | `Ok(43)`     | `Ok(43)`     |
+| `Result::is_ok_and`      | `true`       | `true`       |
+| `Result::map_err`        | `Err("14")`  | `Err("14")`  |
+| `Result::or_else`        | `Ok(15)`     | `Ok(15)`     |
+| `Result::unwrap_or_else` | `15`         | `15`         |
+| `Result::is_err_and`     | `true`       | `true`       |
+
+`Option::filter` and `Option::inspect` are excluded for the reason
+`Iterator::filter` and `Iterator::inspect` are: the value comes back
+out, so a leading `map` changes what does. Over `Some(2)` and a
+doubling step, both give `Some(2)` folded and `Some(4)` split.
+`Result::inspect` and `Result::inspect_err` go the same way.
+
+`Result::map_or_else` takes **one closure per channel** — the first on
+the error, the second on the value — so the adapter table is keyed by
+argument position rather than by method name alone. Lifting the error
+one into `map_err` and leaving the other gave `"14"` either way.
+
+A closure handed nothing — `Option::unwrap_or_else`,
+`Option::or_else`, `ok_or_else` — has no item to root a chain at, so
+this rule does not reach it.
 
 ### Rayon's parallel adapters
 
@@ -459,8 +509,8 @@ Do *not* flag:
   be written into the macro body.
 - A step whose result is not `Send`, under a rayon adapter, per
   [Rayon's parallel adapters](#rayons-parallel-adapters).
-- An adapter belonging to none of `Iterator`, `ParallelIterator` or
-  `Pipe`. `Option`, `Result`, `[T; N]`, `Poll`, `ControlFlow` and
+- An adapter belonging to none of `Iterator`, `ParallelIterator`,
+  `Option`, `Result` or `Pipe`. `[T; N]`, `Poll`, `ControlFlow` and
   `Ref` each have a `map` of their own, and the same reasoning would
   carry to them; this rule does not reach them.
 
@@ -527,9 +577,15 @@ result borrows from.
   `clippy_utils::is_trait_method(cx, expr, sym::Iterator)` for the
   sequential set, and a `DefPath` match for
   `rayon::iter::ParallelIterator` and `pipe_trait::Pipe`, neither of
-  which carries a diagnostic item to ask for instead. The adapter set
-  decides which argument holds the closure, and whether the item is
-  its only parameter.
+  which carries a diagnostic item to ask for instead. `Option`'s and
+  `Result`'s are inherent rather than trait methods, so those are the
+  receiver's own diagnostic item and the method name.
+- Key the adapter table by method **and argument position**: the
+  position says which argument holds a closure, which channel its
+  parameter comes from and so which adapter the lift targets, and
+  whether the item is the closure's only parameter.
+  `Result::map_or_else` needs all of that, carrying one closure per
+  channel.
 - Under a rayon adapter, require each lifted step's result to be
   `Send` as well, per
   [Rayon's parallel adapters](#rayons-parallel-adapters).
