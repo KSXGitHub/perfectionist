@@ -716,23 +716,18 @@ and reserving those two is what keeps them worth reading.
 ### A blockquote is not always an alert
 
 `>` is also plain markdown for a quotation, and the catalogue
-relies on that. A `>` block in `planned-rules/` is one of the
-following, and only the aside may become an alert:
+relies on that. Do not run a sweep that mechanically upgrades
+every `>` block to an alert. An alert is for an aside — a remark
+in the author's own voice, addressed to the reader — and its type
+follows the rules above; read any other `>` block and leave it as
+it stands.
 
-- **A quotation** of something said elsewhere — an upstream style
-  guide, a review comment the file answers. The `**Source:**` line
-  names where it came from. Leave these alone, and do not run a sweep
-  that mechanically upgrades every `>` block to an alert. A
-  `## Statement` is *not* one of these: it states the rule in the
-  catalogue's own words, quoting nothing, however its source is cited.
-- **An aside** — a remark in the author's own voice, addressed to
-  the reader. This is the one an alert improves; pick its type by
-  the rules above.
-- **A sketch of emitted diagnostic text**, typically introduced
-  by a line ending "should emit text along these lines:". Leave
-  it as a blockquote: the markup inside is part of the sketch, so
-  a `text` fence would render the `**error:**` markers literally
-  and lose what the block is showing.
+One kind is worth naming, because the obvious repair breaks it: a
+sketch of emitted diagnostic text, typically introduced by a line
+ending "should emit text along these lines:". It stays a
+blockquote, since the markup inside is part of the sketch, so a
+`text` fence would render the `**error:**` markers literally and
+lose what the block is showing.
 
 ## Symlinks
 
