@@ -585,15 +585,49 @@ formatting step: `"42"` either way.
 The rewrite differs from the iterator family in which end keeps the
 original method. There the leading steps become `map` and the adapter
 stays last, because its kind is what the pipeline depends on. Here
-every step becomes a `pipe`, and the receiver-taking method is pinned
-to the **head**, because it is the only one that touches the receiver:
+there is no last step to keep: each one becomes a piping method, and
+**which method is decided by how the folded body reached its
+argument**.
+
+| the folded body passes | the step becomes      |
+|------------------------|-----------------------|
+| `x`                    | `pipe`                |
+| `&x`                   | `pipe_ref`            |
+| `&mut x`               | `pipe_mut`            |
+| `&*x`, or a `Deref` coercion | `pipe_deref`    |
+| `x.as_ref()`           | `pipe_as_ref`         |
+| `x.borrow()`           | `pipe_borrow`         |
+
+So a body mixing them splits into a chain that mixes them, each step
+taking its argument the way the body did:
 
 ```rust
 // Avoid
-s.pipe_ref(|v| v.trim().len())
+value.pipe(|x| foo(&bar(baz(&x))))
 // Prefer
-s.pipe_ref(|v| v.trim()).pipe(str::len)
+value.pipe(|x| baz(&x)).pipe(bar).pipe_ref(foo)
 ```
+
+Measured `6` either way, as is the `Deref` form of the same shape,
+`value.pipe_deref(baz_str).pipe(bar).pipe_ref(foo)`.
+
+**The head is the exception, and a destructor is why.** Writing that
+first step as `value.pipe_ref(baz)` also typechecks and also gives
+`6`, but `pipe` moves the receiver into the closure while `pipe_ref`
+only borrows it, so the receiver stops being dropped at the end of the
+step and is dropped at the end of its scope instead:
+
+```
+folded                        drop a / after
+split, head kept as `pipe`    drop b / after
+split, head as `pipe_ref`     after / drop c
+```
+
+It compiles, and nothing in the result changes, which makes it the
+third divergence here a compiler does not catch. Keeping the head a
+`pipe` whose closure takes the reference inside costs one closure and
+preserves the drop point; every step after the head is past the
+receiver and free to name whichever method its argument wants.
 
 Every method on the trait was run in both forms, the by-value one over
 a doubling and a formatting step, the rest over a trimming or sorting
