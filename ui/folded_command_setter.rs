@@ -20,9 +20,9 @@ use std::process::Command;
 const VARS: &[&str] = &["A", "B"];
 const PAIRS: &[(&str, &str)] = &[("A", "1"), ("B", "2")];
 
-// Bad: the three pairs, spelled as a path. The receiver is a `&'static`
-// slice whose `iter` is std's, so the call is erased and the fix is
-// applied.
+// Bad: the three pairs, spelled as a path. The receiver's `iter` comes
+// from the standard library, so the fix is applied -- but the call
+// survives into it, because only `into_iter` is erased.
 fn paths() {
     let _ = VARS.iter().fold(Command::new("ls"), CommandExtra::without_env);
     let _ = VARS.iter().fold(Command::new("ls"), CommandExtra::with_arg);
@@ -62,8 +62,7 @@ fn pair_item(pairs: Vec<(String, String)>) {
 }
 
 // Bad: the same pair over a map reference, whose items are pairs of
-// references. The `iter` is std's and the place is already a reference,
-// so the call is erased.
+// references. The `iter` is std's, so the fix is applied.
 fn pair_item_borrowed(pairs: &std::collections::HashMap<String, String>) {
     let _ = pairs
         .iter()
@@ -97,8 +96,8 @@ fn owned_into_iter(names: Vec<String>) {
         .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
-// Bad: `iter` on an owned collection. The erasure would move what the
-// fold only borrows, so the call survives in the suggestion.
+// Bad: `iter` on an owned collection, which the fold only borrows. The
+// call survives, as every `iter` does.
 fn owned_iter(names: Vec<String>) {
     let _ = names.iter().fold(Command::new("ls"), CommandExtra::without_env);
     let _ = names.len();
@@ -117,9 +116,9 @@ impl Config {
     }
 }
 
-// Bad: an `iter` of the linted crate's own, which promises nothing about
-// agreeing with its own `IntoIterator`. Flagged, but the call survives
-// and the fix is not applied.
+// Bad: an `iter` of the linted crate's own. Flagged, but the fix is
+// withheld: the call is not the standard library's, so what evaluating
+// it does is unknown.
 struct Weird(Vec<String>);
 
 impl Weird {
@@ -254,6 +253,164 @@ fn std_setter() {
         command.arg(var);
         command
     });
+}
+
+// Bad: a receiver the call did not run on. Method resolution derefs
+// `&&Vec<String>` twice to reach `<[T]>::iter`, so the place is not the
+// receiver, and handing the plural `v` would hand it something that is
+// not an iterator at all. The call survives, so it compiles.
+fn double_reference(names: &&Vec<String>) {
+    let _ = names
+        .iter()
+        .fold(Command::new("ls"), CommandExtra::without_env);
+}
+
+// Bad: the same through a smart pointer.
+fn through_rc(names: &std::rc::Rc<Vec<String>>) {
+    let _ = names
+        .iter()
+        .fold(Command::new("ls"), CommandExtra::without_env);
+}
+
+// Bad: `into_iter` reached by an autoref, because the only
+// `IntoIterator` is on the reference. Erasing would leave `Borrowed`,
+// which is not an iterator, so the adjustment check keeps the call.
+struct Borrowed(Vec<String>);
+
+impl<'a> IntoIterator for &'a Borrowed {
+    type Item = &'a String;
+    type IntoIter = std::slice::Iter<'a, String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
+    }
+}
+
+fn autoref_into_iter(names: Borrowed) {
+    let _ = names
+        .into_iter()
+        .fold(Command::new("ls"), CommandExtra::without_env);
+}
+
+// Bad: `iter` is std's by way of `Deref` while the type keeps an
+// `IntoIterator` of its own that yields the other order. Erasing here
+// would compile and silently reverse the arguments, which is why no
+// `iter` is erased.
+struct Backwards(Vec<String>);
+
+impl std::ops::Deref for Backwards {
+    type Target = Vec<String>;
+
+    fn deref(&self) -> &Vec<String> {
+        &self.0
+    }
+}
+
+impl<'a> IntoIterator for &'a Backwards {
+    type Item = &'a String;
+    type IntoIter = std::iter::Rev<std::slice::Iter<'a, String>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter().rev()
+    }
+}
+
+fn disagreeing_into_iter(names: &Backwards) {
+    let _ = names
+        .iter()
+        .fold(Command::new("ls"), CommandExtra::without_env);
+}
+
+// Bad: a `&mut` place, which erasing would move where the fold only
+// borrowed.
+fn mutable_reference(names: &mut Vec<String>) {
+    let _ = names
+        .iter()
+        .fold(Command::new("ls"), CommandExtra::without_env);
+    let _ = names.len();
+}
+
+// Bad: an initial value that binds looser than a method call, so the
+// suggestion has to bracket it.
+fn looser_initial(command: Box<Command>) {
+    let _ = VARS.iter().fold(*command, CommandExtra::without_env);
+}
+
+// Not flagged: a fold inside a `macro_rules!` of this crate's own. The
+// suggestion would replace the definition with text read from a call
+// site, and two invocations would earn two suggestions at one span.
+macro_rules! scrub {
+    ($start:expr) => {
+        VARS.iter().fold($start, CommandExtra::without_env)
+    };
+}
+
+fn in_a_macro_body() {
+    let start = Command::new("ls");
+    let _ = scrub!(start);
+}
+
+// Not flagged: an overloaded `Deref` in the place. Reaching the place
+// runs the `deref` body, and the suggestion moves that across the
+// initial value.
+struct Counted(Vec<String>);
+
+struct Noisy(Counted);
+
+impl std::ops::Deref for Noisy {
+    type Target = Counted;
+
+    fn deref(&self) -> &Counted {
+        DEREFS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        &self.0
+    }
+}
+
+impl<'a> IntoIterator for &'a Counted {
+    type Item = &'a String;
+    type IntoIter = std::slice::Iter<'a, String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
+    }
+}
+
+static DEREFS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+fn overloaded_deref(noisy: Noisy) {
+    let _ = (*noisy)
+        .into_iter()
+        .fold(Command::new("ls"), CommandExtra::without_env);
+}
+
+// Not flagged: a block holding a statement that is not a rebinding, so
+// the `uses` check would accept the call while the statement is where
+// the closure computes. The plural would delete it.
+fn block_with_an_effect() {
+    let _ = VARS.iter().fold(Command::new("ls"), |command, var| {
+        println!("{var}");
+        command.without_env(var)
+    });
+}
+
+// Not flagged: a `..` in the tuple pattern hides a field, so the
+// bindings the closure forwards are not all of the item.
+fn gapped_tuple(triples: Vec<(String, String, String)>) {
+    let _ = triples
+        .into_iter()
+        .fold(Command::new("ls"), |command, (key, ..)| {
+            command.without_env(key)
+        });
+}
+
+// Not flagged: fewer arguments than the item has bindings. The plural
+// would pass the whole pair where the fold passed one half of it.
+fn dropped_binding(pairs: Vec<(String, String)>) {
+    let _ = pairs
+        .into_iter()
+        .fold(Command::new("ls"), |command, (key, _value)| {
+            command.without_env(key)
+        });
 }
 
 fn main() {}

@@ -61,11 +61,18 @@ level up from where the library already wrote it.
 The suggestion trades the receiver and the initial value, so it
 trades the order they run in: `A.fold(B, f)` evaluates `A` then
 `B`, and `B.plural(A)` evaluates `B` then `A`. A fix is applied
-only where the receiver's call comes from the standard library,
-whose iterator constructors do not observe the initial value.
-Elsewhere the suggestion is advice, because a receiver that
-mutates what the initial value reads would build a different
-command in the new order.
+where evaluating the receiver is known not to observe the initial
+value — a receiver that only names a place, or one whose call
+comes from the standard library. Elsewhere the suggestion is
+advice, because a receiver that mutates what the initial value
+reads would build a different command in the new order.
+
+The receiver's call is kept in the suggestion unless it is
+`into_iter` on the receiver's own type, which is the one call the
+plural makes for itself. An `iter` is never dropped, however
+std-looking: a `Deref` is enough to hand `iter` to the standard
+library while the type keeps an `IntoIterator` of its own, and
+the shorter form would then build a different command.
 
 ## Example
 
@@ -80,7 +87,7 @@ INHERITED_VARS
 **Prefer:**
 
 ```rust,ignore
-Command::new("cargo").without_envs(INHERITED_VARS)
+Command::new("cargo").without_envs(INHERITED_VARS.iter())
 ```
 
 A closure is how the fold is most likely to be written, and folds
@@ -97,7 +104,7 @@ flags
 **Prefer:**
 
 ```rust,ignore
-Command::new("ls").with_args(flags)
+Command::new("ls").with_args(flags.iter())
 ```
 
 ## Configuration

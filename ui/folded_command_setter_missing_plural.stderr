@@ -2,7 +2,7 @@ warning: this fold over `with_arg` re-implements `with_args`
   --> $DIR/folded_command_setter_missing_plural.rs:LL:CC
    |
 LL |     let _ = VARS.iter().fold(Command::new("ls"), CommandExtra::with_arg);
-   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `with_args`: `Command::new("ls").with_args(VARS)`
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `with_args`: `Command::new("ls").with_args(VARS.iter())`
    |
    = note: `#[warn(perfectionist::folded_command_setter)]` on by default
 
