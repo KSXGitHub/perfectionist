@@ -29,12 +29,16 @@ declare_tool_lint! {
     /// fully-qualified path, a renamed import and a closure that
     /// forwards its parameters to the setter are all one shape.
     ///
-    /// The `with_env` pair asks one thing more, because `with_envs`
-    /// takes an iterator of pairs and a reference to a pair is not a
-    /// pair. A fold over `&[(&str, &str)]` binds its `key` and `value`
-    /// through the reference, which the plural cannot do, so it is left
-    /// alone; a fold whose item is a pair itself — `&HashMap`'s, or an
-    /// owned `Vec<(String, String)>`'s — is flagged.
+    /// The `with_env` pair asks one thing more: whether the `with_envs`
+    /// the build resolved can take the fold's item. Up to
+    /// `command-extra` 1.2.0 it takes an iterator of pairs exactly, and
+    /// a reference to a pair is not a pair — so a fold over
+    /// `&[(&str, &str)]`, whose `key` and `value` bind through the
+    /// reference, is left alone there. 1.3.0 accepts a reference to a
+    /// pair as well, and the same fold is flagged. Either way a fold
+    /// whose item is a pair itself — `&HashMap`'s, or an owned
+    /// `Vec<(String, String)>`'s — is flagged, and one whose item is a
+    /// reference to a reference to a pair is not.
     ///
     /// The fold's receiver has to be a place expression followed by at
     /// most one argument-less method call — `VARS`, `list.iter()`,
@@ -197,10 +201,11 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         let Some(replacement) = setter::replacement_for(cx.tcx.item_name(singular)) else {
             return;
         };
-        if !setter::declares(cx, trait_id, replacement.plural) {
+        let Some(plural_id) = setter::declares(cx, trait_id, replacement.plural) else {
             return;
-        }
-        if replacement.splits_item && !setter::item_splits(cx, receiver) {
+        };
+
+        if replacement.splits_item && !setter::item_fits(cx, plural_id, receiver) {
             return;
         }
         let Some(shape) = receiver::shape(cx, receiver) else {
