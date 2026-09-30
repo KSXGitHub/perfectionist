@@ -269,4 +269,19 @@ warning: this fold over `without_env` re-implements `without_envs`
 LL |     let _ = VARS.iter().fold(*command, CommandExtra::without_env);
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `(*command).without_envs(VARS.iter())`
 
+warning: generic type parameter `C` has a single-letter name
+  --> $DIR/folded_command_setter.rs:LL:CC
+   |
+LL | fn generic_accumulator<C: CommandExtra>(command: C) -> C {
+   |                        ^
+   |
+   = help: rename to a descriptive identifier (e.g. `Element`, `Key`, `Reader`)
+   = note: `#[warn(perfectionist::single_letter_generic)]` on by default
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter.rs:LL:CC
+   |
+LL |     VARS.iter().fold(command, CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `command.without_envs(VARS.iter())`
+
 warning: N warnings emitted

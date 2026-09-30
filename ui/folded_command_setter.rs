@@ -413,4 +413,13 @@ fn dropped_binding(pairs: Vec<(String, String)>) {
         });
 }
 
+// Bad: an accumulator the code names only by a type parameter. What
+// proves the accumulator is a `CommandExtra` is the folder resolving to
+// one of its setters, so the rule never asks the accumulator's type --
+// which is also how it reaches whatever else a release implements the
+// trait for.
+fn generic_accumulator<C: CommandExtra>(command: C) -> C {
+    VARS.iter().fold(command, CommandExtra::without_env)
+}
+
 fn main() {}

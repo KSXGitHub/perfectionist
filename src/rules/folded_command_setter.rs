@@ -1,7 +1,6 @@
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_sugg;
-use clippy_utils::res::MaybeDef;
 use clippy_utils::source::snippet;
 use clippy_utils::sugg::Sugg;
 use clippy_utils::{is_from_proc_macro, sym};
@@ -9,7 +8,6 @@ use rustc_errors::Applicability;
 use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::Symbol;
 
 mod folder;
 mod receiver;
@@ -125,11 +123,6 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// `std::process::Command`'s `rustc_diagnostic_item` name. Not among the
-/// pre-interned `rustc_span::sym` constants, so it is interned on use,
-/// as the sibling rule does for the same reason.
-const COMMAND_DIAGNOSTIC_ITEM: &str = "Command";
-
 const CONFIG_KEY: &str = "perfectionist::folded_command_setter";
 
 /// The rule has no configuration knobs. Not dead code: the read
@@ -176,13 +169,6 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
             .tcx
             .trait_of_assoc(fold)
             .is_some_and(|trait_id| cx.tcx.is_diagnostic_item(sym::Iterator, trait_id))
-        {
-            return;
-        }
-        if !cx
-            .typeck_results()
-            .expr_ty(initial)
-            .is_diag_item(cx, Symbol::intern(COMMAND_DIAGNOSTIC_ITEM))
         {
             return;
         }

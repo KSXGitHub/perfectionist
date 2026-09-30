@@ -38,6 +38,11 @@ use rustc_lint::LateContext;
 use rustc_middle::ty::adjustment::{Adjust, DerefAdjustKind};
 use rustc_span::{Span, Symbol};
 
+/// `std::process::Command`'s `rustc_diagnostic_item` name, which
+/// [`from_std`] uses to reach `std` itself. Not among the pre-interned
+/// `rustc_span::sym` constants, so it is interned on use.
+const COMMAND_DIAGNOSTIC_ITEM: &str = "Command";
+
 /// What the suggestion needs to know about the receiver.
 pub(super) struct Shape {
     /// The source whose text becomes the plural's argument. The
@@ -115,7 +120,7 @@ fn from_std(cx: &LateContext<'_>, call: DefId) -> bool {
     [
         sym::Iterator,
         sym::Vec,
-        Symbol::intern(super::COMMAND_DIAGNOSTIC_ITEM),
+        Symbol::intern(COMMAND_DIAGNOSTIC_ITEM),
     ]
     .into_iter()
     .filter_map(|item| cx.tcx.get_diagnostic_item(item))
