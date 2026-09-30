@@ -1031,6 +1031,15 @@ result borrows from.
   The diagnostic span is the adapter's method segment, which a derive
   can give a user-source span, so the guard is needed and a
   `ui/<rule>_proc_macro.rs` fixture should prove it.
+- Every Avoid example in this file becomes a fixture the rule fires on,
+  and every Prefer example one it stays silent on. The Prefer half is
+  the one to insist on: a form this rule asks for and then flags again
+  is a false positive, and no amount of reading the Avoid cases finds
+  it. The families reached through a dependency — rayon, itertools,
+  `pipe-trait` — take a stub under `ui/auxiliary/` rather than the
+  crate, the way
+  [`ui/auxiliary/command_extra.rs`](../ui/auxiliary/command_extra.rs)
+  and [`ui/auxiliary/clap.rs`](../ui/auxiliary/clap.rs) already do.
 
 ### Difficulty
 
