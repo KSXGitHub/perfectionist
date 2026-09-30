@@ -175,9 +175,11 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         let Some(singular) = folder::resolves_to(cx, folder) else {
             return;
         };
-        // Resolving the setter is also what proves the accumulator is a
-        // `Command`, so the type check above costs the trigger nothing
-        // and buys an early exit on every unrelated fold.
+        // Resolving the setter is what proves the accumulator implements
+        // `CommandExtra`: `fold`'s `B` is the `Self` of the impl the
+        // setter resolved in, or the fold does not type-check. So the
+        // accumulator's type is never asked, and the rule reaches
+        // whatever a release implements the trait for.
         let Some(trait_id) = cx.tcx.trait_of_assoc(singular) else {
             return;
         };
