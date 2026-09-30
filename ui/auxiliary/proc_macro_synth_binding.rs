@@ -624,6 +624,63 @@ pub fn synth_command_setter(input: TokenStream) -> TokenStream {
     out
 }
 
+/// `#[derive(SynthFoldedCommandSetter)]` +
+/// `#[synth_folded_command_setter]` →
+/// `fn _synth_folded_command_setter() { let _ = VARS.iter().fold(`
+/// `std::process::Command::new("ls"),`
+/// `command_extra::CommandExtra::without_env); }` where every token, the
+/// wrapping `fn` included, inherits the user-span of
+/// `synth_folded_command_setter`.
+///
+/// Everything is stamped, so both the fold call and the enclosing item
+/// read as user-written and `hir_in_external_macro` -- which checks the
+/// node's span and the enclosing item's `def_span` -- has nothing to
+/// find.
+///
+/// `VARS` is the fixture's own `const`, so the synthesised fold is one
+/// the rule fires on when hand-written: a `&'static` slice's `iter`
+/// folded over a singular setter whose plural the trait declares.
+#[proc_macro_derive(SynthFoldedCommandSetter, attributes(synth_folded_command_setter))]
+pub fn synth_folded_command_setter(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_folded_command_setter").expect(
+        "`#[derive(SynthFoldedCommandSetter)]` requires a `#[synth_folded_command_setter]`",
+    );
+    let source = r#"
+        fn _synth_folded_command_setter() {
+            let _ = VARS.iter().fold(
+                std::process::Command::new("ls"),
+                command_extra::CommandExtra::without_env,
+            );
+        }
+    "#;
+    respan(
+        source.parse().expect("the synthesised source is valid Rust"),
+        attr_span,
+    )
+}
+
+/// Every token of `stream`, groups walked into, moved to `span`.
+///
+/// The derives above stamp a chosen few tokens and build their output by
+/// hand for that reason; this one stamps all of them, which is shorter
+/// said over a parsed stream than spelled out tree by tree.
+fn respan(stream: TokenStream, span: Span) -> TokenStream {
+    stream
+        .into_iter()
+        .map(|tree| match tree {
+            TokenTree::Group(group) => {
+                let mut replacement = Group::new(group.delimiter(), respan(group.stream(), span));
+                replacement.set_span(span);
+                TokenTree::Group(replacement)
+            }
+            mut leaf => {
+                leaf.set_span(span);
+                leaf
+            }
+        })
+        .collect()
+}
+
 fn wrap_const_block(body: TokenStream) -> TokenStream {
     let call_site = Span::call_site();
     let mut out = TokenStream::new();
