@@ -14,9 +14,7 @@ An adapter should do one thing. A closure doing several makes one
 adapter do all of them, and the stages that would have been visible in
 the pipeline are hidden inside it.
 
-A chain of steps hides them one behind another:
-
-**Avoid:**
+**Avoid** — a chain of steps, hidden one behind another:
 
 ```rust
 let names = headers
@@ -24,7 +22,8 @@ let names = headers
     .collect::<Vec<_>>();
 ```
 
-**Prefer:**
+**Prefer** — one adapter per step, so the order the data passes through
+them reads down the page:
 
 ```rust
 let names = headers
@@ -33,9 +32,8 @@ let names = headers
     .collect::<Vec<_>>();
 ```
 
-A predicate built from separable tests hides them side by side:
-
-**Avoid:**
+**Avoid** — a predicate built from separable tests, hidden side by
+side:
 
 ```rust
 let wanted = entries
@@ -43,7 +41,8 @@ let wanted = entries
     .collect::<Vec<_>>();
 ```
 
-**Prefer:**
+**Prefer** — one adapter per test, so either can be read, moved or cut
+without disturbing the other:
 
 ```rust
 let wanted = entries
