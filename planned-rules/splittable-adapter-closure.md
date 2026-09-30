@@ -55,7 +55,7 @@ let wanted = entries
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. Both forms
-build the same iterator, with the same laziness and the same
+compute the same answer, with the same laziness and the same
 short-circuiting, and a closure that chains two calls is ordinary
 idiomatic Rust.
 
@@ -67,7 +67,8 @@ closure, those same steps are an expression to be parsed before any of
 them can be found.
 
 The split also tends to make each stage point-free, which is why the
-example above ends at `str::trim` rather than a closure wrapping it.
+chain example above ends at `str::trim` rather than a closure wrapping
+it.
 That reduction is Clippy's to enforce, not this rule's; see
 [What Clippy already says](#what-clippy-already-says).
 
@@ -560,13 +561,13 @@ iter  split   f1 g2 f2 g4 f3 g6
 ```
 
 Pure steps give the same answer either way, which is what the table's
-row shows. Impure ones do not, and the reordering compiles, which is the
-quiet kind of divergence that
+row shows. Impure ones do not, and the reordering compiles, which is
+the quiet kind of divergence that
 [When the chain may be hoisted](#when-the-chain-may-be-hoisted)
-describes. It has the same shape — the split is safe exactly where the steps are
-pure, and purity is what no lint can ask for. Where every other family
-lifts into a lazy `map` that keeps `f` and `g` interleaved per item,
-an eager one cannot.
+describes. It has the same shape: the split is safe exactly where the
+steps are pure, and purity is what no lint can ask for. Where every
+other family lifts into a lazy `map` that keeps `f` and `g` interleaved
+per item, an eager one cannot.
 
 So the condition is that **the lift target be lazy**, which excludes
 `[T; N]::map` and nothing else in scope. Admitting it needs a purity
