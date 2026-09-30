@@ -10,9 +10,11 @@ below is the catalogue's own rather than a quotation.
 
 ## Statement
 
-An iterator adapter should do one thing. A closure whose body chains
-several steps makes one adapter do all of them, and the stages that
-would have been visible in the pipeline are hidden inside it.
+An adapter should do one thing. A closure doing several makes one
+adapter do all of them, and the stages that would have been visible in
+the pipeline are hidden inside it.
+
+A chain of steps hides them one behind another:
 
 **Avoid:**
 
@@ -28,6 +30,25 @@ let names = headers
 let names = headers
     .map(str::trim)
     .map(str::to_ascii_lowercase)
+    .collect::<Vec<_>>();
+```
+
+A predicate built from separable tests hides them side by side:
+
+**Avoid:**
+
+```rust
+let wanted = entries
+    .filter(|entry| is_visible(entry) && is_recent(entry))
+    .collect::<Vec<_>>();
+```
+
+**Prefer:**
+
+```rust
+let wanted = entries
+    .filter(is_visible)
+    .filter(is_recent)
     .collect::<Vec<_>>();
 ```
 
@@ -138,10 +159,10 @@ leading `map` cannot reach. A step naming it is simply where the chain
 stops:
 
 ```rust
-// The chain is `trim` and `len`. `wrapping_mul` names the
-// accumulator, so it is not a step, and the body keeps it.
+// Avoid -- the chain is `trim` and `len`; `wrapping_mul` names the
+// accumulator, so it is not a step, and the body keeps it
 .fold(1, |acc, s| s.trim().len().wrapping_mul(acc))
-// becomes
+// Prefer
 .map(str::trim).map(str::len).fold(1, |acc, n| n.wrapping_mul(acc))
 ```
 
@@ -448,6 +469,24 @@ A closure handed nothing — `Option::unwrap_or_else`,
 `Option::or_else`, `ok_or_else` — has no item to root a chain at, so
 this rule does not reach it.
 
+The value channel, with `map` as the lift target:
+
+```rust
+// Avoid
+maybe_id.map(|id| render(double(id)))
+// Prefer
+maybe_id.map(double).map(render)
+```
+
+The error channel, with `map_err`:
+
+```rust
+// Avoid
+outcome.map_err(|code| render(double(code)))
+// Prefer
+outcome.map_err(double).map_err(render)
+```
+
 ### `itertools`
 
 `Itertools` is a blanket extension of `Iterator`, so most of what it
@@ -475,6 +514,16 @@ against `[4]` split, `tree_reduce` `Some(16)` against `Some(32)`, and
 `update`, `find_position`, `into_group_map_by`, `position_max_by_key`
 and `position_min_by_key`, each of which takes its item by reference
 and so fails the predicate's first half before the second is reached.
+
+The nested channel is the one worth seeing, since `map_ok`'s item sits
+inside the iterator's own:
+
+```rust
+// Avoid
+lines.map_ok(|line| line.trim().len())
+// Prefer
+lines.map_ok(str::trim).map_ok(str::len)
+```
 
 ### `Poll`, `ControlFlow` and `[T; N]`
 
@@ -526,11 +575,38 @@ test instead;
 is where that sits. `try_map` is `#[unstable]` and out of reach either
 way.
 
+`Poll`, on its value channel:
+
+```rust
+// Avoid
+poll.map(|id| render(double(id)))
+// Prefer
+poll.map(double).map(render)
+```
+
+`ControlFlow`, on whichever channel the closure was handed, the other
+left alone:
+
+```rust
+// Avoid
+flow.map_break(|code| render(double(code)))
+// Prefer
+flow.map_break(double).map_break(render)
+```
+
 ### Rayon's parallel adapters
 
 `rayon::iter::ParallelIterator` has the same shape and takes the same
-split, so this rule reaches it too. Measured over the same input,
-folded against split:
+split, so this rule reaches it too:
+
+```rust
+// Avoid
+lines.par_iter().map(|line| line.trim().len())
+// Prefer
+lines.par_iter().map(|line| line.trim()).map(str::len)
+```
+
+Measured over the same input, folded against split:
 
 | adapter          | folded         | split          |
 |------------------|----------------|----------------|
@@ -867,6 +943,18 @@ to fire on:
 - **Move a run of stages into a function.** This rule fires on a
   closure passed to an adapter, so `items.map(normalise)` is a path
   and no trigger at all.
+
+Both look like this, on the chain the Statement opens with:
+
+```rust
+// Naming a stage
+let trimmed = headers.map(str::trim);
+let names = trimmed.map(str::to_ascii_lowercase).collect::<Vec<_>>();
+
+// Or moving the run into a function, which this rule cannot see at all
+fn normalise(header: &str) -> String { header.trim().to_ascii_lowercase() }
+let names = headers.map(normalise).collect::<Vec<_>>();
+```
 
 Extraction is the one to take knowingly. It satisfies both triggers
 while putting the steps back inside a body, which is the arrangement
