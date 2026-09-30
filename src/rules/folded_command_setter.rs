@@ -197,6 +197,21 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         let Some(shape) = receiver::shape(cx, receiver) else {
             return;
         };
+        // An initial value that diverges never reaches the fold, so the
+        // plural would run where the fold did not: measured turning a
+        // `return`-as-accumulator into a command whose environment is
+        // stripped. `Sugg`'s bracketing does not cover these, and there
+        // is nothing to advise about code rustc already calls
+        // unreachable.
+        if cx.typeck_results().expr_ty(initial).is_never() {
+            return;
+        }
+        // The plural is named, not resolved, so an inherent method of the
+        // accumulator's own type would take the call instead -- and need
+        // not take the same arguments.
+        if setter::shadowed_by_an_inherent_method(cx, initial, replacement.plural) {
+            return;
+        }
         // A derive that stamps its whole expansion with the driving
         // attribute's span defeats both `report_in_external_macro:
         // false` and `hir_in_external_macro`, which read spans;
