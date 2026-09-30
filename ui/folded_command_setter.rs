@@ -472,4 +472,25 @@ fn inherent_shadow(command: Shadowing) -> Shadowing {
     VARS.iter().fold(command, CommandExtra::without_env)
 }
 
+// Not flagged: a `ref` binding hands the setter a reference to the item
+// where a by-value binding hands it the item, so what the fold proves of
+// the item is not what the plural asks of it. Here the fold establishes
+// `&Key: AsRef<OsStr>` and `without_envs` wants `Key: AsRef<OsStr>`.
+fn ref_binding<Key>(command: Command, keys: Vec<Key>) -> Command
+where
+    for<'a> &'a Key: AsRef<OsStr>,
+{
+    keys.into_iter()
+        .fold(command, |command, ref key| command.without_env(key))
+}
+
+// Not flagged: a one-element tuple wrapping a pair. The closure's
+// bindings are the two the setter needs, but the *item* is a 1-tuple,
+// which no plural can split.
+fn nested_tuple_item(command: Command, pairs: Vec<((String, String),)>) -> Command {
+    pairs
+        .into_iter()
+        .fold(command, |command, ((key, value),)| command.with_env(key, value))
+}
+
 fn main() {}

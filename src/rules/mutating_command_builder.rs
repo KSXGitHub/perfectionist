@@ -198,7 +198,7 @@ impl MutatingCommandBuilder {
             }
             RequiredDeclaration::Crate => {}
         }
-        self.command_extra_is_declared(cx) || availability::trait_is_imported(cx, call)
+        self.command_extra_is_declared(cx) || crate::command_extra::trait_is_imported(cx, call)
     }
 
     /// [`availability::crate_is_declared`], answered once per
@@ -305,7 +305,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
             .args
             .is_some_and(|arguments| !arguments.args.is_empty());
         let receiver_is_a_temporary = receiver::produces_a_temporary(receiver);
-        let trait_is_imported = availability::trait_is_imported(cx, expr);
+        let trait_is_imported = crate::command_extra::trait_is_imported(cx, expr);
         emit::violation(
             cx,
             emit::Violation {

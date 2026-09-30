@@ -1,3 +1,4 @@
+use crate::command_extra::trait_is_imported;
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_sugg;
@@ -238,7 +239,12 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         {
             return;
         }
-        let applicability = if shape.reorderable {
+        // The plural is named rather than resolved, so the rewritten
+        // call reaches it only where the trait is in scope -- and a
+        // *path* folder needs no import of its own, so a fold can name
+        // the setter while the module cannot name the method. Measured:
+        // a machine-applicable `E0599` without this.
+        let applicability = if shape.reorderable && trait_is_imported(cx, expr) {
             Applicability::MachineApplicable
         } else {
             Applicability::Unspecified

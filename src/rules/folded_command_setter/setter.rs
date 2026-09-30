@@ -15,13 +15,6 @@ use rustc_lint::LateContext;
 use rustc_middle::ty::{self, AssocItem, GenericArg, Ty, TypeVisitableExt};
 use rustc_span::Symbol;
 
-/// The crate `command-extra` compiles under, as the compiler spells it
-/// rather than as Cargo does.
-const CRATE: &str = "command_extra";
-
-/// The trait whose setters come in pairs.
-const TRAIT: &str = "CommandExtra";
-
 /// What a fold over one singular setter can be replaced by.
 pub(super) struct Replacement {
     /// The plural's name.
@@ -231,8 +224,7 @@ pub(super) fn shadowed_by_an_inherent_method(
 }
 
 pub(super) fn is_command_extra(cx: &LateContext<'_>, trait_id: DefId) -> bool {
-    cx.tcx.item_name(trait_id) == Symbol::intern(TRAIT)
-        && cx.tcx.crate_name(trait_id.krate) == Symbol::intern(CRATE)
+    crate::command_extra::is_the_trait(cx, trait_id)
 }
 
 /// Whether the `CommandExtra` this build resolved declares a method
