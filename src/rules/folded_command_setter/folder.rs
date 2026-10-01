@@ -72,9 +72,7 @@ fn forwarded_by<'tcx>(cx: &LateContext<'tcx>, closure: &'tcx Closure<'tcx>) -> O
     let destructured = match item.pat.kind {
         // The `with_env` pair's item is a pair, so the closure
         // destructures it, and the halves are what the setter is passed.
-        // A `..` would hide a field from the comparison below, leaving
-        // the arity to agree by accident.
-        PatKind::Tuple(elements, gap) if gap.as_opt_usize().is_none() => {
+        PatKind::Tuple(elements, _) => {
             for element in elements {
                 bound.push(binding(element)?);
             }

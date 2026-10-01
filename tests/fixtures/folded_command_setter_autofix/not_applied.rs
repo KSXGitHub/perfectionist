@@ -184,8 +184,8 @@ pub fn pinned_deref(names: Pin<Backwards>) -> Command {
     names.iter().fold(Command::new("pinned-deref"), CommandExtra::without_env)
 }
 
-// A `Deref` the standard library wrote that runs the user's initializer
-// the first time.
+// A `LazyLock`, whose first `Deref` runs the user's initializer, and
+// whose state a shared reference can write.
 static LAZY: LazyLock<Vec<String>> = LazyLock::new(|| vec!["A".to_owned()]);
 
 pub fn lazy_lock() -> Command {

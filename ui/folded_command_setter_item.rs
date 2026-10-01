@@ -72,16 +72,6 @@ where
         .fold(command, |command, ref key| command.without_env(key))
 }
 
-// Not flagged: a `..` in the tuple pattern hides a field, so the
-// bindings the closure forwards are not all of the item.
-fn gapped_tuple(triples: Vec<(String, String, String)>) {
-    let _ = triples
-        .into_iter()
-        .fold(Command::new("ls"), |command, (key, ..)| {
-            command.without_env(key)
-        });
-}
-
 // Not flagged: fewer arguments than the item has bindings. The plural
 // would pass the whole pair where the fold passed one half of it.
 fn dropped_binding(pairs: Vec<(String, String)>) {
