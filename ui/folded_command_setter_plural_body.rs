@@ -1,0 +1,71 @@
+// edition:2024
+//
+// A fold in the body of the plural itself. This crate stands in for
+// `command-extra`, so the trait's default bodies are its own.
+
+#![crate_name = "command_extra"]
+#![feature(register_tool)]
+#![register_tool(perfectionist)]
+#![allow(dead_code, unused, reason = "ui fixture")]
+
+pub mod caller {
+    use super::CommandExtra;
+    use std::process::Command;
+
+    // Bad: the same fold outside the plural.
+    pub fn lister(flags: &[&str]) -> Command {
+        flags.iter().fold(Command::new("ls"), CommandExtra::with_arg)
+    }
+}
+
+use std::ffi::OsStr;
+use std::process::Command;
+
+pub trait CommandExtra: Sized {
+    fn with_arg(self, arg: impl AsRef<OsStr>) -> Self;
+
+    fn without_env(self, key: impl AsRef<OsStr>) -> Self;
+
+    // Not flagged: the trait's default plural.
+    fn with_args<Args>(self, args: Args) -> Self
+    where
+        Args: IntoIterator,
+        Args::Item: AsRef<OsStr>,
+    {
+        args.into_iter().fold(self, Self::with_arg)
+    }
+
+    // Not flagged: a fold in a closure inside the default plural.
+    fn without_envs<Keys>(self, keys: Keys) -> Self
+    where
+        Keys: IntoIterator,
+        Keys::Item: AsRef<OsStr>,
+    {
+        let strip = |command| keys.into_iter().fold(command, Self::without_env);
+        strip(self)
+    }
+}
+
+impl CommandExtra for Command {
+    fn with_arg(mut self, arg: impl AsRef<OsStr>) -> Self {
+        self.arg(arg);
+        self
+    }
+
+    fn without_env(mut self, key: impl AsRef<OsStr>) -> Self {
+        self.env_remove(key);
+        self
+    }
+
+    // Not flagged: an impl's own plural.
+    fn without_envs<Keys>(self, keys: Keys) -> Self
+    where
+        Keys: IntoIterator,
+        Keys::Item: AsRef<OsStr>,
+    {
+        keys.into_iter()
+            .fold(self, |command, key| command.without_env(key))
+    }
+}
+
+fn main() {}

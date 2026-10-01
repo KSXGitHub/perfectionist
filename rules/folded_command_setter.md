@@ -28,6 +28,9 @@ The fold's receiver has to be a place expression followed by at
 most one argument-less method call. `VARS`, `list.iter()` and
 `self.names.into_iter()` qualify; a longer one is left alone.
 
+A fold in the body of the plural itself is left alone, because
+there the fold is how the plural is implemented.
+
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. The fold

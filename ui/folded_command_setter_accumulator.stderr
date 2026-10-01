@@ -4,7 +4,16 @@ warning: this fold over `without_env` re-implements `without_envs`
 LL |     VARS.iter().fold(command, CommandExtra::without_env)
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `command.without_envs(VARS.iter())`
    |
+   = help: an impl of `CommandExtra` may write its own body for the plural, which the suggestion would run in place of the fold; apply it only where the two agree
    = note: `#[warn(perfectionist::folded_command_setter)]` on by default
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_accumulator.rs:LL:CC
+   |
+LL |     VARS.iter().fold(opaque(), CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `opaque().without_envs(VARS.iter())`
+   |
+   = help: an impl of `CommandExtra` may write its own body for the plural, which the suggestion would run in place of the fold; apply it only where the two agree
 
 warning: this fold over `without_env` re-implements `without_envs`
   --> $DIR/folded_command_setter_accumulator.rs:LL:CC
@@ -12,7 +21,7 @@ warning: this fold over `without_env` re-implements `without_envs`
 LL |     VARS.iter().fold(overriding, CommandExtra::without_env)
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `overriding.without_envs(VARS.iter())`
    |
-   = help: this type's impl of `CommandExtra` writes its own body for the plural, which the suggestion runs in place of the fold; apply it only where the two agree
+   = help: an impl of `CommandExtra` may write its own body for the plural, which the suggestion would run in place of the fold; apply it only where the two agree
 
 warning: this fold over `without_env` re-implements `without_envs`
   --> $DIR/folded_command_setter_accumulator.rs:LL:CC
@@ -21,5 +30,11 @@ LL |     VARS.iter().fold(ambiguous, CommandExtra::without_env)
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `ambiguous.without_envs(VARS.iter())`
    |
    = help: `SameName` also declares `without_envs` for this type, so wherever both traits are in scope the suggestion is ambiguous; call the plural through the path of `CommandExtra` there
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_accumulator.rs:LL:CC
+   |
+LL |     VARS.iter().fold(command, CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `command.without_envs(VARS.iter())`
 
 warning: N warnings emitted

@@ -44,9 +44,20 @@ fn std_setter() {
 // proves the accumulator is a `CommandExtra` is the folder resolving to
 // one of its setters, so the rule never asks the accumulator's type --
 // which is also how it reaches whatever else a release implements the
-// trait for.
+// trait for. The fix is withheld, because the parameter can stand for a
+// type whose impl writes its own plural.
 fn generic_accumulator<Builder: CommandExtra>(command: Builder) -> Builder {
     VARS.iter().fold(command, CommandExtra::without_env)
+}
+
+fn opaque() -> impl CommandExtra {
+    Command::new("ls")
+}
+
+// Bad: an accumulator of an opaque type, which stands for a type the
+// same way a parameter does. The fix is withheld.
+fn opaque_accumulator() -> impl CommandExtra {
+    VARS.iter().fold(opaque(), CommandExtra::without_env)
 }
 
 // Not flagged: an accumulator that never arrives. The fold does not run,
@@ -186,6 +197,23 @@ impl SameName for Ambiguous {
 
 pub fn ambiguous(ambiguous: Ambiguous) -> Ambiguous {
     VARS.iter().fold(ambiguous, CommandExtra::without_env)
+}
+
+// Bad, and the fix is applied: another trait declares a method named
+// like the plural, but on `&self`. Method probing reaches the by-value
+// plural first, so the two never compete.
+trait ByReference {
+    fn without_envs<Keys: IntoIterator>(&self, keys: Keys) -> usize;
+}
+
+impl ByReference for Command {
+    fn without_envs<Keys: IntoIterator>(&self, keys: Keys) -> usize {
+        keys.into_iter().count()
+    }
+}
+
+fn by_reference(command: Command) -> Command {
+    VARS.iter().fold(command, CommandExtra::without_env)
 }
 
 fn main() {}

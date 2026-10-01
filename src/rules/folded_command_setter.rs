@@ -37,6 +37,9 @@ declare_tool_lint! {
     /// most one argument-less method call. `VARS`, `list.iter()` and
     /// `self.names.into_iter()` qualify; a longer one is left alone.
     ///
+    /// A fold in the body of the plural itself is left alone, because
+    /// there the fold is how the plural is implemented.
+    ///
     /// ### Why restrict this?
     ///
     /// This is a stylistic preference, not a correctness issue. The fold
@@ -123,12 +126,12 @@ const NEEDS_THE_IMPORT: &str = "the plural is a `CommandExtra` method, which res
                                 the trait is in scope; add \
                                 `use command_extra::CommandExtra;` if it is not";
 
-/// What a reader has to settle where the accumulator's own impl writes
-/// the plural's body. Why that withholds the fix is on
-/// [`setter::overrides_the_plural`].
-const OVERRIDDEN: &str = "this type's impl of `CommandExtra` writes its own body for the plural, \
-                          which the suggestion runs in place of the fold; apply it only where \
-                          the two agree";
+/// What a reader has to settle where an impl that may apply to the
+/// accumulator writes the plural's body. Why that withholds the fix is
+/// on [`setter::overrides_the_plural`].
+const OVERRIDDEN: &str = "an impl of `CommandExtra` may write its own body for the plural, which \
+                          the suggestion would run in place of the fold; apply it only where the \
+                          two agree";
 
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
@@ -197,6 +200,9 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         let Some(plural_id) = setter::declares(cx, trait_id, replacement.plural) else {
             return;
         };
+        if setter::inside_the_plural(cx, expr, plural_id) {
+            return;
+        }
 
         if replacement.splits_item && !setter::item_fits(cx, plural_id, receiver) {
             return;

@@ -229,11 +229,18 @@ pub(super) fn shadowed_by_an_inherent_method(
 /// fold of its singular. An override keeps the trait's signature, so the
 /// rewritten call still compiles, but it runs that body instead, which is
 /// why this withholds the fix rather than the diagnostic.
+///
+/// For a type parameter or an alias, `for_each_relevant_impl` visits
+/// only the blanket impls, though either can stand for a type whose own
+/// impl overrides the plural. So the answer for one is yes.
 pub(super) fn overrides_the_plural<'tcx>(
     cx: &LateContext<'tcx>,
     plural: DefId,
     accumulator: Ty<'tcx>,
 ) -> bool {
+    if let ty::Param(_) | ty::Alias(..) = accumulator.kind() {
+        return true;
+    }
     let mut overrides = false;
     cx.tcx
         .for_each_relevant_impl(cx.tcx.parent(plural), accumulator, |impl_id| {
@@ -244,6 +251,38 @@ pub(super) fn overrides_the_plural<'tcx>(
                 .any(|item| item.trait_item_def_id() == Some(plural));
         });
     overrides
+}
+
+/// Whether `expr` sits in the body of the plural itself, as the trait's
+/// default or as an impl's override, closures within it included.
+///
+/// There the fold is the plural's implementation, and the suggestion
+/// would make the plural call itself.
+pub(super) fn inside_the_plural(cx: &LateContext<'_>, expr: &Expr<'_>, plural: DefId) -> bool {
+    let owner = cx
+        .tcx
+        .typeck_root_def_id(cx.tcx.hir_enclosing_body_owner(expr.hir_id).to_def_id());
+    owner == plural
+        || cx
+            .tcx
+            .opt_associated_item(owner)
+            .and_then(|item| item.trait_item_def_id())
+            == Some(plural)
+}
+
+/// Whether `method`, declared in a trait, takes `self` by value.
+///
+/// Method probing finds the by-value plural before it tries a reference
+/// to the receiver, so a same-named method taking `&self` or `&mut self`
+/// never competes with it.
+fn takes_self_by_value(cx: &LateContext<'_>, method: DefId) -> bool {
+    cx.tcx
+        .fn_sig(method)
+        .skip_binder()
+        .inputs()
+        .skip_binder()
+        .first()
+        .is_some_and(|receiver| receiver.is_param(0))
 }
 
 /// Another trait implemented for `accumulator` that declares a method
@@ -266,7 +305,7 @@ pub(super) fn another_trait_declaring<'tcx>(
                 .tcx
                 .associated_items(other)
                 .filter_by_name_unhygienic(name)
-                .any(AssocItem::is_method)
+                .any(|item| item.is_method() && takes_self_by_value(cx, item.def_id))
             // A trait with parameters of its own cannot be asked about
             // without them, so it is assumed to apply.
             && (cx.tcx.generics_of(other).count() != 1
