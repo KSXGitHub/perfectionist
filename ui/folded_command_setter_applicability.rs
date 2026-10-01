@@ -133,11 +133,9 @@ fn overloaded_deref(noisy: Noisy) {
         .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
-// Bad: the trait is not in scope at the call site. A path folder needs no
-// import of its own, so the fold compiles while the plural the suggestion
-// names would not resolve. The receiver is a place and its call is std's,
-// so the import is the only thing standing between this and a fix, which
-// makes it the shape that pins the help saying so.
+// Bad: the trait is not in scope at the call site, so the plural the
+// suggestion names would not resolve. The receiver is a place whose call
+// is std's, so the import is the only thing withheld here.
 mod trait_not_in_scope {
     use super::VARS;
     use std::process::Command;

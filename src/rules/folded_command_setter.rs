@@ -109,18 +109,15 @@ declare_tool_lint! {
 const CONFIG_KEY: &str = "perfectionist::folded_command_setter";
 
 /// What a reader has to settle before applying the suggestion by hand
-/// where the receiver's call is not one this rule can vouch for
-/// evaluating. `A.fold(B, f)` evaluates `A` then `B`, and `B.plural(A)`
-/// evaluates `B` then `A`, so the two run in opposite orders.
+/// where the receiver is not reorderable. Why the two orders differ is on
+/// [`receiver::Shape::reorderable`].
 const REORDERS: &str = "the fold evaluates the receiver before the initial value and the \
                         suggestion evaluates them the other way round, so apply it only where \
                         neither reads what the other writes";
 
 /// What a reader has to do first where the trait is not in scope at the
-/// call site. [`trait_is_imported`] reads only the innermost module's own
-/// `use` items, so a glob or a prelude reads there as absent and leaves
-/// this line redundant rather than wrong -- which is why it says to
-/// import the trait if it is not in scope, rather than that it is not.
+/// call site. Conditional, because the imports [`trait_is_imported`]
+/// does not answer for leave this line redundant rather than wrong.
 const NEEDS_THE_IMPORT: &str = "the plural is a `CommandExtra` method, which resolves only where \
                                 the trait is in scope; add \
                                 `use command_extra::CommandExtra;` if it is not";
@@ -275,10 +272,6 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
                     suggestion,
                     applicability,
                 );
-                // Withholding the edit is not withholding the help. Each
-                // reason the fixer was not handed this one is something
-                // the reader has to settle to apply it themselves, so
-                // each one says what that is.
                 if !shape.reorderable {
                     diagnostic.help(REORDERS);
                 }
