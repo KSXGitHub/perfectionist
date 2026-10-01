@@ -283,21 +283,36 @@ pub(super) fn overrides_the_plural<'tcx>(
     overrides
 }
 
-/// Whether `expr` sits in the body of the plural itself, as the trait's
-/// default or as an impl's override, closures within it included.
+/// Whether `expr` sits in the body of the plural itself, closures within
+/// it included, where the suggestion could make the plural call itself.
 ///
-/// There the fold is the plural's implementation, and the suggestion
-/// would make the plural call itself.
-pub(super) fn inside_the_plural(cx: &LateContext<'_>, expr: &Expr<'_>, plural: DefId) -> bool {
+/// In the trait's default body every fold counts, because any
+/// accumulator whose plural is that default reaches it again. In an
+/// impl's override only a fold over the impl's own type does: one over
+/// another type calls that type's plural, as a wrapper delegating to its
+/// inner command does.
+pub(super) fn inside_the_plural(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+    initial: &Expr<'_>,
+    plural: DefId,
+) -> bool {
     let owner = cx
         .tcx
         .typeck_root_def_id(cx.tcx.hir_enclosing_body_owner(expr.hir_id).to_def_id());
-    owner == plural
-        || cx
-            .tcx
-            .opt_associated_item(owner)
-            .and_then(|item| item.trait_item_def_id())
-            == Some(plural)
+    if owner == plural {
+        return true;
+    }
+    cx.tcx
+        .opt_associated_item(owner)
+        .and_then(|item| item.trait_item_def_id())
+        == Some(plural)
+        && cx.typeck_results().expr_ty(initial)
+            == cx
+                .tcx
+                .type_of(cx.tcx.parent(owner))
+                .instantiate_identity()
+                .skip_normalization()
 }
 
 /// Another trait that declares a method named like the plural which

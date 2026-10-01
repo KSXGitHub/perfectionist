@@ -68,4 +68,34 @@ impl CommandExtra for Command {
     }
 }
 
+pub struct Wrapped {
+    inner: Command,
+}
+
+impl CommandExtra for Wrapped {
+    fn with_arg(self, arg: impl AsRef<OsStr>) -> Self {
+        Wrapped {
+            inner: self.inner.with_arg(arg),
+        }
+    }
+
+    fn without_env(self, key: impl AsRef<OsStr>) -> Self {
+        Wrapped {
+            inner: self.inner.without_env(key),
+        }
+    }
+
+    // Bad: an override folding another type's accumulator, whose plural
+    // is that type's and so does not call this one.
+    fn without_envs<Keys>(self, keys: Keys) -> Self
+    where
+        Keys: IntoIterator,
+        Keys::Item: AsRef<OsStr>,
+    {
+        Wrapped {
+            inner: keys.into_iter().fold(self.inner, Command::without_env),
+        }
+    }
+}
+
 fn main() {}

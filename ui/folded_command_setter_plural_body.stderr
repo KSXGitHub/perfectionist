@@ -6,4 +6,14 @@ LL |         flags.iter().fold(Command::new("ls"), CommandExtra::with_arg)
    |
    = note: `#[warn(perfectionist::folded_command_setter)]` on by default
 
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_plural_body.rs:LL:CC
+   |
+LL |             inner: keys.into_iter().fold(self.inner, Command::without_env),
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `self.inner.without_envs(keys)`
+   |
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
+   = help: the plural is a `CommandExtra` method, which resolves only where the trait is in scope; add `use command_extra::CommandExtra;` if it is not
+   = help: an impl of `CommandExtra` may write its own body for the plural, which the suggestion would run in place of the fold; apply it only where the two agree
+
 warning: N warnings emitted
