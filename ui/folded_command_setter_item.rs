@@ -57,7 +57,7 @@ fn reference_to_a_pair() {
 fn no_plural() {
     let _ = VARS
         .iter()
-        .fold(Command::new("ls"), |c, _| c.with_no_env());
+        .fold(Command::new("ls"), |c, dir| c.with_current_dir(dir));
 }
 
 // Not flagged: a `ref` binding hands the setter a reference to the item

@@ -18,7 +18,6 @@ use command_extra::CommandExtra;
 use std::process::Command;
 
 const VARS: &[&str] = &["A", "B"];
-const PAIRS: &[(&str, &str)] = &[("A", "1"), ("B", "2")];
 
 // Bad: the folder spelled as a path. The receiver's `iter` comes from
 // the standard library, so the fix is applied -- but the call survives
@@ -82,10 +81,12 @@ fn block_body() {
     });
 }
 
-// Not flagged: arguments passed out of the order they were bound.
-fn swapped_arguments() {
-    let _ = PAIRS
-        .iter()
+// Not flagged: arguments passed out of the order they were bound. The
+// item is an owned pair, which the plural would take, so the order is
+// what rules this out.
+fn swapped_arguments(pairs: Vec<(String, String)>) {
+    let _ = pairs
+        .into_iter()
         .fold(Command::new("ls"), |c, (key, value)| c.with_env(value, key));
 }
 
