@@ -170,6 +170,7 @@ fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
         "moved-root",
         "initial_is_the_root",
         "aliased-copy",
+        "aliased-static-items",
         "raw-copy",
         "inferred-initial",
         "inferred_binding",

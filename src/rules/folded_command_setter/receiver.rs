@@ -101,7 +101,7 @@ pub(super) fn shape<'tcx>(
             prefix,
             reorderable: !derefs_through_user_code(cx, receiver)
                 && !written_or_moved_by(cx, receiver, initial)
-                && !copied_from_an_alias(cx, receiver, receiver),
+                && !aliased_by(cx, receiver, initial),
         });
     }
     let ExprKind::MethodCall(_, place, [], _) = receiver.kind else {
@@ -122,7 +122,7 @@ pub(super) fn shape<'tcx>(
         reorderable: runs_only_std(cx, receiver, call)
             && !derefs_through_user_code(cx, place)
             && !written_or_moved_by(cx, place, initial)
-            && !copied_from_an_alias(cx, place, receiver),
+            && !aliased_by(cx, place, initial),
     })
 }
 
@@ -177,18 +177,7 @@ fn written_or_moved_by<'tcx>(
         return false;
     };
     match path.res {
-        Res::Local(local) => {
-            let mut touch = Touch {
-                local,
-                fields: &fields,
-                found: false,
-            };
-            // `consume_expr` rather than `walk_expr`: the initial value is
-            // itself moved into the fold, and may be the root itself.
-            let Ok(()) = ExprUseVisitor::for_clippy(cx, initial.hir_id.owner.def_id, &mut touch)
-                .consume_expr(initial);
-            touch.found
-        }
+        Res::Local(local) => touches(cx, initial, Some(local), &fields),
         // Anything can write a `static mut`, a call the initial value
         // makes included.
         Res::Def(
@@ -202,6 +191,27 @@ fn written_or_moved_by<'tcx>(
     }
 }
 
+/// Whether evaluating `initial`, the fold's taking it included, moves,
+/// mutably borrows or writes `local`, or any local where `local` is
+/// `None`. A move counts only along `fields`.
+fn touches<'tcx>(
+    cx: &LateContext<'tcx>,
+    initial: &'tcx Expr<'tcx>,
+    local: Option<HirId>,
+    fields: &[usize],
+) -> bool {
+    let mut touch = Touch {
+        local,
+        fields,
+        found: false,
+    };
+    // `consume_expr` rather than `walk_expr`: the initial value is itself
+    // moved into the fold, and may be the root itself.
+    let Ok(()) = ExprUseVisitor::for_clippy(cx, initial.hir_id.owner.def_id, &mut touch)
+        .consume_expr(initial);
+    touch.found
+}
+
 /// Records whether a walk over an expression writes `local` or moves
 /// what the receiver reads of it.
 ///
@@ -211,17 +221,21 @@ fn written_or_moved_by<'tcx>(
 /// `self.args.iter()` against `Command::new(self.program)` compiles both
 /// ways round.
 struct Touch<'a> {
-    local: HirId,
+    local: Option<HirId>,
     fields: &'a [usize],
     found: bool,
 }
 
 impl Touch<'_> {
-    /// Whether `place` is rooted at the local. The walk runs over the
-    /// enclosing item's body, which captures nothing, so a variable a
-    /// closure captures is reported as the local it is there.
+    /// Whether `place` is rooted at the local, or at any local. The walk
+    /// runs over the enclosing item's body, which captures nothing, so a
+    /// variable a closure captures is reported as the local it is there.
     fn rooted(&self, place: &PlaceWithHirId<'_>) -> bool {
-        place.place.base == PlaceBase::Local(self.local)
+        match (place.place.base, self.local) {
+            (PlaceBase::Local(local), Some(wanted)) => local == wanted,
+            (PlaceBase::Local(_), None) => true,
+            _ => false,
+        }
     }
 
     /// Whether a move of `place` takes something the receiver reads: the
@@ -262,36 +276,32 @@ impl<'tcx> Delegate<'tcx> for Touch<'_> {
     fn fake_read(&mut self, _: &PlaceWithHirId<'tcx>, _: FakeReadCause, _: HirId) {}
 }
 
-/// Whether the receiver comes away owning what it read from behind a
-/// pointer that the initial value may reach another way.
+/// Whether the place reads through a pointer that `initial` may reach
+/// some other way: a reference rooted at a local the body binds, where
+/// `initial` moves, mutably borrows or writes any local, or any raw
+/// pointer, which anything can reach.
 ///
-/// A receiver that keeps borrowing the referent keeps the borrow across
-/// the initial value in the fold as well, so the initial value cannot
-/// have written the referent there. One that owns what it read frees the
-/// referent once it has read it: `view.fold(exhaust(&mut countdown), ..)`
-/// copies `*view` and only then borrows `countdown`, and the plural would
-/// borrow first, which is `E0502`. A reference rooted at a parameter
-/// points outside the body, where nothing the initial value names can
-/// reach; a raw pointer can point anywhere.
-fn copied_from_an_alias(cx: &LateContext<'_>, place: &Expr<'_>, receiver: &Expr<'_>) -> bool {
+/// No check on the place's own root sees such a write: `let view =
+/// &countdown; view.fold(exhaust(&mut countdown), ..)` copies `*view` and
+/// only then borrows `countdown`, and the plural would borrow first,
+/// which is `E0502`. A reference rooted at a parameter, a `const` or a
+/// `static` points where nothing the body binds can reach.
+///
+/// Only a deref reads through a pointer, so an autoref method resolution
+/// adds to the place is not one.
+fn aliased_by<'tcx>(cx: &LateContext<'tcx>, place: &Expr<'_>, initial: &'tcx Expr<'tcx>) -> bool {
     let typeck = cx.typeck_results();
-    if typeck
-        .expr_ty_adjusted(receiver)
-        .walk()
-        .any(|arg| arg.as_region().is_some())
-    {
-        return false;
-    }
     let mut through_a_reference = false;
     let mut expr = place;
     loop {
-        let types = core::iter::once(typeck.expr_ty(expr)).chain(
+        let read = core::iter::once(typeck.expr_ty(expr)).chain(
             typeck
                 .expr_adjustments(expr)
                 .iter()
+                .filter(|adjustment| matches!(adjustment.kind, Adjust::Deref(_)))
                 .map(|adjustment| adjustment.target),
         );
-        for ty in types {
+        for ty in read {
             if ty.is_raw_ptr() {
                 return true;
             }
@@ -301,10 +311,11 @@ fn copied_from_an_alias(cx: &LateContext<'_>, place: &Expr<'_>, receiver: &Expr<
             ExprKind::Field(base, _) | ExprKind::Unary(UnOp::Deref, base) => expr = base,
             ExprKind::Path(QPath::Resolved(_, path)) => {
                 return through_a_reference
-                    && !matches!(path.res, Res::Local(local)
-                        if matches!(cx.tcx.parent_hir_node(local), Node::Param(_)));
+                    && matches!(path.res, Res::Local(local)
+                        if !matches!(cx.tcx.parent_hir_node(local), Node::Param(_)))
+                    && touches(cx, initial, None, &[]);
             }
-            _ => return through_a_reference,
+            _ => return through_a_reference && touches(cx, initial, None, &[]),
         }
     }
 }

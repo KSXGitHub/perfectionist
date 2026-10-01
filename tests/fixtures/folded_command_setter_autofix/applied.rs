@@ -200,12 +200,20 @@ pub async fn awaited_initial() -> Command {
     VARS.iter().fold(command().await, CommandExtra::without_env)
 }
 
-// A reference the body took of a local, through which the receiver
-// keeps borrowing across the initial value in either order.
-pub fn borrowed_through_a_binding(names: Vec<String>) -> Command {
+// A reference the body took of a local, against an initial value that
+// moves, borrows and writes no local, so nothing it does can reach what
+// the reference reads.
+pub fn read_through_a_binding(names: Vec<String>) -> Command {
     let view = &names;
+    view.iter().fold(Command::new("ls"), CommandExtra::without_env)
+}
+
+// A binding the body owns, which method resolution only borrows, so no
+// pointer is read through.
+pub fn owned_binding() -> Command {
+    let names = vec![String::from("A")];
     let start = Command::new("ls");
-    view.iter().fold(start, CommandExtra::without_env)
+    names.iter().fold(start, CommandExtra::without_env)
 }
 
 impl Build {

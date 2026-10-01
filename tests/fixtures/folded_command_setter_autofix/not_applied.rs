@@ -137,6 +137,22 @@ pub fn aliased_copy(mut countdown: Countdown) -> Command {
     view.fold(exhaust(&mut countdown, "aliased-copy"), CommandExtra::without_env)
 }
 
+// The same through a reference, where what the receiver keeps names a
+// lifetime of its own rather than the reference's.
+pub struct Config {
+    flags: [&'static str; 2],
+}
+
+fn clear_flags(config: &mut Config, program: &str) -> Command {
+    config.flags = ["", ""];
+    Command::new(program)
+}
+
+pub fn aliased_static_items(mut config: Config) -> Command {
+    let view = &config;
+    view.flags.into_iter().fold(clear_flags(&mut config, "aliased-static-items"), CommandExtra::with_arg)
+}
+
 // The same copy through a raw pointer, which can point anywhere.
 pub unsafe fn raw_copy(countdown: *const Countdown) -> Command {
     unsafe { (*countdown).fold(Command::new("raw-copy"), CommandExtra::without_env) }
