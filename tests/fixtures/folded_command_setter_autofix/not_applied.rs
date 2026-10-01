@@ -58,3 +58,19 @@ impl Queue {
 pub fn mutating_receiver(queue: &mut Queue) -> Command {
     queue.take_all().fold(Command::new("mutating-receiver"), CommandExtra::without_env)
 }
+
+// The plural is named rather than resolved, and this module does not
+// import the trait -- a *path* folder needs no import of its own, so the
+// fold compiles while the rewritten call would not. Advice only; the
+// rewrite would be `E0599`.
+pub mod trait_not_in_scope {
+    use std::process::Command;
+
+    const NOT_IN_SCOPE: &[&str] = &["a"];
+
+    pub fn run(command: Command) -> Command {
+        NOT_IN_SCOPE
+            .iter()
+            .fold(command, command_extra::CommandExtra::without_env)
+    }
+}

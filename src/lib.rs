@@ -23,6 +23,7 @@ mod attr_tokens;
 mod cargo_manifest;
 mod cargo_target;
 mod code_lines;
+mod command_extra;
 mod comment_walk;
 mod common;
 mod derive_list;

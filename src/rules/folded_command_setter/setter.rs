@@ -12,15 +12,8 @@ use clippy_utils::ty::{get_iterator_item_ty, implements_trait};
 use rustc_hir::Expr;
 use rustc_hir::def_id::DefId;
 use rustc_lint::LateContext;
-use rustc_middle::ty::{self, AssocItem, Ty};
+use rustc_middle::ty::{self, AssocItem, GenericArg, Ty, TypeVisitableExt};
 use rustc_span::Symbol;
-
-/// The crate `command-extra` compiles under, as the compiler spells it
-/// rather than as Cargo does.
-const CRATE: &str = "command_extra";
-
-/// The trait whose setters come in pairs.
-const TRAIT: &str = "CommandExtra";
 
 /// What a fold over one singular setter can be replaced by.
 pub(super) struct Replacement {
@@ -50,21 +43,21 @@ pub(super) fn replacement_for(singular: Symbol) -> Option<Replacement> {
     })
 }
 
-/// Whether the fold's item is a shape the plural's own bound accepts.
+/// Whether the fold's item is a shape the plural's own bounds accept.
 ///
 /// A plural that splits an item constrains what it will take, and which
 /// constraint that is depends on the release. 1.1.0 and 1.2.0 write
 /// `Envs: IntoIterator<Item = (Key, Value)>`, an associated-type
 /// equality that no reference satisfies: `&[(&str, &str)]` yields
 /// `&(&str, &str)`, which the *fold* takes -- `|command, (key, value)|`
-/// binds through the reference -- and the plural does not. 1.3.0 writes
-/// `Envs::Item: Borrow<(Key, Value)>`, which a reference to a pair does
-/// satisfy.
+/// binds through the reference -- and the plural does not. 1.3.0 and
+/// later write `Envs::Item: Borrow<(Key, Value)>`, which a reference to
+/// a pair does satisfy.
 ///
 /// Reading the constraint keeps this in step with the version resolved,
-/// as [`declares`] does for the plural's existence. Asking the item rather
-/// than the closure's pattern is what tells the shapes apart at all,
-/// since the pattern is identical either way.
+/// as [`declares`] does for the plural's existence. Asking the item
+/// rather than the closure's pattern is what tells the shapes apart at
+/// all, since the pattern is identical either way.
 pub(super) fn item_fits<'tcx>(cx: &LateContext<'tcx>, plural: DefId, receiver: &Expr<'_>) -> bool {
     let receiver_ty = cx.typeck_results().expr_ty(receiver);
     let Some(item) = get_iterator_item_ty(cx, receiver_ty) else {
@@ -73,8 +66,11 @@ pub(super) fn item_fits<'tcx>(cx: &LateContext<'tcx>, plural: DefId, receiver: &
     let Some(assoc_item) = iterator_item(cx) else {
         return true;
     };
-    for (clause, _) in cx.tcx.predicates_of(plural).predicates {
-        // `Item = (Key, Value)`, so the item has to be that tuple.
+    let clauses = cx.tcx.predicates_of(plural).predicates;
+    // An equality is read first wherever both appear. It is the stricter
+    // of the two, so answering the other one would vouch for an item the
+    // equality rejects.
+    for (clause, _) in clauses {
         if let Some(projection) = clause.as_projection_clause() {
             let projection = projection.skip_binder();
             if let ty::AliasTermKind::ProjectionTy { def_id } = projection.projection_term.kind
@@ -85,17 +81,15 @@ pub(super) fn item_fits<'tcx>(cx: &LateContext<'tcx>, plural: DefId, receiver: &
                 return matches!(item.kind(), ty::Tuple(actual) if actual.len() == required.len());
             }
         }
-        // `Item: SomeTrait<(Key, Value)>`, so whatever that trait
-        // accepts. The solver answers, rather than a rule of this
-        // module's own about how many references the trait's impls see
-        // through.
+    }
+    for (clause, _) in clauses {
         if let Some(bound) = clause.as_trait_clause() {
             let bound = bound.skip_binder().trait_ref;
             if is_the_item(bound.self_ty(), assoc_item)
                 && let Some(required) = bound.args.types().nth(1)
                 && let ty::Tuple(required) = required.kind()
             {
-                return satisfies(cx, item, bound.def_id, required.len());
+                return satisfies(cx, plural, item, bound.def_id, required);
             }
         }
     }
@@ -121,20 +115,116 @@ fn is_the_item(ty: Ty<'_>, assoc_item: DefId) -> bool {
     matches!(alias.kind, ty::AliasTyKind::Projection { def_id } if def_id == assoc_item)
 }
 
-/// Whether `item` satisfies `bound` for a tuple of `arity` elements.
+/// Whether `item` satisfies the plural's bound on it, and the plural's
+/// bounds on the tuple's own parameters.
 ///
 /// The tuple the trait is asked about is `item` with its references
 /// stripped, which is the only candidate worth trying: the plural
 /// destructures a tuple, so nothing else could be split at all.
-fn satisfies<'tcx>(cx: &LateContext<'tcx>, item: Ty<'tcx>, bound: DefId, arity: usize) -> bool {
+///
+/// The element bounds are asked separately because the fold does not
+/// prove them. Where the item is a reference to a pair the closure's
+/// bindings are references too, so the fold establishes
+/// `&Key: AsRef<OsStr>` where the plural asks for `Key: AsRef<OsStr>`,
+/// which does not follow. Measured: a fold over `&[(Key, Value)]` whose
+/// elements are `AsRef<OsStr>` only through a reference compiles, and
+/// the plural over that same iterator is `E0277` on both elements.
+fn satisfies<'tcx>(
+    cx: &LateContext<'tcx>,
+    plural: DefId,
+    item: Ty<'tcx>,
+    bound: DefId,
+    parameters: &'tcx ty::List<Ty<'tcx>>,
+) -> bool {
     let candidate = item.peel_refs();
-    matches!(candidate.kind(), ty::Tuple(elements) if elements.len() == arity)
-        && implements_trait(cx, item, bound, &[candidate.into()])
+    let ty::Tuple(elements) = candidate.kind() else {
+        return false;
+    };
+    if elements.len() != parameters.len() {
+        return false;
+    }
+    // `implements_trait` asserts its argument count against the trait's
+    // own generics, so a bound over anything but one type parameter
+    // would abort the driver rather than answer.
+    if cx.tcx.generics_of(bound).count() != 2 {
+        return false;
+    }
+    implements_trait(cx, item, bound, &[candidate.into()])
+        && element_bounds_hold(cx, plural, parameters, elements)
+}
+
+/// Whether the plural's clauses on the tuple's own parameters hold for
+/// the item's element types.
+fn element_bounds_hold<'tcx>(
+    cx: &LateContext<'tcx>,
+    plural: DefId,
+    parameters: &'tcx ty::List<Ty<'tcx>>,
+    elements: &'tcx ty::List<Ty<'tcx>>,
+) -> bool {
+    for (clause, _) in cx.tcx.predicates_of(plural).predicates {
+        let Some(bound) = clause.as_trait_clause() else {
+            continue;
+        };
+        let bound = bound.skip_binder().trait_ref;
+        let Some(index) = parameters
+            .iter()
+            .position(|parameter| parameter == bound.self_ty())
+        else {
+            continue;
+        };
+        let arguments: Vec<GenericArg<'tcx>> =
+            bound.args.types().skip(1).map(GenericArg::from).collect();
+        // A bound naming another of the plural's own parameters is one
+        // this cannot instantiate, so it is not one to vouch for.
+        if arguments
+            .iter()
+            .any(|argument| argument.as_type().is_some_and(|ty| ty.has_param()))
+            || cx.tcx.generics_of(bound.def_id).count() != arguments.len() + 1
+        {
+            return false;
+        }
+        if !implements_trait(cx, elements[index], bound.def_id, &arguments) {
+            return false;
+        }
+    }
+    true
+}
+
+/// Whether the accumulator's own type has an inherent method named
+/// `plural`, which method resolution prefers over the trait's.
+///
+/// The suggestion names the plural rather than resolving it, so where
+/// such a method exists the rewritten call reaches that one instead.
+/// Measured: a local type implementing the trait *and* carrying an
+/// inherent `with_args(self, count: usize)` earned a machine-applicable
+/// fix that is `E0308`.
+///
+/// Only the accumulator's own inherent impls are asked. A second *trait*
+/// in scope declaring the same name is ambiguity rather than shadowing,
+/// and answering that needs the call site's imports rather than the
+/// type's impls.
+pub(super) fn shadowed_by_an_inherent_method(
+    cx: &LateContext<'_>,
+    initial: &Expr<'_>,
+    plural: &str,
+) -> bool {
+    let Some(accumulator) = cx.typeck_results().expr_ty(initial).ty_adt_def() else {
+        return false;
+    };
+    let plural = Symbol::intern(plural);
+    cx.tcx
+        .inherent_impls(accumulator.did())
+        .iter()
+        .any(|impl_id| {
+            cx.tcx
+                .associated_items(*impl_id)
+                .filter_by_name_unhygienic(plural)
+                .any(AssocItem::is_method)
+        })
 }
 
 pub(super) fn is_command_extra(cx: &LateContext<'_>, trait_id: DefId) -> bool {
-    cx.tcx.item_name(trait_id) == Symbol::intern(TRAIT)
-        && cx.tcx.crate_name(trait_id.krate) == Symbol::intern(CRATE)
+    crate::command_extra::is_the_trait(cx, trait_id)
 }
 
 /// Whether the `CommandExtra` this build resolved declares a method

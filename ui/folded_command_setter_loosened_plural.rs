@@ -73,4 +73,19 @@ fn untouched_plurals(names: Vec<String>) {
     let _ = VARS.iter().fold(Command::new("ls"), CommandExtra::with_arg);
 }
 
+// Not flagged: the item is a reference to a pair whose elements are
+// `AsRef<OsStr>` only *through* that reference. The fold binds `key` and
+// `value` as references and so proves `&Key: AsRef<OsStr>`, where
+// `with_envs` asks for `Key: AsRef<OsStr>` -- which does not follow, so
+// the plural cannot take this iterator even here.
+fn elements_borrowed_only<Key, Value>(command: Command, pairs: &[(Key, Value)]) -> Command
+where
+    for<'a> &'a Key: AsRef<std::ffi::OsStr>,
+    for<'a> &'a Value: AsRef<std::ffi::OsStr>,
+{
+    pairs
+        .iter()
+        .fold(command, |command, (key, value)| command.with_env(key, value))
+}
+
 fn main() {}

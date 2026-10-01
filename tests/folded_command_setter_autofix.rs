@@ -118,7 +118,12 @@ fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
 
     // And the rule fired on each shape, so the assertion above is not
     // passing because the fixture went quiet.
-    for shape in ["local-iter", "shadowed-into-iter", "mutating-receiver"] {
+    for shape in [
+        "local-iter",
+        "shadowed-into-iter",
+        "mutating-receiver",
+        "NOT_IN_SCOPE",
+    ] {
         assert!(
             stderr.contains(shape),
             "expected the rule to fire on `{shape}`; stderr was:\n{stderr}",

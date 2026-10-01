@@ -14,7 +14,9 @@
 
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::def_id::DefId;
-use rustc_hir::{BlockCheckMode, Closure, Expr, ExprKind, HirId, Pat, PatKind, QPath};
+use rustc_hir::{
+    BindingMode, BlockCheckMode, ByRef, Closure, Expr, ExprKind, HirId, Pat, PatKind, QPath,
+};
 use rustc_lint::LateContext;
 
 /// The setter a folder resolves to, or `None` where the folder is
@@ -71,7 +73,13 @@ fn forwarded_by<'tcx>(cx: &LateContext<'tcx>, closure: &'tcx Closure<'tcx>) -> O
 /// are what the setter is passed.
 fn bindings_of(pat: &Pat<'_>, out: &mut Vec<HirId>) -> Option<()> {
     match pat.kind {
-        PatKind::Binding(_, hir_id, _, None) => out.push(hir_id),
+        // A `ref` binding hands the setter a reference to the item where
+        // a by-value one hands it the item, so what the fold proves of
+        // the item is not what the plural asks of it: `|c, ref k|
+        // c.without_env(k)` establishes `&K: AsRef<OsStr>` and
+        // `without_envs` wants `K: AsRef<OsStr>`. Measured as a
+        // machine-applicable `E0277` on every release.
+        PatKind::Binding(BindingMode(ByRef::No, _), hir_id, _, None) => out.push(hir_id),
         // A `..` would hide a field from the comparison below, leaving
         // the arity to agree by accident.
         PatKind::Tuple(elements, gap) if gap.as_opt_usize().is_none() => {

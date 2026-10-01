@@ -15,27 +15,17 @@ thing — `with_arg` against `with_args`, `with_env` against
 `with_envs`, `without_env` against `without_envs` — and names the
 plural.
 
-The folder is matched by what it resolves to rather than by how
-it is written, so a path, a path through the concrete type, a
-fully-qualified path, a renamed import and a closure that
-forwards its parameters to the setter are all one shape.
+The folder is matched by what it resolves to, so every spelling
+of the setter is one shape, a closure that only forwards to it
+included.
 
-The `with_env` pair asks one thing more: whether the `with_envs`
-the build resolved can take the fold's item. Up to
-`command-extra` 1.2.0 it takes an iterator of pairs exactly, and
-a reference to a pair is not a pair — so a fold over
-`&[(&str, &str)]`, whose `key` and `value` bind through the
-reference, is left alone there. 1.3.0 accepts a reference to a
-pair as well, and the same fold is flagged. Either way a fold
-whose item is a pair itself — `&HashMap`'s, or an owned
-`Vec<(String, String)>`'s — is flagged, and one whose item is a
-reference to a reference to a pair is not.
+The `with_env` pair is flagged only where the `with_envs` the
+build resolved accepts what the fold iterates, so the plural
+named is always one the code can call.
 
 The fold's receiver has to be a place expression followed by at
 most one argument-less method call — `VARS`, `list.iter()`,
-`self.names.into_iter()`. A longer receiver would be relocated
-into the plural's argument rather than removed, which is not what
-this rule is for.
+`self.names.into_iter()`. A longer one is left alone.
 
 ## Why restrict this?
 
@@ -62,21 +52,14 @@ level up from where the library already wrote it.
 
 ## Applicability
 
-The suggestion trades the receiver and the initial value, so it
-trades the order they run in: `A.fold(B, f)` evaluates `A` then
-`B`, and `B.plural(A)` evaluates `B` then `A`. A fix is applied
-where evaluating the receiver is known not to observe the initial
-value — a receiver that only names a place, or one whose call
-comes from the standard library. Elsewhere the suggestion is
-advice, because a receiver that mutates what the initial value
-reads would build a different command in the new order.
+The suggestion moves the receiver past the initial value, so a
+fix is applied only where that cannot change what either of them
+sees: a receiver that names a place, or one whose call comes from
+the standard library. Elsewhere the suggestion is advice, as it
+also is where the trait is not in scope at the call site.
 
-The receiver's call is kept in the suggestion unless it is
-`into_iter` on the receiver's own type, which is the one call the
-plural makes for itself. An `iter` is never dropped, however
-std-looking: a `Deref` is enough to hand `iter` to the standard
-library while the type keeps an `IntoIterator` of its own, and
-the shorter form would then build a different command.
+The suggestion keeps the receiver's call unless the plural makes
+that same call itself.
 
 ## Example
 
@@ -94,10 +77,7 @@ INHERITED_VARS
 Command::new("cargo").without_envs(INHERITED_VARS.iter())
 ```
 
-A closure is how the fold is most likely to be written, and folds
-the same way:
-
-**Avoid:**
+**Avoid** — the closure form, which folds the same way:
 
 ```rust,ignore
 flags
