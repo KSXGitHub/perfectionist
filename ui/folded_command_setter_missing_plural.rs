@@ -4,8 +4,7 @@
 // The plural has to exist in the `command-extra` the crate resolved.
 // This fixture builds against 1.0.0, which has `with_args` but neither
 // `with_envs` (1.1.0) nor `without_envs` (1.2.0), so the two env folds
-// have no plural here to be named — where the sweep in
-// `ui/folded_command_setter.rs`, built against 1.2.0, flags them.
+// have no plural here to be named. The sweep against 1.2.0 flags them.
 //
 // The `with_arg` fold is here to keep that silence attributable to the
 // missing method rather than to the crate: the same shape, against the

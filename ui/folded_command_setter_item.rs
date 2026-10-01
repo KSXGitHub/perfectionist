@@ -21,8 +21,8 @@ const VARS: &[&str] = &["A", "B"];
 const PAIRS: &[(&str, &str)] = &[("A", "1"), ("B", "2")];
 
 // Bad: the `with_env` pair, whose item is a pair. No path spelling
-// works — `with_env` takes three arguments where `fold` supplies two —
-// so the closure destructures and forwards the bindings in order.
+// works, because `with_env` takes three arguments where `fold` supplies
+// two. The closure destructures and forwards the bindings in order.
 fn pair_item(pairs: Vec<(String, String)>) {
     let _ = pairs
         .into_iter()
@@ -31,8 +31,8 @@ fn pair_item(pairs: Vec<(String, String)>) {
         });
 }
 
-// Bad: the same pair over a map reference, whose items are pairs of
-// references. The `iter` is std's, so the fix is applied.
+// Bad: the `with_env` pair over a map reference, whose items are pairs
+// of references. The `iter` is std's, so the fix is applied.
 fn pair_item_borrowed(pairs: &std::collections::HashMap<String, String>) {
     let _ = pairs
         .iter()

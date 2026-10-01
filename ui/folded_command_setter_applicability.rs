@@ -49,9 +49,9 @@ fn shadowing_into_iter(shadow: Shadow) {
         .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
-// Bad: an argument-less call that mutates. Condition 4 admits it, so the
-// rule fires; the fix is withheld because the initial value could
-// observe the mutation in the new order.
+// Bad: an argument-less call that mutates. The receiver test is
+// structural, so this passes it and the rule fires; the fix is withheld
+// because the initial value could observe the mutation in the new order.
 struct Queue(Vec<String>);
 
 impl Queue {
@@ -70,9 +70,9 @@ fn mutating_receiver(mut queue: Queue) {
         .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
-// Bad: the same mutating receiver against an initial value that reads
-// what it changes. Advice only, and this one stays advice however far
-// the gate is widened: the two orders build different commands.
+// Bad: a mutating receiver against an initial value that reads what it
+// changes. Advice only, and it stays advice however far the gate is
+// widened: the two orders build different commands.
 fn mutating_receiver_observed(mut queue: Queue) {
     let _ = queue.take_all().fold(
         Command::new(format!("ls{}", queue.0.len())),
@@ -131,6 +131,19 @@ fn overloaded_deref(noisy: Noisy) {
     let _ = (*noisy)
         .into_iter()
         .fold(Command::new("ls"), CommandExtra::without_env);
+}
+
+// Bad: the trait is not in scope at the call site, so the plural the
+// suggestion names would not resolve. The receiver is a place whose call
+// is std's, so the import is the only thing withheld here.
+mod trait_not_in_scope {
+    use super::VARS;
+    use std::process::Command;
+
+    fn fold(command: Command) -> Command {
+        VARS.iter()
+            .fold(command, command_extra::CommandExtra::without_env)
+    }
 }
 
 fn main() {}

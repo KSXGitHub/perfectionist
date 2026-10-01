@@ -1,7 +1,7 @@
 use crate::command_extra::trait_is_imported;
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
-use clippy_utils::diagnostics::span_lint_and_sugg;
+use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::source::snippet;
 use clippy_utils::sugg::Sugg;
 use clippy_utils::{is_from_proc_macro, sym};
@@ -19,9 +19,9 @@ declare_tool_lint! {
     ///
     /// Flags a `fold` over a singular `command_extra::CommandExtra`
     /// setter where the trait declares the plural that does the same
-    /// thing — `with_arg` against `with_args`, `with_env` against
-    /// `with_envs`, `without_env` against `without_envs` — and names the
-    /// plural.
+    /// thing, and names the plural. The pairs are `with_arg` against
+    /// `with_args`, `with_env` against `with_envs`, and `without_env`
+    /// against `without_envs`.
     ///
     /// The folder is matched by what it resolves to, so every spelling
     /// of the setter is one shape, a closure that only forwards to it
@@ -33,8 +33,8 @@ declare_tool_lint! {
     /// code cannot call.
     ///
     /// The fold's receiver has to be a place expression followed by at
-    /// most one argument-less method call — `VARS`, `list.iter()`,
-    /// `self.names.into_iter()`. A longer one is left alone.
+    /// most one argument-less method call. `VARS`, `list.iter()` and
+    /// `self.names.into_iter()` qualify; a longer one is left alone.
     ///
     /// ### Why restrict this?
     ///
@@ -107,6 +107,20 @@ declare_tool_lint! {
 }
 
 const CONFIG_KEY: &str = "perfectionist::folded_command_setter";
+
+/// What a reader has to settle before applying the suggestion by hand
+/// where the receiver is not reorderable. Why the two orders differ is on
+/// [`receiver::Shape::reorderable`].
+const REORDERS: &str = "the fold evaluates the receiver before the initial value and the \
+                        suggestion evaluates them the other way round, so apply it only where \
+                        neither reads what the other writes";
+
+/// What a reader has to do first where the trait is not in scope at the
+/// call site. Conditional, because the imports [`trait_is_imported`]
+/// does not answer for leave this line redundant rather than wrong.
+const NEEDS_THE_IMPORT: &str = "the plural is a `CommandExtra` method, which resolves only where \
+                                the trait is in scope; add \
+                                `use command_extra::CommandExtra;` if it is not";
 
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
@@ -226,12 +240,23 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         // *path* folder needs no import of its own, so a fold can name
         // the setter while the module cannot name the method. Measured:
         // a machine-applicable `E0599` without this.
-        let applicability = if shape.reorderable && trait_is_imported(cx, expr) {
+        let in_scope = trait_is_imported(cx, expr);
+        let applicability = if shape.reorderable && in_scope {
             Applicability::MachineApplicable
         } else {
             Applicability::Unspecified
         };
-        span_lint_and_sugg(
+        let suggestion = format!(
+            // The initial value becomes a method-call receiver, so one
+            // that binds looser has to keep its own brackets: `*boxed`
+            // spliced raw reads as `*boxed.plural(..)`, which derefs the
+            // *result*.
+            "{}.{}({})",
+            Sugg::hir(cx, initial, "..").maybe_paren(),
+            replacement.plural,
+            snippet(cx, shape.argument, ".."),
+        );
+        span_lint_and_then(
             cx,
             FOLDED_COMMAND_SETTER,
             expr.span,
@@ -240,18 +265,20 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
                 cx.tcx.item_name(singular),
                 replacement.plural,
             ),
-            format!("use `{}`", replacement.plural),
-            format!(
-                // The initial value becomes a method-call receiver, so
-                // one that binds looser has to keep its own brackets:
-                // `*boxed` spliced raw reads as `*boxed.plural(..)`,
-                // which derefs the *result*.
-                "{}.{}({})",
-                Sugg::hir(cx, initial, "..").maybe_paren(),
-                replacement.plural,
-                snippet(cx, shape.argument, ".."),
-            ),
-            applicability,
+            |diagnostic| {
+                diagnostic.span_suggestion(
+                    expr.span,
+                    format!("use `{}`", replacement.plural),
+                    suggestion,
+                    applicability,
+                );
+                if !shape.reorderable {
+                    diagnostic.help(REORDERS);
+                }
+                if !in_scope {
+                    diagnostic.help(NEEDS_THE_IMPORT);
+                }
+            },
         );
     }
 }

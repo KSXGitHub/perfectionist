@@ -68,8 +68,9 @@ fn call_with_argument(names: Vec<String>) {
         .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
-// Not flagged: the same shape written as an associated-function call on
-// the receiver. A known syntactic gap, not a regression.
+// Not flagged: `into_iter` as an associated-function call, which makes
+// the receiver a call carrying an argument. A known syntactic gap, not a
+// regression.
 fn assoc_fn_receiver(names: Vec<String>) {
     let _ = Vec::into_iter(names).fold(Command::new("ls"), CommandExtra::without_env);
 }
@@ -84,7 +85,8 @@ fn double_reference(names: &&Vec<String>) {
         .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
-// Bad: the same through a smart pointer.
+// Bad: a place the call did not run on, resolution derefing an `Rc` to
+// reach `<[T]>::iter`.
 fn through_rc(names: &std::rc::Rc<Vec<String>>) {
     let _ = names
         .iter()
