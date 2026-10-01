@@ -274,10 +274,6 @@ pub(super) fn another_trait_declaring<'tcx>(
     })
 }
 
-pub(super) fn is_command_extra(cx: &LateContext<'_>, trait_id: DefId) -> bool {
-    crate::command_extra::is_the_trait(cx, trait_id)
-}
-
 /// Whether the `CommandExtra` this build resolved declares a method
 /// named `plural`.
 ///

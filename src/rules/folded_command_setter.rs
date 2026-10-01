@@ -1,4 +1,4 @@
-use crate::command_extra::trait_is_imported;
+use crate::command_extra::{is_the_trait, trait_is_imported};
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
@@ -188,7 +188,7 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         let Some(trait_id) = cx.tcx.trait_of_assoc(singular) else {
             return;
         };
-        if !setter::is_command_extra(cx, trait_id) {
+        if !is_the_trait(cx, trait_id) {
             return;
         }
         let Some(replacement) = setter::replacement_for(cx.tcx.item_name(singular)) else {
