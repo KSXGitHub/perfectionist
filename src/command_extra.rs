@@ -49,9 +49,11 @@ pub(crate) fn is_the_trait(cx: &LateContext<'_>, trait_id: DefId) -> bool {
 /// of the author's own packaged as `command-extra` and exporting a
 /// trait called `CommandExtra` reads as the published one. Checking the
 /// trait's methods would close that here and nowhere else:
-/// [`crate_is_declared`] only ever sees a crate name, which is the
-/// point of it -- it answers before anything is loaded. A rule that
-/// names a crate cannot tell a crate that took the name.
+/// `crate_is_declared`, in
+/// `src/rules/mutating_command_builder/availability.rs`, only ever sees
+/// a crate name, which is the point of it -- it answers before anything
+/// is loaded. A rule that names a crate cannot tell a crate that took
+/// the name.
 pub(crate) fn trait_is_imported(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
     let module = cx.tcx.parent_module(call.hir_id);
     let wanted_crate = Symbol::intern(CRATE);
