@@ -159,6 +159,29 @@ LL +         .iter())
 warning: this fold over `without_env` re-implements `without_envs`
   --> $DIR/folded_command_setter_applicability.rs:LL:CC
    |
+LL |     VARS.iter().fold(start.into(), Command::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `start.into().without_envs(VARS.iter())`
+   |
+   = help: the initial value takes its type from the fold, and as the plural's receiver it would have none; name its type first
+
+warning: this fold over `with_arg` re-implements `with_args`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL | /     names
+LL | |         .iter()
+LL | |         .fold(Command::new("ls"), |command, name: &&str| command.with_arg(name))
+   | |________________________________________________________________________________^
+   |
+   = help: the closure annotates the item's type, which the suggestion drops; apply it only where the iterator fixes that type without it
+help: use `with_args`
+   |
+LL ~     Command::new("ls").with_args(names
+LL +         .iter())
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
 LL | /         VARS.iter()
 LL | |             .fold(command, command_extra::CommandExtra::without_env)
    | |____________________________________________________________________^ help: use `without_envs`: `command.without_envs(VARS.iter())`

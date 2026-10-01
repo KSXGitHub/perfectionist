@@ -110,7 +110,7 @@ pub(super) fn shape<'tcx>(
         return None;
     }
     let call = cx.typeck_results().type_dependent_def_id(receiver.hir_id)?;
-    let argument = if erases(cx, call, place) {
+    let argument = if erases(cx, call, place, receiver) {
         place.span
     } else {
         receiver.span
@@ -285,9 +285,16 @@ fn interior_mutable(cx: &LateContext<'_>, place: &Expr<'_>) -> bool {
 /// need not agree with it, and guarded on the place carrying no
 /// adjustment because an autoref or autoderef means the call ran on
 /// something the place is not.
-fn erases(cx: &LateContext<'_>, call: DefId, place: &Expr<'_>) -> bool {
+///
+/// The call's result has to carry none either. An `IntoIter` that is a
+/// reference is reborrowed for the fold, and the prefix spelling that
+/// reborrow belongs on the call: put on the place instead, as
+/// `&mut *holder`, it derefs something that may not deref at all.
+fn erases(cx: &LateContext<'_>, call: DefId, place: &Expr<'_>, receiver: &Expr<'_>) -> bool {
+    let typeck = cx.typeck_results();
     cx.tcx.lang_items().into_iter_fn() == Some(call)
-        && cx.typeck_results().expr_adjustments(place).is_empty()
+        && typeck.expr_adjustments(place).is_empty()
+        && typeck.expr_adjustments(receiver).is_empty()
 }
 
 /// Whether the receiver's call runs only the standard library's code,

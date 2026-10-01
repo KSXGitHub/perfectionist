@@ -5,9 +5,10 @@
 // Most are declined because the plural evaluates the initial value
 // before the receiver where the fold evaluated the receiver first. Those
 // would compile if they were rewritten, so the comparison fails if the
-// fixer rewrites one. Some would not compile, the trait out of scope and
-// a moved root among them: `cargo fix` would revert the rewrite, and the
-// test's check for errors after applying fixes is what catches those.
+// fixer rewrites one. Some would not compile, the trait out of scope, a
+// moved root and a type only the fold supplies among them: `cargo fix`
+// would revert the rewrite, and the test's check for errors after
+// applying fixes is what catches those.
 //
 // Each fold names a distinct program, so an assertion can name one
 // shape without matching another.
@@ -232,6 +233,28 @@ impl Job {
 // would read it after, which is `E0382`.
 pub fn moved_root(job: Job) -> Command {
     job.removed.iter().fold(job.into_base("moved-root"), CommandExtra::without_env)
+}
+
+// An initial value whose type the folder supplies: `into` converts into
+// a `Command` because `Command::without_env` takes one. As the plural's
+// receiver it would convert into nothing in particular, which is
+// `E0282`.
+pub fn inferred_initial(names: &[&str]) -> Command {
+    names.iter().fold(Command::new("inferred-initial").into(), Command::without_env)
+}
+
+// The same through a binding that names no type.
+pub fn inferred_binding(names: &[&str]) -> Command {
+    let inferred_binding = Command::new("ls").into();
+    names.iter().fold(inferred_binding, Command::without_env)
+}
+
+// A closure folder whose annotation is all that fixes the item type.
+// The suggestion drops the closure, and the plural over an element type
+// nothing else names is `E0282`.
+pub fn item_annotated() -> Command {
+    let names = Vec::new();
+    names.iter().fold(Command::new("item-annotated"), |command, name: &&str| command.with_arg(name))
 }
 
 const OVERRIDDEN_VARS: &[&str] = &["a"];

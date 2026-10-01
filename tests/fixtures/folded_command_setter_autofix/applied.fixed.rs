@@ -172,6 +172,40 @@ pub fn disjoint_move(build: Build) -> Command {
     Command::new(build.program).with_args(build.args.iter())
 }
 
+fn base() -> Result<Command, std::io::Error> {
+    Ok(Command::new("ls"))
+}
+
+// An initial value behind `?`, which takes its type from its operand.
+pub fn try_initial() -> Result<Command, std::io::Error> {
+    Ok(base()?.without_envs(VARS.iter()))
+}
+
+// A pattern binding, which has its type before the fold is reached.
+pub fn pattern_binding(pairs: Vec<(Command, u8)>) -> Vec<Command> {
+    let mut commands = Vec::new();
+    for (start, _) in pairs {
+        commands.push(start.without_envs(VARS.iter()));
+    }
+    commands
+}
+
+impl Build {
+    fn base(&self) -> Command {
+        Command::new(&self.program)
+    }
+}
+
+// A method whose declared return type names no parameter, called on a
+// pattern binding.
+pub fn concrete_return(pairs: Vec<(Build, u8)>) -> Vec<Command> {
+    let mut commands = Vec::new();
+    for (build, _) in pairs {
+        commands.push(build.base().without_envs(VARS.iter()));
+    }
+    commands
+}
+
 // A renamed import, in a module of its own so the alias is the only
 // `CommandExtra` in scope. The fixer rewriting this fold is the proof
 // that the trait counts as imported by what the `use` resolves to rather

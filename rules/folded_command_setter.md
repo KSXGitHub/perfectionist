@@ -63,7 +63,9 @@ sees: the receiver runs no code but the standard library's, over
 the standard library's types, panics at no call such as `unwrap`,
 and reads nothing the initial value writes or moves. Elsewhere the
 suggestion is advice, as it also is where the trait is not in
-scope at the call site.
+scope at the call site, where the initial value takes its type
+from the fold, and where a closure folder annotates the item's
+type.
 
 The suggestion keeps the receiver's call unless the plural makes
 that same call itself.

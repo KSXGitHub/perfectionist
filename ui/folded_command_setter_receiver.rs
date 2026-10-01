@@ -151,4 +151,24 @@ fn mutable_reference(names: &mut Vec<String>) {
     let _ = names.len();
 }
 
+// Bad: an `into_iter` whose iterator is a reference, which the fold
+// reborrows. The call survives, because the reborrow is spelled on it:
+// put on the place, `&mut *holder` would deref a type with no `Deref`.
+struct Holder<'a>(&'a mut std::vec::IntoIter<String>);
+
+impl<'a> IntoIterator for Holder<'a> {
+    type Item = String;
+    type IntoIter = &'a mut std::vec::IntoIter<String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0
+    }
+}
+
+fn reference_iterator(holder: Holder<'_>) {
+    let _ = holder
+        .into_iter()
+        .fold(Command::new("ls"), CommandExtra::without_env);
+}
+
 fn main() {}

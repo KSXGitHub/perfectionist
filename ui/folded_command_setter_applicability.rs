@@ -253,6 +253,22 @@ fn moved_root(job: Job) -> Command {
         .fold(job.into_base(), CommandExtra::without_env)
 }
 
+// Bad: an initial value whose type the folder supplies. As the plural's
+// receiver, `into` would convert into nothing in particular, so the fix
+// is withheld.
+fn inferred_initial(start: Command) -> Command {
+    VARS.iter().fold(start.into(), Command::without_env)
+}
+
+// Bad: a closure folder whose annotation is all that fixes the item
+// type. The suggestion drops the closure, so the fix is withheld.
+fn item_annotated() -> Command {
+    let names = Vec::new();
+    names
+        .iter()
+        .fold(Command::new("ls"), |command, name: &&str| command.with_arg(name))
+}
+
 // Bad: the trait is not in scope at the call site, so the plural the
 // suggestion names would not resolve. The receiver is a place whose call
 // is std's, so the import is the only thing withheld here.

@@ -2,12 +2,9 @@ use crate::command_extra::{is_the_trait, trait_is_imported};
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
-use clippy_utils::higher::Range;
 use clippy_utils::source::snippet_with_applicability;
 use clippy_utils::sugg::Sugg;
-use clippy_utils::visitors::for_each_expr_without_closures;
 use clippy_utils::{is_from_proc_macro, sym};
-use core::ops::ControlFlow;
 use rustc_errors::Applicability;
 use rustc_hir::def_id::DefId;
 use rustc_hir::{Expr, ExprKind};
@@ -15,6 +12,7 @@ use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
 mod folder;
+mod initial;
 mod receiver;
 mod setter;
 
@@ -75,7 +73,9 @@ declare_tool_lint! {
     /// the standard library's types, panics at no call such as `unwrap`,
     /// and reads nothing the initial value writes or moves. Elsewhere the
     /// suggestion is advice, as it also is where the trait is not in
-    /// scope at the call site.
+    /// scope at the call site, where the initial value takes its type
+    /// from the fold, and where a closure folder annotates the item's
+    /// type.
     ///
     /// The suggestion keeps the receiver's call unless the plural makes
     /// that same call itself.
@@ -137,6 +137,17 @@ const NEEDS_THE_IMPORT: &str = "the plural is a `CommandExtra` method, which res
 const OVERRIDDEN: &str = "an impl of `CommandExtra` may write its own body for the plural, which \
                           the suggestion would run in place of the fold; apply it only where the \
                           two agree";
+
+/// What a reader has to do first where the initial value takes its type
+/// from the fold. Why that withholds the fix is on
+/// [`initial::fixes_its_own_type`].
+const UNTYPED: &str = "the initial value takes its type from the fold, and as the plural's \
+                       receiver it would have none; name its type first";
+
+/// What a reader has to settle where the closure folder annotates its
+/// item. Why that withholds the fix is on [`folder::annotates_the_item`].
+const ITEM_ANNOTATED: &str = "the closure annotates the item's type, which the suggestion drops; \
+                              apply it only where the iterator fixes that type without it";
 
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
@@ -259,15 +270,7 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         // *path* folder needs no import of its own, so a fold can name
         // the setter while the module cannot name the method. Measured:
         // a machine-applicable `E0599` without this.
-        emit(
-            cx,
-            expr,
-            initial,
-            singular,
-            plural_id,
-            replacement.plural,
-            &shape,
-        );
+        emit(cx, expr, initial, folder, singular, plural_id, &shape);
     }
 }
 
@@ -277,22 +280,30 @@ fn emit<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx Expr<'tcx>,
     initial: &'tcx Expr<'tcx>,
+    folder: &'tcx Expr<'tcx>,
     singular: DefId,
     plural_id: DefId,
-    plural: &str,
     shape: &receiver::Shape,
 ) {
+    let plural = cx.tcx.item_name(plural_id);
     let accumulator = cx.typeck_results().expr_ty(initial);
     let overridden = setter::overrides_the_plural(cx, plural_id, accumulator);
     let ambiguous_with = setter::another_trait_declaring(cx, plural_id, accumulator);
     let in_scope = trait_is_imported(cx, expr);
-    let mut applicability =
-        if shape.reorderable && in_scope && !overridden && ambiguous_with.is_none() {
-            Applicability::MachineApplicable
-        } else {
-            Applicability::Unspecified
-        };
-    let initial_text = if holds_a_struct_literal(cx, initial) {
+    let typed = initial::fixes_its_own_type(cx, initial);
+    let item_annotated = folder::annotates_the_item(folder);
+    let mut applicability = if shape.reorderable
+        && in_scope
+        && !overridden
+        && ambiguous_with.is_none()
+        && typed
+        && !item_annotated
+    {
+        Applicability::MachineApplicable
+    } else {
+        Applicability::Unspecified
+    };
+    let initial_text = if initial::holds_a_struct_literal(cx, initial) {
         format!(
             "({})",
             snippet_with_applicability(cx, initial.span, "..", &mut applicability),
@@ -335,6 +346,12 @@ fn emit<'tcx>(
             if overridden {
                 diagnostic.help(OVERRIDDEN);
             }
+            if !typed {
+                diagnostic.help(UNTYPED);
+            }
+            if item_annotated {
+                diagnostic.help(ITEM_ANNOTATED);
+            }
             if let Some(other) = ambiguous_with {
                 diagnostic.help(format!(
                     "`{}` also declares `{}` for this type, so wherever both traits are in \
@@ -346,22 +363,4 @@ fn emit<'tcx>(
             }
         },
     );
-}
-
-/// Whether a struct literal appears anywhere in `expr`.
-///
-/// Unbracketed, one at the head of a method chain reads as the start of
-/// a block where the call lands in a scrutinee or a condition. Anywhere
-/// else the brackets are redundant, and rustc does not warn about them.
-/// A range is a struct literal to HIR but not to the parser, so it is
-/// skipped.
-fn holds_a_struct_literal<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
-    for_each_expr_without_closures(expr, |expr| {
-        if matches!(expr.kind, ExprKind::Struct(..)) && Range::hir(cx, expr).is_none() {
-            ControlFlow::Break(())
-        } else {
-            ControlFlow::Continue(())
-        }
-    })
-    .is_some()
 }

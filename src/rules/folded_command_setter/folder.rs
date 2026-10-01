@@ -15,7 +15,7 @@
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::def_id::DefId;
 use rustc_hir::{
-    BindingMode, BlockCheckMode, ByRef, Closure, Expr, ExprKind, HirId, Pat, PatKind, QPath,
+    BindingMode, BlockCheckMode, ByRef, Closure, Expr, ExprKind, HirId, Pat, PatKind, QPath, TyKind,
 };
 use rustc_lint::LateContext;
 
@@ -32,6 +32,24 @@ pub(super) fn resolves_to<'tcx>(cx: &LateContext<'tcx>, folder: &'tcx Expr<'tcx>
         ExprKind::Closure(closure) => forwarded_by(cx, closure),
         _ => None,
     }
+}
+
+/// Whether `folder` is a closure that writes a type on its item
+/// parameter.
+///
+/// The suggestion drops the closure, and with it the annotation, which
+/// may be all that fixes the iterator's item type: a `Vec::new()` the
+/// fold only ever reads takes its element type from
+/// `|command, name: &&str|`, and the plural over it is `E0282`. Measured.
+pub(super) fn annotates_the_item(folder: &Expr<'_>) -> bool {
+    let ExprKind::Closure(closure) = folder.kind else {
+        return false;
+    };
+    closure
+        .fn_decl
+        .inputs
+        .get(1)
+        .is_some_and(|item| !matches!(item.kind, TyKind::Infer(())))
 }
 
 /// The associated function a resolution names, or `None` for anything
