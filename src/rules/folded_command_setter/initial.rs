@@ -55,6 +55,12 @@ pub(super) fn holds_a_struct_literal<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx E
 /// well.
 pub(super) fn fixes_its_own_type<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
     let typeck = cx.typeck_results();
+    // An expression that diverges fixes no type, though `todo!()` is a
+    // call to a path Clippy counts as certain. In a branch beside one
+    // whose type the fold supplies, it leaves the whole untyped.
+    if typeck.expr_ty(expr).is_never() {
+        return false;
+    }
     let callee = match expr.kind {
         ExprKind::Call(callee, _) => match typeck.expr_ty(callee).kind() {
             ty::FnDef(def_id, _) => Some(*def_id),

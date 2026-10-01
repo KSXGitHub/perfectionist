@@ -177,6 +177,7 @@ fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
         "inferred_closure_parameter",
         "inferred_let_pattern",
         "inferred_match_arm",
+        "diverging_branch",
         "item-annotated",
         "dropped-comment",
         "OVERRIDDEN_VARS",

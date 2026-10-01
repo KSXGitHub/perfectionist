@@ -295,6 +295,12 @@ pub fn inferred_match_arm(names: &[&str]) -> Command {
     }
 }
 
+// A branch that diverges, which fixes no type, beside one whose type the
+// fold supplies.
+pub fn diverging_branch(names: &[&str], flag: bool, diverging_branch: Command) -> Command {
+    names.iter().fold(if flag { diverging_branch.into() } else { todo!() }, Command::without_env)
+}
+
 // A closure folder whose annotation is all that fixes the item type.
 // The suggestion drops the closure, and the plural over an element type
 // nothing else names is `E0282`.
