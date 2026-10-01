@@ -23,10 +23,9 @@ declare_tool_lint! {
     /// `with_envs`, `without_env` against `without_envs` — and names the
     /// plural.
     ///
-    /// The folder is matched by what it resolves to rather than by how
-    /// it is written, so a path, a path through the concrete type, a
-    /// fully-qualified path, a renamed import and a closure that
-    /// forwards its parameters to the setter are all one shape.
+    /// The folder is matched by what it resolves to, so every spelling
+    /// of the setter is one shape, a closure that only forwards to it
+    /// included.
     ///
     /// The `with_env` pair is flagged only where the `with_envs` the
     /// build resolved accepts what the fold iterates, so the plural
