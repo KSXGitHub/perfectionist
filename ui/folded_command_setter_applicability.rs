@@ -49,9 +49,9 @@ fn shadowing_into_iter(shadow: Shadow) {
         .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
-// Bad: an argument-less call that mutates. Condition 4 admits it, so the
-// rule fires; the fix is withheld because the initial value could
-// observe the mutation in the new order.
+// Bad: an argument-less call that mutates. The receiver test is
+// structural, so this passes it and the rule fires; the fix is withheld
+// because the initial value could observe the mutation in the new order.
 struct Queue(Vec<String>);
 
 impl Queue {
