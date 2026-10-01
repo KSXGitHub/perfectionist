@@ -61,10 +61,9 @@ fn two_calls(names: Vec<String>) {
 }
 
 // Not flagged: a call taking an argument, which is where logic hides.
-fn call_with_argument(names: Vec<String>) {
+fn call_with_argument(mut names: Vec<String>) {
     let _ = names
-        .iter()
-        .map(String::as_str)
+        .drain(1..)
         .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
