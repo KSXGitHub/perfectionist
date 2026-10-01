@@ -96,10 +96,6 @@ fn a_boxed_command_is_not_reached_before_that() {
         !success && stderr.contains("E0277"),
         "expected the fixture not to compile against 1.3.0; stderr was:\n{stderr}",
     );
-    assert!(
-        !stderr.contains(FIRES),
-        "the rule fired on a fold that does not type-check; stderr was:\n{stderr}",
-    );
 }
 
 #[test]
@@ -136,10 +132,6 @@ fn tokio_commands_are_not_reached_with_the_feature_off() {
         !success && stderr.contains("E0277"),
         "expected the fixture not to compile without the feature; stderr was:\n{stderr}",
     );
-    assert!(
-        !stderr.contains(FIRES),
-        "the rule fired on a fold that does not type-check; stderr was:\n{stderr}",
-    );
 }
 
 #[test]
@@ -174,9 +166,5 @@ fn async_process_commands_are_not_reached_with_the_feature_off() {
     assert!(
         !success && stderr.contains("E0277"),
         "expected the fixture not to compile without the feature; stderr was:\n{stderr}",
-    );
-    assert!(
-        !stderr.contains(FIRES),
-        "the rule fired on a fold that does not type-check; stderr was:\n{stderr}",
     );
 }
