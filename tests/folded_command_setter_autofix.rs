@@ -179,6 +179,7 @@ fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
         "inferred_match_arm",
         "diverging_branch",
         "item-annotated",
+        "turbofish",
         "dropped-comment",
         "OVERRIDDEN_VARS",
         "AMBIGUOUS_VARS",

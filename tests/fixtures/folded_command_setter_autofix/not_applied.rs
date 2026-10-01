@@ -309,6 +309,13 @@ pub fn item_annotated() -> Command {
     names.iter().fold(Command::new("item-annotated"), |command, name: &&str| command.with_arg(name))
 }
 
+// The same type written in a turbofish on `fold`, which the suggestion
+// drops too.
+pub fn turbofish() -> Command {
+    let names = Vec::new();
+    names.into_iter().fold::<Command, fn(Command, &'static str) -> Command>(Command::new("turbofish"), CommandExtra::with_arg)
+}
+
 // A comment outside the initial value and the iterator, which the
 // suggestion has no place for.
 pub fn dropped_comment(names: Vec<String>) -> Command {

@@ -172,7 +172,7 @@ LL | |         .iter()
 LL | |         .fold(Command::new("ls"), |command, name: &&str| command.with_arg(name))
    | |________________________________________________________________________________^
    |
-   = help: the closure annotates the item's type, which the suggestion drops; apply it only where the iterator fixes that type without it
+   = help: the fold names a type the suggestion drops; apply it only where the iterator fixes its item type without it
 help: use `with_args`
    |
 LL ~     Command::new("ls").with_args(names

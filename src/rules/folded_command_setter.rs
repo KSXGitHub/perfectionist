@@ -75,7 +75,7 @@ declare_tool_lint! {
     /// and reads nothing the initial value writes or moves. Elsewhere the
     /// suggestion is advice, as it also is where the trait is not in
     /// scope at the call site, where the initial value may take its type
-    /// from the fold, where a closure folder annotates the item's type,
+    /// from the fold, where the fold names a type the suggestion drops,
     /// and where the fold holds a comment the suggestion would drop.
     ///
     /// The suggestion keeps the receiver's call unless the plural makes
@@ -145,10 +145,12 @@ const OVERRIDDEN: &str = "an impl of `CommandExtra` may write its own body for t
 const UNTYPED: &str = "the initial value may take its type from the fold, and as the plural's \
                        receiver it would have none; name its type first";
 
-/// What a reader has to settle where the closure folder annotates its
-/// item. Why that withholds the fix is on [`folder::annotates_the_item`].
-const ITEM_ANNOTATED: &str = "the closure annotates the item's type, which the suggestion drops; \
-                              apply it only where the iterator fixes that type without it";
+/// What a reader has to settle where the fold names a type the
+/// suggestion drops: in a turbofish on `fold`, or on the closure folder's
+/// item, as [`folder::annotates_the_item`] says. Either can be all that
+/// fixes the iterator's item type.
+const DROPS_A_TYPE: &str = "the fold names a type the suggestion drops; apply it only where the \
+                            iterator fixes its item type without it";
 
 /// What a reader has to carry over by hand where the fold holds a comment
 /// the suggestion leaves out.
@@ -300,14 +302,15 @@ fn emit<'tcx>(
     // export a `CommandExtra` that has no plural.
     let in_scope = imports(cx, expr, |imported| imported == cx.tcx.parent(plural_id));
     let typed = initial::fixes_its_own_type(cx, initial);
-    let item_annotated = folder::annotates_the_item(folder);
+    let drops_a_type = folder::annotates_the_item(folder)
+        || matches!(expr.kind, ExprKind::MethodCall(segment, ..) if segment.args.is_some());
     let drops_a_comment = drops_a_comment(cx, expr.span, [initial.span, shape.argument]);
     let mut applicability = if shape.reorderable
         && in_scope
         && !overridden
         && ambiguous_with.is_none()
         && typed
-        && !item_annotated
+        && !drops_a_type
         && !drops_a_comment
     {
         Applicability::MachineApplicable
@@ -360,8 +363,8 @@ fn emit<'tcx>(
             if !typed {
                 diagnostic.help(UNTYPED);
             }
-            if item_annotated {
-                diagnostic.help(ITEM_ANNOTATED);
+            if drops_a_type {
+                diagnostic.help(DROPS_A_TYPE);
             }
             if drops_a_comment {
                 diagnostic.help(DROPS_A_COMMENT);

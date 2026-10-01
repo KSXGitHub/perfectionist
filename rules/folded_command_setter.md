@@ -64,7 +64,7 @@ the standard library's types, panics at no call such as `unwrap`,
 and reads nothing the initial value writes or moves. Elsewhere the
 suggestion is advice, as it also is where the trait is not in
 scope at the call site, where the initial value may take its type
-from the fold, where a closure folder annotates the item's type,
+from the fold, where the fold names a type the suggestion drops,
 and where the fold holds a comment the suggestion would drop.
 
 The suggestion keeps the receiver's call unless the plural makes
