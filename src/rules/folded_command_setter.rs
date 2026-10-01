@@ -2,15 +2,17 @@ use crate::command_extra::{imports, is_the_trait};
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
-use clippy_utils::source::snippet_with_applicability;
+use clippy_utils::source::{snippet_opt, snippet_with_applicability};
 use clippy_utils::sugg::Sugg;
 use clippy_utils::{is_from_proc_macro, span_extract_comments, sym};
 use rustc_errors::Applicability;
+use rustc_hir::def::{DefKind, Res};
 use rustc_hir::def_id::DefId;
-use rustc_hir::{Expr, ExprKind};
+use rustc_hir::{Expr, ExprKind, QPath};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
+use rustc_middle::ty::print::CratePrefixGuard;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::Span;
+use rustc_span::{Span, kw};
 
 mod folder;
 mod initial;
@@ -126,11 +128,11 @@ const REORDERS: &str = "the fold evaluates the receiver before the initial value
                         their order does not matter";
 
 /// What a reader has to do first where the trait is not in scope at the
-/// call site. Conditional, because an import [`imports`] does not see, a
-/// glob among them, leaves this line redundant rather than wrong.
+/// call site, with the trait's path in place of `{}`. Conditional, because
+/// an import [`imports`] does not see, a glob among them, leaves this line
+/// redundant rather than wrong.
 const NEEDS_THE_IMPORT: &str = "the plural is a `CommandExtra` method, which resolves only where \
-                                the trait is in scope; add \
-                                `use command_extra::CommandExtra;` if it is not";
+                                the trait is in scope; add `use {};` if it is not";
 
 /// What a reader has to settle where an impl that may apply to the
 /// accumulator writes the plural's body. Why that withholds the fix is
@@ -355,7 +357,10 @@ fn emit<'tcx>(
                 diagnostic.help(REORDERS);
             }
             if !in_scope {
-                diagnostic.help(NEEDS_THE_IMPORT);
+                diagnostic.help(
+                    NEEDS_THE_IMPORT
+                        .replace("{}", &trait_path(cx, folder, cx.tcx.parent(plural_id))),
+                );
             }
             if overridden {
                 diagnostic.help(OVERRIDDEN);
@@ -388,4 +393,31 @@ fn emit<'tcx>(
 fn drops_a_comment(cx: &LateContext<'_>, fold: Span, kept: [Span; 2]) -> bool {
     let count = |span| span_extract_comments(cx.tcx, span).len();
     count(fold) > kept.into_iter().map(count).sum::<usize>()
+}
+
+/// The trait's path as the folder spells it, or else its definition path.
+///
+/// The folder's spelling names the trait the way this crate does, where
+/// the definition path names the crate as it was compiled: under a
+/// manifest key that renames the dependency, as in
+/// `ce = { package = "command-extra" }`, only the first resolves.
+fn trait_path(cx: &LateContext<'_>, folder: &Expr<'_>, trait_id: DefId) -> String {
+    if let ExprKind::Path(QPath::Resolved(_, path)) = folder.kind
+        && let Some(first) = path
+            .segments
+            .iter()
+            .find(|segment| segment.ident.name != kw::PathRoot)
+        && let Some(last) = path
+            .segments
+            .iter()
+            .find(|segment| segment.res == Res::Def(DefKind::Trait, trait_id))
+        && let Some(text) = snippet_opt(cx, first.ident.span.to(last.ident.span))
+    {
+        return text;
+    }
+    // `crate::` before a local path, as rustc writes its own import
+    // suggestions: a `use` of a bare item name does not resolve. The guard
+    // sets that for as long as it lives.
+    let _prefix = CratePrefixGuard::new();
+    cx.tcx.def_path_str(trait_id)
 }

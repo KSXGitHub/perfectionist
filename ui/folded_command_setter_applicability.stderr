@@ -198,6 +198,15 @@ LL | |             .fold(command, command_extra::CommandExtra::without_env)
    |
    = help: the plural is a `CommandExtra` method, which resolves only where the trait is in scope; add `use command_extra::CommandExtra;` if it is not
 
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL | /         VARS.iter()
+LL | |             .fold(command, renamed_extra::CommandExtra::without_env)
+   | |____________________________________________________________________^ help: use `without_envs`: `command.without_envs(VARS.iter())`
+   |
+   = help: the plural is a `CommandExtra` method, which resolves only where the trait is in scope; add `use renamed_extra::CommandExtra;` if it is not
+
 warning: multi-line macro invocation should end with a trailing comma
   --> $DIR/folded_command_setter_applicability.rs:LL:CC
    |

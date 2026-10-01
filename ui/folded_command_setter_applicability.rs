@@ -10,6 +10,7 @@
 #![allow(dead_code, unused, reason = "ui fixture")]
 
 extern crate command_extra;
+extern crate command_extra as renamed_extra;
 
 use command_extra::CommandExtra;
 use std::ffi::OsStr;
@@ -287,6 +288,19 @@ mod trait_not_in_scope {
     fn fold(command: Command) -> Command {
         VARS.iter()
             .fold(command, command_extra::CommandExtra::without_env)
+    }
+}
+
+// Bad: the trait is not in scope where the crate goes by another name,
+// so the import the help names is spelled as the folder spells the
+// trait.
+mod renamed_crate {
+    use super::VARS;
+    use std::process::Command;
+
+    fn fold(command: Command) -> Command {
+        VARS.iter()
+            .fold(command, renamed_extra::CommandExtra::without_env)
     }
 }
 
