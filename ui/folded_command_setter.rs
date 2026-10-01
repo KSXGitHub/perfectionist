@@ -20,9 +20,9 @@ use std::process::Command;
 const VARS: &[&str] = &["A", "B"];
 const PAIRS: &[(&str, &str)] = &[("A", "1"), ("B", "2")];
 
-// Bad: the three pairs, spelled as a path. The receiver's `iter` comes
-// from the standard library, so the fix is applied -- but the call
-// survives into it, because only `into_iter` is erased.
+// Bad: the folder spelled as a path. The receiver's `iter` comes from
+// the standard library, so the fix is applied -- but the call survives
+// into it, because only `into_iter` is erased.
 fn paths() {
     let _ = VARS.iter().fold(Command::new("ls"), CommandExtra::without_env);
     let _ = VARS.iter().fold(Command::new("ls"), CommandExtra::with_arg);

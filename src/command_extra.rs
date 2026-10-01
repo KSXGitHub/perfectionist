@@ -3,12 +3,12 @@
 //! imports decide whether a suggestion naming one of its methods
 //! resolves.
 //!
-//! Two rules ask. `perfectionist::mutating_command_builder` names a
-//! by-value setter as the remedy for a std one, and
+//! Every rule that asks names a trait method rather than resolving one,
+//! so each needs the same answer about scope, and the reasoning behind
+//! that answer lives here once. `perfectionist::mutating_command_builder`
+//! names a by-value setter as the remedy for a std one, and
 //! `perfectionist::folded_command_setter` names a plural as the remedy
-//! for a fold over its singular. Both name a trait method rather than
-//! resolving one, so both need the same answer about scope, and the
-//! reasoning behind that answer lives here once.
+//! for a fold over its singular.
 
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::def_id::DefId;
