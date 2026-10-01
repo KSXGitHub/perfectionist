@@ -269,6 +269,14 @@ fn item_annotated() -> Command {
         .fold(Command::new("ls"), |command, name: &&str| command.with_arg(name))
 }
 
+// Bad: a comment the suggestion has no place for, so the fix is
+// withheld.
+fn dropped_comment() -> Command {
+    VARS.iter()
+        // kept only by hand
+        .fold(Command::new("ls"), CommandExtra::without_env)
+}
+
 // Bad: the trait is not in scope at the call site, so the plural the
 // suggestion names would not resolve. The receiver is a place whose call
 // is std's, so the import is the only thing withheld here.

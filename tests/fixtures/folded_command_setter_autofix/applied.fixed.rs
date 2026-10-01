@@ -206,6 +206,11 @@ pub fn concrete_return(pairs: Vec<(Build, u8)>) -> Vec<Command> {
     commands
 }
 
+// A comment inside the initial value, which the suggestion carries over.
+pub fn kept_comment() -> Command {
+    Command::new(/* the program */ "ls").without_envs(VARS.iter())
+}
+
 // A renamed import, in a module of its own so the alias is the only
 // `CommandExtra` in scope. The fixer rewriting this fold is the proof
 // that the trait counts as imported by what the `use` resolves to rather

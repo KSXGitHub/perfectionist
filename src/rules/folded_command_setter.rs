@@ -4,12 +4,13 @@ use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::source::snippet_with_applicability;
 use clippy_utils::sugg::Sugg;
-use clippy_utils::{is_from_proc_macro, sym};
+use clippy_utils::{is_from_proc_macro, span_extract_comments, sym};
 use rustc_errors::Applicability;
 use rustc_hir::def_id::DefId;
 use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
+use rustc_span::Span;
 
 mod folder;
 mod initial;
@@ -74,8 +75,8 @@ declare_tool_lint! {
     /// and reads nothing the initial value writes or moves. Elsewhere the
     /// suggestion is advice, as it also is where the trait is not in
     /// scope at the call site, where the initial value takes its type
-    /// from the fold, and where a closure folder annotates the item's
-    /// type.
+    /// from the fold, where a closure folder annotates the item's type,
+    /// and where the fold holds a comment the suggestion would drop.
     ///
     /// The suggestion keeps the receiver's call unless the plural makes
     /// that same call itself.
@@ -148,6 +149,11 @@ const UNTYPED: &str = "the initial value takes its type from the fold, and as th
 /// item. Why that withholds the fix is on [`folder::annotates_the_item`].
 const ITEM_ANNOTATED: &str = "the closure annotates the item's type, which the suggestion drops; \
                               apply it only where the iterator fixes that type without it";
+
+/// What a reader has to carry over by hand where the fold holds a comment
+/// the suggestion leaves out.
+const DROPS_A_COMMENT: &str = "the suggestion keeps the text of the initial value and the \
+                               iterator only, so move the fold's other comments by hand";
 
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
@@ -292,12 +298,14 @@ fn emit<'tcx>(
     let in_scope = trait_is_imported(cx, expr);
     let typed = initial::fixes_its_own_type(cx, initial);
     let item_annotated = folder::annotates_the_item(folder);
+    let drops_a_comment = drops_a_comment(cx, expr.span, [initial.span, shape.argument]);
     let mut applicability = if shape.reorderable
         && in_scope
         && !overridden
         && ambiguous_with.is_none()
         && typed
         && !item_annotated
+        && !drops_a_comment
     {
         Applicability::MachineApplicable
     } else {
@@ -352,6 +360,9 @@ fn emit<'tcx>(
             if item_annotated {
                 diagnostic.help(ITEM_ANNOTATED);
             }
+            if drops_a_comment {
+                diagnostic.help(DROPS_A_COMMENT);
+            }
             if let Some(other) = ambiguous_with {
                 diagnostic.help(format!(
                     "`{}` also declares `{}` for this type, so wherever both traits are in \
@@ -363,4 +374,12 @@ fn emit<'tcx>(
             }
         },
     );
+}
+
+/// Whether `fold` holds a comment outside every span in `kept`, which is
+/// all the suggestion carries over. The spans in `kept` lie inside
+/// `fold` and apart from each other, so comparing counts is enough.
+fn drops_a_comment(cx: &LateContext<'_>, fold: Span, kept: [Span; 2]) -> bool {
+    let count = |span| span_extract_comments(cx.tcx, span).len();
+    count(fold) > kept.into_iter().map(count).sum::<usize>()
 }

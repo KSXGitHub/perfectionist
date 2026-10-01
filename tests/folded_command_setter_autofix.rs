@@ -139,6 +139,7 @@ fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
         "inferred-initial",
         "inferred_binding",
         "item-annotated",
+        "dropped-comment",
         "OVERRIDDEN_VARS",
         "AMBIGUOUS_VARS",
         "NOT_IN_SCOPE",
