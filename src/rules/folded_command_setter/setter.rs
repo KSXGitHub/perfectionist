@@ -11,10 +11,14 @@ use clippy_utils::sym;
 use clippy_utils::ty::{deref_chain, get_iterator_item_ty, implements_trait};
 use rustc_hir::Expr;
 use rustc_hir::def_id::DefId;
+use rustc_infer::infer::TyCtxtInferExt;
 use rustc_lint::LateContext;
+use rustc_middle::traits::EvaluationResult;
 use rustc_middle::ty::fast_reject::DeepRejectCtxt;
-use rustc_middle::ty::{self, AssocItem, GenericArg, GenericArgs, Ty, TypeVisitableExt};
-use rustc_span::Symbol;
+use rustc_middle::ty::{self, AssocItem, GenericArg, GenericArgs, TraitRef, Ty, TypeVisitableExt};
+use rustc_span::{DUMMY_SP, Symbol};
+use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt as _;
+use rustc_trait_selection::traits::{Obligation, ObligationCause};
 
 /// What a fold over one singular setter can be replaced by.
 pub(super) struct Replacement {
@@ -352,17 +356,41 @@ pub(super) fn another_trait_declaring<'tcx>(
                 .filter(|item| item.is_method())
                 .any(|item| {
                     autoderef_steps(cx, accumulator).any(|step| {
-                        // A trait with parameters of its own cannot be
-                        // asked about without them, so it is assumed to
-                        // apply.
-                        (cx.tcx.generics_of(other).count() != 1
-                            || implements_trait(cx, step, other, &[]))
+                        may_implement(cx, other, step)
                             && receiver_with_self(cx, item.def_id, step).is_some_and(|receiver| {
                                 reject.types_may_unify(accumulator, receiver)
                             })
                     })
                 })
     })
+}
+
+/// Whether `ty` may implement `other`, for some arguments to the trait's
+/// own parameters where it has any.
+///
+/// Asked of the trait solver with those arguments left to inference, and
+/// answered yes where the solver cannot decide: two impls for `ty` with
+/// different arguments make the method no less ambiguous. A trait that
+/// nothing implements for `ty` competes for nothing.
+fn may_implement<'tcx>(cx: &LateContext<'tcx>, other: DefId, ty: Ty<'tcx>) -> bool {
+    let tcx = cx.tcx;
+    let (infcx, param_env) = tcx.infer_ctxt().build_with_typing_env(cx.typing_env());
+    let args = GenericArgs::for_item(tcx, other, |param, _| {
+        if param.index == 0 {
+            ty.into()
+        } else {
+            infcx.var_for_def(DUMMY_SP, param)
+        }
+    });
+    let obligation = Obligation::new(
+        tcx,
+        ObligationCause::dummy(),
+        param_env,
+        TraitRef::new_from_args(tcx, other, args),
+    );
+    infcx
+        .evaluate_obligation(&obligation)
+        .is_ok_and(EvaluationResult::may_apply)
 }
 
 /// The receiver type of the trait method `method` with `Self` as

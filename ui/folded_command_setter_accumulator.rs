@@ -388,6 +388,65 @@ fn boxed_ambiguous(ambiguous: Box<BoxedAmbiguous>) -> Box<BoxedAmbiguous> {
     VARS.iter().fold(ambiguous, CommandExtra::without_env)
 }
 
+// Not ambiguous: a trait with a parameter of its own that declares a
+// method named like the plural, and that nothing implements. It
+// competes for no accumulator in this crate.
+trait Unimplemented<Value> {
+    fn without_envs(self, value: Value) -> Self;
+}
+
+// Bad: the same trait shape, implemented for the accumulator under two
+// arguments, so wherever both traits are in scope the rewrite is
+// `E0034`. The fix is withheld.
+struct GenericallyAmbiguous;
+
+impl CommandExtra for GenericallyAmbiguous {
+    fn with_current_dir(self, _dir: impl AsRef<std::path::Path>) -> Self {
+        self
+    }
+    fn with_env(self, _key: impl AsRef<OsStr>, _value: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn without_env(self, _key: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_no_env(self) -> Self {
+        self
+    }
+    fn with_arg(self, _arg: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_stdin(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stdout(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stderr(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+}
+
+trait GenericSameName<Value> {
+    fn without_envs(self, value: Value) -> Self;
+}
+
+impl GenericSameName<u8> for GenericallyAmbiguous {
+    fn without_envs(self, _value: u8) -> Self {
+        self
+    }
+}
+
+impl GenericSameName<u16> for GenericallyAmbiguous {
+    fn without_envs(self, _value: u16) -> Self {
+        self
+    }
+}
+
+fn generically_ambiguous(ambiguous: GenericallyAmbiguous) -> GenericallyAmbiguous {
+    VARS.iter().fold(ambiguous, CommandExtra::without_env)
+}
+
 // Bad: an accumulator whose `Deref` leads back to itself, which method
 // probing gives up on after its recursion limit, and so does the rule.
 struct Cyclic(Command);
