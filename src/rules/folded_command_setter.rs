@@ -2,9 +2,12 @@ use crate::command_extra::{is_the_trait, trait_is_imported};
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
-use clippy_utils::source::snippet;
+use clippy_utils::higher::Range;
+use clippy_utils::source::snippet_with_applicability;
 use clippy_utils::sugg::Sugg;
+use clippy_utils::visitors::for_each_expr_without_closures;
 use clippy_utils::{is_from_proc_macro, sym};
+use core::ops::ControlFlow;
 use rustc_errors::Applicability;
 use rustc_hir::def_id::DefId;
 use rustc_hir::{Expr, ExprKind};
@@ -282,25 +285,29 @@ fn emit<'tcx>(
     let overridden = setter::overrides_the_plural(cx, plural_id, accumulator);
     let ambiguous_with = setter::another_trait_declaring(cx, plural_id, accumulator);
     let in_scope = trait_is_imported(cx, expr);
-    let applicability = if shape.reorderable && in_scope && !overridden && ambiguous_with.is_none()
-    {
-        Applicability::MachineApplicable
+    let mut applicability =
+        if shape.reorderable && in_scope && !overridden && ambiguous_with.is_none() {
+            Applicability::MachineApplicable
+        } else {
+            Applicability::Unspecified
+        };
+    let initial_text = if holds_a_struct_literal(cx, initial) {
+        format!(
+            "({})",
+            snippet_with_applicability(cx, initial.span, "..", &mut applicability),
+        )
     } else {
-        Applicability::Unspecified
-    };
-    let initial_text = match initial.kind {
-        // A struct literal reads as the start of a block where the call
-        // lands in a scrutinee or a condition, so it keeps brackets
-        // everywhere. rustc does not warn about them elsewhere.
-        ExprKind::Struct(..) => format!("({})", snippet(cx, initial.span, "..")),
         // The initial value becomes a method-call receiver, so one that
         // binds looser has to keep its own brackets: `*boxed` spliced raw
         // reads as `*boxed.plural(..)`, which derefs the *result*.
-        _ => Sugg::hir(cx, initial, "..").maybe_paren().to_string(),
+        Sugg::hir_with_applicability(cx, initial, "..", &mut applicability)
+            .maybe_paren()
+            .to_string()
     };
     let suggestion = format!(
-        "{initial_text}.{plural}({})",
-        snippet(cx, shape.argument, ".."),
+        "{initial_text}.{plural}({}{})",
+        shape.prefix,
+        snippet_with_applicability(cx, shape.argument, "..", &mut applicability),
     );
     span_lint_and_then(
         cx,
@@ -338,4 +345,22 @@ fn emit<'tcx>(
             }
         },
     );
+}
+
+/// Whether a struct literal appears anywhere in `expr`.
+///
+/// Unbracketed, one at the head of a method chain reads as the start of
+/// a block where the call lands in a scrutinee or a condition. Anywhere
+/// else the brackets are redundant, and rustc does not warn about them.
+/// A range is a struct literal to HIR but not to the parser, so it is
+/// skipped.
+fn holds_a_struct_literal<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
+    for_each_expr_without_closures(expr, |expr| {
+        if matches!(expr.kind, ExprKind::Struct(..)) && Range::hir(cx, expr).is_none() {
+            ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
+        }
+    })
+    .is_some()
 }

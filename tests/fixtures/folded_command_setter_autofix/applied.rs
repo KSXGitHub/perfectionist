@@ -108,6 +108,59 @@ pub fn through_an_arc(shared: Arc<Shared>) -> Command {
     shared.vars.iter().fold(start, CommandExtra::without_env)
 }
 
+// A receiver method resolution reborrowed for the fold, which the
+// plural would otherwise move.
+pub fn reborrowed(names: &mut std::vec::IntoIter<String>) -> (Command, usize) {
+    let start = Command::new("ls");
+    let command = names.fold(start, CommandExtra::without_env);
+    (command, names.len())
+}
+
+#[derive(Clone, Copy)]
+pub struct Countdown(u8);
+
+impl Iterator for Countdown {
+    type Item = &'static str;
+
+    fn next(&mut self) -> Option<&'static str> {
+        let remaining = self.0.checked_sub(1)?;
+        self.0 = remaining;
+        Some("A")
+    }
+}
+
+// A `Copy` iterator behind a reference, which method resolution copies
+// out for the fold, and which the plural would otherwise take as the
+// reference.
+pub fn copied_out(countdown: &Countdown) -> Command {
+    let start = Command::new("ls");
+    countdown.fold(start, CommandExtra::without_env)
+}
+
+pub struct Wrap {
+    name: &'static str,
+}
+
+impl Wrap {
+    fn build(self) -> Command {
+        Command::new(self.name)
+    }
+}
+
+// A struct literal at the head of a scrutinee, which the suggestion
+// brackets so that it does not read as the start of the match's block.
+pub fn literal_head() -> usize {
+    match VARS.iter().fold(Wrap { name: "ls" }.build(), CommandExtra::without_env) {
+        command => command.get_envs().count(),
+    }
+}
+
+// A range, which HIR spells as a struct literal, and which needs no
+// brackets.
+pub fn range_initial() -> Command {
+    VARS.iter().fold(Command::new(VARS[0..1][0]), CommandExtra::without_env)
+}
+
 // A renamed import, in a module of its own so the alias is the only
 // `CommandExtra` in scope. The fixer rewriting this fold is the proof
 // that the trait counts as imported by what the `use` resolves to rather

@@ -43,7 +43,7 @@ use rustc_hir::def::{DefKind, Res};
 use rustc_hir::def_id::{CrateNum, DefId};
 use rustc_hir::{Expr, ExprKind, Mutability, QPath, UnOp};
 use rustc_lint::LateContext;
-use rustc_middle::ty::adjustment::{Adjust, DerefAdjustKind};
+use rustc_middle::ty::adjustment::{Adjust, AutoBorrow, DerefAdjustKind};
 use rustc_middle::ty::{self, GenericArg, Instance, Ty};
 use rustc_span::{Span, Symbol};
 
@@ -58,6 +58,14 @@ pub(super) struct Shape {
     /// receiver's own span where its call survives, the place alone
     /// where the call is erased.
     pub argument: Span,
+    /// What method resolution did to the receiver before `fold` took
+    /// it, spelled as the prefix that does it by hand.
+    ///
+    /// The plural's argument is a type parameter, which nothing adjusts:
+    /// `it: &mut I` is reborrowed for the fold and would be moved into
+    /// the plural, and a `Copy` iterator behind `&` is copied out for the
+    /// fold and would be handed over as the reference.
+    pub prefix: String,
     /// Whether the receiver may be evaluated after the initial value
     /// without either of them seeing the other's effects.
     ///
@@ -79,6 +87,7 @@ pub(super) fn shape<'tcx>(
     receiver: &Expr<'_>,
     initial: &'tcx Expr<'tcx>,
 ) -> Option<Shape> {
+    let prefix = prefix(cx, receiver)?;
     if is_place(receiver) {
         // Reaching a place runs no user code unless a `Deref` along it
         // does, and then that body runs before the initial value instead
@@ -86,6 +95,7 @@ pub(super) fn shape<'tcx>(
         // receiver reads by writing the place first.
         return Some(Shape {
             argument: receiver.span,
+            prefix,
             reorderable: !derefs_through_user_code(cx, receiver)
                 && !written_by(cx, receiver, initial),
         });
@@ -104,10 +114,27 @@ pub(super) fn shape<'tcx>(
     };
     Some(Shape {
         argument,
+        prefix,
         reorderable: runs_only_std(cx, receiver, call)
             && !derefs_through_user_code(cx, place)
             && !written_by(cx, place, initial),
     })
+}
+
+/// The receiver's adjustments as the prefix that makes them by hand, or
+/// `None` for an adjustment that no prefix spells.
+fn prefix(cx: &LateContext<'_>, receiver: &Expr<'_>) -> Option<String> {
+    let mut prefix = String::new();
+    for adjustment in cx.typeck_results().expr_adjustments(receiver) {
+        match adjustment.kind {
+            Adjust::Deref(_) => prefix.insert(0, '*'),
+            Adjust::Borrow(AutoBorrow::Ref(mutability)) => {
+                prefix.insert_str(0, Mutability::from(mutability).ref_prefix_str());
+            }
+            _ => return None,
+        }
+    }
+    Some(prefix)
 }
 
 /// Whether evaluating `initial` may write the place `place` is rooted at.
