@@ -12,6 +12,7 @@
 extern crate command_extra;
 
 use command_extra::CommandExtra;
+use std::ffi::OsStr;
 use std::process::Command;
 
 const VARS: &[&str] = &["A", "B"];
@@ -84,6 +85,47 @@ fn mutating_receiver_observed(mut queue: Queue) {
 // suggestion has to bracket it.
 fn looser_initial(command: Box<Command>) {
     let _ = VARS.iter().fold(*command, CommandExtra::without_env);
+}
+
+struct Literal {
+    inner: Command,
+}
+
+impl CommandExtra for Literal {
+    fn with_current_dir(self, _dir: impl AsRef<std::path::Path>) -> Self {
+        self
+    }
+    fn with_env(self, _key: impl AsRef<OsStr>, _value: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn without_env(self, _key: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_no_env(self) -> Self {
+        self
+    }
+    fn with_arg(self, _arg: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_stdin(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stdout(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stderr(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+}
+
+// Bad: a struct-literal initial value where the call is a scrutinee.
+// Unbracketed, `Literal { inner }.without_envs(..)` would read as the
+// start of the match's block and not parse, so the suggestion brackets
+// it.
+fn struct_literal_initial(inner: Command) {
+    match VARS.iter().fold(Literal { inner }, CommandExtra::without_env) {
+        _ => {}
+    }
 }
 
 // Not flagged: a fold inside a `macro_rules!` of this crate's own. The

@@ -68,6 +68,12 @@ LL |     let _ = VARS.iter().fold(*command, CommandExtra::without_env);
 warning: this fold over `without_env` re-implements `without_envs`
   --> $DIR/folded_command_setter_applicability.rs:LL:CC
    |
+LL |     match VARS.iter().fold(Literal { inner }, CommandExtra::without_env) {
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `(Literal { inner }).without_envs(VARS.iter())`
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
 LL |       let _ = noisy.into_iter().fold(
    |  _____________^
 LL | |         Command::new(format!(

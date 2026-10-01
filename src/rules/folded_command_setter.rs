@@ -281,14 +281,18 @@ fn emit<'tcx>(
     } else {
         Applicability::Unspecified
     };
+    let initial_text = match initial.kind {
+        // A struct literal reads as the start of a block where the call
+        // lands in a scrutinee or a condition, so it keeps brackets
+        // everywhere. rustc does not warn about them elsewhere.
+        ExprKind::Struct(..) => format!("({})", snippet(cx, initial.span, "..")),
+        // The initial value becomes a method-call receiver, so one that
+        // binds looser has to keep its own brackets: `*boxed` spliced raw
+        // reads as `*boxed.plural(..)`, which derefs the *result*.
+        _ => Sugg::hir(cx, initial, "..").maybe_paren().to_string(),
+    };
     let suggestion = format!(
-        // The initial value becomes a method-call receiver, so one
-        // that binds looser has to keep its own brackets: `*boxed`
-        // spliced raw reads as `*boxed.plural(..)`, which derefs the
-        // *result*.
-        "{}.{}({})",
-        Sugg::hir(cx, initial, "..").maybe_paren(),
-        plural,
+        "{initial_text}.{plural}({})",
         snippet(cx, shape.argument, ".."),
     );
     span_lint_and_then(
