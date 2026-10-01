@@ -8,11 +8,11 @@
 //! promise the same.
 
 use clippy_utils::sym;
-use clippy_utils::ty::{get_iterator_item_ty, implements_trait};
+use clippy_utils::ty::{deref_chain, get_iterator_item_ty, implements_trait};
 use rustc_hir::Expr;
-use rustc_hir::def::DefKind;
 use rustc_hir::def_id::DefId;
 use rustc_lint::LateContext;
+use rustc_middle::ty::fast_reject::DeepRejectCtxt;
 use rustc_middle::ty::{self, AssocItem, GenericArg, Ty, TypeVisitableExt};
 use rustc_span::Symbol;
 
@@ -193,38 +193,53 @@ fn element_bounds_hold<'tcx>(
     true
 }
 
-/// Whether the accumulator's own type has an inherent method named
-/// `plural` and taking `self` by value, which method resolution prefers
-/// over the trait's.
+/// Whether an inherent method named like the plural takes the
+/// accumulator by value, which method resolution prefers over the
+/// trait's.
 ///
 /// The suggestion names the plural rather than resolving it, so where
 /// such a method exists the rewritten call reaches that one instead.
 /// Measured: a local type implementing the trait *and* carrying an
 /// inherent `with_args(self, count: usize)` earned a machine-applicable
-/// fix that is `E0308`. One taking `&self` is not reached first, for the
-/// reason [`takes_self_by_value`] gives.
+/// fix that is `E0308`.
 ///
-/// Only the accumulator's own inherent impls are asked. A second *trait*
-/// declaring the same name is ambiguity rather than shadowing, which
+/// Method probing gathers inherent methods from every type the
+/// accumulator derefs to, and at its first step takes any whose receiver
+/// is the accumulator itself. So each is asked whether its receiver could
+/// be the accumulator: `fn with_args(self: Box<Self>)` on `U` could be a
+/// `Box<U>`, and neither a method taking `&self` nor one in
+/// `impl Wrapper<u32>` could be a `Wrapper<Command>`.
+///
+/// Only inherent methods are asked. A second *trait* declaring the same
+/// name is ambiguity rather than shadowing, which
 /// [`another_trait_declaring`] answers.
 pub(super) fn shadowed_by_an_inherent_method(
     cx: &LateContext<'_>,
     initial: &Expr<'_>,
-    plural: &str,
+    plural: DefId,
 ) -> bool {
-    let Some(accumulator) = cx.typeck_results().expr_ty(initial).ty_adt_def() else {
-        return false;
-    };
-    let plural = Symbol::intern(plural);
-    cx.tcx
-        .inherent_impls(accumulator.did())
-        .iter()
-        .any(|impl_id| {
+    let accumulator = cx.typeck_results().expr_ty(initial);
+    let name = cx.tcx.item_name(plural);
+    let reject = DeepRejectCtxt::relate_rigid_infer(cx.tcx);
+    deref_chain(cx, accumulator)
+        .filter_map(Ty::ty_adt_def)
+        .flat_map(|adt| cx.tcx.inherent_impls(adt.did()))
+        .flat_map(|impl_id| {
             cx.tcx
                 .associated_items(*impl_id)
-                .filter_by_name_unhygienic(plural)
-                .any(|item| item.is_method() && takes_self_by_value(cx, item.def_id))
+                .filter_by_name_unhygienic(name)
         })
+        .filter(|item| item.is_method())
+        .filter_map(|item| {
+            cx.tcx
+                .fn_sig(item.def_id)
+                .skip_binder()
+                .inputs()
+                .skip_binder()
+                .first()
+                .copied()
+        })
+        .any(|receiver| reject.types_may_unify(accumulator, receiver))
 }
 
 /// Whether an impl of the plural's trait that could apply to
@@ -275,36 +290,19 @@ pub(super) fn inside_the_plural(cx: &LateContext<'_>, expr: &Expr<'_>, plural: D
             == Some(plural)
 }
 
-/// Whether `method`, declared in a trait or an inherent impl, takes
-/// `self` by value.
+/// Whether `method`, declared in a trait, takes `self` by value.
 ///
 /// Method probing finds the by-value plural before it tries a reference
 /// to the receiver, so a same-named method taking `&self` or `&mut self`
 /// never competes with it.
 fn takes_self_by_value(cx: &LateContext<'_>, method: DefId) -> bool {
-    let Some(&receiver) = cx
-        .tcx
+    cx.tcx
         .fn_sig(method)
         .skip_binder()
         .inputs()
         .skip_binder()
         .first()
-    else {
-        return false;
-    };
-    let parent = cx.tcx.parent(method);
-    match cx.tcx.def_kind(parent) {
-        DefKind::Trait => receiver.is_param(0),
-        DefKind::Impl { .. } => {
-            receiver
-                == cx
-                    .tcx
-                    .type_of(parent)
-                    .instantiate_identity()
-                    .skip_normalization()
-        }
-        _ => false,
-    }
+        .is_some_and(|receiver| receiver.is_param(0))
 }
 
 /// Another trait implemented for `accumulator` that declares a method

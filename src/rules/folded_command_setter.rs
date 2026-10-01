@@ -244,7 +244,7 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         // The plural is named, not resolved, so an inherent method of the
         // accumulator's own type would take the call instead -- and need
         // not take the same arguments.
-        if setter::shadowed_by_an_inherent_method(cx, initial, replacement.plural) {
+        if setter::shadowed_by_an_inherent_method(cx, initial, plural_id) {
             return;
         }
         // A derive that stamps its whole expansion with the driving

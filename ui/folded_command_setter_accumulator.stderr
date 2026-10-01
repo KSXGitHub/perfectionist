@@ -24,6 +24,12 @@ LL |     VARS.iter().fold(command, CommandExtra::without_env)
 warning: this fold over `without_env` re-implements `without_envs`
   --> $DIR/folded_command_setter_accumulator.rs:LL:CC
    |
+LL |     VARS.iter().fold(wrapped, CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `wrapped.without_envs(VARS.iter())`
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_accumulator.rs:LL:CC
+   |
 LL |     VARS.iter().fold(overriding, CommandExtra::without_env)
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `overriding.without_envs(VARS.iter())`
    |

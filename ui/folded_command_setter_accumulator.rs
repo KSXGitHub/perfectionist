@@ -152,6 +152,90 @@ fn inherent_by_reference(command: Borrowing) -> Borrowing {
     VARS.iter().fold(command, CommandExtra::without_env)
 }
 
+// Bad: an inherent method of the plural's name on another instantiation
+// of the accumulator's type, which method resolution never reaches for
+// this one.
+struct Wrapper<Inner>(Inner);
+
+impl Wrapper<u32> {
+    fn without_envs(self, _count: usize) -> Self {
+        self
+    }
+}
+
+impl<Inner> CommandExtra for Wrapper<Inner> {
+    fn with_current_dir(self, _dir: impl AsRef<std::path::Path>) -> Self {
+        self
+    }
+    fn with_env(self, _key: impl AsRef<OsStr>, _value: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn without_env(self, _key: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_no_env(self) -> Self {
+        self
+    }
+    fn with_arg(self, _arg: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_stdin(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stdout(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stderr(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+}
+
+fn other_instantiation(wrapped: Wrapper<String>) -> Wrapper<String> {
+    VARS.iter().fold(wrapped, CommandExtra::without_env)
+}
+
+// Not flagged: an inherent method of the plural's name on the type a
+// `Box` holds, taking the box by value. Method resolution reaches it
+// before the trait's plural for the box.
+struct Boxed;
+
+impl Boxed {
+    fn without_envs(self: Box<Self>, _count: usize) -> usize {
+        0
+    }
+}
+
+impl CommandExtra for Box<Boxed> {
+    fn with_current_dir(self, _dir: impl AsRef<std::path::Path>) -> Self {
+        self
+    }
+    fn with_env(self, _key: impl AsRef<OsStr>, _value: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn without_env(self, _key: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_no_env(self) -> Self {
+        self
+    }
+    fn with_arg(self, _arg: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_stdin(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stdout(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stderr(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+}
+
+fn boxed_receiver(boxed: Box<Boxed>) -> Box<Boxed> {
+    VARS.iter().fold(boxed, CommandExtra::without_env)
+}
+
 // Bad: a type whose impl writes its own body for the plural. The
 // override keeps the trait's signature, so the rewrite compiles, but it
 // would run that body in place of the fold, and the fix is withheld.
