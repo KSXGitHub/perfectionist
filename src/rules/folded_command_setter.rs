@@ -85,10 +85,7 @@ declare_tool_lint! {
     /// Command::new("cargo").without_envs(INHERITED_VARS.iter())
     /// ```
     ///
-    /// A closure is how the fold is most likely to be written, and folds
-    /// the same way:
-    ///
-    /// **Avoid:**
+    /// **Avoid** — the closure form, which folds the same way:
     ///
     /// ```rust,ignore
     /// flags
