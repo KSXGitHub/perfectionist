@@ -249,6 +249,23 @@ pub fn inferred_binding(names: &[&str]) -> Command {
     names.iter().fold(inferred_binding, Command::without_env)
 }
 
+// The same through bindings that name no type: a closure parameter, a
+// binding inside a `let` pattern, and a `match` arm's.
+pub fn inferred_closure_parameter(names: &'static [&'static str]) -> impl Fn(Command) -> Command {
+    |inferred_closure_parameter| names.iter().fold(inferred_closure_parameter, Command::without_env)
+}
+
+pub fn inferred_let_pattern(names: &[&str]) -> Command {
+    let (inferred_let_pattern, _) = (Command::new("ls").into(), 0);
+    names.iter().fold(inferred_let_pattern, Command::without_env)
+}
+
+pub fn inferred_match_arm(names: &[&str]) -> Command {
+    match Command::new("ls").into() {
+        inferred_match_arm => names.iter().fold(inferred_match_arm, Command::without_env),
+    }
+}
+
 // A closure folder whose annotation is all that fixes the item type.
 // The suggestion drops the closure, and the plural over an element type
 // nothing else names is `E0282`.

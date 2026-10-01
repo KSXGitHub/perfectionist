@@ -63,7 +63,7 @@ sees: the receiver runs no code but the standard library's, over
 the standard library's types, panics at no call such as `unwrap`,
 and reads nothing the initial value writes or moves. Elsewhere the
 suggestion is advice, as it also is where the trait is not in
-scope at the call site, where the initial value takes its type
+scope at the call site, where the initial value may take its type
 from the fold, where a closure folder annotates the item's type,
 and where the fold holds a comment the suggestion would drop.
 

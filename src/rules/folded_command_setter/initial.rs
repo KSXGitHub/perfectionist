@@ -12,7 +12,7 @@ use clippy_utils::visitors::for_each_expr_without_closures;
 use core::ops::ControlFlow;
 use rustc_hir::def::Res;
 use rustc_hir::def_id::DefId;
-use rustc_hir::{Block, Expr, ExprKind, LetStmt, MatchSource, Node, Path, QPath, TyKind};
+use rustc_hir::{Block, Expr, ExprKind, LetStmt, MatchSource, Node, Path, QPath};
 use rustc_lint::LateContext;
 use rustc_middle::ty::{self, TypeVisitableExt};
 
@@ -46,11 +46,13 @@ pub(super) fn holds_a_struct_literal<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx E
 ///
 /// A call whose declared return type names no type parameter fixes it,
 /// whatever its arguments: `Command::new(format!(..))` is a `Command`. A
-/// binding without a type of its own is asked about its initializer, a
-/// block about its tail, and `?` about its operand. A parameter, an
-/// annotated binding and a pattern binding have their type before the
-/// fold is reached. Everything else is put to Clippy's
-/// `expr_type_is_certain`, which errs toward no.
+/// binding declared without a type is asked about its initializer, a
+/// block about its tail, `?` and `.await` about their operand, and a
+/// branching expression about its branches, any one of which fixes the
+/// type of the whole. Everything else, other bindings included, is put
+/// to Clippy's `expr_type_is_certain`, which errs toward no: a closure
+/// parameter or a pattern binding can take its type from the fold as
+/// well.
 pub(super) fn fixes_its_own_type<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
     let typeck = cx.typeck_results();
     let callee = match expr.kind {
@@ -66,14 +68,15 @@ pub(super) fn fixes_its_own_type<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<
                 ..
             },
         )) => {
-            return match cx.tcx.parent_hir_node(*local) {
-                Node::LetStmt(LetStmt { ty, init, .. })
-                    if ty.is_none_or(|ty| matches!(ty.kind, TyKind::Infer(()))) =>
-                {
-                    init.is_some_and(|init| fixes_its_own_type(cx, init))
-                }
-                _ => true,
-            };
+            if let Node::LetStmt(LetStmt {
+                ty: None,
+                init: Some(init),
+                ..
+            }) = cx.tcx.parent_hir_node(*local)
+            {
+                return fixes_its_own_type(cx, init);
+            }
+            None
         }
         ExprKind::Block(
             Block {
@@ -81,11 +84,17 @@ pub(super) fn fixes_its_own_type<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<
             },
             _,
         ) => return fixes_its_own_type(cx, tail),
-        ExprKind::Match(scrutinee, _, MatchSource::TryDesugar(_)) => {
+        ExprKind::If(_, then, Some(otherwise)) => {
+            return fixes_its_own_type(cx, then) || fixes_its_own_type(cx, otherwise);
+        }
+        ExprKind::Match(scrutinee, _, MatchSource::TryDesugar(_) | MatchSource::AwaitDesugar) => {
             if let ExprKind::Call(_, [operand]) = scrutinee.kind {
                 return fixes_its_own_type(cx, operand);
             }
             None
+        }
+        ExprKind::Match(_, arms, _) => {
+            return arms.iter().any(|arm| fixes_its_own_type(cx, arm.body));
         }
         _ => None,
     };

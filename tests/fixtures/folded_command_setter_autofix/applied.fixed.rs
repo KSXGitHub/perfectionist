@@ -181,13 +181,23 @@ pub fn try_initial() -> Result<Command, std::io::Error> {
     Ok(base()?.without_envs(VARS.iter()))
 }
 
-// A pattern binding, which has its type before the fold is reached.
-pub fn pattern_binding(pairs: Vec<(Command, u8)>) -> Vec<Command> {
-    let mut commands = Vec::new();
-    for (start, _) in pairs {
-        commands.push(start.without_envs(VARS.iter()));
-    }
-    commands
+// Branches that fix their own type, which fixes the type of the whole.
+pub fn branching_initial(flag: bool) -> Command {
+    (if flag { Command::new("a") } else { Command::new("b") }).without_envs(VARS.iter())
+}
+
+pub fn matching_initial(flag: bool) -> Command {
+    (match flag { true => Command::new("a"), false => base().unwrap() }).without_envs(VARS.iter())
+}
+
+async fn command() -> Command {
+    Command::new("ls")
+}
+
+// An initial value behind `.await`, which takes its type from the
+// future.
+pub async fn awaited_initial() -> Command {
+    command().await.without_envs(VARS.iter())
 }
 
 impl Build {

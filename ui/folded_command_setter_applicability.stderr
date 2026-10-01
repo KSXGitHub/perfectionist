@@ -162,7 +162,7 @@ warning: this fold over `without_env` re-implements `without_envs`
 LL |     VARS.iter().fold(start.into(), Command::without_env)
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `start.into().without_envs(VARS.iter())`
    |
-   = help: the initial value takes its type from the fold, and as the plural's receiver it would have none; name its type first
+   = help: the initial value may take its type from the fold, and as the plural's receiver it would have none; name its type first
 
 warning: this fold over `with_arg` re-implements `with_args`
   --> $DIR/folded_command_setter_applicability.rs:LL:CC

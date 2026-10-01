@@ -74,7 +74,7 @@ declare_tool_lint! {
     /// the standard library's types, panics at no call such as `unwrap`,
     /// and reads nothing the initial value writes or moves. Elsewhere the
     /// suggestion is advice, as it also is where the trait is not in
-    /// scope at the call site, where the initial value takes its type
+    /// scope at the call site, where the initial value may take its type
     /// from the fold, where a closure folder annotates the item's type,
     /// and where the fold holds a comment the suggestion would drop.
     ///
@@ -139,10 +139,10 @@ const OVERRIDDEN: &str = "an impl of `CommandExtra` may write its own body for t
                           the suggestion would run in place of the fold; apply it only where the \
                           two agree";
 
-/// What a reader has to do first where the initial value takes its type
-/// from the fold. Why that withholds the fix is on
+/// What a reader has to do first where the initial value may take its
+/// type from the fold. Why that withholds the fix is on
 /// [`initial::fixes_its_own_type`].
-const UNTYPED: &str = "the initial value takes its type from the fold, and as the plural's \
+const UNTYPED: &str = "the initial value may take its type from the fold, and as the plural's \
                        receiver it would have none; name its type first";
 
 /// What a reader has to settle where the closure folder annotates its
