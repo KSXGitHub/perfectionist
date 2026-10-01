@@ -133,7 +133,10 @@ fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
         "folded_command_setter_not_applied",
         NOT_APPLIED,
         FAKE_DEPENDENCY,
-        &[("fake/Cargo.toml", FAKE_MANIFEST), ("fake/src/lib.rs", FAKE_LIB)],
+        &[
+            ("fake/Cargo.toml", FAKE_MANIFEST),
+            ("fake/src/lib.rs", FAKE_LIB),
+        ],
     );
 
     assert!(
