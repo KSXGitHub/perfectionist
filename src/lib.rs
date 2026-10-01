@@ -5,6 +5,7 @@
 extern crate rustc_ast;
 extern crate rustc_errors;
 extern crate rustc_hir;
+extern crate rustc_hir_typeck;
 extern crate rustc_lexer;
 extern crate rustc_lint;
 extern crate rustc_middle;

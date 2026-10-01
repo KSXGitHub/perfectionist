@@ -161,6 +161,17 @@ pub fn range_initial() -> Command {
     Command::new(VARS[0..1][0]).without_envs(VARS.iter())
 }
 
+pub struct Build {
+    program: String,
+    args: Vec<String>,
+}
+
+// An initial value that moves a field the receiver does not read, which
+// leaves the receiver readable in either order.
+pub fn disjoint_move(build: Build) -> Command {
+    Command::new(build.program).with_args(build.args.iter())
+}
+
 // A renamed import, in a module of its own so the alias is the only
 // `CommandExtra` in scope. The fixer rewriting this fold is the proof
 // that the trait counts as imported by what the `use` resolves to rather

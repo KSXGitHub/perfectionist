@@ -26,23 +26,26 @@
 //! initial value must not write anything the receiver reads. The first
 //! half is answered over-conservatively: it asks only whether every body
 //! the receiver runs is the standard library's own, instantiated with the
-//! standard library's own types, which declines rewrites that are
-//! provably safe, `queue.take_all()` against a plain binding among them.
+//! standard library's own types and reporting no panic at its caller,
+//! which declines rewrites that are provably safe, `queue.take_all()`
+//! against a plain binding among them.
 //! One side is cheap to classify and two are not, and mutation reordered
 //! is the kind of wrong that does not announce itself. Widening it to
 //! *either* side effect-free is the obvious next step, counting an
 //! initial value as effect-free when it is a place expression, a
 //! literal, or a `core` / `std` call over those. The second half asks
-//! whether the initial value mutates the place the receiver is rooted
-//! at, or could write it through a shared reference.
+//! whether the initial value mutates or moves the place the receiver is
+//! rooted at, or could write it through a shared reference.
 
 use clippy_utils::res::MaybeDef;
 use clippy_utils::sym;
-use clippy_utils::usage::is_potentially_mutated;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::def_id::{CrateNum, DefId};
-use rustc_hir::{Expr, ExprKind, Mutability, QPath, UnOp};
+use rustc_hir::{Expr, ExprKind, HirId, Mutability, QPath, UnOp};
+use rustc_hir_typeck::expr_use_visitor::{Delegate, ExprUseVisitor, PlaceBase, PlaceWithHirId};
 use rustc_lint::LateContext;
+use rustc_middle::hir::place::ProjectionKind;
+use rustc_middle::mir::FakeReadCause;
 use rustc_middle::ty::adjustment::{Adjust, AutoBorrow, DerefAdjustKind};
 use rustc_middle::ty::{self, GenericArg, Instance, Ty};
 use rustc_span::{Span, Symbol};
@@ -97,7 +100,7 @@ pub(super) fn shape<'tcx>(
             argument: receiver.span,
             prefix,
             reorderable: !derefs_through_user_code(cx, receiver)
-                && !written_by(cx, receiver, initial),
+                && !written_or_moved_by(cx, receiver, initial),
         });
     }
     let ExprKind::MethodCall(_, place, [], _) = receiver.kind else {
@@ -117,7 +120,7 @@ pub(super) fn shape<'tcx>(
         prefix,
         reorderable: runs_only_std(cx, receiver, call)
             && !derefs_through_user_code(cx, place)
-            && !written_by(cx, place, initial),
+            && !written_or_moved_by(cx, place, initial),
     })
 }
 
@@ -137,25 +140,51 @@ fn prefix(cx: &LateContext<'_>, receiver: &Expr<'_>) -> Option<String> {
     Some(prefix)
 }
 
-/// Whether evaluating `initial` may write the place `place` is rooted at.
+/// Whether evaluating `initial` may write or move the place `place` is
+/// rooted at.
 ///
-/// Only a mutation can reach the receiver: a by-value receiver of a
-/// `Copy` type is copied before the initial value runs, so the fold sees
-/// the old value and the plural the new one. A read is harmless. Where
-/// the mutation analysis cannot answer, the answer is yes.
-fn written_by<'tcx>(cx: &LateContext<'tcx>, place: &Expr<'_>, initial: &'tcx Expr<'tcx>) -> bool {
+/// A mutation reaches the receiver: a by-value receiver of a `Copy` type
+/// is copied before the initial value runs, so the fold sees the old
+/// value and the plural the new one. So does a move, the other way
+/// round: the fold reads the receiver before the initial value consumes
+/// its root, and the plural would read it after, which is `E0382`. A
+/// read is harmless.
+fn written_or_moved_by<'tcx>(
+    cx: &LateContext<'tcx>,
+    place: &Expr<'_>,
+    initial: &'tcx Expr<'tcx>,
+) -> bool {
     if interior_mutable(cx, place) {
         return true;
     }
+    let typeck = cx.typeck_results();
     let mut root = place;
-    while let ExprKind::Field(base, _) | ExprKind::Unary(UnOp::Deref, base) = root.kind {
-        root = base;
+    let mut fields = Vec::new();
+    loop {
+        match root.kind {
+            ExprKind::Field(base, _) => {
+                fields.push(typeck.field_index(root.hir_id).as_usize());
+                root = base;
+            }
+            ExprKind::Unary(UnOp::Deref, base) => root = base,
+            _ => break,
+        }
     }
+    fields.reverse();
     let ExprKind::Path(QPath::Resolved(_, path)) = root.kind else {
         return false;
     };
     match path.res {
-        Res::Local(local) => is_potentially_mutated(local, initial, cx),
+        Res::Local(local) => {
+            let mut touch = Touch {
+                local,
+                fields: &fields,
+                found: false,
+            };
+            let Ok(()) = ExprUseVisitor::for_clippy(cx, initial.hir_id.owner.def_id, &mut touch)
+                .walk_expr(initial);
+            touch.found
+        }
         // Anything can write a `static mut`, a call the initial value
         // makes included.
         Res::Def(
@@ -167,6 +196,66 @@ fn written_by<'tcx>(cx: &LateContext<'tcx>, place: &Expr<'_>, initial: &'tcx Exp
         ) => true,
         _ => false,
     }
+}
+
+/// Records whether a walk over an expression writes `local` or moves
+/// what the receiver reads of it.
+///
+/// A write anywhere under `local` counts. A move counts only along the
+/// receiver's own `fields`, because a move of a field the receiver does
+/// not reach leaves the receiver readable in either order:
+/// `self.args.iter()` against `Command::new(self.program)` compiles both
+/// ways round.
+struct Touch<'a> {
+    local: HirId,
+    fields: &'a [usize],
+    found: bool,
+}
+
+impl Touch<'_> {
+    /// Whether `place` is rooted at the local. The walk runs over the
+    /// enclosing item's body, which captures nothing, so a variable a
+    /// closure captures is reported as the local it is there.
+    fn rooted(&self, place: &PlaceWithHirId<'_>) -> bool {
+        place.place.base == PlaceBase::Local(self.local)
+    }
+
+    /// Whether a move of `place` takes something the receiver reads: the
+    /// two paths agree field for field until one of them ends. Derefs are
+    /// skipped on both sides, and a projection that is not a field --
+    /// an index, a subslice -- is taken to overlap.
+    fn overlaps(&self, place: &PlaceWithHirId<'_>) -> bool {
+        place
+            .place
+            .projections
+            .iter()
+            .filter(|projection| projection.kind != ProjectionKind::Deref)
+            .zip(self.fields)
+            .all(|(projection, field)| match projection.kind {
+                ProjectionKind::Field(index, _) => index.as_usize() == *field,
+                _ => true,
+            })
+    }
+}
+
+impl<'tcx> Delegate<'tcx> for Touch<'_> {
+    /// Called for a move only. A `Copy` value is reported to `copy`, which
+    /// by default reports a shared borrow: a read.
+    fn consume(&mut self, place: &PlaceWithHirId<'tcx>, _: HirId) {
+        self.found |= self.rooted(place) && self.overlaps(place);
+    }
+
+    fn use_cloned(&mut self, _: &PlaceWithHirId<'tcx>, _: HirId) {}
+
+    fn borrow(&mut self, place: &PlaceWithHirId<'tcx>, _: HirId, kind: ty::BorrowKind) {
+        self.found |= kind != ty::BorrowKind::Immutable && self.rooted(place);
+    }
+
+    fn mutate(&mut self, place: &PlaceWithHirId<'tcx>, _: HirId) {
+        self.found |= self.rooted(place);
+    }
+
+    fn fake_read(&mut self, _: &PlaceWithHirId<'tcx>, _: FakeReadCause, _: HirId) {}
 }
 
 /// Whether the place, or anything method resolution reaches through it,
@@ -201,18 +290,27 @@ fn erases(cx: &LateContext<'_>, call: DefId, place: &Expr<'_>) -> bool {
         && cx.typeck_results().expr_adjustments(place).is_empty()
 }
 
-/// Whether the receiver's call runs only the standard library's code.
+/// Whether the receiver's call runs only the standard library's code,
+/// and none that reports a panic at its caller.
 ///
 /// Asked of the body the call resolves to rather than of the method it
 /// names. `into_iter` names `IntoIterator`'s, but the body that runs is
 /// the impl for the receiver's type, which may be the user's. And a std
 /// body has to be instantiated with std types, because it can call into
 /// the types it is given: cloning a `vec::IntoIter` clones each item.
+///
+/// A panic is an effect too. `names.unwrap()` panics before the initial
+/// value runs in the fold and after it in the plural, so whatever the
+/// initial value did has happened by then: measured as a counter the
+/// initial value bumps, untouched by the fold and bumped under the fix.
+/// The standard library marks the calls that panic on their caller's
+/// behalf `#[track_caller]`, which is what is read here.
 fn runs_only_std(cx: &LateContext<'_>, receiver: &Expr<'_>, call: DefId) -> bool {
     let args = cx.typeck_results().node_args(receiver.hir_id);
     matches!(
         Instance::try_resolve(cx.tcx, cx.typing_env(), call, args),
         Ok(Some(instance)) if is_std(cx, instance.def_id().krate)
+            && !instance.def.requires_caller_location(cx.tcx)
             && instance.args.types().all(|ty| std_throughout(cx, ty)),
     )
 }

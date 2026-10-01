@@ -5,9 +5,9 @@
 // Most are declined because the plural evaluates the initial value
 // before the receiver where the fold evaluated the receiver first. Those
 // would compile if they were rewritten, so the comparison fails if the
-// fixer rewrites one. The trait out of scope is the exception: its
-// rewrite would not compile, `cargo fix` would revert it, and the test's
-// check for errors after applying fixes is what catches that instead.
+// fixer rewrites one. Some would not compile, the trait out of scope and
+// a moved root among them: `cargo fix` would revert the rewrite, and the
+// test's check for errors after applying fixes is what catches those.
 //
 // Each fold names a distinct program, so an assertion can name one
 // shape without matching another.
@@ -118,6 +118,16 @@ pub fn written_place(mut countdown: Countdown) -> Command {
     countdown.fold(exhaust(&mut countdown, "written-place"), CommandExtra::without_env)
 }
 
+// The same write as an assignment, with no call to borrow through.
+pub fn assigned_place(mut countdown: Countdown) -> Command {
+    countdown.fold({ countdown.0 = 0; Command::new("assigned-place") }, CommandExtra::without_env)
+}
+
+// The same write inside a closure, where `countdown` is a capture.
+pub fn written_in_closure(mut countdown: Countdown) -> impl FnMut() -> Command {
+    move || countdown.fold(exhaust(&mut countdown, "written-in-closure"), CommandExtra::without_env)
+}
+
 // A `Deref` the user wrote on the way to a field, rather than on the
 // place the call runs on.
 pub struct Names {
@@ -198,6 +208,30 @@ impl AsRef<OsStr> for Item {
 
 pub fn user_item_clone(items: std::vec::IntoIter<Item>) -> Command {
     items.clone().fold(Command::new("user-item-clone"), CommandExtra::without_env)
+}
+
+// A std call that panics on its caller's behalf. `unwrap` panics before
+// the initial value runs in the fold, and after it in the plural.
+pub fn panicking_receiver(names: Option<std::vec::IntoIter<String>>) -> Command {
+    names.unwrap().fold(Command::new("panicking-receiver"), CommandExtra::without_env)
+}
+
+pub struct Job {
+    removed: &'static [&'static str],
+}
+
+impl Job {
+    fn into_base(self, program: &str) -> Command {
+        std::mem::drop(self);
+        Command::new(program)
+    }
+}
+
+// An initial value that consumes the place the receiver is rooted at.
+// The fold reads `job.removed` before `job` is moved, and the plural
+// would read it after, which is `E0382`.
+pub fn moved_root(job: Job) -> Command {
+    job.removed.iter().fold(job.into_base("moved-root"), CommandExtra::without_env)
 }
 
 const OVERRIDDEN_VARS: &[&str] = &["a"];

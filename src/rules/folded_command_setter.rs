@@ -72,9 +72,10 @@ declare_tool_lint! {
     /// The suggestion moves the receiver past the initial value, so a
     /// fix is applied only where that cannot change what either of them
     /// sees: the receiver runs no code but the standard library's, over
-    /// the standard library's types, and reads nothing the initial value
-    /// writes. Elsewhere the suggestion is advice, as it also is where
-    /// the trait is not in scope at the call site.
+    /// the standard library's types, panics at no call such as `unwrap`,
+    /// and reads nothing the initial value writes or moves. Elsewhere the
+    /// suggestion is advice, as it also is where the trait is not in
+    /// scope at the call site.
     ///
     /// The suggestion keeps the receiver's call unless the plural makes
     /// that same call itself.
@@ -121,7 +122,7 @@ const CONFIG_KEY: &str = "perfectionist::folded_command_setter";
 /// [`receiver::Shape::reorderable`].
 const REORDERS: &str = "the fold evaluates the receiver before the initial value and the \
                         suggestion evaluates them the other way round, so apply it only where \
-                        neither reads what the other writes";
+                        their order does not matter";
 
 /// What a reader has to do first where the trait is not in scope at the
 /// call site. Conditional, because the imports [`trait_is_imported`]

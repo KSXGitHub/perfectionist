@@ -74,7 +74,7 @@ LL | |         .into_iter()
 LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
    | |____________________________________________________________^
    |
-   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
 help: use `without_envs`
    |
 LL ~     let _ = Command::new("ls").without_envs(names
@@ -90,7 +90,7 @@ LL | |         .iter()
 LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
    | |____________________________________________________________^
    |
-   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
 help: use `without_envs`
    |
 LL ~     let _ = Command::new("ls").without_envs(names

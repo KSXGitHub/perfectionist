@@ -7,7 +7,7 @@ LL | |         .iter()
 LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
    | |____________________________________________________________^
    |
-   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
    = note: `#[warn(perfectionist::folded_command_setter)]` on by default
 help: use `without_envs`
    |
@@ -24,7 +24,7 @@ LL | |         .into_iter()
 LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
    | |____________________________________________________________^
    |
-   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
 help: use `without_envs`
    |
 LL ~     let _ = Command::new("ls").without_envs(shadow
@@ -40,7 +40,7 @@ LL | |         .drain_all()
 LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
    | |____________________________________________________________^
    |
-   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
 help: use `without_envs`
    |
 LL ~     let _ = Command::new("ls").without_envs(queue
@@ -57,7 +57,7 @@ LL | |         CommandExtra::without_env,
 LL | |     );
    | |_____^ help: use `without_envs`: `Command::new(format!("ls{}", queue.0.len())).without_envs(queue.take_all())`
    |
-   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
 
 warning: this fold over `without_env` re-implements `without_envs`
   --> $DIR/folded_command_setter_applicability.rs:LL:CC
@@ -80,7 +80,7 @@ LL | |         .into_iter()
 LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
    | |____________________________________________________________^
    |
-   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
 help: use `without_envs`
    |
 LL ~     let _ = Command::new("ls").without_envs((*noisy)
@@ -100,7 +100,7 @@ LL | |         CommandExtra::without_env,
 LL | |     );
    | |_____^
    |
-   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
 help: use `without_envs`
    |
 LL ~     let _ = Command::new(format!(
@@ -115,7 +115,7 @@ warning: this fold over `without_env` re-implements `without_envs`
 LL |     countdown.fold(exhaust(&mut countdown), CommandExtra::without_env)
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `exhaust(&mut countdown).without_envs(countdown)`
    |
-   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
 
 warning: this fold over `without_env` re-implements `without_envs`
   --> $DIR/folded_command_setter_applicability.rs:LL:CC
@@ -125,6 +125,36 @@ LL | |         Command::new(countdown.0.to_string()),
 LL | |         CommandExtra::without_env,
 LL | |     )
    | |_____^ help: use `without_envs`: `Command::new(countdown.0.to_string()).without_envs(countdown)`
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL | /     names
+LL | |         .unwrap()
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env)
+   | |____________________________________________________________^
+   |
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
+help: use `without_envs`
+   |
+LL ~     Command::new("ls").without_envs(names
+LL +         .unwrap())
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL | /     job.removed
+LL | |         .iter()
+LL | |         .fold(job.into_base(), CommandExtra::without_env)
+   | |_________________________________________________________^
+   |
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
+help: use `without_envs`
+   |
+LL ~     job.into_base().without_envs(job.removed
+LL +         .iter())
+   |
 
 warning: this fold over `without_env` re-implements `without_envs`
   --> $DIR/folded_command_setter_applicability.rs:LL:CC

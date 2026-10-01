@@ -225,6 +225,34 @@ fn place_read_by_the_initial(countdown: Countdown) -> Command {
     )
 }
 
+// Bad: a std call that panics on its caller's behalf. `unwrap` panics
+// before the initial value runs in the fold and after it in the plural,
+// so the fix is withheld.
+fn panicking_receiver(names: Option<std::vec::IntoIter<String>>) -> Command {
+    names
+        .unwrap()
+        .fold(Command::new("ls"), CommandExtra::without_env)
+}
+
+struct Job {
+    removed: &'static [&'static str],
+}
+
+impl Job {
+    fn into_base(self) -> Command {
+        Command::new("ls")
+    }
+}
+
+// Bad: an initial value that consumes the place the receiver is rooted
+// at. The fold reads `job.removed` before `job` is moved and the plural
+// would read it after, so the fix is withheld.
+fn moved_root(job: Job) -> Command {
+    job.removed
+        .iter()
+        .fold(job.into_base(), CommandExtra::without_env)
+}
+
 // Bad: the trait is not in scope at the call site, so the plural the
 // suggestion names would not resolve. The receiver is a place whose call
 // is std's, so the import is the only thing withheld here.
