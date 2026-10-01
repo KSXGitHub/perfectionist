@@ -129,6 +129,19 @@ pub fn written_in_closure(mut countdown: Countdown) -> impl FnMut() -> Command {
     move || countdown.fold(exhaust(&mut countdown, "written-in-closure"), CommandExtra::without_env)
 }
 
+// A copy read through a reference the body took of a local, which the
+// initial value then borrows mutably. The fold copies `*view` first, and
+// the plural would borrow first, which is `E0502`.
+pub fn aliased_copy(mut countdown: Countdown) -> Command {
+    let view = &countdown;
+    view.fold(exhaust(&mut countdown, "aliased-copy"), CommandExtra::without_env)
+}
+
+// The same copy through a raw pointer, which can point anywhere.
+pub unsafe fn raw_copy(countdown: *const Countdown) -> Command {
+    unsafe { (*countdown).fold(Command::new("raw-copy"), CommandExtra::without_env) }
+}
+
 // A `Deref` the user wrote on the way to a field, rather than on the
 // place the call runs on.
 pub struct Names {
@@ -281,6 +294,44 @@ pub fn dropped_comment(names: Vec<String>) -> Command {
         .into_iter()
         // kept only by hand
         .fold(Command::new("dropped-comment"), CommandExtra::without_env)
+}
+
+// An initial value that is the receiver's root, moved into the fold
+// after the receiver has borrowed through it. The plural would move it
+// first, which is `E0382`.
+pub struct Defaults {
+    defaults: &'static [&'static str],
+}
+
+impl CommandExtra for Defaults {
+    fn with_current_dir(self, _dir: impl AsRef<std::path::Path>) -> Self {
+        self
+    }
+    fn with_env(self, _key: impl AsRef<OsStr>, _value: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn without_env(self, _key: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_no_env(self) -> Self {
+        self
+    }
+    fn with_arg(self, _arg: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_stdin(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stdout(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stderr(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+}
+
+pub fn initial_root(initial_is_the_root: Defaults) -> Defaults {
+    initial_is_the_root.defaults.iter().fold(initial_is_the_root, CommandExtra::with_arg)
 }
 
 const OVERRIDDEN_VARS: &[&str] = &["a"];

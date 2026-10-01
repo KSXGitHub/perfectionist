@@ -200,6 +200,14 @@ pub async fn awaited_initial() -> Command {
     VARS.iter().fold(command().await, CommandExtra::without_env)
 }
 
+// A reference the body took of a local, through which the receiver
+// keeps borrowing across the initial value in either order.
+pub fn borrowed_through_a_binding(names: Vec<String>) -> Command {
+    let view = &names;
+    let start = Command::new("ls");
+    view.iter().fold(start, CommandExtra::without_env)
+}
+
 impl Build {
     fn base(&self) -> Command {
         Command::new(&self.program)

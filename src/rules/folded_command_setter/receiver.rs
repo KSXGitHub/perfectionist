@@ -41,7 +41,7 @@ use clippy_utils::res::MaybeDef;
 use clippy_utils::sym;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::def_id::{CrateNum, DefId};
-use rustc_hir::{Expr, ExprKind, HirId, Mutability, QPath, UnOp};
+use rustc_hir::{Expr, ExprKind, HirId, Mutability, Node, QPath, UnOp};
 use rustc_hir_typeck::expr_use_visitor::{Delegate, ExprUseVisitor, PlaceBase, PlaceWithHirId};
 use rustc_lint::LateContext;
 use rustc_middle::hir::place::ProjectionKind;
@@ -100,7 +100,8 @@ pub(super) fn shape<'tcx>(
             argument: receiver.span,
             prefix,
             reorderable: !derefs_through_user_code(cx, receiver)
-                && !written_or_moved_by(cx, receiver, initial),
+                && !written_or_moved_by(cx, receiver, initial)
+                && !copied_from_an_alias(cx, receiver, receiver),
         });
     }
     let ExprKind::MethodCall(_, place, [], _) = receiver.kind else {
@@ -120,7 +121,8 @@ pub(super) fn shape<'tcx>(
         prefix,
         reorderable: runs_only_std(cx, receiver, call)
             && !derefs_through_user_code(cx, place)
-            && !written_or_moved_by(cx, place, initial),
+            && !written_or_moved_by(cx, place, initial)
+            && !copied_from_an_alias(cx, place, receiver),
     })
 }
 
@@ -181,8 +183,10 @@ fn written_or_moved_by<'tcx>(
                 fields: &fields,
                 found: false,
             };
+            // `consume_expr` rather than `walk_expr`: the initial value is
+            // itself moved into the fold, and may be the root itself.
             let Ok(()) = ExprUseVisitor::for_clippy(cx, initial.hir_id.owner.def_id, &mut touch)
-                .walk_expr(initial);
+                .consume_expr(initial);
             touch.found
         }
         // Anything can write a `static mut`, a call the initial value
@@ -256,6 +260,53 @@ impl<'tcx> Delegate<'tcx> for Touch<'_> {
     }
 
     fn fake_read(&mut self, _: &PlaceWithHirId<'tcx>, _: FakeReadCause, _: HirId) {}
+}
+
+/// Whether the receiver comes away owning what it read from behind a
+/// pointer that the initial value may reach another way.
+///
+/// A receiver that keeps borrowing the referent keeps the borrow across
+/// the initial value in the fold as well, so the initial value cannot
+/// have written the referent there. One that owns what it read frees the
+/// referent once it has read it: `view.fold(exhaust(&mut countdown), ..)`
+/// copies `*view` and only then borrows `countdown`, and the plural would
+/// borrow first, which is `E0502`. A reference rooted at a parameter
+/// points outside the body, where nothing the initial value names can
+/// reach; a raw pointer can point anywhere.
+fn copied_from_an_alias(cx: &LateContext<'_>, place: &Expr<'_>, receiver: &Expr<'_>) -> bool {
+    let typeck = cx.typeck_results();
+    if typeck
+        .expr_ty_adjusted(receiver)
+        .walk()
+        .any(|arg| arg.as_region().is_some())
+    {
+        return false;
+    }
+    let mut through_a_reference = false;
+    let mut expr = place;
+    loop {
+        let types = core::iter::once(typeck.expr_ty(expr)).chain(
+            typeck
+                .expr_adjustments(expr)
+                .iter()
+                .map(|adjustment| adjustment.target),
+        );
+        for ty in types {
+            if ty.is_raw_ptr() {
+                return true;
+            }
+            through_a_reference |= ty.is_ref();
+        }
+        match expr.kind {
+            ExprKind::Field(base, _) | ExprKind::Unary(UnOp::Deref, base) => expr = base,
+            ExprKind::Path(QPath::Resolved(_, path)) => {
+                return through_a_reference
+                    && !matches!(path.res, Res::Local(local)
+                        if matches!(cx.tcx.parent_hir_node(local), Node::Param(_)));
+            }
+            _ => return through_a_reference,
+        }
+    }
 }
 
 /// Whether the place, or anything method resolution reaches through it,
