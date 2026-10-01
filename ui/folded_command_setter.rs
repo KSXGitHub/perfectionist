@@ -28,7 +28,7 @@ fn paths() {
     let _ = VARS.iter().fold(Command::new("ls"), CommandExtra::with_arg);
 }
 
-// Bad: the same setter reached through the concrete type and through a
+// Bad: `without_env` reached through the concrete type and through a
 // fully-qualified path — one method, so one shape.
 fn spellings() {
     let _ = VARS.iter().fold(Command::new("ls"), Command::without_env);
@@ -37,7 +37,7 @@ fn spellings() {
         .fold(Command::new("ls"), <Command as CommandExtra>::without_env);
 }
 
-// Bad: the same setter under a renamed import, in a module of its own. A
+// Bad: `without_env` under a renamed import, in a module of its own. A
 // `use` is module-wide, so at file scope the alias would be in scope for
 // every case here and the trait would also be in scope under its own
 // name. Only the alias is imported in this module, which is also what

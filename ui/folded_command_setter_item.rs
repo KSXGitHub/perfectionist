@@ -31,8 +31,8 @@ fn pair_item(pairs: Vec<(String, String)>) {
         });
 }
 
-// Bad: the same pair over a map reference, whose items are pairs of
-// references. The `iter` is std's, so the fix is applied.
+// Bad: the `with_env` pair over a map reference, whose items are pairs
+// of references. The `iter` is std's, so the fix is applied.
 fn pair_item_borrowed(pairs: &std::collections::HashMap<String, String>) {
     let _ = pairs
         .iter()

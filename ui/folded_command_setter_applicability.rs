@@ -70,9 +70,9 @@ fn mutating_receiver(mut queue: Queue) {
         .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
-// Bad: the same mutating receiver against an initial value that reads
-// what it changes. Advice only, and this one stays advice however far
-// the gate is widened: the two orders build different commands.
+// Bad: a mutating receiver against an initial value that reads what it
+// changes. Advice only, and it stays advice however far the gate is
+// widened: the two orders build different commands.
 fn mutating_receiver_observed(mut queue: Queue) {
     let _ = queue.take_all().fold(
         Command::new(format!("ls{}", queue.0.len())),

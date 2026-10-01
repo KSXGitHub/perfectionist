@@ -30,7 +30,7 @@ fn boxed_path(command: Box<Command>) -> Box<Command> {
     VARS.iter().fold(command, CommandExtra::without_env)
 }
 
-// Bad: the same, folder spelled as a forwarding closure.
+// Bad: a boxed accumulator, folder spelled as a forwarding closure.
 fn boxed_closure(command: Box<Command>) -> Box<Command> {
     VARS.iter()
         .fold(command, |command, var| command.with_arg(var))
