@@ -41,7 +41,7 @@ fn std_setter() {
 // one of its setters, so the rule never asks the accumulator's type --
 // which is also how it reaches whatever else a release implements the
 // trait for.
-fn generic_accumulator<C: CommandExtra>(command: C) -> C {
+fn generic_accumulator<Builder: CommandExtra>(command: Builder) -> Builder {
     VARS.iter().fold(command, CommandExtra::without_env)
 }
 
