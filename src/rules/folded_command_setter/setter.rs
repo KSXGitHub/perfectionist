@@ -309,12 +309,15 @@ pub(super) fn inside_the_plural(
         .opt_associated_item(owner)
         .and_then(|item| item.trait_item_def_id())
         == Some(plural)
+        // Typeck erases the regions of the types it records, so the
+        // impl's own type is compared with its regions erased too.
         && cx.typeck_results().expr_ty(initial)
-            == cx
-                .tcx
-                .type_of(cx.tcx.parent(owner))
-                .instantiate_identity()
-                .skip_normalization()
+            == cx.tcx.erase_and_anonymize_regions(
+                cx.tcx
+                    .type_of(cx.tcx.parent(owner))
+                    .instantiate_identity()
+                    .skip_normalization(),
+            )
 }
 
 /// Another trait that declares a method named like the plural which

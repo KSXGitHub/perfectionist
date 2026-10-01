@@ -98,4 +98,35 @@ impl CommandExtra for Wrapped {
     }
 }
 
+pub struct Tagged<'a> {
+    inner: Command,
+    tag: &'a str,
+}
+
+impl CommandExtra for Tagged<'_> {
+    fn with_arg(self, arg: impl AsRef<OsStr>) -> Self {
+        Tagged {
+            inner: self.inner.with_arg(arg),
+            tag: self.tag,
+        }
+    }
+
+    fn without_env(self, key: impl AsRef<OsStr>) -> Self {
+        Tagged {
+            inner: self.inner.without_env(key),
+            tag: self.tag,
+        }
+    }
+
+    // Not flagged: an override folding its own type, which names a
+    // lifetime.
+    fn with_args<Args>(self, args: Args) -> Self
+    where
+        Args: IntoIterator,
+        Args::Item: AsRef<OsStr>,
+    {
+        args.into_iter().fold(self, Self::with_arg)
+    }
+}
+
 fn main() {}
