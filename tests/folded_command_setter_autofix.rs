@@ -16,9 +16,10 @@
 //! The fixtures split by direction, because the two fail differently.
 //! `applied.rs` is compared against `applied.fixed.rs`, so a rewrite
 //! that stops being applied, or starts being applied differently, fails
-//! here. `not_applied.rs` is compared against itself, and every shape in
-//! it would compile if it were rewritten anyway, so that comparison can
-//! fail rather than passing because `cargo fix` reverted the file.
+//! here. `not_applied.rs` is compared against itself. Where a shape
+//! would compile if rewritten, that comparison is what fails; where it
+//! would not, `cargo fix` reverts the file, and the check for errors
+//! after applying fixes fails instead.
 
 pub mod _utils;
 
@@ -122,6 +123,8 @@ fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
         "local-iter",
         "shadowed-into-iter",
         "mutating-receiver",
+        "user-deref",
+        "written-place",
         "NOT_IN_SCOPE",
     ] {
         assert!(

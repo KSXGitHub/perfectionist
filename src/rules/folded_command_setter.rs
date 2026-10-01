@@ -193,7 +193,7 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         if replacement.splits_item && !setter::item_fits(cx, plural_id, receiver) {
             return;
         }
-        let Some(shape) = receiver::shape(cx, receiver) else {
+        let Some(shape) = receiver::shape(cx, receiver, initial) else {
             return;
         };
         // An initial value that diverges never reaches the fold, so the

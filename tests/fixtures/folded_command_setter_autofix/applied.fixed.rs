@@ -80,34 +80,6 @@ pub fn double_reference(names: &&Vec<String>) -> Command {
     start.without_envs(names.iter())
 }
 
-// `iter` reached through `Deref` while the type keeps an `IntoIterator`
-// yielding the other order. This one compiles either way, so only the
-// surviving call keeps the command's arguments in order -- which is what
-// makes it the fixture worth having.
-pub struct Backwards(Vec<String>);
-
-impl std::ops::Deref for Backwards {
-    type Target = Vec<String>;
-
-    fn deref(&self) -> &Vec<String> {
-        &self.0
-    }
-}
-
-impl<'a> IntoIterator for &'a Backwards {
-    type Item = &'a String;
-    type IntoIter = std::iter::Rev<std::slice::Iter<'a, String>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.iter().rev()
-    }
-}
-
-pub fn disagreeing_into_iter(names: &Backwards) -> Command {
-    let start = Command::new("ls");
-    start.without_envs(names.iter())
-}
-
 // An initial value that binds looser than a method call, which the
 // suggestion has to bracket.
 pub fn looser_initial(command: Box<Command>) -> Command {

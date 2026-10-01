@@ -68,10 +68,57 @@ LL |     let _ = VARS.iter().fold(*command, CommandExtra::without_env);
 warning: this fold over `without_env` re-implements `without_envs`
   --> $DIR/folded_command_setter_applicability.rs:LL:CC
    |
+LL |       let _ = noisy.into_iter().fold(
+   |  _____________^
+LL | |         Command::new(format!(
+LL | |             "ls{}",
+LL | |             DEREFS.load(std::sync::atomic::Ordering::SeqCst)
+LL | |         )),
+LL | |         CommandExtra::without_env,
+LL | |     );
+   | |_____^
+   |
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+help: use `without_envs`
+   |
+LL ~     let _ = Command::new(format!(
+LL +             "ls{}",
+LL +             DEREFS.load(std::sync::atomic::Ordering::SeqCst)
+LL ~         )).without_envs(noisy.into_iter());
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL |     countdown.fold(exhaust(&mut countdown), CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `exhaust(&mut countdown).without_envs(countdown)`
+   |
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL | /     countdown.fold(
+LL | |         Command::new(countdown.0.to_string()),
+LL | |         CommandExtra::without_env,
+LL | |     )
+   | |_____^ help: use `without_envs`: `Command::new(countdown.0.to_string()).without_envs(countdown)`
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
 LL | /         VARS.iter()
 LL | |             .fold(command, command_extra::CommandExtra::without_env)
    | |____________________________________________________________________^ help: use `without_envs`: `command.without_envs(VARS.iter())`
    |
    = help: the plural is a `CommandExtra` method, which resolves only where the trait is in scope; add `use command_extra::CommandExtra;` if it is not
+
+warning: multi-line macro invocation should end with a trailing comma
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL |             DEREFS.load(std::sync::atomic::Ordering::SeqCst)
+   |                                                             ^ help: add a trailing comma: `,`
+   |
+   = note: `#[warn(perfectionist::macro_trailing_comma)]` on by default
 
 warning: N warnings emitted

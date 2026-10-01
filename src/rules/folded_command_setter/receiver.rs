@@ -21,20 +21,26 @@
 //! that is the one case where the plural calls the same function on the
 //! same value.
 //!
-//! Reorderability is a third question, and the answer here is
-//! deliberately over-conservative: it asks only where the receiver's
-//! call came from, which declines rewrites that are provably safe --
-//! `queue.take_all()` against a plain binding among them. One side is
-//! cheap to classify and two are not, and mutation reordered is the kind
-//! of wrong that does not announce itself. Widening it to *either* side
-//! effect-free is the obvious next step, counting an initial value as
-//! effect-free when it is a place expression, a literal, or a `core` /
-//! `std` call over those.
+//! Reorderability is a third question, and it has two halves. The
+//! receiver must not do anything the initial value could see, and the
+//! initial value must not write anything the receiver reads. The first
+//! half is answered over-conservatively: it asks only where the
+//! receiver's call came from, which declines rewrites that are provably
+//! safe, `queue.take_all()` against a plain binding among them. One side
+//! is cheap to classify and two are not, and mutation reordered is the
+//! kind of wrong that does not announce itself. Widening it to *either*
+//! side effect-free is the obvious next step, counting an initial value
+//! as effect-free when it is a place expression, a literal, or a `core`
+//! / `std` call over those. The second half asks whether the initial
+//! value mutates the place the receiver is rooted at.
 
 use clippy_utils::sym;
-use rustc_hir::def_id::DefId;
-use rustc_hir::{Expr, ExprKind, QPath, UnOp};
+use clippy_utils::usage::mutated_variables;
+use rustc_hir::def::{DefKind, Res};
+use rustc_hir::def_id::{CrateNum, DefId};
+use rustc_hir::{Expr, ExprKind, Mutability, QPath, UnOp};
 use rustc_lint::LateContext;
+use rustc_middle::ty;
 use rustc_middle::ty::adjustment::{Adjust, DerefAdjustKind};
 use rustc_span::{Span, Symbol};
 
@@ -50,7 +56,7 @@ pub(super) struct Shape {
     /// where the call is erased.
     pub argument: Span,
     /// Whether the receiver may be evaluated after the initial value
-    /// without changing what the initial value sees.
+    /// without either of them seeing the other's effects.
     ///
     /// The suggestion trades the two, so it trades the order they run
     /// in: `A.fold(B, f)` evaluates `A` then `B`, and `B.plural(A)`
@@ -65,13 +71,21 @@ pub(super) struct Shape {
 /// An argument is where logic hides, and a second call is more text
 /// moving. Both bars are structural rather than a list of adapter names
 /// that would need extending as the iterator API grows.
-pub(super) fn shape(cx: &LateContext<'_>, receiver: &Expr<'_>) -> Option<Shape> {
+pub(super) fn shape<'tcx>(
+    cx: &LateContext<'tcx>,
+    receiver: &Expr<'_>,
+    initial: &'tcx Expr<'tcx>,
+) -> Option<Shape> {
     if is_place(cx, receiver) {
-        // Reaching a place runs no user code, so there is nothing the
-        // initial value could observe out of order.
+        // Reaching a place runs no user code unless method resolution
+        // derefs it through a user `Deref`, and then that body runs
+        // before the initial value instead of after it. Separately, the
+        // initial value can change what the receiver reads by writing the
+        // place first.
         return Some(Shape {
             argument: receiver.span,
-            reorderable: true,
+            reorderable: !derefs_through_user_code(cx, receiver)
+                && !written_by(cx, receiver, initial),
         });
     }
     let ExprKind::MethodCall(_, place, [], _) = receiver.kind else {
@@ -88,8 +102,44 @@ pub(super) fn shape(cx: &LateContext<'_>, receiver: &Expr<'_>) -> Option<Shape> 
     };
     Some(Shape {
         argument,
-        reorderable: from_std(cx, call),
+        // Method resolution records the autoderef that reached the call
+        // on the place, not on the call, so `noisy.into_iter()` through a
+        // user `Deref` shows up here and nowhere in `is_place`.
+        reorderable: from_std(cx, call)
+            && !derefs_through_user_code(cx, place)
+            && !written_by(cx, place, initial),
     })
+}
+
+/// Whether evaluating `initial` may write the place `place` is rooted at.
+///
+/// Only a mutation can reach the receiver: a by-value receiver of a
+/// `Copy` type is copied before the initial value runs, so the fold sees
+/// the old value and the plural the new one. A read is harmless. Where
+/// the mutation analysis cannot answer, the answer is yes.
+fn written_by<'tcx>(cx: &LateContext<'tcx>, place: &Expr<'_>, initial: &'tcx Expr<'tcx>) -> bool {
+    let mut root = place;
+    while let ExprKind::Field(base, _) | ExprKind::Unary(UnOp::Deref, base) = root.kind {
+        root = base;
+    }
+    let ExprKind::Path(QPath::Resolved(_, path)) = root.kind else {
+        return false;
+    };
+    match path.res {
+        Res::Local(local) => {
+            mutated_variables(initial, cx).is_none_or(|mutated| mutated.contains(&local))
+        }
+        // Anything can write a `static mut`, a call the initial value
+        // makes included.
+        Res::Def(
+            DefKind::Static {
+                mutability: Mutability::Mut,
+                ..
+            },
+            _,
+        ) => true,
+        _ => false,
+    }
 }
 
 /// Whether the receiver's call can be dropped from the suggestion
@@ -117,6 +167,11 @@ fn erases(cx: &LateContext<'_>, call: DefId, place: &Expr<'_>) -> bool {
 /// they carry -- `Iterator` for `core`, `Vec` for `alloc`, `Command`
 /// for `std`.
 fn from_std(cx: &LateContext<'_>, call: DefId) -> bool {
+    is_std(cx, call.krate)
+}
+
+/// Whether `krate` is one of the sysroot crates [`from_std`] anchors on.
+fn is_std(cx: &LateContext<'_>, krate: CrateNum) -> bool {
     [
         sym::Iterator,
         sym::Vec,
@@ -124,7 +179,7 @@ fn from_std(cx: &LateContext<'_>, call: DefId) -> bool {
     ]
     .into_iter()
     .filter_map(|item| cx.tcx.get_diagnostic_item(item))
-    .any(|anchor| anchor.krate == call.krate)
+    .any(|anchor| anchor.krate == krate)
 }
 
 /// Whether `expr` names a location rather than computing one.
@@ -164,4 +219,27 @@ fn reached_freely(cx: &LateContext<'_>, expr: &Expr<'_>, base: &Expr<'_>) -> boo
                     Adjust::Deref(DerefAdjustKind::Overloaded(_)),
                 )
             })
+}
+
+/// Whether the adjustments recorded on `expr` run a `Deref` body the
+/// user wrote.
+///
+/// Not every overloaded `Deref` does: `Vec<T>` reaches `[T]` through
+/// one, which is how `names.iter()` finds `<[T]>::iter`. A `Deref` impl
+/// for a type the standard library defines has to be the standard
+/// library's own, because the orphan rule keeps every other crate from
+/// implementing a std trait for a std type. So each overloaded step is
+/// judged by the type it dereferences.
+fn derefs_through_user_code(cx: &LateContext<'_>, expr: &Expr<'_>) -> bool {
+    let typeck = cx.typeck_results();
+    let mut source = typeck.expr_ty(expr);
+    for adjustment in typeck.expr_adjustments(expr) {
+        if let Adjust::Deref(DerefAdjustKind::Overloaded(_)) = adjustment.kind
+            && !matches!(source.peel_refs().kind(), ty::Adt(def, _) if is_std(cx, def.did().krate))
+        {
+            return true;
+        }
+        source = adjustment.target;
+    }
+    false
 }

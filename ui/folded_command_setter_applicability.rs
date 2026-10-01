@@ -133,6 +133,56 @@ fn overloaded_deref(noisy: Noisy) {
         .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
+// Bad: an overloaded `Deref` that method resolution inserts itself, with
+// no `*` written. The initial value reads the counter the `deref` body
+// bumps, so the two orders build different commands, and the fix is
+// withheld.
+fn overloaded_deref_by_autoderef(noisy: Noisy) {
+    let _ = noisy.into_iter().fold(
+        Command::new(format!(
+            "ls{}",
+            DEREFS.load(std::sync::atomic::Ordering::SeqCst)
+        )),
+        CommandExtra::without_env,
+    );
+}
+
+// An iterator that is `Copy`, so a by-value receiver is copied when it
+// is evaluated and keeps the value it had then.
+#[derive(Clone, Copy)]
+struct Countdown(u8);
+
+impl Iterator for Countdown {
+    type Item = &'static str;
+
+    fn next(&mut self) -> Option<&'static str> {
+        let remaining = self.0.checked_sub(1)?;
+        self.0 = remaining;
+        Some("A")
+    }
+}
+
+fn exhaust(countdown: &mut Countdown) -> Command {
+    countdown.0 = 0;
+    Command::new("ls")
+}
+
+// Bad: a place the initial value writes. The fold copies `countdown`
+// before `exhaust` empties it; the plural would copy it afterwards and
+// fold over nothing.
+fn place_written_by_the_initial(mut countdown: Countdown) -> Command {
+    countdown.fold(exhaust(&mut countdown), CommandExtra::without_env)
+}
+
+// Bad: a place the initial value only reads. A read cannot change what
+// the receiver copies, so the fix is applied.
+fn place_read_by_the_initial(countdown: Countdown) -> Command {
+    countdown.fold(
+        Command::new(countdown.0.to_string()),
+        CommandExtra::without_env,
+    )
+}
+
 // Bad: the trait is not in scope at the call site, so the plural the
 // suggestion names would not resolve. The receiver is a place whose call
 // is std's, so the import is the only thing withheld here.
