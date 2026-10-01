@@ -29,6 +29,16 @@ fn other_accumulator() {
 // Not flagged: a fold over a std setter. The folder resolves to
 // `Command::arg` rather than a `CommandExtra` setter, and its block
 // holds a statement, so this is the sibling rule's to speak about.
+//
+// `expect` rather than `allow`, and rather than letting the diagnostic
+// stand in this fixture's baseline: the expectation goes unfulfilled if
+// the sibling ever stops speaking here, so the sentence above stays
+// checked, while a reword over there no longer rewrites a baseline that
+// belongs to this rule.
+#[expect(
+    perfectionist::mutating_command_builder,
+    reason = "the sibling rule owning this line is the point of the case"
+)]
 fn std_setter() {
     let _ = VARS.iter().fold(Command::new("ls"), |mut command, var| {
         command.arg(var);

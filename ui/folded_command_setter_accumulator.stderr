@@ -1,13 +1,3 @@
-warning: `Command::arg` takes `&mut self`, so it cannot yield the command
-  --> $DIR/folded_command_setter_accumulator.rs:LL:CC
-   |
-LL |         command.arg(var);
-   |                 ^^^
-   |
-   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
-   = note: `#[warn(perfectionist::mutating_command_builder)]` on by default
-
 warning: this fold over `without_env` re-implements `without_envs`
   --> $DIR/folded_command_setter_accumulator.rs:LL:CC
    |
