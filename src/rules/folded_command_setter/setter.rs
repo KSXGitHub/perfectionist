@@ -62,7 +62,9 @@ pub(super) fn replacement_for(singular: Symbol) -> Option<Replacement> {
 /// neither form answers no, because nothing then says which items the
 /// plural accepts.
 pub(super) fn item_fits<'tcx>(cx: &LateContext<'tcx>, plural: DefId, receiver: &Expr<'_>) -> bool {
-    let receiver_ty = cx.typeck_results().expr_ty(receiver);
+    // Adjusted, because the item is what `fold` iterates: a `Copy`
+    // iterator behind `&` is copied out first.
+    let receiver_ty = cx.typeck_results().expr_ty_adjusted(receiver);
     let Some(item) = get_iterator_item_ty(cx, receiver_ty) else {
         return false;
     };

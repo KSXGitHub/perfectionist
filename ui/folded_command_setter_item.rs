@@ -117,4 +117,23 @@ fn nested_pair(command: Command, items: Vec<(String, (String,))>) -> Command {
         .fold(command, |command, (key, (value,))| command.with_env(key, value))
 }
 
+#[derive(Clone, Copy)]
+struct PairCountdown(u8);
+
+impl Iterator for PairCountdown {
+    type Item = (&'static str, &'static str);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let remaining = self.0.checked_sub(1)?;
+        self.0 = remaining;
+        Some(("A", "1"))
+    }
+}
+
+// Bad: a `Copy` iterator of pairs behind a reference, which method
+// resolution copies out for the fold. Its item is a pair once copied.
+fn copied_pairs(command: Command, pairs: &PairCountdown) -> Command {
+    pairs.fold(command, |command, (key, value)| command.with_env(key, value))
+}
+
 fn main() {}
