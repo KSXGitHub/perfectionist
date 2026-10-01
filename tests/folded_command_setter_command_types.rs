@@ -108,7 +108,7 @@ fn tokio_commands_are_reached_with_the_feature_on() {
         TOKIO,
     );
     assert!(success, "the fixture should compile; stderr was:\n{stderr}");
-    for marker in ["TOKIO_VARS", "BOXED_TOKIO_VARS"] {
+    for marker in ["BARE_TOKIO_VARS", "BOXED_TOKIO_VARS"] {
         assert!(
             stderr.contains(FIRES) && stderr.contains(marker),
             "expected the rule to fire on `{marker}`; stderr was:\n{stderr}",
