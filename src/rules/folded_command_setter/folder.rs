@@ -47,12 +47,31 @@ fn assoc_fn(res: Res) -> Option<DefId> {
 /// besides forward.
 fn forwarded_by<'tcx>(cx: &LateContext<'tcx>, closure: &'tcx Closure<'tcx>) -> Option<DefId> {
     let body = cx.tcx.hir_body(closure.body);
-    let mut bound = Vec::new();
-    for param in body.params {
-        bindings_of(param.pat, &mut bound)?;
-    }
+    let [accumulator, item] = body.params else {
+        return None;
+    };
+    let mut bound = vec![binding(accumulator.pat)?];
+    let destructured = match item.pat.kind {
+        // The `with_env` pair's item is a pair, so the closure
+        // destructures it, and the halves are what the setter is passed.
+        // A `..` would hide a field from the comparison below, leaving
+        // the arity to agree by accident.
+        PatKind::Tuple(elements, gap) if gap.as_opt_usize().is_none() => {
+            for element in elements {
+                bound.push(binding(element)?);
+            }
+            true
+        }
+        _ => {
+            bound.push(binding(item.pat)?);
+            false
+        }
+    };
     let (callee, arguments) = as_call(cx, unwrapped(body.value))?;
-    if arguments.len() != bound.len() {
+    // The item is destructured exactly where the setter takes it in
+    // pieces. Forwarded whole after all, as `|c, (arg,)| c.with_arg(arg)`
+    // forwards it, the plural would be handed the tuple.
+    if arguments.len() != bound.len() || destructured != (arguments.len() > 2) {
         return None;
     }
     if !arguments
@@ -65,31 +84,21 @@ fn forwarded_by<'tcx>(cx: &LateContext<'tcx>, closure: &'tcx Closure<'tcx>) -> O
     Some(callee)
 }
 
-/// The bindings a parameter pattern introduces, in the order they were
-/// bound, or `None` for a pattern the rewrite could not reproduce.
+/// The binding a parameter pattern introduces, or `None` for a pattern
+/// that is not one by-value binding.
 ///
-/// A tuple is walked into because the `with_env` pair needs it: its item
-/// is a pair, so the closure destructures, and the bindings it yields
-/// are what the setter is passed.
-fn bindings_of(pat: &Pat<'_>, out: &mut Vec<HirId>) -> Option<()> {
+/// A `ref` binding hands the setter a reference to the item where a
+/// by-value one hands it the item, so what the fold proves of the item
+/// is not what the plural asks of it: `|c, ref k| c.without_env(k)`
+/// establishes `&K: AsRef<OsStr>` and `without_envs` wants
+/// `K: AsRef<OsStr>`. Measured as a machine-applicable `E0277` on every
+/// release. A nested pattern is no better: the plural binds what the
+/// fold destructured.
+fn binding(pat: &Pat<'_>) -> Option<HirId> {
     match pat.kind {
-        // A `ref` binding hands the setter a reference to the item where
-        // a by-value one hands it the item, so what the fold proves of
-        // the item is not what the plural asks of it: `|c, ref k|
-        // c.without_env(k)` establishes `&K: AsRef<OsStr>` and
-        // `without_envs` wants `K: AsRef<OsStr>`. Measured as a
-        // machine-applicable `E0277` on every release.
-        PatKind::Binding(BindingMode(ByRef::No, _), hir_id, _, None) => out.push(hir_id),
-        // A `..` would hide a field from the comparison below, leaving
-        // the arity to agree by accident.
-        PatKind::Tuple(elements, gap) if gap.as_opt_usize().is_none() => {
-            for element in elements {
-                bindings_of(element, out)?;
-            }
-        }
-        _ => return None,
+        PatKind::Binding(BindingMode(ByRef::No, _), hir_id, _, None) => Some(hir_id),
+        _ => None,
     }
-    Some(())
 }
 
 /// `expr` with a block that only wraps one expression peeled off.

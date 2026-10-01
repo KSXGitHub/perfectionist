@@ -101,4 +101,20 @@ fn nested_tuple_item(command: Command, pairs: Vec<((String, String),)>) -> Comma
         .fold(command, |command, ((key, value),)| command.with_env(key, value))
 }
 
+// Not flagged: a tuple destructured for a setter that takes the item
+// whole. The plural would be handed the tuple.
+fn tuple_for_a_whole_item(command: Command, items: Vec<(String,)>) -> Command {
+    items
+        .into_iter()
+        .fold(command, |command, (arg,)| command.with_arg(arg))
+}
+
+// Not flagged: a pair whose second half is destructured again. The
+// plural would bind the 1-tuple where the fold bound what it wraps.
+fn nested_pair(command: Command, items: Vec<(String, (String,))>) -> Command {
+    items
+        .into_iter()
+        .fold(command, |command, (key, (value,))| command.with_env(key, value))
+}
+
 fn main() {}

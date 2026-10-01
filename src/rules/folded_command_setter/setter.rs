@@ -57,14 +57,16 @@ pub(super) fn replacement_for(singular: Symbol) -> Option<Replacement> {
 /// Reading the constraint keeps this in step with the version resolved,
 /// as [`declares`] does for the plural's existence. Asking the item
 /// rather than the closure's pattern is what tells the shapes apart at
-/// all, since the pattern is identical either way.
+/// all, since the pattern is identical either way. A constraint in
+/// neither form answers no, because nothing then says which items the
+/// plural accepts.
 pub(super) fn item_fits<'tcx>(cx: &LateContext<'tcx>, plural: DefId, receiver: &Expr<'_>) -> bool {
     let receiver_ty = cx.typeck_results().expr_ty(receiver);
     let Some(item) = get_iterator_item_ty(cx, receiver_ty) else {
         return false;
     };
     let Some(assoc_item) = iterator_item(cx) else {
-        return true;
+        return false;
     };
     let clauses = cx.tcx.predicates_of(plural).predicates;
     // An equality is read first wherever both appear. It is the stricter
@@ -93,7 +95,7 @@ pub(super) fn item_fits<'tcx>(cx: &LateContext<'tcx>, plural: DefId, receiver: &
             }
         }
     }
-    true
+    false
 }
 
 /// `IntoIterator::Item`, reached through the `into_iter` lang item's own
