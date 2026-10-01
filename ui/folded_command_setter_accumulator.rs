@@ -342,4 +342,93 @@ fn by_reference(command: Command) -> Command {
     VARS.iter().fold(command, CommandExtra::without_env)
 }
 
+// Bad: a type that another trait gives a method named like the plural
+// taking `self: Box<Self>`, so for a boxed accumulator, wherever both
+// traits are in scope, the rewrite is `E0034`. The fix is withheld.
+struct BoxedAmbiguous;
+
+impl CommandExtra for Box<BoxedAmbiguous> {
+    fn with_current_dir(self, _dir: impl AsRef<std::path::Path>) -> Self {
+        self
+    }
+    fn with_env(self, _key: impl AsRef<OsStr>, _value: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn without_env(self, _key: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_no_env(self) -> Self {
+        self
+    }
+    fn with_arg(self, _arg: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_stdin(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stdout(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stderr(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+}
+
+trait BoxedSameName {
+    fn without_envs<Keys: IntoIterator>(self: Box<Self>, keys: Keys) -> Box<Self>;
+}
+
+impl BoxedSameName for BoxedAmbiguous {
+    fn without_envs<Keys: IntoIterator>(self: Box<Self>, _keys: Keys) -> Box<Self> {
+        self
+    }
+}
+
+fn boxed_ambiguous(ambiguous: Box<BoxedAmbiguous>) -> Box<BoxedAmbiguous> {
+    VARS.iter().fold(ambiguous, CommandExtra::without_env)
+}
+
+// Bad: an accumulator whose `Deref` leads back to itself, which method
+// probing gives up on after its recursion limit, and so does the rule.
+struct Cyclic(Command);
+
+impl std::ops::Deref for Cyclic {
+    type Target = Cyclic;
+
+    fn deref(&self) -> &Cyclic {
+        self
+    }
+}
+
+impl CommandExtra for Cyclic {
+    fn with_current_dir(self, _dir: impl AsRef<std::path::Path>) -> Self {
+        self
+    }
+    fn with_env(self, _key: impl AsRef<OsStr>, _value: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn without_env(self, _key: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_no_env(self) -> Self {
+        self
+    }
+    fn with_arg(self, _arg: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_stdin(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stdout(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stderr(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+}
+
+fn cyclic_deref(cyclic: Cyclic) -> Cyclic {
+    VARS.iter().fold(cyclic, CommandExtra::without_env)
+}
+
 fn main() {}

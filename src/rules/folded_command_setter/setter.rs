@@ -13,7 +13,7 @@ use rustc_hir::Expr;
 use rustc_hir::def_id::DefId;
 use rustc_lint::LateContext;
 use rustc_middle::ty::fast_reject::DeepRejectCtxt;
-use rustc_middle::ty::{self, AssocItem, GenericArg, Ty, TypeVisitableExt};
+use rustc_middle::ty::{self, AssocItem, GenericArg, GenericArgs, Ty, TypeVisitableExt};
 use rustc_span::Symbol;
 
 /// What a fold over one singular setter can be replaced by.
@@ -221,7 +221,7 @@ pub(super) fn shadowed_by_an_inherent_method(
     let accumulator = cx.typeck_results().expr_ty(initial);
     let name = cx.tcx.item_name(plural);
     let reject = DeepRejectCtxt::relate_rigid_infer(cx.tcx);
-    deref_chain(cx, accumulator)
+    autoderef_steps(cx, accumulator)
         .filter_map(Ty::ty_adt_def)
         .flat_map(|adt| cx.tcx.inherent_impls(adt.did()))
         .flat_map(|impl_id| {
@@ -240,6 +240,16 @@ pub(super) fn shadowed_by_an_inherent_method(
                 .copied()
         })
         .any(|receiver| reject.types_may_unify(accumulator, receiver))
+}
+
+/// The types method probing steps through from `ty`, bounded as rustc's
+/// own autoderef is: a `Deref` whose target leads back round would
+/// otherwise never end, and measured, the lint did not.
+fn autoderef_steps<'cx, 'tcx>(
+    cx: &'cx LateContext<'tcx>,
+    ty: Ty<'tcx>,
+) -> impl Iterator<Item = Ty<'tcx>> + 'cx {
+    deref_chain(cx, ty).take(cx.tcx.recursion_limit().0)
 }
 
 /// Whether an impl of the plural's trait that could apply to
@@ -290,24 +300,17 @@ pub(super) fn inside_the_plural(cx: &LateContext<'_>, expr: &Expr<'_>, plural: D
             == Some(plural)
 }
 
-/// Whether `method`, declared in a trait, takes `self` by value.
+/// Another trait that declares a method named like the plural which
+/// method probing could pick for `accumulator`, which makes the rewritten
+/// call ambiguous wherever both traits are in scope.
 ///
-/// Method probing finds the by-value plural before it tries a reference
-/// to the receiver, so a same-named method taking `&self` or `&mut self`
-/// never competes with it.
-fn takes_self_by_value(cx: &LateContext<'_>, method: DefId) -> bool {
-    cx.tcx
-        .fn_sig(method)
-        .skip_binder()
-        .inputs()
-        .skip_binder()
-        .first()
-        .is_some_and(|receiver| receiver.is_param(0))
-}
-
-/// Another trait implemented for `accumulator` that declares a method
-/// named like the plural, which makes the rewritten call ambiguous
-/// wherever both traits are in scope.
+/// Probing asks, at its first step, for a method whose receiver is the
+/// accumulator itself, from whichever type along the deref chain the
+/// trait is implemented for. So `fn without_envs(self)` competes for a
+/// `Command`, `fn without_envs(self: Box<Self>)` implemented for
+/// `Command` competes for a `Box<Command>`, and one taking `&self`
+/// competes for neither, because the by-value plural is found before
+/// probing tries a reference.
 ///
 /// Every visible trait is asked rather than only the call site's
 /// imports, so one that is not in scope there reads as present too. That
@@ -319,18 +322,51 @@ pub(super) fn another_trait_declaring<'tcx>(
 ) -> Option<DefId> {
     let own = cx.tcx.parent(plural);
     let name = cx.tcx.item_name(plural);
+    let reject = DeepRejectCtxt::relate_rigid_infer(cx.tcx);
     cx.tcx.visible_traits().find(|&other| {
         other != own
             && cx
                 .tcx
                 .associated_items(other)
                 .filter_by_name_unhygienic(name)
-                .any(|item| item.is_method() && takes_self_by_value(cx, item.def_id))
-            // A trait with parameters of its own cannot be asked about
-            // without them, so it is assumed to apply.
-            && (cx.tcx.generics_of(other).count() != 1
-                || implements_trait(cx, accumulator, other, &[]))
+                .filter(|item| item.is_method())
+                .any(|item| {
+                    autoderef_steps(cx, accumulator).any(|step| {
+                        // A trait with parameters of its own cannot be
+                        // asked about without them, so it is assumed to
+                        // apply.
+                        (cx.tcx.generics_of(other).count() != 1
+                            || implements_trait(cx, step, other, &[]))
+                            && receiver_with_self(cx, item.def_id, step).is_some_and(|receiver| {
+                                reject.types_may_unify(accumulator, receiver)
+                            })
+                    })
+                })
     })
+}
+
+/// The receiver type of the trait method `method` with `Self` as
+/// `self_ty`, and every other parameter left as a parameter.
+fn receiver_with_self<'tcx>(
+    cx: &LateContext<'tcx>,
+    method: DefId,
+    self_ty: Ty<'tcx>,
+) -> Option<Ty<'tcx>> {
+    let args = GenericArgs::for_item(cx.tcx, method, |param, _| {
+        if param.index == 0 {
+            self_ty.into()
+        } else {
+            cx.tcx.mk_param_from_def(param)
+        }
+    });
+    cx.tcx
+        .fn_sig(method)
+        .instantiate(cx.tcx, args)
+        .skip_normalization()
+        .inputs()
+        .skip_binder()
+        .first()
+        .copied()
 }
 
 /// Whether the `CommandExtra` this build resolved declares a method
