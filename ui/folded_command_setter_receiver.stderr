@@ -1,0 +1,113 @@
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_receiver.rs:LL:CC
+   |
+LL |     let _ = names.fold(Command::new("ls"), CommandExtra::without_env);
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `Command::new("ls").without_envs(names)`
+   |
+   = note: `#[warn(perfectionist::folded_command_setter)]` on by default
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_receiver.rs:LL:CC
+   |
+LL |       let _ = names
+   |  _____________^
+LL | |         .into_iter()
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
+   | |____________________________________________________________^ help: use `without_envs`: `Command::new("ls").without_envs(names)`
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_receiver.rs:LL:CC
+   |
+LL |     let _ = names.iter().fold(Command::new("ls"), CommandExtra::without_env);
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `Command::new("ls").without_envs(names.iter())`
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_receiver.rs:LL:CC
+   |
+LL | /         self.names
+LL | |             .iter()
+LL | |             .fold(Command::new("ls"), CommandExtra::without_env)
+   | |________________________________________________________________^
+   |
+help: use `without_envs`
+   |
+LL ~         Command::new("ls").without_envs(self.names
+LL +             .iter())
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_receiver.rs:LL:CC
+   |
+LL |       let _ = names
+   |  _____________^
+LL | |         .iter()
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
+   | |____________________________________________________________^
+   |
+help: use `without_envs`
+   |
+LL ~     let _ = Command::new("ls").without_envs(names
+LL ~         .iter());
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_receiver.rs:LL:CC
+   |
+LL |       let _ = names
+   |  _____________^
+LL | |         .iter()
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
+   | |____________________________________________________________^
+   |
+help: use `without_envs`
+   |
+LL ~     let _ = Command::new("ls").without_envs(names
+LL ~         .iter());
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_receiver.rs:LL:CC
+   |
+LL |       let _ = names
+   |  _____________^
+LL | |         .into_iter()
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
+   | |____________________________________________________________^
+   |
+help: use `without_envs`
+   |
+LL ~     let _ = Command::new("ls").without_envs(names
+LL ~         .into_iter());
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_receiver.rs:LL:CC
+   |
+LL |       let _ = names
+   |  _____________^
+LL | |         .iter()
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
+   | |____________________________________________________________^
+   |
+help: use `without_envs`
+   |
+LL ~     let _ = Command::new("ls").without_envs(names
+LL ~         .iter());
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_receiver.rs:LL:CC
+   |
+LL |       let _ = names
+   |  _____________^
+LL | |         .iter()
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
+   | |____________________________________________________________^
+   |
+help: use `without_envs`
+   |
+LL ~     let _ = Command::new("ls").without_envs(names
+LL ~         .iter());
+   |
+
+warning: N warnings emitted
