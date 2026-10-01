@@ -133,3 +133,19 @@ pub fn autoref_into_iter(borrowed: Borrowed) -> Command {
     let start = Command::new("ls");
     start.without_envs(borrowed.into_iter())
 }
+
+// A renamed import, in a module of its own so the alias is the only
+// `CommandExtra` in scope. The fixer rewriting this fold is the proof
+// that the trait counts as imported by what the `use` resolves to rather
+// than by the name it binds; were it the name, the suggestion would be
+// advice and this file would come back unchanged.
+pub mod renamed_import {
+    use super::VARS;
+    use command_extra::CommandExtra as Ext;
+    use std::process::Command;
+
+    pub fn spelling() -> Command {
+        let start = Command::new("ls");
+        start.without_envs(VARS.iter())
+    }
+}

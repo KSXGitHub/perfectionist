@@ -28,17 +28,31 @@ fn paths() {
     let _ = VARS.iter().fold(Command::new("ls"), CommandExtra::with_arg);
 }
 
-// Bad: the same setter reached through the concrete type, through a
-// fully-qualified path, and through a renamed import — one method, so
-// one shape.
-use command_extra::CommandExtra as Ext;
-
+// Bad: the same setter reached through the concrete type and through a
+// fully-qualified path — one method, so one shape.
 fn spellings() {
     let _ = VARS.iter().fold(Command::new("ls"), Command::without_env);
     let _ = VARS
         .iter()
         .fold(Command::new("ls"), <Command as CommandExtra>::without_env);
-    let _ = VARS.iter().fold(Command::new("ls"), Ext::without_env);
+}
+
+// Bad: the same setter under a renamed import, in a module of its own. A
+// `use` is module-wide, so at file scope the alias would be in scope for
+// every case here and the trait would also be in scope under its own
+// name. Only the alias is imported in this module, which is also what
+// makes the case pin something: the trait counts as imported by what the
+// `use` resolves to rather than by the name it binds. Whether that
+// decides a fix is offered is `tests/folded_command_setter_autofix.rs`'s
+// to say, since a `.stderr` cannot show applicability.
+mod renamed_import {
+    use super::VARS;
+    use command_extra::CommandExtra as Ext;
+    use std::process::Command;
+
+    fn spelling() {
+        let _ = VARS.iter().fold(Command::new("ls"), Ext::without_env);
+    }
 }
 
 // Bad: a closure that forwards its parameters, written as a method call
