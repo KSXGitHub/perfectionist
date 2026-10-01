@@ -6,6 +6,7 @@ use clippy_utils::source::snippet;
 use clippy_utils::sugg::Sugg;
 use clippy_utils::{is_from_proc_macro, sym};
 use rustc_errors::Applicability;
+use rustc_hir::def_id::DefId;
 use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
@@ -121,6 +122,13 @@ const REORDERS: &str = "the fold evaluates the receiver before the initial value
 const NEEDS_THE_IMPORT: &str = "the plural is a `CommandExtra` method, which resolves only where \
                                 the trait is in scope; add \
                                 `use command_extra::CommandExtra;` if it is not";
+
+/// What a reader has to settle where the accumulator's own impl writes
+/// the plural's body. Why that withholds the fix is on
+/// [`setter::overrides_the_plural`].
+const OVERRIDDEN: &str = "this type's impl of `CommandExtra` writes its own body for the plural, \
+                          which the suggestion runs in place of the fold; apply it only where \
+                          the two agree";
 
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
@@ -240,45 +248,83 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         // *path* folder needs no import of its own, so a fold can name
         // the setter while the module cannot name the method. Measured:
         // a machine-applicable `E0599` without this.
-        let in_scope = trait_is_imported(cx, expr);
-        let applicability = if shape.reorderable && in_scope {
-            Applicability::MachineApplicable
-        } else {
-            Applicability::Unspecified
-        };
-        let suggestion = format!(
-            // The initial value becomes a method-call receiver, so one
-            // that binds looser has to keep its own brackets: `*boxed`
-            // spliced raw reads as `*boxed.plural(..)`, which derefs the
-            // *result*.
-            "{}.{}({})",
-            Sugg::hir(cx, initial, "..").maybe_paren(),
-            replacement.plural,
-            snippet(cx, shape.argument, ".."),
-        );
-        span_lint_and_then(
+        emit(
             cx,
-            FOLDED_COMMAND_SETTER,
-            expr.span,
-            format!(
-                "this fold over `{}` re-implements `{}`",
-                cx.tcx.item_name(singular),
-                replacement.plural,
-            ),
-            |diagnostic| {
-                diagnostic.span_suggestion(
-                    expr.span,
-                    format!("use `{}`", replacement.plural),
-                    suggestion,
-                    applicability,
-                );
-                if !shape.reorderable {
-                    diagnostic.help(REORDERS);
-                }
-                if !in_scope {
-                    diagnostic.help(NEEDS_THE_IMPORT);
-                }
-            },
+            expr,
+            initial,
+            singular,
+            plural_id,
+            replacement.plural,
+            &shape,
         );
     }
+}
+
+/// Report the fold, handing the fix over only where none of the reasons
+/// to withhold it holds, and naming each reason that does.
+fn emit<'tcx>(
+    cx: &LateContext<'tcx>,
+    expr: &'tcx Expr<'tcx>,
+    initial: &'tcx Expr<'tcx>,
+    singular: DefId,
+    plural_id: DefId,
+    plural: &str,
+    shape: &receiver::Shape,
+) {
+    let accumulator = cx.typeck_results().expr_ty(initial);
+    let overridden = setter::overrides_the_plural(cx, plural_id, accumulator);
+    let ambiguous_with = setter::another_trait_declaring(cx, plural_id, accumulator);
+    let in_scope = trait_is_imported(cx, expr);
+    let applicability = if shape.reorderable && in_scope && !overridden && ambiguous_with.is_none()
+    {
+        Applicability::MachineApplicable
+    } else {
+        Applicability::Unspecified
+    };
+    let suggestion = format!(
+        // The initial value becomes a method-call receiver, so one
+        // that binds looser has to keep its own brackets: `*boxed`
+        // spliced raw reads as `*boxed.plural(..)`, which derefs the
+        // *result*.
+        "{}.{}({})",
+        Sugg::hir(cx, initial, "..").maybe_paren(),
+        plural,
+        snippet(cx, shape.argument, ".."),
+    );
+    span_lint_and_then(
+        cx,
+        FOLDED_COMMAND_SETTER,
+        expr.span,
+        format!(
+            "this fold over `{}` re-implements `{}`",
+            cx.tcx.item_name(singular),
+            plural,
+        ),
+        |diagnostic| {
+            diagnostic.span_suggestion(
+                expr.span,
+                format!("use `{}`", plural),
+                suggestion,
+                applicability,
+            );
+            if !shape.reorderable {
+                diagnostic.help(REORDERS);
+            }
+            if !in_scope {
+                diagnostic.help(NEEDS_THE_IMPORT);
+            }
+            if overridden {
+                diagnostic.help(OVERRIDDEN);
+            }
+            if let Some(other) = ambiguous_with {
+                diagnostic.help(format!(
+                    "`{}` also declares `{}` for this type, so wherever both traits are in \
+                     scope the suggestion is ambiguous; call the plural through the path \
+                     of `CommandExtra` there",
+                    cx.tcx.def_path_str(other),
+                    plural,
+                ));
+            }
+        },
+    );
 }

@@ -200,9 +200,8 @@ fn element_bounds_hold<'tcx>(
 /// fix that is `E0308`.
 ///
 /// Only the accumulator's own inherent impls are asked. A second *trait*
-/// in scope declaring the same name is ambiguity rather than shadowing,
-/// and answering that needs the call site's imports rather than the
-/// type's impls.
+/// declaring the same name is ambiguity rather than shadowing, which
+/// [`another_trait_declaring`] answers.
 pub(super) fn shadowed_by_an_inherent_method(
     cx: &LateContext<'_>,
     initial: &Expr<'_>,
@@ -221,6 +220,58 @@ pub(super) fn shadowed_by_an_inherent_method(
                 .filter_by_name_unhygienic(plural)
                 .any(AssocItem::is_method)
         })
+}
+
+/// Whether an impl of the plural's trait that could apply to
+/// `accumulator` writes its own body for the plural.
+///
+/// The case for the rewrite is that the trait's default plural is the
+/// fold of its singular. An override keeps the trait's signature, so the
+/// rewritten call still compiles, but it runs that body instead, which is
+/// why this withholds the fix rather than the diagnostic.
+pub(super) fn overrides_the_plural<'tcx>(
+    cx: &LateContext<'tcx>,
+    plural: DefId,
+    accumulator: Ty<'tcx>,
+) -> bool {
+    let mut overrides = false;
+    cx.tcx
+        .for_each_relevant_impl(cx.tcx.parent(plural), accumulator, |impl_id| {
+            overrides |= cx
+                .tcx
+                .associated_items(impl_id)
+                .in_definition_order()
+                .any(|item| item.trait_item_def_id() == Some(plural));
+        });
+    overrides
+}
+
+/// Another trait implemented for `accumulator` that declares a method
+/// named like the plural, which makes the rewritten call ambiguous
+/// wherever both traits are in scope.
+///
+/// Every visible trait is asked rather than only the call site's
+/// imports, so one that is not in scope there reads as present too. That
+/// errs toward withholding the fix, where the opposite error is `E0034`.
+pub(super) fn another_trait_declaring<'tcx>(
+    cx: &LateContext<'tcx>,
+    plural: DefId,
+    accumulator: Ty<'tcx>,
+) -> Option<DefId> {
+    let own = cx.tcx.parent(plural);
+    let name = cx.tcx.item_name(plural);
+    cx.tcx.visible_traits().find(|&other| {
+        other != own
+            && cx
+                .tcx
+                .associated_items(other)
+                .filter_by_name_unhygienic(name)
+                .any(AssocItem::is_method)
+            // A trait with parameters of its own cannot be asked about
+            // without them, so it is assumed to apply.
+            && (cx.tcx.generics_of(other).count() != 1
+                || implements_trait(cx, accumulator, other, &[]))
+    })
 }
 
 pub(super) fn is_command_extra(cx: &LateContext<'_>, trait_id: DefId) -> bool {

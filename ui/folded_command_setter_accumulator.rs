@@ -99,4 +99,93 @@ fn inherent_shadow(command: Shadowing) -> Shadowing {
     VARS.iter().fold(command, CommandExtra::without_env)
 }
 
+// Bad: a type whose impl writes its own body for the plural. The
+// override keeps the trait's signature, so the rewrite compiles, but it
+// would run that body in place of the fold, and the fix is withheld.
+pub struct Overriding;
+
+impl CommandExtra for Overriding {
+    fn with_current_dir(self, _dir: impl AsRef<std::path::Path>) -> Self {
+        self
+    }
+    fn with_env(self, _key: impl AsRef<OsStr>, _value: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn without_env(self, _key: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_no_env(self) -> Self {
+        self
+    }
+    fn with_arg(self, _arg: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_stdin(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stdout(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stderr(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn without_envs<Keys>(self, _keys: Keys) -> Self
+    where
+        Keys: IntoIterator,
+        Keys::Item: AsRef<OsStr>,
+    {
+        self
+    }
+}
+
+pub fn overriding(overriding: Overriding) -> Overriding {
+    VARS.iter().fold(overriding, CommandExtra::without_env)
+}
+
+// Bad: a type that another trait also gives a method named like the
+// plural, so wherever both traits are in scope the rewrite is `E0034`.
+// The fix is withheld.
+pub struct Ambiguous;
+
+impl CommandExtra for Ambiguous {
+    fn with_current_dir(self, _dir: impl AsRef<std::path::Path>) -> Self {
+        self
+    }
+    fn with_env(self, _key: impl AsRef<OsStr>, _value: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn without_env(self, _key: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_no_env(self) -> Self {
+        self
+    }
+    fn with_arg(self, _arg: impl AsRef<OsStr>) -> Self {
+        self
+    }
+    fn with_stdin(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stdout(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+    fn with_stderr(self, _stdio: std::process::Stdio) -> Self {
+        self
+    }
+}
+
+pub trait SameName {
+    fn without_envs<Keys: IntoIterator>(self, keys: Keys) -> Self;
+}
+
+impl SameName for Ambiguous {
+    fn without_envs<Keys: IntoIterator>(self, _keys: Keys) -> Self {
+        self
+    }
+}
+
+pub fn ambiguous(ambiguous: Ambiguous) -> Ambiguous {
+    VARS.iter().fold(ambiguous, CommandExtra::without_env)
+}
+
 fn main() {}

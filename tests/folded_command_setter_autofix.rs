@@ -125,6 +125,8 @@ fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
         "mutating-receiver",
         "user-deref",
         "written-place",
+        "OVERRIDDEN_VARS",
+        "AMBIGUOUS_VARS",
         "NOT_IN_SCOPE",
     ] {
         assert!(
