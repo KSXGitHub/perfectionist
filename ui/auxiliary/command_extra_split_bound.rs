@@ -1,7 +1,7 @@
 // A `command-extra` whose `with_envs` bounds its item by a trait of its
-// own rather than by a tuple, which is not a shape the rule reads. Only
-// what the fixture reaches is declared, under the name the rule looks
-// for.
+// own rather than by a tuple, and whose `with_args` asks for `Copy` as
+// well. Neither is a bound the rule reads. Only what the fixture reaches
+// is declared, under the name the rule looks for.
 
 #![crate_name = "command_extra"]
 
@@ -23,12 +23,22 @@ pub trait CommandExtra: Sized {
 
     fn with_arg(self, arg: impl AsRef<OsStr>) -> Self;
 
+    fn without_env(self, key: impl AsRef<OsStr>) -> Self;
+
     fn with_args<Args>(self, args: Args) -> Self
     where
-        Args: IntoIterator,
+        Args: IntoIterator + Copy,
         Args::Item: AsRef<OsStr>,
     {
         args.into_iter().fold(self, Self::with_arg)
+    }
+
+    fn without_envs<Keys>(self, keys: Keys) -> Self
+    where
+        Keys: IntoIterator,
+        Keys::Item: AsRef<OsStr>,
+    {
+        keys.into_iter().fold(self, Self::without_env)
     }
 
     fn with_envs<Envs, Key, Value>(self, envs: Envs) -> Self
@@ -52,6 +62,11 @@ impl CommandExtra for Command {
 
     fn with_arg(mut self, arg: impl AsRef<OsStr>) -> Self {
         self.arg(arg);
+        self
+    }
+
+    fn without_env(mut self, key: impl AsRef<OsStr>) -> Self {
+        self.env_remove(key);
         self
     }
 }

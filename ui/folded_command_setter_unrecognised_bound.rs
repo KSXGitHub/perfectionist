@@ -1,8 +1,8 @@
 // aux-build:command_extra_split_bound.rs
 // edition:2024
 //
-// A `with_envs` whose bound on the item is not a shape the rule reads.
-// It cannot tell which items that plural accepts.
+// Plurals with bounds the rule does not read. It cannot tell which
+// iterators those plurals accept.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -22,9 +22,16 @@ fn pair_item(pairs: Vec<(String, String)>) -> Command {
         })
 }
 
-// Bad: a plural with no bound on a tuple, which the rule still names.
+// Not flagged: a plural asking for `Copy`, which the fold does not
+// prove.
 fn arguments(flags: Vec<String>) -> Command {
     flags.into_iter().fold(Command::new("ls"), CommandExtra::with_arg)
+}
+
+// Bad: a plural with only the bounds the fold proves, which the rule
+// still names.
+fn removals(keys: Vec<String>) -> Command {
+    keys.into_iter().fold(Command::new("ls"), CommandExtra::without_env)
 }
 
 fn main() {}

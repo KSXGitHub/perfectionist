@@ -9,8 +9,8 @@
 
 use clippy_utils::sym;
 use clippy_utils::ty::{deref_chain, get_iterator_item_ty, implements_trait};
-use rustc_hir::Expr;
 use rustc_hir::def_id::DefId;
+use rustc_hir::{Expr, LangItem};
 use rustc_infer::infer::TyCtxtInferExt;
 use rustc_lint::LateContext;
 use rustc_middle::traits::EvaluationResult;
@@ -415,6 +415,42 @@ fn receiver_with_self<'tcx>(
         .skip_binder()
         .first()
         .copied()
+}
+
+/// Whether every bound the plural declares is one the rule accounts for.
+///
+/// Those are `Sized`, `IntoIterator` on what the plural iterates, `AsRef`
+/// on what the singular takes, and the pair the `with_env` plural splits,
+/// which [`item_fits`] reads. A bound beyond those, `Args: Copy` say, is
+/// one the fold does not prove, and nothing then says which iterators the
+/// plural accepts, so the answer is no.
+pub(super) fn bounds_are_known(cx: &LateContext<'_>, plural: DefId) -> bool {
+    let tcx = cx.tcx;
+    let item = iterator_item(cx);
+    let is = |name: Symbol, def_id: DefId| tcx.is_diagnostic_item(name, def_id);
+    // A parameter of the method's own, rather than the trait's `Self`.
+    let own_parameter = |ty: Ty<'_>| matches!(ty.kind(), ty::Param(param) if param.index != 0);
+    let is_item = |ty: Ty<'_>| item.is_some_and(|item| is_the_item(ty, item));
+    tcx.predicates_of(plural)
+        .predicates
+        .iter()
+        .all(|(clause, _)| {
+            if let Some(bound) = clause.as_trait_clause() {
+                let bound = bound.skip_binder().trait_ref;
+                let subject = bound.self_ty();
+                return tcx.is_lang_item(bound.def_id, LangItem::Sized)
+                    || (is(sym::IntoIterator, bound.def_id) && own_parameter(subject))
+                    || (is(sym::Borrow, bound.def_id) && is_item(subject))
+                    || (is(sym::AsRef, bound.def_id)
+                        && (own_parameter(subject) || is_item(subject)));
+            }
+            clause.as_projection_clause().is_some_and(|projection| {
+                matches!(
+                    projection.skip_binder().projection_term.kind,
+                    ty::AliasTermKind::ProjectionTy { def_id } if Some(def_id) == item,
+                )
+            })
+        })
 }
 
 /// Whether the `CommandExtra` this build resolved declares a method

@@ -226,6 +226,9 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         let Some(plural_id) = setter::declares(cx, trait_id, replacement.plural) else {
             return;
         };
+        if !setter::bounds_are_known(cx, plural_id) {
+            return;
+        }
         if setter::inside_the_plural(cx, expr, initial, plural_id) {
             return;
         }
