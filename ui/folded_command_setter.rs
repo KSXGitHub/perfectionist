@@ -74,8 +74,7 @@ fn transforming_closure() {
 
 // Not flagged: a closure whose block holds a statement, which is where
 // a closure computes. A block that only wraps the forwarding call reads
-// alike and is flagged — the `with_env` pairs above are written that
-// way.
+// alike and is flagged.
 fn block_body() {
     let _ = VARS.iter().fold(Command::new("ls"), |command, var| {
         let key = var;

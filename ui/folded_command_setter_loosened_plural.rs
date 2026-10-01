@@ -5,8 +5,8 @@
 // rule reads the plural's own bound rather than assuming one. This
 // fixture builds against 1.3.0, whose `with_envs` takes
 // `Envs::Item: Borrow<(Key, Value)>` — satisfied by a reference to a
-// pair. The same folds against 1.2.0's `Item = (Key, Value)` are in
-// `ui/folded_command_setter.rs`, where the two reference shapes are
+// pair. These folds against 1.2.0's `Item = (Key, Value)` are in
+// `ui/folded_command_setter_item.rs`, where a reference to a pair is
 // silent.
 
 #![feature(register_tool)]
