@@ -46,8 +46,7 @@ settings are done. The by-value form removes that intermediate.
 
 ## Example
 
-**Avoid** — the function cannot end in its chain, because the
-chain has type `&mut Command`:
+**Avoid:**
 
 ```rust,ignore
 fn lister(dir: &Path) -> Command {
@@ -60,7 +59,7 @@ fn lister(dir: &Path) -> Command {
 }
 ```
 
-**Prefer** — one expression, no binding:
+**Prefer:**
 
 ```rust,ignore
 fn lister(dir: &Path) -> Command {

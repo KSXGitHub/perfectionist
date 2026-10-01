@@ -1,0 +1,63 @@
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL |       let _ = weird
+   |  _____________^
+LL | |         .iter()
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
+   | |____________________________________________________________^
+   |
+   = note: `#[warn(perfectionist::folded_command_setter)]` on by default
+help: use `without_envs`
+   |
+LL ~     let _ = Command::new("ls").without_envs(weird
+LL ~         .iter());
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL |       let _ = shadow
+   |  _____________^
+LL | |         .into_iter()
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
+   | |____________________________________________________________^
+   |
+help: use `without_envs`
+   |
+LL ~     let _ = Command::new("ls").without_envs(shadow
+LL ~         .into_iter());
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL |       let _ = queue
+   |  _____________^
+LL | |         .drain_all()
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
+   | |____________________________________________________________^
+   |
+help: use `without_envs`
+   |
+LL ~     let _ = Command::new("ls").without_envs(queue
+LL ~         .drain_all());
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL |       let _ = queue.take_all().fold(
+   |  _____________^
+LL | |         Command::new(format!("ls{}", queue.0.len())),
+LL | |         CommandExtra::without_env,
+LL | |     );
+   | |_____^ help: use `without_envs`: `Command::new(format!("ls{}", queue.0.len())).without_envs(queue.take_all())`
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL |     let _ = VARS.iter().fold(*command, CommandExtra::without_env);
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `(*command).without_envs(VARS.iter())`
+
+warning: N warnings emitted

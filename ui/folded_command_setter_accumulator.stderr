@@ -1,0 +1,9 @@
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_accumulator.rs:LL:CC
+   |
+LL |     VARS.iter().fold(command, CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `command.without_envs(VARS.iter())`
+   |
+   = note: `#[warn(perfectionist::folded_command_setter)]` on by default
+
+warning: N warnings emitted

@@ -9,8 +9,9 @@
 //!
 //! That is a claim about two builds, not one, so it needs a real Cargo
 //! project rather than a `ui/` fixture: the contrast is a version
-//! requirement in one case and a feature in the other, and the
-//! `tokio_process` half needs `tokio` as a genuine dependency.
+//! requirement for the boxed case and a feature for the rest, and a
+//! feature-gated half needs the command crate it names as a genuine
+//! dependency.
 //! `ui/folded_command_setter_boxed.rs` carries what the diagnostic
 //! *says* for the boxed case; this file carries when it is said at all.
 //!
@@ -32,6 +33,9 @@ use _utils::{
 const BOXED: &str = include_str!("fixtures/folded_command_setter_command_types/boxed.rs");
 
 const TOKIO: &str = include_str!("fixtures/folded_command_setter_command_types/tokio.rs");
+
+const ASYNC_PROCESS: &str =
+    include_str!("fixtures/folded_command_setter_command_types/async_process.rs");
 
 /// Sibling rules would speak about the same lines on their own account,
 /// and the assertions below read the whole stderr.
@@ -108,7 +112,7 @@ fn tokio_commands_are_reached_with_the_feature_on() {
         TOKIO,
     );
     assert!(success, "the fixture should compile; stderr was:\n{stderr}");
-    for marker in ["TOKIO_VARS", "BOXED_TOKIO_VARS"] {
+    for marker in ["BARE_TOKIO_VARS", "BOXED_TOKIO_VARS"] {
         assert!(
             stderr.contains(FIRES) && stderr.contains(marker),
             "expected the rule to fire on `{marker}`; stderr was:\n{stderr}",
@@ -128,6 +132,45 @@ fn tokio_commands_are_not_reached_with_the_feature_off() {
 
     // The impls are the feature's, not the version's, so the same
     // release reaches neither tokio type without it.
+    assert!(
+        !success && stderr.contains("E0277"),
+        "expected the fixture not to compile without the feature; stderr was:\n{stderr}",
+    );
+    assert!(
+        !stderr.contains(FIRES),
+        "the rule fired on a fold that does not type-check; stderr was:\n{stderr}",
+    );
+}
+
+#[test]
+#[ignore = "resolves `command-extra` and `async-process` from the registry in a fresh fixture crate"]
+fn async_process_commands_are_reached_with_the_feature_on() {
+    let (_temp, stderr, success) = check(
+        "fcs_async_present",
+        "command-extra = { version = \"=1.5.0\", features = [\"async_process\"] }\n\
+         async-process = \"2\"\n",
+        ASYNC_PROCESS,
+    );
+    assert!(success, "the fixture should compile; stderr was:\n{stderr}");
+    for marker in ["BARE_ASYNC_VARS", "BOXED_ASYNC_VARS"] {
+        assert!(
+            stderr.contains(FIRES) && stderr.contains(marker),
+            "expected the rule to fire on `{marker}`; stderr was:\n{stderr}",
+        );
+    }
+}
+
+#[test]
+#[ignore = "resolves `command-extra` and `async-process` from the registry in a fresh fixture crate"]
+fn async_process_commands_are_not_reached_with_the_feature_off() {
+    let (_temp, stderr, success) = check(
+        "fcs_async_absent",
+        "command-extra = \"=1.5.0\"\nasync-process = \"2\"\n",
+        ASYNC_PROCESS,
+    );
+
+    // The impls are the feature's, not the version's, so the release that
+    // introduced them reaches neither type without it.
     assert!(
         !success && stderr.contains("E0277"),
         "expected the fixture not to compile without the feature; stderr was:\n{stderr}",

@@ -59,8 +59,7 @@ declare_tool_lint! {
     ///
     /// ### Example
     ///
-    /// **Avoid** — the function cannot end in its chain, because the
-    /// chain has type `&mut Command`:
+    /// **Avoid:**
     ///
     /// ```rust,ignore
     /// fn lister(dir: &Path) -> Command {
@@ -73,7 +72,7 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// **Prefer** — one expression, no binding:
+    /// **Prefer:**
     ///
     /// ```rust,ignore
     /// fn lister(dir: &Path) -> Command {

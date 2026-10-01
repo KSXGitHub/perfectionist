@@ -19,9 +19,10 @@ The folder is matched by what it resolves to, so every spelling
 of the setter is one shape, a closure that only forwards to it
 included.
 
-The `with_env` pair is flagged only where the `with_envs` the
-build resolved accepts what the fold iterates, so the plural
-named is always one the code can call.
+The `with_env` pair is flagged only when the resolved `with_envs`
+accepts what the fold iterates. That bound has changed between
+`command-extra` releases, so the rule never names a plural the
+code cannot call.
 
 The fold's receiver has to be a place expression followed by at
 most one argument-less method call — `VARS`, `list.iter()`,
@@ -45,10 +46,11 @@ to get wrong. A fold whose closure swaps its accumulator and item,
 or returns the wrong one of the two, compiles in some shapes and
 silently builds the wrong command. The plural has no such surface.
 
-The plural is not a convenience wrapper either. Upstream defines
-`with_args` as `args.into_iter().fold(self, Self::with_arg)`, so
-the hand-rolled version is the plural's own body, inlined one
-level up from where the library already wrote it.
+`command-extra` defines `with_args` as
+`args.into_iter().fold(self, Self::with_arg)`, so a hand-rolled
+fold is not an alternative to the plural: it is the plural's own
+body, inlined one level up from where the library already wrote
+it.
 
 ## Applicability
 
@@ -77,7 +79,7 @@ INHERITED_VARS
 Command::new("cargo").without_envs(INHERITED_VARS.iter())
 ```
 
-**Avoid** — the closure form, which folds the same way:
+**Avoid:**
 
 ```rust,ignore
 flags
