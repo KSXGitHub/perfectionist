@@ -11,9 +11,9 @@
 
 Flags a `fold` over a singular `command_extra::CommandExtra`
 setter where the trait declares the plural that does the same
-thing — `with_arg` against `with_args`, `with_env` against
-`with_envs`, `without_env` against `without_envs` — and names the
-plural.
+thing, and names the plural. The pairs are `with_arg` against
+`with_args`, `with_env` against `with_envs`, and `without_env`
+against `without_envs`.
 
 The folder is matched by what it resolves to, so every spelling
 of the setter is one shape, a closure that only forwards to it
@@ -25,8 +25,8 @@ accepts what the fold iterates. That bound has changed between
 code cannot call.
 
 The fold's receiver has to be a place expression followed by at
-most one argument-less method call — `VARS`, `list.iter()`,
-`self.names.into_iter()`. A longer one is left alone.
+most one argument-less method call. `VARS`, `list.iter()` and
+`self.names.into_iter()` qualify; a longer one is left alone.
 
 ## Why restrict this?
 

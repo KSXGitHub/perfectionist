@@ -29,7 +29,7 @@ fn paths() {
 }
 
 // Bad: `without_env` reached through the concrete type and through a
-// fully-qualified path — one method, so one shape.
+// fully-qualified path. One method, so one shape.
 fn spellings() {
     let _ = VARS.iter().fold(Command::new("ls"), Command::without_env);
     let _ = VARS
@@ -65,7 +65,7 @@ fn closures() {
 }
 
 // Not flagged: a closure that computes on the way. The plural would not
-// remove it — it would move one call to the left and add a `map`.
+// remove it. It would move one call to the left and add a `map`.
 fn transforming_closure() {
     let _ = VARS
         .iter()

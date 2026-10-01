@@ -9,7 +9,7 @@
 // is flagged exactly as one over a bare command is.
 //
 // The other half of the contrast cannot be a fixture here, because
-// without that impl the fold does not compile at all —
+// without that impl the fold does not compile at all.
 // `tests/folded_command_setter_command_types.rs` builds both releases
 // and shows the `E0277`.
 

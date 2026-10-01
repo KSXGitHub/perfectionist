@@ -21,8 +21,8 @@ const VARS: &[&str] = &["A", "B"];
 const PAIRS: &[(&str, &str)] = &[("A", "1"), ("B", "2")];
 
 // Bad: the `with_env` pair, whose item is a pair. No path spelling
-// works — `with_env` takes three arguments where `fold` supplies two —
-// so the closure destructures and forwards the bindings in order.
+// works, because `with_env` takes three arguments where `fold` supplies
+// two. The closure destructures and forwards the bindings in order.
 fn pair_item(pairs: Vec<(String, String)>) {
     let _ = pairs
         .into_iter()

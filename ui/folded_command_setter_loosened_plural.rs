@@ -4,8 +4,8 @@
 // What the `with_env` pair accepts is a property of the release, so the
 // rule reads the plural's own bound rather than assuming one. This
 // fixture builds against 1.3.0, whose `with_envs` takes
-// `Envs::Item: Borrow<(Key, Value)>` — satisfied by a reference to a
-// pair. These folds against 1.2.0's `Item = (Key, Value)` are in
+// `Envs::Item: Borrow<(Key, Value)>`, which a reference to a pair
+// satisfies. These folds against 1.2.0's `Item = (Key, Value)` are in
 // `ui/folded_command_setter_item.rs`, where a reference to a pair is
 // silent.
 
@@ -50,7 +50,7 @@ fn pair_of_references(pairs: &std::collections::HashMap<String, String>) {
 
 // Not flagged: a reference to a reference to a pair. `Borrow` reaches
 // through one reference, not two, so the plural cannot take this even
-// here — which the trait solver answers, rather than this rule counting
+// here. The trait solver answers that, rather than this rule counting
 // reference layers itself.
 fn reference_to_a_reference(pairs: Vec<&(String, String)>) {
     let _ = pairs

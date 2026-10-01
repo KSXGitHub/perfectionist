@@ -3,9 +3,9 @@
 // trait is what a consumer resolving it gets: 1.4.0 added
 // `impl CommandExtra for Box<Command>`, and, behind its `tokio_process`
 // feature, impls for `tokio::process::Command` and
-// `Box<tokio::process::Command>`. Those two are `#[cfg]`-gated out here
-// — compiletest builds an auxiliary crate with no dependencies of its
-// own — so the feature-gated half is covered by
+// `Box<tokio::process::Command>`. Those two are `#[cfg]`-gated out here,
+// because compiletest builds an auxiliary crate with no dependencies of
+// its own. The feature-gated half is covered by
 // `tests/folded_command_setter_command_types.rs`, which builds a real
 // Cargo project instead.
 //
