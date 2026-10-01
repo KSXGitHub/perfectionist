@@ -142,9 +142,9 @@ fn in_a_macro_body() {
     let _ = scrub!(start);
 }
 
-// Not flagged: an overloaded `Deref` in the place. Reaching the place
-// runs the `deref` body, and the suggestion moves that across the
-// initial value.
+// Bad: an overloaded `Deref` written as `*`. Reaching the place runs
+// the `deref` body, and the suggestion moves that across the initial
+// value, so the fix is withheld.
 struct Counted(Vec<String>);
 
 struct Noisy(Counted);

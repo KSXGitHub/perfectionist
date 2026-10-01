@@ -18,7 +18,9 @@
 
 use command_extra::CommandExtra;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::process::Command;
+use std::sync::Arc;
 
 const VARS: &[&str] = &["A", "B"];
 
@@ -87,23 +89,23 @@ pub fn looser_initial(command: Box<Command>) -> Command {
 }
 
 // `into_iter` reached by an autoref, because the only `IntoIterator` is
-// on the reference. Erasing would leave `Borrowed`, which is not an
+// on the reference. Erasing would leave `PathBuf`, which is not an
 // iterator, so the fixer reverting this file is how that regression
 // would show up here.
-pub struct Borrowed(Vec<String>);
-
-impl<'a> IntoIterator for &'a Borrowed {
-    type Item = &'a String;
-    type IntoIter = std::slice::Iter<'a, String>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.iter()
-    }
+pub fn autoref_into_iter(path: PathBuf) -> Command {
+    let start = Command::new("ls");
+    path.into_iter().fold(start, CommandExtra::with_arg)
 }
 
-pub fn autoref_into_iter(borrowed: Borrowed) -> Command {
+// A field reached through an `Arc`, whose `deref` only projects a
+// pointer.
+pub struct Shared {
+    vars: Vec<String>,
+}
+
+pub fn through_an_arc(shared: Arc<Shared>) -> Command {
     let start = Command::new("ls");
-    borrowed.into_iter().fold(start, CommandExtra::without_env)
+    shared.vars.iter().fold(start, CommandExtra::without_env)
 }
 
 // A renamed import, in a module of its own so the alias is the only

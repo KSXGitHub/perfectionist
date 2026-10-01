@@ -9,9 +9,9 @@
 //! What the rule decides here is an ordering question. The plural takes
 //! the initial value as its receiver and the folded iterator as its
 //! argument, so it evaluates them in the order the fold did not, and
-//! only a receiver whose call comes from the standard library is known
-//! not to care. `src/rules/folded_command_setter/receiver.rs` derives
-//! it.
+//! only a receiver that runs nothing but the standard library's code,
+//! and reads nothing the initial value writes, is known not to care.
+//! `src/rules/folded_command_setter/receiver.rs` derives it.
 //!
 //! The fixtures split by direction, because the two fail differently.
 //! `applied.rs` is compared against `applied.fixed.rs`, so a rewrite
@@ -124,7 +124,14 @@ fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
         "shadowed-into-iter",
         "mutating-receiver",
         "user-deref",
+        "explicit-deref",
         "written-place",
+        "deref-under-field",
+        "pinned-deref",
+        "lazy-lock",
+        "interior-mutable",
+        "user-into-iter",
+        "user-item-clone",
         "OVERRIDDEN_VARS",
         "AMBIGUOUS_VARS",
         "NOT_IN_SCOPE",

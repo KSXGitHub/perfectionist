@@ -95,7 +95,8 @@ fn through_rc(names: &std::rc::Rc<Vec<String>>) {
 
 // Bad: `into_iter` reached by an autoref, because the only
 // `IntoIterator` is on the reference. Erasing would leave `Borrowed`,
-// which is not an iterator, so the adjustment check keeps the call.
+// which is not an iterator, so the adjustment check keeps the call. The
+// `into_iter` that runs is this crate's, so the fix is withheld.
 struct Borrowed(Vec<String>);
 
 impl<'a> IntoIterator for &'a Borrowed {

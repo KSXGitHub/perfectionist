@@ -15,8 +15,11 @@
 #![allow(dead_code, unused_imports, reason = "fixture")]
 
 use command_extra::CommandExtra;
+use std::cell::Cell;
 use std::ffi::OsStr;
+use std::pin::Pin;
 use std::process::Command;
+use std::sync::LazyLock;
 
 pub struct Weird(Vec<String>);
 
@@ -86,6 +89,11 @@ pub fn user_deref(names: &Backwards) -> Command {
     names.iter().fold(Command::new("user-deref"), CommandExtra::without_env)
 }
 
+// The same `Deref` written as `*`.
+pub fn explicit_deref(names: Backwards) -> Command {
+    (*names).iter().fold(Command::new("explicit-deref"), CommandExtra::without_env)
+}
+
 #[derive(Clone, Copy)]
 pub struct Countdown(u8);
 
@@ -108,6 +116,88 @@ fn exhaust(countdown: &mut Countdown, program: &str) -> Command {
 // `exhaust` empties it, and the plural would copy it afterwards.
 pub fn written_place(mut countdown: Countdown) -> Command {
     countdown.fold(exhaust(&mut countdown, "written-place"), CommandExtra::without_env)
+}
+
+// A `Deref` the user wrote on the way to a field, rather than on the
+// place the call runs on.
+pub struct Names {
+    names: Vec<String>,
+}
+
+pub struct Handle(Names);
+
+impl std::ops::Deref for Handle {
+    type Target = Names;
+
+    fn deref(&self) -> &Names {
+        &self.0
+    }
+}
+
+pub fn deref_under_field(handle: Handle) -> Command {
+    handle.names.iter().fold(Command::new("deref-under-field"), CommandExtra::without_env)
+}
+
+// A `Deref` the standard library wrote that calls the user's: `Pin`'s
+// calls `Backwards`'s.
+pub fn pinned_deref(names: Pin<Backwards>) -> Command {
+    names.iter().fold(Command::new("pinned-deref"), CommandExtra::without_env)
+}
+
+// A `Deref` the standard library wrote that runs the user's initializer
+// the first time.
+static LAZY: LazyLock<Vec<String>> = LazyLock::new(|| vec!["A".to_owned()]);
+
+pub fn lazy_lock() -> Command {
+    LAZY.iter().fold(Command::new("lazy-lock"), CommandExtra::without_env)
+}
+
+fn reset(cell: &Cell<std::vec::IntoIter<String>>, program: &str) -> Command {
+    cell.set(Vec::new().into_iter());
+    Command::new(program)
+}
+
+// A write through a shared reference, which leaves `cell` itself
+// unmutated as far as the borrow checker is concerned.
+pub fn interior_mutable(cell: Cell<std::vec::IntoIter<String>>) -> Command {
+    cell.take().fold(reset(&cell, "interior-mutable"), CommandExtra::without_env)
+}
+
+// A std trait's method whose body is the user's: `into_iter` resolves to
+// the impl below.
+pub struct Borrowed(Vec<String>);
+
+impl<'a> IntoIterator for &'a Borrowed {
+    type Item = &'a String;
+    type IntoIter = std::slice::Iter<'a, String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
+    }
+}
+
+pub fn user_into_iter(borrowed: Borrowed) -> Command {
+    borrowed.into_iter().fold(Command::new("user-into-iter"), CommandExtra::without_env)
+}
+
+// A std method that runs the user's code: cloning a `vec::IntoIter`
+// clones each item, and `Item`'s `clone` is the user's.
+pub struct Item(String);
+
+impl Clone for Item {
+    fn clone(&self) -> Self {
+        Item(self.0.clone())
+    }
+}
+
+impl AsRef<OsStr> for Item {
+    fn as_ref(&self) -> &OsStr {
+        self.0.as_ref()
+    }
+}
+
+pub fn user_item_clone(items: std::vec::IntoIter<Item>) -> Command {
+    items.clone().fold(Command::new("user-item-clone"), CommandExtra::without_env)
 }
 
 const OVERRIDDEN_VARS: &[&str] = &["a"];

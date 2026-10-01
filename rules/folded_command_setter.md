@@ -59,9 +59,10 @@ it.
 
 The suggestion moves the receiver past the initial value, so a
 fix is applied only where that cannot change what either of them
-sees: a receiver that names a place, or one whose call comes from
-the standard library. Elsewhere the suggestion is advice, as it
-also is where the trait is not in scope at the call site.
+sees: the receiver runs no code but the standard library's, over
+the standard library's types, and reads nothing the initial value
+writes. Elsewhere the suggestion is advice, as it also is where
+the trait is not in scope at the call site.
 
 The suggestion keeps the receiver's call unless the plural makes
 that same call itself.

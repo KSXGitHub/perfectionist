@@ -74,6 +74,22 @@ LL |     match VARS.iter().fold(Literal { inner }, CommandExtra::without_env) {
 warning: this fold over `without_env` re-implements `without_envs`
   --> $DIR/folded_command_setter_applicability.rs:LL:CC
    |
+LL |       let _ = (*noisy)
+   |  _____________^
+LL | |         .into_iter()
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
+   | |____________________________________________________________^
+   |
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+help: use `without_envs`
+   |
+LL ~     let _ = Command::new("ls").without_envs((*noisy)
+LL ~         .into_iter());
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
 LL |       let _ = noisy.into_iter().fold(
    |  _____________^
 LL | |         Command::new(format!(
