@@ -440,3 +440,19 @@ pub mod trait_not_in_scope {
             .fold(command, command_extra::CommandExtra::without_env)
     }
 }
+
+// Another crate compiled as `command_extra` is imported, and its
+// `CommandExtra` has no plural. The trait the fold names is not in scope,
+// and the rewrite would be `E0599`.
+pub mod other_trait_in_scope {
+    use fake::CommandExtra;
+    use std::process::Command;
+
+    const OTHER_TRAIT: &[&str] = &["a"];
+
+    pub fn run(command: Command) -> Command {
+        OTHER_TRAIT
+            .iter()
+            .fold(command, command_extra::CommandExtra::without_env)
+    }
+}

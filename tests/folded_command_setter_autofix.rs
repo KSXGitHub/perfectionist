@@ -30,18 +30,40 @@ use _utils::{
 use std::fs;
 use text_block_macros::text_block_fnl;
 
-/// The generated manifest with `command-extra` appended, which the
-/// fixtures need and [`fixture_cargo_toml`] does not carry. Passing
-/// `Cargo.toml` as a source overwrites the generated copy, since
-/// [`build_project_with_config`] inserts the sources after its own
+/// The generated manifest with `command-extra` and `dependencies`
+/// appended, which the fixtures need and [`fixture_cargo_toml`] does not
+/// carry. Passing `Cargo.toml` as a source overwrites the generated copy,
+/// since [`build_project_with_config`] inserts the sources after its own
 /// entries -- appending to that copy rather than restating it keeps the
 /// package, lib and workspace stanzas in one place.
-fn cargo_toml(package: &str) -> String {
+fn cargo_toml(package: &str, dependencies: &str) -> String {
     format!(
-        "{}\n[dependencies]\ncommand-extra = \"1.2.0\"\n",
+        "{}\n[dependencies]\ncommand-extra = \"1.2.0\"\n{dependencies}",
         fixture_cargo_toml(package),
     )
 }
+
+/// A second crate compiled as `command_extra`, imported as `fake`, whose
+/// `CommandExtra` declares no plural. `not_applied.rs` imports it where a
+/// fold names the published trait by path.
+const FAKE_DEPENDENCY: &str = "fake = { package = \"fake-command-extra\", path = \"fake\" }\n";
+
+const FAKE_MANIFEST: &str = text_block_fnl! {
+    "[package]"
+    r#"name = "fake-command-extra""#
+    r#"version = "0.0.0""#
+    r#"edition = "2024""#
+    ""
+    "[lib]"
+    r#"name = "command_extra""#
+    r#"path = "src/lib.rs""#
+};
+
+const FAKE_LIB: &str = text_block_fnl! {
+    "pub trait CommandExtra: Sized {"
+    "    fn without_env(self, key: impl AsRef<std::ffi::OsStr>) -> Self;"
+    "}"
+};
 
 /// The shapes the fixer is asserted to rewrite, and what it must turn
 /// them into. They live in files rather than in literals here: what the
@@ -63,17 +85,19 @@ const CONFIG: &str = text_block_fnl! {
     r#"disable = ["bare_identifier_reference", "impure_macro_arguments", "import_granularity_mismatch", "import_grouping_mismatch"]"#
 };
 
-/// Run the fixer over one fixture crate and hand back what it left on
-/// disk, plus its stderr.
-fn fix(package: &str, source: &str) -> (TempDir, String, String) {
+/// Run the fixer over one fixture crate, beside `extra` files and with
+/// `dependencies`, and hand back what it left on disk, plus its stderr.
+fn fix(
+    package: &str,
+    source: &str,
+    dependencies: &str,
+    extra: &[(&str, &str)],
+) -> (TempDir, String, String) {
     let temp = TempDir::new().expect("failed to create temp dir");
-    build_project_with_config(
-        temp.path(),
-        package,
-        cargo_manifest_dir(),
-        &[("Cargo.toml", &cargo_toml(package)), ("src/lib.rs", source)],
-        CONFIG,
-    );
+    let manifest = cargo_toml(package, dependencies);
+    let mut sources = vec![("Cargo.toml", manifest.as_str()), ("src/lib.rs", source)];
+    sources.extend_from_slice(extra);
+    build_project_with_config(temp.path(), package, cargo_manifest_dir(), &sources, CONFIG);
     let (stderr, success) = run_dylint_fix(temp.path(), &shared_target_dir());
     assert!(
         success,
@@ -86,7 +110,7 @@ fn fix(package: &str, source: &str) -> (TempDir, String, String) {
 #[test]
 #[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
 fn the_fixer_replaces_the_fold_with_the_plural() {
-    let (_temp, fixed, stderr) = fix("folded_command_setter_applied", APPLIED);
+    let (_temp, fixed, stderr) = fix("folded_command_setter_applied", APPLIED, "", &[]);
 
     // `cargo fix` prints this after applying a suggestion that does not
     // compile, having reverted the file. A rewrite this rule hands over
@@ -105,7 +129,12 @@ fn the_fixer_replaces_the_fold_with_the_plural() {
 #[test]
 #[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
 fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
-    let (_temp, fixed, stderr) = fix("folded_command_setter_not_applied", NOT_APPLIED);
+    let (_temp, fixed, stderr) = fix(
+        "folded_command_setter_not_applied",
+        NOT_APPLIED,
+        FAKE_DEPENDENCY,
+        &[("fake/Cargo.toml", FAKE_MANIFEST), ("fake/src/lib.rs", FAKE_LIB)],
+    );
 
     assert!(
         !stderr.contains("errors present after applying fixes"),
@@ -149,6 +178,7 @@ fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
         "OVERRIDDEN_VARS",
         "AMBIGUOUS_VARS",
         "NOT_IN_SCOPE",
+        "OTHER_TRAIT",
     ] {
         assert!(
             stderr.contains(shape),

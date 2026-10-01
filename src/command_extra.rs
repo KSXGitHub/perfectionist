@@ -36,15 +36,6 @@ pub(crate) fn is_the_trait(cx: &LateContext<'_>, trait_id: DefId) -> bool {
 
 /// Whether the innermost module around `call` imports `CommandExtra`.
 ///
-/// Scoped to that module because a trait has to be in scope where the
-/// method is called, and a parent module's `use` does not reach a
-/// child. A trait reached some other way -- a glob, a project prelude,
-/// a `use` inside the body -- reads here as absent. What that costs
-/// depends on the caller: usually a redundant "add the import" line,
-/// but where this answer is the only evidence of the dependency -- as
-/// it is under a manifest key that renames the crate -- the lint stays
-/// silent instead.
-///
 /// The trait is identified by its own name and its crate's, so a crate
 /// of the author's own packaged as `command-extra` and exporting a
 /// trait called `CommandExtra` reads as the published one. Checking the
@@ -53,11 +44,29 @@ pub(crate) fn is_the_trait(cx: &LateContext<'_>, trait_id: DefId) -> bool {
 /// `src/rules/mutating_command_builder/availability.rs`, only ever sees
 /// a crate name, which is the point of it -- it answers before anything
 /// is loaded. A rule that names a crate cannot tell a crate that took
-/// the name.
+/// the name. A rule that has resolved the trait asks [`imports`] about
+/// that trait instead.
 pub(crate) fn trait_is_imported(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
+    imports(cx, call, |def_id| is_the_trait(cx, def_id))
+}
+
+/// Whether the innermost module around `call` imports a trait `wanted`
+/// accepts.
+///
+/// Scoped to that module because a trait has to be in scope where the
+/// method is called, and a parent module's `use` does not reach a
+/// child. A trait reached some other way -- a glob, a project prelude,
+/// a `use` inside the body -- reads here as absent. What that costs
+/// depends on the caller: usually a redundant "add the import" line,
+/// but where this answer is the only evidence of the dependency -- as
+/// it is under a manifest key that renames the crate -- the lint stays
+/// silent instead.
+pub(crate) fn imports(
+    cx: &LateContext<'_>,
+    call: &Expr<'_>,
+    wanted: impl Fn(DefId) -> bool,
+) -> bool {
     let module = cx.tcx.parent_module(call.hir_id);
-    let wanted_crate = Symbol::intern(CRATE);
-    let wanted_trait = Symbol::intern(TRAIT);
     // The module's *direct* children. `hir_module_items` would also
     // reach items nested in bodies, and a `use` inside one function
     // does not bring the trait into scope for that function's siblings.
@@ -76,11 +85,5 @@ pub(crate) fn trait_is_imported(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
             _ => None,
         })
         .flat_map(|path| path.res.iter())
-        .any(|res| match res {
-            Some(Res::Def(DefKind::Trait, def_id)) => {
-                cx.tcx.crate_name(def_id.krate) == wanted_crate
-                    && cx.tcx.item_name(*def_id) == wanted_trait
-            }
-            _ => false,
-        })
+        .any(|res| matches!(res, Some(Res::Def(DefKind::Trait, def_id)) if wanted(*def_id)))
 }

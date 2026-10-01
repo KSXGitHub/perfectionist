@@ -1,4 +1,4 @@
-use crate::command_extra::{is_the_trait, trait_is_imported};
+use crate::command_extra::{imports, is_the_trait};
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
@@ -126,8 +126,8 @@ const REORDERS: &str = "the fold evaluates the receiver before the initial value
                         their order does not matter";
 
 /// What a reader has to do first where the trait is not in scope at the
-/// call site. Conditional, because the imports [`trait_is_imported`]
-/// does not answer for leave this line redundant rather than wrong.
+/// call site. Conditional, because an import [`imports`] does not see, a
+/// glob among them, leaves this line redundant rather than wrong.
 const NEEDS_THE_IMPORT: &str = "the plural is a `CommandExtra` method, which resolves only where \
                                 the trait is in scope; add \
                                 `use command_extra::CommandExtra;` if it is not";
@@ -295,7 +295,10 @@ fn emit<'tcx>(
     let accumulator = cx.typeck_results().expr_ty(initial);
     let overridden = setter::overrides_the_plural(cx, plural_id, accumulator);
     let ambiguous_with = setter::another_trait_declaring(cx, plural_id, accumulator);
-    let in_scope = trait_is_imported(cx, expr);
+    // The trait is resolved, so an import is compared against it rather
+    // than read by name: another crate compiled as `command_extra` may
+    // export a `CommandExtra` that has no plural.
+    let in_scope = imports(cx, expr, |imported| imported == cx.tcx.parent(plural_id));
     let typed = initial::fixes_its_own_type(cx, initial);
     let item_annotated = folder::annotates_the_item(folder);
     let drops_a_comment = drops_a_comment(cx, expr.span, [initial.span, shape.argument]);
