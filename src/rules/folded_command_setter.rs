@@ -33,9 +33,10 @@ declare_tool_lint! {
     /// included.
     ///
     /// The `with_env` pair is flagged only when the resolved `with_envs`
-    /// accepts what the fold iterates. That bound has changed between
-    /// `command-extra` releases, so the rule never names a plural the
-    /// code cannot call.
+    /// accepts what the fold iterates, and every pair only when the rule
+    /// recognises each bound its plural declares. The bounds have changed
+    /// between `command-extra` releases, so the rule never names a plural
+    /// the code cannot call.
     ///
     /// The fold's receiver has to be a place expression followed by at
     /// most one argument-less method call. `VARS`, `list.iter()` and
@@ -75,10 +76,18 @@ declare_tool_lint! {
     /// sees: the receiver runs no code but the standard library's, over
     /// the standard library's types, panics at no call such as `unwrap`,
     /// and reads nothing the initial value writes or moves. Elsewhere the
-    /// suggestion is advice, as it also is where the trait is not in
-    /// scope at the call site, where the initial value may take its type
-    /// from the fold, where the fold names a type the suggestion drops,
-    /// and where the fold holds a comment the suggestion would drop.
+    /// suggestion is advice.
+    ///
+    /// The suggestion is also advice, with a help line naming why, where:
+    ///
+    /// - the trait is not in scope at the call site;
+    /// - an impl that may apply to the accumulator writes its own body
+    ///   for the plural;
+    /// - another trait declares a method of the plural's name for the
+    ///   accumulator's type;
+    /// - the initial value may take its type from the fold;
+    /// - the fold names a type the suggestion drops; or
+    /// - the fold holds a comment the suggestion would drop.
     ///
     /// The suggestion keeps the receiver's call unless the plural makes
     /// that same call itself.
