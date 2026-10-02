@@ -424,30 +424,6 @@ writing one — pasting the driver's real numbers in will not match.
 [`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs) performs the
 normalisation and explains how.
 
-## Fixtures are not formatted
-
-A fixture's written layout is what the lint under test reads, so
-rustfmt is disabled over `ui/`, `ui-toml/` and `tests/fixtures/` by a
-`rustfmt.toml` at each of those roots. Leave it that way: formatting a
-fixture can leave it testing nothing — rustfmt collapses a
-deliberately multi-line macro call onto one line, sorts a `use` block
-whose order *is* the violation, and strips the trailing comma a
-multi-line `#![allow(...)]` case is built around — and a `.fixed.rs`
-has to match what rustc's suggestion machinery writes out, which is not
-rustfmt's output. Write a new fixture the way the case needs it to
-read, not the way rustfmt would.
-
-`cargo fmt` never reached these trees to begin with, because nothing
-declares them as modules. An editor does reach them, which is what the
-shield is for, and it is load-bearing in a way that is easy to undo by
-accident: rustfmt reads the *nearest* configuration file and merges
-nothing from further up, so a second `rustfmt.toml` deeper inside a
-fixture tree switches formatting back on under it.
-[`tests/fixture_formatting.rs`](tests/fixture_formatting.rs) explains
-the mechanism — including why rustfmt's own `ignore` list is not the
-answer — and fails if the shield is dropped, shadowed, or spread over
-real source.
-
 ## Generated documentation site (`tools/gen-docs/`)
 
 The lint catalogue at <https://ksxgithub.github.io/perfectionist/>

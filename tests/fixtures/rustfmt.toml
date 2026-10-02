@@ -1,5 +1,1 @@
-# The lint suite reads the written layout of every `.rs` file below this
-# point, so formatting one can leave it testing nothing. This file is what
-# keeps an editor's format-on-save off them; `tests/fixture_formatting.rs`
-# explains how it works and tests that it still holds.
 disable_all_formatting = true
