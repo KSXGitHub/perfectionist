@@ -1,5 +1,11 @@
 //! Shell out to `cargo dylint` and capture its output.
 //!
+//! Every run passes `--fail-on-no-libraries`, so a fixture whose
+//! workspace cargo refuses to load fails the test outright. Without it
+//! such a run reports no diagnostics and exits zero, which every
+//! assertion that a rule *stays silent* reads as the rule standing
+//! down.
+//!
 //! Every command here clears the dylint-specific variables the
 //! in-process UI harness leaves set in this process, so a spawned
 //! `cargo dylint` never inherits them.
@@ -75,6 +81,7 @@ pub fn run_dylint_fix(project_dir: &Path, shared_target_dir: &Path) -> (String, 
         .with_arg("dylint")
         .with_arg("--fix")
         .with_arg("--all")
+        .with_arg("--fail-on-no-libraries")
         .with_arg("--")
         .with_arg("--lib")
         .with_arg("--allow-no-vcs")
@@ -93,6 +100,7 @@ fn run_dylint_inner(
     let output = cargo_command(project_dir, shared_target_dir)
         .with_arg("dylint")
         .with_arg("--all")
+        .with_arg("--fail-on-no-libraries")
         .with_args(match all_targets {
             true => ["--", "--all-targets"].as_slice(),
             false => &[],
