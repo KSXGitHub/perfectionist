@@ -34,10 +34,9 @@ declare_tool_lint! {
     ///
     /// The rule names a plural only where the code can call it.
     ///
-    /// The fold's receiver has to be a path or field, possibly
-    /// dereferenced, then at most one argument-less method call, such as
-    /// `VARS`, `list.iter()` or `self.names.into_iter()`. A longer one is
-    /// left alone.
+    /// The fold's receiver has to be a place expression followed by at
+    /// most one argument-less method call. `VARS`, `list.iter()` and
+    /// `self.names.into_iter()` qualify; a longer one is left alone.
     ///
     /// A fold inside the plural's own body is left alone where the
     /// suggestion would make the plural call itself.
