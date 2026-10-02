@@ -181,8 +181,8 @@ impl_lint_pass!(FoldedCommandSetter => [FOLDED_COMMAND_SETTER]);
 
 impl Register for rule::FoldedCommandSetter {
     /// The trigger names `CommandExtra`'s own setters, so it can only
-    /// fire in code that already calls them. No dependency gate is
-    /// needed, unlike the sibling rule's.
+    /// fire in code that already calls them, and needs no dependency
+    /// gate.
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {
