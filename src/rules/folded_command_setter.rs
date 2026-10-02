@@ -261,25 +261,22 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         if cx.typeck_results().expr_ty(initial).is_never() {
             return;
         }
-        // The plural is named, not resolved, so an inherent method of the
-        // accumulator's own type would take the call instead -- and need
-        // not take the same arguments.
         if setter::shadowed_by_an_inherent_method(cx, initial, plural_id) {
             return;
         }
-        // A derive that stamps its whole expansion with the driving
-        // attribute's span defeats both `report_in_external_macro:
-        // false` and `hir_in_external_macro`, which read spans;
-        // `is_from_proc_macro` reads the source text under the span
-        // instead, and is what keeps
-        // `ui/folded_command_setter_proc_macro.rs` silent.
+        // `hir_in_external_macro` catches a fold that a derive copies into
+        // an item it generates, whose span gives the expansion away. A
+        // derive that stamps its whole expansion, that item included,
+        // with the driving attribute's span defeats it and
+        // `report_in_external_macro: false` alike; `is_from_proc_macro`
+        // reads the source text under the span instead.
         if hir_in_external_macro(cx, expr.hir_id, expr.span) || is_from_proc_macro(cx, expr) {
             return;
         }
-        // Neither of those covers a `macro_rules!` of the linted crate's
-        // own. The suggestion replaces the span it is reported at while
-        // its text is read from the spans of three sub-expressions, so
-        // inside a macro body it rewrites the *definition* with text
+        // Neither `hir_in_external_macro` nor `is_from_proc_macro` covers
+        // a `macro_rules!` of the linted crate's own. The suggestion
+        // replaces the span it is reported at with text read from the
+        // initial value's and the receiver's spans, so inside a macro body it rewrites the *definition* with text
         // spliced from a call site: measured turning a macro that
         // removed environment variables into one that adds arguments,
         // and pasting a caller's local into a body where hygiene cannot
@@ -291,11 +288,6 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         {
             return;
         }
-        // The plural is named rather than resolved, so the rewritten
-        // call reaches it only where the trait is in scope -- and a
-        // *path* folder needs no import of its own, so a fold can name
-        // the setter while the module cannot name the method. Measured:
-        // a machine-applicable `E0599` without this.
         emit(cx, expr, initial, folder, singular, plural_id, &shape);
     }
 }
@@ -315,9 +307,14 @@ fn emit<'tcx>(
     let accumulator = cx.typeck_results().expr_ty(initial);
     let overridden = setter::overrides_the_plural(cx, plural_id, accumulator);
     let ambiguous_with = setter::another_trait_declaring(cx, plural_id, accumulator);
-    // The trait is resolved, so an import is compared against it rather
-    // than read by name: another crate compiled as `command_extra` may
-    // export a `CommandExtra` that has no plural.
+    // The plural is named rather than resolved, so the rewritten call
+    // reaches it only where the trait is in scope. A *path* folder needs
+    // no import of its own, so a fold can name the setter where the
+    // module cannot name the plural: measured as a machine-applicable
+    // `E0599` without this. The trait is resolved, so an import is
+    // compared against it rather than read by name: another crate
+    // compiled as `command_extra` may export a `CommandExtra` that has
+    // no plural.
     let in_scope = imports(cx, expr, |imported| imported == cx.tcx.parent(plural_id));
     let typed = initial::fixes_its_own_type(cx, initial);
     let drops_a_type = folder::annotates_the_item(folder)
