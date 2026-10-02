@@ -6,20 +6,15 @@
 //! the fixer will apply it. So the fixtures are run through the real
 //! fixer and judged on what it did to the source.
 //!
-//! Most declines are a question of order. The plural takes the initial
-//! value as its receiver and the folded iterator as its argument, so it
-//! evaluates them in the order the fold did not, and only a receiver
-//! that runs nothing but the standard library's code, and reads nothing
-//! the initial value writes or moves, is known not to care.
-//! `src/rules/folded_command_setter/receiver.rs` derives it.
+//! Most declines are a question of order, which
+//! `src/rules/folded_command_setter/receiver.rs` explains.
 //!
 //! The fixtures split by direction, because the two fail differently.
 //! `applied.rs` is compared against `applied.fixed.rs`, so a rewrite
 //! that stops being applied, or starts being applied differently, fails
 //! here. `not_applied.rs` is compared against itself. Where a shape
 //! would compile if rewritten, that comparison is what fails; where it
-//! would not, `cargo fix` reverts the file, and the check for errors
-//! after applying fixes fails instead.
+//! would not, the check for errors after applying fixes fails instead.
 
 pub mod _utils;
 
@@ -32,10 +27,8 @@ use text_block_macros::text_block_fnl;
 
 /// The generated manifest with `command-extra` and `dependencies`
 /// appended, which the fixtures need and [`fixture_cargo_toml`] does not
-/// carry. Passing `Cargo.toml` as a source overwrites the generated copy,
-/// since [`build_project_with_config`] inserts the sources after its own
-/// entries. Appending to that copy rather than restating it keeps the
-/// package, lib and workspace stanzas in one place.
+/// carry. Appending to its output rather than restating it keeps its
+/// stanzas in one place.
 fn cargo_toml(package: &str, dependencies: &str) -> String {
     format!(
         "{}\n[dependencies]\ncommand-extra = \"1.2.0\"\n{dependencies}",
@@ -43,9 +36,7 @@ fn cargo_toml(package: &str, dependencies: &str) -> String {
     )
 }
 
-/// A second crate compiled as `command_extra`, imported as `fake`, whose
-/// `CommandExtra` declares no plural. `not_applied.rs` imports it where a
-/// fold names the published trait by path.
+/// The second `command_extra`, which `not_applied.rs` imports.
 const FAKE_DEPENDENCY: &str = "fake = { package = \"fake-command-extra\", path = \"fake\" }\n";
 
 const FAKE_MANIFEST: &str = text_block_fnl! {
@@ -72,8 +63,6 @@ const APPLIED: &str = include_str!("fixtures/folded_command_setter_autofix/appli
 
 const APPLIED_FIXED: &str = include_str!("fixtures/folded_command_setter_autofix/applied.fixed.rs");
 
-/// The shapes the rule declines to hand over, for each of the reasons
-/// it declines.
 const NOT_APPLIED: &str = include_str!("fixtures/folded_command_setter_autofix/not_applied.rs");
 
 /// Sibling rules would rewrite the same lines on their own account, so a
@@ -84,8 +73,8 @@ const CONFIG: &str = text_block_fnl! {
     r#"disable = ["bare_identifier_reference", "impure_macro_arguments", "import_granularity_mismatch", "import_grouping_mismatch"]"#
 };
 
-/// Run the fixer over one fixture crate, beside `extra` files and with
-/// `dependencies`, and hand back what it left on disk, plus its stderr.
+/// Run the fixer over one fixture crate and hand back what it left on
+/// disk, plus its stderr.
 fn fix(
     package: &str,
     source: &str,

@@ -1,6 +1,5 @@
 // Shapes `folded_command_setter` fires on and declines to hand the
-// fixer, for `tests/folded_command_setter_autofix.rs`. The test compares
-// this file against itself, so anything the fixer rewrote fails it.
+// fixer, for `tests/folded_command_setter_autofix.rs`.
 //
 // Each fold carries a distinct name, its program, a binding or a const,
 // so an assertion can name one shape without matching another.
@@ -265,8 +264,7 @@ pub fn inferred_binding(names: &[&str]) -> Command {
     names.iter().fold(inferred_binding, Command::without_env)
 }
 
-// Bindings that name no type: a closure parameter, a binding inside a
-// `let` pattern, and a `match` arm's.
+// Bindings that name no type.
 pub fn inferred_closure_parameter(names: &'static [&'static str]) -> impl Fn(Command) -> Command {
     |inferred_closure_parameter| names.iter().fold(inferred_closure_parameter, Command::without_env)
 }

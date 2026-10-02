@@ -1,9 +1,7 @@
 // Shapes `folded_command_setter` hands the fixer, for
-// `tests/folded_command_setter_autofix.rs`. This header is shared
-// between the pair: `applied.rs` holds the folds as written and
-// `applied.fixed.rs` as the fixer leaves them, and the test compares
-// the fixer's output against the latter byte for byte, so the two files
-// have to differ by exactly the rewrite and by nothing else, this
+// `tests/folded_command_setter_autofix.rs`. The test compares the
+// fixer's output against `applied.fixed.rs` byte for byte, so the two
+// files have to differ by exactly the rewrite and by nothing else, this
 // header included.
 //
 // Each fold is one line, so the rewrite the fixer performs is a
@@ -26,9 +24,9 @@ pub fn bare_receiver(names: std::slice::Iter<'_, &'static str>) -> Command {
     names.fold(start, CommandExtra::without_env)
 }
 
-// `iter` from the standard library, so the fix is applied. The call
-// survives into it: no `iter` is erased, because a `Deref` can hand
-// `iter` to std while the type keeps an `IntoIterator` of its own.
+// `iter` from the standard library. The call survives the rewrite: no
+// `iter` is erased, because a `Deref` can hand `iter` to std while the
+// type keeps an `IntoIterator` of its own.
 pub fn kept_iter_on_a_slice() -> Command {
     let start = Command::new("ls");
     VARS.iter().fold(start, CommandExtra::without_env)
@@ -82,8 +80,7 @@ pub fn looser_initial(command: Box<Command>) -> Command {
 
 // `into_iter` reached by an autoref, because the only `IntoIterator` is
 // on the reference. Erasing would leave `PathBuf`, which is not an
-// iterator, so the fixer reverting this file is how that regression
-// would show up here.
+// iterator.
 pub fn autoref_into_iter(path: PathBuf) -> Command {
     let start = Command::new("ls");
     path.into_iter().fold(start, CommandExtra::with_arg)
