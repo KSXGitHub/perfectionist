@@ -41,12 +41,7 @@ use rustc_middle::hir::place::ProjectionKind;
 use rustc_middle::mir::FakeReadCause;
 use rustc_middle::ty::adjustment::{Adjust, AutoBorrow, DerefAdjustKind};
 use rustc_middle::ty::{self, GenericArg, Instance, Ty};
-use rustc_span::{Span, Symbol};
-
-/// `std::process::Command`'s `rustc_diagnostic_item` name, which
-/// [`is_std`] uses to reach `std` itself. Not among the pre-interned
-/// `rustc_span::sym` constants, so it is interned on use.
-const COMMAND_DIAGNOSTIC_ITEM: &str = "Command";
+use rustc_span::Span;
 
 /// What the suggestion needs to know about the receiver.
 pub(super) struct Shape {
@@ -385,14 +380,10 @@ fn runs_only_std(cx: &LateContext<'_>, receiver: &Expr<'_>, call: DefId) -> bool
 /// The sysroot crates are reached instead through a diagnostic item that
 /// only each of them carries.
 fn is_std(cx: &LateContext<'_>, krate: CrateNum) -> bool {
-    [
-        sym::Iterator,
-        sym::Vec,
-        Symbol::intern(COMMAND_DIAGNOSTIC_ITEM),
-    ]
-    .into_iter()
-    .filter_map(|item| cx.tcx.get_diagnostic_item(item))
-    .any(|anchor| anchor.krate == krate)
+    [sym::Iterator, sym::Vec, sym::Command]
+        .into_iter()
+        .filter_map(|item| cx.tcx.get_diagnostic_item(item))
+        .any(|anchor| anchor.krate == krate)
 }
 
 /// Whether every type `ty` is built from is the standard library's own,
