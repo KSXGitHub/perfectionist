@@ -28,31 +28,34 @@ fn bare_command() {
     command.arg("off-bare");
 }
 
-// Bad: blessed unconditionally too, which is what 1.4.0 added.
+// Bad: the unconditional `Box` impl 1.4.0 added.
 fn boxed_command() {
     let mut command = Box::new(std::process::Command::new("ls"));
     command.arg("off-boxed");
 }
 
-// Not flagged: the impl for this receiver is behind the feature.
+// Not flagged: `tokio_process` is off, so nothing implements the trait
+// for it.
 fn tokio_command() {
     let mut command = tokio::process::Command::new("ls");
     command.arg("off-tokio");
 }
 
-// Not flagged: behind the same feature.
+// Not flagged: `tokio_process` gates the impl for its box.
 fn boxed_tokio_command() {
     let mut command = Box::new(tokio::process::Command::new("ls"));
     command.arg("off-boxed-tokio");
 }
 
-// Not flagged: this release has no impl for it under any feature.
+// Not flagged: this release has no impl for an async-process command
+// under any feature.
 fn async_command() {
     let mut command = async_process::Command::new("ls");
     command.arg("off-async");
 }
 
-// Not flagged: nor for its box.
+// Not flagged: this release has no impl for a boxed async-process
+// command.
 fn boxed_async_command() {
     let mut command = Box::new(async_process::Command::new("ls"));
     command.arg("off-boxed-async");

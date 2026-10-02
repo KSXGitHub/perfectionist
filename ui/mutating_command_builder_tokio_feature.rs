@@ -30,27 +30,26 @@ fn boxed_command() {
     command.arg("on-boxed");
 }
 
-// Bad: the feature is on, so this receiver is blessed and its `arg` is
-// tokio's own method rather than std's.
+// Bad: `tokio_process` is on, and tokio's `arg` is its own method rather
+// than std's.
 fn tokio_command() {
     let mut command = tokio::process::Command::new("ls");
     command.arg("on-tokio");
 }
 
-// Bad: blessed by the same feature.
+// Bad: a boxed tokio command, which `tokio_process` blesses.
 fn boxed_tokio_command() {
     let mut command = Box::new(tokio::process::Command::new("ls"));
     command.arg("on-boxed-tokio");
 }
 
-// Not flagged: the `async_process` impls arrived in a later release, so
-// no feature of this one blesses this receiver.
+// Not flagged: `async_process`'s impls are 1.5.0's, not this release's.
 fn async_command() {
     let mut command = async_process::Command::new("ls");
     command.arg("on-async");
 }
 
-// Not flagged: nor its box.
+// Not flagged: the boxed `async_process` impl is 1.5.0's.
 fn boxed_async_command() {
     let mut command = Box::new(async_process::Command::new("ls"));
     command.arg("on-boxed-async");
