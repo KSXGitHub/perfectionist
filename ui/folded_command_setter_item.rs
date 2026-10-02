@@ -4,8 +4,6 @@
 // Which plural the trait declares, and what its bound accepts. What the
 // fold proves of its item has to be what the plural asks of it, so the
 // item's shape decides whether a plural can be named at all.
-//
-// Exercises `src/rules/folded_command_setter/setter.rs`.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -41,8 +39,8 @@ fn pair_item_borrowed(pairs: &std::collections::HashMap<String, String>) {
         });
 }
 
-// Not flagged: a reference to a pair is not a pair. `with_envs` takes
-// `IntoIterator<Item = (Key, Value)>`, and `&[(&str, &str)]` yields
+// Not flagged: a reference to a pair is not a pair. 1.2.0's `with_envs`
+// takes `IntoIterator<Item = (Key, Value)>`, and `&[(&str, &str)]` yields
 // `&(&str, &str)`, which the fold binds through and the plural cannot.
 fn reference_to_a_pair() {
     let _ = PAIRS
@@ -52,18 +50,16 @@ fn reference_to_a_pair() {
         });
 }
 
-// Not flagged: a singular with no plural. Each sets one thing a later
-// call replaces rather than extends.
+// Not flagged: `with_current_dir`, which has no plural. It sets one
+// thing that a later call replaces rather than extends.
 fn no_plural() {
     let _ = VARS
         .iter()
         .fold(Command::new("ls"), |c, dir| c.with_current_dir(dir));
 }
 
-// Not flagged: a `ref` binding hands the setter a reference to the item
-// where a by-value binding hands it the item, so what the fold proves of
-// the item is not what the plural asks of it. Here the fold establishes
-// `&Key: AsRef<OsStr>` and `without_envs` wants `Key: AsRef<OsStr>`.
+// Not flagged: a `ref` binding. The fold proves `&Key: AsRef<OsStr>`,
+// where `without_envs` wants `Key: AsRef<OsStr>`.
 fn ref_binding<Key>(command: Command, keys: Vec<Key>) -> Command
 where
     for<'a> &'a Key: AsRef<OsStr>,

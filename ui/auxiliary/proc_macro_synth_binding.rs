@@ -633,9 +633,8 @@ pub fn synth_command_setter(input: TokenStream) -> TokenStream {
 /// `synth_folded_command_setter`.
 ///
 /// Everything is stamped, so both the fold call and the enclosing item
-/// read as user-written and `hir_in_external_macro` -- which checks the
-/// node's span and the enclosing item's `def_span` -- has nothing to
-/// find.
+/// read as user-written, and `hir_in_external_macro`, which checks the
+/// node's span and the enclosing item's `def_span`, has nothing to find.
 ///
 /// `VARS` is the fixture's own `const`, so the synthesised fold is one
 /// the rule fires on when hand-written: a `&'static` slice's `iter`
@@ -681,10 +680,6 @@ pub fn synth_fold_owner(input: TokenStream) -> TokenStream {
 }
 
 /// Every token of `stream`, groups walked into, moved to `span`.
-///
-/// The derives above stamp a chosen few tokens and build their output by
-/// hand for that reason; this one stamps all of them, which is shorter
-/// said over a parsed stream than spelled out tree by tree.
 fn respan(stream: TokenStream, span: Span) -> TokenStream {
     stream
         .into_iter()

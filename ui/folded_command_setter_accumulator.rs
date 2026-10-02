@@ -17,7 +17,8 @@ use std::process::Command;
 
 const VARS: &[&str] = &["A", "B"];
 
-// Not flagged: an accumulator that is not a `Command`.
+// Not flagged: a closure that calls no `CommandExtra` setter, over a
+// `String` accumulator.
 fn other_accumulator() {
     let _ = VARS.iter().fold(String::new(), |mut joined, var| {
         joined.push_str(var);
@@ -25,9 +26,9 @@ fn other_accumulator() {
     });
 }
 
-// Not flagged: a fold over a std setter. The folder resolves to
-// `Command::arg` rather than a `CommandExtra` setter, and its block
-// holds a statement, so this is the sibling rule's to speak about.
+// Not flagged: a closure calling the std setter `Command::arg`, which is
+// not a `CommandExtra` setter. `perfectionist::mutating_command_builder`
+// reports it instead.
 #[expect(
     perfectionist::mutating_command_builder,
     reason = "the sibling rule owning this line is the point of the case"
@@ -50,8 +51,8 @@ fn opaque() -> impl CommandExtra {
     Command::new("ls")
 }
 
-// Bad: an accumulator of an opaque type, which stands for a type the
-// same way a parameter does. The fix is withheld.
+// Bad: an accumulator of an opaque type. The fix is withheld, because
+// the opaque type can stand for a type whose impl writes its own plural.
 fn opaque_accumulator() -> impl CommandExtra {
     VARS.iter().fold(opaque(), CommandExtra::without_env)
 }
@@ -384,15 +385,16 @@ fn boxed_ambiguous(ambiguous: Box<BoxedAmbiguous>) -> Box<BoxedAmbiguous> {
     VARS.iter().fold(ambiguous, CommandExtra::without_env)
 }
 
-// Not ambiguous: a trait with a parameter of its own that declares a
-// method named like the plural, and that nothing implements. It
-// competes for no accumulator in this crate.
+// No help names this trait: it has a parameter of its own and declares a
+// method named like the plural, but nothing implements it, so it
+// competes for no accumulator.
 trait Unimplemented<Value> {
     fn without_envs(self, value: Value) -> Self;
 }
 
-// Bad: the same trait shape, implemented for the accumulator under two
-// arguments, so wherever both traits are in scope the rewrite is
+// Bad: a trait with a parameter of its own, implemented for the
+// accumulator under two arguments, that declares a method named like the
+// plural. Wherever both traits are in scope the rewrite is
 // `E0034`. The fix is withheld.
 struct GenericallyAmbiguous;
 

@@ -5,8 +5,6 @@
 // suggestion. The receiver has to be a place expression followed by at
 // most one argument-less call, and that call is kept unless the plural
 // makes it already.
-//
-// Exercises `src/rules/folded_command_setter/receiver.rs`.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -75,9 +73,10 @@ fn assoc_fn_receiver(names: Vec<String>) {
 }
 
 // Bad: a receiver the call did not run on. Method resolution derefs
-// `&&Vec<String>` twice to reach `<[T]>::iter`, so the place is not the
-// receiver, and handing the plural `v` would hand it something that is
-// not an iterator at all. The call survives, so it compiles.
+// `&&Vec<String>` down to `[String]` to reach `<[T]>::iter`, so the
+// place is not the receiver, and handing the plural `names` would hand it
+// something that is not an iterator at all. The call survives, so it
+// compiles.
 fn double_reference(names: &&Vec<String>) {
     let _ = names
         .iter()

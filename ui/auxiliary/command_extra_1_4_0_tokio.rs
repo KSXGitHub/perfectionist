@@ -1,12 +1,7 @@
-// `command-extra` 1.4.0's `src/lib.rs` with one change: its
-// `tokio_process` gate is lifted, so the two `tokio` impls are present.
-// compiletest cannot pass a cargo feature, and `ui/auxiliary/tokio_stub.rs`
-// stands in for the dependency they name.
-//
-// The stand-in is why the version-and-feature contrast lives in
-// `tests/folded_command_setter_command_types.rs` instead, against the
-// real crates. What this pair is for is the diagnostic text, which that
-// test cannot check and the gating suite can.
+// `command-extra` 1.4.0's `src/lib.rs` with its `tokio_process` gate
+// lifted, so the two `tokio` impls are present, and `extern crate tokio;`
+// added for them. compiletest cannot pass a cargo feature, and
+// `ui/auxiliary/tokio_stub.rs` stands in for the dependency they name.
 //
 // A fixture using this crate has to name both auxiliaries itself, stub
 // first: compiletest builds them in the order listed, into one directory

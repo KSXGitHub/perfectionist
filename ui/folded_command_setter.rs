@@ -5,8 +5,6 @@
 // one. The folder is matched by what it resolves to, so every spelling
 // of the same setter is one shape; a closure earns the same treatment
 // only where it forwards rather than computes.
-//
-// Exercises `src/rules/folded_command_setter/folder.rs`.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -36,14 +34,10 @@ fn spellings() {
         .fold(Command::new("ls"), <Command as CommandExtra>::without_env);
 }
 
-// Bad: `without_env` under a renamed import, in a module of its own. A
-// `use` is module-wide, so at file scope the alias would be in scope for
-// every case here and the trait would also be in scope under its own
-// name. Only the alias is imported in this module, which is also what
-// makes the case pin something: the trait counts as imported by what the
-// `use` resolves to rather than by the name it binds. Whether that
-// decides a fix is offered is `tests/folded_command_setter_autofix.rs`'s
-// to say, since a `.stderr` cannot show applicability.
+// Bad: `without_env` under a renamed import, in a module of its own so
+// that only the alias is in scope. The trait counts as imported by what
+// the `use` resolves to, not by the name it binds, so no help asks for
+// the import.
 mod renamed_import {
     use super::VARS;
     use command_extra::CommandExtra as Ext;
@@ -90,9 +84,9 @@ fn swapped_arguments(pairs: Vec<(String, String)>) {
         .fold(Command::new("ls"), |c, (key, value)| c.with_env(value, key));
 }
 
-// Not flagged: a block holding a statement that is not a rebinding, so
-// the `uses` check would accept the call while the statement is where
-// the closure computes. The plural would delete it.
+// Not flagged: a block holding a statement with an effect, though the
+// call it ends with forwards the parameters untouched. The plural would
+// delete the statement.
 fn block_with_an_effect() {
     let _ = VARS.iter().fold(Command::new("ls"), |command, var| {
         println!("{var}");

@@ -1,4 +1,4 @@
-// `command-extra` 1.4.0's `src/lib.rs`, verbatim below this header.
+// `command-extra` 1.4.0's `src/lib.rs`, verbatim below the crate name.
 // The release is real rather than a stand-in, so what implements the
 // trait is what a consumer resolving it gets: 1.4.0 added
 // `impl CommandExtra for Box<Command>`, and, behind its `tokio_process`

@@ -18,9 +18,9 @@ use std::process::Command;
 
 const VARS: &[&str] = &["A", "B"];
 
-// Bad: an `iter` of the linted crate's own. Flagged, but the fix is
-// withheld: the call is not the standard library's, so what evaluating
-// it does is unknown.
+// Bad: an `iter` of the linted crate's own. The fix is withheld: the
+// call is not the standard library's, so what evaluating it does is
+// unknown.
 struct Weird(Vec<String>);
 
 impl Weird {
@@ -35,8 +35,9 @@ fn local_iter(weird: Weird) {
         .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
-// Bad: an inherent `into_iter` shadowing the trait in method
-// resolution. Flagged, call kept, fix withheld.
+// Bad: an inherent `into_iter` shadowing the trait in method resolution.
+// It is not `IntoIterator::into_iter`, so the call is kept, and it is not
+// the standard library's, so the fix is withheld.
 struct Shadow(Vec<String>);
 
 impl Shadow {
@@ -51,9 +52,9 @@ fn shadowing_into_iter(shadow: Shadow) {
         .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
-// Bad: an argument-less call that mutates. The receiver test is
-// structural, so this passes it and the rule fires; the fix is withheld
-// because the initial value could observe the mutation in the new order.
+// Bad: an argument-less call that mutates. The receiver's shape admits
+// it, so the rule fires; the fix is withheld because `drain_all` is not
+// the standard library's.
 struct Queue(Vec<String>);
 
 impl Queue {
@@ -73,8 +74,8 @@ fn mutating_receiver(mut queue: Queue) {
 }
 
 // Bad: a mutating receiver against an initial value that reads what it
-// changes. Advice only, and it stays advice however far the gate is
-// widened: the two orders build different commands.
+// changes, so the two orders build different commands and the fix is
+// withheld.
 fn mutating_receiver_observed(mut queue: Queue) {
     let _ = queue.take_all().fold(
         Command::new(format!("ls{}", queue.0.len())),
@@ -280,7 +281,8 @@ fn dropped_comment() -> Command {
 
 // Bad: the trait is not in scope at the call site, so the plural the
 // suggestion names would not resolve. The receiver is a place whose call
-// is std's, so the import is the only thing withheld here.
+// is std's, so the missing import is the only reason the fix is
+// withheld.
 mod trait_not_in_scope {
     use super::VARS;
     use std::process::Command;

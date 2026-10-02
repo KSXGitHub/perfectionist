@@ -1,4 +1,4 @@
-// `command-extra` 1.3.0's `src/lib.rs`, verbatim below this header.
+// `command-extra` 1.3.0's `src/lib.rs`, verbatim below the crate name.
 // The release is real rather than a stand-in, so what it accepts is
 // what a consumer resolving it accepts: 1.3.0 loosened `with_envs` from
 // `Envs: IntoIterator<Item = (Key, Value)>` to

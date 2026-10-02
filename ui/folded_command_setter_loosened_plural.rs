@@ -5,9 +5,7 @@
 // rule reads the plural's own bound rather than assuming one. This
 // fixture builds against 1.3.0, whose `with_envs` takes
 // `Envs::Item: Borrow<(Key, Value)>`, which a reference to a pair
-// satisfies. These folds against 1.2.0's `Item = (Key, Value)` are in
-// `ui/folded_command_setter_item.rs`, where a reference to a pair is
-// silent.
+// satisfies and 1.2.0's `Item = (Key, Value)` did not.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -21,7 +19,7 @@ use std::process::Command;
 const PAIRS: &[(&str, &str)] = &[("A", "1"), ("B", "2")];
 
 // Bad: the item is a reference to a pair, which 1.2.0 rejected and
-// 1.3.0 takes. Flagged here and silent in the 1.2.0 sweep.
+// 1.3.0 takes.
 fn reference_to_a_pair() {
     let _ = PAIRS
         .iter()
@@ -73,11 +71,9 @@ fn untouched_plurals(names: Vec<String>) {
     let _ = VARS.iter().fold(Command::new("ls"), CommandExtra::with_arg);
 }
 
-// Not flagged: the item is a reference to a pair whose elements are
-// `AsRef<OsStr>` only *through* that reference. The fold binds `key` and
-// `value` as references and so proves `&Key: AsRef<OsStr>`, where
-// `with_envs` asks for `Key: AsRef<OsStr>` -- which does not follow, so
-// the plural cannot take this iterator even here.
+// Not flagged: a reference to a pair whose elements are `AsRef<OsStr>`
+// only through that reference. The fold proves `&Key: AsRef<OsStr>`,
+// and `with_envs` asks for `Key: AsRef<OsStr>`.
 fn elements_borrowed_only<Key, Value>(command: Command, pairs: &[(Key, Value)]) -> Command
 where
     for<'a> &'a Key: AsRef<std::ffi::OsStr>,
