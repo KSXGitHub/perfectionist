@@ -44,8 +44,6 @@ pub(super) struct Inputs<'a> {
     pub(super) receiver_is_a_temporary: bool,
     pub(super) trait_is_imported: bool,
     pub(super) names_generic_arguments: bool,
-    /// Every `CommandExtra` the compilation loaded, which the walk over
-    /// the chain's later links needs to recognise their receivers.
     pub(super) command_extra_traits: &'a [DefId],
 }
 
