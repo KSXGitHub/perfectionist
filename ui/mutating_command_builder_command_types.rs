@@ -34,7 +34,7 @@ fn bare_command() {
     command.arg("bare-command");
 }
 
-// Not flagged, though `Box<Command>` has had `with_arg` since 1.4.0.
+// Not flagged: a `Box` is not `std::process::Command`.
 fn boxed_command() {
     let mut command = Box::new(std::process::Command::new("ls"));
     command.arg("boxed-command");
@@ -47,7 +47,7 @@ fn tokio_command() {
     command.arg("tokio-command");
 }
 
-// Not flagged, for both reasons at once.
+// Not flagged: a `Box`, and tokio's method rather than std's.
 fn boxed_tokio_command() {
     let mut command = Box::new(tokio::process::Command::new("ls"));
     command.arg("boxed-tokio-command");
@@ -60,17 +60,16 @@ fn async_command() {
     command.arg("async-command");
 }
 
-// Not flagged, for both reasons at once.
+// Not flagged: a `Box`, and async-process's method rather than std's.
 fn boxed_async_command() {
     let mut command = Box::new(async_process::Command::new("ls"));
     command.arg("boxed-async-command");
 }
 
-// Not flagged, and here to keep the premise above honest: every receiver
-// in this file has the by-value counterpart the diagnostic would name.
-// `with_arg` is that counterpart, so an impl going missing makes this
-// fixture `E0599` instead of leaving the silences above looking the same
-// either way.
+// Not flagged: every receiver in this file has the by-value counterpart
+// the diagnostic would name, which the compiler checks here. An impl
+// going missing makes this fixture `E0599` rather than leaving the
+// silences looking the same either way.
 fn the_counterparts_exist() {
     let _ = Box::new(std::process::Command::new("ls")).with_arg("a");
     let _ = tokio::process::Command::new("ls").with_arg("a");
