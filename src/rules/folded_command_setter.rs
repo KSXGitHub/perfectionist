@@ -38,12 +38,15 @@ declare_tool_lint! {
     /// between `command-extra` releases, so the rule never names a plural
     /// the code cannot call.
     ///
-    /// The fold's receiver has to be a place expression followed by at
-    /// most one argument-less method call. `VARS`, `list.iter()` and
-    /// `self.names.into_iter()` qualify; a longer one is left alone.
+    /// The fold's receiver has to be a path or a field access, possibly
+    /// dereferenced, followed by at most one argument-less method call.
+    /// `VARS`, `list.iter()` and `self.names.into_iter()` qualify; an
+    /// index such as `list[0].iter()`, and a longer chain, are left
+    /// alone.
     ///
-    /// A fold in the body of the plural itself is left alone, because
-    /// there the fold is how the plural is implemented.
+    /// A fold in the plural's own body is left alone where the suggestion
+    /// would make the plural call itself: anywhere in the trait's default
+    /// body, and over the impl's own type in an impl's.
     ///
     /// ### Why restrict this?
     ///
@@ -76,11 +79,10 @@ declare_tool_lint! {
     /// sees: the receiver runs no code but the standard library's, over
     /// the standard library's types, panics at no call such as `unwrap`,
     /// and reads nothing the initial value writes or moves. Elsewhere the
-    /// suggestion is advice.
+    /// suggestion is advice, as it also is where:
     ///
-    /// The suggestion is also advice, with a help line naming why, where:
-    ///
-    /// - the trait is not in scope at the call site;
+    /// - the module around the call has no `use` that names the trait (a
+    ///   glob import, or a `use` inside the function, does not count);
     /// - an impl that may apply to the accumulator writes its own body
     ///   for the plural;
     /// - another trait declares a method of the plural's name for the
@@ -88,6 +90,8 @@ declare_tool_lint! {
     /// - the initial value may take its type from the fold;
     /// - the fold names a type the suggestion drops; or
     /// - the fold holds a comment the suggestion would drop.
+    ///
+    /// A help line names each reason that applies.
     ///
     /// The suggestion keeps the receiver's call unless the plural makes
     /// that same call itself.
