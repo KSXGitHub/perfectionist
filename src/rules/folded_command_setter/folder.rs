@@ -19,8 +19,8 @@ use rustc_hir::{
 };
 use rustc_lint::LateContext;
 
-/// The setter a folder resolves to, or `None` where the folder is
-/// neither a path to one nor a closure forwarding to one.
+/// The associated function a folder resolves to, or `None` where the
+/// folder is neither a path to one nor a closure forwarding to one.
 ///
 /// A path bound to a local -- `let f = CommandExtra::without_env;` and
 /// then `.fold(command, f)` -- folds exactly like the bare path but
@@ -61,8 +61,8 @@ fn assoc_fn(res: Res) -> Option<DefId> {
     }
 }
 
-/// The setter a closure forwards to, or `None` where it does anything
-/// besides forward.
+/// The associated function a closure forwards to, or `None` where it
+/// does anything besides forward.
 fn forwarded_by<'tcx>(cx: &LateContext<'tcx>, closure: &'tcx Closure<'tcx>) -> Option<DefId> {
     let body = cx.tcx.hir_body(closure.body);
     let [accumulator, item] = body.params else {
@@ -85,8 +85,8 @@ fn forwarded_by<'tcx>(cx: &LateContext<'tcx>, closure: &'tcx Closure<'tcx>) -> O
     };
     let (callee, arguments) = as_call(cx, unwrapped(body.value))?;
     // The item is destructured exactly where the setter takes it in
-    // pieces. Forwarded whole after all, as `|c, (arg,)| c.with_arg(arg)`
-    // forwards it, the plural would be handed the tuple.
+    // pieces. Where the setter takes one value, as `with_arg` does in
+    // `|c, (arg,)| c.with_arg(arg)`, the plural would be handed the tuple.
     if arguments.len() != bound.len() || destructured != (arguments.len() > 2) {
         return None;
     }
@@ -108,8 +108,8 @@ fn forwarded_by<'tcx>(cx: &LateContext<'tcx>, closure: &'tcx Closure<'tcx>) -> O
 /// is not what the plural asks of it: `|c, ref k| c.without_env(k)`
 /// establishes `&K: AsRef<OsStr>` and `without_envs` wants
 /// `K: AsRef<OsStr>`. Measured as a machine-applicable `E0277` on every
-/// release. A nested pattern is no better: the plural binds what the
-/// fold destructured.
+/// release. A nested pattern is no better: the plural is handed the
+/// item the pattern took apart.
 fn binding(pat: &Pat<'_>) -> Option<HirId> {
     match pat.kind {
         PatKind::Binding(BindingMode(ByRef::No, _), hir_id, _, None) => Some(hir_id),
@@ -137,12 +137,8 @@ fn unwrapped<'tcx>(expr: &'tcx Expr<'tcx>) -> &'tcx Expr<'tcx> {
     }
 }
 
-/// A call's callee and its arguments with the receiver first.
-///
-/// A method call and an associated-function call differ only in where
-/// HIR puts the receiver -- `ExprKind::MethodCall` keeps it out of the
-/// argument list, `ExprKind::Call` has it first -- so both are
-/// normalised to receiver-then-arguments and compared once.
+/// A call's callee and its arguments, with a method call's receiver put
+/// first, where an associated-function call already has it.
 fn as_call<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx Expr<'tcx>,

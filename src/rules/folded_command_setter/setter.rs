@@ -3,9 +3,8 @@
 //!
 //! The set is fixed rather than configured. The suggestion is sound
 //! only because upstream defines each plural as exactly the fold of its
-//! singular -- `with_args` is `args.into_iter().fold(self,
-//! Self::with_arg)` -- so a pair named for some other builder could not
-//! promise the same.
+//! singular, so a pair named for some other builder could not promise
+//! the same.
 
 use clippy_utils::sym;
 use clippy_utils::ty::{deref_chain, get_iterator_item_ty, implements_trait};
@@ -22,7 +21,6 @@ use rustc_trait_selection::traits::{Obligation, ObligationCause};
 
 /// What a fold over one singular setter can be replaced by.
 pub(super) struct Replacement {
-    /// The plural's name.
     pub plural: &'static str,
     /// Whether the plural splits each item between the singular's two
     /// parameters, which only a two-element tuple can be split between.
@@ -32,9 +30,9 @@ pub(super) struct Replacement {
 /// What replaces a fold over the singular `CommandExtra` setter
 /// `singular`, or `None` for one with no plural.
 ///
-/// `with_no_env`, `with_stdin`, `with_stdout` and `with_stderr` each set
-/// one thing that a later call replaces rather than extends, so folding
-/// them is a different mistake and outside this rule.
+/// The trait's other setters that take one value each set one thing
+/// that a later call replaces rather than extends, so folding them is a
+/// different mistake and outside this rule.
 pub(super) fn replacement_for(singular: Symbol) -> Option<Replacement> {
     let (plural, splits_item) = match singular.as_str() {
         "with_arg" => ("with_args", false),
@@ -450,8 +448,8 @@ pub(super) fn bounds_are_known(cx: &LateContext<'_>, plural: DefId) -> bool {
         })
 }
 
-/// Whether the `CommandExtra` this build resolved declares a method
-/// named `plural`.
+/// The method named `plural` that the `CommandExtra` this build
+/// resolved declares, if it declares one.
 ///
 /// The pairs arrived over several releases -- `without_envs` is 1.2.0
 /// and later -- so a crate can have the singular without its plural,
