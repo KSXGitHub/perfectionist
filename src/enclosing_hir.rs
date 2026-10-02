@@ -22,7 +22,7 @@ use rustc_span::Span;
 /// enclosing item's span does not cover the call site — maps to
 /// [`hir::CRATE_HIR_ID`].
 pub(crate) fn find_enclosing_hir_ids(tcx: TyCtxt<'_>, target_spans: &[Span]) -> Vec<hir::HirId> {
-    walk(tcx, target_spans, false)
+    walk(tcx, target_spans, AnchorMode::Node)
 }
 
 #[cfg_attr(
@@ -49,10 +49,15 @@ pub(crate) fn find_enclosing_hir_ids(tcx: TyCtxt<'_>, target_spans: &[Span]) -> 
 /// item), which is the same place a user puts the suppressing
 /// attribute.
 fn find_comment_anchor_hir_ids(tcx: TyCtxt<'_>, target_spans: &[Span]) -> Vec<hir::HirId> {
-    walk(tcx, target_spans, true)
+    walk(tcx, target_spans, AnchorMode::Comment)
 }
 
-fn walk(tcx: TyCtxt<'_>, target_spans: &[Span], include_attr_spans: bool) -> Vec<hir::HirId> {
+enum AnchorMode {
+    Node,
+    Comment,
+}
+
+fn walk(tcx: TyCtxt<'_>, target_spans: &[Span], mode: AnchorMode) -> Vec<hir::HirId> {
     let mut best: Vec<hir::HirId> = vec![hir::CRATE_HIR_ID; target_spans.len()];
     let mut best_width: Vec<u32> = vec![u32::MAX; target_spans.len()];
     let mut finder = EnclosingHirFinder {
@@ -60,7 +65,7 @@ fn walk(tcx: TyCtxt<'_>, target_spans: &[Span], include_attr_spans: bool) -> Vec
         targets: target_spans,
         best: &mut best,
         best_width: &mut best_width,
-        include_attr_spans,
+        include_attr_spans: matches!(mode, AnchorMode::Comment),
     };
     tcx.hir_walk_toplevel_module(&mut finder);
     best

@@ -72,7 +72,7 @@ pub(crate) fn render_rule_md(rule: &Rule, source_link_prefix: &str) -> String {
     out.push('\n');
     let _ = writeln!(out, "# `{}`", rule.namespaced);
     out.push('\n');
-    write_metadata(&mut out, "Default state", Some(rule.default_state.word()));
+    write_metadata(&mut out, "Default state", rule.default_state.word());
     let source_path = source_path_str(rule);
     let _ = writeln!(
         out,
@@ -204,8 +204,8 @@ fn render_config_section(config: &ConfigDoc, out: &mut String) {
 fn render_field(field: &ConfigField, out: &mut String) {
     let _ = writeln!(out, "### Field: `{name}`", name = field.name);
     out.push('\n');
-    write_metadata(out, "Type", Some(&field.type_label));
-    write_metadata(out, field.optionality.label(), None);
+    write_metadata(out, "Type", &field.type_label);
+    write_qualifier(out, field.optionality.label());
     out.push('\n');
     append_doc(&field.doc_markdown, out);
 }
@@ -241,7 +241,7 @@ fn render_variant(variant: &EnumVariant, out: &mut String) {
     // from the string a TOML author writes; when the two coincide
     // the bullet would repeat the heading.
     if variant.rust_name != variant.serialized {
-        write_metadata(out, "Rust", Some(&variant.rust_name));
+        write_metadata(out, "Rust", &variant.rust_name);
         out.push('\n');
     }
     append_doc(&variant.doc_markdown, out);
@@ -250,21 +250,17 @@ fn render_variant(variant: &EnumVariant, out: &mut String) {
 fn render_struct_field(field: &StructField, out: &mut String) {
     let _ = writeln!(out, "##### Field: `{name}`", name = field.name);
     out.push('\n');
-    write_metadata(out, "Type", Some(&field.type_label));
+    write_metadata(out, "Type", &field.type_label);
     out.push('\n');
     append_doc(&field.doc_markdown, out);
 }
 
-/// Write one bullet of the metadata list that sits between an item's
-/// heading and its prose. `value` is rendered in backticks after an
-/// italicised `label:`; passing `None` renders the label alone, for
-/// the standalone words (`Optional`, `Mandatory`) that qualify the
-/// item rather than naming a property of it.
-fn write_metadata(out: &mut String, label: &str, value: Option<&str>) {
-    let _ = match value {
-        Some(value) => writeln!(out, "- _{label}:_ `{value}`"),
-        None => writeln!(out, "- _{label}_"),
-    };
+fn write_metadata(out: &mut String, label: &str, value: &str) {
+    let _ = writeln!(out, "- _{label}:_ `{value}`");
+}
+
+fn write_qualifier(out: &mut String, label: &str) {
+    let _ = writeln!(out, "- _{label}_");
 }
 
 /// Append a doc-comment block, normalising trailing whitespace so

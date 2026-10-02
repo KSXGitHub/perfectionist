@@ -52,7 +52,7 @@ fn cargo_command(project_dir: &Path, shared_target_dir: &Path) -> Command {
 /// `CARGO_TARGET_DIR` pointed at `shared_target_dir` so the build
 /// artefacts are reused across invocations.
 pub fn run_dylint(project_dir: &Path, shared_target_dir: &Path) -> (String, bool) {
-    run_dylint_inner(project_dir, shared_target_dir, false)
+    run_dylint_inner(project_dir, shared_target_dir, &[])
 }
 
 /// Like [`run_dylint`], but forwards `--all-targets` to the underlying
@@ -60,7 +60,7 @@ pub fn run_dylint(project_dir: &Path, shared_target_dir: &Path) -> (String, bool
 /// where `cfg(test)` is active (anything reading `#[cfg(test)]` or
 /// `#[test]`) need the unit-test target this flag adds.
 pub fn run_dylint_all_targets(project_dir: &Path, shared_target_dir: &Path) -> (String, bool) {
-    run_dylint_inner(project_dir, shared_target_dir, true)
+    run_dylint_inner(project_dir, shared_target_dir, &["--", "--all-targets"])
 }
 
 /// Like [`run_dylint`], but applies the lints' autofixes to the
@@ -85,18 +85,11 @@ pub fn run_dylint_fix(project_dir: &Path, shared_target_dir: &Path) -> (String, 
     (stderr, output.status.success())
 }
 
-fn run_dylint_inner(
-    project_dir: &Path,
-    shared_target_dir: &Path,
-    all_targets: bool,
-) -> (String, bool) {
+fn run_dylint_inner(project_dir: &Path, shared_target_dir: &Path, args: &[&str]) -> (String, bool) {
     let output = cargo_command(project_dir, shared_target_dir)
         .with_arg("dylint")
         .with_arg("--all")
-        .with_args(match all_targets {
-            true => ["--", "--all-targets"].as_slice(),
-            false => &[],
-        })
+        .with_args(args)
         .output()
         .expect("failed to run `cargo dylint`");
     let stderr = String::from_utf8(output.stderr).expect("dylint stderr is not UTF-8");

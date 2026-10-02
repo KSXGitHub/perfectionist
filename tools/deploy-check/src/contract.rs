@@ -15,14 +15,22 @@ pub(crate) enum Source {
 }
 
 impl Source {
-    /// Read `file` either before (parent / HEAD) or after (commit /
-    /// index) the change.
-    fn read_file(&self, root: &Path, file: &str, before: bool) -> Result<String, RuntimeError> {
-        let target = match (self, before) {
-            (Source::Commit(rev), true) => format!("{rev}^:{file}"),
-            (Source::Commit(rev), false) => format!("{rev}:{file}"),
-            (Source::Cached, true) => format!("HEAD:{file}"),
-            (Source::Cached, false) => format!(":{file}"),
+    /// Read `file` as it was before the change: the commit's parent, or
+    /// `HEAD` for the staged index.
+    fn read_file_before(&self, root: &Path, file: &str) -> Result<String, RuntimeError> {
+        let target = match self {
+            Source::Commit(rev) => format!("{rev}^:{file}"),
+            Source::Cached => format!("HEAD:{file}"),
+        };
+        git_capture(root, ["show", &target])
+    }
+
+    /// Read `file` as the change leaves it: the commit, or the staged
+    /// index.
+    fn read_file_after(&self, root: &Path, file: &str) -> Result<String, RuntimeError> {
+        let target = match self {
+            Source::Commit(rev) => format!("{rev}:{file}"),
+            Source::Cached => format!(":{file}"),
         };
         git_capture(root, ["show", &target])
     }
@@ -98,8 +106,8 @@ fn verify_version_bump_file(
     file: &str,
     parse_version: impl Fn(&str) -> Result<String, RuntimeError>,
 ) -> Result<(), RuntimeError> {
-    let before = source.read_file(root, file, true)?;
-    let after = source.read_file(root, file, false)?;
+    let before = source.read_file_before(root, file)?;
+    let after = source.read_file_after(root, file)?;
     let before_ver = parse_version(&before)?;
     let after_ver = parse_version(&after)?;
     if after_ver != version {

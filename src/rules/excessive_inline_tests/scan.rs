@@ -110,7 +110,14 @@ fn classify(cx: &LateContext<'_>, item: &Item<'_>, files: &mut HashMap<BytePos, 
             // (its whole block). The body is all test code, so we do not
             // descend into it.
             (true, false) => {
-                record_test(cx, item.span, Some(ident.name), files);
+                record_test(
+                    cx,
+                    TestItem {
+                        span: item.span,
+                        module_name: Some(ident.name),
+                    },
+                    files,
+                );
             }
             // External `#[cfg(test)] mod X;`: already extracted, neutral
             // for the inline footprint. Its file is a valid extraction
@@ -130,7 +137,14 @@ fn classify(cx: &LateContext<'_>, item: &Item<'_>, files: &mut HashMap<BytePos, 
     // Bare test items (`#[test] fn`, `#[cfg(test)] fn`, any other
     // `#[cfg(test)]` item) contribute to the footprint.
     if is_test {
-        record_test(cx, item.span, None, files);
+        record_test(
+            cx,
+            TestItem {
+                span: item.span,
+                module_name: None,
+            },
+            files,
+        );
     } else {
         record_production(cx, item.span, files);
     }
@@ -151,16 +165,11 @@ fn record_production(cx: &LateContext<'_>, span: Span, files: &mut HashMap<ByteP
     acc_for(cx.sess().source_map(), span, files).production_count += 1;
 }
 
-fn record_test(
-    cx: &LateContext<'_>,
-    span: Span,
-    module_name: Option<Symbol>,
-    files: &mut HashMap<BytePos, FileAcc>,
-) {
+fn record_test(cx: &LateContext<'_>, item: TestItem, files: &mut HashMap<BytePos, FileAcc>) {
     let source_map = cx.sess().source_map();
-    let lines = line_count(source_map, span);
-    let acc = acc_for(source_map, span, files);
-    acc.test_items.push(TestItem { span, module_name });
+    let lines = line_count(source_map, item.span);
+    let acc = acc_for(source_map, item.span, files);
+    acc.test_items.push(item);
     acc.inline_test_lines += lines;
 }
 

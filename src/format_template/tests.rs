@@ -2,10 +2,17 @@ use super::{
     Placeholder, Segment, parse_template, take_escaped_brace, take_literal_text, take_placeholder,
 };
 
-fn placeholder<'a>(argument: &'a str, format_spec: Option<&'a str>) -> Segment<'a> {
+fn placeholder(argument: &str) -> Segment<'_> {
     Segment::Placeholder(Placeholder {
         argument,
-        format_spec,
+        format_spec: None,
+    })
+}
+
+fn placeholder_with_spec<'a>(argument: &'a str, format_spec: &'a str) -> Segment<'a> {
+    Segment::Placeholder(Placeholder {
+        argument,
+        format_spec: Some(format_spec),
     })
 }
 
@@ -24,19 +31,19 @@ fn plain_text_is_one_literal_segment() {
 
 #[test]
 fn lone_placeholder_is_one_segment() {
-    assert_eq!(parse_template("{_0}"), Some(vec![placeholder("_0", None)]));
+    assert_eq!(parse_template("{_0}"), Some(vec![placeholder("_0")]));
 }
 
 #[test]
 fn implicit_positional_placeholder_has_an_empty_argument() {
-    assert_eq!(parse_template("{}"), Some(vec![placeholder("", None)]));
+    assert_eq!(parse_template("{}"), Some(vec![placeholder("")]));
 }
 
 #[test]
 fn colon_splits_argument_from_format_spec() {
     assert_eq!(
         parse_template("{_0:>8}"),
-        Some(vec![placeholder("_0", Some(">8"))]),
+        Some(vec![placeholder_with_spec("_0", ">8")]),
     );
 }
 
@@ -44,7 +51,7 @@ fn colon_splits_argument_from_format_spec() {
 fn empty_format_spec_is_distinguished_from_an_absent_one() {
     assert_eq!(
         parse_template("{_0:}"),
-        Some(vec![placeholder("_0", Some(""))]),
+        Some(vec![placeholder_with_spec("_0", "")]),
     );
 }
 
@@ -68,7 +75,7 @@ fn literal_text_surrounds_a_placeholder() {
         parse_template("bad token at offset {_0}!"),
         Some(vec![
             Segment::Literal("bad token at offset "),
-            placeholder("_0", None),
+            placeholder("_0"),
             Segment::Literal("!"),
         ]),
     );
@@ -80,7 +87,7 @@ fn doubled_braces_are_escapes_not_placeholders() {
         parse_template("{{{_0}}}"),
         Some(vec![
             Segment::EscapedBrace('{'),
-            placeholder("_0", None),
+            placeholder("_0"),
             Segment::EscapedBrace('}'),
         ]),
     );
@@ -90,7 +97,7 @@ fn doubled_braces_are_escapes_not_placeholders() {
 fn adjacent_placeholders_are_separate_segments() {
     assert_eq!(
         parse_template("{_0}{_1}"),
-        Some(vec![placeholder("_0", None), placeholder("_1", None)]),
+        Some(vec![placeholder("_0"), placeholder("_1")]),
     );
 }
 
@@ -109,7 +116,7 @@ fn unmatched_closing_brace_is_rejected() {
 fn non_ascii_literal_text_is_kept_whole() {
     assert_eq!(
         parse_template("héllo {_0}"),
-        Some(vec![Segment::Literal("héllo "), placeholder("_0", None)]),
+        Some(vec![Segment::Literal("héllo "), placeholder("_0")]),
     );
 }
 
