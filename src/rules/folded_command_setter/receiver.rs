@@ -66,9 +66,8 @@ pub(super) struct Shape {
     pub reorderable: bool,
 }
 
-/// The receiver's shape, or `None` where it is not a simple iterator
-/// expression, a place followed by at most one argument-less method
-/// call, or where no prefix spells what method resolution did to it.
+/// The receiver's shape, or `None` unless it is a place followed by at
+/// most one argument-less method call.
 ///
 /// An argument is where logic hides, and a second call is more text
 /// moving. Both bars are structural rather than a list of adapter names
@@ -228,8 +227,8 @@ impl Touch<'_> {
 
     /// Whether a move of `place` takes something the receiver reads: the
     /// two paths agree field for field until one of them ends. Derefs are
-    /// skipped on both sides, and a projection that is not a field, such
-    /// as an index or a subslice, is taken to overlap.
+    /// skipped on both sides, and any projection but a field is taken to
+    /// overlap.
     fn overlaps(&self, place: &PlaceWithHirId<'_>) -> bool {
         place
             .place

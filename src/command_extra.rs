@@ -23,12 +23,7 @@ pub(crate) const TRAIT: &str = "CommandExtra";
 /// Whether `trait_id` is `command_extra::CommandExtra`.
 ///
 /// The name alone would match a `CommandExtra` of the author's own, so
-/// the crate is asked for too. That still reads a crate of the author's
-/// own, packaged as `command-extra` and exporting a trait called
-/// `CommandExtra`, as the published one. Checking the trait's methods
-/// would close that here and nowhere else: `crate_is_declared`, in
-/// `src/rules/mutating_command_builder/availability.rs`, only ever sees
-/// a crate name, because it answers before anything is loaded.
+/// the crate is asked for too, though a crate that took the name passes.
 pub(crate) fn is_the_trait(cx: &LateContext<'_>, trait_id: DefId) -> bool {
     cx.tcx.item_name(trait_id) == Symbol::intern(TRAIT)
         && cx.tcx.crate_name(trait_id.krate) == Symbol::intern(CRATE)
@@ -46,12 +41,8 @@ pub(crate) fn trait_is_imported(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
 ///
 /// Scoped to that module because a trait has to be in scope where the
 /// method is called, and a parent module's `use` does not reach a
-/// child. A trait reached some other way, such as through a glob, a
-/// project prelude or a `use` inside the body, reads here as absent.
-/// What that costs depends on the caller: usually a withheld fix and a
-/// redundant "add the import" line, but where this answer is the only
-/// evidence of the dependency, as it is under a manifest key that
-/// renames the crate, the caller's lint stays silent instead.
+/// child. A trait reached through a glob, a prelude or a `use` inside
+/// the body reads here as absent, so this errs toward a missing import.
 pub(crate) fn imports(
     cx: &LateContext<'_>,
     call: &Expr<'_>,

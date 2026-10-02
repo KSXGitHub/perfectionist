@@ -19,13 +19,12 @@ use rustc_hir::{
 };
 use rustc_lint::LateContext;
 
-/// The associated function a folder resolves to, or `None` where the
-/// folder is neither a path to one nor a closure forwarding to one.
+/// The method a folder resolves to, or `None` where the folder is
+/// neither a path to one nor a closure forwarding to one.
 ///
-/// A local bound to a path, as in `let f = CommandExtra::without_env;`
-/// and then `.fold(command, f)`, folds exactly like the bare path but
-/// resolves to the local, so it answers `None` here. A known gap rather
-/// than a shape the rule means to exclude.
+/// A local bound to a path, as in `let f = CommandExtra::without_env;`,
+/// folds like the bare path but answers `None`: a known gap, not an
+/// exclusion.
 pub(super) fn resolves_to<'tcx>(cx: &LateContext<'tcx>, folder: &'tcx Expr<'tcx>) -> Option<DefId> {
     match folder.kind {
         ExprKind::Path(ref qpath) => assoc_fn(cx.qpath_res(qpath, folder.hir_id)),
@@ -52,8 +51,7 @@ pub(super) fn annotates_the_item(folder: &Expr<'_>) -> bool {
         .is_some_and(|item| !matches!(item.kind, TyKind::Infer(())))
 }
 
-/// The associated function a resolution names, or `None` for anything
-/// else, such as a local, a unit struct or a free function.
+/// The associated function a resolution names, if any.
 fn assoc_fn(res: Res) -> Option<DefId> {
     match res {
         Res::Def(DefKind::AssocFn, def_id) => Some(def_id),
@@ -61,8 +59,8 @@ fn assoc_fn(res: Res) -> Option<DefId> {
     }
 }
 
-/// The associated function a closure forwards to, or `None` where it
-/// does anything besides forward.
+/// The method a closure forwards to, or `None` where it does anything
+/// besides forward.
 fn forwarded_by<'tcx>(cx: &LateContext<'tcx>, closure: &'tcx Closure<'tcx>) -> Option<DefId> {
     let body = cx.tcx.hir_body(closure.body);
     let [accumulator, item] = body.params else {
@@ -85,8 +83,7 @@ fn forwarded_by<'tcx>(cx: &LateContext<'tcx>, closure: &'tcx Closure<'tcx>) -> O
     };
     let (callee, arguments) = as_call(cx, unwrapped(body.value))?;
     // The item is destructured exactly where the setter takes it in
-    // pieces. Where the setter takes one value, as `with_arg` does in
-    // `|c, (arg,)| c.with_arg(arg)`, the plural would be handed the tuple.
+    // pieces: `|c, (arg,)| c.with_arg(arg)` would hand the plural a tuple.
     if arguments.len() != bound.len() || destructured != (arguments.len() > 2) {
         return None;
     }
@@ -108,8 +105,8 @@ fn forwarded_by<'tcx>(cx: &LateContext<'tcx>, closure: &'tcx Closure<'tcx>) -> O
 /// is not what the plural asks of it: `|c, ref k| c.without_env(k)`
 /// establishes `&K: AsRef<OsStr>` and `without_envs` wants
 /// `K: AsRef<OsStr>`. Measured as a machine-applicable `E0277` on every
-/// release. A nested pattern is no better: the plural is handed the
-/// item the pattern took apart.
+/// release. A nested pattern is no better: the plural gets the item
+/// whole.
 fn binding(pat: &Pat<'_>) -> Option<HirId> {
     match pat.kind {
         PatKind::Binding(BindingMode(ByRef::No, _), hir_id, _, None) => Some(hir_id),
