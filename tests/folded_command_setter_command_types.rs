@@ -1,11 +1,11 @@
 //! Which types `folded_command_setter` reaches, and why that is the
 //! resolved `command-extra`'s decision rather than the rule's.
 //!
-//! The rule never asks the accumulator's type. What proves the
-//! accumulator implements `CommandExtra` is the folder resolving to one
-//! of its setters, so the rule follows whatever the release implements
-//! the trait for -- and cannot fire where the release does not, because
-//! such a fold does not type-check.
+//! The rule never asks whether the accumulator implements
+//! `CommandExtra`. What proves it does is the folder resolving to one of
+//! the trait's setters, so the rule follows whatever the release
+//! implements the trait for. It cannot fire where the release does not,
+//! because such a fold does not type-check.
 //!
 //! That is a claim about two builds, not one, so it needs a real Cargo
 //! project rather than a `ui/` fixture: the contrast is a version

@@ -2,9 +2,8 @@
 // edition:2024
 //
 // What the rule does and does not ask of the fold's accumulator. It
-// never asks the accumulator's type: the folder resolving to a
-// `CommandExtra` setter is what proves the accumulator implements the
-// trait.
+// never asks whether the accumulator implements `CommandExtra`: the
+// folder resolving to one of the trait's setters is what proves it does.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -40,12 +39,9 @@ fn std_setter() {
     });
 }
 
-// Bad: an accumulator the code names only by a type parameter. What
-// proves the accumulator is a `CommandExtra` is the folder resolving to
-// one of its setters, so the rule never asks the accumulator's type --
-// which is also how it reaches whatever else a release implements the
-// trait for. The fix is withheld, because the parameter can stand for a
-// type whose impl writes its own plural.
+// Bad: an accumulator the code names only by a type parameter. The fix
+// is withheld, because the parameter can stand for a type whose impl
+// writes its own plural.
 fn generic_accumulator<Builder: CommandExtra>(command: Builder) -> Builder {
     VARS.iter().fold(command, CommandExtra::without_env)
 }

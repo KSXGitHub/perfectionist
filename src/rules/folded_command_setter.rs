@@ -223,9 +223,9 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
             return;
         };
         // Resolving the setter is what proves the accumulator implements
-        // `CommandExtra`: `fold`'s `B` is the `Self` of the impl the
-        // setter resolved in, or the fold does not type-check. So the
-        // accumulator's type is never asked, and the rule reaches
+        // `CommandExtra`: `fold`'s `B` is the `Self` the setter is called
+        // with, or the fold does not type-check. So no list of
+        // accumulator types gates the trigger, and the rule reaches
         // whatever a release implements the trait for.
         let Some(trait_id) = cx.tcx.trait_of_assoc(singular) else {
             return;
