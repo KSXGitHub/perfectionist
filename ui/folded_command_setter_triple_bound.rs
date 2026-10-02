@@ -1,8 +1,5 @@
 // aux-build:command_extra_triple_bound.rs
 // edition:2024
-//
-// A `with_envs` whose items have to borrow as a triple, so no pair the
-// fold splits fits it.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]

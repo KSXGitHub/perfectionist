@@ -3,8 +3,8 @@
 //
 // The plural has to exist in the `command-extra` the crate resolved.
 // This fixture builds against 1.0.0, which has `with_args` but neither
-// `with_envs` (1.1.0) nor `without_envs` (1.2.0), so the env folds have
-// no plural here to be named.
+// `with_envs` nor `without_envs`, so the env folds have no plural here
+// to be named.
 //
 // The `with_arg` fold is here to keep that silence attributable to the
 // missing method rather than to the crate: the same shape, against the

@@ -320,9 +320,9 @@ pub fn ambiguous(ambiguous: Ambiguous) -> Ambiguous {
     VARS.iter().fold(ambiguous, CommandExtra::without_env)
 }
 
-// Bad, and the fix is applied: another trait declares a method named
-// like the plural, but on `&self`. Method probing reaches the by-value
-// plural first, so the two never compete.
+// Bad: another trait declares a method named like the plural, but on
+// `&self`. Method resolution reaches the by-value plural first, so the
+// fix is applied.
 trait ByReference {
     fn without_envs<Keys: IntoIterator>(&self, keys: Keys) -> usize;
 }
@@ -440,7 +440,7 @@ fn generically_ambiguous(ambiguous: GenericallyAmbiguous) -> GenericallyAmbiguou
 }
 
 // Bad: an accumulator whose `Deref` leads back to itself, which method
-// probing gives up on after its recursion limit, and so does the rule.
+// resolution gives up on after its recursion limit, as does the rule.
 struct Cyclic(Command);
 
 impl std::ops::Deref for Cyclic {

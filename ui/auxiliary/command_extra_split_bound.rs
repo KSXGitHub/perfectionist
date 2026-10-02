@@ -1,7 +1,7 @@
 // A `command-extra` whose `with_envs` bounds its item by a trait of its
 // own rather than by a tuple, and whose `with_args` asks for `Copy` as
-// well. Neither is a bound the rule reads. Only what the fixture reaches
-// is declared, under the name the rule looks for.
+// well. Only what the fixture reaches is declared, under the name the
+// rule looks for.
 
 #![crate_name = "command_extra"]
 

@@ -140,8 +140,8 @@ fn in_a_macro_body() {
 }
 
 // Bad: an overloaded `Deref` written as `*`. Reaching the place runs
-// the `deref` body, and the suggestion moves that across the initial
-// value, so the fix is withheld.
+// the `deref` body, and the rewrite moves that past the initial value,
+// so the fix is withheld.
 struct Counted(Vec<String>);
 
 struct Noisy(Counted);

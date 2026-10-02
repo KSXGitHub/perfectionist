@@ -625,20 +625,15 @@ pub fn synth_command_setter(input: TokenStream) -> TokenStream {
 }
 
 /// `#[derive(SynthFoldedCommandSetter)]` +
-/// `#[synth_folded_command_setter]` →
-/// `fn _synth_folded_command_setter() { let _ = VARS.iter().fold(`
-/// `std::process::Command::new("ls"),`
-/// `command_extra::CommandExtra::without_env); }` where every token, the
+/// `#[synth_folded_command_setter]` → `source`, every token of which, the
 /// wrapping `fn` included, inherits the user-span of
 /// `synth_folded_command_setter`.
 ///
-/// Everything is stamped, so both the fold call and the enclosing item
-/// read as user-written, and `hir_in_external_macro`, which checks the
-/// node's span and the enclosing item's `def_span`, has nothing to find.
+/// So both the fold call and the enclosing item read as user-written,
+/// and `hir_in_external_macro`, which checks the node's span and the
+/// enclosing item's `def_span`, has nothing to find.
 ///
-/// `VARS` is the fixture's own `const`, so the synthesised fold is one
-/// the rule fires on when hand-written: a `&'static` slice's `iter`
-/// folded over a singular setter whose plural the trait declares.
+/// `VARS` is the fixture's own `const`.
 #[proc_macro_derive(SynthFoldedCommandSetter, attributes(synth_folded_command_setter))]
 pub fn synth_folded_command_setter(input: TokenStream) -> TokenStream {
     let attr_span = find_attr_span(input, "synth_folded_command_setter").expect(

@@ -2,10 +2,7 @@
 // edition:2024
 //
 // What the `with_env` pair accepts is a property of the release, so the
-// rule reads the plural's own bound rather than assuming one. This
-// fixture builds against 1.3.0, whose `with_envs` takes
-// `Envs::Item: Borrow<(Key, Value)>`, which a reference to a pair
-// satisfies and 1.2.0's `Item = (Key, Value)` did not.
+// rule reads the plural's own bound rather than assuming one.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
