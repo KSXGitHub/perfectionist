@@ -22,8 +22,8 @@ use rustc_lint::LateContext;
 /// The associated function a folder resolves to, or `None` where the
 /// folder is neither a path to one nor a closure forwarding to one.
 ///
-/// A path bound to a local -- `let f = CommandExtra::without_env;` and
-/// then `.fold(command, f)` -- folds exactly like the bare path but
+/// A local bound to a path, as in `let f = CommandExtra::without_env;`
+/// and then `.fold(command, f)`, folds exactly like the bare path but
 /// resolves to the local, so it answers `None` here. A known gap rather
 /// than a shape the rule means to exclude.
 pub(super) fn resolves_to<'tcx>(cx: &LateContext<'tcx>, folder: &'tcx Expr<'tcx>) -> Option<DefId> {
@@ -53,7 +53,7 @@ pub(super) fn annotates_the_item(folder: &Expr<'_>) -> bool {
 }
 
 /// The associated function a resolution names, or `None` for anything
-/// else -- a local, a unit struct, a free function.
+/// else, such as a local, a unit struct or a free function.
 fn assoc_fn(res: Res) -> Option<DefId> {
     match res {
         Res::Def(DefKind::AssocFn, def_id) => Some(def_id),

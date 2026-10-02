@@ -3,7 +3,7 @@
 // between the pair: `applied.rs` holds the folds as written and
 // `applied.fixed.rs` as the fixer leaves them, and the test compares
 // the fixer's output against the latter byte for byte, so the two files
-// have to differ by exactly the rewrite and by nothing else -- this
+// have to differ by exactly the rewrite and by nothing else, this
 // header included.
 //
 // Each fold is one line, so the rewrite the fixer performs is a

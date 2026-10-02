@@ -228,8 +228,8 @@ impl Touch<'_> {
 
     /// Whether a move of `place` takes something the receiver reads: the
     /// two paths agree field for field until one of them ends. Derefs are
-    /// skipped on both sides, and a projection that is not a field --
-    /// an index, a subslice -- is taken to overlap.
+    /// skipped on both sides, and a projection that is not a field, such
+    /// as an index or a subslice, is taken to overlap.
     fn overlaps(&self, place: &PlaceWithHirId<'_>) -> bool {
         place
             .place
@@ -432,7 +432,7 @@ fn is_place(expr: &Expr<'_>) -> bool {
 ///
 /// A `Deref` is a call, and the suggestion moves the receiver across the
 /// initial value, so one that records anything would run in the other
-/// order. Measured with one that counts its calls -- the fold builds
+/// order. Measured with one that counts its calls: the fold builds
 /// `ls1` and the plural `ls0`.
 fn derefs_through_user_code(cx: &LateContext<'_>, place: &Expr<'_>) -> bool {
     let typeck = cx.typeck_results();

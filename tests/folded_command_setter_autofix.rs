@@ -35,7 +35,7 @@ use text_block_macros::text_block_fnl;
 /// appended, which the fixtures need and [`fixture_cargo_toml`] does not
 /// carry. Passing `Cargo.toml` as a source overwrites the generated copy,
 /// since [`build_project_with_config`] inserts the sources after its own
-/// entries -- appending to that copy rather than restating it keeps the
+/// entries. Appending to that copy rather than restating it keeps the
 /// package, lib and workspace stanzas in one place.
 fn cargo_toml(package: &str, dependencies: &str) -> String {
     format!(

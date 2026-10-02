@@ -52,10 +52,10 @@ pub(super) fn replacement_for(singular: Symbol) -> Option<Replacement> {
 /// constraint that is depends on the release. 1.1.0 and 1.2.0 write
 /// `Envs: IntoIterator<Item = (Key, Value)>`, an associated-type
 /// equality that no reference satisfies: `&[(&str, &str)]` yields
-/// `&(&str, &str)`, which the *fold* takes -- `|command, (key, value)|`
-/// binds through the reference -- and the plural does not. 1.3.0 and
-/// later write `Envs::Item: Borrow<(Key, Value)>`, which a reference to
-/// a pair does satisfy.
+/// `&(&str, &str)`, which the plural does not take and the *fold* does,
+/// because `|command, (key, value)|` binds through the reference. 1.3.0
+/// and later write `Envs::Item: Borrow<(Key, Value)>`, which a reference
+/// to a pair does satisfy.
 ///
 /// Reading the constraint keeps this in step with the version resolved,
 /// as [`declares`] does for the plural's existence. Asking the item
@@ -451,9 +451,9 @@ pub(super) fn bounds_are_known(cx: &LateContext<'_>, plural: DefId) -> bool {
 /// The method named `plural` that the `CommandExtra` this build
 /// resolved declares, if it declares one.
 ///
-/// The pairs arrived over several releases -- `without_envs` is 1.2.0
-/// and later -- so a crate can have the singular without its plural,
-/// which is the very reason its author wrote the fold. Asking the trait
+/// The pairs arrived over several releases, so a crate can have the
+/// singular without its plural, which is the very reason its author
+/// wrote the fold: `without_envs` is 1.2.0 and later. Asking the trait
 /// carries no version table, so a plural dropped or renamed later is
 /// covered by the same question.
 pub(super) fn declares(cx: &LateContext<'_>, trait_id: DefId, plural: &str) -> Option<DefId> {
