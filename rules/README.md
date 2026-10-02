@@ -92,7 +92,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 
 - [`mutating_command_builder`](./mutating_command_builder.md) (default: `active`).
 
-  a `std::process::Command` setter taking `&mut self` where `command-extra`'s by-value form exists
+  a command setter taking `&mut self` where `command-extra`'s by-value form exists
 
 - [`named_prelude_imports`](./named_prelude_imports.md) (default: `active`).
 
