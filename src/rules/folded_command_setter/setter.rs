@@ -255,9 +255,8 @@ fn autoderef_steps<'cx, 'tcx>(
 /// Whether an impl of the plural's trait that could apply to
 /// `accumulator` writes its own body for the plural.
 ///
-/// The case for the rewrite is that the trait's default plural is the
-/// fold of its singular. An override keeps the trait's signature, so the
-/// rewritten call still compiles, but it runs that body instead, which is
+/// An override keeps the trait's signature, so the rewritten call still
+/// compiles, but it runs that body instead, which is
 /// why this withholds the fix rather than the diagnostic.
 ///
 /// For a type parameter or an alias, `for_each_relevant_impl` visits
@@ -413,11 +412,9 @@ fn receiver_with_self<'tcx>(
 
 /// Whether every bound the plural declares is one the rule accounts for.
 ///
-/// Those are `Sized`, `IntoIterator` on what the plural iterates, `AsRef`
-/// on what the singular takes, and the pair the `with_env` plural splits,
-/// which [`item_fits`] reads. A bound beyond those, `Args: Copy` say, is
-/// one the fold does not prove, and nothing then says which iterators the
-/// plural accepts, so the answer is no.
+/// [`item_fits`] reads the pair the `with_env` plural splits. Any other
+/// bound, `Args: Copy` say, is one the fold does not prove, and nothing
+/// then says which iterators the plural accepts, so the answer is no.
 pub(super) fn bounds_are_known(cx: &LateContext<'_>, plural: DefId) -> bool {
     let tcx = cx.tcx;
     let item = iterator_item(cx);

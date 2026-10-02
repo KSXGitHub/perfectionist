@@ -18,14 +18,12 @@
 //! command's arguments under a fix the rule called machine-applicable.
 //! [`erases`] says which call is erased instead.
 //!
-//! Reorderability is a third question, and it has two halves. The
-//! receiver must not do anything the initial value could see, and the
-//! initial value must not write anything the receiver reads. The first
-//! half is answered over-conservatively: it asks only whether every body
-//! the receiver runs is the standard library's own, instantiated with the
-//! standard library's own types and reporting no panic at its caller,
-//! which declines rewrites that are provably safe, `queue.take_all()`
-//! against a plain binding among them. The second half asks whether the
+//! To be reorderable, the receiver must not do anything the initial value
+//! could see, and the initial value must not write anything the receiver
+//! reads. The first is answered over-conservatively: it asks only whether
+//! every body the receiver runs is the standard library's own, which
+//! declines rewrites that are provably safe, `queue.take_all()` against a
+//! plain binding among them. The second asks whether the
 //! initial value mutates or moves the place the receiver is rooted at,
 //! writes by another path what the receiver reads through a pointer, or
 //! could write it through a shared reference.
@@ -80,9 +78,7 @@ pub(super) fn shape<'tcx>(
     let prefix = prefix(cx, receiver)?;
     if is_place(receiver) {
         // Reaching a place runs no user code unless a `Deref` along it
-        // does, and then that body runs before the initial value instead
-        // of after it. Separately, the initial value can change what the
-        // receiver reads by writing the place first.
+        // does.
         return Some(Shape {
             argument: receiver.span,
             prefix,
@@ -180,7 +176,7 @@ fn written_or_moved_by<'tcx>(
 
 /// Whether evaluating `initial`, the fold's taking it included, moves,
 /// mutably borrows or writes `local`, or any local where `local` is
-/// `None`. A move counts only along `fields`.
+/// `None`.
 fn touches<'tcx>(
     cx: &LateContext<'tcx>,
     initial: &'tcx Expr<'tcx>,
@@ -414,9 +410,7 @@ fn std_throughout(cx: &LateContext<'_>, ty: Ty<'_>) -> bool {
 /// Whether `expr` names a location rather than computing one.
 ///
 /// Narrower than Rust's own notion of a place expression, which counts
-/// every indexing expression however much its index computes. What this
-/// gate is for is keeping the relocated text short, and `list[seek()]`
-/// is not that.
+/// every indexing expression however much its index computes.
 fn is_place(expr: &Expr<'_>) -> bool {
     match expr.kind {
         ExprKind::Path(QPath::Resolved(..) | QPath::TypeRelative(..)) => true,

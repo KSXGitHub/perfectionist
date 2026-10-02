@@ -108,42 +108,29 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::folded_command_setter";
 
-/// What a reader has to settle before applying the suggestion by hand
-/// where the receiver is not reorderable. Why the two orders differ is on
-/// [`receiver::Shape::reorderable`].
+/// Why this withholds the fix is on [`receiver::Shape::reorderable`].
 const REORDERS: &str = "the fold evaluates the receiver before the initial value and the \
                         suggestion evaluates them the other way round, so apply it only where \
                         their order does not matter";
 
-/// What a reader has to do first where the trait is not in scope at the
-/// call site, with the trait's path in place of `{}`. Conditional, because
-/// an import [`imports`] does not see, a glob among them, leaves this line
-/// redundant rather than wrong.
+/// Conditional, because an import [`imports`] does not see leaves this
+/// line redundant rather than wrong.
 const NEEDS_THE_IMPORT: &str = "the plural is a `CommandExtra` method, which resolves only where \
                                 the trait is in scope; add `use {};` if it is not";
 
-/// What a reader has to settle where an impl that may apply to the
-/// accumulator writes the plural's body. Why that withholds the fix is
-/// on [`setter::overrides_the_plural`].
+/// Why this withholds the fix is on [`setter::overrides_the_plural`].
 const OVERRIDDEN: &str = "an impl of `CommandExtra` may write its own body for the plural, which \
                           the suggestion would run in place of the fold; apply it only where the \
                           two agree";
 
-/// What a reader has to do first where the initial value may take its
-/// type from the fold. Why that withholds the fix is on
-/// [`initial::fixes_its_own_type`].
+/// Why this withholds the fix is on [`initial::fixes_its_own_type`].
 const UNTYPED: &str = "the initial value may take its type from the fold, and as the plural's \
                        receiver it would have none; name its type first";
 
-/// What a reader has to settle where the fold names a type the
-/// suggestion drops: in a turbofish on `fold`, or on the closure folder's
-/// item, as [`folder::annotates_the_item`] says. Either can be all that
-/// fixes the iterator's item type.
+/// Why this withholds the fix is on [`folder::annotates_the_item`].
 const DROPS_A_TYPE: &str = "the fold names a type the suggestion drops; apply it only where the \
                             iterator fixes its item type without it";
 
-/// What a reader has to carry over by hand where the fold holds a comment
-/// the suggestion leaves out.
 const DROPS_A_COMMENT: &str = "the suggestion keeps the text of the initial value and the \
                                receiver only, so move the fold's other comments by hand";
 

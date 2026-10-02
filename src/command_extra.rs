@@ -29,9 +29,9 @@ pub(crate) fn is_the_trait(cx: &LateContext<'_>, trait_id: DefId) -> bool {
         && cx.tcx.crate_name(trait_id.krate) == Symbol::intern(CRATE)
 }
 
-/// Whether the innermost module around `call` imports `CommandExtra`,
-/// as [`is_the_trait`] identifies it. A rule that has resolved the trait
-/// asks [`imports`] about that trait instead.
+/// Whether the innermost module around `call` imports `CommandExtra`. A
+/// rule that has resolved the trait asks [`imports`] about that trait
+/// instead.
 pub(crate) fn trait_is_imported(cx: &LateContext<'_>, call: &Expr<'_>) -> bool {
     imports(cx, call, |def_id| is_the_trait(cx, def_id))
 }
