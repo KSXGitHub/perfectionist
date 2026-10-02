@@ -19,21 +19,15 @@ The folder is matched by what it resolves to, so every spelling
 of the setter is one shape, a closure that only forwards to it
 included.
 
-The `with_env` pair is flagged only when the resolved `with_envs`
-accepts what the fold iterates, and every pair only when the rule
-recognises each bound its plural declares. The bounds have changed
-between `command-extra` releases, so the rule never names a plural
-the code cannot call.
+The rule names a plural only where the code can call it.
 
-The fold's receiver has to be a path or a field access, possibly
-dereferenced, followed by at most one argument-less method call.
-`VARS`, `list.iter()` and `self.names.into_iter()` qualify; an
-index such as `list[0].iter()`, and a longer chain, are left
-alone.
+The fold's receiver has to be a path or field, possibly
+dereferenced, then at most one argument-less method call, such as
+`VARS`, `list.iter()` or `self.names.into_iter()`. A longer one is
+left alone.
 
-A fold in the plural's own body is left alone where the suggestion
-would make the plural call itself: anywhere in the trait's default
-body, and over the impl's own type in an impl's.
+A fold inside the plural's own body is left alone where the
+suggestion would make the plural call itself.
 
 ## Why restrict this?
 
@@ -61,24 +55,9 @@ it.
 
 ## Applicability
 
-The suggestion moves the receiver past the initial value, so a
-fix is applied only where that cannot change what either of them
-sees: the receiver runs no code but the standard library's, over
-the standard library's types, panics at no call such as `unwrap`,
-and reads nothing the initial value writes or moves. Elsewhere the
-suggestion is advice, as it also is where:
-
-- the module around the call has no `use` that names the trait (a
-  glob import, or a `use` inside the function, does not count);
-- an impl that may apply to the accumulator writes its own body
-  for the plural;
-- another trait declares a method of the plural's name for the
-  accumulator's type;
-- the initial value may take its type from the fold;
-- the fold names a type the suggestion drops; or
-- the fold holds a comment the suggestion would drop.
-
-A help line names each reason that applies.
+The fix is applied only where the rewrite is known to compile and
+to behave as the fold did. Elsewhere the suggestion is advice, with
+a help line saying what to check first.
 
 The suggestion keeps the receiver's call unless the plural makes
 that same call itself.
