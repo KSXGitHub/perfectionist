@@ -15,9 +15,8 @@ thing, and names the plural. The pairs are `with_arg` against
 `with_args`, `with_env` against `with_envs`, and `without_env`
 against `without_envs`.
 
-The folder is matched by what it resolves to, so every spelling
-of the setter is one shape, a closure that only forwards to it
-included.
+Every spelling of the setter counts, a closure that only forwards
+to it included.
 
 The rule names a plural only where the code can call it.
 
@@ -41,21 +40,19 @@ can see that the answer is "these variables are removed".
 `without_envs` says that outright, and the receiver stops being an
 accumulator threaded through a closure.
 
-There is a second, smaller reason: the fold form has more places
-to get wrong. A fold whose closure swaps its accumulator and item,
-or returns the wrong one of the two, compiles in some shapes and
-silently builds the wrong command. The plural has no such surface.
+The fold form also has more places to get wrong. A fold whose
+closure swaps its accumulator and item, or returns the wrong one of
+the two, compiles in some shapes and silently builds the wrong
+command. The plural has no such surface.
 
-`command-extra` defines `with_args` as
-`args.into_iter().fold(self, Self::with_arg)`, so a hand-rolled
-fold is not an alternative to the plural: it is the plural's own
-body, inlined one level up from where the library already wrote
-it.
+`command-extra` defines each plural as the fold of its singular, so
+a hand-rolled fold is not an alternative to the plural but its
+body, inlined.
 
 ## Applicability
 
-The fix is applied only where the rewrite is known to compile and
-to behave as the fold did. Elsewhere the suggestion is advice, with
+The fix is applied only where it is known to compile and to behave
+as the fold did. Elsewhere the suggestion is advice, with
 a help line saying what to check first.
 
 The suggestion keeps the receiver's call unless the plural makes
