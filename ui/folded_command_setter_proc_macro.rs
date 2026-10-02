@@ -24,9 +24,8 @@ const VARS: &[&str] = &["A", "B"];
 #[synth_folded_command_setter]
 struct UsesSynthFoldedCommandSetter;
 
-// Not flagged: a fold written by hand inside the attribute, which the
-// derive copies, spans and all, into a function it generates. Only that
-// function's span says the fold is the derive's.
+// Not flagged: a hand-written fold the derive copies, spans and all,
+// into a function it generates.
 #[derive(SynthFoldOwner)]
 #[synth_fold_owner(VARS.iter().fold(
     std::process::Command::new("ls"),

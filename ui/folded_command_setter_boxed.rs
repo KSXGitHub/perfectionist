@@ -34,8 +34,7 @@ fn boxed_closure(command: Box<Command>) -> Box<Command> {
         .fold(command, |command, var| command.with_arg(var))
 }
 
-// Bad: the `with_env` pair over a boxed accumulator. The item is a
-// reference to a pair, which 1.4.0's `with_envs` takes.
+// Bad: the `with_env` pair over a boxed accumulator.
 fn boxed_pair(command: Box<Command>) -> Box<Command> {
     PAIRS
         .iter()

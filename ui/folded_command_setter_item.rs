@@ -39,8 +39,8 @@ fn pair_item_borrowed(pairs: &std::collections::HashMap<String, String>) {
         });
 }
 
-// Not flagged: a reference to a pair is not a pair. 1.2.0's `with_envs`
-// takes `IntoIterator<Item = (Key, Value)>`, and `&[(&str, &str)]` yields
+// Not flagged: a reference to a pair is not a pair. `with_envs` takes
+// `IntoIterator<Item = (Key, Value)>`, and `&[(&str, &str)]` yields
 // `&(&str, &str)`, which the fold binds through and the plural cannot.
 fn reference_to_a_pair() {
     let _ = PAIRS
@@ -50,8 +50,7 @@ fn reference_to_a_pair() {
         });
 }
 
-// Not flagged: `with_current_dir`, which has no plural. It sets one
-// thing that a later call replaces rather than extends.
+// Not flagged: `with_current_dir`, which has no plural.
 fn no_plural() {
     let _ = VARS
         .iter()

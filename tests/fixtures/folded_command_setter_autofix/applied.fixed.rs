@@ -41,9 +41,8 @@ pub fn erased_into_iter(names: Vec<String>) -> Command {
     start.without_envs(names)
 }
 
-// `iter` from the standard library over an owned collection the fold
-// only borrows, with a later read to prove the borrow still ends where
-// it did.
+// `iter` over an owned collection, read again afterwards to prove the
+// borrow ends where it did.
 pub fn kept_iter_on_a_vec(names: Vec<String>) -> (Command, usize) {
     let start = Command::new("ls");
     let command = start.without_envs(names.iter());
@@ -62,17 +61,14 @@ pub fn pair_item(pairs: Vec<(String, String)>) -> Command {
     start.with_envs(pairs)
 }
 
-// The `with_env` pair over a map reference, whose items are pairs of
-// references.
+// The `with_env` pair over a map reference.
 pub fn pair_item_borrowed(pairs: &HashMap<String, String>) -> Command {
     let start = Command::new("ls");
     start.with_envs(pairs.iter())
 }
 
-// A place the call did not run on: resolution derefs `&&Vec<String>`
-// down to `[String]` to reach `<[T]>::iter`. Erasing would hand the plural something
-// that is not an iterator, so the call has to survive for this to
-// compile at all.
+// A place the call did not run on: `iter` is `[T]`'s, reached through
+// `&&Vec<String>`. Erasing it would hand the plural a non-iterator.
 pub fn double_reference(names: &&Vec<String>) -> Command {
     let start = Command::new("ls");
     start.without_envs(names.iter())
@@ -177,14 +173,11 @@ pub fn try_initial() -> Result<Command, std::io::Error> {
     Ok(base()?.without_envs(VARS.iter()))
 }
 
-// An `if` whose branches fix their own type, which fixes the type of
-// the whole.
+// Branches that fix their own type, which fixes the type of the whole.
 pub fn branching_initial(flag: bool) -> Command {
     (if flag { Command::new("a") } else { Command::new("b") }).without_envs(VARS.iter())
 }
 
-// A `match` with an arm that fixes its own type, which fixes the type
-// of the whole.
 pub fn matching_initial(flag: bool) -> Command {
     (match flag { true => Command::new("a"), false => base().unwrap() }).without_envs(VARS.iter())
 }

@@ -22,8 +22,7 @@ impl Weird {
     }
 }
 
-// An `iter` of the linted crate's own, whose body would run after the
-// initial value in the plural.
+// An `iter` of the linted crate's own.
 pub fn local_iter(weird: &Weird) -> Command {
     weird.iter().fold(Command::new("local-iter"), CommandExtra::without_env)
 }
@@ -36,9 +35,7 @@ impl Shadow {
     }
 }
 
-// An inherent `into_iter` shadowing the trait in method resolution,
-// whose body is the user's and would run after the initial value in the
-// plural.
+// An inherent `into_iter` shadowing the trait in method resolution.
 pub fn shadowing_into_iter(shadow: Shadow) -> Command {
     shadow.into_iter().fold(Command::new("shadowed-into-iter"), CommandExtra::without_env)
 }
@@ -51,15 +48,13 @@ impl Queue {
     }
 }
 
-// An argument-less call that mutates. The initial value here does not
-// read what it changes, so this rewrite is safe, but the rule declines
-// every receiver that runs the user's code.
+// An argument-less call that mutates what the initial value never
+// reads: safe to rewrite, but the call is the user's.
 pub fn mutating_receiver(queue: &mut Queue) -> Command {
     queue.take_all().fold(Command::new("mutating-receiver"), CommandExtra::without_env)
 }
 
-// `iter` reached through a `Deref` the user wrote. The `deref` body runs
-// before the initial value in the fold and after it in the plural.
+// `iter` reached through a `Deref` the user wrote.
 pub struct Backwards(Vec<String>);
 
 impl std::ops::Deref for Backwards {
@@ -74,8 +69,7 @@ pub fn user_deref(names: &Backwards) -> Command {
     names.iter().fold(Command::new("user-deref"), CommandExtra::without_env)
 }
 
-// A `Deref` the user wrote, called as `*`, whose body would run after
-// the initial value in the plural.
+// A user's `Deref` written as `*`.
 pub fn explicit_deref(names: Backwards) -> Command {
     (*names).iter().fold(Command::new("explicit-deref"), CommandExtra::without_env)
 }
@@ -112,14 +106,12 @@ pub fn static_mut_place() -> Command {
     unsafe { STATIC_COUNTDOWN.fold(Command::new("static-mut-place"), CommandExtra::without_env) }
 }
 
-// A place the initial value writes by assignment, with no call to
-// borrow through.
+// A place the initial value assigns to directly.
 pub fn assigned_place(mut countdown: Countdown) -> Command {
     countdown.fold({ countdown.0 = 0; Command::new("assigned-place") }, CommandExtra::without_env)
 }
 
-// A place the initial value writes, inside a closure where `countdown`
-// is a capture.
+// A captured place the initial value writes inside a closure.
 pub fn written_in_closure(mut countdown: Countdown) -> impl FnMut() -> Command {
     move || countdown.fold(exhaust(&mut countdown, "written-in-closure"), CommandExtra::without_env)
 }
@@ -132,9 +124,8 @@ pub fn aliased_copy(mut countdown: Countdown) -> Command {
     view.fold(exhaust(&mut countdown, "aliased-copy"), CommandExtra::without_env)
 }
 
-// A field read through a reference the body took of a local, which the
-// initial value then borrows mutably. What the receiver keeps names a
-// lifetime of its own rather than the reference's.
+// A reference to a local the initial value borrows mutably, whose
+// `'static` field is what the receiver keeps.
 pub struct Config {
     flags: [&'static str; 2],
 }
@@ -199,8 +190,8 @@ pub fn interior_mutable(cell: Cell<std::vec::IntoIter<String>>) -> Command {
     cell.take().fold(reset(&cell, "interior-mutable"), CommandExtra::without_env)
 }
 
-// A std trait's method whose body is the user's: `into_iter` resolves to
-// `Borrowed`'s impl.
+// A std trait's method whose body is the user's: `Borrowed`'s
+// `into_iter`.
 pub struct Borrowed(Vec<String>);
 
 impl<'a> IntoIterator for &'a Borrowed {
@@ -268,16 +259,14 @@ pub fn inferred_initial(names: &[&str]) -> Command {
     names.iter().fold(Command::new("inferred-initial").into(), Command::without_env)
 }
 
-// An initial value whose type the folder supplies, through a binding
-// that names no type.
+// `into` through a binding that names no type.
 pub fn inferred_binding(names: &[&str]) -> Command {
     let inferred_binding = Command::new("ls").into();
     names.iter().fold(inferred_binding, Command::without_env)
 }
 
-// Initial values whose type the folder supplies, through bindings that
-// name no type: a closure parameter, a binding inside a `let` pattern,
-// and a `match` arm's.
+// Bindings that name no type: a closure parameter, a binding inside a
+// `let` pattern, and a `match` arm's.
 pub fn inferred_closure_parameter(names: &'static [&'static str]) -> impl Fn(Command) -> Command {
     |inferred_closure_parameter| names.iter().fold(inferred_closure_parameter, Command::without_env)
 }
@@ -307,7 +296,7 @@ pub fn item_annotated() -> Command {
     names.iter().fold(Command::new("item-annotated"), |command, name: &&str| command.with_arg(name))
 }
 
-// A turbofish on `fold` that is all that fixes the item type, which the
+// The item type fixed only by a turbofish on `fold`, which the
 // suggestion drops.
 pub fn turbofish() -> Command {
     let names = Vec::new();

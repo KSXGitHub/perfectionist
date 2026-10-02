@@ -6,12 +6,11 @@
 //! the fixer will apply it. So the fixtures are run through the real
 //! fixer and judged on what it did to the source.
 //!
-//! Most of what the rule declines is a question of order. The plural
-//! takes the initial value as its receiver and the folded iterator as
-//! its argument, so it evaluates them in the order the fold did not, and
-//! only a receiver that runs nothing but the standard library's code,
-//! and reads nothing the initial value writes or moves, is known not to
-//! care.
+//! Most declines are a question of order. The plural takes the initial
+//! value as its receiver and the folded iterator as its argument, so it
+//! evaluates them in the order the fold did not, and only a receiver
+//! that runs nothing but the standard library's code, and reads nothing
+//! the initial value writes or moves, is known not to care.
 //! `src/rules/folded_command_setter/receiver.rs` derives it.
 //!
 //! The fixtures split by direction, because the two fail differently.
@@ -149,8 +148,8 @@ fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
         "the fixer rewrote a shape the rule declined to hand it",
     );
 
-    // The rule fired on each shape, so the file is unchanged because the
-    // fix was declined, not because the rule went quiet.
+    // The rule fired on each shape, so the fixture did not pass by going
+    // quiet.
     for shape in [
         "local-iter",
         "shadowed-into-iter",

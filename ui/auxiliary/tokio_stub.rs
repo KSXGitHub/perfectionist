@@ -1,6 +1,6 @@
 // A stand-in for `tokio::process::Command`, carrying only the setters
 // `command_extra::CommandExtra` calls and with the signatures tokio
-// gives them: `&mut self -> &mut Command`, and `Stdio` from std. Enough
+// gives them: `&mut self -> &mut Command`, `Stdio` from std. Enough
 // for an auxiliary `command_extra` to implement the trait for it, which
 // the real crate does behind a feature compiletest cannot turn on.
 //

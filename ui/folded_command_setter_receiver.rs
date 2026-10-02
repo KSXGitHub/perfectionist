@@ -72,11 +72,8 @@ fn assoc_fn_receiver(names: Vec<String>) {
     let _ = Vec::into_iter(names).fold(Command::new("ls"), CommandExtra::without_env);
 }
 
-// Bad: a receiver the call did not run on. Method resolution derefs
-// `&&Vec<String>` down to `[String]` to reach `<[T]>::iter`, so the
-// place is not the receiver, and handing the plural `names` would hand it
-// something that is not an iterator at all. The call survives, so it
-// compiles.
+// Bad: a receiver the call did not run on. `iter` is `[T]`'s, reached
+// through `&&Vec<String>`, so the call survives and the rewrite compiles.
 fn double_reference(names: &&Vec<String>) {
     let _ = names
         .iter()

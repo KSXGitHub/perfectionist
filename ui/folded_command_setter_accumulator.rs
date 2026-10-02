@@ -17,8 +17,7 @@ use std::process::Command;
 
 const VARS: &[&str] = &["A", "B"];
 
-// Not flagged: a closure that calls no `CommandExtra` setter, over a
-// `String` accumulator.
+// Not flagged: an accumulator that is not a `Command`.
 fn other_accumulator() {
     let _ = VARS.iter().fold(String::new(), |mut joined, var| {
         joined.push_str(var);
@@ -40,9 +39,8 @@ fn std_setter() {
     });
 }
 
-// Bad: an accumulator the code names only by a type parameter. The fix
-// is withheld, because the parameter can stand for a type whose impl
-// writes its own plural.
+// Bad: a generic accumulator, which may override the plural, so the fix
+// is withheld.
 fn generic_accumulator<Builder: CommandExtra>(command: Builder) -> Builder {
     VARS.iter().fold(command, CommandExtra::without_env)
 }
@@ -51,8 +49,8 @@ fn opaque() -> impl CommandExtra {
     Command::new("ls")
 }
 
-// Bad: an accumulator of an opaque type. The fix is withheld, because
-// the opaque type can stand for a type whose impl writes its own plural.
+// Bad: an opaque accumulator, which may override the plural, so the fix
+// is withheld.
 fn opaque_accumulator() -> impl CommandExtra {
     VARS.iter().fold(opaque(), CommandExtra::without_env)
 }
@@ -385,17 +383,13 @@ fn boxed_ambiguous(ambiguous: Box<BoxedAmbiguous>) -> Box<BoxedAmbiguous> {
     VARS.iter().fold(ambiguous, CommandExtra::without_env)
 }
 
-// No help names this trait: it has a parameter of its own and declares a
-// method named like the plural, but nothing implements it, so it
-// competes for no accumulator.
+// No help names this trait, which nothing implements.
 trait Unimplemented<Value> {
     fn without_envs(self, value: Value) -> Self;
 }
 
-// Bad: a trait with a parameter of its own, implemented for the
-// accumulator under two arguments, that declares a method named like the
-// plural. Wherever both traits are in scope the rewrite is
-// `E0034`. The fix is withheld.
+// Bad: a generic trait, implemented twice for the accumulator, whose
+// method named like the plural makes the rewrite ambiguous.
 struct GenericallyAmbiguous;
 
 impl CommandExtra for GenericallyAmbiguous {

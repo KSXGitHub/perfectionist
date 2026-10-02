@@ -12,7 +12,7 @@ pub mod caller {
     use super::{CommandExtra, Imitation, Imitator};
     use std::process::Command;
 
-    // Bad: a fold over `with_arg` outside the plural.
+    // Bad: a fold outside the plural.
     pub fn lister(flags: &[&str]) -> Command {
         flags.iter().fold(Command::new("ls"), CommandExtra::with_arg)
     }
