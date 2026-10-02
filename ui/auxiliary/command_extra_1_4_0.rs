@@ -9,9 +9,8 @@
 // `tests/folded_command_setter_command_types.rs`, which builds a real
 // Cargo project instead.
 //
-// The crate name is set here rather than taken from the file name,
-// because the rule looks for the trait under the name the published
-// crate compiles as, and the file has to say which release it is.
+// The crate name is set here for the reason `command_extra_1_0_0.rs`
+// gives.
 
 #![crate_name = "command_extra"]
 use std::{

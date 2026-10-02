@@ -15,17 +15,16 @@
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::def_id::DefId;
 use rustc_hir::{
-    BindingMode, BlockCheckMode, ByRef, Closure, Expr, ExprKind, HirId, Pat, PatKind, QPath,
+    BindingMode, BlockCheckMode, ByRef, Closure, Expr, ExprKind, HirId, Pat, PatKind, QPath, TyKind,
 };
 use rustc_lint::LateContext;
 
-/// The setter a folder resolves to, or `None` where the folder is
+/// The method a folder resolves to, or `None` where the folder is
 /// neither a path to one nor a closure forwarding to one.
 ///
-/// A path bound to a local -- `let f = CommandExtra::without_env;` and
-/// then `.fold(command, f)` -- folds exactly like the bare path but
-/// resolves to the local, so it answers `None` here. A known gap rather
-/// than a shape the rule means to exclude.
+/// A local bound to a path, as in `let f = CommandExtra::without_env;`,
+/// folds like the bare path but answers `None`: a known gap, not an
+/// exclusion.
 pub(super) fn resolves_to<'tcx>(cx: &LateContext<'tcx>, folder: &'tcx Expr<'tcx>) -> Option<DefId> {
     match folder.kind {
         ExprKind::Path(ref qpath) => assoc_fn(cx.qpath_res(qpath, folder.hir_id)),
@@ -34,8 +33,25 @@ pub(super) fn resolves_to<'tcx>(cx: &LateContext<'tcx>, folder: &'tcx Expr<'tcx>
     }
 }
 
-/// The associated function a resolution names, or `None` for anything
-/// else -- a local, a unit struct, a free function.
+/// Whether `folder` is a closure that writes a type on its item
+/// parameter.
+///
+/// The suggestion drops the closure, and with it the annotation, which
+/// may be all that fixes the iterator's item type: a `Vec::new()` the
+/// fold only ever reads takes its element type from
+/// `|command, name: &&str|`, and the plural over it is `E0282`. Measured.
+pub(super) fn annotates_the_item(folder: &Expr<'_>) -> bool {
+    let ExprKind::Closure(closure) = folder.kind else {
+        return false;
+    };
+    closure
+        .fn_decl
+        .inputs
+        .get(1)
+        .is_some_and(|item| !matches!(item.kind, TyKind::Infer(())))
+}
+
+/// The associated function a resolution names, if any.
 fn assoc_fn(res: Res) -> Option<DefId> {
     match res {
         Res::Def(DefKind::AssocFn, def_id) => Some(def_id),
@@ -43,16 +59,32 @@ fn assoc_fn(res: Res) -> Option<DefId> {
     }
 }
 
-/// The setter a closure forwards to, or `None` where it does anything
+/// The method a closure forwards to, or `None` where it does anything
 /// besides forward.
 fn forwarded_by<'tcx>(cx: &LateContext<'tcx>, closure: &'tcx Closure<'tcx>) -> Option<DefId> {
     let body = cx.tcx.hir_body(closure.body);
-    let mut bound = Vec::new();
-    for param in body.params {
-        bindings_of(param.pat, &mut bound)?;
-    }
+    let [accumulator, item] = body.params else {
+        return None;
+    };
+    let mut bound = vec![binding(accumulator.pat)?];
+    let destructured = match item.pat.kind {
+        // The `with_env` pair's item is a pair, so the closure
+        // destructures it, and the halves are what the setter is passed.
+        PatKind::Tuple(elements, _) => {
+            for element in elements {
+                bound.push(binding(element)?);
+            }
+            true
+        }
+        _ => {
+            bound.push(binding(item.pat)?);
+            false
+        }
+    };
     let (callee, arguments) = as_call(cx, unwrapped(body.value))?;
-    if arguments.len() != bound.len() {
+    // The item is destructured exactly where the setter takes it in
+    // pieces: `|c, (arg,)| c.with_arg(arg)` would hand the plural a tuple.
+    if arguments.len() != bound.len() || destructured != (arguments.len() > 2) {
         return None;
     }
     if !arguments
@@ -65,31 +97,21 @@ fn forwarded_by<'tcx>(cx: &LateContext<'tcx>, closure: &'tcx Closure<'tcx>) -> O
     Some(callee)
 }
 
-/// The bindings a parameter pattern introduces, in the order they were
-/// bound, or `None` for a pattern the rewrite could not reproduce.
+/// The binding a parameter pattern introduces, or `None` for a pattern
+/// that is not one by-value binding.
 ///
-/// A tuple is walked into because the `with_env` pair needs it: its item
-/// is a pair, so the closure destructures, and the bindings it yields
-/// are what the setter is passed.
-fn bindings_of(pat: &Pat<'_>, out: &mut Vec<HirId>) -> Option<()> {
+/// A `ref` binding hands the setter a reference to the item where a
+/// by-value one hands it the item, so what the fold proves of the item
+/// is not what the plural asks of it: `|c, ref k| c.without_env(k)`
+/// establishes `&K: AsRef<OsStr>` and `without_envs` wants
+/// `K: AsRef<OsStr>`. Measured as a machine-applicable `E0277` on every
+/// release. A nested pattern is no better: the plural gets the item
+/// whole.
+fn binding(pat: &Pat<'_>) -> Option<HirId> {
     match pat.kind {
-        // A `ref` binding hands the setter a reference to the item where
-        // a by-value one hands it the item, so what the fold proves of
-        // the item is not what the plural asks of it: `|c, ref k|
-        // c.without_env(k)` establishes `&K: AsRef<OsStr>` and
-        // `without_envs` wants `K: AsRef<OsStr>`. Measured as a
-        // machine-applicable `E0277` on every release.
-        PatKind::Binding(BindingMode(ByRef::No, _), hir_id, _, None) => out.push(hir_id),
-        // A `..` would hide a field from the comparison below, leaving
-        // the arity to agree by accident.
-        PatKind::Tuple(elements, gap) if gap.as_opt_usize().is_none() => {
-            for element in elements {
-                bindings_of(element, out)?;
-            }
-        }
-        _ => return None,
+        PatKind::Binding(BindingMode(ByRef::No, _), hir_id, _, None) => Some(hir_id),
+        _ => None,
     }
-    Some(())
 }
 
 /// `expr` with a block that only wraps one expression peeled off.
@@ -112,12 +134,8 @@ fn unwrapped<'tcx>(expr: &'tcx Expr<'tcx>) -> &'tcx Expr<'tcx> {
     }
 }
 
-/// A call's callee and its arguments with the receiver first.
-///
-/// A method call and an associated-function call differ only in where
-/// HIR puts the receiver -- `ExprKind::MethodCall` keeps it out of the
-/// argument list, `ExprKind::Call` has it first -- so both are
-/// normalised to receiver-then-arguments and compared once.
+/// A call's callee and its arguments, with a method call's receiver put
+/// first, where an associated-function call already has it.
 fn as_call<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx Expr<'tcx>,

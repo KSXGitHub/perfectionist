@@ -5,9 +5,8 @@
 // `Envs::Item: Borrow<(Key, Value)>`, which a reference to a pair
 // satisfies where the equality did not.
 //
-// The crate name is set here rather than taken from the file name,
-// because the rule looks for the trait under the name the published
-// crate compiles as, and the file has to say which release it is.
+// The crate name is set here for the reason `command_extra_1_0_0.rs`
+// gives.
 
 #![crate_name = "command_extra"]
 use std::{

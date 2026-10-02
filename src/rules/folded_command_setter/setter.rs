@@ -3,21 +3,24 @@
 //!
 //! The set is fixed rather than configured. The suggestion is sound
 //! only because upstream defines each plural as exactly the fold of its
-//! singular -- `with_args` is `args.into_iter().fold(self,
-//! Self::with_arg)` -- so a pair named for some other builder could not
-//! promise the same.
+//! singular, so a pair named for some other builder could not promise
+//! the same.
 
 use clippy_utils::sym;
-use clippy_utils::ty::{get_iterator_item_ty, implements_trait};
-use rustc_hir::Expr;
+use clippy_utils::ty::{deref_chain, get_iterator_item_ty, implements_trait};
 use rustc_hir::def_id::DefId;
+use rustc_hir::{Expr, LangItem};
+use rustc_infer::infer::TyCtxtInferExt;
 use rustc_lint::LateContext;
-use rustc_middle::ty::{self, AssocItem, GenericArg, Ty, TypeVisitableExt};
-use rustc_span::Symbol;
+use rustc_middle::traits::EvaluationResult;
+use rustc_middle::ty::fast_reject::DeepRejectCtxt;
+use rustc_middle::ty::{self, AssocItem, GenericArg, GenericArgs, TraitRef, Ty, TypeVisitableExt};
+use rustc_span::{DUMMY_SP, Symbol};
+use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt as _;
+use rustc_trait_selection::traits::{Obligation, ObligationCause};
 
 /// What a fold over one singular setter can be replaced by.
 pub(super) struct Replacement {
-    /// The plural's name.
     pub plural: &'static str,
     /// Whether the plural splits each item between the singular's two
     /// parameters, which only a two-element tuple can be split between.
@@ -27,9 +30,9 @@ pub(super) struct Replacement {
 /// What replaces a fold over the singular `CommandExtra` setter
 /// `singular`, or `None` for one with no plural.
 ///
-/// `with_no_env`, `with_stdin`, `with_stdout` and `with_stderr` each set
-/// one thing that a later call replaces rather than extends, so folding
-/// them is a different mistake and outside this rule.
+/// The trait's other setters that take one value each set one thing
+/// that a later call replaces rather than extends, so folding them is a
+/// different mistake and outside this rule.
 pub(super) fn replacement_for(singular: Symbol) -> Option<Replacement> {
     let (plural, splits_item) = match singular.as_str() {
         "with_arg" => ("with_args", false),
@@ -49,22 +52,25 @@ pub(super) fn replacement_for(singular: Symbol) -> Option<Replacement> {
 /// constraint that is depends on the release. 1.1.0 and 1.2.0 write
 /// `Envs: IntoIterator<Item = (Key, Value)>`, an associated-type
 /// equality that no reference satisfies: `&[(&str, &str)]` yields
-/// `&(&str, &str)`, which the *fold* takes -- `|command, (key, value)|`
-/// binds through the reference -- and the plural does not. 1.3.0 and
-/// later write `Envs::Item: Borrow<(Key, Value)>`, which a reference to
-/// a pair does satisfy.
+/// `&(&str, &str)`, which the plural rejects and the *fold* binds
+/// through. 1.3.0 and later write `Envs::Item: Borrow<(Key, Value)>`,
+/// which a reference to a pair does satisfy.
 ///
 /// Reading the constraint keeps this in step with the version resolved,
 /// as [`declares`] does for the plural's existence. Asking the item
 /// rather than the closure's pattern is what tells the shapes apart at
-/// all, since the pattern is identical either way.
+/// all, since the pattern is identical either way. A constraint in
+/// neither form answers no, because nothing then says which items the
+/// plural accepts.
 pub(super) fn item_fits<'tcx>(cx: &LateContext<'tcx>, plural: DefId, receiver: &Expr<'_>) -> bool {
-    let receiver_ty = cx.typeck_results().expr_ty(receiver);
+    // Adjusted, because the item is what `fold` iterates: a `Copy`
+    // iterator behind `&` is copied out first.
+    let receiver_ty = cx.typeck_results().expr_ty_adjusted(receiver);
     let Some(item) = get_iterator_item_ty(cx, receiver_ty) else {
         return false;
     };
     let Some(assoc_item) = iterator_item(cx) else {
-        return true;
+        return false;
     };
     let clauses = cx.tcx.predicates_of(plural).predicates;
     // An equality is read first wherever both appear. It is the stricter
@@ -93,7 +99,7 @@ pub(super) fn item_fits<'tcx>(cx: &LateContext<'tcx>, plural: DefId, receiver: &
             }
         }
     }
-    true
+    false
 }
 
 /// `IntoIterator::Item`, reached through the `into_iter` lang item's own
@@ -144,11 +150,8 @@ fn satisfies<'tcx>(
         return false;
     }
     // `implements_trait` asserts its argument count against the trait's
-    // own generics, so a bound over anything but one type parameter
-    // would abort the driver rather than answer.
-    if cx.tcx.generics_of(bound).count() != 2 {
-        return false;
-    }
+    // own generics. `bound` takes one type parameter besides `Self`,
+    // because the rule reads no plural with any other bound on its item.
     implements_trait(cx, item, bound, &[candidate.into()])
         && element_bounds_hold(cx, plural, parameters, elements)
 }
@@ -190,8 +193,9 @@ fn element_bounds_hold<'tcx>(
     true
 }
 
-/// Whether the accumulator's own type has an inherent method named
-/// `plural`, which method resolution prefers over the trait's.
+/// Whether an inherent method named like the plural takes the
+/// accumulator by value, which method resolution prefers over the
+/// trait's.
 ///
 /// The suggestion names the plural rather than resolving it, so where
 /// such a method exists the rewritten call reaches that one instead.
@@ -199,40 +203,252 @@ fn element_bounds_hold<'tcx>(
 /// inherent `with_args(self, count: usize)` earned a machine-applicable
 /// fix that is `E0308`.
 ///
-/// Only the accumulator's own inherent impls are asked. A second *trait*
-/// in scope declaring the same name is ambiguity rather than shadowing,
-/// and answering that needs the call site's imports rather than the
-/// type's impls.
+/// Method probing gathers inherent methods from every type the
+/// accumulator derefs to, and at its first step takes any whose receiver
+/// is the accumulator itself. So each is asked whether its receiver could
+/// be the accumulator: `fn with_args(self: Box<Self>)` on `U` could be a
+/// `Box<U>`, and neither a method taking `&self` nor one in
+/// `impl Wrapper<u32>` could be a `Wrapper<Command>`.
+///
+/// Only inherent methods are asked. A second *trait* declaring the same
+/// name is ambiguity rather than shadowing, which
+/// [`another_trait_declaring`] answers.
 pub(super) fn shadowed_by_an_inherent_method(
     cx: &LateContext<'_>,
     initial: &Expr<'_>,
-    plural: &str,
+    plural: DefId,
 ) -> bool {
-    let Some(accumulator) = cx.typeck_results().expr_ty(initial).ty_adt_def() else {
-        return false;
-    };
-    let plural = Symbol::intern(plural);
-    cx.tcx
-        .inherent_impls(accumulator.did())
-        .iter()
-        .any(|impl_id| {
+    let accumulator = cx.typeck_results().expr_ty(initial);
+    let name = cx.tcx.item_name(plural);
+    let reject = DeepRejectCtxt::relate_rigid_infer(cx.tcx);
+    autoderef_steps(cx, accumulator)
+        .filter_map(Ty::ty_adt_def)
+        .flat_map(|adt| cx.tcx.inherent_impls(adt.did()))
+        .flat_map(|impl_id| {
             cx.tcx
                 .associated_items(*impl_id)
-                .filter_by_name_unhygienic(plural)
-                .any(AssocItem::is_method)
+                .filter_by_name_unhygienic(name)
+        })
+        .filter(|item| item.is_method())
+        .filter_map(|item| {
+            cx.tcx
+                .fn_sig(item.def_id)
+                .skip_binder()
+                .inputs()
+                .skip_binder()
+                .first()
+                .copied()
+        })
+        .any(|receiver| reject.types_may_unify(accumulator, receiver))
+}
+
+/// The types method probing steps through from `ty`, bounded as rustc's
+/// own autoderef is: a `Deref` whose target leads back round would
+/// otherwise never end, and measured, the lint did not.
+fn autoderef_steps<'cx, 'tcx>(
+    cx: &'cx LateContext<'tcx>,
+    ty: Ty<'tcx>,
+) -> impl Iterator<Item = Ty<'tcx>> + 'cx {
+    deref_chain(cx, ty).take(cx.tcx.recursion_limit().0)
+}
+
+/// Whether an impl of the plural's trait that could apply to
+/// `accumulator` writes its own body for the plural.
+///
+/// An override keeps the trait's signature, so the rewritten call still
+/// compiles, but it runs that body instead, which is
+/// why this withholds the fix rather than the diagnostic.
+///
+/// For a type parameter or an alias, `for_each_relevant_impl` visits
+/// only the blanket impls, though either can stand for a type whose own
+/// impl overrides the plural. So the answer for one is yes.
+pub(super) fn overrides_the_plural<'tcx>(
+    cx: &LateContext<'tcx>,
+    plural: DefId,
+    accumulator: Ty<'tcx>,
+) -> bool {
+    if let ty::Param(_) | ty::Alias(..) = accumulator.kind() {
+        return true;
+    }
+    let mut overrides = false;
+    cx.tcx
+        .for_each_relevant_impl(cx.tcx.parent(plural), accumulator, |impl_id| {
+            overrides |= cx
+                .tcx
+                .associated_items(impl_id)
+                .in_definition_order()
+                .any(|item| item.trait_item_def_id() == Some(plural));
+        });
+    overrides
+}
+
+/// Whether `expr` sits in the body of the plural itself, closures within
+/// it included, where the suggestion could make the plural call itself.
+///
+/// In the trait's default body every fold counts, because any
+/// accumulator whose plural is that default reaches it again. In an
+/// impl's override only a fold over the impl's own type does: one over
+/// another type calls that type's plural, as a wrapper delegating to its
+/// inner command does.
+pub(super) fn inside_the_plural(
+    cx: &LateContext<'_>,
+    expr: &Expr<'_>,
+    initial: &Expr<'_>,
+    plural: DefId,
+) -> bool {
+    let owner = cx
+        .tcx
+        .typeck_root_def_id(cx.tcx.hir_enclosing_body_owner(expr.hir_id).to_def_id());
+    if owner == plural {
+        return true;
+    }
+    cx.tcx
+        .opt_associated_item(owner)
+        .and_then(|item| item.trait_item_def_id())
+        == Some(plural)
+        // Typeck erases the regions of the types it records, so the
+        // impl's own type is compared with its regions erased too.
+        && cx.typeck_results().expr_ty(initial)
+            == cx.tcx.erase_and_anonymize_regions(
+                cx.tcx
+                    .type_of(cx.tcx.parent(owner))
+                    .instantiate_identity()
+                    .skip_normalization(),
+            )
+}
+
+/// Another trait that declares a method named like the plural which
+/// method probing could pick for `accumulator`, which makes the rewritten
+/// call ambiguous wherever both traits are in scope.
+///
+/// Probing asks, at its first step, for a method whose receiver is the
+/// accumulator itself, from whichever type along the deref chain the
+/// trait is implemented for. So `fn without_envs(self)` competes for a
+/// `Command`, `fn without_envs(self: Box<Self>)` implemented for
+/// `Command` competes for a `Box<Command>`, and one taking `&self`
+/// competes for neither, because the by-value plural is found before
+/// probing tries a reference.
+///
+/// Every visible trait is asked rather than only the call site's
+/// imports, so one that is not in scope there reads as present too. That
+/// errs toward withholding the fix, where the opposite error is `E0034`.
+pub(super) fn another_trait_declaring<'tcx>(
+    cx: &LateContext<'tcx>,
+    plural: DefId,
+    accumulator: Ty<'tcx>,
+) -> Option<DefId> {
+    let own = cx.tcx.parent(plural);
+    let name = cx.tcx.item_name(plural);
+    let reject = DeepRejectCtxt::relate_rigid_infer(cx.tcx);
+    cx.tcx.visible_traits().find(|&other| {
+        other != own
+            && cx
+                .tcx
+                .associated_items(other)
+                .filter_by_name_unhygienic(name)
+                .filter(|item| item.is_method())
+                .any(|item| {
+                    autoderef_steps(cx, accumulator).any(|step| {
+                        may_implement(cx, other, step)
+                            && receiver_with_self(cx, item.def_id, step).is_some_and(|receiver| {
+                                reject.types_may_unify(accumulator, receiver)
+                            })
+                    })
+                })
+    })
+}
+
+/// Whether `ty` may implement `other`, for some arguments to the trait's
+/// own parameters where it has any.
+///
+/// Asked of the trait solver with those arguments left to inference, and
+/// answered yes where the solver cannot decide: two impls for `ty` with
+/// different arguments make the method no less ambiguous. A trait that
+/// nothing implements for `ty` competes for nothing.
+fn may_implement<'tcx>(cx: &LateContext<'tcx>, other: DefId, ty: Ty<'tcx>) -> bool {
+    let tcx = cx.tcx;
+    let (infcx, param_env) = tcx.infer_ctxt().build_with_typing_env(cx.typing_env());
+    let args = GenericArgs::for_item(tcx, other, |param, _| {
+        if param.index == 0 {
+            ty.into()
+        } else {
+            infcx.var_for_def(DUMMY_SP, param)
+        }
+    });
+    let obligation = Obligation::new(
+        tcx,
+        ObligationCause::dummy(),
+        param_env,
+        TraitRef::new_from_args(tcx, other, args),
+    );
+    infcx
+        .evaluate_obligation(&obligation)
+        .is_ok_and(EvaluationResult::may_apply)
+}
+
+/// The receiver type of the trait method `method` with `Self` as
+/// `self_ty`, and every other parameter left as a parameter.
+fn receiver_with_self<'tcx>(
+    cx: &LateContext<'tcx>,
+    method: DefId,
+    self_ty: Ty<'tcx>,
+) -> Option<Ty<'tcx>> {
+    let args = GenericArgs::for_item(cx.tcx, method, |param, _| {
+        if param.index == 0 {
+            self_ty.into()
+        } else {
+            cx.tcx.mk_param_from_def(param)
+        }
+    });
+    cx.tcx
+        .fn_sig(method)
+        .instantiate(cx.tcx, args)
+        .skip_normalization()
+        .inputs()
+        .skip_binder()
+        .first()
+        .copied()
+}
+
+/// Whether every bound the plural declares is one the rule accounts for.
+///
+/// [`item_fits`] reads the pair the `with_env` plural splits. Any other
+/// bound, `Args: Copy` say, is one the fold does not prove, and nothing
+/// then says which iterators the plural accepts, so the answer is no.
+pub(super) fn bounds_are_known(cx: &LateContext<'_>, plural: DefId) -> bool {
+    let tcx = cx.tcx;
+    let item = iterator_item(cx);
+    let is = |name: Symbol, def_id: DefId| tcx.is_diagnostic_item(name, def_id);
+    // A parameter of the method's own, rather than the trait's `Self`.
+    let own_parameter = |ty: Ty<'_>| matches!(ty.kind(), ty::Param(param) if param.index != 0);
+    let is_item = |ty: Ty<'_>| item.is_some_and(|item| is_the_item(ty, item));
+    tcx.predicates_of(plural)
+        .predicates
+        .iter()
+        .all(|(clause, _)| {
+            if let Some(bound) = clause.as_trait_clause() {
+                let bound = bound.skip_binder().trait_ref;
+                let subject = bound.self_ty();
+                return tcx.is_lang_item(bound.def_id, LangItem::Sized)
+                    || (is(sym::IntoIterator, bound.def_id) && own_parameter(subject))
+                    || (is(sym::Borrow, bound.def_id) && is_item(subject))
+                    || (is(sym::AsRef, bound.def_id)
+                        && (own_parameter(subject) || is_item(subject)));
+            }
+            clause.as_projection_clause().is_some_and(|projection| {
+                matches!(
+                    projection.skip_binder().projection_term.kind,
+                    ty::AliasTermKind::ProjectionTy { def_id } if Some(def_id) == item,
+                )
+            })
         })
 }
 
-pub(super) fn is_command_extra(cx: &LateContext<'_>, trait_id: DefId) -> bool {
-    crate::command_extra::is_the_trait(cx, trait_id)
-}
-
-/// Whether the `CommandExtra` this build resolved declares a method
-/// named `plural`.
+/// The resolved `CommandExtra`'s method named `plural`, if any.
 ///
-/// The pairs arrived over several releases -- `without_envs` is 1.2.0
-/// and later -- so a crate can have the singular without its plural,
-/// which is the very reason its author wrote the fold. Asking the trait
+/// The pairs arrived over several releases, so a crate can have the
+/// singular without its plural, which is the very reason its author
+/// wrote the fold: `without_envs` is 1.2.0 and later. Asking the trait
 /// carries no version table, so a plural dropped or renamed later is
 /// covered by the same question.
 pub(super) fn declares(cx: &LateContext<'_>, trait_id: DefId, plural: &str) -> Option<DefId> {

@@ -625,21 +625,15 @@ pub fn synth_command_setter(input: TokenStream) -> TokenStream {
 }
 
 /// `#[derive(SynthFoldedCommandSetter)]` +
-/// `#[synth_folded_command_setter]` →
-/// `fn _synth_folded_command_setter() { let _ = VARS.iter().fold(`
-/// `std::process::Command::new("ls"),`
-/// `command_extra::CommandExtra::without_env); }` where every token, the
+/// `#[synth_folded_command_setter]` → `source`, every token of which, the
 /// wrapping `fn` included, inherits the user-span of
 /// `synth_folded_command_setter`.
 ///
-/// Everything is stamped, so both the fold call and the enclosing item
-/// read as user-written and `hir_in_external_macro` -- which checks the
-/// node's span and the enclosing item's `def_span` -- has nothing to
-/// find.
+/// So both the fold call and the enclosing item read as user-written,
+/// and `hir_in_external_macro`, which checks the node's span and the
+/// enclosing item's `def_span`, has nothing to find.
 ///
-/// `VARS` is the fixture's own `const`, so the synthesised fold is one
-/// the rule fires on when hand-written: a `&'static` slice's `iter`
-/// folded over a singular setter whose plural the trait declares.
+/// `VARS` is the fixture's own `const`.
 #[proc_macro_derive(SynthFoldedCommandSetter, attributes(synth_folded_command_setter))]
 pub fn synth_folded_command_setter(input: TokenStream) -> TokenStream {
     let attr_span = find_attr_span(input, "synth_folded_command_setter").expect(
@@ -659,11 +653,28 @@ pub fn synth_folded_command_setter(input: TokenStream) -> TokenStream {
     )
 }
 
-/// Every token of `stream`, groups walked into, moved to `span`.
+/// `#[derive(SynthFoldOwner)]` + `#[synth_fold_owner(<expr>)]` →
+/// `fn _synth_fold_owner() { let _ = <expr>; }`, where `<expr>` keeps the
+/// spans its author wrote it with and every other token takes the
+/// derive's call-site span.
 ///
-/// The derives above stamp a chosen few tokens and build their output by
-/// hand for that reason; this one stamps all of them, which is shorter
-/// said over a parsed stream than spelled out tree by tree.
+/// The fold's text is then the user's own, which `is_from_proc_macro`
+/// accepts, and none of its spans is an expansion's. Only the enclosing
+/// item's `def_span` says where the fold now lives, which is what
+/// `hir_in_external_macro` reads.
+#[proc_macro_derive(SynthFoldOwner, attributes(synth_fold_owner))]
+pub fn synth_fold_owner(input: TokenStream) -> TokenStream {
+    let fold = find_attr_arguments(input, "synth_fold_owner")
+        .expect("`#[derive(SynthFoldOwner)]` requires a `#[synth_fold_owner(..)]`");
+    let mut body: TokenStream = "let _ =".parse().expect("valid tokens");
+    body.extend(fold);
+    body.extend(";".parse::<TokenStream>().expect("valid tokens"));
+    let mut out: TokenStream = "fn _synth_fold_owner()".parse().expect("valid tokens");
+    out.extend([TokenTree::Group(Group::new(Delimiter::Brace, body))]);
+    out
+}
+
+/// Every token of `stream`, groups walked into, moved to `span`.
 fn respan(stream: TokenStream, span: Span) -> TokenStream {
     stream
         .into_iter()
@@ -739,4 +750,26 @@ fn find_attr_span(input: TokenStream, name: &str) -> Option<Span> {
         }
     }
     None
+}
+
+/// The tokens between the parentheses of `#[name(..)]`, spans kept.
+fn find_attr_arguments(input: TokenStream, name: &str) -> Option<TokenStream> {
+    let tokens: Vec<TokenTree> = input.into_iter().collect();
+    tokens.windows(2).find_map(|window| {
+        let (TokenTree::Punct(hash), TokenTree::Group(attribute)) = (&window[0], &window[1]) else {
+            return None;
+        };
+        if hash.as_char() != '#' || attribute.delimiter() != Delimiter::Bracket {
+            return None;
+        }
+        let inner: Vec<TokenTree> = attribute.stream().into_iter().collect();
+        match inner.as_slice() {
+            [TokenTree::Ident(ident), TokenTree::Group(arguments)]
+                if ident.to_string() == name && arguments.delimiter() == Delimiter::Parenthesis =>
+            {
+                Some(arguments.stream())
+            }
+            _ => None,
+        }
+    })
 }

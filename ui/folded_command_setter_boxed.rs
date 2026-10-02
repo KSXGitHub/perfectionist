@@ -1,10 +1,8 @@
 // aux-build:command_extra_1_4_0.rs
 // edition:2024
 //
-// Which types carry `CommandExtra` is a property of the release, and the
-// rule never asks the accumulator's type: what proves the accumulator
-// implements the trait is the folder resolving to one of its setters.
-// This fixture builds against 1.4.0, which added
+// Which types carry `CommandExtra` is a property of the release. This
+// fixture builds against 1.4.0, which added
 // `impl CommandExtra for Box<Command>`, so a fold over a boxed command
 // is flagged exactly as one over a bare command is.
 //
@@ -36,8 +34,7 @@ fn boxed_closure(command: Box<Command>) -> Box<Command> {
         .fold(command, |command, var| command.with_arg(var))
 }
 
-// Bad: the `with_env` pair over a boxed accumulator, whose plural 1.4.0
-// takes a reference to a pair for.
+// Bad: the `with_env` pair over a boxed accumulator.
 fn boxed_pair(command: Box<Command>) -> Box<Command> {
     PAIRS
         .iter()

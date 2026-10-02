@@ -28,4 +28,10 @@ LL ~     let _ = Command::new("ls").with_envs(pairs
 LL ~         .iter());
    |
 
+warning: this fold over `with_env` re-implements `with_envs`
+  --> $DIR/folded_command_setter_item.rs:LL:CC
+   |
+LL |     pairs.fold(command, |command, (key, value)| command.with_env(key, value))
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `with_envs`: `command.with_envs(*pairs)`
+
 warning: N warnings emitted

@@ -1,16 +1,21 @@
-use crate::command_extra::trait_is_imported;
+use crate::command_extra::{imports, is_the_trait};
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
-use clippy_utils::source::snippet;
+use clippy_utils::source::{snippet_opt, snippet_with_applicability};
 use clippy_utils::sugg::Sugg;
-use clippy_utils::{is_from_proc_macro, sym};
+use clippy_utils::{is_from_proc_macro, span_extract_comments, sym};
 use rustc_errors::Applicability;
-use rustc_hir::{Expr, ExprKind};
+use rustc_hir::def::{DefKind, Res};
+use rustc_hir::def_id::DefId;
+use rustc_hir::{Expr, ExprKind, QPath};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
+use rustc_middle::ty::print::CratePrefixGuard;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
+use rustc_span::{Span, kw};
 
 mod folder;
+mod initial;
 mod receiver;
 mod setter;
 
@@ -23,18 +28,17 @@ declare_tool_lint! {
     /// `with_args`, `with_env` against `with_envs`, and `without_env`
     /// against `without_envs`.
     ///
-    /// The folder is matched by what it resolves to, so every spelling
-    /// of the setter is one shape, a closure that only forwards to it
-    /// included.
+    /// Every spelling of the setter counts, a closure that only forwards
+    /// to it included.
     ///
-    /// The `with_env` pair is flagged only when the resolved `with_envs`
-    /// accepts what the fold iterates. That bound has changed between
-    /// `command-extra` releases, so the rule never names a plural the
-    /// code cannot call.
+    /// The rule names a plural only where the code can call it.
     ///
     /// The fold's receiver has to be a place expression followed by at
     /// most one argument-less method call. `VARS`, `list.iter()` and
     /// `self.names.into_iter()` qualify; a longer one is left alone.
+    ///
+    /// A fold inside the plural's own body is left alone where the
+    /// suggestion would make the plural call itself.
     ///
     /// ### Why restrict this?
     ///
@@ -49,24 +53,20 @@ declare_tool_lint! {
     /// `without_envs` says that outright, and the receiver stops being an
     /// accumulator threaded through a closure.
     ///
-    /// There is a second, smaller reason: the fold form has more places
-    /// to get wrong. A fold whose closure swaps its accumulator and item,
-    /// or returns the wrong one of the two, compiles in some shapes and
-    /// silently builds the wrong command. The plural has no such surface.
+    /// The fold form also has more places to get wrong. A fold whose
+    /// closure swaps its accumulator and item, or returns the wrong one of
+    /// the two, compiles in some shapes and silently builds the wrong
+    /// command. The plural has no such surface.
     ///
-    /// `command-extra` defines `with_args` as
-    /// `args.into_iter().fold(self, Self::with_arg)`, so a hand-rolled
-    /// fold is not an alternative to the plural: it is the plural's own
-    /// body, inlined one level up from where the library already wrote
-    /// it.
+    /// `command-extra` defines each plural as the fold of its singular, so
+    /// a hand-rolled fold is not an alternative to the plural but its
+    /// body, inlined.
     ///
     /// ### Applicability
     ///
-    /// The suggestion moves the receiver past the initial value, so a
-    /// fix is applied only where that cannot change what either of them
-    /// sees: a receiver that names a place, or one whose call comes from
-    /// the standard library. Elsewhere the suggestion is advice, as it
-    /// also is where the trait is not in scope at the call site.
+    /// The fix is applied only where it is known to compile and to behave
+    /// as the fold did. Elsewhere the suggestion is advice, with
+    /// a help line saying what to check first.
     ///
     /// The suggestion keeps the receiver's call unless the plural makes
     /// that same call itself.
@@ -108,19 +108,31 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::folded_command_setter";
 
-/// What a reader has to settle before applying the suggestion by hand
-/// where the receiver is not reorderable. Why the two orders differ is on
-/// [`receiver::Shape::reorderable`].
+/// Why this withholds the fix is on [`receiver::Shape::reorderable`].
 const REORDERS: &str = "the fold evaluates the receiver before the initial value and the \
                         suggestion evaluates them the other way round, so apply it only where \
-                        neither reads what the other writes";
+                        their order does not matter";
 
-/// What a reader has to do first where the trait is not in scope at the
-/// call site. Conditional, because the imports [`trait_is_imported`]
-/// does not answer for leave this line redundant rather than wrong.
+/// Conditional, because an import [`imports`] does not see leaves this
+/// line redundant rather than wrong.
 const NEEDS_THE_IMPORT: &str = "the plural is a `CommandExtra` method, which resolves only where \
-                                the trait is in scope; add \
-                                `use command_extra::CommandExtra;` if it is not";
+                                the trait is in scope; add `use {};` if it is not";
+
+/// Why this withholds the fix is on [`setter::overrides_the_plural`].
+const OVERRIDDEN: &str = "an impl of `CommandExtra` may write its own body for the plural, which \
+                          the suggestion would run in place of the fold; apply it only where the \
+                          two agree";
+
+/// Why this withholds the fix is on [`initial::fixes_its_own_type`].
+const UNTYPED: &str = "the initial value may take its type from the fold, and as the plural's \
+                       receiver it would have none; name its type first";
+
+/// Why this withholds the fix is on [`folder::annotates_the_item`].
+const DROPS_A_TYPE: &str = "the fold names a type the suggestion drops; apply it only where the \
+                            iterator fixes its item type without it";
+
+const DROPS_A_COMMENT: &str = "the suggestion keeps the text of the initial value and the \
+                               receiver only, so move the fold's other comments by hand";
 
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
@@ -135,8 +147,8 @@ impl_lint_pass!(FoldedCommandSetter => [FOLDED_COMMAND_SETTER]);
 
 impl Register for rule::FoldedCommandSetter {
     /// The trigger names `CommandExtra`'s own setters, so it can only
-    /// fire in code that already calls them. No dependency gate is
-    /// needed, unlike the sibling rule's.
+    /// fire in code that already calls them, and needs no dependency
+    /// gate.
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {
@@ -173,14 +185,14 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
             return;
         };
         // Resolving the setter is what proves the accumulator implements
-        // `CommandExtra`: `fold`'s `B` is the `Self` of the impl the
-        // setter resolved in, or the fold does not type-check. So the
-        // accumulator's type is never asked, and the rule reaches
+        // `CommandExtra`: `fold`'s `B` is the `Self` the setter is called
+        // with, or the fold does not type-check. So no list of
+        // accumulator types gates the trigger, and the rule reaches
         // whatever a release implements the trait for.
         let Some(trait_id) = cx.tcx.trait_of_assoc(singular) else {
             return;
         };
-        if !setter::is_command_extra(cx, trait_id) {
+        if !is_the_trait(cx, trait_id) {
             return;
         }
         let Some(replacement) = setter::replacement_for(cx.tcx.item_name(singular)) else {
@@ -189,11 +201,17 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         let Some(plural_id) = setter::declares(cx, trait_id, replacement.plural) else {
             return;
         };
+        if !setter::bounds_are_known(cx, plural_id) {
+            return;
+        }
+        if setter::inside_the_plural(cx, expr, initial, plural_id) {
+            return;
+        }
 
         if replacement.splits_item && !setter::item_fits(cx, plural_id, receiver) {
             return;
         }
-        let Some(shape) = receiver::shape(cx, receiver) else {
+        let Some(shape) = receiver::shape(cx, receiver, initial) else {
             return;
         };
         // An initial value that diverges never reaches the fold, so the
@@ -205,80 +223,163 @@ impl<'tcx> LateLintPass<'tcx> for FoldedCommandSetter {
         if cx.typeck_results().expr_ty(initial).is_never() {
             return;
         }
-        // The plural is named, not resolved, so an inherent method of the
-        // accumulator's own type would take the call instead -- and need
-        // not take the same arguments.
-        if setter::shadowed_by_an_inherent_method(cx, initial, replacement.plural) {
+        if setter::shadowed_by_an_inherent_method(cx, initial, plural_id) {
             return;
         }
-        // A derive that stamps its whole expansion with the driving
-        // attribute's span defeats both `report_in_external_macro:
-        // false` and `hir_in_external_macro`, which read spans;
-        // `is_from_proc_macro` reads the source text under the span
-        // instead, and is what keeps
-        // `ui/folded_command_setter_proc_macro.rs` silent.
         if hir_in_external_macro(cx, expr.hir_id, expr.span) || is_from_proc_macro(cx, expr) {
             return;
         }
-        // Neither of those covers a `macro_rules!` of the linted crate's
-        // own. The suggestion replaces the span it is reported at while
-        // its text is read from the spans of three sub-expressions, so
-        // inside a macro body it rewrites the *definition* with text
-        // spliced from a call site: measured turning a macro that
-        // removed environment variables into one that adds arguments,
-        // and pasting a caller's local into a body where hygiene cannot
-        // resolve it. Two invocations also earn two suggestions at one
-        // span, which no fixer can reconcile.
+        // Neither macro guard covers a local `macro_rules!`, where the
+        // suggestion would rewrite the *definition* with one call site's
+        // text: measured turning a macro that removed environment
+        // variables into one that adds arguments, and pasting a caller's
+        // local where hygiene cannot resolve it. Two invocations would
+        // also earn two suggestions at one span.
         if [expr.span, initial.span, shape.argument]
             .iter()
             .any(|span| span.from_expansion())
         {
             return;
         }
-        // The plural is named rather than resolved, so the rewritten
-        // call reaches it only where the trait is in scope -- and a
-        // *path* folder needs no import of its own, so a fold can name
-        // the setter while the module cannot name the method. Measured:
-        // a machine-applicable `E0599` without this.
-        let in_scope = trait_is_imported(cx, expr);
-        let applicability = if shape.reorderable && in_scope {
-            Applicability::MachineApplicable
-        } else {
-            Applicability::Unspecified
-        };
-        let suggestion = format!(
-            // The initial value becomes a method-call receiver, so one
-            // that binds looser has to keep its own brackets: `*boxed`
-            // spliced raw reads as `*boxed.plural(..)`, which derefs the
-            // *result*.
-            "{}.{}({})",
-            Sugg::hir(cx, initial, "..").maybe_paren(),
-            replacement.plural,
-            snippet(cx, shape.argument, ".."),
-        );
-        span_lint_and_then(
-            cx,
-            FOLDED_COMMAND_SETTER,
-            expr.span,
-            format!(
-                "this fold over `{}` re-implements `{}`",
-                cx.tcx.item_name(singular),
-                replacement.plural,
-            ),
-            |diagnostic| {
-                diagnostic.span_suggestion(
-                    expr.span,
-                    format!("use `{}`", replacement.plural),
-                    suggestion,
-                    applicability,
-                );
-                if !shape.reorderable {
-                    diagnostic.help(REORDERS);
-                }
-                if !in_scope {
-                    diagnostic.help(NEEDS_THE_IMPORT);
-                }
-            },
-        );
+        emit(cx, expr, initial, folder, singular, plural_id, &shape);
     }
+}
+
+/// Report the fold, handing the fix over only where none of the reasons
+/// to withhold it holds, and naming each reason that does.
+fn emit<'tcx>(
+    cx: &LateContext<'tcx>,
+    expr: &'tcx Expr<'tcx>,
+    initial: &'tcx Expr<'tcx>,
+    folder: &'tcx Expr<'tcx>,
+    singular: DefId,
+    plural_id: DefId,
+    shape: &receiver::Shape,
+) {
+    let plural = cx.tcx.item_name(plural_id);
+    let accumulator = cx.typeck_results().expr_ty(initial);
+    let overridden = setter::overrides_the_plural(cx, plural_id, accumulator);
+    let ambiguous_with = setter::another_trait_declaring(cx, plural_id, accumulator);
+    // A *path* folder needs no import, so the plural may be out of
+    // scope: measured as a machine-applicable `E0599` without this. The
+    // import is compared with the resolved trait, not by name, since
+    // another crate compiled as `command_extra` may lack the plural.
+    let in_scope = imports(cx, expr, |imported| imported == cx.tcx.parent(plural_id));
+    let typed = initial::fixes_its_own_type(cx, initial);
+    let drops_a_type = folder::annotates_the_item(folder)
+        || matches!(expr.kind, ExprKind::MethodCall(segment, ..) if segment.args.is_some());
+    let drops_a_comment = drops_a_comment(cx, expr.span, [initial.span, shape.argument]);
+    let mut applicability = if shape.reorderable
+        && in_scope
+        && !overridden
+        && ambiguous_with.is_none()
+        && typed
+        && !drops_a_type
+        && !drops_a_comment
+    {
+        Applicability::MachineApplicable
+    } else {
+        Applicability::Unspecified
+    };
+    let initial_text = if initial::holds_a_struct_literal(cx, initial) {
+        format!(
+            "({})",
+            snippet_with_applicability(cx, initial.span, "..", &mut applicability),
+        )
+    } else {
+        // The initial value becomes a method-call receiver, so one that
+        // binds looser has to keep its own brackets: `*boxed` spliced raw
+        // reads as `*boxed.plural(..)`, which derefs the *result*.
+        Sugg::hir_with_applicability(cx, initial, "..", &mut applicability)
+            .maybe_paren()
+            .to_string()
+    };
+    let suggestion = format!(
+        "{initial_text}.{plural}({}{})",
+        shape.prefix,
+        snippet_with_applicability(cx, shape.argument, "..", &mut applicability),
+    );
+    span_lint_and_then(
+        cx,
+        FOLDED_COMMAND_SETTER,
+        expr.span,
+        format!(
+            "this fold over `{}` re-implements `{}`",
+            cx.tcx.item_name(singular),
+            plural,
+        ),
+        |diagnostic| {
+            diagnostic.span_suggestion(
+                expr.span,
+                format!("use `{}`", plural),
+                suggestion,
+                applicability,
+            );
+            if !shape.reorderable {
+                diagnostic.help(REORDERS);
+            }
+            if !in_scope {
+                diagnostic.help(
+                    NEEDS_THE_IMPORT
+                        .replace("{}", &trait_path(cx, folder, cx.tcx.parent(plural_id))),
+                );
+            }
+            if overridden {
+                diagnostic.help(OVERRIDDEN);
+            }
+            if !typed {
+                diagnostic.help(UNTYPED);
+            }
+            if drops_a_type {
+                diagnostic.help(DROPS_A_TYPE);
+            }
+            if drops_a_comment {
+                diagnostic.help(DROPS_A_COMMENT);
+            }
+            if let Some(other) = ambiguous_with {
+                diagnostic.help(format!(
+                    "`{}` also declares `{}` for this type, so wherever both traits are in \
+                     scope the suggestion is ambiguous; call the plural through the path \
+                     of `CommandExtra` there",
+                    cx.tcx.def_path_str(other),
+                    plural,
+                ));
+            }
+        },
+    );
+}
+
+/// Whether `fold` holds a comment outside every span in `kept`, which is
+/// all the suggestion carries over. The spans in `kept` lie inside
+/// `fold` and apart from each other, so comparing counts is enough.
+fn drops_a_comment(cx: &LateContext<'_>, fold: Span, kept: [Span; 2]) -> bool {
+    let count = |span| span_extract_comments(cx.tcx, span).len();
+    count(fold) > kept.into_iter().map(count).sum::<usize>()
+}
+
+/// The trait's path as the folder spells it, or else its definition path.
+///
+/// The folder's spelling names the trait the way this crate does, where
+/// the definition path names the crate as it was compiled: under a
+/// manifest key that renames the dependency, as in
+/// `ce = { package = "command-extra" }`, only the first resolves.
+fn trait_path(cx: &LateContext<'_>, folder: &Expr<'_>, trait_id: DefId) -> String {
+    if let ExprKind::Path(QPath::Resolved(_, path)) = folder.kind
+        && let Some(first) = path
+            .segments
+            .iter()
+            .find(|segment| segment.ident.name != kw::PathRoot)
+        && let Some(last) = path
+            .segments
+            .iter()
+            .find(|segment| segment.res == Res::Def(DefKind::Trait, trait_id))
+        && let Some(text) = snippet_opt(cx, first.ident.span.to(last.ident.span))
+    {
+        return text;
+    }
+    // `crate::` before a local path, as rustc writes its own import
+    // suggestions: a `use` of a bare item name does not resolve. The guard
+    // sets that for as long as it lives.
+    let _prefix = CratePrefixGuard::new();
+    cx.tcx.def_path_str(trait_id)
 }

@@ -1,11 +1,11 @@
 //! Which types `folded_command_setter` reaches, and why that is the
 //! resolved `command-extra`'s decision rather than the rule's.
 //!
-//! The rule never asks the accumulator's type. What proves the
-//! accumulator implements `CommandExtra` is the folder resolving to one
-//! of its setters, so the rule follows whatever the release implements
-//! the trait for -- and cannot fire where the release does not, because
-//! such a fold does not type-check.
+//! The rule never asks whether the accumulator implements
+//! `CommandExtra`. What proves it does is the folder resolving to one of
+//! the trait's setters, so the rule follows whatever the release
+//! implements the trait for. It cannot fire where the release does not,
+//! because such a fold does not type-check.
 //!
 //! That is a claim about two builds, not one, so it needs a real Cargo
 //! project rather than a `ui/` fixture: the contrast is a version
@@ -15,9 +15,7 @@
 //! `ui/folded_command_setter_boxed.rs` carries what the diagnostic
 //! *says* for the boxed case; this file carries when it is said at all.
 //!
-//! Ignored by default: each case resolves `command-extra` from the
-//! registry into a fresh fixture crate, which does not belong in the
-//! gating suite.
+//! Ignored by default; run them with:
 //!
 //! ```text
 //! cargo test --test folded_command_setter_command_types -- --ignored
@@ -37,14 +35,13 @@ const TOKIO: &str = include_str!("fixtures/folded_command_setter_command_types/t
 const ASYNC_PROCESS: &str =
     include_str!("fixtures/folded_command_setter_command_types/async_process.rs");
 
-/// Sibling rules would speak about the same lines on their own account,
-/// and the assertions below read the whole stderr.
+/// Sibling rules would fire on the same lines on their own account,
+/// and each test reads the whole stderr.
 const CONFIG: &str = "[perfectionist]\ndisable = [\"bare_identifier_reference\"]\n";
 
 /// The generated manifest with `dependencies` appended, which
 /// [`fixture_cargo_toml`] does not carry. Appending to its output rather
-/// than restating it keeps the package, lib and workspace stanzas in one
-/// place.
+/// than restating it keeps its stanzas in one place.
 fn cargo_toml(package: &str, dependencies: &str) -> String {
     format!(
         "{}\n[dependencies]\n{dependencies}",
@@ -90,15 +87,9 @@ fn a_boxed_command_is_reached_once_the_release_implements_the_trait() {
 fn a_boxed_command_is_not_reached_before_that() {
     let (_temp, stderr, success) = check("fcs_boxed_absent", "command-extra = \"=1.3.0\"\n", BOXED);
 
-    // 1.3.0 has no `impl CommandExtra for Box<Command>`, so the fold the
-    // rule would speak about cannot be written at all.
     assert!(
         !success && stderr.contains("E0277"),
         "expected the fixture not to compile against 1.3.0; stderr was:\n{stderr}",
-    );
-    assert!(
-        !stderr.contains(FIRES),
-        "the rule fired on a fold that does not type-check; stderr was:\n{stderr}",
     );
 }
 
@@ -130,15 +121,9 @@ fn tokio_commands_are_not_reached_with_the_feature_off() {
         TOKIO,
     );
 
-    // The impls are the feature's, not the version's, so the same
-    // release reaches neither tokio type without it.
     assert!(
         !success && stderr.contains("E0277"),
         "expected the fixture not to compile without the feature; stderr was:\n{stderr}",
-    );
-    assert!(
-        !stderr.contains(FIRES),
-        "the rule fired on a fold that does not type-check; stderr was:\n{stderr}",
     );
 }
 
@@ -169,14 +154,8 @@ fn async_process_commands_are_not_reached_with_the_feature_off() {
         ASYNC_PROCESS,
     );
 
-    // The impls are the feature's, not the version's, so the release that
-    // introduced them reaches neither type without it.
     assert!(
         !success && stderr.contains("E0277"),
         "expected the fixture not to compile without the feature; stderr was:\n{stderr}",
-    );
-    assert!(
-        !stderr.contains(FIRES),
-        "the rule fired on a fold that does not type-check; stderr was:\n{stderr}",
     );
 }

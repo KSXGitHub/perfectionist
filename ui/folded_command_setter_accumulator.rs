@@ -2,9 +2,8 @@
 // edition:2024
 //
 // What the rule does and does not ask of the fold's accumulator. It
-// never asks the accumulator's type: the folder resolving to a
-// `CommandExtra` setter is what proves the accumulator implements the
-// trait.
+// never asks whether the accumulator implements `CommandExtra`: the
+// folder resolving to one of the trait's setters is what proves it does.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -26,9 +25,9 @@ fn other_accumulator() {
     });
 }
 
-// Not flagged: a fold over a std setter. The folder resolves to
-// `Command::arg` rather than a `CommandExtra` setter, and its block
-// holds a statement, so this is the sibling rule's to speak about.
+// Not flagged: a closure calling the std setter `Command::arg`, which is
+// not a `CommandExtra` setter. `perfectionist::mutating_command_builder`
+// reports it instead.
 #[expect(
     perfectionist::mutating_command_builder,
     reason = "the sibling rule owning this line is the point of the case"
@@ -40,13 +39,20 @@ fn std_setter() {
     });
 }
 
-// Bad: an accumulator the code names only by a type parameter. What
-// proves the accumulator is a `CommandExtra` is the folder resolving to
-// one of its setters, so the rule never asks the accumulator's type --
-// which is also how it reaches whatever else a release implements the
-// trait for.
+// Bad: a generic accumulator, which may override the plural, so the fix
+// is withheld.
 fn generic_accumulator<Builder: CommandExtra>(command: Builder) -> Builder {
     VARS.iter().fold(command, CommandExtra::without_env)
+}
+
+fn opaque() -> impl CommandExtra {
+    Command::new("ls")
+}
+
+// Bad: an opaque accumulator, which may override the plural, so the fix
+// is withheld.
+fn opaque_accumulator() -> impl CommandExtra {
+    VARS.iter().fold(opaque(), CommandExtra::without_env)
 }
 
 // Not flagged: an accumulator that never arrives. The fold does not run,
@@ -58,17 +64,12 @@ fn diverging_initial(flag: bool) -> Command {
     Command::new("ls")
 }
 
-// Not flagged: the accumulator's own type carries an inherent method of
-// the plural's name, which method resolution reaches before the trait's.
-struct Shadowing(Command);
+// Bad: a type whose impl writes its own body for the plural. The
+// override keeps the trait's signature, so the rewrite compiles, but it
+// would run that body in place of the fold, and the fix is withheld.
+pub struct Overriding;
 
-impl Shadowing {
-    fn without_envs(self, _count: usize) -> Self {
-        self
-    }
-}
-
-impl CommandExtra for Shadowing {
+impl CommandExtra for Overriding {
     fn with_current_dir(self, _dir: impl AsRef<std::path::Path>) -> Self {
         self
     }
@@ -93,10 +94,17 @@ impl CommandExtra for Shadowing {
     fn with_stderr(self, _stdio: std::process::Stdio) -> Self {
         self
     }
+    fn without_envs<Keys>(self, _keys: Keys) -> Self
+    where
+        Keys: IntoIterator,
+        Keys::Item: AsRef<OsStr>,
+    {
+        self
+    }
 }
 
-fn inherent_shadow(command: Shadowing) -> Shadowing {
-    VARS.iter().fold(command, CommandExtra::without_env)
+pub fn overriding(overriding: Overriding) -> Overriding {
+    VARS.iter().fold(overriding, CommandExtra::without_env)
 }
 
 fn main() {}

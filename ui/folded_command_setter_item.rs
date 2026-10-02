@@ -4,8 +4,6 @@
 // Which plural the trait declares, and what its bound accepts. What the
 // fold proves of its item has to be what the plural asks of it, so the
 // item's shape decides whether a plural can be named at all.
-//
-// Exercises `src/rules/folded_command_setter/setter.rs`.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -52,34 +50,21 @@ fn reference_to_a_pair() {
         });
 }
 
-// Not flagged: a singular with no plural. Each sets one thing a later
-// call replaces rather than extends.
+// Not flagged: `with_current_dir`, which has no plural.
 fn no_plural() {
     let _ = VARS
         .iter()
-        .fold(Command::new("ls"), |c, _| c.with_no_env());
+        .fold(Command::new("ls"), |c, dir| c.with_current_dir(dir));
 }
 
-// Not flagged: a `ref` binding hands the setter a reference to the item
-// where a by-value binding hands it the item, so what the fold proves of
-// the item is not what the plural asks of it. Here the fold establishes
-// `&Key: AsRef<OsStr>` and `without_envs` wants `Key: AsRef<OsStr>`.
+// Not flagged: a `ref` binding. The fold proves `&Key: AsRef<OsStr>`,
+// where `without_envs` wants `Key: AsRef<OsStr>`.
 fn ref_binding<Key>(command: Command, keys: Vec<Key>) -> Command
 where
     for<'a> &'a Key: AsRef<OsStr>,
 {
     keys.into_iter()
         .fold(command, |command, ref key| command.without_env(key))
-}
-
-// Not flagged: a `..` in the tuple pattern hides a field, so the
-// bindings the closure forwards are not all of the item.
-fn gapped_tuple(triples: Vec<(String, String, String)>) {
-    let _ = triples
-        .into_iter()
-        .fold(Command::new("ls"), |command, (key, ..)| {
-            command.without_env(key)
-        });
 }
 
 // Not flagged: fewer arguments than the item has bindings. The plural
@@ -99,6 +84,41 @@ fn nested_tuple_item(command: Command, pairs: Vec<((String, String),)>) -> Comma
     pairs
         .into_iter()
         .fold(command, |command, ((key, value),)| command.with_env(key, value))
+}
+
+// Not flagged: a tuple destructured for a setter that takes the item
+// whole. The plural would be handed the tuple.
+fn tuple_for_a_whole_item(command: Command, items: Vec<(String,)>) -> Command {
+    items
+        .into_iter()
+        .fold(command, |command, (arg,)| command.with_arg(arg))
+}
+
+// Not flagged: a pair whose second half is destructured again. The
+// plural would bind the 1-tuple where the fold bound what it wraps.
+fn nested_pair(command: Command, items: Vec<(String, (String,))>) -> Command {
+    items
+        .into_iter()
+        .fold(command, |command, (key, (value,))| command.with_env(key, value))
+}
+
+#[derive(Clone, Copy)]
+struct PairCountdown(u8);
+
+impl Iterator for PairCountdown {
+    type Item = (&'static str, &'static str);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let remaining = self.0.checked_sub(1)?;
+        self.0 = remaining;
+        Some(("A", "1"))
+    }
+}
+
+// Bad: a `Copy` iterator of pairs behind a reference, which method
+// resolution copies out for the fold. Its item is a pair once copied.
+fn copied_pairs(command: Command, pairs: &PairCountdown) -> Command {
+    pairs.fold(command, |command, (key, value)| command.with_env(key, value))
 }
 
 fn main() {}

@@ -8,22 +8,29 @@
 // `clap_derive` span shape on a minimal
 // `#[synth_folded_command_setter]` attribute.
 //
-// `command_extra` is pulled in because the synthesised fold names one of
-// its setters, and `VARS` below is what the fold reads, so the shape is
-// one the rule fires on when hand-written and the guard is the only
-// thing left that can keep the fixture silent.
+// Each synthesised fold is one the rule fires on when hand-written, so a
+// guard is all that keeps this fixture silent.
 
 #![allow(dead_code, unused, reason = "ui fixture")]
 
 extern crate command_extra;
 extern crate proc_macro_synth_binding;
 
-use proc_macro_synth_binding::SynthFoldedCommandSetter;
+use proc_macro_synth_binding::{SynthFoldOwner, SynthFoldedCommandSetter};
 
 const VARS: &[&str] = &["A", "B"];
 
 #[derive(SynthFoldedCommandSetter)]
 #[synth_folded_command_setter]
 struct UsesSynthFoldedCommandSetter;
+
+// Not flagged: a hand-written fold the derive copies, spans and all,
+// into a function it generates.
+#[derive(SynthFoldOwner)]
+#[synth_fold_owner(VARS.iter().fold(
+    std::process::Command::new("ls"),
+    command_extra::CommandExtra::without_env,
+))]
+struct UsesSynthFoldOwner;
 
 fn main() {}

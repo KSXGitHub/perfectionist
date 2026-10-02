@@ -5,8 +5,6 @@
 // suggestion. The receiver has to be a place expression followed by at
 // most one argument-less call, and that call is kept unless the plural
 // makes it already.
-//
-// Exercises `src/rules/folded_command_setter/receiver.rs`.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -61,10 +59,9 @@ fn two_calls(names: Vec<String>) {
 }
 
 // Not flagged: a call taking an argument, which is where logic hides.
-fn call_with_argument(names: Vec<String>) {
+fn call_with_argument(mut names: Vec<String>) {
     let _ = names
-        .iter()
-        .map(String::as_str)
+        .drain(1..)
         .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
@@ -75,10 +72,8 @@ fn assoc_fn_receiver(names: Vec<String>) {
     let _ = Vec::into_iter(names).fold(Command::new("ls"), CommandExtra::without_env);
 }
 
-// Bad: a receiver the call did not run on. Method resolution derefs
-// `&&Vec<String>` twice to reach `<[T]>::iter`, so the place is not the
-// receiver, and handing the plural `v` would hand it something that is
-// not an iterator at all. The call survives, so it compiles.
+// Bad: a receiver the call did not run on. `iter` is `[T]`'s, reached
+// through `&&Vec<String>`, so the call survives and the rewrite compiles.
 fn double_reference(names: &&Vec<String>) {
     let _ = names
         .iter()
@@ -95,7 +90,8 @@ fn through_rc(names: &std::rc::Rc<Vec<String>>) {
 
 // Bad: `into_iter` reached by an autoref, because the only
 // `IntoIterator` is on the reference. Erasing would leave `Borrowed`,
-// which is not an iterator, so the adjustment check keeps the call.
+// which is not an iterator, so the adjustment check keeps the call. The
+// `into_iter` that runs is this crate's, so the fix is withheld.
 struct Borrowed(Vec<String>);
 
 impl<'a> IntoIterator for &'a Borrowed {
@@ -149,6 +145,40 @@ fn mutable_reference(names: &mut Vec<String>) {
         .iter()
         .fold(Command::new("ls"), CommandExtra::without_env);
     let _ = names.len();
+}
+
+// Bad: an `into_iter` whose iterator is a reference, which the fold
+// reborrows. The call survives, because the reborrow is spelled on it:
+// put on the place, `&mut *holder` would deref a type with no `Deref`.
+struct Holder<'a>(&'a mut std::vec::IntoIter<String>);
+
+impl<'a> IntoIterator for Holder<'a> {
+    type Item = String;
+    type IntoIter = &'a mut std::vec::IntoIter<String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0
+    }
+}
+
+fn reference_iterator(holder: Holder<'_>) {
+    let _ = holder
+        .into_iter()
+        .fold(Command::new("ls"), CommandExtra::without_env);
+}
+
+// Bad: an associated const as the receiver, a place expression written
+// as a type-relative path.
+struct Defaults;
+
+impl Defaults {
+    const VARS: &'static [&'static str] = &["A"];
+}
+
+fn associated_const() {
+    let _ = Defaults::VARS
+        .iter()
+        .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
 fn main() {}

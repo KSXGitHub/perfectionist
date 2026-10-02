@@ -13,7 +13,7 @@
 //! was loaded it is asked for the one the diagnostic would name.
 
 use crate::cargo_manifest;
-use crate::command_extra::{CRATE, TRAIT};
+use crate::command_extra::{CRATE, is_the_trait};
 use rustc_hir::def_id::DefId;
 use rustc_lint::LateContext;
 use rustc_span::Symbol;
@@ -82,14 +82,13 @@ pub(super) fn crate_is_declared(cx: &LateContext<'_>) -> bool {
 /// anything of.
 pub(super) fn loaded_traits(cx: &LateContext<'_>) -> Vec<DefId> {
     let wanted_crate = Symbol::intern(CRATE);
-    let wanted_trait = Symbol::intern(TRAIT);
     cx.tcx
         .crates(())
         .iter()
         .filter(|krate| cx.tcx.crate_name(**krate) == wanted_crate)
         .flat_map(|krate| cx.tcx.traits(*krate))
-        .filter(|def_id| cx.tcx.item_name(**def_id) == wanted_trait)
         .copied()
+        .filter(|def_id| is_the_trait(cx, *def_id))
         .collect()
 }
 

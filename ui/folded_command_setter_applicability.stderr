@@ -7,7 +7,7 @@ LL | |         .iter()
 LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
    | |____________________________________________________________^
    |
-   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
    = note: `#[warn(perfectionist::folded_command_setter)]` on by default
 help: use `without_envs`
    |
@@ -24,7 +24,7 @@ LL | |         .into_iter()
 LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
    | |____________________________________________________________^
    |
-   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
 help: use `without_envs`
    |
 LL ~     let _ = Command::new("ls").without_envs(shadow
@@ -40,7 +40,7 @@ LL | |         .drain_all()
 LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
    | |____________________________________________________________^
    |
-   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
 help: use `without_envs`
    |
 LL ~     let _ = Command::new("ls").without_envs(queue
@@ -57,7 +57,7 @@ LL | |         CommandExtra::without_env,
 LL | |     );
    | |_____^ help: use `without_envs`: `Command::new(format!("ls{}", queue.0.len())).without_envs(queue.take_all())`
    |
-   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where neither reads what the other writes
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
 
 warning: this fold over `without_env` re-implements `without_envs`
   --> $DIR/folded_command_setter_applicability.rs:LL:CC
@@ -68,10 +68,151 @@ LL |     let _ = VARS.iter().fold(*command, CommandExtra::without_env);
 warning: this fold over `without_env` re-implements `without_envs`
   --> $DIR/folded_command_setter_applicability.rs:LL:CC
    |
+LL |     match VARS.iter().fold(Literal { inner }, CommandExtra::without_env) {
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `(Literal { inner }).without_envs(VARS.iter())`
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL |       let _ = (*noisy)
+   |  _____________^
+LL | |         .into_iter()
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
+   | |____________________________________________________________^
+   |
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
+help: use `without_envs`
+   |
+LL ~     let _ = Command::new("ls").without_envs((*noisy)
+LL ~         .into_iter());
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL |       let _ = noisy.into_iter().fold(
+   |  _____________^
+LL | |         Command::new(format!(
+LL | |             "ls{}",
+LL | |             DEREFS.load(std::sync::atomic::Ordering::SeqCst)
+LL | |         )),
+LL | |         CommandExtra::without_env,
+LL | |     );
+   | |_____^
+   |
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
+help: use `without_envs`
+   |
+LL ~     let _ = Command::new(format!(
+LL +             "ls{}",
+LL +             DEREFS.load(std::sync::atomic::Ordering::SeqCst)
+LL ~         )).without_envs(noisy.into_iter());
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL |     countdown.fold(exhaust(&mut countdown), CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `exhaust(&mut countdown).without_envs(countdown)`
+   |
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL | /     countdown.fold(
+LL | |         Command::new(countdown.0.to_string()),
+LL | |         CommandExtra::without_env,
+LL | |     )
+   | |_____^ help: use `without_envs`: `Command::new(countdown.0.to_string()).without_envs(countdown)`
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL | /     names
+LL | |         .unwrap()
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env)
+   | |____________________________________________________________^
+   |
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
+help: use `without_envs`
+   |
+LL ~     Command::new("ls").without_envs(names
+LL +         .unwrap())
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL | /     job.removed
+LL | |         .iter()
+LL | |         .fold(job.into_base(), CommandExtra::without_env)
+   | |_________________________________________________________^
+   |
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
+help: use `without_envs`
+   |
+LL ~     job.into_base().without_envs(job.removed
+LL +         .iter())
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL |     VARS.iter().fold(start.into(), Command::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `start.into().without_envs(VARS.iter())`
+   |
+   = help: the initial value may take its type from the fold, and as the plural's receiver it would have none; name its type first
+
+warning: this fold over `with_arg` re-implements `with_args`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL | /     names
+LL | |         .iter()
+LL | |         .fold(Command::new("ls"), |command, name: &&str| command.with_arg(name))
+   | |________________________________________________________________________________^
+   |
+   = help: the fold names a type the suggestion drops; apply it only where the iterator fixes its item type without it
+help: use `with_args`
+   |
+LL ~     Command::new("ls").with_args(names
+LL +         .iter())
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL | /     VARS.iter()
+LL | |         // kept only by hand
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env)
+   | |____________________________________________________________^ help: use `without_envs`: `Command::new("ls").without_envs(VARS.iter())`
+   |
+   = help: the suggestion keeps the text of the initial value and the receiver only, so move the fold's other comments by hand
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
 LL | /         VARS.iter()
 LL | |             .fold(command, command_extra::CommandExtra::without_env)
    | |____________________________________________________________________^ help: use `without_envs`: `command.without_envs(VARS.iter())`
    |
    = help: the plural is a `CommandExtra` method, which resolves only where the trait is in scope; add `use command_extra::CommandExtra;` if it is not
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL | /         VARS.iter()
+LL | |             .fold(command, renamed_extra::CommandExtra::without_env)
+   | |____________________________________________________________________^ help: use `without_envs`: `command.without_envs(VARS.iter())`
+   |
+   = help: the plural is a `CommandExtra` method, which resolves only where the trait is in scope; add `use renamed_extra::CommandExtra;` if it is not
+
+warning: multi-line macro invocation should end with a trailing comma
+  --> $DIR/folded_command_setter_applicability.rs:LL:CC
+   |
+LL |             DEREFS.load(std::sync::atomic::Ordering::SeqCst)
+   |                                                             ^ help: add a trailing comma: `,`
+   |
+   = note: `#[warn(perfectionist::macro_trailing_comma)]` on by default
 
 warning: N warnings emitted

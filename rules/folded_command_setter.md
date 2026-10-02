@@ -15,18 +15,17 @@ thing, and names the plural. The pairs are `with_arg` against
 `with_args`, `with_env` against `with_envs`, and `without_env`
 against `without_envs`.
 
-The folder is matched by what it resolves to, so every spelling
-of the setter is one shape, a closure that only forwards to it
-included.
+Every spelling of the setter counts, a closure that only forwards
+to it included.
 
-The `with_env` pair is flagged only when the resolved `with_envs`
-accepts what the fold iterates. That bound has changed between
-`command-extra` releases, so the rule never names a plural the
-code cannot call.
+The rule names a plural only where the code can call it.
 
 The fold's receiver has to be a place expression followed by at
 most one argument-less method call. `VARS`, `list.iter()` and
 `self.names.into_iter()` qualify; a longer one is left alone.
+
+A fold inside the plural's own body is left alone where the
+suggestion would make the plural call itself.
 
 ## Why restrict this?
 
@@ -41,24 +40,20 @@ can see that the answer is "these variables are removed".
 `without_envs` says that outright, and the receiver stops being an
 accumulator threaded through a closure.
 
-There is a second, smaller reason: the fold form has more places
-to get wrong. A fold whose closure swaps its accumulator and item,
-or returns the wrong one of the two, compiles in some shapes and
-silently builds the wrong command. The plural has no such surface.
+The fold form also has more places to get wrong. A fold whose
+closure swaps its accumulator and item, or returns the wrong one of
+the two, compiles in some shapes and silently builds the wrong
+command. The plural has no such surface.
 
-`command-extra` defines `with_args` as
-`args.into_iter().fold(self, Self::with_arg)`, so a hand-rolled
-fold is not an alternative to the plural: it is the plural's own
-body, inlined one level up from where the library already wrote
-it.
+`command-extra` defines each plural as the fold of its singular, so
+a hand-rolled fold is not an alternative to the plural but its
+body, inlined.
 
 ## Applicability
 
-The suggestion moves the receiver past the initial value, so a
-fix is applied only where that cannot change what either of them
-sees: a receiver that names a place, or one whose call comes from
-the standard library. Elsewhere the suggestion is advice, as it
-also is where the trait is not in scope at the call site.
+The fix is applied only where it is known to compile and to behave
+as the fold did. Elsewhere the suggestion is advice, with
+a help line saying what to check first.
 
 The suggestion keeps the receiver's call unless the plural makes
 that same call itself.
