@@ -29,6 +29,7 @@ use super::setter::{self, Conversion};
 use clippy_utils::sugg::Sugg;
 use ordering::{creates_an_ordered_drop, leaves_a_sibling_behind};
 use position::{Position, position};
+use rustc_hir::def_id::DefId;
 use rustc_hir::{Expr, ExprKind, Node};
 use rustc_lint::LateContext;
 use rustc_span::Span;
@@ -37,12 +38,13 @@ mod ordering;
 mod position;
 
 /// What the caller has already decided about the call.
-pub(super) struct Inputs {
+pub(super) struct Inputs<'a> {
     pub(super) by_value_form: &'static str,
     pub(super) conversion: Conversion,
     pub(super) receiver_is_a_temporary: bool,
     pub(super) trait_is_imported: bool,
     pub(super) names_generic_arguments: bool,
+    pub(super) command_extra_traits: &'a [DefId],
 }
 
 /// What the rule has to offer for one flagged call.
@@ -142,7 +144,8 @@ fn edits<'tcx>(cx: &LateContext<'tcx>, call: &'tcx Expr<'tcx>, inputs: &Inputs) 
         };
         // A later link resolving anywhere but to `Command`'s own setter
         // is already trait-mediated, and renaming it would move it.
-        if !setter::resolves_to_an_inherent_command_method(cx, parent) {
+        if !setter::resolves_to_an_inherent_command_method(cx, parent, inputs.command_extra_traits)
+        {
             return Rewrite::Defer;
         }
         match link(

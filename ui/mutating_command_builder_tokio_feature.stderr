@@ -1,7 +1,7 @@
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
-  --> $DIR/mutating_command_builder_command_types.rs:LL:CC
+  --> $DIR/mutating_command_builder_tokio_feature.rs:LL:CC
    |
-LL |     command.arg("bare-command");
+LL |     command.arg("on-bare");
    |             ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
@@ -9,45 +9,27 @@ LL |     command.arg("bare-command");
    = note: `#[warn(perfectionist::mutating_command_builder)]` on by default
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
-  --> $DIR/mutating_command_builder_command_types.rs:LL:CC
+  --> $DIR/mutating_command_builder_tokio_feature.rs:LL:CC
    |
-LL |     command.arg("boxed-command");
+LL |     command.arg("on-boxed");
    |             ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
-  --> $DIR/mutating_command_builder_command_types.rs:LL:CC
+  --> $DIR/mutating_command_builder_tokio_feature.rs:LL:CC
    |
-LL |     command.arg("tokio-command");
+LL |     command.arg("on-tokio");
    |             ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
    = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
 
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
-  --> $DIR/mutating_command_builder_command_types.rs:LL:CC
+  --> $DIR/mutating_command_builder_tokio_feature.rs:LL:CC
    |
-LL |     command.arg("boxed-tokio-command");
-   |             ^^^
-   |
-   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
-
-warning: `Command::arg` takes `&mut self`, so it cannot yield the command
-  --> $DIR/mutating_command_builder_command_types.rs:LL:CC
-   |
-LL |     command.arg("async-command");
-   |             ^^^
-   |
-   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
-   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
-
-warning: `Command::arg` takes `&mut self`, so it cannot yield the command
-  --> $DIR/mutating_command_builder_command_types.rs:LL:CC
-   |
-LL |     command.arg("boxed-async-command");
+LL |     command.arg("on-boxed-tokio");
    |             ^^^
    |
    = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position

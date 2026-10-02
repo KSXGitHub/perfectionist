@@ -22,11 +22,13 @@ use emit::Landing;
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Flags a `std::process::Command` setter called on an *owned*
-    /// command — `arg`, `args`, `env`, `envs`, `env_remove`,
-    /// `env_clear`, `current_dir`, `stdin`, `stdout`, `stderr` — and
-    /// names the `command_extra::CommandExtra` counterpart that takes
-    /// `self` instead of `&mut self`.
+    /// Flags a setter called on an *owned* command — `arg`, `args`,
+    /// `env`, `envs`, `env_remove`, `env_clear`, `current_dir`,
+    /// `stdin`, `stdout`, `stderr` — and names the
+    /// `command_extra::CommandExtra` counterpart that takes `self`
+    /// instead of `&mut self`. Any command the trait covers counts:
+    /// `std::process::Command`, a `Box` of one, and, behind a feature
+    /// apiece, `tokio::process`'s and `async_process`'s.
     ///
     /// A receiver it could not take ownership of — a `&mut Command`, or
     /// a field reached through one — is left alone. So is a crate that
@@ -84,7 +86,7 @@ declare_tool_lint! {
     /// ```
     pub perfectionist::MUTATING_COMMAND_BUILDER,
     Warn,
-    "a `std::process::Command` setter taking `&mut self` where `command-extra`'s by-value form exists",
+    "a command setter taking `&mut self` where `command-extra`'s by-value form exists",
     report_in_external_macro: false
 }
 
@@ -130,12 +132,13 @@ impl MutatingCommandBuilder {
     /// The walk ends where the rewrite's does, because nothing past
     /// there is renamed.
     fn chain_counterparts_are_declared<'tcx>(
-        &mut self,
+        &self,
         cx: &LateContext<'tcx>,
         call: &'tcx Expr<'tcx>,
         by_value_form: &'static str,
+        command_extra_traits: &[DefId],
     ) -> bool {
-        if !self.counterpart_is_declared(cx, by_value_form) {
+        if !Self::counterpart_is_declared(cx, command_extra_traits, by_value_form) {
             return false;
         }
         let mut tail = call;
@@ -149,10 +152,10 @@ impl MutatingCommandBuilder {
             let Some(by_value_form) = setter::by_value_form(method.ident.name) else {
                 break;
             };
-            if !setter::resolves_to_an_inherent_command_method(cx, parent) {
+            if !setter::resolves_to_an_inherent_command_method(cx, parent, command_extra_traits) {
                 break;
             }
-            if !self.counterpart_is_declared(cx, by_value_form) {
+            if !Self::counterpart_is_declared(cx, command_extra_traits, by_value_form) {
                 return false;
             }
             tail = parent;
@@ -172,13 +175,14 @@ impl MutatingCommandBuilder {
     /// crate not using it yet, still free to resolve a version that
     /// has the counterpart; one already using it is held to the
     /// version it has.
-    fn counterpart_is_declared(&mut self, cx: &LateContext<'_>, by_value_form: &str) -> bool {
-        self.command_extra_traits
-            .get_or_insert_with(|| availability::loaded_traits(cx))
-            .iter()
-            .all(|command_extra| {
-                availability::declares_the_counterpart(cx, *command_extra, by_value_form)
-            })
+    fn counterpart_is_declared(
+        cx: &LateContext<'_>,
+        command_extra_traits: &[DefId],
+        by_value_form: &str,
+    ) -> bool {
+        command_extra_traits.iter().all(|command_extra| {
+            availability::declares_the_counterpart(cx, *command_extra, by_value_form)
+        })
     }
 
     /// Whether the `CommandExtra` counterpart is near enough to hand
@@ -243,10 +247,17 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         let Some(by_value_form) = setter::by_value_form(path_segment.ident.name) else {
             return;
         };
-        if !setter::is_on_an_owned_command(cx, receiver) {
+        // Taken by value because the gates below and the rewrite all read
+        // it while `self` is borrowed again for the memoised answers. The
+        // list holds one trait, or none.
+        let command_extra_traits = self
+            .command_extra_traits
+            .get_or_insert_with(|| availability::loaded_traits(cx))
+            .clone();
+        if !setter::is_on_an_owned_command(cx, receiver, &command_extra_traits) {
             return;
         }
-        if !setter::resolves_to_an_inherent_command_method(cx, expr) {
+        if !setter::resolves_to_an_inherent_command_method(cx, expr, &command_extra_traits) {
             return;
         }
         if !receiver::can_be_consumed(cx, receiver) {
@@ -289,7 +300,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         // Naming a counterpart the resolved `command-extra` does not
         // have gives advice that cannot be followed and a rewrite that
         // does not compile.
-        if !self.chain_counterparts_are_declared(cx, expr, by_value_form) {
+        if !self.chain_counterparts_are_declared(cx, expr, by_value_form, &command_extra_traits) {
             return;
         }
         // Last of the gates rather than first: it can need whether the
@@ -356,6 +367,7 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                         receiver_is_a_temporary,
                         trait_is_imported,
                         names_generic_arguments,
+                        command_extra_traits: &command_extra_traits,
                     },
                 ),
             },

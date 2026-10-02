@@ -7,8 +7,11 @@
 //! first: a name, then a type, then a resolution.
 
 use clippy_utils::res::MaybeDef;
-use rustc_hir::Expr;
+use clippy_utils::ty::implements_trait;
+use rustc_hir::def_id::DefId;
+use rustc_hir::{Expr, Mutability};
 use rustc_lint::LateContext;
+use rustc_middle::ty::{self, Ty};
 use rustc_span::{Symbol, sym};
 
 /// `std::process::Command`'s `rustc_diagnostic_item` name. Not among
@@ -36,16 +39,53 @@ pub(super) fn by_value_form(std_form: Symbol) -> Option<&'static str> {
     })
 }
 
-/// Whether the setter's receiver is an owned `Command`.
+/// Whether the setter's receiver is an owned command the counterpart
+/// could take by value.
 ///
 /// The type is read unadjusted, so an autoref inserted for the
 /// `&mut self` signature does not hide an owned receiver -- and so a
 /// receiver that is genuinely a `&mut Command` keeps its reference and
-/// fails the check.
-pub(super) fn is_on_an_owned_command(cx: &LateContext<'_>, receiver: &Expr<'_>) -> bool {
-    cx.typeck_results()
-        .expr_ty(receiver)
-        .is_diag_item(cx, Symbol::intern(COMMAND_DIAGNOSTIC_ITEM))
+/// fails the check, the trait being implemented for the command rather
+/// than for a reference to one.
+pub(super) fn is_on_an_owned_command<'tcx>(
+    cx: &LateContext<'tcx>,
+    receiver: &Expr<'_>,
+    command_extra_traits: &[DefId],
+) -> bool {
+    carries_the_counterparts(
+        cx,
+        cx.typeck_results().expr_ty(receiver),
+        command_extra_traits,
+    )
+}
+
+/// Whether `ty` is a command whose setters this rule speaks about:
+/// `std::process::Command` itself, or any type a loaded `CommandExtra`
+/// is implemented for.
+///
+/// Which types those are is the resolved release's decision rather than
+/// this rule's. 1.4.0 added `Box<Command>` and, behind a feature,
+/// `tokio::process`'s own `Command` and its box; 1.5.0 added
+/// `async_process`'s pair. Asking the trait follows all of them without
+/// naming a crate here, so neither of those crates has to be reachable
+/// for the rule to build, and a release that implements the trait for
+/// something new is followed with no change.
+///
+/// std's `Command` is named by its diagnostic item instead of being
+/// asked, because the rule speaks about it whether or not the crate has
+/// loaded `command-extra` yet. A crate that has declared the dependency
+/// without naming it loads no trait, as
+/// [`super::availability::loaded_traits`] explains, and the advice to
+/// adopt the by-value form is the whole point of the rule there.
+fn carries_the_counterparts<'tcx>(
+    cx: &LateContext<'tcx>,
+    ty: Ty<'tcx>,
+    command_extra_traits: &[DefId],
+) -> bool {
+    ty.is_diag_item(cx, Symbol::intern(COMMAND_DIAGNOSTIC_ITEM))
+        || command_extra_traits
+            .iter()
+            .any(|command_extra| implements_trait(cx, ty, *command_extra, &[]))
 }
 
 /// Whether the call resolves to one of `Command`'s own inherent
@@ -56,9 +96,10 @@ pub(super) fn is_on_an_owned_command(cx: &LateContext<'_>, receiver: &Expr<'_>) 
 /// chain, *before* `Command`'s own `&mut self` setter, so an extension
 /// trait of the author's own with a colliding name wins resolution and
 /// must not be renamed.
-pub(super) fn resolves_to_an_inherent_command_method(
-    cx: &LateContext<'_>,
+pub(super) fn resolves_to_an_inherent_command_method<'tcx>(
+    cx: &LateContext<'tcx>,
     call: &Expr<'_>,
+    command_extra_traits: &[DefId],
 ) -> bool {
     let Some(method) = cx.typeck_results().type_dependent_def_id(call.hir_id) else {
         return false;
@@ -72,12 +113,35 @@ pub(super) fn resolves_to_an_inherent_command_method(
     if cx.tcx.trait_of_assoc(method).is_some() {
         return false;
     }
+    // What the diagnostic says about the call is that `&mut self` is why
+    // the chain cannot yield the command, so a setter of the name that
+    // already takes its receiver by value is not this rule's to speak
+    // about. Every std setter in the table takes `&mut self`, so this
+    // bears only on a command of another crate's, or of the author's.
+    if !takes_the_receiver_by_mutable_reference(cx, method) {
+        return false;
+    }
     cx.tcx.impl_of_assoc(method).is_some_and(|impl_did| {
-        cx.tcx
-            .type_of(impl_did)
-            .skip_binder()
-            .is_diag_item(cx, Symbol::intern(COMMAND_DIAGNOSTIC_ITEM))
+        carries_the_counterparts(
+            cx,
+            cx.tcx.type_of(impl_did).skip_binder(),
+            command_extra_traits,
+        )
     })
+}
+
+/// Whether `method`'s own receiver is `&mut self`.
+fn takes_the_receiver_by_mutable_reference(cx: &LateContext<'_>, method: DefId) -> bool {
+    matches!(
+        cx.tcx
+            .fn_sig(method)
+            .skip_binder()
+            .inputs()
+            .skip_binder()
+            .first()
+            .map(|receiver| receiver.kind()),
+        Some(ty::Ref(_, _, Mutability::Mut)),
+    )
 }
 
 /// Whether the by-value counterpart would take this call's argument as
