@@ -113,14 +113,6 @@ pattern that several rules call out by reference — live in
   `perfectionist::overly_long_method_chain` without contradicting it.
   Active by default.
 
-### Command builder
-- [`folded-command-setter.md`](./folded-command-setter.md) — flag a
-  `fold` of a singular `CommandExtra` setter over an iterator where
-  the plural exists (`without_env` → `without_envs`), however the
-  folder is spelled. Fires only where the rewrite deletes the fold
-  rather than relocating it, so a transforming closure or an adapter
-  chain in the receiver stays quiet.
-
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
   `#[cfg_attr(..., ignore = "...")]` over `#[cfg(...)]` on `#[test]`s, and
