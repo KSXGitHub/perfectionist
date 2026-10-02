@@ -5,15 +5,17 @@
 - _Default state:_ `active`
 - _Source:_ [`src/rules/mutating_command_builder.rs`](../src/rules/mutating_command_builder.rs)
 
-> a `std::process::Command` setter taking `&mut self` where `command-extra`'s by-value form exists
+> a command setter taking `&mut self` where `command-extra`'s by-value form exists
 
 ## What it does
 
-Flags a `std::process::Command` setter called on an *owned*
-command — `arg`, `args`, `env`, `envs`, `env_remove`,
-`env_clear`, `current_dir`, `stdin`, `stdout`, `stderr` — and
-names the `command_extra::CommandExtra` counterpart that takes
-`self` instead of `&mut self`.
+Flags a setter called on an *owned* command — `arg`, `args`,
+`env`, `envs`, `env_remove`, `env_clear`, `current_dir`,
+`stdin`, `stdout`, `stderr` — and names the
+`command_extra::CommandExtra` counterpart that takes `self`
+instead of `&mut self`. Any command the trait covers counts:
+`std::process::Command`, a `Box` of one, and, behind a feature
+apiece, `tokio::process`'s and `async_process`'s.
 
 A receiver it could not take ownership of — a `&mut Command`, or
 a field reached through one — is left alone. So is a crate that
@@ -46,8 +48,7 @@ settings are done. The by-value form removes that intermediate.
 
 ## Example
 
-**Avoid** — the function cannot end in its chain, because the
-chain has type `&mut Command`:
+**Avoid:**
 
 ```rust,ignore
 fn lister(dir: &Path) -> Command {
@@ -60,7 +61,7 @@ fn lister(dir: &Path) -> Command {
 }
 ```
 
-**Prefer** — one expression, no binding:
+**Prefer:**
 
 ```rust,ignore
 fn lister(dir: &Path) -> Command {

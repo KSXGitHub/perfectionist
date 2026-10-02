@@ -13,6 +13,7 @@ pub mod excessive_cognitive_complexity;
 pub mod excessive_inline_tests;
 pub mod excessive_nesting;
 pub mod exhaustive_error_enums;
+pub mod folded_command_setter;
 pub mod import_granularity_mismatch;
 pub mod import_grouping_mismatch;
 pub mod impure_macro_arguments;

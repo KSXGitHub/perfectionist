@@ -66,6 +66,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   error-shaped type is missing `#[non_exhaustive]`
 
+- [`folded_command_setter`](./folded_command_setter.md) (default: `active`).
+
+  fold over a singular `CommandExtra` setter re-implements the plural
+
 - [`import_granularity_mismatch`](./import_granularity_mismatch.md) (default: `active`).
 
   import granularity does not match the configured `import_granularity_mismatch.style`
@@ -88,7 +92,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 
 - [`mutating_command_builder`](./mutating_command_builder.md) (default: `active`).
 
-  a `std::process::Command` setter taking `&mut self` where `command-extra`'s by-value form exists
+  a command setter taking `&mut self` where `command-extra`'s by-value form exists
 
 - [`named_prelude_imports`](./named_prelude_imports.md) (default: `active`).
 
