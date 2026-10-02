@@ -38,7 +38,7 @@ const ASYNC_PROCESS: &str =
     include_str!("fixtures/folded_command_setter_command_types/async_process.rs");
 
 /// Sibling rules would speak about the same lines on their own account,
-/// and the assertions below read the whole stderr.
+/// and each test reads the whole stderr.
 const CONFIG: &str = "[perfectionist]\ndisable = [\"bare_identifier_reference\"]\n";
 
 /// The generated manifest with `dependencies` appended, which

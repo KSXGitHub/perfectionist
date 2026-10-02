@@ -6,11 +6,12 @@
 //! the fixer will apply it. So the fixtures are run through the real
 //! fixer and judged on what it did to the source.
 //!
-//! What the rule decides here is an ordering question. The plural takes
-//! the initial value as its receiver and the folded iterator as its
-//! argument, so it evaluates them in the order the fold did not, and
+//! Most of what the rule declines is a question of order. The plural
+//! takes the initial value as its receiver and the folded iterator as
+//! its argument, so it evaluates them in the order the fold did not, and
 //! only a receiver that runs nothing but the standard library's code,
-//! and reads nothing the initial value writes, is known not to care.
+//! and reads nothing the initial value writes or moves, is known not to
+//! care.
 //! `src/rules/folded_command_setter/receiver.rs` derives it.
 //!
 //! The fixtures split by direction, because the two fail differently.
@@ -76,10 +77,9 @@ const APPLIED_FIXED: &str = include_str!("fixtures/folded_command_setter_autofix
 /// it declines.
 const NOT_APPLIED: &str = include_str!("fixtures/folded_command_setter_autofix/not_applied.rs");
 
-/// Sibling rules would rewrite the same lines on their own account,
-/// which would make "did the fixer touch this line?" answer the wrong
-/// question -- and any error one of them introduced would be blamed on
-/// this rule by the headline assertion below.
+/// Sibling rules would rewrite the same lines on their own account, so a
+/// changed line would no longer be this rule's doing, and an error one
+/// of them introduced would be blamed on this rule.
 const CONFIG: &str = text_block_fnl! {
     "[perfectionist]"
     r#"disable = ["bare_identifier_reference", "impure_macro_arguments", "import_granularity_mismatch", "import_grouping_mismatch"]"#
@@ -149,8 +149,8 @@ fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
         "the fixer rewrote a shape the rule declined to hand it",
     );
 
-    // And the rule fired on each shape, so the assertion above is not
-    // passing because the fixture went quiet.
+    // The rule fired on each shape, so the file is unchanged because the
+    // fix was declined, not because the rule went quiet.
     for shape in [
         "local-iter",
         "shadowed-into-iter",

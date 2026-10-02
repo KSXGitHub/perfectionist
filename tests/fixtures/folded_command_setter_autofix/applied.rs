@@ -6,11 +6,6 @@
 // have to differ by exactly the rewrite and by nothing else -- this
 // header included.
 //
-// What that test asserts is the rule's own decision, not the
-// compiler's, which is why it runs the fixer rather than reading a
-// `.stderr`. `not_applied.rs` holds the shapes the rule declines to
-// hand over at all.
-//
 // Each fold is one line, so the rewrite the fixer performs is a
 // line-for-line swap and the pair stays legible side by side.
 
@@ -46,8 +41,9 @@ pub fn erased_into_iter(names: Vec<String>) -> Command {
     names.into_iter().fold(start, CommandExtra::without_env)
 }
 
-// The same over an owned collection the fold only borrows, with a later
-// read to prove the borrow still ends where it did.
+// `iter` from the standard library over an owned collection the fold
+// only borrows, with a later read to prove the borrow still ends where
+// it did.
 pub fn kept_iter_on_a_vec(names: Vec<String>) -> (Command, usize) {
     let start = Command::new("ls");
     let command = names.iter().fold(start, CommandExtra::without_env);
@@ -66,7 +62,7 @@ pub fn pair_item(pairs: Vec<(String, String)>) -> Command {
     pairs.into_iter().fold(start, |command, (key, value)| command.with_env(key, value))
 }
 
-// The same pair over a map reference, whose items are pairs of
+// The `with_env` pair over a map reference, whose items are pairs of
 // references.
 pub fn pair_item_borrowed(pairs: &HashMap<String, String>) -> Command {
     let start = Command::new("ls");
@@ -74,7 +70,7 @@ pub fn pair_item_borrowed(pairs: &HashMap<String, String>) -> Command {
 }
 
 // A place the call did not run on: resolution derefs `&&Vec<String>`
-// twice to reach `<[T]>::iter`. Erasing would hand the plural something
+// down to `[String]` to reach `<[T]>::iter`. Erasing would hand the plural something
 // that is not an iterator, so the call has to survive for this to
 // compile at all.
 pub fn double_reference(names: &&Vec<String>) -> Command {
@@ -181,11 +177,14 @@ pub fn try_initial() -> Result<Command, std::io::Error> {
     Ok(VARS.iter().fold(base()?, CommandExtra::without_env))
 }
 
-// Branches that fix their own type, which fixes the type of the whole.
+// An `if` whose branches fix their own type, which fixes the type of
+// the whole.
 pub fn branching_initial(flag: bool) -> Command {
     VARS.iter().fold(if flag { Command::new("a") } else { Command::new("b") }, CommandExtra::without_env)
 }
 
+// A `match` with an arm that fixes its own type, which fixes the type
+// of the whole.
 pub fn matching_initial(flag: bool) -> Command {
     VARS.iter().fold(match flag { true => Command::new("a"), false => base().unwrap() }, CommandExtra::without_env)
 }

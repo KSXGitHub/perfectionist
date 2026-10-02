@@ -2,16 +2,8 @@
 // fixer, for `tests/folded_command_setter_autofix.rs`. The test compares
 // this file against itself, so anything the fixer rewrote fails it.
 //
-// Most are declined because the plural evaluates the initial value
-// before the receiver where the fold evaluated the receiver first. Those
-// would compile if they were rewritten, so the comparison fails if the
-// fixer rewrites one. Some would not compile, the trait out of scope, a
-// moved root and a type only the fold supplies among them: `cargo fix`
-// would revert the rewrite, and the test's check for errors after
-// applying fixes is what catches those.
-//
-// Each fold names a distinct program, so an assertion can name one
-// shape without matching another.
+// Each fold carries a distinct name, its program, a binding or a const,
+// so an assertion can name one shape without matching another.
 
 #![allow(dead_code, unused_imports, reason = "fixture")]
 
@@ -30,8 +22,8 @@ impl Weird {
     }
 }
 
-// An `iter` of the linted crate's own, which promises nothing about
-// agreeing with its own `IntoIterator`.
+// An `iter` of the linted crate's own, whose body would run after the
+// initial value in the plural.
 pub fn local_iter(weird: &Weird) -> Command {
     weird.iter().fold(Command::new("local-iter"), CommandExtra::without_env)
 }
@@ -44,7 +36,9 @@ impl Shadow {
     }
 }
 
-// An inherent `into_iter` shadowing the trait in method resolution.
+// An inherent `into_iter` shadowing the trait in method resolution,
+// whose body is the user's and would run after the initial value in the
+// plural.
 pub fn shadowing_into_iter(shadow: Shadow) -> Command {
     shadow.into_iter().fold(Command::new("shadowed-into-iter"), CommandExtra::without_env)
 }
@@ -58,14 +52,13 @@ impl Queue {
 }
 
 // An argument-less call that mutates. The initial value here does not
-// read what it changes, so this rewrite is safe and declined anyway --
-// the gate is over-conservative on purpose.
+// read what it changes, so this rewrite is safe, but the rule declines
+// every receiver that runs the user's code.
 pub fn mutating_receiver(queue: &mut Queue) -> Command {
     queue.take_all().fold(Command::new("mutating-receiver"), CommandExtra::without_env)
 }
 
-// `iter` reached through a `Deref` the user wrote, while the type keeps
-// an `IntoIterator` yielding the other order. The `deref` body runs
+// `iter` reached through a `Deref` the user wrote. The `deref` body runs
 // before the initial value in the fold and after it in the plural.
 pub struct Backwards(Vec<String>);
 
@@ -77,20 +70,12 @@ impl std::ops::Deref for Backwards {
     }
 }
 
-impl<'a> IntoIterator for &'a Backwards {
-    type Item = &'a String;
-    type IntoIter = std::iter::Rev<std::slice::Iter<'a, String>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.iter().rev()
-    }
-}
-
 pub fn user_deref(names: &Backwards) -> Command {
     names.iter().fold(Command::new("user-deref"), CommandExtra::without_env)
 }
 
-// The same `Deref` written as `*`.
+// A `Deref` the user wrote, called as `*`, whose body would run after
+// the initial value in the plural.
 pub fn explicit_deref(names: Backwards) -> Command {
     (*names).iter().fold(Command::new("explicit-deref"), CommandExtra::without_env)
 }
@@ -127,12 +112,14 @@ pub fn static_mut_place() -> Command {
     unsafe { STATIC_COUNTDOWN.fold(Command::new("static-mut-place"), CommandExtra::without_env) }
 }
 
-// The same write as an assignment, with no call to borrow through.
+// A place the initial value writes by assignment, with no call to
+// borrow through.
 pub fn assigned_place(mut countdown: Countdown) -> Command {
     countdown.fold({ countdown.0 = 0; Command::new("assigned-place") }, CommandExtra::without_env)
 }
 
-// The same write inside a closure, where `countdown` is a capture.
+// A place the initial value writes, inside a closure where `countdown`
+// is a capture.
 pub fn written_in_closure(mut countdown: Countdown) -> impl FnMut() -> Command {
     move || countdown.fold(exhaust(&mut countdown, "written-in-closure"), CommandExtra::without_env)
 }
@@ -145,7 +132,8 @@ pub fn aliased_copy(mut countdown: Countdown) -> Command {
     view.fold(exhaust(&mut countdown, "aliased-copy"), CommandExtra::without_env)
 }
 
-// The same through a reference, where what the receiver keeps names a
+// A field read through a reference the body took of a local, which the
+// initial value then borrows mutably. What the receiver keeps names a
 // lifetime of its own rather than the reference's.
 pub struct Config {
     flags: [&'static str; 2],
@@ -161,7 +149,7 @@ pub fn aliased_static_items(mut config: Config) -> Command {
     view.flags.into_iter().fold(clear_flags(&mut config, "aliased-static-items"), CommandExtra::with_arg)
 }
 
-// The same copy through a raw pointer, which can point anywhere.
+// A copy read through a raw pointer, which can point anywhere.
 pub unsafe fn raw_copy(countdown: *const Countdown) -> Command {
     unsafe { (*countdown).fold(Command::new("raw-copy"), CommandExtra::without_env) }
 }
@@ -212,7 +200,7 @@ pub fn interior_mutable(cell: Cell<std::vec::IntoIter<String>>) -> Command {
 }
 
 // A std trait's method whose body is the user's: `into_iter` resolves to
-// the impl below.
+// `Borrowed`'s impl.
 pub struct Borrowed(Vec<String>);
 
 impl<'a> IntoIterator for &'a Borrowed {
@@ -280,14 +268,16 @@ pub fn inferred_initial(names: &[&str]) -> Command {
     names.iter().fold(Command::new("inferred-initial").into(), Command::without_env)
 }
 
-// The same through a binding that names no type.
+// An initial value whose type the folder supplies, through a binding
+// that names no type.
 pub fn inferred_binding(names: &[&str]) -> Command {
     let inferred_binding = Command::new("ls").into();
     names.iter().fold(inferred_binding, Command::without_env)
 }
 
-// The same through bindings that name no type: a closure parameter, a
-// binding inside a `let` pattern, and a `match` arm's.
+// Initial values whose type the folder supplies, through bindings that
+// name no type: a closure parameter, a binding inside a `let` pattern,
+// and a `match` arm's.
 pub fn inferred_closure_parameter(names: &'static [&'static str]) -> impl Fn(Command) -> Command {
     |inferred_closure_parameter| names.iter().fold(inferred_closure_parameter, Command::without_env)
 }
@@ -317,14 +307,14 @@ pub fn item_annotated() -> Command {
     names.iter().fold(Command::new("item-annotated"), |command, name: &&str| command.with_arg(name))
 }
 
-// The same type written in a turbofish on `fold`, which the suggestion
-// drops too.
+// A turbofish on `fold` that is all that fixes the item type, which the
+// suggestion drops.
 pub fn turbofish() -> Command {
     let names = Vec::new();
     names.into_iter().fold::<Command, fn(Command, &'static str) -> Command>(Command::new("turbofish"), CommandExtra::with_arg)
 }
 
-// A comment outside the initial value and the iterator, which the
+// A comment outside the initial value and the receiver, which the
 // suggestion has no place for.
 pub fn dropped_comment(names: Vec<String>) -> Command {
     names
@@ -373,9 +363,9 @@ pub fn initial_root(initial_is_the_root: Defaults) -> Defaults {
 
 const OVERRIDDEN_VARS: &[&str] = &["a"];
 const AMBIGUOUS_VARS: &[&str] = &["a"];
-// Bad: a type whose impl writes its own body for the plural. The
-// override keeps the trait's signature, so the rewrite compiles, but it
-// would run that body in place of the fold, and the fix is withheld.
+// A type whose impl writes its own body for the plural. The override
+// keeps the trait's signature, so the rewrite compiles, but it would run
+// that body in place of the fold.
 pub struct Overriding;
 
 impl CommandExtra for Overriding {
@@ -416,9 +406,8 @@ pub fn overriding(overriding: Overriding) -> Overriding {
     OVERRIDDEN_VARS.iter().fold(overriding, CommandExtra::without_env)
 }
 
-// Bad: a type that another trait also gives a method named like the
-// plural, so wherever both traits are in scope the rewrite is `E0034`.
-// The fix is withheld.
+// A type that another trait also gives a method named like the plural,
+// so wherever both traits are in scope the rewrite is `E0034`.
 pub struct Ambiguous;
 
 impl CommandExtra for Ambiguous {
@@ -463,9 +452,8 @@ pub fn ambiguous(ambiguous: Ambiguous) -> Ambiguous {
 }
 
 // The plural is named rather than resolved, and this module does not
-// import the trait -- a *path* folder needs no import of its own, so the
-// fold compiles while the rewritten call would not. Advice only; the
-// rewrite would be `E0599`.
+// import the trait. A *path* folder needs no import of its own, so the
+// fold compiles where the rewrite would be `E0599`.
 pub mod trait_not_in_scope {
     use std::process::Command;
 

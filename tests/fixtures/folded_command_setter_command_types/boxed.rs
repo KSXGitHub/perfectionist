@@ -4,8 +4,8 @@
 // `impl CommandExtra for Box<Command>`, and 1.3.0 has no such impl, so
 // the same source is `E0277` there.
 //
-// The const is named distinctly so an assertion can find this fold's
-// diagnostic without matching another file's.
+// The const's name appears in the diagnostic, which is how the test
+// finds this fold's.
 
 #![allow(dead_code, unused_imports, reason = "fixture")]
 
