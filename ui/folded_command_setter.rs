@@ -100,4 +100,88 @@ fn block_with_an_effect() {
     });
 }
 
+// Not flagged: a `fold` of a trait other than `Iterator`. Its receiver
+// need not iterate at all, so there is no plural to hand it.
+struct Bag;
+
+trait Gather {
+    fn fold<Accumulator>(
+        self,
+        init: Accumulator,
+        step: impl FnMut(Accumulator, &'static str) -> Accumulator,
+    ) -> Accumulator;
+}
+
+impl Gather for Bag {
+    fn fold<Accumulator>(
+        self,
+        init: Accumulator,
+        mut step: impl FnMut(Accumulator, &'static str) -> Accumulator,
+    ) -> Accumulator {
+        step(init, "A")
+    }
+}
+
+fn other_trait_fold(bag: Bag) -> Command {
+    bag.fold(Command::new("ls"), CommandExtra::without_env)
+}
+
+// Not flagged: setters of another trait, though they share the names
+// and the plural of `command_extra`'s.
+trait Lookalike: Sized {
+    fn without_env(self, key: &str) -> Self;
+
+    fn without_envs(self, keys: &[&str]) -> Self;
+}
+
+struct Builder;
+
+impl Lookalike for Builder {
+    fn without_env(self, _key: &str) -> Self {
+        self
+    }
+
+    fn without_envs(self, _keys: &[&str]) -> Self {
+        self
+    }
+}
+
+fn lookalike_setter(keys: std::vec::IntoIter<&'static str>) -> Builder {
+    keys.fold(Builder, Lookalike::without_env)
+}
+
+// Not flagged: a trait of this crate's own that takes the published
+// trait's name and its pair.
+mod own_trait {
+    pub trait CommandExtra: Sized {
+        fn with_arg(self, arg: &str) -> Self;
+
+        fn with_args(self, args: &[&str]) -> Self;
+    }
+
+    pub struct Own;
+
+    impl CommandExtra for Own {
+        fn with_arg(self, _arg: &str) -> Self {
+            self
+        }
+
+        fn with_args(self, _args: &[&str]) -> Self {
+            self
+        }
+    }
+
+    pub fn own_trait(args: std::vec::IntoIter<&'static str>) -> Own {
+        args.fold(Own, CommandExtra::with_arg)
+    }
+}
+
+// Not flagged: a closure whose body is an `unsafe` block. The rewrite
+// would drop the block along with whatever its author meant by it.
+fn unsafe_block() {
+    let _ = VARS
+        .iter()
+        .fold(Command::new("ls"), |command, var| unsafe { command.without_env(var) });
+}
+
 fn main() {}

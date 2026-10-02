@@ -158,6 +158,7 @@ fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
         "user-deref",
         "explicit-deref",
         "written-place",
+        "static-mut-place",
         "assigned-place",
         "written-in-closure",
         "deref-under-field",

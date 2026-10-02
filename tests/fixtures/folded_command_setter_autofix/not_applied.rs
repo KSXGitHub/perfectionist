@@ -119,6 +119,14 @@ pub fn written_place(mut countdown: Countdown) -> Command {
     countdown.fold(exhaust(&mut countdown, "written-place"), CommandExtra::without_env)
 }
 
+// A `static mut`, which anything can write, a call the initial value
+// makes included.
+static mut STATIC_COUNTDOWN: Countdown = Countdown(1);
+
+pub fn static_mut_place() -> Command {
+    unsafe { STATIC_COUNTDOWN.fold(Command::new("static-mut-place"), CommandExtra::without_env) }
+}
+
 // The same write as an assignment, with no call to borrow through.
 pub fn assigned_place(mut countdown: Countdown) -> Command {
     countdown.fold({ countdown.0 = 0; Command::new("assigned-place") }, CommandExtra::without_env)

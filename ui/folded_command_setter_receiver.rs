@@ -171,4 +171,18 @@ fn reference_iterator(holder: Holder<'_>) {
         .fold(Command::new("ls"), CommandExtra::without_env);
 }
 
+// Bad: an associated const as the receiver, a place expression written
+// as a type-relative path.
+struct Defaults;
+
+impl Defaults {
+    const VARS: &'static [&'static str] = &["A"];
+}
+
+fn associated_const() {
+    let _ = Defaults::VARS
+        .iter()
+        .fold(Command::new("ls"), CommandExtra::without_env);
+}
+
 fn main() {}

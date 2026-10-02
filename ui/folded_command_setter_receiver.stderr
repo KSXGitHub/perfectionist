@@ -128,4 +128,19 @@ LL ~     let _ = Command::new("ls").without_envs(&mut *holder
 LL ~         .into_iter());
    |
 
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_receiver.rs:LL:CC
+   |
+LL |       let _ = Defaults::VARS
+   |  _____________^
+LL | |         .iter()
+LL | |         .fold(Command::new("ls"), CommandExtra::without_env);
+   | |____________________________________________________________^
+   |
+help: use `without_envs`
+   |
+LL ~     let _ = Command::new("ls").without_envs(Defaults::VARS
+LL ~         .iter());
+   |
+
 warning: N warnings emitted

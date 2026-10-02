@@ -9,12 +9,18 @@
 #![allow(dead_code, unused, reason = "ui fixture")]
 
 pub mod caller {
-    use super::CommandExtra;
+    use super::{CommandExtra, Imitation, Imitator};
     use std::process::Command;
 
     // Bad: the same fold outside the plural.
     pub fn lister(flags: &[&str]) -> Command {
         flags.iter().fold(Command::new("ls"), CommandExtra::with_arg)
+    }
+
+    // Not flagged: a trait of this crate other than `CommandExtra`,
+    // though it declares the same pair.
+    pub fn imitation(flags: std::vec::IntoIter<&'static str>) -> Imitator {
+        flags.fold(Imitator, Imitation::with_arg)
     }
 }
 
@@ -126,6 +132,24 @@ impl CommandExtra for Tagged<'_> {
         Args::Item: AsRef<OsStr>,
     {
         args.into_iter().fold(self, Self::with_arg)
+    }
+}
+
+pub trait Imitation: Sized {
+    fn with_arg(self, arg: &str) -> Self;
+
+    fn with_args(self, args: &[&str]) -> Self;
+}
+
+pub struct Imitator;
+
+impl Imitation for Imitator {
+    fn with_arg(self, _arg: &str) -> Self {
+        self
+    }
+
+    fn with_args(self, _args: &[&str]) -> Self {
+        self
     }
 }
 
