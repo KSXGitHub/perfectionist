@@ -35,8 +35,8 @@ impl Person {
         self.name.clone()
     }
 
-    // Bad: `to_path_buf` is a copying method too, and a `PathBuf`
-    // borrows as `&Path`.
+    // Bad: `to_path_buf` is a copying method, and a `PathBuf` borrows
+    // as `&Path`.
     fn as_home(&self) -> PathBuf {
         self.home.to_path_buf()
     }
@@ -109,14 +109,14 @@ impl Person {
         (String::new(), self.age)
     }
 
-    // Bad: an array of owning elements is owned the same way a tuple
-    // of them is.
+    // Bad: an array is the caller's to drop as soon as one element is,
+    // so one owning element is enough.
     fn as_pieces(&self) -> [String; 2] {
         [String::new(), String::new()]
     }
 
-    // Bad: a list is owned for the same reason its `Vec` and
-    // `VecDeque` siblings are.
+    // Bad: a `LinkedList` is an owning collection, which is what puts
+    // it on the list beside `Vec` and `VecDeque`.
     fn as_queue(&self) -> LinkedList<u8> {
         LinkedList::new()
     }
@@ -218,9 +218,10 @@ impl Person {
         self.name.clone()
     }
 
-    // Not flagged: an `impl Trait` return is opaque for the same
-    // reason. The body is not a field copy either, so this is the
-    // return type alone, and the return type is unreadable.
+    // Not flagged: what an `impl Trait` signature names is the opaque
+    // type, not the `String` behind it, so the return-type shape has
+    // nothing to read. The body is not a field copy either, so neither
+    // shape reaches this.
     fn as_opaque_label(&self) -> impl AsRef<str> + use<'_> {
         self.age.to_string()
     }
