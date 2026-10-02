@@ -16,7 +16,8 @@ use rustc_hir::{Block, Expr, ExprKind, LetStmt, MatchSource, Node, Path, QPath};
 use rustc_lint::LateContext;
 use rustc_middle::ty::{self, TypeVisitableExt};
 
-/// Whether a struct literal appears anywhere in `expr`.
+/// Whether a struct literal appears anywhere in `expr` outside a
+/// closure body.
 ///
 /// Unbracketed, one at the head of a method chain reads as the start of
 /// a block where the call lands in a scrutinee or a condition. Anywhere
@@ -44,15 +45,15 @@ pub(super) fn holds_a_struct_literal<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx E
 /// `start.into().without_envs(..)` it converts into nothing in
 /// particular. Measured as a machine-applicable `E0282`.
 ///
-/// A call whose declared return type names no type parameter fixes it,
-/// whatever its arguments: `Command::new(format!(..))` is a `Command`. A
-/// binding declared without a type is asked about its initializer, a
-/// block about its tail, `?` and `.await` about their operand, and a
-/// branching expression about its branches, any one of which fixes the
-/// type of the whole. Everything else, other bindings included, is put
-/// to Clippy's `expr_type_is_certain`, which errs toward no: a closure
-/// parameter or a pattern binding can take its type from the fold as
-/// well.
+/// A call whose declared return type names no type or const parameter
+/// fixes it, whatever its arguments: `Command::new(format!(..))` is a
+/// `Command`. A binding declared without a type is asked about its
+/// initializer, a block about its tail, `?` and `.await` about their
+/// operand, and a branching expression about its branches, any one of
+/// which fixes the type of the whole. Everything else, other bindings
+/// included, is put to Clippy's `expr_type_is_certain`, which errs
+/// toward no: a closure parameter or a pattern binding can take its type
+/// from the fold as well.
 pub(super) fn fixes_its_own_type<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
     let typeck = cx.typeck_results();
     // An expression that diverges fixes no type, though `todo!()` is a

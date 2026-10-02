@@ -2,11 +2,10 @@
 //! into the suggestion.
 //!
 //! The shape gate is a value judgement rather than a correctness one.
-//! The rewrite stays valid for any receiver, because the receiver only
-//! moves; it stops being an *improvement* once what moves is long or
-//! carries logic of its own. So what the gate measures is the written
-//! form -- how much text the suggestion would relocate -- which is why
-//! it is syntactic where the folder's check is not.
+//! The rewrite stops being an *improvement* once what moves is long or
+//! carries logic of its own, so the gate measures the written form: how
+//! much text the suggestion would relocate. That is why it is syntactic
+//! where the folder's check is not.
 //!
 //! Erasing the receiver's call is the opposite kind of question, and one
 //! the method's name cannot answer. Method resolution autorefs and
@@ -15,11 +14,9 @@
 //! hands it something else: `&&Vec<T>`, which is not an iterator at all,
 //! or a collection whose only `IntoIterator` is on `&Self`. Worse, a
 //! `Deref` is enough to hand `iter` to *std* while the type keeps an
-//! `IntoIterator for &Self` of its own -- measured reversing a command's
-//! arguments under a fix the rule called machine-applicable. So only
-//! `IntoIterator::into_iter` on the place's own type is erased, because
-//! that is the one case where the plural calls the same function on the
-//! same value.
+//! `IntoIterator for &Self` of its own: measured, that reversed a
+//! command's arguments under a fix the rule called machine-applicable.
+//! [`erases`] says which call is erased instead.
 //!
 //! Reorderability is a third question, and it has two halves. The
 //! receiver must not do anything the initial value could see, and the
@@ -28,14 +25,10 @@
 //! the receiver runs is the standard library's own, instantiated with the
 //! standard library's own types and reporting no panic at its caller,
 //! which declines rewrites that are provably safe, `queue.take_all()`
-//! against a plain binding among them.
-//! One side is cheap to classify and two are not, and mutation reordered
-//! is the kind of wrong that does not announce itself. Widening it to
-//! *either* side effect-free is the obvious next step, counting an
-//! initial value as effect-free when it is a place expression, a
-//! literal, or a `core` / `std` call over those. The second half asks
-//! whether the initial value mutates or moves the place the receiver is
-//! rooted at, or could write it through a shared reference.
+//! against a plain binding among them. The second half asks whether the
+//! initial value mutates or moves the place the receiver is rooted at,
+//! writes by another path what the receiver reads through a pointer, or
+//! could write it through a shared reference.
 
 use clippy_utils::res::MaybeDef;
 use clippy_utils::sym;
@@ -79,8 +72,8 @@ pub(super) struct Shape {
 }
 
 /// The receiver's shape, or `None` where it is not a simple iterator
-/// expression: a place expression followed by at most one argument-less
-/// method call.
+/// expression, a place followed by at most one argument-less method
+/// call, or where no prefix spells what method resolution did to it.
 ///
 /// An argument is where logic hides, and a second call is more text
 /// moving. Both bars are structural rather than a list of adapter names
@@ -389,9 +382,8 @@ fn runs_only_std(cx: &LateContext<'_>, receiver: &Expr<'_>, call: DefId) -> bool
 /// A crate's name is not evidence. Cargo rejects a *package* called
 /// `std`, but accepts one whose `[lib] name` is `alloc` and builds it,
 /// and a name match then reads that crate as the standard library's.
-/// The sysroot crates are reached instead through diagnostic items only
-/// they carry -- `Iterator` for `core`, `Vec` for `alloc`, `Command`
-/// for `std`.
+/// The sysroot crates are reached instead through a diagnostic item that
+/// only each of them carries.
 fn is_std(cx: &LateContext<'_>, krate: CrateNum) -> bool {
     [
         sym::Iterator,
