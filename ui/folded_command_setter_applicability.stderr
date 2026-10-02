@@ -187,7 +187,7 @@ LL | |         // kept only by hand
 LL | |         .fold(Command::new("ls"), CommandExtra::without_env)
    | |____________________________________________________________^ help: use `without_envs`: `Command::new("ls").without_envs(VARS.iter())`
    |
-   = help: the suggestion keeps the text of the initial value and the iterator only, so move the fold's other comments by hand
+   = help: the suggestion keeps the text of the initial value and the receiver only, so move the fold's other comments by hand
 
 warning: this fold over `without_env` re-implements `without_envs`
   --> $DIR/folded_command_setter_applicability.rs:LL:CC

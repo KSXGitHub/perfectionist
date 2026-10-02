@@ -170,7 +170,7 @@ const DROPS_A_TYPE: &str = "the fold names a type the suggestion drops; apply it
 /// What a reader has to carry over by hand where the fold holds a comment
 /// the suggestion leaves out.
 const DROPS_A_COMMENT: &str = "the suggestion keeps the text of the initial value and the \
-                               iterator only, so move the fold's other comments by hand";
+                               receiver only, so move the fold's other comments by hand";
 
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
