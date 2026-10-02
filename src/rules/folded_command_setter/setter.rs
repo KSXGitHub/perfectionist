@@ -153,11 +153,8 @@ fn satisfies<'tcx>(
         return false;
     }
     // `implements_trait` asserts its argument count against the trait's
-    // own generics, so a bound over anything but one type parameter
-    // would abort the driver rather than answer.
-    if cx.tcx.generics_of(bound).count() != 2 {
-        return false;
-    }
+    // own generics. `bound` takes one type parameter besides `Self`,
+    // because the rule reads no plural with any other bound on its item.
     implements_trait(cx, item, bound, &[candidate.into()])
         && element_bounds_hold(cx, plural, parameters, elements)
 }
