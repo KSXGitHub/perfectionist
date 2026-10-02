@@ -18,12 +18,21 @@
 extern crate command_extra;
 extern crate proc_macro_synth_binding;
 
-use proc_macro_synth_binding::SynthFoldedCommandSetter;
+use proc_macro_synth_binding::{SynthFoldOwner, SynthFoldedCommandSetter};
 
 const VARS: &[&str] = &["A", "B"];
 
 #[derive(SynthFoldedCommandSetter)]
 #[synth_folded_command_setter]
 struct UsesSynthFoldedCommandSetter;
+
+// The same fold written by hand inside the attribute, which the derive
+// copies, spans and all, into a function it generates.
+#[derive(SynthFoldOwner)]
+#[synth_fold_owner(VARS.iter().fold(
+    std::process::Command::new("ls"),
+    command_extra::CommandExtra::without_env,
+))]
+struct UsesSynthFoldOwner;
 
 fn main() {}

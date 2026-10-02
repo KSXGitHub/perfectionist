@@ -659,6 +659,27 @@ pub fn synth_folded_command_setter(input: TokenStream) -> TokenStream {
     )
 }
 
+/// `#[derive(SynthFoldOwner)]` + `#[synth_fold_owner(<expr>)]` →
+/// `fn _synth_fold_owner() { let _ = <expr>; }`, where `<expr>` keeps the
+/// spans its author wrote it with and every other token takes the
+/// derive's call-site span.
+///
+/// The fold's text is then the user's own, which `is_from_proc_macro`
+/// accepts, and none of its spans is an expansion's. Only the enclosing
+/// item's `def_span` says where the fold now lives, which is what
+/// `hir_in_external_macro` reads.
+#[proc_macro_derive(SynthFoldOwner, attributes(synth_fold_owner))]
+pub fn synth_fold_owner(input: TokenStream) -> TokenStream {
+    let fold = find_attr_arguments(input, "synth_fold_owner")
+        .expect("`#[derive(SynthFoldOwner)]` requires a `#[synth_fold_owner(..)]`");
+    let mut body: TokenStream = "let _ =".parse().expect("valid tokens");
+    body.extend(fold);
+    body.extend(";".parse::<TokenStream>().expect("valid tokens"));
+    let mut out: TokenStream = "fn _synth_fold_owner()".parse().expect("valid tokens");
+    out.extend([TokenTree::Group(Group::new(Delimiter::Brace, body))]);
+    out
+}
+
 /// Every token of `stream`, groups walked into, moved to `span`.
 ///
 /// The derives above stamp a chosen few tokens and build their output by
@@ -739,4 +760,26 @@ fn find_attr_span(input: TokenStream, name: &str) -> Option<Span> {
         }
     }
     None
+}
+
+/// The tokens between the parentheses of `#[name(..)]`, spans kept.
+fn find_attr_arguments(input: TokenStream, name: &str) -> Option<TokenStream> {
+    let tokens: Vec<TokenTree> = input.into_iter().collect();
+    tokens.windows(2).find_map(|window| {
+        let (TokenTree::Punct(hash), TokenTree::Group(attribute)) = (&window[0], &window[1]) else {
+            return None;
+        };
+        if hash.as_char() != '#' || attribute.delimiter() != Delimiter::Bracket {
+            return None;
+        }
+        let inner: Vec<TokenTree> = attribute.stream().into_iter().collect();
+        match inner.as_slice() {
+            [TokenTree::Ident(ident), TokenTree::Group(arguments)]
+                if ident.to_string() == name && arguments.delimiter() == Delimiter::Parenthesis =>
+            {
+                Some(arguments.stream())
+            }
+            _ => None,
+        }
+    })
 }
