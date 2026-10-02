@@ -3,20 +3,16 @@
 // aux-build:command_extra_1_5_0.rs
 // edition:2024
 //
-// The receivers this rule does *not* reach, pinned so that widening it
-// is a measured change rather than a guess.
+// Every receiver `CommandExtra` covers, each flagged for one reason: the
+// setter takes `&mut self`, so the chain cannot yield the command, and
+// the trait has a by-value counterpart for that very type.
 //
-// `command-extra` implements `CommandExtra` for `Box<Command>`
+// `command-extra` implements the trait for `Box<Command>`
 // unconditionally and, behind a feature apiece, for `tokio::process`'s
-// and `async_process`'s own `Command` and each of those boxed. Every one
-// of them has the by-value counterpart this rule exists to name, and
-// every std-style setter below still takes `&mut self`, so the argument
-// for flagging them is the same one the bare `Command` is flagged under.
-//
-// The rule asks whether the receiver's type *is* `std::process::Command`,
-// so only the first function earns a diagnostic. The rest are the gap,
-// and the list is every receiver the trait covers, so a widening that
-// reaches some of them and not others shows up here.
+// and `async_process`'s own `Command` and each of those boxed. The rule
+// asks the trait rather than naming a crate, so which receivers it
+// reaches is the resolved release's decision, and a release implementing
+// the trait for something new is followed with no change here.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -28,48 +24,46 @@ extern crate tokio;
 
 use command_extra::CommandExtra;
 
-// Bad: the receiver this rule has always reached.
+// Bad: std's own `Command`.
 fn bare_command() {
     let mut command = std::process::Command::new("ls");
     command.arg("bare-command");
 }
 
-// Not flagged: a `Box` is not `std::process::Command`.
+// Bad: a box, whose `arg` is still std's, reached through the box.
 fn boxed_command() {
     let mut command = Box::new(std::process::Command::new("ls"));
     command.arg("boxed-command");
 }
 
-// Not flagged: `tokio::process::Command::arg` is tokio's method, not
-// std's, so the setter table does not reach it.
+// Bad: tokio's own `Command`, whose `arg` is tokio's method rather than
+// std's.
 fn tokio_command() {
     let mut command = tokio::process::Command::new("ls");
     command.arg("tokio-command");
 }
 
-// Not flagged: a `Box`, and tokio's method rather than std's.
+// Bad: tokio's command, boxed.
 fn boxed_tokio_command() {
     let mut command = Box::new(tokio::process::Command::new("ls"));
     command.arg("boxed-tokio-command");
 }
 
-// Not flagged: `async_process::Command::arg` is async-process's method,
-// not std's, for the same reason tokio's is not.
+// Bad: async-process's own `Command`, whose `arg` is its own method.
 fn async_command() {
     let mut command = async_process::Command::new("ls");
     command.arg("async-command");
 }
 
-// Not flagged: a `Box`, and async-process's method rather than std's.
+// Bad: async-process's command, boxed.
 fn boxed_async_command() {
     let mut command = Box::new(async_process::Command::new("ls"));
     command.arg("boxed-async-command");
 }
 
-// Not flagged: every receiver in this file has the by-value counterpart
-// the diagnostic would name, which the compiler checks here. An impl
-// going missing makes this fixture `E0599` rather than leaving the
-// silences looking the same either way.
+// Not flagged: the counterpart called directly, so there is no std
+// setter to report. An impl going missing makes this fixture `E0599`,
+// which is what keeps the diagnostics above attributable to the trait.
 fn the_counterparts_exist() {
     let _ = Box::new(std::process::Command::new("ls")).with_arg("a");
     let _ = tokio::process::Command::new("ls").with_arg("a");
