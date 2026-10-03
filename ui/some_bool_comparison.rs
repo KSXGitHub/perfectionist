@@ -22,6 +22,15 @@ fn each_pair(verbose: Option<bool>) {
     if verbose == Some(false) {}
 }
 
+// Good: `each_pair`'s four comparisons as the rule asks for them. The rule
+// does not fire on what it suggests.
+fn each_pair_rewritten(verbose: Option<bool>) {
+    if verbose.unwrap_or(false) {}
+    if verbose.unwrap_or(true) {}
+    if !verbose.unwrap_or(false) {}
+    if !verbose.unwrap_or(true) {}
+}
+
 // Bad: the `Some` on the left reads the same as the `Some` on the right.
 fn reversed_operands(entry: Entry) {
     if Some(true) == entry.enabled {}
@@ -36,6 +45,13 @@ fn method_chain(flags: HashMap<String, bool>) {
 fn borrowed_payload(flags: HashMap<String, bool>, settings: Option<bool>) {
     if flags.get("verbose") == Some(&true) {}
     if settings.as_ref() != Some(&false) {}
+}
+
+// Good: `borrowed_payload`'s two comparisons as the rule asks for them,
+// each `copied` reaching the `bool`.
+fn borrowed_payload_rewritten(flags: HashMap<String, bool>, settings: Option<bool>) {
+    if flags.get("verbose").copied().unwrap_or(false) {}
+    if settings.as_ref().copied().unwrap_or(true) {}
 }
 
 // Bad: a `&Option<bool>` against a `&Some`; `unwrap_or` resolves through
@@ -63,16 +79,6 @@ fn as_a_macro_argument(verbose: Option<bool>) {
     assert!(verbose == Some(true));
 }
 
-// Good: the `unwrap_or` form the rule asks for, which says what `None`
-// means. The rule does not fire on its own suggestion.
-fn the_unwrap_or_form(verbose: Option<bool>, flags: HashMap<String, bool>) {
-    if verbose.unwrap_or(false) {}
-    if verbose.unwrap_or(true) {}
-    if !verbose.unwrap_or(false) {}
-    if !verbose.unwrap_or(true) {}
-    if flags.get("verbose").copied().unwrap_or(false) {}
-}
-
 // Not flagged: both sides are `Option<bool>`, so neither names a state.
 fn two_option_sides(left: Option<bool>, right: Option<bool>) {
     if left == right {}
@@ -89,8 +95,7 @@ fn another_payload(version: Option<i32>) {
     if version == Some(3) {}
 }
 
-// Good: `matches!` names the state it matches, which is what this rule
-// asks for.
+// Not flagged: `matches!` already names the state it matches.
 fn a_pattern_match(enabled: Option<bool>) {
     if matches!(enabled, Some(true)) {}
 }
