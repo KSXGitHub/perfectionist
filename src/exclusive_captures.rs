@@ -10,9 +10,12 @@
 //!
 //! The `Copy` clause is what keeps a `move` closure answerable, since
 //! `move` captures everything by value whether or not the body needs it
-//! that way. It asks that the closure not write to the capture: two
+//! that way. It asks that the capture's root binding not be `mut`, which
+//! is as close as rustc gets to "the closure may write to it": two
 //! closures holding their own copies of one the body increments see
-//! different values, which compiles and answers differently.
+//! different values, which compiles and answers differently. A binding
+//! the *caller* writes is declined with them, the two being the same
+//! question to `CapturedPlace::mutability`.
 
 use rustc_hir::def_id::LocalDefId;
 use rustc_hir::{HirId, Mutability};
