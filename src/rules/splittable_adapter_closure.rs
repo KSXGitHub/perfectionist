@@ -52,8 +52,8 @@ declare_tool_lint! {
     /// `Itertools`, `ParallelIterator` and `Pipe` traits.
     ///
     /// A chain starts at the item and runs outwards: a method call whose
-    /// receiver is the chain so far, or a call whose sole argument is
-    /// it, naming no other parameter of the closure.
+    /// receiver is the chain so far, or a call whose sole argument is it,
+    /// naming nothing else the closure declares.
     ///
     /// The adapters in scope are the ones whose item enters the closure
     /// by value and never comes back out, which is what lets a leading

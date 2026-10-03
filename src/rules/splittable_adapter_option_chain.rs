@@ -33,9 +33,9 @@ declare_tool_lint! {
     /// ### What it does
     ///
     /// Flags a closure passed to `filter_map`, `find_map` or `map_while`
-    /// whose body ends in an `Option` combinator or a `bool::then`, so
-    /// one adapter performs both the step that produced the `Option` and
-    /// the one applied to it.
+    /// whose body is a call to an `Option` combinator or to a
+    /// `bool::then`, so one adapter performs both the step that produced
+    /// the `Option` and the one applied to it.
     ///
     /// ### Why restrict this?
     ///
