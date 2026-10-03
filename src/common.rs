@@ -258,6 +258,18 @@ pub(crate) fn join_path_segments(segments: &[hir::PathSegment<'_>]) -> String {
         .join("::")
 }
 
+/// The expression a body of nested `{ }` blocks with no statements
+/// comes down to.
+pub(crate) fn unwrap_block<'a>(mut expr: &'a hir::Expr<'a>) -> &'a hir::Expr<'a> {
+    while let hir::ExprKind::Block(block, None) = expr.kind
+        && block.stmts.is_empty()
+        && let Some(inner) = block.expr
+    {
+        expr = inner;
+    }
+    expr
+}
+
 /// Whether `name` is exactly one ASCII letter (`a`..=`z` or
 /// `A`..=`Z`). Used by every `single_letter_*` rule.
 pub(crate) fn is_single_ascii_letter(name: &str) -> bool {
