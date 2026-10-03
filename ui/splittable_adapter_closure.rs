@@ -438,6 +438,40 @@ fn panics_before_the_chain(flag: bool, lines: std::vec::IntoIter<&'static str>) 
     })
 }
 
+// Not flagged: the same program as a `match`, which the `if` above does
+// not establish on its own. A `panic!` expands in `core`, so what runs
+// first cannot be read from a span.
+fn panics_in_an_arm(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.fold(0, |total, line| {
+        match flag {
+            true => panic!("stop"),
+            false => {}
+        }
+        total + line.trim().len()
+    })
+}
+
+// Not flagged: an assignment evaluates its right side before the place it
+// writes to, so a divergence there runs before a chain in the index.
+fn diverges_through_an_assignment(
+    mut slots: Vec<usize>,
+    lines: std::vec::IntoIter<&'static str>,
+) -> usize {
+    lines.fold(0, |total, line| {
+        slots[line.trim().len()] = std::process::exit(7);
+        total
+    })
+}
+
+// Not flagged: a `let` before the chain runs its initialiser, so a
+// divergence there leaves the closure first.
+fn diverges_in_a_let(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.fold(0, |total, line| {
+        let extra = if flag { std::process::exit(3) } else { 1 };
+        total + extra + line.trim().len()
+    })
+}
+
 fn exits_before_the_chain(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| {
         if flag {

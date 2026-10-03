@@ -295,7 +295,7 @@ fn check<'tcx>(
         true => top.hir_id == body.value.hir_id,
         false => {
             position::always_evaluated(cx, top.hir_id, body.value.hir_id)
-                && position::nothing_diverts_first(cx, body, root.span)
+                && position::nothing_diverts_first(cx, top.hir_id, body.value.hir_id)
         }
     };
     if !anchored {

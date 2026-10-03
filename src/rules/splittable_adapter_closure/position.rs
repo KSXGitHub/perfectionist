@@ -20,9 +20,8 @@
 //! purity test a lint could ask instead.
 
 use rustc_hir::intravisit::{Visitor, walk_expr};
-use rustc_hir::{BinOpKind, Body, Expr, ExprKind, HirId, MatchSource, Node};
+use rustc_hir::{BinOpKind, Expr, ExprKind, HirId, MatchSource, Node, Stmt, StmtKind};
 use rustc_lint::LateContext;
-use rustc_span::Span;
 
 /// Whether every node between `chain` and the body root always
 /// evaluates the child the chain came through.
@@ -97,7 +96,7 @@ fn evaluates(parent: &Expr<'_>, reached: HirId) -> bool {
     }
 }
 
-/// Whether anything that can leave the closure runs before `chain`.
+/// Whether anything evaluated before `chain` can leave the closure.
 ///
 /// [`always_evaluated`] asks what stands above the chain, which says
 /// nothing about what runs before it. Anything reached first that leaves
@@ -106,39 +105,146 @@ fn evaluates(parent: &Expr<'_>, reached: HirId) -> bool {
 /// written as an `if` whose branch holds the chain is declined by the
 /// walk, and these two answers have to agree.
 ///
-/// What leaves is read from the type rather than the node kind: an
-/// expression of type `!` does not return, which covers a `panic!`, a
-/// `std::process::exit`, a call to a `-> !` function and a `loop {}` as
-/// readily as a `return` or a `break`. A `?` is the one that leaves while
-/// typing as its output, so it keeps a case of its own.
+/// What runs first is read from the tree rather than from span order,
+/// because a span answers the question only where both spans are in one
+/// file: a `panic!` expands in `core`, so its byte positions live in
+/// another file's range of the `SourceMap` and comparing them with the
+/// chain's answers nothing. And one position in Rust evaluates against
+/// source order anyway: an assignment's right side runs before the place
+/// it is assigned to.
+///
+/// What leaves is read from the type: an expression of type `!` does not
+/// return, which covers a `panic!`, a `std::process::exit`, a call to a
+/// `-> !` function and a `loop {}` as readily as a `return` or a `break`.
+/// A `?` is the one that leaves while typing as its output, so it keeps a
+/// case of its own.
 ///
 /// A nested closure's own `return` leaves that closure rather than this
 /// one, which is why the visitor stays at its default nesting filter.
 pub(super) fn nothing_diverts_first<'tcx>(
     cx: &LateContext<'tcx>,
-    body: &'tcx Body<'tcx>,
-    chain: Span,
+    chain: HirId,
+    body: HirId,
 ) -> bool {
-    struct Diversions<'a, 'tcx> {
+    let mut child = chain;
+    let mut earlier: Vec<&'tcx Expr<'tcx>> = Vec::new();
+    while child != body {
+        match cx.tcx.parent_hir_node(child) {
+            Node::Expr(parent) => {
+                preceding(parent, child, &mut earlier);
+                child = parent.hir_id;
+            }
+            Node::Stmt(statement) => child = statement.hir_id,
+            Node::LetStmt(local) => child = local.hir_id,
+            Node::Block(block) => {
+                // Every statement before the one the chain is in runs
+                // first, and so does nothing after it.
+                let reached = block
+                    .stmts
+                    .iter()
+                    .position(|statement| statement.hir_id == child);
+                let before = reached.unwrap_or(block.stmts.len());
+                earlier.extend(statements(&block.stmts[..before]));
+                child = block.hir_id;
+            }
+            // The walk above has already declined anything else.
+            _ => return false,
+        }
+    }
+    !earlier.iter().any(|expression| diverges(cx, expression))
+}
+
+/// The expressions `parent` evaluates before the child the chain came
+/// through.
+fn preceding<'tcx>(parent: &'tcx Expr<'tcx>, reached: HirId, earlier: &mut Vec<&'tcx Expr<'tcx>>) {
+    let before = |operands: &'tcx [Expr<'tcx>]| {
+        let reached_at = operands
+            .iter()
+            .position(|operand| operand.hir_id == reached);
+        &operands[..reached_at.unwrap_or(0)]
+    };
+    match parent.kind {
+        // The right side runs before the place it is assigned to, which
+        // is the one position where evaluation order and source order
+        // disagree.
+        ExprKind::Assign(_, value, _) => {
+            if reached != value.hir_id {
+                earlier.push(value);
+            }
+        }
+        // A compound assignment's order is the plain one's for primitives
+        // and the reverse for an overloaded operator, so either operand
+        // counts as the one that may have run first.
+        ExprKind::AssignOp(_, place, value) => {
+            earlier.push(match reached == value.hir_id {
+                true => place,
+                false => value,
+            });
+        }
+        ExprKind::Binary(_, left, right) => {
+            if reached == right.hir_id {
+                earlier.push(left);
+            }
+        }
+        ExprKind::Index(base, index, _) => {
+            if reached == index.hir_id {
+                earlier.push(base);
+            }
+        }
+        ExprKind::MethodCall(_, receiver, arguments, _) => {
+            if reached != receiver.hir_id {
+                earlier.push(receiver);
+                earlier.extend(before(arguments));
+            }
+        }
+        ExprKind::Call(callee, arguments) => {
+            if reached != callee.hir_id {
+                earlier.push(callee);
+                earlier.extend(before(arguments));
+            }
+        }
+        ExprKind::Tup(operands) | ExprKind::Array(operands) => {
+            earlier.extend(before(operands));
+        }
+        ExprKind::Struct(_, fields, _) => {
+            let reached_at = fields.iter().position(|field| field.expr.hir_id == reached);
+            let before = &fields[..reached_at.unwrap_or(0)];
+            earlier.extend(before.iter().map(|field| field.expr));
+        }
+        // Everything else the walk admits holds one operand, or holds the
+        // chain in a position it has already answered for.
+        _ => {}
+    }
+}
+
+/// The expressions a run of statements evaluates.
+fn statements<'tcx>(statements: &'tcx [Stmt<'tcx>]) -> impl Iterator<Item = &'tcx Expr<'tcx>> {
+    statements
+        .iter()
+        .filter_map(|statement| match statement.kind {
+            StmtKind::Expr(expression) | StmtKind::Semi(expression) => Some(expression),
+            StmtKind::Let(local) => local.init,
+            StmtKind::Item(_) => None,
+        })
+}
+
+/// Whether evaluating `expr` can leave the closure.
+fn diverges<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
+    struct Diverges<'a, 'tcx> {
         cx: &'a LateContext<'tcx>,
-        chain: Span,
         found: bool,
     }
-    impl<'tcx> Visitor<'tcx> for Diversions<'_, 'tcx> {
+    impl<'tcx> Visitor<'tcx> for Diverges<'_, 'tcx> {
         fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-            let diverts = self.cx.typeck_results().expr_ty(expr).is_never()
-                || matches!(expr.kind, ExprKind::Match(_, _, MatchSource::TryDesugar(_)));
-            if diverts && expr.span.lo() < self.chain.lo() {
+            if self.cx.typeck_results().expr_ty(expr).is_never()
+                || matches!(expr.kind, ExprKind::Match(_, _, MatchSource::TryDesugar(_)))
+            {
                 self.found = true;
             }
             walk_expr(self, expr);
         }
     }
-    let mut diversions = Diversions {
-        cx,
-        chain,
-        found: false,
-    };
-    diversions.visit_expr(body.value);
-    !diversions.found
+    let mut diverges = Diverges { cx, found: false };
+    diverges.visit_expr(expr);
+    diverges.found
 }
