@@ -24,20 +24,27 @@ the diagnostic can offer:
    `Box`, and `&T` otherwise.
 2. **The return type is one that owns what it holds** — a
    `String`, a `Vec<T>`, a `PathBuf`, an `OsString`, a
-   `CString`, a `Box<T>`, one of the standard maps, sets or
-   queues, a tuple or array of any of those, or any of them
-   under an `Option` or a `Result`. Nothing here says which
-   value a borrow could have replaced, so the rule offers the
-   rename alone.
+   `CString`, a `Box<T>`, a `Cow<'_, B>`, one of the standard
+   maps, sets or queues, a tuple or array of any of those, or
+   any of them under an `Option` or a `Result`. Nothing here
+   says which value a borrow could have replaced, so the rule
+   offers the rename alone.
 
 Ownership is reported, not allocation: `String::new()`
-allocates nothing and is still an owned value.
+allocates nothing and is still an owned value. What a given
+*call* hands back is not read either, only what its type can: an
+`Option<String>` holding `None` and a `Cow<'_, str>` holding a
+borrow each own nothing, and both return types are reported.
+Neither lets a caller see what the call cost. std reads a `Cow`
+the same way — `OsStr`, `Path` and `CStr` each name their
+`Cow`-returning conversion `to_string_lossy`.
 
 Left alone:
 
 - A `Copy` return type. Handing one back by value is free.
-- A return type outside the list above, `Cow<'_, str>` among
-  them. It is free to hand back a borrow.
+- A return type outside the list above. The owning types are
+  named rather than guessed at, so a third-party one is missed
+  rather than reported.
 - An `Rc` or `Arc` field. Cloning one bumps a refcount, and a
   caller keeping the handle has to own one.
 - An `async fn`, or a method returning `impl Trait`. The
