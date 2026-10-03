@@ -13,7 +13,7 @@ warning: this closure chains 2 steps onto the item, so `fold_ok` does all of the
 LL |     items.fold_ok(0, |total, text| total + text.trim().len())
    |           ^^^^^^^
    |
-   = help: lift every step into a leading `map_ok` of its own, leaving the closure only the work on the state
+   = help: lift every step into a leading `map_ok` of its own, leaving the closure the accumulation
 
 warning: this closure chains 2 steps onto the item, so `fold_while` does all of them
   --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
@@ -21,7 +21,7 @@ warning: this closure chains 2 steps onto the item, so `fold_while` does all of 
 LL |         .fold_while(0, |total, text| {
    |          ^^^^^^^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure only the work on the state
+   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
 
 warning: this closure chains 2 steps onto the item, so `map` does all of them
   --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
@@ -134,7 +134,7 @@ warning: this closure chains 2 steps onto the item, so `fold` does all of them
 LL |     items.fold(|| 0, |total, text| total + text.trim().len())
    |           ^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure only the work on the state
+   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
 
 warning: this closure chains 2 steps onto the item, so `try_fold` does all of them
   --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
@@ -142,7 +142,7 @@ warning: this closure chains 2 steps onto the item, so `try_fold` does all of th
 LL |     items.try_fold(|| 0, |total, text| Some(total + text.trim().len()))
    |           ^^^^^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure only the work on the state
+   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
 
 warning: this predicate runs 2 tests on the item, so `find_first` does all of them
   --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC

@@ -347,7 +347,7 @@ fn check<'tcx>(
                 ),
                 false => format!(
                     "lift every step into a leading `{}` of its own, leaving the closure \
-                     only the work on the state",
+                     the accumulation",
                     adapter.lift_target,
                 ),
             });
