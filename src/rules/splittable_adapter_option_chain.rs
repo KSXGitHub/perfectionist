@@ -157,7 +157,9 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterOptionChain {
         let Some(item) = binding_hir_id(parameter.pat) else {
             return;
         };
-        let Some(split) = combinator::split(cx, body.value, item, discipline, yields) else {
+        let item_ty = cx.typeck_results().pat_ty(parameter.pat);
+        let Some(split) = combinator::split(cx, body.value, item, item_ty, discipline, yields)
+        else {
             return;
         };
         if segment.ident.span.from_expansion()

@@ -35,6 +35,10 @@ fn render(line: &str) -> usize {
     line.len()
 }
 
+fn consume(name: String) -> bool {
+    !name.is_empty()
+}
+
 // Bad: two fallible stages welded together.
 fn fallible(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| parse(line).and_then(validate)).collect()
@@ -137,6 +141,18 @@ fn found_guarded(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
 // Bad: a trailing `map` drops nothing, so a one-value adapter takes it.
 fn found_infallible(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
     lines.find_map(|line| parse(line).map(double))
+}
+
+// Not flagged: a guard lifts into a `filter`, which hands the item by
+// reference, so a guard that moves it is `E0308` once lifted.
+fn guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
+    names.filter_map(|name| consume(name).then_some(1)).collect()
+}
+
+// Not flagged: and a `map_while` guard lifts into a `take_while`, which
+// hands it by reference too.
+fn prefix_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
+    names.map_while(|name| consume(name).then_some(1)).collect()
 }
 
 // Not flagged: one stage has nothing to hand over.

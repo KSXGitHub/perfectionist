@@ -84,6 +84,7 @@ pub(super) fn split<'tcx>(
     cx: &LateContext<'tcx>,
     body: &'tcx Expr<'tcx>,
     item: HirId,
+    item_ty: ty::Ty<'tcx>,
     discipline: Discipline,
     yields: Yield,
 ) -> Option<Split> {
@@ -114,6 +115,14 @@ pub(super) fn split<'tcx>(
     if let (Discipline::Prefix, Split::Fallible | Split::Filtering) = (discipline, &split) {
         return None;
     }
+    // A guard lifts into `filter` or `take_while`, which hand the item by
+    // reference where `filter_map` and its kin hand it over. A guard that
+    // moves the item is then `E0308` and one that needs it mutably
+    // `E0596`, with nothing to amend by hand. A shared reference and a
+    // `Copy` item are the two that survive the extra reference.
+    if matches!(split, Split::Guarded(_)) && !takes_one_more_reference(cx, item_ty) {
+        return None;
+    }
     // A one-value adapter has no trailing adapter but the `Option`'s, so
     // the two forms lifting work to its right go somewhere other than
     // where they read. `Filtering`'s trailing `filter` becomes
@@ -133,4 +142,16 @@ fn is_option<'tcx>(cx: &LateContext<'tcx>, ty: ty::Ty<'tcx>) -> bool {
         cx.tcx
             .is_diagnostic_item(rustc_span::sym::Option, adt.did())
     })
+}
+
+/// Whether the item survives being handed one reference more than it was.
+///
+/// A shared reference derefs through the extra one, and a `Copy` item is
+/// read through it. An owned item that the guard moves, and a mutable
+/// reference it writes through, do neither.
+fn takes_one_more_reference<'tcx>(cx: &LateContext<'tcx>, item_ty: ty::Ty<'tcx>) -> bool {
+    if item_ty.is_mutable_ptr() {
+        return false;
+    }
+    item_ty.is_ref() || cx.type_is_copy_modulo_regions(item_ty)
 }
