@@ -83,10 +83,10 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// The second of the two remedies. A violation both borrows and
+/// The second of the two remedies. A violation both costs nothing and
 /// carries the `to_` prefix, so dropping either half resolves it.
-const OWNED_HELP: &str = "or stop it borrowing: hand back a value of the caller's own, where one \
-                          really is needed";
+const OWNED_HELP: &str = "or make it cost something: hand back a value of the caller's own, where \
+                          one really is needed";
 
 /// The prefix this rule measures.
 const TO_PREFIX: &str = "to_";
@@ -171,7 +171,7 @@ impl<'tcx> LateLintPass<'tcx> for CostlessToConversion {
             cx,
             COSTLESS_TO_CONVERSION,
             def_span,
-            format!("`{method}` only borrows, but `to_` promises a costly conversion"),
+            format!("`{method}` costs nothing, but `to_` promises a conversion that does"),
             |diag| {
                 diag.help(format!(
                     "either stop it being a `to_*`: rename it `{suggested}`, the prefix for a \
