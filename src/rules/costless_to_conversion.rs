@@ -1,15 +1,17 @@
+mod free_borrow;
+
 use crate::common::{DefaultState, unwrap_block};
 use crate::field_copy::{Eligible, eligible_method};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
+use free_borrow::{AS_PREFIX, costless_body};
 use rustc_hir as hir;
 use rustc_hir::def_id::LocalDefId;
 use rustc_hir::intravisit::FnKind;
-use rustc_hir::{BorrowKind, Expr, ExprKind, QPath, UnOp};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_middle::ty::{self, Ty};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::{Span, kw, sym};
+use rustc_span::{Span, sym};
 
 declare_tool_lint! {
     /// ### What it does
@@ -25,10 +27,19 @@ declare_tool_lint! {
     /// - Any other body — a call, a `match`, a statement before the
     ///   tail expression. A costly one is what `to_` is for, and a free
     ///   one written that way is missed rather than guessed at.
+    /// - A borrow reached through a `Deref` that may run code: a
+    ///   `LazyLock`'s runs its initializer. The types whose `Deref`
+    ///   only projects a pointer are named, and an unrecognised one
+    ///   counts as code.
     /// - A `to_*` with another parameter, which is converting
     ///   something more than `self`.
     /// - A trait impl's method. The trait fixes the signature.
     /// - A method produced by a macro.
+    ///
+    /// What no reading of the body can tell is a free borrow from one
+    /// whose author means to make it cost later — std names
+    /// `CStr::to_bytes` with `to_` for that reason — so that case takes
+    /// an `#[expect(...)]`.
     ///
     /// ### Why restrict this?
     ///
@@ -90,11 +101,6 @@ const OWNED_HELP: &str = "or make it cost something: hand back a value of the ca
 
 /// The prefix this rule measures.
 const TO_PREFIX: &str = "to_";
-
-/// The prefix a flagged method should have worn instead, and the one a
-/// method call in the body may be trusted to be free: the guidelines
-/// give both the same meaning.
-const AS_PREFIX: &str = "as_";
 
 const CONFIG_KEY: &str = "perfectionist::costless_to_conversion";
 
@@ -163,7 +169,7 @@ impl<'tcx> LateLintPass<'tcx> for CostlessToConversion {
         if !returns_a_borrow(cx, output) {
             return;
         }
-        if !costless_body(unwrap_block(body.value)) {
+        if !costless_body(cx, cx.tcx.typeck(def_id), unwrap_block(body.value)) {
             return;
         }
         let suggested = method.as_str().replacen(TO_PREFIX, AS_PREFIX, 1);
@@ -199,34 +205,4 @@ fn returns_a_borrow<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> bool {
         return false;
     }
     args.types().next().is_some_and(Ty::is_ref)
-}
-
-/// Whether the body hands over a borrow it already had, doing nothing
-/// on the way: a place inside `self`, or a single `as_*` call on one.
-/// Anything else is left alone, a free body among them: what an
-/// arbitrary body costs is not a question this can answer, so it
-/// under-approximates rather than guesses.
-fn costless_body(expr: &Expr<'_>) -> bool {
-    if let ExprKind::MethodCall(segment, receiver, [], _) = expr.kind {
-        // An `as_*` call is free by the same guideline this rule reads,
-        // so trusting the name here is trusting what the rule enforces.
-        return segment.ident.name.as_str().starts_with(AS_PREFIX) && borrows_self(receiver);
-    }
-    borrows_self(expr)
-}
-
-/// Whether `expr` names a place inside `self`, or borrows one:
-/// `self.name`, `&self.name`, `&self.inner.name`, `&*self.boxed`.
-fn borrows_self(mut expr: &Expr<'_>) -> bool {
-    loop {
-        expr = match expr.kind {
-            ExprKind::AddrOf(BorrowKind::Ref, _, inner) => inner,
-            ExprKind::Field(base, _) => base,
-            ExprKind::Unary(UnOp::Deref, base) => base,
-            ExprKind::Path(QPath::Resolved(None, path)) => {
-                return matches!(path.segments, [segment] if segment.ident.name == kw::SelfLower);
-            }
-            _ => return false,
-        };
-    }
 }
