@@ -202,6 +202,31 @@ fn generic_parameter(mut lines: std::vec::IntoIter<&'static str>) -> bool {
     lines.any(|line| wants_owned(line) && !line.is_empty())
 }
 
+// Not flagged: one mention is not one move. A call in a loop runs again,
+// and the second run moves a receiver the first one took.
+fn receiver_moved_twice(mut lines: std::vec::IntoIter<&'static str>) -> usize {
+    let mut hits = 0;
+    for _ in 0..2 {
+        if lines.find(|line| wanted(line) && line.starts_with('#')).is_some() {
+            hits += 1;
+        }
+    }
+    hits
+}
+
+// Not flagged: and the body to count mentions in is the one declaring the
+// receiver, not the closure the call sits in.
+fn receiver_named_outside(mut lines: std::vec::IntoIter<&'static str>) -> bool {
+    let found = (|| lines.find(|line| wanted(line) && line.starts_with('#')))();
+    found.is_some() || lines.next().is_some()
+}
+
+macro_rules! both {
+    ($line:expr) => {
+        wanted($line) && $line.starts_with('#')
+    };
+}
+
 // Not flagged: `find` leaves the receiver where it was and the leading
 // `filter` would move it, so a receiver named again is `E0382` once
 // split.

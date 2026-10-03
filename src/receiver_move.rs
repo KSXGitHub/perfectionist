@@ -13,7 +13,7 @@
 
 use crate::binding_uses::uses;
 use rustc_hir::def::Res;
-use rustc_hir::{Expr, ExprKind, QPath, UnOp};
+use rustc_hir::{Expr, ExprKind, HirId, Node, QPath, UnOp};
 use rustc_lint::LateContext;
 
 /// Whether the lifted adapter can be given `receiver`, where `call` is
@@ -27,12 +27,13 @@ pub(crate) fn movable<'tcx>(
         return true;
     }
     match receiver.kind {
-        // A local is movable where this call is the only thing naming it:
+        // A local is movable where this call is the only thing naming it,
+        // and the call runs at most once per time the local is bound:
         // anything else naming it is `E0382` once the split moves it, and
         // whether that other mention runs first is a question a span
         // cannot answer.
         ExprKind::Path(QPath::Resolved(None, path)) => match path.res {
-            Res::Local(local) => named_once(cx, local),
+            Res::Local(local) => moved_once(cx, call, local),
             _ => false,
         },
         // A place the receiver does not own: moving out of one is
@@ -60,10 +61,41 @@ pub(crate) fn borrows_the_receiver<'tcx>(cx: &LateContext<'tcx>, call: &Expr<'tc
         .is_some_and(|receiver| receiver.is_ref())
 }
 
-/// Whether the enclosing body names `local` exactly once.
-fn named_once(cx: &LateContext<'_>, local: rustc_hir::HirId) -> bool {
-    let Some(body) = cx.enclosing_body else {
-        return false;
-    };
-    uses(cx, cx.tcx.hir_body(body).value, &[local]).len() == 1
+/// Whether the split can move `local` out from under `call`.
+///
+/// The body to ask is the one that declares `local`, not the innermost
+/// one: a chain inside a nested closure names an upvar, and what the
+/// enclosing function does with that local afterwards is exactly what the
+/// move would break.
+///
+/// Naming it once is not enough either, because a mention inside a loop,
+/// or inside a closure the body may call again, is evaluated more than
+/// once however often it is written, and the second evaluation moves an
+/// already-moved local.
+fn moved_once<'tcx>(cx: &LateContext<'tcx>, call: &Expr<'tcx>, local: HirId) -> bool {
+    let owner = cx.tcx.hir_enclosing_body_owner(local);
+    let body = cx.tcx.hir_body_owned_by(owner);
+    uses(cx, body.value, &[local]).len() == 1 && evaluated_once(cx, call.hir_id, body.value.hir_id)
+}
+
+/// Whether nothing between `call` and the body root can run it twice.
+fn evaluated_once(cx: &LateContext<'_>, call: HirId, body: HirId) -> bool {
+    let mut child = call;
+    while child != body {
+        match cx.tcx.parent_hir_node(child) {
+            Node::Expr(parent) => {
+                if matches!(parent.kind, ExprKind::Loop(..) | ExprKind::Closure(..)) {
+                    return false;
+                }
+                child = parent.hir_id;
+            }
+            Node::Stmt(statement) => child = statement.hir_id,
+            Node::LetStmt(local) => child = local.hir_id,
+            Node::Block(block) => child = block.hir_id,
+            Node::ExprField(field) => child = field.hir_id,
+            Node::Arm(arm) => child = arm.hir_id,
+            _ => return false,
+        }
+    }
+    true
 }
