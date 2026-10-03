@@ -112,6 +112,7 @@ rule_index! {
     excessive_inline_tests => ExcessiveInlineTests,
     excessive_nesting => ExcessiveNesting,
     exhaustive_error_enums => ExhaustiveErrorEnums,
+    folded_command_setter => FoldedCommandSetter,
     import_granularity_mismatch => ImportGranularityMismatch,
     import_grouping_mismatch => ImportGroupingMismatch,
     impure_macro_arguments => ImpureMacroArguments,

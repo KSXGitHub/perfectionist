@@ -83,10 +83,24 @@ const MIDDLE_SOURCE: &str =
 /// source overwrites the generated copy, so this restates the package
 /// and lib stanzas that copy would have held.
 fn fixture_manifest(dependency: &str) -> String {
+    fixture_manifest_excluding(dependency, &[])
+}
+
+/// Like [`fixture_manifest`], but keeps `excluded` out of the
+/// fixture's workspace. Cargo enrols every path dependency residing in
+/// the workspace directory as a member, and two members may not share
+/// a name, so a graph carrying two majors of one package has to
+/// exclude them or the workspace does not load at all.
+fn fixture_manifest_excluding(dependency: &str, excluded: &[&str]) -> String {
+    // `[&str]`'s `Debug` is already the TOML array form.
+    let exclude = match excluded {
+        [] => String::new(),
+        _ => format!("exclude = {excluded:?}\n"),
+    };
     format!(
         "[package]\nname = \"gate\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n\
          [lib]\npath = \"src/lib.rs\"\n\n\
-         [workspace]\n\n\
+         [workspace]\n{exclude}\n\
          [dependencies]\n{dependency}\n",
     )
 }
@@ -417,10 +431,13 @@ fn two_majors_stand_down_on_a_counterpart_only_one_declares() {
     let stderr = run_two_majors(&[
         (
             "Cargo.toml",
-            &fixture_manifest(text_block_fnl! {
-                r#"command-extra = { path = "command-extra-old", version = "1.0.0" }"#
-                r#"middle = { path = "middle" }"#
-            }),
+            &fixture_manifest_excluding(
+                text_block_fnl! {
+                    r#"command-extra = { path = "command-extra-old", version = "1.0.0" }"#
+                    r#"middle = { path = "middle" }"#
+                },
+                &["command-extra-old", "command-extra-new"],
+            ),
         ),
         ("src/lib.rs", TWO_MAJORS_SOURCE),
         ("command-extra-old/Cargo.toml", OLD_STUB_MANIFEST),
