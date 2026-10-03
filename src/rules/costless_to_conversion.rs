@@ -22,15 +22,16 @@ declare_tool_lint! {
     /// `self`, a borrow of one, or a single `as_*` view of one. It
     /// asks for the `as_*` prefix instead.
     ///
+    /// A `Deref` on the way is taken to be free, whatever the
+    /// implementation does: an expensive one is its own anti-pattern,
+    /// and a `LazyLock`'s cost falls on its first call rather than on
+    /// every one.
+    ///
     /// Left alone:
     ///
     /// - Any other body — a call, a `match`, a statement before the
     ///   tail expression. A costly one is what `to_` is for, and a free
     ///   one written that way is missed rather than guessed at.
-    /// - A borrow reached through a `Deref` that may run code: a
-    ///   `LazyLock`'s runs its initializer. The types whose `Deref`
-    ///   only projects a pointer are named, and an unrecognised one
-    ///   counts as code.
     /// - A `to_*` with another parameter, which is converting
     ///   something more than `self`.
     /// - A trait impl's method. The trait fixes the signature.
@@ -169,7 +170,7 @@ impl<'tcx> LateLintPass<'tcx> for CostlessToConversion {
         if !returns_a_borrow(cx, output) {
             return;
         }
-        if !costless_body(cx, cx.tcx.typeck(def_id), unwrap_block(body.value)) {
+        if !costless_body(unwrap_block(body.value)) {
             return;
         }
         let suggested = method.as_str().replacen(TO_PREFIX, AS_PREFIX, 1);

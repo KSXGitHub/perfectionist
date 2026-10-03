@@ -53,4 +53,31 @@ LL |     fn to_parsed(&self) -> Result<&String, &String> {
    = help: either stop it being a `to_*`: rename it `as_parsed`, the prefix for a conversion that costs nothing, so the call site shows it is free
    = help: or make it cost something: hand back a value of the caller's own, where one really is needed
 
+warning: `to_table` costs nothing, but `to_` promises a conversion that does
+  --> $DIR/costless_to_conversion.rs:LL:CC
+   |
+LL |     fn to_table(&self) -> &[String] {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it being a `to_*`: rename it `as_table`, the prefix for a conversion that costs nothing, so the call site shows it is free
+   = help: or make it cost something: hand back a value of the caller's own, where one really is needed
+
+warning: `to_table_explicit` costs nothing, but `to_` promises a conversion that does
+  --> $DIR/costless_to_conversion.rs:LL:CC
+   |
+LL |     fn to_table_explicit(&self) -> &[String] {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it being a `to_*`: rename it `as_table_explicit`, the prefix for a conversion that costs nothing, so the call site shows it is free
+   = help: or make it cost something: hand back a value of the caller's own, where one really is needed
+
+warning: `to_slot` costs nothing, but `to_` promises a conversion that does
+  --> $DIR/costless_to_conversion.rs:LL:CC
+   |
+LL |     fn to_slot(&self) -> &str {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it being a `to_*`: rename it `as_slot`, the prefix for a conversion that costs nothing, so the call site shows it is free
+   = help: or make it cost something: hand back a value of the caller's own, where one really is needed
+
 warning: N warnings emitted
