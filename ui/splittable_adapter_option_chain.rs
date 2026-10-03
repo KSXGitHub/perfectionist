@@ -259,6 +259,26 @@ fn guard_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
         .collect()
 }
 
+trait Winnow {
+    fn filter_map<Output>(self, body: impl FnOnce(&'static str) -> Option<Output>)
+    -> Option<Output>;
+}
+
+impl Winnow for &'static str {
+    fn filter_map<Output>(
+        self,
+        body: impl FnOnce(&'static str) -> Option<Output>,
+    ) -> Option<Output> {
+        body(self)
+    }
+}
+
+// Not flagged: a trait of one's own, whose `filter_map` says nothing
+// about how the value arrives.
+fn another_trait_filter_map(line: &'static str) -> Option<usize> {
+    line.filter_map(|text| parse(text).and_then(validate))
+}
+
 // Not flagged: nor are `map` and `filter` on something that is not an
 // `Option`.
 fn map_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
