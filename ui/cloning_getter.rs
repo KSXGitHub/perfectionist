@@ -119,8 +119,11 @@ impl Person {
         self.first_name.clone()
     }
 
-    // Good: `into_*` likewise announces that it costs something.
-    #[expect(perfectionist::unconsumed_into_conversion, reason = "exercises cloning_getter")]
+    // Not flagged: `into_*` likewise announces that it costs something.
+    #[expect(
+        perfectionist::unconsumed_into_conversion,
+        reason = "an `into_*` that does not consume belongs to that rule; this one pins clause 1"
+    )]
     fn into_first_name(&self) -> String {
         self.first_name.clone()
     }
