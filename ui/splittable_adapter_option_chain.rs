@@ -139,6 +139,61 @@ fn invariant_guard(flag: bool, lines: std::vec::IntoIter<&'static str>) -> Vec<u
     lines.filter_map(|line| flag.then_some(1)).collect()
 }
 
+struct Sieve(&'static str);
+
+impl Sieve {
+    fn and_then<Output>(self, body: impl FnOnce(&'static str) -> Option<Output>) -> Option<Output> {
+        body(self.0)
+    }
+
+    fn then_some<Output>(self, value: Output) -> Option<Output> {
+        Some(value)
+    }
+}
+
+fn sieve(line: &'static str) -> Sieve {
+    Sieve(line)
+}
+
+// Not flagged: `and_then` on something that is not an `Option` is a
+// method of that name rather than the combinator.
+fn method_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines.filter_map(|line| sieve(line).and_then(parse)).collect()
+}
+
+// Not flagged: nor is `then_some` on something that is not a `bool`.
+fn guard_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .filter_map(|line| sieve(line).then_some(line.len()))
+        .collect()
+}
+
+trait Winnow {
+    fn filter_map<Output>(self, body: impl FnOnce(&'static str) -> Option<Output>)
+    -> Option<Output>;
+}
+
+impl Winnow for &'static str {
+    fn filter_map<Output>(
+        self,
+        body: impl FnOnce(&'static str) -> Option<Output>,
+    ) -> Option<Output> {
+        body(self)
+    }
+}
+
+// Not flagged: a trait of one's own, whose `filter_map` says nothing
+// about how the value arrives.
+fn another_trait_filter_map(line: &'static str) -> Option<usize> {
+    line.filter_map(|text| parse(text).and_then(validate))
+}
+
+// Bad for the chain rule and not for this one: `Iterator::map` has no
+// `Option` work to hand over, so only the steps split.
+fn plain_map(lines: std::vec::IntoIter<&'static str>) -> Vec<Option<usize>> {
+    lines.map(|line| parse(line).map(double)).collect()
+}
+
 // Not flagged: a `Result` combinator of the same name, whose family has
 // no filtering adapter to lift into.
 fn result_map(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {

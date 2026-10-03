@@ -382,6 +382,49 @@ fn mutable_capture_in_a_step(lines: std::vec::IntoIter<&'static str>) -> usize {
     })
 }
 
+// Bad: a shared capture is one two closures may both hold, so a step
+// reaching it still splits.
+fn shared_capture_in_a_step(limit: usize, lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.fold(0, |total, line| total + line.trim().len().min(limit))
+}
+
+// Bad: a step whose result cannot cross a thread, which only a parallel
+// adapter asks of it.
+fn not_sendable_sequentially(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .map(|line| std::rc::Rc::new(line).len())
+        .collect()
+}
+
+// Not flagged: a `loop` runs its body any number of times including
+// none, and every shape the rule does not recognise answers the same
+// way. The `break` sits after the chain, so nothing diverts first.
+fn loop_after_the_chain(lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.fold(0, |total, line| {
+        let mut sum = total;
+        loop {
+            sum += line.trim().len();
+            break;
+        }
+        sum
+    })
+}
+
+// Not flagged: a `let`'s `else` block, reached where nothing diverts
+// before the chain, so the arm reading `else` is what declines it.
+fn let_else_diverting_after(
+    fallback: Option<usize>,
+    lines: std::vec::IntoIter<&'static str>,
+) -> usize {
+    lines.fold(0, |total, line| {
+        let Some(extra) = fallback else {
+            let length = line.trim().len();
+            return total + length;
+        };
+        total + extra
+    })
+}
+
 // Not flagged: a destructured parameter bottoms the chain out at a
 // binding the pattern introduced, which is a different rewrite.
 fn destructured(pairs: std::vec::IntoIter<(usize, &'static str)>) -> usize {

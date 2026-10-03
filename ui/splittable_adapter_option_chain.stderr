@@ -63,4 +63,13 @@ LL |     lines.map_while(|line| parse(line).map(double)).collect()
    |
    = help: give the `map` its own trailing `map`, so the adapter is left only what can fail
 
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_option_chain.rs:LL:CC
+   |
+LL |     lines.map(|line| parse(line).map(double)).collect()
+   |           ^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+
 warning: N warnings emitted

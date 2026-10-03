@@ -37,6 +37,21 @@ pub mod iter {
             Parallel(mapped)
         }
 
+        /// Here to be left alone: the item comes back out, so a
+        /// leading `map` changes what this sees.
+        fn filter<Body>(self, body: Body) -> Parallel<Self::Item>
+        where
+            Body: Fn(&Self::Item) -> bool + Send + Sync,
+        {
+            let mut kept = Vec::new();
+            for item in self.into_items() {
+                if body(&item) {
+                    kept.push(item);
+                }
+            }
+            Parallel(kept)
+        }
+
         fn for_each<Body>(self, body: Body)
         where
             Body: Fn(Self::Item) + Send + Sync,

@@ -183,4 +183,20 @@ LL |         .scan(0, |total, line| Some(*total + line.trim().len()))
    |
    = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
 
+warning: this closure chains 3 steps onto the item, so `fold` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.fold(0, |total, line| total + line.trim().len().min(limit))
+   |           ^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |         .map(|line| std::rc::Rc::new(line).len())
+   |          ^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
 warning: N warnings emitted

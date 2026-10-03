@@ -38,6 +38,10 @@ fn render(value: usize) -> String {
     value.to_string()
 }
 
+fn wanted(text: &str) -> bool {
+    !text.is_empty()
+}
+
 fn results() -> std::vec::IntoIter<Result<&'static str, usize>> {
     vec![Ok(" a "), Err(7)].into_iter()
 }
@@ -95,6 +99,18 @@ fn parallel_any(items: Parallel<&'static str>) -> bool {
 // Bad: a piping method, where every step becomes one and none stays.
 fn piped(value: usize) -> String {
     value.pipe(|number| render(double(number)))
+}
+
+// Bad: a parallel predicate that is a conjunction, which the predicate
+// rule splits into successive `filter`s.
+fn parallel_conjunction(items: Parallel<&'static str>) -> bool {
+    items.any(|text| wanted(text) && text.starts_with('#'))
+}
+
+// Not flagged: a parallel `filter` hands the item back downstream, the
+// way the sequential one does.
+fn parallel_filter(items: Parallel<&'static str>) -> Parallel<&'static str> {
+    items.filter(|text| text.trim().is_empty())
 }
 
 // Not flagged: a lifted step's result has to cross a thread, and an `Rc`
