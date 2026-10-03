@@ -10,10 +10,12 @@
 //!
 //! The `Copy` clause is what keeps a `move` closure answerable, since
 //! `move` captures everything by value whether or not the body needs it
-//! that way.
+//! that way. It asks that the closure not write to the capture: two
+//! closures holding their own copies of one the body increments see
+//! different values, which compiles and answers differently.
 
-use rustc_hir::HirId;
 use rustc_hir::def_id::LocalDefId;
+use rustc_hir::{HirId, Mutability};
 use rustc_lint::LateContext;
 use rustc_middle::ty::{BorrowKind, CapturedPlace, UpvarCapture};
 
@@ -24,7 +26,10 @@ pub(crate) fn exclusive<'tcx>(cx: &LateContext<'tcx>, closure: LocalDefId) -> Ve
         .closure_min_captures_flattened(closure)
         .filter(|capture| match capture.info.capture_kind {
             UpvarCapture::ByRef(BorrowKind::Immutable) => false,
-            UpvarCapture::ByValue => !cx.type_is_copy_modulo_regions(capture.place.ty()),
+            UpvarCapture::ByValue => {
+                capture.mutability == Mutability::Mut
+                    || !cx.type_is_copy_modulo_regions(capture.place.ty())
+            }
             _ => true,
         })
         .map(CapturedPlace::get_root_variable)

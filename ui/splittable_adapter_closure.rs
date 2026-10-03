@@ -641,6 +641,16 @@ fn indexes_before_the_chain(table: [usize; 2], lines: std::vec::IntoIter<&'stati
     lines.fold(0, |total, line| total + table[total] + line.trim().len())
 }
 
+// Not flagged: a `move` closure writing to a `Copy` capture would give
+// each half its own copy, which compiles and answers differently.
+fn move_closure_writes_its_capture(lines: std::vec::IntoIter<&'static str>) -> usize {
+    let mut seen = 0usize;
+    lines.fold(0, move |total, line| {
+        seen += 1;
+        total + line.trim().len().min(seen)
+    })
+}
+
 // Bad: a `move` closure holds its own copy of a `Copy` capture, so two of
 // them may both read it.
 fn move_closure_copies_its_capture(
