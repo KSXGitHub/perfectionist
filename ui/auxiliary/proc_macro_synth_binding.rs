@@ -482,17 +482,17 @@ pub fn synth_owned_as_conversion(input: TokenStream) -> TokenStream {
     synth_field_copy(attr_span, "as_s")
 }
 
-/// `#[derive(SynthBorrowedToConversion)]` +
-/// `#[synth_borrowed_to_conversion]` → a `to_`-prefixed method handing
+/// `#[derive(SynthCostlessToConversion)]` +
+/// `#[synth_costless_to_conversion]` → a `to_`-prefixed method handing
 /// the field back as a borrow, under the same span shape.
-/// `borrowed_to_conversion` fires on this method when it is
+/// `costless_to_conversion` fires on this method when it is
 /// hand-written: the prefix, a `&self` receiver and nothing else, a
 /// borrow returned, and a body that hands the field straight over. The
 /// proc-macro guard is the only thing that does not report it.
-#[proc_macro_derive(SynthBorrowedToConversion, attributes(synth_borrowed_to_conversion))]
-pub fn synth_borrowed_to_conversion(input: TokenStream) -> TokenStream {
-    let attr_span = find_attr_span(input, "synth_borrowed_to_conversion").expect(
-        "`#[derive(SynthBorrowedToConversion)]` requires a `#[synth_borrowed_to_conversion]`",
+#[proc_macro_derive(SynthCostlessToConversion, attributes(synth_costless_to_conversion))]
+pub fn synth_costless_to_conversion(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_costless_to_conversion").expect(
+        "`#[derive(SynthCostlessToConversion)]` requires a `#[synth_costless_to_conversion]`",
     );
     synth_field_borrow(attr_span, "to_s")
 }
@@ -525,7 +525,7 @@ fn synth_field_copy(attr_span: Span, method_name: &str) -> TokenStream {
 }
 
 /// The borrowing form of [`synth_accessor`]: `-> &str` from a body of
-/// `&self.s`, which is the shape `borrowed_to_conversion` reads.
+/// `&self.s`, which is the shape `costless_to_conversion` reads.
 fn synth_field_borrow(attr_span: Span, method_name: &str) -> TokenStream {
     let at_sig = |mut tree: TokenTree| {
         tree.set_span(attr_span);

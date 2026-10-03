@@ -1,6 +1,6 @@
 // aux-build:proc_macro_synth_binding.rs
 
-// Regression test: `borrowed_to_conversion` must not fire on a
+// Regression test: `costless_to_conversion` must not fire on a
 // `fn to_s(&self) -> &str { &self.s }` synthesised by a proc-macro
 // derive whose expansion stamps the user's span on the whole generated
 // `impl`, the way an accessor derive spans a generated method over the
@@ -9,8 +9,8 @@
 // because the enclosing `impl` carries a user span too, the
 // `hir_in_external_macro` guard the sibling late passes use has nothing
 // to find either. The text-based `is_from_proc_macro` is what holds
-// here. The `SynthBorrowedToConversion` derive imported below builds
-// that span shape on a minimal `#[synth_borrowed_to_conversion]`
+// here. The `SynthCostlessToConversion` derive imported below builds
+// that span shape on a minimal `#[synth_costless_to_conversion]`
 // attribute.
 //
 // The synthesised method wears the `to_` prefix and hands a field
@@ -23,10 +23,10 @@
 
 extern crate proc_macro_synth_binding;
 
-use proc_macro_synth_binding::SynthBorrowedToConversion;
+use proc_macro_synth_binding::SynthCostlessToConversion;
 
-#[derive(SynthBorrowedToConversion)]
-#[synth_borrowed_to_conversion]
-struct UsesSynthBorrowedToConversion;
+#[derive(SynthCostlessToConversion)]
+#[synth_costless_to_conversion]
+struct UsesSynthCostlessToConversion;
 
 fn main() {}

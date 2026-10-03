@@ -52,7 +52,7 @@ declare_tool_lint! {
     ///
     /// `perfectionist::owned_as_conversion` is this rule's mirror: it
     /// flags an `as_*` that hands back an owned value, where this
-    /// flags a `to_*` that hands back a borrow for nothing. Each
+    /// flags a `to_*` that hands back a borrow at no cost. Each
     /// rule's fix is the other's prefix.
     ///
     /// ### Example
@@ -76,9 +76,9 @@ declare_tool_lint! {
     ///     }
     /// }
     /// ```
-    pub perfectionist::BORROWED_TO_CONVERSION,
+    pub perfectionist::COSTLESS_TO_CONVERSION,
     Warn,
-    "`to_*` method hands back a borrow for nothing where its prefix promises a costly conversion",
+    "`to_*` method hands back a borrow at no cost where its prefix promises a costly conversion",
     report_in_external_macro: false
 }
 
@@ -95,7 +95,7 @@ const TO_PREFIX: &str = "to_";
 /// give both the same meaning.
 const AS_PREFIX: &str = "as_";
 
-const CONFIG_KEY: &str = "perfectionist::borrowed_to_conversion";
+const CONFIG_KEY: &str = "perfectionist::costless_to_conversion";
 
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
@@ -104,26 +104,26 @@ const CONFIG_KEY: &str = "perfectionist::borrowed_to_conversion";
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}
 
-pub struct BorrowedToConversion;
+pub struct CostlessToConversion;
 
-impl_lint_pass!(BorrowedToConversion => [BORROWED_TO_CONVERSION]);
+impl_lint_pass!(CostlessToConversion => [COSTLESS_TO_CONVERSION]);
 
-impl Register for rule::BorrowedToConversion {
+impl Register for rule::CostlessToConversion {
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {
-        lint_store.register_lints(&[BORROWED_TO_CONVERSION]);
+        lint_store.register_lints(&[COSTLESS_TO_CONVERSION]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
         lint_store.register_late_lint_pass(Box::new(|_| {
             let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-            Box::new(BorrowedToConversion)
+            Box::new(CostlessToConversion)
         }));
     }
 }
 
-impl<'tcx> LateLintPass<'tcx> for BorrowedToConversion {
+impl<'tcx> LateLintPass<'tcx> for CostlessToConversion {
     fn check_fn(
         &mut self,
         cx: &LateContext<'tcx>,
@@ -168,7 +168,7 @@ impl<'tcx> LateLintPass<'tcx> for BorrowedToConversion {
         let suggested = method.as_str().replacen(TO_PREFIX, AS_PREFIX, 1);
         span_lint_and_then(
             cx,
-            BORROWED_TO_CONVERSION,
+            COSTLESS_TO_CONVERSION,
             def_span,
             format!("`{method}` only borrows, but `to_` promises a costly conversion"),
             |diag| {

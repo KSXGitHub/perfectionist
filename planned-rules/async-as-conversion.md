@@ -144,7 +144,7 @@ has to reach a verb. A single rule emitting two unrelated remedies
 under one name would also have to claim both triggers in that name,
 and `owned_as_conversion` claims exactly the one it checks.
 
-`perfectionist::borrowed_to_conversion` and
+`perfectionist::costless_to_conversion` and
 `perfectionist::unconsumed_into_conversion` hold the other two
 prefixes. Neither reads asyncness, and per
 [Why only `as_`](#why-only-as_) neither should.
