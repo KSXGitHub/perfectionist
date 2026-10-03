@@ -25,7 +25,6 @@ use std::{env, io};
 
 const DYLINT_LIBRARY_CRATE: &str = "dylint_linting";
 const INSTALL_DIR: &str = ".dev-tools";
-
 const PINNED_CRATES: [&str; 2] = ["cargo-dylint", "dylint-link"];
 
 #[derive(Parser)]
