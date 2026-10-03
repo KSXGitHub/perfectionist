@@ -1,0 +1,37 @@
+warning: this fold over `with_env` re-implements `with_envs`
+  --> $DIR/folded_command_setter_item.rs:LL:CC
+   |
+LL |       let _ = pairs
+   |  _____________^
+LL | |         .into_iter()
+LL | |         .fold(Command::new("ls"), |command, (key, value)| {
+LL | |             command.with_env(key, value)
+LL | |         });
+   | |__________^ help: use `with_envs`: `Command::new("ls").with_envs(pairs)`
+   |
+   = note: `#[warn(perfectionist::folded_command_setter)]` on by default
+
+warning: this fold over `with_env` re-implements `with_envs`
+  --> $DIR/folded_command_setter_item.rs:LL:CC
+   |
+LL |       let _ = pairs
+   |  _____________^
+LL | |         .iter()
+LL | |         .fold(Command::new("ls"), |command, (key, value)| {
+LL | |             command.with_env(key, value)
+LL | |         });
+   | |__________^
+   |
+help: use `with_envs`
+   |
+LL ~     let _ = Command::new("ls").with_envs(pairs
+LL ~         .iter());
+   |
+
+warning: this fold over `with_env` re-implements `with_envs`
+  --> $DIR/folded_command_setter_item.rs:LL:CC
+   |
+LL |     pairs.fold(command, |command, (key, value)| command.with_env(key, value))
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `with_envs`: `command.with_envs(*pairs)`
+
+warning: N warnings emitted

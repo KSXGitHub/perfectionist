@@ -458,20 +458,40 @@ pub fn synth_owned_param(input: TokenStream) -> TokenStream {
     wrap_const_block(body)
 }
 
-/// `#[derive(SynthCloningGetter)]` + `#[synth_cloning_getter]` →
-/// `const _: () = { struct _Synth { s: String } impl _Synth {
-/// fn s(&self) -> String { self.s.clone() } } };` where the
-/// generated `impl` and every token of the method inside it inherit
-/// the user-span of `synth_cloning_getter`, the way a `getset`-style
-/// derive spans an accessor over the field it accesses. `cloning_getter`
-/// reports at the method's `def_span`, so that user span defeats
-/// `Span::from_expansion` and `report_in_external_macro: false`, and
-/// stamping the `impl` too leaves a parent-item span check nothing to
-/// find; this exercises the rule's `is_from_proc_macro` guard.
 #[proc_macro_derive(SynthCloningGetter, attributes(synth_cloning_getter))]
 pub fn synth_cloning_getter(input: TokenStream) -> TokenStream {
     let attr_span = find_attr_span(input, "synth_cloning_getter")
         .expect("`#[derive(SynthCloningGetter)]` requires a `#[synth_cloning_getter]`");
+    // The method is named for the field it reads, so `cloning_getter`'s
+    // field-match clause admits it and only the proc-macro guard stops
+    // the diagnostic; a method named anything else would leave the
+    // fixture passing with the guard removed.
+    synth_field_copy(attr_span, "s")
+}
+
+/// `#[derive(SynthOwnedAsConversion)]` + `#[synth_owned_as_conversion]`
+/// → the same shape under an `as_`-prefixed method name, for the rule
+/// that measures that prefix. `owned_as_conversion` needs no field-name
+/// match: the prefix alone admits the method, and the body is a field
+/// copy, so both of the rule's shapes would report it and the
+/// proc-macro guard is the only thing that does not.
+#[proc_macro_derive(SynthOwnedAsConversion, attributes(synth_owned_as_conversion))]
+pub fn synth_owned_as_conversion(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_owned_as_conversion")
+        .expect("`#[derive(SynthOwnedAsConversion)]` requires a `#[synth_owned_as_conversion]`");
+    synth_field_copy(attr_span, "as_s")
+}
+
+/// `const _: () = { struct _Synth { s: String } impl _Synth {
+/// fn <method_name>(&self) -> String { self.s.clone() } } };` where the
+/// generated `impl` and every token of the method inside it inherit
+/// `attr_span`, the way a `getset`-style derive spans an accessor over
+/// the field it accesses. The rules that read this shape report at the
+/// method's `def_span`, so that user span defeats `Span::from_expansion`
+/// and `report_in_external_macro: false`, and stamping the `impl` too
+/// leaves a parent-item span check nothing to find; this exercises
+/// their `is_from_proc_macro` guard.
+fn synth_field_copy(attr_span: Span, method_name: &str) -> TokenStream {
     let call_site = Span::call_site();
     let at_sig = |mut tree: TokenTree| {
         tree.set_span(attr_span);
@@ -507,11 +527,8 @@ pub fn synth_cloning_getter(input: TokenStream) -> TokenStream {
         ))),
     ]);
 
-    // `fn s(&self) -> String` — every signature token user-spanned. The
-    // method is named for the field it reads, so `cloning_getter`'s
-    // field-match clause admits it and only the proc-macro guard stops
-    // the diagnostic; a method named anything else would leave the
-    // fixture passing with the guard removed.
+    // `fn <method_name>(&self) -> String` — every signature token
+    // user-spanned.
     let mut receiver = TokenStream::new();
     receiver.extend([
         at_sig(TokenTree::Punct(Punct::new('&', Spacing::Alone))),
@@ -520,7 +537,7 @@ pub fn synth_cloning_getter(input: TokenStream) -> TokenStream {
     let mut method = TokenStream::new();
     method.extend([
         at_sig(TokenTree::Ident(Ident::new("fn", attr_span))),
-        at_sig(TokenTree::Ident(Ident::new("s", attr_span))),
+        at_sig(TokenTree::Ident(Ident::new(method_name, attr_span))),
         at_sig(TokenTree::Group(Group::new(
             Delimiter::Parenthesis,
             receiver,
@@ -540,6 +557,156 @@ pub fn synth_cloning_getter(input: TokenStream) -> TokenStream {
         at_sig(TokenTree::Group(Group::new(Delimiter::Brace, method))),
     ]);
     wrap_const_block(body)
+}
+
+/// `#[derive(SynthCommandSetter)]` + `#[synth_command_setter]` →
+/// `fn _synth_command_setter() { let mut command =`
+/// `std::process::Command::new("ls"); command.arg("-l"); }` where the
+/// whole setter call, the `arg` segment included, inherits the
+/// user-span of `synth_command_setter`.
+///
+/// The wrapping `fn` is stamped too, the way `SynthCloningGetter` stamps
+/// its `impl`, so every span the rule could consult reads as
+/// user-written and `hir_in_external_macro` -- which checks the node's
+/// span and the enclosing item's `def_span` -- has nothing to find. What
+/// stops the diagnostic is `is_from_proc_macro`, which reads the source
+/// text under the span instead.
+///
+/// The synthesised call is one the rule fires on when hand-written --
+/// a std setter on an owned local -- so the fixture is not vacuous.
+#[proc_macro_derive(SynthCommandSetter, attributes(synth_command_setter))]
+pub fn synth_command_setter(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_command_setter")
+        .expect("`#[derive(SynthCommandSetter)]` requires a `#[synth_command_setter]`");
+    let call_site = Span::call_site();
+    let at_attr = |mut tree: TokenTree| {
+        tree.set_span(attr_span);
+        tree
+    };
+    let path = |segments: &[&str], span: Span| {
+        let mut out = Vec::new();
+        for (index, segment) in segments.iter().enumerate() {
+            if index > 0 {
+                out.push(TokenTree::Punct(Punct::new(':', Spacing::Joint)));
+                out.push(TokenTree::Punct(Punct::new(':', Spacing::Alone)));
+            }
+            out.push(TokenTree::Ident(Ident::new(segment, span)));
+        }
+        out
+    };
+
+    // `let mut command = std::process::Command::new("ls");` — at the
+    // call site, so only the setter call below carries a user span.
+    let mut new_args = TokenStream::new();
+    new_args.extend([TokenTree::Literal(Literal::string("ls"))]);
+    let mut body = TokenStream::new();
+    body.extend([
+        TokenTree::Ident(Ident::new("let", call_site)),
+        TokenTree::Ident(Ident::new("mut", call_site)),
+        TokenTree::Ident(Ident::new("command", call_site)),
+        TokenTree::Punct(Punct::new('=', Spacing::Alone)),
+    ]);
+    body.extend(path(&["std", "process", "Command", "new"], call_site));
+    body.extend([
+        TokenTree::Group(Group::new(Delimiter::Parenthesis, new_args)),
+        TokenTree::Punct(Punct::new(';', Spacing::Alone)),
+    ]);
+
+    // `command.arg("-l");` — every token user-spanned, the way a derive
+    // spans a synthesised call over the attribute that drove it.
+    let mut arg_args = TokenStream::new();
+    arg_args.extend([TokenTree::Literal(Literal::string("-l"))]);
+    body.extend([
+        at_attr(TokenTree::Ident(Ident::new("command", attr_span))),
+        at_attr(TokenTree::Punct(Punct::new('.', Spacing::Alone))),
+        at_attr(TokenTree::Ident(Ident::new("arg", attr_span))),
+        at_attr(TokenTree::Group(Group::new(
+            Delimiter::Parenthesis,
+            arg_args,
+        ))),
+        at_attr(TokenTree::Punct(Punct::new(';', Spacing::Alone))),
+    ]);
+    // `wrap_fn_block` would leave the `fn` at the call site; stamp it
+    // so no span the rule reads betrays the expansion.
+    let mut out = TokenStream::new();
+    out.extend([
+        at_attr(TokenTree::Ident(Ident::new("fn", attr_span))),
+        at_attr(TokenTree::Ident(Ident::new("_synth_command_setter", attr_span))),
+        at_attr(TokenTree::Group(Group::new(
+            Delimiter::Parenthesis,
+            TokenStream::new(),
+        ))),
+        at_attr(TokenTree::Group(Group::new(Delimiter::Brace, body))),
+    ]);
+    out
+}
+
+/// `#[derive(SynthFoldedCommandSetter)]` +
+/// `#[synth_folded_command_setter]` → `source`, every token of which, the
+/// wrapping `fn` included, inherits the user-span of
+/// `synth_folded_command_setter`.
+///
+/// So both the fold call and the enclosing item read as user-written,
+/// and `hir_in_external_macro`, which checks the node's span and the
+/// enclosing item's `def_span`, has nothing to find.
+///
+/// `VARS` is the fixture's own `const`.
+#[proc_macro_derive(SynthFoldedCommandSetter, attributes(synth_folded_command_setter))]
+pub fn synth_folded_command_setter(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_folded_command_setter").expect(
+        "`#[derive(SynthFoldedCommandSetter)]` requires a `#[synth_folded_command_setter]`",
+    );
+    let source = r#"
+        fn _synth_folded_command_setter() {
+            let _ = VARS.iter().fold(
+                std::process::Command::new("ls"),
+                command_extra::CommandExtra::without_env,
+            );
+        }
+    "#;
+    respan(
+        source.parse().expect("the synthesised source is valid Rust"),
+        attr_span,
+    )
+}
+
+/// `#[derive(SynthFoldOwner)]` + `#[synth_fold_owner(<expr>)]` →
+/// `fn _synth_fold_owner() { let _ = <expr>; }`, where `<expr>` keeps the
+/// spans its author wrote it with and every other token takes the
+/// derive's call-site span.
+///
+/// The fold's text is then the user's own, which `is_from_proc_macro`
+/// accepts, and none of its spans is an expansion's. Only the enclosing
+/// item's `def_span` says where the fold now lives, which is what
+/// `hir_in_external_macro` reads.
+#[proc_macro_derive(SynthFoldOwner, attributes(synth_fold_owner))]
+pub fn synth_fold_owner(input: TokenStream) -> TokenStream {
+    let fold = find_attr_arguments(input, "synth_fold_owner")
+        .expect("`#[derive(SynthFoldOwner)]` requires a `#[synth_fold_owner(..)]`");
+    let mut body: TokenStream = "let _ =".parse().expect("valid tokens");
+    body.extend(fold);
+    body.extend(";".parse::<TokenStream>().expect("valid tokens"));
+    let mut out: TokenStream = "fn _synth_fold_owner()".parse().expect("valid tokens");
+    out.extend([TokenTree::Group(Group::new(Delimiter::Brace, body))]);
+    out
+}
+
+/// Every token of `stream`, groups walked into, moved to `span`.
+fn respan(stream: TokenStream, span: Span) -> TokenStream {
+    stream
+        .into_iter()
+        .map(|tree| match tree {
+            TokenTree::Group(group) => {
+                let mut replacement = Group::new(group.delimiter(), respan(group.stream(), span));
+                replacement.set_span(span);
+                TokenTree::Group(replacement)
+            }
+            mut leaf => {
+                leaf.set_span(span);
+                leaf
+            }
+        })
+        .collect()
 }
 
 fn wrap_const_block(body: TokenStream) -> TokenStream {
@@ -600,4 +767,26 @@ fn find_attr_span(input: TokenStream, name: &str) -> Option<Span> {
         }
     }
     None
+}
+
+/// The tokens between the parentheses of `#[name(..)]`, spans kept.
+fn find_attr_arguments(input: TokenStream, name: &str) -> Option<TokenStream> {
+    let tokens: Vec<TokenTree> = input.into_iter().collect();
+    tokens.windows(2).find_map(|window| {
+        let (TokenTree::Punct(hash), TokenTree::Group(attribute)) = (&window[0], &window[1]) else {
+            return None;
+        };
+        if hash.as_char() != '#' || attribute.delimiter() != Delimiter::Bracket {
+            return None;
+        }
+        let inner: Vec<TokenTree> = attribute.stream().into_iter().collect();
+        match inner.as_slice() {
+            [TokenTree::Ident(ident), TokenTree::Group(arguments)]
+                if ident.to_string() == name && arguments.delimiter() == Delimiter::Parenthesis =>
+            {
+                Some(arguments.stream())
+            }
+            _ => None,
+        }
+    })
 }

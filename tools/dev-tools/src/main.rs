@@ -18,13 +18,14 @@ use clap::{Parser, Subcommand};
 use command_extra::CommandExtra;
 use derive_more::Display;
 use pipe_trait::Pipe;
-use std::fs::OpenOptions;
+use std::fs::{OpenOptions, read_dir, remove_file};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 use std::{env, io};
 
 const DYLINT_LIBRARY_CRATE: &str = "dylint_linting";
 const INSTALL_DIR: &str = ".dev-tools";
+const PINNED_CRATES: [&str; 2] = ["cargo-dylint", "dylint-link"];
 
 #[derive(Parser)]
 #[clap(about = "Manage workspace-local tooling under .dev-tools/")]
@@ -82,6 +83,56 @@ enum InstallError {
     Status,
 }
 
+fn cargo_home() -> Option<PathBuf> {
+    match env::var_os("CARGO_HOME") {
+        Some(path) => Some(path.into()),
+        None => env::home_dir().map(|home| home.join(".cargo")),
+    }
+}
+
+fn index_prefix(crate_name: &str) -> PathBuf {
+    match crate_name.len() {
+        1 => PathBuf::from("1"),
+        2 => PathBuf::from("2"),
+        3 => Path::new("3").join(&crate_name[..1]),
+        _ => Path::new(&crate_name[..2]).join(&crate_name[2..4]),
+    }
+}
+
+fn remove_cached_index_entry(registry: &Path, crate_name: &str) {
+    let path = registry
+        .join(".cache")
+        .join(index_prefix(crate_name))
+        .join(crate_name);
+    if let Err(error) = remove_file(&path)
+        && error.kind() != io::ErrorKind::NotFound
+    {
+        eprintln!("warning: failed to remove {}: {error}", path.display());
+    }
+}
+
+fn evict_cached_index_entries() {
+    let Some(home) = cargo_home() else {
+        eprintln!("warning: cannot locate CARGO_HOME; not refreshing index metadata");
+        return;
+    };
+    let index = home.join("registry").join("index");
+    let registries = match read_dir(&index) {
+        Ok(registries) => registries,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return,
+        Err(error) => {
+            eprintln!("warning: failed to read {}: {error}", index.display());
+            return;
+        }
+    };
+    for registry in registries.flatten() {
+        let registry_dir = registry.path();
+        for crate_name in PINNED_CRATES {
+            remove_cached_index_entry(&registry_dir, crate_name);
+        }
+    }
+}
+
 fn install(root: &Path, version: &str) -> Result<(), InstallError> {
     let install_root = root.join(INSTALL_DIR);
 
@@ -90,6 +141,12 @@ fn install(root: &Path, version: &str) -> Result<(), InstallError> {
         install_root.display(),
     );
 
+    // Cargo keeps a cached index entry when revalidation reports it
+    // unchanged, so an entry predating the pinned version hides that
+    // version from the `cargo install` below. Removing it forces a
+    // fetch. See <https://github.com/KSXGitHub/perfectionist/pull/497>.
+    evict_cached_index_entries();
+
     "cargo"
         .pipe(Command::new)
         .with_env("CARGO_INSTALL_ROOT", &install_root)
@@ -97,8 +154,7 @@ fn install(root: &Path, version: &str) -> Result<(), InstallError> {
         .with_arg("--locked")
         .with_arg("--version")
         .with_arg(version)
-        .with_arg("cargo-dylint")
-        .with_arg("dylint-link")
+        .with_args(PINNED_CRATES)
         .status()
         .map_err(InstallError::Spawn)?
         .success()

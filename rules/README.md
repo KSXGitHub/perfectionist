@@ -66,6 +66,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   error-shaped type is missing `#[non_exhaustive]`
 
+- [`folded_command_setter`](./folded_command_setter.md) (default: `active`).
+
+  fold over a singular `CommandExtra` setter re-implements the plural
+
 - [`import_granularity_mismatch`](./import_granularity_mismatch.md) (default: `active`).
 
   import granularity does not match the configured `import_granularity_mismatch.style`
@@ -85,6 +89,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`macro_trailing_comma`](./macro_trailing_comma.md) (default: `active`).
 
   macro invocation does not follow rustfmt's vertical trailing-comma policy
+
+- [`mutating_command_builder`](./mutating_command_builder.md) (default: `active`).
+
+  a command setter taking `&mut self` where `command-extra`'s by-value form exists
 
 - [`named_prelude_imports`](./named_prelude_imports.md) (default: `active`).
 
@@ -113,6 +121,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`overly_long_print_macro`](./overly_long_print_macro.md) (default: `active`).
 
   splittable print macro with an embedded-newline template exceeds the configured line width
+
+- [`owned_as_conversion`](./owned_as_conversion.md) (default: `active`).
+
+  `as_*` method hands back an owned value where its prefix promises a free borrow
 
 - [`redundant_derive_more_forward_template`](./redundant_derive_more_forward_template.md) (default: `active`).
 
