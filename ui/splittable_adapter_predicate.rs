@@ -55,8 +55,8 @@ fn rfind_tests(mut lines: std::vec::IntoIter<&'static str>) -> Option<&'static s
     lines.rfind(|line| wanted(line) && line.starts_with('#'))
 }
 
-// Bad: `any` takes its item by value, which bears on the binding the
-// rewrite writes rather than on whether it splits.
+// Bad: `any` takes its item by value where the lifted `filter` hands a
+// reference, and a `&&str` derefs to where these tests read it.
 fn any_tests(mut lines: std::vec::IntoIter<&'static str>) -> bool {
     lines.any(|line| wanted(line) && line.starts_with('#'))
 }

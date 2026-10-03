@@ -5,7 +5,7 @@
 //! Two closures may both hold a shared borrow of a capture and no more
 //! than that, so a capture held mutably, uniquely or by move is one the
 //! split cannot hand to both halves: reaching it from two of them is
-//! `E0499`.
+//! `E0499` where it is borrowed and `E0382` where it is moved.
 
 use rustc_hir::HirId;
 use rustc_hir::def_id::LocalDefId;

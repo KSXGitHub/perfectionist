@@ -225,7 +225,7 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterPredicate {
         }
         // Each test gets a closure of its own after the split, and two
         // closures cannot both hold a capture held any way but shared, so
-        // two tests reaching one is `E0499` once split.
+        // two tests reaching one does not compile once split.
         let held_alone = exclusive(cx, closure.def_id);
         let reaching = conjuncts
             .iter()

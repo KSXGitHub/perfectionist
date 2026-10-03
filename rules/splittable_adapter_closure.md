@@ -42,8 +42,9 @@ expression to be parsed before any of them can be found.
 A chain of one step has nothing to split. An item named more than
 once cannot be split at all, since each step would get its own
 closure and the later mentions would have no binding to name. A
-step whose result borrows the item cannot be lifted out of the
-closure the item belongs to. And a chain the closure does not
+step whose result borrows lifts only where what it borrows from
+outlives the closure, so one borrowing the item, or a temporary
+the closure handed it, stays. And a chain the closure does not
 always reach is left alone, because lifting it would run it for
 every item rather than for some.
 

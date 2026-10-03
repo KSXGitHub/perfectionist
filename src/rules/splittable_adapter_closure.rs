@@ -78,8 +78,9 @@ declare_tool_lint! {
     /// A chain of one step has nothing to split. An item named more than
     /// once cannot be split at all, since each step would get its own
     /// closure and the later mentions would have no binding to name. A
-    /// step whose result borrows the item cannot be lifted out of the
-    /// closure the item belongs to. And a chain the closure does not
+    /// step whose result borrows lifts only where what it borrows from
+    /// outlives the closure, so one borrowing the item, or a temporary
+    /// the closure handed it, stays. And a chain the closure does not
     /// always reach is left alone, because lifting it would run it for
     /// every item rather than for some.
     ///
@@ -280,8 +281,8 @@ fn check<'tcx>(
         return;
     }
     // A lifted step runs in a closure of its own, alongside the one the
-    // adapter keeps. Two closures cannot both hold a mutable borrow of
-    // the same capture, so a step reaching one is `E0499` once lifted.
+    // adapter keeps. Two closures cannot both hold a capture held any way
+    // but shared, so a step reaching one does not compile once lifted.
     let held_alone = exclusive(cx, closure.def_id);
     if lifted.iter().any(|step| names(cx, step.expr, &held_alone)) {
         return;
