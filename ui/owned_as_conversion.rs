@@ -129,6 +129,24 @@ impl Person {
         self.inner.name.clone()
     }
 
+    // Bad: a `Cow` can hand the caller a `String`, which is what puts
+    // it on the list beside `Option` and `Result`. The body takes
+    // either variant, pinning that it is the return type being read and
+    // not the call: `as_` promises free, and half of these do allocate.
+    fn as_display_name(&self) -> Cow<'_, str> {
+        if self.name.is_empty() {
+            Cow::Owned(String::from("anonymous"))
+        } else {
+            Cow::Borrowed(&self.name)
+        }
+    }
+
+    // Bad: a `Cow` under a wrapper is still a `Cow`, so the payload
+    // recursion reaches it.
+    fn as_display_middle(&self) -> Option<Cow<'_, str>> {
+        self.middle.as_deref().map(Cow::Borrowed)
+    }
+
     // Good: returning `&str` costs nothing, which is what `as_` says.
     fn as_name_ref(&self) -> &str {
         &self.name
@@ -143,13 +161,6 @@ impl Person {
     // recursion into the payload has to reach the reference and stop.
     fn as_middle_ref(&self) -> Option<&String> {
         self.middle.as_ref()
-    }
-
-    // Good: `Cow` is the honest type for a conversion that is
-    // sometimes free, and it is on no list of owning types, so the
-    // signature never says the caller was handed anything of their own.
-    fn as_display_name(&self) -> Cow<'_, str> {
-        Cow::Borrowed(&self.name)
     }
 
     // Good: a borrow under a `Result` is still a borrow. The payload
