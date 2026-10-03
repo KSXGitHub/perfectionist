@@ -14,14 +14,9 @@ asked, of `owned_as_conversion`'s exemption for opaque return types:
 It is not valid, and it is another rule. This file is that rule.
 
 > [!NOTE]
-> The sibling this file reasons against, `owned_as_conversion`, is
-> still in flight in
-> <https://github.com/KSXGitHub/perfectionist/pull/462>, as are
-> `borrowed_to_conversion` and `unconsumed_into_conversion` in the two
-> PRs stacked on it. None of the three is on `master` yet. Nothing
-> here should be implemented before the first of them lands, since the
-> argument for this being a separate rule is an argument about what
-> that one already covers.
+> The sibling this file reasons against, `owned_as_conversion`, is on
+> `master`; the rules for the other two prefixes are still in flight in
+> the PRs that were stacked on it.
 
 ## Statement
 
