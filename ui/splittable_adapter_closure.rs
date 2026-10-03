@@ -611,4 +611,21 @@ fn callee_lends_the_result(lines: std::vec::IntoIter<&'static str>) -> Vec<usize
         .collect()
 }
 
+fn wrap(count: usize) -> usize {
+    count + 1
+}
+
+macro_rules! wrapped {
+    ($value:expr) => {
+        wrap($value)
+    };
+}
+
+// Not flagged: a step the reader did not write. A `macro_rules!` body
+// holding a call around the item reads as a step, and a split whose
+// boundary falls inside an expansion is not a rewrite they can make.
+fn step_from_a_macro(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines.map(|line| wrapped!(line.len())).collect()
+}
+
 fn main() {}

@@ -78,10 +78,12 @@ pub(super) fn steps<'tcx>(
     let mut steps = Vec::new();
     let mut chain = root;
     while let Node::Expr(parent) = cx.tcx.parent_hir_node(chain.hir_id) {
-        // `?` lowers to a `match` on `Try::branch(operand)`, and that
-        // call's sole argument is the chain, so it reads as a step the
-        // reader never wrote and could not lift into a `map`.
-        if parent.span.desugaring_kind().is_some() {
+        // `?` lowers to a `match` on `Try::branch(operand)`, and a
+        // `macro_rules!` body can hold a call around the item too. Either
+        // reads as a step the reader never wrote, and a split whose
+        // boundary falls inside an expansion is not a rewrite they can
+        // make.
+        if parent.span.from_expansion() {
             break;
         }
         let extends = match parent.kind {
