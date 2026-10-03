@@ -1,10 +1,9 @@
 //! Shell out to `cargo dylint` and capture its output.
 //!
-//! Every run passes `--fail-on-no-libraries`, so a fixture whose
-//! workspace cargo refuses to load fails the test outright. Without it
-//! such a run reports no diagnostics and exits zero, which every
-//! assertion that a rule *stays silent* reads as the rule standing
-//! down.
+//! A run that loads no libraries reports no diagnostics and exits
+//! zero, which an assertion that a rule *stays silent* cannot tell
+//! from the rule standing down. `--fail-on-no-libraries` turns that
+//! into a test failure.
 //!
 //! Every command here clears the dylint-specific variables the
 //! in-process UI harness leaves set in this process, so a spawned
