@@ -130,10 +130,27 @@ fn destructured(pairs: std::vec::IntoIter<(usize, &'static str)>) -> Vec<(usize,
         .collect()
 }
 
-// Not flagged: `Option::filter` is a method of the same name whose item
-// the rule does not speak about.
+// Bad: `Option::filter` is set-shaped too, so its tests lift into a
+// leading `filter` of its own.
 fn option_filter(line: Option<&'static str>) -> Option<&'static str> {
     line.filter(|line| wanted(line) && line.starts_with('#'))
+}
+
+// Bad: and so is `Option::is_some_and`.
+fn option_is_some_and(line: Option<&'static str>) -> bool {
+    line.is_some_and(|line| wanted(line) && line.starts_with('#'))
+}
+
+// Not flagged: filtering before `is_none_or` makes a value that failed
+// the first test vacuously fine, the way it does before `all`.
+fn option_is_none_or(line: Option<&'static str>) -> bool {
+    line.is_none_or(|line| wanted(line) && line.starts_with('#'))
+}
+
+// Not flagged: `Result` has no filtering adapter to lift into, so these
+// stay folded however they are written.
+fn result_is_ok_and(outcome: Result<&'static str, usize>) -> bool {
+    outcome.is_ok_and(|line| wanted(line) && line.starts_with('#'))
 }
 
 fn main() {}

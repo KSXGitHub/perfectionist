@@ -17,6 +17,7 @@ use crate::binding_uses::names;
 use crate::common::{DefaultState, binding_hir_id, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
+use clippy_utils::paths::{PathNS, lookup_path};
 use clippy_utils::{is_from_proc_macro, sym};
 use rustc_hir::{BinOpKind, Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
@@ -100,41 +101,80 @@ impl Register for rule::SplittableAdapterPredicate {
     }
 }
 
-/// The discipline of `method`'s answer, or `None` for a method this
-/// rule does not speak about.
+/// Which family a receiver belongs to, or `None` where the call is none
+/// of this rule's.
 ///
-/// The names are shared with other traits' own methods, so the caller
-/// asks what the call resolves to as well.
-fn discipline(method: Symbol) -> Option<Discipline> {
-    // `all`, `position`, `rposition`, `partition` and `skip_while` take
-    // a predicate of the same shape and have no lift target: filtering
-    // first flips `all`'s answer, renumbers `position`'s, and loses
-    // what the other two were counting on.
-    Some(match method.as_str() {
-        "filter" | "find" | "rfind" | "any" => Discipline::Set,
-        "take_while" => Discipline::Prefix,
+/// The names are shared across families and with other traits' own
+/// methods, so what the call resolves to is what identifies it. rayon's
+/// trait carries no diagnostic item, so the path is what identifies that
+/// one, and a crate the linted one does not depend on answers nothing.
+fn family<'tcx>(
+    cx: &LateContext<'tcx>,
+    call: &Expr<'tcx>,
+    receiver: &'tcx Expr<'tcx>,
+) -> Option<Family> {
+    let method = cx.typeck_results().type_dependent_def_id(call.hir_id)?;
+    if let Some(declaring) = cx.tcx.trait_of_assoc(method) {
+        let declares = |name| cx.tcx.is_diagnostic_item(name, declaring);
+        if declares(sym::Iterator) || declares(sym::DoubleEndedIterator) {
+            return Some(Family::Iterator);
+        }
+        let rayon = [
+            Symbol::intern("rayon"),
+            Symbol::intern("iter"),
+            Symbol::intern("ParallelIterator"),
+        ];
+        let found = lookup_path(cx.tcx, PathNS::Type, &rayon);
+        return found.contains(&declaring).then_some(Family::Rayon);
+    }
+    let adt = cx
+        .typeck_results()
+        .expr_ty_adjusted(receiver)
+        .peel_refs()
+        .ty_adt_def()?;
+    cx.tcx
+        .is_diagnostic_item(sym::Option, adt.did())
+        .then_some(Family::Option)
+}
+
+/// Which kind of receiver a filtering adapter is on, which is what
+/// tells `Iterator::filter` from `Option::filter`.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Family {
+    Iterator,
+    Option,
+    Rayon,
+}
+
+/// The discipline of `method`'s answer on the receiver's kind, or
+/// `None` for a method this rule does not speak about.
+fn discipline(family: Family, method: Symbol) -> Option<Discipline> {
+    // `all`, `position`, `rposition`, `partition`, `skip_while` and
+    // `Option::is_none_or` take a predicate of the same shape and have no
+    // lift target: filtering first flips what `all` and `is_none_or`
+    // answer, renumbers `position`'s, and loses what the other two were
+    // counting on. `Result` has no filtering adapter at all, so
+    // `is_ok_and` and `is_err_and` stay folded however they are written.
+    Some(match (family, method.as_str()) {
+        (Family::Iterator, "filter" | "find" | "rfind" | "any") => Discipline::Set,
+        (Family::Iterator, "take_while") => Discipline::Prefix,
+        (Family::Option, "filter" | "is_some_and") => Discipline::Set,
+        (Family::Rayon, "filter" | "find_first" | "find_any" | "any") => Discipline::Set,
         _ => return None,
     })
 }
 
 impl<'tcx> LateLintPass<'tcx> for SplittableAdapterPredicate {
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
-        let ExprKind::MethodCall(segment, _, arguments, _) = expr.kind else {
+        let ExprKind::MethodCall(segment, receiver, arguments, _) = expr.kind else {
             return;
         };
-        let Some(discipline) = discipline(segment.ident.name) else {
+        let Some(family) = family(cx, expr, receiver) else {
             return;
         };
-        let Some(method) = cx.typeck_results().type_dependent_def_id(expr.hir_id) else {
+        let Some(discipline) = discipline(family, segment.ident.name) else {
             return;
         };
-        let Some(declaring) = cx.tcx.trait_of_assoc(method) else {
-            return;
-        };
-        let declares = |iterator| cx.tcx.is_diagnostic_item(iterator, declaring);
-        if !declares(sym::Iterator) && !declares(sym::DoubleEndedIterator) {
-            return;
-        }
         let Some(closure) = arguments.iter().find_map(|argument| match argument.kind {
             ExprKind::Closure(closure) => Some(closure),
             _ => None,
