@@ -158,6 +158,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   static item has a single-letter name
 
+- [`splittable_adapter_closure`](./splittable_adapter_closure.md) (default: `active`).
+
+  a closure passed to an iterator adapter chains several steps onto its item
+
 - [`thiserror_usage`](./thiserror_usage.md) (default: `active`).
 
   `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`

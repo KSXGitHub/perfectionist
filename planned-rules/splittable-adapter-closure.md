@@ -8,6 +8,50 @@ its error in the same step; the suggestion rewrote it so that each
 adapter did one thing. Neither style guide covers this, so the wording
 below is the catalogue's own rather than a quotation.
 
+## Status
+
+The **chain** trigger is implemented, in
+[`src/rules/splittable_adapter_closure.rs`](../src/rules/splittable_adapter_closure.rs),
+over `Iterator` alone. What it covers:
+
+- The adapters whose item enters by value and never comes back out,
+  unary and binary, as tabled in
+  [Which adapters](#which-adapters), **less** `filter_map`, `find_map`
+  and `map_while`: their closure returns an `Option`, and what splits
+  inside one lifts into a discipline-matched adapter rather than into a
+  `map`, per [A guard and a value](#a-guard-and-a-value). Flagging them
+  from here would offer the weaker split.
+- The item-occurs-once rule, the two-step minimum, the position
+  condition of
+  [When the chain may be hoisted](#when-the-chain-may-be-hoisted), and
+  the proc-macro guard.
+- Liftability by a narrower test than
+  [When a step can be lifted](#when-a-step-can-be-lifted) describes: a
+  step lifts where its result carries no lifetime, or where the item is
+  itself a reference, so a `&self` borrows the referent rather than the
+  closure's local. Regions are erased in typeck results, so the
+  result's lifetime cannot be matched against the item's, and this is
+  the conservative pair that needs no such match.
+
+Not implemented, and the rest of this file is their active spec:
+
+- The **predicate** trigger of
+  [Splitting a predicate](#splitting-a-predicate) and the
+  **guard-and-value** trigger of
+  [A guard and a value](#a-guard-and-a-value). Each is independently
+  triggered, lifts into a filtering adapter chosen by discipline rather
+  than into a `map`, and shares no configuration with the chain
+  trigger. By the test in
+  [One rule per file, one `Config` per rule](../CLAUDE.md#one-rule-per-file-one-config-per-rule)
+  they are rules of their own, and whoever implements them should split
+  this file rather than widen the registered lint.
+- Every family beyond `Iterator`: `Option`, `Result`, `Poll`,
+  `ControlFlow`, `itertools`, rayon and `pipe-trait`.
+- No autofix. The diagnostic names the count and asks for the split,
+  because the point-free form a split invites asks more of each step
+  than the split does, so the text a rewrite would have to choose is
+  not the text a reader wants.
+
 ## Statement
 
 An adapter should do one thing. A closure doing several makes one

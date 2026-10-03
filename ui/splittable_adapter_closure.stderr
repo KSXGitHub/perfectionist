@@ -1,0 +1,69 @@
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |         .map(|header| header.trim().to_ascii_lowercase())
+   |          ^^^
+   |
+   = help: give each step its own adapter, lifting all but the last into a leading `map`, so the stages read down the chain
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+
+warning: this closure chains 3 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |         .map(|line| line.trim().to_ascii_lowercase().len())
+   |          ^^^
+   |
+   = help: give each step its own adapter, lifting all but the last into a leading `map`, so the stages read down the chain
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.map(|line| parse(line.trim())).collect()
+   |           ^^^
+   |
+   = help: give each step its own adapter, lifting all but the last into a leading `map`, so the stages read down the chain
+
+warning: this closure chains 3 steps onto the item, so `for_each` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.for_each(|line| drop(line.trim().len()));
+   |           ^^^^^^^^
+   |
+   = help: give each step its own adapter, lifting all but the last into a leading `map`, so the stages read down the chain
+
+warning: this closure chains 2 steps onto the item, so `any` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.any(|line| line.trim().is_empty())
+   |           ^^^
+   |
+   = help: give each step its own adapter, lifting all but the last into a leading `map`, so the stages read down the chain
+
+warning: this closure chains 2 steps onto the item, so `fold` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.fold(0, |total, line| total + line.trim().len())
+   |           ^^^^
+   |
+   = help: give each step its own adapter, lifting all but the last into a leading `map`, so the stages read down the chain
+
+warning: this closure chains 2 steps onto the item, so `fold` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.fold(1, |acc, line| line.trim().len().wrapping_mul(acc))
+   |           ^^^^
+   |
+   = help: give each step its own adapter, lifting all but the last into a leading `map`, so the stages read down the chain
+
+warning: calls to `std::mem::drop` with a value that implements `Copy` does nothing
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.for_each(|line| drop(line.trim().len()));
+   |                           ^^^^^-----------------^
+   |                                |
+   |                                argument has type `usize`
+   |
+   = note: use `let _ = ...` to ignore the expression or result
+   = note: `#[warn(dropping_copy_types)]` on by default
+
+warning: N warnings emitted
