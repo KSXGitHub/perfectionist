@@ -5,9 +5,9 @@ use super::{Rewrite, rewrite};
 /// put in its place. The suggestion is handed over as
 /// `MachineApplicable`, so this is what that promise rests on.
 ///
-/// The `Option<&bool>` payload needs no second table: the rewrite
-/// reaches its `bool` with a `copied` and then answers the same
-/// question, and `Some(&true) == Some(&true)` compares the referents.
+/// The `Option<&bool>` payload needs no second table: comparing two
+/// `&bool`s compares the referents, and the rewrite's `copied` reaches
+/// the same `bool`s.
 #[test]
 fn the_rewrite_answers_as_the_comparison_did_in_every_state() {
     for equality in [true, false] {

@@ -57,6 +57,12 @@ LL |     if enabled == &Some(true) {}
 warning: comparing against `Some(true)` leaves the `None` case unnamed
   --> $DIR/some_bool_comparison.rs:LL:CC
    |
+LL |     if &entry.enabled == &Some(true) {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `entry.enabled.unwrap_or(false)`
+
+warning: comparing against `Some(true)` leaves the `None` case unnamed
+  --> $DIR/some_bool_comparison.rs:LL:CC
+   |
 LL |     if *enabled == Some(true) {}
    |        ^^^^^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `(*enabled).unwrap_or(false)`
 

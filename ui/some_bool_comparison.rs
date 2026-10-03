@@ -1,8 +1,8 @@
 // edition:2024
 //
 // Which comparisons this rule reads as an `Option<bool>` measured
-// against a state, which rewrite each earns, and which shapes name
-// their state already.
+// against a state, which rewrite each earns, and which shapes it leaves
+// alone.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -38,11 +38,17 @@ fn borrowed_payload(flags: HashMap<String, bool>, settings: Option<bool>) {
     if settings.as_ref() != Some(&false) {}
 }
 
-// Bad: the `&` on the `Some` and the one on the option side both come
-// off, since `unwrap_or` resolves through either.
+// Bad: a `&Option<bool>` against a `&Some`; `unwrap_or` resolves through
+// the reference, so the rewrite keeps neither.
 fn borrowed_option(entry: Entry) {
     let enabled = &entry.enabled;
     if enabled == &Some(true) {}
+}
+
+// Bad: the same with the option side's reference written out, which the
+// suggestion takes off rather than bracketing.
+fn borrowed_on_both_sides(entry: Entry) {
+    if &entry.enabled == &Some(true) {}
 }
 
 // Bad: a receiver that binds looser than a method call keeps its
@@ -57,7 +63,7 @@ fn as_a_macro_argument(verbose: Option<bool>) {
     assert!(verbose == Some(true));
 }
 
-fn already_named(left: Option<bool>, right: Option<bool>, wanted: bool, version: Option<i32>) {
+fn not_flagged(left: Option<bool>, right: Option<bool>, wanted: bool, version: Option<i32>) {
     // Both sides are `Option<bool>`, so neither names a state.
     if left == right {}
     // The `Some` carries a variable: no state to name, and `unwrap_or`
@@ -69,17 +75,24 @@ fn already_named(left: Option<bool>, right: Option<bool>, wanted: bool, version:
     if matches!(left, Some(true)) {}
 }
 
-// Deliberately silent, not an oversight: `assert_eq!` builds the
-// comparison itself, so the rewrite would cost the failure message the
-// operand values it prints, and the assertion already names the state it
-// expects.
+// Not flagged: a `&&bool` payload. One `copied` reaches a `&bool` rather
+// than the `bool` the comparison answers with, so there is no total
+// rewrite to offer.
+fn doubly_borrowed_payload(settings: Option<&bool>) {
+    if settings.as_ref() == Some(&&true) {}
+}
+
+// Not flagged, and not an oversight: `assert_eq!` binds both operands
+// before comparing them, so the shape never arises -- and the silence is
+// wanted, since the rewrite would cost the failure message the operand
+// values it prints.
 fn under_an_equality_assertion(verbose: Option<bool>) {
     assert_eq!(verbose, Some(true));
 }
 
-// Deliberately silent for the same reason, one crate nearer: the
-// comparison belongs to the macro, so the suggestion would rewrite its
-// definition with one call site's text.
+// Not flagged, and not an oversight either: the comparison belongs to the
+// macro, so the suggestion would rewrite its definition with one call
+// site's text.
 macro_rules! turned_on {
     ($option:expr) => {
         $option == Some(true)
@@ -88,6 +101,20 @@ macro_rules! turned_on {
 
 fn under_a_local_macro(verbose: Option<bool>) {
     if turned_on!(verbose) {}
+}
+
+// Not flagged, for its own reason: the comparison is the author's and
+// only the `Some` is expanded, so the rewrite would read the literal's
+// value and drop the macro call, freezing today's expansion into the
+// source.
+macro_rules! the_wanted_state {
+    () => {
+        Some(true)
+    };
+}
+
+fn against_an_expanded_operand(verbose: Option<bool>) {
+    if verbose == the_wanted_state!() {}
 }
 
 fn main() {}

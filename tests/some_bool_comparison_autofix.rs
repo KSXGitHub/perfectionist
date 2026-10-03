@@ -11,8 +11,8 @@
 //! whether the text the rule splices parses and type-checks where it
 //! lands, and that is what the fixer answers.
 //!
-//! Three shapes earned the test, each a way the rewrite could compile
-//! as something other than the comparison it replaced:
+//! The shapes that earned the test are each a way the rewrite could
+//! compile as something other than the comparison it replaced:
 //!
 //! - A `&bool` payload, where `unwrap_or` alone would hand back a
 //!   `&bool` rather than a `bool`.
@@ -20,10 +20,8 @@
 //!   has to reach the `Option` through it.
 //! - A dereferenced option side, where a method call binds tighter than
 //!   the `*` and would deref the result instead.
-//!
-//! A fourth is about where the rewrite lands rather than what it is: a
-//! comparison under an `&&` is replaced whole, so the replacement has
-//! to bind at least as tightly as the comparison did.
+//! - A comparison under an `&&`, which is replaced whole, so the
+//!   replacement has to bind at least as tightly as the comparison did.
 
 pub mod _utils;
 

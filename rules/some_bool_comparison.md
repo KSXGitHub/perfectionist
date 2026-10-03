@@ -11,7 +11,7 @@
 
 Flags an `Option<bool>` compared with `==` or `!=` against a
 `Some` of a boolean literal, and names the `unwrap_or` that says
-what the comparison leaves to the reader:
+what `None` means:
 
 | Comparison            | Prefer                  |
 |-----------------------|-------------------------|
@@ -21,10 +21,10 @@ what the comparison leaves to the reader:
 | `opt == Some(false)`  | `!opt.unwrap_or(true)`  |
 
 Either operand may be the `Some`, and either may be borrowed, so
-`Some(true) == entry.enabled` and `r == &Some(true)` are flagged
-the same. A borrowed payload — what `HashMap::<_, bool>::get` and
-`Option::as_ref` hand back — gains a `copied` to reach the
-`bool`, so `map.get(k) == Some(&true)` becomes
+`Some(true) == opt` and `opt == &Some(true)` are flagged the same.
+A borrowed payload — what `HashMap::<_, bool>::get` and
+`Option::as_ref` hand back — gains a `copied` to reach the `bool`,
+so `map.get(k) == Some(&true)` becomes
 `map.get(k).copied().unwrap_or(false)`.
 
 Left alone:
@@ -33,12 +33,15 @@ Left alone:
   matches, which is what this rule asks for.
 - A `Some` carrying a variable. There is no state to name, and
   `unwrap_or` would not be an improvement.
+- A `Some` an expansion produced, as in `opt == wanted!()`. The
+  rewrite reads the literal and drops the call, which would
+  freeze today's expansion into the source.
 - A comparison a macro builds, `assert_eq!(opt, Some(true))`
-  among them. The rewrite would cost that assertion the operand
-  values its failure message prints, and an equality assertion
-  already names the state it expects. A comparison written as a
-  macro *argument* is the author's own, so
-  `assert!(opt == Some(true))` is flagged.
+  among them. An equality assertion already names the state it
+  expects, and rewriting it would cost its failure message the
+  operand values it prints. A comparison written as a macro
+  *argument* is the author's own, so `assert!(opt == Some(true))`
+  is flagged.
 
 ## Why restrict this?
 
@@ -46,7 +49,7 @@ This is a stylistic preference, not a correctness issue. The
 comparison is exactly equivalent to its replacement. The
 objection is to what the reader has to do:
 
-- **The absent case is left implicit.** `== Some(true)` never
+- **The `None` case is left implicit.** `== Some(true)` never
   says what `None` means, so the reader derives it from the
   operator. `unwrap_or(false)` states it — absent counts as
   false — which is usually the decision the surrounding code
@@ -73,13 +76,13 @@ a refinement of it.
 **Avoid:**
 
 ```rust,ignore
-if flags.get("verbose").copied() == Some(true) { /* ... */ }
+if settings.verbose == Some(true) { /* ... */ }
 ```
 
 **Prefer:**
 
 ```rust,ignore
-if flags.get("verbose").copied().unwrap_or(false) { /* ... */ }
+if settings.verbose.unwrap_or(false) { /* ... */ }
 ```
 
 ## Configuration
