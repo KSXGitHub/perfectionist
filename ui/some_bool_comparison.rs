@@ -1,8 +1,8 @@
 // edition:2024
 //
 // Which comparisons this rule reads as an `Option<bool>` measured
-// against a state, which rewrite each earns, and which shapes it does not
-// flag.
+// against a state, which rewrite each earns, which forms it asks for
+// instead, and which shapes it does not flag.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -63,6 +63,16 @@ fn as_a_macro_argument(verbose: Option<bool>) {
     assert!(verbose == Some(true));
 }
 
+// Good: the `unwrap_or` form the rule asks for, which says what `None`
+// means. The rule does not fire on its own suggestion.
+fn the_unwrap_or_form(verbose: Option<bool>, flags: HashMap<String, bool>) {
+    if verbose.unwrap_or(false) {}
+    if verbose.unwrap_or(true) {}
+    if !verbose.unwrap_or(false) {}
+    if !verbose.unwrap_or(true) {}
+    if flags.get("verbose").copied().unwrap_or(false) {}
+}
+
 // Not flagged: both sides are `Option<bool>`, so neither names a state.
 fn two_option_sides(left: Option<bool>, right: Option<bool>) {
     if left == right {}
@@ -79,7 +89,8 @@ fn another_payload(version: Option<i32>) {
     if version == Some(3) {}
 }
 
-// Not flagged: `matches!` already names the state it matches.
+// Good: `matches!` names the state it matches, which is what this rule
+// asks for.
 fn a_pattern_match(enabled: Option<bool>) {
     if matches!(enabled, Some(true)) {}
 }
