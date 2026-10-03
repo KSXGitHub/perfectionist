@@ -146,7 +146,6 @@ fn evict_cached_index_entries() {
     let index = home.join("registry").join("index");
     let registries = match read_dir(&index) {
         Ok(registries) => registries,
-        // A checkout that has never fetched a crate has no index yet.
         Err(error) if error.kind() == io::ErrorKind::NotFound => return,
         Err(error) => {
             eprintln!("warning: failed to read {}: {error}", index.display());
