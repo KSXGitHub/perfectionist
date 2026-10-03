@@ -40,7 +40,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 
 - [`borrowed_to_conversion`](./borrowed_to_conversion.md) (default: `active`).
 
-  `to_*` method returns a reference where its prefix promises an owned value
+  `to_*` method hands back a borrow for nothing where its prefix promises a costly conversion
 
 - [`clap_help_markdown`](./clap_help_markdown.md) (default: `active`).
 

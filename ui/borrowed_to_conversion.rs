@@ -10,11 +10,13 @@ struct Person {
     home: PathBuf,
     tags: Vec<String>,
     nickname: Option<String>,
+    parsed: Result<String, String>,
     age: u32,
 }
 
 impl Person {
-    // Bad: `to_` promises an owned value, this borrows.
+    // Bad: `to_` promises a conversion that costs something, and this
+    // hands a field straight over.
     fn to_name(&self) -> &str {
         &self.name
     }
@@ -29,12 +31,25 @@ impl Person {
         &self.tags
     }
 
-    // Bad: an `Option` of a borrow is as free as the borrow inside it.
+    // Bad: a dereference on the way is free as well.
+    fn to_home_path(&self) -> &Path {
+        &*self.home
+    }
+
+    // Bad: an `as_*` call is free, which is the whole point of the
+    // prefix this rule asks for.
     fn to_nickname(&self) -> Option<&str> {
         self.nickname.as_deref()
     }
 
-    // Good: `to_` returning an owned value is what the prefix promises.
+    // Bad: a borrow under a `Result` is as free as one under an
+    // `Option`, so the two shapes are measured alike.
+    fn to_parsed(&self) -> Result<&String, &String> {
+        self.parsed.as_ref()
+    }
+
+    // Good: a `to_` that hands back an owned value is the costly
+    // conversion the prefix announces.
     fn to_owned_name(&self) -> String {
         self.name.clone()
     }
@@ -49,22 +64,62 @@ impl Person {
         self.age
     }
 
-    // Not flagged: not the `to_` prefix. `as_*` is the right prefix
-    // for a free conversion, but that is not this rule's business.
+    // Good: the borrow costs a UTF-8 check. This is the shape the
+    // guidelines name as `to_`'s own: `Path::to_str` has it, and
+    // `as_str` would be the wrong name for it.
+    fn to_text(&self) -> Option<&str> {
+        self.home.to_str()
+    }
+
+    // Good: a `match` is work, whatever it costs.
+    fn to_tag(&self) -> Option<&String> {
+        match self.tags.split_first() {
+            Some((first, _)) => Some(first),
+            None => None,
+        }
+    }
+
+    // Good: a body with a statement in it is not a borrow handed
+    // straight over.
+    fn to_first_tag(&self) -> Option<&String> {
+        let tags = &self.tags;
+        tags.first()
+    }
+
+    // Not flagged: not the `to_` prefix. `as_*` is the prefix this
+    // rule asks for.
     fn as_name(&self) -> &str {
         &self.name
     }
 
-    // Not flagged: not the `to_` prefix, though `to` without the
-    // underscore is close enough to pin the boundary.
+    // Not flagged: `token` begins with `to` but not with `to_`, which
+    // is where the prefix test draws its line.
     fn token(&self) -> &str {
         &self.name
     }
 
     // Not flagged: takes an argument, so it is not a conversion of
-    // `self`. The return type is the shape this rule fires on, so this
-    // pins that the arity requirement is what excludes it.
+    // `self`. Both halves hold otherwise, so this pins that the arity
+    // requirement is what excludes it.
     fn to_name_or(&self, fallback: &str) -> &str {
+        &self.name
+    }
+
+    // Not flagged: `&mut self` is not the receiver this measures.
+    fn to_name_mut(&mut self) -> &mut String {
+        &mut self.name
+    }
+
+    // Not flagged: what an `async fn` signature names is the opaque
+    // future, not the borrow awaited out of it.
+    async fn to_awaited_name(&self) -> &str {
+        &self.name
+    }
+
+    // Not flagged: an explicitly typed receiver is `ImplicitSelfKind::None`
+    // however it is spelled, so the eligibility test does not see the
+    // `&self` this is equivalent to.
+    fn to_spelled_out(self: &Self) -> &str {
         &self.name
     }
 }

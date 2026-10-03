@@ -5,43 +5,50 @@
 - _Default state:_ `active`
 - _Source:_ [`src/rules/borrowed_to_conversion.rs`](../src/rules/borrowed_to_conversion.rs)
 
-> `to_*` method returns a reference where its prefix promises an owned value
+> `to_*` method hands back a borrow for nothing where its prefix promises a costly conversion
 
 ## What it does
 
 Flags an inherent `to_*` method taking `&self` and nothing else
-that returns a reference — `&T`, or an `Option<&T>` — and asks for
-the `as_*` prefix instead. A `to_*` with another parameter is
-converting something more than `self`, so the prefix is not
-speaking about the receiver alone and the rule leaves it be.
+that hands back a borrow — `&T`, or an `Option` or `Result` of
+one — and does nothing to earn it: the body is a field of
+`self`, a borrow of one, or a single `as_*` view of one. It
+asks for the `as_*` prefix instead.
 
-A method of a trait impl is left alone, since the trait fixes its
-signature, and so is a method produced by a macro.
+Left alone:
+
+- A body that does work on the way to the borrow — a call, a
+  `match`, a validation. That is what `to_` is for.
+- A `to_*` with another parameter, which is converting
+  something more than `self`.
+- A trait impl's method. The trait fixes the signature.
+- A method produced by a macro.
 
 ## Why restrict this?
 
-This is a stylistic preference, not a correctness issue. The Rust
-API Guidelines give `as_`, `to_` and `into_` distinct meanings. `to_` is the costly one, borrowed to owned, and `as_` is
-the free one, borrowed to borrowed. A `to_*` that hands back a
-reference has done the free conversion under the costly name, so a
-caller who could have used it freely avoids it, and one reading
-the signature has to look twice to see that nothing was allocated.
-The name is the only thing wrong, and renaming is the whole fix.
+This is a stylistic preference, not a correctness issue. The
+Rust API Guidelines sort the three conversion prefixes by what
+they cost: `as_` is the free one, `to_` the expensive one.
+Either may hand back a borrow — `Path::to_str` validates UTF-8
+and returns `Option<&str>`, and the guidelines say outright
+that calling that one `as_str` would be wrong. It is the
+reverse they leave no room for: a `to_*` that costs nothing,
+whose name asks a caller to avoid in a loop what they could
+have had for free.
 
 ## Interaction with Clippy
 
-`clippy::wrong_self_convention` checks these same prefixes against
-the method's *receiver* — whether `to_*` takes `&self`. It does
-not look at the return type, so a `to_*` that takes `&self` and
-returns a borrow satisfies it.
+`clippy::wrong_self_convention` checks the same three prefixes
+against the method's *receiver* — whether `to_*` takes `&self`.
+It does not look at what the body costs, so a `to_*` that takes
+`&self` and only borrows satisfies it.
 
 ## Interaction with sibling rules
 
 `perfectionist::owned_as_conversion` is this rule's mirror: it
-flags an `as_*` that hands back an owned value, where this flags
-a `to_*` that hands back a borrow. Between them the two prefixes
-keep their guideline meanings, and each rule's fix is the
-other's prefix.
+flags an `as_*` that hands back an owned value, where this
+flags a `to_*` that hands back a borrow for nothing. Each
+rule's fix is the other's prefix.
 
 ## Example
 
