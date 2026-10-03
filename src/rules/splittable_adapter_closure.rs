@@ -23,16 +23,19 @@
 //! implemented; `planned-rules/splittable-adapter-closure.md` records
 //! which.
 
+use self::adapter::{Adapter, Family};
 use crate::binding_uses::{names, uses};
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
+use clippy_utils::paths::{PathNS, lookup_path};
 use clippy_utils::{is_from_proc_macro, sym};
 use rustc_hir::def_id::LocalDefId;
 use rustc_hir::{Expr, ExprKind, HirId};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_middle::ty::{BorrowKind, CapturedPlace, Ty, UpvarCapture};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
+use rustc_span::Symbol;
 
 mod adapter;
 mod chain;
@@ -105,13 +108,6 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::splittable_adapter_closure";
 
-/// What a reader does with the diagnostic, which names the count rather
-/// than rendering the split: the point-free form a split invites asks
-/// more of each step than the split does, so the text a rewrite would
-/// have to choose is not the text a reader wants.
-const SPLIT_HELP: &str = "lift each step into a leading `map` of its own, leaving the closure \
-                          only the work that is the adapter's";
-
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
 /// and gen-docs needs the struct for `Configuration: none.`
@@ -142,115 +138,160 @@ impl Register for rule::SplittableAdapterClosure {
 
 impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
-        let ExprKind::MethodCall(segment, _, arguments, _) = expr.kind else {
+        let ExprKind::MethodCall(segment, receiver, arguments, _) = expr.kind else {
             return;
         };
-        let Some(shape) = adapter::shape(segment.ident.name) else {
+        let Some(family) = family(cx, expr, receiver) else {
             return;
         };
-        // The names are shared with inherent methods and with other
-        // traits' own adapters, whose items need not enter by value, so
-        // the trait the call resolves to is what identifies it.
-        let Some(method) = cx.typeck_results().type_dependent_def_id(expr.hir_id) else {
+        let Some(adapter) = adapter::adapter(family, segment.ident.name) else {
             return;
         };
-        let Some(declaring) = cx.tcx.trait_of_assoc(method) else {
-            return;
-        };
-        // `rfold` and `try_rfold` are `DoubleEndedIterator`'s, the same
-        // shape worked from the other end. They lift into
-        // `Iterator::map` all the same, because `Map` is double-ended
-        // wherever its iterator is.
-        let declares = |iterator| cx.tcx.is_diagnostic_item(iterator, declaring);
-        if !declares(sym::Iterator) && !declares(sym::DoubleEndedIterator) {
-            return;
-        }
-        let Some(closure) = arguments.iter().find_map(|argument| match argument.kind {
-            ExprKind::Closure(closure) => Some(closure),
-            _ => None,
-        }) else {
-            return;
-        };
-        let body = cx.tcx.hir_body(closure.body);
-        let Some(parameter) = body.params.get(shape.item_parameter()) else {
-            return;
-        };
-        let Some(item) = chain::binding(parameter.pat) else {
-            return;
-        };
-        // Each step gets its own closure after the split, so a second
-        // use of the item would be left with nothing to name.
-        let occurrences = uses(cx, body.value, &[item]);
-        let [root] = *occurrences.as_slice() else {
-            return;
-        };
-        let parameters: Vec<_> = body
-            .params
-            .iter()
-            .filter_map(|parameter| chain::binding(parameter.pat))
-            .collect();
-        let steps = chain::steps(cx, root, &parameters);
-        if steps.len() < 2 {
-            return;
-        }
-        // The last step stays with the adapter where the closure is
-        // unary, so only the ones moving into a `map` have to be
-        // liftable.
-        let lifted = match shape.keeps_the_last_step() {
-            true => &steps[..steps.len() - 1],
-            false => &steps[..],
-        };
-        if !lifted.iter().all(|step| is_liftable(cx, step.expr)) {
-            return;
-        }
-        // A lifted step runs in a closure of its own, alongside the one
-        // the adapter keeps. Two closures cannot both hold a mutable
-        // borrow of the same capture, so a step reaching one is `E0499`
-        // once lifted.
-        let mutably_captured = mutable_captures(cx, closure.def_id);
-        if lifted
-            .iter()
-            .any(|step| names(cx, step.expr, &mutably_captured))
-        {
-            return;
-        }
-        let top = steps.last().expect("two or more steps").expr;
-        let anchored = match shape.keeps_the_last_step() {
-            // Requiring the chain to *be* the body satisfies the
-            // position condition vacuously, and holds the scope to a
-            // closure whose whole job is the chain.
-            true => top.hir_id == body.value.hir_id,
-            false => {
-                position::always_evaluated(cx, top.hir_id, body.value.hir_id)
-                    && position::nothing_diverts_first(body, root.span)
-            }
-        };
-        if !anchored {
-            return;
-        }
-        // The diagnostic span is the adapter's method segment, which a
-        // derive can stamp with a user-source span, defeating both
-        // `report_in_external_macro: false` and `hir_in_external_macro`.
-        if segment.ident.span.from_expansion()
-            || hir_in_external_macro(cx, expr.hir_id, segment.ident.span)
-            || is_from_proc_macro(cx, expr)
-        {
-            return;
-        }
-        span_lint_and_then(
-            cx,
-            SPLITTABLE_ADAPTER_CLOSURE,
-            segment.ident.span,
-            format!(
-                "this closure chains {} steps onto the item, so `{}` does all of them",
-                steps.len(),
-                segment.ident.name,
-            ),
-            |diagnostic| {
-                diagnostic.help(SPLIT_HELP);
-            },
-        );
+        check(cx, expr, segment, arguments, adapter);
     }
+}
+
+/// Which family `receiver` belongs to, or `None` where the call is none
+/// of this rule's.
+///
+/// The method names are shared across families and with other traits'
+/// own adapters, whose items need not enter by value, so what the call
+/// resolves to is what identifies it. `rfold` and `try_rfold` are
+/// `DoubleEndedIterator`'s, the same shape worked from the other end;
+/// they lift into `Iterator::map` all the same, because `Map` is
+/// double-ended wherever its iterator is.
+fn family<'tcx>(
+    cx: &LateContext<'tcx>,
+    call: &Expr<'tcx>,
+    receiver: &'tcx Expr<'tcx>,
+) -> Option<Family> {
+    let method = cx.typeck_results().type_dependent_def_id(call.hir_id)?;
+    if let Some(declaring) = cx.tcx.trait_of_assoc(method) {
+        let declares = |name| cx.tcx.is_diagnostic_item(name, declaring);
+        let iterator = declares(sym::Iterator) || declares(sym::DoubleEndedIterator);
+        return iterator.then_some(Family::Iterator);
+    }
+    let adt = cx
+        .typeck_results()
+        .expr_ty_adjusted(receiver)
+        .peel_refs()
+        .ty_adt_def()?;
+    let carries = |name| cx.tcx.is_diagnostic_item(name, adt.did());
+    let named = [
+        (sym::Option, Family::Option),
+        (sym::Result, Family::Result),
+        (sym::ControlFlow, Family::ControlFlow),
+    ]
+    .into_iter()
+    .find_map(|(name, family)| carries(name).then_some(family));
+    // `Poll` carries no diagnostic item, measured by asking
+    // `get_diagnostic_name` for it, so the path is what identifies it.
+    named.or_else(|| {
+        let poll = lookup_path(
+            cx.tcx,
+            PathNS::Type,
+            &[sym::core, Symbol::intern("task"), sym::Poll],
+        );
+        poll.contains(&adt.did()).then_some(Family::Poll)
+    })
+}
+
+/// Flag the closure this adapter holds where the chain rooted at its
+/// item is two or more steps long.
+fn check<'tcx>(
+    cx: &LateContext<'tcx>,
+    expr: &'tcx Expr<'tcx>,
+    segment: &'tcx rustc_hir::PathSegment<'tcx>,
+    arguments: &'tcx [Expr<'tcx>],
+    adapter: Adapter,
+) {
+    let Some(argument) = arguments.get(adapter.closure_argument) else {
+        return;
+    };
+    let ExprKind::Closure(closure) = argument.kind else {
+        return;
+    };
+    let body = cx.tcx.hir_body(closure.body);
+    let Some(parameter) = body.params.get(adapter.item_parameter) else {
+        return;
+    };
+    let Some(item) = chain::binding(parameter.pat) else {
+        return;
+    };
+    // Each step gets its own closure after the split, so a second use of
+    // the item would be left with nothing to name.
+    let occurrences = uses(cx, body.value, &[item]);
+    let [root] = *occurrences.as_slice() else {
+        return;
+    };
+    let parameters: Vec<_> = body
+        .params
+        .iter()
+        .filter_map(|parameter| chain::binding(parameter.pat))
+        .collect();
+    let steps = chain::steps(cx, root, &parameters);
+    if steps.len() < 2 {
+        return;
+    }
+    // The last step stays with the adapter where the closure takes the
+    // item alone, so only the ones moving out have to be liftable.
+    let lifted = match adapter.keeps_the_last_step {
+        true => &steps[..steps.len() - 1],
+        false => &steps[..],
+    };
+    if !lifted.iter().all(|step| is_liftable(cx, step.expr)) {
+        return;
+    }
+    // A lifted step runs in a closure of its own, alongside the one the
+    // adapter keeps. Two closures cannot both hold a mutable borrow of
+    // the same capture, so a step reaching one is `E0499` once lifted.
+    let mutably_captured = mutable_captures(cx, closure.def_id);
+    if lifted
+        .iter()
+        .any(|step| names(cx, step.expr, &mutably_captured))
+    {
+        return;
+    }
+    let top = steps.last().expect("two or more steps").expr;
+    let anchored = match adapter.keeps_the_last_step {
+        // Requiring the chain to *be* the body satisfies the position
+        // condition vacuously, and holds the scope to a closure whose
+        // whole job is the chain.
+        true => top.hir_id == body.value.hir_id,
+        false => {
+            position::always_evaluated(cx, top.hir_id, body.value.hir_id)
+                && position::nothing_diverts_first(body, root.span)
+        }
+    };
+    if !anchored {
+        return;
+    }
+    // The diagnostic span is the adapter's method segment, which a derive
+    // can stamp with a user-source span, defeating both
+    // `report_in_external_macro: false` and `hir_in_external_macro`.
+    if segment.ident.span.from_expansion()
+        || hir_in_external_macro(cx, expr.hir_id, segment.ident.span)
+        || is_from_proc_macro(cx, expr)
+    {
+        return;
+    }
+    span_lint_and_then(
+        cx,
+        SPLITTABLE_ADAPTER_CLOSURE,
+        segment.ident.span,
+        format!(
+            "this closure chains {} steps onto the item, so `{}` does all of them",
+            steps.len(),
+            segment.ident.name,
+        ),
+        |diagnostic| {
+            diagnostic.help(format!(
+                "lift each step into a leading `{}` of its own, leaving the closure only \
+                 the work that is the adapter's",
+                adapter.lift_target,
+            ));
+        },
+    );
 }
 
 /// Whether lifting `step` out of the closure keeps it compiling.

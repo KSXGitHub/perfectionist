@@ -150,12 +150,6 @@ fn inspecting(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
     lines.inspect(|line| record(line.trim().len())).collect()
 }
 
-// Not flagged: `Option::map` is a method of the same name whose item
-// the rule does not speak about.
-fn option_map(header: Option<&'static str>) -> Option<usize> {
-    header.map(|text| text.trim().len())
-}
-
 trait Mapper {
     fn map<Output>(self, body: impl FnOnce(&'static str) -> Output) -> Output;
 }
