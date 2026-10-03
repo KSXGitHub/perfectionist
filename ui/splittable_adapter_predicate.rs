@@ -122,6 +122,20 @@ fn a_comparison_among_calls(lines: std::vec::IntoIter<&'static str>) -> Vec<&'st
     lines.filter(|line| line.len() > 3 && wanted(line)).collect()
 }
 
+// Not flagged: two tests reaching a capture held mutably would be two
+// closures both holding it.
+fn note(log: &mut Vec<usize>, line: &str) -> bool {
+    log.push(line.len());
+    !line.is_empty()
+}
+
+fn mutable_capture_in_two_tests(lines: std::vec::IntoIter<&'static str>) -> usize {
+    let mut log = Vec::new();
+    lines
+        .filter(|line| note(&mut log, line) && note(&mut log, line.trim()))
+        .count()
+}
+
 // Not flagged: a destructured parameter, where each test would have to
 // reproduce the pattern.
 fn destructured(pairs: std::vec::IntoIter<(usize, &'static str)>) -> Vec<(usize, &'static str)> {

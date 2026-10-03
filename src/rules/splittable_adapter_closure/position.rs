@@ -100,30 +100,34 @@ fn evaluates(parent: &Expr<'_>, reached: HirId) -> bool {
 /// Whether anything that can leave the closure runs before `chain`.
 ///
 /// [`always_evaluated`] asks what stands above the chain, which says
-/// nothing about what runs before it. An early `return`, a `break`, a
-/// `continue` or a `?` reached first leaves the closure without
-/// evaluating the chain at all, so a lifted step would run for every
-/// item where the folded form ran it for none. The same program written
-/// as an `if` with no `return` is declined by the walk, and these two
-/// answers have to agree.
+/// nothing about what runs before it. Anything reached first that leaves
+/// the closure leaves the chain unevaluated, so a lifted step would run
+/// for every item where the folded form ran it for none. The same program
+/// written as an `if` whose branch holds the chain is declined by the
+/// walk, and these two answers have to agree.
+///
+/// What leaves is read from the type rather than the node kind: an
+/// expression of type `!` does not return, which covers a `panic!`, a
+/// `std::process::exit`, a call to a `-> !` function and a `loop {}` as
+/// readily as a `return` or a `break`. A `?` is the one that leaves while
+/// typing as its output, so it keeps a case of its own.
 ///
 /// A nested closure's own `return` leaves that closure rather than this
 /// one, which is why the visitor stays at its default nesting filter.
-pub(super) fn nothing_diverts_first(body: &Body<'_>, chain: Span) -> bool {
-    struct Diversions {
+pub(super) fn nothing_diverts_first<'tcx>(
+    cx: &LateContext<'tcx>,
+    body: &'tcx Body<'tcx>,
+    chain: Span,
+) -> bool {
+    struct Diversions<'a, 'tcx> {
+        cx: &'a LateContext<'tcx>,
         chain: Span,
         found: bool,
     }
-    impl<'tcx> Visitor<'tcx> for Diversions {
+    impl<'tcx> Visitor<'tcx> for Diversions<'_, 'tcx> {
         fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-            let diverts = matches!(
-                expr.kind,
-                ExprKind::Ret(_)
-                    | ExprKind::Break(..)
-                    | ExprKind::Continue(_)
-                    | ExprKind::Become(_)
-                    | ExprKind::Match(_, _, MatchSource::TryDesugar(_)),
-            );
+            let diverts = self.cx.typeck_results().expr_ty(expr).is_never()
+                || matches!(expr.kind, ExprKind::Match(_, _, MatchSource::TryDesugar(_)));
             if diverts && expr.span.lo() < self.chain.lo() {
                 self.found = true;
             }
@@ -131,6 +135,7 @@ pub(super) fn nothing_diverts_first(body: &Body<'_>, chain: Span) -> bool {
         }
     }
     let mut diversions = Diversions {
+        cx,
         chain,
         found: false,
     };

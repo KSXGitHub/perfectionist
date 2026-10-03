@@ -25,15 +25,16 @@
 use self::adapter::{Adapter, Family};
 use crate::binding_uses::{names, uses};
 use crate::common::{DefaultState, hir_in_external_macro};
+use crate::exclusive_captures::exclusive;
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::paths::{PathNS, lookup_path};
 use clippy_utils::ty::implements_trait;
 use clippy_utils::{is_from_proc_macro, sym};
-use rustc_hir::def_id::{DefId, LocalDefId};
-use rustc_hir::{Expr, ExprKind, HirId};
+use rustc_hir::def_id::DefId;
+use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
-use rustc_middle::ty::{BorrowKind, CapturedPlace, Ty, UpvarCapture};
+use rustc_middle::ty::Ty;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Symbol;
 
@@ -282,11 +283,8 @@ fn check<'tcx>(
     // A lifted step runs in a closure of its own, alongside the one the
     // adapter keeps. Two closures cannot both hold a mutable borrow of
     // the same capture, so a step reaching one is `E0499` once lifted.
-    let mutably_captured = mutable_captures(cx, closure.def_id);
-    if lifted
-        .iter()
-        .any(|step| names(cx, step.expr, &mutably_captured))
-    {
+    let held_alone = exclusive(cx, closure.def_id);
+    if lifted.iter().any(|step| names(cx, step.expr, &held_alone)) {
         return;
     }
     let top = steps.last().expect("two or more steps").expr;
@@ -297,7 +295,7 @@ fn check<'tcx>(
         true => top.hir_id == body.value.hir_id,
         false => {
             position::always_evaluated(cx, top.hir_id, body.value.hir_id)
-                && position::nothing_diverts_first(body, root.span)
+                && position::nothing_diverts_first(cx, body, root.span)
         }
     };
     if !anchored {
@@ -347,9 +345,15 @@ fn check<'tcx>(
 /// before it, so `.map(|s: &str| s.to_lowercase().trim())` has an
 /// owned `String` under its `trim` however the item arrived.
 ///
+/// A borrowing result is only the receiver's to answer for where nothing
+/// else it was handed could have lent it: `s.max(&String::from("m")[..])`
+/// returns the shorter of two lifetimes, and the shorter one belongs to a
+/// temporary the closure made. So an argument that carries a region at
+/// all leaves the question unanswerable, and the step declines.
+///
 /// Regions are erased by the time typeck results are read, so a
 /// result's lifetime cannot be matched against the receiver's. These
-/// two clauses are the conservative answer that needs no such match.
+/// clauses are the conservative answer that needs no such match.
 fn is_liftable<'tcx>(cx: &LateContext<'tcx>, step: &'tcx Expr<'tcx>) -> bool {
     if !borrows(cx.typeck_results().expr_ty(step)) {
         return true;
@@ -357,7 +361,24 @@ fn is_liftable<'tcx>(cx: &LateContext<'tcx>, step: &'tcx Expr<'tcx>) -> bool {
     let Some(receiver) = applied_to(step) else {
         return false;
     };
-    cx.typeck_results().expr_ty(receiver).is_ref()
+    if !cx.typeck_results().expr_ty(receiver).is_ref() {
+        return false;
+    }
+    lends_nothing(cx, step)
+}
+
+/// Whether nothing `step` was handed besides its receiver carries a
+/// region of its own.
+fn lends_nothing<'tcx>(cx: &LateContext<'tcx>, step: &'tcx Expr<'tcx>) -> bool {
+    let arguments = match step.kind {
+        ExprKind::MethodCall(_, _, arguments, _) => arguments,
+        // A call's sole argument is the chain, which is the receiver
+        // here, so there is nothing else to ask about.
+        _ => return true,
+    };
+    !arguments
+        .iter()
+        .any(|argument| borrows(cx.typeck_results().expr_ty(argument)))
 }
 
 /// What `step` applies itself to: a method call's receiver, or the sole
@@ -368,23 +389,6 @@ fn applied_to<'tcx>(step: &'tcx Expr<'tcx>) -> Option<&'tcx Expr<'tcx>> {
         ExprKind::Call(_, [only]) => Some(only),
         _ => None,
     }
-}
-
-/// The locals this closure captures in a way a second closure could
-/// not also hold: a mutable borrow, a unique immutable borrow, or a
-/// move. A shared borrow is left out, since any number of closures may
-/// hold one.
-fn mutable_captures<'tcx>(cx: &LateContext<'tcx>, closure: LocalDefId) -> Vec<HirId> {
-    cx.typeck_results()
-        .closure_min_captures_flattened(closure)
-        .filter(|capture| {
-            !matches!(
-                capture.info.capture_kind,
-                UpvarCapture::ByRef(BorrowKind::Immutable),
-            )
-        })
-        .map(CapturedPlace::get_root_variable)
-        .collect()
 }
 
 /// Whether `step`'s result can cross a thread boundary.

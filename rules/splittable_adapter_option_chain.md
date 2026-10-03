@@ -17,8 +17,10 @@ the one applied to it.
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. Both
-forms keep the same items, in the same order, and run the same
-work the same number of times.
+forms keep the same items, in the same order. A `then_some` is
+the one that does less work split than folded, since it builds
+its value whether the guard holds or not; the split can drop a
+side effect there, never add one.
 
 The preference is that each adapter does one thing, so a reader
 sees where the guard is and where the value is made without

@@ -15,6 +15,7 @@
 use crate::adapter_discipline::Discipline;
 use crate::binding_uses::names;
 use crate::common::{DefaultState, binding_hir_id, hir_in_external_macro};
+use crate::exclusive_captures::exclusive;
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::paths::{PathNS, lookup_path};
@@ -204,6 +205,17 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterPredicate {
             return;
         }
         if conjuncts.iter().any(|conjunct| is_comparison(conjunct)) {
+            return;
+        }
+        // Each test gets a closure of its own after the split, and two
+        // closures cannot both hold a capture held any way but shared, so
+        // two tests reaching one is `E0499` once split.
+        let held_alone = exclusive(cx, closure.def_id);
+        let reaching = conjuncts
+            .iter()
+            .filter(|conjunct| names(cx, conjunct, &held_alone))
+            .count();
+        if reaching > 1 {
             return;
         }
         if segment.ident.span.from_expansion()

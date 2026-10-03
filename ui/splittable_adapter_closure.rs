@@ -425,6 +425,37 @@ fn let_else_diverting_after(
     })
 }
 
+// Not flagged: a `panic!` before the chain leaves the closure without
+// evaluating it, which a leading `map` would do for every item. What
+// leaves is read from the type, so an `exit`, a call to a `-> !` function
+// and a `loop {}` answer the same way.
+fn panics_before_the_chain(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.fold(0, |total, line| {
+        if flag {
+            panic!("stop");
+        }
+        total + line.trim().len()
+    })
+}
+
+fn exits_before_the_chain(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.fold(0, |total, line| {
+        if flag {
+            std::process::exit(0);
+        }
+        total + line.trim().len()
+    })
+}
+
+// Not flagged: the step's result borrows the shorter of two lifetimes,
+// and the shorter one is a temporary this closure made, so the receiver
+// being a reference does not answer for it.
+fn argument_lends_the_result(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .map(|line| line.max(&String::from("m")[..]).len())
+        .collect()
+}
+
 // Not flagged: a destructured parameter bottoms the chain out at a
 // binding the pattern introduced, which is a different rewrite.
 fn destructured(pairs: std::vec::IntoIter<(usize, &'static str)>) -> usize {

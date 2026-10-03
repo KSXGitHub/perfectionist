@@ -15,6 +15,7 @@
 //! stopped it, so a prefix-shaped adapter takes only the forms whose
 //! lift target filters its way or not at all.
 
+use self::combinator::Yield;
 use crate::adapter_discipline::Discipline;
 use crate::common::{DefaultState, binding_hir_id, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
@@ -38,8 +39,10 @@ declare_tool_lint! {
     /// ### Why restrict this?
     ///
     /// This is a stylistic preference, not a correctness issue. Both
-    /// forms keep the same items, in the same order, and run the same
-    /// work the same number of times.
+    /// forms keep the same items, in the same order. A `then_some` is
+    /// the one that does less work split than folded, since it builds
+    /// its value whether the guard holds or not; the split can drop a
+    /// side effect there, never add one.
     ///
     /// The preference is that each adapter does one thing, so a reader
     /// sees where the guard is and where the value is made without
@@ -106,12 +109,19 @@ impl Register for rule::SplittableAdapterOptionChain {
     }
 }
 
-/// The discipline of `method`'s answer, or `None` for a method this rule
-/// does not speak about.
-fn discipline(method: Symbol) -> Option<Discipline> {
+/// The discipline of `method`'s answer and whether it yields a stream,
+/// or `None` for a method this rule does not speak about.
+///
+/// Yielding a stream is a second question the discipline does not
+/// answer. `find_map` returns one value, so the only trailing adapter it
+/// has is the `Option`'s own: a trailing `filter` there is
+/// `Option::filter`, which compiles and can only reject what the search
+/// already settled on, where the folded form kept looking.
+fn adapter(method: Symbol) -> Option<(Discipline, Yield)> {
     Some(match method.as_str() {
-        "filter_map" | "find_map" => Discipline::Set,
-        "map_while" => Discipline::Prefix,
+        "filter_map" => (Discipline::Set, Yield::Stream),
+        "find_map" => (Discipline::Set, Yield::OneValue),
+        "map_while" => (Discipline::Prefix, Yield::Stream),
         _ => return None,
     })
 }
@@ -121,7 +131,7 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterOptionChain {
         let ExprKind::MethodCall(segment, _, arguments, _) = expr.kind else {
             return;
         };
-        let Some(discipline) = discipline(segment.ident.name) else {
+        let Some((discipline, yields)) = adapter(segment.ident.name) else {
             return;
         };
         let Some(method) = cx.typeck_results().type_dependent_def_id(expr.hir_id) else {
@@ -147,7 +157,7 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterOptionChain {
         let Some(item) = binding_hir_id(parameter.pat) else {
             return;
         };
-        let Some(split) = combinator::split(cx, body.value, item, discipline) else {
+        let Some(split) = combinator::split(cx, body.value, item, discipline, yields) else {
             return;
         };
         if segment.ident.span.from_expansion()

@@ -12,6 +12,17 @@ use rustc_hir::{Expr, ExprKind, HirId};
 use rustc_lint::LateContext;
 use rustc_middle::ty;
 
+/// Whether the adapter yields a stream or one value.
+///
+/// A one-value adapter's trailing adapter is the `Option`'s own rather
+/// than the iterator's, so a form lifting work to the right of it hands
+/// that work somewhere else than it reads.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum Yield {
+    Stream,
+    OneValue,
+}
+
 /// The shape the closure ends in, named for what the split hands the
 /// work to.
 pub(super) enum Split {
@@ -74,6 +85,7 @@ pub(super) fn split<'tcx>(
     body: &'tcx Expr<'tcx>,
     item: HirId,
     discipline: Discipline,
+    yields: Yield,
 ) -> Option<Split> {
     let ExprKind::MethodCall(segment, receiver, arguments, _) = body.kind else {
         return None;
@@ -99,8 +111,17 @@ pub(super) fn split<'tcx>(
     // moves where a prefix-shaped adapter stops. Only the forms lifting
     // into a `take_while`, or into a `map` that drops nothing, survive
     // there.
-    match (discipline, &split) {
-        (Discipline::Prefix, Split::Fallible | Split::Filtering) => None,
+    if let (Discipline::Prefix, Split::Fallible | Split::Filtering) = (discipline, &split) {
+        return None;
+    }
+    // A one-value adapter has no trailing adapter but the `Option`'s, so
+    // the two forms lifting work to its right go somewhere other than
+    // where they read. `Filtering`'s trailing `filter` becomes
+    // `Option::filter`, which rejects what the search settled on;
+    // `Guarded`'s `map` would have to follow an iterator the guard's
+    // leading adapter produced, and the one value is gone.
+    match (yields, &split) {
+        (Yield::OneValue, Split::Filtering | Split::Guarded(_)) => None,
         _ => Some(split),
     }
 }

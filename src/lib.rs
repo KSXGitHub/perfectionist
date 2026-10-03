@@ -33,6 +33,7 @@ mod comment_walk;
 mod common;
 mod derive_list;
 mod enclosing_hir;
+mod exclusive_captures;
 mod field_copy;
 mod format_template;
 mod getter_name_patterns;

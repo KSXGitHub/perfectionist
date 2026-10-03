@@ -121,6 +121,24 @@ fn filtering_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
         .collect()
 }
 
+// Not flagged: `find_map` yields one value, so the only trailing
+// `filter` it has is the `Option`'s, which rejects what the search
+// settled on where the folded form kept looking.
+fn found_filtering(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.find_map(|line| parse(line).filter(positive))
+}
+
+// Not flagged: nor has it anywhere to put a guard's value, the one value
+// being gone once a leading adapter has made a stream of them.
+fn found_guarded(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.find_map(|line| wanted(line).then(|| render(line)))
+}
+
+// Bad: a trailing `map` drops nothing, so a one-value adapter takes it.
+fn found_infallible(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.find_map(|line| parse(line).map(double))
+}
+
 // Not flagged: one stage has nothing to hand over.
 fn one_stage(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| parse(line)).collect()
