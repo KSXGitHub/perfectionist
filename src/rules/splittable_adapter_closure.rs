@@ -23,6 +23,7 @@
 //! implemented; `planned-rules/splittable-adapter-closure.md` records
 //! which.
 
+use crate::binding_uses::{names, uses};
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
@@ -179,7 +180,7 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
         };
         // Each step gets its own closure after the split, so a second
         // use of the item would be left with nothing to name.
-        let occurrences = chain::occurrences(cx, body, item);
+        let occurrences = uses(cx, body.value, &[item]);
         let [root] = *occurrences.as_slice() else {
             return;
         };
@@ -209,7 +210,7 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
         let mutably_captured = mutable_captures(cx, closure.def_id);
         if lifted
             .iter()
-            .any(|step| chain::mentions(cx, step.expr, &mutably_captured))
+            .any(|step| names(cx, step.expr, &mutably_captured))
         {
             return;
         }

@@ -162,6 +162,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   a closure passed to an iterator adapter chains several steps onto its item
 
+- [`splittable_adapter_option_chain`](./splittable_adapter_option_chain.md) (default: `active`).
+
+  a closure passed to an `Option`-returning adapter welds a guard to a value
+
 - [`splittable_adapter_predicate`](./splittable_adapter_predicate.md) (default: `active`).
 
   a predicate passed to a filtering adapter is a conjunction of several tests

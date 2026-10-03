@@ -24,6 +24,7 @@ mod abs_path;
 mod adapter_discipline;
 mod ascii_letter;
 mod attr_tokens;
+mod binding_uses;
 mod cargo_manifest;
 mod cargo_target;
 mod code_lines;

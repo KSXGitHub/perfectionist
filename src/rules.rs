@@ -37,6 +37,7 @@ pub mod single_letter_generic;
 pub mod single_letter_let_binding;
 pub mod single_letter_static_item;
 pub mod splittable_adapter_closure;
+pub mod splittable_adapter_option_chain;
 pub mod splittable_adapter_predicate;
 pub mod thiserror_usage;
 pub mod too_many_local_bindings;

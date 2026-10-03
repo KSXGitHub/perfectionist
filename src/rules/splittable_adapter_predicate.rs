@@ -13,13 +13,12 @@
 //! trigger needs none of the position care the chain's does.
 
 use crate::adapter_discipline::Discipline;
+use crate::binding_uses::names;
 use crate::common::{DefaultState, binding_hir_id, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::{is_from_proc_macro, sym};
-use rustc_hir::def::Res;
-use rustc_hir::intravisit::{Visitor, walk_expr};
-use rustc_hir::{BinOpKind, Expr, ExprKind, HirId, QPath};
+use rustc_hir::{BinOpKind, Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Symbol;
@@ -158,7 +157,10 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterPredicate {
         // so an adapter of its own would ask the same question once per
         // item. Hoisting it out of the pipeline is the rewrite it
         // wants, which is not the one this rule makes.
-        if !conjuncts.iter().all(|conjunct| names(conjunct, item)) {
+        if !conjuncts
+            .iter()
+            .all(|conjunct| names(cx, conjunct, &[item]))
+        {
             return;
         }
         if conjuncts.iter().any(|conjunct| is_comparison(conjunct)) {
@@ -228,25 +230,4 @@ fn is_comparison(expr: &Expr<'_>) -> bool {
             | BinOpKind::Gt
             | BinOpKind::Ge,
     )
-}
-
-/// Whether `item` is named anywhere in `expr`, nested closures aside.
-fn names(expr: &Expr<'_>, item: HirId) -> bool {
-    struct Names {
-        item: HirId,
-        found: bool,
-    }
-    impl<'tcx> Visitor<'tcx> for Names {
-        fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-            if let ExprKind::Path(QPath::Resolved(None, path)) = expr.kind
-                && path.res == Res::Local(self.item)
-            {
-                self.found = true;
-            }
-            walk_expr(self, expr);
-        }
-    }
-    let mut names = Names { item, found: false };
-    names.visit_expr(expr);
-    names.found
 }
