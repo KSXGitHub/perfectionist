@@ -8,7 +8,7 @@
 
 use crate::binding_uses::names;
 use rustc_hir::intravisit::{Visitor, walk_pat};
-use rustc_hir::{Body, Expr, ExprKind, HirId, Node, Pat, PatKind};
+use rustc_hir::{BindingMode, Body, ByRef, Expr, ExprKind, HirId, Node, Pat, PatKind};
 use rustc_lint::LateContext;
 
 /// One step of the chain, and the expression it is applied to.
@@ -18,15 +18,22 @@ pub(super) struct Step<'tcx> {
 }
 
 /// The binding an item parameter introduces, or `None` for a pattern
-/// that is not one plain binding.
+/// that is not one plain by-value binding.
 ///
 /// A destructured parameter bottoms the chain out at a binding the
 /// pattern introduced rather than at the parameter, which the walk
 /// cannot start from. Reproducing the pattern in the lifted `map` is a
 /// different rewrite from lifting a step.
+///
+/// A `ref` binding is refused for the liftability check's sake rather
+/// than the walk's: the item then types as a reference whose referent is
+/// the closure's own parameter slot, so a step borrowing through it
+/// borrows something that dies with the closure, where
+/// `crate::common::binding_hir_id` would hand back the same `HirId` for
+/// either spelling.
 pub(super) fn binding(pat: &Pat<'_>) -> Option<HirId> {
     match pat.kind {
-        PatKind::Binding(_, hir_id, _, None) => Some(hir_id),
+        PatKind::Binding(BindingMode(ByRef::No, _), hir_id, _, None) => Some(hir_id),
         _ => None,
     }
 }

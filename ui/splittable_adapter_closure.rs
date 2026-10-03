@@ -592,4 +592,23 @@ fn accumulator_has_an_effect(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| counted(total) + line.trim().len())
 }
 
+// Not flagged: a `ref` item types as a reference to the closure's own
+// parameter slot, so a step borrowing through it borrows what dies with
+// the closure.
+fn ref_item(headers: std::vec::IntoIter<String>) -> Vec<usize> {
+    headers.map(|ref header| header.trim().len()).collect()
+}
+
+// Not flagged: a callee that is not a path can hand back an `Fn` holding
+// a borrow, which the step's result then carries.
+fn pick<'chosen>(prefix: &'chosen str) -> impl Fn(&str) -> &'chosen str {
+    move |_| prefix
+}
+
+fn callee_lends_the_result(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .map(|line| pick(&String::from("m"))(line).len())
+        .collect()
+}
+
 fn main() {}

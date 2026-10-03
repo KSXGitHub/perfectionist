@@ -374,16 +374,21 @@ fn is_liftable<'tcx>(cx: &LateContext<'tcx>, step: &'tcx Expr<'tcx>) -> bool {
 
 /// Whether nothing `step` was handed besides its receiver carries a
 /// region of its own.
+///
+/// A call's sole argument is the chain, which is the receiver here, so
+/// what is left to ask about is the callee: an expression yielding an
+/// `Fn` that returns a borrow lends that borrow to the result. A path to
+/// a function is not one, its regions belonging to the signature rather
+/// than to anything the zero-sized item holds.
 fn lends_nothing<'tcx>(cx: &LateContext<'tcx>, step: &'tcx Expr<'tcx>) -> bool {
-    let arguments = match step.kind {
-        ExprKind::MethodCall(_, _, arguments, _) => arguments,
-        // A call's sole argument is the chain, which is the receiver
-        // here, so there is nothing else to ask about.
+    let lenders: Vec<&Expr<'tcx>> = match step.kind {
+        ExprKind::MethodCall(_, _, arguments, _) => arguments.iter().collect(),
+        ExprKind::Call(callee, _) if !matches!(callee.kind, ExprKind::Path(_)) => vec![callee],
         _ => return true,
     };
-    !arguments
+    !lenders
         .iter()
-        .any(|argument| borrows(cx.typeck_results().expr_ty(argument)))
+        .any(|lender| borrows(cx.typeck_results().expr_ty(lender)))
 }
 
 /// What `step` applies itself to: a method call's receiver, or the sole
