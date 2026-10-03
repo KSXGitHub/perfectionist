@@ -164,6 +164,14 @@ fn parallel_position(items: Parallel<&'static str>) -> Option<usize> {
     items.position_any(|text| text.trim().is_empty())
 }
 
+fn parallel_position_first(items: Parallel<&'static str>) -> Option<usize> {
+    items.position_first(|text| text.trim().is_empty())
+}
+
+fn parallel_position_last(items: Parallel<&'static str>) -> Option<usize> {
+    items.position_last(|text| text.trim().is_empty())
+}
+
 fn parallel_found_any(items: Parallel<&'static str>) -> Option<usize> {
     items.find_map_any(|text| text.trim().parse().ok())
 }

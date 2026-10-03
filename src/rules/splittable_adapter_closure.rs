@@ -222,6 +222,16 @@ fn extension(cx: &LateContext<'_>, declaring: DefId) -> Option<Family> {
             vec![intern("rayon"), intern("iter"), intern("ParallelIterator")],
             Family::Rayon,
         ),
+        // The positional adapters are declared on the subtrait, so a
+        // lookup of the base one alone never reaches them.
+        (
+            vec![
+                intern("rayon"),
+                intern("iter"),
+                intern("IndexedParallelIterator"),
+            ],
+            Family::Rayon,
+        ),
         (vec![intern("pipe_trait"), intern("Pipe")], Family::Pipe),
     ];
     paths.into_iter().find_map(|(path, family)| {

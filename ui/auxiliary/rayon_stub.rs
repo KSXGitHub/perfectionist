@@ -1,9 +1,11 @@
 // A stand-in for `rayon::iter::ParallelIterator`, carrying only the
 // adapters the rule names. The names differ from the sequential set the
 // way rayon's do: there is no `scan`, no `map_while` and no `rposition`;
-// there is `position_any`, a `find_map_any` / `find_map_first` /
-// `find_map_last` trio in place of `find_map`, and a `find_first` /
-// `find_any` pair in place of `find`.
+// there is a `position_any` / `position_first` / `position_last` trio,
+// declared on the `IndexedParallelIterator` subtrait as upstream declares
+// them, a `find_map_any` / `find_map_first` / `find_map_last` trio in
+// place of `find_map`, and a `find_first` / `find_any` pair in place of
+// `find`.
 //
 // `ParallelIterator: Sized + Send` and the `Send` bound on what `map`
 // produces are upstream's, and they are the point: the rule declines a
@@ -81,18 +83,6 @@ pub mod iter {
             !self.any(move |item| !body(item))
         }
 
-        fn position_any<Body>(self, body: Body) -> Option<usize>
-        where
-            Body: Fn(Self::Item) -> bool + Send + Sync,
-        {
-            for (index, item) in self.into_items().into_iter().enumerate() {
-                if body(item) {
-                    return Some(index);
-                }
-            }
-            None
-        }
-
         fn find_map_first<Output: Send, Body>(self, body: Body) -> Option<Output>
         where
             Body: Fn(Self::Item) -> Option<Output> + Send + Sync,
@@ -165,6 +155,42 @@ pub mod iter {
         }
     }
 
+    /// The subtrait upstream declares the positional adapters on, which
+    /// is why a lookup of the base trait alone never reaches them.
+    pub trait IndexedParallelIterator: ParallelIterator {
+        fn position_any<Body>(self, body: Body) -> Option<usize>
+        where
+            Body: Fn(Self::Item) -> bool + Send + Sync,
+        {
+            for (index, item) in self.into_items().into_iter().enumerate() {
+                if body(item) {
+                    return Some(index);
+                }
+            }
+            None
+        }
+
+        fn position_first<Body>(self, body: Body) -> Option<usize>
+        where
+            Body: Fn(Self::Item) -> bool + Send + Sync,
+        {
+            self.position_any(body)
+        }
+
+        fn position_last<Body>(self, body: Body) -> Option<usize>
+        where
+            Body: Fn(Self::Item) -> bool + Send + Sync,
+        {
+            let mut found = None;
+            for (index, item) in self.into_items().into_iter().enumerate() {
+                if body(item) {
+                    found = Some(index);
+                }
+            }
+            found
+        }
+    }
+
     impl<Item: Send> ParallelIterator for Parallel<Item> {
         type Item = Item;
 
@@ -172,8 +198,10 @@ pub mod iter {
             self.0
         }
     }
+
+    impl<Item: Send> IndexedParallelIterator for Parallel<Item> {}
 }
 
 pub mod prelude {
-    pub use super::iter::{Parallel, ParallelIterator};
+    pub use super::iter::{IndexedParallelIterator, Parallel, ParallelIterator};
 }

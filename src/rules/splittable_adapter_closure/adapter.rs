@@ -185,9 +185,12 @@ fn itertools(method: Symbol) -> Option<Adapter> {
 fn rayon(method: Symbol) -> Option<Adapter> {
     // There is no `scan`, no `map_while` and no `rposition`; `fold`
     // yields per-chunk accumulators rather than one value, and its item
-    // side splits all the same.
+    // side splits all the same. The `position_*` trio is declared on
+    // `IndexedParallelIterator`, which is why `extension` looks that up
+    // too.
     Some(match method.as_str() {
-        "map" | "for_each" | "any" | "all" | "position_any" => unary("map"),
+        "map" | "for_each" | "any" | "all" => unary("map"),
+        "position_any" | "position_first" | "position_last" => unary("map"),
         "find_map_any" | "find_map_first" | "find_map_last" => unary("map"),
         "fold" | "try_fold" => stateful("map"),
         _ => return None,

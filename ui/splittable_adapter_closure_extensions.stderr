@@ -88,6 +88,22 @@ LL |     items.position_any(|text| text.trim().is_empty())
    |
    = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
 
+warning: this closure chains 2 steps onto the item, so `position_first` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.position_first(|text| text.trim().is_empty())
+   |           ^^^^^^^^^^^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `position_last` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.position_last(|text| text.trim().is_empty())
+   |           ^^^^^^^^^^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
 warning: this closure chains 3 steps onto the item, so `find_map_any` does all of them
   --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
    |
