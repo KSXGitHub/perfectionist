@@ -230,6 +230,18 @@ macro_rules! staged {
     };
 }
 
+macro_rules! staged {
+    ($line:expr) => {
+        parse($line).map(double)
+    };
+}
+
+// Not flagged: a combinator the reader did not write has no stage
+// boundary they can move.
+fn stage_from_a_macro(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines.filter_map(|line| staged!(line)).collect()
+}
+
 // Not flagged: one stage has nothing to hand over.
 fn one_stage(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| parse(line)).collect()

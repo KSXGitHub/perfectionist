@@ -223,6 +223,11 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterPredicate {
         if !movable(cx, expr, receiver) {
             return;
         }
+        // A conjunction the reader did not write has no `&&` they can
+        // cut: the body they see is one macro call.
+        if body.value.span.from_expansion() {
+            return;
+        }
         let mut conjuncts = Vec::new();
         collect(body.value, &mut conjuncts);
         if conjuncts.len() < 2 {

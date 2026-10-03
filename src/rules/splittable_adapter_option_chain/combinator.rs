@@ -101,6 +101,11 @@ pub(super) fn split<'tcx>(
     yields: Yield,
 ) -> Option<Split> {
     let item = binding_hir_id(parameter)?;
+    // A combinator the reader did not write has no stage boundary they
+    // can move: the body they see is one macro call.
+    if body.span.from_expansion() {
+        return None;
+    }
     let ExprKind::MethodCall(segment, receiver, arguments, _) = body.kind else {
         return None;
     };
