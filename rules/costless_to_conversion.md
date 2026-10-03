@@ -17,8 +17,9 @@ asks for the `as_*` prefix instead.
 
 Left alone:
 
-- A body that does work on the way to the borrow — a call, a
-  `match`, a validation. That is what `to_` is for.
+- Any other body — a call, a `match`, a statement before the
+  tail expression. A costly one is what `to_` is for, and a free
+  one written that way is missed rather than guessed at.
 - A `to_*` with another parameter, which is converting
   something more than `self`.
 - A trait impl's method. The trait fixes the signature.
