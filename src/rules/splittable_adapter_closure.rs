@@ -168,11 +168,6 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
         let Some(parameter) = body.params.get(shape.item_parameter()) else {
             return;
         };
-        // An async or generator closure wraps the body, so what the walk
-        // would reach is the wrapper rather than the chain.
-        if body.params.len() != shape.item_parameter() + 1 {
-            return;
-        }
         let Some(item) = chain::binding(parameter.pat) else {
             return;
         };

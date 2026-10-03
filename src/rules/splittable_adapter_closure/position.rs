@@ -61,6 +61,8 @@ fn evaluates(parent: &Expr<'_>, reached: HirId) -> bool {
         ExprKind::Binary(operator, left, _) => {
             !matches!(operator.node, BinOpKind::And | BinOpKind::Or) || is(left)
         }
+        // Each of these evaluates every operand it holds, a block's
+        // statements and tail among them.
         ExprKind::Unary(..)
         | ExprKind::Cast(..)
         | ExprKind::Field(..)
@@ -76,16 +78,15 @@ fn evaluates(parent: &Expr<'_>, reached: HirId) -> bool {
         | ExprKind::MethodCall(..)
         | ExprKind::Break(..)
         | ExprKind::Ret(_)
-        | ExprKind::Become(_) => true,
+        | ExprKind::Become(_)
+        | ExprKind::Block(..) => true,
         // The scrutinee runs; an arm does not. `?` lowers to a `match`
         // on its operand, so it needs no case of its own.
         ExprKind::Match(scrutinee, ..) => is(scrutinee),
-        // An `if` lowers to a `match` on its condition, so this is the
-        // `if let` form, where the same holds.
+        // The same split, where the condition takes the scrutinee's
+        // place. An `if let` reaches here too, with its `let` for the
+        // condition.
         ExprKind::If(condition, ..) => is(condition),
-        // Either the block's tail, or the block reached from a statement
-        // inside it, which the walk above arrives with.
-        ExprKind::Block(block, _) => block.hir_id == reached || block.expr.is_some_and(is),
         _ => false,
     }
 }
