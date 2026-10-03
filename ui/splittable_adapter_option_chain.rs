@@ -39,6 +39,17 @@ fn consume(name: String) -> bool {
     !name.is_empty()
 }
 
+fn note(log: &mut Vec<usize>, line: &str) -> bool {
+    log.push(line.len());
+    true
+}
+
+fn record(log: &mut Vec<usize>, line: &str) -> usize {
+    log.push(0);
+    line.len()
+}
+
+
 // Bad: two fallible stages welded together.
 fn fallible(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| parse(line).and_then(validate)).collect()
@@ -155,6 +166,15 @@ fn prefix_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> 
     names.map_while(|name| consume(name).then_some(1)).collect()
 }
 
+// Not flagged: both halves of the split reach the same capture held
+// mutably, which two closures cannot do.
+fn both_halves_reach_a_capture(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    let mut log = Vec::new();
+    lines
+        .filter_map(|line| note(&mut log, line).then(|| record(&mut log, line)))
+        .collect()
+}
+
 // Not flagged: one stage has nothing to hand over.
 fn one_stage(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| parse(line)).collect()
@@ -183,6 +203,14 @@ impl Sieve {
     fn then_some<Output>(self, value: Output) -> Option<Output> {
         Some(value)
     }
+
+    fn map<Output>(self, body: impl FnOnce(&'static str) -> Output) -> Option<Output> {
+        Some(body(self.0))
+    }
+
+    fn filter(self, test: impl FnOnce(&&'static str) -> bool) -> Option<&'static str> {
+        test(&self.0).then_some(self.0)
+    }
 }
 
 fn sieve(line: &'static str) -> Sieve {
@@ -202,24 +230,16 @@ fn guard_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
         .collect()
 }
 
-trait Winnow {
-    fn filter_map<Output>(self, body: impl FnOnce(&'static str) -> Option<Output>)
-    -> Option<Output>;
+// Not flagged: nor are `map` and `filter` on something that is not an
+// `Option`.
+fn map_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines.filter_map(|line| sieve(line).map(render)).collect()
 }
 
-impl Winnow for &'static str {
-    fn filter_map<Output>(
-        self,
-        body: impl FnOnce(&'static str) -> Option<Output>,
-    ) -> Option<Output> {
-        body(self)
-    }
-}
-
-// Not flagged: a trait of one's own, whose `filter_map` says nothing
-// about how the value arrives.
-fn another_trait_filter_map(line: &'static str) -> Option<usize> {
-    line.filter_map(|text| parse(text).and_then(validate))
+fn filter_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
+    lines
+        .filter_map(|line| sieve(line).filter(|text| wanted(text)))
+        .collect()
 }
 
 // Bad for the chain rule and not for this one: `Iterator::map` has no
@@ -228,9 +248,9 @@ fn plain_map(lines: std::vec::IntoIter<&'static str>) -> Vec<Option<usize>> {
     lines.map(|line| parse(line).map(double)).collect()
 }
 
-// Not flagged: a `Result` combinator of the same name, whose family has
-// no filtering adapter to lift into.
-fn result_map(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+// Not flagged: the closure's outermost call takes no argument, so there
+// is no second stage to hand over.
+fn no_second_stage(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .filter_map(|line| line.trim().parse::<usize>().map(double).ok())
         .collect()

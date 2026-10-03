@@ -8,6 +8,8 @@
 
 use crate::adapter_discipline::Discipline;
 use crate::binding_uses::names;
+use crate::exclusive_captures::exclusive;
+use rustc_hir::def_id::LocalDefId;
 use rustc_hir::{Expr, ExprKind, HirId};
 use rustc_lint::LateContext;
 use rustc_middle::ty;
@@ -26,9 +28,13 @@ pub(super) enum Yield {
 /// The shape the closure ends in, named for what the split hands the
 /// work to.
 pub(super) enum Split {
-    /// `X.and_then(f)` becomes a `filter_map` of its own, since `f` is
-    /// fallible too.
-    Fallible,
+    /// One of the two fallible stages becomes a `filter_map` of its own.
+    /// Which one depends on the yield: a stream's trailing adapter is an
+    /// iterator's, so the `and_then` takes it, while a one-value
+    /// adapter's is the `Option`'s, so the stage before the `and_then`
+    /// takes a leading one instead.
+    Fallible(Yield),
+
     /// `X.map(f)` becomes a trailing `map`, which filters nothing and so
     /// suits either discipline.
     Infallible,
@@ -45,9 +51,14 @@ impl Split {
     /// hands the work to.
     pub(super) fn help(&self) -> String {
         match self {
-            Self::Fallible => {
-                "give the `and_then` its own `filter_map`, so each fallible stage is one \
-                 adapter"
+            Self::Fallible(Yield::Stream) => {
+                "give the `and_then` a trailing `filter_map` of its own, so each fallible \
+                 stage is one adapter"
+                    .to_owned()
+            }
+            Self::Fallible(Yield::OneValue) => {
+                "give the stage before the `and_then` a leading `filter_map` of its own, so \
+                 each fallible stage is one adapter"
                     .to_owned()
             }
             Self::Infallible => {
@@ -83,6 +94,7 @@ impl Split {
 pub(super) fn split<'tcx>(
     cx: &LateContext<'tcx>,
     body: &'tcx Expr<'tcx>,
+    closure: LocalDefId,
     item: HirId,
     item_ty: ty::Ty<'tcx>,
     discipline: Discipline,
@@ -100,7 +112,7 @@ pub(super) fn split<'tcx>(
     let receiver_ty = cx.typeck_results().expr_ty(receiver);
     let split = match segment.ident.name.as_str() {
         "then" | "then_some" if receiver_ty.is_bool() => Split::Guarded(discipline),
-        "and_then" if is_option(cx, receiver_ty) => Split::Fallible,
+        "and_then" if is_option(cx, receiver_ty) => Split::Fallible(yields),
         "map" if is_option(cx, receiver_ty) => Split::Infallible,
         "filter" if is_option(cx, receiver_ty) => Split::Filtering,
         _ => return None,
@@ -108,11 +120,18 @@ pub(super) fn split<'tcx>(
     if !matches!(split, Split::Guarded(_)) && names(cx, argument, &[item]) {
         return None;
     }
+    // Each half of the split gets a closure of its own, and two closures
+    // cannot both hold a capture held any way but shared, so a capture
+    // both halves reach does not compile once split.
+    let held_alone = exclusive(cx, closure);
+    if names(cx, receiver, &held_alone) && names(cx, argument, &held_alone) {
+        return None;
+    }
     // A leading `filter_map` or a trailing `filter` drops items, which
     // moves where a prefix-shaped adapter stops. Only the forms lifting
     // into a `take_while`, or into a `map` that drops nothing, survive
     // there.
-    if let (Discipline::Prefix, Split::Fallible | Split::Filtering) = (discipline, &split) {
+    if let (Discipline::Prefix, Split::Fallible(_) | Split::Filtering) = (discipline, &split) {
         return None;
     }
     // A guard lifts into `filter` or `take_while`, which hand the item by

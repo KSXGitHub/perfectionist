@@ -158,8 +158,15 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterOptionChain {
             return;
         };
         let item_ty = cx.typeck_results().pat_ty(parameter.pat);
-        let Some(split) = combinator::split(cx, body.value, item, item_ty, discipline, yields)
-        else {
+        let Some(split) = combinator::split(
+            cx,
+            body.value,
+            closure.def_id,
+            item,
+            item_ty,
+            discipline,
+            yields,
+        ) else {
             return;
         };
         if segment.ident.span.from_expansion()

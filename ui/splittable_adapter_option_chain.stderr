@@ -4,7 +4,7 @@ warning: this closure holds a guard and a value, so `filter_map` does both
 LL |     lines.filter_map(|line| parse(line).and_then(validate)).collect()
    |           ^^^^^^^^^^
    |
-   = help: give the `and_then` its own `filter_map`, so each fallible stage is one adapter
+   = help: give the `and_then` a trailing `filter_map` of its own, so each fallible stage is one adapter
    = note: `#[warn(perfectionist::splittable_adapter_option_chain)]` on by default
 
 warning: this closure holds a guard and a value, so `filter_map` does both
@@ -45,7 +45,7 @@ warning: this closure holds a guard and a value, so `find_map` does both
 LL |     lines.find_map(|line| parse(line).and_then(validate))
    |           ^^^^^^^^
    |
-   = help: give the `and_then` its own `filter_map`, so each fallible stage is one adapter
+   = help: give the stage before the `and_then` a leading `filter_map` of its own, so each fallible stage is one adapter
 
 warning: this closure holds a guard and a value, so `map_while` does both
   --> $DIR/splittable_adapter_option_chain.rs:LL:CC
