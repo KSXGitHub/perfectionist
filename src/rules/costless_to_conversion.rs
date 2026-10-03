@@ -22,8 +22,9 @@ declare_tool_lint! {
     ///
     /// Left alone:
     ///
-    /// - A body that does work on the way to the borrow — a call, a
-    ///   `match`, a validation. That is what `to_` is for.
+    /// - Any other body — a call, a `match`, a statement before the
+    ///   tail expression. A costly one is what `to_` is for, and a free
+    ///   one written that way is missed rather than guessed at.
     /// - A `to_*` with another parameter, which is converting
     ///   something more than `self`.
     /// - A trait impl's method. The trait fixes the signature.
@@ -82,10 +83,10 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// The second of the two remedies. A violation both borrows and
+/// The second of the two remedies. A violation both costs nothing and
 /// carries the `to_` prefix, so dropping either half resolves it.
-const OWNED_HELP: &str = "or stop it borrowing: hand back a value of the caller's own, where one \
-                          really is needed";
+const OWNED_HELP: &str = "or make it cost something: hand back a value of the caller's own, where \
+                          one really is needed";
 
 /// The prefix this rule measures.
 const TO_PREFIX: &str = "to_";
@@ -170,7 +171,7 @@ impl<'tcx> LateLintPass<'tcx> for CostlessToConversion {
             cx,
             COSTLESS_TO_CONVERSION,
             def_span,
-            format!("`{method}` only borrows, but `to_` promises a costly conversion"),
+            format!("`{method}` costs nothing, but `to_` promises a conversion that does"),
             |diag| {
                 diag.help(format!(
                     "either stop it being a `to_*`: rename it `{suggested}`, the prefix for a \
@@ -202,8 +203,9 @@ fn returns_a_borrow<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> bool {
 
 /// Whether the body hands over a borrow it already had, doing nothing
 /// on the way: a place inside `self`, or a single `as_*` call on one.
-/// Anything else — a call, a `match`, a block with a statement in it —
-/// is work, and work is what `to_` announces.
+/// Anything else is left alone, a free body among them: what an
+/// arbitrary body costs is not a question this can answer, so it
+/// under-approximates rather than guesses.
 fn costless_body(expr: &Expr<'_>) -> bool {
     if let ExprKind::MethodCall(segment, receiver, [], _) = expr.kind {
         // An `as_*` call is free by the same guideline this rule reads,

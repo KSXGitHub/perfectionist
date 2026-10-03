@@ -11,6 +11,7 @@ struct Person {
     tags: Vec<String>,
     nickname: Option<String>,
     parsed: Result<String, String>,
+    raw: Vec<u8>,
     age: u32,
 }
 
@@ -71,19 +72,23 @@ impl Person {
         self.home.to_str()
     }
 
-    // Good: a `match` is work, whatever it costs.
+    // Good: a scan to find the nul, the way `CStr::to_bytes` pays for
+    // its slice.
+    fn to_bytes(&self) -> &[u8] {
+        let end = self.raw.iter().position(|byte| *byte == 0);
+        &self.raw[..end.unwrap_or(self.raw.len())]
+    }
+
+    // Not flagged: an under-approximation. `split_first` costs nothing,
+    // so the rule's own premise condemns this `to_*` -- but what the
+    // rule reads is a borrow handed straight over, and a `match` is not
+    // one. Missing it is the safe direction, since the alternative is
+    // judging what an arbitrary body costs.
     fn to_tag(&self) -> Option<&String> {
         match self.tags.split_first() {
             Some((first, _)) => Some(first),
             None => None,
         }
-    }
-
-    // Good: a body with a statement in it is not a borrow handed
-    // straight over.
-    fn to_first_tag(&self) -> Option<&String> {
-        let tags = &self.tags;
-        tags.first()
     }
 
     // Not flagged: not the `to_` prefix. `as_*` is the prefix this
