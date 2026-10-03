@@ -181,7 +181,8 @@ fn element_bounds_hold<'tcx>(
         // this cannot instantiate, so it is not one to vouch for.
         if arguments
             .iter()
-            .any(|argument| argument.as_type().is_some_and(|ty| ty.has_param()))
+            .filter_map(|argument| argument.as_type())
+            .any(|ty| ty.has_param())
             || cx.tcx.generics_of(bound.def_id).count() != arguments.len() + 1
         {
             return false;

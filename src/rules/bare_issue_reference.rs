@@ -669,7 +669,8 @@ fn block_defines_reference(rendered: &str, number: &str) -> bool {
     let label = format!("[#{number}]:");
     rendered
         .lines()
-        .any(|line| line.trim_start().starts_with(&label))
+        .map(str::trim_start)
+        .any(|line| line.starts_with(&label))
 }
 
 /// The `///` / `//!` prefix (with leading indentation, the optional
