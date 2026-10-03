@@ -109,6 +109,20 @@ fn index_prefix(crate_name: &str) -> PathBuf {
     }
 }
 
+/// Drop one crate's cached index metadata under `registry`, silently
+/// where there is none to drop.
+fn remove_cached_index_entry(registry: &Path, crate_name: &str) {
+    let path = registry
+        .join(".cache")
+        .join(index_prefix(crate_name))
+        .join(crate_name);
+    if let Err(error) = remove_file(&path)
+        && error.kind() != io::ErrorKind::NotFound
+    {
+        eprintln!("warning: failed to remove {}: {error}", path.display());
+    }
+}
+
 /// Drop cargo's cached registry metadata for [`PINNED_CRATES`].
 ///
 /// [`install`]'s `cargo install --version` is the only step in this
@@ -121,27 +135,28 @@ fn index_prefix(crate_name: &str) -> PathBuf {
 /// it holds when the answer is "unchanged", so removing the entry is
 /// what forces the version to be fetched outright.
 ///
-/// Best effort: an absent entry is the state this wants, and whatever
-/// it cannot remove is cargo's to report.
+/// Best effort throughout: what is already absent passes in silence,
+/// and what cannot be read or removed is warned about and skipped
+/// rather than failing the install.
 fn evict_cached_index_entries() {
     let Some(home) = cargo_home() else {
+        eprintln!("warning: cannot locate CARGO_HOME; not refreshing index metadata");
         return;
     };
-    let Ok(registries) = read_dir(home.join("registry").join("index")) else {
-        return;
+    let index = home.join("registry").join("index");
+    let registries = match read_dir(&index) {
+        Ok(registries) => registries,
+        // A checkout that has never fetched a crate has no index yet.
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return,
+        Err(error) => {
+            eprintln!("warning: failed to read {}: {error}", index.display());
+            return;
+        }
     };
     for registry in registries.flatten() {
+        let registry_dir = registry.path();
         for crate_name in PINNED_CRATES {
-            let path = registry
-                .path()
-                .join(".cache")
-                .join(index_prefix(crate_name))
-                .join(crate_name);
-            if let Err(error) = remove_file(&path)
-                && error.kind() != io::ErrorKind::NotFound
-            {
-                eprintln!("warning: failed to remove {}: {error}", path.display());
-            }
+            remove_cached_index_entry(&registry_dir, crate_name);
         }
     }
 }
