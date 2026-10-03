@@ -256,12 +256,11 @@ fn check<'tcx>(
     let [root] = *occurrences.as_slice() else {
         return;
     };
-    let parameters: Vec<_> = body
-        .params
-        .iter()
-        .filter_map(|parameter| chain::binding(parameter.pat))
-        .collect();
-    let steps = chain::steps(cx, root, &parameters);
+    // A step moves into an adapter outside the closure, where nothing the
+    // body declares is in scope, so a step naming any of it would be
+    // `E0425` once lifted.
+    let locals = chain::declared(body);
+    let steps = chain::steps(cx, root, &locals);
     if steps.len() < 2 {
         return;
     }

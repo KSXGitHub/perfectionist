@@ -472,6 +472,16 @@ fn diverges_in_a_let(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usi
     })
 }
 
+// Not flagged: a step naming a local the body declares stays out of the
+// chain, which leaves one step here, because the lifted `map` would name
+// the local outside the closure, where it does not exist.
+fn step_names_a_local(lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.fold(0, |total, line| {
+        let cap = total.max(8);
+        total + line.len().min(cap)
+    })
+}
+
 fn exits_before_the_chain(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| {
         if flag {

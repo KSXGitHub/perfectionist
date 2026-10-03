@@ -7,7 +7,8 @@
 //! have to guess which sub-expression the chain runs through.
 
 use crate::binding_uses::names;
-use rustc_hir::{Expr, ExprKind, HirId, Node, Pat, PatKind};
+use rustc_hir::intravisit::{Visitor, walk_pat};
+use rustc_hir::{Body, Expr, ExprKind, HirId, Node, Pat, PatKind};
 use rustc_lint::LateContext;
 
 /// One step of the chain, and the expression it is applied to.
@@ -30,12 +31,34 @@ pub(super) fn binding(pat: &Pat<'_>) -> Option<HirId> {
     }
 }
 
+/// Every binding `body` declares, its parameters included.
+pub(super) fn declared(body: &Body<'_>) -> Vec<HirId> {
+    struct Declared {
+        found: Vec<HirId>,
+    }
+    impl<'tcx> Visitor<'tcx> for Declared {
+        fn visit_pat(&mut self, pat: &'tcx Pat<'tcx>) {
+            if let PatKind::Binding(_, hir_id, ..) = pat.kind {
+                self.found.push(hir_id);
+            }
+            walk_pat(self, pat);
+        }
+    }
+    let mut declared = Declared { found: Vec::new() };
+    for parameter in body.params {
+        declared.visit_pat(parameter.pat);
+    }
+    declared.visit_expr(body.value);
+    declared.found
+}
+
 /// The steps rooted at `root`, outermost last.
 ///
 /// A parent is a step where it applies something to the chain so far: a
 /// method call whose receiver is the chain, or a call whose sole
-/// argument is it. The walk stops at the first parent that is neither,
-/// which is what leaves a step naming the accumulator outside the chain.
+/// argument is it, naming none of the bindings given. The walk stops at
+/// the first parent that is neither, which is what leaves a step naming
+/// the accumulator, or a local the body declares, outside the chain.
 ///
 /// "Sole argument" is deliberately narrow. `foo(bar(item), 1)` does
 /// split, but recognising it means picking which argument carries the
@@ -43,7 +66,7 @@ pub(super) fn binding(pat: &Pat<'_>) -> Option<HirId> {
 pub(super) fn steps<'tcx>(
     cx: &LateContext<'tcx>,
     root: &'tcx Expr<'tcx>,
-    parameters: &[HirId],
+    declared: &[HirId],
 ) -> Vec<Step<'tcx>> {
     let mut steps = Vec::new();
     let mut chain = root;
@@ -59,10 +82,10 @@ pub(super) fn steps<'tcx>(
                 receiver.hir_id == chain.hir_id
                     && !arguments
                         .iter()
-                        .any(|argument| names(cx, argument, parameters))
+                        .any(|argument| names(cx, argument, declared))
             }
             ExprKind::Call(callee, [only]) => {
-                only.hir_id == chain.hir_id && !names(cx, callee, parameters)
+                only.hir_id == chain.hir_id && !names(cx, callee, declared)
             }
             _ => false,
         };
