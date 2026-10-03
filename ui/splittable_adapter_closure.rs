@@ -630,6 +630,17 @@ fn step_from_a_macro(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.map(|line| wrapped!(line.len())).collect()
 }
 
+// Not flagged: a division by zero leaves the closure without being a
+// call, so the item's steps would run before a panic that stopped them.
+fn divides_before_the_chain(divisor: usize, lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.fold(0, |total, line| total + 1 / divisor + line.trim().len())
+}
+
+// Not flagged: and an index out of bounds is the same.
+fn indexes_before_the_chain(table: [usize; 2], lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.fold(0, |total, line| total + table[total] + line.trim().len())
+}
+
 // Bad: a `move` closure holds its own copy of a `Copy` capture, so two of
 // them may both read it.
 fn move_closure_copies_its_capture(

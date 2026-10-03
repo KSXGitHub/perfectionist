@@ -22,6 +22,7 @@
 use rustc_hir::intravisit::{Visitor, walk_expr};
 use rustc_hir::{BinOpKind, Expr, ExprKind, HirId, MatchSource, Node, Stmt, StmtKind};
 use rustc_lint::LateContext;
+use rustc_span::Spanned;
 
 /// Whether every node between `chain` and the body root always
 /// evaluates the child the chain came through.
@@ -260,6 +261,12 @@ fn statements<'tcx>(statements: &'tcx [Stmt<'tcx>]) -> impl Iterator<Item = &'tc
 /// steps the reader can see. An operator on a user type is a call too,
 /// which is why the question is asked of typeck rather than of the node
 /// kind alone.
+///
+/// Two builtins leave the closure without being a call of any kind: a
+/// division or remainder by zero, and an index out of bounds. Arithmetic
+/// overflow is the one left out, because a `fold` whose accumulator is
+/// added to is the shape this rule is mostly about, and declining every
+/// one of those costs more than the panic ordering it would buy.
 fn observable<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
     struct Observable<'a, 'tcx> {
         cx: &'a LateContext<'tcx>,
@@ -269,12 +276,23 @@ fn observable<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
         fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
             let leaves = self.cx.typeck_results().expr_ty(expr).is_never()
                 || matches!(expr.kind, ExprKind::Match(_, _, MatchSource::TryDesugar(_)));
-            let calls = matches!(expr.kind, ExprKind::Call(..) | ExprKind::MethodCall(..))
-                || self
-                    .cx
-                    .typeck_results()
-                    .type_dependent_def_id(expr.hir_id)
-                    .is_some();
+            let calls = matches!(
+                expr.kind,
+                ExprKind::Call(..)
+                    | ExprKind::MethodCall(..)
+                    | ExprKind::Index(..)
+                    | ExprKind::Binary(
+                        Spanned {
+                            node: BinOpKind::Div | BinOpKind::Rem,
+                            ..
+                        },
+                        ..
+                    ),
+            ) || self
+                .cx
+                .typeck_results()
+                .type_dependent_def_id(expr.hir_id)
+                .is_some();
             if leaves || calls {
                 self.found = true;
             }
