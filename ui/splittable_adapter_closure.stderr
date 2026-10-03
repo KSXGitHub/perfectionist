@@ -103,4 +103,84 @@ LL |     lines.fold(0, |total, line| {
    |
    = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
 
+warning: this closure chains 3 steps onto the item, so `try_fold` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.try_fold(0usize, |total, line| Ok(total + line.trim().parse::<usize>()?))
+   |           ^^^^^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `flat_map` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.flat_map(|line| line.trim().chars()).collect()
+   |           ^^^^^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 4 steps onto the item, so `try_for_each` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.try_for_each(|line| Some(record(line.trim().len())))
+   |           ^^^^^^^^^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `all` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.all(|line| line.trim().is_empty())
+   |           ^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `position` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.position(|line| line.trim().is_empty())
+   |           ^^^^^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `rposition` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.rposition(|line| line.trim().is_empty())
+   |           ^^^^^^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `try_fold` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.try_fold(0, |total, line| Some(total + line.trim().len()))
+   |           ^^^^^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `rfold` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.rfold(0, |total, line| total + line.trim().len())
+   |           ^^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `try_rfold` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.try_rfold(0, |total, line| Some(total + line.trim().len()))
+   |           ^^^^^^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `scan` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |         .scan(0, |total, line| Some(*total + line.trim().len()))
+   |          ^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
 warning: N warnings emitted

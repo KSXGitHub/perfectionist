@@ -1,4 +1,4 @@
-//! Which `Iterator` adapters this rule speaks about, and where each
+//! Which iterator adapters this rule speaks about, and where each
 //! one's item parameter sits in the closure it takes.
 //!
 //! The condition an adapter has to meet is that **the item enters the
@@ -24,9 +24,9 @@ pub(super) enum Shape {
     /// with the adapter and the earlier ones lift into a `map`.
     Unary,
     /// The closure takes state and then the item, so the whole chain
-    /// lifts and the body keeps the state expression. `fold`,
-    /// `try_fold` and `scan` differ in what the state is and in what
-    /// the closure returns, none of which bears on the item side.
+    /// lifts and the body keeps the state expression. The adapters of
+    /// this shape differ in what the state is and in what the closure
+    /// returns, neither of which bears on the item side.
     Binary,
 }
 

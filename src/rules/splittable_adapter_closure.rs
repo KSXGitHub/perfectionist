@@ -17,7 +17,8 @@
 //! into something that compiles and behaves differently, which is why
 //! [`position`] is where the care goes.
 //!
-//! Scope: `Iterator`, and steps taking their receiver by value. The
+//! Scope: `Iterator` and `DoubleEndedIterator`, and steps taking their
+//! receiver by value. The
 //! planning file's other families and its other two triggers are not
 //! implemented; `planned-rules/splittable-adapter-closure.md` records
 //! which.
@@ -151,11 +152,15 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
         let Some(method) = cx.typeck_results().type_dependent_def_id(expr.hir_id) else {
             return;
         };
-        if !cx
-            .tcx
-            .trait_of_assoc(method)
-            .is_some_and(|trait_id| cx.tcx.is_diagnostic_item(sym::Iterator, trait_id))
-        {
+        let Some(declaring) = cx.tcx.trait_of_assoc(method) else {
+            return;
+        };
+        // `rfold` and `try_rfold` are `DoubleEndedIterator`'s, the same
+        // shape worked from the other end. They lift into
+        // `Iterator::map` all the same, because `Map` is double-ended
+        // wherever its iterator is.
+        let declares = |iterator| cx.tcx.is_diagnostic_item(iterator, declaring);
+        if !declares(sym::Iterator) && !declares(sym::DoubleEndedIterator) {
             return;
         }
         let Some(closure) = arguments.iter().find_map(|argument| match argument.kind {

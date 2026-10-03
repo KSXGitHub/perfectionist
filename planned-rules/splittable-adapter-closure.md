@@ -12,7 +12,7 @@ below is the catalogue's own rather than a quotation.
 
 The **chain** trigger is implemented, in
 [`src/rules/splittable_adapter_closure.rs`](../src/rules/splittable_adapter_closure.rs),
-over `Iterator` alone. What it covers:
+over `Iterator` and `DoubleEndedIterator`. What it covers:
 
 - The adapters whose item enters by value and never comes back out,
   unary and binary, as tabled in

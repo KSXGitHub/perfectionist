@@ -278,6 +278,53 @@ fn looping_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
     })
 }
 
+// Bad: `?` is a `match` on its operand, and an operand runs.
+fn fold_through_try(
+    mut lines: std::vec::IntoIter<&'static str>,
+) -> Result<usize, std::num::ParseIntError> {
+    lines.try_fold(0usize, |total, line| Ok(total + line.trim().parse::<usize>()?))
+}
+
+// Bad: the rest of the adapter table, one case each, so an entry
+// naming the wrong parameter or the wrong shape would show up here.
+fn flattening(lines: std::vec::IntoIter<&'static str>) -> String {
+    lines.flat_map(|line| line.trim().chars()).collect()
+}
+
+fn trying_each(mut lines: std::vec::IntoIter<&'static str>) -> Option<()> {
+    lines.try_for_each(|line| Some(record(line.trim().len())))
+}
+
+fn every(mut lines: std::vec::IntoIter<&'static str>) -> bool {
+    lines.all(|line| line.trim().is_empty())
+}
+
+fn first_empty(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.position(|line| line.trim().is_empty())
+}
+
+fn last_empty(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.rposition(|line| line.trim().is_empty())
+}
+
+fn try_total(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.try_fold(0, |total, line| Some(total + line.trim().len()))
+}
+
+fn total_from_the_right(lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.rfold(0, |total, line| total + line.trim().len())
+}
+
+fn try_total_from_the_right(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.try_rfold(0, |total, line| Some(total + line.trim().len()))
+}
+
+fn running_total(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .scan(0, |total, line| Some(*total + line.trim().len()))
+        .collect()
+}
+
 // Not flagged: a destructured parameter bottoms the chain out at a
 // binding the pattern introduced, which is a different rewrite.
 fn destructured(pairs: std::vec::IntoIter<(usize, &'static str)>) -> usize {
