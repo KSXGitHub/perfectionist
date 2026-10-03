@@ -32,7 +32,7 @@ impl Person {
         &self.tags
     }
 
-    // Bad: a dereference on the way is free as well.
+    // Bad: dereferencing a `PathBuf` is free as well.
     fn to_home_path(&self) -> &Path {
         &*self.home
     }
@@ -72,8 +72,8 @@ impl Person {
         self.home.to_str()
     }
 
-    // Good: a scan to find the nul, the way `CStr::to_bytes` pays for
-    // its slice.
+    // Good: the scan is the cost, and paying one is what `to_`
+    // announces.
     fn to_bytes(&self) -> &[u8] {
         let end = self.raw.iter().position(|byte| *byte == 0);
         &self.raw[..end.unwrap_or(self.raw.len())]
