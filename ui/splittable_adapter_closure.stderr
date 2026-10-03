@@ -26,7 +26,7 @@ LL |     lines.map(|line| parse(line.trim())).collect()
 warning: this closure chains 3 steps onto the item, so `for_each` does all of them
   --> $DIR/splittable_adapter_closure.rs:LL:CC
    |
-LL |     lines.for_each(|line| drop(line.trim().len()));
+LL |     lines.for_each(|line| record(line.trim().len()));
    |           ^^^^^^^^
    |
    = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
@@ -36,6 +36,22 @@ warning: this closure chains 2 steps onto the item, so `any` does all of them
    |
 LL |     lines.any(|line| line.trim().is_empty())
    |           ^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     headers.map(|header| label(header.len())).collect()
+   |             ^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `any` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     let empty = lines.any(|line| line.trim().is_empty());
+   |                       ^^^
    |
    = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
 
@@ -55,15 +71,36 @@ LL |     lines.fold(1, |acc, line| line.trim().len().wrapping_mul(acc))
    |
    = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
 
-warning: calls to `std::mem::drop` with a value that implements `Copy` does nothing
+warning: this closure chains 2 steps onto the item, so `fold` does all of them
   --> $DIR/splittable_adapter_closure.rs:LL:CC
    |
-LL |     lines.for_each(|line| drop(line.trim().len()));
-   |                           ^^^^^-----------------^
-   |                                |
-   |                                argument has type `usize`
+LL |     lines.fold(0, |total, line| line.trim().parse().unwrap_or_else(|_| total))
+   |           ^^^^
    |
-   = note: use `let _ = ...` to ignore the expression or result
-   = note: `#[warn(dropping_copy_types)]` on by default
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `fold` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.fold(0, |total, line| {
+   |           ^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `fold` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.fold(0, |total, line| match line.trim().len() {
+   |           ^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `fold` does all of them
+  --> $DIR/splittable_adapter_closure.rs:LL:CC
+   |
+LL |     lines.fold(0, |total, line| {
+   |           ^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
 
 warning: N warnings emitted
