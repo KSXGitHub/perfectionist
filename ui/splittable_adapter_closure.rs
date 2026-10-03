@@ -636,6 +636,19 @@ fn divides_before_the_chain(divisor: usize, lines: std::vec::IntoIter<&'static s
     lines.fold(0, |total, line| total + 1 / divisor + line.trim().len())
 }
 
+// Not flagged: and a compound division is the same, which the plain
+// spelling's arm does not cover.
+fn divides_in_place_before_the_chain(
+    divisor: usize,
+    lines: std::vec::IntoIter<&'static str>,
+) -> usize {
+    lines.fold(0, |total, line| {
+        let mut scaled = total;
+        scaled /= divisor;
+        scaled + line.trim().len()
+    })
+}
+
 // Not flagged: and an index out of bounds is the same.
 fn indexes_before_the_chain(table: [usize; 2], lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| total + table[total] + line.trim().len())

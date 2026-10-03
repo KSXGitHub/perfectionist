@@ -20,7 +20,9 @@
 //! purity test a lint could ask instead.
 
 use rustc_hir::intravisit::{Visitor, walk_expr};
-use rustc_hir::{BinOpKind, Expr, ExprKind, HirId, MatchSource, Node, Stmt, StmtKind};
+use rustc_hir::{
+    AssignOpKind, BinOpKind, Expr, ExprKind, HirId, MatchSource, Node, Stmt, StmtKind,
+};
 use rustc_lint::LateContext;
 use rustc_span::Spanned;
 
@@ -263,7 +265,8 @@ fn statements<'tcx>(statements: &'tcx [Stmt<'tcx>]) -> impl Iterator<Item = &'tc
 /// kind alone.
 ///
 /// Two builtins leave the closure without being a call of any kind: a
-/// division or remainder by zero, and an index out of bounds. Arithmetic
+/// division or remainder by zero, in either the plain or the compound
+/// spelling, and an index out of bounds. Arithmetic
 /// overflow is the one left out, because a `fold` whose accumulator is
 /// added to is the shape this rule is mostly about, and declining every
 /// one of those costs more than the panic ordering it would buy.
@@ -284,6 +287,13 @@ fn observable<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
                     | ExprKind::Binary(
                         Spanned {
                             node: BinOpKind::Div | BinOpKind::Rem,
+                            ..
+                        },
+                        ..
+                    )
+                    | ExprKind::AssignOp(
+                        Spanned {
+                            node: AssignOpKind::DivAssign | AssignOpKind::RemAssign,
                             ..
                         },
                         ..
