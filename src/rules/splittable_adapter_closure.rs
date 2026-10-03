@@ -26,6 +26,7 @@ use self::adapter::{Adapter, Family};
 use crate::binding_uses::{names, uses};
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::exclusive_captures::exclusive;
+use crate::receiver_move::movable;
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::paths::{PathNS, lookup_path};
@@ -149,7 +150,7 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
         let Some(adapter) = adapter::adapter(family, segment.ident.name) else {
             return;
         };
-        check(cx, expr, segment, arguments, family, adapter);
+        check(cx, expr, segment, receiver, arguments, family, adapter);
     }
 }
 
@@ -234,10 +235,14 @@ fn check<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx Expr<'tcx>,
     segment: &'tcx rustc_hir::PathSegment<'tcx>,
+    receiver: &'tcx Expr<'tcx>,
     arguments: &'tcx [Expr<'tcx>],
     family: Family,
     adapter: Adapter,
 ) {
+    if !movable(cx, expr, receiver) {
+        return;
+    }
     let Some(argument) = arguments.get(adapter.closure_argument) else {
         return;
     };

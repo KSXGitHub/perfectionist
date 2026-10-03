@@ -47,14 +47,6 @@ LL |     headers.map(|header| label(header.len())).collect()
    |
    = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
 
-warning: this closure chains 2 steps onto the item, so `any` does all of them
-  --> $DIR/splittable_adapter_closure.rs:LL:CC
-   |
-LL |     let empty = lines.any(|line| line.trim().is_empty());
-   |                       ^^^
-   |
-   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
-
 warning: this closure chains 2 steps onto the item, so `fold` does all of them
   --> $DIR/splittable_adapter_closure.rs:LL:CC
    |

@@ -10,6 +10,14 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
+fn even(count: usize) -> bool {
+    count % 2 == 0
+}
+
+fn large(count: usize) -> bool {
+    count > 10
+}
+
 fn wanted(line: &str) -> bool {
     !line.is_empty()
 }
@@ -130,6 +138,50 @@ fn mutable_item_by_value(counters: &mut [Counter]) -> bool {
 // Not flagged: `Option::is_some_and` hands it over the same way.
 fn mutable_option_item(slot: Option<&mut Counter>) -> bool {
     slot.is_some_and(|counter| counter.bump() && counter.flagged())
+}
+
+// Not flagged: and an owned item bound `mut` is written to just as a
+// `&mut` one is, with no `&mut` in the type to read it from.
+fn owned_mutable_item(counters: Vec<Counter>) -> bool {
+    counters
+        .into_iter()
+        .any(|mut counter| counter.bump() && counter.flagged())
+}
+
+// Not flagged: an owned item handed to a helper by value gets a
+// reference the helper cannot take, since `&T` does not coerce to `T`.
+fn owned_item_by_value(mut counts: std::vec::IntoIter<usize>) -> bool {
+    counts.any(|count| even(count) && large(count))
+}
+
+// Bad: the same adapter where every lifted test reads the item through a
+// method call, which autoderefs to whatever depth it is handed.
+fn owned_item_by_method(names: std::vec::IntoIter<String>) -> bool {
+    names
+        .into_iter()
+        .any(|name| name.starts_with('a') && name.ends_with('z'))
+}
+
+struct Pending {
+    rest: std::vec::IntoIter<&'static str>,
+}
+
+// Not flagged: a receiver the closure does not own cannot be moved into
+// the leading `filter`, which `E0507` would say.
+fn receiver_is_a_field(pending: &mut Pending) -> bool {
+    pending
+        .rest
+        .any(|line| wanted(line) && line.starts_with('#'))
+}
+
+// Not flagged: `find` leaves the receiver where it was and the leading
+// `filter` would move it, so a receiver named again is `E0382` once
+// split.
+fn receiver_named_again(
+    mut lines: std::vec::IntoIter<&'static str>,
+) -> (Option<&'static str>, Option<&'static str>) {
+    let first = lines.find(|line| wanted(line) && line.starts_with('#'));
+    (first, lines.next())
 }
 
 // Not flagged: a conjunction of comparisons is one test. Each of these

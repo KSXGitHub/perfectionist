@@ -290,6 +290,21 @@ pub(crate) fn binding_hir_id<'hir>(pat: &'hir hir::Pat<'hir>) -> Option<hir::Hir
     }
 }
 
+/// Whether `pat` binds its value so the body can write to it.
+///
+/// Two rules lift a test out of an adapter handed the item by value into
+/// one handed `&Item`, where a test that writes to the item has nothing
+/// to write through. The `&mut` item is the type's answer; this is the
+/// binding's, for an owned item the body mutates in place. An item the
+/// body never writes to does not carry the `mut`, which
+/// `clippy::unused_mut` is about.
+pub(crate) fn binds_mutably(pat: &hir::Pat<'_>) -> bool {
+    matches!(
+        pat.kind,
+        hir::PatKind::Binding(hir::BindingMode(_, hir::Mutability::Mut), ..),
+    )
+}
+
 /// Resolve a `&str` set from a curated built-in default, a
 /// user-supplied `extras` list, and a user-supplied `ignore`
 /// list. Used by rules whose runtime set key remains a `String` —

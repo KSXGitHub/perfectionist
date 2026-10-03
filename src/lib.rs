@@ -44,6 +44,7 @@ mod markdown;
 mod measured_fn;
 mod module_reparse;
 mod name_pattern;
+mod receiver_move;
 mod rule_index;
 mod rules;
 mod test_code;

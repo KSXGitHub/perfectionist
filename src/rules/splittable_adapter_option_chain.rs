@@ -17,7 +17,8 @@
 
 use self::combinator::Yield;
 use crate::adapter_discipline::Discipline;
-use crate::common::{DefaultState, binding_hir_id, hir_in_external_macro};
+use crate::common::{DefaultState, hir_in_external_macro};
+use crate::receiver_move::movable;
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::{is_from_proc_macro, sym};
@@ -128,7 +129,7 @@ fn adapter(method: Symbol) -> Option<(Discipline, Yield)> {
 
 impl<'tcx> LateLintPass<'tcx> for SplittableAdapterOptionChain {
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
-        let ExprKind::MethodCall(segment, _, arguments, _) = expr.kind else {
+        let ExprKind::MethodCall(segment, receiver, arguments, _) = expr.kind else {
             return;
         };
         let Some((discipline, yields)) = adapter(segment.ident.name) else {
@@ -144,6 +145,9 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterOptionChain {
         {
             return;
         }
+        if !movable(cx, expr, receiver) {
+            return;
+        }
         let Some(closure) = arguments.iter().find_map(|argument| match argument.kind {
             ExprKind::Closure(closure) => Some(closure),
             _ => None,
@@ -154,16 +158,11 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterOptionChain {
         let [parameter] = body.params else {
             return;
         };
-        let Some(item) = binding_hir_id(parameter.pat) else {
-            return;
-        };
-        let item_ty = cx.typeck_results().pat_ty(parameter.pat);
         let Some(split) = combinator::split(
             cx,
             body.value,
             closure.def_id,
-            item,
-            item_ty,
+            parameter.pat,
             discipline,
             yields,
         ) else {

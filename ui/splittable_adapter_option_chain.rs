@@ -49,6 +49,17 @@ fn record(log: &mut Vec<usize>, line: &str) -> usize {
     line.len()
 }
 
+#[derive(Clone, Copy)]
+struct Tick {
+    count: usize,
+}
+
+impl Tick {
+    fn bump(&mut self) -> bool {
+        self.count += 1;
+        true
+    }
+}
 
 // Bad: two fallible stages welded together.
 fn fallible(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
@@ -173,6 +184,24 @@ fn both_halves_reach_a_capture(lines: std::vec::IntoIter<&'static str>) -> Vec<u
     lines
         .filter_map(|line| note(&mut log, line).then(|| record(&mut log, line)))
         .collect()
+}
+
+// Not flagged: a `Copy` item survives the extra reference a `filter`
+// hands it, but one the guard writes to has nothing to write through.
+fn copy_item_the_guard_writes_to(ticks: std::vec::IntoIter<Tick>) -> Vec<usize> {
+    ticks
+        .filter_map(|mut tick| tick.bump().then_some(tick.count))
+        .collect()
+}
+
+// Not flagged: `find_map` leaves the receiver where it was and the
+// leading `filter_map` would move it, so a receiver named again is
+// `E0382` once split.
+fn receiver_named_again(
+    mut lines: std::vec::IntoIter<&'static str>,
+) -> (Option<usize>, Option<&'static str>) {
+    let first = lines.find_map(|line| parse(line).and_then(validate));
+    (first, lines.next())
 }
 
 // Not flagged: one stage has nothing to hand over.

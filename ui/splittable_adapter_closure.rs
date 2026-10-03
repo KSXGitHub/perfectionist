@@ -77,9 +77,9 @@ fn last_step_borrows(headers: std::vec::IntoIter<String>) -> Vec<&'static str> {
     headers.map(|header| label(header.len())).collect()
 }
 
-// Bad, with a caveat the rule does not see: an adapter taking `&mut
-// self` leaves the receiver positioned and usable, and a leading `map`
-// would move it, so a rewrite here needs a reborrow.
+// Not flagged: `any` takes `&mut self`, so it leaves the receiver
+// positioned and usable, and the leading `map` would move it. A receiver
+// named again is `E0382` once split.
 fn receiver_used_after(mut lines: std::vec::IntoIter<&'static str>) -> (bool, usize) {
     let empty = lines.any(|line| line.trim().is_empty());
     (empty, lines.count())

@@ -8,9 +8,10 @@
 
 use crate::adapter_discipline::Discipline;
 use crate::binding_uses::names;
+use crate::common::{binding_hir_id, binds_mutably};
 use crate::exclusive_captures::exclusive;
 use rustc_hir::def_id::LocalDefId;
-use rustc_hir::{Expr, ExprKind, HirId};
+use rustc_hir::{Expr, ExprKind, Pat};
 use rustc_lint::LateContext;
 use rustc_middle::ty;
 
@@ -34,7 +35,6 @@ pub(super) enum Split {
     /// adapter's is the `Option`'s, so the stage before the `and_then`
     /// takes a leading one instead.
     Fallible(Yield),
-
     /// `X.map(f)` becomes a trailing `map`, which filters nothing and so
     /// suits either discipline.
     Infallible,
@@ -95,11 +95,11 @@ pub(super) fn split<'tcx>(
     cx: &LateContext<'tcx>,
     body: &'tcx Expr<'tcx>,
     closure: LocalDefId,
-    item: HirId,
-    item_ty: ty::Ty<'tcx>,
+    parameter: &'tcx Pat<'tcx>,
     discipline: Discipline,
     yields: Yield,
 ) -> Option<Split> {
+    let item = binding_hir_id(parameter)?;
     let ExprKind::MethodCall(segment, receiver, arguments, _) = body.kind else {
         return None;
     };
@@ -136,10 +136,9 @@ pub(super) fn split<'tcx>(
     }
     // A guard lifts into `filter` or `take_while`, which hand the item by
     // reference where `filter_map` and its kin hand it over. A guard that
-    // moves the item is then `E0308` and one that needs it mutably
-    // `E0596`, with nothing to amend by hand. A shared reference and a
-    // `Copy` item are the two that survive the extra reference.
-    if matches!(split, Split::Guarded(_)) && !takes_one_more_reference(cx, item_ty) {
+    // moves the item is then `E0308` and one that writes to it `E0596`,
+    // with nothing to amend by hand.
+    if matches!(split, Split::Guarded(_)) && !takes_one_more_reference(cx, parameter) {
         return None;
     }
     // A one-value adapter has no trailing adapter but the `Option`'s, so
@@ -166,10 +165,13 @@ fn is_option<'tcx>(cx: &LateContext<'tcx>, ty: ty::Ty<'tcx>) -> bool {
 /// Whether the item survives being handed one reference more than it was.
 ///
 /// A shared reference derefs through the extra one, and a `Copy` item is
-/// read through it. An owned item that the guard moves, and a mutable
-/// reference it writes through, do neither.
-fn takes_one_more_reference<'tcx>(cx: &LateContext<'tcx>, item_ty: ty::Ty<'tcx>) -> bool {
-    if item_ty.is_mutable_ptr() {
+/// read through it. The two that do not survive it are an item the guard
+/// moves, which the type answers for, and one the guard writes to, which
+/// the binding does: a `&mut` item, or one bound `mut`, which an item the
+/// closure never writes to does not carry.
+fn takes_one_more_reference<'tcx>(cx: &LateContext<'tcx>, parameter: &Pat<'tcx>) -> bool {
+    let item_ty = cx.typeck_results().pat_ty(parameter);
+    if item_ty.is_mutable_ptr() || binds_mutably(parameter) {
         return false;
     }
     item_ty.is_ref() || cx.type_is_copy_modulo_regions(item_ty)
