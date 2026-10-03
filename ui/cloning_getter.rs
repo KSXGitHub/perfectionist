@@ -125,7 +125,7 @@ impl Person {
         self.first_name.clone()
     }
 
-    // Good: `as_*` promises the opposite, and has its own rule.
+    // Not flagged: `as_*` promises the opposite, and has its own rule.
     #[expect(
         perfectionist::owned_as_conversion,
         reason = "an `as_*` that copies belongs to that rule; this one pins clause 1"
