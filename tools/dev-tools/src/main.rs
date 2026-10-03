@@ -18,13 +18,17 @@ use clap::{Parser, Subcommand};
 use command_extra::CommandExtra;
 use derive_more::Display;
 use pipe_trait::Pipe;
-use std::fs::OpenOptions;
+use std::fs::{OpenOptions, read_dir, remove_file};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 use std::{env, io};
 
 const DYLINT_LIBRARY_CRATE: &str = "dylint_linting";
 const INSTALL_DIR: &str = ".dev-tools";
+
+/// The crates [`install`] pins, named once so its `cargo install`
+/// arguments and the index eviction beside them cannot drift apart.
+const PINNED_CRATES: [&str; 2] = ["cargo-dylint", "dylint-link"];
 
 #[derive(Parser)]
 #[clap(about = "Manage workspace-local tooling under .dev-tools/")]
@@ -82,6 +86,66 @@ enum InstallError {
     Status,
 }
 
+/// Where cargo keeps its registry caches: `$CARGO_HOME` when set,
+/// otherwise `.cargo` under the platform's home directory.
+fn cargo_home() -> Option<PathBuf> {
+    match env::var_os("CARGO_HOME") {
+        Some(path) => Some(path.into()),
+        None => env::home_dir().map(|home| home.join(".cargo")),
+    }
+}
+
+/// The directory cargo files a crate's index metadata under, following
+/// the registry index layout: one directory naming the length for a
+/// name shorter than four characters, two character-pair directories
+/// for anything longer. `crate_name` is expected lowercase ASCII, as
+/// the index spells it.
+fn index_prefix(crate_name: &str) -> PathBuf {
+    match crate_name.len() {
+        1 => PathBuf::from("1"),
+        2 => PathBuf::from("2"),
+        3 => Path::new("3").join(&crate_name[..1]),
+        _ => Path::new(&crate_name[..2]).join(&crate_name[2..4]),
+    }
+}
+
+/// Drop cargo's cached registry metadata for [`PINNED_CRATES`].
+///
+/// [`install`]'s `cargo install --version` is the only step in this
+/// workspace that reads the registry index; every other one replays
+/// `Cargo.lock` against sources it already has. So a CI cache can
+/// carry an index snapshot older than the pinned dylint release with
+/// nothing noticing until the pin moves, and then cargo reports a
+/// published version as `could not find <crate> in registry`. Cargo
+/// refreshes a cached entry with a conditional request and keeps what
+/// it holds when the answer is "unchanged", so removing the entry is
+/// what forces the version to be fetched outright.
+///
+/// Best effort: an absent entry is the state this wants, and whatever
+/// it cannot remove is cargo's to report.
+fn evict_cached_index_entries() {
+    let Some(home) = cargo_home() else {
+        return;
+    };
+    let Ok(registries) = read_dir(home.join("registry").join("index")) else {
+        return;
+    };
+    for registry in registries.flatten() {
+        for crate_name in PINNED_CRATES {
+            let path = registry
+                .path()
+                .join(".cache")
+                .join(index_prefix(crate_name))
+                .join(crate_name);
+            if let Err(error) = remove_file(&path)
+                && error.kind() != io::ErrorKind::NotFound
+            {
+                eprintln!("warning: failed to remove {}: {error}", path.display());
+            }
+        }
+    }
+}
+
 fn install(root: &Path, version: &str) -> Result<(), InstallError> {
     let install_root = root.join(INSTALL_DIR);
 
@@ -90,6 +154,8 @@ fn install(root: &Path, version: &str) -> Result<(), InstallError> {
         install_root.display(),
     );
 
+    evict_cached_index_entries();
+
     "cargo"
         .pipe(Command::new)
         .with_env("CARGO_INSTALL_ROOT", &install_root)
@@ -97,8 +163,7 @@ fn install(root: &Path, version: &str) -> Result<(), InstallError> {
         .with_arg("--locked")
         .with_arg("--version")
         .with_arg(version)
-        .with_arg("cargo-dylint")
-        .with_arg("dylint-link")
+        .with_args(PINNED_CRATES)
         .status()
         .map_err(InstallError::Spawn)?
         .success()
