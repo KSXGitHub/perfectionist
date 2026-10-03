@@ -106,8 +106,8 @@ const CONFIG_KEY: &str = "perfectionist::splittable_adapter_closure";
 /// than rendering the split: the point-free form a split invites asks
 /// more of each step than the split does, so the text a rewrite would
 /// have to choose is not the text a reader wants.
-const SPLIT_HELP: &str = "give each step its own adapter, lifting all but the last into a leading \
-                          `map`, so the stages read down the chain";
+const SPLIT_HELP: &str = "lift each step into a leading `map` of its own, leaving the closure \
+                          only the work that is the adapter's";
 
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
