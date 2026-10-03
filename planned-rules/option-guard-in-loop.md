@@ -213,3 +213,11 @@ author rather than rewriting a loop body into a closure unattended.
   borrow the name.
 - `perfectionist::excessive_nesting` counts depth without judging
   what produced it; this rule removes one specific cause.
+- [`splittable-adapter-closure`](./splittable-adapter-closure.md)
+  picks up where this rule's suggestion stops. The `filter_map` this
+  rule introduces carries whatever the guard's scrutinee was, so a
+  scrutinee that was itself a composition arrives as a closure doing
+  several things — `filter_map(|x| parse(x).and_then(validate))`,
+  which is among the shapes that rule names. The two compose in that
+  order rather than disagreeing: this one flattens the nesting, that
+  one splits what the flattening carried over.
