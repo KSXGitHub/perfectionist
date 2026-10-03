@@ -1,8 +1,9 @@
 // A stand-in for `rayon::iter::ParallelIterator`, carrying only the
 // adapters the rule names. The names differ from the sequential set the
 // way rayon's do: there is no `scan`, no `map_while` and no `rposition`;
-// there is `position_any`, and a `find_map_any` / `find_map_first` /
-// `find_map_last` trio in place of `find_map`.
+// there is `position_any`, a `find_map_any` / `find_map_first` /
+// `find_map_last` trio in place of `find_map`, and a `find_first` /
+// `find_any` pair in place of `find`.
 //
 // `ParallelIterator: Sized + Send` and the `Send` bound on what `map`
 // produces are upstream's, and they are the point: the rule declines a
@@ -102,6 +103,53 @@ pub mod iter {
                 }
             }
             None
+        }
+
+        fn find_map_any<Output: Send, Body>(self, body: Body) -> Option<Output>
+        where
+            Body: Fn(Self::Item) -> Option<Output> + Send + Sync,
+        {
+            self.find_map_first(body)
+        }
+
+        fn find_map_last<Output: Send, Body>(self, body: Body) -> Option<Output>
+        where
+            Body: Fn(Self::Item) -> Option<Output> + Send + Sync,
+        {
+            self.into_items().into_iter().filter_map(body).last()
+        }
+
+        /// Here to be left alone by the chain rule, which the item coming
+        /// back out excludes, and reached by the predicate rule, whose
+        /// `filter` takes the item the same way this does.
+        fn find_first<Body>(self, body: Body) -> Option<Self::Item>
+        where
+            Body: Fn(&Self::Item) -> bool + Send + Sync,
+        {
+            self.into_items().into_iter().find(|item| body(item))
+        }
+
+        fn find_any<Body>(self, body: Body) -> Option<Self::Item>
+        where
+            Body: Fn(&Self::Item) -> bool + Send + Sync,
+        {
+            self.find_first(body)
+        }
+
+        fn try_fold<Accumulator: Send, Start, Body>(
+            self,
+            start: Start,
+            body: Body,
+        ) -> Parallel<Option<Accumulator>>
+        where
+            Start: Fn() -> Accumulator + Send + Sync,
+            Body: Fn(Accumulator, Self::Item) -> Option<Accumulator> + Send + Sync,
+        {
+            let mut total = Some(start());
+            for item in self.into_items() {
+                total = total.and_then(|carried| body(carried, item));
+            }
+            Parallel(vec![total])
         }
 
         fn fold<Accumulator: Send, Start, Body>(self, start: Start, body: Body) -> Parallel<Accumulator>

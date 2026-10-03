@@ -26,6 +26,7 @@ extern crate rayon;
 use itertools::Itertools;
 use pipe_trait::Pipe;
 use rayon::prelude::*;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 fn record(length: usize) {}
@@ -141,6 +142,55 @@ fn one_step(
     items: std::vec::IntoIter<Result<&'static str, usize>>,
 ) -> Vec<Result<&'static str, usize>> {
     items.map_ok(|text| text.trim()).collect()
+}
+
+// Bad: the rest of the extension tables, one case each, so an entry
+// naming the wrong parameter or the wrong shape would show up here.
+fn counting(lines: std::vec::IntoIter<&'static str>) -> HashMap<usize, usize> {
+    lines.counts_by(|text| text.trim().len())
+}
+
+fn parallel_each(items: Parallel<&'static str>) {
+    items.for_each(|text| drop(text.trim().len()));
+}
+
+fn parallel_every(items: Parallel<&'static str>) -> bool {
+    items.all(|text| text.trim().is_empty())
+}
+
+fn parallel_position(items: Parallel<&'static str>) -> Option<usize> {
+    items.position_any(|text| text.trim().is_empty())
+}
+
+fn parallel_found_any(items: Parallel<&'static str>) -> Option<usize> {
+    items.find_map_any(|text| text.trim().parse().ok())
+}
+
+fn parallel_found_first(items: Parallel<&'static str>) -> Option<usize> {
+    items.find_map_first(|text| text.trim().parse().ok())
+}
+
+fn parallel_found_last(items: Parallel<&'static str>) -> Option<usize> {
+    items.find_map_last(|text| text.trim().parse().ok())
+}
+
+fn parallel_total(items: Parallel<&'static str>) -> Parallel<usize> {
+    items.fold(|| 0, |total, text| total + text.trim().len())
+}
+
+fn parallel_try_total(items: Parallel<&'static str>) -> Parallel<Option<usize>> {
+    items.try_fold(|| 0, |total, text| Some(total + text.trim().len()))
+}
+
+// Not flagged by the chain rule: `find_first` and `find_any` hand the
+// closure a borrow of the item, which a leading `map` would replace. Bad
+// for the predicate rule, whose `filter` takes the item the same way.
+fn parallel_first(items: Parallel<&'static str>) -> Option<&'static str> {
+    items.find_first(|text| wanted(text) && text.starts_with('#'))
+}
+
+fn parallel_found(items: Parallel<&'static str>) -> Option<&'static str> {
+    items.find_any(|text| wanted(text) && text.starts_with('#'))
 }
 
 fn main() {}
