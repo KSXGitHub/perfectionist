@@ -1,8 +1,8 @@
 // edition:2024
 //
 // Which comparisons this rule reads as an `Option<bool>` measured
-// against a state, which rewrite each earns, and which shapes it leaves
-// alone.
+// against a state, which rewrite each earns, and which shapes it does not
+// flag.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -45,8 +45,8 @@ fn borrowed_option(entry: Entry) {
     if enabled == &Some(true) {}
 }
 
-// Bad: the same with the option side's reference written out, which the
-// suggestion takes off rather than bracketing.
+// Bad: an option side whose `&` is written rather than carried by its
+// type, which the suggestion takes off rather than bracketing.
 fn borrowed_on_both_sides(entry: Entry) {
     if &entry.enabled == &Some(true) {}
 }
@@ -63,16 +63,25 @@ fn as_a_macro_argument(verbose: Option<bool>) {
     assert!(verbose == Some(true));
 }
 
-fn not_flagged(left: Option<bool>, right: Option<bool>, wanted: bool, version: Option<i32>) {
-    // Both sides are `Option<bool>`, so neither names a state.
+// Not flagged: both sides are `Option<bool>`, so neither names a state.
+fn two_option_sides(left: Option<bool>, right: Option<bool>) {
     if left == right {}
-    // The `Some` carries a variable: no state to name, and `unwrap_or`
-    // would not be an improvement.
-    if left == Some(wanted) {}
-    // Not an `Option<bool>`.
+}
+
+// Not flagged: the `Some` carries a variable, so there is no state to name
+// and `unwrap_or` would not be an improvement.
+fn a_variable_in_the_some(enabled: Option<bool>, wanted: bool) {
+    if enabled == Some(wanted) {}
+}
+
+// Not flagged: not an `Option<bool>`.
+fn another_payload(version: Option<i32>) {
     if version == Some(3) {}
-    // Already names the state it matches.
-    if matches!(left, Some(true)) {}
+}
+
+// Not flagged: `matches!` already names the state it matches.
+fn a_pattern_match(enabled: Option<bool>) {
+    if matches!(enabled, Some(true)) {}
 }
 
 // Not flagged: a `&&bool` payload. One `copied` reaches a `&bool` rather
@@ -82,17 +91,16 @@ fn doubly_borrowed_payload(settings: Option<&bool>) {
     if settings.as_ref() == Some(&&true) {}
 }
 
-// Not flagged, and not an oversight: `assert_eq!` binds both operands
-// before comparing them, so the shape never arises -- and the silence is
-// wanted, since the rewrite would cost the failure message the operand
+// Not flagged: `assert_eq!` binds both operands before comparing them, so
+// the shape never arises -- and the silence is wanted rather than
+// tolerated, since the rewrite would cost the failure message the operand
 // values it prints.
 fn under_an_equality_assertion(verbose: Option<bool>) {
     assert_eq!(verbose, Some(true));
 }
 
-// Not flagged, and not an oversight either: the comparison belongs to the
-// macro, so the suggestion would rewrite its definition with one call
-// site's text.
+// Not flagged: the comparison belongs to the macro, so the suggestion
+// would rewrite its definition with one call site's text.
 macro_rules! turned_on {
     ($option:expr) => {
         $option == Some(true)
@@ -103,10 +111,9 @@ fn under_a_local_macro(verbose: Option<bool>) {
     if turned_on!(verbose) {}
 }
 
-// Not flagged, for its own reason: the comparison is the author's and
-// only the `Some` is expanded, so the rewrite would read the literal's
-// value and drop the macro call, freezing today's expansion into the
-// source.
+// Not flagged: the comparison is the author's and only the `Some` is
+// expanded, so the rewrite would read the literal's value and drop the
+// macro call, freezing today's expansion into the source.
 macro_rules! the_wanted_state {
     () => {
         Some(true)

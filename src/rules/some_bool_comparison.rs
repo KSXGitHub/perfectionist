@@ -231,9 +231,9 @@ fn comparison<'tcx>(
 ///
 /// A literal out of an expansion answers `None`. The rewrite reads its
 /// value and drops its text, so `opt == wanted!()` would otherwise be
-/// rewritten to whatever `wanted!()` expands to today. The whole
-/// comparison's span stays the author's in that shape, so the bail on it
-/// does not reach this.
+/// rewritten to whatever `wanted!()` expands to today. The comparison's
+/// own span stays the author's in that shape, so the bail on that span
+/// does not reach here.
 fn some_bool_literal(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<bool> {
     let argument = as_some_expr(cx, peel_hir_expr_refs(expr).0)?;
     let argument = peel_hir_expr_refs(argument).0;
