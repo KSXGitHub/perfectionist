@@ -227,12 +227,6 @@ macro_rules! both {
     };
 }
 
-macro_rules! both {
-    ($line:expr) => {
-        wanted($line) && $line.starts_with('#')
-    };
-}
-
 // Not flagged: a conjunction the reader did not write has no `&&` they
 // can cut.
 fn conjunction_from_a_macro(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
