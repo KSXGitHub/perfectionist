@@ -47,6 +47,11 @@ Not implemented, and the rest of this file is their active spec:
   this file rather than widen the registered lint.
 - Every family beyond `Iterator`: `Option`, `Result`, `Poll`,
   `ControlFlow`, `itertools`, rayon and `pipe-trait`.
+- No check that an adapter taking `&mut self` leaves its receiver in
+  use. [Which adapters](#which-adapters) measures the `E0382` a split
+  causes where the receiver is used after the call; the rule fires
+  there all the same, so the rewrite needs the reborrow that note
+  gives.
 - No autofix. The diagnostic names the count and asks for the split,
   because the point-free form a split invites asks more of each step
   than the split does, so the text a rewrite would have to choose is
