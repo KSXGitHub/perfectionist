@@ -10,9 +10,11 @@
 //!
 //! It is a deliberate under-approximation: a type counts as owned only
 //! where this module can name it, so a third-party owning type is
-//! missed rather than guessed at. That is also what leaves
-//! `Cow<'_, str>` and the other borrow-capable wrappers alone, since
-//! none of them is a type this module names.
+//! missed rather than guessed at.
+//!
+//! What a *call* hands back is not read either, only what its type can:
+//! an `Option<String>` holding `None` and a `Cow<'_, str>` holding a
+//! borrow each own nothing, and both types answer yes here.
 //!
 //! Only the outermost type is asked. A lifetime *inside* an owned
 //! container does not make the container less owned: a
@@ -80,6 +82,15 @@ pub(super) fn owned_return<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> bool {
             .types()
             .next()
             .is_some_and(|inner| owned_return(cx, inner));
+    }
+    // A `Cow<'_, B>` can hand the caller a `B::Owned`, which is what
+    // puts it here on the same terms as an `Option` or a `Result`: a
+    // type is read for what it can hand back, and a caller cannot see
+    // which of the two variants a call chose. Its borrowed variant is
+    // why it is not on `OWNING_TYPES`, whose members allocate whatever
+    // they are parameterised with.
+    if is("Cow") {
+        return true;
     }
     OWNING_TYPES.iter().any(|name| is(name))
 }
