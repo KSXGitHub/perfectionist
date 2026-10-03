@@ -134,6 +134,7 @@ rule_index! {
     single_letter_generic => SingleLetterGeneric,
     single_letter_let_binding => SingleLetterLetBinding,
     single_letter_static_item => SingleLetterStaticItem,
+    some_bool_comparison => SomeBoolComparison,
     splittable_adapter_closure => SplittableAdapterClosure,
     splittable_adapter_option_chain => SplittableAdapterOptionChain,
     splittable_adapter_predicate => SplittableAdapterPredicate,

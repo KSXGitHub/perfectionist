@@ -775,6 +775,36 @@ pub fn synth_splittable_adapter_option_chain(input: TokenStream) -> TokenStream 
     )
 }
 
+/// `#[derive(SynthSomeBoolComparison)]` +
+/// `#[synth_some_bool_comparison]` →
+/// `fn _synth_some_bool_comparison() { let _ = FLAG == Some(true); }`,
+/// where every token of the statement inherits the user-span of
+/// `synth_some_bool_comparison` and the wrapping `fn` keeps the derive's
+/// call-site span.
+///
+/// The comparison's own span is then a user span, which
+/// `Span::from_expansion` and `report_in_external_macro: false` both let
+/// through. Only the enclosing item's `def_span` still says where the
+/// comparison lives, which is what `hir_in_external_macro` reads.
+///
+/// `FLAG` is the fixture's own `const`.
+#[proc_macro_derive(SynthSomeBoolComparison, attributes(synth_some_bool_comparison))]
+pub fn synth_some_bool_comparison(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_some_bool_comparison")
+        .expect("`#[derive(SynthSomeBoolComparison)]` requires a `#[synth_some_bool_comparison]`");
+    let body = respan(
+        "let _ = FLAG == Some(true);"
+            .parse()
+            .expect("valid tokens"),
+        attr_span,
+    );
+    let mut out: TokenStream = "fn _synth_some_bool_comparison()"
+        .parse()
+        .expect("valid tokens");
+    out.extend([TokenTree::Group(Group::new(Delimiter::Brace, body))]);
+    out
+}
+
 /// Every token of `stream`, groups walked into, moved to `span`.
 fn respan(stream: TokenStream, span: Span) -> TokenStream {
     stream
