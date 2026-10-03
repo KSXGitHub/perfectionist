@@ -22,7 +22,7 @@ target and no shared configuration, per
 | guard and value | [`src/rules/splittable_adapter_option_chain.rs`](../src/rules/splittable_adapter_option_chain.rs) | the combinator's counterpart, discipline-matched |
 
 Families reached: `Iterator`, `DoubleEndedIterator`, `Option`, `Result`,
-`Poll` and `ControlFlow`.
+`Poll`, `ControlFlow`, `Itertools`, `ParallelIterator` and `Pipe`.
 
 Narrower than this file describes, each narrowing measured against this
 crate's own source:
@@ -42,12 +42,15 @@ crate's own source:
   regions are erased in typeck results, so a result's lifetime cannot be
   matched against the item's, and the item is the receiver of the first
   step alone.
-- **`filter_map`, `find_map` and `map_while` are the guard-and-value
-  trigger's**, not the chain's, so the chain rule leaves them alone.
+- **`filter_map`, `find_map`, `map_while` and `filter_map_ok` are the
+  guard-and-value trigger's**, not the chain's, so the chain rule leaves
+  them alone.
+- **`partition_map` has no lift target**, its closure returning an
+  `Either`, and only `Pipe`'s by-value `pipe` is in scope: the rest hand
+  the closure a borrow.
 
 Not implemented, and the rest of this file is their active spec:
 
-- `itertools`, rayon and `pipe-trait`.
 - The `&mut self` receiver used after the adapter returns, per
   [Which adapters](#which-adapters). Telling needs liveness, so the rule
   fires and the rewrite needs the reborrow that section gives.

@@ -1,0 +1,50 @@
+warning: this closure chains 2 steps onto the item, so `map_ok` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.map_ok(|text| text.trim().len()).collect()
+   |           ^^^^^^
+   |
+   = help: lift each step into a leading `map_ok` of its own, leaving the closure only the work that is the adapter's
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+
+warning: this closure chains 2 steps onto the item, so `fold_ok` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.fold_ok(0, |total, text| total + text.trim().len())
+   |           ^^^^^^^
+   |
+   = help: lift each step into a leading `map_ok` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `fold_while` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |         .fold_while(0, |total, text| {
+   |          ^^^^^^^^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.map(|text| text.trim().len())
+   |           ^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `any` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.any(|text| text.trim().is_empty())
+   |           ^^^
+   |
+   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe(|number| render(double(number)))
+   |           ^^^^
+   |
+   = help: lift each step into a leading `pipe` of its own, leaving the closure only the work that is the adapter's
+
+warning: N warnings emitted

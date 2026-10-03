@@ -40,6 +40,24 @@ pub(super) enum Family {
     Poll,
     /// `ControlFlow`.
     ControlFlow,
+    /// The `Itertools` blanket extension of `Iterator`.
+    Itertools,
+    /// rayon's `ParallelIterator`.
+    Rayon,
+    /// `pipe-trait`'s `Pipe`.
+    Pipe,
+}
+
+impl Family {
+    /// Whether a lifted step's result has to be `Send`.
+    ///
+    /// `ParallelIterator::map` requires it of the item it produces,
+    /// where the folded form does not, because the value never leaves
+    /// the closure. `.map(|s| Rc::new(*s).len())` compiles and
+    /// `.map(|s| Rc::new(*s)).map(|r| r.len())` does not.
+    pub(super) fn sends_between_threads(self) -> bool {
+        self == Self::Rayon
+    }
 }
 
 /// One adapter this rule speaks about.
@@ -73,12 +91,12 @@ const fn unary(lift_target: &'static str) -> Adapter {
 }
 
 /// An adapter taking state first, where the whole chain leaves.
-const fn stateful() -> Adapter {
+const fn stateful(lift_target: &'static str) -> Adapter {
     Adapter {
         closure_argument: 1,
         item_parameter: 1,
         keeps_the_last_step: false,
-        lift_target: "map",
+        lift_target,
     }
 }
 
@@ -91,6 +109,9 @@ pub(super) fn adapter(family: Family, method: Symbol) -> Option<Adapter> {
         Family::Result => result(method),
         Family::Poll => poll(method),
         Family::ControlFlow => control_flow(method),
+        Family::Itertools => itertools(method),
+        Family::Rayon => rayon(method),
+        Family::Pipe => pipe(method),
     }
 }
 
@@ -102,7 +123,7 @@ fn iterator(method: Symbol) -> Option<Adapter> {
     Some(match method.as_str() {
         "map" | "flat_map" | "for_each" | "try_for_each" => unary("map"),
         "any" | "all" | "position" | "rposition" => unary("map"),
-        "fold" | "try_fold" | "rfold" | "try_rfold" | "scan" => stateful(),
+        "fold" | "try_fold" | "rfold" | "try_rfold" | "scan" => stateful("map"),
         _ => return None,
     })
 }
@@ -135,6 +156,49 @@ fn control_flow(method: Symbol) -> Option<Adapter> {
     Some(match method.as_str() {
         "map_break" => unary("map_break"),
         "map_continue" => unary("map_continue"),
+        _ => return None,
+    })
+}
+
+fn itertools(method: Symbol) -> Option<Adapter> {
+    // `filter_map_ok`'s closure returns an `Option`, so what splits
+    // inside it is `Option` work, which
+    // `perfectionist::splittable_adapter_option_chain` is about.
+    // `partition_map` returns an `Either`, which this rule has no lift
+    // target for. Excluded for taking the item by reference:
+    // `unique_by`, `filter_ok`, `update`, `find_position`,
+    // `into_group_map_by`, `position_max_by_key`, `position_min_by_key`,
+    // `tree_reduce` and `sorted_by_key`.
+    Some(match method.as_str() {
+        // The item here is the `Ok` inside a `Result` item, a channel
+        // nested one level inside the iterator's own, so it lifts into
+        // the adapter mapping that channel.
+        "map_ok" => unary("map_ok"),
+        "fold_ok" => stateful("map_ok"),
+        "counts_by" => unary("map"),
+        "fold_while" => stateful("map"),
+        _ => return None,
+    })
+}
+
+fn rayon(method: Symbol) -> Option<Adapter> {
+    // There is no `scan`, no `map_while` and no `rposition`; `fold`
+    // yields per-chunk accumulators rather than one value, and its item
+    // side splits all the same.
+    Some(match method.as_str() {
+        "map" | "for_each" | "any" | "all" | "position_any" => unary("map"),
+        "find_map_any" | "find_map_first" | "find_map_last" => unary("map"),
+        "fold" | "try_fold" => stateful("map"),
+        _ => return None,
+    })
+}
+
+fn pipe(method: Symbol) -> Option<Adapter> {
+    // Only the by-value form meets the condition. `pipe_ref`,
+    // `pipe_mut` and their kin hand the closure a borrow, which a
+    // leading `pipe` would be handing something else.
+    Some(match method.as_str() {
+        "pipe" => unary("pipe"),
         _ => return None,
     })
 }

@@ -28,8 +28,9 @@ use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::paths::{PathNS, lookup_path};
+use clippy_utils::ty::implements_trait;
 use clippy_utils::{is_from_proc_macro, sym};
-use rustc_hir::def_id::LocalDefId;
+use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_hir::{Expr, ExprKind, HirId};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_middle::ty::{BorrowKind, CapturedPlace, Ty, UpvarCapture};
@@ -146,7 +147,7 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
         let Some(adapter) = adapter::adapter(family, segment.ident.name) else {
             return;
         };
-        check(cx, expr, segment, arguments, adapter);
+        check(cx, expr, segment, arguments, family, adapter);
     }
 }
 
@@ -167,8 +168,12 @@ fn family<'tcx>(
     let method = cx.typeck_results().type_dependent_def_id(call.hir_id)?;
     if let Some(declaring) = cx.tcx.trait_of_assoc(method) {
         let declares = |name| cx.tcx.is_diagnostic_item(name, declaring);
-        let iterator = declares(sym::Iterator) || declares(sym::DoubleEndedIterator);
-        return iterator.then_some(Family::Iterator);
+        if declares(sym::Iterator) || declares(sym::DoubleEndedIterator) {
+            return Some(Family::Iterator);
+        }
+        // A trait from a crate the linted one does not depend on resolves
+        // to nothing, so these cost a lookup and answer `None` there.
+        return extension(cx, declaring);
     }
     let adt = cx
         .typeck_results()
@@ -195,6 +200,32 @@ fn family<'tcx>(
     })
 }
 
+/// Which extension trait `declaring` is, or `None` for a trait this rule
+/// does not speak about.
+///
+/// None of these carries a diagnostic item, so the path is what
+/// identifies it. `Itertools` is a blanket extension of `Iterator` and
+/// `Pipe` one of everything, which is why a receiver's type says nothing
+/// about either.
+fn extension(cx: &LateContext<'_>, declaring: DefId) -> Option<Family> {
+    let intern = Symbol::intern;
+    let paths = [
+        (
+            vec![intern("itertools"), intern("Itertools")],
+            Family::Itertools,
+        ),
+        (
+            vec![intern("rayon"), intern("iter"), intern("ParallelIterator")],
+            Family::Rayon,
+        ),
+        (vec![intern("pipe_trait"), intern("Pipe")], Family::Pipe),
+    ];
+    paths.into_iter().find_map(|(path, family)| {
+        let found = lookup_path(cx.tcx, PathNS::Type, &path);
+        found.contains(&declaring).then_some(family)
+    })
+}
+
 /// Flag the closure this adapter holds where the chain rooted at its
 /// item is two or more steps long.
 fn check<'tcx>(
@@ -202,6 +233,7 @@ fn check<'tcx>(
     expr: &'tcx Expr<'tcx>,
     segment: &'tcx rustc_hir::PathSegment<'tcx>,
     arguments: &'tcx [Expr<'tcx>],
+    family: Family,
     adapter: Adapter,
 ) {
     let Some(argument) = arguments.get(adapter.closure_argument) else {
@@ -239,6 +271,12 @@ fn check<'tcx>(
         false => &steps[..],
     };
     if !lifted.iter().all(|step| is_liftable(cx, step.expr)) {
+        return;
+    }
+    // A parallel adapter requires the item it produces to be `Send`,
+    // where the folded form does not, because the value never leaves the
+    // closure.
+    if family.sends_between_threads() && !lifted.iter().all(|step| is_sendable(cx, step.expr)) {
         return;
     }
     // A lifted step runs in a closure of its own, alongside the one the
@@ -347,6 +385,18 @@ fn mutable_captures<'tcx>(cx: &LateContext<'tcx>, closure: LocalDefId) -> Vec<Hi
         })
         .map(CapturedPlace::get_root_variable)
         .collect()
+}
+
+/// Whether `step`'s result can cross a thread boundary.
+///
+/// Measured on the planning file's own example:
+/// `.map(|s| Rc::new(*s).len())` compiles and
+/// `.map(|s| Rc::new(*s)).map(|r| r.len())` is `E0277`.
+fn is_sendable<'tcx>(cx: &LateContext<'tcx>, step: &'tcx Expr<'tcx>) -> bool {
+    let Some(send) = cx.tcx.get_diagnostic_item(sym::Send) else {
+        return false;
+    };
+    implements_trait(cx, cx.typeck_results().expr_ty(step), send, &[])
 }
 
 /// Whether `ty` mentions a region, which is where a borrow would show

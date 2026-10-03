@@ -1,0 +1,130 @@
+// aux-build:rayon_stub.rs
+// aux-build:pipe_trait_stub.rs
+// edition:2024
+//
+// The extension traits, whose paths are what identify them: none carries
+// a diagnostic item.
+//
+// `itertools` needs no stub: the driver's sysroot ships the real crate,
+// because rustc itself depends on it, and a stub of that name collides
+// with it (`E0464`). Reaching it from there is what `rustc_private` is
+// for. rayon and `pipe-trait` are not in the sysroot, so each has a
+// stub.
+//
+// Every Prefer form the rule's own docs ask for is here too. A form the
+// rule suggests and then fires on again is a false positive that reading
+// the Avoid cases alone would never find.
+
+#![feature(register_tool, rustc_private)]
+#![register_tool(perfectionist)]
+#![allow(dead_code, unused, reason = "ui fixture")]
+
+extern crate itertools;
+extern crate pipe_trait;
+extern crate rayon;
+
+use itertools::Itertools;
+use pipe_trait::Pipe;
+use rayon::prelude::*;
+use std::rc::Rc;
+
+fn record(length: usize) {}
+
+fn double(value: usize) -> usize {
+    value * 2
+}
+
+fn render(value: usize) -> String {
+    value.to_string()
+}
+
+fn results() -> std::vec::IntoIter<Result<&'static str, usize>> {
+    vec![Ok(" a "), Err(7)].into_iter()
+}
+
+fn lines() -> std::vec::IntoIter<&'static str> {
+    vec![" a ", " bb "].into_iter()
+}
+
+// Bad: the `Ok` inside a `Result` item is a channel nested one level
+// inside the iterator's own, so a lifted step goes into `map_ok`.
+fn nested_channel(
+    items: std::vec::IntoIter<Result<&'static str, usize>>,
+) -> Vec<Result<usize, usize>> {
+    items.map_ok(|text| text.trim().len()).collect()
+}
+
+// Good: one adapter per step, on the nested channel.
+fn split_nested_channel(
+    items: std::vec::IntoIter<Result<&'static str, usize>>,
+) -> Vec<Result<usize, usize>> {
+    items.map_ok(str::trim).map_ok(str::len).collect()
+}
+
+// Bad: binary over that same nested item.
+fn nested_fold(
+    mut items: std::vec::IntoIter<Result<&'static str, usize>>,
+) -> Result<usize, usize> {
+    items.fold_ok(0, |total, text| total + text.trim().len())
+}
+
+// Bad: binary over the iterator's own item, so this one lifts into `map`.
+fn own_fold(mut items: std::vec::IntoIter<&'static str>) -> usize {
+    items
+        .fold_while(0, |total, text| {
+            itertools::FoldWhile::Continue(total + text.trim().len())
+        })
+        .into_inner()
+}
+
+// Bad: a parallel adapter, whose split rayon performs itself for `any`.
+fn parallel(items: Parallel<&'static str>) -> Parallel<usize> {
+    items.map(|text| text.trim().len())
+}
+
+// Good: the same split.
+fn split_parallel(items: Parallel<&'static str>) -> Parallel<usize> {
+    items.map(str::trim).map(str::len)
+}
+
+// Bad: a parallel predicate-returning consumer.
+fn parallel_any(items: Parallel<&'static str>) -> bool {
+    items.any(|text| text.trim().is_empty())
+}
+
+// Bad: a piping method, where every step becomes one and none stays.
+fn piped(value: usize) -> String {
+    value.pipe(|number| render(double(number)))
+}
+
+// Not flagged: a lifted step's result has to cross a thread, and an `Rc`
+// cannot. The folded form compiles because the value never leaves the
+// closure.
+fn not_sendable(items: Parallel<&'static str>) -> Parallel<usize> {
+    items.map(|text| Rc::new(text).len())
+}
+
+// Not flagged: `pipe_ref` hands the closure a borrow, so a leading `pipe`
+// would be handing it something else.
+fn piped_by_reference(value: String) -> usize {
+    value.pipe_ref(|text| text.trim().len())
+}
+
+// Not flagged: `filter_map_ok`'s closure returns an `Option`, so what
+// splits inside it is the other rule's.
+fn nested_filter_map(
+    items: std::vec::IntoIter<Result<&'static str, usize>>,
+) -> Vec<Result<usize, usize>> {
+    items
+        .filter_map_ok(|text| text.trim().parse().ok())
+        .collect()
+}
+
+// Not flagged: one step is already one adapter doing one thing.
+fn one_step(
+    items: std::vec::IntoIter<Result<&'static str, usize>>,
+) -> Vec<Result<&'static str, usize>> {
+    items.map_ok(|text| text.trim()).collect()
+}
+
+fn main() {}
