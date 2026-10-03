@@ -21,6 +21,7 @@ use rustc_session::Session;
 dylint_linting::dylint_library!();
 
 mod abs_path;
+mod adapter_discipline;
 mod ascii_letter;
 mod attr_tokens;
 mod cargo_manifest;

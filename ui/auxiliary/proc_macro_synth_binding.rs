@@ -718,6 +718,33 @@ pub fn synth_splittable_adapter_closure(input: TokenStream) -> TokenStream {
     )
 }
 
+/// `#[derive(SynthSplittableAdapterPredicate)]` +
+/// `#[synth_splittable_adapter_predicate]` → `source`, every token of
+/// which inherits the user-span of `synth_splittable_adapter_predicate`.
+///
+/// `VARS` is the fixture's own `const`. The synthesised predicate runs
+/// two tests on the item, which the rule fires on when hand-written, so
+/// only the proc-macro guard keeps the fixture silent.
+#[proc_macro_derive(
+    SynthSplittableAdapterPredicate,
+    attributes(synth_splittable_adapter_predicate)
+)]
+pub fn synth_splittable_adapter_predicate(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_splittable_adapter_predicate").expect(
+        "`#[derive(SynthSplittableAdapterPredicate)]` requires a \
+         `#[synth_splittable_adapter_predicate]`",
+    );
+    let source = r#"
+        fn _synth_splittable_adapter_predicate() -> Vec<&'static str> {
+            VARS.iter().copied().filter(|entry| !entry.is_empty() && entry.ends_with(' ')).collect()
+        }
+    "#;
+    respan(
+        source.parse().expect("the synthesised source is valid Rust"),
+        attr_span,
+    )
+}
+
 /// Every token of `stream`, groups walked into, moved to `span`.
 fn respan(stream: TokenStream, span: Span) -> TokenStream {
     stream

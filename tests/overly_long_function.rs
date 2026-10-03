@@ -71,7 +71,8 @@ fn is_flagged(stderr: &str, function: &str) -> bool {
     let name = format!("`{function}` has");
     stderr
         .lines()
-        .any(|line| line.contains(&name) && line.contains("of code, above the limit of"))
+        .filter(|line| line.contains(&name))
+        .any(|line| line.contains("of code, above the limit of"))
 }
 
 fn assert_flagged(stderr: &str, function: &str) {
