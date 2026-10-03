@@ -46,6 +46,9 @@ pub(super) fn always_evaluated(cx: &LateContext<'_>, chain: HirId, body: HirId) 
             }
             Node::LetStmt(local) => child = local.hir_id,
             Node::Block(block) => child = block.hir_id,
+            // A struct expression's field is a node of its own, and
+            // every field it holds is evaluated.
+            Node::ExprField(field) => child = field.hir_id,
             _ => return false,
         }
     }
@@ -121,7 +124,7 @@ fn evaluates(parent: &Expr<'_>, reached: HirId) -> bool {
 ///
 /// A nested closure's own `return` leaves that closure rather than this
 /// one, which is why the visitor stays at its default nesting filter.
-pub(super) fn nothing_diverts_first<'tcx>(
+pub(super) fn nothing_observable_first<'tcx>(
     cx: &LateContext<'tcx>,
     chain: HirId,
     body: HirId,
@@ -136,6 +139,7 @@ pub(super) fn nothing_diverts_first<'tcx>(
             }
             Node::Stmt(statement) => child = statement.hir_id,
             Node::LetStmt(local) => child = local.hir_id,
+            Node::ExprField(field) => child = field.hir_id,
             Node::Block(block) => {
                 // Every statement before the one the chain is in runs
                 // first, and so does nothing after it.
@@ -143,25 +147,42 @@ pub(super) fn nothing_diverts_first<'tcx>(
                     .stmts
                     .iter()
                     .position(|statement| statement.hir_id == child);
-                let before = reached.unwrap_or(block.stmts.len());
-                earlier.extend(statements(&block.stmts[..before]));
+                let before = &block.stmts[..reached.unwrap_or(block.stmts.len())];
+                // A `let`-`else` leaves the closure exactly where its
+                // pattern does not match, and its `else` block is
+                // divergent by construction, so nothing has to be read
+                // from a type for it.
+                if before.iter().any(|statement| leaves(statement)) {
+                    return false;
+                }
+                earlier.extend(statements(before));
                 child = block.hir_id;
             }
             // The walk above has already declined anything else.
             _ => return false,
         }
     }
-    !earlier.iter().any(|expression| diverges(cx, expression))
+    !earlier.iter().any(|expression| observable(cx, expression))
+}
+
+/// Whether `statement` is a `let`-`else`, whose `else` block leaves the
+/// closure where the pattern does not match.
+fn leaves(statement: &Stmt<'_>) -> bool {
+    matches!(statement.kind, StmtKind::Let(local) if local.els.is_some())
 }
 
 /// The expressions `parent` evaluates before the child the chain came
 /// through.
 fn preceding<'tcx>(parent: &'tcx Expr<'tcx>, reached: HirId, earlier: &mut Vec<&'tcx Expr<'tcx>>) {
+    // Each arm below answers for the positions that are not operands
+    // before it reaches here, so the fallback is unreachable; counting
+    // everything as preceding rather than nothing is what makes an arm
+    // added without one err toward declining.
     let before = |operands: &'tcx [Expr<'tcx>]| {
         let reached_at = operands
             .iter()
             .position(|operand| operand.hir_id == reached);
-        &operands[..reached_at.unwrap_or(0)]
+        &operands[..reached_at.unwrap_or(operands.len())]
     };
     match parent.kind {
         // The right side runs before the place it is assigned to, which
@@ -206,9 +227,12 @@ fn preceding<'tcx>(parent: &'tcx Expr<'tcx>, reached: HirId, earlier: &mut Vec<&
         ExprKind::Tup(operands) | ExprKind::Array(operands) => {
             earlier.extend(before(operands));
         }
+        // A field's expression is reached through the field's own node,
+        // and the `..base` is reached as an expression, so a search that
+        // finds neither means the base, which every field precedes.
         ExprKind::Struct(_, fields, _) => {
-            let reached_at = fields.iter().position(|field| field.expr.hir_id == reached);
-            let before = &fields[..reached_at.unwrap_or(0)];
+            let reached_at = fields.iter().position(|field| field.hir_id == reached);
+            let before = &fields[..reached_at.unwrap_or(fields.len())];
             earlier.extend(before.iter().map(|field| field.expr));
         }
         // Everything else the walk admits holds one operand, or holds the
@@ -228,23 +252,36 @@ fn statements<'tcx>(statements: &'tcx [Stmt<'tcx>]) -> impl Iterator<Item = &'tc
         })
 }
 
-/// Whether evaluating `expr` can leave the closure.
-fn diverges<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
-    struct Diverges<'a, 'tcx> {
+/// Whether evaluating `expr` is something the split can be told apart
+/// from.
+///
+/// A call is where the answer comes from in both directions: it can leave
+/// the closure, and it can have an effect whose order against the item's
+/// steps the reader can see. An operator on a user type is a call too,
+/// which is why the question is asked of typeck rather than of the node
+/// kind alone.
+fn observable<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
+    struct Observable<'a, 'tcx> {
         cx: &'a LateContext<'tcx>,
         found: bool,
     }
-    impl<'tcx> Visitor<'tcx> for Diverges<'_, 'tcx> {
+    impl<'tcx> Visitor<'tcx> for Observable<'_, 'tcx> {
         fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
-            if self.cx.typeck_results().expr_ty(expr).is_never()
-                || matches!(expr.kind, ExprKind::Match(_, _, MatchSource::TryDesugar(_)))
-            {
+            let leaves = self.cx.typeck_results().expr_ty(expr).is_never()
+                || matches!(expr.kind, ExprKind::Match(_, _, MatchSource::TryDesugar(_)));
+            let calls = matches!(expr.kind, ExprKind::Call(..) | ExprKind::MethodCall(..))
+                || self
+                    .cx
+                    .typeck_results()
+                    .type_dependent_def_id(expr.hir_id)
+                    .is_some();
+            if leaves || calls {
                 self.found = true;
             }
             walk_expr(self, expr);
         }
     }
-    let mut diverges = Diverges { cx, found: false };
-    diverges.visit_expr(expr);
-    diverges.found
+    let mut observable = Observable { cx, found: false };
+    observable.visit_expr(expr);
+    observable.found
 }

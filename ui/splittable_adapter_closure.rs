@@ -528,4 +528,68 @@ fn built_from_a_macro(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     trimmed_lengths!(lines)
 }
 
+struct Pair {
+    first: usize,
+    second: usize,
+}
+
+fn pair(count: usize) -> Pair {
+    Pair {
+        first: count,
+        second: count,
+    }
+}
+
+fn counted(total: usize) -> usize {
+    total
+}
+
+// Bad: a struct expression's field is a position the chain is always
+// reached through, and every field before it runs first.
+fn folds_into_a_struct_field(lines: std::vec::IntoIter<&'static str>) -> Pair {
+    lines.fold(
+        Pair {
+            first: 0,
+            second: 0,
+        },
+        |acc, line| Pair {
+            first: acc.first + line.trim().len(),
+            second: acc.second,
+        },
+    )
+}
+
+// Not flagged: a `let`-`else` before the chain leaves the closure exactly
+// where its pattern does not match.
+fn diverges_in_a_let_else(
+    fallback: Option<usize>,
+    lines: std::vec::IntoIter<&'static str>,
+) -> usize {
+    lines.fold(0, |total, line| {
+        let Some(extra) = fallback else {
+            return total;
+        };
+        total + extra + line.trim().len()
+    })
+}
+
+// Not flagged: a struct expression evaluates its fields before its
+// `..base`, so a divergence in a field runs before a chain in the base.
+fn diverges_in_a_struct_field(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.fold(0, |total, line| {
+        let built = Pair {
+            first: if flag { std::process::exit(1) } else { 0 },
+            ..pair(line.trim().len())
+        };
+        total + built.second
+    })
+}
+
+// Not flagged: the accumulator's side of a stateful closure runs before
+// the chain and after it once the chain is lifted, so a call there keeps
+// the answer and moves the trace.
+fn accumulator_has_an_effect(lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.fold(0, |total, line| counted(total) + line.trim().len())
+}
+
 fn main() {}
