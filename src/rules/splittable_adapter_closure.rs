@@ -27,9 +27,10 @@ use crate::common::{DefaultState, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::{is_from_proc_macro, sym};
-use rustc_hir::{Expr, ExprKind};
+use rustc_hir::def_id::LocalDefId;
+use rustc_hir::{Expr, ExprKind, HirId};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
-use rustc_middle::ty::Ty;
+use rustc_middle::ty::{BorrowKind, CapturedPlace, Ty, UpvarCapture};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
 mod adapter;
@@ -198,10 +199,17 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
             true => &steps[..steps.len() - 1],
             false => &steps[..],
         };
-        let item_ty = cx.typeck_results().pat_ty(parameter.pat);
-        if !lifted
+        if !lifted.iter().all(|step| is_liftable(cx, step.expr)) {
+            return;
+        }
+        // A lifted step runs in a closure of its own, alongside the one
+        // the adapter keeps. Two closures cannot both hold a mutable
+        // borrow of the same capture, so a step reaching one is `E0499`
+        // once lifted.
+        let mutably_captured = mutable_captures(cx, closure.def_id);
+        if lifted
             .iter()
-            .all(|step| is_liftable(cx, step.expr, item_ty))
+            .any(|step| chain::mentions(cx, step.expr, &mutably_captured))
         {
             return;
         }
@@ -211,7 +219,10 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
             // position condition vacuously, and holds the scope to a
             // closure whose whole job is the chain.
             true => top.hir_id == body.value.hir_id,
-            false => position::always_evaluated(cx, top.hir_id, body.value.hir_id),
+            false => {
+                position::always_evaluated(cx, top.hir_id, body.value.hir_id)
+                    && position::nothing_diverts_first(body, root.span)
+            }
         };
         if !anchored {
             return;
@@ -243,21 +254,58 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
 
 /// Whether lifting `step` out of the closure keeps it compiling.
 ///
-/// A lifted step runs in a `map` of its own, where the item is a local
-/// that dies at the end of it, so a result borrowing that local is
-/// `E0515`. Two shapes rule that out. A result carrying no lifetime
-/// borrows nothing. And where the item is itself a reference, a step's
-/// `&self` borrows the referent rather than the local pointer, and the
-/// referent outlives the closure: `.map(|s: &str| s.trim())` hands back
-/// a borrow of what `s` points at.
+/// A lifted step runs in a `map` of its own, applied to a local that
+/// dies at the end of it, so a result borrowing that local is `E0515`.
+/// Two shapes rule that out. A result carrying no lifetime borrows
+/// nothing. And where what the step is applied to is itself a
+/// reference, a `&self` borrows the referent rather than the local
+/// pointer, and the referent outlives the closure:
+/// `.map(|s: &str| s.trim())` hands back a borrow of what `s` points
+/// at.
 ///
-/// Regions are erased by the time typeck results are read, so the
-/// result's lifetime cannot be matched against the item's. These two
-/// clauses are the conservative answer that needs no such match. What
-/// they decline is an owned item handing back a borrow, which is the
-/// shape the planning file measured as `E0515`.
-fn is_liftable<'tcx>(cx: &LateContext<'tcx>, step: &'tcx Expr<'tcx>, item: Ty<'tcx>) -> bool {
-    !borrows(cx.typeck_results().expr_ty(step)) || item.is_ref()
+/// The question is about the step's own receiver, which is the item
+/// only for the first step. Each later one is applied to the step
+/// before it, so `.map(|s: &str| s.to_lowercase().trim())` has an
+/// owned `String` under its `trim` however the item arrived.
+///
+/// Regions are erased by the time typeck results are read, so a
+/// result's lifetime cannot be matched against the receiver's. These
+/// two clauses are the conservative answer that needs no such match.
+fn is_liftable<'tcx>(cx: &LateContext<'tcx>, step: &'tcx Expr<'tcx>) -> bool {
+    if !borrows(cx.typeck_results().expr_ty(step)) {
+        return true;
+    }
+    let Some(receiver) = applied_to(step) else {
+        return false;
+    };
+    cx.typeck_results().expr_ty(receiver).is_ref()
+}
+
+/// What `step` applies itself to: a method call's receiver, or the sole
+/// argument of a call.
+fn applied_to<'tcx>(step: &'tcx Expr<'tcx>) -> Option<&'tcx Expr<'tcx>> {
+    match step.kind {
+        ExprKind::MethodCall(_, receiver, ..) => Some(receiver),
+        ExprKind::Call(_, [only]) => Some(only),
+        _ => None,
+    }
+}
+
+/// The locals this closure captures in a way a second closure could
+/// not also hold: a mutable borrow, a unique immutable borrow, or a
+/// move. A shared borrow is left out, since any number of closures may
+/// hold one.
+fn mutable_captures<'tcx>(cx: &LateContext<'tcx>, closure: LocalDefId) -> Vec<HirId> {
+    cx.typeck_results()
+        .closure_min_captures_flattened(closure)
+        .filter(|capture| {
+            !matches!(
+                capture.info.capture_kind,
+                UpvarCapture::ByRef(BorrowKind::Immutable),
+            )
+        })
+        .map(CapturedPlace::get_root_variable)
+        .collect()
 }
 
 /// Whether `ty` mentions a region, which is where a borrow would show

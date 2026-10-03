@@ -66,6 +66,12 @@ pub(super) fn steps<'tcx>(
     let mut steps = Vec::new();
     let mut chain = root;
     while let Node::Expr(parent) = cx.tcx.parent_hir_node(chain.hir_id) {
+        // `?` lowers to a `match` on `Try::branch(operand)`, and that
+        // call's sole argument is the chain, so it reads as a step the
+        // reader never wrote and could not lift into a `map`.
+        if parent.span.desugaring_kind().is_some() {
+            break;
+        }
         let extends = match parent.kind {
             ExprKind::MethodCall(_, receiver, arguments, _) => {
                 receiver.hir_id == chain.hir_id
@@ -93,7 +99,7 @@ pub(super) fn steps<'tcx>(
 /// A nested body is where a use hides from a visitor left at the default
 /// nesting filter: a step's own closure argument can name the item or
 /// the accumulator, and lifting that step would leave the name behind.
-fn uses<'tcx>(
+pub(super) fn uses<'tcx>(
     cx: &LateContext<'tcx>,
     expr: &'tcx Expr<'tcx>,
     bindings: &[HirId],
@@ -127,4 +133,13 @@ fn uses<'tcx>(
     };
     collect.visit_expr(expr);
     collect.found
+}
+
+/// Whether `expr` names any of `bindings`.
+pub(super) fn mentions<'tcx>(
+    cx: &LateContext<'tcx>,
+    expr: &'tcx Expr<'tcx>,
+    bindings: &[HirId],
+) -> bool {
+    !uses(cx, expr, bindings).is_empty()
 }

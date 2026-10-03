@@ -20,6 +20,11 @@ fn parse(text: &str) -> usize {
 
 fn record(length: usize) {}
 
+fn bump(seen: &mut Vec<usize>) -> usize {
+    seen.push(0);
+    seen.len()
+}
+
 fn label(length: usize) -> &'static str {
     match length {
         0 => "empty",
@@ -334,6 +339,53 @@ fn running_total(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .scan(0, |total, line| Some(*total + line.trim().len()))
         .collect()
+}
+
+// Not flagged: an early `return` leaves the closure before the chain,
+// so a leading `map` would run the step for every item where the
+// closure ran it for none.
+fn early_return_fold(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.fold(0, |total, line| {
+        if flag {
+            return total;
+        }
+        total + line.trim().len()
+    })
+}
+
+// Not flagged: a `?` before the chain leaves it the same way.
+fn try_before_the_chain(
+    first: Option<usize>,
+    mut lines: std::vec::IntoIter<&'static str>,
+) -> Option<usize> {
+    lines.try_fold(0, |total, line| Some(total + first? + line.trim().len()))
+}
+
+// Not flagged: one step, where the `?` the reader wrote is not a second
+// one. It lowers to a call the chain is the argument of, which no `map`
+// could hold.
+fn one_step_through_try(
+    mut lines: std::vec::IntoIter<&'static str>,
+) -> Result<usize, std::num::ParseIntError> {
+    lines.try_fold(0usize, |total, line| Ok(total + line.parse::<usize>()?))
+}
+
+// Not flagged: the second step is applied to an owned `String`, which
+// dies at the end of the `map` it would lift into, however the item
+// arrived.
+fn owned_intermediate(lines: std::vec::IntoIter<&'static str>) -> Vec<String> {
+    lines
+        .map(|line| line.to_lowercase().trim().to_string())
+        .collect()
+}
+
+// Not flagged: a step mutably borrowing a capture the closure holds
+// too, which two closures could not both do.
+fn mutable_capture_in_a_step(lines: std::vec::IntoIter<&'static str>) -> usize {
+    let mut seen = Vec::new();
+    lines.fold(0, |total, line| {
+        total + line.trim().len().min(bump(&mut seen))
+    })
 }
 
 // Not flagged: a destructured parameter bottoms the chain out at a

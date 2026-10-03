@@ -19,8 +19,10 @@
 //! conditional position, and this declines it, because Rust exposes no
 //! purity test a lint could ask instead.
 
-use rustc_hir::{BinOpKind, Expr, ExprKind, HirId, Node};
+use rustc_hir::intravisit::{Visitor, walk_expr};
+use rustc_hir::{BinOpKind, Body, Expr, ExprKind, HirId, MatchSource, Node};
 use rustc_lint::LateContext;
+use rustc_span::Span;
 
 /// Whether every node between `chain` and the body root always
 /// evaluates the child the chain came through.
@@ -89,9 +91,49 @@ fn evaluates(parent: &Expr<'_>, reached: HirId) -> bool {
         // on its operand, so it needs no case of its own.
         ExprKind::Match(scrutinee, ..) => is(scrutinee),
         // The same split, where the condition takes the scrutinee's
-        // place. An `if let` reaches here too, with its `let` for the
-        // condition.
+        // place.
         ExprKind::If(condition, ..) => is(condition),
         _ => false,
     }
+}
+
+/// Whether anything that can leave the closure runs before `chain`.
+///
+/// [`always_evaluated`] asks what stands above the chain, which says
+/// nothing about what runs before it. An early `return`, a `break`, a
+/// `continue` or a `?` reached first leaves the closure without
+/// evaluating the chain at all, so a lifted step would run for every
+/// item where the folded form ran it for none. The same program written
+/// as an `if` with no `return` is declined by the walk, and these two
+/// answers have to agree.
+///
+/// A nested closure's own `return` leaves that closure rather than this
+/// one, which is why the visitor stays at its default nesting filter.
+pub(super) fn nothing_diverts_first(body: &Body<'_>, chain: Span) -> bool {
+    struct Diversions {
+        chain: Span,
+        found: bool,
+    }
+    impl<'tcx> Visitor<'tcx> for Diversions {
+        fn visit_expr(&mut self, expr: &'tcx Expr<'tcx>) {
+            let diverts = matches!(
+                expr.kind,
+                ExprKind::Ret(_)
+                    | ExprKind::Break(..)
+                    | ExprKind::Continue(_)
+                    | ExprKind::Become(_)
+                    | ExprKind::Match(_, _, MatchSource::TryDesugar(_)),
+            );
+            if diverts && expr.span.lo() < self.chain.lo() {
+                self.found = true;
+            }
+            walk_expr(self, expr);
+        }
+    }
+    let mut diversions = Diversions {
+        chain,
+        found: false,
+    };
+    diversions.visit_expr(body.value);
+    !diversions.found
 }
