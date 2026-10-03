@@ -72,12 +72,14 @@ method is measured by both.
 
 `to_*` announces a conversion that costs something, so an owned
 value is what that name already promises, and neither rule
-measures it. `into_*` promises more than cost: it promises to
-consume, so `perfectionist::unconsumed_into_conversion` measures
-one that does not. A name that is none of the three and that the
-getter rule does not read as a getter — one naming no field, with
-nothing in `getter_name_patterns` admitting it — is left alone by
-both as well.
+measures it; a `to_*` that costs nothing is
+`perfectionist::costless_to_conversion`'s to measure. `into_*`
+promises more than cost: it promises to consume, so
+`perfectionist::unconsumed_into_conversion` measures one that does
+not. A name that is none of the three and that the getter rule
+does not read as a getter — one naming no field, with nothing in
+`getter_name_patterns` admitting it — is left alone by both as
+well.
 
 ## Example
 
