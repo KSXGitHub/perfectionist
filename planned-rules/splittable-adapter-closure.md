@@ -10,52 +10,51 @@ below is the catalogue's own rather than a quotation.
 
 ## Status
 
-The **chain** trigger is implemented, in
-[`src/rules/splittable_adapter_closure.rs`](../src/rules/splittable_adapter_closure.rs),
-over `Iterator` and `DoubleEndedIterator`. What it covers:
+Three rules implement this file's three triggers, which are three rules
+rather than one because each has its own trigger predicate, its own lift
+target and no shared configuration, per
+[One rule per file, one `Config` per rule](../CLAUDE.md#one-rule-per-file-one-config-per-rule).
 
-- The adapters whose item enters by value and never comes back out,
-  unary and binary, as tabled in
-  [Which adapters](#which-adapters), **less** `filter_map`, `find_map`
-  and `map_while`: their closure returns an `Option`, and what splits
-  inside one lifts into a discipline-matched adapter rather than into a
-  `map`, per [A guard and a value](#a-guard-and-a-value). Flagging them
-  from here would offer the weaker split.
-- The item-occurs-once rule, the two-step minimum, the position
-  condition of
-  [When the chain may be hoisted](#when-the-chain-may-be-hoisted), and
-  the proc-macro guard.
-- Liftability by a narrower test than
-  [When a step can be lifted](#when-a-step-can-be-lifted) describes: a
-  step lifts where its result carries no lifetime, or where the item is
-  itself a reference, so a `&self` borrows the referent rather than the
-  closure's local. Regions are erased in typeck results, so the
-  result's lifetime cannot be matched against the item's, and this is
-  the conservative pair that needs no such match.
+| trigger | rule | a lifted part goes into |
+|---|---|---|
+| chain | [`src/rules/splittable_adapter_closure.rs`](../src/rules/splittable_adapter_closure.rs) | the adapter mapping the item's channel |
+| predicate | [`src/rules/splittable_adapter_predicate.rs`](../src/rules/splittable_adapter_predicate.rs) | `filter` or `take_while`, by discipline |
+| guard and value | [`src/rules/splittable_adapter_option_chain.rs`](../src/rules/splittable_adapter_option_chain.rs) | the combinator's counterpart, discipline-matched |
+
+Families reached: `Iterator`, `DoubleEndedIterator`, `Option`, `Result`,
+`Poll` and `ControlFlow`.
+
+Narrower than this file describes, each narrowing measured against this
+crate's own source:
+
+- **A single-value family's fallible, defaulted and predicate-shaped
+  adapters stay folded.** `and_then`, `map_or`, `map_or_else`,
+  `or_else`, `unwrap_or_else` and the `is_*_and` family leave a lifted
+  step's result wrapped in what the adapter keeps, which costs a wrapper
+  and sometimes a `mut` rebinding. Those splits are equivalent, as
+  [`Option` and `Result`](#option-and-result) tables; what it does not
+  table is what they read like.
+- **A conjunction holding a comparison stays folded.** A comparison is a
+  bound rather than a question, and a conjunction of them is how Rust
+  spells one test, so each half gets no adapter of its own.
+- **Liftability asks about a step's own receiver** rather than the item,
+  which [When a step can be lifted](#when-a-step-can-be-lifted) is about:
+  regions are erased in typeck results, so a result's lifetime cannot be
+  matched against the item's, and the item is the receiver of the first
+  step alone.
+- **`filter_map`, `find_map` and `map_while` are the guard-and-value
+  trigger's**, not the chain's, so the chain rule leaves them alone.
 
 Not implemented, and the rest of this file is their active spec:
 
-- The **predicate** trigger of
-  [Splitting a predicate](#splitting-a-predicate) and the
-  **guard-and-value** trigger of
-  [A guard and a value](#a-guard-and-a-value). Each is independently
-  triggered, lifts into a filtering adapter chosen by discipline rather
-  than into a `map`, and shares no configuration with the chain
-  trigger. By the test in
-  [One rule per file, one `Config` per rule](../CLAUDE.md#one-rule-per-file-one-config-per-rule)
-  they are rules of their own, and whoever implements them should split
-  this file rather than widen the registered lint.
-- Every family beyond `Iterator`: `Option`, `Result`, `Poll`,
-  `ControlFlow`, `itertools`, rayon and `pipe-trait`.
-- No check that an adapter taking `&mut self` leaves its receiver in
-  use. [Which adapters](#which-adapters) measures the `E0382` a split
-  causes where the receiver is used after the call; the rule fires
-  there all the same, so the rewrite needs the reborrow that note
-  gives.
-- No autofix. The diagnostic names the count and asks for the split,
-  because the point-free form a split invites asks more of each step
-  than the split does, so the text a rewrite would have to choose is
-  not the text a reader wants.
+- `itertools`, rayon and `pipe-trait`.
+- The `&mut self` receiver used after the adapter returns, per
+  [Which adapters](#which-adapters). Telling needs liveness, so the rule
+  fires and the rewrite needs the reborrow that section gives.
+- No autofix. The point-free form a split invites asks more of each step
+  than the split does, so the text a rewrite would have to choose is not
+  the text a reader wants.
+- Both `## Deferred` sections below.
 
 ## Statement
 

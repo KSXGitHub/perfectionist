@@ -17,11 +17,10 @@
 //! into something that compiles and behaves differently, which is why
 //! [`position`] is where the care goes.
 //!
-//! Scope: `Iterator` and `DoubleEndedIterator`, and steps taking their
-//! receiver by value. The
-//! planning file's other families and its other two triggers are not
-//! implemented; `planned-rules/splittable-adapter-closure.md` records
-//! which.
+//! Scope: steps taking their receiver by value, over the families
+//! [`adapter::Family`] names. The planning file's remaining families are
+//! not implemented, and its other two triggers are rules of their own;
+//! `planned-rules/splittable-adapter-closure.md` records both.
 
 use self::adapter::{Adapter, Family};
 use crate::binding_uses::{names, uses};
