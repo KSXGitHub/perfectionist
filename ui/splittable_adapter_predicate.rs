@@ -105,6 +105,33 @@ fn invariant_conjunct(flag: bool, lines: std::vec::IntoIter<&'static str>) -> Ve
     lines.filter(|line| flag && wanted(line)).collect()
 }
 
+struct Counter {
+    seen: usize,
+}
+
+impl Counter {
+    fn bump(&mut self) -> bool {
+        self.seen += 1;
+        true
+    }
+
+    fn flagged(&self) -> bool {
+        self.seen > 1
+    }
+}
+
+// Not flagged: `any` hands the item over where `filter` hands a
+// reference, so a test needing it mutably has nothing to get `&mut` out
+// of `&&mut`.
+fn mutable_item_by_value(counters: &mut [Counter]) -> bool {
+    counters.iter_mut().any(|counter| counter.bump() && counter.flagged())
+}
+
+// Not flagged: `Option::is_some_and` hands it over the same way.
+fn mutable_option_item(slot: Option<&mut Counter>) -> bool {
+    slot.is_some_and(|counter| counter.bump() && counter.flagged())
+}
+
 // Not flagged: a conjunction of comparisons is one test. Each of these
 // asks a single question that its halves do not: whether a byte is
 // whitespace, and whether a position is inside a range.

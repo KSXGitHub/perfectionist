@@ -165,6 +165,18 @@ fn discipline(family: Family, method: Symbol) -> Option<Discipline> {
     })
 }
 
+/// Whether `method` hands the item to its closure by value, where the
+/// lift target hands it by reference.
+///
+/// `filter` and `take_while` take `&Item`, so a test lifted out of an
+/// adapter that was handed the item itself gets one reference more than
+/// it had. For most items that is deref coercion and nothing else, but a
+/// test needing the item mutably has nothing to get `&mut` out of `&&mut`
+/// and the lift is `E0596`.
+fn hands_the_item_over(method: Symbol) -> bool {
+    matches!(method.as_str(), "any" | "is_some_and")
+}
+
 impl<'tcx> LateLintPass<'tcx> for SplittableAdapterPredicate {
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
         let ExprKind::MethodCall(segment, receiver, arguments, _) = expr.kind else {
@@ -189,6 +201,10 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterPredicate {
         let Some(item) = binding_hir_id(parameter.pat) else {
             return;
         };
+        let item_ty = cx.typeck_results().pat_ty(parameter.pat);
+        if hands_the_item_over(segment.ident.name) && item_ty.is_mutable_ptr() {
+            return;
+        }
         let mut conjuncts = Vec::new();
         collect(body.value, &mut conjuncts);
         if conjuncts.len() < 2 {
