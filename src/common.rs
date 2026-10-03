@@ -290,6 +290,12 @@ pub(crate) fn binding_hir_id<'hir>(pat: &'hir hir::Pat<'hir>) -> Option<hir::Hir
     }
 }
 
+/// Whether `ty` mentions a region, which is where a borrow would show
+/// up.
+pub(crate) fn borrows(ty: rustc_middle::ty::Ty<'_>) -> bool {
+    ty.walk().any(|argument| argument.as_region().is_some())
+}
+
 /// Whether `pat` binds its value so the body can write to it.
 ///
 /// Two rules lift a test out of an adapter handed the item by value into

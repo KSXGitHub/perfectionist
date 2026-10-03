@@ -8,7 +8,7 @@
 
 use crate::adapter_discipline::Discipline;
 use crate::binding_uses::names;
-use crate::common::{binding_hir_id, binds_mutably};
+use crate::common::{binding_hir_id, binds_mutably, borrows};
 use crate::exclusive_captures::exclusive;
 use crate::extra_reference::survives;
 use rustc_hir::def_id::LocalDefId;
@@ -126,6 +126,14 @@ pub(super) fn split<'tcx>(
     // both halves reach does not compile once split.
     let held_alone = exclusive(cx, closure);
     if names(cx, receiver, &held_alone) && names(cx, argument, &held_alone) {
+        return None;
+    }
+    // `Fallible` and `Infallible` move the later stage into an adapter of
+    // its own, so the earlier stage's `Option` becomes that adapter's item
+    // and leaves the closure. A result borrowing anything is `E0515`
+    // there, and the regions are erased by now, so a borrow of the item
+    // cannot be told from one of something outliving the closure.
+    if matches!(split, Split::Fallible(_) | Split::Infallible) && borrows(receiver_ty) {
         return None;
     }
     // A leading `filter_map` or a trailing `filter` drops items, which

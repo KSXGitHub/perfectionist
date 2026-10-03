@@ -216,6 +216,20 @@ fn first_word(text: &str) -> Option<&str> {
     text.split(' ').next()
 }
 
+// Not flagged: the stage that stays becomes the next adapter's item, so a
+// result borrowing anything leaves the closure with it.
+fn stage_borrows(names: std::vec::IntoIter<String>) -> Vec<usize> {
+    names
+        .filter_map(|name| first_word(&name).map(render))
+        .collect()
+}
+
+macro_rules! staged {
+    ($line:expr) => {
+        parse($line).map(double)
+    };
+}
+
 // Not flagged: one stage has nothing to hand over.
 fn one_stage(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| parse(line)).collect()

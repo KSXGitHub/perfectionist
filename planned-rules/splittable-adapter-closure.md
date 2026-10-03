@@ -51,6 +51,11 @@ crate's own source:
 - **`partition_map` has no lift target**, its closure returning an
   `Either`, and only `Pipe`'s by-value `pipe` is in scope: the rest hand
   the closure a borrow.
+- **The guard-and-value trigger declines a stage whose result borrows.**
+  The stage that stays becomes the next adapter's item, so a borrow leaves
+  the closure with it, and the erased regions make a borrow of the item
+  indistinguishable from one that outlives the closure. A stage returning
+  `Option<&str>` is the cost.
 - **A borrowing adapter whose receiver is named again is declined**
   rather than suggesting the reborrow of
   [Which adapters](#which-adapters), which is the cheaper error that

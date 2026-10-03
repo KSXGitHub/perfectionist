@@ -24,7 +24,7 @@
 
 use self::adapter::{Adapter, Family};
 use crate::binding_uses::{names, uses};
-use crate::common::{DefaultState, hir_in_external_macro};
+use crate::common::{DefaultState, borrows, hir_in_external_macro};
 use crate::exclusive_captures::exclusive;
 use crate::receiver_move::movable;
 use crate::rule_index::{Register, rule};
@@ -35,7 +35,6 @@ use clippy_utils::{is_from_proc_macro, sym};
 use rustc_hir::def_id::DefId;
 use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
-use rustc_middle::ty::Ty;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Symbol;
 
@@ -415,10 +414,4 @@ fn is_sendable<'tcx>(cx: &LateContext<'tcx>, step: &'tcx Expr<'tcx>) -> bool {
         return false;
     };
     implements_trait(cx, cx.typeck_results().expr_ty(step), send, &[])
-}
-
-/// Whether `ty` mentions a region, which is where a borrow would show
-/// up.
-fn borrows(ty: Ty<'_>) -> bool {
-    ty.walk().any(|argument| argument.as_region().is_some())
 }
