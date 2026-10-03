@@ -142,6 +142,10 @@ fn install(root: &Path, version: &str) -> Result<(), InstallError> {
         install_root.display(),
     );
 
+    // Cargo keeps a cached index entry when revalidation reports it
+    // unchanged, so an entry predating the pinned version hides that
+    // version from the `cargo install` below. Removing it forces a
+    // fetch. See <https://github.com/KSXGitHub/perfectionist/pull/497>.
     evict_cached_index_entries();
 
     "cargo"
