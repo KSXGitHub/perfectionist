@@ -134,4 +134,20 @@ LL |     fn as_inner_name(&self) -> String {
    |
    = help: rename it `to_inner_name`, the prefix for a conversion that costs something, so the call site shows what it pays
 
+warning: `as_display_name` returns an owned `Cow<'_, str>`, but `as_` promises a free conversion
+  --> $DIR/owned_as_conversion.rs:LL:CC
+   |
+LL |     fn as_display_name(&self) -> Cow<'_, str> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: rename it `to_display_name`, the prefix for a conversion that costs something, so the call site shows what it pays
+
+warning: `as_display_middle` returns an owned `Option<Cow<'_, str>>`, but `as_` promises a free conversion
+  --> $DIR/owned_as_conversion.rs:LL:CC
+   |
+LL |     fn as_display_middle(&self) -> Option<Cow<'_, str>> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: rename it `to_display_middle`, the prefix for a conversion that costs something, so the call site shows what it pays
+
 warning: N warnings emitted
