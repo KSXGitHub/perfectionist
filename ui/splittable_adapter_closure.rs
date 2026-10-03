@@ -261,6 +261,17 @@ fn branching_fold(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize 
     })
 }
 
+// Not flagged: a `let`'s `else` block runs only where the pattern does
+// not match.
+fn let_else_fold(fallback: Option<usize>, lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.fold(0, |total, line| {
+        let Some(extra) = fallback else {
+            return total + line.trim().len();
+        };
+        total + extra
+    })
+}
+
 // Not flagged: nor does an arm of a `match`.
 fn arm_fold(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| match flag {

@@ -38,6 +38,11 @@ pub(super) fn always_evaluated(cx: &LateContext<'_>, chain: HirId, body: HirId) 
             // when the block does, so which of them interposed does not
             // matter; the block's own position is what remains to ask.
             Node::Stmt(statement) => child = statement.hir_id,
+            // A `let`'s `else` block is the exception: it runs only
+            // where the pattern does not match.
+            Node::LetStmt(local) if local.els.is_some_and(|els| els.hir_id == child) => {
+                return false;
+            }
             Node::LetStmt(local) => child = local.hir_id,
             Node::Block(block) => child = block.hir_id,
             _ => return false,
