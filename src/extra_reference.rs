@@ -8,7 +8,19 @@
 //!
 //! A method call's receiver autoderefs to whatever depth the method
 //! wants, so it survives unless the method takes `self` and the item is
-//! not `Copy`, there being no value for the autoderef to produce.
+//! not `Copy`, there being no value for the autoderef to produce. That
+//! holds only where the probe picks the *same* method, and the extra
+//! reference adds a step at the front where another candidate can match
+//! first: `[T; N]::into_iter` yields `T` where `&[T; N]`'s yields `&T`,
+//! and `<&T as Clone>::clone` hands back the reference where `T`'s hands
+//! back a `T`. An inherent method cannot be the one intercepted, there
+//! being no way to write an inherent impl on a reference type, so a trait
+//! method is declined rather than guessed at.
+//!
+//! What that leaves is an inherent method shadowed at the extra reference
+//! by a trait method of the same name implemented for `&Item`. It needs
+//! the trait in scope and the names to collide, and no cheap question
+//! tells it apart from the inherent call, so it stays.
 //!
 //! An argument survives where the parameter it fills is declared as a
 //! reference to a type holding no parameter, a coercion site derefing
@@ -21,6 +33,7 @@ use crate::binding_uses::uses;
 use crate::receiver_move::borrows_the_receiver;
 use rustc_hir::{Expr, ExprKind, HirId, Node};
 use rustc_lint::LateContext;
+use rustc_middle::ty::adjustment::{Adjust, PointerCoercion};
 use rustc_middle::ty::{Ty, TyKind, TypeVisitableExt};
 
 /// Whether every mention of `item` in `lifted` survives one more
@@ -43,7 +56,7 @@ fn mention_survives<'tcx>(cx: &LateContext<'tcx>, mention: &Expr<'tcx>, copy: bo
     };
     match parent.kind {
         ExprKind::MethodCall(_, receiver, _, _) if receiver.hir_id == mention.hir_id => {
-            borrows_the_receiver(cx, parent) || copy
+            is_inherent(cx, parent) && (borrows_the_receiver(cx, parent) || copy)
         }
         // `self` occupies the first declared parameter, so the arguments
         // start one along.
@@ -59,6 +72,14 @@ fn mention_survives<'tcx>(cx: &LateContext<'tcx>, mention: &Expr<'tcx>, copy: bo
         }
         _ => false,
     }
+}
+
+/// Whether `call`'s method is an inherent one, which no impl on a
+/// reference can intercept.
+fn is_inherent<'tcx>(cx: &LateContext<'tcx>, call: &Expr<'tcx>) -> bool {
+    cx.typeck_results()
+        .type_dependent_def_id(call.hir_id)
+        .is_some_and(|method| cx.tcx.trait_of_assoc(method).is_none())
 }
 
 /// Whether the parameter `mention` fills is declared as a reference to a
@@ -79,6 +100,18 @@ fn fills_a_concrete_reference<'tcx>(
     else {
         return false;
     };
+    // Deref coercion walks the whole chain, so `&&String` reaches `&str`.
+    // An unsize coercion is the one with no step to repeat: the folded
+    // `&[u8; 32]` to `&[u8]` has no `&&[u8; 32]` form, and neither does
+    // `&Concrete` to `&dyn Marker`.
+    if cx
+        .typeck_results()
+        .expr_adjustments(mention)
+        .iter()
+        .any(|adjustment| matches!(adjustment.kind, Adjust::Pointer(PointerCoercion::Unsize)))
+    {
+        return false;
+    }
     let declared = cx.tcx.fn_sig(called).skip_binder().skip_binder();
     let Some(parameter) = declared.inputs().get(at + offset) else {
         return false;

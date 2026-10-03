@@ -12,6 +12,26 @@
 
 use std::collections::HashSet;
 
+fn checksum(bytes: &[u8]) -> bool {
+    bytes.iter().all(|byte| *byte == 0)
+}
+
+trait Marker {
+    fn marked(&self) -> bool;
+}
+
+struct Concrete;
+
+impl Marker for Concrete {
+    fn marked(&self) -> bool {
+        true
+    }
+}
+
+fn marked_by(value: &dyn Marker) -> bool {
+    value.marked()
+}
+
 fn wants_owned<Subject: Into<String>>(subject: Subject) -> bool {
     subject.into().len() > 1
 }
@@ -184,6 +204,34 @@ fn receiver_is_a_field(pending: &mut Pending) -> bool {
 // autoderef can produce a value for.
 fn copy_item_by_self(mut letters: std::vec::IntoIter<char>) -> bool {
     letters.any(|letter| letter.is_alphabetic() && letter.is_uppercase())
+}
+
+// Not flagged: a trait method can be intercepted one reference up, where
+// `IntoIterator for &[T; N]` yields a reference to each byte rather than
+// the byte.
+fn trait_method_on_the_receiver(rows: Vec<[u8; 4]>) -> bool {
+    rows.into_iter()
+        .any(|row| row.into_iter().any(|byte| byte == 0) && row.first().is_some())
+}
+
+// Not flagged: `Clone for &T` is the same interception, handing back the
+// reference where the item's own `clone` hands back a value.
+fn clone_on_the_receiver(words: Vec<String>) -> bool {
+    words
+        .iter()
+        .any(|word| word.clone().into_bytes().is_empty() && word.is_empty())
+}
+
+// Not flagged: an unsize coercion at the outer reference has no step to
+// repeat, `&[u8; 32]` reaching `&[u8]` where `&&[u8; 32]` does not.
+fn unsized_parameter(hashes: Vec<[u8; 32]>) -> bool {
+    hashes.iter().any(|hash| checksum(hash) && hash.is_ascii())
+}
+
+// Not flagged: and neither does `&Concrete` to `&dyn Marker`, a user
+// trait carrying no blanket impl for a reference.
+fn dyn_parameter(items: Vec<Concrete>) -> bool {
+    items.iter().any(|item| marked_by(item) && item.marked())
 }
 
 // Not flagged: a reference parameter naming a type parameter is no
