@@ -15,11 +15,11 @@ rather than one because each has its own trigger predicate, its own lift
 target and no shared configuration, per
 [One rule per file, one `Config` per rule](../CLAUDE.md#one-rule-per-file-one-config-per-rule).
 
-| trigger | rule | a lifted part goes into |
-|---|---|---|
-| chain | [`src/rules/splittable_adapter_step_chain.rs`](../src/rules/splittable_adapter_step_chain.rs) | the adapter mapping the item's channel |
-| predicate | [`src/rules/splittable_adapter_predicate.rs`](../src/rules/splittable_adapter_predicate.rs) | `filter` or `take_while`, by discipline |
+| trigger         | rule                                                                                              | a lifted part goes into                          |
+|-----------------|---------------------------------------------------------------------------------------------------|--------------------------------------------------|
 | guard and value | [`src/rules/splittable_adapter_option_chain.rs`](../src/rules/splittable_adapter_option_chain.rs) | the combinator's counterpart, discipline-matched |
+| predicate       | [`src/rules/splittable_adapter_predicate.rs`](../src/rules/splittable_adapter_predicate.rs)       | `filter` or `take_while`, by discipline          |
+| chain           | [`src/rules/splittable_adapter_step_chain.rs`](../src/rules/splittable_adapter_step_chain.rs)     | the adapter mapping the item's channel           |
 
 Families reached: `Iterator`, `DoubleEndedIterator`, `Option`, `Result`,
 `Poll`, `ControlFlow`, `Itertools`, `ParallelIterator` and `Pipe`.
