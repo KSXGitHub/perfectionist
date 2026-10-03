@@ -46,9 +46,11 @@ mod position;
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Flags a closure passed to an iterator adapter where the chain of
+    /// Flags a closure passed to a mapping adapter where the chain of
     /// steps rooted at the closure's item is two or more long, so one
-    /// adapter performs all of them.
+    /// adapter performs all of them. The receivers in scope are
+    /// iterators, `Option`, `Result`, `Poll`, `ControlFlow`, and the
+    /// `Itertools`, `ParallelIterator` and `Pipe` traits.
     ///
     /// A chain starts at the item and runs outwards: a method call whose
     /// receiver is the chain so far, or a call whose sole argument is
@@ -79,9 +81,9 @@ declare_tool_lint! {
     /// A chain of one step has nothing to split. An item named more than
     /// once cannot be split at all, since each step would get its own
     /// closure and the later mentions would have no binding to name. A
-    /// step whose result borrows lifts only where what it borrows from
-    /// outlives the closure, so one borrowing the item, or a temporary
-    /// the closure handed it, stays. And a chain the closure does not
+    /// step whose result borrows lifts only where it borrows through a
+    /// reference it was handed, so one borrowing an owned item, or a
+    /// temporary the closure made, stays. And a chain the closure does not
     /// always reach is left alone, because lifting it would run it for
     /// every item rather than for some.
     ///
@@ -105,7 +107,7 @@ declare_tool_lint! {
     /// ```
     pub perfectionist::SPLITTABLE_ADAPTER_CLOSURE,
     Warn,
-    "a closure passed to an iterator adapter chains several steps onto its item",
+    "a closure passed to a mapping adapter chains several steps onto its item",
     report_in_external_macro: false
 }
 

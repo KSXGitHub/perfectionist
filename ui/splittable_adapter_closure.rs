@@ -482,6 +482,8 @@ fn step_names_a_local(lines: std::vec::IntoIter<&'static str>) -> usize {
     })
 }
 
+// Not flagged: an `exit` is read from the type the same way a `panic!`
+// is.
 fn exits_before_the_chain(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| {
         if flag {

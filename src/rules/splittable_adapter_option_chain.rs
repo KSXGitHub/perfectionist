@@ -73,7 +73,7 @@ declare_tool_lint! {
     ///
     /// ```rust,ignore
     /// let found = lines.filter_map(parse).filter_map(validate);
-    /// let shown = lines.filter(wanted).map(render);
+    /// let shown = lines.filter(|line| wanted(line)).map(render);
     /// ```
     pub perfectionist::SPLITTABLE_ADAPTER_OPTION_CHAIN,
     Warn,

@@ -162,13 +162,14 @@ fn control_flow(method: Symbol) -> Option<Adapter> {
 
 fn itertools(method: Symbol) -> Option<Adapter> {
     // `filter_map_ok`'s closure returns an `Option`, so what splits
-    // inside it is `Option` work, which
-    // `perfectionist::splittable_adapter_option_chain` is about.
-    // `partition_map` returns an `Either`, which this rule has no lift
-    // target for. Excluded for taking the item by reference:
-    // `unique_by`, `filter_ok`, `update`, `find_position`,
-    // `into_group_map_by`, `position_max_by_key`, `position_min_by_key`,
-    // `tree_reduce` and `sorted_by_key`.
+    // inside it is `Option` work rather than a chain, and
+    // `perfectionist::splittable_adapter_option_chain` reaches
+    // `Iterator` alone, so nothing lints it yet. `partition_map` returns
+    // an `Either`, which this rule has no lift target for, and
+    // `tree_reduce` takes the item twice as `Iterator::reduce` does.
+    // Excluded for taking the item by reference: `unique_by`,
+    // `filter_ok`, `update`, `find_position`, `into_group_map_by`,
+    // `position_max_by_key`, `position_min_by_key` and `sorted_by_key`.
     Some(match method.as_str() {
         // The item here is the `Ok` inside a `Result` item, a channel
         // nested one level inside the iterator's own, so it lifts into

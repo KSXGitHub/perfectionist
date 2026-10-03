@@ -51,10 +51,23 @@ declare_tool_lint! {
     /// alternatives keeps items the pair would have dropped. An adapter
     /// whose answer depends on more than which items satisfy the test
     /// has nothing to lift into, so `all`, `position` and their kin are
-    /// left alone — filtering before `all` makes an item that failed
-    /// the first test vacuously fine. A conjunct not naming the item is
-    /// an invariant to hoist out of the pipeline rather than a test to
-    /// give its own adapter.
+    /// left alone: filtering before `all` makes an item that failed the
+    /// first test vacuously fine. A conjunct not naming the item is an
+    /// invariant to hoist out of the pipeline rather than a test to give
+    /// its own adapter.
+    ///
+    /// A conjunction of comparisons stays whole, because that is how Rust
+    /// spells one test: `pos >= range.start && pos < range.end` asks
+    /// whether a position is inside a range, and each half on its own
+    /// adapter reads worse than the pair does.
+    ///
+    /// Two more are about what the split would not compile into. `any`
+    /// and `Option::is_some_and` hand the item over, where the `filter` a
+    /// test lifts into hands a reference, so a test writing to the item
+    /// or handing it to something wanting the value is left alone. And
+    /// where two tests reach one capture the closure holds other than by
+    /// shared borrow, the two closures the split makes cannot both have
+    /// it.
     ///
     /// ### Example
     ///

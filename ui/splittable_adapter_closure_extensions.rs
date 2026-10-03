@@ -82,7 +82,8 @@ fn own_fold(mut items: std::vec::IntoIter<&'static str>) -> usize {
         .into_inner()
 }
 
-// Bad: a parallel adapter, whose split rayon performs itself for `any`.
+// Bad: a parallel adapter, which splits the way the sequential one
+// does.
 fn parallel(items: Parallel<&'static str>) -> Parallel<usize> {
     items.map(|text| text.trim().len())
 }
@@ -128,7 +129,8 @@ fn piped_by_reference(value: String) -> usize {
 }
 
 // Not flagged: `filter_map_ok`'s closure returns an `Option`, so what
-// splits inside it is the other rule's.
+// splits inside it is `Option` work rather than a chain, which no rule
+// lints yet.
 fn nested_filter_map(
     items: std::vec::IntoIter<Result<&'static str, usize>>,
 ) -> Vec<Result<usize, usize>> {

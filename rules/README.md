@@ -164,7 +164,7 @@ Lint-control attributes use the `perfectionist::` namespace.
 
 - [`splittable_adapter_closure`](./splittable_adapter_closure.md) (default: `active`).
 
-  a closure passed to an iterator adapter chains several steps onto its item
+  a closure passed to a mapping adapter chains several steps onto its item
 
 - [`splittable_adapter_option_chain`](./splittable_adapter_option_chain.md) (default: `active`).
 

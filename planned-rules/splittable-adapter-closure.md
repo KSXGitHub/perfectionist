@@ -28,12 +28,14 @@ Narrower than this file describes, each narrowing measured against this
 crate's own source:
 
 - **A single-value family's fallible, defaulted and predicate-shaped
-  adapters stay folded.** `and_then`, `map_or`, `map_or_else`,
-  `or_else`, `unwrap_or_else` and the `is_*_and` family leave a lifted
-  step's result wrapped in what the adapter keeps, which costs a wrapper
-  and sometimes a `mut` rebinding. Those splits are equivalent, as
-  [`Option` and `Result`](#option-and-result) tables; what it does not
-  table is what they read like.
+  adapters stay folded in the chain trigger.** `and_then`, `map_or`,
+  `map_or_else`, `or_else`, `unwrap_or_else` and the `is_*_and` family
+  leave a lifted step's result wrapped in what the adapter keeps, which
+  costs a wrapper and sometimes a `mut` rebinding. Those splits are
+  equivalent, as [`Option` and `Result`](#option-and-result) tables; what
+  it does not table is what they read like. The predicate trigger does
+  reach `Option::is_some_and`, whose conjunction splits without a
+  wrapper.
 - **A conjunction holding a comparison stays folded.** A comparison is a
   bound rather than a question, and a conjunction of them is how Rust
   spells one test, so each half gets no adapter of its own.
@@ -42,18 +44,20 @@ crate's own source:
   regions are erased in typeck results, so a result's lifetime cannot be
   matched against the item's, and the item is the receiver of the first
   step alone.
-- **`filter_map`, `find_map`, `map_while` and `filter_map_ok` are the
-  guard-and-value trigger's**, not the chain's, so the chain rule leaves
-  them alone.
+- **`filter_map`, `find_map` and `map_while` are the guard-and-value
+  trigger's**, not the chain's, so the chain rule leaves them alone.
+  `filter_map_ok` is the same shape and no rule lints it, the
+  guard-and-value trigger reaching `Iterator` alone.
 - **`partition_map` has no lift target**, its closure returning an
   `Either`, and only `Pipe`'s by-value `pipe` is in scope: the rest hand
   the closure a borrow.
+- **A borrowing adapter whose receiver is named again is declined**
+  rather than suggesting the reborrow of
+  [Which adapters](#which-adapters), which is the cheaper error that
+  section asks for.
 
 Not implemented, and the rest of this file is their active spec:
 
-- The `&mut self` receiver used after the adapter returns, per
-  [Which adapters](#which-adapters). Telling needs liveness, so the rule
-  fires and the rewrite needs the reborrow that section gives.
 - No autofix. The point-free form a split invites asks more of each step
   than the split does, so the text a rewrite would have to choose is not
   the text a reader wants.

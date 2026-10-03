@@ -50,7 +50,7 @@ let shown = lines.filter_map(|line| wanted(line).then(|| render(line)));
 
 ```rust,ignore
 let found = lines.filter_map(parse).filter_map(validate);
-let shown = lines.filter(wanted).map(render);
+let shown = lines.filter(|line| wanted(line)).map(render);
 ```
 
 ## Configuration
