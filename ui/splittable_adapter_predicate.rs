@@ -10,6 +10,12 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
+use std::collections::HashSet;
+
+fn wants_owned<Subject: Into<String>>(subject: Subject) -> bool {
+    subject.into().len() > 1
+}
+
 fn even(count: usize) -> bool {
     count % 2 == 0
 }
@@ -172,6 +178,28 @@ fn receiver_is_a_field(pending: &mut Pending) -> bool {
     pending
         .rest
         .any(|line| wanted(line) && line.starts_with('#'))
+}
+
+// Bad: a `Copy` item read through a method that takes `self`, which the
+// autoderef can produce a value for.
+fn copy_item_by_self(mut letters: std::vec::IntoIter<char>) -> bool {
+    letters.any(|letter| letter.is_alphabetic() && letter.is_uppercase())
+}
+
+// Not flagged: a reference parameter naming a type parameter is no
+// coercion site either, the extra reference being inferred into the
+// parameter instead of coerced away.
+fn generic_reference_parameter(words: Vec<String>, allowed: &HashSet<String>) -> bool {
+    words
+        .iter()
+        .any(|word| allowed.contains(word) && !word.is_empty())
+}
+
+// Not flagged: a parameter naming a type parameter is not a coercion
+// site, so the extra reference is inferred into the parameter and the
+// bound is checked against it rather than against what it was written for.
+fn generic_parameter(mut lines: std::vec::IntoIter<&'static str>) -> bool {
+    lines.any(|line| wants_owned(line) && !line.is_empty())
 }
 
 // Not flagged: `find` leaves the receiver where it was and the leading

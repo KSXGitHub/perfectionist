@@ -204,6 +204,18 @@ fn receiver_named_again(
     (first, lines.next())
 }
 
+// Not flagged: the guard reads a `Copy` item by value, where the lifted
+// `filter` hands a reference and `&T` is no coercion to `T`.
+fn copy_item_read_by_value(counts: std::vec::IntoIter<usize>) -> Vec<usize> {
+    counts
+        .filter_map(|count| (count > 0).then(|| count * 2))
+        .collect()
+}
+
+fn first_word(text: &str) -> Option<&str> {
+    text.split(' ').next()
+}
+
 // Not flagged: one stage has nothing to hand over.
 fn one_stage(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| parse(line)).collect()

@@ -10,6 +10,7 @@ use crate::adapter_discipline::Discipline;
 use crate::binding_uses::names;
 use crate::common::{binding_hir_id, binds_mutably};
 use crate::exclusive_captures::exclusive;
+use crate::extra_reference::survives;
 use rustc_hir::def_id::LocalDefId;
 use rustc_hir::{Expr, ExprKind, Pat};
 use rustc_lint::LateContext;
@@ -138,7 +139,7 @@ pub(super) fn split<'tcx>(
     // reference where `filter_map` and its kin hand it over. A guard that
     // moves the item is then `E0308` and one that writes to it `E0596`,
     // with nothing to amend by hand.
-    if matches!(split, Split::Guarded(_)) && !takes_one_more_reference(cx, parameter) {
+    if matches!(split, Split::Guarded(_)) && !takes_one_more_reference(cx, parameter, receiver) {
         return None;
     }
     // A one-value adapter has no trailing adapter but the `Option`'s, so
@@ -164,15 +165,19 @@ fn is_option<'tcx>(cx: &LateContext<'tcx>, ty: ty::Ty<'tcx>) -> bool {
 
 /// Whether the item survives being handed one reference more than it was.
 ///
-/// A shared reference derefs through the extra one, and a `Copy` item is
-/// read through it. The two that do not survive it are an item the guard
-/// moves, which the type answers for, and one the guard writes to, which
-/// the binding does: a `&mut` item, or one bound `mut`, which an item the
-/// closure never writes to does not carry.
-fn takes_one_more_reference<'tcx>(cx: &LateContext<'tcx>, parameter: &Pat<'tcx>) -> bool {
+/// The guard moves into `filter` or `take_while`, which hand `&Item`. Two
+/// things do not survive that, and neither is visible in the other: an
+/// item the guard writes to has nothing to write through, which the
+/// binding and the type answer for, and a mention the extra reference
+/// changes the meaning of, which [`crate::extra_reference`] answers for.
+fn takes_one_more_reference<'tcx>(
+    cx: &LateContext<'tcx>,
+    parameter: &'tcx Pat<'tcx>,
+    guard: &'tcx Expr<'tcx>,
+) -> bool {
     let item_ty = cx.typeck_results().pat_ty(parameter);
     if item_ty.is_mutable_ptr() || binds_mutably(parameter) {
         return false;
     }
-    item_ty.is_ref() || cx.type_is_copy_modulo_regions(item_ty)
+    binding_hir_id(parameter).is_some_and(|item| survives(cx, guard, item, item_ty))
 }

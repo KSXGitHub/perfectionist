@@ -13,17 +13,17 @@
 //! trigger needs none of the position care the chain's does.
 
 use crate::adapter_discipline::Discipline;
-use crate::binding_uses::{names, uses};
+use crate::binding_uses::names;
 use crate::common::{DefaultState, binding_hir_id, binds_mutably, hir_in_external_macro};
 use crate::exclusive_captures::exclusive;
-use crate::receiver_move::{borrows_the_receiver, movable};
+use crate::extra_reference::survives;
+use crate::receiver_move::movable;
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::paths::{PathNS, lookup_path};
 use clippy_utils::{is_from_proc_macro, sym};
-use rustc_hir::{BinOpKind, Expr, ExprKind, HirId, Node};
+use rustc_hir::{BinOpKind, Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
-use rustc_middle::ty::Ty;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::Symbol;
 
@@ -185,53 +185,9 @@ fn discipline(family: Family, method: Symbol) -> Option<Discipline> {
 ///
 /// `filter` and `take_while` take `&Item`, so a test lifted out of an
 /// adapter that was handed the item itself gets one reference more than
-/// it had, and what survives that is
-/// [`reads_through_one_more_reference`]'s question.
+/// it had, and [`crate::extra_reference`] is about what survives that.
 fn hands_the_item_over(method: Symbol) -> bool {
     matches!(method.as_str(), "any" | "is_some_and")
-}
-
-/// Whether every lifted test can read the item through one more
-/// reference.
-///
-/// A reference item is the easy case: `&&T` coerces to `&T` at every
-/// coercion site, so a test handing the item to anything expecting a
-/// reference compiles however deep it sits. An owned item has no such
-/// coercion -- `&T` to `T` is not one -- so a test handing it over by
-/// value gets a reference where the callee wants the value, and the lift
-/// is `E0308`. A method call is the exception, its receiver autoderefing
-/// to whatever depth the method wants -- unless the method takes `self`,
-/// which needs a value the autoderef can only produce for a `Copy` item.
-///
-/// Only the lifted tests are asked. The last one stays where it is, with
-/// the item it always had.
-fn reads_through_one_more_reference<'tcx>(
-    cx: &LateContext<'tcx>,
-    lifted: &[&'tcx Expr<'tcx>],
-    item: HirId,
-    item_ty: Ty<'tcx>,
-) -> bool {
-    if item_ty.is_ref() {
-        return true;
-    }
-    let copy = cx.type_is_copy_modulo_regions(item_ty);
-    lifted.iter().all(|test| {
-        uses(cx, test, &[item])
-            .iter()
-            .all(|mention| reads_through_it(cx, mention, copy))
-    })
-}
-
-/// Whether a test still reads the item through `mention` once the item
-/// has one reference more.
-fn reads_through_it<'tcx>(cx: &LateContext<'tcx>, mention: &Expr<'tcx>, copy: bool) -> bool {
-    let Node::Expr(parent) = cx.tcx.parent_hir_node(mention.hir_id) else {
-        return false;
-    };
-    let ExprKind::MethodCall(_, receiver, ..) = parent.kind else {
-        return false;
-    };
-    receiver.hir_id == mention.hir_id && (borrows_the_receiver(cx, parent) || copy)
 }
 
 impl<'tcx> LateLintPass<'tcx> for SplittableAdapterPredicate {
@@ -285,9 +241,11 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterPredicate {
         if conjuncts.iter().any(|conjunct| is_comparison(conjunct)) {
             return;
         }
+        // Only the lifted tests are asked. The last one stays where it
+        // is, with the item it always had.
         let lifted = &conjuncts[..conjuncts.len() - 1];
         if hands_the_item_over(segment.ident.name)
-            && !reads_through_one_more_reference(cx, lifted, item, item_ty)
+            && !lifted.iter().all(|test| survives(cx, test, item, item_ty))
         {
             return;
         }

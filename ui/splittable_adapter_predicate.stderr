@@ -63,6 +63,14 @@ LL |         .any(|name| name.starts_with('a') && name.ends_with('z'))
    |
    = help: lift all but the last test into a leading `filter` of its own, so each adapter asks one question
 
+warning: this predicate runs 2 tests on the item, so `any` does all of them
+  --> $DIR/splittable_adapter_predicate.rs:LL:CC
+   |
+LL |     letters.any(|letter| letter.is_alphabetic() && letter.is_uppercase())
+   |             ^^^
+   |
+   = help: lift all but the last test into a leading `filter` of its own, so each adapter asks one question
+
 warning: this predicate runs 2 tests on the item, so `filter` does all of them
   --> $DIR/splittable_adapter_predicate.rs:LL:CC
    |
