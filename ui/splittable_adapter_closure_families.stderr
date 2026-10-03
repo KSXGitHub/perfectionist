@@ -4,7 +4,7 @@ warning: this closure chains 2 steps onto the item, so `map` does all of them
 LL |     header.map(|text| text.trim().len())
    |            ^^^
    |
-   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
    = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
 
 warning: this closure chains 2 steps onto the item, so `map` does all of them
@@ -13,7 +13,7 @@ warning: this closure chains 2 steps onto the item, so `map` does all of them
 LL |     outcome.map(|text| text.trim().len())
    |             ^^^
    |
-   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 2 steps onto the item, so `map_err` does all of them
   --> $DIR/splittable_adapter_closure_families.rs:LL:CC
@@ -21,7 +21,7 @@ warning: this closure chains 2 steps onto the item, so `map_err` does all of the
 LL |     outcome.map_err(|text| text.trim().len())
    |             ^^^^^^^
    |
-   = help: lift each step into a leading `map_err` of its own, leaving the closure only the work that is the adapter's
+   = help: lift all but the last step into a leading `map_err` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 2 steps onto the item, so `map` does all of them
   --> $DIR/splittable_adapter_closure_families.rs:LL:CC
@@ -29,7 +29,7 @@ warning: this closure chains 2 steps onto the item, so `map` does all of them
 LL |     state.map(|text| text.trim().len())
    |           ^^^
    |
-   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 2 steps onto the item, so `map_ok` does all of them
   --> $DIR/splittable_adapter_closure_families.rs:LL:CC
@@ -37,7 +37,7 @@ warning: this closure chains 2 steps onto the item, so `map_ok` does all of them
 LL |     state.map_ok(|text| text.trim().len())
    |           ^^^^^^
    |
-   = help: lift each step into a leading `map_ok` of its own, leaving the closure only the work that is the adapter's
+   = help: lift all but the last step into a leading `map_ok` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 2 steps onto the item, so `map_break` does all of them
   --> $DIR/splittable_adapter_closure_families.rs:LL:CC
@@ -45,7 +45,7 @@ warning: this closure chains 2 steps onto the item, so `map_break` does all of t
 LL |     flow.map_break(|text| text.trim().len())
    |          ^^^^^^^^^
    |
-   = help: lift each step into a leading `map_break` of its own, leaving the closure only the work that is the adapter's
+   = help: lift all but the last step into a leading `map_break` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 2 steps onto the item, so `map_continue` does all of them
   --> $DIR/splittable_adapter_closure_families.rs:LL:CC
@@ -53,6 +53,6 @@ warning: this closure chains 2 steps onto the item, so `map_continue` does all o
 LL |     flow.map_continue(|text| text.trim().len())
    |          ^^^^^^^^^^^^
    |
-   = help: lift each step into a leading `map_continue` of its own, leaving the closure only the work that is the adapter's
+   = help: lift all but the last step into a leading `map_continue` of its own, leaving the closure the step that is the adapter's
 
 warning: N warnings emitted

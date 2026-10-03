@@ -179,7 +179,8 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterOptionChain {
             SPLITTABLE_ADAPTER_OPTION_CHAIN,
             segment.ident.span,
             format!(
-                "this closure holds a guard and a value, so `{}` does both",
+                "this closure {}, so `{}` does both",
+                split.summary(),
                 segment.ident.name,
             ),
             |diagnostic| {

@@ -338,11 +338,18 @@ fn check<'tcx>(
             segment.ident.name,
         ),
         |diagnostic| {
-            diagnostic.help(format!(
-                "lift each step into a leading `{}` of its own, leaving the closure only \
-                 the work that is the adapter's",
-                adapter.lift_target,
-            ));
+            diagnostic.help(match adapter.keeps_the_last_step {
+                true => format!(
+                    "lift all but the last step into a leading `{}` of its own, leaving \
+                     the closure the step that is the adapter's",
+                    adapter.lift_target,
+                ),
+                false => format!(
+                    "lift every step into a leading `{}` of its own, leaving the closure \
+                     only the work on the state",
+                    adapter.lift_target,
+                ),
+            });
         },
     );
 }

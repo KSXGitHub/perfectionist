@@ -48,6 +48,17 @@ pub(super) enum Split {
 }
 
 impl Split {
+    /// What the closure is doing twice, which the `Fallible` shape has no
+    /// guard in.
+    pub(super) fn summary(&self) -> &'static str {
+        match self {
+            Self::Fallible(_) => "runs two fallible stages",
+            Self::Infallible => "makes a value after a stage that may fail",
+            Self::Filtering => "tests a value it made in the same closure",
+            Self::Guarded(_) => "holds a guard and a value",
+        }
+    }
+
     /// What to tell the reader to do, which differs by what the split
     /// hands the work to.
     pub(super) fn help(&self) -> String {

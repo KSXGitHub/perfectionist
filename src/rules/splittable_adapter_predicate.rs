@@ -282,7 +282,7 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterPredicate {
             ),
             |diagnostic| {
                 diagnostic.help(format!(
-                    "lift all but the last test into a leading `{}` of its own, so each \
+                    "give every test but the last a leading `{}` of its own, so each \
                      adapter asks one question",
                     discipline.lift_target(),
                 ));

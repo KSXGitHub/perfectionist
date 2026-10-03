@@ -1,4 +1,4 @@
-warning: this closure holds a guard and a value, so `filter_map` does both
+warning: this closure runs two fallible stages, so `filter_map` does both
   --> $DIR/splittable_adapter_option_chain.rs:LL:CC
    |
 LL |     lines.filter_map(|line| parse(line).and_then(validate)).collect()
@@ -7,7 +7,7 @@ LL |     lines.filter_map(|line| parse(line).and_then(validate)).collect()
    = help: give the `and_then` a trailing `filter_map` of its own, so each fallible stage is one adapter
    = note: `#[warn(perfectionist::splittable_adapter_option_chain)]` on by default
 
-warning: this closure holds a guard and a value, so `filter_map` does both
+warning: this closure makes a value after a stage that may fail, so `filter_map` does both
   --> $DIR/splittable_adapter_option_chain.rs:LL:CC
    |
 LL |     lines.filter_map(|line| parse(line).map(double)).collect()
@@ -15,7 +15,7 @@ LL |     lines.filter_map(|line| parse(line).map(double)).collect()
    |
    = help: give the `map` its own trailing `map`, so the adapter is left only what can fail
 
-warning: this closure holds a guard and a value, so `filter_map` does both
+warning: this closure tests a value it made in the same closure, so `filter_map` does both
   --> $DIR/splittable_adapter_option_chain.rs:LL:CC
    |
 LL |     lines.filter_map(|line| parse(line).filter(positive)).collect()
@@ -39,7 +39,7 @@ LL |     lines.filter_map(|line| wanted(line).then_some(1)).collect()
    |
    = help: lift the guard into a leading `filter` and let a `map` make the value, so neither adapter does both
 
-warning: this closure holds a guard and a value, so `find_map` does both
+warning: this closure runs two fallible stages, so `find_map` does both
   --> $DIR/splittable_adapter_option_chain.rs:LL:CC
    |
 LL |     lines.find_map(|line| parse(line).and_then(validate))
@@ -55,7 +55,7 @@ LL |     lines.map_while(|line| wanted(line).then(|| render(line))).collect()
    |
    = help: lift the guard into a leading `take_while` and let a `map` make the value, so neither adapter does both
 
-warning: this closure holds a guard and a value, so `map_while` does both
+warning: this closure makes a value after a stage that may fail, so `map_while` does both
   --> $DIR/splittable_adapter_option_chain.rs:LL:CC
    |
 LL |     lines.map_while(|line| parse(line).map(double)).collect()
@@ -63,7 +63,7 @@ LL |     lines.map_while(|line| parse(line).map(double)).collect()
    |
    = help: give the `map` its own trailing `map`, so the adapter is left only what can fail
 
-warning: this closure holds a guard and a value, so `find_map` does both
+warning: this closure makes a value after a stage that may fail, so `find_map` does both
   --> $DIR/splittable_adapter_option_chain.rs:LL:CC
    |
 LL |     lines.find_map(|line| parse(line).map(double))
@@ -77,7 +77,7 @@ warning: this closure chains 2 steps onto the item, so `map` does all of them
 LL |     lines.map(|line| parse(line).map(double)).collect()
    |           ^^^
    |
-   = help: lift each step into a leading `map` of its own, leaving the closure only the work that is the adapter's
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
    = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
 
 warning: N warnings emitted
