@@ -1,4 +1,4 @@
-# `splittable_adapter_closure`
+# Splittable adapter closures
 
 **Source:** project convention, from a maintainer's review suggestion
 on <https://github.com/KSXGitHub/perfectionist/pull/475>. The
@@ -17,7 +17,7 @@ target and no shared configuration, per
 
 | trigger | rule | a lifted part goes into |
 |---|---|---|
-| chain | [`src/rules/splittable_adapter_closure.rs`](../src/rules/splittable_adapter_closure.rs) | the adapter mapping the item's channel |
+| chain | [`src/rules/splittable_adapter_step_chain.rs`](../src/rules/splittable_adapter_step_chain.rs) | the adapter mapping the item's channel |
 | predicate | [`src/rules/splittable_adapter_predicate.rs`](../src/rules/splittable_adapter_predicate.rs) | `filter` or `take_while`, by discipline |
 | guard and value | [`src/rules/splittable_adapter_option_chain.rs`](../src/rules/splittable_adapter_option_chain.rs) | the combinator's counterpart, discipline-matched |
 

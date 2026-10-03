@@ -1,14 +1,14 @@
 warning: this closure chains 2 steps onto the item, so `map_ok` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.map_ok(|text| text.trim().len()).collect()
    |           ^^^^^^
    |
    = help: lift all but the last step into a leading `map_ok` of its own, leaving the closure the step that is the adapter's
-   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+   = note: `#[warn(perfectionist::splittable_adapter_step_chain)]` on by default
 
 warning: this closure chains 2 steps onto the item, so `fold_ok` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.fold_ok(0, |total, text| total + text.trim().len())
    |           ^^^^^^^
@@ -16,7 +16,7 @@ LL |     items.fold_ok(0, |total, text| total + text.trim().len())
    = help: lift every step into a leading `map_ok` of its own, leaving the closure the accumulation
 
 warning: this closure chains 2 steps onto the item, so `fold_while` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |         .fold_while(0, |total, text| {
    |          ^^^^^^^^^^
@@ -24,7 +24,7 @@ LL |         .fold_while(0, |total, text| {
    = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
 
 warning: this closure chains 2 steps onto the item, so `map` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.map(|text| text.trim().len())
    |           ^^^
@@ -32,7 +32,7 @@ LL |     items.map(|text| text.trim().len())
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 2 steps onto the item, so `any` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.any(|text| text.trim().is_empty())
    |           ^^^
@@ -40,7 +40,7 @@ LL |     items.any(|text| text.trim().is_empty())
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 2 steps onto the item, so `pipe` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     value.pipe(|number| render(double(number)))
    |           ^^^^
@@ -48,7 +48,7 @@ LL |     value.pipe(|number| render(double(number)))
    = help: lift all but the last step into a leading `pipe` of its own, leaving the closure the step that is the adapter's
 
 warning: this predicate runs 2 tests on the item, so `any` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.any(|text| wanted(text) && text.starts_with('#'))
    |           ^^^
@@ -57,7 +57,7 @@ LL |     items.any(|text| wanted(text) && text.starts_with('#'))
    = note: `#[warn(perfectionist::splittable_adapter_predicate)]` on by default
 
 warning: this closure chains 2 steps onto the item, so `counts_by` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     lines.counts_by(|text| text.trim().len())
    |           ^^^^^^^^^
@@ -65,7 +65,7 @@ LL |     lines.counts_by(|text| text.trim().len())
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 3 steps onto the item, so `for_each` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.for_each(|text| drop(text.trim().len()));
    |           ^^^^^^^^
@@ -73,7 +73,7 @@ LL |     items.for_each(|text| drop(text.trim().len()));
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 2 steps onto the item, so `all` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.all(|text| text.trim().is_empty())
    |           ^^^
@@ -81,7 +81,7 @@ LL |     items.all(|text| text.trim().is_empty())
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 2 steps onto the item, so `position_any` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.position_any(|text| text.trim().is_empty())
    |           ^^^^^^^^^^^^
@@ -89,7 +89,7 @@ LL |     items.position_any(|text| text.trim().is_empty())
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 2 steps onto the item, so `position_first` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.position_first(|text| text.trim().is_empty())
    |           ^^^^^^^^^^^^^^
@@ -97,7 +97,7 @@ LL |     items.position_first(|text| text.trim().is_empty())
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 2 steps onto the item, so `position_last` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.position_last(|text| text.trim().is_empty())
    |           ^^^^^^^^^^^^^
@@ -105,7 +105,7 @@ LL |     items.position_last(|text| text.trim().is_empty())
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 3 steps onto the item, so `find_map_any` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.find_map_any(|text| text.trim().parse().ok())
    |           ^^^^^^^^^^^^
@@ -113,7 +113,7 @@ LL |     items.find_map_any(|text| text.trim().parse().ok())
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 3 steps onto the item, so `find_map_first` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.find_map_first(|text| text.trim().parse().ok())
    |           ^^^^^^^^^^^^^^
@@ -121,7 +121,7 @@ LL |     items.find_map_first(|text| text.trim().parse().ok())
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 3 steps onto the item, so `find_map_last` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.find_map_last(|text| text.trim().parse().ok())
    |           ^^^^^^^^^^^^^
@@ -129,7 +129,7 @@ LL |     items.find_map_last(|text| text.trim().parse().ok())
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
 warning: this closure chains 2 steps onto the item, so `fold` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.fold(|| 0, |total, text| total + text.trim().len())
    |           ^^^^
@@ -137,7 +137,7 @@ LL |     items.fold(|| 0, |total, text| total + text.trim().len())
    = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
 
 warning: this closure chains 2 steps onto the item, so `try_fold` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.try_fold(|| 0, |total, text| Some(total + text.trim().len()))
    |           ^^^^^^^^
@@ -145,7 +145,7 @@ LL |     items.try_fold(|| 0, |total, text| Some(total + text.trim().len()))
    = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
 
 warning: this predicate runs 2 tests on the item, so `find_first` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.find_first(|text| wanted(text) && text.starts_with('#'))
    |           ^^^^^^^^^^
@@ -153,7 +153,7 @@ LL |     items.find_first(|text| wanted(text) && text.starts_with('#'))
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
 
 warning: this predicate runs 2 tests on the item, so `find_any` does all of them
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.find_any(|text| wanted(text) && text.starts_with('#'))
    |           ^^^^^^^^
@@ -161,7 +161,7 @@ LL |     items.find_any(|text| wanted(text) && text.starts_with('#'))
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
 
 warning: calls to `std::mem::drop` with a value that implements `Copy` does nothing
-  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+  --> $DIR/splittable_adapter_step_chain_extensions.rs:LL:CC
    |
 LL |     items.for_each(|text| drop(text.trim().len()));
    |                           ^^^^^-----------------^

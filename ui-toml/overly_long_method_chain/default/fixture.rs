@@ -3,7 +3,7 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 #![allow(
-    perfectionist::splittable_adapter_closure,
+    perfectionist::splittable_adapter_step_chain,
     reason = "exercises overly_long_method_chain"
 )]
 

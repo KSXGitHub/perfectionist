@@ -78,6 +78,6 @@ LL |     lines.map(|line| parse(line).map(double)).collect()
    |           ^^^
    |
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
-   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+   = note: `#[warn(perfectionist::splittable_adapter_step_chain)]` on by default
 
 warning: N warnings emitted

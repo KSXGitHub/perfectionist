@@ -1,4 +1,4 @@
-//! `perfectionist::splittable_adapter_closure` — flag a closure passed
+//! `perfectionist::splittable_adapter_step_chain` — flag a closure passed
 //! to an iterator adapter that chains two or more steps onto its item,
 //! so one adapter does all of them.
 //!
@@ -104,13 +104,13 @@ declare_tool_lint! {
     ///     .map(str::to_ascii_lowercase)
     ///     .collect::<Vec<_>>();
     /// ```
-    pub perfectionist::SPLITTABLE_ADAPTER_CLOSURE,
+    pub perfectionist::SPLITTABLE_ADAPTER_STEP_CHAIN,
     Warn,
     "a closure passed to a mapping adapter chains several steps onto its item",
     report_in_external_macro: false
 }
 
-const CONFIG_KEY: &str = "perfectionist::splittable_adapter_closure";
+const CONFIG_KEY: &str = "perfectionist::splittable_adapter_step_chain";
 
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
@@ -119,11 +119,11 @@ const CONFIG_KEY: &str = "perfectionist::splittable_adapter_closure";
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}
 
-pub struct SplittableAdapterClosure;
+pub struct SplittableAdapterStepChain;
 
-impl_lint_pass!(SplittableAdapterClosure => [SPLITTABLE_ADAPTER_CLOSURE]);
+impl_lint_pass!(SplittableAdapterStepChain => [SPLITTABLE_ADAPTER_STEP_CHAIN]);
 
-impl Register for rule::SplittableAdapterClosure {
+impl Register for rule::SplittableAdapterStepChain {
     /// The shape the rule flags is ordinary idiomatic Rust, so it fires
     /// often. That is a reason to expect diagnostics rather than a
     /// reason to ship the rule off: firing on what the rule names is not
@@ -131,16 +131,16 @@ impl Register for rule::SplittableAdapterClosure {
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {
-        lint_store.register_lints(&[SPLITTABLE_ADAPTER_CLOSURE]);
+        lint_store.register_lints(&[SPLITTABLE_ADAPTER_STEP_CHAIN]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
         let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        lint_store.register_late_lint_pass(Box::new(|_| Box::new(SplittableAdapterClosure)));
+        lint_store.register_late_lint_pass(Box::new(|_| Box::new(SplittableAdapterStepChain)));
     }
 }
 
-impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
+impl<'tcx> LateLintPass<'tcx> for SplittableAdapterStepChain {
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
         let ExprKind::MethodCall(segment, receiver, arguments, _) = expr.kind else {
             return;
@@ -331,7 +331,7 @@ fn check<'tcx>(
     }
     span_lint_and_then(
         cx,
-        SPLITTABLE_ADAPTER_CLOSURE,
+        SPLITTABLE_ADAPTER_STEP_CHAIN,
         segment.ident.span,
         format!(
             "this closure chains {} steps onto the item, so `{}` does all of them",

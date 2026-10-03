@@ -13,12 +13,12 @@
 
 extern crate proc_macro_synth_binding;
 
-use proc_macro_synth_binding::SynthSplittableAdapterClosure;
+use proc_macro_synth_binding::SynthSplittableAdapterStepChain;
 
 const VARS: &[&str] = &[" a ", " b "];
 
-#[derive(SynthSplittableAdapterClosure)]
-#[synth_splittable_adapter_closure]
-struct UsesSynthSplittableAdapterClosure;
+#[derive(SynthSplittableAdapterStepChain)]
+#[synth_splittable_adapter_step_chain]
+struct UsesSynthSplittableAdapterStepChain;
 
 fn main() {}

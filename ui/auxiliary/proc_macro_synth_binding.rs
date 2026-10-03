@@ -691,24 +691,24 @@ pub fn synth_fold_owner(input: TokenStream) -> TokenStream {
     out
 }
 
-/// `#[derive(SynthSplittableAdapterClosure)]` +
-/// `#[synth_splittable_adapter_closure]` → `source`, every token of
-/// which inherits the user-span of `synth_splittable_adapter_closure`.
+/// `#[derive(SynthSplittableAdapterStepChain)]` +
+/// `#[synth_splittable_adapter_step_chain]` → `source`, every token of
+/// which inherits the user-span of `synth_splittable_adapter_step_chain`.
 ///
 /// `VARS` is the fixture's own `const`. The synthesised closure chains
 /// two steps onto the item, which the rule fires on when hand-written,
 /// so only the proc-macro guard keeps the fixture silent.
 #[proc_macro_derive(
-    SynthSplittableAdapterClosure,
-    attributes(synth_splittable_adapter_closure)
+    SynthSplittableAdapterStepChain,
+    attributes(synth_splittable_adapter_step_chain)
 )]
-pub fn synth_splittable_adapter_closure(input: TokenStream) -> TokenStream {
-    let attr_span = find_attr_span(input, "synth_splittable_adapter_closure").expect(
-        "`#[derive(SynthSplittableAdapterClosure)]` requires a \
-         `#[synth_splittable_adapter_closure]`",
+pub fn synth_splittable_adapter_step_chain(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_splittable_adapter_step_chain").expect(
+        "`#[derive(SynthSplittableAdapterStepChain)]` requires a \
+         `#[synth_splittable_adapter_step_chain]`",
     );
     let source = r#"
-        fn _synth_splittable_adapter_closure() -> Vec<usize> {
+        fn _synth_splittable_adapter_step_chain() -> Vec<usize> {
             VARS.iter().map(|entry| entry.trim().len()).collect()
         }
     "#;
