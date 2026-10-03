@@ -628,4 +628,15 @@ fn step_from_a_macro(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.map(|line| wrapped!(line.len())).collect()
 }
 
+// Bad: a `move` closure holds its own copy of a `Copy` capture, so two of
+// them may both read it.
+fn move_closure_copies_its_capture(
+    limit: usize,
+    lines: std::vec::IntoIter<&'static str>,
+) -> usize {
+    lines.fold(0, move |total, line| {
+        total + line.trim().len().min(limit)
+    })
+}
+
 fn main() {}
