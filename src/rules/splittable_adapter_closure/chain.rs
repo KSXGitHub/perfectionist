@@ -38,7 +38,12 @@ pub(super) fn binding(pat: &Pat<'_>) -> Option<HirId> {
     }
 }
 
-/// Every binding `body` declares, its parameters included.
+/// Every binding `body` declares in its own scope, its parameters
+/// included.
+///
+/// A nested closure's parameters are left out, and that is the point: they
+/// move with the closure, so a step carrying one is not a step naming
+/// something the lift would strand.
 pub(super) fn declared(body: &Body<'_>) -> Vec<HirId> {
     struct Declared {
         found: Vec<HirId>,

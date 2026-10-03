@@ -102,8 +102,10 @@ pattern that several rules call out by reference — live in
   rule covers which, which families each reaches, and how each is
   narrower than the file. It remains the spec for the `[T; N]` receiver,
   the unanchored chain and the autofix. Narrows what also satisfies
-  `perfectionist::overly_long_method_chain` without contradicting it.
-  Active by default.
+  `perfectionist::overly_long_method_chain`, and contradicts it where the
+  lift target is a method of another name: that rule collapses a run of
+  one name, so `map` into `map` is free where `any` into `map` costs a
+  call. Active by default.
 
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
