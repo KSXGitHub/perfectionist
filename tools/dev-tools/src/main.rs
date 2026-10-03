@@ -26,8 +26,6 @@ use std::{env, io};
 const DYLINT_LIBRARY_CRATE: &str = "dylint_linting";
 const INSTALL_DIR: &str = ".dev-tools";
 
-/// The crates [`install`] pins, named once so its `cargo install`
-/// arguments and the index eviction beside them cannot drift apart.
 const PINNED_CRATES: [&str; 2] = ["cargo-dylint", "dylint-link"];
 
 #[derive(Parser)]
@@ -86,8 +84,6 @@ enum InstallError {
     Status,
 }
 
-/// Where cargo keeps its registry caches: `$CARGO_HOME` when set,
-/// otherwise `.cargo` under the platform's home directory.
 fn cargo_home() -> Option<PathBuf> {
     match env::var_os("CARGO_HOME") {
         Some(path) => Some(path.into()),
@@ -95,11 +91,6 @@ fn cargo_home() -> Option<PathBuf> {
     }
 }
 
-/// The directory cargo files a crate's index metadata under, following
-/// the registry index layout: one directory naming the length for a
-/// name shorter than four characters, two character-pair directories
-/// for anything longer. `crate_name` is expected lowercase ASCII, as
-/// the index spells it.
 fn index_prefix(crate_name: &str) -> PathBuf {
     match crate_name.len() {
         1 => PathBuf::from("1"),
@@ -109,39 +100,36 @@ fn index_prefix(crate_name: &str) -> PathBuf {
     }
 }
 
-/// Drop cargo's cached registry metadata for [`PINNED_CRATES`].
-///
-/// [`install`]'s `cargo install --version` is the only step in this
-/// workspace that reads the registry index; every other one replays
-/// `Cargo.lock` against sources it already has. So a CI cache can
-/// carry an index snapshot older than the pinned dylint release with
-/// nothing noticing until the pin moves, and then cargo reports a
-/// published version as `could not find <crate> in registry`. Cargo
-/// refreshes a cached entry with a conditional request and keeps what
-/// it holds when the answer is "unchanged", so removing the entry is
-/// what forces the version to be fetched outright.
-///
-/// Best effort: an absent entry is the state this wants, and whatever
-/// it cannot remove is cargo's to report.
+fn remove_cached_index_entry(registry: &Path, crate_name: &str) {
+    let path = registry
+        .join(".cache")
+        .join(index_prefix(crate_name))
+        .join(crate_name);
+    if let Err(error) = remove_file(&path)
+        && error.kind() != io::ErrorKind::NotFound
+    {
+        eprintln!("warning: failed to remove {}: {error}", path.display());
+    }
+}
+
 fn evict_cached_index_entries() {
     let Some(home) = cargo_home() else {
+        eprintln!("warning: cannot locate CARGO_HOME; not refreshing index metadata");
         return;
     };
-    let Ok(registries) = read_dir(home.join("registry").join("index")) else {
-        return;
+    let index = home.join("registry").join("index");
+    let registries = match read_dir(&index) {
+        Ok(registries) => registries,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return,
+        Err(error) => {
+            eprintln!("warning: failed to read {}: {error}", index.display());
+            return;
+        }
     };
     for registry in registries.flatten() {
+        let registry_dir = registry.path();
         for crate_name in PINNED_CRATES {
-            let path = registry
-                .path()
-                .join(".cache")
-                .join(index_prefix(crate_name))
-                .join(crate_name);
-            if let Err(error) = remove_file(&path)
-                && error.kind() != io::ErrorKind::NotFound
-            {
-                eprintln!("warning: failed to remove {}: {error}", path.display());
-            }
+            remove_cached_index_entry(&registry_dir, crate_name);
         }
     }
 }
