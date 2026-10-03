@@ -7,6 +7,8 @@ use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
+const DEFAULT: &str = "none";
+
 struct Person {
     name: String,
     home: PathBuf,
@@ -93,24 +95,19 @@ impl Person {
         &self.raw[..end.unwrap_or(self.raw.len())]
     }
 
-    // Good: `LazyLock::deref` runs the initializer, so this borrow is
-    // not free. Which `Deref` implementations only project is asked of
-    // the field's type, since neither spelling of the deref shows it.
+    // Bad: a `Deref` is taken to be free. `LazyLock` pays for its
+    // initializer once, which is not the per-call cost `to_` announces.
     fn to_table(&self) -> &[String] {
         &self.table
     }
 
-    // Good: the same `LazyLock` deref written out. An explicit `*` is
-    // recorded as a method call rather than as a coercion, so it is
-    // asked about separately.
+    // Bad: the same deref written out.
     fn to_table_explicit(&self) -> &[String] {
         &*self.table
     }
 
-    // Not flagged: an under-approximation. `Slot::deref` only projects,
-    // so this borrow is free and the rule's premise condemns it -- but a
-    // `Deref` the rule cannot name may run anything, and counting an
-    // unrecognised one as code is what keeps the case above unreported.
+    // Bad: a `Deref` of the author's own is assumed free too. One that
+    // costs something is an anti-pattern in its own right.
     fn to_slot(&self) -> &str {
         &self.slot
     }
@@ -125,6 +122,12 @@ impl Person {
             Some((first, _)) => Some(first),
             None => None,
         }
+    }
+
+    // Not flagged: the borrow is of a `const` rather than of `self`,
+    // so the method converts nothing of its receiver's.
+    fn to_default(&self) -> &str {
+        DEFAULT
     }
 
     // Not flagged: not the `to_` prefix. `as_*` is the prefix this
