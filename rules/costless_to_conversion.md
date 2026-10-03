@@ -20,10 +20,19 @@ Left alone:
 - Any other body — a call, a `match`, a statement before the
   tail expression. A costly one is what `to_` is for, and a free
   one written that way is missed rather than guessed at.
+- A borrow reached through a `Deref` that may run code: a
+  `LazyLock`'s runs its initializer. The types whose `Deref`
+  only projects a pointer are named, and an unrecognised one
+  counts as code.
 - A `to_*` with another parameter, which is converting
   something more than `self`.
 - A trait impl's method. The trait fixes the signature.
 - A method produced by a macro.
+
+What no reading of the body can tell is a free borrow from one
+whose author means to make it cost later — std names
+`CStr::to_bytes` with `to_` for that reason — so that case takes
+an `#[expect(...)]`.
 
 ## Why restrict this?
 

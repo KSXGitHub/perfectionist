@@ -3,7 +3,9 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 
 struct Person {
     name: String,
@@ -12,7 +14,19 @@ struct Person {
     nickname: Option<String>,
     parsed: Result<String, String>,
     raw: Vec<u8>,
+    table: LazyLock<Vec<String>>,
+    slot: Slot,
     age: u32,
+}
+
+struct Slot(String);
+
+impl Deref for Slot {
+    type Target = str;
+
+    fn deref(&self) -> &str {
+        &self.0
+    }
 }
 
 impl Person {
@@ -77,6 +91,28 @@ impl Person {
     fn to_bytes(&self) -> &[u8] {
         let end = self.raw.iter().position(|byte| *byte == 0);
         &self.raw[..end.unwrap_or(self.raw.len())]
+    }
+
+    // Good: `LazyLock::deref` runs the initializer, so this borrow is
+    // not free. Which `Deref` implementations only project is asked of
+    // the field's type, since neither spelling of the deref shows it.
+    fn to_table(&self) -> &[String] {
+        &self.table
+    }
+
+    // Good: the same `LazyLock` deref written out. An explicit `*` is
+    // recorded as a method call rather than as a coercion, so it is
+    // asked about separately.
+    fn to_table_explicit(&self) -> &[String] {
+        &*self.table
+    }
+
+    // Not flagged: an under-approximation. `Slot::deref` only projects,
+    // so this borrow is free and the rule's premise condemns it -- but a
+    // `Deref` the rule cannot name may run anything, and counting an
+    // unrecognised one as code is what keeps the case above unreported.
+    fn to_slot(&self) -> &str {
+        &self.slot
     }
 
     // Not flagged: an under-approximation. `split_first` costs nothing,
