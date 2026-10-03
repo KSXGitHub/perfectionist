@@ -53,6 +53,26 @@ pub fn field_of_a_temporary() {
     make().command.arg("field-of-a-temporary");
 }
 
+pub fn boxed() -> Box<Command> {
+    Box::new(Command::new("ls"))
+}
+
+// A boxed receiver whose value is read. The counterpart hands back
+// `Box<Command>` where the setter handed back `&mut Command`, so the
+// `&mut ` the rewrite adds reaches the command through `DerefMut`.
+pub fn boxed_argument_position() {
+    configure(boxed().arg("boxed-argument-position"));
+}
+
+// Every link over a boxed receiver, so each later one resolves on
+// `Box<Command>` rather than on the `&mut Command` a setter returned.
+pub fn boxed_chain() {
+    let _ = boxed()
+        .arg("boxed-chain-head")
+        .arg("boxed-chain-tail")
+        .status();
+}
+
 // Every link at once. Only the head is flagged -- each later one takes
 // the `&mut Command` the previous returned -- but they move together,
 // for the reason `shadowed_next_link` shows. The trailing `status`

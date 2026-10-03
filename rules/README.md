@@ -38,10 +38,6 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   bare URL in comment or doc comment; wrap in `<...>` or use a labelled markdown link
 
-- [`borrowed_to_conversion`](./borrowed_to_conversion.md) (default: `active`).
-
-  `to_*` method returns a reference where its prefix promises an owned value
-
 - [`clap_help_markdown`](./clap_help_markdown.md) (default: `active`).
 
   markdown construct in a clap-derived doc comment leaks into `--help` output
@@ -53,6 +49,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`core_instead_of_std`](./core_instead_of_std.md) (default: `inactive`).
 
   item named through `core` or `alloc` instead of `std`
+
+- [`costless_to_conversion`](./costless_to_conversion.md) (default: `active`).
+
+  `to_*` method hands back a borrow at no cost where its prefix promises a costly conversion
 
 - [`excessive_cognitive_complexity`](./excessive_cognitive_complexity.md) (default: `active`).
 

@@ -1,0 +1,56 @@
+warning: `to_name` only borrows, but `to_` promises a costly conversion
+  --> $DIR/costless_to_conversion.rs:LL:CC
+   |
+LL |     fn to_name(&self) -> &str {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it being a `to_*`: rename it `as_name`, the prefix for a conversion that costs nothing, so the call site shows it is free
+   = help: or stop it borrowing: hand back a value of the caller's own, where one really is needed
+   = note: `#[warn(perfectionist::costless_to_conversion)]` on by default
+
+warning: `to_home` only borrows, but `to_` promises a costly conversion
+  --> $DIR/costless_to_conversion.rs:LL:CC
+   |
+LL |     fn to_home(&self) -> &Path {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it being a `to_*`: rename it `as_home`, the prefix for a conversion that costs nothing, so the call site shows it is free
+   = help: or stop it borrowing: hand back a value of the caller's own, where one really is needed
+
+warning: `to_tags` only borrows, but `to_` promises a costly conversion
+  --> $DIR/costless_to_conversion.rs:LL:CC
+   |
+LL |     fn to_tags(&self) -> &[String] {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it being a `to_*`: rename it `as_tags`, the prefix for a conversion that costs nothing, so the call site shows it is free
+   = help: or stop it borrowing: hand back a value of the caller's own, where one really is needed
+
+warning: `to_home_path` only borrows, but `to_` promises a costly conversion
+  --> $DIR/costless_to_conversion.rs:LL:CC
+   |
+LL |     fn to_home_path(&self) -> &Path {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it being a `to_*`: rename it `as_home_path`, the prefix for a conversion that costs nothing, so the call site shows it is free
+   = help: or stop it borrowing: hand back a value of the caller's own, where one really is needed
+
+warning: `to_nickname` only borrows, but `to_` promises a costly conversion
+  --> $DIR/costless_to_conversion.rs:LL:CC
+   |
+LL |     fn to_nickname(&self) -> Option<&str> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it being a `to_*`: rename it `as_nickname`, the prefix for a conversion that costs nothing, so the call site shows it is free
+   = help: or stop it borrowing: hand back a value of the caller's own, where one really is needed
+
+warning: `to_parsed` only borrows, but `to_` promises a costly conversion
+  --> $DIR/costless_to_conversion.rs:LL:CC
+   |
+LL |     fn to_parsed(&self) -> Result<&String, &String> {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: either stop it being a `to_*`: rename it `as_parsed`, the prefix for a conversion that costs nothing, so the call site shows it is free
+   = help: or stop it borrowing: hand back a value of the caller's own, where one really is needed
+
+warning: N warnings emitted
