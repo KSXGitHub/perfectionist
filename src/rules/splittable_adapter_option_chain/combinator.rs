@@ -137,9 +137,9 @@ pub(super) fn split<'tcx>(
     if !matches!(split, Split::Guarded(_)) && names(cx, argument, &[item]) {
         return None;
     }
-    // Each half of the split gets a closure of its own, and two closures
-    // cannot both hold a capture held any way but shared, so a capture
-    // both halves reach does not compile once split.
+    // Each half of the split gets a closure of its own, and a capture only
+    // a shared borrow or a copy of a `Copy` value lets both of them hold,
+    // so any other one both halves reach does not compile once split.
     let held_alone = exclusive(cx, closure);
     if names(cx, receiver, &held_alone) && names(cx, argument, &held_alone) {
         return None;

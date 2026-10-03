@@ -65,9 +65,9 @@ declare_tool_lint! {
     /// and `Option::is_some_and` hand the item over, where the `filter` a
     /// test lifts into hands a reference, so a test writing to the item
     /// or handing it to something wanting the value is left alone. And
-    /// where two tests reach one capture the closure holds other than by
-    /// shared borrow, the two closures the split makes cannot both have
-    /// it.
+    /// two tests reaching one capture split only where both closures could
+    /// hold it, which a shared borrow and a copy of a `Copy` value are the
+    /// cases of.
     ///
     /// ### Example
     ///
@@ -254,9 +254,10 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterPredicate {
         {
             return;
         }
-        // Each test gets a closure of its own after the split, and two
-        // closures cannot both hold a capture held any way but shared, so
-        // two tests reaching one does not compile once split.
+        // Each test gets a closure of its own after the split, and a
+        // capture only a shared borrow or a copy of a `Copy` value lets
+        // both of them hold, so two tests reaching any other one does not
+        // compile once split.
         let held_alone = exclusive(cx, closure.def_id);
         let reaching = conjuncts
             .iter()

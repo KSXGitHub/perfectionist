@@ -44,9 +44,9 @@ Two more are about what the split would not compile into. `any`
 and `Option::is_some_and` hand the item over, where the `filter` a
 test lifts into hands a reference, so a test writing to the item
 or handing it to something wanting the value is left alone. And
-where two tests reach one capture the closure holds other than by
-shared borrow, the two closures the split makes cannot both have
-it.
+two tests reaching one capture split only where both closures could
+hold it, which a shared borrow and a copy of a `Copy` value are the
+cases of.
 
 ## Example
 

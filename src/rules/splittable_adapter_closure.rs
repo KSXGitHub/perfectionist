@@ -297,10 +297,11 @@ fn check<'tcx>(
         return;
     }
     // A lifted step runs in a closure of its own, alongside the one the
-    // adapter keeps. Two closures cannot both hold a capture held any way
-    // but shared, so a step reaching one is declined rather than worked
-    // out: whether the step is the only half reaching it is a question
-    // the split's shape answers differently per adapter.
+    // adapter keeps. A capture only a shared borrow or a copy of a `Copy`
+    // value lets both of them hold, so a step reaching any other one is
+    // declined rather than worked out: whether the step is the only half
+    // reaching it is a question the split's shape answers differently per
+    // adapter.
     let held_alone = exclusive(cx, closure.def_id);
     if lifted.iter().any(|step| names(cx, step.expr, &held_alone)) {
         return;

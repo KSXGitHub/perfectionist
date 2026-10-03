@@ -36,6 +36,14 @@ fn wants_owned<Subject: Into<String>>(subject: Subject) -> bool {
     subject.into().len() > 1
 }
 
+fn longer(line: &str, limit: usize) -> bool {
+    line.len() > limit
+}
+
+fn shorter(line: &str, limit: usize) -> bool {
+    line.len() < limit * 2
+}
+
 fn even(count: usize) -> bool {
     count % 2 == 0
 }
@@ -306,6 +314,12 @@ fn inside_a_range(positions: std::vec::IntoIter<usize>, start: usize, end: usize
 // rule cannot tell which bound belongs to which question.
 fn a_comparison_among_calls(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
     lines.filter(|line| line.len() > 3 && wanted(line)).collect()
+}
+
+// Bad: a `move` closure's `Copy` capture is one both closures can hold,
+// each its own copy, so two tests reaching it still split.
+fn copy_capture_in_two_tests(limit: usize, mut lines: std::vec::IntoIter<&'static str>) -> bool {
+    lines.any(move |line| longer(line, limit) && shorter(line, limit))
 }
 
 // Not flagged: two tests reaching a capture held mutably would be two
