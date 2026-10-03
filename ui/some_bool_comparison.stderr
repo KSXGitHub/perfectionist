@@ -1,0 +1,69 @@
+warning: comparing against `Some(true)` leaves the `None` case unnamed
+  --> $DIR/some_bool_comparison.rs:LL:CC
+   |
+LL |     if verbose == Some(true) {}
+   |        ^^^^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `verbose.unwrap_or(false)`
+   |
+   = note: `#[warn(perfectionist::some_bool_comparison)]` on by default
+
+warning: comparing against `Some(false)` leaves the `None` case unnamed
+  --> $DIR/some_bool_comparison.rs:LL:CC
+   |
+LL |     if verbose != Some(false) {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `verbose.unwrap_or(true)`
+
+warning: comparing against `Some(true)` leaves the `None` case unnamed
+  --> $DIR/some_bool_comparison.rs:LL:CC
+   |
+LL |     if verbose != Some(true) {}
+   |        ^^^^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `!verbose.unwrap_or(false)`
+
+warning: comparing against `Some(false)` leaves the `None` case unnamed
+  --> $DIR/some_bool_comparison.rs:LL:CC
+   |
+LL |     if verbose == Some(false) {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `!verbose.unwrap_or(true)`
+
+warning: comparing against `Some(true)` leaves the `None` case unnamed
+  --> $DIR/some_bool_comparison.rs:LL:CC
+   |
+LL |     if Some(true) == entry.enabled {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `entry.enabled.unwrap_or(false)`
+
+warning: comparing against `Some(true)` leaves the `None` case unnamed
+  --> $DIR/some_bool_comparison.rs:LL:CC
+   |
+LL |     if flags.get("verbose").copied() == Some(true) {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `flags.get("verbose").copied().unwrap_or(false)`
+
+warning: comparing against `Some(true)` leaves the `None` case unnamed
+  --> $DIR/some_bool_comparison.rs:LL:CC
+   |
+LL |     if flags.get("verbose") == Some(&true) {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `flags.get("verbose").copied().unwrap_or(false)`
+
+warning: comparing against `Some(false)` leaves the `None` case unnamed
+  --> $DIR/some_bool_comparison.rs:LL:CC
+   |
+LL |     if settings.as_ref() != Some(&false) {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `settings.as_ref().copied().unwrap_or(true)`
+
+warning: comparing against `Some(true)` leaves the `None` case unnamed
+  --> $DIR/some_bool_comparison.rs:LL:CC
+   |
+LL |     if enabled == &Some(true) {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `enabled.unwrap_or(false)`
+
+warning: comparing against `Some(true)` leaves the `None` case unnamed
+  --> $DIR/some_bool_comparison.rs:LL:CC
+   |
+LL |     if *enabled == Some(true) {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `(*enabled).unwrap_or(false)`
+
+warning: comparing against `Some(true)` leaves the `None` case unnamed
+  --> $DIR/some_bool_comparison.rs:LL:CC
+   |
+LL |     assert!(verbose == Some(true));
+   |             ^^^^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `verbose.unwrap_or(false)`
+
+warning: N warnings emitted

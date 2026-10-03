@@ -158,6 +158,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   static item has a single-letter name
 
+- [`some_bool_comparison`](./some_bool_comparison.md) (default: `active`).
+
+  `Option<bool>` compared against a `Some` of a boolean literal, which never says what `None` means
+
 - [`thiserror_usage`](./thiserror_usage.md) (default: `active`).
 
   `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`
