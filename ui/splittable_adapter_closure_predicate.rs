@@ -440,4 +440,24 @@ fn result_is_ok_and(outcome: Result<&'static str, usize>) -> bool {
     outcome.is_ok_and(|line| wanted(line) && line.starts_with('#'))
 }
 
+// Bad: a comment inside the predicate does not stop it being two tests, so
+// the rule still asks for the split. It offers the rewrite as advice rather
+// than applying it, splicing the adapters being what would drop the comment.
+fn a_commented_conjunction(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
+    lines
+        .filter(|line| wanted(line) /* and a heading */ && line.starts_with('#'))
+        .collect()
+}
+
+// Good: one adapter per test, with the comment kept beside the test it was
+// about.
+fn split_a_commented_conjunction(
+    lines: std::vec::IntoIter<&'static str>,
+) -> Vec<&'static str> {
+    lines
+        .filter(|line| wanted(line))
+        .filter(|line| line.starts_with('#') /* a heading */)
+        .collect()
+}
+
 fn main() {}

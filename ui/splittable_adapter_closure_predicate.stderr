@@ -143,4 +143,16 @@ LL -     line.is_some_and(|line| wanted(line) && line.starts_with('#'))
 LL +     line.filter(|line| wanted(line)).is_some_and(|line| line.starts_with('#'))
    |
 
+warning: this predicate runs 2 tests on the item, so `filter` does all of them
+  --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
+   |
+LL |         .filter(|line| wanted(line) /* and a heading */ && line.starts_with('#'))
+   |          ^^^^^^
+   |
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -         .filter(|line| wanted(line) /* and a heading */ && line.starts_with('#'))
+LL +         .filter(|line| wanted(line)).filter(|line| line.starts_with('#'))
+   |
+
 warning: N warnings emitted
