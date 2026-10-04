@@ -47,9 +47,10 @@ crate's own source:
   it does not table is what they read like. The predicate trigger does
   reach `Option::is_some_and`, whose conjunction splits without a
   wrapper.
-- **A conjunction holding a comparison stays folded.** A comparison is a
-  bound rather than a question, and a conjunction of them is how Rust
-  spells one test, so each half gets no adapter of its own.
+- **A conjunction of nothing but comparisons stays folded.** A comparison
+  is a bound rather than a question, and a conjunction of them is how Rust
+  spells one test, so each half gets no adapter of its own. One comparison
+  among named questions is not that shape and does split.
 - **Liftability asks about a step's own receiver** rather than the item,
   which [When a step can be lifted](#when-a-step-can-be-lifted) is about:
   regions are erased in typeck results, so a result's lifetime cannot be

@@ -71,11 +71,12 @@ satisfy the test has nothing to lift into, so `all`, `position`
 and their kin are left alone: filtering before `all` makes an item
 that failed the first test vacuously fine. A conjunct not naming
 the item is an invariant to hoist out of the pipeline rather than a
-test to give its own adapter. And a conjunction of comparisons
-stays whole, because that is how Rust spells one test:
+test to give its own adapter. And a conjunction of nothing but
+comparisons stays whole, because that is how Rust spells one test:
 `pos >= range.start && pos < range.end` asks whether a position is
 inside a range, and each half on its own adapter reads worse than
-the pair does.
+the pair does. One comparison among named questions is not that
+shape, and does split.
 
 Two are about what the split would not compile into. `any` and
 `Option::is_some_and` hand the item over, where the `filter` a

@@ -71,6 +71,14 @@ LL |     letters.any(|letter| letter.is_alphabetic() && letter.is_uppercase())
    |
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
 
+warning: this predicate runs 2 tests on the item, so `filter` does all of them
+  --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
+   |
+LL |     lines.filter(|line| line.len() > 3 && wanted(line)).collect()
+   |           ^^^^^^
+   |
+   = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+
 warning: this predicate runs 2 tests on the item, so `any` does all of them
   --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
    |

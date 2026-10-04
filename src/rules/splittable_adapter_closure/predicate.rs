@@ -61,7 +61,7 @@ pub(super) fn check<'tcx>(
     {
         return None;
     }
-    if conjuncts.iter().any(|conjunct| is_comparison(conjunct)) {
+    if conjuncts.iter().all(|conjunct| is_comparison(conjunct)) {
         return None;
     }
     // Only the lifted tests are asked. The last one stays where it is,
@@ -141,13 +141,17 @@ fn collect<'tcx>(expr: &'tcx Expr<'tcx>, conjuncts: &mut Vec<&'tcx Expr<'tcx>>) 
 /// Whether `expr` compares two values.
 ///
 /// A comparison is a bound rather than a question, and a conjunction of
-/// them is how Rust spells one test: `pos >= range.start && pos <
-/// range.end` asks whether a position is in a range, and
-/// `*byte != b' ' && *byte != b'\t'` whether a byte is whitespace.
-/// Giving each half its own adapter reads worse than the conjunction
-/// does, so a conjunction holding one is left alone. A conjunct that
-/// merely contains a comparison is not one: `wanted(line)` asks a named
-/// question however it answers it.
+/// nothing but comparisons is how Rust spells one test:
+/// `pos >= range.start && pos < range.end` asks whether a position is in
+/// a range, and `*byte != b' ' && *byte != b'\t'` whether a byte is
+/// whitespace. Giving each half its own adapter reads worse than the
+/// conjunction does, so a conjunction of them is left alone.
+///
+/// One comparison among named questions is a different shape:
+/// `wanted(line) && line.len() > 3` asks two things already, and the
+/// bound is one of them rather than half of one. A conjunct that merely
+/// contains a comparison is not a comparison either: `wanted(line)` asks
+/// a named question however it answers it.
 fn is_comparison(expr: &Expr<'_>) -> bool {
     let ExprKind::Binary(operator, ..) = expr.kind else {
         return false;

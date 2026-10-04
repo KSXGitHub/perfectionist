@@ -310,8 +310,9 @@ fn inside_a_range(positions: std::vec::IntoIter<usize>, start: usize, end: usize
     positions.into_iter().any(|pos| pos >= start && pos < end)
 }
 
-// Not flagged: one comparison among the conjuncts is enough, since the
-// rule cannot tell which bound belongs to which question.
+// Bad: one comparison among named questions is not a conjunction of
+// comparisons. The reader is being asked two things, and the bound is one
+// of them rather than half of one.
 fn a_comparison_among_calls(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
     lines.filter(|line| line.len() > 3 && wanted(line)).collect()
 }
