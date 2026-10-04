@@ -18,7 +18,6 @@ fn parse(text: &str) -> usize {
     text.len()
 }
 
-
 // Not flagged: a chain the closure does not always reach. Lifting it
 // would run the parse for every item rather than for none, which
 // compiles and answers differently.
@@ -28,13 +27,11 @@ fn conditional(flag: bool, lines: std::vec::IntoIter<&'static str>) -> Vec<usize
         .collect()
 }
 
-
 // Not flagged: the right operand of `&&` is skipped where the left
 // settles the answer.
 fn short_circuit(lines: std::vec::IntoIter<&'static str>) -> bool {
     lines.fold(false, |seen, line| seen && line.trim().is_empty())
 }
-
 
 // Bad: a `let` and the block holding it run when the block does, so
 // the chain's position is the block's.
@@ -45,7 +42,6 @@ fn fold_with_a_let(lines: std::vec::IntoIter<&'static str>) -> usize {
     })
 }
 
-
 // Good: the steps lifted, which leaves the `let` nothing to name and the
 // closure the accumulation alone.
 fn split_fold_with_a_let(lines: std::vec::IntoIter<&'static str>) -> usize {
@@ -55,7 +51,6 @@ fn split_fold_with_a_let(lines: std::vec::IntoIter<&'static str>) -> usize {
         .fold(0, |total, length| total + length)
 }
 
-
 // Bad: a scrutinee runs.
 fn scrutinee_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| match line.trim().len() {
@@ -63,7 +58,6 @@ fn scrutinee_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
         length => total + length,
     })
 }
-
 
 // Good: the steps lifted, leaving the `match` its own item to scrutinise.
 fn split_scrutinee_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
@@ -76,7 +70,6 @@ fn split_scrutinee_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
         })
 }
 
-
 // Bad: an `if` condition runs too.
 fn condition_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| {
@@ -88,7 +81,6 @@ fn condition_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
     })
 }
 
-
 // Good: the steps lifted, leaving the `if` the answer they computed.
 fn split_condition_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines
@@ -96,7 +88,6 @@ fn split_condition_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
         .map(str::is_empty)
         .fold(0, |total, empty| if empty { total } else { total + 1 })
 }
-
 
 // Not flagged: a branch of an `if` does not run every time the closure
 // does.
@@ -110,7 +101,6 @@ fn branching_fold(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize 
     })
 }
 
-
 // Not flagged: a `let`'s `else` block runs only where the pattern does
 // not match.
 fn let_else_fold(fallback: Option<usize>, lines: std::vec::IntoIter<&'static str>) -> usize {
@@ -122,7 +112,6 @@ fn let_else_fold(fallback: Option<usize>, lines: std::vec::IntoIter<&'static str
     })
 }
 
-
 // Not flagged: nor does an arm of a `match`.
 fn arm_fold(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| match flag {
@@ -130,7 +119,6 @@ fn arm_fold(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
         false => total,
     })
 }
-
 
 // Not flagged: a `loop` runs its body any number of times including
 // none, and every shape the rule does not recognise answers the same
@@ -141,14 +129,12 @@ fn looping_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
     })
 }
 
-
 // Bad: `?` is a `match` on its operand, and an operand runs.
 fn fold_through_try(
     mut lines: std::vec::IntoIter<&'static str>,
 ) -> Result<usize, std::num::ParseIntError> {
     lines.try_fold(0usize, |total, line| Ok(total + line.trim().parse::<usize>()?))
 }
-
 
 // Good: the steps lifted, leaving the closure the `?` the reader wrote.
 fn split_fold_through_try(
@@ -159,7 +145,6 @@ fn split_fold_through_try(
         .map(str::parse::<usize>)
         .try_fold(0usize, |total, parsed| Ok(total + parsed?))
 }
-
 
 // Not flagged: an early `return` leaves the closure before the chain,
 // so a leading `map` would run the step for every item where the
@@ -173,7 +158,6 @@ fn early_return_fold(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usi
     })
 }
 
-
 // Not flagged: a `?` before the chain leaves it the same way.
 fn try_before_the_chain(
     first: Option<usize>,
@@ -181,7 +165,6 @@ fn try_before_the_chain(
 ) -> Option<usize> {
     lines.try_fold(0, |total, line| Some(total + first? + line.trim().len()))
 }
-
 
 // Not flagged: one step, where the `?` the reader wrote is not a second
 // one. It lowers to a call the chain is the argument of, which no `map`
@@ -191,7 +174,6 @@ fn one_step_through_try(
 ) -> Result<usize, std::num::ParseIntError> {
     lines.try_fold(0usize, |total, line| Ok(total + line.parse::<usize>()?))
 }
-
 
 // Not flagged: a `loop` runs its body any number of times including
 // none, and every shape the rule does not recognise answers the same
@@ -206,7 +188,6 @@ fn loop_after_the_chain(lines: std::vec::IntoIter<&'static str>) -> usize {
         sum
     })
 }
-
 
 // Not flagged: a `let`'s `else` block, reached where nothing diverts
 // before the chain, so the arm reading `else` is what declines it.
@@ -223,7 +204,6 @@ fn let_else_diverting_after(
     })
 }
 
-
 // Not flagged: a `panic!` before the chain leaves the closure without
 // evaluating it, which a leading `map` would do for every item. What
 // leaves is read from the type, so an `exit`, a call to a `-> !` function
@@ -236,7 +216,6 @@ fn panics_before_the_chain(flag: bool, lines: std::vec::IntoIter<&'static str>) 
         total + line.trim().len()
     })
 }
-
 
 // Not flagged: the same program as a `match`, which the `if` above does
 // not establish on its own. A `panic!` expands in `core`, so what runs
@@ -251,7 +230,6 @@ fn panics_in_an_arm(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usiz
     })
 }
 
-
 // Not flagged: an assignment evaluates its right side before the place it
 // writes to, so a divergence there runs before a chain in the index.
 fn diverges_through_an_assignment(
@@ -264,7 +242,6 @@ fn diverges_through_an_assignment(
     })
 }
 
-
 // Not flagged: a `let` before the chain runs its initialiser, so a
 // divergence there leaves the closure first.
 fn diverges_in_a_let(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
@@ -273,7 +250,6 @@ fn diverges_in_a_let(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usi
         total + extra + line.trim().len()
     })
 }
-
 
 // Not flagged: an `exit` is read from the type the same way a `panic!`
 // is.
@@ -286,19 +262,16 @@ fn exits_before_the_chain(flag: bool, lines: std::vec::IntoIter<&'static str>) -
     })
 }
 
-
 // Not flagged: a unary closure whose body is not the chain. The scope
 // here is a closure whose whole job is the chain.
 fn body_is_not_the_chain(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.map(|line| line.trim().len() + 1).collect()
 }
 
-
 struct Pair {
     first: usize,
     second: usize,
 }
-
 
 fn pair(count: usize) -> Pair {
     Pair {
@@ -307,11 +280,9 @@ fn pair(count: usize) -> Pair {
     }
 }
 
-
 fn counted(total: usize) -> usize {
     total
 }
-
 
 // Bad: a struct expression's field is a position the chain is always
 // reached through, and every field before it runs first.
@@ -342,7 +313,6 @@ fn split_folds_into_a_struct_field(lines: std::vec::IntoIter<&'static str>) -> P
     )
 }
 
-
 // Not flagged: a `let`-`else` before the chain leaves the closure exactly
 // where its pattern does not match.
 fn diverges_in_a_let_else(
@@ -357,7 +327,6 @@ fn diverges_in_a_let_else(
     })
 }
 
-
 // Not flagged: a struct expression evaluates its fields before its
 // `..base`, so a divergence in a field runs before a chain in the base.
 fn diverges_in_a_struct_field(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
@@ -370,7 +339,6 @@ fn diverges_in_a_struct_field(flag: bool, lines: std::vec::IntoIter<&'static str
     })
 }
 
-
 // Not flagged: the accumulator's side of a stateful closure runs before
 // the chain and after it once the chain is lifted, so a call there keeps
 // the answer and moves the trace.
@@ -378,13 +346,11 @@ fn accumulator_has_an_effect(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| counted(total) + line.trim().len())
 }
 
-
 // Not flagged: a division by zero leaves the closure without being a
 // call, so the item's steps would run before a panic that stopped them.
 fn divides_before_the_chain(divisor: usize, lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| total + 1 / divisor + line.trim().len())
 }
-
 
 // Not flagged: and a compound division is the same, which the plain
 // spelling's arm does not cover.
@@ -398,7 +364,6 @@ fn divides_in_place_before_the_chain(
         scaled + line.trim().len()
     })
 }
-
 
 // Not flagged: and an index out of bounds is the same.
 fn indexes_before_the_chain(table: [usize; 2], lines: std::vec::IntoIter<&'static str>) -> usize {
