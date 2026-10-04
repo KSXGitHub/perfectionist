@@ -12,7 +12,7 @@ pub mod manifest;
 pub mod project;
 pub mod ui_test;
 
-pub use dylint::{run_dylint, run_dylint_all_targets, run_dylint_fix};
+pub use dylint::{run_cargo_test, run_dylint, run_dylint_all_targets, run_dylint_fix};
 pub use manifest::{
     DylintLibrary, DylintMetadata, DylintWorkspaceMetadata, fixture_cargo_toml, fixture_dylint_toml,
 };

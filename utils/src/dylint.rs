@@ -91,6 +91,24 @@ pub fn run_dylint_fix(project_dir: &Path, shared_target_dir: &Path) -> (String, 
     (stderr, output.status.success())
 }
 
+/// Run the fixture's own `cargo test` and hand back its output.
+///
+/// A fixture carrying assertions about what its functions answer is an
+/// oracle a rewrite can be judged against: run it before the fixer and
+/// again after, and a rewrite that compiles but answers differently
+/// fails the second run. `cargo dylint --fix` rewrites `--lib` only, so
+/// the assertions themselves are not among what the fixer may edit.
+pub fn run_cargo_test(project_dir: &Path, shared_target_dir: &Path) -> (String, bool) {
+    let output = cargo_command(project_dir, shared_target_dir)
+        .with_arg("test")
+        .output()
+        .expect("failed to run `cargo test`");
+    let combined = [output.stdout, output.stderr]
+        .map(|stream| String::from_utf8(stream).expect("cargo test output is not UTF-8"))
+        .join("\n");
+    (combined, output.status.success())
+}
+
 fn run_dylint_inner(
     project_dir: &Path,
     shared_target_dir: &Path,
