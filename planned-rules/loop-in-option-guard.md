@@ -67,10 +67,25 @@ An `if let Some(binding) = scrutinee { .. }` expression where:
    condition 2 already implies the block has one statement, so this
    holds by construction; assert it rather than re-deriving it.
 
-Emit one suggestion: replace the whole `if let` with the `for`,
-splicing `.into_iter().flatten()` onto the scrutinee. It is
-`MachineApplicable` — the rewrite is total and the iteration order
-and count are unchanged.
+Emit no suggestion. Which rewrite is right depends on the
+scrutinee, as the [Statement](#statement) shows — folded into the
+header where it is one short expression, bound to a `let` where it is
+a chain — and that is a judgement about the surrounding code rather
+than a fact about the shape. A `MachineApplicable` fix would be
+applied unreviewed by `--fix`, and on a chained scrutinee it makes
+the code worse; rustfmt then bakes the result in. So the diagnostic
+carries help naming both forms and why the second exists, in the
+shape `perfectionist::overly_long_method_chain` uses:
+
+> **help:** an `Option` is already an iterator of at most one item —
+> fold the absent case into the iterator with
+> `.into_iter().flatten()` where the scrutinee is one short
+> expression
+>
+> **help:** where it is a chain, bind it to a `let` first and iterate
+> the binding — folding it into the `for` header splits the header
+> across a line per call and adds two calls toward
+> `overly_long_method_chain`'s limit
 
 `if let Some(x) = opt` where the loop iterates something *derived*
 from `x` does not fire, nor does a `while let`, nor a `match` with a
@@ -152,18 +167,16 @@ disable = ["loop_in_option_guard"]
   and compare its `Res` against the `HirId` the `Some` pattern binds.
   Comparing spans or names is not enough — a shadowing binding of the
   same name would match textually.
-- **Suggestion span.** Replace the whole `if let` expression.
-  `.into_iter().flatten()` binds tighter than most things, but the
-  scrutinee still needs parenthesising when it is not already a call
-  chain or path; take it through
-  `clippy_utils::source::snippet_with_applicability` and wrap when
-  `expr.precedence()` calls for it.
-- **`&` versus owned.** The scrutinee is usually `Option<&T>` where
-  `&T: IntoIterator`, but an `Option<T>` iterated by reference needs
-  `.iter().flatten()` rather than `.into_iter().flatten()` to keep
-  borrowing rather than moving. Pick the adaptor from the loop's own
-  desugared iteratee (`IntoIterator::into_iter` receiver type), not
-  from the scrutinee alone.
+- **Diagnostic span.** The whole `if let` expression. Emitting no
+  rewrite means no snippet to reuse, so neither the parenthesising
+  nor the `iter`-versus-`into_iter` question below arises in the
+  output — but the help text still names `.into_iter().flatten()`, so
+  say `iter()` instead where the loop borrows. Read that from the
+  loop's own desugared iteratee (`IntoIterator::into_iter` receiver
+  type) rather than from the scrutinee alone: the scrutinee is
+  usually `Option<&T>` where `&T: IntoIterator`, but an `Option<T>`
+  iterated by reference needs `.iter().flatten()` to keep borrowing
+  rather than moving.
 - **Proc-macro suppression.** The primary span is the whole `if let`,
   wider than the synthesised spans the
   [suppression convention](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations)
@@ -175,10 +188,10 @@ disable = ["loop_in_option_guard"]
 
 ### Difficulty
 
-**Easy.** A closed HIR shape, one type check, one textual rewrite,
-no configuration. The only real care is the `iter` versus
-`into_iter` choice above, which is decided by the loop's own
-desugaring rather than guessed.
+**Easy**, and cheaper for carrying no rewrite: a closed HIR shape,
+one type check, no snippet reuse, no configuration. The only real
+care is the `iter` versus `into_iter` wording above, which is decided
+by the loop's own desugaring rather than guessed.
 
 ## Default state
 

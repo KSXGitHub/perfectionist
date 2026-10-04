@@ -128,10 +128,11 @@ pattern that several rules call out by reference — live in
 ### Loops and option guards
 - [`loop-in-option-guard.md`](./loop-in-option-guard.md) — flag an
   `if let Some(..)` with no `else` whose only statement is a `for`
-  over the binding, and suggest folding the absent case into the
-  iterator: `opt.into_iter().flatten()`. An `Option` is already an
-  iterator of at most one item, so the guard buys a level of
-  indentation and no decision. Active by default, no configuration.
+  over the binding. An `Option` is already an iterator of at most one
+  item, so the guard buys a level of indentation and no decision.
+  Offers no rewrite, which of `.into_iter().flatten()` in the header
+  or a `let` first being a judgement about the scrutinee; the help
+  names both. Active by default, no configuration.
 - [`option-guard-in-loop.md`](./option-guard-in-loop.md) — the
   mirror image: flag a `for` whose entire body is an `if let
   Some(..)` on something derived from the loop binding, and suggest
