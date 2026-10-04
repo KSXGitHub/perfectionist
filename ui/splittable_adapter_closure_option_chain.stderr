@@ -103,6 +103,14 @@ LL |     names.filter_map(|name| consume(name).then_some(1)).collect()
    |
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
+warning: this closure holds a guard and a value, so `filter_map` does both
+  --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
+   |
+LL |         .filter_map(|flag| flag.then_some(1))
+   |          ^^^^^^^^^^
+   |
+   = help: lift the guard into a leading `filter` and let a `map` make the value, so neither adapter does both
+
 warning: this closure chains 2 steps onto the item, so `map_while` does all of them
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
    |
@@ -110,6 +118,14 @@ LL |     names.map_while(|name| consume(name).then_some(1)).collect()
    |           ^^^^^^^^^
    |
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure holds a guard and a value, so `map_while` does both
+  --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
+   |
+LL |         .map_while(|flag| flag.then_some(1))
+   |          ^^^^^^^^^
+   |
+   = help: lift the guard into a leading `take_while` and let a `map` make the value, so neither adapter does both
 
 warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC

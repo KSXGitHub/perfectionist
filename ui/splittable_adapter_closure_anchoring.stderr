@@ -1,0 +1,42 @@
+warning: this closure chains 2 steps onto the item, so `fold` does all of them
+  --> $DIR/splittable_adapter_closure_anchoring.rs:LL:CC
+   |
+LL |     lines.fold(0, |total, line| {
+   |           ^^^^
+   |
+   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+
+warning: this closure chains 2 steps onto the item, so `fold` does all of them
+  --> $DIR/splittable_adapter_closure_anchoring.rs:LL:CC
+   |
+LL |     lines.fold(0, |total, line| match line.trim().len() {
+   |           ^^^^
+   |
+   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+
+warning: this closure chains 2 steps onto the item, so `fold` does all of them
+  --> $DIR/splittable_adapter_closure_anchoring.rs:LL:CC
+   |
+LL |     lines.fold(0, |total, line| {
+   |           ^^^^
+   |
+   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+
+warning: this closure chains 2 steps onto the item, so `try_fold` does all of them
+  --> $DIR/splittable_adapter_closure_anchoring.rs:LL:CC
+   |
+LL |     lines.try_fold(0usize, |total, line| Ok(total + line.trim().parse::<usize>()?))
+   |           ^^^^^^^^
+   |
+   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+
+warning: this closure chains 2 steps onto the item, so `fold` does all of them
+  --> $DIR/splittable_adapter_closure_anchoring.rs:LL:CC
+   |
+LL |     lines.fold(
+   |           ^^^^
+   |
+   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+
+warning: N warnings emitted

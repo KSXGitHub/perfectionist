@@ -71,6 +71,30 @@ LL |         .map_while(|line| line.trim().parse::<usize>().ok())
    |
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
+warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
+   |
+LL |     lines.filter_map(|line| maybe(line.trim())).collect()
+   |           ^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
+   |
+LL |     lines.filter_map(|line| maybe(line.trim())).collect()
+   |           ^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
+   |
+LL |     rows.map(|row| row.as_str().len()).collect()
+   |          ^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
 warning: this closure chains 2 steps onto the item, so `fold` does all of them
   --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
    |
@@ -92,38 +116,6 @@ warning: this closure chains 2 steps onto the item, so `fold` does all of them
    |
 LL |     lines.fold(0, |total, line| line.trim().parse().unwrap_or_else(|_| total))
    |           ^^^^
-   |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
-
-warning: this closure chains 2 steps onto the item, so `fold` does all of them
-  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
-   |
-LL |     lines.fold(0, |total, line| {
-   |           ^^^^
-   |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
-
-warning: this closure chains 2 steps onto the item, so `fold` does all of them
-  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
-   |
-LL |     lines.fold(0, |total, line| match line.trim().len() {
-   |           ^^^^
-   |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
-
-warning: this closure chains 2 steps onto the item, so `fold` does all of them
-  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
-   |
-LL |     lines.fold(0, |total, line| {
-   |           ^^^^
-   |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
-
-warning: this closure chains 2 steps onto the item, so `try_fold` does all of them
-  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
-   |
-LL |     lines.try_fold(0usize, |total, line| Ok(total + line.trim().parse::<usize>()?))
-   |           ^^^^^^^^
    |
    = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
 
@@ -222,14 +214,6 @@ LL |         .map(|line| line.trim_start_matches("# ").len())
    |          ^^^
    |
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
-
-warning: this closure chains 2 steps onto the item, so `fold` does all of them
-  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
-   |
-LL |     lines.fold(
-   |           ^^^^
-   |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
 
 warning: this closure chains 3 steps onto the item, so `fold` does all of them
   --> $DIR/splittable_adapter_closure_chain.rs:LL:CC

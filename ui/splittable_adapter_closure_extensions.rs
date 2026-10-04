@@ -80,12 +80,31 @@ fn nested_fold(
     items.fold_ok(0, |total, text| total + text.trim().len())
 }
 
+// Good: the steps lifted into the adapter mapping that channel, leaving
+// the closure the accumulation.
+fn split_nested_fold(items: std::vec::IntoIter<Result<&'static str, usize>>) -> Result<usize, usize> {
+    items
+        .map_ok(str::trim)
+        .map_ok(str::len)
+        .fold_ok(0, |total, length| total + length)
+}
+
 // Bad: binary over the iterator's own item, so this one lifts into `map`.
 fn own_fold(mut items: std::vec::IntoIter<&'static str>) -> usize {
     items
         .fold_while(0, |total, text| {
             itertools::FoldWhile::Continue(total + text.trim().len())
         })
+        .into_inner()
+}
+
+// Good: the steps lifted into `map`, this adapter's item being the
+// iterator's own.
+fn split_own_fold(items: std::vec::IntoIter<&'static str>) -> usize {
+    items
+        .map(str::trim)
+        .map(str::len)
+        .fold_while(0, |total, length| itertools::FoldWhile::Continue(total + length))
         .into_inner()
 }
 
@@ -105,15 +124,32 @@ fn parallel_any(items: Parallel<&'static str>) -> bool {
     items.any(|text| text.trim().is_empty())
 }
 
+// Good: the step lifted, leaving the consumer its test.
+fn split_parallel_any(items: Parallel<&'static str>) -> bool {
+    items.map(str::trim).any(str::is_empty)
+}
+
 // Bad: a piping method, where every step becomes one and none stays.
 fn piped(value: usize) -> String {
     value.pipe(|number| render(double(number)))
 }
 
-// Bad: a parallel predicate that is a conjunction, which the predicate
-// rule splits into successive `filter`s.
+// Good: one `pipe` per step.
+fn split_piped(value: usize) -> String {
+    value.pipe(double).pipe(render)
+}
+
+// Bad: a parallel predicate that is a conjunction, which the conjunction
+// trigger splits into successive `filter`s.
 fn parallel_conjunction(items: Parallel<&'static str>) -> bool {
     items.any(|text| wanted(text) && text.starts_with('#'))
+}
+
+// Good: one adapter per test, the leading one filtering.
+fn split_parallel_conjunction(items: Parallel<&'static str>) -> bool {
+    items
+        .filter(|text| wanted(text))
+        .any(|text| text.starts_with('#'))
 }
 
 // Not flagged: a parallel `filter` hands the item back downstream, the
@@ -157,32 +193,75 @@ fn piped_by_reference_thrice(value: String) -> usize {
     value.pipe_ref(|text| text.trim().to_uppercase().len())
 }
 
+// Good: the head keeps the method and the step above it takes a value.
+fn split_piped_by_reference_thrice(value: String) -> usize {
+    value
+        .pipe_ref(|text| text.trim())
+        .pipe(str::to_uppercase)
+        .pipe(|upper| upper.len())
+}
+
 fn piped_mutably(mut value: Vec<usize>) -> usize {
     value.pipe_mut(|all| all.as_mut_slice().len())
+}
+
+// Good: the head keeps the method, the step above it takes a value.
+fn split_piped_mutably(mut value: Vec<usize>) -> usize {
+    value.pipe_mut(|all| all.as_mut_slice()).pipe(|all| all.len())
 }
 
 fn piped_as_reference(value: String) -> usize {
     value.pipe_as_ref(|text: &str| text.trim().len())
 }
 
+// Good: the head keeps the method, the step above it takes a value.
+fn split_piped_as_reference(value: String) -> usize {
+    value.pipe_as_ref(|text: &str| text.trim()).pipe(str::len)
+}
+
 fn piped_as_mutable(mut value: String) -> usize {
     value.pipe_as_mut(|text: &mut str| text.trim().len())
+}
+
+// Good: the head keeps the method, the step above it takes a value.
+fn split_piped_as_mutable(mut value: String) -> usize {
+    value.pipe_as_mut(|text: &mut str| text.trim()).pipe(str::len)
 }
 
 fn piped_through_deref(value: String) -> usize {
     value.pipe_deref(|text: &str| text.trim().len())
 }
 
+// Good: the head keeps the method, the step above it takes a value.
+fn split_piped_through_deref(value: String) -> usize {
+    value.pipe_deref(|text: &str| text.trim()).pipe(str::len)
+}
+
 fn piped_through_deref_mut(mut value: String) -> usize {
     value.pipe_deref_mut(|text: &mut str| text.trim().len())
+}
+
+// Good: the head keeps the method, the step above it takes a value.
+fn split_piped_through_deref_mut(mut value: String) -> usize {
+    value.pipe_deref_mut(|text: &mut str| text.trim()).pipe(str::len)
 }
 
 fn piped_through_borrow(value: String) -> usize {
     value.pipe_borrow(|text: &str| text.trim().len())
 }
 
+// Good: the head keeps the method, the step above it takes a value.
+fn split_piped_through_borrow(value: String) -> usize {
+    value.pipe_borrow(|text: &str| text.trim()).pipe(str::len)
+}
+
 fn piped_through_borrow_mut(mut value: String) -> usize {
     value.pipe_borrow_mut(|text: &mut str| text.trim().len())
+}
+
+// Good: the head keeps the method, the step above it takes a value.
+fn split_piped_through_borrow_mut(mut value: String) -> usize {
+    value.pipe_borrow_mut(|text: &mut str| text.trim()).pipe(str::len)
 }
 
 // Bad: a receiver named again after the call, which the split borrows
@@ -190,6 +269,13 @@ fn piped_through_borrow_mut(mut value: String) -> usize {
 // decline.
 fn piped_by_reference_then_used(value: String) -> (usize, String) {
     let length = value.pipe_ref(|text| text.trim().len());
+    (length, value)
+}
+
+// Good: the split borrows the receiver where the folded form did, so the
+// name is still there afterwards.
+fn split_piped_by_reference_then_used(value: String) -> (usize, String) {
+    let length = value.pipe_ref(|text| text.trim()).pipe(str::len);
     (length, value)
 }
 
@@ -201,6 +287,18 @@ fn nested_filter_map(
 ) -> Vec<Result<usize, usize>> {
     items
         .filter_map_ok(|text| text.trim().parse().ok())
+        .collect()
+}
+
+// Good: every step but the last lifted into `map_ok`, leaving the adapter
+// the call that discards the error.
+fn split_nested_filter_map(
+    items: std::vec::IntoIter<Result<&'static str, usize>>,
+) -> Vec<Result<usize, usize>> {
+    items
+        .map_ok(str::trim)
+        .map_ok(str::parse::<usize>)
+        .filter_map_ok(Result::ok)
         .collect()
 }
 
@@ -219,6 +317,17 @@ fn counting(lines: std::vec::IntoIter<&'static str>) -> HashMap<usize, usize> {
 
 fn partitioned(lines: std::vec::IntoIter<&'static str>) -> (Vec<usize>, Vec<&'static str>) {
     lines.partition_map(|text| classify(text.trim()))
+}
+
+// Good: the same two, split.
+fn split_counting(lines: std::vec::IntoIter<&'static str>) -> HashMap<usize, usize> {
+    lines.map(str::trim).counts_by(str::len)
+}
+
+fn split_partitioned(
+    lines: std::vec::IntoIter<&'static str>,
+) -> (Vec<usize>, Vec<&'static str>) {
+    lines.map(str::trim).partition_map(classify)
 }
 
 // Not flagged: the guard-and-value trigger reads `Iterator`'s own
@@ -271,15 +380,87 @@ fn parallel_try_total(items: Parallel<&'static str>) -> Parallel<Option<usize>> 
     items.try_fold(|| 0, |total, text| Some(total + text.trim().len()))
 }
 
-// Not flagged by the chain rule: `find_first` and `find_any` hand the
-// closure a borrow of the item, which a leading `map` would replace. Bad
-// for the predicate rule, whose `filter` takes the item the same way.
+// Good: the same parallel table, split. `map` keeps one item per item, so
+// the positional answers are the positions they were.
+fn split_parallel_each(items: Parallel<&'static str>) {
+    items.map(str::trim).map(str::len).for_each(drop);
+}
+
+fn split_parallel_every(items: Parallel<&'static str>) -> bool {
+    items.map(str::trim).all(str::is_empty)
+}
+
+fn split_parallel_position(items: Parallel<&'static str>) -> Option<usize> {
+    items.map(str::trim).position_any(str::is_empty)
+}
+
+fn split_parallel_position_first(items: Parallel<&'static str>) -> Option<usize> {
+    items.map(str::trim).position_first(str::is_empty)
+}
+
+fn split_parallel_position_last(items: Parallel<&'static str>) -> Option<usize> {
+    items.map(str::trim).position_last(str::is_empty)
+}
+
+fn split_parallel_found_any(items: Parallel<&'static str>) -> Option<usize> {
+    items
+        .map(str::trim)
+        .map(str::parse::<usize>)
+        .find_map_any(Result::ok)
+}
+
+fn split_parallel_found_first(items: Parallel<&'static str>) -> Option<usize> {
+    items
+        .map(str::trim)
+        .map(str::parse::<usize>)
+        .find_map_first(Result::ok)
+}
+
+fn split_parallel_found_last(items: Parallel<&'static str>) -> Option<usize> {
+    items
+        .map(str::trim)
+        .map(str::parse::<usize>)
+        .find_map_last(Result::ok)
+}
+
+fn split_parallel_total(items: Parallel<&'static str>) -> Parallel<usize> {
+    items
+        .map(str::trim)
+        .map(str::len)
+        .fold(|| 0, |total, length| total + length)
+}
+
+fn split_parallel_try_total(items: Parallel<&'static str>) -> Parallel<Option<usize>> {
+    items
+        .map(str::trim)
+        .map(str::len)
+        .try_fold(|| 0, |total, length| Some(total + length))
+}
+
+// Bad: `find_first` and `find_any` hand the closure a borrow of the item,
+// which a leading `map` would replace, so the chain trigger leaves them
+// alone. The conjunction trigger's `filter` takes the item the same way, so
+// its finding is the one reported.
 fn parallel_first(items: Parallel<&'static str>) -> Option<&'static str> {
     items.find_first(|text| wanted(text) && text.starts_with('#'))
 }
 
 fn parallel_found(items: Parallel<&'static str>) -> Option<&'static str> {
     items.find_any(|text| wanted(text) && text.starts_with('#'))
+}
+
+// Good: one adapter per test, the leading one filtering, which hands the
+// item the same way the finder did.
+fn split_parallel_first(items: Parallel<&'static str>) -> Option<&'static str> {
+    items
+        .filter(|text| wanted(text))
+        .find_first(|text| text.starts_with('#'))
+}
+
+fn split_parallel_found(items: Parallel<&'static str>) -> Option<&'static str> {
+    items
+        .filter(|text| wanted(text))
+        .find_any(|text| text.starts_with('#'))
 }
 
 fn main() {}

@@ -78,11 +78,30 @@ fn three_tests(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
         .collect()
 }
 
+// Good: one adapter per test, however many there are.
+fn split_three_tests(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
+    lines
+        .filter(|line| wanted(line))
+        .filter(|line| line.starts_with('#'))
+        .filter(|line| line.ends_with('!'))
+        .collect()
+}
+
 // Bad: a disjunction inside a conjunct stays whole, and the pair still
 // splits.
 fn conjunct_holds_a_disjunction(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
     lines
         .filter(|line| wanted(line) && (line.starts_with('#') || line.ends_with('!')))
+        .collect()
+}
+
+// Good: the disjunction stays one test, in an adapter of its own.
+fn split_conjunct_holds_a_disjunction(
+    lines: std::vec::IntoIter<&'static str>,
+) -> Vec<&'static str> {
+    lines
+        .filter(|line| wanted(line))
+        .filter(|line| line.starts_with('#') || line.ends_with('!'))
         .collect()
 }
 
@@ -92,9 +111,24 @@ fn find_tests(mut lines: std::vec::IntoIter<&'static str>) -> Option<&'static st
     lines.find(|line| wanted(line) && line.starts_with('#'))
 }
 
+// Good: the leading test filters, leaving the consumer the last one.
+fn split_find_tests(lines: std::vec::IntoIter<&'static str>) -> Option<&'static str> {
+    lines
+        .filter(|line| wanted(line))
+        .find(|line| line.starts_with('#'))
+}
+
 // Bad: the same from the other end.
 fn rfind_tests(mut lines: std::vec::IntoIter<&'static str>) -> Option<&'static str> {
     lines.rfind(|line| wanted(line) && line.starts_with('#'))
+}
+
+// Good: the same from the other end, `Filter` being double-ended wherever
+// its iterator is.
+fn split_rfind_tests(lines: std::vec::IntoIter<&'static str>) -> Option<&'static str> {
+    lines
+        .filter(|line| wanted(line))
+        .rfind(|line| line.starts_with('#'))
 }
 
 // Bad: `any` takes its item by value where the lifted `filter` hands a
@@ -103,11 +137,28 @@ fn any_tests(mut lines: std::vec::IntoIter<&'static str>) -> bool {
     lines.any(|line| wanted(line) && line.starts_with('#'))
 }
 
+// Good: the leading test filters, which hands it one reference more than
+// `any` did, and a `&&str` derefs to where the test reads it.
+fn split_any_tests(lines: std::vec::IntoIter<&'static str>) -> bool {
+    lines
+        .filter(|line| wanted(line))
+        .any(|line| line.starts_with('#'))
+}
+
 // Bad: a prefix-shaped adapter, whose tests lift into a `take_while`
 // rather than a `filter`.
 fn take_while_tests(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
     lines
         .take_while(|line| wanted(line) && line.starts_with('#'))
+        .collect()
+}
+
+// Good: one `take_while` per test, which stops the run on the first item
+// failing either, as the conjunction did.
+fn split_take_while_tests(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
+    lines
+        .take_while(|line| wanted(line))
+        .take_while(|line| line.starts_with('#'))
         .collect()
 }
 
@@ -196,6 +247,14 @@ fn owned_item_by_method(names: std::vec::IntoIter<String>) -> bool {
         .any(|name| name.starts_with('a') && name.ends_with('z'))
 }
 
+// Good: the leading test filters, its method call autoderefing through the
+// reference the `filter` hands it.
+fn split_owned_item_by_method(names: std::vec::IntoIter<String>) -> bool {
+    names
+        .filter(|name| name.starts_with('a'))
+        .any(|name| name.ends_with('z'))
+}
+
 struct Pending {
     rest: std::vec::IntoIter<&'static str>,
 }
@@ -212,6 +271,14 @@ fn receiver_is_a_field(pending: &mut Pending) -> bool {
 // autoderef can produce a value for.
 fn copy_item_by_self(mut letters: std::vec::IntoIter<char>) -> bool {
     letters.any(|letter| letter.is_alphabetic() && letter.is_uppercase())
+}
+
+// Good: the leading test filters, the `Copy` item being read through the
+// reference without being moved out of it.
+fn split_copy_item_by_self(letters: std::vec::IntoIter<char>) -> bool {
+    letters
+        .filter(|letter| letter.is_alphabetic())
+        .any(|letter| letter.is_uppercase())
 }
 
 // Not flagged: a trait method can be intercepted one reference up, where
@@ -317,10 +384,31 @@ fn a_comparison_among_calls(lines: std::vec::IntoIter<&'static str>) -> Vec<&'st
     lines.filter(|line| line.len() > 3 && wanted(line)).collect()
 }
 
+// Good: the bound is one of the two questions, so it gets one adapter.
+fn split_a_comparison_among_calls(
+    lines: std::vec::IntoIter<&'static str>,
+) -> Vec<&'static str> {
+    lines
+        .filter(|line| line.len() > 3)
+        .filter(|line| wanted(line))
+        .collect()
+}
+
 // Bad: a `move` closure's `Copy` capture is one both closures can hold,
 // each its own copy, so two tests reaching it still split.
 fn copy_capture_in_two_tests(limit: usize, mut lines: std::vec::IntoIter<&'static str>) -> bool {
     lines.any(move |line| longer(line, limit) && shorter(line, limit))
+}
+
+// Good: each closure holds its own copy of the capture, which is what lets
+// both of them read it.
+fn split_copy_capture_in_two_tests(
+    limit: usize,
+    lines: std::vec::IntoIter<&'static str>,
+) -> bool {
+    lines
+        .filter(move |line| longer(line, limit))
+        .any(move |line| shorter(line, limit))
 }
 
 // Not flagged: two tests reaching a capture held mutably would be two
@@ -351,9 +439,21 @@ fn option_filter(line: Option<&'static str>) -> Option<&'static str> {
     line.filter(|line| wanted(line) && line.starts_with('#'))
 }
 
+// Good: one `Option::filter` per test.
+fn split_option_filter(line: Option<&'static str>) -> Option<&'static str> {
+    line.filter(|line| wanted(line))
+        .filter(|line| line.starts_with('#'))
+}
+
 // Bad: and so is `Option::is_some_and`.
 fn option_is_some_and(line: Option<&'static str>) -> bool {
     line.is_some_and(|line| wanted(line) && line.starts_with('#'))
+}
+
+// Good: the leading test filters, leaving the adapter the last one.
+fn split_option_is_some_and(line: Option<&'static str>) -> bool {
+    line.filter(|line| wanted(line))
+        .is_some_and(|line| line.starts_with('#'))
 }
 
 // Not flagged: filtering before `is_none_or` makes a value that failed

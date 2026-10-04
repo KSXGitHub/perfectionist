@@ -91,9 +91,9 @@ fn split_filtering(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(parse).filter(positive).collect()
 }
 
-// Bad: a guard welded to a value, which is where the rule's name comes
-// from. The value names the item, because a `map` over the item is where
-// it goes.
+// Bad: a guard welded to a value, which is what this trigger is named
+// for. The value names the item, because a `map` over the item is where it
+// goes.
 fn guarded(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| wanted(line).then(|| render(line))).collect()
 }
@@ -108,10 +108,22 @@ fn guarded_by_value(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| wanted(line).then_some(1)).collect()
 }
 
+// Good: the guard filters and the value maps, as it does for `then`.
+fn split_guarded_by_value(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines.filter(|line| wanted(line)).map(|_| 1).collect()
+}
+
 // Bad: a consumer, whose answer still depends only on which items
 // satisfy the guard.
 fn found(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
     lines.find_map(|line| parse(line).and_then(validate))
+}
+
+// Good: the stage before the `and_then` takes a leading `filter_map`,
+// because the only trailing adapter a one-value answer has is the
+// `Option`'s own.
+fn split_found(lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.filter_map(parse).find_map(validate)
 }
 
 // Bad: a prefix-shaped adapter takes the guard, whose lift target is a
@@ -131,16 +143,31 @@ fn infallible_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.map_while(|line| parse(line).map(double)).collect()
 }
 
-// Bad, by the chain trigger: a leading `filter_map` would drop the very
-// item that would have stopped the run, so the guard-and-value split does
-// not apply here. A leading `map` drops nothing, so the chain's does.
+// Good: the `map` becomes a trailing one, which drops nothing and so
+// leaves the run stopping where it did.
+fn split_infallible_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines.map_while(parse).map(double).collect()
+}
+
+// Bad: a leading `filter_map` would drop the very item that would have
+// stopped the run, so the guard-and-value split does not apply here. A
+// leading `map` drops nothing, so the chain trigger's finding is the one
+// reported.
 fn fallible_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .map_while(|line| parse(line).and_then(validate))
         .collect()
 }
 
-// Bad for the same reason, a trailing `filter` moving where the run
+// Good: the chain's split, a leading `map` holding the first stage.
+fn split_fallible_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .map(parse)
+        .map_while(|parsed| parsed.and_then(validate))
+        .collect()
+}
+
+// Bad: for the same reason, a trailing `filter` moves where the run
 // stops.
 fn filtering_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
@@ -148,12 +175,26 @@ fn filtering_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
         .collect()
 }
 
-// Bad, by the chain trigger: `find_map` yields one value, so the only
-// trailing `filter` it has is the `Option`'s, which rejects what the
-// search settled on where the folded form kept looking. The chain lifts
-// the stage before it instead, which keeps the search.
+// Good: the chain's split again.
+fn split_filtering_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .map(parse)
+        .map_while(|parsed| parsed.filter(positive))
+        .collect()
+}
+
+// Bad: `find_map` yields one value, so the only trailing `filter` it has
+// is the `Option`'s, which rejects what the search settled on where the
+// folded form kept looking. The chain trigger lifts the stage before it
+// instead, which keeps the search.
 fn found_filtering(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
     lines.find_map(|line| parse(line).filter(positive))
+}
+
+// Good: the stage before the `filter` lifted, which keeps the search
+// looking where a trailing `Option::filter` would have settled.
+fn split_found_filtering(lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.map(parse).find_map(|parsed| parsed.filter(positive))
 }
 
 // Not flagged: nor has it anywhere to put a guard's value, the one value
@@ -167,18 +208,40 @@ fn found_infallible(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize
     lines.find_map(|line| parse(line).map(double))
 }
 
-// Bad, by the chain trigger rather than this one: the guard-and-value
-// split lifts a guard into a `filter`, which hands the item by reference,
-// so a guard that moves it is `E0308`. The chain's leading `map` hands it
-// over, so the two calls split that way instead.
+// Good: the `map` becomes a trailing one, on the `Option` the search
+// answered with.
+fn split_found_infallible(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.find_map(parse).map(double)
+}
+
+// Bad: the guard-and-value split lifts a guard into a `filter`, which
+// hands the item by reference, so a guard that moves it is `E0308`. The
+// chain trigger's leading `map` hands it over, so the two calls split that
+// way instead.
 fn guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
     names.filter_map(|name| consume(name).then_some(1)).collect()
 }
 
-// Bad for the same reason, a `map_while` guard lifting into a
+// Good: the chain's split, whose leading `map` hands the item over.
+fn split_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
+    names
+        .map(consume)
+        .filter_map(|flag| flag.then_some(1))
+        .collect()
+}
+
+// Bad: for the same reason, a `map_while` guard lifts into a
 // `take_while`, which hands it by reference too.
 fn prefix_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
     names.map_while(|name| consume(name).then_some(1)).collect()
+}
+
+// Good: the same, under the prefix-shaped adapter.
+fn split_prefix_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
+    names
+        .map(consume)
+        .map_while(|flag| flag.then_some(1))
+        .collect()
 }
 
 // Not flagged: both halves of the split reach the same capture held
@@ -228,13 +291,22 @@ fn stage_borrows(names: std::vec::IntoIter<String>) -> Vec<usize> {
         .collect()
 }
 
-// Bad, by the chain trigger: this stage borrows what the item points at,
-// which outlives the closure, so the chain's split compiles. This trigger
-// declines it all the same, telling that borrow from one of a local the
-// closure made needing the regions the erased types no longer carry.
+// Bad: this stage borrows what the item points at, which outlives the
+// closure, so the chain trigger's split compiles. The guard-and-value
+// trigger declines it all the same, telling that borrow from one of a local
+// the closure made needing the regions the erased types no longer carry.
 fn stage_borrows_the_item(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .filter_map(|line| line.strip_prefix("# ").map(str::len))
+        .collect()
+}
+
+// Good: the chain's split, which the borrow outliving the closure lets
+// compile.
+fn split_stage_borrows_the_item(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .map(|line| line.strip_prefix("# "))
+        .filter_map(|held| held.map(str::len))
         .collect()
 }
 
@@ -292,11 +364,19 @@ fn sieve(line: &'static str) -> Sieve {
     Sieve(line)
 }
 
-// Bad, by the chain trigger: `and_then` on something that is not an
-// `Option` is a method of that name rather than the combinator, so this
-// one has no split for it. The call is a step all the same.
+// Bad: `and_then` on something that is not an `Option` is a method of
+// that name rather than the combinator, so the guard-and-value trigger has
+// no split for it. The call is a step all the same.
 fn method_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| sieve(line).and_then(parse)).collect()
+}
+
+// Good: the chain's split, the call of that name staying where it is.
+fn split_method_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .map(sieve)
+        .filter_map(|held| held.and_then(parse))
+        .collect()
 }
 
 // Not flagged: nor is `then_some` on something that is not a `bool`.
@@ -326,7 +406,7 @@ fn another_trait_filter_map(line: &'static str) -> Option<usize> {
     line.filter_map(|text| parse(text).and_then(validate))
 }
 
-// Bad for the same reason, `map` and `filter` on something that is not
+// Bad: for the same reason, `map` and `filter` on something that is not
 // an `Option`.
 fn map_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| sieve(line).map(render)).collect()
@@ -338,18 +418,46 @@ fn filter_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static 
         .collect()
 }
 
-// Bad for the chain rule and not for this one: `Iterator::map` has no
-// `Option` work to hand over, so only the steps split.
+// Good: the chain's split for both of them.
+fn split_map_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines.map(sieve).filter_map(|held| held.map(render)).collect()
+}
+
+fn split_filter_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
+    lines
+        .map(sieve)
+        .filter_map(|held| held.filter(|text| wanted(text)))
+        .collect()
+}
+
+// Bad: `Iterator::map` has no `Option` work to hand over, so only the
+// steps split, which is the chain trigger's finding.
 fn plain_map(lines: std::vec::IntoIter<&'static str>) -> Vec<Option<usize>> {
     lines.map(|line| parse(line).map(double)).collect()
 }
 
-// Bad, by the chain trigger: the closure's outermost call takes no
-// argument, so the guard-and-value split has no second stage to hand
-// over. The chain reads the same body as four steps.
+// Good: the step lifted, leaving the closure the `Option` work.
+fn split_plain_map(lines: std::vec::IntoIter<&'static str>) -> Vec<Option<usize>> {
+    lines.map(parse).map(|parsed| parsed.map(double)).collect()
+}
+
+// Bad: the closure's outermost call takes no argument, so the
+// guard-and-value trigger has no second stage to hand over. The chain
+// trigger reads the same body as four steps.
 fn no_second_stage(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .filter_map(|line| line.trim().parse::<usize>().map(double).ok())
+        .collect()
+}
+
+// Good: every step but the last lifted, leaving the adapter the call that
+// discards the error.
+fn split_no_second_stage(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .map(str::trim)
+        .map(str::parse::<usize>)
+        .map(|parsed| parsed.map(double))
+        .filter_map(Result::ok)
         .collect()
 }
 
