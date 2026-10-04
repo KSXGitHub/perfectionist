@@ -1,8 +1,8 @@
 //! Whether a lifted adapter may take the receiver the folded one has.
 //!
-//! Every rule here lifts work into an adapter placed in front of the one
-//! it came from, and the three adapters they lift into -- `map`, `filter`
-//! and `take_while` -- all take the iterator by value. The adapter the
+//! A split lifts work into an adapter placed in front of the one it came
+//! from, and the three adapters the work lifts into are `map`, `filter`
+//! and `take_while`, which all take the iterator by value. The adapter the
 //! work came from need not: `Iterator::any`, `find`, `rfind`, `position`
 //! and `find_map` take `&mut self`, so the folded form leaves the
 //! receiver where it was and the split moves it away.
