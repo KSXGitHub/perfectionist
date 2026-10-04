@@ -274,41 +274,24 @@ addresses whoever is about to hand-edit it.
 
 ## A published crate is linked at its first shipped mention
 
-A shipped doc may name a published crate, and the consumer reading the
-catalogue or the docs site has no resolver to follow — so the first code
-span naming one in a rule's shipped docs is a markdown link to that
-crate's docs.rs root, and every later mention of the same crate on that
-page is plain:
+The first code span naming a published crate in a rule's shipped docs
+links to that crate's docs.rs root: `https://docs.rs/<crates.io name>`,
+never an item page, which a rename or a module move breaks. The
+crates.io spelling stands even where the link text is the underscored
+Rust path — `` [`command_extra::CommandExtra`](https://docs.rs/command-extra) ``.
 
-```rust
-/// Flags a [`frobnicate`](https://docs.rs/frobnicate) attribute whose
-/// template restates what the derive already does.
-///
-/// Each of `frobnicate`'s templates is read through its own parser.
-```
+Later mentions of that crate on the same rendered page are plain, so a
+crate the `declare_tool_lint!` rustdoc links is plain in the
+`Configuration` section below it, and a crate only a `Config` field
+names is linked there. The lint's one-line description is plain
+wherever it falls: rustc prints it in a diagnostic, where a link is
+literal text.
 
-The details that recur:
-
-- **The URL is `https://docs.rs/<crates.io name>`, never an item page.**
-  The crates.io name is the hyphenated one where the crate publishes
-  under a hyphen, even when the link text is the underscored Rust path
-  (`` [`command_extra::CommandExtra`](https://docs.rs/command-extra) ``).
-  A crate root also survives the rename or the module move that would
-  break a deep link.
-- **A code span references a crate when the crate name is its leading
-  path segment** — `` `thiserror` ``, `` `clap::Parser` ``,
-  `` `log::info!` ``. An attribute span (`#[serde(...)]`), a bare macro
-  name (`quote!`), and anything inside a code fence name something else
-  and stay plain.
-- **The standard library is not a published crate here.** `std`, `core`
-  and `alloc` are not linked, and neither are the rustc, Clippy and
-  rustdoc lint namespaces.
-- **The lint's one-line description stays plain.** rustc prints it in a
-  diagnostic, where a markdown link is literal text.
-- **First mention means first on the rendered page.** A crate the
-  `declare_tool_lint!` rustdoc already links is plain in the
-  `Configuration` section below it; a crate only a `Config` field names
-  is linked there.
+A code span names a crate when the crate is its leading path segment
+— `` `thiserror` ``, `` `clap::Parser` ``, `` `log::info!` ``. An
+attribute span (`#[serde(...)]`), a bare macro name (`quote!`), a code
+fence, the standard library, and the rustc / Clippy / rustdoc lint
+namespaces name something else and stay plain.
 
 ## Defaults live in field docs, not type or variant docs
 
