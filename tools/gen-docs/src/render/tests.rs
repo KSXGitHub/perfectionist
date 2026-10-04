@@ -732,9 +732,10 @@ fn structural_sheets_carry_no_literal_colours() {
             if byte != b'#' {
                 continue;
             }
-            let is_six_hex = bytes
-                .get(index + 1..index + 7)
-                .is_some_and(|run| run.iter().all(u8::is_ascii_hexdigit));
+            let is_six_hex = match bytes.get(index + 1..index + 7) {
+                Some(run) => run.iter().all(u8::is_ascii_hexdigit),
+                None => false,
+            };
             assert!(
                 !is_six_hex,
                 "{name} should carry no literal hex colour near byte {index}",
