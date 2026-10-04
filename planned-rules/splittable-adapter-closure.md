@@ -48,18 +48,30 @@ crate's own source:
   among named questions is not that shape and does split.
 - **Liftability asks about a step's own receiver** rather than the item,
   which [When a step can be lifted](#when-a-step-can-be-lifted) is about:
-  regions are erased in typeck results, so a result's lifetime cannot be
-  matched against the item's, and the item is the receiver of the first
-  step alone.
+  the item is the receiver of the first step alone, and a step applied to
+  an owned value declines however safe the borrow its result carries,
+  since the regions in typeck results are erased. What the step's
+  *arguments* could lend is read from the declared signature instead,
+  where they are not.
 - **The guard-and-value trigger declines a stage whose result borrows.**
   The stage that stays becomes the next adapter's item, so a borrow leaves
   the closure with it, and the erased regions make a borrow of the item
   indistinguishable from one that outlives the closure. A stage returning
-  `Option<&str>` is the cost.
+  `Option<&str>` is the cost, and the cost is in which split is offered
+  rather than in silence: the chain trigger reads the same body as two
+  steps.
+- **The guard-and-value trigger counts every split as moving the
+  receiver**, where only a leading lift does. The shapes lifting work to
+  the right hand the receiver to the adapter that already had it, so
+  `find_map`, the one adapter among the three taking its receiver by
+  reference, declines a receiver named again for a split that would not
+  have moved it.
 - **A borrowing adapter whose receiver is named again is declined**
   rather than suggesting the reborrow of
   [Which adapters](#which-adapters), which is the cheaper error that
-  section asks for.
+  section asks for. A split whose head keeps the folded method borrows the
+  receiver where the folded form did, so the piping methods that hand a
+  borrow are not declined for it.
 
 Not implemented, and the rest of this file is their active spec:
 
