@@ -12,10 +12,12 @@
 Flags a setter called on an *owned* command — `arg`, `args`,
 `env`, `envs`, `env_remove`, `env_clear`, `current_dir`,
 `stdin`, `stdout`, `stderr` — and names the
-`command_extra::CommandExtra` counterpart that takes `self`
-instead of `&mut self`. Any command the trait covers counts:
-`std::process::Command`, a `Box` of one, and, behind a feature
-apiece, `tokio::process`'s and `async_process`'s.
+[`command_extra::CommandExtra`](https://docs.rs/command-extra)
+counterpart that takes `self` instead of `&mut self`. Any
+command the trait covers counts: `std::process::Command`, a
+`Box` of one, and, behind a feature apiece,
+[`tokio::process`](https://docs.rs/tokio)'s and
+[`async_process`](https://docs.rs/async-process)'s.
 
 A receiver it could not take ownership of — a `&mut Command`, or
 a field reached through one — is left alone. So is a crate that

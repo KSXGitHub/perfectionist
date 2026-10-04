@@ -26,10 +26,10 @@ declare_tool_lint! {
     ///   sorted alphabetically after.
     ///
     /// Trait matching is by the final path segment, so
-    /// `serde::Deserialize` is matched as `Deserialize`. The lint
-    /// does not police how derives are partitioned across multiple
-    /// `#[derive(...)]` lines — that's a layout decision left to the
-    /// author.
+    /// [`serde::Deserialize`](https://docs.rs/serde) is matched as
+    /// `Deserialize`. The lint does not police how derives are
+    /// partitioned across multiple `#[derive(...)]` lines — that's a
+    /// layout decision left to the author.
     ///
     /// A `cfg`-gated derive written as
     /// `#[cfg_attr(<cfg>, derive(...))]` is checked the same way as a
