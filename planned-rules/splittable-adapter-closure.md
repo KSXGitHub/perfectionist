@@ -78,13 +78,26 @@ crate's own source:
 
 Not implemented, and the rest of this file is their active spec:
 
-- No autofix for the chain or the guard-and-value shapes, each having more
-  than one reasonable text. A conjunction has one, so that one is applied:
-  one adapter per test, each keeping the closure the test was written in,
-  with `clippy::redundant_closure_for_method_calls` left to reduce the ones
-  that reduce. Nothing in `clippy::all`, `pedantic`, `nursery` or
-  `restriction` asks for the closure form back, so the two fixes compose in
-  that order and stop.
+- No autofix for the guard-and-value shape, which has more than one
+  reasonable text, nor for a chain under an adapter that takes the whole
+  chain or that keeps the method at the head: the first keeps a closure whose
+  body has to be rewritten rather than replaced, and the second puts the
+  leading step in its own method.
+- A conjunction is applied as one adapter per test, each keeping the closure
+  the test was written in, with
+  `clippy::redundant_closure_for_method_calls` left to reduce the ones that
+  reduce. Nothing in `clippy::all`, `pedantic`, `nursery` or `restriction`
+  asks for the closure form back, so the two fixes compose in that order and
+  stop.
+- A chain is applied as one adapter per step, each step named as the function
+  it already is. Reusing the item's name was tried and rejected: only the
+  first step is handed the item, so `|line| line.len()` above a `trim` binds
+  a length to a name meaning a line. A step that cannot be named declines to
+  a closure over the item where it is the first, and to a placeholder for the
+  reader above that, which is offered rather than applied. The path form is
+  only taken where the method's self type has the borrow depth and the base
+  type the receiver has, which is what keeps an item of `String` away from
+  the `str::len` it reaches through a deref.
 - Both `## Deferred` sections below.
 
 ## Statement

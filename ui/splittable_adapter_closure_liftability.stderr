@@ -4,8 +4,12 @@ warning: this closure chains 2 steps onto the item, so `filter_map` does all of 
 LL |     lines.filter_map(|line| maybe(line.trim())).collect()
    |           ^^^^^^^^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
    = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.filter_map(|line| maybe(line.trim())).collect()
+LL +     lines.map(str::trim).filter_map(maybe).collect()
+   |
 
 warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
   --> $DIR/splittable_adapter_closure_liftability.rs:LL:CC
@@ -13,7 +17,11 @@ warning: this closure chains 2 steps onto the item, so `filter_map` does all of 
 LL |     lines.filter_map(|line| maybe(line.trim())).collect()
    |           ^^^^^^^^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.filter_map(|line| maybe(line.trim())).collect()
+LL +     lines.map(|line| line.trim()).filter_map(maybe).collect()
+   |
 
 warning: this closure chains 2 steps onto the item, so `map` does all of them
   --> $DIR/splittable_adapter_closure_liftability.rs:LL:CC
@@ -21,7 +29,11 @@ warning: this closure chains 2 steps onto the item, so `map` does all of them
 LL |     rows.map(|row| row.as_str().len()).collect()
    |          ^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     rows.map(|row| row.as_str().len()).collect()
+LL +     rows.map(String::as_str).map(str::len).collect()
+   |
 
 warning: this closure chains 3 steps onto the item, so `fold` does all of them
   --> $DIR/splittable_adapter_closure_liftability.rs:LL:CC
@@ -37,7 +49,11 @@ warning: this closure chains 2 steps onto the item, so `map` does all of them
 LL |         .map(|line| std::rc::Rc::new(line).len())
    |          ^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .map(|line| std::rc::Rc::new(line).len())
+LL +         .map(std::rc::Rc::new).map(|/* name */| /* name */.len())
+   |
 
 warning: this closure chains 2 steps onto the item, so `map` does all of them
   --> $DIR/splittable_adapter_closure_liftability.rs:LL:CC
@@ -45,7 +61,11 @@ warning: this closure chains 2 steps onto the item, so `map` does all of them
 LL |         .map(|line| line.trim_start_matches("# ").len())
    |          ^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .map(|line| line.trim_start_matches("# ").len())
+LL +         .map(|line| line.trim_start_matches("# ")).map(str::len)
+   |
 
 warning: this closure chains 3 steps onto the item, so `fold` does all of them
   --> $DIR/splittable_adapter_closure_liftability.rs:LL:CC

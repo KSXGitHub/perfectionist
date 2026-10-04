@@ -69,7 +69,11 @@ warning: this closure chains 2 steps onto the item, so `map_while` does all of t
 LL |         .map_while(|line| parse(line).and_then(validate))
    |          ^^^^^^^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .map_while(|line| parse(line).and_then(validate))
+LL +         .map(parse).map_while(|/* name */| /* name */.and_then(validate))
+   |
 
 warning: this closure chains 2 steps onto the item, so `map_while` does all of them
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
@@ -77,7 +81,11 @@ warning: this closure chains 2 steps onto the item, so `map_while` does all of t
 LL |         .map_while(|line| parse(line).filter(positive))
    |          ^^^^^^^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .map_while(|line| parse(line).filter(positive))
+LL +         .map(parse).map_while(|/* name */| /* name */.filter(positive))
+   |
 
 warning: this closure chains 2 steps onto the item, so `find_map` does all of them
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
@@ -85,7 +93,11 @@ warning: this closure chains 2 steps onto the item, so `find_map` does all of th
 LL |     lines.find_map(|line| parse(line).filter(positive))
    |           ^^^^^^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.find_map(|line| parse(line).filter(positive))
+LL +     lines.map(parse).find_map(|/* name */| /* name */.filter(positive))
+   |
 
 warning: this closure makes a value after a stage that may fail, so `find_map` does both
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
@@ -101,7 +113,11 @@ warning: this closure chains 2 steps onto the item, so `filter_map` does all of 
 LL |     names.filter_map(|name| consume(name).then_some(1)).collect()
    |           ^^^^^^^^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     names.filter_map(|name| consume(name).then_some(1)).collect()
+LL +     names.map(consume).filter_map(|/* name */| /* name */.then_some(1)).collect()
+   |
 
 warning: this closure holds a guard and a value, so `filter_map` does both
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
@@ -117,7 +133,11 @@ warning: this closure chains 2 steps onto the item, so `map_while` does all of t
 LL |     names.map_while(|name| consume(name).then_some(1)).collect()
    |           ^^^^^^^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     names.map_while(|name| consume(name).then_some(1)).collect()
+LL +     names.map(consume).map_while(|/* name */| /* name */.then_some(1)).collect()
+   |
 
 warning: this closure holds a guard and a value, so `map_while` does both
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
@@ -133,7 +153,11 @@ warning: this closure chains 2 steps onto the item, so `filter_map` does all of 
 LL |         .filter_map(|line| line.strip_prefix("# ").map(str::len))
    |          ^^^^^^^^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .filter_map(|line| line.strip_prefix("# ").map(str::len))
+LL +         .map(|line| line.strip_prefix("# ")).filter_map(|/* name */| /* name */.map(str::len))
+   |
 
 warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
@@ -141,7 +165,11 @@ warning: this closure chains 2 steps onto the item, so `filter_map` does all of 
 LL |     lines.filter_map(|line| sieve(line).and_then(parse)).collect()
    |           ^^^^^^^^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.filter_map(|line| sieve(line).and_then(parse)).collect()
+LL +     lines.map(sieve).filter_map(|/* name */| /* name */.and_then(parse)).collect()
+   |
 
 warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
@@ -149,7 +177,11 @@ warning: this closure chains 2 steps onto the item, so `filter_map` does all of 
 LL |     lines.filter_map(|line| sieve(line).map(render)).collect()
    |           ^^^^^^^^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.filter_map(|line| sieve(line).map(render)).collect()
+LL +     lines.map(sieve).filter_map(|/* name */| /* name */.map(render)).collect()
+   |
 
 warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
@@ -157,7 +189,11 @@ warning: this closure chains 2 steps onto the item, so `filter_map` does all of 
 LL |         .filter_map(|line| sieve(line).filter(|text| wanted(text)))
    |          ^^^^^^^^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .filter_map(|line| sieve(line).filter(|text| wanted(text)))
+LL +         .map(sieve).filter_map(|/* name */| /* name */.filter(|text| wanted(text)))
+   |
 
 warning: this closure chains 2 steps onto the item, so `map` does all of them
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
@@ -165,7 +201,11 @@ warning: this closure chains 2 steps onto the item, so `map` does all of them
 LL |     lines.map(|line| parse(line).map(double)).collect()
    |           ^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.map(|line| parse(line).map(double)).collect()
+LL +     lines.map(parse).map(|/* name */| /* name */.map(double)).collect()
+   |
 
 warning: this closure chains 4 steps onto the item, so `filter_map` does all of them
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
@@ -173,6 +213,10 @@ warning: this closure chains 4 steps onto the item, so `filter_map` does all of 
 LL |         .filter_map(|line| line.trim().parse::<usize>().map(double).ok())
    |          ^^^^^^^^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .filter_map(|line| line.trim().parse::<usize>().map(double).ok())
+LL +         .map(str::trim).map(str::parse::<usize>).map(|/* name */| /* name */.map(double)).filter_map(Result::ok)
+   |
 
 warning: N warnings emitted

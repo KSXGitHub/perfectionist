@@ -103,18 +103,26 @@ declare_tool_lint! {
     ///
     /// ### Applicability
     ///
-    /// A conjunction is rewritten, one adapter per test. The other two
-    /// shapes are described rather than rewritten, their splits having
-    /// more than one reasonable text.
+    /// A conjunction is rewritten, one adapter per test, and so is a chain
+    /// under an adapter that keeps the last step. A guard welded to a value
+    /// is described rather than rewritten, its split having more than one
+    /// reasonable text.
     ///
-    /// The rewrite keeps the closure each test was written in rather than
-    /// reducing it to a path. A path asks more of a test than the split
-    /// does, so `clippy::redundant_closure_for_method_calls` is what
-    /// reduces the ones that can be reduced, and the two fixes compose in
-    /// that order.
+    /// The conjunction's rewrite keeps the closure each test was written in
+    /// rather than reducing it to a path. A path asks more of a test than
+    /// the split does, so `clippy::redundant_closure_for_method_calls` is
+    /// what reduces the ones that can be reduced, and the two fixes compose
+    /// in that order.
     ///
-    /// A rewrite that would drop a comment the predicate holds is offered
-    /// as advice rather than applied.
+    /// A chain's rewrite names each step as the function it already is,
+    /// because only the first step is handed the item and so only the first
+    /// could take the item's own name. Where a step cannot be named that
+    /// way, the first falls back to a closure over the item, and a later one
+    /// to a placeholder for the reader to fill in, which is offered rather
+    /// than applied.
+    ///
+    /// A rewrite that would drop a comment is offered as advice rather than
+    /// applied.
     ///
     /// ### Example
     ///

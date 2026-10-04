@@ -4,8 +4,12 @@ warning: this closure chains 2 steps onto the item, so `map` does all of them
 LL |         .map(|header| header.trim().to_ascii_lowercase())
    |          ^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
    = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .map(|header| header.trim().to_ascii_lowercase())
+LL +         .map(str::trim).map(str::to_ascii_lowercase)
+   |
 
 warning: this closure chains 3 steps onto the item, so `map` does all of them
   --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
@@ -13,7 +17,11 @@ warning: this closure chains 3 steps onto the item, so `map` does all of them
 LL |         .map(|line| line.trim().to_ascii_lowercase().len())
    |          ^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .map(|line| line.trim().to_ascii_lowercase().len())
+LL +         .map(str::trim).map(str::to_ascii_lowercase).map(|/* name */| /* name */.len())
+   |
 
 warning: this closure chains 2 steps onto the item, so `map` does all of them
   --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
@@ -21,7 +29,11 @@ warning: this closure chains 2 steps onto the item, so `map` does all of them
 LL |     lines.map(|line| parse(line.trim())).collect()
    |           ^^^
    |
-   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.map(|line| parse(line.trim())).collect()
+LL +     lines.map(str::trim).map(parse).collect()
+   |
 
 warning: this closure chains 2 steps onto the item, so `fold` does all of them
   --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
