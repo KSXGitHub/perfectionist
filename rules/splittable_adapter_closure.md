@@ -50,41 +50,19 @@ same things have to be read out of that expression first.
 
 ## When it stays silent
 
-A closure doing one thing has nothing to split. A capture that
-only one half of the split could hold is left alone, since the two
-closures the split writes both reach it, which a shared borrow and
-a copy of a `Copy` value are the cases that survive.
+A chain the closure does not always reach stays, since lifting it
+would run it for every item rather than for some. An item the
+closure names more than once stays, there being no binding for the
+later mentions to name once each step has its own closure.
 
-Three are the chain's own. An item named more than once cannot be
-split at all, since each step would get its own closure and the
-later mentions would have no binding to name. A step whose result
-borrows lifts only where it borrows through a reference it was
-handed, so one borrowing an owned item, or a temporary the closure
-made, stays. And a chain the closure does not always reach is left
-alone, because lifting it would run it for every item rather than
-for some.
+A conjunction of nothing but comparisons stays whole, because that
+is how Rust spells one test: `pos >= range.start && pos < range.end`
+asks whether a position is inside a range, and each half on its own
+adapter reads worse than the pair does. One comparison among named
+questions is not that shape, and does split.
 
-Four are about the tests. A disjunction does not split: filtering
-on one of two alternatives keeps items the pair would have
-dropped. An adapter whose answer depends on more than which items
-satisfy the test has nothing to lift into, so `all`, `position`
-and their kin are left alone: filtering before `all` makes an item
-that failed the first test vacuously fine. A conjunct not naming
-the item is an invariant to hoist out of the pipeline rather than a
-test to give its own adapter. And a conjunction of nothing but
-comparisons stays whole, because that is how Rust spells one test:
-`pos >= range.start && pos < range.end` asks whether a position is
-inside a range, and each half on its own adapter reads worse than
-the pair does. One comparison among named questions is not that
-shape, and does split.
-
-Two are about what the split would not compile into. `any` and
-`Option::is_some_and` hand the item over, where the `filter` a
-test lifts into hands a reference, so a test writing to the item
-or handing it to something wanting the value is left alone. And a
-`map_while` takes only the forms whose lift target shares its
-discipline: a leading `filter_map` in front of it would drop the
-item that would have stopped it.
+Otherwise the lint declines any split that would not compile, or
+would not mean what the closure means.
 
 ## Applicability
 
