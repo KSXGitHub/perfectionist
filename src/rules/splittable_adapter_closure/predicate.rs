@@ -18,6 +18,7 @@ use crate::binding_uses::names;
 use crate::common::{binding_hir_id, binds_mutably, drops_a_comment};
 use crate::exclusive_captures::exclusive;
 use crate::extra_reference::survives;
+use clippy_utils::SpanlessEq;
 use clippy_utils::source::snippet_with_applicability;
 use rustc_errors::Applicability;
 use rustc_hir::{self as hir, BinOpKind, CaptureBy, Closure, Expr, ExprKind, Pat, TyKind};
@@ -63,7 +64,7 @@ pub(super) fn check<'tcx>(
     {
         return None;
     }
-    if conjuncts.iter().all(|conjunct| is_comparison(conjunct)) {
+    if bounds_one_quantity(cx, &conjuncts) {
         return None;
     }
     // Only the lifted tests are asked. The last one stays where it is,
@@ -213,23 +214,40 @@ fn collect<'tcx>(expr: &'tcx Expr<'tcx>, conjuncts: &mut Vec<&'tcx Expr<'tcx>>) 
     conjuncts.push(expr);
 }
 
-/// Whether `expr` compares two values.
+/// Whether `conjuncts` are comparisons that all bound one quantity, which
+/// is how Rust spells a single test.
 ///
-/// A comparison is a bound rather than a question, and a conjunction of
-/// nothing but comparisons is how Rust spells one test:
 /// `pos >= range.start && pos < range.end` asks whether a position is in
 /// a range, and `*byte != b' ' && *byte != b'\t'` whether a byte is
-/// whitespace. Giving each half its own adapter reads worse than the
-/// conjunction does, so a conjunction of them is left alone.
+/// whitespace. Each reads as one question because every comparison bounds
+/// the same value, so giving the halves an adapter apiece reads worse than
+/// the conjunction does.
 ///
-/// One comparison among named questions is a different shape:
+/// Comparing is not enough on its own. `row.first >= low && row.second < high`
+/// bounds two quantities, so it asks two questions however it is spelled,
+/// and an adapter apiece is what it wants. [`shared_operand`] is the
+/// difference.
+///
+/// One comparison among named questions is a third shape:
 /// `wanted(line) && line.len() > 3` asks two things already, and the
 /// bound is one of them rather than half of one. A conjunct that merely
 /// contains a comparison is not a comparison either: `wanted(line)` asks
 /// a named question however it answers it.
-fn is_comparison(expr: &Expr<'_>) -> bool {
-    let ExprKind::Binary(operator, ..) = expr.kind else {
+fn bounds_one_quantity<'tcx>(cx: &LateContext<'tcx>, conjuncts: &[&'tcx Expr<'tcx>]) -> bool {
+    let Some(operands) = conjuncts
+        .iter()
+        .map(|conjunct| comparison_operands(conjunct))
+        .collect::<Option<Vec<_>>>()
+    else {
         return false;
+    };
+    shared_operand(cx, &operands)
+}
+
+/// The two sides of `expr` where it compares them, `None` otherwise.
+fn comparison_operands<'tcx>(expr: &'tcx Expr<'tcx>) -> Option<[&'tcx Expr<'tcx>; 2]> {
+    let ExprKind::Binary(operator, left, right) = expr.kind else {
+        return None;
     };
     matches!(
         operator.node,
@@ -240,4 +258,30 @@ fn is_comparison(expr: &Expr<'_>) -> bool {
             | BinOpKind::Gt
             | BinOpKind::Ge,
     )
+    .then_some([left, right])
+}
+
+/// Whether one quantity is an operand of every comparison in `operands`.
+///
+/// Which side it falls on is not asked, so `range.start <= pos && pos <
+/// range.end` reads as the one range check it is.
+///
+/// Side effects are not denied, so two readings of `line.len()` count as
+/// one quantity. `line.len() > 3 && line.len() < 80` is the length range
+/// the exemption is for, and denying them would split it. The cost is that
+/// a quantity read twice through a mutating call, `counter.bump() > 3 &&
+/// counter.bump() < 80`, reads as one where it is two; that direction
+/// leaves a predicate folded rather than asking for a split the reader
+/// should not take.
+fn shared_operand<'tcx>(cx: &LateContext<'tcx>, operands: &[[&'tcx Expr<'tcx>; 2]]) -> bool {
+    let Some((first, rest)) = operands.split_first() else {
+        return false;
+    };
+    let mut equal = SpanlessEq::new(cx);
+    first.iter().any(|quantity| {
+        rest.iter().all(|pair| {
+            pair.iter()
+                .any(|other| equal.eq_expr(quantity.span.ctxt(), quantity, other))
+        })
+    })
 }

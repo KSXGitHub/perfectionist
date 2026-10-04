@@ -55,11 +55,13 @@ would run it for every item rather than for some. An item the
 closure names more than once stays, there being no binding for the
 later mentions to name once each step has its own closure.
 
-A conjunction of nothing but comparisons stays whole, because that
-is how Rust spells one test: `pos >= range.start && pos < range.end`
+Comparisons that all bound one quantity stay whole, because that is
+how Rust spells one test: `pos >= range.start && pos < range.end`
 asks whether a position is inside a range, and each half on its own
-adapter reads worse than the pair does. One comparison among named
-questions is not that shape, and does split.
+adapter reads worse than the pair does. Which side of the operator
+the quantity falls on is not asked. Bounds on two quantities ask two
+questions, so `span.offset >= start && span.length < limit` splits,
+and so does one comparison among named questions.
 
 Otherwise the lint declines any split that would not compile, or
 would not mean what the closure means.

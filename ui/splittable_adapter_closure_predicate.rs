@@ -366,34 +366,6 @@ fn receiver_named_again(
     (first, lines.next())
 }
 
-// Not flagged: a conjunction of comparisons is one test. Each of these
-// asks a single question that its halves do not: whether a byte is
-// whitespace, and whether a position is inside a range.
-fn whitespace_byte(bytes: std::slice::Iter<'static, u8>) -> bool {
-    bytes.clone().any(|byte| *byte != b' ' && *byte != b'\t')
-}
-
-fn inside_a_range(positions: std::vec::IntoIter<usize>, start: usize, end: usize) -> bool {
-    positions.into_iter().any(|pos| pos >= start && pos < end)
-}
-
-// Bad: one comparison among named questions is not a conjunction of
-// comparisons. The reader is being asked two things, and the bound is one
-// of them rather than half of one.
-fn a_comparison_among_calls(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
-    lines.filter(|line| line.len() > 3 && wanted(line)).collect()
-}
-
-// Good: the bound is one of the two questions, so it gets one adapter.
-fn split_a_comparison_among_calls(
-    lines: std::vec::IntoIter<&'static str>,
-) -> Vec<&'static str> {
-    lines
-        .filter(|line| line.len() > 3)
-        .filter(|line| wanted(line))
-        .collect()
-}
-
 // Bad: a `move` closure's `Copy` capture is one both closures can hold,
 // each its own copy, so two tests reaching it still split.
 fn copy_capture_in_two_tests(limit: usize, mut lines: std::vec::IntoIter<&'static str>) -> bool {

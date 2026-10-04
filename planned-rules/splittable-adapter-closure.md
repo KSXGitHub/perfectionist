@@ -42,10 +42,13 @@ crate's own source:
   closure per channel, as [`Option` and `Result`](#option-and-result)
   records, and the table holds one adapter per name, so the value closure
   is the one read.
-- **A conjunction of nothing but comparisons stays folded.** A comparison
-  is a bound rather than a question, and a conjunction of them is how Rust
-  spells one test, so each half gets no adapter of its own. One comparison
-  among named questions is not that shape and does split.
+- **Comparisons that all bound one quantity stay folded.** A comparison is
+  a bound rather than a question, and bounds on one quantity are how Rust
+  spells one test, so each gets no adapter of its own. Which side of the
+  operator the quantity falls on is not asked, and a quantity read twice
+  through a call counts as one, so `line.len() > 3 && line.len() < 80` is
+  the one length range it reads as. Bounds on two quantities ask two
+  questions and do split, as does one comparison among named questions.
 - **Liftability asks about a step's own receiver** rather than the item,
   which [When a step can be lifted](#when-a-step-can-be-lifted) is about:
   the item is the receiver of the first step alone, and a step applied to
