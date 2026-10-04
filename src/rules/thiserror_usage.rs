@@ -42,10 +42,10 @@ declare_tool_lint! {
     /// `#[derive(derive_more::Display, derive_more::Error)]`. There is
     /// no autofix — the migration involves a mix of derive-list edits,
     /// format-string positional translation (`thiserror`'s `{0}` ↔
-    /// `derive_more`'s `{_0}`), attribute renames (`#[error(...)]` ↔
-    /// `#[display(...)]`), and edge cases (`#[error(transparent)]`,
-    /// `#[backtrace]`) whose mechanical rewrite is too risky to apply
-    /// without review.
+    /// [`derive_more`](https://docs.rs/derive_more)'s `{_0}`),
+    /// attribute renames (`#[error(...)]` ↔ `#[display(...)]`), and
+    /// edge cases (`#[error(transparent)]`, `#[backtrace]`) whose
+    /// mechanical rewrite is too risky to apply without review.
     ///
     /// Alias collection is crate-wide rather than per-module: a
     /// `use thiserror::Error;` anywhere in the crate makes the bare

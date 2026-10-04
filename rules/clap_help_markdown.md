@@ -13,9 +13,9 @@ Forbids markdown-specific constructs in a doc comment that
 clap's derive macros consume as `--help` text — HTML tags,
 inline / reference / intra-doc links, code blocks, code spans,
 and headings. The rule fires on the doc comment of a struct or
-enum deriving `clap::Parser`, `Args`, `Subcommand`, `ValueEnum`,
-or `CommandFactory`, and on the doc comments of their fields and
-variants.
+enum deriving [`clap::Parser`](https://docs.rs/clap), `Args`,
+`Subcommand`, `ValueEnum`, or `CommandFactory`, and on the doc
+comments of their fields and variants.
 
 A `ValueEnum`'s own type-level doc comment is left alone: unlike
 its variant docs — clap's per-value help — it never reaches
