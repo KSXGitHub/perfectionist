@@ -272,6 +272,27 @@ rules section offers `planned-rules/` as the roadmap), and a generated
 file's do-not-edit banner names `just gen-rules-md` because it
 addresses whoever is about to hand-edit it.
 
+## A published crate is linked at its first shipped mention
+
+The first code span naming a published crate in a rule's shipped docs
+links to that crate's docs.rs root: `https://docs.rs/<crates.io name>`,
+never an item page, which a rename or a module move breaks. The
+crates.io spelling stands even where the link text is the underscored
+Rust path — `` [`command_extra::CommandExtra`](https://docs.rs/command-extra) ``.
+
+Later mentions of that crate on the same rendered page are plain, so a
+crate the `declare_tool_lint!` rustdoc links is plain in the
+`Configuration` section below it, and a crate only a `Config` field
+names is linked there. The lint's one-line description is plain
+wherever it falls: rustc prints it in a diagnostic, where a link is
+literal text.
+
+A code span names a crate when the crate is its leading path segment
+— `` `thiserror` ``, `` `clap::Parser` ``, `` `log::info!` ``. An
+attribute span (`#[serde(...)]`), a bare macro name (`quote!`), a code
+fence, the standard library, and the rustc / Clippy / rustdoc lint
+namespaces name something else and stay plain.
+
 ## Defaults live in field docs, not type or variant docs
 
 A config field's default value is documented on the **field**, never

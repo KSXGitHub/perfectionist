@@ -48,7 +48,8 @@ pub(super) struct Config {
     /// `eprint`), the `Write` writers (`writeln`, `write`), and the
     /// `log` family (`log`, `error`, `warn`, `info`, `debug`,
     /// `trace`). Every one of those is single-segment, so `error`
-    /// covers `log::error!` and `tracing::error!` alike.
+    /// covers `log::error!` and
+    /// [`tracing::error!`](https://docs.rs/tracing) alike.
     pub target_macros: Vec<String>,
 }
 
