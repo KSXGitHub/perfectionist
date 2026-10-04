@@ -38,15 +38,10 @@ Families reached: `Iterator`, `DoubleEndedIterator`, `Option`, `Result`,
 Narrower than this file describes, each narrowing measured against this
 crate's own source:
 
-- **A single-value family's fallible, defaulted and predicate-shaped
-  adapters stay folded in the chain trigger.** `and_then`, `map_or`,
-  `map_or_else`, `or_else`, `unwrap_or_else` and the `is_*_and` family
-  leave a lifted step's result wrapped in what the adapter keeps, which
-  costs a wrapper and sometimes a `mut` rebinding. Those splits are
-  equivalent, as [`Option` and `Result`](#option-and-result) tables; what
-  it does not table is what they read like. The predicate trigger does
-  reach `Option::is_some_and`, whose conjunction splits without a
-  wrapper.
+- **`Result::map_or_else`'s error closure is left alone.** It takes one
+  closure per channel, as [`Option` and `Result`](#option-and-result)
+  records, and the table holds one adapter per name, so the value closure
+  is the one read.
 - **A conjunction of nothing but comparisons stays folded.** A comparison
   is a bound rather than a question, and a conjunction of them is how Rust
   spells one test, so each half gets no adapter of its own. One comparison

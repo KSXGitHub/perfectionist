@@ -49,6 +49,17 @@ const fn unary(lift_target: &'static str) -> Adapter {
     }
 }
 
+/// An adapter whose closure is its second argument, the first being a
+/// default or the other channel's closure.
+const fn defaulted(lift_target: &'static str) -> Adapter {
+    Adapter {
+        closure_argument: 1,
+        item_parameter: 0,
+        keeps_the_last_step: true,
+        lift_target,
+    }
+}
+
 /// An adapter taking state first, where the whole chain leaves.
 const fn stateful(lift_target: &'static str) -> Adapter {
     Adapter {
@@ -90,16 +101,28 @@ fn iterator(method: Symbol) -> Option<Adapter> {
 }
 
 fn option(method: Symbol) -> Option<Adapter> {
+    // `filter`, `inspect` and `take_if` hand the value back, and
+    // `or_else`, `ok_or_else`, `unwrap_or_else` and `get_or_insert_with`
+    // hand the closure nothing, so neither kind has a chain to read.
+    //
+    // `is_none_or` is here and not in the conjunction trigger's table,
+    // which is not an inconsistency: filtering before it flips what it
+    // answers, where a leading `map` leaves every `None` a `None`.
     Some(match method.as_str() {
-        "map" => unary("map"),
+        "map" | "and_then" | "is_some_and" | "is_none_or" => unary("map"),
+        "map_or" | "map_or_else" => defaulted("map"),
         _ => return None,
     })
 }
 
 fn result(method: Symbol) -> Option<Adapter> {
+    // `inspect` and `inspect_err` hand the value back. `map_or_else` takes
+    // one closure per channel, and the table holds one adapter per name,
+    // so the value one is read and a chain in the error one is left alone.
     Some(match method.as_str() {
-        "map" => unary("map"),
-        "map_err" => unary("map_err"),
+        "map" | "and_then" | "is_ok_and" => unary("map"),
+        "map_err" | "or_else" | "unwrap_or_else" | "is_err_and" => unary("map_err"),
+        "map_or" | "map_or_else" => defaulted("map"),
         _ => return None,
     })
 }

@@ -19,6 +19,10 @@ fn parse(text: &str) -> Option<usize> {
 
 fn record(length: usize) {}
 
+fn recover(text: &str) -> Result<usize, usize> {
+    text.parse().map_err(|_| 0)
+}
+
 // Bad: an `Option`'s value channel, where a lifted step goes into a
 // `map`.
 fn option_value(header: Option<&'static str>) -> Option<usize> {
@@ -66,28 +70,80 @@ fn control_flow_continue(flow: ControlFlow<usize, &'static str>) -> ControlFlow<
     flow.map_continue(|text| text.trim().len())
 }
 
-// Not flagged: a fallible, defaulted or predicate-shaped adapter keeps
-// the lifted step's result wrapped in what it returns, so the split
-// costs a wrapper, and `all` below costs a `mut` rebinding as well. Each
-// of these is equivalent split; none of them reads better.
+// Bad: a fallible, defaulted or predicate-shaped adapter, whose closure
+// takes the item by value and hands it back no more than `map` does. The
+// lifted step's result stays wrapped in what the adapter keeps, and
+// `runs_of_hex` below wants a `mut` rebinding once split, which are the
+// costs `Iterator`'s own adapters pay too.
 fn option_and_then(header: Option<&'static str>) -> Option<usize> {
     header.and_then(|text| parse(text.trim()))
+}
+
+// Good: the step lifted out, leaving the adapter the fallible call.
+fn split_option_and_then(header: Option<&'static str>) -> Option<usize> {
+    header.map(str::trim).and_then(parse)
 }
 
 fn option_map_or(header: Option<&'static str>) -> usize {
     header.map_or(0, |text| text.trim().len())
 }
 
+fn option_map_or_else(header: Option<&'static str>) -> usize {
+    header.map_or_else(|| 0, |text| text.trim().len())
+}
+
 fn option_is_some_and(header: Option<&'static str>) -> bool {
     header.is_some_and(|text| text.trim().is_empty())
+}
+
+fn option_is_none_or(header: Option<&'static str>) -> bool {
+    header.is_none_or(|text| text.trim().is_empty())
+}
+
+fn result_and_then(outcome: Result<&'static str, usize>) -> Result<usize, usize> {
+    outcome.and_then(|text| parse(text.trim()).ok_or(0))
+}
+
+fn result_is_ok_and(outcome: Result<&'static str, usize>) -> bool {
+    outcome.is_ok_and(|text| text.trim().is_empty())
+}
+
+fn result_map_or(outcome: Result<&'static str, usize>) -> usize {
+    outcome.map_or(0, |text| text.trim().len())
 }
 
 fn result_both_channels(outcome: Result<&'static str, &'static str>) -> usize {
     outcome.map_or_else(|text| text.trim().len(), |text| text.trim().len())
 }
 
+// Bad: the error channel's own adapters, where a lifted step goes into a
+// `map_err`.
+fn result_or_else(outcome: Result<usize, &'static str>) -> Result<usize, usize> {
+    outcome.or_else(|text| recover(text.trim()))
+}
+
+fn result_unwrap_or_else(outcome: Result<usize, &'static str>) -> usize {
+    outcome.unwrap_or_else(|text| text.trim().len())
+}
+
+// Good: the same one lifted, which is the form the help asks for.
+fn split_result_unwrap_or_else(outcome: Result<usize, &'static str>) -> usize {
+    outcome.map_err(str::trim).unwrap_or_else(str::len)
+}
+
+fn result_is_err_and(outcome: Result<usize, &'static str>) -> bool {
+    outcome.is_err_and(|text| text.trim().is_empty())
+}
+
 fn runs_of_hex(bytes: Option<&'static [u8]>) -> bool {
     bytes.is_some_and(|run| run.iter().all(u8::is_ascii_hexdigit))
+}
+
+// Not flagged: `map_or_else` takes one closure per channel and the table
+// holds one adapter per name, so the value one is read and a chain in the
+// error one is left alone.
+fn result_error_closure(outcome: Result<usize, &'static str>) -> usize {
+    outcome.map_or_else(|text| text.trim().len(), |value| value)
 }
 
 // Not flagged: `Option::filter` hands the value back, so a leading `map`
