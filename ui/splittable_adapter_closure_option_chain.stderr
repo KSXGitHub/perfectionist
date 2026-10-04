@@ -63,6 +63,30 @@ LL |     lines.map_while(|line| parse(line).map(double)).collect()
    |
    = help: give the `map` its own trailing `map`, so the adapter is left only what can fail
 
+warning: this closure chains 2 steps onto the item, so `map_while` does all of them
+  --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
+   |
+LL |         .map_while(|line| parse(line).and_then(validate))
+   |          ^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map_while` does all of them
+  --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
+   |
+LL |         .map_while(|line| parse(line).filter(positive))
+   |          ^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `find_map` does all of them
+  --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
+   |
+LL |     lines.find_map(|line| parse(line).filter(positive))
+   |           ^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
 warning: this closure makes a value after a stage that may fail, so `find_map` does both
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
    |
@@ -71,11 +95,59 @@ LL |     lines.find_map(|line| parse(line).map(double))
    |
    = help: give the `map` its own trailing `map`, so the adapter is left only what can fail
 
+warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
+   |
+LL |     names.filter_map(|name| consume(name).then_some(1)).collect()
+   |           ^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map_while` does all of them
+  --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
+   |
+LL |     names.map_while(|name| consume(name).then_some(1)).collect()
+   |           ^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
+   |
+LL |     lines.filter_map(|line| sieve(line).and_then(parse)).collect()
+   |           ^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
+   |
+LL |     lines.filter_map(|line| sieve(line).map(render)).collect()
+   |           ^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
+   |
+LL |         .filter_map(|line| sieve(line).filter(|text| wanted(text)))
+   |          ^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
 warning: this closure chains 2 steps onto the item, so `map` does all of them
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
    |
 LL |     lines.map(|line| parse(line).map(double)).collect()
    |           ^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 4 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
+   |
+LL |         .filter_map(|line| line.trim().parse::<usize>().map(double).ok())
+   |          ^^^^^^^^^^
    |
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 

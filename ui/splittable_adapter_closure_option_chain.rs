@@ -131,25 +131,27 @@ fn infallible_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.map_while(|line| parse(line).map(double)).collect()
 }
 
-// Not flagged: a leading `filter_map` would drop the very item that
-// would have stopped the run, so this one does not split.
+// Bad, by the chain trigger: a leading `filter_map` would drop the very
+// item that would have stopped the run, so the guard-and-value split does
+// not apply here. A leading `map` drops nothing, so the chain's does.
 fn fallible_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .map_while(|line| parse(line).and_then(validate))
         .collect()
 }
 
-// Not flagged: a trailing `filter` moves where the run stops, for the
-// same reason.
+// Bad for the same reason, a trailing `filter` moving where the run
+// stops.
 fn filtering_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .map_while(|line| parse(line).filter(positive))
         .collect()
 }
 
-// Not flagged: `find_map` yields one value, so the only trailing
-// `filter` it has is the `Option`'s, which rejects what the search
-// settled on where the folded form kept looking.
+// Bad, by the chain trigger: `find_map` yields one value, so the only
+// trailing `filter` it has is the `Option`'s, which rejects what the
+// search settled on where the folded form kept looking. The chain lifts
+// the stage before it instead, which keeps the search.
 fn found_filtering(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
     lines.find_map(|line| parse(line).filter(positive))
 }
@@ -165,14 +167,16 @@ fn found_infallible(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize
     lines.find_map(|line| parse(line).map(double))
 }
 
-// Not flagged: a guard lifts into a `filter`, which hands the item by
-// reference, so a guard that moves it is `E0308` once lifted.
+// Bad, by the chain trigger rather than this one: the guard-and-value
+// split lifts a guard into a `filter`, which hands the item by reference,
+// so a guard that moves it is `E0308`. The chain's leading `map` hands it
+// over, so the two calls split that way instead.
 fn guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
     names.filter_map(|name| consume(name).then_some(1)).collect()
 }
 
-// Not flagged: and a `map_while` guard lifts into a `take_while`, which
-// hands it by reference too.
+// Bad for the same reason, a `map_while` guard lifting into a
+// `take_while`, which hands it by reference too.
 fn prefix_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
     names.map_while(|name| consume(name).then_some(1)).collect()
 }
@@ -278,8 +282,9 @@ fn sieve(line: &'static str) -> Sieve {
     Sieve(line)
 }
 
-// Not flagged: `and_then` on something that is not an `Option` is a
-// method of that name rather than the combinator.
+// Bad, by the chain trigger: `and_then` on something that is not an
+// `Option` is a method of that name rather than the combinator, so this
+// one has no split for it. The call is a step all the same.
 fn method_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| sieve(line).and_then(parse)).collect()
 }
@@ -311,8 +316,8 @@ fn another_trait_filter_map(line: &'static str) -> Option<usize> {
     line.filter_map(|text| parse(text).and_then(validate))
 }
 
-// Not flagged: nor are `map` and `filter` on something that is not an
-// `Option`.
+// Bad for the same reason, `map` and `filter` on something that is not
+// an `Option`.
 fn map_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| sieve(line).map(render)).collect()
 }
@@ -329,8 +334,9 @@ fn plain_map(lines: std::vec::IntoIter<&'static str>) -> Vec<Option<usize>> {
     lines.map(|line| parse(line).map(double)).collect()
 }
 
-// Not flagged: the closure's outermost call takes no argument, so there
-// is no second stage to hand over.
+// Bad, by the chain trigger: the closure's outermost call takes no
+// argument, so the guard-and-value split has no second stage to hand
+// over. The chain reads the same body as four steps.
 fn no_second_stage(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .filter_map(|line| line.trim().parse::<usize>().map(double).ok())

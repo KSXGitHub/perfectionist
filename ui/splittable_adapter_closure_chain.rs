@@ -118,10 +118,10 @@ fn owned_item(headers: std::vec::IntoIter<String>) -> Vec<String> {
         .collect()
 }
 
-// Not flagged: `filter_map`, `find_map` and `map_while` meet the same
-// condition, and their closure returns an `Option`, so what splits
-// inside one lifts into an adapter matched to that discipline rather
-// than into a `map`.
+// Bad: `filter_map`, `find_map` and `map_while` meet the same condition,
+// and a body that is a chain rather than `Option` work lifts into a
+// leading `map` as any other adapter's does. The guard-and-value trigger
+// answers first where the body is `Option` work.
 fn parsing(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .filter_map(|line| line.trim().parse::<usize>().ok())

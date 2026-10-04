@@ -47,6 +47,30 @@ LL |     headers.map(|header| label(header.len())).collect()
    |
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
+warning: this closure chains 3 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
+   |
+LL |         .filter_map(|line| line.trim().parse::<usize>().ok())
+   |          ^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 3 steps onto the item, so `find_map` does all of them
+  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
+   |
+LL |     lines.find_map(|line| line.trim().parse::<usize>().ok())
+   |           ^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 3 steps onto the item, so `map_while` does all of them
+  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
+   |
+LL |         .map_while(|line| line.trim().parse::<usize>().ok())
+   |          ^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
 warning: this closure chains 2 steps onto the item, so `fold` does all of them
   --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
    |

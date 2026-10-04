@@ -75,12 +75,14 @@ pub(super) fn adapter(family: Family, method: Symbol) -> Option<Adapter> {
 }
 
 fn iterator(method: Symbol) -> Option<Adapter> {
-    // `filter_map`, `find_map` and `map_while` meet the condition and
-    // are left out all the same: their closure returns an `Option`, and
-    // what splits inside one is `Option` work, which the guard-and-value
-    // trigger is about.
+    // The guard-and-value trigger answers first for `filter_map`,
+    // `find_map` and `map_while`, so a body that is `Option` work gets the
+    // split that hands each half to its counterpart. What reaches here is
+    // a body that is a chain, which lifts into a leading `map` as any
+    // other adapter's does.
     Some(match method.as_str() {
         "map" | "flat_map" | "for_each" | "try_for_each" => unary("map"),
+        "filter_map" | "find_map" | "map_while" => unary("map"),
         "any" | "all" | "position" | "rposition" => unary("map"),
         "fold" | "try_fold" | "rfold" | "try_rfold" | "scan" => stateful("map"),
         _ => return None,

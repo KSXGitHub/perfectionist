@@ -56,13 +56,12 @@ crate's own source:
   regions are erased in typeck results, so a result's lifetime cannot be
   matched against the item's, and the item is the receiver of the first
   step alone.
-- **`filter_map`, `find_map` and `map_while` are the guard-and-value
-  trigger's**, not the chain's, so the chain trigger leaves them alone.
-  `filter_map_ok` is the same shape and nothing lints it, the
-  guard-and-value trigger reaching `Iterator` alone; rayon's
-  `find_map_any`, `find_map_first` and `find_map_last` are the chain
-  trigger's for the same reason, so the same closure splits one way on
-  `Iterator::find_map` and the other on rayon's.
+- **`filter_map_ok` is unlinted.** Its closure returns an `Option`, so
+  what splits inside one is `Option` work, and the guard-and-value trigger
+  reaches `Iterator` alone. rayon's `find_map_any`, `find_map_first` and
+  `find_map_last` have no guard-and-value split either, so a closure
+  holding `Option` work splits on `Iterator::find_map` and not on
+  rayon's.
 - **`partition_map` has no lift target**, its closure returning an
   `Either`, and only `Pipe`'s by-value `pipe` is in scope: the rest hand
   the closure a borrow.
