@@ -135,12 +135,12 @@ pattern that several rules call out by reference — live in
   names both. Active by default, no configuration.
 - [`option-guard-in-loop.md`](./option-guard-in-loop.md) — the
   mirror image: flag a `for` whose entire body is an `if let
-  Some(..)` on something derived from the loop binding, and suggest
-  moving the selection into `filter_map`. Skips the degenerate case
-  where the element itself is the `Option`, which is
-  `clippy::manual_flatten`'s. Suggestion-only, since the rewrite
-  moves an expression into a closure. Active by default, no
-  configuration.
+  Some(..)` on something derived from the loop binding, whose help
+  asks for the selection to move into a `filter_map`. Skips the
+  degenerate case where the element itself is the `Option`, which is
+  `clippy::manual_flatten`'s. Offers no rewrite either, the choice of
+  `for` or `for_each` over the result being the author's. Active by
+  default, no configuration.
 
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer

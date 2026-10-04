@@ -60,13 +60,23 @@ scrutinee { .. }` with **no `else`**, where:
    would escape the loop. Each changes meaning once the body moves
    into a closure, and none can be expressed there.
 
-Emit one suggestion: move the scrutinee into a `filter_map` on the
-iteratee, rebinding the loop pattern to carry the unwrapped value
-alongside whatever else the pattern bound.
+Emit no suggestion, for the reason its sibling does not: the target
+form is a judgement rather than a fact. Lifting the scrutinee into a
+`filter_map` leaves a choice of what to iterate it with — `for y in
+it.filter_map(f)` keeps the loop and whatever the body needs from it,
+`.for_each(..)` reads as one pipeline but can carry no `break`,
+`continue`, `return` or `?`. The rewrite also moves an expression
+into a closure, which can change when a borrow is taken even where it
+cannot change the result, so there is no spelling the rule could
+print and stand behind.
 
-Applicability is **`MaybeIncorrect`**: the rewrite moves an
-expression into a closure, so it can change when a borrow is taken
-even where it cannot change the result. Offer it, do not apply it.
+The help names the step and leaves the shape open:
+
+> **help:** the guard selects rather than decides — lift it into a
+> `filter_map` on the iteratee and let the loop body do only the work
+>
+> **help:** carry through whatever else the pattern bound, and keep a
+> `for` where the body needs `break`, `continue`, `return` or `?`
 
 ## Examples
 
@@ -186,17 +196,18 @@ disable = ["option_guard_in_loop"]
 
 ### Difficulty
 
-**Medium.** Detection is as cheap as its sibling's, but the fix is
-not: it moves an expression into a closure, so it has to reason
-about escaping control flow, about which names the pattern binds and
-must carry through, and about patterns whose source text cannot be
-reused. Most of the work is in deciding when *not* to suggest.
+**Easy**, where carrying a rewrite would have made it medium.
+Detection is as cheap as its sibling's, and emitting no rewrite drops
+what was going to cost: no reasoning about which names the pattern
+binds and must carry through, and no patterns whose source text
+cannot be reused. The escaping-control-flow check stays, being part
+of the trigger rather than the fix.
 
 ## Default state
 
-Active by default, but suggestion-only — the diagnostic is
-`MaybeIncorrect`, so `cargo dylint --fix` leaves the choice to the
-author rather than rewriting a loop body into a closure unattended.
+Active by default, and carries no rewrite, so `cargo dylint --fix`
+has nothing to apply: moving a loop body into a closure is the
+author's call, not a fix to be made unattended.
 
 ## Interaction with sibling rules
 
@@ -214,8 +225,8 @@ author rather than rewriting a loop body into a closure unattended.
 - `perfectionist::excessive_nesting` counts depth without judging
   what produced it; this rule removes one specific cause.
 - [`splittable-adapter-closure`](./splittable-adapter-closure.md)
-  picks up where this rule's suggestion stops. The `filter_map` this
-  rule introduces carries whatever the guard's scrutinee was, so a
+  picks up where this rule's help stops. The `filter_map` it asks for
+  carries whatever the guard's scrutinee was, so a
   scrutinee that was itself a composition arrives as a closure doing
   several things — `filter_map(|x| parse(x).and_then(validate))`,
   which is among the shapes that rule names. The two compose in that
