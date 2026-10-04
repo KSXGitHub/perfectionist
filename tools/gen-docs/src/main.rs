@@ -156,7 +156,13 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     let repo_url = manifest
         .package
         .as_ref()
-        .and_then(|package| package.repository.as_ref().and_then(|repo| repo.get().ok()))
+        .and_then(|package| {
+            package
+                .repository
+                .as_ref()
+                .map(|repo| repo.get())
+                .and_then(Result::ok)
+        })
         .map(|url| url.strip_suffix(".git").unwrap_or(url).to_owned())
         .unwrap_or_else(|| "https://github.com/KSXGitHub/perfectionist".to_owned());
 
